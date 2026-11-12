@@ -102,7 +102,7 @@ Decoding a request costs far more memory than its body: every message, content b
 | Limit | Value | Counts | Source |
 | --- | --- | --- | --- |
 | `MAX_MESSAGES` | 100,000 | `messages` (Anthropic Messages, Chat Completions) or `input` items (Responses, OpenAI Decisions) | Anthropic's limit of 100,000 messages per request |
-| `MAX_BLOCKS_PER_MESSAGE` | 10,000 | Content blocks of one message, input item or system prompt, with the blocks inside its tool results | Far above any provider's image or document limit per request |
+| `MAX_BLOCKS_PER_MESSAGE` | 10,000 | Content blocks of one message, input item or system prompt, with the blocks inside its tool results, or of a Gemini Decisions `input` | Far above any provider's image or document limit per request |
 | `MAX_TOOLS` | 10,000 | `tools`, and Chat's `functions` | The catalog size of Anthropic's tool search |
 | `MAX_EMBEDDING_INPUTS` | 2,048 | Inputs of an OpenAI Embeddings `input` array | OpenAI's limit of 2,048 inputs |
 | `MAX_DECISION_QUESTIONS` | 1,000 | Questions of a decision request | Gemini's limit, the largest of the decision formats |

@@ -1,0 +1,430 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "assets": {
+    "request_refused": "image reference"
+  },
+  "assets-criteria": {
+    "request_refused": "image reference"
+  },
+  "box": {
+    "request_refused": "box question"
+  },
+  "choice": {
+    "answers": [
+      {
+        "choice": "calm",
+        "confidence": 0.7000000000000001,
+        "name": "tone",
+        "probabilities": [
+          {
+            "probability": 0.15,
+            "value": "angry"
+          },
+          {
+            "probability": 0.8,
+            "value": "calm"
+          },
+          {
+            "probability": 0.05,
+            "value": "excited"
+          }
+        ],
+        "type": "choice"
+      }
+    ],
+    "model": "jev-latest",
+    "usage": {
+      "input_tokens": 120,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 12,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 132
+    }
+  },
+  "instructions-forms": {
+    "request_refused": "options"
+  },
+  "long-context": {
+    "answers": [
+      {
+        "name": "renewal",
+        "probability": 0.12,
+        "type": "predicate"
+      }
+    ],
+    "model": "jev-1.14.0",
+    "usage": {
+      "input_tokens": 70,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 4,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 74
+    }
+  },
+  "noul": {
+    "answers": [
+      {
+        "name": "billing",
+        "probability": 0.98,
+        "type": "predicate"
+      }
+    ],
+    "model": "jev-latest",
+    "usage": {
+      "input_tokens": 120,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 12,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 132
+    }
+  },
+  "noul-criteria": {
+    "answers": [
+      {
+        "name": "spam",
+        "probability": 0.97,
+        "type": "predicate"
+      },
+      {
+        "name": "statement",
+        "probability": 0.95,
+        "type": "predicate"
+      },
+      {
+        "name": "structured",
+        "probability": 0.93,
+        "type": "predicate"
+      },
+      {
+        "name": "no_criteria",
+        "probability": 0.99,
+        "type": "predicate"
+      },
+      {
+        "name": "only_true",
+        "probability": 0.62,
+        "type": "predicate"
+      }
+    ],
+    "model": "jev-1.14.0",
+    "usage": {
+      "input_tokens": 301,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 15,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 316
+    }
+  },
+  "providers/baseten/route": {
+    "answers": [
+      {
+        "choice": "billing",
+        "confidence": 0.94,
+        "name": "route",
+        "probabilities": [
+          {
+            "probability": 0.97,
+            "value": "billing"
+          },
+          {
+            "probability": 0.03,
+            "value": "technical_support"
+          }
+        ],
+        "type": "choice"
+      },
+      {
+        "name": "refund",
+        "probability": 0.96,
+        "type": "predicate"
+      },
+      {
+        "confidence": 0.25,
+        "name": "urgency",
+        "probabilities": [
+          {
+            "label": "Routine request",
+            "probability": 0.55,
+            "value": 0
+          },
+          {
+            "label": "Needs attention today",
+            "probability": 0.4,
+            "value": 1
+          },
+          {
+            "label": "Immediate emergency",
+            "probability": 0.05,
+            "value": 2
+          }
+        ],
+        "score": 0.5,
+        "type": "score"
+      }
+    ],
+    "model": "decision-models/baseten-joey-2b-latest",
+    "usage": {
+      "input_tokens": 212,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 212
+    }
+  },
+  "providers/baseten/screenshot": {
+    "request_refused": "service_tier"
+  },
+  "providers/openrouter/listing-box": {
+    "request_refused": "box question"
+  },
+  "providers/openrouter/ticket": {
+    "answers": [
+      {
+        "name": "is_bug",
+        "probability": 0.96,
+        "type": "predicate"
+      },
+      {
+        "choice": "payments",
+        "confidence": 0.7599999999999998,
+        "name": "team",
+        "probabilities": [
+          {
+            "probability": 0.0,
+            "value": "account"
+          },
+          {
+            "probability": 0.16,
+            "value": "frontend"
+          },
+          {
+            "probability": 0.84,
+            "value": "payments"
+          }
+        ],
+        "type": "choice"
+      },
+      {
+        "confidence": 0.985,
+        "name": "urgency",
+        "probabilities": [
+          {
+            "label": "Can wait for the next release",
+            "probability": 0.0,
+            "value": 0
+          },
+          {
+            "label": "Should be fixed this week",
+            "probability": 0.01,
+            "value": 1
+          },
+          {
+            "label": "Blocking revenue right now",
+            "probability": 0.99,
+            "value": 2
+          }
+        ],
+        "score": 1.99,
+        "type": "score"
+      }
+    ],
+    "model": "typesafe/jev-1.13-20260917",
+    "usage": {
+      "input_tokens": 476,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 70,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 546
+    }
+  },
+  "providers/perplexity/review": {
+    "answers": [
+      {
+        "name": "defect",
+        "probability": 0.9424522889347015,
+        "type": "predicate"
+      },
+      {
+        "choice": "mixed",
+        "confidence": 0.9255246944002182,
+        "name": "sentiment",
+        "probabilities": [
+          {
+            "probability": 0.020649883775315993,
+            "value": "positive"
+          },
+          {
+            "probability": 0.9503497962668123,
+            "value": "mixed"
+          },
+          {
+            "probability": 0.02900031995787183,
+            "value": "negative"
+          }
+        ],
+        "type": "choice"
+      },
+      {
+        "confidence": 0.6758029479676377,
+        "name": "severity",
+        "probabilities": [
+          {
+            "label": "Cosmetic",
+            "probability": 0.008423954913615923,
+            "value": 0
+          },
+          {
+            "label": "Inconvenient",
+            "probability": 0.199283458194343,
+            "value": 1
+          },
+          {
+            "label": "Product unusable",
+            "probability": 0.7922925868920411,
+            "value": 2
+          }
+        ],
+        "score": 1.7838686319784252,
+        "type": "score"
+      }
+    ],
+    "model": "pplx-decider-latest",
+    "usage": {
+      "input_tokens": 367,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 3,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 370
+    }
+  },
+  "score": {
+    "answers": [
+      {
+        "confidence": 0.5499999999999999,
+        "name": "urgency",
+        "probabilities": [
+          {
+            "label": "Can wait",
+            "probability": 0.1,
+            "value": 0
+          },
+          {
+            "label": "Needs attention this week",
+            "probability": 0.1,
+            "value": 1
+          },
+          {
+            "label": "Needs attention today",
+            "probability": 0.8,
+            "value": 2
+          }
+        ],
+        "score": 1.7,
+        "type": "score"
+      }
+    ],
+    "model": "jev-latest",
+    "usage": {
+      "input_tokens": 120,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 12,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 132
+    }
+  },
+  "structured-state": {
+    "answers": [
+      {
+        "name": "refund",
+        "probability": 0.31,
+        "type": "predicate"
+      },
+      {
+        "choice": "billing",
+        "confidence": 0.8133333333333334,
+        "name": "team",
+        "probabilities": [
+          {
+            "probability": 0.86,
+            "value": "billing"
+          },
+          {
+            "probability": 0.09,
+            "value": "accounts"
+          },
+          {
+            "probability": 0.03,
+            "value": "other"
+          },
+          {
+            "probability": 0.02,
+            "value": "escalate"
+          }
+        ],
+        "type": "choice"
+      }
+    ],
+    "model": "jev-1.14.0",
+    "usage": {
+      "input_tokens": 214,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 8,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 222
+    }
+  },
+  "unknown-fields": {
+    "request_refused": "questions[0].x_weight"
+  },
+  "unknown-top-level-field": {
+    "request_refused": "x_future_field"
+  }
+}

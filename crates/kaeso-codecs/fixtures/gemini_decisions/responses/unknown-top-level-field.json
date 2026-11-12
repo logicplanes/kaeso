@@ -1,0 +1,21 @@
+{
+  "answers": {
+    "at_door": {
+      "type": "noul",
+      "noul": 0.5,
+      "confidence": 0.5
+    }
+  },
+  "usage": {
+    "total_input_tokens": 14,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 14
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 14
+  },
+  "x_trace": "trace-0001"
+}

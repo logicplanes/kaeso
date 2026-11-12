@@ -146,7 +146,7 @@ Manche Tests vergleichen mit geprüften `insta`-Snapshots. Ändert sich einer, p
 | --- | --- | --- |
 | `crates/kaeso-core/src/rights/snapshots/` | Jedes Recht und jede eingebaute Rolle | [Rechte](../concepts/rights.md) |
 | `crates/kaeso-server/tests/snapshots/` | Jede Einstellung mit Standardwert und Beschreibung | [Konfiguration](../self-hosting/configuration.md) und `deploy/kaeso.example.toml` |
-| `crates/kaeso-codecs/tests/snapshots/` | Die Ergebnisse der dialektübergreifenden Matrix | Die Mapping-Seite des Dialekts ([KPP-Interna](kpp/index.md#tests)) |
+| `crates/kaeso-codecs/tests/snapshots/` | Die Ergebnisse der dialektübergreifenden Matrix und der Entscheidungsmatrix | Die Mapping-Seite des Dialekts ([KPP-Interna](kpp/index.md#tests)) |
 | `crates/kaeso-mail/src/snapshots/` | Text und HTML jeder E-Mail | |
 
 Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/error_copy.rs` prüft jede Meldung, die die Platform API senden kann, gegen die [Regeln für Fehlermeldungen](architecture/gateway.md#fehlermeldungen). `crates/kaeso-server/tests/docs_paths.rs` prüft, dass jeder Repository-Pfad und jeder relative Link in den Markdown-Dateien im Wurzelverzeichnis und in `crates/`, `deploy/`, `e2e/`, `fuzz/` und `.github/` auf etwas Vorhandenes zeigt. `crates/kaeso-core/tests/supported_providers.rs` prüft, dass [Unterstützte Anbieter](../concepts/supported-providers.md) in jeder Sprache jeden Anbieter aus `PROVIDERS` mit seinen Formaten und seinem Host listet; ein neuer Anbieter bekommt dort also eine Zeile.
@@ -198,6 +198,7 @@ sequenceDiagram
 | `POST /v1/audio/transcriptions`, `/v1/audio/translations` | `openai_transcriptions` | `audio.transcriptions.create` in jedem `response_format` und gestreamt, `audio.translations.create` |
 | `POST /v1/systemone` | `system_one`, JSON und Uploads | `system_one` mit Fragen, Assets, zusätzlichen Headern und Body-Feldern (`typesafe-sdk`), und seine Fehler; eine Verweigerung von OpenAI, die dort ankommt |
 | `POST /v1/decisions` | `openai_decisions` | `decisions.create` mit jedem Eingabeelement, jeder Frage und jedem Cache-Feld, seine Fehler, und Antworten von System One, die dorthin wechseln (`openai`) |
+| `POST /v1beta/decisions` | `gemini_decisions` | `decisions.create` mit jedem Inhaltsblock und Fragetyp, seine Fehler und Sicherheitssperren, und Antworten und Verweigerungen der anderen Formate, die dorthin wechseln (`google-genai`) |
 | `/v1/videos`, `/v1/videos/{id}`, `/v1/videos/{id}/remix`, `/v1/videos/{id}/content` | `openai_videos`, antwortet mit jeder Job-Fixture jedes Video-Dialekts | `videos.create` (JSON und mit Upload), `videos.retrieve`, `videos.remix`, `videos.list`, `videos.download_content`, `videos.delete`, `videos.poll` |
 
 Jede Antwort- und Stream-[Fixture](kpp/fixtures.md) jedes Generierungsdialekts läuft durch jeden Generierungsendpunkt, gestreamt und nicht gestreamt. Die Tests vergleichen, was das SDK geparst hat, mit dem, was KPP dekodiert hat (`GET /_expected`), sodass eine Übersetzung fehlschlägt, die Text, Tool-Argumente oder lesbares Reasoning verliert. Die Tests prüfen außerdem, dass strukturierte Ausgabe gültiges JSON bleibt und dass jede Fehler-Fixture den Fehler des SDKs mit dem richtigen Status auslöst (`e2e/conformance/test_errors.py`): `APIStatusError` in den SDKs von OpenAI und Anthropic, `APIError` in `google-genai`.

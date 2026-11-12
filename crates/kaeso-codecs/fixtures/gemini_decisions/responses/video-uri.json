@@ -1,0 +1,28 @@
+{
+  "answers": {
+    "shows_fire": {
+      "type": "noul",
+      "noul": 0.98,
+      "confidence": 0.98
+    }
+  },
+  "usage": {
+    "total_input_tokens": 1787,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 17
+      },
+      {
+        "modality": "video",
+        "tokens": 1290
+      },
+      {
+        "modality": "audio",
+        "tokens": 480
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 1787
+  }
+}

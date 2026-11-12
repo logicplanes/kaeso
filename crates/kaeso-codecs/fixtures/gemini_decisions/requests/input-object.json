@@ -1,0 +1,13 @@
+{
+  "model": "gemini-decision-1",
+  "input": {
+    "type": "text",
+    "text": "Please cancel my subscription before the next billing date."
+  },
+  "questions": {
+    "wants_cancel": {
+      "type": "noul",
+      "instructions": "Does the customer want to cancel?"
+    }
+  }
+}

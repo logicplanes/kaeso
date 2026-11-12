@@ -99,6 +99,7 @@ sequenceDiagram
 | `dashscope` | QwenCloud 的 DashScope API：图片、语音合成、转写和 Wan 模型视频合成（[DashScope](dashscope.md)） |
 | `system_one` | TypeSafe 的 System One API（`/v1/systemone`）以及使用其某种形式的服务商（[System One](system-one.md)） |
 | `openai_decisions` | OpenAI 的 Decisions API（`/v1/decisions`）（[OpenAI Decisions](openai-decisions.md)） |
+| `gemini_decisions` | Gemini 的 Decisions API（`/v1beta/decisions`）（[Gemini Decisions](gemini-decisions.md)） |
 | `multipart` | 图片、音频和视频上传以及 System One 图片部分使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |
@@ -212,8 +213,8 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `Question.name` | 语义 | 可选，可以重复，与 OpenAI 的格式相同。保留；格式不能接受这些名称时，每个问题都写成 `q0`…`qN-1`，回复按位置映射回来。 |
 | `Question.instructions`、`.kind` | 语义 | |
 | `Predicate.when_true`、`.when_false`、`ChoiceOption.value`、`.description`、`Level.label`、`.description` | 语义 | 没有对应位置的格式按其映射页面所述写出，或拒绝它们。 |
-| `user` | 提示 | OpenAI 的 `safety_identifier`；发往 System One 时省略，并在 `kaeso-left-out` 中列出。 |
-| `cache` | 提示 | OpenAI 的 `prompt_cache_key` 和 `prompt_cache_options`；发往 System One 时省略，并在 `kaeso-left-out` 中列出（[决策](decisions-across-formats.md)）。 |
+| `user` | 提示 | OpenAI 的 `safety_identifier`；发往 System One 和 Gemini 时省略，并在 `kaeso-left-out` 中列出。 |
+| `cache` | 提示 | OpenAI 的 `prompt_cache_key` 和 `prompt_cache_options`；发往 System One 和 Gemini 时省略，并在 `kaeso-left-out` 中列出（[决策](decisions-across-formats.md)）。 |
 | `extras` | 同 `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -246,9 +247,10 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `crates/kaeso-kpp/tests/types.rs` | 单独验证 KPP 类型：错误种类和块的名称保持稳定，`validate()` 和 `required_capabilities()`，以及决策请求和答案的 JSON 形式。 |
 | Fixture 往返（每个方言的 `tests` 模块） | `decode → KPP → encode` 把方言的每个 [fixture](fixtures.md) 重现为相等的 JSON 值（流：相等的事件序列），流还要在多种 chunk 切分下验证。必须被拒绝的 fixture 会以指定的 `Unsupported` 功能失败。 |
 | `crates/kaeso-codecs/tests/cross_matrix.rs` | 对方言 A 的每个生成类 fixture 和其他每个方言 B：请求经过 `decode_A → check_B → encode_B`，并且必须能被 B 的解码器再次解码，对话内容保持不变；回复和流经过 `decode_A → encode_B → decode_B`，并且必须保留文本、拒绝和工具调用，转回 A 之后也是如此。Token 计数的请求和回复在 Anthropic 与 Responses 之间转换。结果保存为 `insta` 快照。 |
+| `crates/kaeso-codecs/tests/decision_matrix.rs` | 对决策格式做同样的检查：对格式 A 的每个决策 fixture 和其他每个格式 B，请求经过 `decode_A → check_B → encode_B → decode_B`，保留问题、选项和输入；回复经过 `decode_A → encode_B → decode_B`，保留答案、概率和拒答，或按名称被拒绝。结果保存为 `insta` 快照。 |
 | `crates/kaeso-codecs/tests/dispatch.rs` | `dispatch` 在每种方言中都能解码服务商错误、编码带状态码的错误，嵌入编解码器会拒绝生成类回复，并且在没有请求要求其他编码时把 base64 向量保持为收到时的样子。 |
 | `crates/kaeso-codecs/tests/number_spelling.rs` | 在 Anthropic、Chat 和 Responses 请求中，`temperature: 1` 回来时仍是 `1`，`1.0` 仍是 `1.0`；修改过的值按新值写出；另一种方言得到目标自己的写法；Responses 回复中回显的数字保持原来的写法。 |
-| `crates/kaeso-codecs/tests/kpp_proptest.rs` | 随机生成的有效 KPP 请求和回复，在每种生成方言上经过编码和解码后保持不变，范围限于所有方言都支持的子集。 |
+| `crates/kaeso-codecs/tests/kpp_proptest.rs` | 随机生成的有效 KPP 请求和回复，在每种生成方言上经过编码和解码后保持不变，范围限于所有方言都支持的子集。随机生成的决策请求和回复在每种决策格式上也是如此：概率从不重新归一化，答案保持顺序。 |
 | `crates/kaeso-codecs/tests/keepalive.rs` | 应用看不到的内容仍会定期在线路上产生保活帧，并且这些帧对应用的解析器不可见。 |
 | `crates/kaeso-codecs/tests/reasoning_carry.rs` | 推理发给另一方言的应用后，会在下一轮逐字节地回来，覆盖 Responses、Anthropic 和 Chat 应用。 |
 | `crates/kaeso-codecs/tests/responses_on_anthropic.rs` | 使用 Anthropic 模型的 OpenAI Responses 应用，以及使用 OpenAI 模型的 Anthropic 应用：推理请求、按 OpenAI 事件顺序输出的思考流，以及工具循环。 |
@@ -265,7 +267,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 
 `testing::sse_diff` 逐项比较流。它先比较事件名，再按 JSON 比较数据（不是 JSON 时按文本比较），然后按顺序比较 `id`、`retry` 和未知字段。没有 `data:` 行的帧，其 `ComparableItem::Event.data` 为 `None`；注释按原文精确比较。
 
-当变更改变了跨方言输出时，要审查快照的差异：运行 `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`，然后在提交之前阅读有变化的 `.snap` 文件。
+当变更改变了跨方言输出时，要审查快照的差异：运行 `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`（或 `--test decision_matrix`），然后在提交之前阅读有变化的 `.snap` 文件。
 
 ## 下一步
 
@@ -298,5 +300,6 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [DashScope](dashscope.md)：了解图片、语音、转写和视频任务如何映射到 QwenCloud 的 DashScope API。
 - [System One](system-one.md)：查找 TypeSafe 决策格式的每个字段在 KPP 中的位置，以及各服务商如何接收它。
 - [OpenAI Decisions](openai-decisions.md)：查找 OpenAI Decisions API 的每个字段在 KPP 中的位置。
+- [Gemini Decisions](gemini-decisions.md)：查找 Gemini Decisions API 的每个字段在 KPP 中的位置。
 - [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。
 - [Fixture 约定](fixture-conventions.md)：查阅每个构造的 fixture 都遵循的规则。

@@ -1,0 +1,18 @@
+{
+  "error": {
+    "code": 400,
+    "message": "Option ID ' billing' in question 'department' must not have leading or trailing whitespace.",
+    "status": "INVALID_ARGUMENT",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.BadRequest",
+        "fieldViolations": [
+          {
+            "field": "questions[department].criteria",
+            "description": "Option ID ' billing' must not have leading or trailing whitespace."
+          }
+        ]
+      }
+    ]
+  }
+}

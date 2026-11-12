@@ -1,9 +1,14 @@
 #![cfg(test)]
 
+use kaeso_codecs::openai_decisions::DecisionsProfile;
+use kaeso_codecs::system_one::SystemOneProfile;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
-    Block, DialectId, FunctionTool, GenerateRequest, Message, RawJson, Reply, Request, RequestKind,
-    Response, Role, StopReason, StreamMode, ToolDef, Usage,
+    Answer, AnswerValue, Block, Choice, ChoiceAnswer, ChoiceOption, ChoiceValue, DecideRequest,
+    DecideResponse, DecisionInput, Description, DialectId, FunctionTool, GenerateRequest,
+    Instructions, Level, Message, Predicate, PredicateAnswer, Question, QuestionKind, RawJson,
+    Reply, Request, RequestKind, Response, Role, Score, ScoreAnswer, StopReason, StreamMode,
+    ToolDef, Usage,
 };
 use proptest::prelude::*;
 
@@ -12,6 +17,12 @@ const GENERATION: [DialectId; 4] = [
     DialectId::OpenAiChat,
     DialectId::OpenAiResponses,
     DialectId::Gemini,
+];
+
+const DECISIONS: [DialectId; 3] = [
+    DialectId::SystemOne,
+    DialectId::OpenAiDecisions,
+    DialectId::GeminiDecisions,
 ];
 
 fn text() -> impl Strategy<Value = String> {
@@ -206,4 +217,202 @@ proptest! {
             prop_assert_eq!(back.usage.output_tokens, output, "dialect {}", d);
         }
     }
+
+    #[test]
+    fn decision_requests_survive_every_decision_format(req in decide_request()) {
+        for d in DECISIONS {
+            let (_, back) = decide_round_trip(d, &req);
+            prop_assert_eq!(decide_essence(&back), decide_essence(&req), "dialect {}", d);
+        }
+    }
+
+    #[test]
+    fn decision_replies_survive_every_decision_format(
+        (req, reply) in decide_request().prop_flat_map(|req| {
+            let answers: Vec<_> = req.questions.iter().map(answer_for).collect();
+            (Just(req), answers, 0u64..100_000)
+        }).prop_map(|(req, answers, input)| {
+            let mut reply = DecideResponse::new(req.model.clone(), answers);
+            reply.usage = Usage::new(input, 0);
+            (req, reply)
+        })
+    ) {
+        let reply = Reply::Decide(reply);
+        for d in DECISIONS {
+            let (ctx, app) = decide_round_trip(d, &req);
+            let out = dispatch::encode_response(d, &reply, &EncodeCtx::for_request(Request::Decide(app)))
+                .unwrap_or_else(|e| panic!("{d}: {e}"));
+            let back = dispatch::decode_response(d, 200, &HeaderList::new(), &out, &ctx)
+                .unwrap_or_else(|e| panic!("{d}: {e}"));
+            let (Reply::Decide(want), Reply::Decide(got)) = (&reply, &back) else {
+                panic!("kind changed")
+            };
+            prop_assert_eq!(&got.model, &want.model, "dialect {}", d);
+            prop_assert_eq!(answers_essence(got), answers_essence(want), "dialect {}", d);
+            prop_assert_eq!(got.usage.total_input_tokens(), want.usage.input_tokens, "dialect {}", d);
+        }
+    }
+}
+
+// The questions every decision format can say: named by Gemini's key rule, predicates without
+// criteria, which OpenAI's format has no place for, and 2 to 10 options or levels.
+fn decide_kind() -> impl Strategy<Value = QuestionKind> {
+    prop_oneof![
+        Just(QuestionKind::Predicate(Predicate::default())),
+        proptest::collection::vec(
+            ("[a-z][a-z0-9_]{0,8}", proptest::option::of(text())),
+            2..=10
+        )
+        .prop_map(|options| {
+            QuestionKind::Choice(Choice::new(
+                options
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, (key, d))| {
+                        ChoiceOption::new(
+                            ChoiceValue::Text(format!("{key}{i}")),
+                            d.map(Description::Text),
+                        )
+                    })
+                    .collect(),
+            ))
+        }),
+        proptest::collection::vec(text(), 2..=10).prop_map(|levels| {
+            QuestionKind::Score(Score::new(
+                levels
+                    .into_iter()
+                    .map(|l| Level::new(None, Some(Description::Text(l))))
+                    .collect(),
+            ))
+        }),
+    ]
+}
+
+prop_compose! {
+    fn decide_request()(
+        input in text(),
+        questions in proptest::collection::vec(("[a-z][a-z0-9_-]{0,20}", text(), decide_kind()), 1..6),
+    ) -> DecideRequest {
+        let mut req = DecideRequest::new("decider-x", DecisionInput::Text(input));
+        for (i, (name, instructions, kind)) in questions.into_iter().enumerate() {
+            req.questions.push(
+                Question::new(Some(format!("{name}{i}")), kind)
+                    .with_instructions(Instructions::Text(instructions)),
+            );
+        }
+        req
+    }
+}
+
+// Probabilities as a provider sends them: not normalised, some options or levels left out.
+fn answer_for(q: &Question) -> BoxedStrategy<Answer> {
+    let probabilities = |n: usize| proptest::collection::vec(proptest::option::of(0.0f64..1.0), n);
+    match &q.kind {
+        QuestionKind::Choice(c) => {
+            let n = c.options.len();
+            (0..n, probabilities(n))
+                .prop_map(|(option, mut ps)| {
+                    if let Some(slot) = ps.get_mut(option) {
+                        slot.get_or_insert(0.5);
+                    }
+                    Answer::new(AnswerValue::Choice(ChoiceAnswer::new(option, ps)))
+                })
+                .boxed()
+        }
+        QuestionKind::Score(s) => {
+            let n = s.levels.len();
+            (0.0f64..9.0, probabilities(n))
+                .prop_map(|(score, ps)| {
+                    Answer::new(AnswerValue::Score(ScoreAnswer::new(score, ps)))
+                })
+                .boxed()
+        }
+        _ => (0.01f64..0.99)
+            .prop_map(|p| Answer::new(AnswerValue::Predicate(PredicateAnswer::new(p))))
+            .boxed(),
+    }
+}
+
+fn decide_egress(req: &Request) -> EgressCtx {
+    EgressCtx::new(req)
+        .with_system_one_profile(SystemOneProfile::GENERIC)
+        .with_decisions_profile(DecisionsProfile::GENERIC)
+}
+
+fn decide_round_trip(dialect: DialectId, req: &DecideRequest) -> (EgressCtx, DecideRequest) {
+    let request = Request::Decide(req.clone());
+    dispatch::check(dialect, &request, &decide_egress(&request))
+        .unwrap_or_else(|e| panic!("{dialect}: {e}"));
+    let mut ctx = decide_egress(&request);
+    let enc = dispatch::encode_request(dialect, &request, &mut ctx).unwrap();
+    let back = dispatch::decode_request(dialect, RequestKind::Decide, &enc.body, &enc.headers)
+        .unwrap_or_else(|e| panic!("{dialect}: {e}"));
+    let Request::Decide(back) = back else {
+        panic!("kind changed")
+    };
+    (ctx, back)
+}
+
+fn description(d: Option<&Description>) -> String {
+    match d {
+        Some(Description::Text(t)) => t.clone(),
+        Some(Description::Json(j)) => j.get().to_owned(),
+        _ => String::new(),
+    }
+}
+
+fn decide_essence(req: &DecideRequest) -> serde_json::Value {
+    let questions: Vec<serde_json::Value> = req
+        .questions
+        .iter()
+        .map(|q| {
+            let instructions = match &q.instructions {
+                Some(Instructions::Text(t)) => t.clone(),
+                other => format!("{other:?}"),
+            };
+            let kind = match &q.kind {
+                QuestionKind::Predicate(_) => serde_json::json!("predicate"),
+                QuestionKind::Choice(c) => serde_json::json!(
+                    c.options
+                        .iter()
+                        .map(|o| {
+                            let ChoiceValue::Text(v) = &o.value else {
+                                panic!("a boolean value")
+                            };
+                            (v.clone(), description(o.description.as_ref()))
+                        })
+                        .collect::<Vec<_>>()
+                ),
+                QuestionKind::Score(s) => serde_json::json!(
+                    s.levels
+                        .iter()
+                        .map(|l| l
+                            .label
+                            .clone()
+                            .unwrap_or_else(|| description(l.description.as_ref())))
+                        .collect::<Vec<_>>()
+                ),
+                other => serde_json::json!(other.as_str()),
+            };
+            serde_json::json!([q.name, instructions, kind])
+        })
+        .collect();
+    let DecisionInput::Text(input) = &req.input else {
+        panic!("the input changed form")
+    };
+    serde_json::json!({"model": req.model, "input": input, "questions": questions})
+}
+
+fn answers_essence(r: &DecideResponse) -> serde_json::Value {
+    serde_json::json!(
+        r.answers
+            .iter()
+            .map(|a| match &a.value {
+                AnswerValue::Predicate(p) => serde_json::json!(["predicate", p.probability]),
+                AnswerValue::Choice(c) => serde_json::json!(["choice", c.option, c.probabilities]),
+                AnswerValue::Score(s) => serde_json::json!(["score", s.score, s.probabilities]),
+                other => serde_json::json!([other.as_str()]),
+            })
+            .collect::<Vec<_>>()
+    )
 }

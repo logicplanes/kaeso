@@ -1,0 +1,490 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "assets": {
+    "kind": "unsupported",
+    "message": "The provider takes images as parts of the input or the instructions, so the image `a3f1c2e8-found` must stand in a string of the state, of a state list or of the instructions; move it there.",
+    "param": "input",
+    "unsupported": "image reference"
+  },
+  "assets-criteria": {
+    "kind": "unsupported",
+    "message": "The provider takes images as parts of the input or the instructions, so the image `e48a6f30-cam` must stand in a string of the state, of a state list or of the instructions; move it there.",
+    "param": "input",
+    "unsupported": "image reference"
+  },
+  "box": {
+    "kind": "unsupported",
+    "message": "The provider answers no box questions; send them to a System One provider that does, such as TypeSafe.",
+    "param": "questions[0]",
+    "unsupported": "box question"
+  },
+  "choice": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my subscription this month. Please refund the extra charge.",
+      "model": "jev-latest",
+      "questions": [
+        {
+          "choices": [
+            {
+              "description": "An upset or hostile message",
+              "value": "angry"
+            },
+            {
+              "description": "A neutral or polite message",
+              "value": "calm"
+            },
+            {
+              "description": "An enthusiastic or eager message",
+              "value": "excited"
+            }
+          ],
+          "instructions": "What is the tone of this message?",
+          "name": "tone",
+          "type": "choice"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "instructions-forms": {
+    "kind": "unsupported",
+    "message": "The provider takes 2 to 255 options per choice question; this one has 1.",
+    "param": "questions[3]",
+    "unsupported": "options"
+  },
+  "long-context": {
+    "adapted": [],
+    "body": {
+      "input": "A very long contract would go here.",
+      "model": "jev-1.14.0",
+      "questions": [
+        {
+          "instructions": "Does the contract renew automatically?",
+          "name": "renewal",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "noul": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my subscription this month. Please refund the extra charge.",
+      "model": "jev-latest",
+      "questions": [
+        {
+          "instructions": "Is this message about billing?",
+          "name": "billing",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "noul-criteria": {
+    "adapted": [
+      "criteria",
+      "instructions"
+    ],
+    "body": {
+      "input": "Limited offer! Reply STOP to unsubscribe. Win a free cruise today.",
+      "model": "jev-1.14.0",
+      "questions": [
+        {
+          "instructions": "Is this message spam?\n\nIt is true when: Unsolicited advertising\nIt is false when: A legitimate conversation",
+          "name": "spam",
+          "type": "predicate"
+        },
+        {
+          "instructions": "This message contains unsolicited advertising.",
+          "name": "statement",
+          "type": "predicate"
+        },
+        {
+          "instructions": "{\n        \"task\": \"Identify unsolicited advertising.\"\n      }\n\nIt is true when: {\n          \"signals\": [\n            \"prizes\",\n            \"urgency\"\n          ]\n        }",
+          "name": "structured",
+          "type": "predicate"
+        },
+        {
+          "instructions": "Does the message mention a cruise?",
+          "name": "no_criteria",
+          "type": "predicate"
+        },
+        {
+          "instructions": "It is true when: The message asks the reader to reply.",
+          "name": "only_true",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "providers/baseten/route": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my subscription. Please refund the duplicate charge.",
+      "model": "decision-models/baseten-joey-2b-latest",
+      "questions": [
+        {
+          "choices": [
+            {
+              "description": "Billing, payments, and refunds",
+              "value": "billing"
+            },
+            {
+              "description": "Technical troubleshooting",
+              "value": "technical_support"
+            }
+          ],
+          "instructions": "Which team should handle this request?",
+          "name": "route",
+          "type": "choice"
+        },
+        {
+          "instructions": "Is the customer asking for a refund?",
+          "name": "refund",
+          "type": "predicate"
+        },
+        {
+          "instructions": "How urgent is the request?",
+          "levels": [
+            {
+              "label": "Routine request"
+            },
+            {
+              "label": "Needs attention today"
+            },
+            {
+              "label": "Immediate emergency"
+            }
+          ],
+          "name": "urgency",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "providers/baseten/screenshot": {
+    "kind": "unsupported",
+    "message": "`service_tier` comes from a System One request and has no equivalent in OpenAI Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/openrouter/listing-box": {
+    "kind": "unsupported",
+    "message": "The provider answers no box questions; send them to a System One provider that does, such as TypeSafe.",
+    "param": "questions[0]",
+    "unsupported": "box question"
+  },
+  "providers/openrouter/ticket": {
+    "adapted": [
+      "criteria"
+    ],
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "data": {
+                "customer_tier": "enterprise",
+                "ticket": "My checkout page shows a blank screen after I click Pay. I have tried two browsers."
+              },
+              "type": "input_json"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "typesafe/jev-1.13",
+      "questions": [
+        {
+          "instructions": "Is the customer reporting a software defect?\n\nIt is true when: The customer describes broken or unexpected product behavior.\nIt is false when: The customer is asking a question or requesting a feature.",
+          "name": "is_bug",
+          "type": "predicate"
+        },
+        {
+          "choices": [
+            {
+              "description": "Login, permissions, or profile issues.",
+              "value": "account"
+            },
+            {
+              "description": "Rendering, layout, or browser compatibility issues.",
+              "value": "frontend"
+            },
+            {
+              "description": "Checkout, billing, or payment processing issues.",
+              "value": "payments"
+            }
+          ],
+          "instructions": "Which team should own this ticket?",
+          "name": "team",
+          "type": "choice"
+        },
+        {
+          "instructions": "How urgent is this ticket?",
+          "levels": [
+            {
+              "label": "Can wait for the next release"
+            },
+            {
+              "label": "Should be fixed this week"
+            },
+            {
+              "label": "Blocking revenue right now"
+            }
+          ],
+          "name": "urgency",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "providers/perplexity/image-state": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAIAAAD2HxkiAAACd0lEQVR42u3TMQ0AAAjAMEAI2pGKBi6eVsKSZU8H8KckABOCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIZhQAjAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQuFlS7wM0rU5knAAAAABJRU5ErkJggg==",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "pplx-decider-latest",
+      "questions": [
+        {
+          "instructions": "Is the image mostly green?",
+          "name": "green",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "providers/perplexity/object-photo": {
+    "kind": "unsupported",
+    "message": "The provider takes images as parts of the input or the instructions, so the image `kaeso-image-0-ref` must stand in a string of the state, of a state list or of the instructions; move it there.",
+    "param": "input",
+    "unsupported": "image reference"
+  },
+  "providers/perplexity/review": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "data": {
+                "review": "The headphones sound great, but the battery stopped charging after two weeks.",
+                "title": "Battery died after two weeks"
+              },
+              "type": "input_json"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "pplx-decider-latest",
+      "questions": [
+        {
+          "instructions": "Does the review report a product defect?",
+          "name": "defect",
+          "type": "predicate"
+        },
+        {
+          "choices": [
+            {
+              "description": "Mostly satisfied",
+              "value": "positive"
+            },
+            {
+              "description": "Praise and complaints in one review",
+              "value": "mixed"
+            },
+            {
+              "description": "Mostly dissatisfied",
+              "value": "negative"
+            }
+          ],
+          "instructions": "What is the overall sentiment of the review?",
+          "name": "sentiment",
+          "type": "choice"
+        },
+        {
+          "instructions": "How severe is the reported problem?",
+          "levels": [
+            {
+              "label": "Cosmetic"
+            },
+            {
+              "label": "Inconvenient"
+            },
+            {
+              "label": "Product unusable"
+            }
+          ],
+          "name": "severity",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "providers/perplexity/square-color": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "Which color is the square?",
+              "type": "input_text"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAAEYCAIAAAAI7H7bAAACQElEQVR42u3TMQ0AAAjAMEAI/qUgCxEcPK2EJcvpDuCmJAAjgZHASICRwEhgJDASYCQwEhgJjAQYCYwERgIjAUYCI4GRwEiAkcBIYCQwEmAkMBIYCTASGAmMBEYCjARGAiOBkQAjgZHASGAkwEhgJDASGAkwEhgJjARGAowERgIjgZEAI4GRwEiAkcBIYCQwEmAkMBIYCYwEGAmMBEYCIwFGAiOBkcBIgJHASGAkMBJgJDASGAmMBBgJjARGAowERgIjgZEAI4GRwEhgJMBIYCQwEhgJMBIYCYwERgKMBEYCI4GRACOBkcBIgJHASGAkMBJgJDASGAmMBBgJjARGAiMBRgIjgZHASICRwEhgJDASYCQwEhgJjAQYCYwERgKMBEYCI4GRACOBkcBIYCTASGAkMBIYCTASGAmMBEYCjARGAiOBkQAjgZHASGAkwEhgJDASYCQwEhgJjAQYCYwERgIjAUYCI4GRwEiAkcBIYCQwEmAkMBIYCYwEGAmMBEYCjARGAiOBkQAjgZHASGAkwEhgJDASGAkwEhgJjARGAowERgIjgZEAI4GRwEhgJMBIYCQwEmAkMBIYCYwEGAmMBEYCIwFGAiOBkcBIgJHASGAkMBJgJDASGAmMBBgJjARGAiMBRgIjgZEAI4GRwEhgJMBIYCQwEhgJMBIYCYwERgKMBEYCI4GRACOBkcBIYCTASGAkMBIYSQIwEhgJjAQYCYwERgIjAUYCI4GRwEiAkcBIYCQwEmAkMBIYCYwEGAk+LFQCAzTGtaTtAAAAAElFTkSuQmCC",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "pplx-decider-latest",
+      "questions": [
+        {
+          "choices": [
+            {
+              "value": "red"
+            },
+            {
+              "value": "blue"
+            },
+            {
+              "value": "green"
+            }
+          ],
+          "instructions": "What color is the square?",
+          "name": "color",
+          "type": "choice"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "score": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my subscription this month. Please refund the extra charge.",
+      "model": "jev-latest",
+      "questions": [
+        {
+          "instructions": "How urgent is this message?",
+          "levels": [
+            {
+              "label": "Can wait"
+            },
+            {
+              "label": "Needs attention this week"
+            },
+            {
+              "label": "Needs attention today"
+            }
+          ],
+          "name": "urgency",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "structured-state": {
+    "adapted": [
+      "criteria"
+    ],
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "data": {
+                "account": {
+                  "plan": "pro",
+                  "renews": "2026-12-01",
+                  "seats": 12
+                },
+                "message": "Please help.",
+                "subject": "Duplicate charge"
+              },
+              "type": "input_json"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "jev-1.14.0",
+      "questions": [
+        {
+          "instructions": "Does the customer ask for a refund?",
+          "name": "refund",
+          "type": "predicate"
+        },
+        {
+          "choices": [
+            {
+              "description": "Charges, refunds, and invoices",
+              "value": "billing"
+            },
+            {
+              "description": "{\n          \"description\": \"Sign-in and seats\",\n          \"examples\": [\n            \"Cannot add a seat\",\n            \"Locked out\"\n          ]\n        }",
+              "value": "accounts"
+            },
+            {
+              "value": "other"
+            },
+            {
+              "description": "[\n          \"Legal threats\",\n          \"Press inquiries\"\n        ]",
+              "value": "escalate"
+            }
+          ],
+          "instructions": "Which team should handle this ticket?",
+          "name": "team",
+          "type": "choice"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "unknown-fields": {
+    "kind": "unsupported",
+    "message": "`questions[0].x_weight` comes from a System One request and has no equivalent in OpenAI Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": "questions[0]",
+    "unsupported": "questions[0].x_weight"
+  },
+  "unknown-top-level-field": {
+    "kind": "unsupported",
+    "message": "`x_future_field` comes from a System One request and has no equivalent in OpenAI Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "x_future_field"
+  }
+}

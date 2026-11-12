@@ -33,6 +33,7 @@ pub mod anthropic_messages;
 pub mod dashscope;
 pub mod elevenlabs;
 pub mod gemini;
+pub mod gemini_decisions;
 pub mod gemini_embeddings;
 pub mod gemini_interactions;
 pub mod minimax_images;

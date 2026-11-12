@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "safety",
+    "message": "Request blocked due to safety violations (harmful content). Please modify your input and retry."
+  }
+}

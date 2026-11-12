@@ -216,14 +216,16 @@ impl<'de> serde::Deserialize<'de> for Key<'de> {
 
 fn child(node: Node, key: &str) -> Option<Node> {
     use DialectId::{
-        AnthropicMessages, Gemini, GeminiEmbeddings, OpenAiChat, OpenAiDecisions, OpenAiEmbeddings,
-        OpenAiResponses, SystemOne,
+        AnthropicMessages, Gemini, GeminiDecisions, GeminiEmbeddings, OpenAiChat, OpenAiDecisions,
+        OpenAiEmbeddings, OpenAiResponses, SystemOne,
     };
     Some(match (node, key) {
         (Node::Top(SystemOne), "questions") => Node::DecideQuestions,
         (Node::Top(SystemOne), "assets") => Node::DecideAssets,
         (Node::Top(OpenAiDecisions), "questions") => Node::DecideQuestions,
         (Node::Top(d @ OpenAiDecisions), "input") => Node::Items(d),
+        (Node::Top(GeminiDecisions), "questions") => Node::DecideQuestions,
+        (Node::Top(GeminiDecisions), "input") => Node::Content(None),
         (Node::DecideQuestions, _) => Node::DecideQuestion,
         (Node::DecideQuestion, "criteria" | "choices" | "levels") => Node::DecideOptions,
         (Node::Top(d @ Gemini), "contents") => Node::Items(d),
@@ -574,6 +576,12 @@ fn refusal(dialect: DialectId, over: Over) -> KppError {
                 "`requests` holds more than {MAX_EMBEDDING_INPUTS} requests; Kaeso takes at most {MAX_EMBEDDING_INPUTS}."
             ),
             "requests",
+        ),
+        Over::Blocks if dialect == DialectId::GeminiDecisions => (
+            format!(
+                "`input` holds more than {MAX_BLOCKS_PER_MESSAGE} content blocks; Kaeso takes at most {MAX_BLOCKS_PER_MESSAGE}."
+            ),
+            "input",
         ),
         Over::Items if responses => (
             format!(

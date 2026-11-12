@@ -1,0 +1,244 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "booleans": {
+    "answers": {
+      "packaging": {
+        "choice": "yes",
+        "confidence": 0.92,
+        "probabilities": {
+          "false": 0.03,
+          "unsure": 0.05,
+          "yes": 0.92
+        },
+        "type": "choice"
+      },
+      "works": {
+        "choice": "true",
+        "confidence": 0.91,
+        "probabilities": {
+          "false": 0.09,
+          "true": 0.91
+        },
+        "type": "choice"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 66
+        }
+      ],
+      "total_input_tokens": 66,
+      "total_output_tokens": 0,
+      "total_tokens": 66
+    }
+  },
+  "cache": {
+    "request_refused": "conversation input"
+  },
+  "choice": {
+    "answers": {
+      "department": {
+        "choice": "billing",
+        "confidence": 0.95,
+        "probabilities": {
+          "billing": 0.95,
+          "other": 0.02,
+          "shipping": 0.01,
+          "technical": 0.02
+        },
+        "type": "choice"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 61
+        }
+      ],
+      "total_input_tokens": 61,
+      "total_output_tokens": 0,
+      "total_tokens": 61
+    }
+  },
+  "conversation": {
+    "request_refused": "conversation input"
+  },
+  "image": {
+    "answers": {
+      "visible_damage": {
+        "confidence": 0.92,
+        "noul": 0.92,
+        "type": "noul"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 97
+        }
+      ],
+      "total_input_tokens": 97,
+      "total_output_tokens": 0,
+      "total_tokens": 97
+    }
+  },
+  "input-json": {
+    "answers": {
+      "duplicate_charge": {
+        "confidence": 0.88,
+        "noul": 0.88,
+        "type": "noul"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 73
+        }
+      ],
+      "total_input_tokens": 73,
+      "total_output_tokens": 0,
+      "total_tokens": 73
+    }
+  },
+  "instructions-images": {
+    "request_refused": "image in question instructions"
+  },
+  "instructions-parts": {
+    "request_refused": "image in question instructions"
+  },
+  "null-names": {
+    "answers": {
+      "q0": {
+        "confidence": 0.83,
+        "noul": 0.83,
+        "type": "noul"
+      },
+      "q1": {
+        "confidence": 0.7,
+        "legend": {
+          "0": "Low",
+          "1": "Medium",
+          "2": "High"
+        },
+        "probabilities": {
+          "0": 0.05,
+          "1": 0.25,
+          "2": 0.7
+        },
+        "score": 1.65,
+        "type": "score"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 49
+        }
+      ],
+      "total_input_tokens": 49,
+      "total_output_tokens": 0,
+      "total_tokens": 49
+    }
+  },
+  "predicate": {
+    "answers": {
+      "damaged": {
+        "confidence": 0.95,
+        "noul": 0.95,
+        "type": "noul"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 42
+        }
+      ],
+      "total_input_tokens": 42,
+      "total_output_tokens": 0,
+      "total_tokens": 42
+    }
+  },
+  "refusal": {
+    "body": {
+      "error": {
+        "code": "safety",
+        "message": "The model declined to answer `how_to`; Gemini's Decisions API has no answer for that, so no answers are returned."
+      }
+    },
+    "error": "content_filtered",
+    "status": 400
+  },
+  "repeated-names": {
+    "answers": {
+      "q0": {
+        "confidence": 0.98,
+        "noul": 0.98,
+        "type": "noul"
+      },
+      "q1": {
+        "confidence": 0.96,
+        "noul": 0.96,
+        "type": "noul"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 44
+        }
+      ],
+      "total_input_tokens": 44,
+      "total_output_tokens": 0,
+      "total_tokens": 44
+    }
+  },
+  "score": {
+    "answers": {
+      "severity": {
+        "confidence": 0.7,
+        "legend": {
+          "0": "Cosmetic: Appearance only; no lost functionality.",
+          "1": "Workaround available: A task fails, but another way works.",
+          "2": "Fully blocked: A task fails with no workaround."
+        },
+        "probabilities": {
+          "0": 0.1,
+          "1": 0.7,
+          "2": 0.2
+        },
+        "score": 1.1,
+        "type": "score"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 58
+        }
+      ],
+      "total_input_tokens": 58,
+      "total_output_tokens": 0,
+      "total_tokens": 58
+    }
+  },
+  "unknown-fields": {
+    "request_refused": "input[0].blocks[0].x_note"
+  },
+  "unknown-top-level-field": {
+    "request_refused": "x_future_field"
+  }
+}

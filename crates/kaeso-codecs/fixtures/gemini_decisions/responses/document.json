@@ -1,0 +1,29 @@
+{
+  "answers": {
+    "invoice_type": {
+      "type": "choice",
+      "choice": "invoice",
+      "probabilities": {
+        "invoice": 0.71,
+        "needs review": 0.08,
+        "receipt": 0.21
+      },
+      "confidence": 0.71
+    }
+  },
+  "usage": {
+    "total_input_tokens": 298,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 40
+      },
+      {
+        "modality": "document",
+        "tokens": 258
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 298
+  }
+}

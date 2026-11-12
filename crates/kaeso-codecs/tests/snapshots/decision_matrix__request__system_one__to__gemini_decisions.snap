@@ -1,0 +1,354 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "assets": {
+    "kind": "unsupported",
+    "message": "Gemini takes images as blocks of the input, so the image `a3f1c2e8-found` must stand in the input string or in a string of a state list; move it there.",
+    "param": "input",
+    "unsupported": "image reference"
+  },
+  "assets-criteria": {
+    "kind": "unsupported",
+    "message": "Gemini takes images as blocks of the input, so the image `e48a6f30-cam` must stand in the input string or in a string of a state list; move it there.",
+    "param": "input",
+    "unsupported": "image reference"
+  },
+  "box": {
+    "kind": "unsupported",
+    "message": "Gemini's Decisions API answers no box questions; send them to a System One provider that does, such as TypeSafe.",
+    "param": "questions[0]",
+    "unsupported": "box question"
+  },
+  "choice": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my subscription this month. Please refund the extra charge.",
+      "model": "jev-latest",
+      "questions": {
+        "tone": {
+          "criteria": {
+            "angry": "An upset or hostile message",
+            "calm": "A neutral or polite message",
+            "excited": "An enthusiastic or eager message"
+          },
+          "instructions": "What is the tone of this message?",
+          "type": "choice"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "instructions-forms": {
+    "kind": "unsupported",
+    "message": "Gemini's Decisions API takes 2 to 255 options per choice question; this one has 1.",
+    "param": "questions[3]",
+    "unsupported": "options"
+  },
+  "long-context": {
+    "adapted": [],
+    "body": {
+      "input": "A very long contract would go here.",
+      "model": "jev-1.14.0",
+      "questions": {
+        "renewal": {
+          "instructions": "Does the contract renew automatically?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "noul": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my subscription this month. Please refund the extra charge.",
+      "model": "jev-latest",
+      "questions": {
+        "billing": {
+          "instructions": "Is this message about billing?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "noul-criteria": {
+    "adapted": [
+      "instructions",
+      "criteria"
+    ],
+    "body": {
+      "input": "Limited offer! Reply STOP to unsubscribe. Win a free cruise today.",
+      "model": "jev-1.14.0",
+      "questions": {
+        "no_criteria": {
+          "instructions": "Does the message mention a cruise?",
+          "type": "noul"
+        },
+        "only_true": {
+          "criteria": {
+            "true_description": "The message asks the reader to reply."
+          },
+          "instructions": "",
+          "type": "noul"
+        },
+        "spam": {
+          "criteria": {
+            "false_description": "A legitimate conversation",
+            "true_description": "Unsolicited advertising"
+          },
+          "instructions": "Is this message spam?",
+          "type": "noul"
+        },
+        "statement": {
+          "instructions": "This message contains unsolicited advertising.",
+          "type": "noul"
+        },
+        "structured": {
+          "criteria": {
+            "true_description": "{\n          \"signals\": [\n            \"prizes\",\n            \"urgency\"\n          ]\n        }"
+          },
+          "instructions": "{\n        \"task\": \"Identify unsolicited advertising.\"\n      }",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "providers/baseten/route": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my subscription. Please refund the duplicate charge.",
+      "model": "decision-models/baseten-joey-2b-latest",
+      "questions": {
+        "refund": {
+          "instructions": "Is the customer asking for a refund?",
+          "type": "noul"
+        },
+        "route": {
+          "criteria": {
+            "billing": "Billing, payments, and refunds",
+            "technical_support": "Technical troubleshooting"
+          },
+          "instructions": "Which team should handle this request?",
+          "type": "choice"
+        },
+        "urgency": {
+          "criteria": [
+            "Routine request",
+            "Needs attention today",
+            "Immediate emergency"
+          ],
+          "instructions": "How urgent is the request?",
+          "type": "score"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "providers/baseten/screenshot": {
+    "kind": "unsupported",
+    "message": "`service_tier` comes from a System One request and has no equivalent in Gemini Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/openrouter/listing-box": {
+    "kind": "unsupported",
+    "message": "Gemini's Decisions API answers no box questions; send them to a System One provider that does, such as TypeSafe.",
+    "param": "questions[0]",
+    "unsupported": "box question"
+  },
+  "providers/openrouter/ticket": {
+    "adapted": [],
+    "body": {
+      "input": "{\n    \"customer_tier\": \"enterprise\",\n    \"ticket\": \"My checkout page shows a blank screen after I click Pay. I have tried two browsers.\"\n  }",
+      "model": "typesafe/jev-1.13",
+      "questions": {
+        "is_bug": {
+          "criteria": {
+            "false_description": "The customer is asking a question or requesting a feature.",
+            "true_description": "The customer describes broken or unexpected product behavior."
+          },
+          "instructions": "Is the customer reporting a software defect?",
+          "type": "noul"
+        },
+        "team": {
+          "criteria": {
+            "account": "Login, permissions, or profile issues.",
+            "frontend": "Rendering, layout, or browser compatibility issues.",
+            "payments": "Checkout, billing, or payment processing issues."
+          },
+          "instructions": "Which team should own this ticket?",
+          "type": "choice"
+        },
+        "urgency": {
+          "criteria": [
+            "Can wait for the next release",
+            "Should be fixed this week",
+            "Blocking revenue right now"
+          ],
+          "instructions": "How urgent is this ticket?",
+          "type": "score"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "providers/perplexity/image-state": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "data": "iVBORw0KGgoAAAANSUhEUgAAASwAAAEsCAIAAAD2HxkiAAACd0lEQVR42u3TMQ0AAAjAMEAI2pGKBi6eVsKSZU8H8KckABOCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggkBE4IJAROCCQETggnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEgAnBhIAJwYSACcGEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQsCEYELAhGBCwIRgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIWBCMCFgQjAhYEIwIZhQAjAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQMCGYEDAhmBAwIZgQuFlS7wM0rU5knAAAAABJRU5ErkJggg==",
+          "mime_type": "image/png",
+          "type": "image"
+        }
+      ],
+      "model": "pplx-decider-latest",
+      "questions": {
+        "green": {
+          "instructions": "Is the image mostly green?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "providers/perplexity/object-photo": {
+    "kind": "unsupported",
+    "message": "Gemini takes images as blocks of the input, so the image `kaeso-image-0-ref` must stand in the input string or in a string of a state list; move it there.",
+    "param": "input",
+    "unsupported": "image reference"
+  },
+  "providers/perplexity/review": {
+    "adapted": [],
+    "body": {
+      "input": "{\n    \"title\": \"Battery died after two weeks\",\n    \"review\": \"The headphones sound great, but the battery stopped charging after two weeks.\"\n  }",
+      "model": "pplx-decider-latest",
+      "questions": {
+        "defect": {
+          "instructions": "Does the review report a product defect?",
+          "type": "noul"
+        },
+        "sentiment": {
+          "criteria": {
+            "mixed": "Praise and complaints in one review",
+            "negative": "Mostly dissatisfied",
+            "positive": "Mostly satisfied"
+          },
+          "instructions": "What is the overall sentiment of the review?",
+          "type": "choice"
+        },
+        "severity": {
+          "criteria": [
+            "Cosmetic",
+            "Inconvenient",
+            "Product unusable"
+          ],
+          "instructions": "How severe is the reported problem?",
+          "type": "score"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "providers/perplexity/square-color": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "text": "Which color is the square?",
+          "type": "text"
+        },
+        {
+          "data": "iVBORw0KGgoAAAANSUhEUgAAARgAAAEYCAIAAAAI7H7bAAACQElEQVR42u3TMQ0AAAjAMEAI/qUgCxEcPK2EJcvpDuCmJAAjgZHASICRwEhgJDASYCQwEhgJjAQYCYwERgIjAUYCI4GRwEiAkcBIYCQwEmAkMBIYCTASGAmMBEYCjARGAiOBkQAjgZHASGAkwEhgJDASGAkwEhgJjARGAowERgIjgZEAI4GRwEiAkcBIYCQwEmAkMBIYCYwEGAmMBEYCIwFGAiOBkcBIgJHASGAkMBJgJDASGAmMBBgJjARGAowERgIjgZEAI4GRwEhgJMBIYCQwEhgJMBIYCYwERgKMBEYCI4GRACOBkcBIgJHASGAkMBJgJDASGAmMBBgJjARGAiMBRgIjgZHASICRwEhgJDASYCQwEhgJjAQYCYwERgKMBEYCI4GRACOBkcBIYCTASGAkMBIYCTASGAmMBEYCjARGAiOBkQAjgZHASGAkwEhgJDASYCQwEhgJjAQYCYwERgIjAUYCI4GRwEiAkcBIYCQwEmAkMBIYCYwEGAmMBEYCjARGAiOBkQAjgZHASGAkwEhgJDASGAkwEhgJjARGAowERgIjgZEAI4GRwEhgJMBIYCQwEmAkMBIYCYwEGAmMBEYCIwFGAiOBkcBIgJHASGAkMBJgJDASGAmMBBgJjARGAiMBRgIjgZEAI4GRwEhgJMBIYCQwEhgJMBIYCYwERgKMBEYCI4GRACOBkcBIYCTASGAkMBIYSQIwEhgJjAQYCYwERgIjAUYCI4GRwEiAkcBIYCQwEmAkMBIYCYwEGAk+LFQCAzTGtaTtAAAAAElFTkSuQmCC",
+          "mime_type": "image/png",
+          "type": "image"
+        }
+      ],
+      "model": "pplx-decider-latest",
+      "questions": {
+        "color": {
+          "criteria": {
+            "blue": "",
+            "green": "",
+            "red": ""
+          },
+          "instructions": "What color is the square?",
+          "type": "choice"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "score": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my subscription this month. Please refund the extra charge.",
+      "model": "jev-latest",
+      "questions": {
+        "urgency": {
+          "criteria": [
+            "Can wait",
+            "Needs attention this week",
+            "Needs attention today"
+          ],
+          "instructions": "How urgent is this message?",
+          "type": "score"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "structured-state": {
+    "adapted": [
+      "criteria"
+    ],
+    "body": {
+      "input": "{\n    \"subject\": \"Duplicate charge\",\n    \"message\": \"Please help.\",\n    \"account\": {\n      \"plan\": \"pro\",\n      \"seats\": 12,\n      \"renews\": \"2026-12-01\"\n    }\n  }",
+      "model": "jev-1.14.0",
+      "questions": {
+        "refund": {
+          "instructions": "Does the customer ask for a refund?",
+          "type": "noul"
+        },
+        "team": {
+          "criteria": {
+            "accounts": "{\n          \"description\": \"Sign-in and seats\",\n          \"examples\": [\n            \"Cannot add a seat\",\n            \"Locked out\"\n          ]\n        }",
+            "billing": "Charges, refunds, and invoices",
+            "escalate": "[\n          \"Legal threats\",\n          \"Press inquiries\"\n        ]",
+            "other": ""
+          },
+          "instructions": "Which team should handle this ticket?",
+          "type": "choice"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "unknown-fields": {
+    "kind": "unsupported",
+    "message": "`questions[0].x_weight` comes from a System One request and has no equivalent in Gemini Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": "questions[0]",
+    "unsupported": "questions[0].x_weight"
+  },
+  "unknown-top-level-field": {
+    "kind": "unsupported",
+    "message": "`x_future_field` comes from a System One request and has no equivalent in Gemini Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "x_future_field"
+  }
+}

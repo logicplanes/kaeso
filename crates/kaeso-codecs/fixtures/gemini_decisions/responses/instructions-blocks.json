@@ -1,0 +1,30 @@
+{
+  "answers": {
+    "late": {
+      "type": "noul",
+      "noul": 0.95,
+      "confidence": 0.95
+    },
+    "carrier_fault": {
+      "type": "choice",
+      "choice": "carrier",
+      "probabilities": {
+        "carrier": 0.6,
+        "customer": 0.1,
+        "warehouse": 0.3
+      },
+      "confidence": 0.6
+    }
+  },
+  "usage": {
+    "total_input_tokens": 52,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 52
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 52
+  }
+}

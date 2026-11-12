@@ -1,0 +1,302 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "booleans": {
+    "adapted": [
+      "booleans"
+    ],
+    "body": {
+      "model": "gpt-6-luna",
+      "questions": {
+        "packaging": {
+          "criteria": {
+            "false": null,
+            "unsure": null,
+            "yes": null
+          },
+          "instructions": "Was the packaging damaged?",
+          "type": "choice"
+        },
+        "works": {
+          "criteria": {
+            "false": "The product is faulty.",
+            "true": "The product works."
+          },
+          "instructions": "Does the product work as described?",
+          "type": "choice"
+        }
+      },
+      "state": "The customer says the blender works, but the box arrived crushed."
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "cache": {
+    "kind": "unsupported",
+    "message": "System One takes one state, not a conversation; send one user message.",
+    "param": "input",
+    "unsupported": "conversation input"
+  },
+  "choice": {
+    "adapted": [],
+    "body": {
+      "model": "gpt-6-luna",
+      "questions": {
+        "department": {
+          "criteria": {
+            "billing": "Payments, invoices, and refunds.",
+            "other": "Requests outside these categories.",
+            "shipping": "Delivery and tracking.",
+            "technical": "Problems using the product."
+          },
+          "instructions": "Which department should handle this complaint?",
+          "type": "choice"
+        }
+      },
+      "state": "I was charged twice for my order."
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "conversation": {
+    "kind": "unsupported",
+    "message": "System One takes one state, not a conversation; send one user message.",
+    "param": "input",
+    "unsupported": "conversation input"
+  },
+  "image": {
+    "adapted": [],
+    "body": {
+      "assets": {
+        "kaeso-image-0-ref": {
+          "data_base64": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mM4oaEBRAwQCgAhLgRh9uHCTQAAAABJRU5ErkJggg==",
+          "format": "png",
+          "type": "image"
+        }
+      },
+      "model": "gpt-6-luna",
+      "questions": {
+        "visible_damage": {
+          "instructions": "Does the product have visible damage, such as a crack, tear, or dent? Ignore shadows and damage to the packaging.",
+          "type": "noul"
+        }
+      },
+      "state": [
+        "Inspect the product in this photo.",
+        "kaeso-image-0-ref"
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "input-json": {
+    "adapted": [],
+    "body": {
+      "model": "gpt-6-luna",
+      "questions": {
+        "duplicate_charge": {
+          "instructions": "Does the ticket describe a duplicate charge supported by the order?",
+          "type": "noul"
+        }
+      },
+      "state": [
+        "Evaluate the ticket using the order evidence.",
+        {
+          "order": {
+            "charges": [
+              49,
+              49
+            ]
+          },
+          "ticket": {
+            "body": "Please refund the duplicate charge."
+          }
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "instructions-images": {
+    "kind": "unsupported",
+    "message": "The provider takes images in `assets` only as bytes; send the image as a data URL or base64.",
+    "param": null,
+    "unsupported": "image URL"
+  },
+  "instructions-parts": {
+    "adapted": [],
+    "body": {
+      "assets": {
+        "kaeso-image-0-ref": {
+          "data_base64": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mPQ0DgBRAwQCgAcLgRhHY/MXwAAAABJRU5ErkJggg==",
+          "format": "png",
+          "type": "image"
+        }
+      },
+      "model": "gpt-6-luna",
+      "questions": {
+        "color": {
+          "criteria": {
+            "blue": null,
+            "red": null
+          },
+          "instructions": [
+            "Which listed color does this swatch show?",
+            "kaeso-image-0-ref",
+            {
+              "palette": [
+                "red",
+                "blue"
+              ]
+            }
+          ],
+          "type": "choice"
+        },
+        "match": {
+          "criteria": [
+            "No match",
+            "Partial",
+            "Full match"
+          ],
+          "instructions": [
+            "How well does the listing match these records?",
+            [
+              {
+                "listing": "red mug"
+              },
+              {
+                "photo": "blue swatch"
+              }
+            ]
+          ],
+          "type": "score"
+        }
+      },
+      "state": "Listing 4411: a red mug with a white handle."
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "null-names": {
+    "adapted": [
+      "names"
+    ],
+    "body": {
+      "model": "gpt-6-luna",
+      "questions": {
+        "q0": {
+          "instructions": "Is the customer angry?",
+          "type": "noul"
+        },
+        "q1": {
+          "criteria": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "instructions": "How urgent is a reply?",
+          "type": "score"
+        }
+      },
+      "state": "My order is three weeks late and nobody answers my emails."
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "predicate": {
+    "adapted": [],
+    "body": {
+      "model": "gpt-6-luna",
+      "questions": {
+        "damaged": {
+          "instructions": "Does the customer report a damaged item?",
+          "type": "noul"
+        }
+      },
+      "state": "The package arrived with a broken screen."
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "refusal": {
+    "adapted": [],
+    "body": {
+      "model": "gpt-6-luna",
+      "questions": {
+        "how_to": {
+          "instructions": "Would the answer explain the steps?",
+          "type": "noul"
+        },
+        "topic": {
+          "criteria": {
+            "home": null,
+            "other": null,
+            "security": null
+          },
+          "instructions": "Which topic is this?",
+          "type": "choice"
+        }
+      },
+      "state": "Describe how to pick the lock of my neighbour's door."
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "repeated-names": {
+    "adapted": [
+      "names"
+    ],
+    "body": {
+      "model": "gpt-6-luna",
+      "questions": {
+        "q0": {
+          "instructions": "Does the message name a city?",
+          "type": "noul"
+        },
+        "q1": {
+          "instructions": "Does the message ask for gift wrap?",
+          "type": "noul"
+        }
+      },
+      "state": "Ship it to Berlin and add gift wrap."
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "score": {
+    "adapted": [
+      "levels"
+    ],
+    "body": {
+      "model": "gpt-6-luna",
+      "questions": {
+        "severity": {
+          "criteria": [
+            "Cosmetic: Appearance only; no lost functionality.",
+            "Workaround available: A task fails, but another way works.",
+            "Fully blocked: A task fails with no workaround."
+          ],
+          "instructions": "How severe is this issue?",
+          "type": "score"
+        }
+      },
+      "state": "Export fails in Safari but works in Chrome."
+    },
+    "left_out": [],
+    "path": "/v1/systemone"
+  },
+  "unknown-fields": {
+    "kind": "unsupported",
+    "message": "`input[0].blocks[0].x_note` comes from an OpenAI Decisions request and has no equivalent in System One. Remove it, or send the request to a model served through its original format.",
+    "param": "input[0].blocks[0]",
+    "unsupported": "input[0].blocks[0].x_note"
+  },
+  "unknown-top-level-field": {
+    "kind": "unsupported",
+    "message": "`x_future_field` comes from an OpenAI Decisions request and has no equivalent in System One. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "x_future_field"
+  }
+}

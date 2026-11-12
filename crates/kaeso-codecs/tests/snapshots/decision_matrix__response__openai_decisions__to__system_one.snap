@@ -1,0 +1,232 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "booleans": {
+    "answers": {
+      "packaging": {
+        "choice": "yes",
+        "confidence": 0.8799999999999999,
+        "probabilities": {
+          "false": 0.03,
+          "unsure": 0.05,
+          "yes": 0.92
+        },
+        "type": "choice"
+      },
+      "works": {
+        "choice": "true",
+        "confidence": 0.8200000000000001,
+        "probabilities": {
+          "false": 0.09,
+          "true": 0.91
+        },
+        "type": "choice"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 66,
+      "output_tokens": 0
+    }
+  },
+  "cache": {
+    "request_refused": "conversation input"
+  },
+  "choice": {
+    "answers": {
+      "department": {
+        "choice": "billing",
+        "confidence": 0.9333333333333332,
+        "probabilities": {
+          "billing": 0.95,
+          "other": 0.02,
+          "shipping": 0.01,
+          "technical": 0.02
+        },
+        "type": "choice"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 61,
+      "output_tokens": 0
+    }
+  },
+  "conversation": {
+    "request_refused": "conversation input"
+  },
+  "image": {
+    "answers": {
+      "visible_damage": {
+        "noul": 0.92,
+        "type": "noul"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 97,
+      "output_tokens": 0
+    }
+  },
+  "input-json": {
+    "answers": {
+      "duplicate_charge": {
+        "noul": 0.88,
+        "type": "noul"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 73,
+      "output_tokens": 0
+    }
+  },
+  "instructions-images": {
+    "request_refused": "image URL"
+  },
+  "instructions-parts": {
+    "answers": {
+      "color": {
+        "choice": "blue",
+        "confidence": 0.9199999999999999,
+        "probabilities": {
+          "blue": 0.96,
+          "red": 0.04
+        },
+        "type": "choice"
+      },
+      "match": {
+        "confidence": 0.35499999999999987,
+        "legend": {
+          "0": "No match",
+          "1": "Partial",
+          "2": "Full match"
+        },
+        "probabilities": {
+          "0": 0.62,
+          "1": 0.33,
+          "2": 0.05
+        },
+        "score": 0.43,
+        "type": "score"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 214,
+      "output_tokens": 0
+    }
+  },
+  "null-names": {
+    "answers": {
+      "q0": {
+        "noul": 0.83,
+        "type": "noul"
+      },
+      "q1": {
+        "confidence": 0.475,
+        "legend": {
+          "0": "Low",
+          "1": "Medium",
+          "2": "High"
+        },
+        "probabilities": {
+          "0": 0.05,
+          "1": 0.25,
+          "2": 0.7
+        },
+        "score": 1.65,
+        "type": "score"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 49,
+      "output_tokens": 0
+    }
+  },
+  "predicate": {
+    "answers": {
+      "damaged": {
+        "noul": 0.95,
+        "type": "noul"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 42,
+      "output_tokens": 0
+    }
+  },
+  "refusal": {
+    "answers": {
+      "how_to": {
+        "type": "refusal"
+      },
+      "topic": {
+        "choice": "security",
+        "confidence": 0.7899999999999998,
+        "probabilities": {
+          "home": 0.1,
+          "other": 0.04,
+          "security": 0.86
+        },
+        "type": "choice"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 51,
+      "output_tokens": 0
+    }
+  },
+  "repeated-names": {
+    "answers": {
+      "q0": {
+        "noul": 0.98,
+        "type": "noul"
+      },
+      "q1": {
+        "noul": 0.96,
+        "type": "noul"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 44,
+      "output_tokens": 0
+    }
+  },
+  "score": {
+    "answers": {
+      "severity": {
+        "confidence": 0.5499999999999999,
+        "legend": {
+          "0": "Cosmetic: Appearance only; no lost functionality.",
+          "1": "Workaround available: A task fails, but another way works.",
+          "2": "Fully blocked: A task fails with no workaround."
+        },
+        "probabilities": {
+          "0": 0.1,
+          "1": 0.7,
+          "2": 0.2
+        },
+        "score": 1.1,
+        "type": "score"
+      }
+    },
+    "model": "gpt-6-luna",
+    "usage": {
+      "input_tokens": 58,
+      "output_tokens": 0
+    }
+  },
+  "unknown-fields": {
+    "request_refused": "input[0].blocks[0].x_note"
+  },
+  "unknown-top-level-field": {
+    "request_refused": "x_future_field"
+  }
+}

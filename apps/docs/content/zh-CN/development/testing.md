@@ -146,7 +146,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 | --- | --- | --- |
 | `crates/kaeso-core/src/rights/snapshots/` | 每个权限和内置角色 | [权限](../concepts/rights.md) |
 | `crates/kaeso-server/tests/snapshots/` | 每项设置及其默认值和说明 | [配置](../self-hosting/configuration.md)和 `deploy/kaeso.example.toml` |
-| `crates/kaeso-codecs/tests/snapshots/` | 跨方言矩阵的结果 | 该方言的映射页面（[KPP 内部实现](kpp/index.md#测试)） |
+| `crates/kaeso-codecs/tests/snapshots/` | 跨方言矩阵和决策矩阵的结果 | 该方言的映射页面（[KPP 内部实现](kpp/index.md#测试)） |
 | `crates/kaeso-mail/src/snapshots/` | 每封邮件的文本和 HTML | |
 
 另有三个测试守护文本。`crates/kaeso-server/tests/error_copy.rs` 按照[错误文案规则](architecture/gateway.md#错误消息)检查 Platform API 可能发送的每条消息。`crates/kaeso-server/tests/docs_paths.rs` 检查根目录以及 `crates/`、`deploy/`、`e2e/`、`fuzz/` 和 `.github/` 中 Markdown 文件里的每个仓库路径和相对链接都指向存在的内容。`crates/kaeso-core/tests/supported_providers.rs` 检查[支持的服务商](../concepts/supported-providers.md)在每种语言中都列出了 `PROVIDERS` 中的每个服务商及其格式和主机，因此添加服务商时要在那里添加一行。
@@ -198,6 +198,7 @@ sequenceDiagram
 | `POST /v1/audio/transcriptions`、`/v1/audio/translations` | `openai_transcriptions` | 各种 `response_format` 及流式的 `audio.transcriptions.create`、`audio.translations.create` |
 | `POST /v1/systemone` | `system_one`，JSON 和上传 | 带问题、资产、额外请求头和请求体字段的 `system_one`（`typesafe-sdk`），以及它的错误；到达它的 OpenAI 拒答 |
 | `POST /v1/decisions` | `openai_decisions` | 带每种输入项、问题和缓存字段的 `decisions.create`，它的错误，以及跨格式到达的 System One 答案（`openai`） |
+| `POST /v1beta/decisions` | `gemini_decisions` | 带每种内容块和问题类型的 `decisions.create`，它的错误和安全拦截，以及跨格式到达的其他格式的答案和拒答（`google-genai`） |
 | `/v1/videos`、`/v1/videos/{id}`、`/v1/videos/{id}/remix`、`/v1/videos/{id}/content` | `openai_videos`，用每个视频方言的每个任务 fixture 回答 | `videos.create`（JSON 和带上传）、`videos.retrieve`、`videos.remix`、`videos.list`、`videos.download_content`、`videos.delete`、`videos.poll` |
 
 每个生成类方言的每个响应和流式 [fixture](kpp/fixtures.md) 都会通过每个生成类端点，包括流式和非流式。测试把 SDK 解析出的内容与 KPP 解码出的内容（`GET /_expected`）比较，因此丢失文本、工具参数或可读推理的转换都会失败。测试还检查结构化输出仍是有效的 JSON，每个错误 fixture 都会以正确的状态码引发 SDK 的错误（`e2e/conformance/test_errors.py`）：OpenAI 和 Anthropic SDK 中为 `APIStatusError`，`google-genai` 中为 `APIError`。

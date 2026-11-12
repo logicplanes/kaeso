@@ -1,0 +1,31 @@
+{
+  "answers": {
+    "animal": {
+      "type": "choice",
+      "choice": "dog",
+      "probabilities": {
+        "cat": 0.02,
+        "dog": 0.98
+      },
+      "confidence": 0.98,
+      "x_rationale_id": "r-17"
+    },
+    "awake": {
+      "type": "noul",
+      "noul": 0.1,
+      "confidence": 0.9
+    }
+  },
+  "usage": {
+    "total_input_tokens": 33,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 33
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 33,
+    "total_cached_tokens": 0
+  }
+}

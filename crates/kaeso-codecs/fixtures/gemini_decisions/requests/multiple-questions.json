@@ -1,0 +1,39 @@
+{
+  "model": "gemini-decision-1",
+  "input": [
+    {
+      "type": "text",
+      "text": "{\"order\": {\"id\": \"8821\", \"item\": \"headphones\", \"price_usd\": 240}, \"tier\": \"Gold\"}\n"
+    },
+    {
+      "type": "text",
+      "text": "{\"message\": \"Audio cuts out on the left earcup. Fix it today or I cancel my membership.\"}"
+    }
+  ],
+  "questions": {
+    "is_defect": {
+      "type": "noul",
+      "instructions": "Does `message` describe a hardware defect?"
+    },
+    "next_action": {
+      "type": "choice",
+      "instructions": "What is the right resolution given `tier` and `order`?",
+      "criteria": {
+        "instant_refund": "Refund without return. Low value or clear fault.",
+        "replacement_shipment": "Ship a replacement. Customer returns the original.",
+        "troubleshooting_flow": "The issue may be fixable by the customer.",
+        "human_escalation": ""
+      }
+    },
+    "churn_risk": {
+      "type": "score",
+      "instructions": "How likely is the customer to churn if the issue is not resolved now?",
+      "criteria": [
+        "No churn signal",
+        "Mild frustration",
+        "Mentions alternatives",
+        "Threatens to cancel"
+      ]
+    }
+  }
+}

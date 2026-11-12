@@ -146,7 +146,7 @@ Some tests compare against reviewed `insta` snapshots. When one changes, review 
 | --- | --- | --- |
 | `crates/kaeso-core/src/rights/snapshots/` | Every right and built-in role | [Rights](../concepts/rights.md) |
 | `crates/kaeso-server/tests/snapshots/` | Every setting with its default and description | [Configuration](../self-hosting/configuration.md) and `deploy/kaeso.example.toml` |
-| `crates/kaeso-codecs/tests/snapshots/` | The outcomes of the cross-dialect matrix | The dialect's mapping page ([KPP internals](kpp/index.md#tests)) |
+| `crates/kaeso-codecs/tests/snapshots/` | The outcomes of the cross-dialect matrix and the decision matrix | The dialect's mapping page ([KPP internals](kpp/index.md#tests)) |
 | `crates/kaeso-mail/src/snapshots/` | The text and HTML of every email | |
 
 Three more tests guard text. `crates/kaeso-server/tests/error_copy.rs` checks every message the Platform API can send against the [error copy rules](architecture/gateway.md#error-messages). `crates/kaeso-server/tests/docs_paths.rs` checks that every repository path and relative link in the Markdown files at the root and in `crates/`, `deploy/`, `e2e/`, `fuzz/` and `.github/` points at something that exists. `crates/kaeso-core/tests/supported_providers.rs` checks that [supported providers](../concepts/supported-providers.md) lists every provider in `PROVIDERS` with its formats and host, in every language, so adding a provider adds a row there.
@@ -198,6 +198,7 @@ sequenceDiagram
 | `POST /v1/audio/transcriptions`, `/v1/audio/translations` | `openai_transcriptions` | `audio.transcriptions.create` in every `response_format` and streamed, `audio.translations.create` |
 | `POST /v1/systemone` | `system_one`, JSON and uploads | `system_one` with questions, assets, extra headers and body fields (`typesafe-sdk`), and its errors; an OpenAI refusal reaching it |
 | `POST /v1/decisions` | `openai_decisions` | `decisions.create` with every input item, question and cache field, its errors, and System One answers crossing to it (`openai`) |
+| `POST /v1beta/decisions` | `gemini_decisions` | `decisions.create` with every content block and question type, its errors and safety blocks, and answers and refusals of the other formats crossing to it (`google-genai`) |
 | `/v1/videos`, `/v1/videos/{id}`, `/v1/videos/{id}/remix`, `/v1/videos/{id}/content` | `openai_videos`, answering every job fixture of every video dialect | `videos.create` (JSON and with an upload), `videos.retrieve`, `videos.remix`, `videos.list`, `videos.download_content`, `videos.delete`, `videos.poll` |
 
 Every response and stream [fixture](kpp/fixtures.md) of every generation dialect goes through every generation endpoint, streamed and not. The tests compare what the SDK parsed with what KPP decoded (`GET /_expected`), so a translation that loses text, tool arguments or readable reasoning fails. They also check that structured output stays valid JSON and that every error fixture raises the SDK's error with the right status (`e2e/conformance/test_errors.py`): `APIStatusError` in the OpenAI and Anthropic SDKs, `APIError` in `google-genai`.

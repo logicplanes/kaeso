@@ -46,6 +46,8 @@ pub const EXTRAS_ALLOWLIST: &[(DialectId, Scope, &str)] = &[
     ),
     (DialectId::OpenAiDecisions, "request", "safety_identifier"),
     (DialectId::OpenAiDecisions, "image", "detail"),
+    (DialectId::GeminiDecisions, "image", "resolution"),
+    (DialectId::GeminiDecisions, "video", "resolution"),
     (
         DialectId::SystemOne,
         "request",
@@ -436,7 +438,7 @@ pub(crate) fn claude_code_hint(origin: DialectId, scope: &str, key: &str) -> Opt
 fn file_store(dialect: DialectId) -> &'static str {
     match dialect {
         DialectId::AnthropicMessages => "anthropic",
-        DialectId::Gemini | DialectId::GeminiEmbeddings => "google",
+        DialectId::Gemini | DialectId::GeminiEmbeddings | DialectId::GeminiDecisions => "google",
         _ => "openai",
     }
 }

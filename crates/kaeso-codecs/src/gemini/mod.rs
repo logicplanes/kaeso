@@ -2,7 +2,7 @@ mod audio;
 pub(crate) mod error;
 mod images;
 pub(crate) mod models;
-mod parts;
+pub(crate) mod parts;
 mod path;
 mod request;
 mod response;

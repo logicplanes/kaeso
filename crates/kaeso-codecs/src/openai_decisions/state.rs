@@ -52,14 +52,14 @@ fn within(value: &Value, depth: usize, values: &mut usize) -> bool {
 
 /// A piece of a string that holds asset references: text, or the image a reference stands for.
 #[derive(Debug, PartialEq)]
-pub(super) enum Piece<'a> {
+pub(crate) enum Piece<'a> {
     Text(&'a str),
     Image(&'a str, &'a Asset),
 }
 
 /// `text` cut where asset references stand, each reference the image it stands for. The
 /// earliest reference wins, and of two that start at the same place, the longer one.
-pub(super) fn pieces<'a>(text: &'a str, assets: &'a IndexMap<String, Asset>) -> Vec<Piece<'a>> {
+pub(crate) fn pieces<'a>(text: &'a str, assets: &'a IndexMap<String, Asset>) -> Vec<Piece<'a>> {
     let mut out = Vec::new();
     let mut rest = text;
     loop {
@@ -85,7 +85,7 @@ pub(super) fn pieces<'a>(text: &'a str, assets: &'a IndexMap<String, Asset>) -> 
 
 /// Whether any string in `raw`, not counting object keys, holds an asset reference; the first
 /// one found.
-pub(super) fn reference_in<'a>(
+pub(crate) fn reference_in<'a>(
     raw: &RawValue,
     assets: &'a IndexMap<String, Asset>,
 ) -> Option<&'a str> {
@@ -98,7 +98,7 @@ pub(super) fn reference_in<'a>(
     strings.iter().find_map(|s| reference_in_text(s, assets))
 }
 
-pub(super) fn reference_in_text<'a>(
+pub(crate) fn reference_in_text<'a>(
     text: &str,
     assets: &'a IndexMap<String, Asset>,
 ) -> Option<&'a str> {
