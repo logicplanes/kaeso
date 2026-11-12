@@ -55,12 +55,30 @@ export function Status() {
   );
 }
 const BADGE_SIZES = ["sm", "md", "lg", "xl"] as const;
+const MARKED = [
+  ...providers,
+  { id: "cohere", name: "Cohere" },
+  { id: "elevenlabs", name: "ElevenLabs" },
+  { id: "vllm", name: "vLLM" },
+  { id: "sglang", name: "SGLang" },
+  { id: "ollama", name: "Ollama" },
+  { id: "lm-studio", name: "LM Studio" },
+  { id: "llama-cpp", name: "llama.cpp" },
+  { id: "localai", name: "LocalAI" },
+  { id: "tgi", name: "Text Generation Inference" },
+  { id: "lmdeploy", name: "LMDeploy" },
+  { id: "nim", name: "NVIDIA NIM" },
+  { id: "docker-model-runner", name: "Docker Model Runner" },
+  { id: "xinference", name: "Xinference" },
+  { id: "mlx-lm", name: "MLX LM" },
+  { id: "jan", name: "Jan" },
+];
 
 export function States() {
   return (
     <>
       <StateMatrix title="ProviderBadge for every built-in provider, at every size" columns={["sm · 16", "md · 20", "lg · 28", "xl · 40"]}>
-        {providers.map((p) => (
+        {MARKED.map((p) => (
           <StateRow key={p.id} label={p.name}>
             {BADGE_SIZES.map((size) => (
               <StateCell key={size} id={`${p.id}-${size}`}>
