@@ -103,6 +103,8 @@ pub struct WhoAmI {
     #[doc = "Whether the install is a public, read-only demo (`auth.demo_user`):\n\
         every visitor is its demo user, and every change is refused."]
     pub demo: bool,
+    #[doc = "The operator's legal pages, which the console links (`legal.*`)."]
+    pub legal: super::methods::LegalLinksView,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -206,6 +208,7 @@ pub async fn current(State(state): State<AppState>, ctx: Ctx) -> ApiResult<Json<
         timezone: instance.timezone,
         request_logs: state.request_logs(),
         demo: state.config.auth.demo_user().is_some(),
+        legal: super::methods::LegalLinksView::of(&state),
     }))
 }
 

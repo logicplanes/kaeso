@@ -144,6 +144,15 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | 文本 | — | 将实例变为公开的只读演示：填写一个现有用户的邮箱，每位访客都以该用户身份登录。每位访客只能看到自己的会话，任何内容都无法更改，模型 API 和 MCP 关闭（[运行公开演示](installation.md#运行公开演示)）。 |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS`<br>`auth.oidc_allow_private_networks` | 布尔 | `false` | 允许向私有地址和回环地址发出 OIDC 请求，用于部署在您自己网络中的身份提供商。仅在允许组织管理员借网关访问您内部网络的情况下开启。链路本地地址和云元数据地址（例如 `169.254.169.254`）始终被拒绝。 |
 
+### 法律页面
+
+如果您的实例对外公开，且运营地的法律要求提供法律声明或隐私政策，请设置这些项。控制台会在登录页面和侧边栏底部菜单中链接已设置的每个页面，并在新标签页中打开。未设置时不显示任何链接。
+
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_LEGAL_IMPRINT_URL`<br>`legal.imprint_url` | 文本 | — | 您的法律声明的 `https` 地址，例如 `https://example.com/imprint`。 |
+| `KAESO_LEGAL_PRIVACY_URL`<br>`legal.privacy_url` | 文本 | — | 您的隐私政策的 `https` 地址，例如 `https://example.com/privacy`。 |
+
 ### API 密钥查找失败
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |

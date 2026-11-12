@@ -428,6 +428,33 @@ mod tests {
     }
 
     #[test]
+    fn legal_links_are_unset_until_set_and_must_be_https() {
+        let c = load(&Map::minimal()).unwrap();
+        assert_eq!((c.legal.imprint_url(), c.legal.privacy_url()), (None, None));
+        let c = load(
+            &Map::minimal()
+                .set("KAESO_LEGAL_IMPRINT_URL", "https://example.com/imprint")
+                .set("KAESO_LEGAL_PRIVACY_URL", " "),
+        )
+        .unwrap();
+        assert_eq!(
+            (c.legal.imprint_url(), c.legal.privacy_url()),
+            (Some("https://example.com/imprint"), None)
+        );
+        for value in [
+            "http://example.com/privacy",
+            "/privacy",
+            "javascript:alert(1)",
+        ] {
+            let err = load(&Map::minimal().set("KAESO_LEGAL_PRIVACY_URL", value))
+                .unwrap_err()
+                .to_string();
+            assert!(err.contains("legal.privacy_url"), "{value}: {err}");
+            assert!(err.contains("must be an https URL"), "{value}: {err}");
+        }
+    }
+
+    #[test]
     fn missing_required_settings_are_named() {
         let mut m = Map::minimal();
         m.vars.remove("KAESO_VALKEY_URL");

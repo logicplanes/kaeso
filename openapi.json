@@ -27444,6 +27444,28 @@
           }
         }
       },
+      "LegalLinksView": {
+        "type": "object",
+        "description": "The operator's legal pages, as set in `legal.imprint_url` and\n`legal.privacy_url`; `null` where the install sets none.",
+        "properties": {
+          "imprint_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The legal notice (imprint).",
+            "example": "https://example.com/imprint"
+          },
+          "privacy_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The privacy policy.",
+            "example": "https://example.com/privacy"
+          }
+        }
+      },
       "LimitAmount": {
         "oneOf": [
           {
@@ -37915,12 +37937,17 @@
           "sso_required",
           "sign_up",
           "set_up",
-          "demo"
+          "demo",
+          "legal"
         ],
         "properties": {
           "demo": {
             "type": "boolean",
             "description": "The install is a read-only demo: `auth/demo` signs anyone in as its demo\nuser, and every change is refused."
+          },
+          "legal": {
+            "$ref": "#/components/schemas/LegalLinksView",
+            "description": "The operator's legal pages, which the page links (`legal.*`)."
           },
           "magic_link": {
             "type": "boolean",
@@ -40200,7 +40227,8 @@
           "locale",
           "timezone",
           "request_logs",
-          "demo"
+          "demo",
+          "legal"
         ],
         "properties": {
           "can_administer_instance": {
@@ -40214,6 +40242,10 @@
           "demo": {
             "type": "boolean",
             "description": "Whether the install is a public, read-only demo (`auth.demo_user`):\nevery visitor is its demo user, and every change is refused."
+          },
+          "legal": {
+            "$ref": "#/components/schemas/LegalLinksView",
+            "description": "The operator's legal pages, which the console links (`legal.*`)."
           },
           "locale": {
             "$ref": "#/components/schemas/UserLocale",

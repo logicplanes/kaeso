@@ -40,6 +40,41 @@ async fn says_set_up(app: &App, set_up: bool) {
 }
 
 #[tokio::test]
+async fn the_legal_pages_an_operator_sets_reach_the_sign_in_page_and_the_session() {
+    let s = TestServices::start().await;
+    let plain = App::start(&s).await;
+    let owner = plain.setup().await;
+    let none = json!({ "imprint_url": null, "privacy_url": null });
+    let page = plain.call(Method::GET, "/auth/methods", None, None).await;
+    assert_eq!(page.body["legal"], none, "{:?}", page.body);
+    let session = plain.get("/auth/session", &owner.cookie).await;
+    assert_eq!(session.body["legal"], none, "{:?}", session.body);
+
+    let operated = App::start_with(
+        &s,
+        &[
+            ("KAESO_LEGAL_IMPRINT_URL", "https://example.com/imprint"),
+            ("KAESO_LEGAL_PRIVACY_URL", "https://example.com/privacy"),
+        ],
+    )
+    .await;
+    let set = json!({
+        "imprint_url": "https://example.com/imprint",
+        "privacy_url": "https://example.com/privacy",
+    });
+    let page = operated
+        .call(Method::GET, "/auth/methods", None, None)
+        .await;
+    assert_eq!(page.body["legal"], set, "{:?}", page.body);
+    let address = operated
+        .post("/auth/methods", json!({ "email": "ada@example.com" }), None)
+        .await;
+    assert_eq!(address.body["legal"], set, "{:?}", address.body);
+    let session = operated.get("/auth/session", &owner.cookie).await;
+    assert_eq!(session.body["legal"], set, "{:?}", session.body);
+}
+
+#[tokio::test]
 async fn setup_creates_the_first_admin_owner_and_works_once() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;
