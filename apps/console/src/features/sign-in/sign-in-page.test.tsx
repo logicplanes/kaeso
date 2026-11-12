@@ -120,6 +120,53 @@ describe("a read-only demo", () => {
   });
 });
 
+describe("the operator's legal pages", () => {
+  const legal = { imprint_url: "https://example.com/imprint", privacy_url: "https://example.com/privacy" };
+
+  it("are linked at the foot of the demo's sign-in page when the install sets them", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods({ demo: true, password: false, magic_link: false, legal }));
+    await renderApp("/sign-in");
+    expect(await screen.findByRole("heading", { name: "Kaeso demo" })).toBeInTheDocument();
+    const links = await screen.findByRole("navigation", { name: "Legal" });
+    expect(within(links).getByRole("link", { name: /^Legal notice/ })).toHaveAttribute("href", legal.imprint_url);
+    expect(within(links).getByRole("link", { name: /^Privacy/ })).toHaveAttribute("href", legal.privacy_url);
+  });
+
+  it("link only the page that is set", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods({ legal: { imprint_url: null, privacy_url: legal.privacy_url } }));
+    await renderApp("/sign-in");
+    const links = await screen.findByRole("navigation", { name: "Legal" });
+    expect(
+      within(links)
+        .getAllByRole("link")
+        .map((l) => l.getAttribute("href")),
+    ).toEqual([legal.privacy_url]);
+  });
+
+  it("are linked in the page's language", async () => {
+    signedOut();
+    on("GET", "auth/methods", methods({ legal }));
+    await renderApp("/sign-in", { locale: "de" });
+    const links = await screen.findByRole("navigation", { name: "Rechtliches" });
+    expect(within(links).getByRole("link", { name: /^Impressum/ })).toHaveAttribute("href", legal.imprint_url);
+    expect(within(links).getByRole("link", { name: /^Datenschutz/ })).toHaveAttribute("href", legal.privacy_url);
+  });
+
+  it.each([
+    ["Sign in", false],
+    ["Kaeso demo", true],
+  ])("are not linked on %s when the install sets none", async (heading, demo) => {
+    signedOut();
+    on("GET", "auth/methods", methods({ demo }));
+    await renderApp("/sign-in");
+    expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Legal" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Legal notice|Privacy/ })).toBeNull();
+  });
+});
+
 describe("signing in with a password", () => {
   it("signs in and opens the page the person came for", async () => {
     const { user } = await atMethods(`/sign-in?next=/orgs/${ORG}`);

@@ -4,13 +4,14 @@ import { Menu, icons } from "@logicplanes/kaeso-ui";
 import { api } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { toastApiError } from "~/api/toast-error";
-import type { ProjectView } from "~/api/generated/types";
+import type { LegalLinksView, ProjectView } from "~/api/generated/types";
 import { useMemberships, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { deletionCaption } from "./org-switcher";
 import { orgPath, projectPath } from "./pages";
 import { forgetUserData } from "~/auth/user-data";
 import { Picture } from "./project-switcher";
+import { anyLegalLink } from "./legal-links";
 
 const PERIOD = ["period", "from", "to", "by", "metric"] as const;
 
@@ -127,10 +128,30 @@ export function OrgMenu({ org, onCreate }: { org: string | undefined; onCreate: 
           {t("shell.instance", "Instance")}
         </Menu.LinkItem>
       )}
+      <LegalMenuItems legal={session.legal} />
       <Menu.Separator />
       <Menu.Item icon={icons.signOut} onClick={() => void signOut()}>
         {t("shell.signOut", "Sign out")}
       </Menu.Item>
+    </>
+  );
+}
+
+function LegalMenuItems({ legal }: { legal: LegalLinksView }) {
+  if (!anyLegalLink(legal)) return null;
+  return (
+    <>
+      <Menu.Separator />
+      {legal.imprint_url && (
+        <Menu.LinkItem icon={icons.legal} href={legal.imprint_url} external>
+          {t("shell.legal.imprint", "Legal notice")}
+        </Menu.LinkItem>
+      )}
+      {legal.privacy_url && (
+        <Menu.LinkItem icon={icons.security} href={legal.privacy_url} external>
+          {t("shell.legal.privacy", "Privacy")}
+        </Menu.LinkItem>
+      )}
     </>
   );
 }

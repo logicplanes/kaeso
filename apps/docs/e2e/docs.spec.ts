@@ -148,6 +148,21 @@ test("Edit on GitHub opens the page's file", async ({ page }) => {
   await expect(edit).toHaveAttribute("target", "_blank");
 });
 
+for (const [path, label, notice, privacy, site] of [
+  ["/guides/keys-and-limits", "Legal", "Legal notice", "Privacy", "https://kaeso.app"],
+  ["/de/guides/keys-and-limits", "Rechtliches", "Impressum", "Datenschutz", "https://kaeso.app/de"],
+  ["/zh-CN/guides/keys-and-limits", "法律信息", "法律声明", "隐私政策", "https://kaeso.app/zh-CN"],
+] as const) {
+  test(`the page's foot links the legal notice and the privacy policy at ${path}`, async ({ page }) => {
+    await page.goto(path);
+    const legal = page.getByRole("navigation", { name: label, exact: true });
+    await legal.scrollIntoViewIfNeeded();
+    await expect(legal.getByRole("link", { name: new RegExp(`^${notice}`) })).toHaveAttribute("href", `${site}/impressum`);
+    await expect(legal.getByRole("link", { name: new RegExp(`^${privacy}`) })).toHaveAttribute("href", `${site}/datenschutz`);
+    await expect(legal).toBeVisible();
+  });
+}
+
 test("search finds pages and headings, and says when nothing matches", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Search" }).click();
@@ -255,7 +270,7 @@ test.describe("on a phone", () => {
     await toggle.click();
     const sheet = page.getByRole("dialog", { name: "Navigation" });
     await expect(sheet).toBeVisible();
-    for (const name of ["Legal", "Theme", "Language"]) await expect(sheet.getByRole("button", { name })).toBeVisible();
+    for (const name of ["Theme", "Language"]) await expect(sheet.getByRole("button", { name })).toBeVisible();
     await sheet.getByRole("link", { name: "Models" }).click();
     await expect(page).toHaveURL("/reference/models");
     await expect(sheet).toBeHidden();

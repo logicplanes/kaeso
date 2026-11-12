@@ -253,6 +253,29 @@ describe("the organization switcher", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Create organization" })).not.toBeInTheDocument());
   });
 
+  it("links the operator's legal pages above Sign out when the install sets them", async () => {
+    const legal = { imprint_url: "https://example.com/imprint", privacy_url: "https://example.com/privacy" };
+    signedIn({ session: whoAmI({ demo: true, legal }) });
+    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: "Legal notice" })).toHaveAttribute("href", legal.imprint_url);
+    expect(within(menu).getByRole("menuitem", { name: "Privacy" })).toHaveAttribute("href", legal.privacy_url);
+    const items = within(menu)
+      .getAllByRole("menuitem")
+      .map((i) => i.textContent);
+    expect(items.slice(-3)).toEqual(["Legal notice", "Privacy", "Sign out"]);
+  });
+
+  it("links no legal pages on an install that sets none, even a demo", async () => {
+    signedIn({ session: whoAmI({ demo: true }) });
+    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: "Sign out" })).toBeInTheDocument();
+    expect(within(menu).queryByRole("menuitem", { name: /Legal notice|Privacy/ })).not.toBeInTheDocument();
+  });
+
   it("goes to the sign-in page when the session had already ended", async () => {
     signedIn();
     const { user, router } = await renderApp(`/orgs/${ORG}/projects`);

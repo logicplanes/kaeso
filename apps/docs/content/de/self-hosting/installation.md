@@ -140,6 +140,8 @@ services:
 
 Übernehmen Sie die Einstellung mit `docker compose up -d --wait`. Die Anmeldeseite bietet dann **Demo erkunden** an, womit jeder Besucher als dieser Benutzer angemeldet wird. Nach der Anmeldung sagt jede Seite der Konsole, dass es sich um eine schreibgeschützte Demo mit Beispieldaten handelt, und verlinkt auf diese Anleitung. Jeder Besucher sieht unter **Konto** › **Sitzungen** nur seine eigene Sitzung, nie die Adresse oder den Browser eines anderen Besuchers. Die Installation lehnt jede Änderung mit dem Hinweis ab, dass sie eine schreibgeschützte Demo ist, und die Modell-API und MCP sind aus, sodass nichts über sie gesendet werden kann. Entfernen Sie die Einstellung, um die Installation wieder normal zu nutzen.
 
+Eine öffentliche Demo braucht meist ein Impressum und eine Datenschutzerklärung. Setzen Sie `KAESO_LEGAL_IMPRINT_URL` und `KAESO_LEGAL_PRIVACY_URL` neben dem Demo-Benutzer, dann verlinken die Anmeldeseite und das Menü am Fuß der Seitenleiste beide ([rechtliche Seiten](configuration.md#rechtliche-seiten)).
+
 ## Festlegen, wie Anfrageprotokolle gespeichert werden
 
 Anfrageprotokolle liegen in ClickHouse. Das mitgelieferte ClickHouse in der `compose.yaml` ist die empfohlene Einrichtung: Es braucht nichts von Ihnen und hält die Protokolle auf demselben Server. Nutzung, Limits, Budgets und Budget-Warnungen hängen nicht davon ab, denn Kaeso speichert die Nutzung in PostgreSQL. ClickHouse braucht von allen Diensten den meisten Arbeitsspeicher ([Anforderungen](requirements.md#arbeitsspeicher-und-images)). Eine Installation kann deshalb auch ein ClickHouse nutzen, das Sie bereits betreiben, oder gar keine Anfrageprotokolle speichern.

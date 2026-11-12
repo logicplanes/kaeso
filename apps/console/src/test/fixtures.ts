@@ -72,6 +72,7 @@ export function whoAmI(overrides: Partial<WhoAmI> = {}): WhoAmI {
     timezone: "UTC",
     request_logs: true,
     demo: false,
+    legal: { imprint_url: null, privacy_url: null },
     ...overrides,
   } as WhoAmI;
 }

@@ -46,6 +46,8 @@ pub struct Config {
     pub smtp: SmtpConfig,
     pub mail: MailConfig,
     pub auth: AuthConfig,
+    #[serde(default)]
+    pub legal: LegalConfig,
     pub key_failures: KeyFailuresConfig,
     pub kpmr: KpmrConfig,
     pub updates: UpdatesConfig,
@@ -178,6 +180,29 @@ impl AuthConfig {
             .map(str::trim)
             .filter(|address| !address.is_empty())
     }
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LegalConfig {
+    #[serde(default)]
+    imprint_url: Option<String>,
+    #[serde(default)]
+    privacy_url: Option<String>,
+}
+
+impl LegalConfig {
+    pub fn imprint_url(&self) -> Option<&str> {
+        set(self.imprint_url.as_deref())
+    }
+
+    pub fn privacy_url(&self) -> Option<&str> {
+        set(self.privacy_url.as_deref())
+    }
+}
+
+fn set(value: Option<&str>) -> Option<&str> {
+    value.map(str::trim).filter(|v| !v.is_empty())
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -518,6 +543,16 @@ impl Config {
             }
             if !email.contains('@') || email.contains(['\n', '\r', ',']) {
                 return invalid("setup.email", "must be one email address".into());
+            }
+        }
+        for (key, value) in [
+            ("legal.imprint_url", self.legal.imprint_url()),
+            ("legal.privacy_url", self.legal.privacy_url()),
+        ] {
+            if let Some(value) = value
+                && !Url::parse(value).is_ok_and(|u| u.scheme() == "https" && u.host().is_some())
+            {
+                return invalid(key, "must be an https URL".into());
             }
         }
         for (key, url) in [

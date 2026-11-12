@@ -140,6 +140,8 @@ services:
 
 Apply it with `docker compose up -d --wait`. The sign-in page then offers **Explore the demo**, which signs every visitor in as that user. Once signed in, every page of the console says it's a read-only demo with sample data and links to this guide. Each visitor sees only their own session under **Account** › **Sessions**, never another visitor's address or browser. The install refuses every change with a message that it's a read-only demo, and the model API and MCP are off, so nothing can be sent through it. Remove the setting to make the install usable again.
 
+A public demo usually needs a legal notice and a privacy policy. Set `KAESO_LEGAL_IMPRINT_URL` and `KAESO_LEGAL_PRIVACY_URL` beside the demo user, and the sign-in page and the menu at the foot of the sidebar link them ([legal pages](configuration.md#legal-pages)).
+
 ## Choose how to keep request logs
 
 Request logs live in ClickHouse. The bundled ClickHouse in `compose.yaml` is the recommended setup: it needs nothing from you and keeps the logs on the same server. Usage, limits, budgets and budget alerts don't depend on it, because Kaeso keeps usage in PostgreSQL. ClickHouse takes the most memory of the services ([requirements](requirements.md#memory-and-images)), so an install can also use a ClickHouse you already run, or keep no request logs at all.

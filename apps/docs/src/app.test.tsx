@@ -67,7 +67,6 @@ function app(path: string) {
 
 describe("the site", () => {
   it("opens a page with its title, description, sidebar and footer", async () => {
-    const user = userEvent.setup();
     app("/guides/keys-and-limits");
     expect(await screen.findByRole("heading", { level: 1, name: "Keys and limits" })).toBeInTheDocument();
     expect(screen.getByText("Create a key for an app and keep its spending inside a budget.")).toBeInTheDocument();
@@ -75,10 +74,9 @@ describe("the site", () => {
     expect(within(nav).getByRole("link", { name: "Keys and limits" })).toHaveAttribute("aria-current", "page");
     expect(screen.getAllByRole("link", { current: "page" }).map((link) => link.textContent)).toEqual(["Keys and limits"]);
     expect(within(nav).getByRole("link", { name: "Changelog" })).toHaveAttribute("href", "https://kaeso.app/changelog");
-    await user.click(within(nav).getByRole("button", { name: "Legal" }));
-    expect(await screen.findByRole("menuitem", { name: "Privacy" })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
-    expect(screen.getByRole("menuitem", { name: "Imprint" })).toHaveAttribute("href", "https://kaeso.app/impressum");
-    await user.keyboard("{Escape}");
+    const legal = screen.getByRole("navigation", { name: "Legal" });
+    expect(within(legal).getByRole("link", { name: /^Legal notice/ })).toHaveAttribute("href", "https://kaeso.app/impressum");
+    expect(within(legal).getByRole("link", { name: /^Privacy/ })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
     expect(screen.getByRole("link", { name: /Edit on GitHub/ })).toHaveAttribute(
       "href",
       "https://github.com/logicplanes/kaeso/edit/dev/apps/docs/e2e/fixtures/content/en/guides/keys-and-limits.md",
@@ -92,6 +90,7 @@ describe("the site", () => {
     const user = userEvent.setup();
     const router = app("/guides/keys-and-limits");
     await screen.findByRole("heading", { level: 1, name: "Keys and limits" });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Language" })).toHaveAttribute("aria-expanded", "false"));
     await user.click(screen.getByRole("button", { name: "Language" }));
     expect((await screen.findAllByRole("menuitemradio")).map((o) => o.textContent)).toEqual(["English", "Deutsch", "简体中文"]);
     expect(screen.getByRole("menuitemradio", { name: "English" })).toHaveAttribute("aria-checked", "true");
@@ -99,7 +98,7 @@ describe("the site", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe("/de/guides/keys-and-limits"));
     expect(await screen.findByRole("heading", { level: 1, name: "Schlüssel und Limits" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Dokumentation" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Rechtliches" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Rechtliches" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Design" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Sprache" }));
     expect(await screen.findByRole("menuitemradio", { name: "Deutsch" })).toHaveAttribute("aria-checked", "true");
@@ -111,7 +110,7 @@ describe("the site", () => {
   it("shows the Chinese pages with their own text", async () => {
     app("/zh-CN");
     expect(await screen.findByRole("navigation", { name: "文档" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "法律信息" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "法律信息" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "主题" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "语言" })).toBeInTheDocument();
   });
@@ -243,13 +242,23 @@ describe("search", () => {
     expect(await screen.findByRole("option", { name: /^Aliases/ })).toBeInTheDocument();
   });
 
-  it("links the privacy policy and the imprint in the page's language", async () => {
-    const user = userEvent.setup();
-    app("/de/guides");
-    await screen.findByRole("heading", { level: 1, name: "Anleitungen" });
-    await user.click(within(screen.getByRole("navigation", { name: "Dokumentation" })).getByRole("button", { name: "Rechtliches" }));
-    expect(await screen.findByRole("menuitem", { name: "Datenschutz" })).toHaveAttribute("href", "https://kaeso.app/de/datenschutz");
-    expect(screen.getByRole("menuitem", { name: "Impressum" })).toHaveAttribute("href", "https://kaeso.app/de/impressum");
+  it.each([
+    ["/de/guides", "Anleitungen", "Rechtliches", "Impressum", "Datenschutz", "https://kaeso.app/de"],
+    ["/zh-CN/guides", "指南", "法律信息", "法律声明", "隐私政策", "https://kaeso.app/zh-CN"],
+  ])("links the legal notice and the privacy policy in the page's language on %s", async (path, title, label, notice, privacy, site) => {
+    app(path);
+    await screen.findByRole("heading", { level: 1, name: title });
+    const legal = screen.getByRole("navigation", { name: label });
+    expect(within(legal).getByRole("link", { name: new RegExp(`^${notice}`) })).toHaveAttribute("href", `${site}/impressum`);
+    expect(within(legal).getByRole("link", { name: new RegExp(`^${privacy}`) })).toHaveAttribute("href", `${site}/datenschutz`);
+  });
+
+  it("links the legal notice and the privacy policy on a page that doesn't exist", async () => {
+    app("/no-such-page");
+    await screen.findByRole("heading", { name: "This page doesn't exist." });
+    const legal = screen.getByRole("navigation", { name: "Legal" });
+    expect(within(legal).getByRole("link", { name: /^Legal notice/ })).toHaveAttribute("href", "https://kaeso.app/impressum");
+    expect(within(legal).getByRole("link", { name: /^Privacy/ })).toHaveAttribute("href", "https://kaeso.app/datenschutz");
   });
 
   it("opens from the phone bar, beside the navigation toggle, in the page's language", async () => {

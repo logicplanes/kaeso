@@ -8,7 +8,7 @@ export const en = {
   "nav.overview": "Overview",
   "legal.label": "Legal",
   "legal.privacy": "Privacy",
-  "legal.imprint": "Imprint",
+  "legal.notice": "Legal notice",
   "language.label": "Language",
   "search.open": "Search",
   "search.placeholder": "Search the documentation",

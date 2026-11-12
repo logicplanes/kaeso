@@ -38,6 +38,32 @@ pub struct SignInMethodsView {
     #[doc = "The install is a read-only demo: `auth/demo` signs anyone in as its demo\n\
         user, and every change is refused."]
     pub demo: bool,
+    #[doc = "The operator's legal pages, which the page links (`legal.*`)."]
+    pub legal: LegalLinksView,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(
+    description = "The operator's legal pages, as set in `legal.imprint_url` and\n\
+    `legal.privacy_url`; `null` where the install sets none."
+)]
+pub struct LegalLinksView {
+    #[doc = "The legal notice (imprint)."]
+    #[schema(example = "https://example.com/imprint")]
+    pub imprint_url: Option<String>,
+    #[doc = "The privacy policy."]
+    #[schema(example = "https://example.com/privacy")]
+    pub privacy_url: Option<String>,
+}
+
+impl LegalLinksView {
+    pub fn of(state: &AppState) -> LegalLinksView {
+        let legal = &state.config.legal;
+        LegalLinksView {
+            imprint_url: legal.imprint_url().map(str::to_owned),
+            privacy_url: legal.privacy_url().map(str::to_owned),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -87,6 +113,7 @@ fn install(state: &AppState, sign_up: bool, set_up: bool) -> SignInMethodsView {
         provider: None,
         set_up,
         demo: a.demo_user().is_some(),
+        legal: LegalLinksView::of(state),
     }
 }
 

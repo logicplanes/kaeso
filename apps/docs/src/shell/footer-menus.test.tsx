@@ -28,7 +28,7 @@ describe("the menus at the foot of the sidebar", () => {
       </ThemeProvider>,
     );
     await screen.findByRole("heading", { level: 1, name: "Kaeso documentation" });
-    for (const name of ["Legal", "Theme", "Language"]) await user.click(screen.getByRole("button", { name }));
+    for (const name of ["Theme", "Language"]) await user.click(screen.getByRole("button", { name }));
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     footerMenus.release();
     expect((await screen.findAllByRole("menuitemradio")).map((o) => o.textContent)).toEqual(["English", "Deutsch", "简体中文"]);

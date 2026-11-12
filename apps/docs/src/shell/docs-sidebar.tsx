@@ -43,7 +43,6 @@ function FooterButtons({ onOpen }: { onOpen: (menu: FooterMenu) => void }) {
   const { resolvedTheme } = useTheme();
   return (
     <>
-      <Button variant="ghost" size="sm" icon={icons.legal} aria-label={t("legal.label")} aria-haspopup="menu" onClick={() => onOpen("legal")} />
       <Button
         variant="ghost"
         size="sm"

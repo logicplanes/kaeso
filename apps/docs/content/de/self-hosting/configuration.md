@@ -144,6 +144,15 @@ Diese Einstellungen schalten Passwörter und Anmeldelinks für die ganze Install
 | `KAESO_AUTH_DEMO_USER`<br>`auth.demo_user` | Text | — | Macht die Installation zu einer öffentlichen, schreibgeschützten Demo: die E-Mail-Adresse eines bestehenden Benutzers, als der jeder Besucher angemeldet wird. Jeder Besucher sieht nur seine eigene Sitzung, nichts lässt sich ändern, und die Modell-API und MCP sind aus ([eine öffentliche Demo betreiben](installation.md#eine-öffentliche-demo-betreiben)). |
 | `KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS`<br>`auth.oidc_allow_private_networks` | Bool | `false` | OIDC-Anfragen an private und Loopback-Adressen erlauben, für einen Identitätsanbieter in Ihrem eigenen Netz. Schalten Sie es nur ein, wo Admins von Organisationen Ihr internes Netz über das Gateway erreichen dürfen. Link-lokale Adressen und Metadaten-Adressen von Clouds wie `169.254.169.254` bleiben gesperrt. |
 
+### Rechtliche Seiten
+
+Setzen Sie diese Einstellungen, wenn Ihre Installation öffentlich ist und das Recht am Ort des Betriebs ein Impressum oder eine Datenschutzerklärung verlangt. Die Konsole verlinkt jede gesetzte Seite auf ihren Anmeldeseiten und im Menü am Fuß der Seitenleiste, in einem neuen Tab. Ohne sie verlinkt sie keine.
+
+| Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- |
+| `KAESO_LEGAL_IMPRINT_URL`<br>`legal.imprint_url` | Text | — | Die `https`-Adresse Ihres Impressums, etwa `https://example.com/imprint`. |
+| `KAESO_LEGAL_PRIVACY_URL`<br>`legal.privacy_url` | Text | — | Die `https`-Adresse Ihrer Datenschutzerklärung, etwa `https://example.com/privacy`. |
+
 ### Fehlgeschlagene Schlüsselprüfungen
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |

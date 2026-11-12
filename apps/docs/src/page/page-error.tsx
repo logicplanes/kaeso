@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { AppFrame, Button, Empty, VisuallyHidden } from "@logicplanes/kaeso-ui";
 import { useText } from "~/i18n/text";
+import { LegalLinks } from "~/shell/legal-links";
 import { toast } from "~/shell/toast";
 import { usePageTitle } from "~/shell/title";
 
@@ -13,7 +14,7 @@ function useRetry(reset: () => void): () => void {
   };
 }
 
-function PageErrorContent({ reset }: { reset: () => void }) {
+function PageErrorContent({ reset, centered = false }: { reset: () => void; centered?: boolean }) {
   const t = useText();
   const retry = useRetry(reset);
   usePageTitle(t("pageError.title"));
@@ -28,14 +29,16 @@ function PageErrorContent({ reset }: { reset: () => void }) {
         title={t("pageError.heading")}
         description={t("pageError.description")}
         actions={<Button onClick={retry}>{t("pageError.retry")}</Button>}
+        className={centered ? "flex-1 justify-center" : "flex-1"}
       />
+      <LegalLinks className="mx-24 mb-24 justify-center" />
     </>
   );
 }
 
 export function PageError({ reset }: { reset: () => void }) {
   return (
-    <AppFrame.Body className="relative">
+    <AppFrame.Body className="relative flex flex-col">
       <AppFrame.MenuButton className="absolute top-10 left-12 z-10" />
       <PageErrorContent reset={reset} />
     </AppFrame.Body>
@@ -44,8 +47,8 @@ export function PageError({ reset }: { reset: () => void }) {
 
 export function BootError({ reset }: { reset: () => void }) {
   return (
-    <main className="flex h-dvh items-center justify-center">
-      <PageErrorContent reset={reset} />
+    <main className="flex h-dvh flex-col">
+      <PageErrorContent reset={reset} centered />
     </main>
   );
 }

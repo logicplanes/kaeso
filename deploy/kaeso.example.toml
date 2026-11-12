@@ -42,6 +42,10 @@ magic_link = true
 demo_user = ""
 oidc_allow_private_networks = false
 
+[legal]
+imprint_url = ""
+privacy_url = ""
+
 [key_failures]
 per_address = 100
 window = "1m"
