@@ -312,6 +312,7 @@ impl Codec for ZaiVideos {
         body: &[u8],
         _headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         if kind != RequestKind::Video {
             return Err(crate::video_jobs::not_videos(D, kind));
         }
@@ -320,6 +321,7 @@ impl Codec for ZaiVideos {
     }
 
     fn encode_response(reply: &Reply, _ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         crate::wire::to_body(&encode_job(video_reply(reply, D)?))
     }
 
@@ -332,10 +334,12 @@ impl Codec for ZaiVideos {
     }
 
     fn check(req: &Request, _ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         check(req)
     }
 
     fn encode_request(req: &Request, _ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         encode_request(req)
     }
 

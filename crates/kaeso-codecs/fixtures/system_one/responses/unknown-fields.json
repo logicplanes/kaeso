@@ -1,0 +1,22 @@
+{
+  "model": "jev-latest",
+  "answers": {
+    "tone": {
+      "type": "choice",
+      "choice": "calm",
+      "confidence": 0.8,
+      "probabilities": {
+        "angry": 0.1,
+        "calm": 0.9
+      },
+      "x_rationale_id": "r-17"
+    }
+  },
+  "usage": {
+    "input_tokens": 98,
+    "output_tokens": 6
+  },
+  "x_trace": {
+    "region": "test"
+  }
+}

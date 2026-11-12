@@ -1,0 +1,65 @@
+{
+  "model": "jev-1.14.0",
+  "answers": {
+    "bug": {
+      "type": "noul",
+      "noul": 0.91
+    },
+    "urgency": {
+      "type": "score",
+      "score": 2.18,
+      "confidence": 0.58,
+      "legend": {
+        "0": {
+          "level": "low",
+          "means": "Can wait"
+        },
+        "1": [
+          "Needs attention",
+          "this week"
+        ],
+        "2": "Needs attention today",
+        "3": "Drop everything"
+      },
+      "probabilities": {
+        "0": 0.02,
+        "1": 0.08,
+        "2": 0.6,
+        "3": 0.3
+      }
+    },
+    "area": {
+      "type": "choice",
+      "choice": "export",
+      "confidence": 0.91,
+      "probabilities": {
+        "export": 0.94,
+        "editor": 0.05,
+        "billing": 0.01
+      }
+    },
+    "one_option": {
+      "type": "choice",
+      "choice": "browser",
+      "confidence": 1.0,
+      "probabilities": {
+        "browser": 1.0
+      }
+    },
+    "one_level": {
+      "type": "score",
+      "score": 0.0,
+      "confidence": 1.0,
+      "legend": {
+        "0": "Polite"
+      },
+      "probabilities": {
+        "0": 1.0
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 388,
+    "output_tokens": 21
+  }
+}

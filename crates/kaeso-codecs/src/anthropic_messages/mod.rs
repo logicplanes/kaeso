@@ -66,11 +66,13 @@ impl Codec for AnthropicMessages {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         crate::limits::request_shape(Self::DIALECT, body)?;
         Self::decode_checked(kind, body, headers)
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         response::encode_response(reply, ctx)
     }
 
@@ -87,11 +89,13 @@ impl Codec for AnthropicMessages {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         let req = crate::adapt::for_target(req, Self::DIALECT, ctx)?;
         check::check(&req, &ctx.origin(Self::DIALECT), &ctx.messages_profile)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         let crate::adapt::Adapted {
             req,
             left_out,

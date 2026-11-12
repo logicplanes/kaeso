@@ -1,0 +1,19 @@
+{
+  "detail": [
+    {
+      "loc": [
+        "body",
+        "questions",
+        "urgency",
+        "score",
+        "criteria"
+      ],
+      "msg": "List should have at least 1 item after validation, not 0",
+      "type": "too_short",
+      "input": "{\"type\":\"score\"}",
+      "ctx": {
+        "min_length": 1
+      }
+    }
+  ]
+}

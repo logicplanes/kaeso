@@ -1,0 +1,17 @@
+{
+  "model": "jev-preview",
+  "state": "photo",
+  "questions": {
+    "red_rectangle": {
+      "type": "box",
+      "instructions": "Locate the red rectangle."
+    }
+  },
+  "assets": {
+    "photo": {
+      "type": "image",
+      "format": "png",
+      "data_base64": "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAHElEQVR4nGP4TyJgoKcGBgbsaFQDfTUQB4aDBgDAen2fpitsVAAAAABJRU5ErkJggg=="
+    }
+  }
+}

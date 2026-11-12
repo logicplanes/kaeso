@@ -439,6 +439,7 @@ impl Codec for MinimaxImages {
         body: &[u8],
         _headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         if kind != RequestKind::Image {
             return Err(not_images(kind));
         }
@@ -447,6 +448,7 @@ impl Codec for MinimaxImages {
     }
 
     fn encode_response(reply: &Reply, _ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         encode_response(reply)
     }
 
@@ -462,6 +464,7 @@ impl Codec for MinimaxImages {
     }
 
     fn check(req: &Request, _ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         match req {
             Request::Image(r) => check_request(r),
             other => Err(not_images(other.kind())),
@@ -469,6 +472,7 @@ impl Codec for MinimaxImages {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         encode_request(req, ctx)
     }
 

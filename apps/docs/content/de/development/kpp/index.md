@@ -69,7 +69,7 @@ Streams nehmen denselben Weg mit `dispatch::stream_decoder` und `dispatch::strea
 
 | Crate | Inhalt |
 | --- | --- |
-| `kaeso-kpp` | Nur die KPP-Typen: Anfragen, Antworten, Stream-Events, Fehler, Token-Zählungen, Embeddings und Modelllisten, mit `validate()` und `required_capabilities()`. Keine Codec-Logik, kein I/O. |
+| `kaeso-kpp` | Nur die KPP-Typen: Anfragen, Antworten, Stream-Events, Fehler, Token-Zählungen, Embeddings, Entscheidungen und Modelllisten, mit `validate()` und `required_capabilities()`. Keine Codec-Logik, kein I/O. |
 | `kaeso-codecs` | Ein Sans-IO-Codec pro API-Format, im Code Dialekt genannt (`DialectId`), und die Bausteine, die sie teilen. Ein Codec macht aus Bytes KPP-Werte und aus KPP-Werten Bytes; Streams werden Chunk für Chunk eingespeist und erzeugen Events. |
 
 Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur von `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` abhängen, und `cargo deny` verbietet ihnen `tokio`, `reqwest`, `hyper` und `axum` ([Abhängigkeit hinzufügen](../contributing.md#abhängigkeit-hinzufügen)).
@@ -97,7 +97,8 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `veo` | Die lang laufenden Vorgänge von Veo auf Gemini Enterprise Agent Platform ([Veo](veo.md)) |
 | `gemini_interactions` | Die Videojobs von Gemini Omni in der Interactions API von Google AI Studio und Gemini Enterprise Agent Platform ([Gemini Interactions](gemini-interactions.md)) |
 | `dashscope` | Die DashScope-API von QwenCloud: Bilder, Sprachausgabe, Transkription und Videosynthese der Wan-Modelle ([DashScope](dashscope.md)) |
-| `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-, Audio- und Video-Uploads |
+| `system_one` | Die System-One-API von TypeSafe (`/v1/systemone`) und die Anbieter, die eine Form davon sprechen ([System One](system-one.md)) |
+| `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-, Audio- und Video-Uploads und der Bildteile von System One |
 
 | Gemeinsames Modul | Aufgabe |
 | --- | --- |
@@ -110,6 +111,8 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `continuity` | Reasoning, das mit der Unterhaltung mitreist ([Reasoning über Runden hinweg](reasoning.md#reasoning-über-runden-hinweg)) |
 | `keepalive` | Frames, die laufende Streams nicht verstummen lassen ([Keepalives](cross-format.md#keepalives)) |
 | `models` | Hilfsfunktionen für Modelllisten ([Modelllisten](codec-design.md#modelllisten)) |
+| `decisions` | Was die Entscheidungs-Codecs teilen: die Ablehnung, die jeder andere Codec einer Entscheidungsanfrage gibt, die Schlüssel der Fragen in Formaten, die Fragen nach Namen ablegen, und die dokumentierten Formeln für `confidence` |
+| `image_size` | Format und Größe eines Bildes, aus seinem Header gelesen, ohne es zu dekodieren ([Bildgrößen](codec-design.md#typen)) |
 | `testing` | Vergleich von JSON und SSE, auch für Crates, die die Codecs nutzen |
 
 ## Entwurfsprinzipien
@@ -190,6 +193,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `Reasoning.origin` | — | Entscheidet über das Zurückspielen ([Reasoning](reasoning.md)). Ein Anthropic-`thinking`-Block ohne Signatur geht nur an Anthropic zurück, wenn er aus Anthropic Messages gelesen wurde. |
 | `Refusal.text` | semantisch | Anthropic hat keinen Verweigerungsblock: in Anfragen dorthin `Unsupported`, in Antworten an Anthropic-Apps ein Textblock. |
 | `Unknown` | semantisch | Nur im Ursprungsdialekt. Eine `function`-Nachricht von OpenAI Chat wird vollständig als ein solcher Block aufbewahrt ([Anfragen](cross-format.md#anfragen)). |
+| `Json.data` | semantisch | Strukturierte Daten als Teil der Eingabe einer Entscheidung oder der Anweisungen einer Frage; jedes Generierungsformat lehnt sie ab. |
 | `extras` jedes Blocks | wie bei der Anfrage | Auf der Allowlist je Blockart freigegeben ([Extras-Allowlist](cross-format.md#extras)). |
 
 ### `CacheHint`
@@ -198,6 +202,18 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | --- | --- | --- |
 | `ttl` | Hinweis | |
 | `extras` | Hinweis | Fällt mit dem Hinweis weg. |
+
+### `DecideRequest`
+
+| Feld | Klasse | Anmerkungen |
+| --- | --- | --- |
+| `model`, `input`, `questions`, `assets` | semantisch | Auf ein Asset verweist sein Schlüssel aus Strings der Eingabe, der Anweisungen oder der Beschreibungen ([System One](system-one.md#bilder)). |
+| `Question.name` | semantisch | Bleibt, oder `q0`…`qN-1` für jede Frage, wo ein Format die Namen nicht annimmt; die Antwort wird nach Position zurückgelesen. |
+| `Question.instructions`, `.kind` | semantisch | |
+| `Predicate.when_true`, `.when_false`, `ChoiceOption.value`, `.description`, `Level.label`, `.description` | semantisch | Ein Format ohne Platz dafür schreibt sie, wie auf seiner Abbildungsseite dokumentiert, oder lehnt sie ab. |
+| `user` | Hinweis | |
+| `cache` | Hinweis | |
+| `extras` | wie bei `GenerateRequest` | |
 
 ### `EmbedRequest`
 
@@ -226,7 +242,7 @@ Schreiben Sie Fehlermeldungen für die Person, die Kaeso aufgerufen hat: Nennen 
 
 | Suite | Was sie belegt |
 | --- | --- |
-| `crates/kaeso-kpp/tests/types.rs` | Die KPP-Typen allein: stabile Namen der Fehlerarten und Blöcke, `validate()` und `required_capabilities()`. |
+| `crates/kaeso-kpp/tests/types.rs` | Die KPP-Typen allein: stabile Namen der Fehlerarten und Blöcke, `validate()` und `required_capabilities()` und die JSON-Form von Entscheidungsanfragen und Antworten. |
 | Fixture-Round-Trips (die `tests`-Module jedes Dialekts) | `decode → KPP → encode` reproduziert jede [Fixture](fixtures.md) eines Dialekts als gleichen JSON-Wert (bei Streams als gleiche Event-Folge), bei Streams unter vielen Chunk-Aufteilungen. Fixtures, die abgelehnt werden müssen, scheitern mit dem genannten `Unsupported`-Feature. |
 | `crates/kaeso-codecs/tests/cross_matrix.rs` | Für jede Generierungs-Fixture von Dialekt A und jeden anderen Dialekt B: Anfragen durchlaufen `decode_A → check_B → encode_B` und müssen sich mit dem Decoder von B wieder dekodieren lassen, ohne dass sich die Unterhaltung ändert; Antworten und Streams durchlaufen `decode_A → encode_B → decode_B` und müssen Text, Verweigerungen und Tool-Aufrufe behalten, auch zurück in A. Anfragen und Antworten zur Token-Zählung wechseln zwischen Anthropic und Responses. Die Ergebnisse sind `insta`-Snapshots. |
 | `crates/kaeso-codecs/tests/dispatch.rs` | `dispatch` dekodiert Anbieterfehler und kodiert Fehler mit einem Status in jedem Dialekt, der Embeddings-Codec lehnt Generierungsantworten ab, und er behält einen Base64-Vektor, wie er empfangen wurde, wenn keine Anfrage eine andere Kodierung verlangt. |
@@ -237,7 +253,7 @@ Schreiben Sie Fehlermeldungen für die Person, die Kaeso aufgerufen hat: Nennen 
 | `crates/kaeso-codecs/tests/responses_on_anthropic.rs` | Apps für OpenAI Responses auf Anthropic-Modellen und Anthropic-Apps auf OpenAI-Modellen: Reasoning-Anfragen, Thinking-Streams in der Event-Reihenfolge von OpenAI und Tool-Schleifen. |
 | `crates/kaeso-codecs/tests/nesting.rs` | Anthropic-Blöcke `tool_result`, die tiefer als das Limit verschachtelt sind, werden in Anfragen, Antworten und Streams abgelehnt, und eine Verschachtelung bis zum Limit lässt sich weiterhin dekodieren. |
 | `crates/kaeso-codecs/tests/unknown_frames.rs` | Unbekannte SSE-Frames überstehen in jedem streamenden Dialekt einen Round Trip im selben Dialekt, mit ihrer JSON-Schreibweise, Strings in Anführungszeichen, SSE-Feldern und Kommentaren; Anthropic- und Chat-Streams behalten auch Frames, deren Daten reiner Text sind. |
-| `e2e/conformance`, bedient von `crates/kpp-conformance` | Die offiziellen Python-SDKs von OpenAI, Anthropic und Google Gen AI parsen alles, was die Encoder erzeugen ([Tests](../testing.md#sdk-konformität)). |
+| `e2e/conformance`, bedient von `crates/kpp-conformance` | Die offiziellen Python-SDKs von OpenAI, Anthropic, Google Gen AI und TypeSafe parsen alles, was die Encoder erzeugen ([Tests](../testing.md#sdk-konformität)). |
 | `fuzz/` | Jeder Decoder nimmt beliebige Bytes an, ohne einen Panic auszulösen, und der SSE-Parser liefert bei jeder Chunk-Aufteilung dieselben Items ([Fuzzing](../testing.md#fuzzing)). |
 
 `kaeso_codecs::testing` vergleicht JSON strukturell: Die Reihenfolge der Schlüssel spielt nie eine Rolle, und Zahlen werden exakt so verglichen, wie `serde_json` sie liest, daher unterscheiden sich `1` und `1.0`, während `1e0` und `1.0` dieselbe Zahl sind.
@@ -277,5 +293,6 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Veo](veo.md): Sehen Sie, wie Videojobs auf Veo in Gemini Enterprise Agent Platform abgebildet werden.
 - [Gemini Interactions](gemini-interactions.md): Sehen Sie, wie Videojobs von Gemini Omni auf die Interactions API abgebildet werden.
 - [DashScope](dashscope.md): Sehen Sie, wie Bilder, Sprache, Transkriptionen und Videojobs auf die DashScope-API von QwenCloud abgebildet werden.
+- [System One](system-one.md): Finden Sie, wohin jedes Feld des Entscheidungsformats von TypeSafe in KPP gehört und wie jeder Anbieter es annimmt.
 - [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
 - [Fixture-Konventionen](fixture-conventions.md): Schlagen Sie die Regeln nach, denen jede konstruierte Fixture folgt.

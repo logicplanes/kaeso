@@ -78,6 +78,7 @@ FOLDERS = {
     "count_tokens": [("responses/count_tokens", False), ("responses/input_tokens", False)],
     "embed": [("responses", False)],
     "image": [("responses", False), ("streams", True)],
+    "decide": [("responses", False)],
     "error": [("errors", False)],
     "video": [("responses", False), ("polls", False)],
 }

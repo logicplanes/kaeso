@@ -1,0 +1,19 @@
+{
+  "model": "jev-preview",
+  "answers": {
+    "red_rectangle": {
+      "type": "box",
+      "box": {
+        "top": 0.2,
+        "bottom": 0.66,
+        "left": 0.19,
+        "right": 0.68
+      },
+      "confidence": null
+    }
+  },
+  "usage": {
+    "input_tokens": 285,
+    "output_tokens": 20
+  }
+}

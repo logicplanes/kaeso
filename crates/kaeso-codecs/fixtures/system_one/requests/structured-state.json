@@ -1,0 +1,37 @@
+{
+  "model": "jev-1.14.0",
+  "state": {
+    "subject": "Duplicate charge",
+    "message": "Please help.",
+    "account": {
+      "plan": "pro",
+      "seats": 12,
+      "renews": "2026-12-01"
+    }
+  },
+  "questions": {
+    "refund": {
+      "type": "noul",
+      "instructions": "Does the customer ask for a refund?"
+    },
+    "team": {
+      "type": "choice",
+      "instructions": "Which team should handle this ticket?",
+      "criteria": {
+        "billing": "Charges, refunds, and invoices",
+        "accounts": {
+          "description": "Sign-in and seats",
+          "examples": [
+            "Cannot add a seat",
+            "Locked out"
+          ]
+        },
+        "other": null,
+        "escalate": [
+          "Legal threats",
+          "Press inquiries"
+        ]
+      }
+    }
+  }
+}

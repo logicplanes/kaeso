@@ -1,0 +1,75 @@
+{
+  "model": "jev-1.14.0",
+  "state": [
+    {
+      "from": "customer",
+      "text": "The export button does nothing."
+    },
+    {
+      "from": "agent",
+      "text": "Which browser do you use?"
+    },
+    {
+      "from": "customer",
+      "text": "Firefox, and our board meeting is in an hour."
+    }
+  ],
+  "questions": {
+    "bug": {
+      "type": "noul",
+      "instructions": null,
+      "criteria": {
+        "true": "The customer reports broken behavior.",
+        "false": "The customer asks a question."
+      }
+    },
+    "urgency": {
+      "type": "score",
+      "instructions": {
+        "task": "Rate the urgency",
+        "consider": [
+          "deadlines",
+          "impact"
+        ]
+      },
+      "criteria": [
+        {
+          "level": "low",
+          "means": "Can wait"
+        },
+        [
+          "Needs attention",
+          "this week"
+        ],
+        "Needs attention today",
+        "Drop everything"
+      ]
+    },
+    "area": {
+      "type": "choice",
+      "instructions": [
+        "Which product area is affected?",
+        "Use the last customer message."
+      ],
+      "criteria": {
+        "export": null,
+        "editor": null,
+        "billing": null
+      }
+    },
+    "one_option": {
+      "type": "choice",
+      "instructions": "Is there a browser named?",
+      "criteria": {
+        "browser": "A browser is named."
+      }
+    },
+    "one_level": {
+      "type": "score",
+      "instructions": "How polite is the customer?",
+      "criteria": [
+        "Polite"
+      ]
+    }
+  }
+}

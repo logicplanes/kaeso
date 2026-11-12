@@ -154,6 +154,7 @@ impl Codec for OpenAiVideos {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         if kind != RequestKind::Video {
             return Err(crate::video_jobs::not_videos(DIALECT, kind));
         }
@@ -162,6 +163,7 @@ impl Codec for OpenAiVideos {
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         let job = crate::video_jobs::video_reply(reply, DIALECT)?;
         reply::encode_video(job, ctx)
     }
@@ -175,10 +177,12 @@ impl Codec for OpenAiVideos {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         request::check(req, ctx)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         request::encode(req, ctx)
     }
 

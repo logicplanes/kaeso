@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use crate::audio::{SpeechResponse, TranscriptionResponse};
 use crate::block::Block;
+use crate::decision::DecideResponse;
 use crate::dialect::Origin;
 use crate::extras::Extras;
 use crate::image::ImageResponse;
@@ -20,6 +21,7 @@ pub enum Reply {
     Speech(SpeechResponse),
     Transcription(TranscriptionResponse),
     Video(VideoJob),
+    Decide(DecideResponse),
 }
 
 impl Reply {
@@ -32,6 +34,7 @@ impl Reply {
             Reply::Speech(_) => RequestKind::Speech,
             Reply::Transcription(_) => RequestKind::Transcription,
             Reply::Video(_) => RequestKind::Video,
+            Reply::Decide(_) => RequestKind::Decide,
         }
     }
 }

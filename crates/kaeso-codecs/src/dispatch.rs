@@ -21,6 +21,7 @@ use crate::openai_speech::OpenAiSpeech;
 use crate::openai_transcriptions::OpenAiTranscriptions;
 use crate::openai_videos::OpenAiVideos;
 use crate::openrouter_videos::OpenRouterVideos;
+use crate::system_one::SystemOne;
 use crate::veo::Veo;
 use crate::xai_videos::XaiVideos;
 use crate::zai_videos::ZaiVideos;
@@ -52,6 +53,7 @@ macro_rules! dispatch {
             DialectId::OpenRouterVideos => Ok(OpenRouterVideos::$f($($arg),*)),
             DialectId::MinimaxVideos => Ok(MinimaxVideos::$f($($arg),*)),
             DialectId::ZaiVideos => Ok(ZaiVideos::$f($($arg),*)),
+            DialectId::SystemOne => Ok(SystemOne::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -82,6 +84,9 @@ pub fn decode_checked_request<B: RequestBody>(
     checked: &Checked<B>,
     headers: &HeaderList,
 ) -> Result<Request, KppError> {
+    if checked.dialect() != DialectId::SystemOne {
+        crate::decisions::refuse_kind(kind, checked.dialect())?;
+    }
     let upload = upload_of(checked.body());
     let body = checked.body().as_ref();
     match checked.dialect() {
@@ -111,6 +116,7 @@ pub fn decode_checked_request<B: RequestBody>(
             upload,
             headers,
         ),
+        DialectId::SystemOne => SystemOne::decode_checked(kind, upload, headers),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }

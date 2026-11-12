@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::audio::{SpeechRequest, TranscriptionRequest};
 use crate::block::{Block, CacheHint, RawItem};
+use crate::decision::DecideRequest;
 use crate::extras::Extras;
 use crate::image::ImageRequest;
 use crate::raw::RawJson;
@@ -18,6 +19,8 @@ pub enum Request {
     Speech(SpeechRequest),
     Transcription(TranscriptionRequest),
     Video(VideoRequest),
+    /// Typed questions answered with probabilities.
+    Decide(DecideRequest),
 }
 
 impl Request {
@@ -30,6 +33,7 @@ impl Request {
             Request::Speech(_) => RequestKind::Speech,
             Request::Transcription(_) => RequestKind::Transcription,
             Request::Video(_) => RequestKind::Video,
+            Request::Decide(_) => RequestKind::Decide,
         }
     }
 
@@ -41,6 +45,7 @@ impl Request {
             Request::Speech(r) => &r.model,
             Request::Transcription(r) => &r.model,
             Request::Video(r) => &r.model,
+            Request::Decide(r) => &r.model,
         }
     }
 
@@ -50,7 +55,10 @@ impl Request {
             Request::Image(r) => r.stream,
             Request::Speech(r) => r.stream,
             Request::Transcription(r) => r.stream,
-            Request::CountTokens(_) | Request::Embed(_) | Request::Video(_) => StreamMode::Off,
+            Request::CountTokens(_)
+            | Request::Embed(_)
+            | Request::Video(_)
+            | Request::Decide(_) => StreamMode::Off,
         }
     }
 }
@@ -66,6 +74,7 @@ pub enum RequestKind {
     Speech,
     Transcription,
     Video,
+    Decide,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]

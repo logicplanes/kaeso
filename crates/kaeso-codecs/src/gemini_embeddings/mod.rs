@@ -696,6 +696,7 @@ impl Codec for GeminiEmbeddings {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         crate::limits::request_shape(D, body)?;
         if kind != RequestKind::Embed {
             return Err(not_generation());
@@ -712,6 +713,7 @@ impl Codec for GeminiEmbeddings {
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         encode_response(reply, ctx)
     }
 
@@ -728,10 +730,12 @@ impl Codec for GeminiEmbeddings {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         check(req, ctx)
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         encode_request(req, ctx)
     }
 

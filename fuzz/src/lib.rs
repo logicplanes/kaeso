@@ -1,6 +1,7 @@
 use kaeso_codecs::gemini::GeminiAction;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::sse::{SseError, SseItem, SseParser, write_item};
+use kaeso_codecs::system_one::SystemOneProfile;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
     CountTokensResponse, DialectId, EmbedResponse, ImageOperation, ImageResponse, ModelList, Reply,
@@ -8,7 +9,7 @@ use kaeso_kpp::{
 };
 use kaeso_mcp::{Message, RequestHeaders, headers, names};
 
-const KINDS: [RequestKind; 7] = [
+const KINDS: [RequestKind; 8] = [
     RequestKind::Generate,
     RequestKind::CountTokens,
     RequestKind::Embed,
@@ -16,7 +17,21 @@ const KINDS: [RequestKind; 7] = [
     RequestKind::Speech,
     RequestKind::Transcription,
     RequestKind::Video,
+    RequestKind::Decide,
 ];
+
+const SYSTEM_ONE_PROFILES: [SystemOneProfile; 7] = [
+    SystemOneProfile::TYPESAFE,
+    SystemOneProfile::OPENROUTER,
+    SystemOneProfile::PERPLEXITY,
+    SystemOneProfile::BASETEN,
+    SystemOneProfile::FIREWORKS,
+    SystemOneProfile::CLOUDFLARE_WORKERS_AI,
+    SystemOneProfile::GENERIC,
+];
+
+// The questions a System One reply is read against: one of each type.
+const DECISION: &str = r#"{"model":"m","state":"s","questions":{"a":{"type":"noul"},"b":{"type":"choice","criteria":{"x":null,"y":null}},"c":{"type":"score","criteria":["0","1","2"]},"d":{"type":"box"}}}"#;
 
 const ELEVENLABS_PATHS: [&str; 8] = [
     "/v1/text-to-speech/v1",
@@ -86,6 +101,9 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
                 request(dialect, &req);
             }
         }
+    }
+    if dialect == DialectId::SystemOne {
+        system_one(data, &headers, &upload);
     }
     if dialect == DialectId::ElevenLabs {
         for path in ELEVENLABS_PATHS {
@@ -158,6 +176,43 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
     }
 }
 
+fn system_one(data: &[u8], headers: &HeaderList, upload: &HeaderList) {
+    let dialect = DialectId::SystemOne;
+    if let Ok(req) = dispatch::decode_request(dialect, RequestKind::Decide, data, upload) {
+        request(dialect, &req);
+    }
+    let Ok(asked) =
+        dispatch::decode_request(dialect, RequestKind::Decide, DECISION.as_bytes(), headers)
+    else {
+        return;
+    };
+    let mut ctx = EgressCtx::new(&asked).with_system_one_profile(SystemOneProfile::GENERIC);
+    if dispatch::encode_request(dialect, &asked, &mut ctx).is_err() {
+        return;
+    }
+    for c in [
+        ctx.clone(),
+        ctx.with_system_one_profile(SystemOneProfile::CLOUDFLARE_WORKERS_AI),
+    ] {
+        if let Ok(reply) = dispatch::decode_response(dialect, 200, headers, data, &c) {
+            let written =
+                dispatch::encode_response(dialect, &reply, &EncodeCtx::for_request(asked.clone()))
+                    .unwrap_or_else(|e| panic!("a System One reply writes: {e:?}"));
+            let again = dispatch::decode_response(dialect, 200, headers, &written, &c)
+                .unwrap_or_else(|e| panic!("a written System One reply reads again: {e:?}"));
+            assert_eq!(again.kind(), reply.kind());
+            response(&reply);
+        }
+    }
+}
+
+pub fn image_size(data: &[u8]) {
+    if let Some(info) = kaeso_codecs::image_size::image_info(data) {
+        assert!(info.width > 0 && info.height > 0);
+        assert_eq!(kaeso_codecs::image_size::image_info(data), Some(info));
+    }
+}
+
 fn nested(data: &[u8], salt: u8, headers: &HeaderList) {
     let Ok(inner) = std::str::from_utf8(data) else {
         return;
@@ -219,6 +274,13 @@ fn request(dialect: DialectId, req: &Request) {
     if dispatch::check(DialectId::OpenAiResponses, req, &ctx).is_ok() {
         let _ = dispatch::encode_request(DialectId::OpenAiResponses, req, &mut ctx);
     }
+    if let Request::Decide(decide) = req {
+        let _ = decide.required_capabilities();
+        for profile in SYSTEM_ONE_PROFILES {
+            let mut ctx = EgressCtx::new(req).with_system_one_profile(profile);
+            let _ = dispatch::encode_request(DialectId::SystemOne, req, &mut ctx);
+        }
+    }
     let _ = dispatch::encode_response(
         dialect,
         &empty_reply(req),
@@ -231,6 +293,9 @@ fn empty_reply(req: &Request) -> Reply {
         RequestKind::Embed => Reply::Embed(EmbedResponse::new(req.model(), Vec::new())),
         RequestKind::CountTokens => Reply::CountTokens(CountTokensResponse::new(0)),
         RequestKind::Image => Reply::Image(ImageResponse::new(req.model(), Vec::new())),
+        RequestKind::Decide => {
+            Reply::Decide(kaeso_kpp::DecideResponse::new(req.model(), Vec::new()))
+        }
         _ => Reply::Generate(Response::new("resp_fuzz", req.model(), Vec::new())),
     }
 }

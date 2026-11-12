@@ -1,0 +1,30 @@
+{
+  "model": "jev-1.14.0",
+  "answers": {
+    "gesture": {
+      "type": "choice",
+      "choice": "open_palm",
+      "confidence": 0.7467,
+      "probabilities": {
+        "thumbs_up": 0.05,
+        "open_palm": 0.81,
+        "fist": 0.1,
+        "none": 0.04
+      }
+    },
+    "hand_box": {
+      "type": "box",
+      "box": {
+        "top": 0.21,
+        "bottom": 0.74,
+        "left": 0.33,
+        "right": 0.6
+      },
+      "confidence": 0.88
+    }
+  },
+  "usage": {
+    "input_tokens": 4120,
+    "output_tokens": 30
+  }
+}

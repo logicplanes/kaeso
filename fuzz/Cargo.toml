@@ -175,3 +175,17 @@ path = "fuzz_targets/decode_gemini_interactions.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "decode_system_one"
+path = "fuzz_targets/decode_system_one.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "image_size"
+path = "fuzz_targets/image_size.rs"
+test = false
+doc = false
+bench = false

@@ -8,6 +8,7 @@ use axum::extract::{Path as UrlPath, Query, RawQuery, State};
 use axum::http::{HeaderMap, HeaderName, HeaderValue, StatusCode};
 use axum::response::Response;
 use axum::routing::{get, post};
+use kaeso_codecs::system_one::SystemOneProfile;
 use kaeso_codecs::{EgressCtx, EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
     Block, Delta, DialectId, EmbeddingVector, ErrorKind, ImageOperation, KppError, ModelInfo,
@@ -104,6 +105,7 @@ async fn main() -> std::io::Result<()> {
         )
         .route("/v1/videos/{id}/remix", post(videos::remix))
         .route("/v1/videos/{id}/content", get(videos::content))
+        .route("/v1/systemone", post(serve_decisions))
         .route("/v1beta/models", get(list_gemini_models))
         .route(
             "/v1beta/models/{*rest}",
@@ -284,6 +286,22 @@ async fn serve(
         Err(e) => return error_response(ingress, &e.with_status(400)),
     };
     answer(&app, req, ingress, kind)
+}
+
+async fn serve_decisions(State(app): State<App>, headers: HeaderMap, body: Bytes) -> Response {
+    let ingress = DialectId::SystemOne;
+    match dispatch::decode_request(ingress, RequestKind::Decide, &body, &headers_in(&headers)) {
+        Ok(req) => answer(&app, req, ingress, RequestKind::Decide),
+        Err(e) => error_response(ingress, &e),
+    }
+}
+
+// The egress context of a decision scenario: the fixture's answers are keyed by the questions
+// the request was sent with.
+fn decide_egress(source: DialectId, req: &kaeso_kpp::Request) -> EgressCtx {
+    let mut egress = EgressCtx::new(req).with_system_one_profile(SystemOneProfile::GENERIC);
+    let _ = dispatch::encode_request(source, req, &mut egress);
+    egress
 }
 
 async fn serve_images(
@@ -546,7 +564,10 @@ fn answer(app: &App, req: kaeso_kpp::Request, ingress: DialectId, kind: RequestK
         return error_response(ingress, &err);
     }
     let ctx = EncodeCtx::for_request(req.clone()).with_created_at(CREATED_AT);
-    let mut egress = EgressCtx::for_kind(kind, req.stream_mode());
+    let mut egress = match kind {
+        RequestKind::Decide => decide_egress(sc.source, &req),
+        _ => EgressCtx::for_kind(kind, req.stream_mode()),
+    };
     egress.audio_format = EgressCtx::new(&req).audio_format;
     if let StreamMode::On { .. } = req.stream_mode() {
         let bytes = match read(&dir.join(format!("streams/{}.sse", sc.name))) {
@@ -655,6 +676,7 @@ async fn expected(State(app): State<App>, Query(q): Query<ExpectedQuery>) -> Res
         Some("count_tokens") => RequestKind::CountTokens,
         Some("embed") => RequestKind::Embed,
         Some("image") => RequestKind::Image,
+        Some("decide") => RequestKind::Decide,
         _ => RequestKind::Generate,
     };
     let dir = app.fixtures.join(source.as_str());
@@ -678,7 +700,18 @@ async fn expected(State(app): State<App>, Query(q): Query<ExpectedQuery>) -> Res
     } else {
         StreamMode::Off
     };
-    let egress = EgressCtx::for_kind(kind, mode);
+    let egress = match kind {
+        RequestKind::Decide => {
+            let Ok(body) = read(&dir.join(format!("requests/{}.json", q.name))) else {
+                return json_response(json!({"error": "missing request"}));
+            };
+            match dispatch::decode_request(source, kind, &body, &HeaderList::new()) {
+                Ok(req) => decide_egress(source, &req),
+                Err(e) => return json_response(json!({"error": e.message})),
+            }
+        }
+        _ => EgressCtx::for_kind(kind, mode),
+    };
     if q.stream {
         let Ok(bytes) = read(&dir.join(format!("streams/{}.sse", q.name))) else {
             return json_response(json!({"error": "missing"}));
@@ -734,8 +767,36 @@ fn summarize_reply(reply: &Reply) -> Value {
             "input_tokens": r.usage.total_input_tokens(),
             "output_tokens": r.usage.output_tokens,
         }),
+        Reply::Decide(r) => json!({
+            "model": r.model,
+            "answers": r.answers.iter().map(summarize_answer).collect::<Vec<_>>(),
+            "input_tokens": r.usage.total_input_tokens(),
+            "output_tokens": r.usage.output_tokens,
+        }),
         _ => json!({}),
     }
+}
+
+fn summarize_answer(a: &kaeso_kpp::Answer) -> Value {
+    use kaeso_kpp::AnswerValue;
+    let mut v = match &a.value {
+        AnswerValue::Predicate(p) => json!({"type": "predicate", "probability": p.probability}),
+        AnswerValue::Choice(c) => {
+            json!({"type": "choice", "option": c.option, "probabilities": c.probabilities})
+        }
+        AnswerValue::Score(s) => {
+            json!({"type": "score", "score": s.score, "probabilities": s.probabilities})
+        }
+        AnswerValue::Box(b) => json!({
+            "type": "box", "top": b.top, "bottom": b.bottom, "left": b.left, "right": b.right,
+        }),
+        AnswerValue::Refusal(_) => json!({"type": "refusal"}),
+        _ => json!({"type": "unknown"}),
+    };
+    if let Value::Object(map) = &mut v {
+        map.insert("confidence".to_owned(), json!(a.confidence));
+    }
+    v
 }
 
 fn readable<'a>(parts: impl Iterator<Item = &'a String>) -> String {
@@ -852,9 +913,11 @@ async fn scenarios(State(app): State<App>) -> Response {
                     DialectId::OpenAiEmbeddings | DialectId::GeminiEmbeddings
                 );
                 let images = matches!(source, DialectId::OpenAiImages | DialectId::MinimaxImages);
+                let decisions = source == DialectId::SystemOne;
                 let kind = match kind {
                     "generate" if embeddings => "embed",
                     "generate" if images => "image",
+                    "generate" if decisions => "decide",
                     other => other,
                 };
                 out.push(json!({"source": source.as_str(), "name": full, "kind": kind, "stream": stream}));

@@ -178,6 +178,7 @@ impl Codec for ElevenLabs {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         if kind == RequestKind::Video {
             crate::limits::request_shape(D, body)?;
             return video::decode(body);
@@ -201,6 +202,7 @@ impl Codec for ElevenLabs {
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         if let Reply::Video(job) = reply {
             return crate::wire::to_body(&video::encode_job(job));
         }
@@ -224,6 +226,7 @@ impl Codec for ElevenLabs {
     }
 
     fn check(req: &Request, ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         if let Request::Video(r) = req {
             return video::check(r);
         }
@@ -234,6 +237,7 @@ impl Codec for ElevenLabs {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         if matches!(req, Request::Video(_)) {
             return video::encode(req);
         }

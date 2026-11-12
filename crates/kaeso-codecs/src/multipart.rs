@@ -304,6 +304,9 @@ pub enum FormField<'a> {
     Text(&'a str, &'a str),
     /// A file field: name, file name, media type and bytes.
     File(&'a str, &'a str, &'a str, &'a [u8]),
+    /// A field with a media type and no file name, such as a JSON part: name, media type and
+    /// bytes.
+    Typed(&'a str, &'a str, &'a [u8]),
 }
 
 impl FormWriter {
@@ -318,6 +321,9 @@ impl FormWriter {
                 FormField::Text(n, v) => FIELD_FRAMING + 3 * n.len() + v.len(),
                 FormField::File(n, f, t, bytes) => {
                     FIELD_FRAMING + 3 * (n.len() + f.len()) + t.len() + bytes.len()
+                }
+                FormField::Typed(n, t, bytes) => {
+                    FIELD_FRAMING + 3 * n.len() + t.len() + bytes.len()
                 }
             })
             .fold(boundary.len() + 6, |sum, n| {
@@ -366,6 +372,13 @@ impl FormWriter {
                 b.extend_from_slice(b"\r\n\r\n");
                 b.extend_from_slice(bytes);
             }
+            FormField::Typed(name, media_type, bytes) => {
+                b.extend_from_slice(quoted(name).as_bytes());
+                b.extend_from_slice(b"\"\r\nContent-Type: ");
+                b.extend_from_slice(header_safe(media_type).as_bytes());
+                b.extend_from_slice(b"\r\n\r\n");
+                b.extend_from_slice(bytes);
+            }
         }
         b.extend_from_slice(b"\r\n");
     }
@@ -408,6 +421,11 @@ fn boundary_for(fields: &[FormField<'_>]) -> String {
                 feed(t.as_bytes());
                 feed(bytes.get(..4096).unwrap_or(bytes));
             }
+            FormField::Typed(n, t, bytes) => {
+                feed(n.as_bytes());
+                feed(t.as_bytes());
+                feed(bytes.get(..4096).unwrap_or(bytes));
+            }
         }
     }
     let mut n = hash;
@@ -417,6 +435,7 @@ fn boundary_for(fields: &[FormField<'_>]) -> String {
             let hay: &[&[u8]] = match f {
                 FormField::Text(a, b) => &[a.as_bytes(), b.as_bytes()],
                 FormField::File(a, b, c, d) => &[a.as_bytes(), b.as_bytes(), c.as_bytes(), d],
+                FormField::Typed(a, b, c) => &[a.as_bytes(), b.as_bytes(), c],
             };
             hay.iter().any(|h| find(h, candidate.as_bytes()).is_some())
         });

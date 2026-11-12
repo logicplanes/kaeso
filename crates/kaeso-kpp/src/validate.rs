@@ -18,6 +18,7 @@ impl Request {
             Request::Speech(r) => r.validate(),
             Request::Transcription(r) => r.validate(),
             Request::Video(r) => r.validate(),
+            Request::Decide(r) => r.validate(),
         }
     }
 }
@@ -226,6 +227,8 @@ pub struct Capabilities {
     pub json_object: bool,
     pub streaming: bool,
     pub cache_hints: bool,
+    /// Box questions of a decision request.
+    pub box_questions: bool,
 }
 
 fn unknown_call_ids(raw: &crate::RawJson) -> Vec<String> {

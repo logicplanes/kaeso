@@ -21,6 +21,8 @@ pub enum Block {
     Reasoning(ReasoningBlock),
     Refusal(RefusalBlock),
     Unknown(RawItem),
+    /// Structured data as a part of its own, such as OpenAI's `input_json` in a decision request.
+    Json(JsonBlock),
 }
 
 impl Block {
@@ -50,6 +52,10 @@ impl Block {
         Block::Video(VideoBlock::new(source))
     }
 
+    pub fn json(data: RawJson) -> Self {
+        Block::Json(JsonBlock::new(data))
+    }
+
     pub fn kind(&self) -> &'static str {
         match self {
             Block::Text(_) => "text",
@@ -62,6 +68,7 @@ impl Block {
             Block::Reasoning(_) => "reasoning",
             Block::Refusal(_) => "refusal",
             Block::Unknown(_) => "unknown",
+            Block::Json(_) => "json",
         }
     }
 
@@ -76,6 +83,7 @@ impl Block {
             Block::ToolResult(b) => Some(&b.extras),
             Block::Reasoning(b) => Some(&b.extras),
             Block::Refusal(b) => Some(&b.extras),
+            Block::Json(b) => Some(&b.extras),
             Block::Unknown(_) => None,
         }
     }
@@ -89,6 +97,7 @@ impl Block {
             Block::Video(b) => b.cache.as_ref(),
             Block::ToolCall(b) => b.cache.as_ref(),
             Block::ToolResult(b) => b.cache.as_ref(),
+            Block::Json(b) => b.cache.as_ref(),
             Block::Reasoning(_) | Block::Refusal(_) | Block::Unknown(_) => None,
         }
     }
@@ -111,6 +120,27 @@ impl TextBlock {
         TextBlock {
             text: text.into(),
             ..TextBlock::default()
+        }
+    }
+}
+
+/// Structured data, written as the app wrote it.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct JsonBlock {
+    pub data: RawJson,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache: Option<CacheHint>,
+    #[serde(default, skip_serializing_if = "Extras::is_empty")]
+    pub extras: Extras,
+}
+
+impl JsonBlock {
+    pub fn new(data: RawJson) -> Self {
+        JsonBlock {
+            data,
+            cache: None,
+            extras: Extras::default(),
         }
     }
 }

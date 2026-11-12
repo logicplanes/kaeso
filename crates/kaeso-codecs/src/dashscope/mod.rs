@@ -643,6 +643,7 @@ impl Codec for DashScope {
         body: &[u8],
         _headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         crate::limits::request_shape(D, body)?;
         match kind {
             RequestKind::Video => decode_request(body),
@@ -654,6 +655,7 @@ impl Codec for DashScope {
     }
 
     fn encode_response(reply: &Reply, _ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
+        crate::decisions::refuse_reply(reply, Self::DIALECT)?;
         match reply {
             Reply::Image(r) => images::encode_response(r),
             Reply::Speech(r) => speech::encode_response(r),
@@ -671,6 +673,7 @@ impl Codec for DashScope {
     }
 
     fn check(req: &Request, _ctx: &EgressCtx) -> Result<(), KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         match req {
             Request::Image(r) => images::check(r).map(|_| ()),
             Request::Speech(r) => speech::check(r).map(|_| ()),
@@ -681,6 +684,7 @@ impl Codec for DashScope {
     }
 
     fn encode_request(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
+        crate::decisions::refuse_request(req, Self::DIALECT)?;
         match req {
             Request::Image(r) => images::encode_request(r, ctx),
             Request::Speech(r) => speech::encode_request(r, ctx),

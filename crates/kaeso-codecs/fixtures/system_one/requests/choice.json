@@ -1,0 +1,15 @@
+{
+  "model": "jev-latest",
+  "state": "I was charged twice for my subscription this month. Please refund the extra charge.",
+  "questions": {
+    "tone": {
+      "type": "choice",
+      "instructions": "What is the tone of this message?",
+      "criteria": {
+        "angry": "An upset or hostile message",
+        "calm": "A neutral or polite message",
+        "excited": "An enthusiastic or eager message"
+      }
+    }
+  }
+}

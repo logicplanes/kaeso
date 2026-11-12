@@ -1,0 +1,10 @@
+{
+  "model": "jev-latest",
+  "state": "I was charged twice for my subscription this month. Please refund the extra charge.",
+  "questions": {
+    "billing": {
+      "type": "noul",
+      "instructions": "Is this message about billing?"
+    }
+  }
+}
