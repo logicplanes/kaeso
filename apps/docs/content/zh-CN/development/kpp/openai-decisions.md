@@ -75,7 +75,7 @@ order: 8
 
 ## 写出请求
 
-编码器写出 KPP 中的内容，并在发送之前拒绝 OpenAI 格式无法接收的内容。来自其他格式（例如 System One）的请求按以下规则跨格式；[跨格式](cross-format.md#决策)说明了原因。
+编码器写出 KPP 中的内容，并在发送之前拒绝 OpenAI 格式无法接收的内容。来自其他格式（例如 System One）的请求按以下规则跨格式；[跨格式](decisions-across-formats.md)说明了原因。
 
 | KPP | 写成 | 说明 |
 |---|---|---|

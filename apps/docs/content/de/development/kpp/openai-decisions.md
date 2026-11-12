@@ -75,7 +75,7 @@ Ein `predicate` mit `choices` oder `levels`, ein `choice` ohne `choices` oder mi
 
 ## Anfragen schreiben
 
-Der Encoder schreibt, was KPP hält, und lehnt vor dem Senden ab, was das Format von OpenAI nicht annimmt. Eine Anfrage eines anderen Formats, etwa System One, wechselt nach diesen Regeln; [Formate wechseln](cross-format.md#entscheidungen) nennt die Gründe.
+Der Encoder schreibt, was KPP hält, und lehnt vor dem Senden ab, was das Format von OpenAI nicht annimmt. Eine Anfrage eines anderen Formats, etwa System One, wechselt nach diesen Regeln; [Formate wechseln](decisions-across-formats.md) nennt die Gründe.
 
 | KPP | Geschrieben als | Anmerkungen |
 |---|---|---|

@@ -213,7 +213,7 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `Question.instructions`、`.kind` | 语义 | |
 | `Predicate.when_true`、`.when_false`、`ChoiceOption.value`、`.description`、`Level.label`、`.description` | 语义 | 没有对应位置的格式按其映射页面所述写出，或拒绝它们。 |
 | `user` | 提示 | OpenAI 的 `safety_identifier`；发往 System One 时省略，并在 `kaeso-left-out` 中列出。 |
-| `cache` | 提示 | OpenAI 的 `prompt_cache_key` 和 `prompt_cache_options`；发往 System One 时省略，并在 `kaeso-left-out` 中列出（[决策](cross-format.md#决策)）。 |
+| `cache` | 提示 | OpenAI 的 `prompt_cache_key` 和 `prompt_cache_options`；发往 System One 时省略，并在 `kaeso-left-out` 中列出（[决策](decisions-across-formats.md)）。 |
 | `extras` | 同 `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -272,6 +272,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [编解码器设计](codec-design.md)：了解类型、流和线路结构体如何让每次转换保持无损。
 - [跨格式转换](cross-format.md)：查阅数据从一种 API 格式转到另一种格式时会发生什么，以及原因。
 - [跨格式的推理](reasoning.md)：查阅推理内容、推理设置及其签名如何在各格式之间转换。
+- [跨格式的决策](decisions-across-formats.md)：查阅决策请求和答案如何在各决策格式之间转换。
 - [Anthropic Messages](anthropic-messages.md)：查找 Anthropic Messages 格式的每个字段在 KPP 中的位置。
 - [Messages 服务商](anthropic-messages-providers.md)：查看 Messages 编解码器如何适配使用该格式的每个服务商。
 - [OpenAI Chat Completions](openai-chat.md)：查找 Chat Completions 格式的每个字段在 KPP 中的位置。

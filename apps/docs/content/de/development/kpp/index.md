@@ -213,7 +213,7 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `Question.instructions`, `.kind` | semantisch | |
 | `Predicate.when_true`, `.when_false`, `ChoiceOption.value`, `.description`, `Level.label`, `.description` | semantisch | Ein Format ohne Platz dafür schreibt sie, wie auf seiner Abbildungsseite dokumentiert, oder lehnt sie ab. |
 | `user` | Hinweis | `safety_identifier` von OpenAI; für System One weggelassen und in `kaeso-left-out` genannt. |
-| `cache` | Hinweis | `prompt_cache_key` und `prompt_cache_options` von OpenAI; für System One weggelassen und in `kaeso-left-out` genannt ([Entscheidungen](cross-format.md#entscheidungen)). |
+| `cache` | Hinweis | `prompt_cache_key` und `prompt_cache_options` von OpenAI; für System One weggelassen und in `kaeso-left-out` genannt ([Entscheidungen](decisions-across-formats.md)). |
 | `extras` | wie bei `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -272,6 +272,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Aufbau der Codecs](codec-design.md): Erfahren Sie, wie Typen, Streams und Wire-Structs jede Übersetzung verlustfrei halten.
 - [Formatwechsel](cross-format.md): Schlagen Sie nach, was mit Daten geschieht, die von einem API-Format in ein anderes wechseln, und warum.
 - [Reasoning über Formate hinweg](reasoning.md): Schlagen Sie nach, wie Reasoning, seine Einstellungen und seine Signaturen zwischen den Formaten wechseln.
+- [Entscheidungen über Formate hinweg](decisions-across-formats.md): Schlagen Sie nach, wie Entscheidungsanfragen und Antworten zwischen den Entscheidungsformaten wechseln.
 - [Anthropic Messages](anthropic-messages.md): Finden Sie, wohin jedes Feld des Formats Anthropic Messages in KPP gehört.
 - [Messages-Anbieter](anthropic-messages-providers.md): Sehen Sie, wie sich der Messages-Codec an jeden Anbieter anpasst, der das Format spricht.
 - [OpenAI Chat Completions](openai-chat.md): Finden Sie, wohin jedes Feld des Formats Chat Completions in KPP gehört.

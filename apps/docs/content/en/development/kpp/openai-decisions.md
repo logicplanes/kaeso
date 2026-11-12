@@ -75,7 +75,7 @@ A `predicate` with `choices` or `levels`, a `choice` without `choices` or with `
 
 ## Writing requests
 
-The encoder writes what KPP holds, and refuses before sending what OpenAI's format can't take. A request of another format, such as System One, crosses with these rules; [crossing formats](cross-format.md#decisions) has the reasons.
+The encoder writes what KPP holds, and refuses before sending what OpenAI's format can't take. A request of another format, such as System One, crosses with these rules; [crossing formats](decisions-across-formats.md) has the reasons.
 
 | KPP | Written as | Notes |
 |---|---|---|

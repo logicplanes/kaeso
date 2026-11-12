@@ -74,7 +74,7 @@ Schemas `CreateMessageParams` und `CountMessageTokensParams`.
 | `cache_control` (oberste Ebene, automatisches Caching) | fields `cache_control` | Nur ein Hinweis; KPP hat keinen Cache-Hinweis auf Ebene der Anfrage. Steht auf der [Allowlist](cross-format.md#extras) und wird daher für andere Dialekte weggelassen. Anfragen aus anderen Dialekten bekommen stattdessen Block-Breakpoints ([Cache-Hinweise](cross-format.md#cache-hinweise)). |
 | `container`, `inference_geo`, `service_tier`, SDK `diagnostics`, `user_profile_id`, `workspace_id`, unbekannte Schlüssel | `extras.fields` | |
 | Header `anthropic-beta` | `extras`-Header `header:anthropic-beta` | Wird beim Egress nur an Anthropic weitergegeben. |
-| Header `anthropic-version` | `extras`-Header, wenn er nicht `2023-06-01` ist | Die festgelegte Version wird immer gesendet, außer eine neuere wurde weitergegeben ([die Anthropic-Version](cross-format.md#die-anthropic-version)). |
+| Header `anthropic-version` | `extras`-Header, wenn er nicht `2023-06-01` ist | Die festgelegte Version wird immer gesendet, außer eine neuere wurde weitergegeben ([die Anthropic-Version](#die-anthropic-version)). |
 
 ### Content-Blöcke
 
@@ -331,6 +331,16 @@ Auf der Egress-Seite bauen diese Funktionen Anfragen und lesen Antworten:
 - `decode_models` und `decode_model` nehmen die Antwort eines Anbieters entgegen. Ein Status außer 2xx geht an `decode_error`.
 
 Dekodierte Extras tragen den Ursprung `anthropic_messages` ohne Anbieter, weil diese Funktionen keinen `EgressCtx` erhalten. Die ID `.` oder `..` ist `InvalidRequest`, weil URL-Parser ein solches Segment auch prozentkodiert entfernen.
+
+## Die Anthropic-Version
+
+Der Anthropic-Codec legt eine API-Version fest, `2023-06-01`, exportiert als `kaeso_codecs::anthropic_messages::ANTHROPIC_VERSION`. Es ist die einzige Version, die die [Seite zur Versionierung](https://platform.claude.com/docs/en/api/versioning) von Anthropic auflistet, die Version, die die offiziellen SDKs senden, und die, von der jede Anthropic-Fixture ausgeht.
+
+- **Egress.** Jede Anfrage, die der Anthropic-Codec kodiert, trägt `anthropic-version: 2023-06-01`, außer die eigene Anthropic-Anfrage der App hat ein `anthropic-version` weitergegeben, das eine neuere Version nennt: ein wohlgeformtes `YYYY-MM-DD`, das nach der festgelegten Version einsortiert wird. Ein fehlerhafter oder älterer Wert wird ignoriert. Eine Anfrage aus einem anderen Dialekt trägt den Header nie und bekommt daher immer die festgelegte Version.
+- **Ingress.** Ein weitergegebenes `anthropic-version`, das der festgelegten Version entspricht, wird nicht in den Extras der Anfrage gespeichert. Der Codec sendet es ohnehin, und es aufzubewahren würde jede Anfrage eines Anthropic-SDKs an ihren Dialekt binden. Jeder andere Wert wird als Extra `header:anthropic-version` aufbewahrt und beim Egress wie oben verglichen.
+- **Warum die neuere Version gewinnt.** Anthropic ergänzt eine Version nur, mit neuen optionalen Eingaben und neuen Ausgabewerten, und eine App, die eine neuere Version anfordert, verlässt sich auf deren Verhalten. Die Decoder tolerieren unbekannte Felder, Blöcke und Events, daher führt eine neuere Version zu Extras und unbekannten Items, statt zu scheitern.
+
+Um die festgelegte Version zu ändern, ändern Sie die Konstante, zeichnen die Fixtures mit `cargo xtask record` neu auf ([Aufzeichnen](fixtures.md#live-antworten-aufzeichnen)) und aktualisieren diesen Abschnitt.
 
 ## Round Trips
 

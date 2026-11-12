@@ -213,7 +213,7 @@ Every KPP field is either semantic or a hint:
 | `Question.instructions`, `.kind` | semantic | |
 | `Predicate.when_true`, `.when_false`, `ChoiceOption.value`, `.description`, `Level.label`, `.description` | semantic | A format without a place for them writes them as documented on its mapping page, or refuses them. |
 | `user` | hint | OpenAI's `safety_identifier`; left out for System One, named in `kaeso-left-out`. |
-| `cache` | hint | OpenAI's `prompt_cache_key` and `prompt_cache_options`; left out for System One, named in `kaeso-left-out` ([decisions](cross-format.md#decisions)). |
+| `cache` | hint | OpenAI's `prompt_cache_key` and `prompt_cache_options`; left out for System One, named in `kaeso-left-out` ([decisions](decisions-across-formats.md)). |
 | `extras` | as for `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -272,6 +272,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Codec design](codec-design.md): Learn how the types, streams and wire structs keep every translation lossless.
 - [Crossing formats](cross-format.md): Look up what happens to data that moves from one API format to another, and why.
 - [Reasoning across formats](reasoning.md): Look up how reasoning, its settings and its signatures move between the formats.
+- [Decisions across formats](decisions-across-formats.md): Look up how decision requests and answers move between the decision formats.
 - [Anthropic Messages](anthropic-messages.md): Find where every field of the Anthropic Messages format goes in KPP.
 - [Messages providers](anthropic-messages-providers.md): See how the Messages codec adapts to each provider that speaks the format.
 - [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.
