@@ -1,0 +1,250 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "booleans": {
+    "adapted": [
+      "booleans"
+    ],
+    "body": {
+      "input": "The customer says the blender works, but the box arrived crushed.",
+      "model": "gpt-6-luna",
+      "questions": {
+        "packaging": {
+          "criteria": {
+            "false": "",
+            "unsure": "",
+            "yes": ""
+          },
+          "instructions": "Was the packaging damaged?",
+          "type": "choice"
+        },
+        "works": {
+          "criteria": {
+            "false": "The product is faulty.",
+            "true": "The product works."
+          },
+          "instructions": "Does the product work as described?",
+          "type": "choice"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "cache": {
+    "kind": "unsupported",
+    "message": "Gemini's Decisions API takes one input, not a conversation; send one user message.",
+    "param": "input",
+    "unsupported": "conversation input"
+  },
+  "choice": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my order.",
+      "model": "gpt-6-luna",
+      "questions": {
+        "department": {
+          "criteria": {
+            "billing": "Payments, invoices, and refunds.",
+            "other": "Requests outside these categories.",
+            "shipping": "Delivery and tracking.",
+            "technical": "Problems using the product."
+          },
+          "instructions": "Which department should handle this complaint?",
+          "type": "choice"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "conversation": {
+    "kind": "unsupported",
+    "message": "Gemini's Decisions API takes one input, not a conversation; send one user message.",
+    "param": "input",
+    "unsupported": "conversation input"
+  },
+  "image": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "text": "Inspect the product in this photo.",
+          "type": "text"
+        },
+        {
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mM4oaEBRAwQCgAhLgRh9uHCTQAAAABJRU5ErkJggg==",
+          "mime_type": "image/png",
+          "type": "image"
+        }
+      ],
+      "model": "gpt-6-luna",
+      "questions": {
+        "visible_damage": {
+          "instructions": "Does the product have visible damage, such as a crack, tear, or dent? Ignore shadows and damage to the packaging.",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "input-json": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "text": "Evaluate the ticket using the order evidence.",
+          "type": "text"
+        },
+        {
+          "text": "{\n            \"ticket\": {\n              \"body\": \"Please refund the duplicate charge.\"\n            },\n            \"order\": {\n              \"charges\": [\n                49,\n                49\n              ]\n            }\n          }",
+          "type": "text"
+        }
+      ],
+      "model": "gpt-6-luna",
+      "questions": {
+        "duplicate_charge": {
+          "instructions": "Does the ticket describe a duplicate charge supported by the order?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "instructions-images": {
+    "kind": "unsupported",
+    "message": "Gemini's Decisions API takes text only in question instructions; put the image in the input.",
+    "param": "questions[0].instructions[1]",
+    "unsupported": "image in question instructions"
+  },
+  "instructions-parts": {
+    "kind": "unsupported",
+    "message": "Gemini's Decisions API takes text only in question instructions; put the image in the input.",
+    "param": "questions[0].instructions[1]",
+    "unsupported": "image in question instructions"
+  },
+  "null-names": {
+    "adapted": [
+      "names"
+    ],
+    "body": {
+      "input": "My order is three weeks late and nobody answers my emails.",
+      "model": "gpt-6-luna",
+      "questions": {
+        "q0": {
+          "instructions": "Is the customer angry?",
+          "type": "noul"
+        },
+        "q1": {
+          "criteria": [
+            "Low",
+            "Medium",
+            "High"
+          ],
+          "instructions": "How urgent is a reply?",
+          "type": "score"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "predicate": {
+    "adapted": [],
+    "body": {
+      "input": "The package arrived with a broken screen.",
+      "model": "gpt-6-luna",
+      "questions": {
+        "damaged": {
+          "instructions": "Does the customer report a damaged item?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "refusal": {
+    "adapted": [],
+    "body": {
+      "input": "Describe how to pick the lock of my neighbour's door.",
+      "model": "gpt-6-luna",
+      "questions": {
+        "how_to": {
+          "instructions": "Would the answer explain the steps?",
+          "type": "noul"
+        },
+        "topic": {
+          "criteria": {
+            "home": "",
+            "other": "",
+            "security": ""
+          },
+          "instructions": "Which topic is this?",
+          "type": "choice"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "repeated-names": {
+    "adapted": [
+      "names"
+    ],
+    "body": {
+      "input": "Ship it to Berlin and add gift wrap.",
+      "model": "gpt-6-luna",
+      "questions": {
+        "q0": {
+          "instructions": "Does the message name a city?",
+          "type": "noul"
+        },
+        "q1": {
+          "instructions": "Does the message ask for gift wrap?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "score": {
+    "adapted": [
+      "levels"
+    ],
+    "body": {
+      "input": "Export fails in Safari but works in Chrome.",
+      "model": "gpt-6-luna",
+      "questions": {
+        "severity": {
+          "criteria": [
+            "Cosmetic: Appearance only; no lost functionality.",
+            "Workaround available: A task fails, but another way works.",
+            "Fully blocked: A task fails with no workaround."
+          ],
+          "instructions": "How severe is this issue?",
+          "type": "score"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "unknown-fields": {
+    "kind": "unsupported",
+    "message": "`input[0].blocks[0].x_note` comes from an OpenAI Decisions request and has no equivalent in Gemini Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": "input[0].blocks[0]",
+    "unsupported": "input[0].blocks[0].x_note"
+  },
+  "unknown-top-level-field": {
+    "kind": "unsupported",
+    "message": "`x_future_field` comes from an OpenAI Decisions request and has no equivalent in Gemini Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "x_future_field"
+  }
+}

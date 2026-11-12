@@ -1,0 +1,24 @@
+{
+  "answers": {
+    "mentions_launch": {
+      "type": "noul",
+      "noul": 0.97,
+      "confidence": 0.97
+    }
+  },
+  "usage": {
+    "total_input_tokens": 341,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 21
+      },
+      {
+        "modality": "audio",
+        "tokens": 320
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 341
+  }
+}

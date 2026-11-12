@@ -8,7 +8,7 @@ mod parts;
 mod profile;
 mod request;
 mod response;
-mod state;
+pub(crate) mod state;
 mod wire;
 
 #[cfg(test)]

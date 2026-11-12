@@ -269,6 +269,9 @@ pub struct EgressCtx {
     /// The questions a decision request was sent with, in question order, under the keys the
     /// encoder chose, so that keyed answers are read back by position. The encoder sets it.
     pub(crate) decision_questions: Vec<crate::decisions::SentQuestion>,
+    /// The model a decision request was sent to, for replies that don't name it, as Gemini's
+    /// Decisions API's. The encoder sets it.
+    pub(crate) decision_model: Option<String>,
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
     /// The prompt-cache breakpoints (`cache_control`) an encoded generation request
@@ -334,6 +337,7 @@ impl EgressCtx {
             system_one_profile: SystemOneProfile::TYPESAFE,
             decisions_profile: DecisionsProfile::OPENAI,
             decision_questions: Vec::new(),
+            decision_model: None,
             left_out: Vec::new(),
             adapted: Vec::new(),
             cache_breakpoints: None,

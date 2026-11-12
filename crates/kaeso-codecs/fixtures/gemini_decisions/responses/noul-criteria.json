@@ -1,0 +1,20 @@
+{
+  "answers": {
+    "is_defect": {
+      "type": "noul",
+      "noul": 0.03,
+      "confidence": 0.97
+    }
+  },
+  "usage": {
+    "total_input_tokens": 58,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 58
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 58
+  }
+}

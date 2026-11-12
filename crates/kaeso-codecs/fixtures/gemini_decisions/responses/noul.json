@@ -1,0 +1,20 @@
+{
+  "answers": {
+    "is_damaged": {
+      "type": "noul",
+      "noul": 0.99,
+      "confidence": 0.99
+    }
+  },
+  "usage": {
+    "total_input_tokens": 100,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 100
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 100
+  }
+}

@@ -99,6 +99,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `dashscope` | Die DashScope-API von QwenCloud: Bilder, Sprachausgabe, Transkription und Videosynthese der Wan-Modelle ([DashScope](dashscope.md)) |
 | `system_one` | Die System-One-API von TypeSafe (`/v1/systemone`) und die Anbieter, die eine Form davon sprechen ([System One](system-one.md)) |
 | `openai_decisions` | Die Decisions-API von OpenAI (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
+| `gemini_decisions` | Die Decisions-API von Gemini (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
 | `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-, Audio- und Video-Uploads und der Bildteile von System One |
 
 | Gemeinsames Modul | Aufgabe |
@@ -212,8 +213,8 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `Question.name` | semantisch | Optional und darf sich wiederholen, wie im Format von OpenAI. Bleibt, oder `q0`…`qN-1` für jede Frage, wo ein Format die Namen nicht annimmt; die Antwort wird nach Position zurückgelesen. |
 | `Question.instructions`, `.kind` | semantisch | |
 | `Predicate.when_true`, `.when_false`, `ChoiceOption.value`, `.description`, `Level.label`, `.description` | semantisch | Ein Format ohne Platz dafür schreibt sie, wie auf seiner Abbildungsseite dokumentiert, oder lehnt sie ab. |
-| `user` | Hinweis | `safety_identifier` von OpenAI; für System One weggelassen und in `kaeso-left-out` genannt. |
-| `cache` | Hinweis | `prompt_cache_key` und `prompt_cache_options` von OpenAI; für System One weggelassen und in `kaeso-left-out` genannt ([Entscheidungen](decisions-across-formats.md)). |
+| `user` | Hinweis | `safety_identifier` von OpenAI; für System One und Gemini weggelassen und in `kaeso-left-out` genannt. |
+| `cache` | Hinweis | `prompt_cache_key` und `prompt_cache_options` von OpenAI; für System One und Gemini weggelassen und in `kaeso-left-out` genannt ([Entscheidungen](decisions-across-formats.md)). |
 | `extras` | wie bei `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -246,9 +247,10 @@ Schreiben Sie Fehlermeldungen für die Person, die Kaeso aufgerufen hat: Nennen 
 | `crates/kaeso-kpp/tests/types.rs` | Die KPP-Typen allein: stabile Namen der Fehlerarten und Blöcke, `validate()` und `required_capabilities()` und die JSON-Form von Entscheidungsanfragen und Antworten. |
 | Fixture-Round-Trips (die `tests`-Module jedes Dialekts) | `decode → KPP → encode` reproduziert jede [Fixture](fixtures.md) eines Dialekts als gleichen JSON-Wert (bei Streams als gleiche Event-Folge), bei Streams unter vielen Chunk-Aufteilungen. Fixtures, die abgelehnt werden müssen, scheitern mit dem genannten `Unsupported`-Feature. |
 | `crates/kaeso-codecs/tests/cross_matrix.rs` | Für jede Generierungs-Fixture von Dialekt A und jeden anderen Dialekt B: Anfragen durchlaufen `decode_A → check_B → encode_B` und müssen sich mit dem Decoder von B wieder dekodieren lassen, ohne dass sich die Unterhaltung ändert; Antworten und Streams durchlaufen `decode_A → encode_B → decode_B` und müssen Text, Verweigerungen und Tool-Aufrufe behalten, auch zurück in A. Anfragen und Antworten zur Token-Zählung wechseln zwischen Anthropic und Responses. Die Ergebnisse sind `insta`-Snapshots. |
+| `crates/kaeso-codecs/tests/decision_matrix.rs` | Dasselbe für die Entscheidungsformate: Für jede Entscheidungs-Fixture von Format A und jedes andere Format B durchlaufen Anfragen `decode_A → check_B → encode_B → decode_B` und behalten Fragen, Optionen und Eingabe; Antworten durchlaufen `decode_A → encode_B → decode_B` und behalten Antworten, Wahrscheinlichkeiten und Verweigerungen, oder sie werden mit Namen abgelehnt. Die Ergebnisse sind `insta`-Snapshots. |
 | `crates/kaeso-codecs/tests/dispatch.rs` | `dispatch` dekodiert Anbieterfehler und kodiert Fehler mit einem Status in jedem Dialekt, der Embeddings-Codec lehnt Generierungsantworten ab, und er behält einen Base64-Vektor, wie er empfangen wurde, wenn keine Anfrage eine andere Kodierung verlangt. |
 | `crates/kaeso-codecs/tests/number_spelling.rs` | `temperature: 1` kommt in Anthropic-, Chat- und Responses-Anfragen als `1` zurück und `1.0` als `1.0`, ein geänderter Wert wird als neuer Wert geschrieben, ein anderer Dialekt bekommt die eigene Schreibweise des Ziels, und Antworten von Responses behalten die Schreibweise der Zahlen, die sie wiedergeben. |
-| `crates/kaeso-codecs/tests/kpp_proptest.rs` | Zufällige gültige KPP-Anfragen und -Antworten überstehen Kodieren und Dekodieren für jeden Generierungsdialekt, auf der Teilmenge, die jeder Dialekt unterstützt. |
+| `crates/kaeso-codecs/tests/kpp_proptest.rs` | Zufällige gültige KPP-Anfragen und -Antworten überstehen Kodieren und Dekodieren für jeden Generierungsdialekt, auf der Teilmenge, die jeder Dialekt unterstützt. Zufällige Entscheidungsanfragen und -antworten tun dasselbe für jedes Entscheidungsformat; Wahrscheinlichkeiten werden nie neu normiert, und Antworten behalten ihre Reihenfolge. |
 | `crates/kaeso-codecs/tests/keepalive.rs` | Alles, was eine App nicht sehen kann, bringt trotzdem regelmäßig Keepalive-Frames auf die Leitung, und für den Parser der App sind die Frames unsichtbar. |
 | `crates/kaeso-codecs/tests/reasoning_carry.rs` | Reasoning geht an eine App eines anderen Dialekts und kommt in der nächsten Runde Byte für Byte zurück, über Apps für Responses, Anthropic und Chat. |
 | `crates/kaeso-codecs/tests/responses_on_anthropic.rs` | Apps für OpenAI Responses auf Anthropic-Modellen und Anthropic-Apps auf OpenAI-Modellen: Reasoning-Anfragen, Thinking-Streams in der Event-Reihenfolge von OpenAI und Tool-Schleifen. |
@@ -265,7 +267,7 @@ OpenAI Responses hält eine abweichende Schreibweise als Form-Override fest, der
 
 `testing::sse_diff` vergleicht Streams Item für Item. Es vergleicht den Event-Namen, dann die Daten als JSON oder als Text, wenn sie kein JSON sind, dann die Felder `id`, `retry` und die unbekannten Felder in ihrer Reihenfolge. `ComparableItem::Event.data` ist `None` für einen Frame ohne `data:`-Zeile, und Kommentare werden exakt verglichen.
 
-Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den Snapshot-Diff: Führen Sie `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` aus und lesen Sie die geänderten `.snap`-Dateien, bevor Sie sie committen.
+Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den Snapshot-Diff: Führen Sie `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` (oder `--test decision_matrix`) aus und lesen Sie die geänderten `.snap`-Dateien, bevor Sie sie committen.
 
 ## Nächste Schritte
 
@@ -298,5 +300,6 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [DashScope](dashscope.md): Sehen Sie, wie Bilder, Sprache, Transkriptionen und Videojobs auf die DashScope-API von QwenCloud abgebildet werden.
 - [System One](system-one.md): Finden Sie, wohin jedes Feld des Entscheidungsformats von TypeSafe in KPP gehört und wie jeder Anbieter es annimmt.
 - [OpenAI Decisions](openai-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von OpenAI in KPP gehört.
+- [Gemini Decisions](gemini-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von Gemini in KPP gehört.
 - [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
 - [Fixture-Konventionen](fixture-conventions.md): Schlagen Sie die Regeln nach, denen jede konstruierte Fixture folgt.

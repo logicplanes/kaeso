@@ -1,0 +1,10 @@
+{
+  "model": "gemini-decision-1",
+  "input": "A message the input safety filters block.",
+  "questions": {
+    "is_spam": {
+      "type": "noul",
+      "instructions": "Is this message spam?"
+    }
+  }
+}

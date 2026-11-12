@@ -99,6 +99,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `dashscope` | QwenCloud's DashScope API: images, speech, transcription and Wan video synthesis ([DashScope](dashscope.md)) |
 | `system_one` | TypeSafe's System One API (`/v1/systemone`) and the providers that speak a form of it ([System One](system-one.md)) |
 | `openai_decisions` | OpenAI's Decisions API (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
+| `gemini_decisions` | Gemini's Decisions API (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
 | `multipart` | The bounded `multipart/form-data` reader and writer of image, audio and video uploads, and of System One's image parts |
 
 | Shared module | Job |
@@ -212,8 +213,8 @@ Every KPP field is either semantic or a hint:
 | `Question.name` | semantic | Optional and may repeat, as in OpenAI's format. Kept, or `q0`…`qN-1` for every question where a format can't take the names; the reply maps back by position. |
 | `Question.instructions`, `.kind` | semantic | |
 | `Predicate.when_true`, `.when_false`, `ChoiceOption.value`, `.description`, `Level.label`, `.description` | semantic | A format without a place for them writes them as documented on its mapping page, or refuses them. |
-| `user` | hint | OpenAI's `safety_identifier`; left out for System One, named in `kaeso-left-out`. |
-| `cache` | hint | OpenAI's `prompt_cache_key` and `prompt_cache_options`; left out for System One, named in `kaeso-left-out` ([decisions](decisions-across-formats.md)). |
+| `user` | hint | OpenAI's `safety_identifier`; left out for System One and Gemini, named in `kaeso-left-out`. |
+| `cache` | hint | OpenAI's `prompt_cache_key` and `prompt_cache_options`; left out for System One and Gemini, named in `kaeso-left-out` ([decisions](decisions-across-formats.md)). |
 | `extras` | as for `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -246,9 +247,10 @@ Write error messages for the person who called Kaeso: name the field the target 
 | `crates/kaeso-kpp/tests/types.rs` | The KPP types alone: stable names of error kinds and blocks, `validate()` and `required_capabilities()`, and the JSON form of decision requests and answers. |
 | Fixture round trips (each dialect's `tests` modules) | `decode → KPP → encode` reproduces every [fixture](fixtures.md) of a dialect as an equal JSON value (streams: an equal event sequence), under many chunkings for streams. Fixtures that must be refused fail with the named `Unsupported` feature. |
 | `crates/kaeso-codecs/tests/cross_matrix.rs` | For every generation fixture of dialect A and every other dialect B: requests go through `decode_A → check_B → encode_B` and must decode again with B's decoder, keeping the conversation; replies and streams go through `decode_A → encode_B → decode_B` and must keep the text, refusals and tool calls, also back in A. Token-count requests and replies cross between Anthropic and Responses. The outcomes are `insta` snapshots. |
+| `crates/kaeso-codecs/tests/decision_matrix.rs` | The same for the decision formats: for every decision fixture of format A and each other format B, requests go through `decode_A → check_B → encode_B → decode_B` and keep their questions, options and input; replies go through `decode_A → encode_B → decode_B` and keep their answers, probabilities and refusals, or are refused by name. The outcomes are `insta` snapshots. |
 | `crates/kaeso-codecs/tests/dispatch.rs` | `dispatch` decodes provider errors and encodes errors with a status in every dialect; the embeddings codec refuses generation replies and keeps a base64 vector as received when no request asks for another encoding. |
 | `crates/kaeso-codecs/tests/number_spelling.rs` | `temperature: 1` comes back as `1` and `1.0` as `1.0` in Anthropic, Chat and Responses requests; a changed value is written as the new value; another dialect gets the target's own spelling; Responses replies keep the spelling of the numbers they echo. |
-| `crates/kaeso-codecs/tests/kpp_proptest.rs` | Random valid KPP requests and replies survive encode and decode for every generation dialect, on the subset every dialect supports. |
+| `crates/kaeso-codecs/tests/kpp_proptest.rs` | Random valid KPP requests and replies survive encode and decode for every generation dialect, on the subset every dialect supports. Random decision requests and replies do the same for every decision format, with probabilities never renormalised and answers in order. |
 | `crates/kaeso-codecs/tests/keepalive.rs` | Whatever an app can't see still puts keepalive frames on the wire regularly, and the frames are invisible to the app's parser. |
 | `crates/kaeso-codecs/tests/reasoning_carry.rs` | Reasoning goes to an app of another dialect and comes back on the next turn byte for byte, through Responses, Anthropic and Chat apps. |
 | `crates/kaeso-codecs/tests/responses_on_anthropic.rs` | OpenAI Responses apps on Anthropic models and Anthropic apps on OpenAI models: reasoning requests, thinking streams in OpenAI's event order, and tool loops. |
@@ -265,7 +267,7 @@ OpenAI Responses records a different spelling as a form override, which applies 
 
 `testing::sse_diff` compares streams item by item. It compares the event name, then the data as JSON, or as text when it isn't JSON, then the `id`, `retry` and unknown fields in order. `ComparableItem::Event.data` is `None` for a frame without a `data:` line, and comments compare exactly.
 
-When a change alters cross-dialect output, review the snapshot diff: run `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`, then read the changed `.snap` files before committing them.
+When a change alters cross-dialect output, review the snapshot diff: run `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix` (or `--test decision_matrix`), then read the changed `.snap` files before committing them.
 
 ## Next steps
 
@@ -298,5 +300,6 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [DashScope](dashscope.md): See how images, speech, transcriptions and video jobs map to QwenCloud's DashScope API.
 - [System One](system-one.md): Find where every field of TypeSafe's decision format goes in KPP, and how each provider takes it.
 - [OpenAI Decisions](openai-decisions.md): Find where every field of OpenAI's Decisions API goes in KPP.
+- [Gemini Decisions](gemini-decisions.md): Find where every field of Gemini's Decisions API goes in KPP.
 - [Fixtures and recordings](fixtures.md): Add the real payloads the codecs are tested against, and record new ones.
 - [Fixture conventions](fixture-conventions.md): Look up the rules every constructed fixture follows.

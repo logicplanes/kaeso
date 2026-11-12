@@ -419,9 +419,13 @@ impl PartWriter<'_> {
             image_url: self.image_url(b, param)?,
             prompt_cache_breakpoint: breakpoint_for(b.cache.as_ref())?,
         };
+        let mut extra = extra_for(&b.extras, DIALECT);
+        if let Some(detail) = crate::gemini_decisions::detail_of(&b.extras) {
+            extra.insert("detail".to_owned(), detail);
+        }
         ser(&Ext::with(
             w,
-            extra_for(&b.extras, DIALECT),
+            extra,
             verbatim_from_form(&b.extras, DIALECT, ""),
         ))
     }
@@ -457,7 +461,7 @@ impl PartWriter<'_> {
             unsupported(
                 &format!("{kind} part"),
                 format!(
-                    "{} takes {} in {}, not a {kind} part; remove it.",
+                    "{} takes {} in {}, not {kind} parts; remove it.",
                     self.name,
                     place.takes(),
                     place.what()

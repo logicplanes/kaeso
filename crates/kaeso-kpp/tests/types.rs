@@ -276,6 +276,20 @@ mod decisions {
     }
 
     #[test]
+    fn gemini_decisions_is_a_dialect() {
+        assert_eq!(DialectId::GeminiDecisions.as_str(), "gemini_decisions");
+        assert_eq!(
+            DialectId::GeminiDecisions.display_name(),
+            "Gemini Decisions"
+        );
+        assert_eq!(
+            "gemini_decisions".parse::<DialectId>().unwrap(),
+            DialectId::GeminiDecisions
+        );
+        assert!(DialectId::ALL.contains(&DialectId::GeminiDecisions));
+    }
+
+    #[test]
     fn a_decision_request_is_its_own_kind_and_never_streams() {
         let req = Request::Decide(
             DecideRequest::new("jev-latest", DecisionInput::Text("Hi".into()))

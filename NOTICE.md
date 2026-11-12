@@ -90,6 +90,7 @@ KPP implements the OpenAI and Anthropic wire formats from the vendors' public do
 - the Anthropic API documentation, https://docs.anthropic.com;
 - the Gemini API documentation and its discovery document, https://ai.google.dev/api;
 - OpenAI's Decisions API reference and guide, https://developers.openai.com/api/reference/resources/decisions/methods/create;
+- Gemini's Decisions API guide and reference, https://aistudio.google.com/docs/decisions-api and https://ai.google.dev/api/decisions;
 - TypeSafe's System One OpenAPI document and documentation, https://api.typesafe.ai/openapi.json and https://docs.typesafe.ai, and the decision API documentation of Perplexity, https://docs.perplexity.ai, OpenRouter, https://openrouter.ai/docs, and Baseten, https://docs.baseten.co;
 - payload shapes cross-checked against the official SDKs, https://github.com/openai/openai-python (Apache-2.0), https://github.com/anthropics/anthropic-sdk-python (MIT), https://github.com/googleapis/python-genai (Apache-2.0) and TypeSafe's `typesafe-sdk` for Python (MIT).
 

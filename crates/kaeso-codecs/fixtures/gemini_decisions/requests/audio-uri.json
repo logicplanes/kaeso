@@ -1,0 +1,16 @@
+{
+  "model": "gemini-decision-1",
+  "input": [
+    {
+      "type": "audio",
+      "uri": "https://storage.googleapis.com/generativeai-downloads/data/Apollo-11_Day-01-Highlights-10s.mp3",
+      "mime_type": "audio/mp3"
+    }
+  ],
+  "questions": {
+    "mentions_launch": {
+      "type": "noul",
+      "instructions": "Is the speaker talking about spaceflight or a rocket launch?"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "model": "gemini-decision-1",
+  "input": "The blue mug I ordered on Monday arrived cracked on Wednesday.",
+  "questions": {
+    "is_damaged": {
+      "type": "noul",
+      "instructions": "Did the item arrive damaged?"
+    }
+  }
+}

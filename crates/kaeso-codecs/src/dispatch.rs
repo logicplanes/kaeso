@@ -7,6 +7,7 @@ use crate::anthropic_messages::AnthropicMessages;
 use crate::dashscope::DashScope;
 use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
 use crate::gemini::{Gemini, GeminiAction};
+use crate::gemini_decisions::GeminiDecisions;
 use crate::gemini_embeddings::GeminiEmbeddings;
 use crate::gemini_interactions::GeminiInteractions;
 use crate::limits::{Checked, RequestBody, upload_of};
@@ -56,6 +57,7 @@ macro_rules! dispatch {
             DialectId::ZaiVideos => Ok(ZaiVideos::$f($($arg),*)),
             DialectId::SystemOne => Ok(SystemOne::$f($($arg),*)),
             DialectId::OpenAiDecisions => Ok(OpenAiDecisions::$f($($arg),*)),
+            DialectId::GeminiDecisions => Ok(GeminiDecisions::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -88,7 +90,7 @@ pub fn decode_checked_request<B: RequestBody>(
 ) -> Result<Request, KppError> {
     if !matches!(
         checked.dialect(),
-        DialectId::SystemOne | DialectId::OpenAiDecisions
+        DialectId::SystemOne | DialectId::OpenAiDecisions | DialectId::GeminiDecisions
     ) {
         crate::decisions::refuse_kind(kind, checked.dialect())?;
     }
@@ -123,6 +125,7 @@ pub fn decode_checked_request<B: RequestBody>(
         ),
         DialectId::SystemOne => SystemOne::decode_checked(kind, upload, headers),
         DialectId::OpenAiDecisions => OpenAiDecisions::decode_checked(kind, body, headers),
+        DialectId::GeminiDecisions => GeminiDecisions::decode_checked(kind, body, headers),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }

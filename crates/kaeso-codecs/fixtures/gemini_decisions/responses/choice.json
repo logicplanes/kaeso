@@ -1,0 +1,26 @@
+{
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "billing",
+      "probabilities": {
+        "billing": 0.99,
+        "shipping": 0.004,
+        "other": 0.003,
+        "technical": 0.002
+      },
+      "confidence": 0.99
+    }
+  },
+  "usage": {
+    "total_input_tokens": 61,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 61
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 61
+  }
+}

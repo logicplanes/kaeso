@@ -1,0 +1,330 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "assets": {
+    "request_refused": "image reference"
+  },
+  "assets-criteria": {
+    "request_refused": "image reference"
+  },
+  "box": {
+    "request_refused": "box question"
+  },
+  "choice": {
+    "answers": {
+      "tone": {
+        "choice": "calm",
+        "confidence": 0.8,
+        "probabilities": {
+          "angry": 0.15,
+          "calm": 0.8,
+          "excited": 0.05
+        },
+        "type": "choice"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 120
+        }
+      ],
+      "total_input_tokens": 120,
+      "total_output_tokens": 12,
+      "total_tokens": 132
+    }
+  },
+  "instructions-forms": {
+    "request_refused": "options"
+  },
+  "long-context": {
+    "answers": {
+      "renewal": {
+        "confidence": 0.88,
+        "noul": 0.12,
+        "type": "noul"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 70
+        }
+      ],
+      "total_input_tokens": 70,
+      "total_output_tokens": 4,
+      "total_tokens": 74
+    }
+  },
+  "noul": {
+    "answers": {
+      "billing": {
+        "confidence": 0.98,
+        "noul": 0.98,
+        "type": "noul"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 120
+        }
+      ],
+      "total_input_tokens": 120,
+      "total_output_tokens": 12,
+      "total_tokens": 132
+    }
+  },
+  "noul-criteria": {
+    "answers": {
+      "no_criteria": {
+        "confidence": 0.99,
+        "noul": 0.99,
+        "type": "noul"
+      },
+      "only_true": {
+        "confidence": 0.62,
+        "noul": 0.62,
+        "type": "noul"
+      },
+      "spam": {
+        "confidence": 0.97,
+        "noul": 0.97,
+        "type": "noul"
+      },
+      "statement": {
+        "confidence": 0.95,
+        "noul": 0.95,
+        "type": "noul"
+      },
+      "structured": {
+        "confidence": 0.93,
+        "noul": 0.93,
+        "type": "noul"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 301
+        }
+      ],
+      "total_input_tokens": 301,
+      "total_output_tokens": 15,
+      "total_tokens": 316
+    }
+  },
+  "providers/baseten/route": {
+    "answers": {
+      "refund": {
+        "confidence": 0.96,
+        "noul": 0.96,
+        "type": "noul"
+      },
+      "route": {
+        "choice": "billing",
+        "confidence": 0.97,
+        "probabilities": {
+          "billing": 0.97,
+          "technical_support": 0.03
+        },
+        "type": "choice"
+      },
+      "urgency": {
+        "confidence": 0.55,
+        "legend": {
+          "0": "Routine request",
+          "1": "Needs attention today",
+          "2": "Immediate emergency"
+        },
+        "probabilities": {
+          "0": 0.55,
+          "1": 0.4,
+          "2": 0.05
+        },
+        "score": 0.5,
+        "type": "score"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 212
+        }
+      ],
+      "total_input_tokens": 212,
+      "total_output_tokens": 0,
+      "total_tokens": 212
+    }
+  },
+  "providers/baseten/screenshot": {
+    "request_refused": "service_tier"
+  },
+  "providers/openrouter/listing-box": {
+    "request_refused": "box question"
+  },
+  "providers/openrouter/ticket": {
+    "answers": {
+      "is_bug": {
+        "confidence": 0.96,
+        "noul": 0.96,
+        "type": "noul"
+      },
+      "team": {
+        "choice": "payments",
+        "confidence": 0.84,
+        "probabilities": {
+          "account": 0.0,
+          "frontend": 0.16,
+          "payments": 0.84
+        },
+        "type": "choice"
+      },
+      "urgency": {
+        "confidence": 0.99,
+        "legend": {
+          "0": "Can wait for the next release",
+          "1": "Should be fixed this week",
+          "2": "Blocking revenue right now"
+        },
+        "probabilities": {
+          "0": 0.0,
+          "1": 0.01,
+          "2": 0.99
+        },
+        "score": 1.99,
+        "type": "score"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 476
+        }
+      ],
+      "total_input_tokens": 476,
+      "total_output_tokens": 70,
+      "total_tokens": 546
+    }
+  },
+  "providers/perplexity/review": {
+    "answers": {
+      "defect": {
+        "confidence": 0.9424522889347015,
+        "noul": 0.9424522889347015,
+        "type": "noul"
+      },
+      "sentiment": {
+        "choice": "mixed",
+        "confidence": 0.9503497962668123,
+        "probabilities": {
+          "mixed": 0.9503497962668123,
+          "negative": 0.02900031995787183,
+          "positive": 0.020649883775315993
+        },
+        "type": "choice"
+      },
+      "severity": {
+        "confidence": 0.7922925868920411,
+        "legend": {
+          "0": "Cosmetic",
+          "1": "Inconvenient",
+          "2": "Product unusable"
+        },
+        "probabilities": {
+          "0": 0.008423954913615923,
+          "1": 0.199283458194343,
+          "2": 0.7922925868920411
+        },
+        "score": 1.7838686319784252,
+        "type": "score"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 367
+        }
+      ],
+      "total_input_tokens": 367,
+      "total_output_tokens": 3,
+      "total_tokens": 370
+    }
+  },
+  "score": {
+    "answers": {
+      "urgency": {
+        "confidence": 0.8,
+        "legend": {
+          "0": "Can wait",
+          "1": "Needs attention this week",
+          "2": "Needs attention today"
+        },
+        "probabilities": {
+          "0": 0.1,
+          "1": 0.1,
+          "2": 0.8
+        },
+        "score": 1.7,
+        "type": "score"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 120
+        }
+      ],
+      "total_input_tokens": 120,
+      "total_output_tokens": 12,
+      "total_tokens": 132
+    }
+  },
+  "structured-state": {
+    "answers": {
+      "refund": {
+        "confidence": 0.69,
+        "noul": 0.31,
+        "type": "noul"
+      },
+      "team": {
+        "choice": "billing",
+        "confidence": 0.86,
+        "probabilities": {
+          "accounts": 0.09,
+          "billing": 0.86,
+          "escalate": 0.02,
+          "other": 0.03
+        },
+        "type": "choice"
+      }
+    },
+    "usage": {
+      "input_tokens_by_modality": [
+        {
+          "modality": "text",
+          "tokens": 214
+        }
+      ],
+      "total_input_tokens": 214,
+      "total_output_tokens": 8,
+      "total_tokens": 222
+    }
+  },
+  "unknown-fields": {
+    "request_refused": "questions[0].x_weight"
+  },
+  "unknown-top-level-field": {
+    "request_refused": "x_future_field"
+  }
+}

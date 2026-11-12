@@ -26,6 +26,7 @@ order: 10
 | `openai_videos/` | OpenAI 的 Videos API；上传为 `requests/<name>.multipart`，列表和删除在 `lists/` 中，生成的视频文件在 `content/` 中 |
 | `system_one/` | TypeSafe 的 System One API（`/v1/systemone`）；需要请求头的请求带有 `<name>.headers.json`，每个回复都有同名的请求，`requests/multipart/` 存放上传的 JSON 部分 |
 | `openai_decisions/` | OpenAI 的 Decisions API（`/v1/decisions`）；每个回复都有同名的请求 |
+| `gemini_decisions/` | Gemini 的 Decisions API（`/v1beta/decisions`）；每个回复都有同名的请求 |
 | `xai_videos/`、`minimax_videos/`、`zai_videos/`、`openrouter_videos/`、`veo/`、`gemini_interactions/`、`dashscope/` | 各服务商的视频 API；`responses/` 保存启动任务的回复，`polls/` 保存查询任务时服务商的回答，`minimax_videos/files/` 保存一个变为链接的文件 ID；`dashscope/` 还在 `requests/`、`responses/` 和 `streams/` 下的独立文件夹中保存图片、语音和转写 |
 
 每个方言文件夹都有 `requests/`、`responses/` 和 `errors/`，端点支持流式时还有 `streams/`。

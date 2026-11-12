@@ -1,0 +1,13 @@
+{
+  "model": "gemini-decision-1",
+  "input": "Is the parcel at the door?",
+  "questions": {
+    "at_door": {
+      "type": "noul",
+      "instructions": "Is the parcel at the door?"
+    }
+  },
+  "x_future_field": {
+    "enabled": true
+  }
+}

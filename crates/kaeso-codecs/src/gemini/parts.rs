@@ -135,7 +135,7 @@ fn source_block(source: Source, media: Media, extras: Extras) -> Block {
     }
 }
 
-fn file_source(origin: &Origin, uri: &str) -> Source {
+pub(crate) fn file_source(origin: &Origin, uri: &str) -> Source {
     if uri.starts_with("files/") || uri.starts_with(FILES_URL) {
         Source::file_id(origin.clone(), uri)
     } else {
@@ -857,7 +857,7 @@ fn media_fields(
 /// The MIME type of a URL's file extension, for the types Gemini reads from `fileData`
 /// ("File input methods", external URLs: "Always provide the correct MIME type").
 /// Audio and video follow the audio and video understanding guides' "Supported formats".
-fn mime_of_url(url: &str, media: Media) -> Option<&'static str> {
+pub(crate) fn mime_of_url(url: &str, media: Media) -> Option<&'static str> {
     let path = url.split(['?', '#']).next().unwrap_or(url);
     let name = path.rsplit('/').next().unwrap_or(path);
     let ext = name.rsplit_once('.')?.1.to_ascii_lowercase();

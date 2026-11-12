@@ -1,0 +1,15 @@
+{
+  "model": "gemini-decision-1",
+  "input": "Export fails in Safari but works in Chrome.",
+  "questions": {
+    "severity": {
+      "type": "score",
+      "instructions": "How severe is this issue for the user?",
+      "criteria": [
+        "Cosmetic: appearance only, no lost functionality.",
+        "Workaround available: a task fails, but another way works.",
+        "Fully blocked: a task fails with no workaround."
+      ]
+    }
+  }
+}

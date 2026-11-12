@@ -37,6 +37,9 @@ const DECISION: &str = r#"{"model":"m","state":"s","questions":{"a":{"type":"nou
 // The questions an OpenAI Decisions reply is read against: one of each type, with a boolean value.
 const OPENAI_DECISION: &str = r#"{"model":"m","input":"s","questions":[{"type":"predicate","instructions":"?"},{"type":"choice","instructions":"?","choices":[{"value":"x"},{"value":true}]},{"type":"score","instructions":"?","levels":[{"label":"0"},{"label":"1"},{"label":"2"}]}]}"#;
 
+// The questions a Gemini Decisions reply is read against: one of each type.
+const GEMINI_DECISION: &str = r#"{"model":"m","input":"s","questions":{"a":{"type":"noul","instructions":"?"},"b":{"type":"choice","instructions":"?","criteria":{"x":"","y":""}},"c":{"type":"score","instructions":"?","criteria":["0","1","2"]}}}"#;
+
 const DECISIONS_PROFILES: [DecisionsProfile; 2] = [
     DecisionsProfile::OPENAI,
     DecisionsProfile::GENERIC.with_instruction_images(false),
@@ -116,6 +119,9 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
     }
     if dialect == DialectId::OpenAiDecisions {
         openai_decisions(data, &headers);
+    }
+    if dialect == DialectId::GeminiDecisions {
+        gemini_decisions(data, &headers);
     }
     if dialect == DialectId::ElevenLabs {
         for path in ELEVENLABS_PATHS {
@@ -240,6 +246,38 @@ fn openai_decisions(data: &[u8], headers: &HeaderList) {
             .unwrap_or_else(|e| panic!("a written OpenAI Decisions reply reads again: {e:?}"));
         assert_eq!(again.kind(), reply.kind());
         response(&reply);
+    }
+}
+
+fn gemini_decisions(data: &[u8], headers: &HeaderList) {
+    let dialect = DialectId::GeminiDecisions;
+    let Ok(asked) = dispatch::decode_request(
+        dialect,
+        RequestKind::Decide,
+        GEMINI_DECISION.as_bytes(),
+        headers,
+    ) else {
+        return;
+    };
+    let mut ctx = EgressCtx::new(&asked);
+    if dispatch::encode_request(dialect, &asked, &mut ctx).is_err() {
+        return;
+    }
+    match dispatch::decode_response(dialect, 200, headers, data, &ctx) {
+        Ok(reply) => {
+            let written =
+                dispatch::encode_response(dialect, &reply, &EncodeCtx::for_request(asked.clone()))
+                    .unwrap_or_else(|e| panic!("a Gemini Decisions reply writes: {e:?}"));
+            let again = dispatch::decode_response(dialect, 200, headers, &written, &ctx)
+                .unwrap_or_else(|e| panic!("a written Gemini Decisions reply reads again: {e:?}"));
+            assert_eq!(again.kind(), reply.kind());
+            response(&reply);
+        }
+        Err(e) => {
+            for target in DialectId::ALL {
+                let _ = dispatch::encode_error(target, &e);
+            }
+        }
     }
 }
 

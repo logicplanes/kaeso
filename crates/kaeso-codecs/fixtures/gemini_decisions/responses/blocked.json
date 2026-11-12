@@ -1,0 +1,18 @@
+{
+  "answers": {},
+  "usage": {
+    "total_input_tokens": 12,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 12
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 12
+  },
+  "prompt_feedback": {
+    "block_reason": "safety",
+    "block_reason_message": "The input was blocked by the safety filters."
+  }
+}

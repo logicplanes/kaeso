@@ -92,6 +92,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `model_id` | 仅助手消息，来自 `openai_chat` | 写出某条重放的助手消息的模型，由 Grok CLI 记在它自己的历史里。属于模型从不读取的簿记信息；记录下来的请求正文会保留它。它是 `cross::CHAT_ASSISTANT_BOOKKEEPING` 中唯一的键，Chat 提供商只有在 `with_message_bookkeeping()` 下才会收到（[Chat 提供商](openai-chat-providers.md)）；出现在其他消息上时，发往其他格式的请求会被拒绝；Chat 提供商按原样收到它。 | Grok CLI 在每条重放的助手消息上都会发送；`openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request，来自 `openai_responses` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
 | `detail`（位于 `input_image` 上；Responses 把 `auto` 作为形式标记） | image，来自 `openai_responses`、`openai_decisions` | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
+| `resolution` | image、video，来自 `gemini_decisions` | 分辨率提示，同 `detail`；`low` 和 `high` 以 `detail` 跨格式到达 OpenAI Decisions（[决策](decisions-across-formats.md)）。 | `gemini_decisions/requests/image.json` |
 | `prompt_cache_key`、`prompt_cache_options`、`safety_identifier` | request，来自 `openai_decisions` | 提示，类型化为 `DecideRequest.cache` 和 `user`（[决策](decisions-across-formats.md)）；这些条目涵盖 KPP 不做类型化的形式。 | `openai_decisions/requests/cache.json` |
 | `phase`（位于助手消息上：`commentary`、`final_answer`） | message，来自 `openai_responses` | 把助手消息标记为前言或最终回答，便于 OpenAI 在重放该轮时区分它们。两种情况下文本相同，其他格式没有这种标记。 | Codex 把 GPT-6 的消息连同它一起发回；切换到其他模型的会话会带上它们；`openai_responses/requests/codex-model-switch.json` |
 

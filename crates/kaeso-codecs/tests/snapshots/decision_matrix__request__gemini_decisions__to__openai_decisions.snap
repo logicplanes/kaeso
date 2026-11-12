@@ -1,0 +1,331 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "audio-uri": {
+    "kind": "unsupported",
+    "message": "The provider takes text, images and JSON in a user message, not audio parts; remove it.",
+    "param": "input[0].content[0]",
+    "unsupported": "audio part"
+  },
+  "blocked": {
+    "adapted": [],
+    "body": {
+      "input": "A message the input safety filters block.",
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "instructions": "Is this message spam?",
+          "name": "is_spam",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "choice": {
+    "adapted": [],
+    "body": {
+      "input": "I was charged twice for my order.",
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "choices": [
+            {
+              "description": "Payments, invoices, and refunds.",
+              "value": "billing"
+            },
+            {
+              "description": "Problems using the product.",
+              "value": "technical"
+            },
+            {
+              "description": "Delivery and tracking.",
+              "value": "shipping"
+            },
+            {
+              "description": "Anything outside these categories.",
+              "value": "other"
+            }
+          ],
+          "instructions": "Which department should handle this request?",
+          "name": "department",
+          "type": "choice"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "document": {
+    "kind": "unsupported",
+    "message": "The provider takes text, images and JSON in a user message, not document parts; remove it.",
+    "param": "input[0].content[0]",
+    "unsupported": "document part"
+  },
+  "files-api": {
+    "kind": "unsupported",
+    "message": "`file id` comes from a Gemini Decisions request and has no equivalent in OpenAI Decisions. Provider file ids (here `https://generativelanguage.googleapis.com/v1beta/files/a1b2c3d4e5`) only work with the provider that issued them. Send the file inline (base64 or URL) instead.",
+    "param": "input[0].blocks[0]",
+    "unsupported": "file id"
+  },
+  "image": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "Customer photo for return request #8821.",
+              "type": "input_text"
+            },
+            {
+              "detail": "low",
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mM4oaEBRAwQCgAhLgRh9uHCTQAAAABJRU5ErkJggg==",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "instructions": "Does the photo show physical damage to the device? Ignore the packaging.",
+          "name": "visible_damage",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "input-object": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "Please cancel my subscription before the next billing date.",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "instructions": "Does the customer want to cancel?",
+          "name": "wants_cancel",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "instructions-blocks": {
+    "adapted": [],
+    "body": {
+      "input": "Order 4411 shipped on May 2 and was delivered on May 9.",
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "instructions": [
+            {
+              "text": "Was the order delivered more than five days after it shipped?",
+              "type": "input_text"
+            }
+          ],
+          "name": "late",
+          "type": "predicate"
+        },
+        {
+          "choices": [
+            {
+              "description": "",
+              "value": "carrier"
+            },
+            {
+              "description": "",
+              "value": "warehouse"
+            },
+            {
+              "description": "",
+              "value": "customer"
+            }
+          ],
+          "instructions": [
+            {
+              "text": "Who is most likely responsible for the delay? ",
+              "type": "input_text"
+            },
+            {
+              "text": "Answer from the dates alone.",
+              "type": "input_text"
+            }
+          ],
+          "name": "carrier_fault",
+          "type": "choice"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "multiple-questions": {
+    "adapted": [],
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "{\"order\": {\"id\": \"8821\", \"item\": \"headphones\", \"price_usd\": 240}, \"tier\": \"Gold\"}\n",
+              "type": "input_text"
+            },
+            {
+              "text": "{\"message\": \"Audio cuts out on the left earcup. Fix it today or I cancel my membership.\"}",
+              "type": "input_text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "instructions": "Does `message` describe a hardware defect?",
+          "name": "is_defect",
+          "type": "predicate"
+        },
+        {
+          "choices": [
+            {
+              "description": "Refund without return. Low value or clear fault.",
+              "value": "instant_refund"
+            },
+            {
+              "description": "Ship a replacement. Customer returns the original.",
+              "value": "replacement_shipment"
+            },
+            {
+              "description": "The issue may be fixable by the customer.",
+              "value": "troubleshooting_flow"
+            },
+            {
+              "description": "",
+              "value": "human_escalation"
+            }
+          ],
+          "instructions": "What is the right resolution given `tier` and `order`?",
+          "name": "next_action",
+          "type": "choice"
+        },
+        {
+          "instructions": "How likely is the customer to churn if the issue is not resolved now?",
+          "levels": [
+            {
+              "label": "No churn signal"
+            },
+            {
+              "label": "Mild frustration"
+            },
+            {
+              "label": "Mentions alternatives"
+            },
+            {
+              "label": "Threatens to cancel"
+            }
+          ],
+          "name": "churn_risk",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "noul": {
+    "adapted": [],
+    "body": {
+      "input": "The blue mug I ordered on Monday arrived cracked on Wednesday.",
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "instructions": "Did the item arrive damaged?",
+          "name": "is_damaged",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "noul-criteria": {
+    "adapted": [
+      "criteria"
+    ],
+    "body": {
+      "input": "Customer returned the sweater because they preferred green over blue.",
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "instructions": "Is the customer reporting a product defect?\n\nIt is true when: The product itself is broken or faulty.\nIt is false when: Preference, sizing, shipping, or pricing complaint.",
+          "name": "is_defect",
+          "type": "predicate"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "score": {
+    "adapted": [],
+    "body": {
+      "input": "Export fails in Safari but works in Chrome.",
+      "model": "gemini-decision-1",
+      "questions": [
+        {
+          "instructions": "How severe is this issue for the user?",
+          "levels": [
+            {
+              "label": "Cosmetic: appearance only, no lost functionality."
+            },
+            {
+              "label": "Workaround available: a task fails, but another way works."
+            },
+            {
+              "label": "Fully blocked: a task fails with no workaround."
+            }
+          ],
+          "name": "severity",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "unknown-fields": {
+    "kind": "unsupported",
+    "message": "`input[0].blocks[0].x_note` comes from a Gemini Decisions request and has no equivalent in OpenAI Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": "input[0].blocks[0]",
+    "unsupported": "input[0].blocks[0].x_note"
+  },
+  "unknown-top-level-field": {
+    "kind": "unsupported",
+    "message": "`x_future_field` comes from a Gemini Decisions request and has no equivalent in OpenAI Decisions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "x_future_field"
+  },
+  "video-uri": {
+    "kind": "unsupported",
+    "message": "The provider takes text, images and JSON in a user message, not video parts; remove it.",
+    "param": "input[0].content[0]",
+    "unsupported": "video part"
+  }
+}

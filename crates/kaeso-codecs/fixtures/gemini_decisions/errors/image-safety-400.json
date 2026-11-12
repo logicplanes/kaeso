@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "image_safety",
+    "message": "Request blocked due to unsafe image content. Please modify your input and retry."
+  }
+}

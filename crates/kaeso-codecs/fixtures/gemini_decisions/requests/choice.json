@@ -1,0 +1,16 @@
+{
+  "model": "gemini-decision-1",
+  "input": "I was charged twice for my order.",
+  "questions": {
+    "department": {
+      "type": "choice",
+      "instructions": "Which department should handle this request?",
+      "criteria": {
+        "billing": "Payments, invoices, and refunds.",
+        "technical": "Problems using the product.",
+        "shipping": "Delivery and tracking.",
+        "other": "Anything outside these categories."
+      }
+    }
+  }
+}

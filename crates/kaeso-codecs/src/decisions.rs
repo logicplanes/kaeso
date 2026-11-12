@@ -8,7 +8,7 @@ use kaeso_kpp::{
 
 /// The hint every codec that isn't a decision codec gives a decision request.
 pub(crate) const DECISIONS_HINT: &str =
-    "Send decision requests to `/v1/decisions` or `/v1/systemone`.";
+    "Send decision requests to `/v1/decisions`, `/v1/systemone` or `/v1beta/decisions`.";
 
 fn not_decisions(dialect: DialectId) -> KppError {
     KppError::unsupported_by("decision request", dialect, DECISIONS_HINT)

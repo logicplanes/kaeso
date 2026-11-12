@@ -1,0 +1,30 @@
+{
+  "answers": {
+    "severity": {
+      "type": "score",
+      "score": 1.12,
+      "legend": {
+        "0": "Cosmetic: appearance only, no lost functionality.",
+        "1": "Workaround available: a task fails, but another way works.",
+        "2": "Fully blocked: a task fails with no workaround."
+      },
+      "probabilities": {
+        "0": 0.03,
+        "1": 0.83,
+        "2": 0.15
+      },
+      "confidence": 0.83
+    }
+  },
+  "usage": {
+    "total_input_tokens": 74,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 74
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 74
+  }
+}

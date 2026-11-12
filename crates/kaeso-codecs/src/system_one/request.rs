@@ -624,7 +624,7 @@ impl Writer<'_> {
                     return Err(unsupported(
                         &format!("{} part", other.kind()),
                         format!(
-                            "System One takes text, JSON and images, not a {} part; remove it.",
+                            "System One takes text, JSON and images, not {} parts; remove it.",
                             other.kind()
                         ),
                     )

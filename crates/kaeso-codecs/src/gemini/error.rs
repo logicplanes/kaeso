@@ -166,10 +166,12 @@ pub(crate) fn decode_error_value(
 // A status another format's provider chose, such as Anthropic's 529, means nothing to a
 // Gemini app; its error kind decides the Google code instead.
 fn code_for(err: &KppError) -> u16 {
-    let google = err
-        .origin
-        .as_ref()
-        .is_none_or(|o| matches!(o.dialect, DialectId::Gemini | DialectId::GeminiEmbeddings));
+    let google = err.origin.as_ref().is_none_or(|o| {
+        matches!(
+            o.dialect,
+            DialectId::Gemini | DialectId::GeminiEmbeddings | DialectId::GeminiDecisions
+        )
+    });
     match err.status {
         Some(status) if google => status,
         _ => default_code(&err.kind),

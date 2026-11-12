@@ -975,7 +975,10 @@ fn decision_requests_are_refused_by_every_other_codec_and_other_kinds_by_system_
     );
     let reply = Reply::Decide(DecideResponse::new("m", vec![]));
     for d in DialectId::ALL {
-        if matches!(d, DialectId::SystemOne | DialectId::OpenAiDecisions) {
+        if matches!(
+            d,
+            DialectId::SystemOne | DialectId::OpenAiDecisions | DialectId::GeminiDecisions
+        ) {
             continue;
         }
         let mut c = EgressCtx::new(&req);

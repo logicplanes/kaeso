@@ -1,0 +1,321 @@
+---
+source: crates/kaeso-codecs/tests/decision_matrix.rs
+expression: outcomes
+---
+{
+  "audio-uri": {
+    "request_refused": "audio part"
+  },
+  "blocked": {
+    "body": {
+      "error": {
+        "code": "content_policy_violation",
+        "message": "The input was blocked by the safety filters.",
+        "param": null,
+        "type": "invalid_request_error"
+      }
+    },
+    "error": "content_filtered",
+    "status": 400
+  },
+  "choice": {
+    "answers": [
+      {
+        "choice": "billing",
+        "confidence": 0.9866666666666667,
+        "name": "department",
+        "probabilities": [
+          {
+            "probability": 0.99,
+            "value": "billing"
+          },
+          {
+            "probability": 0.002,
+            "value": "technical"
+          },
+          {
+            "probability": 0.004,
+            "value": "shipping"
+          },
+          {
+            "probability": 0.003,
+            "value": "other"
+          }
+        ],
+        "type": "choice"
+      }
+    ],
+    "model": "gemini-decision-1",
+    "usage": {
+      "input_tokens": 61,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 61
+    }
+  },
+  "document": {
+    "request_refused": "document part"
+  },
+  "files-api": {
+    "request_refused": "file id"
+  },
+  "image": {
+    "answers": [
+      {
+        "name": "visible_damage",
+        "probability": 0.12,
+        "type": "predicate"
+      }
+    ],
+    "model": "gemini-decision-1",
+    "usage": {
+      "input_tokens": 97,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 97
+    }
+  },
+  "input-object": {
+    "answers": [
+      {
+        "name": "wants_cancel",
+        "probability": 0.99,
+        "type": "predicate"
+      }
+    ],
+    "model": "gemini-decision-1",
+    "usage": {
+      "input_tokens": 25,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 25
+    }
+  },
+  "instructions-blocks": {
+    "answers": [
+      {
+        "name": "late",
+        "probability": 0.95,
+        "type": "predicate"
+      },
+      {
+        "choice": "carrier",
+        "confidence": 0.39999999999999997,
+        "name": "carrier_fault",
+        "probabilities": [
+          {
+            "probability": 0.6,
+            "value": "carrier"
+          },
+          {
+            "probability": 0.3,
+            "value": "warehouse"
+          },
+          {
+            "probability": 0.1,
+            "value": "customer"
+          }
+        ],
+        "type": "choice"
+      }
+    ],
+    "model": "gemini-decision-1",
+    "usage": {
+      "input_tokens": 52,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 52
+    }
+  },
+  "multiple-questions": {
+    "answers": [
+      {
+        "name": "is_defect",
+        "probability": 0.94,
+        "type": "predicate"
+      },
+      {
+        "choice": "human_escalation",
+        "confidence": 0.68,
+        "name": "next_action",
+        "probabilities": [
+          {
+            "probability": 0.02,
+            "value": "instant_refund"
+          },
+          {
+            "probability": 0.18,
+            "value": "replacement_shipment"
+          },
+          {
+            "probability": 0.04,
+            "value": "troubleshooting_flow"
+          },
+          {
+            "probability": 0.76,
+            "value": "human_escalation"
+          }
+        ],
+        "type": "choice"
+      },
+      {
+        "confidence": 0.99,
+        "name": "churn_risk",
+        "probabilities": [
+          {
+            "label": "No churn signal",
+            "probability": 0.0,
+            "value": 0
+          },
+          {
+            "label": "Mild frustration",
+            "probability": 0.0,
+            "value": 1
+          },
+          {
+            "label": "Mentions alternatives",
+            "probability": 0.01,
+            "value": 2
+          },
+          {
+            "label": "Threatens to cancel",
+            "probability": 0.99,
+            "value": 3
+          }
+        ],
+        "score": 2.99,
+        "type": "score"
+      }
+    ],
+    "model": "gemini-decision-1",
+    "usage": {
+      "input_tokens": 324,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 324
+    }
+  },
+  "noul": {
+    "answers": [
+      {
+        "name": "is_damaged",
+        "probability": 0.99,
+        "type": "predicate"
+      }
+    ],
+    "model": "gemini-decision-1",
+    "usage": {
+      "input_tokens": 100,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 100
+    }
+  },
+  "noul-criteria": {
+    "answers": [
+      {
+        "name": "is_defect",
+        "probability": 0.03,
+        "type": "predicate"
+      }
+    ],
+    "model": "gemini-decision-1",
+    "usage": {
+      "input_tokens": 58,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 58
+    }
+  },
+  "score": {
+    "answers": [
+      {
+        "confidence": 0.73,
+        "name": "severity",
+        "probabilities": [
+          {
+            "label": "Cosmetic: appearance only, no lost functionality.",
+            "probability": 0.03,
+            "value": 0
+          },
+          {
+            "label": "Workaround available: a task fails, but another way works.",
+            "probability": 0.83,
+            "value": 1
+          },
+          {
+            "label": "Fully blocked: a task fails with no workaround.",
+            "probability": 0.15,
+            "value": 2
+          }
+        ],
+        "score": 1.12,
+        "type": "score"
+      }
+    ],
+    "model": "gemini-decision-1",
+    "usage": {
+      "input_tokens": 74,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 74
+    }
+  },
+  "unknown-fields": {
+    "request_refused": "input[0].blocks[0].x_note"
+  },
+  "unknown-top-level-field": {
+    "request_refused": "x_future_field"
+  },
+  "video-uri": {
+    "request_refused": "video part"
+  }
+}

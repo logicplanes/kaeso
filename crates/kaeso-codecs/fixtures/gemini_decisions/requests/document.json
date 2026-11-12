@@ -1,0 +1,25 @@
+{
+  "model": "gemini-decision-1",
+  "input": [
+    {
+      "type": "document",
+      "data": "JVBERi0xLjQKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyA+PiBlbmRvYmoKdHJhaWxlciA8PCAvUm9vdCAxIDAgUiA+PgolJUVPRgo=",
+      "mime_type": "application/pdf"
+    },
+    {
+      "type": "text",
+      "text": "Invoice attached by the customer."
+    }
+  ],
+  "questions": {
+    "invoice_type": {
+      "type": "choice",
+      "instructions": "What kind of document is this?",
+      "criteria": {
+        "invoice": "A bill for goods or services.",
+        "receipt": "Proof of a payment already made.",
+        "needs review": "Anything else."
+      }
+    }
+  }
+}

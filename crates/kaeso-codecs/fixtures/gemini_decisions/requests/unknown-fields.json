@@ -1,0 +1,29 @@
+{
+  "model": "gemini-decision-1",
+  "input": [
+    {
+      "type": "text",
+      "text": "A dog sleeps on the porch.",
+      "x_note": "from camera 2"
+    }
+  ],
+  "questions": {
+    "animal": {
+      "type": "choice",
+      "instructions": "Which animal is it?",
+      "criteria": {
+        "dog": "",
+        "cat": ""
+      },
+      "x_weight": 2
+    },
+    "awake": {
+      "type": "noul",
+      "instructions": "Is the animal awake?",
+      "criteria": {
+        "true_description": "Eyes open.",
+        "x_hint": "look at the eyes"
+      }
+    }
+  }
+}

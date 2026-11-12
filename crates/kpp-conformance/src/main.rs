@@ -114,6 +114,10 @@ async fn main() -> std::io::Result<()> {
             "/v1/decisions",
             post(|s, h, b| serve_decisions(s, h, b, DialectId::OpenAiDecisions)),
         )
+        .route(
+            "/v1beta/decisions",
+            post(|s, h, b| serve_decisions(s, h, b, DialectId::GeminiDecisions)),
+        )
         .route("/v1beta/models", get(list_gemini_models))
         .route(
             "/v1beta/models/{*rest}",
@@ -927,7 +931,10 @@ async fn scenarios(State(app): State<App>) -> Response {
                     DialectId::OpenAiEmbeddings | DialectId::GeminiEmbeddings
                 );
                 let images = matches!(source, DialectId::OpenAiImages | DialectId::MinimaxImages);
-                let decisions = matches!(source, DialectId::SystemOne | DialectId::OpenAiDecisions);
+                let decisions = matches!(
+                    source,
+                    DialectId::SystemOne | DialectId::OpenAiDecisions | DialectId::GeminiDecisions
+                );
                 let kind = match kind {
                     "generate" if embeddings => "embed",
                     "generate" if images => "image",

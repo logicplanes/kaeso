@@ -1,0 +1,25 @@
+{
+  "model": "gemini-decision-1",
+  "input": [
+    {
+      "type": "image",
+      "uri": "https://generativelanguage.googleapis.com/v1beta/files/a1b2c3d4e5",
+      "mime_type": "image/jpeg"
+    },
+    {
+      "type": "text",
+      "text": "Shelf photo from store 14."
+    }
+  ],
+  "questions": {
+    "shelf_state": {
+      "type": "score",
+      "instructions": "How well stocked is the shelf?",
+      "criteria": [
+        "Empty",
+        "Partly stocked",
+        "Fully stocked"
+      ]
+    }
+  }
+}

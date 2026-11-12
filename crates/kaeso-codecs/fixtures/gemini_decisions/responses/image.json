@@ -1,0 +1,24 @@
+{
+  "answers": {
+    "visible_damage": {
+      "type": "noul",
+      "noul": 0.12,
+      "confidence": 0.88
+    }
+  },
+  "usage": {
+    "total_input_tokens": 97,
+    "input_tokens_by_modality": [
+      {
+        "modality": "text",
+        "tokens": 31
+      },
+      {
+        "modality": "image",
+        "tokens": 66
+      }
+    ],
+    "total_output_tokens": 0,
+    "total_tokens": 97
+  }
+}

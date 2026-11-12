@@ -1,0 +1,31 @@
+{
+  "model": "gemini-decision-1",
+  "input": "Order 4411 shipped on May 2 and was delivered on May 9.",
+  "questions": {
+    "late": {
+      "type": "noul",
+      "instructions": {
+        "type": "text",
+        "text": "Was the order delivered more than five days after it shipped?"
+      }
+    },
+    "carrier_fault": {
+      "type": "choice",
+      "instructions": [
+        {
+          "type": "text",
+          "text": "Who is most likely responsible for the delay? "
+        },
+        {
+          "type": "text",
+          "text": "Answer from the dates alone."
+        }
+      ],
+      "criteria": {
+        "carrier": "",
+        "warehouse": "",
+        "customer": ""
+      }
+    }
+  }
+}

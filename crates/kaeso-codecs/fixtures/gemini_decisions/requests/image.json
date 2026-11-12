@@ -1,0 +1,21 @@
+{
+  "model": "gemini-decision-1",
+  "input": [
+    {
+      "type": "text",
+      "text": "Customer photo for return request #8821."
+    },
+    {
+      "type": "image",
+      "data": "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAEElEQVR42mM4oaEBRAwQCgAhLgRh9uHCTQAAAABJRU5ErkJggg==",
+      "mime_type": "image/png",
+      "resolution": "low"
+    }
+  ],
+  "questions": {
+    "visible_damage": {
+      "type": "noul",
+      "instructions": "Does the photo show physical damage to the device? Ignore the packaging."
+    }
+  }
+}
