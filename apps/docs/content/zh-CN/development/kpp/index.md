@@ -98,6 +98,7 @@ sequenceDiagram
 | `gemini_interactions` | Google AI Studio 和 Gemini Enterprise Agent Platform 的 Interactions API 上 Gemini Omni 的视频任务（[Gemini Interactions](gemini-interactions.md)） |
 | `dashscope` | QwenCloud 的 DashScope API：图片、语音合成、转写和 Wan 模型视频合成（[DashScope](dashscope.md)） |
 | `system_one` | TypeSafe 的 System One API（`/v1/systemone`）以及使用其某种形式的服务商（[System One](system-one.md)） |
+| `openai_decisions` | OpenAI 的 Decisions API（`/v1/decisions`）（[OpenAI Decisions](openai-decisions.md)） |
 | `multipart` | 图片、音频和视频上传以及 System One 图片部分使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |
@@ -208,11 +209,11 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | 字段 | 类别 | 说明 |
 | --- | --- | --- |
 | `model`、`input`、`questions`、`assets` | 语义 | 资产由输入、说明或描述中的字符串以其键引用（[System One](system-one.md#图片)）。 |
-| `Question.name` | 语义 | 保留；格式不能接受这些名称时，每个问题都写成 `q0`…`qN-1`，回复按位置映射回来。 |
+| `Question.name` | 语义 | 可选，可以重复，与 OpenAI 的格式相同。保留；格式不能接受这些名称时，每个问题都写成 `q0`…`qN-1`，回复按位置映射回来。 |
 | `Question.instructions`、`.kind` | 语义 | |
 | `Predicate.when_true`、`.when_false`、`ChoiceOption.value`、`.description`、`Level.label`、`.description` | 语义 | 没有对应位置的格式按其映射页面所述写出，或拒绝它们。 |
-| `user` | 提示 | |
-| `cache` | 提示 | |
+| `user` | 提示 | OpenAI 的 `safety_identifier`；发往 System One 时省略，并在 `kaeso-left-out` 中列出。 |
+| `cache` | 提示 | OpenAI 的 `prompt_cache_key` 和 `prompt_cache_options`；发往 System One 时省略，并在 `kaeso-left-out` 中列出（[决策](cross-format.md#决策)）。 |
 | `extras` | 同 `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -295,5 +296,6 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [Gemini Interactions](gemini-interactions.md)：了解 Gemini Omni 视频任务如何映射到 Interactions API。
 - [DashScope](dashscope.md)：了解图片、语音、转写和视频任务如何映射到 QwenCloud 的 DashScope API。
 - [System One](system-one.md)：查找 TypeSafe 决策格式的每个字段在 KPP 中的位置，以及各服务商如何接收它。
+- [OpenAI Decisions](openai-decisions.md)：查找 OpenAI Decisions API 的每个字段在 KPP 中的位置。
 - [Fixture 与录制](fixtures.md)：添加编解码器测试所用的真实载荷，并录制新的载荷。
 - [Fixture 约定](fixture-conventions.md)：查阅每个构造的 fixture 都遵循的规则。

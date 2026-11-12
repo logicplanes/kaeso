@@ -135,7 +135,7 @@ Decisions don't stream. The stream encoder returns `Unsupported` (`streaming`) f
 
 ## Errors
 
-Errors use OpenAI's envelope, `{"error": {"message", "type", "param", "code"}}`, read and written as on [OpenAI Responses](openai-responses.md#errors). OpenAI documents no error codes of its own for decisions, so the kinds follow the status, the `type` and the `code`. An OpenAI error reaches an OpenAI app as sent. Any other error is written in the envelope with the status of its kind, and a 429 or 503 keeps its `retry-after`.
+Errors use OpenAI's envelope, `{"error": {"message", "type", "param", "code"}}`, read and written as on [OpenAI Responses](openai-responses.md#errors-errorresponse). OpenAI documents no error codes of its own for decisions, so the kinds follow the status, the `type` and the `code`. An OpenAI error reaches an OpenAI app as sent. Any other error is written in the envelope with the status of its kind, and a 429 or 503 keeps its `retry-after`.
 
 ## Models
 

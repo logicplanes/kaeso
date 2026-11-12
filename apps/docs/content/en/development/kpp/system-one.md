@@ -51,7 +51,7 @@ A decision request decodes to `Request::Decide(DecideRequest)`. Its questions ke
 
 An upload's first part is `request`, the JSON request. Every other part is an image that exactly one asset names in `part`, with the type `image/png`, `image/jpeg`, `image/jpg`, `application/octet-stream` or none. A missing, unused or repeated part, or another type, is `InvalidRequest`. Uploads are re-sent as uploads only to TypeSafe; other providers get the images as base64.
 
-`DecideRequest::validate()` asks for a model, at least one question, at least one option and level, names used once, and every asset referenced from a string of the state, the instructions or the descriptions. Object keys never count, as TypeSafe doesn't replace them. `decode_request` refuses requests of every other kind.
+`DecideRequest::validate()` asks for a model, at least one question, at least one option and level, and every asset referenced from a string of the state, the instructions or the descriptions. Object keys never count, as TypeSafe doesn't replace them. `decode_request` refuses requests of every other kind.
 
 ## Images
 

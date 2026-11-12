@@ -98,6 +98,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `gemini_interactions` | Die Videojobs von Gemini Omni in der Interactions API von Google AI Studio und Gemini Enterprise Agent Platform ([Gemini Interactions](gemini-interactions.md)) |
 | `dashscope` | Die DashScope-API von QwenCloud: Bilder, Sprachausgabe, Transkription und Videosynthese der Wan-Modelle ([DashScope](dashscope.md)) |
 | `system_one` | Die System-One-API von TypeSafe (`/v1/systemone`) und die Anbieter, die eine Form davon sprechen ([System One](system-one.md)) |
+| `openai_decisions` | Die Decisions-API von OpenAI (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
 | `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-, Audio- und Video-Uploads und der Bildteile von System One |
 
 | Gemeinsames Modul | Aufgabe |
@@ -208,11 +209,11 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | Feld | Klasse | Anmerkungen |
 | --- | --- | --- |
 | `model`, `input`, `questions`, `assets` | semantisch | Auf ein Asset verweist sein Schlüssel aus Strings der Eingabe, der Anweisungen oder der Beschreibungen ([System One](system-one.md#bilder)). |
-| `Question.name` | semantisch | Bleibt, oder `q0`…`qN-1` für jede Frage, wo ein Format die Namen nicht annimmt; die Antwort wird nach Position zurückgelesen. |
+| `Question.name` | semantisch | Optional und darf sich wiederholen, wie im Format von OpenAI. Bleibt, oder `q0`…`qN-1` für jede Frage, wo ein Format die Namen nicht annimmt; die Antwort wird nach Position zurückgelesen. |
 | `Question.instructions`, `.kind` | semantisch | |
 | `Predicate.when_true`, `.when_false`, `ChoiceOption.value`, `.description`, `Level.label`, `.description` | semantisch | Ein Format ohne Platz dafür schreibt sie, wie auf seiner Abbildungsseite dokumentiert, oder lehnt sie ab. |
-| `user` | Hinweis | |
-| `cache` | Hinweis | |
+| `user` | Hinweis | `safety_identifier` von OpenAI; für System One weggelassen und in `kaeso-left-out` genannt. |
+| `cache` | Hinweis | `prompt_cache_key` und `prompt_cache_options` von OpenAI; für System One weggelassen und in `kaeso-left-out` genannt ([Entscheidungen](cross-format.md#entscheidungen)). |
 | `extras` | wie bei `GenerateRequest` | |
 
 ### `EmbedRequest`
@@ -295,5 +296,6 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Gemini Interactions](gemini-interactions.md): Sehen Sie, wie Videojobs von Gemini Omni auf die Interactions API abgebildet werden.
 - [DashScope](dashscope.md): Sehen Sie, wie Bilder, Sprache, Transkriptionen und Videojobs auf die DashScope-API von QwenCloud abgebildet werden.
 - [System One](system-one.md): Finden Sie, wohin jedes Feld des Entscheidungsformats von TypeSafe in KPP gehört und wie jeder Anbieter es annimmt.
+- [OpenAI Decisions](openai-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von OpenAI in KPP gehört.
 - [Fixtures und Aufzeichnungen](fixtures.md): Legen Sie die echten Payloads an, gegen die die Codecs getestet werden, und zeichnen Sie neue auf.
 - [Fixture-Konventionen](fixture-conventions.md): Schlagen Sie die Regeln nach, denen jede konstruierte Fixture folgt.

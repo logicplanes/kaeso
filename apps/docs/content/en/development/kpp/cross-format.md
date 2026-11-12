@@ -80,7 +80,7 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | --- | --- | --- | --- |
 | `header:anthropic-beta` | request, from `anthropic_messages` | Beta headers only switch on provider features. A feature a request actually uses appears as a body field or block, which is checked on its own. | Claude Code sends `claude-code-20250219,interleaved-thinking-…` and further betas on every request; `anthropic_messages/requests/claude-code-mid-conversation-system.headers.json`, `anthropic_messages/requests/thinking-interleaved-tools.headers.json` |
 | `header:anthropic-version` | request, from `anthropic_messages` | API versioning of the Anthropic wire format; meaningless elsewhere. A value equal to the pinned version is not stored at all ([the Anthropic version](#the-anthropic-version)). | Anthropic SDKs |
-| `header:openai-beta` | request, from `openai_chat`, `openai_responses`, `openai_embeddings` | As `anthropic-beta`. | Codex sends `OpenAI-Beta: responses=experimental` |
+| `header:openai-beta` | request, from `openai_chat`, `openai_responses`, `openai_embeddings`, `openai_decisions` | As `anthropic-beta`. | Codex sends `OpenAI-Beta: responses=experimental` |
 | `cache_control` | request, from `anthropic_messages` | Top-level automatic prompt caching. Cache hints are hints ([cache hints](#cache-hints)). | `anthropic_messages/requests/system-string-multi-turn.json`, `explicit-nulls.json` |
 | `eager_input_streaming` | tool, from `anthropic_messages` | Only decides whether Claude streams the tool's arguments as it writes them (fine-grained tool streaming); the arguments are the same, and other formats stream as they do. | Claude Code sends it on the tools of MCP servers that connect during a session; `anthropic_messages/requests/claude-code-inline-tools.json` |
 | `display` (`thinking.display`) | reasoning, from `anthropic_messages` | Only controls whether thinking text is returned (`summarized` or `omitted`). OpenAI Responses gets `reasoning.summary: "auto"` instead unless it is `omitted` ([readable reasoning and summaries](reasoning.md#readable-reasoning-and-summaries)). | `anthropic_messages/requests/thinking-display-omitted.json`, `thinking-adaptive-effort.json` |
@@ -91,6 +91,8 @@ Fixture paths in these tables are relative to `crates/kaeso-codecs/fixtures/`.
 | `model_id` | assistant messages only, from `openai_chat` | The model that wrote a replayed assistant message, which Grok CLI records in its own history. Bookkeeping the model never reads; a logged request body keeps it. It is the one key of `cross::CHAT_ASSISTANT_BOOKKEEPING`, which Chat providers get only with `with_message_bookkeeping()` ([Chat providers](openai-chat-providers.md)); on any other message, a request to another format is refused; Chat providers get it as sent. | Grok CLI sends it on every replayed assistant message; `openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request, from `openai_responses` | Request metadata: turn and thread ids, W3C trace context and `x-codex-turn-metadata`. It never reaches the model, and a logged request body keeps it. | Codex sends it on every turn; `openai_responses/requests/codex-namespace-tools.json` |
 | `detail` (on `input_image`; `auto` is already a form marker) | image, from `openai_responses` | Image resolution hint, as Chat's `image_url.detail`. `input_file.detail` (PDF rendering) is **not** allowlisted. | `openai_responses/requests/image-base64-file-id.json` |
+| `prompt_cache_key`, `prompt_cache_options`, `safety_identifier` | request, from `openai_decisions` | Cache routing and an end-user id for abuse checks. KPP types them as `DecideRequest.cache` and `user`, hints ([decisions](#decisions)); the allowlist covers a form KPP doesn't type, such as `prompt_cache_options` with an undocumented field. | `openai_decisions/requests/cache.json` |
+| `detail` (on `input_image`) | image, from `openai_decisions` | Image resolution hint, as Responses' `detail`. | `openai_decisions/requests/instructions-parts.json` |
 | `phase` (on assistant messages: `commentary`, `final_answer`) | message, from `openai_responses` | Marks an assistant message as a preamble or the final answer, so OpenAI can tell them apart when the turn is replayed. The text is the same either way, and other formats have no such mark. | Codex sends GPT-6's messages back with it; a thread that switches to another model carries them; `openai_responses/requests/codex-model-switch.json` |
 
 ### Conditional entries
@@ -103,6 +105,35 @@ These fields cross only with the values below (`cross::is_droppable_value`, and 
 | `text.verbosity` | request, from `openai_responses` | `low` or `high` (`medium` is a form marker). An output length hint ([field classes](index.md#field-classes)): a Chat Completions target whose profile takes `verbosity` gets it there ([provider profiles](openai-chat-providers.md#provider-profiles)); Anthropic and other Chat Completions targets have no equivalent, so it is left out and named in `kaeso-left-out`. | Codex sends `low` for GPT models and keeps it when a thread switches models; `openai_responses/requests/multi-turn-roles.json` |
 | `output_config` | message (`role: "system"`), from `anthropic_messages` | `{}`, or only `effort` equal to the request's `output_config.effort`. Repeating the request's effort changes nothing. | Claude Code 2.1.296 repeats the request's effort on its mid-conversation system message; same fixture |
 | `prompt_cache_retention`, `prompt_cache_options` | request, from `openai_chat` and `openai_responses` | Only towards Anthropic, where they set how long the cache is kept ([cache hints](#cache-hints)); every other target still refuses them. | `openai_chat/requests/prompt-cache-breakpoint.json`, `openai_responses/requests/item-reference-breakpoint.json` |
+
+## Decisions
+
+Decision requests cross between OpenAI's Decisions API ([OpenAI Decisions](openai-decisions.md)) and TypeSafe's System One API ([System One](system-one.md)) through one `DecideRequest`. A target refuses what its format can't say before anything is sent. A few named adaptations are listed in the reply's `kaeso-adapted` header, and hints the target has no place for in `kaeso-left-out`. The IDs in brackets are the design decisions of the decision formats.
+
+| What | OpenAI app to System One provider | System One app to OpenAI |
+| --- | --- | --- |
+| Question names (D19) | Kept when every question has a name, used once and valid for the provider; otherwise all sent as `q0`…`qN-1`, `adapted: names` | Each key is the question's `name` |
+| Boolean values (D18) | Sent as `"true"` and `"false"`, `adapted: booleans`; a question with both `true` and `"true"` is `Unsupported` | — |
+| Score levels | `"label: description"` where a level has both, `adapted: levels`; the label alone otherwise | Each level's text becomes its `label` |
+| Structured state (D13) | — | `input_json` within OpenAI's limits; otherwise `input_text` with the JSON as written, `adapted: state` |
+| Predicate criteria (D11) | — | Folded into the instructions with one template, `adapted: criteria` |
+| JSON instructions and descriptions | — | Their JSON as written, as text, `adapted: instructions` or `criteria` |
+| Conversations (D12) | `Unsupported` (`conversation input`): send one user message | — |
+| Images | Data URLs become assets; URLs are `Unsupported` (`image URL`): send the image as a data URL (D6) | Each reference in a string of the input, a state list or the instructions becomes an `input_image` part in its place; elsewhere `Unsupported` |
+| Box questions | Only where the profile answers them | `Unsupported` |
+| Limits (D5) | The profile's question, option, level and image limits | 400 questions, 2 to 255 options, 2 to 10 levels |
+| `prompt_cache_key`, `prompt_cache_options`, breakpoints | Left out, `left_out: cache` | — |
+| `safety_identifier` | Left out, `left_out: user` | — |
+| `detail` | Left out | — |
+
+The criteria template adds a blank line and then `It is true when: <true>` and `It is false when: <false>`, one line each, to the instructions. Instructions made of parts get the lines as one more text part. JSON text is never reformatted.
+
+Replies cross by position: the encoder of the app's format takes every name, option and level from the app's request.
+
+- **Confidence (D8).** A reply in its own format keeps its `confidence` byte for byte. One from another format gets it recomputed from the probabilities: TypeSafe's formulas for System One apps, and the same for OpenAI apps, whose two documented examples match them. A predicate answer has none.
+- **Refusals (D9).** An OpenAI refusal reaches a System One app as `{"type": "refusal"}` under the question's key. TypeSafe's SDKs skip answer types they don't know, and the other answers still count.
+- **Labels and legends.** An OpenAI app gets each level's label from its request; a System One app gets a `legend` from its request's levels.
+- **Usage.** KPP counts input tokens without the cache. OpenAI's `input_tokens` holds cache reads and writes, so the decoder subtracts them and the encoder adds them back; `total_tokens` is input plus output.
 
 ## Tool namespaces
 

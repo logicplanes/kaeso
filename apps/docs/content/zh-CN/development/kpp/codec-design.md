@@ -101,12 +101,12 @@ OpenAI Responses 编解码器用普通的 serde 结构体读取类型化的值�
 
 | 上限 | 值 | 统计对象 | 来源 |
 | --- | --- | --- | --- |
-| `MAX_MESSAGES` | 100,000 | `messages`（Anthropic Messages、Chat Completions）或 `input` 中的项（Responses） | Anthropic 每个请求最多 100,000 条消息的限制 |
+| `MAX_MESSAGES` | 100,000 | `messages`（Anthropic Messages、Chat Completions）或 `input` 中的项（Responses、OpenAI Decisions） | Anthropic 每个请求最多 100,000 条消息的限制 |
 | `MAX_BLOCKS_PER_MESSAGE` | 10,000 | 单条消息、输入项或系统提示词中的内容块，包括其工具结果中的内容块 | 远高于任何服务商对每个请求中图片或文档数量的限制 |
 | `MAX_TOOLS` | 10,000 | `tools`，以及 Chat 的 `functions` | Anthropic 工具搜索的目录规模 |
 | `MAX_EMBEDDING_INPUTS` | 2,048 | OpenAI Embeddings 中 `input` 数组的输入 | OpenAI 最多 2,048 个输入的限制 |
 | `MAX_DECISION_QUESTIONS` | 1,000 | 决策请求的问题 | Gemini 的限制，是各决策格式中最大的 |
-| `MAX_DECISION_OPTIONS`、`MAX_DECISION_LEVELS` | 255 | 一个选择题的选项、一个评分题的级别 | 各决策格式中最大的限制 |
+| `MAX_DECISION_OPTIONS`、`MAX_DECISION_LEVELS` | 255 | 一个选择题的选项（`criteria` 或 `choices`）、一个评分题的级别（`criteria` 或 `levels`） | 各决策格式中最大的限制 |
 | `MAX_DECISION_ASSETS` | 64 | 决策请求 `assets` 中的图片 | 内存保护；服务商允许的更少 |
 | `MAX_DEPTH` | 127 | 正文中任意位置对象和数组的嵌套层数，最外层对象也计入 | serde_json 在其 128 层递归上限内能完整解析的最大层数 |
 

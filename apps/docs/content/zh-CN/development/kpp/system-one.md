@@ -51,7 +51,7 @@ order: 8
 
 上传的第一个部分是 `request`，即 JSON 请求。其他每个部分都是一张图片，恰好由一个资产在 `part` 中指名，类型为 `image/png`、`image/jpeg`、`image/jpg`、`application/octet-stream` 或没有类型。缺失、未使用或重复的部分，或其他类型，都是 `InvalidRequest`。上传只在发往 TypeSafe 时仍以上传形式发送；其他服务商以 base64 接收图片。
 
-`DecideRequest::validate()` 要求有模型、至少一个问题、每个问题至少一个选项或级别、名称不重复，并且每个资产都在状态、说明或描述的某个字符串中被引用。对象的键从不计入，因为 TypeSafe 不会替换它们。`decode_request` 拒绝其他所有类型的请求。
+`DecideRequest::validate()` 要求有模型、至少一个问题、每个问题至少一个选项或级别，并且每个资产都在状态、说明或描述的某个字符串中被引用。对象的键从不计入，因为 TypeSafe 不会替换它们。`decode_request` 拒绝其他所有类型的请求。
 
 ## 图片
 

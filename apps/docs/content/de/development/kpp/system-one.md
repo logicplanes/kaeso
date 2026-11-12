@@ -51,7 +51,7 @@ Eine Entscheidungsanfrage wird zu `Request::Decide(DecideRequest)` dekodiert. Ih
 
 Der erste Teil eines Uploads ist `request`, die JSON-Anfrage. Jeder andere Teil ist ein Bild, das genau ein Asset in `part` nennt, mit dem Typ `image/png`, `image/jpeg`, `image/jpg`, `application/octet-stream` oder keinem. Ein fehlender, ungenutzter oder doppelter Teil oder ein anderer Typ ist `InvalidRequest`. Uploads gehen nur an TypeSafe wieder als Uploads; andere Anbieter bekommen die Bilder als Base64.
 
-`DecideRequest::validate()` verlangt ein Modell, mindestens eine Frage, mindestens eine Option und Stufe, nur einmal vergebene Namen und für jedes Asset eine Referenz in einem String des Zustands, der Anweisungen oder der Beschreibungen. Objektschlüssel zählen nie, weil TypeSafe sie nicht ersetzt. `decode_request` lehnt Anfragen jeder anderen Art ab.
+`DecideRequest::validate()` verlangt ein Modell, mindestens eine Frage, mindestens eine Option und Stufe und für jedes Asset eine Referenz in einem String des Zustands, der Anweisungen oder der Beschreibungen. Objektschlüssel zählen nie, weil TypeSafe sie nicht ersetzt. `decode_request` lehnt Anfragen jeder anderen Art ab.
 
 ## Bilder
 

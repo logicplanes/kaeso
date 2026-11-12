@@ -101,12 +101,12 @@ Eine Anfrage zu decodieren kostet weit mehr Speicher als ihr Body: Jede Nachrich
 
 | Grenze | Wert | Zählt | Quelle |
 | --- | --- | --- | --- |
-| `MAX_MESSAGES` | 100.000 | `messages` (Anthropic Messages, Chat Completions) oder Elemente von `input` (Responses) | Die Grenze von Anthropic: 100.000 Nachrichten pro Anfrage |
+| `MAX_MESSAGES` | 100.000 | `messages` (Anthropic Messages, Chat Completions) oder Elemente von `input` (Responses, OpenAI Decisions) | Die Grenze von Anthropic: 100.000 Nachrichten pro Anfrage |
 | `MAX_BLOCKS_PER_MESSAGE` | 10.000 | Inhaltsblöcke einer Nachricht, eines Eingabeelements oder des System-Prompts, mit den Blöcken in ihren Werkzeugergebnissen | Weit über der Grenze jedes Anbieters für Bilder oder Dokumente pro Anfrage |
 | `MAX_TOOLS` | 10.000 | `tools` und `functions` von Chat | Die Kataloggröße der Werkzeugsuche von Anthropic |
 | `MAX_EMBEDDING_INPUTS` | 2.048 | Eingaben eines `input`-Arrays von OpenAI Embeddings | Die Grenze von OpenAI: 2.048 Eingaben |
 | `MAX_DECISION_QUESTIONS` | 1.000 | Fragen einer Entscheidungsanfrage | Die Grenze von Gemini, die größte der Entscheidungsformate |
-| `MAX_DECISION_OPTIONS`, `MAX_DECISION_LEVELS` | 255 | Optionen einer Auswahlfrage, Stufen einer Bewertungsfrage | Die größte Grenze der Entscheidungsformate |
+| `MAX_DECISION_OPTIONS`, `MAX_DECISION_LEVELS` | 255 | Optionen einer Auswahlfrage (`criteria` oder `choices`), Stufen einer Bewertungsfrage (`criteria` oder `levels`) | Die größte Grenze der Entscheidungsformate |
 | `MAX_DECISION_ASSETS` | 64 | Bilder in `assets` einer Entscheidungsanfrage | Ein Schutz für den Speicher; Anbieter erlauben weniger |
 | `MAX_DEPTH` | 127 | Ebenen von Objekten und Arrays irgendwo im Body, das äußerste Objekt mitgezählt | So viel liest serde_json unter seiner Rekursionsgrenze von 128 vollständig |
 

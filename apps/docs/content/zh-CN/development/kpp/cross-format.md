@@ -80,7 +80,7 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | --- | --- | --- | --- |
 | `header:anthropic-beta` | request，来自 `anthropic_messages` | Beta 请求头只用于开启服务商的功能。请求实际用到的功能会以请求体字段或块的形式出现，并单独检查。 | Claude Code 在每个请求中都发送 `claude-code-20250219,interleaved-thinking-…` 及其他 beta；`anthropic_messages/requests/claude-code-mid-conversation-system.headers.json`、`anthropic_messages/requests/thinking-interleaved-tools.headers.json` |
 | `header:anthropic-version` | request，来自 `anthropic_messages` | Anthropic 线路格式的 API 版本控制，在其他地方没有意义。等于固定版本的值根本不会被保存（[Anthropic 版本](#anthropic-版本)）。 | Anthropic SDK |
-| `header:openai-beta` | request，来自 `openai_chat`、`openai_responses`、`openai_embeddings` | 同 `anthropic-beta`。 | Codex 发送 `OpenAI-Beta: responses=experimental` |
+| `header:openai-beta` | request，来自 `openai_chat`、`openai_responses`、`openai_embeddings`、`openai_decisions` | 同 `anthropic-beta`。 | Codex 发送 `OpenAI-Beta: responses=experimental` |
 | `cache_control` | request，来自 `anthropic_messages` | 顶层的自动提示缓存。缓存提示属于提示字段（[缓存提示](#缓存提示)）。 | `anthropic_messages/requests/system-string-multi-turn.json`、`explicit-nulls.json` |
 | `eager_input_streaming` | tool，来自 `anthropic_messages` | 只决定 Claude 是否在写出工具参数的同时流式发送它们（细粒度工具流式传输）；参数本身相同，其他格式照常流式传输。 | Claude Code 会在会话期间连接上的 MCP 服务器的工具上发送它；`anthropic_messages/requests/claude-code-inline-tools.json` |
 | `display`（`thinking.display`） | reasoning，来自 `anthropic_messages` | 只控制是否返回思考文本（`summarized` 或 `omitted`）。发往 OpenAI Responses 时改为 `reasoning.summary: "auto"`，除非其值为 `omitted`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。 | `anthropic_messages/requests/thinking-display-omitted.json`、`thinking-adaptive-effort.json` |
@@ -91,6 +91,8 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `model_id` | 仅助手消息，来自 `openai_chat` | 写出某条重放的助手消息的模型，由 Grok CLI 记在它自己的历史里。属于模型从不读取的簿记信息；记录下来的请求正文会保留它。它是 `cross::CHAT_ASSISTANT_BOOKKEEPING` 中唯一的键，Chat 提供商只有在 `with_message_bookkeeping()` 下才会收到（[Chat 提供商](openai-chat-providers.md)）；出现在其他消息上时，发往其他格式的请求会被拒绝；Chat 提供商按原样收到它。 | Grok CLI 在每条重放的助手消息上都会发送；`openai_chat/requests/grok-cli-model-id.json` |
 | `client_metadata` | request，来自 `openai_responses` | 请求元数据：轮次和线程 ID、W3C 追踪上下文以及 `x-codex-turn-metadata`。它从不到达模型，记录下来的请求正文会保留它。 | Codex 每一轮都会发送；`openai_responses/requests/codex-namespace-tools.json` |
 | `detail`（位于 `input_image` 上；`auto` 已经是形式标记） | image，来自 `openai_responses` | 图像分辨率提示，同 Chat 的 `image_url.detail`。`input_file.detail`（PDF 渲染）**不**在允许列表中。 | `openai_responses/requests/image-base64-file-id.json` |
+| `prompt_cache_key`、`prompt_cache_options`、`safety_identifier` | request，来自 `openai_decisions` | 缓存路由和用于滥用检查的最终用户 ID。KPP 把它们类型化为 `DecideRequest.cache` 和 `user`，属于提示（[决策](#决策)）；允许列表涵盖 KPP 不做类型化的形式，例如带有未记录字段的 `prompt_cache_options`。 | `openai_decisions/requests/cache.json` |
+| `detail`（位于 `input_image` 上） | image，来自 `openai_decisions` | 图像分辨率提示，同 Responses 的 `detail`。 | `openai_decisions/requests/instructions-parts.json` |
 | `phase`（位于助手消息上：`commentary`、`final_answer`） | message，来自 `openai_responses` | 把助手消息标记为前言或最终回答，便于 OpenAI 在重放该轮时区分它们。两种情况下文本相同，其他格式没有这种标记。 | Codex 把 GPT-6 的消息连同它一起发回；切换到其他模型的会话会带上它们；`openai_responses/requests/codex-model-switch.json` |
 
 ### 条件条目
@@ -103,6 +105,35 @@ OpenAI Chat 已弃用的函数调用在 Chat 内部可以往返，但不会转�
 | `text.verbosity` | request，来自 `openai_responses` | `low` 或 `high`（`medium` 是形式标记）。这是输出长度提示（[字段类别](index.md#字段类别)）：配置接受 `verbosity` 的 Chat Completions 目标会在该字段收到它（[服务商配置](openai-chat-providers.md#服务商配置)）；Anthropic 和其他 Chat Completions 目标没有对应字段，因此会省略它，并在 `kaeso-left-out` 中注明。 | Codex 对 GPT 模型发送 `low`，线程切换模型时仍保留它；`openai_responses/requests/multi-turn-roles.json` |
 | `output_config` | message（`role: "system"`），来自 `anthropic_messages` | `{}`，或只有与请求的 `output_config.effort` 相同的 `effort`。重复请求的推理强度不会改变任何内容。 | Claude Code 2.1.296 会在对话中间的系统消息里重复请求的推理强度；同一个 fixture |
 | `prompt_cache_retention`、`prompt_cache_options` | request，来自 `openai_chat` 和 `openai_responses` | 仅限发往 Anthropic，用于设置缓存保留多久（[缓存提示](#缓存提示)）；其他所有目标仍会拒绝它们。 | `openai_chat/requests/prompt-cache-breakpoint.json`、`openai_responses/requests/item-reference-breakpoint.json` |
+
+## 决策
+
+决策请求通过同一个 `DecideRequest` 在 OpenAI 的 Decisions API（[OpenAI Decisions](openai-decisions.md)）和 TypeSafe 的 System One API（[System One](system-one.md)）之间跨格式传递。目标在发送任何内容之前拒绝其格式无法表达的内容。少数有名称的调整列在回复的 `kaeso-adapted` 请求头中，目标没有位置的提示列在 `kaeso-left-out` 中。括号中的编号是决策格式的设计决定。
+
+| 内容 | OpenAI 应用到 System One 服务商 | System One 应用到 OpenAI |
+| --- | --- | --- |
+| 问题名称（D19） | 当每个问题都有名称、名称不重复且服务商可接受时保留；否则全部以 `q0`…`qN-1` 发送，`adapted: names` | 每个键成为问题的 `name` |
+| 布尔值（D18） | 以 `"true"` 和 `"false"` 发送，`adapted: booleans`；同时含有 `true` 和 `"true"` 的问题为 `Unsupported` | — |
+| 评分级别 | 级别同时有两者时写成 `"label: description"`，`adapted: levels`；否则只写标签 | 每个级别的文本成为它的 `label` |
+| 结构化状态（D13） | — | 在 OpenAI 的限制内为 `input_json`；否则为带原样 JSON 的 `input_text`，`adapted: state` |
+| 是非题的 criteria（D11） | — | 用一个固定模板并入说明，`adapted: criteria` |
+| JSON 形式的说明和描述 | — | 原样的 JSON 作为文本，`adapted: instructions` 或 `criteria` |
+| 对话（D12） | `Unsupported`（`conversation input`）：请发送一条用户消息 | — |
+| 图片 | data URL 成为资产；URL 为 `Unsupported`（`image URL`）：请以 data URL 发送图片（D6） | 输入、状态列表或说明的字符串中的每个引用，在原位置成为一个 `input_image` 部分；其他位置为 `Unsupported` |
+| box 问题 | 只发往能回答它们的配置文件 | `Unsupported` |
+| 限制（D5） | 配置文件对问题、选项、级别和图片的限制 | 400 个问题，2 到 255 个选项，2 到 10 个级别 |
+| `prompt_cache_key`、`prompt_cache_options`、断点 | 省略，`left_out: cache` | — |
+| `safety_identifier` | 省略，`left_out: user` | — |
+| `detail` | 省略 | — |
+
+criteria 模板在说明后加一个空行，再加 `It is true when: <true>` 和 `It is false when: <false>`，各占一行。由部分组成的说明把这些行作为另一个文本部分。JSON 文本从不重新格式化。
+
+回复按位置跨格式：应用格式的编码器从应用的请求中取得每个名称、选项和级别。
+
+- **置信度（D8）。** 保持原格式的回复逐字节保留其 `confidence`。来自其他格式的回复根据概率重新计算：System One 应用使用 TypeSafe 的公式，OpenAI 应用也一样，因为其文档中的两个示例与这些公式一致。是非题的答案没有置信度。
+- **拒答（D9）。** OpenAI 的拒答以 `{"type": "refusal"}` 写在问题的键下，到达 System One 应用。TypeSafe 的 SDK 会跳过它们不认识的答案类型，其他答案照常有效。
+- **标签和图例。** OpenAI 应用从其请求中得到每个级别的标签；System One 应用从其请求的级别得到 `legend`。
+- **用量。** KPP 统计的输入 token 不含缓存。OpenAI 的 `input_tokens` 包含缓存读取和写入，因此解码器减去它们，编码器再加回；`total_tokens` 为输入加输出。
 
 ## 工具命名空间
 
