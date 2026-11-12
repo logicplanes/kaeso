@@ -276,6 +276,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [OpenAI Chat Completions](openai-chat.md): Find where every field of the Chat Completions format goes in KPP.
 - [Chat Completions providers](openai-chat-providers.md): See how the codec adapts to each provider that speaks Chat Completions.
 - [Chat Completions inference clouds](openai-chat-inference-clouds.md): See what the inference clouds that host open models add to Chat Completions.
+- [Chat Completions gateways](openai-chat-gateways.md): See what the gateways and routers that pass requests on to other providers add to Chat Completions.
 - [OpenAI Responses](openai-responses.md): Find where every field of the Responses format goes in KPP.
 - [OpenAI Embeddings](openai-embeddings.md): Find where every field of the Embeddings format goes in KPP.
 - [Gemini API](gemini.md): Find where every field of the Gemini API goes in KPP, embeddings included.

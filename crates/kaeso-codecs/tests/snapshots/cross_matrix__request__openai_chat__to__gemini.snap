@@ -4584,6 +4584,21 @@ expression: outcomes
     },
     "path": "/v1beta/models/kaeso-example%2Fno-such-model%3Afree:generateContent"
   },
+  "providers/perplexity/json-schema": {
+    "message": "`disable_search` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "disable_search"
+  },
+  "providers/perplexity/reasoning-stream": {
+    "message": "`search_recency_filter` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "search_recency_filter"
+  },
+  "providers/perplexity/search-filters": {
+    "message": "`search_mode` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "search_mode"
+  },
   "providers/sambanova/invalid-api-key": {
     "body": {
       "contents": [

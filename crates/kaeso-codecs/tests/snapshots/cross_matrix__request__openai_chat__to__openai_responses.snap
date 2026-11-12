@@ -3701,6 +3701,21 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/perplexity/json-schema": {
+    "message": "`disable_search` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "disable_search"
+  },
+  "providers/perplexity/reasoning-stream": {
+    "message": "`search_recency_filter` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "search_recency_filter"
+  },
+  "providers/perplexity/search-filters": {
+    "message": "`search_mode` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "search_mode"
+  },
   "providers/sambanova/invalid-api-key": {
     "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

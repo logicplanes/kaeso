@@ -457,6 +457,26 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Perplexity key with its project's API Keys page and its pplx- prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "perplexity", name: "Perplexity search", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Perplexity");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Perplexity API key" })).toBeVisible();
+    expectKeyHint(dialog, "console.perplexity.ai", "https://console.perplexity.ai/project/keys", "API Keys", "pplx-");
+    const secret = within(dialog).getByLabelText("Perplexity API key");
+    expect(secret).toHaveAttribute("placeholder", "pplx-…");
+    await user.type(secret, "pplx-0123abcd");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Perplexity search");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Perplexity search is the Perplexity default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "perplexity", name: "Perplexity search", secret: "pplx-0123abcd", make_default: false },
+    ]);
+  });
+
   it("adds a Cloudflare AI Gateway token with the account it calls and, optionally, its gateway", async () => {
     on(
       "POST",

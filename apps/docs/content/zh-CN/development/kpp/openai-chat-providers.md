@@ -28,6 +28,8 @@ nav: Chat 服务商
 | `tool_schema_root(root)` | 把服务商不接受的函数工具根部联合合并为一个对象 schema，并在 `kaeso-adapted` 中注明该工具；`ToolSchemaRoot::ObjectUnions` 保留由内联对象组成的联合，`ToolSchemaRoot::TypedObjectUnions` 还会在没有 `type` 的根部写上 `type: "object"`。 | 工具、它的属性和模型的参数都保留；只有根部的形状改变（[联合类型的工具 schema](cross-format.md#联合类型的工具-schema)）。 |
 | `any_audio_format()` | 接受任何能对应到媒体类型的 `input_audio.format`（[音频](openai-chat.md#内容部分)）；没有这项设置时只接受 `wav` 和 `mp3`（`input_audio_formats`），其他音频为 `Unsupported`（`` audio format `flac` ``）。 | OpenAI 的规范列出 `wav` 和 `mp3`；OpenRouter 会把任何格式转发给模型自己的服务商。 |
 | `with_video_url()` | 把 `Block::Video` 作为 `video_url` 部分发送，内容为 URL 或 base64 data URL；没有这项设置时，视频为 `Unsupported`。 | OpenAI 的 API 没有视频部分；只有在文档中写明 `video_url` 的服务商才会收到它。 |
+| `at_path(path)` | 把请求发送到 `path` 而不是 `/v1/chat/completions`，基础 URL 和 API 根路径不变。 | 只有地址改变，请求体相同。Perplexity 在 `/v1/sonar` 提供 Sonar Chat Completions。 |
+| `without_stream_options()` | 流式请求中省略 `stream_options`；应用是否看到用量仍由其 `include_usage` 决定。Chat 应用 `stream_options` 中的其他键，例如 `include_obfuscation`，为 `Unsupported`（`stream_options.include_obfuscation`）。 | 适用于无需请求就在每个流中报告用量、且未列出 `stream_options` 的服务商。Kaeso 自己写出应用的流，因此应用要求的内容不会丢失。 |
 | `with_tool_parameters()` | 对于应用发送时没有 `parameters` 的函数工具，发送 `parameters: {"type": "object", "properties": {}}`。 | OpenAI 把没有 `parameters` 的函数理解为没有参数的函数；空对象 schema 向要求该字段的服务商表达同样的意思。 |
 | `partial_prefill()` | 当对话的最后一条 assistant 消息由其他格式的应用发送且不调用工具时，为其加上 `partial: true`；Anthropic Messages 应用就是这样预填回复开头的。Chat 应用自己的消息按原样发送。 | 消息及其文本不变；该标记只是告诉借助它续写预填内容的服务商（例如 Moonshot）接着该消息续写，而不是重新回答并重复预填内容。 |
 | `stop_list()` | 将单个 `stop` 字符串作为只含一项的列表发送。 | 只改变写法，停止序列不变。把 `stop` 定义为列表的服务商会拒绝字符串。 |
@@ -69,6 +71,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | NVIDIA（`nvidia`） | `max_tokens()`、`system_role()`、`without_end_user()`、`reasoning_fields(["reasoning_content"])` | NVIDIA 的 [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis) 参考及其模型页面的 OpenAPI 文档（只有 `max_tokens`，没有 `user` 或 `safety_identifier`，角色为 `system`、`context`、`user` 和 `assistant`，代码示例中为 `reasoning_content`），2026-11-10 阅读；据此构建于 `fixtures/openai_chat/providers/nvidia/` |
 | Ollama Cloud（`ollama-cloud`） | `max_tokens()`、`reasoning_fields(["reasoning"])`；拒绝 `logit_bias`、`logprobs` 和 `top_logprobs` | Ollama 的 OpenAI 兼容性页面（消息和增量中的 `reasoning`）；`responses/recorded-reasoning-effort` 和 `streams/recorded-reasoning-stream`；`responses/recorded-max-completion-tokens-ignored`（要求 20，生成 150 个 completion token）和 `responses/recorded-max-tokens-honoured`（要求 20，生成 20，`finish_reason: "length"`）；2026-10-30 的实时测试中，Ollama 对 `logprobs`、`top_logprobs` 和 `logit_bias` 返回 200，且没有返回对数概率 |
 | OpenRouter（`openrouter`） | `any_audio_format()`、`with_video_url()`、`reasoning_fields(["reasoning"])`、`error_detail(["error", "metadata", "raw"])` | OpenRouter 的音频和视频输入指南（2026-11-08 阅读：服务商接受的任何 `input_audio.format`，以及带 URL 或 data URL 的 `video_url` 部分）；OpenRouter 的推理 token 指南（`reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-free-reasoning` 和 `streams/recorded-free-reasoning-stream`；OpenRouter 的错误与调试页面（`metadata.raw`，即上游服务商的错误），`errors/recorded-upstream-rate-limited` 和 `errors/recorded-routing-fields` |
+| Perplexity（`perplexity`） | `at_path("/v1/sonar")`、`max_tokens()`、`system_role()`、`without_end_user()`、`without_cache_key()`、`without_stream_options()`；拒绝 `audio`、`frequency_penalty`、`function_call`、`functions`、`logit_bias`、`logprobs`、`metadata`、`modalities`、`parallel_tool_calls`、`prediction`、`presence_penalty`、`prompt_cache_key`、`prompt_cache_retention`、`seed`、`service_tier`、`store`、`stream_mode`、`tool_choice`、`tools` 和 `top_logprobs` | Perplexity 的 [OpenAPI 文档](https://docs.perplexity.ai/openapi.json) 中 `POST /v1/sonar` 的 `ApiChatCompletionsRequest`（只有 `max_tokens`；角色为 `system`、`user` 和 `assistant`；没有工具、惩罚参数、对数概率、`seed` 或 `stream_options`），以及其 [Python SDK](https://github.com/perplexityai/perplexity-py) 在提交 `1a79c5d` 中的 `StreamChunk` 类型（每个块都有用量），查阅于 2026-11-12；`fixtures/openai_chat/providers/perplexity/` 中根据规范构建的 fixtures。SDK 还列出了工具、惩罚参数和对数概率；两个来源不一致，因此予以拒绝。`stream_mode: "concise"` 流式发送的事件格式没有文档说明。 |
 | QwenCloud（`alibaba`） | `system_role()`、`thinking_switch()`、`reasoning_fields(["reasoning_content"])`；拒绝 `audio`、`logit_bias`、`metadata`、`modalities`、`prediction`、`service_tier`、`store`、`verbosity` 和 `web_search_options` | 百炼的[深度思考](https://www.alibabacloud.com/help/en/model-studio/deep-thinking)页面（`enable_thinking`、`thinking_budget`、`reasoning_content`，2026-10-30 查阅）；`fixtures/openai_chat/providers/alibaba/errors/recorded-developer-role`（`developer` 角色返回 400）；`responses/recorded-reasoning-effort-alone`（在 `qwen-flash` 上使用 `reasoning_effort: "high"`：没有思考）和 `responses/recorded-enable-thinking`（100 token 预算用满 100 个推理 token）；`responses/recorded-thinking` 和 `streams/recorded-thinking-stream`；`responses/recorded-logit-bias-field`、`recorded-store-metadata-fields`、`recorded-prediction-field`、`recorded-audio-fields` 和 `recorded-web-search-options-field`，百炼对它们以 200 回答，就像没有这些字段 |
 | SambaNova（`sambanova`） | `without_end_user()`、`without_cache_key()`、`with_video_url()`、`reasoning_fields(["reasoning"])`；拒绝 `frequency_penalty` 和 `presence_penalty` | SambaNova 的 [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility) 页面（两种惩罚参数“will be ignored”）和 [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json)（没有 `user`、`safety_identifier` 或 `prompt_cache_key`，`additionalProperties: false`；消息和增量上的 `reasoning`），2026-11-09 阅读；据此构建于 `fixtures/openai_chat/providers/sambanova/` |
 | Scaleway（`scaleway`） | `system_role()`、`without_end_user()`、`reasoning_fields(["reasoning_content", "reasoning"])` | Scaleway 的 [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/)（角色为 `system`、`user`、`assistant` 和 `tool`；没有 `user` 或 `safety_identifier`）及其 [reasoning 指南](https://www.scaleway.com/en/docs/generative-apis/how-to/query-reasoning-models/)（回复中的 `reasoning_content`，流增量中的 `reasoning`），2026-11-09 阅读；据此构建于 `fixtures/openai_chat/providers/scaleway/` |
@@ -80,7 +83,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 
 ## 使用此格式的服务商
 
-提供 Chat Completions 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_chat/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。 托管开放模型的推理云（例如 Fireworks AI 和 Nebius Token Factory）有单独的页面：[Chat Completions 推理云](openai-chat-inference-clouds.md)。
+提供 Chat Completions 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_chat/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。 托管开放模型的推理云（例如 Fireworks AI 和 Nebius Token Factory）有单独的页面：[Chat Completions 推理云](openai-chat-inference-clouds.md)，OpenRouter 和 Vercel 等网关和路由器也有：[Chat Completions 网关](openai-chat-gateways.md)。
 
 ### DeepSeek
 
@@ -181,68 +184,21 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | OpenAI 格式的错误，带有 Moonshot 自己的 `type`，例如 `invalid_authentication_error`、`resource_not_found_error` 或 `rate_limit_reached_error` | `KppError` | 类型取决于状态码；根据 Moonshot 的错误页面，`exceeded_current_quota_error`（余额用尽时的 429）属于计费拒绝，`engine_overloaded_error`（429）属于过载（`errors/exceeded-current-quota`、`errors/engine-overloaded`）。速率限制消息中含有账户的组织和密钥 ID（`ak-…`）；网关会从每条服务商错误消息中去掉两者。 |
 | `GET /v1/models`：OpenAI 的列表，`owned_by: "moonshot"`，每个模型还带有 `context_length`、`supports_reasoning`、`reasoning`、`modalities` 等字段 | `ModelList`、extras | 错误的密钥会得到 401，因此模型检查能发现它。 |
 
-### OpenRouter
+### Perplexity
 
-来源：OpenRouter 的 [API 参考](https://openrouter.ai/docs/api_reference/overview)、[流式传输](https://openrouter.ai/docs/api_reference/streaming)、[错误与调试](https://openrouter.ai/docs/api_reference/errors-and-debugging)和[推理 Token](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/openrouter/` 中的实时录制（均使用 `:free` 模型）。
+来源：Perplexity 的 [OpenAPI 文档](https://docs.perplexity.ai/openapi.json)（`POST /v1/sonar`）、其[迁移指南](https://docs.perplexity.ai/docs/agent-api/migrate-from-sonar/how-to.md)和[速率限制](https://docs.perplexity.ai/docs/admin/rate-limits-usage-tiers.md)页面，以及其 [Python SDK](https://github.com/perplexityai/perplexity-py) 在提交 `1a79c5d` 中的类型，查阅于 2026-11-12。由于没有密钥，`fixtures/openai_chat/providers/perplexity/` 中的 fixtures 根据这些来源构建，而非录制。Perplexity 已于 2026-09-27 结束对 Sonar Chat Completions 的支持；它仍通过 Agent API 作答。
 
-| OpenRouter 字段 | KPP | 说明 |
+| Perplexity 字段 | KPP | 说明 |
 |---|---|---|
-| `provider`、`models`、`transforms`、`usage`、`reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
-| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
-| `message.reasoning_details`、`delta.reasoning_details` | extras | OpenRouter 结构化形式的同一推理；Chat 应用原样收回，其他方言从 `reasoning` 得到文本。 |
-| 回复中的 `provider`、`native_finish_reason` | extras | 发往其他方言时省略。 |
-| `usage.cost`、`is_byok`、`cost_details` 及额外的 Token 明细 | 用量的 `raw` | Kaeso 按目录中的价格计算费用，而不是按 `usage.cost`。 |
-| 最后一个流式数据块，它在 `usage` 旁重复带 `finish_reason` 的 choice | `Usage` | 按 `choices: []` 的用量数据块读取。 |
-| `: OPENROUTER PROCESSING` 注释 | `Extra` | 与其他 SSE 注释一样，仅限同一方言。 |
-| `error.metadata.raw`，即上游服务商自己的错误，与笼统的 `message` `Provider returned error` 并列 | `KppError.message` | 通过配置的 `error_detail`，Anthropic Messages 和 Responses 应用以及请求日志会得到 `Provider returned error: <原因>`，例如 `google/gemma-4-31b-it:free is temporarily rate-limited upstream…`。Chat 应用收到 OpenRouter 发来的原样错误体。 |
-| 200 之后出现的 `error` 对象，位于回复体中或与 `choices` 并列的数据块中 | `KppError` | 见[上方各行](openai-chat.md#流createchatcompletionstreamresponse)；数字 `code` 像状态码一样决定类别。 |
-| `GET /api/v1/models`：没有 `object`，模型也没有 `object` 和 `owned_by`，带 `total_count` 和 `links` | `ModelList`、extras | `GET /api/v1/models/{model}` 对每个模型都返回 404，因此模型检查依赖模型列表，而 OpenRouter 提供该列表时不检查密钥。 |
-
-### Vercel
-
-来源：Vercel 的 [Chat Completions](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions)、[reasoning](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/reasoning)和[advanced configuration](https://vercel.com/docs/ai-gateway/sdks-and-apis/openai-chat-completions/advanced) 页面（2026-10-29 阅读），以及 `fixtures/openai_chat/providers/vercel/` 中的实时录制。Chat Completions 是 Vercel 的 `generation` 方言，它列出的每个模型都支持。
-
-| Vercel 字段 | KPP | 说明 |
-|---|---|---|
-| `providerOptions`（`gateway` 下的路由，例如 `order`、`only`、`sort`、`models`、`byok`、`tags`、`user`）、`models`、`provider`、`reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同（`requests/gateway-options`）。 |
-| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`，与 OpenRouter 相同。 |
-| `message.reasoning_details`、`delta.reasoning_details` | extras | OpenRouter 结构化形式的同一推理；对于既非 OpenAI 也非 Anthropic 的模型，`format` 为 `"unknown"`。 |
-| 消息中和最后一个数据块 delta 中的 `provider_metadata`（`gateway.routing`、`cost`、`marketCost`、`gatewayCost`、`generationId`），以及顶层的 `generationId` | extras | 发往其他方言时省略。录制中的 `clientSessionId` 是客户端指纹，已替换为零。 |
-| `usage.cost`、`market_cost`、`gateway_cost`、`surcharge_cost`、`reporting_tag_write_cost`、`is_byok`、`cost_details`、`cache_creation_input_tokens` 及额外的 Token 明细 | 用量的 `raw` | Kaeso 按目录中的价格计算费用。`usage.cost` 只是推理费用：`requests/gateway-options` 中的标签产生了 0.00015 美元的附加费，只有 `gateway_cost` 包含它。 |
-| 最后一个流式数据块，同时带 `finish_reason`、`provider_metadata` 和 `usage` | `Usage` | 按 `choices: []` 的用量数据块读取。 |
-| OpenAI 错误结构中的错误，带 Vercel 自己的 `type`（`model_not_found`、`no_providers_available`、`authentication_error`）、作为对象的 `param`，以及与 `error` 并列的 `providerMetadata` | `KppError` | 类别取决于状态码：401 表示密钥错误，403 表示账户无权调用该模型（`errors/recorded-restricted-model`，免费套餐账户调用 Claude），404 表示模型未知。Chat 应用收到 Vercel 发来的原样错误体。 |
-| `GET /v1/models`：OpenAI 的结构，每个模型带 Vercel 自己的字段（`name`、`type`、`context_window`、`max_tokens`、`pricing`、`tags`、`supported_parameters`） | `ModelList`、extras | 模型列表对错误的密钥返回 401（`errors/list-invalid-api-key`），但模型检查首先询问的 `GET /v1/models/{model}` 不检查密钥就会回答。 |
-
-### Standard Compute
-
-来源：Standard Compute 的 [Chat Completions](https://docs.standardcompute.com/api/chat-completions)、[模型和路由](https://docs.standardcompute.com/models)、[错误](https://docs.standardcompute.com/api/errors)和[模型列表](https://docs.standardcompute.com/api/models)页面，阅读于 2026-11-12，以及 `fixtures/openai_chat/providers/standardcompute/` 中的实时录制，其中大部分通过智能路由（`standardcompute`）。
-
-| Standard Compute 字段 | KPP | 说明 |
-|---|---|---|
-| 智能路由回复中的 `model: "StandardCompute"` | `Response.model` | 回复从不说明由哪个模型作答；Standard Compute 的请求日志会说明。 |
-| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`，与 OpenRouter 相同。 |
-| `message.reasoning_details`、`delta.reasoning_details` | extras | 以 OpenRouter 结构化形式表示的同一推理，包括 Gemini 模型作为 `reasoning.encrypted` 项的思考签名；Chat 应用会原样收到，并在之后的轮次中发回。 |
-| `native_finish_reason`、`refusal: null`、`system_fingerprint: null`、`service_tier` | extras | 发往其他方言时省略。 |
-| `usage` 中的 `cache_write_tokens`、`audio_tokens`、`video_tokens`、`image_tokens` | `raw` 用量 | |
-| 最后一个流式分块，在 `usage` 旁重复结束选项 | `Usage` | 按带 `choices: []` 的用量分块读取。 |
-| 不带 `code` 的 401 `error`；来自模型自身提供商、带数字 `code` 的错误 | `KppError` | 类型取决于状态码；带 `code: "budget_exhausted"` 的 402 `insufficient_quota` 为 `Billing`。 |
-| 未知模型的 400 `model_not_found` | 类型为 `InvalidRequest` 的 `KppError` | 从不返回 404，因此不会把目录中的模型标记为不可用。 |
-| `GET /v1/models`：`StandardCompute`、`context_length`、`architecture`、`supported_parameters`、`anthropic_family_tier`、`is_family_default` | `ModelList`、extras | 无需密钥即可获取。某个密钥的列表可能缺少该密钥仍可调用的模型，并把路由器称为 `StandardCompute`，并把回复中的 `anthropic/claude-haiku-5.5` 写作 `anthropic/claude-haiku-5-5`，因此模型检查比较 ID 时不区分大小写，也不区分 `.` 和 `-`，找不到的模型判定为无法确定。`GET /v1/models/{model}` 对每个模型都返回 404。 |
-
-### Cloudflare AI Gateway
-
-来源：Cloudflare 的 [REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/)、[Unified Billing](https://developers.cloudflare.com/ai-gateway/features/unified-billing/) 和[模型目录](https://developers.cloudflare.com/ai/models/)页面，阅读于 2026-11-12，以及 `fixtures/openai_chat/providers/cloudflare-ai-gateway/` 中来自 Workers AI 模型的实时录制（第三方模型在没有额度时返回 402）。
-
-| Cloudflare 字段 | KPP | 说明 |
-|---|---|---|
-| `/client/v4/accounts/{account_id}/ai/v1/…` | `EgressCtx::base_path` | 对于 Chat Completions、Responses 和 Messages，密钥的账户取代 `/v1`；密钥的网关写入 `cf-aig-gateway-id`。 |
-| `message.reasoning` 和 `reasoning_content`、`delta.reasoning` 和 `reasoning_content` | `Block::Reasoning` | 两个字段中是相同的文本；配置读取 `reasoning`，Chat 应用会原样收到 `reasoning_content`。 |
-| 每个流式分块中的 `usage`，以及最后一个包含全部用量的分块 | `Usage` | 每个分块只统计自身的 Token；`finish_reason` 之后的最后一个分块包含总数。 |
-| `usage.neurons` | `raw` 用量 | Workers AI 自己的单位；Kaeso 按 Token 计价。 |
-| `refusal`、`annotations`、`audio`、`function_call`、`tool_calls: []`、`token_ids` | extras | 为 Chat 应用往返保留。 |
-| `{"errors": [{"code", "message"}], "success": false}` | `KppError` | Cloudflare 自己的封装，用于被拒绝的令牌（401，代码 10000）、余额不足（402，代码 2021）、未知模型（404，代码 7003）或已停用模型（410，代码 7010）、图片链接（400，代码 6004）以及被拒绝的推理强度（400，代码 8001）。类型取决于状态码；消息沿用 Cloudflare 的。 |
-| 带 402 的 Messages 错误 `{"type": "error", "error": {"type": "invalid_request_error"}}` | 类型为 `Billing` 的 `KppError` | 无论类型如何，402 都是计费错误。 |
-| 来自 Workers AI 模型的 Responses 流 | 不使用 | 返回 `$error: Error: Network connection lost.` 或 Workers AI 自己的 `{"response"}` 事件，而不是 Responses 事件（实时），因此 Kaeso 通过 Chat Completions 流式传输 Workers AI 模型。 |
+| `POST /v1/sonar` | `ChatProfile::at_path` | Perplexity 没有 `/v1/chat/completions`。 |
+| `search_mode`、`search_domain_filter`、`search_language_filter`、`search_recency_filter`、日期过滤器、`return_images`、`return_related_questions`、`enable_search_classifier`、`disable_search`、`language_preference`、`web_search_options` | extras | 对 Chat 应用按原样发送；来自没有这些字段的其他格式时为 `Unsupported`。 |
+| `citations`、`search_results`、`images`、`related_questions` | extras | 按原样返回给 Chat 应用；对其他方言省略，这些应用收到带 `[1]` 标记的文本。 |
+| `usage.cost`、`citation_tokens`、`num_search_queries`、`search_context_size` | `raw` 用量 | Kaeso 按目录中的 token 价格记录成本；搜索费用 `cost.request_cost` 不包含在内。 |
+| 回复选项中 `message` 旁的 `delta` | extras | 对 Chat 应用往返保持不变。 |
+| 流式块带有 `delta`、目前为止的消息、引用、累计的 `usage`、`status` 和 `type`，没有 `[DONE]` | 事件、`Usage` | 文本来自 `delta`；以最后一次用量为准。`stream_mode: "concise"` 被拒绝。 |
+| 429 `{"error": {"type": "request_rate_limit_exceeded", "code": 429}}`，带 `Retry-After` | 种类为 `RateLimited` 的 `KppError` | `token_rate_limit_exceeded` 会指明时间窗口 `TPM` 或 `TPH`。 |
+| 422 `{"detail": [{"loc", "msg", "type"}]}` | 种类为 `InvalidRequest` 的 `KppError` | 第一个条目给出消息和字段。 |
+| `GET /v1/models` | `ModelList` | 列出 Agent API 的模型，例如 `perplexity/sonar` 和 `anthropic/claude-opus-5`，而不是 `/v1/sonar` 接受的 ID，因此该服务商的模型列表不完整。 |
 
 ### Cohere
 

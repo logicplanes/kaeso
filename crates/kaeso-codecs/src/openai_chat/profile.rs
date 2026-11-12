@@ -43,6 +43,13 @@ pub struct RequestProfile {
     /// Whether the provider takes videos as `video_url` content parts, which OpenAI's API
     /// doesn't have; otherwise video blocks are refused.
     pub video_url: bool,
+    /// Where the provider serves Chat Completions, `/v1/chat/completions` unless it uses a path
+    /// of its own, such as Perplexity's `/v1/sonar`.
+    pub path: &'static str,
+    /// Whether the provider takes `stream_options`. One that reports usage in every stream
+    /// without being asked gets none; an app's `include_usage` still decides whether the app
+    /// sees it, and any other option is refused.
+    pub stream_options: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -105,6 +112,8 @@ impl RequestProfile {
         refused_message_fields: &[],
         input_audio_formats: Some(&["wav", "mp3"]),
         video_url: false,
+        path: super::CHAT_COMPLETIONS_PATH,
+        stream_options: true,
     };
 }
 
@@ -276,6 +285,20 @@ impl ChatProfile {
     #[must_use]
     pub const fn with_video_url(mut self) -> Self {
         self.request.video_url = true;
+        self
+    }
+
+    /// The provider serves Chat Completions at `path` ([`RequestProfile::path`]).
+    #[must_use]
+    pub const fn at_path(mut self, path: &'static str) -> Self {
+        self.request.path = path;
+        self
+    }
+
+    /// The provider takes no `stream_options` ([`RequestProfile::stream_options`]).
+    #[must_use]
+    pub const fn without_stream_options(mut self) -> Self {
+        self.request.stream_options = false;
         self
     }
 

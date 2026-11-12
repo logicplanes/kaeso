@@ -43,6 +43,16 @@ fn redacts(word: &str) -> Option<&'static str> {
         .iter()
         .copied()
         .find(|p| word.len() >= p.len() + 4 && word.starts_with(p))
+        .or_else(|| perplexity_key(word).then_some(PERPLEXITY_KEY))
+}
+
+const PERPLEXITY_KEY: &str = "pplx-";
+
+// Perplexity's keys are `pplx-` and letters and digits; its model ids, such as
+// `pplx-decider-v1.2`, have more hyphens and must stay readable in its error messages.
+fn perplexity_key(word: &str) -> bool {
+    word.strip_prefix(PERPLEXITY_KEY)
+        .is_some_and(|rest| rest.len() >= 4 && rest.chars().all(|c| c.is_ascii_alphanumeric()))
 }
 
 fn labels_account(word: &str) -> bool {
@@ -187,6 +197,10 @@ mod tests {
         assert_eq!(
             redact_tokens("The API key fw_0AbCdEf123456 you provided is invalid."),
             "The API key fw_[redacted] you provided is invalid."
+        );
+        assert_eq!(
+            redact_tokens("Invalid key pplx-0AbCdEf123456 for model pplx-decider-flash-v1.2."),
+            "Invalid key pplx-[redacted] for model pplx-decider-flash-v1.2."
         );
         assert_eq!(
             redact_tokens("Invalid credentials in Authorization header: hf_AbCdEf0123456789."),

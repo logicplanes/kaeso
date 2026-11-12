@@ -1,0 +1,60 @@
+{
+  "id": "3c7a9f1e-5b2d-4c8e-9a61-0d4e7b2f8a13",
+  "model": "sonar-pro",
+  "created": 1762905600,
+  "usage": {
+    "prompt_tokens": 31,
+    "completion_tokens": 42,
+    "total_tokens": 73,
+    "search_context_size": "high",
+    "citation_tokens": 1520,
+    "num_search_queries": 2,
+    "cost": {
+      "input_tokens_cost": 0.0001,
+      "output_tokens_cost": 0.0006,
+      "request_cost": 0.014,
+      "total_cost": 0.0147
+    }
+  },
+  "citations": [
+    "https://www.ipcc.ch/report/ar6/syr/",
+    "https://www.ipcc.ch/srocc/chapter/summary-for-policymakers/"
+  ],
+  "search_results": [
+    {
+      "title": "Climate Change 2023: Synthesis Report",
+      "url": "https://www.ipcc.ch/report/ar6/syr/",
+      "date": "2023-03-20",
+      "last_updated": "2025-02-11",
+      "snippet": "Sea level rise is unavoidable for centuries to millennia due to continuing deep ocean warming and ice sheet melt.",
+      "source": "web"
+    },
+    {
+      "title": "Sea level rise - Summary for Policymakers",
+      "url": "https://www.ipcc.ch/srocc/chapter/summary-for-policymakers/",
+      "date": "2019-09-25",
+      "last_updated": null,
+      "snippet": "Global mean sea level is rising, with acceleration in recent decades.",
+      "source": "web"
+    }
+  ],
+  "related_questions": [
+    "How much will sea levels rise by 2100?",
+    "Which coastal cities are most at risk?"
+  ],
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "The IPCC's AR6 Synthesis Report concludes that sea level rise is unavoidable for centuries to millennia [1], and that it has accelerated in recent decades [2]."
+      },
+      "delta": {
+        "role": "assistant",
+        "content": ""
+      }
+    }
+  ]
+}

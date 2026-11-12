@@ -93,6 +93,10 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::InvalidRequest,
     ),
     (
+        "providers/perplexity/validation-error-doc",
+        ErrorKind::InvalidRequest,
+    ),
+    (
         "providers/mistral/recorded-assistant-prefill",
         ErrorKind::InvalidRequest,
     ),

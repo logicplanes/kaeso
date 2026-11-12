@@ -225,6 +225,22 @@ fn apply_profile(
     extras: &Extras,
     out: &mut Ext<ChatRequest>,
 ) -> Result<(), KppError> {
+    if !profile.request.stream_options {
+        if let Some(options) = out.known.stream_options.take()
+            && let Some(key) = options.extra.keys().chain(options.verbatim.keys()).next()
+        {
+            let param = format!("stream_options.{key}");
+            return Err(KppError::unsupported(
+                &param,
+                format!(
+                    "`{param}` is not supported by {}; remove it from the request.",
+                    profile.provider
+                ),
+            )
+            .with_param(param));
+        }
+        rename_null(&mut out.verbatim, "stream_options", None);
+    }
     if profile.request.greedy_top_p && out.known.top_p.is_some() {
         out.verbatim.shift_remove("top_p");
     }

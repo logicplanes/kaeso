@@ -1961,6 +1961,74 @@ pub const PROVIDERS: &[Provider] = &[
             gateway_header: "cf-aig-gateway-id",
         }),
     },
+    Provider {
+        id: "perplexity",
+        name: "Perplexity",
+        // Keys are made in a project's API Keys page and start `pplx-`
+        // (https://docs.perplexity.ai/docs/admin/api-key-management.md).
+        key_page: KeyPage {
+            url: "https://console.perplexity.ai/project/keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("pplx-"),
+        default_base_url: "https://api.perplexity.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /v1/models` lists the Agent API's models, such as `perplexity/sonar`, and none of
+        // the ids Sonar chat completions take (https://docs.perplexity.ai/openapi.json).
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        // Sonar chat completions at `/v1/sonar` take the fields of `ApiChatCompletionsRequest`
+        // in https://docs.perplexity.ai/openapi.json (2026-11-12) and report usage in every
+        // stream chunk; the official SDK lists tools, penalties and log probabilities too, so
+        // the sources disagree and Kaeso refuses them. End users go in a header, not the body.
+        chat: ChatProfile::compatible("Perplexity")
+            .at_path("/v1/sonar")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .without_cache_key()
+            .without_stream_options()
+            .refusing(&[
+                "audio",
+                "frequency_penalty",
+                "function_call",
+                "functions",
+                "logit_bias",
+                "logprobs",
+                "metadata",
+                "modalities",
+                "parallel_tool_calls",
+                "prediction",
+                "presence_penalty",
+                "prompt_cache_key",
+                "prompt_cache_retention",
+                "seed",
+                "service_tier",
+                "store",
+                "stream_mode",
+                "tool_choice",
+                "tools",
+                "top_logprobs",
+            ]),
+        responses: ResponsesProfile::compatible("Perplexity"),
+        messages: MessagesProfile::compatible("Perplexity"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+    },
 ];
 
 const _: () = {
@@ -2257,7 +2325,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity"
         );
     }
 
@@ -2336,7 +2404,37 @@ mod tests {
             .filter(|p| p.listing == ModelListing::Partial)
             .map(|p| p.id)
             .collect();
-        assert_eq!(partial, ["standardcompute"]);
+        assert_eq!(partial, ["standardcompute", "perplexity"]);
+    }
+
+    #[test]
+    fn perplexity_takes_sonar_chat_at_its_own_path_and_refuses_what_its_api_reference_leaves_out() {
+        let p = provider("perplexity").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Perplexity",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://api.perplexity.ai");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, None, Some("pplx-"))
+        );
+        assert_eq!(p.key_page.url, "https://console.perplexity.ai/project/keys");
+        assert_eq!(p.listing, ModelListing::Partial);
+        assert_eq!(p.chat.provider, "Perplexity");
+        assert_eq!(p.chat.request.path, "/v1/sonar");
+        assert!(!p.chat.request.stream_options && !p.chat.request.end_user);
+        for field in ["tools", "tool_choice", "logprobs", "seed", "stream_mode"] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        let listed = ["perplexity/sonar".to_owned()];
+        assert_eq!(p.listing.serves(&listed, "sonar-pro"), None);
     }
 
     #[test]
@@ -2824,7 +2922,11 @@ mod tests {
             .iter()
             .filter(|p| p.dialects.contains(&DialectId::OpenAiChat))
         {
-            let sent = sent_with_profile(p.id, "requests/grok-cli-model-id").unwrap();
+            let sent = match sent_with_profile(p.id, "requests/grok-cli-model-id") {
+                Ok(sent) => sent,
+                Err(param) if p.chat.request.refused_fields.contains(&param.as_str()) => continue,
+                Err(param) => panic!("{}: {param}", p.id),
+            };
             let kept = sent["messages"]
                 .as_array()
                 .unwrap()
@@ -3177,7 +3279,8 @@ mod tests {
                 "baseten",
                 "siliconflow",
                 "standardcompute",
-                "cloudflare-ai-gateway"
+                "cloudflare-ai-gateway",
+                "perplexity"
             ]
         );
         assert_eq!(
