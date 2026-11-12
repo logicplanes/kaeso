@@ -3533,6 +3533,248 @@ expression: outcomes
       "output_tokens": 58
     }
   },
+  "providers/standardcompute/recorded-file-pdf-data": {
+    "content": [
+      {
+        "text": "The document says \"Hello PDF\".",
+        "type": "text"
+      }
+    ],
+    "id": "sc-1794449330-H4VwY4ZgHhB7oE6VWqvQ",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 23,
+      "output_tokens": 70,
+      "output_tokens_details": {
+        "thinking_tokens": 61
+      }
+    }
+  },
+  "providers/standardcompute/recorded-json-schema": {
+    "content": [
+      {
+        "text": "{\n  \"date\": \"2026-10-16\",\n  \"name\": \"science fair\",\n  \"participants\": [\"Alice\", \"Bob\"]\n}",
+        "type": "text"
+      }
+    ],
+    "id": "sc-1794449341-9EjquliCwplEt3TShf49",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 28,
+      "output_tokens": 132,
+      "output_tokens_details": {
+        "thinking_tokens": 97
+      }
+    }
+  },
+  "providers/standardcompute/recorded-logprobs-top-logprobs-doc": {
+    "content": [
+      {
+        "text": "Hello! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "sc-1794449354-HhI1E8DqA5iJzvfpnaBy",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 6,
+      "output_tokens": 10,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/standardcompute/recorded-plain-developer-string": {
+    "content": [
+      {
+        "text": "Hello! How can I assist you today?",
+        "type": "text"
+      }
+    ],
+    "id": "sc-1794449365-Hsph6UgzGw9oG7EnZzwF",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 12,
+      "output_tokens": 48,
+      "output_tokens_details": {
+        "thinking_tokens": 37
+      }
+    }
+  },
+  "providers/standardcompute/recorded-stop-array": {
+    "content": [],
+    "id": "sc-1794449375-gMMoPfHitesCbYZqrIdS",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 15,
+      "output_tokens": 31,
+      "output_tokens_details": {
+        "thinking_tokens": 30
+      }
+    }
+  },
+  "providers/standardcompute/recorded-system-name-multiturn": {
+    "content": [
+      {
+        "text": "Boil it for 9 to 12 minutes, then plunge into cold water to stop cooking.",
+        "type": "text"
+      }
+    ],
+    "id": "sc-1794449390-MFKSuTwPbmBvQX1bW1JP",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 61,
+      "output_tokens": 21,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/standardcompute/recorded-tools-parallel": {
+    "content": [
+      {
+        "text": "\n\nLet me fetch both pieces of information for you.",
+        "type": "text"
+      },
+      {
+        "id": "call_003e24c39ed449a5b5dc6f9e",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "call_b0028684a94b4158913ae00c",
+        "input": {
+          "timezone": "Asia/Tokyo"
+        },
+        "name": "get_local_time",
+        "type": "tool_use"
+      }
+    ],
+    "id": "sc-1794449395-Uku8RmaLVrBpn6J4rCPY",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 444,
+      "output_tokens": 109,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/standardcompute/recorded-tools-results-parallel-error": {
+    "content": [
+      {
+        "text": "Here's what I found:\n\n🌦️ **Weather in Paris, France**: Currently **18°C** and **cloudy**.\n\n🕐 **Time in Tokyo**: The time service is temporarily unavailable, so I can't give you the exact local time right now. Since you're landing tonight, it's likely evening in Tokyo, but you may want to check your phone or a device for the precise time. Could you like me to try again?",
+        "type": "text"
+      }
+    ],
+    "id": "sc-1794449406-waiWqCmzj9xJKASWQpJm",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 589,
+      "output_tokens": 93,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/standardcompute/recorded-tools-single": {
+    "content": [
+      {
+        "id": "chatcmpl-tool-9d361a0d9e1c0147",
+        "input": {
+          "location": "Paris, France",
+          "unit": "celsius"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "sc-1794449419-vbXuQk7ROdh1NuWl0jZo",
+    "model": "StandardCompute",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 349,
+      "output_tokens": 64,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "content": [
       {

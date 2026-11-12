@@ -1,0 +1,12 @@
+data: {"id": "sc-1794449381-rAYm6HlTDsUkZeUKPd0w", "object": "chat.completion.chunk", "created": 1794449381, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "Hello", "role": "assistant"}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449381-rAYm6HlTDsUkZeUKPd0w", "object": "chat.completion.chunk", "created": 1794449381, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "! How can I assist", "role": "assistant"}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449381-rAYm6HlTDsUkZeUKPd0w", "object": "chat.completion.chunk", "created": 1794449381, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": " you today?", "role": "assistant"}, "finish_reason": null, "native_finish_reason": null}]}
+
+data: {"id": "sc-1794449381-rAYm6HlTDsUkZeUKPd0w", "object": "chat.completion.chunk", "created": 1794449381, "model": "StandardCompute", "choices": [{"index": 0, "delta": {"content": "", "role": "assistant"}, "finish_reason": "stop", "native_finish_reason": "stop"}]}
+
+data: {"id": "sc-1794449381-rAYm6HlTDsUkZeUKPd0w", "object": "chat.completion.chunk", "created": 1794449381, "model": "StandardCompute", "service_tier": null, "choices": [{"index": 0, "delta": {"content": "", "role": "assistant"}, "finish_reason": "stop", "native_finish_reason": "stop"}], "usage": {"prompt_tokens": 12, "completion_tokens": 10, "total_tokens": 22, "prompt_tokens_details": {"cached_tokens": 0, "cache_write_tokens": 0, "audio_tokens": 0, "video_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0, "image_tokens": 0, "audio_tokens": 0}}}
+
+data: [DONE]
+

@@ -8,9 +8,9 @@ Der Katalog eines Projekts auf seiner Seite **Modelle** listet die Modelle, die 
 
 ## Modelle hinzufügen
 
-Wählen Sie **Modelle hinzufügen**, wählen Sie dann in der durchsuchbaren Liste neben dem Suchfeld einen Anbieter und durchsuchen Sie seine Modelle. Die von Ihrer Organisation verbundenen Anbieter stehen zuerst. Der Dialog merkt sich den Anbieter, bis Sie die Konsole neu laden oder sich abmelden. Hat die Organisation keinen [Anbieter-Schlüssel](provider-keys.md) für ihn, weist der Dialog darauf hin, dass Anfragen an seine Modelle fehlschlagen, bis jemand einen hinzufügt.
+Wählen Sie **Modelle hinzufügen**, wählen Sie dann in der durchsuchbaren Liste neben dem Suchfeld einen Anbieter und durchsuchen Sie seine Modelle. Die von Ihrer Organisation verbundenen Anbieter stehen zuerst. Der Dialog merkt sich den Anbieter, bis Sie die Konsole neu laden oder sich abmelden. Bevor Sie einen wählen, beginnt er beim ersten Anbieter, für den die Organisation einen Schlüssel hat. Hat die Organisation keinen [Anbieter-Schlüssel](provider-keys.md) für ihn, weist der Dialog darauf hin, dass Anfragen an seine Modelle fehlschlagen, bis jemand einen hinzufügt.
 
-Der Dialog listet die Modelle, die neuesten zuerst, jedes mit seinem Kontextfenster sowie seinen Eingabe- und Ausgabepreisen. Passen mehr als 50 Modelle, zeigt er die ersten 50 und sagt, wie viele passen, sodass Sie sie mit der Suche eingrenzen. Wählen Sie eines oder mehrere aus und fügen Sie sie hinzu. **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells, bevor Sie es hinzufügen.
+Der Dialog listet die Modelle, die neuesten zuerst, jedes mit seinem Kontextfenster sowie seinen Eingabe- und Ausgabepreisen. Ein Router, ein Modell, das für jede Anfrage ein anderes Modell wählt, etwa `standardcompute` von Standard Compute, steht an erster Stelle und ist mit **Router** markiert. Passen mehr als 50 Modelle, zeigt er die ersten 50 und sagt, wie viele passen, sodass Sie sie mit der Suche eingrenzen. Wählen Sie eines oder mehrere aus und fügen Sie sie hinzu. **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells, bevor Sie es hinzufügen.
 
 Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [KPMR](../concepts/kpmr.md) mit, der Kaeso Provider & Model Registry. Zwei Abkürzungen decken den Rest ab:
 

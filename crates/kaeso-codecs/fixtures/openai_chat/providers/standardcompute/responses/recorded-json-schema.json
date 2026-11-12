@@ -1,0 +1,46 @@
+{
+  "id": "sc-1794449341-9EjquliCwplEt3TShf49",
+  "object": "chat.completion",
+  "created": 1794449341,
+  "model": "StandardCompute",
+  "system_fingerprint": null,
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"date\": \"2026-10-16\",\n  \"name\": \"science fair\",\n  \"participants\": [\"Alice\", \"Bob\"]\n}",
+        "refusal": null,
+        "reasoning": "We need to extract event information from the sentence: \"Alice and Bob are going to a science fair on 2026-10-16.\" The event is \"science fair\", date is \"2026-10-16\". The people are Alice and Bob. But the instruction says \"Extract the event information.\" Likely we need to output structured info: event name, date, maybe participants. Since it's a simple extraction, I'll output a JSON or key-value.",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "We need to extract event information from the sentence: \"Alice and Bob are going to a science fair on 2026-10-16.\" The event is \"science fair\", date is \"2026-10-16\". The people are Alice and Bob. But the instruction says \"Extract the event information.\" Likely we need to output structured info: event name, date, maybe participants. Since it's a simple extraction, I'll output a JSON or key-value.",
+            "format": "unknown",
+            "index": 0
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 28,
+    "completion_tokens": 132,
+    "total_tokens": 160,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 97,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}

@@ -435,6 +435,28 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Standard Compute key, which has no fixed prefix, with its dashboard's API Keys page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "standardcompute", name: "Standard Compute plan", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Standard Compute");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Standard Compute API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "standardcompute.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://standardcompute.com/dashboard/api-keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe("Create one at standardcompute.com under API Keys.");
+    const secret = within(dialog).getByLabelText("Standard Compute API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "standardcompute-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Standard Compute plan");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Standard Compute plan is the Standard Compute default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "standardcompute", name: "Standard Compute plan", secret: "standardcompute-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a Scaleway secret key, which has no fixed prefix, with Scaleway's IAM API keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "scaleway", name: "Scaleway prod", is_default: true }));
     const { user, dialog } = await open();

@@ -73,6 +73,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | Scaleway（`scaleway`） | `system_role()`、`without_end_user()`、`reasoning_fields(["reasoning_content", "reasoning"])` | Scaleway 的 [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/)（角色为 `system`、`user`、`assistant` 和 `tool`；没有 `user` 或 `safety_identifier`）及其 [reasoning 指南](https://www.scaleway.com/en/docs/generative-apis/how-to/query-reasoning-models/)（回复中的 `reasoning_content`，流增量中的 `reasoning`），2026-11-09 阅读；据此构建于 `fixtures/openai_chat/providers/scaleway/` |
 | SiliconFlow（`siliconflow`） | `max_tokens()`、`system_role()`、`without_end_user()`、`thinking_switch()`、`reasoning_fields(["reasoning_content"])` | SiliconFlow 的 [chat completions](https://docs.siliconflow.com/en/api-reference/chat-completions/chat-completions) 参考（只有 `max_tokens`，角色为 `system`、`user` 和 `assistant`，没有 `user` 或 `safety_identifier`，`enable_thinking` 和 `thinking_budget`）及其 [reasoning](https://docs.siliconflow.com/en/userguide/capabilities/reasoning) 指南（`reasoning_content`，`max_tokens` 只限制回答），2026-11-10 阅读；据此构建于 `fixtures/openai_chat/providers/siliconflow/` |
 | SpaceX（`xai`） | `reasoning_fields(["reasoning_content"])`、`with_message_bookkeeping()`、`tool_schema_root(ToolSchemaRoot::ObjectUnions)` | xAI 的 Chat Completions 参考（`reasoning_content`）；xAI 的函数调用指南（对象根部或对象组成的联合）；Grok CLI（xAI 自己的客户端）在每个助手轮次都向它发送 `model_id`（`requests/grok-cli-model-id.json`）；`responses/recorded-reasoning-content` 和 `streams/recorded-reasoning-content-stream` |
+| Standard Compute（`standardcompute`） | `reasoning_fields(["reasoning"])` | Standard Compute 的 [Chat Completions](https://docs.standardcompute.com/api/chat-completions) 和[推理](https://docs.standardcompute.com/reasoning)页面，阅读于 2026-11-12；`streams/recorded-routed-reasoning-stream`（`delta.reasoning` 及 `reasoning_details`） |
 | Together AI（`togetherai`） | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AI 的 chat completions 参考；键名取决于模型：`responses/recorded-sampling-extras`（`reasoning_content`），`responses/recorded-reasoning-reply` 和 `streams/recorded-reasoning-stream`（`reasoning`） |
 | Vercel（`vercel`） | `reasoning_fields(["reasoning"])` | Vercel 的 Chat Completions 推理页面（`message.reasoning` 和 `delta.reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-reasoning` 和 `streams/recorded-reasoning-stream` |
 
@@ -210,6 +211,22 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | 最后一个流式数据块，同时带 `finish_reason`、`provider_metadata` 和 `usage` | `Usage` | 按 `choices: []` 的用量数据块读取。 |
 | OpenAI 错误结构中的错误，带 Vercel 自己的 `type`（`model_not_found`、`no_providers_available`、`authentication_error`）、作为对象的 `param`，以及与 `error` 并列的 `providerMetadata` | `KppError` | 类别取决于状态码：401 表示密钥错误，403 表示账户无权调用该模型（`errors/recorded-restricted-model`，免费套餐账户调用 Claude），404 表示模型未知。Chat 应用收到 Vercel 发来的原样错误体。 |
 | `GET /v1/models`：OpenAI 的结构，每个模型带 Vercel 自己的字段（`name`、`type`、`context_window`、`max_tokens`、`pricing`、`tags`、`supported_parameters`） | `ModelList`、extras | 模型列表对错误的密钥返回 401（`errors/list-invalid-api-key`），但模型检查首先询问的 `GET /v1/models/{model}` 不检查密钥就会回答。 |
+
+### Standard Compute
+
+来源：Standard Compute 的 [Chat Completions](https://docs.standardcompute.com/api/chat-completions)、[模型和路由](https://docs.standardcompute.com/models)、[错误](https://docs.standardcompute.com/api/errors)和[模型列表](https://docs.standardcompute.com/api/models)页面，阅读于 2026-11-12，以及 `fixtures/openai_chat/providers/standardcompute/` 中的实时录制，其中大部分通过智能路由（`standardcompute`）。
+
+| Standard Compute 字段 | KPP | 说明 |
+|---|---|---|
+| 智能路由回复中的 `model: "StandardCompute"` | `Response.model` | 回复从不说明由哪个模型作答；Standard Compute 的请求日志会说明。 |
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`，与 OpenRouter 相同。 |
+| `message.reasoning_details`、`delta.reasoning_details` | extras | 以 OpenRouter 结构化形式表示的同一推理，包括 Gemini 模型作为 `reasoning.encrypted` 项的思考签名；Chat 应用会原样收到，并在之后的轮次中发回。 |
+| `native_finish_reason`、`refusal: null`、`system_fingerprint: null`、`service_tier` | extras | 发往其他方言时省略。 |
+| `usage` 中的 `cache_write_tokens`、`audio_tokens`、`video_tokens`、`image_tokens` | `raw` 用量 | |
+| 最后一个流式分块，在 `usage` 旁重复结束选项 | `Usage` | 按带 `choices: []` 的用量分块读取。 |
+| 不带 `code` 的 401 `error`；来自模型自身提供商、带数字 `code` 的错误 | `KppError` | 类型取决于状态码；带 `code: "budget_exhausted"` 的 402 `insufficient_quota` 为 `Billing`。 |
+| 未知模型的 400 `model_not_found` | 类型为 `InvalidRequest` 的 `KppError` | 从不返回 404，因此不会把目录中的模型标记为不可用。 |
+| `GET /v1/models`：`StandardCompute`、`context_length`、`architecture`、`supported_parameters`、`anthropic_family_tier`、`is_family_default` | `ModelList`、extras | 无需密钥即可获取。某个密钥的列表可能缺少该密钥仍可调用的模型，并把路由器称为 `StandardCompute`，并把回复中的 `anthropic/claude-haiku-5.5` 写作 `anthropic/claude-haiku-5-5`，因此模型检查比较 ID 时不区分大小写，也不区分 `.` 和 `-`，找不到的模型判定为无法确定。`GET /v1/models/{model}` 对每个模型都返回 404。 |
 
 ### Cohere
 

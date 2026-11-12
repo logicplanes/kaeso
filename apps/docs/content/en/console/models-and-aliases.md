@@ -8,9 +8,9 @@ A project's catalogue, on its **Models** page, lists the models its keys may cal
 
 ## Add models
 
-Choose **Add models**, then pick a provider from the searchable list next to the search field and search its models. Providers your organization has connected come first. The dialog remembers the provider until you reload the console or sign out. If the organization has no [provider key](provider-keys.md) for it, the dialog says that requests to its models fail until someone adds one.
+Choose **Add models**, then pick a provider from the searchable list next to the search field and search its models. Providers your organization has connected come first. The dialog remembers the provider until you reload the console or sign out. Before you pick one, it starts on the first provider the organization has a key for. If the organization has no [provider key](provider-keys.md) for it, the dialog says that requests to its models fail until someone adds one.
 
-The dialog lists models newest first, each with its context window and its input and output prices. When more than 50 models match, it shows the first 50 and says how many match, so search to narrow them down. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
+The dialog lists models newest first, each with its context window and its input and output prices. A router, a model that picks another model for each request, such as Standard Compute's `standardcompute`, comes first and is marked **Router**. When more than 50 models match, it shows the first 50 and says how many match, so search to narrow them down. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
 
 Each model brings its prices, limits and capabilities from [KPMR](../concepts/kpmr.md), the Kaeso Provider & Model Registry. Two shortcuts cover the rest:
 

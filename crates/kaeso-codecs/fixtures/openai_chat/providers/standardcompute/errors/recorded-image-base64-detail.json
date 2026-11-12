@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "Received 400 status code when fetching image from URL: https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+    "type": "invalid_request_error",
+    "code": 400
+  }
+}

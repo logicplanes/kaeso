@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Unsupported model. Use a model ID from GET /v1/models, or 'standardcompute' for smart routing.",
+    "type": "invalid_request_error",
+    "code": "model_not_found",
+    "param": "model"
+  }
+}

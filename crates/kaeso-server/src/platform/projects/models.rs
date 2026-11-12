@@ -262,6 +262,9 @@ pub struct SearchHit {
     pub release_date: Option<String>,
     #[doc = "Whether KPMR marks it deprecated."]
     pub deprecated: bool,
+    #[doc = "Whether it is a router that picks a model for each request, such as Standard\n\
+        Compute's `standardcompute`; routers come first among their provider's models."]
+    pub router: bool,
     #[doc = "The catalogue entry, if the project has it."]
     pub catalogue_model_id: Option<CatalogueModelId>,
     #[doc = "USD per million input tokens, as an entry would start with it."]
@@ -275,7 +278,10 @@ pub struct SearchHit {
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
-#[schema(description = "The KPMR models matching a search, newest first per provider.")]
+#[schema(
+    description = "The KPMR models matching a search, routers and then the newest first per\n\
+    provider."
+)]
 pub struct ModelSearch {
     #[doc = "The first `limit` matches."]
     pub data: Vec<SearchHit>,
@@ -285,6 +291,15 @@ pub struct ModelSearch {
     pub total: u32,
     #[doc = "How many of the matches the catalogue doesn't have yet."]
     pub not_in_catalogue: u32,
+}
+
+// A router has no release date of its own, so newest first alone would list it last.
+fn newest_after_routers(a: &SearchHit, b: &SearchHit) -> std::cmp::Ordering {
+    a.provider
+        .cmp(&b.provider)
+        .then(b.router.cmp(&a.router))
+        .then(b.release_date.cmp(&a.release_date))
+        .then(a.model_id.cmp(&b.model_id))
 }
 
 fn is_current(m: &kaeso_core::kpmr::Model) -> bool {
@@ -300,7 +315,7 @@ fn is_current(m: &kaeso_core::kpmr::Model) -> bool {
 #[utoipa::path(
     get,
     path = "/orgs/{org}/projects/{project}/models/search",
-    summary = "Searches KPMR for models to add, newest first per provider.",
+    summary = "Searches KPMR for models to add, routers and then the newest first per provider.",
     tag = "models",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), SearchParams),
     responses((status = 200, body = ModelSearch))
@@ -363,6 +378,7 @@ pub async fn search(
                 family: m.family.clone(),
                 release_date: m.release_date.clone(),
                 deprecated: m.is_deprecated(),
+                router: m.is_router(),
                 catalogue_model_id: in_catalogue
                     .get(&(pid.as_str(), mid.as_str()))
                     .map(|id| CatalogueModelId::from_uuid(*id)),
@@ -372,12 +388,7 @@ pub async fn search(
             });
         }
     }
-    hits.sort_by(|a, b| {
-        a.provider
-            .cmp(&b.provider)
-            .then(b.release_date.cmp(&a.release_date))
-            .then(a.model_id.cmp(&b.model_id))
-    });
+    hits.sort_by(newest_after_routers);
     let total = u32::try_from(hits.len()).unwrap_or(u32::MAX);
     let not_in_catalogue = u32::try_from(
         hits.iter()
@@ -1045,4 +1056,56 @@ pub async fn delete(
     tx.commit().await?;
     service::forget(&state, row.project_id).await;
     Ok(StatusCode::NO_CONTENT)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn hit(provider: &str, model: &str, release: Option<&str>, router: bool) -> SearchHit {
+        SearchHit {
+            provider: provider.to_owned(),
+            model_id: model.to_owned(),
+            name: None,
+            family: None,
+            release_date: release.map(str::to_owned),
+            deprecated: false,
+            router,
+            catalogue_model_id: None,
+            input_price: None,
+            output_price: None,
+            context_limit: None,
+        }
+    }
+
+    #[test]
+    fn a_router_comes_first_among_its_providers_models_then_the_newest() {
+        let mut hits = [
+            hit("standardcompute", "z-ai/glm-5.3", Some("2026-08-14"), false),
+            hit("openrouter", "openrouter/auto", None, true),
+            hit("standardcompute", "standardcompute", None, true),
+            hit(
+                "standardcompute",
+                "openai/gpt-6.1-sol",
+                Some("2026-10-30"),
+                false,
+            ),
+            hit("standardcompute", "example/undated", None, false),
+        ];
+        hits.sort_by(newest_after_routers);
+        let order: Vec<(&str, &str)> = hits
+            .iter()
+            .map(|h| (h.provider.as_str(), h.model_id.as_str()))
+            .collect();
+        assert_eq!(
+            order,
+            [
+                ("openrouter", "openrouter/auto"),
+                ("standardcompute", "standardcompute"),
+                ("standardcompute", "openai/gpt-6.1-sol"),
+                ("standardcompute", "z-ai/glm-5.3"),
+                ("standardcompute", "example/undated"),
+            ]
+        );
+    }
 }

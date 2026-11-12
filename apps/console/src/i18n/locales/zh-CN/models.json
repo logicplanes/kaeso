@@ -100,6 +100,7 @@
   "models.filters": "筛选",
   "models.filtersCount": "筛选 · {count}",
   "models.inCatalogue": "已在目录",
+  "models.router": "路由器",
   "models.includeDeprecated": "包含已弃用",
   "models.listSeparator": "、",
   "models.loadFailed": "无法加载此模型。",

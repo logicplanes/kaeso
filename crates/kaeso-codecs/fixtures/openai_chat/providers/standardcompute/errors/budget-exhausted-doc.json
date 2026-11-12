@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "Your monthly compute budget is used up. ...",
+    "type": "insufficient_quota",
+    "code": "budget_exhausted"
+  }
+}

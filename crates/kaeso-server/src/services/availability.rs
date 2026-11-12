@@ -305,8 +305,13 @@ pub async fn probe(
             )
             .await;
         return match listing.as_ref() {
-            Listing::Complete(ids) if ids.contains(&eff.model_id) => Probe::Served,
-            Listing::Complete(_) => Probe::Unserved,
+            Listing::Complete(ids) => match eff.provider.listing().serves(ids, &eff.model_id) {
+                Some(true) => Probe::Served,
+                Some(false) => Probe::Unserved,
+                None => Probe::Inconclusive(KppError::provider(
+                    "the account's model listing leaves the model out, and it may still serve it",
+                )),
+            },
             Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
             Listing::Failed(e) => Probe::Inconclusive(e.clone()),
             Listing::Unfinished => Probe::Inconclusive(KppError::provider(
@@ -341,8 +346,11 @@ pub async fn probe(
         )
         .await;
     match listing.as_ref() {
-        Listing::Complete(ids) if ids.contains(&eff.model_id) => Probe::Served,
-        Listing::Complete(_) => Probe::Unserved,
+        Listing::Complete(ids) => match eff.provider.listing().serves(ids, &eff.model_id) {
+            Some(true) => Probe::Served,
+            Some(false) => Probe::Unserved,
+            None => Probe::Inconclusive(not_found),
+        },
         Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
         Listing::Unfinished | Listing::Failed(_) => Probe::Inconclusive(not_found),
     }

@@ -1,0 +1,38 @@
+{
+  "id": "sc-1794449406-waiWqCmzj9xJKASWQpJm",
+  "object": "chat.completion",
+  "created": 1794449406,
+  "model": "StandardCompute",
+  "system_fingerprint": null,
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "Here's what I found:\n\n\ud83c\udf26\ufe0f **Weather in Paris, France**: Currently **18\u00b0C** and **cloudy**.\n\n\ud83d\udd50 **Time in Tokyo**: The time service is temporarily unavailable, so I can't give you the exact local time right now. Since you're landing tonight, it's likely evening in Tokyo, but you may want to check your phone or a device for the precise time. Could you like me to try again?",
+        "refusal": null,
+        "reasoning": null
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 589,
+    "completion_tokens": 93,
+    "total_tokens": 682,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}

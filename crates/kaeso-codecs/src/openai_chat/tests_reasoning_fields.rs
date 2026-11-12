@@ -68,6 +68,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("Scaleway").reasoning_fields(&["reasoning_content", "reasoning"]),
     ),
     (
+        "standardcompute",
+        ChatProfile::compatible("Standard Compute").reasoning_fields(&["reasoning"]),
+    ),
+    (
         "siliconflow",
         ChatProfile::compatible("SiliconFlow").reasoning_fields(&["reasoning_content"]),
     ),
@@ -292,6 +296,46 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         );
         assert_eq!(responses["output"][1]["type"], "message", "{name}");
     }
+}
+
+#[test]
+fn standard_compute_routed_reasoning_reaches_anthropic_apps_as_thinking_before_the_answer() {
+    let bytes = recorded(
+        "streams",
+        "sse",
+        "standardcompute",
+        "recorded-routed-reasoning-stream",
+    );
+    let events = stream("standardcompute", &bytes);
+    let got = shape(&events);
+    assert_eq!(got.reasoning, streamed_field(&bytes, "reasoning"));
+    assert!(!got.reasoning.is_empty());
+    assert_eq!(got.order[..2], ["reasoning 0", "stop 0"]);
+    let anthropic =
+        String::from_utf8(encode_stream(DialectId::AnthropicMessages, &events)).unwrap();
+    assert!(
+        anthropic.contains(r#""type":"thinking_delta""#),
+        "{anthropic}"
+    );
+    assert!(anthropic.contains("No, 91 is"), "{anthropic}");
+    let resp = reply(
+        "standardcompute",
+        &recorded(
+            "responses",
+            "json",
+            "standardcompute",
+            "recorded-json-schema",
+        ),
+    );
+    assert!(
+        matches!(&resp.blocks[0], Block::Reasoning(_)),
+        "{:?}",
+        resp.blocks
+    );
+    assert_eq!(
+        encode_reply(DialectId::AnthropicMessages, &resp)["content"][0]["type"],
+        "thinking"
+    );
 }
 
 #[test]

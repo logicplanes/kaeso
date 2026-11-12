@@ -71,12 +71,13 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const [view, setView] = useState<View>("search");
   const catalog = useProviders(org);
   const [chosen, setProvider] = useState(() => recall<string>(LAST_PROVIDER));
-  const provider = (chosen && catalog.get(chosen) ? chosen : catalog.list[0]?.id) ?? "";
+  const orgKeys = useOrgProviderKeys(org);
+  const connected = catalog.list.find((p) => orgKeys.keys.some((k) => k.provider === p.id))?.id;
+  const provider = (chosen && catalog.get(chosen) ? chosen : (connected ?? catalog.list[0]?.id)) ?? "";
   const providers = useProviderOptions(org);
   const dialects = catalog.dialects(provider);
   const ownProvider = !!catalog.get(provider)?.custom;
   const takesKey = catalog.get(provider)?.takes_key !== false;
-  const orgKeys = useOrgProviderKeys(org);
   const noKey = orgKeys.known && takesKey && !orgKeys.keys.some((k) => k.provider === provider);
   const [q, setQ] = useState("");
   const [deprecated, setDeprecated] = useState(false);
@@ -549,8 +550,10 @@ function hitColumns(providerName: (id: string) => string, review: (modelId: stri
             />
             {h.catalogue_model_id ? (
               <Badge>{t("models.inCatalogue", "In catalogue")}</Badge>
+            ) : h.deprecated ? (
+              <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
             ) : (
-              h.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
+              h.router && <Badge tone="info">{t("models.router", "Router")}</Badge>
             )}
           </span>
         ),

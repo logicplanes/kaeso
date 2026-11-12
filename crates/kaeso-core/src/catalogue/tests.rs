@@ -362,7 +362,7 @@ fn delisted_models_keep_their_last_known_values() {
 fn kpmr_marks_entries_deprecated_also_after_delisting() {
     let snap = snapshot();
     assert!(entry("openai", "gpt-4").is_deprecated(&snap));
-    assert!(!entry("anthropic", "claude-sonnet-4-5").is_deprecated(&snap));
+    assert!(!entry("anthropic", "claude-sonnet-5-5").is_deprecated(&snap));
     assert!(!entry("openai", "unknown").is_deprecated(&snap));
     let mut gone = entry("openai", "gone-model");
     let mut last = snap.model("openai", "gpt-4").unwrap().clone();
@@ -2578,6 +2578,42 @@ fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
         messages.provider.count_tokens_for(messages.dialect),
         Some(messages.dialect)
     );
+}
+
+#[test]
+fn standard_compute_models_speak_chat_completions_without_prices_and_smart_routing_is_a_router() {
+    let routing = eff(&entry("standardcompute", "standardcompute"));
+    assert_eq!(routing.dialect, DialectId::OpenAiChat);
+    assert_eq!(routing.provider.chat().provider, "Standard Compute");
+    assert_eq!(
+        routing.fields.display_name.as_deref(),
+        Some("Smart routing")
+    );
+    assert_eq!(
+        routing.provider.count_tokens_for(DialectId::OpenAiChat),
+        None
+    );
+    let models = &snapshot().providers["standardcompute"].models;
+    assert!(models["standardcompute"].is_router());
+    assert_eq!(models.values().filter(|m| m.is_router()).count(), 1);
+    for id in [
+        "standardcompute",
+        "anthropic/claude-sonnet-5.5",
+        "openai/gpt-5.6-luna:eu",
+        "z-ai/glm-5.3:us",
+    ] {
+        let m = eff(&entry("standardcompute", id));
+        assert_eq!(
+            (
+                m.fields.input_price,
+                m.fields.output_price,
+                m.fields.cache_read_price
+            ),
+            (None, None, None),
+            "{id}: Standard Compute bills a plan, not tokens"
+        );
+    }
+    assert!(models["google/gemini-2.5-pro"].is_deprecated());
 }
 
 #[test]

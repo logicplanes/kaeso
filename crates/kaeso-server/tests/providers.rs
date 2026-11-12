@@ -210,6 +210,24 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         siliconflow["key_page"],
         json!({ "url": "https://cloud.siliconflow.com/account/ak", "label": "API Keys" })
     );
+    let standardcompute = listed
+        .iter()
+        .find(|p| p["id"] == "standardcompute")
+        .unwrap();
+    assert_eq!(standardcompute["name"], "Standard Compute");
+    assert_eq!(standardcompute["dialects"], json!(["openai_chat"]));
+    assert_eq!(
+        (
+            &standardcompute["count_tokens"],
+            &standardcompute["embeddings"],
+            &standardcompute["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &Value::Null)
+    );
+    assert_eq!(
+        standardcompute["key_page"],
+        json!({ "url": "https://standardcompute.com/dashboard/api-keys", "label": "API Keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

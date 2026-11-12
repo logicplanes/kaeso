@@ -184,8 +184,9 @@ pub struct CredentialCreate {
         `togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n\
         `ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n\
         `elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n\
-        `sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`, or one\n\
-        of the organization's custom providers that takes a key."]
+        `sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n\
+        `standardcompute`, or one of the organization's custom providers that takes a\n\
+        key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]

@@ -400,6 +400,7 @@
   "models.route.views": "Alias views",
   "models.route.weight": "{weight}%",
   "models.route.withTimeout": "{provider} · {seconds} s",
+  "models.router": "Router",
   "models.saveOverrides": "Save overrides",
   "models.search": "Search models",
   "models.seconds": "{seconds} s",

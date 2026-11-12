@@ -578,6 +578,11 @@ impl ProviderRef {
             .is_some_and(|p| p.reasoning_beyond_output_limit)
     }
 
+    pub fn listing(&self) -> crate::provider::ModelListing {
+        self.built_in()
+            .map_or(crate::provider::ModelListing::Complete, |p| p.listing)
+    }
+
     pub fn built_in(&self) -> Option<&'static Provider> {
         match self {
             ProviderRef::BuiltIn(p) => Some(p),

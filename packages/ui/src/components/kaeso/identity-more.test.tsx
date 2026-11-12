@@ -198,6 +198,7 @@ const MARKED_PROVIDERS = {
   nvidia: "NVIDIA",
   baseten: "Baseten",
   siliconflow: "SiliconFlow",
+  standardcompute: "Standard Compute",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

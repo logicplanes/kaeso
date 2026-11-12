@@ -1,0 +1,46 @@
+{
+  "id": "sc-1794449365-Hsph6UgzGw9oG7EnZzwF",
+  "object": "chat.completion",
+  "created": 1794449365,
+  "model": "StandardCompute",
+  "system_fingerprint": null,
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": null,
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I assist you today?",
+        "refusal": null,
+        "reasoning": "We need to respond to the user's greeting. The user just said \"Hello!\" so a simple friendly greeting back is appropriate. As a helpful assistant, we can also offer assistance.",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "We need to respond to the user's greeting. The user just said \"Hello!\" so a simple friendly greeting back is appropriate. As a helpful assistant, we can also offer assistance.",
+            "format": "unknown",
+            "index": 0
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 48,
+    "total_tokens": 60,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 37,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}

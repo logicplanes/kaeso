@@ -1,0 +1,369 @@
+{
+  "id": "sc-1794449354-HhI1E8DqA5iJzvfpnaBy",
+  "object": "chat.completion",
+  "created": 1794449354,
+  "model": "StandardCompute",
+  "system_fingerprint": null,
+  "service_tier": null,
+  "choices": [
+    {
+      "index": 0,
+      "logprobs": {
+        "content": [
+          {
+            "token": "Hello",
+            "bytes": [
+              72,
+              101,
+              108,
+              108,
+              111
+            ],
+            "logprob": -0.035306256264448166,
+            "top_logprobs": [
+              {
+                "token": "Hello",
+                "bytes": [
+                  72,
+                  101,
+                  108,
+                  108,
+                  111
+                ],
+                "logprob": -0.035306256264448166
+              },
+              {
+                "token": "\u4f60\u597d",
+                "bytes": [
+                  228,
+                  189,
+                  160,
+                  229,
+                  165,
+                  189
+                ],
+                "logprob": -3.660306215286255
+              }
+            ]
+          },
+          {
+            "token": "!",
+            "bytes": [
+              33
+            ],
+            "logprob": -0.0005103239673189819,
+            "top_logprobs": [
+              {
+                "token": "!",
+                "bytes": [
+                  33
+                ],
+                "logprob": -0.0005103239673189819
+              },
+              {
+                "token": " there",
+                "bytes": [
+                  32,
+                  116,
+                  104,
+                  101,
+                  114,
+                  101
+                ],
+                "logprob": -7.625510215759277
+              }
+            ]
+          },
+          {
+            "token": " How",
+            "bytes": [
+              32,
+              72,
+              111,
+              119
+            ],
+            "logprob": -0.0006206493126228452,
+            "top_logprobs": [
+              {
+                "token": "!",
+                "bytes": [
+                  33
+                ],
+                "logprob": -0.0005103239673189819
+              },
+              {
+                "token": " there",
+                "bytes": [
+                  32,
+                  116,
+                  104,
+                  101,
+                  114,
+                  101
+                ],
+                "logprob": -7.625510215759277
+              }
+            ]
+          },
+          {
+            "token": " can",
+            "bytes": [
+              32,
+              99,
+              97,
+              110
+            ],
+            "logprob": -1.6689286894688848e-06,
+            "top_logprobs": [
+              {
+                "token": "!",
+                "bytes": [
+                  33
+                ],
+                "logprob": -0.0005103239673189819
+              },
+              {
+                "token": " there",
+                "bytes": [
+                  32,
+                  116,
+                  104,
+                  101,
+                  114,
+                  101
+                ],
+                "logprob": -7.625510215759277
+              }
+            ]
+          },
+          {
+            "token": " I",
+            "bytes": [
+              32,
+              73
+            ],
+            "logprob": -4.6491513785440475e-06,
+            "top_logprobs": [
+              {
+                "token": "!",
+                "bytes": [
+                  33
+                ],
+                "logprob": -0.0005103239673189819
+              },
+              {
+                "token": " there",
+                "bytes": [
+                  32,
+                  116,
+                  104,
+                  101,
+                  114,
+                  101
+                ],
+                "logprob": -7.625510215759277
+              }
+            ]
+          },
+          {
+            "token": " help",
+            "bytes": [
+              32,
+              104,
+              101,
+              108,
+              112
+            ],
+            "logprob": -0.014165681786835194,
+            "top_logprobs": [
+              {
+                "token": "!",
+                "bytes": [
+                  33
+                ],
+                "logprob": -0.0005103239673189819
+              },
+              {
+                "token": " there",
+                "bytes": [
+                  32,
+                  116,
+                  104,
+                  101,
+                  114,
+                  101
+                ],
+                "logprob": -7.625510215759277
+              }
+            ]
+          },
+          {
+            "token": " you",
+            "bytes": [
+              32,
+              121,
+              111,
+              117
+            ],
+            "logprob": -3.814689989667386e-06,
+            "top_logprobs": [
+              {
+                "token": "!",
+                "bytes": [
+                  33
+                ],
+                "logprob": -0.0005103239673189819
+              },
+              {
+                "token": " there",
+                "bytes": [
+                  32,
+                  116,
+                  104,
+                  101,
+                  114,
+                  101
+                ],
+                "logprob": -7.625510215759277
+              }
+            ]
+          },
+          {
+            "token": " today",
+            "bytes": [
+              32,
+              116,
+              111,
+              100,
+              97,
+              121
+            ],
+            "logprob": -4.8397800128441304e-05,
+            "top_logprobs": [
+              {
+                "token": "!",
+                "bytes": [
+                  33
+                ],
+                "logprob": -0.0005103239673189819
+              },
+              {
+                "token": " there",
+                "bytes": [
+                  32,
+                  116,
+                  104,
+                  101,
+                  114,
+                  101
+                ],
+                "logprob": -7.625510215759277
+              }
+            ]
+          },
+          {
+            "token": "?",
+            "bytes": [
+              63
+            ],
+            "logprob": -0.0001915509783430025,
+            "top_logprobs": [
+              {
+                "token": "?",
+                "bytes": [
+                  63
+                ],
+                "logprob": -0.0001915509783430025
+              },
+              {
+                "token": "?\n\n",
+                "bytes": [
+                  63,
+                  10,
+                  10
+                ],
+                "logprob": -8.750191688537598
+              }
+            ]
+          },
+          {
+            "token": "<\uff5cend\u2581of\u2581sentence\uff5c>",
+            "bytes": [
+              60,
+              239,
+              189,
+              156,
+              101,
+              110,
+              100,
+              226,
+              150,
+              129,
+              111,
+              102,
+              226,
+              150,
+              129,
+              115,
+              101,
+              110,
+              116,
+              101,
+              110,
+              99,
+              101,
+              239,
+              189,
+              156,
+              62
+            ],
+            "logprob": -0.016517678275704384,
+            "top_logprobs": [
+              {
+                "token": "?",
+                "bytes": [
+                  63
+                ],
+                "logprob": -0.0001915509783430025
+              },
+              {
+                "token": "?\n\n",
+                "bytes": [
+                  63,
+                  10,
+                  10
+                ],
+                "logprob": -8.750191688537598
+              }
+            ]
+          }
+        ],
+        "refusal": null
+      },
+      "finish_reason": "stop",
+      "native_finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I help you today?",
+        "refusal": null,
+        "reasoning": null
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 6,
+    "completion_tokens": 10,
+    "total_tokens": 16,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "audio_tokens": 0,
+      "video_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "image_tokens": 0,
+      "audio_tokens": 0
+    }
+  }
+}
