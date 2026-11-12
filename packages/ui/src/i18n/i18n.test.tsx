@@ -192,6 +192,7 @@ describe("the library's catalogs", () => {
     "kbd.ctrl",
     "kbd.shift",
     "parameterPanel.topP",
+    "questionEditor.namePlaceholder",
     "format.hoursMinutes",
     "format.minutesSeconds",
     "format.milliseconds",

@@ -1,3 +1,4 @@
+import type { DecisionAnswer, DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
 export interface PlaygroundModel {
   value: string;
   provider: string;
@@ -87,3 +88,45 @@ export const tokensOf = (text: string) => Math.max(1, Math.round(text.length / 4
 export function costOf(model: PlaygroundModel, input: number, output: number): string {
   return ((input * model.input + output * model.output) / 1_000_000).toFixed(6);
 }
+
+export const triageQuestions: DecisionQuestion[] = [
+  {
+    id: "is_invoice",
+    name: "is_invoice",
+    kind: "predicate",
+    instructions: "Is this document an invoice or a receipt?",
+    whenTrue: "It asks for or confirms a payment",
+    whenFalse: "Anything else",
+  },
+  {
+    id: "team",
+    name: "team",
+    kind: "choice",
+    instructions: "Which team should handle it?",
+    options: [
+      { value: "finance", description: "Invoices, refunds and payments" },
+      { value: "legal", description: "Contracts and data requests" },
+      { value: "support", description: "Questions about using Kaeso" },
+      { value: "sales", description: "Plans and quotes" },
+    ],
+  },
+  {
+    id: "urgency",
+    name: "urgency",
+    kind: "score",
+    instructions: "How soon does it need an answer?",
+    levels: [
+      { label: "This month", description: "Nothing waits on it" },
+      { label: "This week", description: "Someone waits, but not today" },
+      { label: "Today", description: "Work is blocked until it is answered" },
+    ],
+  },
+  { id: "total", name: "total", kind: "box", instructions: "Where is the total on the receipt?" },
+];
+
+export const triageAnswers: DecisionAnswer[] = [
+  { kind: "predicate", probability: 0.9731 },
+  { kind: "choice", option: 0, probabilities: [0.8812, 0.0041, 0.1105, null], confidence: 0.8416 },
+  { kind: "score", score: 0.62, probabilities: [0.47, 0.44, 0.09], confidence: 0.3812 },
+  { kind: "box", top: 0.579, bottom: 0.629, left: 0.35, right: 0.65 },
+];
