@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "Token rate limit exceeded (TPM). Retry after the Retry-After interval.",
+    "type": "token_rate_limit_exceeded",
+    "code": 429
+  }
+}

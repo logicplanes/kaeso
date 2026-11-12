@@ -1,0 +1,30 @@
+{
+  "model": "sonar",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Name the tallest building in the world and its height in metres."
+    }
+  ],
+  "disable_search": true,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "height_m": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "height_m"
+        ]
+      }
+    }
+  }
+}

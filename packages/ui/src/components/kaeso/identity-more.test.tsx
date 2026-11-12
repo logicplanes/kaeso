@@ -200,6 +200,7 @@ const MARKED_PROVIDERS = {
   siliconflow: "SiliconFlow",
   standardcompute: "Standard Compute",
   "cloudflare-ai-gateway": "Cloudflare AI Gateway",
+  perplexity: "Perplexity",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

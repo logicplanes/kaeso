@@ -254,6 +254,21 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         standardcompute["key_page"],
         json!({ "url": "https://standardcompute.com/dashboard/api-keys", "label": "API Keys" })
     );
+    let perplexity = listed.iter().find(|p| p["id"] == "perplexity").unwrap();
+    assert_eq!(perplexity["name"], "Perplexity");
+    assert_eq!(perplexity["dialects"], json!(["openai_chat"]));
+    assert_eq!(
+        (
+            &perplexity["count_tokens"],
+            &perplexity["embeddings"],
+            &perplexity["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &json!("pplx-"))
+    );
+    assert_eq!(
+        perplexity["key_page"],
+        json!({ "url": "https://console.perplexity.ai/project/keys", "label": "API Keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

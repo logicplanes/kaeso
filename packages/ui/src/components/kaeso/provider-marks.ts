@@ -411,6 +411,10 @@ export const PROVIDER_MARKS: Record<string, ProviderMark> = {
       },
     ],
   },
+  perplexity: {
+    d: "M4 2h11l5 5v2l-5 5h-6v8H4zM9 6.5v3h5l1.5-1.5-1.5-1.5z",
+    color: "text-mark-perplexity",
+  },
 
   vllm: {
     parts: [

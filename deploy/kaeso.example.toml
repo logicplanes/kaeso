@@ -152,6 +152,9 @@ base_url = "https://api.stdcmpt.com"
 [providers.cloudflare-ai-gateway]
 base_url = "https://api.cloudflare.com"
 
+[providers.perplexity]
+base_url = "https://api.perplexity.ai"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

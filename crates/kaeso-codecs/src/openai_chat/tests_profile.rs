@@ -1044,3 +1044,116 @@ fn siliconflow_gets_an_anthropic_apps_thinking_as_enable_thinking_and_its_budget
         "{sent}"
     );
 }
+
+const PERPLEXITY: ChatProfile = ChatProfile::compatible("Perplexity")
+    .at_path("/v1/sonar")
+    .max_tokens()
+    .system_role()
+    .without_end_user()
+    .without_cache_key()
+    .without_stream_options()
+    .refusing(&["frequency_penalty", "logprobs", "stream_mode", "tools"]);
+
+fn sent_to_perplexity(req: &Request) -> (String, Value) {
+    let mut ctx = EgressCtx::new(req).with_chat_profile(PERPLEXITY);
+    let out = OpenAiChat::encode_request(req, &mut ctx).unwrap();
+    (out.path, serde_json::from_slice(&out.body).unwrap())
+}
+
+#[test]
+fn perplexity_gets_its_search_fields_as_written_at_its_own_path() {
+    let requests: Vec<_> = fixtures("openai_chat", "requests", "json")
+        .into_iter()
+        .filter(|(n, _)| n.starts_with("providers/perplexity/"))
+        .collect();
+    assert_eq!(requests.len(), 3);
+    for (name, body) in requests {
+        let (path, sent) = sent_to_perplexity(&decode(&body).unwrap());
+        assert_eq!(path, "/v1/sonar", "{name}");
+        assert_eq!(
+            sent,
+            serde_json::from_slice::<Value>(&body).unwrap(),
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn perplexity_gets_no_stream_options_and_refuses_options_other_than_usage() {
+    let (_, sent) = sent_to_perplexity(&chat(json!({
+        "model": "sonar",
+        "messages": [{"role": "developer", "content": "Be brief."}, {"role": "user", "content": "Hi"}],
+        "stream": true,
+        "stream_options": {"include_usage": true},
+        "max_completion_tokens": 128,
+        "safety_identifier": "user-0001"
+    })));
+    assert_eq!(sent["stream"], true);
+    assert_eq!(sent["messages"][0]["role"], "system");
+    assert_eq!(sent["max_tokens"], 128);
+    for key in [
+        "stream_options",
+        "max_completion_tokens",
+        "safety_identifier",
+        "user",
+    ] {
+        assert!(sent.get(key).is_none(), "{key}: {sent}");
+    }
+
+    let mut req = foreign(DialectId::AnthropicMessages);
+    req.stream = StreamMode::on(true);
+    let (_, sent) = sent_to_perplexity(&Request::Generate(req));
+    assert_eq!(sent["stream"], true);
+    assert!(sent.get("stream_options").is_none(), "{sent}");
+
+    let err = encode_with(
+        &chat(json!({
+            "model": "sonar",
+            "messages": [{"role": "user", "content": "Hi"}],
+            "stream": true,
+            "stream_options": {"include_usage": true, "include_obfuscation": false}
+        })),
+        PERPLEXITY,
+    )
+    .unwrap_err();
+    assert_eq!(
+        refusal(&err),
+        (
+            Some("stream_options.include_obfuscation"),
+            Some("stream_options.include_obfuscation"),
+            "`stream_options.include_obfuscation` is not supported by Perplexity; remove it from the request."
+                .to_owned()
+        )
+    );
+}
+
+#[test]
+fn perplexity_refuses_tools_and_the_fields_its_api_reference_leaves_out() {
+    for (field, value) in [
+        (
+            "tools",
+            json!([{"type": "function", "function": {"name": "f", "parameters": {"type": "object"}}}]),
+        ),
+        ("frequency_penalty", json!(0.5)),
+        ("logprobs", json!(true)),
+        ("stream_mode", json!("concise")),
+    ] {
+        let err = encode_with(
+            &chat(json!({
+                "model": "sonar",
+                "messages": [{"role": "user", "content": "Hi"}],
+                field: value
+            })),
+            PERPLEXITY,
+        )
+        .unwrap_err();
+        assert_eq!(
+            refusal(&err),
+            (
+                Some(field),
+                Some(field),
+                format!("`{field}` is not supported by Perplexity; remove it from the request.")
+            )
+        );
+    }
+}

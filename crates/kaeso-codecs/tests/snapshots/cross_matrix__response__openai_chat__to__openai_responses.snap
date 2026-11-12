@@ -9470,6 +9470,136 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/perplexity/citations-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "3c7a9f1e-5b2d-4c8e-9a61-0d4e7b2f8a13",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "sonar-pro",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "The IPCC's AR6 Synthesis Report concludes that sea level rise is unavoidable for centuries to millennia [1], and that it has accelerated in recent decades [2].",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_3c7a9f1e5b2d4c8e9a610d4e7b2f8a13_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 31,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 42,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 73
+    },
+    "user": null
+  },
+  "providers/perplexity/json-schema-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "9b0e3d52-71a4-4f6b-8c2e-5a1f6e9d3b70",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "sonar",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "{\"name\": \"Burj Khalifa\", \"height_m\": 828}",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_9b0e3d5271a44f6b8c2e5a1f6e9d3b70_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 18,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 14,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 32
+    },
+    "user": null
+  },
   "providers/sambanova/palindrome-poem-doc": {
     "background": false,
     "completed_at": 1760000000,

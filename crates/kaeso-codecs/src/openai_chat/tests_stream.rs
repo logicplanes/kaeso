@@ -605,6 +605,40 @@ fn usage_is_hidden_when_the_app_did_not_ask() {
     );
 }
 
+// Perplexity's default `stream_mode: "full"` repeats the message so far, the citations and a
+// running usage in every chunk and ends without `[DONE]`; the last usage is the request's.
+#[test]
+fn a_perplexity_stream_gives_the_answer_once_and_its_last_usage() {
+    let events = decode_whole(&fixture("providers/perplexity/full-mode-doc"));
+    let text: String = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(BlockDelta {
+                delta: Delta::Text(t),
+                ..
+            }) => Some(t.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        text,
+        "The IPCC's AR6 Synthesis Report concludes that sea level rise is unavoidable for centuries to millennia [1]."
+    );
+    let usages: Vec<&Usage> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => d.usage.as_ref(),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(usages.len(), 1, "{events:?}");
+    assert_eq!((usages[0].input_tokens, usages[0].output_tokens), (31, 24));
+    assert!(events.iter().any(
+        |e| matches!(e, StreamEvent::ResponseDelta(d) if d.stop == Some(StopReason::EndTurn))
+    ));
+    assert!(matches!(events.last(), Some(StreamEvent::ResponseStop(_))));
+}
+
 #[test]
 fn provider_origin_is_stamped_on_events() {
     let ctx = ectx().with_provider("openai");

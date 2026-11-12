@@ -1,0 +1,12 @@
+{
+  "model": "sonar-reasoning-pro",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Compare the two most recent Mars rover landings."
+    }
+  ],
+  "stream": true,
+  "reasoning_effort": "low",
+  "search_recency_filter": "month"
+}

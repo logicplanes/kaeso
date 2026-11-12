@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "Request rate limit exceeded, please try again later.",
+    "type": "request_rate_limit_exceeded",
+    "code": 429
+  }
+}

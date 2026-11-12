@@ -1,0 +1,41 @@
+{
+  "model": "sonar-pro",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Be precise and concise."
+    },
+    {
+      "role": "user",
+      "content": "What did the latest IPCC synthesis report conclude about sea level rise?"
+    }
+  ],
+  "max_tokens": 600,
+  "temperature": 0.2,
+  "top_p": 0.9,
+  "search_mode": "academic",
+  "search_domain_filter": [
+    "ipcc.ch",
+    "-reddit.com"
+  ],
+  "search_language_filter": [
+    "en"
+  ],
+  "search_recency_filter": "year",
+  "search_after_date_filter": "01/01/2025",
+  "last_updated_after_filter": "06/01/2025",
+  "return_related_questions": true,
+  "return_images": false,
+  "enable_search_classifier": true,
+  "language_preference": "en",
+  "web_search_options": {
+    "search_context_size": "high",
+    "search_type": "pro",
+    "user_location": {
+      "country": "DE",
+      "city": "Berlin",
+      "latitude": 52.52,
+      "longitude": 13.405
+    }
+  }
+}

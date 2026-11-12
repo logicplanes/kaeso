@@ -1,0 +1,12 @@
+{
+  "detail": [
+    {
+      "loc": [
+        "body",
+        "model"
+      ],
+      "msg": "Input should be 'sonar', 'sonar-pro', 'sonar-deep-research' or 'sonar-reasoning-pro'",
+      "type": "enum"
+    }
+  ]
+}

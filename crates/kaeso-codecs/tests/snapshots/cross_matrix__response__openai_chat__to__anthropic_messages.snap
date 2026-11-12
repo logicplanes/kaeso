@@ -3634,6 +3634,50 @@ expression: outcomes
       }
     }
   },
+  "providers/perplexity/citations-doc": {
+    "content": [
+      {
+        "text": "The IPCC's AR6 Synthesis Report concludes that sea level rise is unavoidable for centuries to millennia [1], and that it has accelerated in recent decades [2].",
+        "type": "text"
+      }
+    ],
+    "id": "3c7a9f1e-5b2d-4c8e-9a61-0d4e7b2f8a13",
+    "model": "sonar-pro",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 31,
+      "output_tokens": 42
+    }
+  },
+  "providers/perplexity/json-schema-doc": {
+    "content": [
+      {
+        "text": "{\"name\": \"Burj Khalifa\", \"height_m\": 828}",
+        "type": "text"
+      }
+    ],
+    "id": "9b0e3d52-71a4-4f6b-8c2e-5a1f6e9d3b70",
+    "model": "sonar",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 18,
+      "output_tokens": 14
+    }
+  },
   "providers/sambanova/palindrome-poem-doc": {
     "content": [
       {
