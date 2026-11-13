@@ -2604,6 +2604,12 @@ pub(super) fn egress_ctx(
         ctx = ctx
             .with_system_one_profile(decisions.system_one)
             .with_decisions_profile(decisions.openai);
+        if let Some(path) = provider
+            .decisions_path()
+            .filter(|_| app_req.kind() == RequestKind::Decide)
+        {
+            ctx = ctx.with_base_path(path);
+        }
     }
     if let Some(a) = flags.adaptive_thinking {
         ctx = ctx.with_adaptive_thinking(a);
@@ -2687,6 +2693,54 @@ mod tests {
                 .responses_profile
                 .web_search,
             kaeso_codecs::openai_responses::WebSearchTool::Xai
+        );
+    }
+
+    #[test]
+    fn a_custom_providers_decisions_path_reaches_only_its_decision_requests() {
+        use kaeso_core::providers::{
+            CustomAuth, CustomProvider, DecisionsApi, DecisionsFormat, Draft, ImagePlacement,
+            MediaApi,
+        };
+        let custom = ProviderRef::Custom(Arc::new(
+            CustomProvider::new(Draft {
+                uuid: uuid::Uuid::now_v7(),
+                id: kaeso_core::provider::ProviderId::parse("liquid").unwrap(),
+                name: "Liquid".into(),
+                base_url: "https://api.liquid.example".into(),
+                auth: CustomAuth::Bearer,
+                generation: DialectId::OpenAiChat,
+                embeddings: None,
+                count_tokens: None,
+                server: None,
+                media: vec![MediaApi::Decisions],
+                decisions: Some(DecisionsApi {
+                    format: DecisionsFormat::SystemOne,
+                    path: "/decisions/v1/systemone".into(),
+                    media: Some(ImagePlacement::Root),
+                }),
+            })
+            .unwrap(),
+        ));
+        let decide = Request::Decide(kaeso_kpp::DecideRequest::new(
+            "d1",
+            kaeso_kpp::DecisionInput::Text("a cat".into()),
+        ));
+        let ctx = egress_ctx(&decide, &custom, "d1", ModelFlags::default());
+        assert_eq!(ctx.base_path.as_deref(), Some("/decisions/v1/systemone"));
+        assert_eq!(
+            ctx.system_one_profile.media,
+            kaeso_codecs::system_one::MediaPlacement::Root
+        );
+        let chat = Request::Generate(kaeso_kpp::GenerateRequest::new("d1"));
+        assert_eq!(
+            egress_ctx(&chat, &custom, "d1", ModelFlags::default()).base_path,
+            None
+        );
+        let openai = ProviderRef::from(kaeso_core::provider::provider("openai").unwrap());
+        assert_eq!(
+            egress_ctx(&decide, &openai, "gpt-6-luna", ModelFlags::default()).base_path,
+            None
         );
     }
 

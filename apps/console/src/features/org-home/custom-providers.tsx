@@ -31,8 +31,11 @@ import type {
   CustomProviderDetect,
   CustomProviderDetection,
   CustomProviderView,
+  DecisionsApiSettings,
+  DecisionsFormat,
   EmbeddingsDialect,
   GenerationDialect,
+  ImagePlacement,
   MediaApi,
   ServerKind,
   ServerView,
@@ -52,6 +55,36 @@ const GENERATIONS: GenerationDialect[] = ["openai_chat", "openai_responses", "an
 const COUNTING = new Set<GenerationDialect>(["openai_responses", "anthropic_messages"]);
 const AUTHS: CustomAuthView[] = ["bearer", "x_api_key", "none"];
 const MEDIA: MediaApi[] = ["images", "speech", "transcriptions", "videos"];
+const MEDIA_ORDER: MediaApi[] = [...MEDIA, "decisions"];
+const DECISION_FORMATS: DecisionsFormat[] = ["system_one", "openai_decisions"];
+const PLACEMENTS: ImagePlacement[] = ["assets", "state", "root", "none"];
+const DEFAULT_PATHS: Record<DecisionsFormat, string> = { system_one: "/v1/systemone", openai_decisions: "/v1/decisions" };
+
+function placementLabel(p: ImagePlacement): string {
+  switch (p) {
+    case "assets":
+      return t("orgHome.custom.decisions.assets", "In an assets map");
+    case "state":
+      return t("orgHome.custom.decisions.state", "In the state");
+    case "root":
+      return t("orgHome.custom.decisions.root", "In an images list");
+    case "none":
+      return t("orgHome.custom.decisions.none", "No images");
+  }
+}
+
+function placementHint(p: ImagePlacement): string {
+  switch (p) {
+    case "assets":
+      return t("orgHome.custom.decisions.assetsHint", "As TypeSafe takes them, each image named where it is used.");
+    case "state":
+      return t("orgHome.custom.decisions.stateHint", "As OpenRouter and Perplexity take them, as image parts in the state.");
+    case "root":
+      return t("orgHome.custom.decisions.rootHint", "As Cloudflare, vLLM and llama.cpp take them, in a top-level images list.");
+    case "none":
+      return t("orgHome.custom.decisions.noneHint", "The server takes text only; Kaeso refuses requests with images.");
+  }
+}
 
 function mediaLabel(m: MediaApi): string {
   switch (m) {
@@ -63,6 +96,8 @@ function mediaLabel(m: MediaApi): string {
       return t("orgHome.custom.media.transcriptions", "Serves transcriptions");
     case "videos":
       return t("orgHome.custom.media.videos", "Serves videos");
+    case "decisions":
+      return t("orgHome.custom.media.decisions", "Serves decisions");
   }
 }
 
@@ -76,6 +111,8 @@ function mediaHint(m: MediaApi): string {
       return t("orgHome.custom.media.transcriptionsHint", "In OpenAI's format, at /v1/audio/transcriptions and /v1/audio/translations.");
     case "videos":
       return t("orgHome.custom.media.videosHint", "In OpenAI's Videos API format, at /v1/videos.");
+    case "decisions":
+      return t("orgHome.custom.media.decisionsHint", "In System One's or OpenAI's Decisions format, at the path you set.");
   }
 }
 const OTHER = "other";
@@ -369,6 +406,7 @@ interface Draft {
   count_tokens: boolean;
   server: ServerKind | null;
   media: MediaApi[];
+  decisions: { format: DecisionsFormat; path: string; media: ImagePlacement };
 }
 
 function draftOf(p: CustomProviderView | CustomProviderDetection, idTouched: boolean): Draft {
@@ -383,20 +421,80 @@ function draftOf(p: CustomProviderView | CustomProviderDetection, idTouched: boo
     count_tokens: !!p.count_tokens,
     server: p.server ?? null,
     media: [...p.media],
+    decisions: decisionsOf("decisions" in p ? p.decisions : null),
   };
+}
+
+function decisionsOf(d: CustomProviderView["decisions"]): Draft["decisions"] {
+  return d ? { format: d.format, path: d.path, media: d.media ?? "assets" } : { format: "system_one", path: DEFAULT_PATHS.system_one, media: "assets" };
 }
 
 function draftProblem(d: Draft): string | undefined {
   if (!d.name.trim()) return t("orgHome.custom.nameNeeded", "Give the provider a name");
   if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(d.id)) return t("orgHome.custom.idNeeded", "Give the provider an id of lowercase letters, digits and hyphens");
   if (!/^https?:\/\/\S+$/.test(d.base_url.trim())) return t("orgHome.custom.urlNeeded", "Give the base URL, starting with https://");
+  if (d.media.includes("decisions") && !d.decisions.path.trim().startsWith("/"))
+    return t("orgHome.custom.decisions.pathNeeded", "Give the decisions path, starting with /");
   return undefined;
 }
 
 function settingsOf(d: Draft) {
   const embeddings: EmbeddingsDialect | null = d.embeddings ? "openai_embeddings" : null;
   const count_tokens: GenerationDialect | null = d.count_tokens && COUNTING.has(d.generation) ? d.generation : null;
-  return { base_url: d.base_url.trim(), auth: d.auth, generation: d.generation, embeddings, count_tokens, server: d.server, media: d.media };
+  const { format, path, media } = d.decisions;
+  const decisions: DecisionsApiSettings | null = d.media.includes("decisions")
+    ? { format, path: path.trim(), ...(format === "system_one" ? { media } : {}) }
+    : null;
+  return { base_url: d.base_url.trim(), auth: d.auth, generation: d.generation, embeddings, count_tokens, server: d.server, media: d.media, decisions };
+}
+
+function toggled(media: readonly MediaApi[], m: MediaApi, on: boolean): MediaApi[] {
+  return on ? MEDIA_ORDER.filter((x) => x === m || media.includes(x)) : media.filter((x) => x !== m);
+}
+
+function DecisionsFields({ draft, set, error }: { draft: Draft; set: (patch: Partial<Draft>) => void; error: ApiError | null }) {
+  const d = draft.decisions;
+  const change = (patch: Partial<Draft["decisions"]>) => set({ decisions: { ...d, ...patch } });
+  return (
+    <div className="flex flex-col gap-20">
+      <Select
+        label={t("orgHome.custom.decisions.format", "Decisions format")}
+        description={
+          d.format === "system_one"
+            ? t("orgHome.custom.decisions.formatHint", "vLLM, llama.cpp, Ollama and LM Studio serve System One.")
+            : t("orgHome.custom.decisions.formatHintOpenai", "OpenAI's own format, which LM Studio and vLLM also serve at /v1/decisions.")
+        }
+        fullWidth
+        value={d.format}
+        onValueChange={(v) => {
+          const format = v as DecisionsFormat;
+          change({ format, path: d.path === DEFAULT_PATHS[d.format] ? DEFAULT_PATHS[format] : d.path });
+        }}
+        options={DECISION_FORMATS.map((f) => ({ value: f, label: dialectLabel(f) }))}
+        error={fieldError(error, "decisions.format")}
+      />
+      <Input
+        label={t("orgHome.custom.decisions.path", "Decisions path")}
+        description={t("orgHome.custom.decisions.pathHint", "Kaeso adds it to the base URL, such as {path}.", { path: DEFAULT_PATHS[d.format] })}
+        value={d.path}
+        onChange={(e) => change({ path: e.target.value })}
+        error={fieldError(error, "decisions.path")}
+        placeholder={DEFAULT_PATHS[d.format]}
+        maxLength={200}
+      />
+      {d.format === "system_one" && (
+        <Select
+          label={t("orgHome.custom.decisions.images", "Images")}
+          description={placementHint(d.media)}
+          fullWidth
+          value={d.media}
+          onValueChange={(v) => change({ media: v as ImagePlacement })}
+          options={PLACEMENTS.map((p) => ({ value: p, label: placementLabel(p) }))}
+          error={fieldError(error, "decisions.media")}
+        />
+      )}
+    </div>
+  );
 }
 
 function SettingsFields({
@@ -457,7 +555,8 @@ function SettingsFields({
         value={draft.server ?? OTHER}
         onValueChange={(v) => {
           const server = v === OTHER ? null : (v as ServerKind);
-          set(editing ? { server } : { server, media: [...(servers.find((s) => s.server === server)?.media ?? [])] });
+          const documented = servers.find((s) => s.server === server)?.media ?? [];
+          set(editing ? { server } : { server, media: MEDIA_ORDER.filter((m) => documented.includes(m) || (m === "decisions" && draft.media.includes(m))) });
         }}
         options={serverOptions(servers)}
         error={fieldError(error, "server")}
@@ -492,10 +591,17 @@ function SettingsFields({
             label={mediaLabel(m)}
             description={mediaHint(m)}
             checked={draft.media.includes(m)}
-            onCheckedChange={(v) => set({ media: v ? MEDIA.filter((x) => x === m || draft.media.includes(x)) : draft.media.filter((x) => x !== m) })}
+            onCheckedChange={(v) => set({ media: toggled(draft.media, m, v) })}
           />
         ))}
+        <Switch
+          label={mediaLabel("decisions")}
+          description={fieldError(error, "decisions") ?? mediaHint("decisions")}
+          checked={draft.media.includes("decisions")}
+          onCheckedChange={(v) => set({ media: toggled(draft.media, "decisions", v) })}
+        />
       </div>
+      {draft.media.includes("decisions") && <DecisionsFields draft={draft} set={set} error={error} />}
       <Select
         label={t("orgHome.custom.auth", "Key")}
         description={authHint(draft.auth)}
@@ -571,12 +677,12 @@ export function AddCustomProviderDialog({ org, onClose }: { org: string; onClose
   const save = useApiMutation({
     mutationFn: async (): Promise<{ added: CustomProviderView; keySaved: boolean }> => {
       const key = server.key.trim();
-      const { media, ...settings } = settingsOf(draft);
+      const { media, decisions, ...settings } = settingsOf(draft);
       if (changedFrom(found, draft)) await detect({ ...settings, key: key || null });
       const added = data(
         await api.POST("/platform/v1/orgs/{org}/custom-providers", {
           params: { path: { org } },
-          body: { id: draft.id, name: draft.name.trim(), ...settings, media },
+          body: { id: draft.id, name: draft.name.trim(), ...settings, media, decisions },
         }),
       );
       if (!key || draft.auth === "none" || !savesKey) return { added, keySaved: false };
@@ -715,11 +821,11 @@ export function CustomProviderDialog({ org, editing, onClose }: { org: string; e
   };
   const save = useApiMutation({
     mutationFn: async () => {
-      const { base_url, auth, generation, embeddings, count_tokens, server, media } = settingsOf(draft);
+      const { base_url, auth, generation, embeddings, count_tokens, server, media, decisions } = settingsOf(draft);
       return data(
         await api.PATCH("/platform/v1/orgs/{org}/custom-providers/{provider}", {
           params: { path: { org, provider: editing.id }, header: { "If-Match": `"${editing.revision}"` } },
-          body: { name: draft.name.trim(), base_url, auth, generation, embeddings, count_tokens, server, media },
+          body: { name: draft.name.trim(), base_url, auth, generation, embeddings, count_tokens, server, media, decisions },
         }),
       );
     },

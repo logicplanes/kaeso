@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, provider, name, base_url, auth, generation, embeddings, count_tokens, server, media, created_by_kind, created_by_id, created_at, updated_at, revision FROM custom_providers WHERE org_id = $1 ORDER BY provider",
+  "query": "SELECT c.id, c.org_id, c.provider, c.name, c.base_url, c.auth, c.generation, c.embeddings, c.count_tokens, c.server, c.media, c.decisions, c.created_by_kind, c.created_by_id, c.created_at, c.updated_at, c.revision FROM custom_providers c JOIN projects p ON p.org_id = c.org_id WHERE p.id = $1 ORDER BY c.provider",
   "describe": {
     "columns": [
       {
@@ -126,6 +126,17 @@
       },
       {
         "ordinal": 11,
+        "name": "decisions",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "custom_providers",
+            "name": "decisions"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
         "name": "created_by_kind",
         "type_info": "Text",
         "origin": {
@@ -136,7 +147,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "created_by_id",
         "type_info": "Uuid",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -158,7 +169,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -169,7 +180,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "revision",
         "type_info": "Int8",
         "origin": {
@@ -197,6 +208,7 @@
       true,
       true,
       false,
+      true,
       false,
       true,
       false,
@@ -204,5 +216,5 @@
       false
     ]
   },
-  "hash": "0da2c539d692baa49747b3b0777bbff16fb09483b46b7746968a0a79be17639e"
+  "hash": "b2d17284f7ace962110b616025716f0e91db51de4f8ba072c1e3985a8a0a429e"
 }

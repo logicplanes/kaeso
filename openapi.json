@@ -25129,6 +25129,17 @@
               }
             ]
           },
+          "decisions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecisionsApiSettings",
+                "description": "How it takes decision requests once `media` has `decisions`; absent or\n`null` for System One at `/v1/systemone` with images as `assets`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "embeddings": {
             "oneOf": [
               {
@@ -25156,7 +25167,7 @@
             "items": {
               "$ref": "#/components/schemas/MediaApi"
             },
-            "description": "OpenAI's media APIs it serves at its base URL; absent for the ones its\n`server` documents, none without one."
+            "description": "The media APIs it serves at its base URL; absent for the ones its\n`server` documents, none without one. `decisions` is never among those:\nadd it to turn decisions on."
           },
           "name": {
             "type": "string",
@@ -25310,7 +25321,7 @@
             "items": {
               "$ref": "#/components/schemas/MediaApi"
             },
-            "description": "OpenAI's media APIs its server software documents; none for another server\nor a proxy.",
+            "description": "OpenAI's media APIs its server software documents; none for another server\nor a proxy. Never `decisions`: asking a question to find out would be billed.",
             "example": [
               "transcriptions"
             ]
@@ -25376,6 +25387,17 @@
               }
             ]
           },
+          "decisions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecisionsApiSettings",
+                "description": "How it takes decision requests once `media` has `decisions`; `null` for\nSystem One at `/v1/systemone` with images as `assets`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "embeddings": {
             "oneOf": [
               {
@@ -25406,7 +25428,7 @@
             "items": {
               "$ref": "#/components/schemas/MediaApi"
             },
-            "description": "OpenAI's media APIs it serves at its base URL; `[]` for none."
+            "description": "The media APIs it serves at its base URL; `[]` for none. Leaving out\n`decisions` turns decisions off."
           },
           "name": {
             "type": [
@@ -25501,6 +25523,17 @@
             "$ref": "#/components/schemas/Party",
             "description": "Who added it."
           },
+          "decisions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecisionsApiView",
+                "description": "How it takes decision requests while `media` has `decisions`; `null`\notherwise."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "embeddings": {
             "oneOf": [
               {
@@ -25537,7 +25570,7 @@
             "items": {
               "$ref": "#/components/schemas/MediaApi"
             },
-            "description": "OpenAI's media APIs it serves at its base URL, which reach its catalogue\nmodels: `images`, `speech`, `transcriptions` (with translations) and `videos`.",
+            "description": "The media APIs it serves at its base URL, which reach its catalogue models:\nOpenAI's `images`, `speech`, `transcriptions` (with translations) and `videos`,\nand `decisions` as its `decisions` says.",
             "example": [
               "transcriptions"
             ]
@@ -25627,6 +25660,77 @@
           }
         },
         "additionalProperties": false
+      },
+      "DecisionsApiSettings": {
+        "type": "object",
+        "description": "How a custom provider takes decision requests.",
+        "required": [
+          "format"
+        ],
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/DecisionsFormat",
+            "description": "The format it makes decisions in."
+          },
+          "media": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImagePlacement",
+                "description": "Where its System One server takes images; absent for `assets`. Only for\n`system_one`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The path under its base URL, such as `/decisions/v1/systemone`; absent\nfor the format's own, `/v1/systemone` or `/v1/decisions`.",
+            "example": "/v1/systemone"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionsApiView": {
+        "type": "object",
+        "description": "How a custom provider takes decision requests.",
+        "required": [
+          "format",
+          "path"
+        ],
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/DecisionsFormat",
+            "description": "The format it makes decisions in."
+          },
+          "media": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ImagePlacement",
+                "description": "Where its System One server takes images; `null` for `openai_decisions`,\nwhose format names its own place for them."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "The path under its base URL that Kaeso sends decision requests to.",
+            "example": "/v1/systemone"
+          }
+        }
+      },
+      "DecisionsFormat": {
+        "type": "string",
+        "description": "The format a custom provider makes decisions in.",
+        "enum": [
+          "system_one",
+          "openai_decisions"
+        ]
       },
       "DeletionRequest": {
         "type": "object",
@@ -26791,6 +26895,16 @@
             "description": "Every reason it is held."
           }
         }
+      },
+      "ImagePlacement": {
+        "type": "string",
+        "description": "Where a custom provider's System One server takes images.",
+        "enum": [
+          "assets",
+          "state",
+          "root",
+          "none"
+        ]
       },
       "InstanceAgentPolicy": {
         "type": "object",
@@ -28655,6 +28769,17 @@
                   "$ref": "#/components/schemas/Party",
                   "description": "Who added it."
                 },
+                "decisions": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/DecisionsApiView",
+                      "description": "How it takes decision requests while `media` has `decisions`; `null`\notherwise."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "embeddings": {
                   "oneOf": [
                     {
@@ -28691,7 +28816,7 @@
                   "items": {
                     "$ref": "#/components/schemas/MediaApi"
                   },
-                  "description": "OpenAI's media APIs it serves at its base URL, which reach its catalogue\nmodels: `images`, `speech`, `transcriptions` (with translations) and `videos`.",
+                  "description": "The media APIs it serves at its base URL, which reach its catalogue models:\nOpenAI's `images`, `speech`, `transcriptions` (with translations) and `videos`,\nand `decisions` as its `decisions` says.",
                   "example": [
                     "transcriptions"
                   ]
@@ -31148,7 +31273,7 @@
                   "items": {
                     "$ref": "#/components/schemas/MediaApi"
                   },
-                  "description": "OpenAI's media APIs the software documents, which a new custom provider\nfor it serves unless set otherwise.",
+                  "description": "OpenAI's media APIs the software documents, which a new custom provider\nfor it serves unless set otherwise; never `decisions`, which its admin turns on.",
                   "example": [
                     "transcriptions"
                   ]
@@ -33239,7 +33364,8 @@
           "images",
           "speech",
           "transcriptions",
-          "videos"
+          "videos",
+          "decisions"
         ]
       },
       "MediaView": {
@@ -37633,7 +37759,7 @@
             "items": {
               "$ref": "#/components/schemas/MediaApi"
             },
-            "description": "OpenAI's media APIs the software documents, which a new custom provider\nfor it serves unless set otherwise.",
+            "description": "OpenAI's media APIs the software documents, which a new custom provider\nfor it serves unless set otherwise; never `decisions`, which its admin turns on.",
             "example": [
               "transcriptions"
             ]

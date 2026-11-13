@@ -864,10 +864,16 @@ fn validate_decisions(d: &DecisionFields, provider: &ProviderRef) -> Result<(), 
     if !provider.has_decisions() {
         return Err(FieldError::new(
             "decisions",
-            format!(
-                "{} offers no decisions API Kaeso can call; remove `decisions`.",
-                provider.name()
-            ),
+            match provider.custom() {
+                Some(c) => format!(
+                    "The custom provider `{}` has no decisions API turned on; turn it on first.",
+                    c.id()
+                ),
+                None => format!(
+                    "{} offers no decisions API Kaeso can call; remove `decisions`.",
+                    provider.name()
+                ),
+            },
         ));
     }
     if let Some(types) = &d.question_types {

@@ -50,4 +50,4 @@ order: 2
 | Vercel `vercel` | 支持：其目录 | 支持：其嵌入模型 | 支持：其图片模型 | 支持：其语音合成模型 | 支持：其转写模型 | 不提供 | 拒绝：Vercel 只通过其 AI SDK 记录视频，没有 HTTP 接口 | 拒绝：Kaeso 只为语音合成调用 Vercel 的语音模型 | 支持：其决策模型，OpenAI Decisions | [Modalities](https://vercel.com/docs/ai-gateway/modalities) |
 | Z.ai `zai` | 支持：GLM 模型 | 不提供 | 支持：`glm-image` | 不提供 | 支持：`glm-asr-2512` | 不提供 | 支持：`cogvideox-3` | 不提供 | 不提供 | [API reference](https://docs.z.ai/llms.txt) |
 
-自定义服务商只有在您为其开启相应 API 后，才能使用 OpenAI 的 Images、音频和 Videos API（[自定义服务商](../console/custom-providers.md)）。
+自定义服务商只有在您为其开启相应 API 后，才能使用 OpenAI 的 Images、音频和 Videos API 以及做决策（[自定义服务商](../console/custom-providers.md)）。

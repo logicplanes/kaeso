@@ -185,6 +185,7 @@ async fn admins_add_change_and_delete_custom_providers_with_their_own_rights_and
             "count_tokens": null,
             "server": null,
             "media": [],
+            "decisions": null,
             "hides_built_in": null,
             "in_use": { "keys": 0, "models": 0, "projects": 0 },
             "created_by": created.body["created_by"],
@@ -2440,4 +2441,297 @@ async fn a_server_kind_brings_the_media_apis_its_software_documents() {
     )
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+}
+
+fn decision_model(provider: &str, model: &str) -> Value {
+    json!({
+        "provider": provider,
+        "model_id": model,
+        "custom": true,
+        "overrides": {
+            "input_modalities": ["text", "image"],
+            "input_price": "0.042",
+            "decisions": { "only": true },
+        },
+    })
+}
+
+const PNG: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+fn system_one_with_image(model: &str) -> Value {
+    json!({
+        "model": model,
+        "state": ["Is this a cat?", "<photo>"],
+        "assets": { "<photo>": { "type": "image", "format": "png", "data_base64": PNG } },
+        "questions": { "cat": { "type": "noul", "instructions": "A cat?" } },
+    })
+}
+
+fn openai_decision(model: &str) -> Value {
+    json!({
+        "model": model,
+        "input": "My card was charged twice.",
+        "questions": [{ "type": "predicate", "name": "refund", "instructions": "A refund?" }],
+    })
+}
+
+#[tokio::test]
+async fn a_custom_provider_serves_decisions_once_its_admin_turns_them_on_in_the_format_path_and_placement_set()
+ {
+    let env = env().await;
+    let (app, owner) = (&env.app, &env.owner);
+    let base = env.mock.base_url.clone();
+    let r = add_provider(
+        app,
+        owner,
+        json!({ "id": "lab", "name": "Lab", "base_url": format!("{base}/v1/systemone"), "auth": "bearer", "generation": "openai_chat" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    assert_eq!(r.body["base_url"], format!("{base}/"));
+    assert_eq!(
+        (&r.body["media"], &r.body["decisions"]),
+        (&json!([]), &Value::Null)
+    );
+    key(app, owner, "lab", LAB_SECRET).await;
+    let r = add_model(app, owner, &env.project, decision_model("lab", "jev-local")).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "The custom provider `lab` has no decisions API turned on; turn it on first."
+    );
+
+    let lab = format!("/orgs/{}/custom-providers/lab", owner.org_id);
+    let r = patch_if_match(
+        app,
+        &lab,
+        json!({ "media": ["decisions"] }),
+        &owner.cookie,
+        "*",
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(
+        r.body["decisions"],
+        json!({ "format": "system_one", "path": "/v1/systemone", "media": "assets" })
+    );
+    add_model(app, owner, &env.project, decision_model("lab", "jev-local"))
+        .await
+        .expect_status(StatusCode::CREATED);
+
+    let bearer = format!("Bearer {LAB_SECRET}");
+    let decide = |body: Value| call(&env, "/v1/systemone", Some(&env.key), false, Some(body));
+    let r = decide(system_one_with_image("lab/jev-local")).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["answers"]["cat"]["noul"], 0.82);
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/v1/systemone");
+    assert_eq!(sent.header("authorization"), Some(bearer.as_str()));
+    let body = sent.json();
+    assert_eq!(body["model"], "jev-local");
+    assert_eq!(body["assets"]["<photo>"]["data_base64"], PNG, "{body}");
+
+    for (media, path) in [
+        ("state", "/v1/systemone"),
+        ("root", "/decisions/v1/systemone"),
+        ("assets", "/providers/microsoft/v1/systemone"),
+    ] {
+        let r = patch_if_match(
+            app,
+            &lab,
+            json!({ "decisions": { "format": "system_one", "path": path, "media": media } }),
+            &owner.cookie,
+            "*",
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+        assert_eq!(r.body["media"], json!(["decisions"]));
+        let r = decide(system_one_with_image("lab/jev-local")).await;
+        assert_eq!(r.status, StatusCode::OK, "{media}: {}", r.text());
+        let sent = env.mock.last().unwrap();
+        assert_eq!(sent.path, path, "{media}");
+        let body = sent.json();
+        match media {
+            "state" => {
+                assert_eq!(body["state"][1]["type"], "image_url", "{body}");
+                assert!(body.get("assets").is_none(), "{body}");
+            }
+            "root" => {
+                assert_eq!(body["state"], json!(["Is this a cat?"]), "{body}");
+                assert_eq!(
+                    body["images"],
+                    json!([format!("data:image/png;base64,{PNG}")])
+                );
+            }
+            _ => assert!(body["assets"].is_object(), "{body}"),
+        }
+    }
+
+    let r = patch_if_match(
+        app,
+        &lab,
+        json!({ "decisions": { "format": "system_one", "media": "none" } }),
+        &owner.cookie,
+        "*",
+    )
+    .await;
+    assert_eq!(r.body["decisions"]["path"], "/v1/systemone", "{:?}", r.body);
+    let before = env.mock.received().len();
+    let r = decide(system_one_with_image("lab/jev-local")).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+    let text = json!({ "model": "lab/jev-local", "state": "Is it urgent?",
+        "questions": { "urgent": { "type": "noul", "instructions": "Urgent?" } } });
+    let r = decide(text).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+
+    let r = patch_if_match(
+        app,
+        &lab,
+        json!({ "decisions": { "format": "openai_decisions", "path": "/openai/v1/decisions" } }),
+        &owner.cookie,
+        "*",
+    )
+    .await;
+    assert_eq!(
+        r.body["decisions"],
+        json!({ "format": "openai_decisions", "path": "/openai/v1/decisions", "media": null })
+    );
+    let r = call(
+        &env,
+        "/v1/decisions",
+        Some(&env.key),
+        false,
+        Some(openai_decision("lab/jev-local")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["answers"][0]["probability"], 0.82);
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/openai/v1/decisions");
+    assert!(sent.json()["questions"].is_array());
+    let r = decide(
+        json!({ "model": "lab/jev-local", "state": "My card was charged twice.",
+        "questions": { "refund": { "type": "noul", "instructions": "A refund?" } } }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["answers"]["refund"]["noul"], 0.82);
+    let sent = env.mock.last().unwrap().json();
+    assert_eq!(sent["input"], "My card was charged twice.", "{sent}");
+    let logged = env.outcomes().await;
+    assert!(
+        logged
+            .iter()
+            .all(|o| o.custom_provider.as_deref() == Some("lab"))
+    );
+
+    let r = patch_if_match(app, &lab, json!({ "media": [] }), &owner.cookie, "*").await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["decisions"], Value::Null);
+    let before = env.mock.received().len();
+    let r = call(
+        &env,
+        "/v1/decisions",
+        Some(&env.key),
+        false,
+        Some(openai_decision("lab/jev-local")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The custom provider `lab` has no Decisions API turned on; an org admin turns it on under Providers."
+    );
+    assert_eq!(env.mock.received().len(), before, "nothing was sent");
+}
+
+#[tokio::test]
+async fn decisions_settings_kaeso_would_send_elsewhere_are_refused_with_the_field_to_fix() {
+    let env = env().await;
+    let (app, owner) = (&env.app, &env.owner);
+    let base = env.mock.base_url.clone();
+    let refused = |decisions: Value, media: Value| {
+        json!({ "id": "lab", "name": "Lab", "base_url": base, "auth": "bearer", "generation": "openai_chat",
+            "media": media, "decisions": decisions })
+    };
+    for (decisions, media, param, message) in [
+        (
+            json!({ "format": "system_one", "path": "v1/systemone" }),
+            json!(["decisions"]),
+            "decisions.path",
+            "`decisions.path` must be a path such as `/v1/systemone`, without a query or `..`.",
+        ),
+        (
+            json!({ "format": "system_one", "path": "/v1/../admin" }),
+            json!(["decisions"]),
+            "decisions.path",
+            "`decisions.path` must be a path such as `/v1/systemone`, without a query or `..`.",
+        ),
+        (
+            json!({ "format": "openai_decisions", "media": "root" }),
+            json!(["decisions"]),
+            "decisions.media",
+            "`decisions.media` is only for `system_one`; leave it out for `openai_decisions`.",
+        ),
+        (
+            json!({ "format": "system_one" }),
+            json!(["images"]),
+            "decisions",
+            "Add `decisions` to `media` to turn decisions on, or leave `decisions` out.",
+        ),
+    ] {
+        let r = add_provider(app, owner, refused(decisions.clone(), media)).await;
+        assert_eq!(
+            r.status,
+            StatusCode::BAD_REQUEST,
+            "{decisions}: {:?}",
+            r.body
+        );
+        assert_eq!(r.body["error"]["param"], param, "{decisions}");
+        assert_eq!(r.body["error"]["message"], message, "{decisions}");
+    }
+    for bad in [
+        json!({ "format": "gemini_decisions" }),
+        json!({ "format": "system_one", "media": "conversation" }),
+        json!({ "format": "system_one", "headers": {} }),
+    ] {
+        let r = add_provider(app, owner, refused(bad.clone(), json!(["decisions"]))).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{bad}: {:?}", r.body);
+    }
+    let r = add_provider(
+        app,
+        owner,
+        json!({ "id": "lab", "name": "Lab", "base_url": base, "auth": "bearer", "generation": "openai_chat",
+            "server": "vllm", "decisions": { "format": "system_one", "media": "root" } }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "decisions");
+    let r = add_provider(
+        app,
+        owner,
+        json!({ "id": "lab", "name": "Lab", "base_url": base, "auth": "bearer", "generation": "openai_chat",
+            "server": "vllm", "media": ["transcriptions", "decisions"], "decisions": { "format": "system_one", "media": "root" } }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    assert_eq!(r.body["media"], json!(["transcriptions", "decisions"]));
+    assert_eq!(
+        r.body["decisions"],
+        json!({ "format": "system_one", "path": "/v1/systemone", "media": "root" })
+    );
+    let r = app
+        .get(
+            &format!("/orgs/{}/custom-providers/lab", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(r.body["decisions"]["media"], "root");
+    let actions = audit_actions(app, owner).await;
+    let created = actions
+        .iter()
+        .find(|a| a["action"] == "custom_provider.create")
+        .unwrap();
+    assert_eq!(created["after"]["decisions"]["media"], "root", "{created}");
 }

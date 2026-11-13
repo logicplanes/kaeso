@@ -19,7 +19,7 @@ Ohne das Recht **Anbieter-Schlüssel hinzufügen** nutzt Kaeso den Schlüssel nu
 
 Die **ID** beginnt mit dem Host des Servers, bei einer Adresse wie `localhost`, `10.0.0.5` oder `host.docker.internal` mit dem Namen seiner Software, und folgt dem Namen, bis Sie sie ändern. Modellnamen beginnen mit ihr, etwa `research-vllm/llama-3.3-70b`, und sie ändert sich nie. Eine ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen, höchstens 40 Zeichen. Sie darf nicht die ID eines eingebauten Anbieters sein und auch nicht die eines Anbieters in [KPMR](../concepts/kpmr.md), denn Kaeso könnte diesen Anbieter später aufnehmen. Jede Organisation hat ihre eigenen IDs, zwei Organisationen können also beide ein `research-vllm` haben.
 
-Kaeso hängt den Pfad des Formats an die Basis-URL an, etwa `/v1/chat/completions`, wie bei jedem Anbieter. Deshalb entfernt es ein abschließendes `/v1` oder einen eingefügten Endpunkt, etwa `/v1/chat/completions`, und ergänzt `https://` bei einer Adresse ohne Schema. Ein Pfad vor `/v1` bleibt: `https://proxy.example.com/llm/v1` erhält Anfragen unter `https://proxy.example.com/llm/v1/chat/completions`. Ein Server, dessen API nicht unter `/v1` liegt, lässt sich noch nicht hinzufügen.
+Kaeso hängt den Pfad des Formats an die Basis-URL an, etwa `/v1/chat/completions`, wie bei jedem Anbieter. Deshalb entfernt es ein abschließendes `/v1` oder einen eingefügten Endpunkt, etwa `/v1/chat/completions`, und ergänzt `https://` bei einer Adresse ohne Schema. Ein Pfad vor `/v1` bleibt: `https://proxy.example.com/llm/v1` erhält Anfragen unter `https://proxy.example.com/llm/v1/chat/completions`. Ein Server, dessen API nicht unter `/v1` liegt, lässt sich noch nicht hinzufügen; nur [Entscheidungen](#entscheidungen) haben einen eigenen Pfad.
 
 ## Was Kaeso erkennt
 
@@ -63,6 +63,30 @@ Ein eigener Anbieter kann unter seiner Basis-URL auch die Medien-APIs von OpenAI
 | **Bedient Videos** | die Videos API von OpenAI unter `/v1/videos` | die [Videos API](../api/videos.md) |
 
 Ein neuer Anbieter für Server-Software, die Kaeso kennt, beginnt mit den APIs, die diese Software dokumentiert: LocalAI mit Bildern, Sprache und Transkriptionen, Xinference mit Bildern, Sprache und Transkriptionen und vLLM mit Transkriptionen. Die Erkennung probiert sie nie aus, weil eine Testanfrage ein Bild oder einen Ton erzeugen würde. Ist eine API aus, lehnt Kaeso die Modelle des Anbieters dafür mit 400 ab und sagt, dass ein Admin sie einschaltet. Ein Medienmodell eines eigenen Anbieters braucht seine Modalitäten und einen Preis pro Einheit, etwa pro Bild oder pro Minute Audio ([seine Modelle hinzufügen](#seine-modelle-hinzufügen)).
+
+## Entscheidungen
+
+Ein eigener Anbieter kann auch Entscheidungen treffen: Ja/Nein-, Auswahl- und Bewertungsfragen beantworten ([Decisions-API](../api/decisions.md)). Die Erkennung schaltet Entscheidungen nie ein, denn um es herauszufinden, müsste Kaeso eine Frage stellen, die ein gehosteter Server abrechnet. Schalten Sie **Bedient Entscheidungen** ein und geben Sie an, wie Ihr Server sie annimmt:
+
+| Einstellung | Was sie festlegt |
+| --- | --- |
+| **Format für Entscheidungen** | **System One**, das Format von TypeSafe mit einem `state` und einer Map von `questions`, oder **OpenAI Decisions**, mit einem `input` und einer Liste von `questions`. |
+| **Pfad für Entscheidungen** | Wohin unter der Basis-URL Kaeso sie sendet. Er beginnt als `/v1/systemone` oder `/v1/decisions`, und jeder Pfad geht, etwa `/decisions/v1/systemone`. |
+| **Bilder** | Nur für System One: **In einer assets-Map**, wie TypeSafe sie nimmt; **Im state**, als Bildteile, wie OpenRouter und Perplexity sie nehmen; **In einer images-Liste**, einer `images`-Liste von Data-URLs auf oberster Ebene, wie Cloudflare, vLLM und llama.cpp sie nehmen; oder **Keine Bilder**, womit Anfragen mit Bildern abgelehnt werden, bevor etwas gesendet wird. OpenAI Decisions hat einen eigenen Platz für Bilder. |
+
+Apps rufen die Entscheidungsmodelle des Anbieters dann in jedem der drei Formate auf, unter `/v1/decisions`, `/v1/systemone` oder `/v1beta/decisions`, und Kaeso schreibt jede Anfrage im gewählten Format. Fügen Sie ein solches Modell mit **Entscheidungen** unter **Ausgaben**, seinen Eingaben und seinem Eingabepreis hinzu ([Entscheidungsmodelle](models-and-aliases.md#entscheidungsmodelle)). Solange Entscheidungen ausgeschaltet sind, lässt sich ein solches Modell nicht hinzufügen, und Anfragen an eines scheitern mit 400: „The custom provider `…` has no Decisions API turned on; an org admin turns it on under Providers.“
+
+| Server | Format für Entscheidungen | Pfad für Entscheidungen | Bilder |
+| --- | --- | --- | --- |
+| vLLM ab 0.32 | System One | `/v1/systemone` | In einer images-Liste |
+| llama.cpp | System One | `/v1/systemone` | In einer images-Liste |
+| Ollama ab 0.35 | System One | `/v1/systemone` | Keine Bilder |
+| LM Studio ab 0.4.26 | System One, oder OpenAI Decisions unter `/v1/decisions` | `/v1/systemone` | Keine Bilder |
+| Nace (Drex) | System One | `/v1/systemone` | In einer assets-Map |
+| Liquid | System One | `/decisions/v1/systemone` | In einer images-Liste |
+| Inception (Mercury Decide) | System One | `/v1/decisions` | Keine Bilder |
+
+Eine Zeile mit **Keine Bilder** steht für einen Server, dessen Platz für Bilder Kaeso noch nicht kennt; Anfragen mit Bildern werden abgelehnt, statt dorthin gesendet zu werden, wo der Server sie verwerfen würde. Microsoft Foundry bedient Microsoft-Decision-1 in System One unter `/providers/microsoft/v1/systemone`, mit dem Namen der Bereitstellung als Modell-ID und ohne Bilder. Es nimmt seinen Schlüssel nur in einem Header `api-key` oder als Token von Microsoft Entra ID, und ein eigener Anbieter kann noch keines von beiden senden; Foundry lässt sich daher nicht hinzufügen.
 
 ## Server-Software
 

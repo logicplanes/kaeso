@@ -39,6 +39,7 @@ async fn add_provider(pg: &sqlx::PgPool, org: Uuid, base_url: &str) -> bool {
                 count_tokens: None,
                 server: None,
                 media: vec!["speech".into()],
+                decisions: None,
             },
             created_by_kind: "system",
             created_by_id: None,
@@ -176,6 +177,144 @@ async fn the_table_refuses_what_the_gateway_would_never_write() {
             r.is_err(),
             "{provider} {base_url} {generation} {count_tokens:?}"
         );
+    }
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn a_custom_providers_decisions_api_is_stored_and_read_back_only_in_a_shape_kaeso_writes() {
+    use kaeso_core::providers::{DecisionsApi, DecisionsFormat, ImagePlacement, MediaApi};
+    let s = TestServices::start().await;
+    kaeso_store::pg::migrate(&s.pg).await.unwrap();
+    let (org, project) = org_with_project(&s.pg, "Acme").await;
+    let decisions = serde_json::json!({"format": "system_one", "path": "/decisions/v1/systemone", "media": "root"});
+    assert!(
+        store::insert(
+            &s.pg,
+            &NewCustomProvider {
+                id: Uuid::now_v7(),
+                org_id: org,
+                provider: "lab",
+                fields: Fields {
+                    name: "Lab",
+                    base_url: "https://lab.example.com/",
+                    auth: "bearer",
+                    generation: "openai_chat",
+                    embeddings: None,
+                    count_tokens: None,
+                    server: None,
+                    media: vec!["decisions".into()],
+                    decisions: Some(decisions),
+                },
+                created_by_kind: "system",
+                created_by_id: None,
+            },
+        )
+        .await
+        .unwrap()
+    );
+    let row = &store::of_project(&s.pg, project).await.unwrap()[0];
+    let p = row.custom_provider().unwrap();
+    assert_eq!(p.media(), [MediaApi::Decisions]);
+    assert_eq!(
+        p.decisions(),
+        Some(&DecisionsApi {
+            format: DecisionsFormat::SystemOne,
+            path: "/decisions/v1/systemone".into(),
+            media: Some(ImagePlacement::Root),
+        })
+    );
+
+    let mut draft = p.draft();
+    draft.decisions = Some(DecisionsApi::of(DecisionsFormat::OpenaiDecisions));
+    let changed = kaeso_core::providers::CustomProvider::new(draft).unwrap();
+    assert!(
+        store::update(&s.pg, org, "lab", &Fields::of(&changed))
+            .await
+            .unwrap()
+    );
+    let row = store::get(&s.pg, org, "lab").await.unwrap().unwrap();
+    assert_eq!(
+        row.decisions,
+        Some(serde_json::json!({"format": "openai_decisions", "path": "/v1/decisions"}))
+    );
+    assert_eq!(row.custom_provider().unwrap(), changed);
+
+    let mut off = changed.draft();
+    off.media = Vec::new();
+    off.decisions = None;
+    let off = kaeso_core::providers::CustomProvider::new(off).unwrap();
+    assert!(
+        store::update(&s.pg, org, "lab", &Fields::of(&off))
+            .await
+            .unwrap()
+    );
+    let row = store::get(&s.pg, org, "lab").await.unwrap().unwrap();
+    assert_eq!((row.media.len(), row.decisions), (0, None));
+
+    let refused = [
+        ("{decisions}", None),
+        (
+            "{}",
+            Some(r#"{"format": "system_one", "path": "/v1/systemone", "media": "assets"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "system_one", "path": "/v1/systemone"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "system_one", "path": "/v1/systemone", "media": "pixels"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "openai_decisions", "path": "/v1/decisions", "media": "assets"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "gemini_decisions", "path": "/v1beta/decisions"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "openai_decisions", "path": "v1/decisions"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "openai_decisions", "path": "/v1/../admin"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "openai_decisions", "path": "/v1/decisions?x=1"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "openai_decisions", "path": "/v1//decisions"}"#),
+        ),
+        (
+            "{decisions}",
+            Some(r#"{"format": "openai_decisions", "path": 7}"#),
+        ),
+        ("{decisions}", Some(r#"{"format": "openai_decisions"}"#)),
+        ("{decisions}", Some(r#"{"path": "/v1/decisions"}"#)),
+        (
+            "{decisions}",
+            Some(r#"{"format": "openai_decisions", "path": "/v1/decisions", "key": "x"}"#),
+        ),
+        ("{decisions}", Some(r#"["system_one"]"#)),
+        ("{robots}", None),
+    ];
+    for (media, decisions) in refused {
+        let r = sqlx::query(
+            "INSERT INTO custom_providers (id, org_id, provider, name, base_url, auth, generation, media, decisions, created_by_kind) \
+             VALUES ($1, $2, 'other', 'Other', 'https://x.example.com/', 'bearer', 'openai_chat', $3::text[], $4::jsonb, 'system')",
+        )
+        .bind(Uuid::now_v7())
+        .bind(org)
+        .bind(media)
+        .bind(decisions)
+        .execute(&s.pg)
+        .await;
+        assert!(r.is_err(), "{media} {decisions:?}");
     }
     s.cleanup().await;
 }
