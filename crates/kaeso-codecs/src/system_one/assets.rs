@@ -285,7 +285,7 @@ pub(super) fn check_image(
         return refuse(
             "image format",
             format!(
-                "{name} takes only these images: {types}; Kaeso can't read this one as any of them. Convert it before sending."
+                "{name} takes only these images: {types}; Kaeso can't read this one as any of them, so convert it before sending."
             ),
         );
     };
@@ -293,7 +293,7 @@ pub(super) fn check_image(
         return refuse(
             "image format",
             format!(
-                "{name} takes only these images: {types}, not {}. Convert it before sending.",
+                "{name} takes only these images: {types}, not {}; convert it before sending.",
                 info.kind.media_type()
             ),
         );
@@ -310,7 +310,7 @@ pub(super) fn check_image(
         return refuse(
             "image size",
             format!(
-                "{name} takes images of at most {} megapixels; this one is {}×{}. Resize it before sending.",
+                "{name} takes images of at most {} megapixels, so resize this {}×{} image before sending.",
                 max / 1_000_000,
                 info.width,
                 info.height
@@ -325,7 +325,7 @@ pub(super) fn check_image(
         return refuse(
             "image size",
             format!(
-                "{name} takes images of {min} to {max} pixels a side and never resizes them; this one is {}×{}. Resize it before sending.",
+                "{name} takes images of {min} to {max} pixels a side and never resizes them, so resize this {}×{} image before sending.",
                 info.width, info.height
             ),
         );
