@@ -9,9 +9,8 @@ coverage-kpp = [
   "--all-features",
   "--ignore-filename-regex",
   "(/tests/|/tests_[a-z_]+\\.rs|/models_tests\\.rs|/test_support\\.rs)",
-  # Was 95 until Rust 1.100, whose coverage counts the same code about 0.75 points lower.
   "--fail-under-lines",
-  "94.25",
+  "95",
 ]
 coverage-gateway = [
   "llvm-cov",
