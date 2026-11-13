@@ -232,6 +232,8 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 | `[mock:models=typesafe]` im Anbieter-Schlüssel | Beantwortet `GET /v1/models` mit der eigenen Modellliste von TypeSafe und `GET /v1/models/{id}` mit einem bloßen 404, wie TypeSafe |
 | `[mock:models=endless]` im Anbieter-Schlüssel | Hält die Anthropic-Liste auf ihrer ersten Seite |
 
+Auf den Kontopfaden von Cloudflare beantwortet der Mock Clef unter `…/ai/run/@cf/cloudflare/{model}` in der Hülle von Cloudflare; `[mock:error=NAME]` wählt dort den Fehler `recorded-NAME` aus `system_one/providers/cloudflare-ai-gateway/errors/`.
+
 `MockProvider::gate()` erzeugt ein Gate und gibt seine Markierung zurück. `wait_for(n)` kehrt zurück, sobald `n` Anfragen es erreicht haben, und `open()` lässt sie alle durch. So hält ein Test eine Anfrage ohne Sleep in der Schwebe.
 
 ### MCP-Portal-Suite

@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "Please configure AI Gateway in the Cloudflare dashboard",
+      "code": 2001
+    }
+  ],
+  "success": false,
+  "result": {},
+  "messages": []
+}

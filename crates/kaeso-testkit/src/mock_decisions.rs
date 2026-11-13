@@ -44,6 +44,19 @@ pub fn dialect(path: &str, body: &[u8]) -> Option<DialectId> {
 
 /// A reply to the decision request, in its own format.
 pub fn answer(dialect: DialectId, body: &Bytes, headers: &HeaderMap) -> Response {
+    match reply(dialect, body, headers) {
+        Some(bytes) => Response::builder()
+            .status(StatusCode::OK)
+            .header("content-type", "application/json")
+            .header("x-request-id", "req_mock_decision")
+            .body(Body::from(bytes))
+            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+        None => StatusCode::UNPROCESSABLE_ENTITY.into_response(),
+    }
+}
+
+/// The body of the reply to the decision request, or `None` when it isn't one.
+pub fn reply(dialect: DialectId, body: &Bytes, headers: &HeaderMap) -> Option<Vec<u8>> {
     let mut listed = HeaderList::new();
     for (name, value) in headers {
         if let Ok(v) = value.to_str() {
@@ -52,7 +65,7 @@ pub fn answer(dialect: DialectId, body: &Bytes, headers: &HeaderMap) -> Response
     }
     let req = match dispatch::decode_request(dialect, RequestKind::Decide, body, &listed) {
         Ok(Request::Decide(d)) => d,
-        Ok(_) | Err(_) => return StatusCode::UNPROCESSABLE_ENTITY.into_response(),
+        Ok(_) | Err(_) => return None,
     };
     let text = String::from_utf8_lossy(body);
     let refuse = text.contains("[mock:refuse]");
@@ -66,12 +79,7 @@ pub fn answer(dialect: DialectId, body: &Bytes, headers: &HeaderMap) -> Response
     reply.usage = usage(dialect, &req);
     let ctx = EncodeCtx::for_request(Arc::new(Request::Decide(req)));
     match dispatch::encode_response(dialect, &Reply::Decide(reply), &ctx) {
-        Ok(bytes) => Response::builder()
-            .status(StatusCode::OK)
-            .header("content-type", "application/json")
-            .header("x-request-id", "req_mock_decision")
-            .body(Body::from(bytes))
-            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response()),
+        Ok(bytes) => Some(bytes),
         Err(e) => panic!("mock: cannot write a {dialect} decision reply: {e}"),
     }
 }

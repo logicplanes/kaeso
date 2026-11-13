@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "AiError: AiError: Request body failed validation: questions.s.choice.criteria: Dictionary should have at least 2 items after validation, not 1 (be3b41fe-56ca-4646-9975-858a8a09d7e5)",
+      "code": 3030
+    }
+  ],
+  "success": false,
+  "result": {},
+  "messages": []
+}

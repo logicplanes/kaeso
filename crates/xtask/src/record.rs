@@ -441,8 +441,9 @@ impl Recorder<'_> {
             (None, None) => "?".to_owned(),
         };
         let streaming = payload.get("stream").is_some_and(truthy);
-        self.send(fixture, body, &self.url, &model, streaming, out)
-            .await
+        // Cloudflare's Workers AI names the model in the path as well as the body.
+        let url = self.url.replace("{model}", &model);
+        self.send(fixture, body, &url, &model, streaming, out).await
     }
 
     async fn send(
@@ -798,6 +799,10 @@ mod tests {
         let typesafe = known("typesafe");
         assert!(Dialect::SystemOne.speaks(typesafe));
         assert_eq!(Dialect::SystemOne.path_at(typesafe), Some("/v1/systemone"));
+        assert_eq!(
+            Dialect::SystemOne.path_at(known("cloudflare-ai-gateway")),
+            Some("/run/@cf/cloudflare/{model}")
+        );
         assert!(!Dialect::OpenaiChat.speaks(typesafe));
         assert!(!Dialect::GeminiDecisions.speaks(known("openrouter")));
         assert_eq!(
@@ -1036,6 +1041,37 @@ mod tests {
         assert_eq!(
             cannot_count.unwrap_err().to_string(),
             "example-cloud has no token-count endpoint for anthropic_messages; record without --count"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_cloudflare_decision_goes_to_the_models_own_path() {
+        let dir = repository();
+        dir.file(
+            "crates/kaeso-codecs/fixtures/system_one/requests/noul.json",
+            r#"{"model":"jev-latest"}"#,
+        );
+        let own =
+            "crates/kaeso-codecs/fixtures/system_one/providers/cloudflare-ai-gateway/requests";
+        dir.file(&format!("{own}/support.json"), r#"{"model":"clef-flash"}"#);
+        let mut out = Vec::new();
+        run(
+            dir.path(),
+            &args(&["system_one", "support", "--dry-run"]),
+            &endpoint(
+                known("cloudflare-ai-gateway"),
+                "https://api.example.com/client/v4/accounts/0123/ai",
+                None,
+            ),
+            &mut out,
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            String::from_utf8(out).unwrap(),
+            format!(
+                "{own}/support.json -> POST https://api.example.com/client/v4/accounts/0123/ai/run/@cf/cloudflare/clef-flash\n"
+            )
         );
     }
 

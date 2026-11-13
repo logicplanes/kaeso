@@ -232,6 +232,8 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 | `[mock:models=typesafe]` in the provider key | Answers `GET /v1/models` with TypeSafe's own listing and `GET /v1/models/{id}` with a bare 404, as TypeSafe does |
 | `[mock:models=endless]` in the provider key | Keeps the Anthropic listing on its first page |
 
+On Cloudflare's account paths the mock answers Clef at `…/ai/run/@cf/cloudflare/{model}` in Cloudflare's envelope; `[mock:error=NAME]` there picks the error `recorded-NAME` of `system_one/providers/cloudflare-ai-gateway/errors/`.
+
 `MockProvider::gate()` makes a gate and returns its marker. `wait_for(n)` returns once `n` requests have reached it, and `open()` lets them all through. That is how a test holds a request in flight without a sleep.
 
 ### MCP portal suite

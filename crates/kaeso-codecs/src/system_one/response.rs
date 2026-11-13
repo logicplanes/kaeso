@@ -9,7 +9,7 @@ use serde_json::{Number, Value};
 
 use super::DIALECT;
 use super::assets::{quoted, raw};
-use super::profile::Envelope;
+use super::profile::{Envelope, ModelField};
 use super::wire::{
     BoxAnswerWire, BoxWire, ChoiceAnswerWire, NoulAnswerWire, RefusalAnswerWire, ResponseWire,
     ScoreAnswerWire, UsageWire,
@@ -116,7 +116,13 @@ pub(super) fn decode(
             &origin,
         )?);
     }
-    let mut resp = DecideResponse::new(w.model, answers);
+    let model = match ctx.system_one_profile.model_field {
+        ModelField::ShortName(prefix) if !w.model.is_empty() && !w.model.starts_with(prefix) => {
+            format!("{prefix}{}", w.model)
+        }
+        _ => w.model,
+    };
+    let mut resp = DecideResponse::new(model, answers);
     if let Some(u) = &w.usage {
         let parsed: UsageWire = u
             .parse()

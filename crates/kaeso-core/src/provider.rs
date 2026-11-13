@@ -2038,7 +2038,14 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
-        decisions: &[],
+        // Workers AI's Clef models answer System One bodies at `/run/@cf/cloudflare/{model}`
+        // beside the account's `/ai/v1`, through the gateway the key names
+        // (https://developers.cloudflare.com/workers-ai/models/clef/,
+        // https://developers.cloudflare.com/ai-gateway/usage/rest-api/#call-a-workers-ai-model).
+        decisions: &[
+            DecisionsEgress::system_one(SystemOneProfile::CLOUDFLARE_WORKERS_AI)
+                .for_models("@cf/cloudflare/clef*"),
+        ],
         dialects: &[
             DialectId::OpenAiChat,
             DialectId::OpenAiResponses,
@@ -3425,6 +3432,19 @@ mod tests {
             assert!(!e.from_root && e.auth.is_none(), "{id}");
         }
         assert_eq!(SystemOneProfile::PERPLEXITY.path, "/v1/decisions");
+        let clef = egress("cloudflare-ai-gateway", "@cf/cloudflare/clef-flash").unwrap();
+        assert_eq!(
+            (clef.dialect, clef.system_one, clef.max_questions()),
+            (
+                DialectId::SystemOne,
+                SystemOneProfile::CLOUDFLARE_WORKERS_AI,
+                Some(64)
+            )
+        );
+        assert!(!clef.box_questions() && !clef.from_root);
+        assert!(egress("cloudflare-ai-gateway", "@cf/cloudflare/clef-omni").is_some());
+        assert!(egress("cloudflare-ai-gateway", "typesafe/jev").is_none());
+        assert!(egress("cloudflare-ai-gateway", "@cf/zai-org/glm-4.7-flash").is_none());
         let served = [
             "openai",
             "google",
@@ -3434,6 +3454,7 @@ mod tests {
             "fireworks-ai",
             "perplexity",
             "typesafe",
+            "cloudflare-ai-gateway",
         ];
         for p in PROVIDERS {
             assert_eq!(!p.decisions.is_empty(), served.contains(&p.id), "{}", p.id);

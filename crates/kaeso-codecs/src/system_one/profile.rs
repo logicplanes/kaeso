@@ -36,7 +36,8 @@ pub enum Envelope {
 pub enum ModelField {
     /// The model id as the request names it.
     AsSent,
-    /// The id without this prefix, as Cloudflare's `clef` for `@cf/cloudflare/clef`.
+    /// The id without this prefix, as Cloudflare's `clef` for `@cf/cloudflare/clef`; a reply
+    /// that names the short id gets the prefix back.
     ShortName(&'static str),
 }
 
@@ -87,8 +88,9 @@ pub struct ContextLimits {
 pub struct SystemOneProfile {
     /// The provider's name in refusals.
     pub name: &'static str,
-    /// The request path; `{model}` stands for the model the body names. A `/v1/…` path goes
-    /// under the context's API root.
+    /// The request path; `{model}` stands for the model the body names. With an API root
+    /// ([`crate::EgressCtx::api_root`]), a `/v1/…` path goes under it and any other path beside
+    /// it, under the root without its `/v1`.
     pub path: &'static str,
     pub media: MediaPlacement,
     pub envelope: Envelope,
@@ -107,10 +109,16 @@ pub struct SystemOneProfile {
     /// are sent as.
     pub unknown_fields: bool,
     pub max_questions: Option<usize>,
+    /// The fewest options one choice question may have.
+    pub min_options: usize,
     /// The most options one choice question may have.
     pub max_options: Option<usize>,
+    /// The fewest levels one score question may have.
+    pub min_levels: usize,
     /// The most levels one score question may have.
     pub max_levels: Option<usize>,
+    /// Whether every question must have instructions.
+    pub instructions_required: bool,
     /// The most images one request may show, counting each place an image is used.
     pub max_images: Option<usize>,
     /// The image media types the provider takes; empty for any.
@@ -119,6 +127,10 @@ pub struct SystemOneProfile {
     pub image_px: Option<(u32, u32)>,
     /// The most bytes one image may have.
     pub image_bytes: Option<usize>,
+    /// The most pixels one image may have, its width times its height.
+    pub image_pixels: Option<u64>,
+    /// The most bytes all images of one request may have together.
+    pub images_bytes: Option<usize>,
     /// Whether the provider takes an animated image.
     pub animated_images: bool,
     /// Whether the provider fetches an image from an `https` URL, rather than only taking bytes.
@@ -150,12 +162,17 @@ impl SystemOneProfile {
         box_questions: true,
         unknown_fields: true,
         max_questions: None,
+        min_options: 1,
         max_options: Some(255),
+        min_levels: 1,
         max_levels: Some(10),
+        instructions_required: false,
         max_images: None,
         image_types: PNG_JPEG,
         image_px: Some((280, 1568)),
         image_bytes: Some(16 * MIB),
+        image_pixels: None,
+        images_bytes: None,
         animated_images: false,
         image_urls: false,
         question_ids: IdRule::Any,
@@ -225,13 +242,16 @@ impl SystemOneProfile {
         ..SystemOneProfile::TYPESAFE
     };
 
-    /// Cloudflare Workers AI's Clef models (`/ai/run/@cf/cloudflare/{model}`): the short model
-    /// name in the body, at most 64 questions with ids of letters, digits, `_`, `.` and `-`, and at
-    /// most 4 PNG, JPEG or WebP images of 4 MiB in a top-level `images` list; the reply is the
-    /// `result` of Cloudflare's envelope (<https://developers.cloudflare.com/workers-ai/models/clef/>).
+    /// Cloudflare Workers AI's Clef models (`/run/@cf/cloudflare/{model}` beside the account's
+    /// `/v1`, which is `/client/v4/accounts/{account_id}/ai/run/@cf/cloudflare/{model}`): the
+    /// short model name in the body, 1 to 64 questions with instructions and ids of letters,
+    /// digits, `_`, `.` and `-`, 2 to 255 options and 2 to 10 levels, at most 4 PNG, JPEG or WebP
+    /// images of 4 MiB and 16 megapixels in a top-level `images` list, 8 MiB together, and no
+    /// field it doesn't document; the reply is the `result` of Cloudflare's envelope
+    /// (<https://developers.cloudflare.com/workers-ai/models/clef/>, `schema-input.json`).
     pub const CLOUDFLARE_WORKERS_AI: SystemOneProfile = SystemOneProfile {
         name: "Cloudflare Workers AI",
-        path: "/ai/run/@cf/cloudflare/{model}",
+        path: "/run/@cf/cloudflare/{model}",
         media: MediaPlacement::Root,
         envelope: Envelope::Result,
         model_field: ModelField::ShortName("@cf/cloudflare/"),
@@ -239,14 +259,19 @@ impl SystemOneProfile {
         long_context: None,
         multipart: false,
         box_questions: false,
-        unknown_fields: true,
+        unknown_fields: false,
         max_questions: Some(64),
+        min_options: 2,
         max_options: Some(255),
+        min_levels: 2,
         max_levels: Some(10),
+        instructions_required: true,
         max_images: Some(4),
         image_types: PNG_JPEG_WEBP,
         image_px: None,
         image_bytes: Some(4 * MIB),
+        image_pixels: Some(16_000_000),
+        images_bytes: Some(8 * MIB),
         animated_images: true,
         image_urls: false,
         question_ids: IdRule::Word {
@@ -318,5 +343,18 @@ mod tests {
         assert_eq!(SystemOneProfile::PERPLEXITY.path, "/v1/decisions");
         assert_eq!(SystemOneProfile::FIREWORKS.media, MediaPlacement::None);
         assert_eq!(SystemOneProfile::BASETEN.max_images, Some(16));
+        let rules = |p: SystemOneProfile| {
+            (
+                p.min_options,
+                p.min_levels,
+                p.instructions_required,
+                p.unknown_fields,
+            )
+        };
+        assert_eq!(
+            rules(SystemOneProfile::CLOUDFLARE_WORKERS_AI),
+            (2, 2, true, false)
+        );
+        assert_eq!(rules(SystemOneProfile::GENERIC), (1, 1, false, true));
     }
 }

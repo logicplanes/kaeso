@@ -8,7 +8,7 @@ Look up any field of TypeSafe's System One format here: where it goes in KPP, ho
 
 - **Codec:** `kaeso_codecs::system_one::SystemOne` (`crates/kaeso-codecs/src/system_one/`)
 - **Endpoints:** `POST /v1/systemone`, as JSON or as a `multipart/form-data` upload, and the OpenAI [models](#models) endpoints
-- **Fixtures:** `crates/kaeso-codecs/fixtures/system_one/`, spec-built from TypeSafe's OpenAPI document and documentation; only TypeSafe's two refused-key replies in `providers/typesafe/` are recorded
+- **Fixtures:** `crates/kaeso-codecs/fixtures/system_one/`, spec-built from TypeSafe's OpenAPI document and documentation; TypeSafe's two refused-key replies in `providers/typesafe/` and Cloudflare's Clef replies and refusals in `providers/cloudflare-ai-gateway/` are recorded
 
 **Sources.** TypeSafe's OpenAPI document `https://api.typesafe.ai/openapi.json`, version 0.2.0 (`SystemOneRequest`, `Question`, `NoulCriteria`, `Asset`, `SystemOneResponse`, `Answer`, `HTTPBadRequestError`, `HTTPValidationError`), and its pages on [System One](https://docs.typesafe.ai/api/system-one), [images](https://docs.typesafe.ai/images), [errors](https://docs.typesafe.ai/api/errors) and [confidence](https://docs.typesafe.ai/confidence), read on 2026-11-12.
 
@@ -61,10 +61,10 @@ Every image is an asset that strings reference. Where it goes depends on the pro
 | `State` | An `image_url` part with a data URL in place of every whole-string reference in the state | A reference inside a longer string, in instructions or in descriptions |
 | `StateOrAssets` | Parts where the app sent parts, `assets` for the rest | Image URLs in `assets` |
 | `Conversation` | A user message under `state.messages`: each string a `text` part, each image an `image_url` part | Images in any other state than text, a list of strings or `{"messages": …}` |
-| `Root` | A top-level `images` list of data URLs, taken out of a state array in order | A reference anywhere but as a whole item of a state array |
+| `Root` | A top-level `images` list of data URLs, taken out of a state array in order; an image that followed other items moves before the state, named in `adapted` as `image_order` | A reference anywhere but as a whole item of a state array |
 | `None` | Nothing | Every image |
 
-Before sending, the codec reads each image's format and size from its header without decoding it (`kaeso_codecs::image_size`) and refuses what the profile refuses. Images are never converted or resized. The refusals name `image URL`, `image format`, `image size` or `animated image`, with the field in `param`.
+Before sending, the codec reads each image's format and size from its header without decoding it (`kaeso_codecs::image_size`) and refuses what the profile refuses: its formats, its bytes per image and per request, its pixels per side or per image. Images are never converted or resized. The refusals name `image URL`, `image format`, `image size` or `animated image`, with the field in `param`.
 
 ## Questions and options
 
@@ -75,6 +75,8 @@ Before sending, the codec reads each image's format and size from its header wit
 | `ChoiceValue::Bool` | `"true"`, `"false"` | Named in `adapted` as `booleans`. `true` and `"true"` in one question are `Unsupported` (`repeated choice value`). |
 | `Level` with `label` and a text `description` | `"label: description"` | Named in `adapted` as `levels`. A label alone is written as the level. |
 | `QuestionKind::Box` | `box` | `Unsupported` (`box question`) where the profile answers none. |
+| `Choice.options`, `Score.levels` | `criteria` | Fewer than the profile's `min_options` or `min_levels`, or more than its `max_options` or `max_levels`, is `Unsupported` (`options`, `levels`). |
+| `Question.instructions` | `instructions` | A question without them, or with empty text, is `Unsupported` (`question without instructions`) where the profile's `instructions_required` is set. |
 | `DecideRequest.cache`, `Block.cache` | none | Hints System One has no place for, named in `left_out` as `cache`. |
 | `DecideRequest.user` | none | A hint, named in `left_out` as `user`. |
 | `DecisionInput::Messages` | the state | One user message only; its text, JSON and image blocks become a string or an array. More messages are `Unsupported` (`conversation input`). |
@@ -85,7 +87,7 @@ The decoder reads each answer under the key its question was sent with, from `Eg
 
 | Wire field | KPP | Notes |
 |---|---|---|
-| `model` | `DecideResponse.model` typed | The model that answered, such as `jev-1.14.0` for `jev-latest`. |
+| `model` | `DecideResponse.model` typed | The model that answered, such as `jev-1.14.0` for `jev-latest`. A short name the profile's `ModelField::ShortName` wrote gets its prefix back, so Cloudflare's `clef` reads as `@cf/cloudflare/clef`. |
 | `answers.*` noul | `AnswerValue::Predicate(PredicateAnswer { probability })` typed | `noul` is the probability of yes. |
 | `answers.*` choice | `AnswerValue::Choice(ChoiceAnswer { option, probabilities })` typed | `option` is the chosen option's index; `probabilities` has one entry per option, `None` where the reply has none. |
 | `answers.*` score | `AnswerValue::Score(ScoreAnswer { score, probabilities })` typed | `probabilities` by level, from the keys `"0"`, `"1"`, …. |
@@ -157,7 +159,14 @@ Without `TypeSafe-Danger-Zone-Long-Context: true`, a request gets 64k tokens for
 
 ### Cloudflare Workers AI
 
-`SystemOneProfile::CLOUDFLARE_WORKERS_AI`, `POST /ai/run/@cf/cloudflare/{model}`, from the [Clef model page](https://developers.cloudflare.com/workers-ai/models/clef/). The body names the model by its short name, such as `clef`. A request takes at most 64 questions with keys of letters, digits, `_`, `.` and `-`, and at most 4 PNG, JPEG or WebP images of 4 MiB in a top-level `images` list. The reply is the `result` of Cloudflare's envelope. The gateway doesn't send to it yet.
+`SystemOneProfile::CLOUDFLARE_WORKERS_AI`, for Cloudflare's Clef models. Sources, read on 2026-11-13: the model pages of [Clef](https://developers.cloudflare.com/workers-ai/models/clef/), [Clef-flash](https://developers.cloudflare.com/workers-ai/models/clef-flash/) and [Clef-omni](https://developers.cloudflare.com/workers-ai/models/clef-omni/) with their `schema-input.json` and `schema-output.json`, Workers AI's [errors](https://developers.cloudflare.com/workers-ai/platform/errors/), and AI Gateway's [REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/#call-a-workers-ai-model), which keeps the Workers AI path with the model in it and routes it through the gateway named in `cf-aig-gateway-id`.
+
+- **Path.** `/run/@cf/cloudflare/{model}` beside the key's `/v1` root: `POST /client/v4/accounts/{account_id}/ai/run/@cf/cloudflare/clef`. The body names the model by its short name, `clef`, `clef-flash` or `clef-omni`; another name is a 422.
+- **Limits.** 1 to 64 questions with instructions, keys of letters, digits, `_`, `.` and `-` up to 100 characters, 2 to 255 options and 2 to 10 levels; no box questions. Cloudflare refuses a field it doesn't document, so an app's own fields are `Unsupported` before sending.
+- **Images.** A top-level `images` list of PNG, JPEG or WebP data URLs, at most 4, each at most 4 MiB and 16 megapixels, 8 MiB together. Clef-omni also takes `audio` and `videos`, which KPP has no place for.
+- **Replies.** The answer is the `result` of Cloudflare's envelope, `{"result", "success", "errors", "messages"}`. A yes/no answer has no `confidence`. Errors come in the envelope with `success: false`, such as 401 code 10000 for a refused token, 422 code 3030 naming the schema rule a request broke, and 400 code 2001 for a gateway the account doesn't have.
+
+Live checks on 2026-11-13: the documented request answered 200 on all three models, with and without `cf-aig-gateway-id`; the limits above came back as the refusals recorded in `providers/cloudflare-ai-gateway/errors/`; and a 10,350-token state was read whole, so the state is truncated only to fit the model's context, as the model pages say, not at about 2,000 tokens.
 
 ### Other servers
 

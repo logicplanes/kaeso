@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "AiError: AiError: Request body failed validation: questions.s.score.criteria: List should have at least 2 items after validation, not 1 (fcb380d7-bae4-4ff2-9a81-e557809d2df2)",
+      "code": 3030
+    }
+  ],
+  "success": false,
+  "result": {},
+  "messages": []
+}

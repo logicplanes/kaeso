@@ -31,6 +31,7 @@ fn profile_for(name: &str) -> SystemOneProfile {
         Some("openrouter") => SystemOneProfile::OPENROUTER,
         Some("perplexity") => SystemOneProfile::PERPLEXITY,
         Some("baseten") => SystemOneProfile::BASETEN,
+        Some("cloudflare-ai-gateway") => SystemOneProfile::CLOUDFLARE_WORKERS_AI,
         // The OpenAPI document's own box example holds a 16×16 image, which TypeSafe refuses
         // (`a_typesafe_example_image_is_refused_before_sending` below).
         _ if name == "box" => SystemOneProfile::GENERIC,
@@ -130,25 +131,54 @@ fn every_request_fixture_round_trips() {
         for (k, v) in headers.iter() {
             assert_eq!(enc.headers.get(k), Some(v), "{name}: {k}");
         }
-        let expected_path = match profile_for(&name).path {
-            "/v1/decisions" => "/v1/decisions",
-            _ => "/v1/systemone",
-        };
-        assert_eq!(enc.path, expected_path, "{name}");
+        let model = serde_json::from_slice::<Value>(&body).unwrap()["model"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        assert_eq!(
+            enc.path,
+            profile_for(&name).path.replace("{model}", &model),
+            "{name}"
+        );
     }
+}
+
+// A recorded reply answers the request of the same name without `recorded-`.
+fn request_of(reply: &str) -> String {
+    match reply.rsplit_once('/') {
+        Some((folder, stem)) => format!(
+            "{folder}/{}",
+            stem.strip_prefix("recorded-").unwrap_or(stem)
+        ),
+        None => reply.strip_prefix("recorded-").unwrap_or(reply).to_owned(),
+    }
+}
+
+// What an app gets for a provider's reply: Cloudflare's `result` without its envelope, with the
+// model's full id.
+fn as_apps_get(profile: SystemOneProfile, body: &[u8]) -> Vec<u8> {
+    let Envelope::Result = profile.envelope else {
+        return body.to_vec();
+    };
+    let mut result = serde_json::from_slice::<Value>(body).unwrap()["result"].take();
+    if let ModelField::ShortName(prefix) = profile.model_field {
+        result["model"] = format!("{prefix}{}", result["model"].as_str().unwrap()).into();
+    }
+    json_body(&result)
 }
 
 #[test]
 fn every_response_fixture_round_trips_through_its_request() {
     for (name, body) in fixtures(DIR, "responses", "json") {
-        let (req_body, headers) = request_fixture(&name);
+        let (req_body, headers) = request_fixture(&request_of(&name));
         let req = decode_with(&req_body, &headers);
-        let (_, c) = encode(&req, profile_for(&name)).unwrap();
+        let profile = profile_for(&name);
+        let (_, c) = encode(&req, profile).unwrap();
         let reply = SystemOne::decode_response(200, &HeaderList::new(), &body, &c)
             .unwrap_or_else(|e| panic!("{name}: {e}"));
         let out = SystemOne::encode_response(&reply, &EncodeCtx::for_request(Request::Decide(req)))
             .unwrap_or_else(|e| panic!("{name}: {e}"));
-        assert_json_eq(&name, &body, &out);
+        assert_json_eq(&name, &as_apps_get(profile, &body), &out);
     }
 }
 
@@ -208,6 +238,42 @@ fn error_fixtures_read_as_their_kinds_and_reach_apps_as_sent() {
         (
             "providers/typesafe/recorded-missing-key-403",
             ErrorKind::Authentication,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-invalid-token-401",
+            ErrorKind::Authentication,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-no-instructions-400",
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-one-level-422",
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-one-option-422",
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-too-many-images-422",
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-too-many-questions-422",
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-unknown-field-422",
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-unknown-gateway-400",
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/cloudflare-ai-gateway/recorded-wrong-model-422",
+            ErrorKind::InvalidRequest,
         ),
     ];
     let all = fixtures(DIR, "errors", "json");
@@ -507,7 +573,7 @@ fn images_go_where_each_provider_takes_them() {
     cf.model = "@cf/cloudflare/clef".into();
     let (enc, _) = encode(&cf, SystemOneProfile::CLOUDFLARE_WORKERS_AI).unwrap();
     let sent = body_of(&enc);
-    assert_eq!(enc.path, "/ai/run/@cf/cloudflare/clef");
+    assert_eq!(enc.path, "/run/@cf/cloudflare/clef");
     assert_eq!(sent["model"], "clef");
     assert_eq!(sent["state"], json!(["Two photos:"]));
     let images = sent["images"].as_array().unwrap();
@@ -695,13 +761,16 @@ fn profiles_refuse_what_their_providers_refuse() {
 fn names_a_provider_cant_take_become_positions_and_answers_map_back() {
     let req = DecideRequest::new("@cf/cloudflare/clef", DecisionInput::Text("Hi".into()))
         .with_question(noul("is it spam?", "Spam?"))
-        .with_question(Question::new(
-            Some("tone".into()),
-            QuestionKind::Choice(Choice::new(vec![
-                ChoiceOption::new(ChoiceValue::Text("calm".into()), None),
-                ChoiceOption::new(ChoiceValue::Text("angry".into()), None),
-            ])),
-        ));
+        .with_question(
+            Question::new(
+                Some("tone".into()),
+                QuestionKind::Choice(Choice::new(vec![
+                    ChoiceOption::new(ChoiceValue::Text("calm".into()), None),
+                    ChoiceOption::new(ChoiceValue::Text("angry".into()), None),
+                ])),
+            )
+            .with_instructions(kaeso_kpp::Instructions::Text("Tone?".into())),
+        );
     let (enc, c) = encode(&req, SystemOneProfile::CLOUDFLARE_WORKERS_AI).unwrap();
     let sent = body_of(&enc);
     assert_eq!(
@@ -1730,4 +1799,174 @@ fn provider_errors_in_every_shape() {
             ["loc"],
         json!(["body", "a"])
     );
+}
+
+const CLOUDFLARE: &str = "providers/cloudflare-ai-gateway";
+const CLOUDFLARE_ROOT: &str = "/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1";
+
+fn cloudflare_file(name: &str) -> Vec<u8> {
+    std::fs::read(
+        crate::test_support::fixtures_dir()
+            .join(DIR)
+            .join(CLOUDFLARE)
+            .join(format!("{name}.json")),
+    )
+    .unwrap()
+}
+
+fn cloudflare_ctx(req: &Request) -> EgressCtx {
+    ctx(SystemOneProfile::CLOUDFLARE_WORKERS_AI, req).with_api_root(CLOUDFLARE_ROOT)
+}
+
+#[test]
+fn cloudflare_takes_images_in_a_list_before_the_state_beside_the_accounts_v1() {
+    let req = Request::Decide(decode(&cloudflare_file("images/colour.app")));
+    let mut c = cloudflare_ctx(&req);
+    let enc = SystemOne::encode_request(&req, &mut c).unwrap();
+    assert_json_eq(
+        "images/colour.sent",
+        &cloudflare_file("images/colour.sent"),
+        &enc.body,
+    );
+    assert_eq!(
+        enc.path,
+        "/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/run/@cf/cloudflare/clef"
+    );
+    assert!(c.adapted.is_empty(), "{:?}", c.adapted);
+    assert_eq!(enc.headers.get("typesafe-danger-zone-images"), None);
+
+    let reply = SystemOne::decode_response(
+        200,
+        &HeaderList::new(),
+        &cloudflare_file("images/recorded-colour"),
+        &c,
+    )
+    .unwrap();
+    let Reply::Decide(r) = &reply else { panic!() };
+    assert_eq!(r.model, "@cf/cloudflare/clef");
+    assert_eq!((r.usage.input_tokens, r.usage.output_tokens), (218, 0));
+    let Request::Decide(app) = req else { panic!() };
+    let out: Value = serde_json::from_slice(
+        &SystemOne::encode_response(&reply, &EncodeCtx::for_request(Request::Decide(app))).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(out["answers"]["colour"]["choice"], "red");
+    assert_eq!(out["model"], "@cf/cloudflare/clef");
+    assert_eq!(
+        out.as_object().unwrap().keys().collect::<Vec<_>>(),
+        ["answers", "model", "usage"]
+    );
+}
+
+#[test]
+fn an_image_after_text_moves_before_the_state_on_cloudflare() {
+    let req = with_image(json!(["A photo:", "img-1"]), png(300, 300), "image/png");
+    let (enc, c) = encode(&req, SystemOneProfile::CLOUDFLARE_WORKERS_AI).unwrap();
+    assert_eq!(body_of(&enc)["state"], json!(["A photo:"]));
+    assert_eq!(body_of(&enc)["images"].as_array().unwrap().len(), 1);
+    assert_eq!(c.adapted, ["image_order"]);
+}
+
+#[test]
+fn cloudflare_refuses_what_clef_refuses_before_sending() {
+    let cf = SystemOneProfile::CLOUDFLARE_WORKERS_AI;
+    let one_option = DecideRequest::new("@cf/cloudflare/clef", DecisionInput::Text("x".into()))
+        .with_question(
+            Question::new(
+                Some("c".into()),
+                QuestionKind::Choice(Choice::new(vec![ChoiceOption::new(
+                    ChoiceValue::Text("only".into()),
+                    None,
+                )])),
+            )
+            .with_instructions(kaeso_kpp::Instructions::Text("Which?".into())),
+        );
+    let err = encode(&one_option, cf).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("options"));
+    assert_eq!(err.param.as_deref(), Some("questions[0]"));
+    assert!(
+        err.message.contains("at least 2 options"),
+        "{}",
+        err.message
+    );
+    encode(&one_option, SystemOneProfile::TYPESAFE).unwrap();
+
+    let one_level = DecideRequest::new("@cf/cloudflare/clef", DecisionInput::Text("x".into()))
+        .with_question(
+            Question::new(
+                Some("s".into()),
+                QuestionKind::Score(Score::new(vec![Level::new(
+                    None,
+                    Some(Description::Text("only".into())),
+                )])),
+            )
+            .with_instructions(kaeso_kpp::Instructions::Text("How bad?".into())),
+        );
+    let err = encode(&one_level, cf).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("levels"));
+    assert!(err.message.contains("at least 2 levels"), "{}", err.message);
+
+    for instructions in [None, Some(kaeso_kpp::Instructions::Text(String::new()))] {
+        let mut q = noul("a", "?");
+        q.instructions = instructions;
+        let req = DecideRequest::new("@cf/cloudflare/clef", DecisionInput::Text("x".into()))
+            .with_question(q);
+        let err = encode(&req, cf).unwrap_err();
+        assert_eq!(
+            err.unsupported_feature(),
+            Some("question without instructions")
+        );
+        assert_eq!(err.param.as_deref(), Some("questions[0].instructions"));
+        encode(&req, SystemOneProfile::TYPESAFE).unwrap();
+    }
+
+    let (body, _) = request_fixture("unknown-top-level-field");
+    let err = encode(&decode(&body), cf).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("x_future_field"));
+
+    let huge = with_image(json!(["img-1"]), png(5000, 4000), "image/png");
+    let err = encode(&huge, cf).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("image size"));
+    assert!(err.message.contains("16 megapixels"), "{}", err.message);
+    encode(&huge, SystemOneProfile::GENERIC).unwrap();
+
+    let mut three = png(300, 300);
+    three.resize(3 * 1024 * 1024, 0);
+    let heavy = with_image(
+        json!(["img-1", "img-2", "img-3"]),
+        three.clone(),
+        "image/png",
+    )
+    .with_asset(
+        "img-2",
+        Asset::new(Source::bytes("image/png", three.clone())),
+    )
+    .with_asset("img-3", Asset::new(Source::bytes("image/png", three)));
+    let err = encode(&heavy, cf).unwrap_err();
+    assert_eq!(err.unsupported_feature(), Some("image size"));
+    assert_eq!(err.param.as_deref(), Some("assets"));
+    assert!(err.message.contains("8 MiB of images"), "{}", err.message);
+}
+
+#[test]
+fn a_short_model_name_in_a_reply_gets_its_prefix_back() {
+    let req = DecideRequest::new("@cf/cloudflare/clef-flash", DecisionInput::Text("x".into()))
+        .with_question(noul("a", "?"));
+    let (enc, c) = encode(&req, SystemOneProfile::CLOUDFLARE_WORKERS_AI).unwrap();
+    assert_eq!(body_of(&enc)["model"], "clef-flash");
+    assert_eq!(enc.path, "/run/@cf/cloudflare/clef-flash");
+    let reply = |model: &str| json!({"result": {"model": model, "answers": {"a": {"type": "noul", "noul": 0.5}}, "usage": {"input_tokens": 3, "output_tokens": 0}}, "success": true, "errors": [], "messages": []});
+    for (sent, read) in [
+        ("clef-flash", "@cf/cloudflare/clef-flash"),
+        ("@cf/cloudflare/clef-flash", "@cf/cloudflare/clef-flash"),
+        ("", ""),
+    ] {
+        let Reply::Decide(r) =
+            SystemOne::decode_response(200, &HeaderList::new(), &json_body(&reply(sent)), &c)
+                .unwrap()
+        else {
+            panic!()
+        };
+        assert_eq!(r.model, read, "{sent}");
+    }
 }

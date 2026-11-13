@@ -1,0 +1,45 @@
+{
+  "result": {
+    "model": "clef-omni",
+    "answers": {
+      "urgent": {
+        "type": "noul",
+        "noul": 0.9865
+      },
+      "team": {
+        "type": "choice",
+        "choice": "technical",
+        "probabilities": {
+          "billing": 0.2322,
+          "technical": 0.7618,
+          "sales": 0.006
+        },
+        "confidence": 0.4513
+      },
+      "severity": {
+        "type": "score",
+        "score": 2.7853,
+        "legend": {
+          "0": "No impact",
+          "1": "Minor",
+          "2": "Major",
+          "3": "Critical"
+        },
+        "probabilities": {
+          "0": 0.0052,
+          "1": 0.0047,
+          "2": 0.1897,
+          "3": 0.8004
+        },
+        "confidence": 0.5689
+      }
+    },
+    "usage": {
+      "input_tokens": 341,
+      "output_tokens": 0
+    }
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}

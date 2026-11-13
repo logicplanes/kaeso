@@ -682,8 +682,19 @@ const TYPE_KEYS: [&str; 6] = [
     "contentType",
 ];
 // Keys that hold a file's bytes in the formats Kaeso reads and in MCP: base64 under one of
-// them is a file even without a type beside it. `data_base64` holds a System One asset.
-const FILE_KEYS: [&str; 5] = ["b64_json", "file_data", "blob", "bytes", "data_base64"];
+// them is a file even without a type beside it. `data_base64` holds a System One asset and
+// `base64` an image of Cloudflare's Clef (`{"content_type", "base64"}`).
+const FILE_KEYS: [&str; 6] = [
+    "b64_json",
+    "file_data",
+    "blob",
+    "bytes",
+    "data_base64",
+    "base64",
+];
+// Lists of files, such as the top-level `images` of Clef, Liquid, vLLM and llama.cpp: long
+// base64 that is itself an item of one is a file.
+const FILE_LISTS: [&str; 1] = ["images"];
 const CONTENT_KEYS: [&str; 6] = ["data", "result", "image", "audio", "video", "input_audio"];
 // Objects that hold one file: long base64 in or under one of these keys is that file even
 // when nothing states its type.
@@ -879,8 +890,12 @@ fn value<'a>(raw: &'a str, token: Token, stack: &mut [Frame<'a>], found: &mut Ve
     } else if let Some(base64) = base64_of(&text) {
         let sniffed = sniff(&head(base64.get(..64).unwrap_or(&base64)));
         let plain = all_hex(&base64) || (base64.starts_with('/') && sniffed.is_none());
+        let listed = stack.last().is_some_and(|f| {
+            !f.object && f.under.as_deref().is_some_and(|u| FILE_LISTS.contains(&u))
+        });
         let certain = sniffed.is_some_and(|s| s.1)
-            || (FILE_KEYS.contains(&key_name) && base64.len() >= 32 && !plain);
+            || (FILE_KEYS.contains(&key_name) && base64.len() >= 32 && !plain)
+            || (listed && base64.len() >= NAMED_MIN_CHARS && !plain);
         let object = stack.iter_mut().rev().find(|f| f.object);
         match object {
             Some(frame) if certain || !(plain || named_type || TEXT_KEYS.contains(&key_name)) => {

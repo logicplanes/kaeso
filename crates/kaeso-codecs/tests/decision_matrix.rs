@@ -102,17 +102,45 @@ fn decode(dialect: DialectId, body: &[u8], headers: &HeaderList) -> Result<Reque
 
 // Providers of every format with the profiles that check no provider's own limits, as a custom
 // provider has them.
-fn egress(req: &Request) -> EgressCtx {
+fn egress(req: &Request, system_one: SystemOneProfile) -> EgressCtx {
     EgressCtx::new(req)
-        .with_system_one_profile(SystemOneProfile::GENERIC)
+        .with_system_one_profile(system_one)
         .with_decisions_profile(DecisionsProfile::GENERIC)
 }
 
 fn encode(dialect: DialectId, req: &Request) -> Result<(EncodedRequest, EgressCtx), KppError> {
-    let mut ctx = egress(req);
-    dispatch::check(dialect, req, &egress(req))?;
+    encode_to(dialect, req, SystemOneProfile::GENERIC)
+}
+
+fn encode_to(
+    dialect: DialectId,
+    req: &Request,
+    system_one: SystemOneProfile,
+) -> Result<(EncodedRequest, EgressCtx), KppError> {
+    let mut ctx = egress(req, system_one);
+    dispatch::check(dialect, req, &egress(req, system_one))?;
     let enc = dispatch::encode_request(dialect, req, &mut ctx)?;
     Ok((enc, ctx))
+}
+
+// A provider's reply is read with its own profile, such as Cloudflare's envelope.
+fn profile_of(name: &str) -> SystemOneProfile {
+    if name.starts_with("providers/cloudflare-ai-gateway/") {
+        SystemOneProfile::CLOUDFLARE_WORKERS_AI
+    } else {
+        SystemOneProfile::GENERIC
+    }
+}
+
+// A recorded reply answers the request of the same name without `recorded-`.
+fn request_of(reply: &str) -> String {
+    match reply.rsplit_once('/') {
+        Some((folder, stem)) => format!(
+            "{folder}/{}",
+            stem.strip_prefix("recorded-").unwrap_or(stem)
+        ),
+        None => reply.strip_prefix("recorded-").unwrap_or(reply).to_owned(),
+    }
 }
 
 fn pretty(bytes: &[u8]) -> Value {
@@ -282,11 +310,13 @@ fn decision_replies_cross_every_decision_format() {
         for b in DECISIONS.into_iter().filter(|b| *b != a) {
             let mut outcomes = BTreeMap::new();
             for (name, body) in &bodies {
-                let request = std::fs::read(path_of(a, "requests", name, ".json"))
+                let asked = request_of(name);
+                let request = std::fs::read(path_of(a, "requests", &asked, ".json"))
                     .unwrap_or_else(|_| panic!("{a} {name}: a reply needs its request"));
-                let req = decode(a, &request, &headers(a, name))
+                let req = decode(a, &request, &headers(a, &asked))
                     .unwrap_or_else(|e| panic!("{a} {name}: {e}"));
-                let (_, ctx_a) = encode(a, &req).unwrap_or_else(|e| panic!("{a} {name}: {e}"));
+                let (_, ctx_a) = encode_to(a, &req, profile_of(name))
+                    .unwrap_or_else(|e| panic!("{a} {name}: {e}"));
                 let reply = match dispatch::decode_response(
                     a,
                     200,
