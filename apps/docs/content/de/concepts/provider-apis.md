@@ -50,4 +50,4 @@ Die Dokumentation der Anbieter wurde am 2026-11-09 gelesen. Die Quelle einer Zei
 | Vercel `vercel` | Ja: sein Katalog | Ja: seine Embedding-Modelle | Ja: seine Bildmodelle | Ja: seine Sprachmodelle | Ja: seine Transkriptionsmodelle | Nicht angeboten | Abgelehnt: Vercel dokumentiert Video nur über sein AI SDK, nicht über HTTP | Abgelehnt: Kaeso ruft die Sprachmodelle von Vercel nur für Sprache auf | Ja: seine Entscheidungsmodelle, OpenAI Decisions | [Modalities](https://vercel.com/docs/ai-gateway/modalities) |
 | Z.ai `zai` | Ja: GLM-Modelle | Nicht angeboten | Ja: `glm-image` | Nicht angeboten | Ja: `glm-asr-2512` | Nicht angeboten | Ja: `cogvideox-3` | Nicht angeboten | Nicht angeboten | [API reference](https://docs.z.ai/llms.txt) |
 
-Eigene Anbieter erreichen die Images-, Audio- und Videos-APIs von OpenAI nur, wo Sie die jeweilige API für den Anbieter einschalten ([Eigene Anbieter](../console/custom-providers.md)).
+Eigene Anbieter erreichen die Images-, Audio- und Videos-APIs von OpenAI und treffen Entscheidungen nur, wo Sie die jeweilige API für den Anbieter einschalten ([Eigene Anbieter](../console/custom-providers.md)).

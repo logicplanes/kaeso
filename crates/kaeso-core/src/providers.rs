@@ -83,14 +83,18 @@ pub enum MediaApi {
     Transcriptions,
     #[doc = "The Videos API, `/v1/videos`."]
     Videos,
+    #[doc = "Decisions, in System One's or OpenAI's format at the path its `decisions`\n\
+        settings name."]
+    Decisions,
 }
 
 impl MediaApi {
-    pub const ALL: [MediaApi; 4] = [
+    pub const ALL: [MediaApi; 5] = [
         MediaApi::Images,
         MediaApi::Speech,
         MediaApi::Transcriptions,
         MediaApi::Videos,
+        MediaApi::Decisions,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -99,12 +103,155 @@ impl MediaApi {
             MediaApi::Speech => "speech",
             MediaApi::Transcriptions => "transcriptions",
             MediaApi::Videos => "videos",
+            MediaApi::Decisions => "decisions",
         }
     }
 
     pub fn parse(s: &str) -> Option<MediaApi> {
         MediaApi::ALL.into_iter().find(|m| m.as_str() == s)
     }
+}
+
+/// The format a custom provider's server makes decisions in.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(
+    feature = "openapi",
+    schema(description = "The format a custom provider makes decisions in.")
+)]
+pub enum DecisionsFormat {
+    #[doc = "TypeSafe's System One format: a `state` and a map of `questions`, as vLLM,\n\
+        llama.cpp, Ollama and LM Studio serve it at `/v1/systemone`."]
+    SystemOne,
+    #[doc = "OpenAI's Decisions format: an `input` and a list of `questions`, at\n\
+        `/v1/decisions`."]
+    OpenaiDecisions,
+}
+
+impl DecisionsFormat {
+    pub const fn dialect(self) -> DialectId {
+        match self {
+            DecisionsFormat::SystemOne => DialectId::SystemOne,
+            DecisionsFormat::OpenaiDecisions => DialectId::OpenAiDecisions,
+        }
+    }
+
+    /// The path the format's own API serves it at.
+    pub const fn default_path(self) -> &'static str {
+        match self {
+            DecisionsFormat::SystemOne => kaeso_codecs::system_one::SYSTEM_ONE_PATH,
+            DecisionsFormat::OpenaiDecisions => kaeso_codecs::openai_decisions::DECISIONS_PATH,
+        }
+    }
+}
+
+/// Where a custom provider's System One server takes the images a decision request shows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "snake_case")]
+#[cfg_attr(
+    feature = "openapi",
+    schema(description = "Where a custom provider's System One server takes images.")
+)]
+pub enum ImagePlacement {
+    #[doc = "In the top-level `assets` map, each image named where it is used, as\n\
+        TypeSafe takes them."]
+    Assets,
+    #[doc = "As `image_url` parts in the `state`, as OpenRouter and Perplexity take them."]
+    State,
+    #[doc = "In a top-level `images` list of data URLs, as Cloudflare, vLLM and llama.cpp\n\
+        take them."]
+    Root,
+    #[doc = "Nowhere: the server takes text only, and a request with images is refused."]
+    None,
+}
+
+impl ImagePlacement {
+    pub const ALL: [ImagePlacement; 4] = [
+        ImagePlacement::Assets,
+        ImagePlacement::State,
+        ImagePlacement::Root,
+        ImagePlacement::None,
+    ];
+
+    pub const fn media(self) -> kaeso_codecs::system_one::MediaPlacement {
+        use kaeso_codecs::system_one::MediaPlacement;
+        match self {
+            ImagePlacement::Assets => MediaPlacement::Assets,
+            ImagePlacement::State => MediaPlacement::State,
+            ImagePlacement::Root => MediaPlacement::Root,
+            ImagePlacement::None => MediaPlacement::None,
+        }
+    }
+}
+
+pub const MAX_DECISIONS_PATH_LEN: usize = 200;
+
+/// How a custom provider's server takes decision requests: its format, the path under the base
+/// URL, and for System One where images go.
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DecisionsApi {
+    pub format: DecisionsFormat,
+    pub path: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media: Option<ImagePlacement>,
+}
+
+impl DecisionsApi {
+    /// The format at its own API's path, with images as `assets` for System One.
+    pub fn of(format: DecisionsFormat) -> DecisionsApi {
+        DecisionsApi {
+            format,
+            path: format.default_path().to_owned(),
+            media: (format == DecisionsFormat::SystemOne).then_some(ImagePlacement::Assets),
+        }
+    }
+
+    fn checked(mut self) -> Result<DecisionsApi, Problem> {
+        let trimmed = self.path.trim().trim_end_matches('/');
+        if !decisions_path(trimmed) {
+            return Err(Problem::DecisionsPath);
+        }
+        self.path = trimmed.to_owned();
+        if self.media.is_some() != (self.format == DecisionsFormat::SystemOne) {
+            return Err(Problem::DecisionsMedia);
+        }
+        Ok(self)
+    }
+
+    /// Where Kaeso sends the provider's decision requests; the path goes in the context.
+    pub fn egress(&self) -> crate::provider::DecisionsEgress {
+        use crate::provider::DecisionsEgress;
+        use kaeso_codecs::openai_decisions::DecisionsProfile;
+        use kaeso_codecs::system_one::SystemOneProfile;
+        match (self.format, self.media) {
+            (DecisionsFormat::OpenaiDecisions, _) => {
+                DecisionsEgress::openai(DecisionsProfile::GENERIC)
+            }
+            (DecisionsFormat::SystemOne, media) => DecisionsEgress::system_one(
+                SystemOneProfile::GENERIC
+                    .with_media(media.unwrap_or(ImagePlacement::Assets).media()),
+            ),
+        }
+    }
+}
+
+// Segments of URL path characters (RFC 3986 `pchar`), without `.` or `..` segments, so the
+// path stays under the base URL; the same rule as the `custom_providers.decisions` CHECK.
+fn decisions_path(path: &str) -> bool {
+    path.len() <= MAX_DECISIONS_PATH_LEN
+        && path.strip_prefix('/').is_some_and(|rest| {
+            rest.split('/').all(|segment| {
+                !segment.is_empty()
+                    && segment != "."
+                    && segment != ".."
+                    && segment
+                        .chars()
+                        .all(|c| c.is_ascii_alphanumeric() || "-._~!$&'()*+,;=:@%".contains(c))
+            })
+        })
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -119,6 +266,9 @@ pub enum Problem {
     Generation,
     Embeddings,
     CountTokens,
+    DecisionsPath,
+    DecisionsMedia,
+    DecisionsOff,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -133,6 +283,9 @@ pub struct Draft {
     pub count_tokens: Option<DialectId>,
     pub server: Option<ServerKind>,
     pub media: Vec<MediaApi>,
+    /// How the server takes decision requests, once `media` names [`MediaApi::Decisions`];
+    /// `None` there means System One at `/v1/systemone` with images as `assets`.
+    pub decisions: Option<DecisionsApi>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -148,6 +301,7 @@ pub struct CustomProvider {
     count_tokens: Option<DialectId>,
     server: Option<ServerKind>,
     media: Vec<MediaApi>,
+    decisions: Option<DecisionsApi>,
     dialects: Vec<DialectId>,
 }
 
@@ -181,6 +335,15 @@ impl CustomProvider {
         let mut media = d.media;
         media.sort_unstable();
         media.dedup();
+        let decisions = match (media.contains(&MediaApi::Decisions), d.decisions) {
+            (true, given) => Some(
+                given
+                    .unwrap_or_else(|| DecisionsApi::of(DecisionsFormat::SystemOne))
+                    .checked()?,
+            ),
+            (false, None) => None,
+            (false, Some(_)) => return Err(Problem::DecisionsOff),
+        };
         Ok(CustomProvider {
             uuid: d.uuid,
             id: d.id,
@@ -192,6 +355,7 @@ impl CustomProvider {
             count_tokens: d.count_tokens,
             server: d.server,
             media,
+            decisions,
             dialects,
         })
     }
@@ -245,6 +409,11 @@ impl CustomProvider {
         self.media.contains(&api)
     }
 
+    /// How the server takes decision requests; `None` while its decisions API is off.
+    pub fn decisions(&self) -> Option<&DecisionsApi> {
+        self.decisions.as_ref()
+    }
+
     pub fn draft(&self) -> Draft {
         Draft {
             uuid: self.uuid,
@@ -257,6 +426,7 @@ impl CustomProvider {
             count_tokens: self.count_tokens,
             server: self.server,
             media: self.media.clone(),
+            decisions: self.decisions.clone(),
         }
     }
 }
@@ -278,7 +448,7 @@ impl From<CustomProvider> for Draft {
 impl Serialize for Draft {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
-        let mut out = s.serialize_struct("CustomProvider", 10)?;
+        let mut out = s.serialize_struct("CustomProvider", 11)?;
         out.serialize_field("uuid", &self.uuid)?;
         out.serialize_field("id", &self.id)?;
         out.serialize_field("name", &self.name)?;
@@ -289,6 +459,7 @@ impl Serialize for Draft {
         out.serialize_field("count_tokens", &self.count_tokens)?;
         out.serialize_field("server", &self.server)?;
         out.serialize_field("media", &self.media)?;
+        out.serialize_field("decisions", &self.decisions)?;
         out.end()
     }
 }
@@ -310,6 +481,8 @@ impl<'de> Deserialize<'de> for Draft {
             server: Option<ServerKind>,
             #[serde(default)]
             media: Vec<MediaApi>,
+            #[serde(default)]
+            decisions: Option<DecisionsApi>,
         }
         let s = Stored::deserialize(d)?;
         Ok(Draft {
@@ -323,11 +496,12 @@ impl<'de> Deserialize<'de> for Draft {
             count_tokens: s.count_tokens,
             server: s.server,
             media: s.media,
+            decisions: s.decisions,
         })
     }
 }
 
-const API_PATHS: [&str; 7] = [
+const API_PATHS: [&str; 9] = [
     "/chat/completions",
     "/responses/input_tokens",
     "/responses",
@@ -335,6 +509,8 @@ const API_PATHS: [&str; 7] = [
     "/messages",
     "/embeddings",
     "/models",
+    "/systemone",
+    "/decisions",
 ];
 
 // Kaeso appends `/v1/…` to the base URL, so a pasted endpoint or a base URL that already
@@ -485,11 +661,12 @@ impl ProviderRef {
         }
     }
 
-    /// Where Kaeso sends decision requests for `model`; none for a custom provider yet.
+    /// Where Kaeso sends decision requests for `model`; a custom provider, where its admin
+    /// turned them on, with its path in [`ProviderRef::decisions_path`].
     pub fn decisions(&self, model: &str) -> Option<crate::provider::DecisionsEgress> {
         match self {
             ProviderRef::BuiltIn(p) => p.decisions.iter().copied().find(|e| e.serves(model)),
-            ProviderRef::Custom(_) => None,
+            ProviderRef::Custom(c) => c.decisions().map(DecisionsApi::egress),
         }
     }
 
@@ -497,8 +674,16 @@ impl ProviderRef {
     pub fn has_decisions(&self) -> bool {
         match self {
             ProviderRef::BuiltIn(p) => !p.decisions.is_empty(),
-            ProviderRef::Custom(_) => false,
+            ProviderRef::Custom(c) => c.decisions().is_some(),
         }
+    }
+
+    /// The path a custom provider takes decision requests at, under its base URL; a built-in
+    /// provider's comes with its profile.
+    pub fn decisions_path(&self) -> Option<&str> {
+        self.custom()
+            .and_then(CustomProvider::decisions)
+            .map(|d| d.path.as_str())
     }
 
     pub fn auth(&self) -> Option<AuthStyle> {
@@ -696,6 +881,7 @@ mod tests {
             count_tokens: None,
             server: None,
             media: Vec::new(),
+            decisions: None,
         }
     }
 
@@ -839,6 +1025,22 @@ mod tests {
                 "https://proxy.example.com/models",
             ),
             (
+                "http://localhost:8000/v1/systemone",
+                "http://localhost:8000/",
+            ),
+            (
+                "https://api.liquid.example/decisions/v1/systemone",
+                "https://api.liquid.example/decisions",
+            ),
+            (
+                "https://api.nace.example/v1/decisions",
+                "https://api.nace.example/",
+            ),
+            (
+                "https://proxy.example.com/decisions",
+                "https://proxy.example.com/decisions",
+            ),
+            (
                 "https://proxy.example.com/v1-proxy",
                 "https://proxy.example.com/v1-proxy",
             ),
@@ -852,6 +1054,145 @@ mod tests {
         assert!(!has_scheme("localhost:8000"));
         let p = CustomProvider::new(draft("my-vllm", "https://vllm.example.com/v1")).unwrap();
         assert_eq!(p.base_url().as_str(), "https://vllm.example.com/");
+    }
+
+    #[test]
+    fn decisions_go_where_the_admin_turned_them_on_in_the_format_path_and_placement_set() {
+        use kaeso_codecs::system_one::MediaPlacement;
+        let off = ProviderRef::Custom(Arc::new(
+            CustomProvider::new(draft("my-vllm", "http://localhost:8000")).unwrap(),
+        ));
+        assert!(!off.has_decisions());
+        assert_eq!((off.decisions("m"), off.decisions_path()), (None, None));
+
+        let mut d = draft("my-vllm", "http://localhost:8000");
+        d.media = vec![MediaApi::Decisions, MediaApi::Speech];
+        let p = CustomProvider::new(d).unwrap();
+        assert_eq!(p.media(), [MediaApi::Speech, MediaApi::Decisions]);
+        assert_eq!(
+            p.decisions(),
+            Some(&DecisionsApi {
+                format: DecisionsFormat::SystemOne,
+                path: "/v1/systemone".into(),
+                media: Some(ImagePlacement::Assets),
+            })
+        );
+        let r = ProviderRef::Custom(Arc::new(p));
+        assert!(r.has_decisions());
+        let e = r.decisions("any-model").unwrap();
+        assert_eq!(e.dialect, DialectId::SystemOne);
+        assert_eq!(e.system_one.media, MediaPlacement::Assets);
+        assert_eq!(r.decisions_path(), Some("/v1/systemone"));
+
+        for (placement, media) in [
+            (ImagePlacement::Assets, MediaPlacement::Assets),
+            (ImagePlacement::State, MediaPlacement::State),
+            (ImagePlacement::Root, MediaPlacement::Root),
+            (ImagePlacement::None, MediaPlacement::None),
+        ] {
+            let mut d = draft("liquid", "https://api.liquid.example");
+            d.media = vec![MediaApi::Decisions];
+            d.decisions = Some(DecisionsApi {
+                format: DecisionsFormat::SystemOne,
+                path: " /decisions/v1/systemone/ ".into(),
+                media: Some(placement),
+            });
+            let r = ProviderRef::Custom(Arc::new(CustomProvider::new(d).unwrap()));
+            assert_eq!(r.decisions("d1").unwrap().system_one.media, media);
+            assert_eq!(r.decisions_path(), Some("/decisions/v1/systemone"));
+        }
+        assert_eq!(ImagePlacement::ALL.len(), 4);
+
+        let mut d = draft("nace", "https://api.nace.example");
+        d.media = vec![MediaApi::Decisions];
+        d.decisions = Some(DecisionsApi::of(DecisionsFormat::OpenaiDecisions));
+        let r = ProviderRef::Custom(Arc::new(CustomProvider::new(d).unwrap()));
+        let e = r.decisions("drex").unwrap();
+        assert_eq!(e.dialect, DialectId::OpenAiDecisions);
+        assert_eq!(e.max_questions(), None);
+        assert!(!e.box_questions());
+        assert_eq!(r.decisions_path(), Some("/v1/decisions"));
+        assert_eq!(
+            serde_json::to_value(r.custom().unwrap().decisions()).unwrap(),
+            serde_json::json!({"format": "openai_decisions", "path": "/v1/decisions"})
+        );
+    }
+
+    #[test]
+    fn decisions_settings_are_refused_where_kaeso_would_send_them_elsewhere() {
+        let refused = |media: Vec<MediaApi>, decisions: DecisionsApi| {
+            let mut d = draft("my-vllm", "http://localhost:8000");
+            d.media = media;
+            d.decisions = Some(decisions);
+            CustomProvider::new(d).unwrap_err()
+        };
+        let on = || vec![MediaApi::Decisions];
+        let system_one = |path: &str| DecisionsApi {
+            path: path.into(),
+            ..DecisionsApi::of(DecisionsFormat::SystemOne)
+        };
+        for path in [
+            "",
+            "/",
+            "v1/systemone",
+            "/v1//systemone",
+            "/v1/../admin",
+            "/./v1",
+            "/v1/systemone?x=1",
+            "/v1/systemone#a",
+            "/v1/system one",
+            "https://other.example/v1/systemone",
+            "/v1/systémone",
+            &format!("/{}", "a".repeat(MAX_DECISIONS_PATH_LEN)),
+        ] {
+            assert_eq!(
+                refused(on(), system_one(path)),
+                Problem::DecisionsPath,
+                "{path}"
+            );
+        }
+        for path in [
+            "/v1/systemone",
+            "/providers/microsoft/v1/systemone",
+            "/api/v1/systemone",
+            "/v1/decisions;v=2",
+            "/~me/%7Edecide",
+        ] {
+            let mut d = draft("my-vllm", "http://localhost:8000");
+            d.media = on();
+            d.decisions = Some(system_one(path));
+            assert!(CustomProvider::new(d).is_ok(), "{path}");
+        }
+        assert_eq!(
+            refused(
+                on(),
+                DecisionsApi {
+                    media: None,
+                    ..DecisionsApi::of(DecisionsFormat::SystemOne)
+                }
+            ),
+            Problem::DecisionsMedia
+        );
+        assert_eq!(
+            refused(
+                on(),
+                DecisionsApi {
+                    media: Some(ImagePlacement::Root),
+                    ..DecisionsApi::of(DecisionsFormat::OpenaiDecisions)
+                }
+            ),
+            Problem::DecisionsMedia
+        );
+        assert_eq!(
+            refused(
+                vec![MediaApi::Images],
+                DecisionsApi::of(DecisionsFormat::SystemOne)
+            ),
+            Problem::DecisionsOff
+        );
+        for m in MediaApi::ALL {
+            assert_eq!(MediaApi::parse(m.as_str()), Some(m));
+        }
     }
 
     #[test]
@@ -895,16 +1236,22 @@ mod tests {
 
     #[test]
     fn org_providers_read_back_from_their_cached_form_and_refuse_a_broken_one() {
-        let org = OrgProviders::new(vec![
-            CustomProvider::new(draft("my-vllm", "https://vllm.example.com/v1-proxy")).unwrap(),
-        ]);
+        let mut deciding = draft("my-vllm", "https://vllm.example.com/v1-proxy");
+        deciding.media = vec![MediaApi::Decisions];
+        let org = OrgProviders::new(vec![CustomProvider::new(deciding).unwrap()]);
         let json = serde_json::to_value(&org).unwrap();
         assert_eq!(json[0]["id"], "my-vllm");
         assert_eq!(json[0]["generation"], "openai_chat");
+        assert_eq!(json[0]["decisions"]["media"], "assets");
         assert_eq!(
             serde_json::from_value::<OrgProviders>(json.clone()).unwrap(),
             org
         );
+        let mut before = json.clone();
+        before[0]["media"] = serde_json::json!([]);
+        before[0].as_object_mut().unwrap().remove("decisions");
+        let read = serde_json::from_value::<OrgProviders>(before).unwrap();
+        assert_eq!(read.custom()[0].decisions(), None);
         let mut broken = json;
         broken[0]["base_url"] = "file:///etc/passwd".into();
         assert!(serde_json::from_value::<OrgProviders>(broken).is_err());

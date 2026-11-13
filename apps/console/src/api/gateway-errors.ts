@@ -465,6 +465,15 @@ const messages = (): Rule[] => [
   rule("errors.customProvider.countTokens", () =>
     t("errors.customProvider.countTokens", "`count_tokens` must be `null` or the `generation` format, which must count tokens."),
   ),
+  rule("errors.customProvider.decisionsPath", () =>
+    t("errors.customProvider.decisionsPath", "`decisions.path` must be a path such as `/v1/systemone`, without a query or `..`."),
+  ),
+  rule("errors.customProvider.decisionsMedia", () =>
+    t("errors.customProvider.decisionsMedia", "`decisions.media` is only for `system_one`; leave it out for `openai_decisions`."),
+  ),
+  rule("errors.customProvider.decisionsOff", () =>
+    t("errors.customProvider.decisionsOff", "Add `decisions` to `media` to turn decisions on, or leave `decisions` out."),
+  ),
   rule("errors.customProvider.keysFirst", () => t("errors.customProvider.keysFirst", "Delete the provider's keys before switching it to no key.")),
   rule("errors.serviceAccount.locationOnly", () =>
     t("errors.serviceAccount.locationOnly", "Only a service account key calls a location; leave `location` out."),
@@ -502,6 +511,9 @@ const messages = (): Rule[] => [
   rule("errors.noImagesAtProvider", (v) => t("errors.noImagesAtProvider", "{provider} offers no image API Kaeso can call, so `{name}` can't make images.", v)),
   rule("errors.noDecisionsAtProvider", (v) =>
     t("errors.noDecisionsAtProvider", "{provider} offers no decisions API Kaeso can call, so `{name}` can't make decisions.", v),
+  ),
+  rule("errors.customDecisionsOff", (v) =>
+    t("errors.customDecisionsOff", "The custom provider `{provider}` has no decisions API turned on; turn it on first.", v),
   ),
   rule("errors.decisionsNotAtProvider", (v) => t("errors.decisionsNotAtProvider", "{provider} offers no decisions API Kaeso can call; remove `decisions`.", v)),
   rule("errors.decisionsQuestionTypes", () => t("errors.decisionsQuestionTypes", "`decisions.question_types` must list at least one type.")),

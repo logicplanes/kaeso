@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE custom_providers SET name = $3, base_url = $4, auth = $5, generation = $6, embeddings = $7, count_tokens = $8, server = $9, media = $10, decisions = $11, revision = revision + 1, updated_at = now() WHERE org_id = $1 AND provider = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "Text",
+        "TextArray",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b898f16fc712346519d558f46e2fe912762162a46b221ae812120d103f65df6e"
+}

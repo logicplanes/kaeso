@@ -126,8 +126,9 @@ Kaeso sendet Entscheidungen über die eigene Decisions-API jedes Anbieters, glei
 | Fireworks AI | System One | `/inference/v1/systemone` | nur Text; keine Box-Fragen |
 | Perplexity | System One | `/v1/decisions` | Decider-Modelle; Bilder als Data-URLs im State, höchstens 8; keine Box-Fragen |
 | TypeSafe | System One | `/v1/systemone` | Jev; Bilder als Assets oder hochgeladene Teile; Box-Fragen mit Jev 1.14; langer Kontext, wenn eine Anfrage ihn braucht |
+| Ein eigener Anbieter | System One oder OpenAI Decisions | der Pfad, den sein Admin festlegt | sobald ein Admin der Organisation Entscheidungen einschaltet, mit dem gewählten Platz für Bilder ([Eigene Anbieter](../console/custom-providers.md#entscheidungen)) |
 
-Alle anderen Anbieter, Gemini Enterprise Agent Platform und eigene Anbieter haben in Kaeso noch keine Decisions-API. Eine Anfrage an einen von ihnen wird abgelehnt, bevor etwas gesendet wird, zum Beispiel „Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.“. Ebenso eine Anfrage an OpenAI in einem Projekt, dessen OpenAI-Schlüssel ein [ChatGPT-Konto](../console/provider-keys.md#mit-einem-chatgpt-konto-anmelden) ist.
+Alle anderen Anbieter und Gemini Enterprise Agent Platform haben in Kaeso noch keine Decisions-API. Eine Anfrage an einen von ihnen wird abgelehnt, bevor etwas gesendet wird, zum Beispiel „Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.“. Ebenso eine Anfrage an OpenAI in einem Projekt, dessen OpenAI-Schlüssel ein [ChatGPT-Konto](../console/provider-keys.md#mit-einem-chatgpt-konto-anmelden) ist.
 
 Entscheidungsmodelle kommen aus [KPMR](../concepts/kpmr.md#entscheidungsmodelle): Ein Modell der Art `decision` beantwortet nur Fragen, und ein Modell mit einem Eintrag `decisions`, etwa `gpt-6-luna`, erzeugt auch Text. Ein eigenes Modell bei einem Anbieter mit Decisions-API wird mit dem Feld `decisions` zum Entscheidungsmodell ([Modelle und Aliasse](../console/models-and-aliases.md#entscheidungsmodelle)).
 

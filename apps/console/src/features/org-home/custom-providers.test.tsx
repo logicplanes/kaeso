@@ -47,6 +47,7 @@ function customProvider(overrides: Partial<CustomProviderView> = {}): CustomProv
     count_tokens: null,
     server: null,
     media: [],
+    decisions: null,
     hides_built_in: null,
     in_use: { keys: 1, models: 3, projects: 2 },
     created_by: { kind: "user", id: "usr_ada" },
@@ -213,6 +214,149 @@ describe("custom providers", () => {
     await waitFor(() => expect(requests("PATCH", ONE)[0]?.body).toMatchObject({ media: ["images", "transcriptions"] }));
   });
 
+  it("turns decisions on with the format, path and image placement the server takes", async () => {
+    signedIn();
+    withCustom([customProvider({ server: "vllm", media: ["transcriptions"] })]);
+    on(
+      "PATCH",
+      ONE,
+      customProvider({
+        server: "vllm",
+        media: ["transcriptions", "decisions"],
+        decisions: { format: "system_one", path: "/decisions/v1/systemone", media: "root" },
+      }),
+    );
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Actions for Research vLLM" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Research vLLM" });
+    const decisions = within(dialog).getByRole("switch", { name: "Serves decisions" });
+    expect(decisions).not.toBeChecked();
+    expect(within(dialog).getByText("In System One's or OpenAI's Decisions format, at the path you set.")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox", { name: "Decisions path" })).not.toBeInTheDocument();
+    await user.click(decisions);
+
+    const format = within(dialog).getByRole("combobox", { name: "Decisions format" });
+    expect(format).toHaveTextContent("System One");
+    const path = within(dialog).getByRole("textbox", { name: "Decisions path" });
+    expect(path).toHaveValue("/v1/systemone");
+    const images = within(dialog).getByRole("combobox", { name: "Images" });
+    expect(images).toHaveTextContent("In an assets map");
+    expect(within(dialog).getByText("As TypeSafe takes them, each image named where it is used.")).toBeInTheDocument();
+    for (const [label, hint] of [
+      ["In the state", "As OpenRouter and Perplexity take them, as image parts in the state."],
+      ["No images", "The server takes text only; Kaeso refuses requests with images."],
+      ["In an images list", "As Cloudflare, vLLM and llama.cpp take them, in a top-level images list."],
+    ] as const) {
+      await user.click(images);
+      await user.click(await screen.findByRole("option", { name: label }));
+      expect(within(dialog).getByText(hint)).toBeInTheDocument();
+    }
+
+    await user.clear(path);
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Save" }), "Give the decisions path, starting with /");
+    await user.type(path, "/decisions/v1/systemone");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(requests("PATCH", ONE)[0]?.body).toMatchObject({
+        media: ["transcriptions", "decisions"],
+        decisions: { format: "system_one", path: "/decisions/v1/systemone", media: "root" },
+      }),
+    );
+  });
+
+  it("sends OpenAI Decisions at its own path without an image placement, and turns decisions off again", async () => {
+    signedIn();
+    withCustom([customProvider({ media: ["decisions"], decisions: { format: "system_one", path: "/v1/systemone", media: "state" } })]);
+    on("PATCH", ONE, customProvider());
+    const { user } = await renderApp(PATH);
+
+    const open = async () => {
+      await user.click(await screen.findByRole("button", { name: "Actions for Research vLLM" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
+      return screen.findByRole("dialog", { name: "Edit Research vLLM" });
+    };
+    let dialog = await open();
+    expect(within(dialog).getByRole("switch", { name: "Serves decisions" })).toBeChecked();
+    expect(within(dialog).getByRole("combobox", { name: "Images" })).toHaveTextContent("In the state");
+    await user.click(within(dialog).getByRole("combobox", { name: "Decisions format" }));
+    await user.click(await screen.findByRole("option", { name: "OpenAI Decisions" }));
+    expect(within(dialog).getByRole("textbox", { name: "Decisions path" })).toHaveValue("/v1/decisions");
+    expect(within(dialog).getByText("OpenAI's own format, which LM Studio and vLLM also serve at /v1/decisions.")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("combobox", { name: "Images" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(requests("PATCH", ONE)[0]?.body).toMatchObject({ media: ["decisions"], decisions: { format: "openai_decisions", path: "/v1/decisions" } }),
+    );
+    expect(requests("PATCH", ONE)[0]?.body).not.toHaveProperty("decisions.media");
+
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit Research vLLM" })).not.toBeInTheDocument());
+    dialog = await open();
+    await user.click(within(dialog).getByRole("switch", { name: "Serves decisions" }));
+    expect(within(dialog).queryByRole("combobox", { name: "Decisions format" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests("PATCH", ONE)[1]?.body).toMatchObject({ media: [], decisions: null }));
+  });
+
+  it("shows the gateway's refusal of a decisions setting beside its field", async () => {
+    signedIn();
+    withCustom([customProvider({ media: ["decisions"], decisions: { format: "system_one", path: "/v1/systemone", media: "assets" } })]);
+    on(
+      "PATCH",
+      ONE,
+      apiError(400, "invalid_request", "`decisions.path` must be a path such as `/v1/systemone`, without a query or `..`.", { param: "decisions.path" }),
+    );
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Actions for Research vLLM" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Research vLLM" });
+    const path = within(dialog).getByRole("textbox", { name: "Decisions path" });
+    await user.type(path, "/../admin");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(path).toHaveAccessibleDescription(/without a query/));
+  });
+
+  it("keeps decisions on when a new provider's server changes, and sends them with it", async () => {
+    signedIn();
+    withCustom([]);
+    on(
+      "POST",
+      DETECT,
+      detected({
+        base_url: "http://gpus.example.com:8000/",
+        generation: "openai_chat",
+        auth: "bearer",
+        count_tokens: null,
+        server: "vllm",
+        media: ["transcriptions"],
+      }),
+    );
+    on("POST", LIST, customProvider({ server: "llama_cpp", media: ["decisions"] }));
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("button", { name: "Add custom provider" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add custom provider" });
+    await pickSoftware(user, dialog, "vLLM");
+    await fill(user, within(dialog).getByRole("textbox", { name: "Base URL" }), "http://gpus.example.com:8000");
+    await user.click(within(dialog).getByRole("button", { name: "Detect settings" }));
+    await user.click(await within(dialog).findByRole("switch", { name: "Serves decisions" }));
+    await user.click(within(dialog).getByRole("combobox", { name: "Server" }));
+    await user.click(await screen.findByRole("option", { name: /llama\.cpp/ }));
+    expect(within(dialog).getByRole("switch", { name: "Serves decisions" })).toBeChecked();
+    expect(within(dialog).getByRole("switch", { name: "Serves transcriptions" })).not.toBeChecked();
+    await user.click(within(dialog).getByRole("button", { name: "Add custom provider" }));
+    await waitFor(() =>
+      expect(requests("POST", LIST)[0]?.body).toMatchObject({
+        server: "llama_cpp",
+        media: ["decisions"],
+        decisions: { format: "system_one", path: "/v1/systemone", media: "assets" },
+      }),
+    );
+    expect(requests("POST", DETECT)[0]?.body).not.toHaveProperty("decisions");
+  });
+
   it("turns on the media APIs a new provider's server software documents, and none for another server", async () => {
     signedIn();
     withCustom([]);
@@ -295,6 +439,7 @@ describe("custom providers", () => {
         count_tokens: "anthropic_messages",
         server: null,
         media: [],
+        decisions: null,
       },
     ]);
     expect(requests("POST", KEYS).map((r) => r.body)).toEqual([{ provider: "gpus-example-com", name: "gpus.example.com", secret: LAB_KEY }]);
@@ -527,6 +672,7 @@ describe("custom providers", () => {
       count_tokens: null,
       server: null,
       media: [],
+      decisions: null,
     });
   });
 

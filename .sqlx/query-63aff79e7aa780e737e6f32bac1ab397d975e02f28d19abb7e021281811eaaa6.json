@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.id, c.org_id, c.provider, c.name, c.base_url, c.auth, c.generation, c.embeddings, c.count_tokens, c.server, c.media, c.created_by_kind, c.created_by_id, c.created_at, c.updated_at, c.revision FROM custom_providers c JOIN projects p ON p.org_id = c.org_id WHERE p.id = $1 ORDER BY c.provider",
+  "query": "SELECT id, org_id, provider, name, base_url, auth, generation, embeddings, count_tokens, server, media, decisions, created_by_kind, created_by_id, created_at, updated_at, revision FROM custom_providers WHERE org_id = $1 AND provider = $2",
   "describe": {
     "columns": [
       {
@@ -126,6 +126,17 @@
       },
       {
         "ordinal": 11,
+        "name": "decisions",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "custom_providers",
+            "name": "decisions"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
         "name": "created_by_kind",
         "type_info": "Text",
         "origin": {
@@ -136,7 +147,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "created_by_id",
         "type_info": "Uuid",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -158,7 +169,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -169,7 +180,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "revision",
         "type_info": "Int8",
         "origin": {
@@ -182,7 +193,8 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Text"
       ]
     },
     "nullable": [
@@ -197,6 +209,7 @@
       true,
       true,
       false,
+      true,
       false,
       true,
       false,
@@ -204,5 +217,5 @@
       false
     ]
   },
-  "hash": "b6fbdb39679ac98446d3bec9ad32751ac66c2d938507a3356c6f19d067bb9b6a"
+  "hash": "63aff79e7aa780e737e6f32bac1ab397d975e02f28d19abb7e021281811eaaa6"
 }

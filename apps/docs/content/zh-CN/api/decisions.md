@@ -126,8 +126,9 @@ sequenceDiagram
 | Fireworks AI | System One | `/inference/v1/systemone` | 仅文本；不支持边界框问题 |
 | Perplexity | System One | `/v1/decisions` | Decider 模型；图片以 data URL 放在 state 中，最多 8 张；不支持边界框问题 |
 | TypeSafe | System One | `/v1/systemone` | Jev；图片作为 assets 或上传的分段；Jev 1.14 支持边界框问题；请求需要时使用长上下文 |
+| 自定义服务商 | System One 或 OpenAI Decisions | 由其管理员设置的路径 | 组织管理员开启决策后可用，图片位置由其选择（[自定义服务商](../console/custom-providers.md#决策)） |
 
-其他所有服务商、Gemini Enterprise Agent Platform 和自定义服务商在 Kaeso 中还没有决策 API。发往它们的请求会在发送任何内容之前被拒绝，例如“Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.”。如果项目的 OpenAI 密钥是 [ChatGPT 账户](../console/provider-keys.md#使用-chatgpt-账户登录)，发往 OpenAI 的请求同样会被拒绝。
+其他所有服务商和 Gemini Enterprise Agent Platform 在 Kaeso 中还没有决策 API。发往它们的请求会在发送任何内容之前被拒绝，例如“Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.”。如果项目的 OpenAI 密钥是 [ChatGPT 账户](../console/provider-keys.md#使用-chatgpt-账户登录)，发往 OpenAI 的请求同样会被拒绝。
 
 决策模型来自 [KPMR](../concepts/kpmr.md#决策模型)：类型为 `decision` 的模型只回答问题，带有 `decisions` 条目的模型（例如 `gpt-6-luna`）也生成文本。在有决策 API 的服务商上，自定义模型设置 `decisions` 字段后即成为决策模型（[模型和别名](../console/models-and-aliases.md#决策模型)）。
 

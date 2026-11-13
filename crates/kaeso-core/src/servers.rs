@@ -551,6 +551,19 @@ mod tests {
         assert!(!tgi.matches(br#"{"router":"other"}"#));
     }
 
+    // A server's decisions API is never turned on for it: detecting one would mean asking a
+    // question, which a hosted server bills, so only the provider's admin turns it on.
+    #[test]
+    fn no_server_turns_decisions_on_by_itself() {
+        for s in SERVERS {
+            assert!(
+                !s.media.contains(&crate::providers::MediaApi::Decisions),
+                "{}",
+                s.name
+            );
+        }
+    }
+
     #[test]
     fn every_server_hears_system_messages_and_its_output_limit_as_max_tokens() {
         use kaeso_codecs::openai_chat::OutputLimit;

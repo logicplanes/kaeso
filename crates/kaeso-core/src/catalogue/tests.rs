@@ -1846,6 +1846,7 @@ fn custom_provider(id: &str, generation: DialectId) -> crate::providers::CustomP
         count_tokens: None,
         server: None,
         media: Vec::new(),
+        decisions: None,
     })
     .unwrap()
 }
@@ -2912,6 +2913,20 @@ fn decisions_are_set_by_hand_only_where_the_provider_has_a_decisions_api() {
         ..DecisionFields::default()
     };
     assert!(with(only.clone()).validate(&openrouter).is_ok());
+    let off = ProviderRef::Custom(std::sync::Arc::new(custom_provider(
+        "my-vllm",
+        DialectId::OpenAiChat,
+    )));
+    assert_eq!(
+        with(only.clone()).validate(&off).unwrap_err().message,
+        "The custom provider `my-vllm` has no decisions API turned on; turn it on first."
+    );
+    let mut draft = custom_provider("my-vllm", DialectId::OpenAiChat).draft();
+    draft.media = vec![crate::providers::MediaApi::Decisions];
+    let on = ProviderRef::Custom(std::sync::Arc::new(
+        crate::providers::CustomProvider::new(draft).unwrap(),
+    ));
+    assert!(with(only.clone()).validate(&on).is_ok());
     let e = with(only.clone()).validate(&anthropic).unwrap_err();
     assert_eq!(
         (e.field.as_str(), e.message.as_str()),

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, provider, name, base_url, auth, generation, embeddings, count_tokens, server, media, created_by_kind, created_by_id, created_at, updated_at, revision FROM custom_providers WHERE org_id = $1 AND provider = $2",
+  "query": "SELECT id, org_id, provider, name, base_url, auth, generation, embeddings, count_tokens, server, media, decisions, created_by_kind, created_by_id, created_at, updated_at, revision FROM custom_providers WHERE org_id = $1 ORDER BY provider",
   "describe": {
     "columns": [
       {
@@ -126,6 +126,17 @@
       },
       {
         "ordinal": 11,
+        "name": "decisions",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "custom_providers",
+            "name": "decisions"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
         "name": "created_by_kind",
         "type_info": "Text",
         "origin": {
@@ -136,7 +147,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "created_by_id",
         "type_info": "Uuid",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -158,7 +169,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -169,7 +180,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "revision",
         "type_info": "Int8",
         "origin": {
@@ -182,8 +193,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -198,6 +208,7 @@
       true,
       true,
       false,
+      true,
       false,
       true,
       false,
@@ -205,5 +216,5 @@
       false
     ]
   },
-  "hash": "bdee2a4cee906d86c9c4e5cc92fd8f44b05c499fe65390b2c8ff1d304c04ed31"
+  "hash": "b391bf3fb08eb6fb34f7339ca53fe5e44517693f53228a53803a44e4d40a2ad3"
 }

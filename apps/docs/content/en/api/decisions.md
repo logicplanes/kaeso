@@ -126,8 +126,9 @@ Kaeso sends decisions through each provider's own decisions API, whatever format
 | Fireworks AI | System One | `/inference/v1/systemone` | text only; no box questions |
 | Perplexity | System One | `/v1/decisions` | Decider models; images as data URLs in the state, at most 8; no box questions |
 | TypeSafe | System One | `/v1/systemone` | Jev; images as assets or uploaded parts; box questions on Jev 1.14; long context when a request needs it |
+| A custom provider | System One or OpenAI Decisions | the path its admin sets | once an org admin turns decisions on, with the image placement they choose ([custom providers](../console/custom-providers.md#decisions)) |
 
-Every other provider, Gemini Enterprise Agent Platform and custom providers have no decisions API in Kaeso yet. A request to one is refused before anything is sent, for example "Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.". So is a request to OpenAI in a project whose OpenAI key is a [ChatGPT account](../console/provider-keys.md#sign-in-with-a-chatgpt-account).
+Every other provider and Gemini Enterprise Agent Platform have no decisions API in Kaeso yet. A request to one is refused before anything is sent, for example "Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.". So is a request to OpenAI in a project whose OpenAI key is a [ChatGPT account](../console/provider-keys.md#sign-in-with-a-chatgpt-account).
 
 Decision models come from [KPMR](../concepts/kpmr.md#decision-models): a model of the kind `decision` answers questions only, and a model with a `decisions` entry, such as `gpt-6-luna`, also generates text. A custom model on a provider with a decisions API becomes a decision model with the `decisions` field ([models and aliases](../console/models-and-aliases.md#decision-models)).
 

@@ -323,9 +323,13 @@ pub fn prepare(
                 let message = if eff.provider.has_decisions() {
                     generation_only(name)
                 } else {
-                    format!(
-                        "{} offers no decisions API Kaeso can call, so `{name}` can't make decisions.",
-                        eff.provider.name()
+                    no_media_api(
+                        eff,
+                        "Decisions API",
+                        format!(
+                            "{} offers no decisions API Kaeso can call, so `{name}` can't make decisions.",
+                            eff.provider.name()
+                        ),
                     )
                 };
                 return Err(refuse("decisions", Some("model"), message));

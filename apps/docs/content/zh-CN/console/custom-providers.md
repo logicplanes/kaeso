@@ -19,7 +19,7 @@ order: 4
 
 **ID** 以服务器的主机名为起点；对于 `localhost`、`10.0.0.5` 或 `host.docker.internal` 这类地址，则以其软件名称为起点，并在您修改之前跟随名称生成。模型名称以它开头，例如 `research-vllm/llama-3.3-70b`，且它不可更改。ID 由小写字母和数字组成，中间用单个连字符分隔，最多 40 个字符。它不能是内置服务商的 ID，也不能是 [KPMR](../concepts/kpmr.md) 中列出的服务商的 ID，因为 Kaeso 将来可能内置该服务商。每个组织的 ID 相互独立，因此两个组织都可以有 `research-vllm`。
 
-与所有服务商一样，Kaeso 会在基础 URL 后加上格式的路径，例如 `/v1/chat/completions`。因此它会去掉末尾的 `/v1` 或粘贴进来的端点，例如 `/v1/chat/completions`，并为没有协议的地址补上 `https://`。`/v1` 之前的路径会保留：`https://proxy.example.com/llm/v1` 接收的请求地址为 `https://proxy.example.com/llm/v1/chat/completions`。API 不在 `/v1` 之下的服务器暂时无法添加。
+与所有服务商一样，Kaeso 会在基础 URL 后加上格式的路径，例如 `/v1/chat/completions`。因此它会去掉末尾的 `/v1` 或粘贴进来的端点，例如 `/v1/chat/completions`，并为没有协议的地址补上 `https://`。`/v1` 之前的路径会保留：`https://proxy.example.com/llm/v1` 接收的请求地址为 `https://proxy.example.com/llm/v1/chat/completions`。API 不在 `/v1` 之下的服务器暂时无法添加；只有[决策](#决策)可以使用自己的路径。
 
 ## Kaeso 检测的内容
 
@@ -63,6 +63,30 @@ Kaeso 会选择它检测到的格式。如需修改，请选择您的服务器�
 | **提供视频** | `/v1/videos` 下 OpenAI 的 Videos API | [Videos API](../api/videos.md) |
 
 为 Kaeso 认识的服务器软件新建服务商时，会默认打开该软件文档所列的 API：LocalAI 为图片、语音和转写，Xinference 为图片、语音和转写，vLLM 为转写。检测从不尝试这些 API，因为一次测试请求就会生成图片或声音。某个 API 关闭时，Kaeso 会以 400 拒绝该服务商的模型用于此 API，并说明需由管理员打开。自定义服务商的媒体模型需要填写其模态和按单位计的价格，例如按图片或按每分钟音频（[添加其模型](#添加其模型)）。
+
+## 决策
+
+自定义服务商也可以做决策：回答是非题、选择题和评分题（[决策 API](../api/decisions.md)）。检测从不开启决策，因为要查明这一点就得提出一个问题，而托管服务器会为此计费。请开启**提供决策**，并说明您的服务器如何接收决策请求：
+
+| 设置 | 作用 |
+| --- | --- |
+| **决策格式** | **System One**，即 TypeSafe 的格式，包含 `state` 和 `questions` 映射；或 **OpenAI Decisions**，包含 `input` 和 `questions` 列表。 |
+| **决策路径** | Kaeso 在基础 URL 下发送决策请求的位置。初始为 `/v1/systemone` 或 `/v1/decisions`，可以使用任意路径，例如 `/decisions/v1/systemone`。 |
+| **图片** | 仅适用于 System One：**放在 assets 映射中**，与 TypeSafe 相同；**放在 state 中**，作为图片部分，与 OpenRouter 和 Perplexity 相同；**放在 images 列表中**，即顶层由 data URL 组成的 `images` 列表，与 Cloudflare、vLLM 和 llama.cpp 相同；或**不支持图片**，带图片的请求会在发送任何内容之前被拒绝。OpenAI Decisions 有自己放置图片的位置。 |
+
+之后，应用可以用三种格式中的任意一种调用该服务商的决策模型，地址为 `/v1/decisions`、`/v1/systemone` 或 `/v1beta/decisions`，Kaeso 会按您选择的格式写出每个请求。添加此类模型时，在**输出**下选择**决策**，并填写其输入和输入价格（[决策模型](models-and-aliases.md#决策模型)）。在决策关闭期间，此类模型无法添加，发往它的请求会返回 400：“The custom provider `…` has no Decisions API turned on; an org admin turns it on under Providers.”
+
+| 服务器 | 决策格式 | 决策路径 | 图片 |
+| --- | --- | --- | --- |
+| vLLM 0.32 或更高版本 | System One | `/v1/systemone` | 放在 images 列表中 |
+| llama.cpp | System One | `/v1/systemone` | 放在 images 列表中 |
+| Ollama 0.35 或更高版本 | System One | `/v1/systemone` | 不支持图片 |
+| LM Studio 0.4.26 或更高版本 | System One，或 `/v1/decisions` 上的 OpenAI Decisions | `/v1/systemone` | 不支持图片 |
+| Nace（Drex） | System One | `/v1/systemone` | 放在 assets 映射中 |
+| Liquid | System One | `/decisions/v1/systemone` | 放在 images 列表中 |
+| Inception（Mercury Decide） | System One | `/v1/decisions` | 不支持图片 |
+
+标为**不支持图片**的行表示 Kaeso 尚不知道该服务器在何处接收图片；带图片的请求会被拒绝，而不是发送到服务器会丢弃图片的位置。Microsoft Foundry 在 `/providers/microsoft/v1/systemone` 以 System One 提供 Microsoft-Decision-1，模型 ID 为部署名称，不支持图片。它只接受 `api-key` 请求头中的密钥或 Microsoft Entra ID 令牌，而自定义服务商目前两者都无法发送，因此暂时无法添加 Foundry。
 
 ## 服务器软件
 

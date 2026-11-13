@@ -5,7 +5,10 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::id::OrgId;
 use kaeso_core::provider::{self, ProviderId};
-use kaeso_core::providers::{self as custom, CustomAuth, CustomProvider, Draft, MediaApi, Problem};
+use kaeso_core::providers::{
+    self as custom, CustomAuth, CustomProvider, DecisionsApi, DecisionsFormat, Draft,
+    ImagePlacement, MediaApi, Problem,
+};
 use kaeso_core::servers::ServerKind;
 use kaeso_kpp::DialectId;
 use kaeso_store::pg::custom_providers::{self as store, CustomProviderRow, Fields, InUse};
@@ -100,6 +103,60 @@ impl From<EmbeddingsDialect> for DialectId {
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "How a custom provider takes decision requests.")]
+pub struct DecisionsApiView {
+    #[doc = "The format it makes decisions in."]
+    pub format: DecisionsFormat,
+    #[doc = "The path under its base URL that Kaeso sends decision requests to."]
+    #[schema(example = "/v1/systemone")]
+    pub path: String,
+    #[doc = "Where its System One server takes images; `null` for `openai_decisions`,\n\
+        whose format names its own place for them."]
+    #[schema(example = "assets")]
+    pub media: Option<ImagePlacement>,
+}
+
+impl From<&DecisionsApi> for DecisionsApiView {
+    fn from(d: &DecisionsApi) -> Self {
+        DecisionsApiView {
+            format: d.format,
+            path: d.path.clone(),
+            media: d.media,
+        }
+    }
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "How a custom provider takes decision requests.")]
+pub struct DecisionsApiSettings {
+    #[doc = "The format it makes decisions in."]
+    pub format: DecisionsFormat,
+    #[doc = "The path under its base URL, such as `/decisions/v1/systemone`; absent\n\
+        for the format's own, `/v1/systemone` or `/v1/decisions`."]
+    #[serde(default)]
+    #[schema(example = "/v1/systemone")]
+    pub path: Option<String>,
+    #[doc = "Where its System One server takes images; absent for `assets`. Only for\n\
+        `system_one`."]
+    #[serde(default)]
+    pub media: Option<ImagePlacement>,
+}
+
+impl From<DecisionsApiSettings> for DecisionsApi {
+    fn from(s: DecisionsApiSettings) -> Self {
+        let mut d = DecisionsApi::of(s.format);
+        if let Some(path) = s.path {
+            d.path = path;
+        }
+        if s.media.is_some() {
+            d.media = s.media;
+        }
+        d
+    }
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
 #[schema(description = "What uses a custom provider in the organization.")]
 pub struct CustomProviderUse {
     #[doc = "Its provider keys."]
@@ -151,10 +208,14 @@ pub struct CustomProviderView {
         and picks its mark; `null` for another server or a proxy."]
     #[schema(example = "vllm")]
     pub server: Option<ServerKind>,
-    #[doc = "OpenAI's media APIs it serves at its base URL, which reach its catalogue\n\
-        models: `images`, `speech`, `transcriptions` (with translations) and `videos`."]
+    #[doc = "The media APIs it serves at its base URL, which reach its catalogue models:\n\
+        OpenAI's `images`, `speech`, `transcriptions` (with translations) and `videos`,\n\
+        and `decisions` as its `decisions` says."]
     #[schema(example = json!(["transcriptions"]))]
     pub media: Vec<MediaApi>,
+    #[doc = "How it takes decision requests while `media` has `decisions`; `null`\n\
+        otherwise."]
+    pub decisions: Option<DecisionsApiView>,
     #[doc = "The name of the built-in provider with the same id, which a newer Kaeso\n\
         release added; inside this organization the custom provider takes its\n\
         place. `null` without one."]
@@ -196,6 +257,7 @@ fn view(row: &CustomProviderRow, in_use: InUse) -> ApiResult<CustomProviderView>
         count_tokens: p.count_tokens().map(generation_view),
         server: p.server(),
         media: p.media().to_vec(),
+        decisions: p.decisions().map(DecisionsApiView::from),
         hides_built_in: provider::provider(p.id().as_str()).map(|b| b.name.to_owned()),
         in_use: in_use.into(),
         created_by: creator(&row.created_by_kind, row.created_by_id),
@@ -236,10 +298,15 @@ pub struct CustomProviderCreate {
         server or a proxy."]
     #[serde(default)]
     pub server: Option<ServerKind>,
-    #[doc = "OpenAI's media APIs it serves at its base URL; absent for the ones its\n\
-        `server` documents, none without one."]
+    #[doc = "The media APIs it serves at its base URL; absent for the ones its\n\
+        `server` documents, none without one. `decisions` is never among those:\n\
+        add it to turn decisions on."]
     #[serde(default)]
     pub media: Option<Vec<MediaApi>>,
+    #[doc = "How it takes decision requests once `media` has `decisions`; absent or\n\
+        `null` for System One at `/v1/systemone` with images as `assets`."]
+    #[serde(default)]
+    pub decisions: Option<DecisionsApiSettings>,
 }
 
 fn present<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
@@ -273,8 +340,14 @@ pub struct CustomProviderUpdate {
     #[serde(default, deserialize_with = "present")]
     #[schema(value_type = Option<ServerKind>, nullable)]
     pub server: Option<Option<ServerKind>>,
-    #[doc = "OpenAI's media APIs it serves at its base URL; `[]` for none."]
+    #[doc = "The media APIs it serves at its base URL; `[]` for none. Leaving out\n\
+        `decisions` turns decisions off."]
     pub media: Option<Vec<MediaApi>>,
+    #[doc = "How it takes decision requests once `media` has `decisions`; `null` for\n\
+        System One at `/v1/systemone` with images as `assets`."]
+    #[serde(default, deserialize_with = "present")]
+    #[schema(value_type = Option<DecisionsApiSettings>, nullable)]
+    pub decisions: Option<Option<DecisionsApiSettings>>,
 }
 
 fn turned_off(state: &AppState) -> ApiResult<()> {
@@ -350,6 +423,18 @@ fn problem(p: Problem) -> ApiError {
         Problem::CountTokens => (
             "count_tokens",
             "`count_tokens` must be `null` or the `generation` format, which must count tokens.",
+        ),
+        Problem::DecisionsPath => (
+            "decisions.path",
+            "`decisions.path` must be a path such as `/v1/systemone`, without a query or `..`.",
+        ),
+        Problem::DecisionsMedia => (
+            "decisions.media",
+            "`decisions.media` is only for `system_one`; leave it out for `openai_decisions`.",
+        ),
+        Problem::DecisionsOff => (
+            "decisions",
+            "Add `decisions` to `media` to turn decisions on, or leave `decisions` out.",
         ),
     };
     ApiError::invalid(field, message)
@@ -480,6 +565,7 @@ pub async fn create(
             req.server
                 .map_or_else(Vec::new, |s| s.server().media.to_vec())
         }),
+        decisions: req.decisions.map(Into::into),
     })
     .map_err(problem)?;
     check_reach(&state, p.base_url()).await?;
@@ -569,6 +655,11 @@ pub async fn update(
     }
     if let Some(media) = req.media {
         draft.media = media;
+    }
+    match req.decisions {
+        Some(d) => draft.decisions = d.map(Into::into),
+        None if !draft.media.contains(&MediaApi::Decisions) => draft.decisions = None,
+        None => {}
     }
     let after_provider = CustomProvider::new(draft).map_err(problem)?;
     let used = store::in_use(&mut tx, org)
@@ -740,7 +831,7 @@ pub struct CustomProviderDetection {
     #[schema(example = "vllm")]
     pub server: Option<ServerKind>,
     #[doc = "OpenAI's media APIs its server software documents; none for another server\n\
-        or a proxy."]
+        or a proxy. Never `decisions`: asking a question to find out would be billed."]
     #[schema(example = json!(["transcriptions"]))]
     pub media: Vec<MediaApi>,
     #[doc = "The models the server lists, sorted by id; `null` when it has no model\n\
@@ -997,7 +1088,7 @@ pub struct ServerView {
         `server` header or one of its own endpoints."]
     pub detected: bool,
     #[doc = "OpenAI's media APIs the software documents, which a new custom provider\n\
-        for it serves unless set otherwise."]
+        for it serves unless set otherwise; never `decisions`, which its admin turns on."]
     #[schema(example = json!(["transcriptions"]))]
     pub media: &'static [MediaApi],
 }
