@@ -500,6 +500,12 @@ const messages = (): Rule[] => [
     t("errors.noEmbeddingsAtProvider", "Kaeso calls no embeddings models on {provider}, so `{name}` can't create embeddings.", v),
   ),
   rule("errors.noImagesAtProvider", (v) => t("errors.noImagesAtProvider", "{provider} offers no image API Kaeso can call, so `{name}` can't make images.", v)),
+  rule("errors.noDecisionsAtProvider", (v) =>
+    t("errors.noDecisionsAtProvider", "{provider} offers no decisions API Kaeso can call, so `{name}` can't make decisions.", v),
+  ),
+  rule("errors.decisionsNotAtProvider", (v) => t("errors.decisionsNotAtProvider", "{provider} offers no decisions API Kaeso can call; remove `decisions`.", v)),
+  rule("errors.decisionsQuestionTypes", () => t("errors.decisionsQuestionTypes", "`decisions.question_types` must list at least one type.")),
+  rule("errors.decisionsLimits", () => t("errors.decisionsLimits", "The limits in `decisions` must be positive.")),
   rule("errors.elevenLabsUnserved", (v) =>
     t("errors.elevenLabsUnserved", "Kaeso does not serve `{path}`; manage voices, dubbing and your account at ElevenLabs.", v),
   ),
@@ -824,6 +830,17 @@ const messages = (): Rule[] => [
   rule("errors.model.noPdf", (v) => t("errors.model.noPdf", "The model `{model}` does not accept PDF documents.", v)),
   rule("errors.model.noAudio", (v) => t("errors.model.noAudio", "The model `{model}` does not accept audio.", v)),
   rule("errors.model.noVideo", (v) => t("errors.model.noVideo", "The model `{model}` does not accept video.", v)),
+  rule("errors.model.notDecisionModel", (v) =>
+    t("errors.model.notDecisionModel", "The model `{model}` is a generation model; it can't answer decision questions.", v),
+  ),
+  rule("errors.model.decisionOnly", (v) =>
+    t("errors.model.decisionOnly", "The model `{model}` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.", v),
+  ),
+  rule("errors.model.questionType", (v) => t("errors.model.questionType", "The model `{model}` does not answer {type} questions.", v)),
+  rule("errors.model.maxQuestions", (v) => t("errors.model.maxQuestions", "The model `{model}` answers at most {max} questions per request.", v)),
+  rule("errors.model.maxOptions", (v) => t("errors.model.maxOptions", "The model `{model}` takes at most {max} options per choice question.", v)),
+  rule("errors.model.maxLevels", (v) => t("errors.model.maxLevels", "The model `{model}` takes at most {max} levels per score question.", v)),
+  rule("errors.model.maxImages", (v) => t("errors.model.maxImages", "The model `{model}` takes at most {max} images per request.", v)),
   rule("errors.model.noTools", (v) => t("errors.model.noTools", "The model `{model}` does not support tool calling.", v)),
   rule(
     "errors.model.forcedTool",
@@ -943,6 +960,9 @@ const messages = (): Rule[] => [
   ),
   rule("errors.modelApi.accountNoTranscription", (v) =>
     t("errors.modelApi.accountNoTranscription", "A {product} account can't transcribe audio. Use an API key for {provider} in this project instead.", v),
+  ),
+  rule("errors.modelApi.accountNoDecisions", (v) =>
+    t("errors.modelApi.accountNoDecisions", "A {product} account can't make decisions. Use an API key for {provider} in this project instead.", v),
   ),
   rule("errors.modelApi.planUsageLimit", (v) => t("errors.modelApi.planUsageLimit", "Your {product} plan's usage limit is reached. Review it at {url}.", v)),
   rule("errors.modelApi.accountNoApiAccess", (v) =>

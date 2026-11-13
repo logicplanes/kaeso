@@ -166,6 +166,8 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 | `POST /v1/audio/speech` | OpenAI Speech ([Audio-API](audio.md)) |
 | `POST /v1/audio/transcriptions`, `POST /v1/audio/translations` | OpenAI Transcriptions ([Audio-API](audio.md)) |
 | `POST /v1/videos`, `GET /v1/videos`, `GET /v1/videos/{video_id}`, `DELETE /v1/videos/{video_id}`, `GET /v1/videos/{video_id}/content`, `POST /v1/videos/{video_id}/remix` | OpenAI Videos ([Videos-API](videos.md)) |
+| `POST /v1/decisions` | OpenAI Decisions ([Decisions-API](decisions.md)) |
+| `POST /v1/systemone` | System One ([Decisions-API](decisions.md)) |
 | `POST /v1/text-to-speech/{voice_id}`, `/v1/text-to-dialogue`, `/v1/sound-generation`, `/v1/music`, `/v1/voice-changer/{voice_id}`, `/v1/speech-to-text`, `/v1/flows/image`, `GET /v1/voices`, `/v2/voices` | ElevenLabs ([ElevenLabs-API](elevenlabs.md)) |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages, Token zählen |
@@ -178,10 +180,11 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 | `POST /v1beta/models/{model}:batchEmbedContents` | Gemini-Embeddings, mehrere Eingaben |
 | `GET /v1beta/models` | Die Modelle, die der Schlüssel aufrufen darf, im Gemini-Format |
 | `GET /v1beta/models/{model}` | Eines davon, im Gemini-Format |
+| `POST /v1beta/decisions` | Gemini Decisions ([Decisions-API](decisions.md)) |
 
 In einem `/v1beta`-Pfad ist `{model}` ein beliebiger [Modellname](#modellnamen), etwa `claude-haiku-4-5`.
 
-`/v1/embeddings`, `:embedContent` und `:batchEmbedContents` bedienen nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/provider-apis.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt.
+`/v1/embeddings`, `:embedContent` und `:batchEmbedContents` bedienen nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/provider-apis.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt. Ebenso bedienen `/v1/decisions`, `/v1/systemone` und `/v1beta/decisions` nur Entscheidungsmodelle, und ein reines Entscheidungsmodell bedient keinen anderen Endpunkt ([Decisions-API](decisions.md)).
 
 Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, im Format von ElevenLabs, wenn sie einen `xi-api-key`-Header hat, und sonst im OpenAI-Format.
 

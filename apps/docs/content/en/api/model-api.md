@@ -166,6 +166,8 @@ Any format reaches any generation model in the project's catalogue, so a Gemini 
 | `POST /v1/audio/speech` | OpenAI Speech ([Audio API](audio.md)) |
 | `POST /v1/audio/transcriptions`, `POST /v1/audio/translations` | OpenAI Transcriptions ([Audio API](audio.md)) |
 | `POST /v1/videos`, `GET /v1/videos`, `GET /v1/videos/{video_id}`, `DELETE /v1/videos/{video_id}`, `GET /v1/videos/{video_id}/content`, `POST /v1/videos/{video_id}/remix` | OpenAI Videos ([Videos API](videos.md)) |
+| `POST /v1/decisions` | OpenAI Decisions ([Decisions API](decisions.md)) |
+| `POST /v1/systemone` | System One ([Decisions API](decisions.md)) |
 | `POST /v1/text-to-speech/{voice_id}`, `/v1/text-to-dialogue`, `/v1/sound-generation`, `/v1/music`, `/v1/voice-changer/{voice_id}`, `/v1/speech-to-text`, `/v1/flows/image`, `GET /v1/voices`, `/v2/voices` | ElevenLabs ([ElevenLabs API](elevenlabs.md)) |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages, counting tokens |
@@ -178,10 +180,11 @@ Any format reaches any generation model in the project's catalogue, so a Gemini 
 | `POST /v1beta/models/{model}:batchEmbedContents` | Gemini embeddings, several inputs |
 | `GET /v1beta/models` | The models the key may call, in the Gemini format |
 | `GET /v1beta/models/{model}` | One of them, in the Gemini format |
+| `POST /v1beta/decisions` | Gemini Decisions ([Decisions API](decisions.md)) |
 
 In a `/v1beta` path, `{model}` is any [model name](#model-names), such as `claude-haiku-4-5`.
 
-`/v1/embeddings`, `:embedContent` and `:batchEmbedContents` serve only embeddings models, which only some [providers](../concepts/provider-apis.md) offer, and embeddings models serve no other endpoint. Kaeso answers 400 to a request that mixes them.
+`/v1/embeddings`, `:embedContent` and `:batchEmbedContents` serve only embeddings models, which only some [providers](../concepts/provider-apis.md) offer, and embeddings models serve no other endpoint. Kaeso answers 400 to a request that mixes them. Likewise, `/v1/decisions`, `/v1/systemone` and `/v1beta/decisions` serve only decision models, and a model that only makes decisions serves no other endpoint ([Decisions API](decisions.md)).
 
 Any other path under `/v1` gets 404, and a known path called with the wrong method gets 405. Both errors are in the Anthropic format when the request has an `anthropic-version` header, in ElevenLabs' format when it has an `xi-api-key` header, and in the OpenAI format otherwise.
 

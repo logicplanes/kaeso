@@ -138,6 +138,70 @@ async fn the_model_api_takes_bodies_up_to_32_mib_by_default() {
 }
 
 #[tokio::test]
+async fn decision_endpoints_take_bodies_up_to_their_own_limit() {
+    let env = common::v1::env(
+        None,
+        Some(&[
+            ("KAESO_BODY_LIMITS_MODEL_API", "64KiB"),
+            ("KAESO_BODY_LIMITS_DECISIONS", "256KiB"),
+        ]),
+    )
+    .await;
+    env.app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({ "provider": "openai", "model_id": "gpt-6-luna" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let decide = |state: String| {
+        serde_json::to_vec(&json!({ "model": "gpt-6-luna", "state": state,
+            "questions": { "refund": { "type": "noul", "instructions": "A refund?" } } }))
+        .unwrap()
+    };
+    let send =
+        |path: &str, body: Vec<u8>| env.app.router.clone().oneshot(post(path, &env.key, body));
+    let r = send("/v1/systemone", decide("a".repeat(100 << 10)))
+        .await
+        .unwrap();
+    assert_eq!(r.status(), StatusCode::OK);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("gpt-4o", &"a".repeat(100 << 10))),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::PAYLOAD_TOO_LARGE);
+    env.mock.clear();
+    let r = send("/v1/systemone", decide("a".repeat(300 << 10)))
+        .await
+        .unwrap();
+    assert_eq!(r.status(), StatusCode::PAYLOAD_TOO_LARGE);
+    let body: Value =
+        serde_json::from_slice(&r.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(
+        body["detail"],
+        "The request body is larger than 262144 bytes."
+    );
+    let gemini = Request::builder()
+        .uri("/v1beta/decisions")
+        .method("POST")
+        .header("content-type", "application/json")
+        .header("x-goog-api-key", &env.key)
+        .body(Body::from(vec![b' '; 300 << 10]))
+        .unwrap();
+    let r = env.app.router.clone().oneshot(gemini).await.unwrap();
+    assert_eq!(r.status(), StatusCode::PAYLOAD_TOO_LARGE);
+    let body: Value =
+        serde_json::from_slice(&r.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(body["error"]["code"], 413, "{body}");
+    assert!(env.mock.received().is_empty());
+}
+
+#[tokio::test]
 async fn a_request_returns_its_translation_memory_before_the_provider_answers() {
     let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "128KiB")])).await;
     let state = &env.app.state;

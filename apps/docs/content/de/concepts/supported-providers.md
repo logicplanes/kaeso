@@ -9,7 +9,7 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 ## Spalten
 
 - **Anbieter.** Der Name, den die Konsole zeigt, dann die ID. Die ID bezeichnet den Anbieter in Modellnamen wie `groq/llama-3.3-70b-versatile` und in [Einstellungen](../self-hosting/configuration.md#anbietereinstellungen).
-- **Formate.** Die API-Formate, in denen Kaeso den Anbieter aufruft. Ein Modell nutzt das erste, außer sein Wert **Sendet als** nennt ein anderes ([Werte eines Modells](../console/models-and-aliases.md#werte-eines-modells-ändern)). **Embeddings** und **Gemini Embeddings** heißen, dass der Anbieter Embeddings-Modelle hat, die `/v1/embeddings` bedienen. **Token-Zählung** heißt, dass er Token für `/v1/messages/count_tokens` und `/v1/responses/input_tokens` zählt.
+- **Formate.** Die API-Formate, in denen Kaeso den Anbieter aufruft. Ein Modell nutzt das erste, außer sein Wert **Sendet als** nennt ein anderes ([Werte eines Modells](../console/models-and-aliases.md#werte-eines-modells-ändern)). **Embeddings** und **Gemini Embeddings** heißen, dass der Anbieter Embeddings-Modelle hat, die `/v1/embeddings` bedienen. **Token-Zählung** heißt, dass er Token für `/v1/messages/count_tokens` und `/v1/responses/input_tokens` zählt. Entscheidungen laufen über die eigene Decisions-API jedes Anbieters, die [APIs nach Anbieter](provider-apis.md) auflistet.
 - **Host.** Der Host der Standard-Basis-URL des Anbieters, den die Installation erreichen muss. Eine [Basis-URL, die Sie setzen](../self-hosting/configuration.md#anbietereinstellungen), ersetzt ihn.
 - **Schlüssel.** Wo Sie einen Schlüssel erstellen und womit er beginnt ([Anbieter-Schlüssel](../console/provider-keys.md)).
 

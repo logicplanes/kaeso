@@ -18,6 +18,7 @@ pub(super) fn prepare(
         Request::Image(_) => ("images", "make images"),
         Request::Speech(_) => ("speech", "create speech"),
         Request::Transcription(_) => ("transcription", "transcribe audio"),
+        Request::Decide(_) => ("decisions", "make decisions"),
         _ => ("endpoint", "serve this endpoint"),
     };
     let product = account.product;
@@ -35,6 +36,7 @@ pub(super) fn media_api(kind: RequestKind) -> Option<&'static str> {
         RequestKind::Speech => Some("Speech API"),
         RequestKind::Transcription => Some("Transcriptions API"),
         RequestKind::Video => Some("Videos API"),
+        RequestKind::Decide => Some("Decisions API"),
         _ => None,
     }
 }
@@ -108,6 +110,20 @@ mod tests {
         assert_eq!(media_api(RequestKind::Generate), None);
         assert!(text_only(AuthMethod::ChatGpt));
         assert!(!text_only(AuthMethod::Grok) && !text_only(AuthMethod::ApiKey));
+    }
+
+    #[test]
+    fn a_plan_makes_no_decisions_and_names_the_decisions_api() {
+        let mut decide = Request::Decide(kaeso_kpp::DecideRequest::new(
+            "gpt-6-luna",
+            kaeso_kpp::DecisionInput::Text("state".into()),
+        ));
+        let err = prepare(&mut decide, CHATGPT, "OpenAI").unwrap_err();
+        assert_eq!(
+            err.message,
+            "A ChatGPT account can't make decisions. Use an API key for OpenAI in this project instead."
+        );
+        assert_eq!(media_api(RequestKind::Decide), Some("Decisions API"));
     }
 
     #[test]

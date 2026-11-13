@@ -682,8 +682,8 @@ const TYPE_KEYS: [&str; 6] = [
     "contentType",
 ];
 // Keys that hold a file's bytes in the formats Kaeso reads and in MCP: base64 under one of
-// them is a file even without a type beside it.
-const FILE_KEYS: [&str; 4] = ["b64_json", "file_data", "blob", "bytes"];
+// them is a file even without a type beside it. `data_base64` holds a System One asset.
+const FILE_KEYS: [&str; 5] = ["b64_json", "file_data", "blob", "bytes", "data_base64"];
 const CONTENT_KEYS: [&str; 6] = ["data", "result", "image", "audio", "video", "input_audio"];
 // Objects that hold one file: long base64 in or under one of these keys is that file even
 // when nothing states its type.

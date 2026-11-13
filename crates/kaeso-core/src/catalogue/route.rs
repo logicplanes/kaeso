@@ -241,6 +241,9 @@ pub enum AppFormat {
     OpenaiEmbeddings,
     Gemini,
     GeminiEmbeddings,
+    OpenaiDecisions,
+    SystemOne,
+    GeminiDecisions,
 }
 
 impl AppFormat {
@@ -252,6 +255,9 @@ impl AppFormat {
             DialectId::OpenAiEmbeddings => Some(AppFormat::OpenaiEmbeddings),
             DialectId::Gemini => Some(AppFormat::Gemini),
             DialectId::GeminiEmbeddings => Some(AppFormat::GeminiEmbeddings),
+            DialectId::OpenAiDecisions => Some(AppFormat::OpenaiDecisions),
+            DialectId::SystemOne => Some(AppFormat::SystemOne),
+            DialectId::GeminiDecisions => Some(AppFormat::GeminiDecisions),
             _ => None,
         }
     }

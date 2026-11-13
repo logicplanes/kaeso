@@ -224,6 +224,9 @@ const SHORT_DIALECTS: Record<string, string> = {
   veo: "Veo",
   gemini_interactions: "Gemini Interactions",
   dashscope: "DashScope",
+  openai_decisions: "Decisions",
+  system_one: "System One",
+  gemini_decisions: "Gemini Decisions",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
 

@@ -16,9 +16,16 @@ const MODELS = {
   "claude-opus-5-5": { provider: "anthropic", ttfb: 1350, tps: 44 },
   "text-embedding-3-small": { provider: "openai", ttfb: 150, embedding: true },
   "text-embedding-3-large": { provider: "openai", ttfb: 210, embedding: true },
+  "gpt-6-luna": { provider: "openai", ttfb: 120, decision: true },
 };
 
-const INGRESS = { "chat/completions": "openai_chat", messages: "anthropic_messages", responses: "openai_responses", embeddings: "openai_embeddings" };
+const INGRESS = {
+  "chat/completions": "openai_chat",
+  messages: "anthropic_messages",
+  responses: "openai_responses",
+  embeddings: "openai_embeddings",
+  decisions: "openai_decisions",
+};
 
 const ERRORS = {
   overloaded: { anthropic: [529, "overloaded", "Overloaded"], openai: [503, "overloaded", "The engine is currently overloaded, please try again later."] },
@@ -125,6 +132,7 @@ function logRow(next, ctx, req) {
   const caller = ctx.keys[req.key];
   const stream = Boolean(req.stream);
   const embedding = Boolean(model.embedding);
+  const decision = Boolean(model.decision);
   const failed = req.error && req.error[0] !== 499;
   const output = failed ? 0 : req.error ? Math.round(req.output * (0.2 + next() * 0.5)) : req.output;
   const reasoning = failed ? 0 : Math.min(req.reasoning ?? 0, output);
@@ -137,7 +145,7 @@ function logRow(next, ctx, req) {
   } else if (failed) {
     duration = Math.round(lognormal(next, req.refused ? 3 : 520, 0.6));
     ttfb = null;
-  } else if (embedding) {
+  } else if (embedding || decision) {
     duration = Math.round(lognormal(next, model.ttfb, 0.35) + req.input / 120);
     ttfb = Math.max(1, duration - 2 - Math.floor(next() * 6));
   } else {
@@ -147,7 +155,7 @@ function logRow(next, ctx, req) {
     duration = Math.round(first + ((output - reasoning) / tps) * 1000 + (req.fallbackMs ?? 0));
     ttfb = stream ? Math.round(first + (req.fallbackMs ?? 0)) : Math.max(1, duration - 1 - Math.floor(next() * 12));
   }
-  const egress = embedding ? "openai_embeddings" : model.provider === "openai" ? "openai_responses" : "anthropic_messages";
+  const egress = embedding ? "openai_embeddings" : decision ? "openai_decisions" : model.provider === "openai" ? "openai_responses" : "anthropic_messages";
   const row = {
     request_id: uuid7(req.at),
     ...caller,
@@ -484,6 +492,22 @@ function triage(next, ctx, dayStart, until, d, weekday) {
     if (t.draft) {
       const later = at + 2000 + Math.floor(next() * 5000);
       if (later < until) requests.push({ ...base, at: later, model: "claude-sonnet-5-5", ...t.draft.shape, content: t.draft });
+    }
+    // Since the switch to a decision model, each email's refund and urgency questions go to GPT-6 Luna as well.
+    if (d < 21 && next() < 0.6) {
+      const asked = at + 300 + Math.floor(next() * 900);
+      if (asked < until)
+        requests.push({
+          key: "triage-bot",
+          at: asked,
+          model: "gpt-6-luna",
+          endpoint: "decisions",
+          stream: false,
+          input: Math.round(lognormal(next, 380, 0.4)),
+          output: 0,
+          ua: "OpenAI/Python 3.45.0",
+          ip: "203.0.113.30",
+        });
     }
   }
   return requests;

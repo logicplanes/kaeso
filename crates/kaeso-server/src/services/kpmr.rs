@@ -33,6 +33,7 @@ static FORMAT: LazyLock<Vec<u8>> = LazyLock::new(|| {
         capabilities: Some(kpmr::Capabilities::default()),
         reasoning: Some(kpmr::Reasoning::default()),
         gateway: Some(kpmr::Gateway::default()),
+        decisions: Some(kpmr::Decisions::default()),
         ..kpmr::Model::default()
     };
     let providers = kaeso_core::provider::known_ids()

@@ -28,7 +28,15 @@ export type TestRequest = {
   seed: number;
 };
 
-const FORMATS: readonly RouteFormat[] = ["openai_chat", "openai_responses", "anthropic_messages", "openai_embeddings"];
+const FORMATS: readonly RouteFormat[] = [
+  "openai_chat",
+  "openai_responses",
+  "anthropic_messages",
+  "openai_embeddings",
+  "openai_decisions",
+  "system_one",
+  "gemini_decisions",
+];
 const FEATURES: readonly RouteFeature[] = ["images", "pdfs", "tools", "reasoning", "structured_output", "streaming"];
 const NO_KEY = "none";
 const MAX_HEADERS = 20;

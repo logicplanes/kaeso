@@ -6,11 +6,13 @@ use std::sync::LazyLock;
 use kaeso_codecs::anthropic_messages::{FixedValue, MINIMAX_VIDEO_MEDIA_TYPES, MessagesProfile};
 use kaeso_codecs::gemini::GeminiProfile;
 use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_decisions::DecisionsProfile;
 use kaeso_codecs::openai_images::ImagesProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::openai_speech::SpeechProfile;
 use kaeso_codecs::openai_transcriptions::TranscriptionsProfile;
 use kaeso_codecs::openai_videos::VideosProfile;
+use kaeso_codecs::system_one::SystemOneProfile;
 use kaeso_codecs::{ToolPatterns, ToolSchemaRoot};
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -459,6 +461,82 @@ impl VideosEgress {
     }
 }
 
+/// Where and how Kaeso sends decision requests to a provider, for the models `models` matches.
+/// The profile of the egress dialect is the one that applies; the other stays at its default.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct DecisionsEgress {
+    /// `openai_decisions`, `system_one` or `gemini_decisions`.
+    pub dialect: DialectId,
+    /// How a provider of TypeSafe's System One format takes decision requests.
+    pub system_one: SystemOneProfile,
+    /// How a provider of OpenAI's Decisions format takes decision requests.
+    pub openai: DecisionsProfile,
+    /// The dialect's paths start at the root of the host, as for [`ImagesEgress::from_root`].
+    pub from_root: bool,
+    /// The auth header the decisions API takes when it differs from the provider's.
+    pub auth: Option<AuthStyle>,
+    /// The model ids this API serves, as for [`ImagesEgress::models`].
+    pub models: &'static str,
+}
+
+impl DecisionsEgress {
+    const ANY: DecisionsEgress = DecisionsEgress {
+        dialect: DialectId::OpenAiDecisions,
+        system_one: SystemOneProfile::GENERIC,
+        openai: DecisionsProfile::GENERIC,
+        from_root: false,
+        auth: None,
+        models: "*",
+    };
+
+    /// OpenAI's Decisions API in the form `profile` describes.
+    pub const fn openai(profile: DecisionsProfile) -> DecisionsEgress {
+        DecisionsEgress {
+            openai: profile,
+            ..DecisionsEgress::ANY
+        }
+    }
+
+    /// TypeSafe's System One API in the form `profile` describes.
+    pub const fn system_one(profile: SystemOneProfile) -> DecisionsEgress {
+        DecisionsEgress {
+            dialect: DialectId::SystemOne,
+            system_one: profile,
+            ..DecisionsEgress::ANY
+        }
+    }
+
+    /// Google's Gemini Decisions API, which only Google AI Studio serves.
+    pub const fn gemini() -> DecisionsEgress {
+        DecisionsEgress {
+            dialect: DialectId::GeminiDecisions,
+            ..DecisionsEgress::ANY
+        }
+    }
+
+    pub const fn for_models(self, models: &'static str) -> DecisionsEgress {
+        DecisionsEgress { models, ..self }
+    }
+
+    pub fn serves(&self, model: &str) -> bool {
+        glob(self.models, model)
+    }
+
+    /// The most questions one request may ask, as the profile of the egress dialect says.
+    pub fn max_questions(&self) -> Option<usize> {
+        match self.dialect {
+            DialectId::SystemOne => self.system_one.max_questions,
+            DialectId::OpenAiDecisions => self.openai.max_questions,
+            _ => None,
+        }
+    }
+
+    /// Whether the provider answers box questions.
+    pub fn box_questions(&self) -> bool {
+        self.dialect == DialectId::SystemOne && self.system_one.box_questions
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ModelRoute {
     pub pattern: &'static str,
@@ -605,6 +683,8 @@ pub struct Provider {
     pub transcriptions: &'static [TranscriptionsEgress],
     /// Where Kaeso sends video jobs, by model; empty for a provider that offers no video API.
     pub videos: &'static [VideosEgress],
+    /// Where Kaeso sends decision requests, by model, as for `images`.
+    pub decisions: &'static [DecisionsEgress],
     pub dialects: &'static [DialectId],
     pub refused_key_messages: &'static [&'static str],
     pub context_window_messages: &'static [&'static str],
@@ -676,6 +756,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[SpeechEgress::openai(SpeechProfile::OPENAI)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::OPENAI)],
         videos: &[],
+        decisions: &[DecisionsEgress::openai(DecisionsProfile::OPENAI).for_models("gpt-6-luna*")],
         dialects: &[
             DialectId::OpenAiResponses,
             DialectId::OpenAiChat,
@@ -718,6 +799,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -750,6 +832,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -787,6 +870,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[SpeechEgress::openai(SpeechProfile::XAI)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::XAI)],
         videos: &[VideosEgress::of(DialectId::XaiVideos)],
+        decisions: &[],
         dialects: &[DialectId::OpenAiResponses, DialectId::OpenAiChat],
         refused_key_messages: &["Incorrect API key provided"],
         context_window_messages: &[],
@@ -837,6 +921,7 @@ pub const PROVIDERS: &[Provider] = &[
             profile: VideosProfile::TOGETHER,
             ..VideosEgress::of(DialectId::OpenAiVideos)
         }],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -870,6 +955,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[SpeechEgress::openai(SpeechProfile::GROQ)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::GROQ)],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -910,6 +996,7 @@ pub const PROVIDERS: &[Provider] = &[
             TranscriptionsProfile::OPENROUTER,
         )],
         videos: &[VideosEgress::of(DialectId::OpenRouterVideos)],
+        decisions: &[DecisionsEgress::system_one(SystemOneProfile::OPENROUTER)],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -948,6 +1035,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[SpeechEgress::openai(SpeechProfile::MISTRAL)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::MISTRAL)],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &["too large for model with"],
@@ -1001,6 +1089,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[SpeechEgress::openai(SpeechProfile::VERCEL)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::VERCEL)],
         videos: &[],
+        decisions: &[DecisionsEgress::openai(DecisionsProfile::GENERIC)],
         dialects: &[
             DialectId::OpenAiChat,
             DialectId::OpenAiResponses,
@@ -1044,6 +1133,7 @@ pub const PROVIDERS: &[Provider] = &[
             ..TranscriptionsEgress::ANY
         }],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1093,6 +1183,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1128,6 +1219,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1202,6 +1294,7 @@ pub const PROVIDERS: &[Provider] = &[
             },
         ],
         videos: &[VideosEgress::rooted(DialectId::DashScope).for_models("wan*")],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1248,6 +1341,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1300,6 +1394,7 @@ pub const PROVIDERS: &[Provider] = &[
             ..TranscriptionsEgress::ANY
         }],
         videos: &[VideosEgress::rooted(DialectId::ZaiVideos)],
+        decisions: &[],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1350,6 +1445,7 @@ pub const PROVIDERS: &[Provider] = &[
             ..TranscriptionsEgress::ANY
         }],
         videos: &[VideosEgress::rooted(DialectId::MinimaxVideos)],
+        decisions: &[],
         dialects: &[DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1415,6 +1511,7 @@ pub const PROVIDERS: &[Provider] = &[
             ..TranscriptionsEgress::ANY
         }],
         videos: &[VideosEgress::of(DialectId::ElevenLabs)],
+        decisions: &[],
         dialects: &[DialectId::ElevenLabs],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1448,6 +1545,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[SpeechEgress::gemini()],
         transcriptions: &[TranscriptionsEgress::gemini()],
         videos: &[VideosEgress::of(DialectId::GeminiInteractions).for_models("gemini-omni-*")],
+        decisions: &[DecisionsEgress::gemini()],
         dialects: &[DialectId::Gemini, DialectId::GeminiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1484,6 +1582,7 @@ pub const PROVIDERS: &[Provider] = &[
             VideosEgress::of(DialectId::Veo).for_models("veo-*"),
             VideosEgress::of(DialectId::GeminiInteractions).for_models("gemini-omni-*"),
         ],
+        decisions: &[],
         dialects: &[
             DialectId::Gemini,
             DialectId::AnthropicMessages,
@@ -1561,6 +1660,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[DecisionsEgress::system_one(SystemOneProfile::FIREWORKS)],
         dialects: &[
             DialectId::OpenAiChat,
             DialectId::AnthropicMessages,
@@ -1602,6 +1702,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1640,6 +1741,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1682,6 +1784,7 @@ pub const PROVIDERS: &[Provider] = &[
             TranscriptionsProfile::SCALEWAY,
         )],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1720,6 +1823,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1760,6 +1864,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1799,6 +1904,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[DecisionsEgress::system_one(SystemOneProfile::BASETEN)],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1840,6 +1946,7 @@ pub const PROVIDERS: &[Provider] = &[
             TranscriptionsProfile::SILICONFLOW,
         )],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1883,6 +1990,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -1930,6 +2038,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[
             DialectId::OpenAiChat,
             DialectId::OpenAiResponses,
@@ -1980,6 +2089,7 @@ pub const PROVIDERS: &[Provider] = &[
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[DecisionsEgress::system_one(SystemOneProfile::PERPLEXITY)],
         dialects: &[DialectId::OpenAiChat],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -3229,6 +3339,67 @@ mod tests {
         assert!(!fetchable(&[], "dashscope-result.aliyuncs.com"));
         let openai = provider("openai").unwrap();
         assert!(openai.images.iter().all(|e| e.fetch_hosts.is_empty()));
+    }
+
+    #[test]
+    fn each_decisions_provider_takes_its_own_format_and_the_rest_take_none() {
+        let egress = |id: &str, model: &str| {
+            provider(id)
+                .unwrap()
+                .decisions
+                .iter()
+                .find(|e| e.serves(model))
+                .copied()
+        };
+        let openai = egress("openai", "gpt-6-luna").unwrap();
+        assert_eq!(openai.dialect, DialectId::OpenAiDecisions);
+        assert_eq!(openai.openai, DecisionsProfile::OPENAI);
+        assert_eq!(openai.max_questions(), Some(400));
+        assert!(!openai.box_questions());
+        assert!(egress("openai", "gpt-6-luna-2026-09-22").is_some());
+        assert!(egress("openai", "gpt-5.5").is_none());
+        assert_eq!(
+            egress("google", "gemini-decision-1").unwrap().dialect,
+            DialectId::GeminiDecisions
+        );
+        assert_eq!(egress("google", "x").unwrap().max_questions(), None);
+        let vercel = egress("vercel", "typesafe-ai/jev").unwrap();
+        assert_eq!(
+            (vercel.dialect, vercel.openai, vercel.max_questions()),
+            (DialectId::OpenAiDecisions, DecisionsProfile::GENERIC, None)
+        );
+        for (id, profile) in [
+            ("openrouter", SystemOneProfile::OPENROUTER),
+            ("baseten", SystemOneProfile::BASETEN),
+            ("fireworks-ai", SystemOneProfile::FIREWORKS),
+            ("perplexity", SystemOneProfile::PERPLEXITY),
+        ] {
+            let e = egress(id, "any/model").unwrap();
+            assert_eq!((e.dialect, e.system_one), (DialectId::SystemOne, profile));
+            assert_eq!(e.box_questions(), profile.box_questions, "{id}");
+            assert!(!e.from_root && e.auth.is_none(), "{id}");
+        }
+        assert_eq!(SystemOneProfile::PERPLEXITY.path, "/v1/decisions");
+        let served = [
+            "openai",
+            "google",
+            "openrouter",
+            "vercel",
+            "baseten",
+            "fireworks-ai",
+            "perplexity",
+        ];
+        for p in PROVIDERS {
+            assert_eq!(!p.decisions.is_empty(), served.contains(&p.id), "{}", p.id);
+            assert!(
+                !p.dialects.iter().any(|d| matches!(
+                    d,
+                    DialectId::OpenAiDecisions | DialectId::SystemOne | DialectId::GeminiDecisions
+                )),
+                "{} lists a decision format as a generation format",
+                p.id
+            );
+        }
     }
 
     #[test]

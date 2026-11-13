@@ -38,7 +38,8 @@ import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { cachedShare, isEmbedding, sentWithoutBreakpoint } from "./columns";
 import { mediaCount, mediaLabel } from "./media";
-import { embeddingsView, isKnownReplyForm, replyView, requestView } from "./render";
+import { decisionAnswers, decisionView, embeddingsView, isKnownReplyForm, replyView, requestView, type DecisionView } from "./render";
+import { kindLabel } from "./decision-labels";
 import { collectMedia, forReading } from "./logged-media";
 import { MediaList } from "./kept-media";
 import { microseconds, seconds, startedLabel } from "./timing";
@@ -64,7 +65,7 @@ function useConversation() {
       live = false;
     };
   }, [mod]);
-  return mod?.default;
+  return mod;
 }
 
 function ConversationPending({ messages }: { messages: number }) {
@@ -150,7 +151,8 @@ function Body({
       : null,
   );
   const [tab, setTab] = useState("overview");
-  const conversation = useConversation();
+  const loaded = useConversation();
+  const conversation = loaded?.default;
   if (entry.isPending) return <Skeleton className="h-full w-full" />;
   if (entry.isError) {
     return (
@@ -178,7 +180,9 @@ function Body({
         <Overview org={org} project={project} e={e} keyName={keyName} />
       </Tabs.Panel>
       <Tabs.Panel value="request">{canContent ? <RequestTab e={e} Conversation={conversation} /> : <NoRight org={org} project={project} />}</Tabs.Panel>
-      <Tabs.Panel value="reply">{canContent ? <ReplyTab e={e} Conversation={conversation} /> : <NoRight org={org} project={project} />}</Tabs.Panel>
+      <Tabs.Panel value="reply">
+        {canContent ? <ReplyTab e={e} Conversation={conversation} Answers={loaded?.DecisionAnswers} /> : <NoRight org={org} project={project} />}
+      </Tabs.Panel>
       <Tabs.Panel value="raw">
         <RawTab e={e} canContent={canContent} />
       </Tabs.Panel>
@@ -540,7 +544,8 @@ function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: Conver
   const readable = useMemo(() => forReading(body), [body]);
   if (!e.content) return <NotLogged />;
   const embeddings = embeddingsView(e.ingress_dialect, body);
-  const mapped = !!(view || embeddings);
+  const decision = decisionView(e.ingress_dialect, body);
+  const mapped = !!(view || embeddings || decision);
   return (
     <div className="mt-24 flex flex-col gap-24">
       <TabHeader control={mapped && <Switch size="sm" label={t("logs.inspector.showRaw", "Show raw")} checked={raw} onCheckedChange={setRaw} />}>
@@ -553,6 +558,8 @@ function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: Conver
           {!mapped && <MediaList media={media} />}
           <JsonView value={readable} defaultDepth={4} />
         </>
+      ) : decision ? (
+        <DecisionRequest decision={decision} />
       ) : embeddings ? (
         <Text>{t("logs.inspector.inputsEmbedded", "{count, plural, one {# input embedded.} other {# inputs embedded.}}", { count: embeddings.inputs })}</Text>
       ) : (
@@ -600,7 +607,73 @@ function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: Conver
   );
 }
 
-function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: ConversationView }) {
+type AnswersView = ConversationModule["DecisionAnswers"] | undefined;
+
+function DecisionRequest({ decision }: { decision: DecisionView }) {
+  const state = useMemo(() => forReading(decision.state), [decision.state]);
+  return (
+    <>
+      <Section title={t("logs.decision.state", "What the questions are about")} spacing="none">
+        {typeof decision.state === "string" ? <Text>{decision.state}</Text> : <JsonView value={state} defaultDepth={3} />}
+      </Section>
+      <Section title={t("logs.decision.questions", "Questions")} spacing="none">
+        <KeyValue
+          layout="stacked"
+          items={decision.questions.map((q, i) => ({
+            label: q.name || t("logs.decision.question", "Question {n}", { n: formatNumber(i + 1) }),
+            value: (
+              <span className="flex min-w-0 flex-col gap-4">
+                <Text>{q.instructions ? `${kindLabel(q.kind)}: ${q.instructions}` : kindLabel(q.kind)}</Text>
+                {(q.options?.length || q.levels?.length) && (
+                  <Text variant="small" tone="secondary">
+                    {(q.options ?? [])
+                      .map((o) => o.value)
+                      .concat((q.levels ?? []).map((l, n) => l.label || String(n)))
+                      .join(" · ")}
+                  </Text>
+                )}
+              </span>
+            ),
+          }))}
+        />
+      </Section>
+    </>
+  );
+}
+
+function DecisionReply({
+  e,
+  decided,
+  readable,
+  Answers,
+}: {
+  e: LogEntryView;
+  decided: NonNullable<ReturnType<typeof decisionAnswers>>;
+  readable: unknown;
+  Answers: AnswersView;
+}) {
+  const [raw, setRaw] = useState(false);
+  const asked = useMemo(() => decisionView(e.ingress_dialect, e.content?.request as unknown), [e.ingress_dialect, e.content?.request]);
+  const questions = asked?.questions ?? decided.answers.map((a) => ({ kind: a.kind === "refusal" ? ("predicate" as const) : a.kind }));
+  return (
+    <div className="mt-24 flex flex-col gap-24">
+      <TabHeader control={<Switch size="sm" label={t("logs.inspector.showRaw", "Show raw")} checked={raw} onCheckedChange={setRaw} />}>
+        <Text variant="small" tone="secondary">
+          {t("logs.decision.replyHint", "Each answer with its probabilities, in the order the questions were asked.")}
+        </Text>
+      </TabHeader>
+      {raw ? (
+        <JsonView value={readable} defaultDepth={4} />
+      ) : Answers ? (
+        <Answers questions={questions} answers={decided.answers} />
+      ) : (
+        <ConversationPending messages={questions.length} />
+      )}
+    </div>
+  );
+}
+
+function ReplyTab({ e, Conversation, Answers }: { e: LogEntryView; Conversation: ConversationView; Answers: AnswersView }) {
   const [raw, setRaw] = useState(false);
   const reply = e.content?.reply as unknown;
   const view = useMemo(() => replyView(reply), [reply]);
@@ -631,6 +704,8 @@ function ReplyTab({ e, Conversation }: { e: LogEntryView; Conversation: Conversa
       </div>
     );
   }
+  const decided = decisionAnswers(reply);
+  if (decided) return <DecisionReply e={e} decided={decided} readable={readable} Answers={Answers} />;
   if (!isKnownReplyForm(reply)) {
     return (
       <div className="mt-24 flex flex-col gap-24">

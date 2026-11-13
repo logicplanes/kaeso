@@ -57,6 +57,7 @@ enum Media {
     None,
     Image(ImageOperation),
     Transcription(TranscriptionOperation),
+    Decision,
 }
 
 async fn serve_call(
@@ -73,6 +74,7 @@ async fn serve_call(
     let (max_body, image, transcription) = match media {
         Media::Image(op) => (limits.images.as_usize(), Some(op), None),
         Media::Transcription(op) => (limits.audio.as_usize(), None, Some(op)),
+        Media::Decision => (limits.decisions.as_usize(), None, None),
         Media::None => (limits.model_api.as_usize(), None, None),
     };
     pipeline::serve(
@@ -144,6 +146,31 @@ macro_rules! transcription_endpoint {
         }
     };
 }
+
+macro_rules! decision_endpoint {
+    ($name:ident, $dialect:expr) => {
+        async fn $name(
+            State(state): State<AppState>,
+            Extension(id): Extension<RequestId>,
+            ip: ClientIp,
+            req: Request,
+        ) -> Response {
+            serve_call(
+                state,
+                $dialect,
+                RequestKind::Decide,
+                id,
+                ip,
+                req,
+                Media::Decision,
+            )
+            .await
+        }
+    };
+}
+
+decision_endpoint!(decisions, DialectId::OpenAiDecisions);
+decision_endpoint!(systemone, DialectId::SystemOne);
 
 transcription_endpoint!(audio_transcriptions, TranscriptionOperation::Transcribe);
 transcription_endpoint!(audio_translations, TranscriptionOperation::Translate);
@@ -271,6 +298,8 @@ pub fn router() -> Router<AppState> {
         .route("/v1/responses", post(responses))
         .route("/v1/responses/input_tokens", post(responses_input_tokens))
         .route("/v1/embeddings", post(embeddings))
+        .route("/v1/decisions", post(decisions))
+        .route("/v1/systemone", post(systemone))
         .route("/v1/images/generations", post(image_generations))
         .route("/v1/images/edits", post(image_edits))
         .route("/v1/images/variations", post(image_variations))

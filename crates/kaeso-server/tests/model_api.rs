@@ -633,6 +633,19 @@ async fn rejections_are_errors_in_the_apps_format() {
         ),
         (raw("DELETE", "/v1/messages", true, None, ""), 405, true),
         (raw("POST", "/v1/models", false, None, ""), 405, false),
+        (raw("GET", "/v1/decisions", false, None, ""), 405, false),
+        (raw("GET", "/v1/systemone", true, None, ""), 405, true),
+        (
+            raw(
+                "POST",
+                "/v1/decisions",
+                false,
+                Some("application/json"),
+                "{",
+            ),
+            400,
+            false,
+        ),
         (raw("GET", "/v1", false, None, ""), 404, false),
         (raw("GET", "/v1/nope", true, None, ""), 404, true),
         (

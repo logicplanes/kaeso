@@ -66,6 +66,32 @@ Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模
 > [!NOTE]
 > Kaeso 不会在轮次之间保存响应。如果请求要求服务商保存或延续某个响应（`store: true`、`previous_response_id`），Kaeso 会拒绝它，并在错误中说明原因。
 
+## 在 OpenCode 中添加决策模型
+
+[OpenCode](https://opencode.ai/docs/providers/) 以 System One 格式调用决策模型，Kaeso 在 `/v1/systemone` 提供该格式。把 Kaeso 添加为服务商，并用 `type: "decision"` 标记每个[决策模型](../api/decisions.md)：
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "providers": {
+    "kaeso": {
+      "name": "Kaeso",
+      "env": ["KAESO_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": { "baseURL": "https://kaeso.example.com/v1" },
+      "models": {
+        "jev-latest": {
+          "type": "decision",
+          "compatibility": { "mediaInput": "assets" },
+        },
+      },
+    },
+  },
+}
+```
+
+模型的键是它在 Kaeso 项目中的名称。`mediaInput: "assets"` 让 OpenCode 以 System One 资源的形式发送图片，这是 Kaeso 读取的形式；Kaeso 会把图片放到模型服务商要求的位置。
+
 ## 设置其他工具
 
 任何可以设置 OpenAI 或 Anthropic 基础 URL 的工具，都可以用同样的方式接入：

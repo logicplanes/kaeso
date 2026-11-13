@@ -187,10 +187,17 @@ fn a_file_is_known_by_the_type_beside_it_whatever_its_key_or_by_how_it_starts() 
         stripped(&resource)["content"][0]["resource"]["blob"]["kaeso_media"],
         json!({ "media_type": "application/x-thing", "bytes": 60, "reason": "not_kept" })
     );
-    for key in ["b64_json", "bytes", "blob", "file_data"] {
+    for key in ["b64_json", "bytes", "blob", "file_data", "data_base64"] {
         let text = format!(r#"{{"{key}":"{unknown}"}}"#);
         assert_eq!(stripped(&text)[key]["kaeso_media"]["bytes"], 60, "{key}");
     }
+    let asset = format!(
+        r#"{{"assets":{{"<photo>":{{"type":"image","format":"png","data_base64":"{unknown}"}}}}}}"#
+    );
+    assert_eq!(
+        stripped(&asset)["assets"]["<photo>"]["data_base64"]["kaeso_media"]["bytes"],
+        60
+    );
     let odd = format!(
         r#"{{"payload":"{}","content_type":"audio/pcm"}}"#,
         noise(900)

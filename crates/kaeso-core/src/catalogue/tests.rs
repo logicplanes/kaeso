@@ -2672,3 +2672,266 @@ fn scaleway_models_speak_chat_completions_and_whisper_is_priced_by_the_minute() 
     assert_eq!(per_unit.len(), 1);
     assert_eq!(per_unit[0].usd, dec!(0.0033645));
 }
+
+fn decide(questions: Vec<kaeso_kpp::QuestionKind>) -> Request {
+    let mut d = kaeso_kpp::DecideRequest::new(
+        "m",
+        kaeso_kpp::DecisionInput::Text("A refund for order 7".into()),
+    );
+    for (i, kind) in questions.into_iter().enumerate() {
+        d = d.with_question(kaeso_kpp::Question::new(Some(format!("q{i}")), kind));
+    }
+    Request::Decide(d)
+}
+
+fn yes_no() -> kaeso_kpp::QuestionKind {
+    kaeso_kpp::QuestionKind::Predicate(kaeso_kpp::Predicate::new(None, None))
+}
+
+fn choice(n: usize) -> kaeso_kpp::QuestionKind {
+    kaeso_kpp::QuestionKind::Choice(kaeso_kpp::Choice::new(
+        (0..n)
+            .map(|i| {
+                kaeso_kpp::ChoiceOption::new(kaeso_kpp::ChoiceValue::Text(format!("o{i}")), None)
+            })
+            .collect(),
+    ))
+}
+
+fn score(n: usize) -> kaeso_kpp::QuestionKind {
+    kaeso_kpp::QuestionKind::Score(kaeso_kpp::Score::new(
+        (0..n)
+            .map(|i| kaeso_kpp::Level::new(Some(format!("l{i}")), None))
+            .collect(),
+    ))
+}
+
+#[test]
+fn decision_models_come_from_kpmrs_kind_and_decisions_object() {
+    let luna = eff(&entry("openai", "gpt-6-luna"));
+    assert!(luna.decides() && !luna.decides_only());
+    assert_eq!(luna.dialect, DialectId::OpenAiResponses);
+    let gemini = eff(&entry("google", "gemini-decision-1"));
+    assert!(gemini.decides() && gemini.decides_only());
+    let d = gemini.fields.decisions.as_ref().unwrap();
+    assert_eq!(d.max_questions, Some(1000));
+    assert!(d.answers("predicate") && !d.answers("box"));
+    let chat = eff(&entry("openai", "gpt-5.5"));
+    assert!(!chat.decides() && !chat.decides_only());
+    let bare = DecisionFields::default();
+    assert!(bare.answers("score") && !bare.answers("box"));
+    let m: kpmr::Model = serde_json::from_str(r#"{"id": "m", "kind": "decision"}"#).unwrap();
+    assert_eq!(
+        Fields::from_kpmr(&m).decisions,
+        Some(DecisionFields {
+            only: true,
+            ..DecisionFields::default()
+        })
+    );
+}
+
+#[test]
+fn decisions_go_to_the_providers_decisions_api_in_its_own_format() {
+    for (provider, model, dialect) in [
+        ("openai", "gpt-6-luna", DialectId::OpenAiDecisions),
+        ("google", "gemini-decision-1", DialectId::GeminiDecisions),
+        ("openrouter", "typesafe/jev-1.14", DialectId::SystemOne),
+        ("vercel", "typesafe-ai/jev", DialectId::OpenAiDecisions),
+        ("perplexity", "pplx-decider-v1.2", DialectId::SystemOne),
+    ] {
+        let e = eff(&entry(provider, model));
+        let plan = prepare(&mut decide(vec![yes_no()]), DialectId::SystemOne, &e).unwrap();
+        assert_eq!(plan.dialect, dialect, "{provider}/{model}");
+    }
+}
+
+#[test]
+fn decisions_are_refused_where_the_model_or_its_provider_cannot_answer_them() {
+    let refused = |provider: &str, model: &str, req: &mut Request| {
+        let e = eff(&entry(provider, model));
+        let u = prepare(req, DialectId::OpenAiDecisions, &e).unwrap_err();
+        (u.capability, u.param, u.message)
+    };
+    assert_eq!(
+        refused("openai", "gpt-5.5", &mut decide(vec![yes_no()])),
+        (
+            "decisions",
+            Some("model"),
+            "The model `gpt-5.5` is a generation model; it can't answer decision questions.".into()
+        )
+    );
+    assert_eq!(
+        refused("anthropic", "claude-haiku-4-5", &mut decide(vec![yes_no()])).2,
+        "Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions."
+    );
+    assert_eq!(
+        refused(
+            "cloudflare-ai-gateway",
+            "typesafe/jev",
+            &mut decide(vec![yes_no()])
+        )
+        .2,
+        "Cloudflare AI Gateway offers no decisions API Kaeso can call, so `typesafe/jev` can't make decisions."
+    );
+    assert_eq!(
+        refused("openrouter", "openai/gpt-5", &mut decide(vec![yes_no()])).2,
+        "The model `openai/gpt-5` is a generation model; it can't answer decision questions."
+    );
+    assert_eq!(
+        refused(
+            "google",
+            "gemini-decision-1",
+            &mut decide(vec![
+                yes_no(),
+                kaeso_kpp::QuestionKind::Box(kaeso_kpp::BoxQuestion::new())
+            ])
+        ),
+        (
+            "question type",
+            Some("questions"),
+            "The model `gemini-decision-1` does not answer box questions.".into()
+        )
+    );
+    let mut many = decide((0..401).map(|_| yes_no()).collect());
+    assert_eq!(
+        refused("openai", "gpt-6-luna", &mut many).2,
+        "The model `gpt-6-luna` answers at most 400 questions per request."
+    );
+    assert_eq!(
+        refused(
+            "perplexity",
+            "pplx-decider-v1.2",
+            &mut decide(vec![choice(256)])
+        )
+        .2,
+        "The model `pplx-decider-v1.2` takes at most 255 options per choice question."
+    );
+    assert_eq!(
+        refused("openai", "gpt-6-luna", &mut decide(vec![score(11)])).2,
+        "The model `gpt-6-luna` takes at most 10 levels per score question."
+    );
+    let image = kaeso_kpp::Block::image(Source::base64("image/png", "AA==").unwrap());
+    let mut with_image = decide(vec![yes_no()]);
+    if let Request::Decide(d) = &mut with_image {
+        d.input = kaeso_kpp::DecisionInput::Messages(vec![Message::new(Role::User, vec![image])]);
+    }
+    let mut text_only = eff(&entry("google", "gemini-decision-1"));
+    text_only.fields.input_modalities = Some(vec!["text".into()]);
+    let u = prepare(&mut with_image.clone(), DialectId::SystemOne, &text_only).unwrap_err();
+    assert_eq!(
+        (u.param, u.message.as_str()),
+        (
+            Some("state"),
+            "The model `gemini-decision-1` does not accept images."
+        )
+    );
+    let mut one_image = eff(&entry("google", "gemini-decision-1"));
+    one_image.fields.decisions.as_mut().unwrap().max_images = Some(0);
+    let u = prepare(&mut with_image, DialectId::GeminiDecisions, &one_image).unwrap_err();
+    assert_eq!(
+        (u.param, u.message.as_str()),
+        (
+            Some("input"),
+            "The model `gemini-decision-1` takes at most 0 images per request."
+        )
+    );
+}
+
+#[test]
+fn a_decision_only_model_refuses_chat_token_counts_and_embeddings() {
+    let gemini = eff(&entry("google", "gemini-decision-1"));
+    let message = "The model `gemini-decision-1` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.";
+    for mut req in [
+        Request::Generate(user_request()),
+        Request::CountTokens(user_request()),
+        Request::Embed(EmbedRequest::new("m", vec![EmbedInput::Text("a".into())])),
+    ] {
+        let u = prepare(&mut req, DialectId::OpenAiChat, &gemini).unwrap_err();
+        assert_eq!((u.param, u.message.as_str()), (Some("model"), message));
+    }
+    let luna = eff(&entry("openai", "gpt-6-luna"));
+    assert!(
+        prepare(
+            &mut Request::Generate(user_request()),
+            DialectId::OpenAiResponses,
+            &luna
+        )
+        .is_ok()
+    );
+}
+
+#[test]
+fn decisions_are_set_by_hand_only_where_the_provider_has_a_decisions_api() {
+    let openrouter: ProviderRef = provider::provider("openrouter").unwrap().into();
+    let anthropic: ProviderRef = provider::provider("anthropic").unwrap().into();
+    let with = |d: DecisionFields| Fields {
+        decisions: Some(d),
+        ..Fields::default()
+    };
+    let only = DecisionFields {
+        only: true,
+        question_types: Some(vec!["choice".into(), "box".into()]),
+        max_questions: Some(64),
+        ..DecisionFields::default()
+    };
+    assert!(with(only.clone()).validate(&openrouter).is_ok());
+    let e = with(only.clone()).validate(&anthropic).unwrap_err();
+    assert_eq!(
+        (e.field.as_str(), e.message.as_str()),
+        (
+            "decisions",
+            "Anthropic offers no decisions API Kaeso can call; remove `decisions`."
+        )
+    );
+    for (bad, message) in [
+        (
+            DecisionFields {
+                question_types: Some(vec!["extract".into()]),
+                ..DecisionFields::default()
+            },
+            "`extract` is not one of predicate, choice, score, box.",
+        ),
+        (
+            DecisionFields {
+                question_types: Some(vec![]),
+                ..DecisionFields::default()
+            },
+            "`decisions.question_types` must list at least one type.",
+        ),
+        (
+            DecisionFields {
+                max_levels: Some(0),
+                ..DecisionFields::default()
+            },
+            "The limits in `decisions` must be positive.",
+        ),
+    ] {
+        assert_eq!(
+            with(bad).validate(&openrouter).unwrap_err().message,
+            message
+        );
+    }
+    let mut patched = Fields::default();
+    patched
+        .patch(
+            serde_json::json!({"decisions": {"only": true, "max_options": 26}})
+                .as_object()
+                .unwrap(),
+        )
+        .unwrap();
+    assert_eq!(patched.decisions.as_ref().unwrap().max_options, Some(26));
+    assert_eq!(patched.set_names(), ["decisions"]);
+    let custom = Fields {
+        input_modalities: Some(vec!["text".into()]),
+        input_price: Some(dec!(0.042)),
+        ..with(only)
+    };
+    assert!(custom.validate_custom().is_ok());
+    let e = Fields {
+        input_price: None,
+        ..custom
+    }
+    .validate_custom()
+    .unwrap_err();
+    assert_eq!(e.message, "A custom model needs input_price.");
+}

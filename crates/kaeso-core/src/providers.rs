@@ -485,6 +485,22 @@ impl ProviderRef {
         }
     }
 
+    /// Where Kaeso sends decision requests for `model`; none for a custom provider yet.
+    pub fn decisions(&self, model: &str) -> Option<crate::provider::DecisionsEgress> {
+        match self {
+            ProviderRef::BuiltIn(p) => p.decisions.iter().copied().find(|e| e.serves(model)),
+            ProviderRef::Custom(_) => None,
+        }
+    }
+
+    /// Whether the provider serves decision requests for any model.
+    pub fn has_decisions(&self) -> bool {
+        match self {
+            ProviderRef::BuiltIn(p) => !p.decisions.is_empty(),
+            ProviderRef::Custom(_) => false,
+        }
+    }
+
     pub fn auth(&self) -> Option<AuthStyle> {
         match self {
             ProviderRef::BuiltIn(p) => Some(p.auth),

@@ -737,5 +737,17 @@
   "errors.imageGenerationsUnavailable": "Kaeso kann seine Bildgenerierungen gerade nicht lesen; versuchen Sie es gleich noch einmal.",
   "errors.imageKeyReplaced": "Der Anbieterschlüssel, der dieses Bild gestartet hat, wurde ersetzt, deshalb erreicht Kaeso es nicht.",
   "errors.imageModelGone": "{provider} bedient das Modell dieses Bildes nicht mehr.",
-  "errors.imageNotKept": "Kaeso hat das Bild gestartet, kann es aber nicht verfolgen; versuchen Sie es gleich noch einmal."
+  "errors.imageNotKept": "Kaeso hat das Bild gestartet, kann es aber nicht verfolgen; versuchen Sie es gleich noch einmal.",
+  "errors.noDecisionsAtProvider": "{provider} bietet keine Entscheidungs-API, die Kaeso aufrufen kann, daher kann `{name}` keine Entscheidungen treffen.",
+  "errors.decisionsNotAtProvider": "{provider} bietet keine Entscheidungs-API, die Kaeso aufrufen kann; entfernen Sie `decisions`.",
+  "errors.decisionsQuestionTypes": "`decisions.question_types` muss mindestens einen Typ nennen.",
+  "errors.decisionsLimits": "Die Limits in `decisions` müssen positiv sein.",
+  "errors.model.notDecisionModel": "Das Modell `{model}` ist ein Generierungsmodell und kann keine Entscheidungsfragen beantworten.",
+  "errors.model.decisionOnly": "Das Modell `{model}` ist ein Entscheidungsmodell; senden Sie es an `/v1/decisions` oder `/v1/systemone`.",
+  "errors.model.questionType": "Das Modell `{model}` beantwortet keine Fragen vom Typ {type}.",
+  "errors.model.maxQuestions": "Das Modell `{model}` beantwortet höchstens {max} Fragen pro Anfrage.",
+  "errors.model.maxOptions": "Das Modell `{model}` nimmt höchstens {max} Optionen pro Auswahlfrage an.",
+  "errors.model.maxLevels": "Das Modell `{model}` nimmt höchstens {max} Stufen pro Bewertungsfrage an.",
+  "errors.model.maxImages": "Das Modell `{model}` nimmt höchstens {max} Bilder pro Anfrage an.",
+  "errors.modelApi.accountNoDecisions": "Ein {product}-Konto kann keine Entscheidungen treffen. Stattdessen in diesem Projekt einen API-Schlüssel für {provider} verwenden."
 }

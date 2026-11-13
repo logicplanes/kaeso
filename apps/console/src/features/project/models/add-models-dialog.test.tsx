@@ -226,6 +226,23 @@ describe("AddModelsDialog", () => {
     expect(rowOf(dialog, "gpt-5-mini")).not.toHaveTextContent("Router");
   });
 
+  it("marks a decision model and shows its input price alone", async () => {
+    signedIn();
+    projectData();
+    modelsApi({
+      hits: [
+        searchHit({ model_id: "gpt-6-luna", decisions: true, input_price: "0.1", output_price: "0" }),
+        searchHit({ model_id: "gpt-5-mini", output_price: null }),
+      ],
+    });
+    const { dialog } = await open();
+
+    expect(await within(dialog).findByText("gpt-6-luna")).toBeInTheDocument();
+    expect(rowOf(dialog, "gpt-6-luna")).toHaveTextContent("Decisions");
+    expect(rowOf(dialog, "gpt-6-luna")).toHaveTextContent("$0.10");
+    expect(rowOf(dialog, "gpt-5-mini")).not.toHaveTextContent("Decisions");
+  });
+
   it("says when KPMR lists no models for the provider", async () => {
     signedIn();
     projectData();

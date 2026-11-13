@@ -25,7 +25,12 @@ const PROJECTS = [
     openai: ["gpt-5.4-mini", "gpt-6-sol", "text-embedding-3-small", "gpt-image-2", "tts-1", "whisper-1"],
     anthropic: ["claude-haiku-5-5", "claude-sonnet-5-5"],
   },
-  { name: "Support triage", share: 3, openai: ["gpt-5.4-mini", "gpt-5.4-nano"], anthropic: ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-haiku-4-5"] },
+  {
+    name: "Support triage",
+    share: 3,
+    openai: ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-6-luna"],
+    anthropic: ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-haiku-4-5"],
+  },
   { name: "Search ranking", share: 2, openai: ["text-embedding-3-large", "text-embedding-3-small", "gpt-5.4-nano"], anthropic: [] },
   { name: "Research agent", share: 1.5, openai: ["gpt-6-sol", "gpt-5.6"], anthropic: ["claude-opus-5-5", "claude-haiku-5-5"] },
   { name: "Internal tools", share: 0.6, openai: ["gpt-5.4-mini", "gpt-image-1-mini"], anthropic: ["claude-haiku-5-5"] },

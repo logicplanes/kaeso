@@ -551,6 +551,75 @@ describe("LogInspector", () => {
     expect(reply).toHaveTextContent("Vectors aren't kept");
   });
 
+  it("shows a decision's questions and each answer with its probabilities", async () => {
+    signedIn();
+    projectData();
+    const asked = {
+      model: "jev-latest",
+      state: "I was charged twice; refund me.",
+      questions: {
+        refund: { type: "noul", instructions: "Does the customer ask for a refund?" },
+        team: { type: "choice", instructions: "Which team?", criteria: { billing: "Payments.", support: "Everything else." } },
+      },
+    };
+    const decided = {
+      format: 2,
+      decide: {
+        model: "gpt-6-luna",
+        answers: [{ value: { predicate: { probability: 0.82 } } }, { value: { choice: { option: 1, probabilities: [0.1, 0.9] } }, confidence: 0.8 }],
+        usage: { input_tokens: 120, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0 },
+      },
+    };
+    logsData({
+      rows: [logRow()],
+      entries: [
+        logEntry({
+          endpoint: "systemone",
+          ingress_dialect: "system_one",
+          egress_dialect: "openai_decisions",
+          usage: { input_tokens: 120, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false },
+          content: logContent(asked, decided),
+        }),
+      ],
+    });
+    const { user } = await renderApp(projectPath("logs?log=req_0001"));
+
+    const request = await openTab(user, "Request");
+    expect(request).toHaveTextContent("I was charged twice; refund me.");
+    expect(within(request).getByText("refund")).toBeInTheDocument();
+    expect(request).toHaveTextContent("Yes/no: Does the customer ask for a refund?");
+    expect(request).toHaveTextContent("billing · support");
+    const reply = await openTab(user, "Reply");
+    expect(reply).toHaveTextContent("Each answer with its probabilities, in the order the questions were asked.");
+    const answers = await within(reply).findByRole("article", { name: "Answers" });
+    expect(answers).toHaveTextContent("refund");
+    expect(answers).toHaveTextContent("support");
+    await user.click(within(reply).getByRole("switch", { name: "Show raw" }));
+    await waitFor(() => expect(within(reply).queryByRole("article", { name: "Answers" })).not.toBeInTheDocument());
+    expect(reply).toHaveTextContent("decide");
+  });
+
+  it("names a decision's questions without a name by their place and its levels without a label by their number", async () => {
+    signedIn();
+    projectData();
+    const asked = {
+      model: "gpt-6-luna",
+      input: [{ role: "user", content: [{ type: "input_text", text: "Export fails in Safari." }] }],
+      questions: [
+        { type: "score", levels: [{}, { label: "high" }] },
+        { type: "predicate", name: "bug", instructions: "A bug?" },
+      ],
+    };
+    logsData({ rows: [logRow()], entries: [logEntry({ ingress_dialect: "openai_decisions", content: logContent(asked, null) })] });
+    const { user } = await renderApp(projectPath("logs?log=req_0001"));
+
+    const request = await openTab(user, "Request");
+    expect(within(request).getByText("Question 1")).toBeInTheDocument();
+    expect(request).toHaveTextContent("0 · high");
+    expect(request).toHaveTextContent("Yes/no: A bug?");
+    expect(request).toHaveTextContent(`"role": "user"`);
+  });
+
   it("draws the reply with how it stopped and the blocks kept as they came", async () => {
     signedIn();
     projectData();

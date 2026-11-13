@@ -167,6 +167,67 @@ pub struct Fields {
     #[doc = "Release date, `YYYY-MM-DD`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub release_date: Option<String>,
+    #[doc = "What it answers as a decision model; absent for a model that makes no decisions."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub decisions: Option<DecisionFields>,
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(deny_unknown_fields)]
+#[cfg_attr(
+    feature = "openapi",
+    schema(
+        description = "What a decision model answers at `/v1/decisions`, `/v1/systemone` and\n\
+    `/v1beta/decisions`: its question types and its limits."
+    )
+)]
+pub struct DecisionFields {
+    #[doc = "Whether it answers decision questions only and generates no text."]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub only: bool,
+    #[doc = "The question types it answers: `predicate`, `choice`, `score`, `box`; absent\n\
+        means the first three."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub question_types: Option<Vec<String>>,
+    #[doc = "The most questions one request may ask."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_questions: Option<u32>,
+    #[doc = "The most options one choice question may have."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_options: Option<u32>,
+    #[doc = "The most levels one score question may have."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_levels: Option<u32>,
+    #[doc = "The most images one request may show."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_images: Option<u32>,
+}
+
+impl DecisionFields {
+    fn from_kpmr(m: &kpmr::Model) -> Option<DecisionFields> {
+        let only = m.is_decision_only();
+        if !only && m.decisions.is_none() {
+            return None;
+        }
+        let d = m.decisions.clone().unwrap_or_default();
+        Some(DecisionFields {
+            only,
+            question_types: (!d.question_types.is_empty()).then_some(d.question_types),
+            max_questions: d.max_questions,
+            max_options: d.max_options,
+            max_levels: d.max_levels,
+            max_images: d.max_images,
+        })
+    }
+
+    /// Whether it answers questions of the KPP type `kind`.
+    pub fn answers(&self, kind: &str) -> bool {
+        match &self.question_types {
+            Some(types) => types.iter().any(|t| t == kind),
+            None => kind != "box",
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -369,7 +430,8 @@ macro_rules! each_field {
             forced_tool_choice,
             efforts,
             timeout_seconds,
-            release_date
+            release_date,
+            decisions
         )
     };
 }
@@ -403,6 +465,7 @@ pub const FIELD_NAMES: &[&str] = &[
     "efforts",
     "timeout_seconds",
     "release_date",
+    "decisions",
 ];
 
 impl Fields {
@@ -522,6 +585,7 @@ impl Fields {
             }),
             timeout_seconds: None,
             release_date: m.release_date.clone(),
+            decisions: DecisionFields::from_kpmr(m),
         }
     }
 
@@ -693,6 +757,9 @@ impl Fields {
                 "The timeout must be 1 to 3600 seconds.",
             ));
         }
+        if let Some(d) = &self.decisions {
+            validate_decisions(d, provider)?;
+        }
         if let Some(d) = &self.release_date {
             let format = time::macros::format_description!("[year]-[month]-[day]");
             if time::Date::parse(d, &format).is_err() {
@@ -706,6 +773,24 @@ impl Fields {
     }
 
     pub fn validate_custom(&self) -> Result<(), FieldError> {
+        // A decision-only model generates nothing: it has no output limit or generation dialect,
+        // and its price is per input token.
+        if self.decisions.as_ref().is_some_and(|d| d.only) {
+            let missing: Vec<&str> = [
+                ("input_modalities", self.input_modalities.is_none()),
+                ("input_price", self.input_price.is_none()),
+            ]
+            .into_iter()
+            .filter_map(|(n, m)| m.then_some(n))
+            .collect();
+            return match missing.first() {
+                None => Ok(()),
+                Some(first) => Err(FieldError::new(
+                    first,
+                    format!("A custom model needs {}.", missing.join(", ")),
+                )),
+            };
+        }
         // A video model has no context or output limit and no generation dialect either, and
         // providers such as Gemini Enterprise Agent Platform publish no price for theirs: it
         // needs its modalities, and its jobs are logged with an unknown cost until it has one.
@@ -773,6 +858,35 @@ impl Fields {
             )),
         }
     }
+}
+
+fn validate_decisions(d: &DecisionFields, provider: &ProviderRef) -> Result<(), FieldError> {
+    if !provider.has_decisions() {
+        return Err(FieldError::new(
+            "decisions",
+            format!(
+                "{} offers no decisions API Kaeso can call; remove `decisions`.",
+                provider.name()
+            ),
+        ));
+    }
+    if let Some(types) = &d.question_types {
+        if types.is_empty() {
+            return Err(FieldError::new(
+                "decisions",
+                "`decisions.question_types` must list at least one type.",
+            ));
+        }
+        check_values("decisions", types, &kpmr::QUESTION_TYPES)?;
+    }
+    let limits = [d.max_questions, d.max_options, d.max_levels, d.max_images];
+    if limits.contains(&Some(0)) {
+        return Err(FieldError::new(
+            "decisions",
+            "The limits in `decisions` must be positive.",
+        ));
+    }
+    Ok(())
 }
 
 fn check_values(name: &str, list: &[String], allowed: &[&str]) -> Result<(), FieldError> {
@@ -870,6 +984,16 @@ pub struct Effective {
 impl Effective {
     pub fn is_embeddings(&self) -> bool {
         EMBEDDINGS.contains(&self.dialect)
+    }
+
+    /// Whether the model answers decision questions, alone or as well as generating.
+    pub fn decides(&self) -> bool {
+        self.fields.decisions.is_some()
+    }
+
+    /// Whether the model answers decision questions only and generates nothing.
+    pub fn decides_only(&self) -> bool {
+        self.fields.decisions.as_ref().is_some_and(|d| d.only)
     }
 
     pub fn accepts(&self, modality: &str) -> bool {

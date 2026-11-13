@@ -68,6 +68,15 @@ Der Katalog ist ein JSON-Dokument in Kaesos eigenem Format, versioniert durch ei
 - **`gateway.egress_dialect`** nennt das API-Format, in dem Kaeso das Modell aufruft, wenn es nicht das Standardformat des Anbieters ist.
 - **Unbekannte Schlüssel werden ignoriert.** Ein neues Feld im Format 1 stört ein älteres Gateway nicht; eine Änderung, die es stören würde, wird Format 2.
 
+### Entscheidungsmodelle
+
+Ein Entscheidungsmodell beantwortet typisierte Fragen mit Wahrscheinlichkeiten, statt Text zu schreiben ([Decisions-API](../api/decisions.md)). KPMR kennzeichnet es auf zwei Arten:
+
+- **`kind: "decision"`** für ein Modell, das nur Entscheidungen trifft, etwa `gemini-decision-1`. Seine Ausgabemodalitäten sind leer, daher bietet ein Gateway, das keine Entscheidungen kennt, es nie für Chat an.
+- **`decisions`** an jedem Modell, das Fragen beantwortet, auch an einem, das Text schreibt, etwa `gpt-6-luna`: `question_types` (`predicate`, `choice`, `score`, `box`) sowie `max_questions`, `max_options`, `max_levels` und `max_images`, jeweils `null`, wenn unbekannt.
+
+Entscheidungsmodelle kosten ihre Eingabe-Tokens; ihr Ausgabepreis ist `0`.
+
 ## Wie das Gateway ihn abruft
 
 Ein Job prüft alle fünf Minuten, ob das Gateway KPMR wieder fragen muss. Steht `kpmr.interval` auf `auto`, folgt es `refresh_seconds` des Katalogs, gehalten zwischen 5 Minuten und 24 Stunden; eine Dauer wie `6h` ersetzt es. Nach einem fehlgeschlagenen Versuch fragt das Gateway innerhalb einer Stunde erneut.

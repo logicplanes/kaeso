@@ -63,7 +63,8 @@ The catalogue entry says what the model can do. Kaeso answers 400 when a request
 - images, PDFs, tools, a JSON schema, or `enabled` thinking or a thinking budget;
 - an effort level Kaeso doesn't know;
 - a forced tool choice (`required`, `any` or a named tool) for a model that takes none, such as Claude Fable 5.1, Opus 5.5 and Sonnet 5.5;
-- embeddings from a generation model, or text from an embeddings model.
+- embeddings from a generation model, or text from an embeddings model;
+- decisions from a generation model, or text from a model that only makes decisions ([Decisions API](../api/decisions.md#what-is-refused)).
 
 A model without effort levels gets no effort instead, a model that doesn't reason no adaptive thinking, and a model that takes only the default temperature no temperature. The reply's `kaeso-left-out` header names what Kaeso left out. An effort the model doesn't list becomes the nearest level it lists, and adaptive thinking for a Claude model without it becomes `enabled` thinking with a budget; the reply's `kaeso-adapted` header names those ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)).
 

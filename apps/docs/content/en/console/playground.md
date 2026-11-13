@@ -6,7 +6,7 @@ order: 10
 
 The **Playground** sends a prompt to up to four of the project's models at once and shows their replies side by side. Each column is its own conversation. Using it needs the right **Use the Playground**, which project admins and developers have.
 
-It lists every kind of model the project can call, and each column takes the form of its model's kind: text, images, speech, sound effects, music, transcription or video. Embeddings, reranking and realtime models aren't listed.
+It lists every kind of model the project can call, and each column takes the form of its model's kind: text, images, speech, sound effects, music, transcription or video. Embeddings, reranking and realtime models aren't listed, nor are models that only make decisions.
 
 ## Compare models
 

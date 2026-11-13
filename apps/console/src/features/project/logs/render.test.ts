@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { embeddingsView, isKnownReplyForm, replyView, requestView, stopLabel } from "./render";
+import { decisionAnswers, decisionView, embeddingsView, isDecisionDialect, isKnownReplyForm, replyView, requestView, stopLabel } from "./render";
 
 const anthropicStream = {
   request: { max_tokens: 300, messages: [{ content: "Stream a short answer.", role: "user" }], model: "fast", stream: true },
@@ -700,5 +700,165 @@ describe("requestView and replyView, edge cases", () => {
       },
     });
     expect(() => replyView({ blocks: [block] })).toThrow("broken block");
+  });
+});
+
+describe("decisions", () => {
+  it("reads the questions of each decision format in the order they were asked", () => {
+    const openai = decisionView("openai_decisions", {
+      model: "gpt-6-luna",
+      input: "Hi",
+      questions: [
+        { type: "predicate", name: "refund", instructions: [{ type: "input_text", text: "A refund?" }] },
+        { type: "choice", instructions: "Team?", choices: [{ value: "billing", description: "Payments." }, { value: true }] },
+        { type: "score", instructions: "Urgency?", levels: [{ label: "low" }, { label: "high", description: { what: "today" } }] },
+      ],
+    });
+    expect(openai?.state).toBe("Hi");
+    expect(openai?.questions).toEqual([
+      { kind: "predicate", name: "refund", instructions: "A refund?" },
+      { kind: "choice", instructions: "Team?", options: [{ value: "billing", description: "Payments." }, { value: "true" }] },
+      { kind: "score", instructions: "Urgency?", levels: [{ label: "low" }, { label: "high", description: '{"what":"today"}' }] },
+    ]);
+    const systemOne = decisionView("system_one", {
+      model: "jev-latest",
+      state: { order: 7 },
+      questions: {
+        refund: { type: "noul", instructions: "A refund?", criteria: { true: "Money back.", false: null } },
+        box: { type: "box", instructions: "the hand" },
+        urgency: { type: "score", criteria: ["low", { label: "high" }] },
+      },
+    });
+    expect(systemOne?.state).toEqual({ order: 7 });
+    expect(systemOne?.questions).toEqual([
+      { name: "refund", kind: "predicate", instructions: "A refund?", whenTrue: "Money back." },
+      { name: "box", kind: "box", instructions: "the hand" },
+      { name: "urgency", kind: "score", levels: [{ label: "low" }, { label: '{"label":"high"}' }] },
+    ]);
+    const gemini = decisionView("gemini_decisions", {
+      model: "gemini-decision-1",
+      input: [{ type: "text", text: "Hi" }],
+      questions: {
+        refund: { type: "noul", instructions: "A refund?", criteria: { true_description: "Yes.", false_description: "" } },
+        team: { type: "choice", instructions: "Team?", criteria: { billing: "", support: "Rest." } },
+      },
+    });
+    expect(gemini?.questions).toEqual([
+      { name: "refund", kind: "predicate", instructions: "A refund?", whenTrue: "Yes." },
+      { name: "team", kind: "choice", instructions: "Team?", options: [{ value: "billing" }, { value: "support", description: "Rest." }] },
+    ]);
+  });
+
+  it("reads an uploaded System One request, which the log keeps in Kaeso's own form", () => {
+    const upload = decisionView("system_one", {
+      model: "jev-1.14.0",
+      input: { text: "Is <photo> a cat?" },
+      questions: [
+        { name: "cat", instructions: { text: "A cat?" }, kind: { predicate: {} } },
+        { name: "kind", kind: { choice: { options: [{ value: { text: "tabby" } }, { value: { bool: true } }] } } },
+        { kind: { score: { levels: [{ label: "low" }, {}] } } },
+      ],
+      assets: { "<photo>": { source: { base64: { data: { kaeso_media: { media_type: "image/png", bytes: 68, reason: "not_kept" } } } } } },
+    });
+    expect(upload?.state).toBe("Is <photo> a cat?");
+    expect(upload?.questions).toEqual([
+      { kind: "predicate", name: "cat", instructions: "A cat?" },
+      { kind: "choice", name: "kind", options: [{ value: "tabby" }, { value: "true" }] },
+      { kind: "score", levels: [{ label: "low" }, {}] },
+    ]);
+  });
+
+  it("returns null for a body that isn't a decision it can read", () => {
+    expect(decisionView("openai_chat", { model: "m", input: "x", questions: [] })).toBeNull();
+    expect(decisionView("system_one", { model: "m", state: "x", questions: { q: { type: "extract" } } })).toBeNull();
+    expect(decisionView("gemini_decisions", "text")).toBeNull();
+    expect(decisionView("openai_decisions", { input: "x" })).toBeNull();
+    expect(decisionView("gemini_decisions", { input: "x" })).toBeNull();
+    expect(isDecisionDialect("system_one") && !isDecisionDialect(null)).toBe(true);
+  });
+
+  it("reads the logged answers, a refusal included, and nothing else as answers", () => {
+    const reply = {
+      format: 2,
+      decide: {
+        model: "gpt-6-luna",
+        answers: [
+          { value: { predicate: { probability: 0.82 } } },
+          { value: { choice: { option: 0, probabilities: [0.7, null] } }, confidence: 0.4 },
+          { value: { score: { score: 1.6, probabilities: [0, 0.4, 0.6] } }, confidence: 0.5 },
+          { value: { box: { top: 0.1, bottom: 0.9, left: 0.2, right: 0.8 } } },
+          { value: { refusal: {} } },
+        ],
+      },
+    };
+    expect(isKnownReplyForm(reply)).toBe(true);
+    expect(decisionAnswers(reply)).toEqual({
+      model: "gpt-6-luna",
+      answers: [
+        { kind: "predicate", probability: 0.82 },
+        { kind: "choice", option: 0, probabilities: [0.7, null], confidence: 0.4 },
+        { kind: "score", score: 1.6, probabilities: [0, 0.4, 0.6], confidence: 0.5 },
+        { kind: "box", top: 0.1, bottom: 0.9, left: 0.2, right: 0.8 },
+        { kind: "refusal" },
+      ],
+    });
+    expect(decisionAnswers({ format: 2, decide: { answers: [{ value: { extract: {} } }] } })).toBeNull();
+    expect(decisionAnswers({ format: 2, decide: { answers: [{ value: { predicate: {} } }] } })).toBeNull();
+    expect(decisionAnswers({ format: 2, image: {} })).toBeNull();
+    expect(decisionAnswers("text")).toBeNull();
+  });
+});
+
+describe("decision bodies it can't read", () => {
+  const openai = (question: unknown) => decisionView("openai_decisions", { input: "x", questions: [question] });
+  const keyed = (question: unknown) => decisionView("system_one", { state: "x", questions: { q: question } });
+  const kpp = (question: unknown) => decisionView("system_one", { input: { json: { a: 1 } }, questions: [question] });
+
+  it("refuses odd questions in every form, instead of guessing", () => {
+    for (const odd of ["x", { type: 5 }, { type: "extract" }, { type: "choice", choices: ["billing"] }]) expect(openai(odd)).toBeNull();
+    for (const odd of [7, { type: 5 }, { type: "choice", criteria: ["billing"] }]) expect(keyed(odd)).toBeNull();
+    for (const odd of [
+      "x",
+      { kind: "predicate" },
+      { kind: {} },
+      { kind: { extract: {} } },
+      { kind: { choice: { options: [{ value: "billing" }] } } },
+      { kind: { choice: { options: ["x"] } } },
+    ])
+      expect(kpp(odd)).toBeNull();
+    expect(decisionView("system_one", { state: "x", questions: [{ kind: { box: {} } }] })).toEqual({ state: undefined, questions: [{ kind: "box" }] });
+  });
+
+  it("writes instructions and descriptions that aren't text as their JSON", () => {
+    expect(kpp({ kind: { predicate: null }, instructions: { json: { step: 1 } } })).toEqual({
+      state: { a: 1 },
+      questions: [{ kind: "predicate", instructions: '{"step":1}' }],
+    });
+    expect(keyed({ type: "noul", instructions: ["Look", "closely"], criteria: { true: 1 } })?.questions).toEqual([
+      { name: "q", kind: "predicate", instructions: '["Look","closely"]', whenTrue: "1" },
+    ]);
+    expect(keyed({ type: "noul" })?.questions).toEqual([{ name: "q", kind: "predicate" }]);
+    expect(keyed({ type: "noul", criteria: { false: "No." } })?.questions).toEqual([{ name: "q", kind: "predicate", whenFalse: "No." }]);
+    expect(keyed({ type: "score", criteria: [null, "high"] })?.questions).toEqual([{ name: "q", kind: "score", levels: [{ label: "" }, { label: "high" }] }]);
+    expect(() => keyed({ type: "noul", instructions: 1n })).toThrow(TypeError);
+    expect(openai({ type: "score", levels: ["low"] })?.questions).toEqual([{ kind: "score", levels: [{}] }]);
+  });
+
+  it("refuses odd answers and reads a refusal however it is written", () => {
+    const decided = (answer: unknown) => decisionAnswers({ format: 2, decide: { answers: [answer] } });
+    expect(decided("x")).toBeNull();
+    expect(decided({ value: "predicate" })).toBeNull();
+    expect(decided({ value: { refusal: null } })).toEqual({ model: "", answers: [{ kind: "refusal" }] });
+    expect(decisionAnswers({ format: 3, decide: { answers: [] } })).toBeNull();
+    expect(decided({ value: {} })).toBeNull();
+    const broken = {
+      format: 2,
+      decide: {
+        get answers(): unknown {
+          throw new RangeError("unreadable");
+        },
+      },
+    };
+    expect(() => decisionAnswers(broken)).toThrow(RangeError);
   });
 });

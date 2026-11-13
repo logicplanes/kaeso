@@ -333,6 +333,10 @@ try {
 
 ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry-After` 以整秒给出等待时间，向上取整。Kaeso 不提供的路径（例如 `/v1/dubbing`）以这种形式返回 404（[ElevenLabs API](elevenlabs.md#kaeso-拒绝的内容)）。
 
+## System One 格式
+
+`/v1/systemone` 上的应用得到 TypeSafe 形式的错误，与 TypeSafe 的 SDK 读取的方式一致：带消息的 `{"detail": "…"}`，或在请求某个字段有误时，列出带 `loc` 的问题列表。过载的服务商返回 529。`/v1/decisions` 上的错误采用 [OpenAI 格式](#openai-格式)，`/v1beta/decisions` 上的错误采用 [Gemini 格式](#gemini-格式)；Gemini 的安全拦截保留其 `code`，例如 `safety`。[决策 API](decisions.md#拒绝的内容)列出了 Kaeso 拒绝的内容。
+
 ## 原因
 
 消息会说明原因以及该怎么做。各状态码背后的原因如下：

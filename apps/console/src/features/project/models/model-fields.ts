@@ -1,6 +1,6 @@
 import type { Capability } from "@logicplanes/kaeso-ui";
 import { formatContext, formatNumber, formatPrice, formatUSD } from "@logicplanes/kaeso-ui/format";
-import type { CatalogueModelView, Fields } from "~/api/generated/types";
+import type { CatalogueModelView, DecisionFields, Fields } from "~/api/generated/types";
 import { t } from "~/i18n";
 
 export function capabilities(f: Fields): Capability[] {
@@ -27,7 +27,7 @@ export function contextLabel(tokens: number | null | undefined): string {
   return tokens ? formatContext(tokens) : "—";
 }
 
-export function priceLabel(f: Fields): string {
+export function priceLabel(f: Pick<Fields, "input_price" | "output_price">): string {
   if (!f.input_price && !f.output_price) return "—";
   const short = (v: string | null | undefined) => (v ? (Number(v) % 1 === 0 ? formatUSD(v, { decimals: 0 }) : formatPrice(v)) : "—");
   if (f.input_price && f.output_price && Number(f.output_price) === 0) return short(f.input_price);
@@ -74,7 +74,35 @@ export function overriddenFields(m: CatalogueModelView): string[] {
     .map(([k]) => k);
 }
 
-export function dialectPill(d: string): string {
+export function questionTypeLabel(type: string): string {
+  switch (type) {
+    case "predicate":
+      return t("models.question.predicate", "Yes/no");
+    case "choice":
+      return t("models.question.choice", "Choice");
+    case "score":
+      return t("models.question.score", "Score");
+    case "box":
+      return t("models.question.box", "Box");
+    default:
+      return type;
+  }
+}
+
+/** What a decision model answers, as the model sheet lists it: what it does, its question types, then its limits. */
+export function decisionLabels(d: DecisionFields): string[] {
+  const types = (d.question_types ?? ["predicate", "choice", "score"]).map(questionTypeLabel).join(t("models.listSeparator", ", "));
+  const limits = [
+    d.max_questions ? t("models.decisions.maxQuestions", "At most {count} questions", { count: formatNumber(d.max_questions) }) : null,
+    d.max_options ? t("models.decisions.maxOptions", "At most {count} options per choice", { count: formatNumber(d.max_options) }) : null,
+    d.max_levels ? t("models.decisions.maxLevels", "At most {count} levels per score", { count: formatNumber(d.max_levels) }) : null,
+    d.max_images ? t("models.decisions.maxImages", "At most {count} images", { count: formatNumber(d.max_images) }) : null,
+  ].filter((l): l is string => !!l);
+  return [d.only ? t("models.decisions.only", "Decisions only") : t("models.decisions.also", "Decisions and generation"), types, ...limits];
+}
+
+export function dialectPill(d: string, decisionsOnly = false): string {
+  if (decisionsOnly) return "decisions";
   return (
     {
       openai_responses: "responses",
@@ -97,11 +125,14 @@ export function dialectPill(d: string): string {
       veo: "videos",
       gemini_interactions: "videos",
       dashscope: "videos",
+      openai_decisions: "decisions",
+      system_one: "decisions",
+      gemini_decisions: "decisions",
     }[d] ?? d
   );
 }
 
-export type FieldKind = "text" | "number" | "price" | "tiers" | "units" | "bool" | "list" | "dialect" | "date";
+export type FieldKind = "text" | "number" | "price" | "tiers" | "units" | "bool" | "list" | "dialect" | "date" | "decisions";
 
 export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind }[] {
   return [
@@ -133,5 +164,6 @@ export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind
     { key: "efforts", label: t("models.field.efforts", "Efforts"), kind: "list" },
     { key: "timeout_seconds", label: t("models.field.timeout", "Timeout"), kind: "number" },
     { key: "release_date", label: t("models.field.released", "Released"), kind: "date" },
+    { key: "decisions", label: t("models.field.decisions", "Decisions"), kind: "decisions" },
   ];
 }

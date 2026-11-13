@@ -48,6 +48,9 @@ export const DIALECTS: Record<string, string> = {
   veo: "Veo",
   gemini_interactions: "Gemini Interactions",
   dashscope: "DashScope",
+  openai_decisions: "OpenAI Decisions",
+  system_one: "System One",
+  gemini_decisions: "Gemini Decisions",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

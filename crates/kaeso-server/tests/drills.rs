@@ -52,6 +52,7 @@ async fn malformed_json_is_refused_in_every_dialect() {
         ("/v1/embeddings", false),
         ("/v1/messages", true),
         ("/v1/messages/count_tokens", true),
+        ("/v1/decisions", false),
     ];
     let bodies: [&'static [u8]; 5] = [
         b"",
@@ -79,6 +80,15 @@ async fn malformed_json_is_refused_in_every_dialect() {
                 assert!(json["error"]["message"].is_string(), "{path}: {json}");
             }
         }
+    }
+    for body in bodies {
+        let (status, json) = raw(&env, "/v1/systemone", false, body).await;
+        assert!(
+            matches!(status.as_u16(), 400 | 422),
+            "{:?}: {status} {json}",
+            String::from_utf8_lossy(body)
+        );
+        assert!(!json["detail"].is_null(), "System One's shape: {json}");
     }
     assert!(env.mock.received().is_empty());
 }

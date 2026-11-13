@@ -184,6 +184,9 @@ function toolCall(dialect, body, raw) {
 }
 
 function dialectOf(path, headers) {
+  if (path === "/v1beta/decisions") return "gemini_decisions";
+  if (path.endsWith("/v1/systemone")) return "system_one";
+  if (path.endsWith("/v1/decisions")) return "decisions";
   if (path.startsWith("/v1/messages") || (path.startsWith("/v1/models") && headers["x-api-key"])) return "anthropic_messages";
   if (path.startsWith("/v1/responses")) return "openai_responses";
   if (path.startsWith("/v1/embeddings")) return "openai_embeddings";
@@ -192,7 +195,90 @@ function dialectOf(path, headers) {
 
 function authorized(dialect, headers) {
   if (dialect === "anthropic_messages") return Boolean(headers["x-api-key"]);
+  if (dialect === "gemini_decisions") return Boolean(headers["x-goog-api-key"]);
   return /^Bearer \S+/.test(headers.authorization ?? "");
+}
+
+// Each question gets an answer in the format it was asked in: yes 0.82, the first option, a score near the top level.
+const YES = 0.82;
+
+function spread(n) {
+  return Array.from({ length: n }, (_, i) => (i === 0 ? 0.7 : 0.3 / Math.max(1, n - 1)));
+}
+
+function scored(n) {
+  const p = Array.from({ length: n }, (_, i) => (n === 1 ? 1 : i === n - 1 ? 0.6 : i === n - 2 ? 0.4 : 0));
+  return { p, score: p.reduce((sum, x, i) => sum + i * x, 0) };
+}
+
+const byIndex = (values) => Object.fromEntries(values.map((v, i) => [String(i), v]));
+
+function decisions(res, dialect, body, shape) {
+  if (dialect === "decisions" && body.state !== undefined) dialect = "system_one";
+  if (dialect === "decisions") {
+    const answers = (body.questions ?? []).map((q) => {
+      const named = { name: q.name ?? null };
+      if (q.type === "choice") {
+        const p = spread(q.choices.length);
+        return {
+          type: "choice",
+          ...named,
+          choice: q.choices[0].value,
+          probabilities: q.choices.map((c, i) => ({ value: c.value, probability: p[i] })),
+          confidence: 0.6,
+        };
+      }
+      if (q.type === "score") {
+        const { p, score } = scored(q.levels.length);
+        return { type: "score", ...named, score, probabilities: q.levels.map((l, i) => ({ value: i, label: l.label, probability: p[i] })), confidence: 0.5 };
+      }
+      return { type: "predicate", ...named, probability: YES };
+    });
+    const usage = {
+      input_tokens: shape.input,
+      input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+      output_tokens: 0,
+      output_tokens_details: { reasoning_tokens: 0 },
+      total_tokens: shape.input,
+    };
+    return sendJson(res, 200, { model: body.model, answers, usage });
+  }
+  const gemini = dialect === "gemini_decisions";
+  const answers = Object.fromEntries(
+    Object.entries(body.questions ?? {}).map(([key, q]) => {
+      if (q.type === "choice") {
+        const keys = Object.keys(q.criteria ?? {});
+        const p = spread(keys.length);
+        return [key, { type: "choice", choice: keys[0], probabilities: Object.fromEntries(keys.map((k, i) => [k, p[i]])), confidence: gemini ? 0.7 : 0.6 }];
+      }
+      if (q.type === "score") {
+        const levels = q.criteria ?? [];
+        const { p, score } = scored(levels.length);
+        return [
+          key,
+          {
+            type: "score",
+            score,
+            legend: byIndex(levels.map((l) => (typeof l === "string" ? l : JSON.stringify(l)))),
+            probabilities: byIndex(p),
+            confidence: gemini ? 0.6 : 0.5,
+          },
+        ];
+      }
+      if (q.type === "box") return [key, { type: "box", box: { top: 0.1, bottom: 0.9, left: 0.2, right: 0.8 }, confidence: null }];
+      return [key, gemini ? { type: "noul", noul: YES, confidence: YES } : { type: "noul", noul: YES }];
+    }),
+  );
+  if (gemini) {
+    const usage = {
+      total_input_tokens: shape.input,
+      input_tokens_by_modality: [{ modality: "text", tokens: shape.input }],
+      total_output_tokens: 0,
+      total_tokens: shape.input,
+    };
+    return sendJson(res, 200, { answers, usage });
+  }
+  return sendJson(res, 200, { model: body.model, answers, usage: { input_tokens: shape.input, output_tokens: Object.keys(answers).length } });
 }
 
 function sendJson(res, status, body, headers = {}) {
@@ -541,10 +627,11 @@ async function handle(req, res) {
   if (path === "/v1/audio/speech") return speech(res, body);
   const failing = typeof body.model === "string" ? failureFor(raw, body.model) : undefined;
   if (failing !== undefined) return sendError(res, dialect, failing);
-  const scripted = dialect === "openai_embeddings" ? undefined : scriptedReply(body);
+  const scripted = ["openai_embeddings", "decisions", "system_one", "gemini_decisions"].includes(dialect) ? undefined : scriptedReply(body);
   const shape = scripted === undefined ? shapeOf(raw) : scriptedShape(raw, body, scripted);
   if (path === "/v1/messages/count_tokens") return sendJson(res, 200, { input_tokens: shape.input });
   if (path === "/v1/responses/input_tokens") return sendJson(res, 200, { object: "response.input_tokens", input_tokens: shape.input });
+  if (dialect === "decisions" || dialect === "system_one" || dialect === "gemini_decisions") return decisions(res, dialect, body, shape);
   if (dialect === "openai_embeddings") return embeddings(res, body);
   const call = toolCall(dialect, body, raw);
   if (dialect === "anthropic_messages") return messages(res, body, shape, call);

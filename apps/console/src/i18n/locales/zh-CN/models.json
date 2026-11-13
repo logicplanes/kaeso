@@ -437,5 +437,19 @@
   "models.field.inputAudioPrice": "音频输入价格",
   "models.field.outputAudioPrice": "音频输出价格",
   "models.unit.video": "视频",
-  "models.unit.duration": "时长 {seconds} 秒"
+  "models.unit.duration": "时长 {seconds} 秒",
+  "models.decisionsBadge": "决策",
+  "models.question.predicate": "是/否",
+  "models.question.choice": "选择",
+  "models.question.score": "评分",
+  "models.question.box": "边界框",
+  "models.decisions.maxQuestions": "最多 {count} 个问题",
+  "models.decisions.maxOptions": "每个选择题最多 {count} 个选项",
+  "models.decisions.maxLevels": "每个评分题最多 {count} 个等级",
+  "models.decisions.maxImages": "最多 {count} 张图片",
+  "models.decisions.only": "仅决策",
+  "models.decisions.also": "决策和生成",
+  "models.field.decisions": "决策",
+  "models.problem.decisionPrice": "自定义决策模型需要其输入价格。",
+  "models.modality.decisions": "决策"
 }

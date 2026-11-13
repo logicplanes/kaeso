@@ -23,7 +23,7 @@ flowchart TD
   encode -- Messages --> provider
 ```
 
-KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat Completions, Responses and Embeddings, Anthropic Messages, and Gemini with its embeddings. The reply takes the same way back, event by event for a stream. Embeddings go only to embeddings models, which only some [providers](supported-providers.md) have. [Model API](../api/model-api.md) lists the endpoints of each format.
+KPP, the Kaeso Provider Protocol, has a codec for each API format: OpenAI Chat Completions, Responses and Embeddings, Anthropic Messages, and Gemini with its embeddings. The reply takes the same way back, event by event for a stream. Embeddings go only to embeddings models, which only some [providers](supported-providers.md) have. Decisions in OpenAI's, TypeSafe's and Gemini's decision formats cross among themselves and go only to decision models ([Decisions API](../api/decisions.md)). [Model API](../api/model-api.md) lists the endpoints of each format.
 
 ## Three rules
 

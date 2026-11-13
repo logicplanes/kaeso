@@ -37,7 +37,7 @@ flowchart TD
 | 字段 | 成立的情形 |
 | --- | --- |
 | `header` | 请求头 `equals`、`not_equals` 或 `contains` 某个值，或为 `present`、`absent`。名称为小写，值按原样精确比较，最多 200 个字符。同一请求头发送两次时，只要其中一个值匹配，`equals` 和 `contains` 即成立 |
-| `format` | 应用的 API 格式 `in` 或 `not_in` 一个列表：`openai_chat`、`openai_responses`、`anthropic_messages`、`openai_embeddings`、`gemini`、`gemini_embeddings` |
+| `format` | 应用的 API 格式 `in` 或 `not_in` 一个列表：`openai_chat`、`openai_responses`、`anthropic_messages`、`openai_embeddings`、`gemini`、`gemini_embeddings`、`openai_decisions`、`system_one`、`gemini_decisions` |
 | `feature` | 请求使用或不使用 `images`、`pdfs`、`tools`、`reasoning`、`structured_output`（JSON schema）或 `streaming` |
 | `input_tokens` | 输入 Token 数 `at_least` 或 `below` 某个值，按每 4 字节一个 Token 从请求大小估算 |
 | `key`、`member`、`service_account` | 发送请求的 API 密钥、成员或服务账号 `in` 或 `not_in` 一个最多 100 项的列表 |

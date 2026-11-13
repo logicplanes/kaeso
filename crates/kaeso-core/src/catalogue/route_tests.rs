@@ -323,6 +323,17 @@ fn conditions_branch_on_headers_formats_features_tokens_and_callers() {
         AppFormat::of(kaeso_kpp::DialectId::GeminiEmbeddings),
         Some(AppFormat::GeminiEmbeddings)
     );
+    let decisions = with(json!({ "field": "format", "op": "in",
+        "value": ["openai_decisions", "system_one", "gemini_decisions"] }));
+    assert_eq!(took(&decisions, &w), id(2));
+    for d in [
+        kaeso_kpp::DialectId::OpenAiDecisions,
+        kaeso_kpp::DialectId::SystemOne,
+        kaeso_kpp::DialectId::GeminiDecisions,
+    ] {
+        w.format = AppFormat::of(d).unwrap();
+        assert_eq!(took(&decisions, &w), id(1), "{d}");
+    }
     w.format = AppFormat::AnthropicMessages;
 
     let images = with(json!({ "field": "feature", "op": "used", "value": "images" }));

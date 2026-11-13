@@ -8,6 +8,7 @@ import { locale, t, type Locale } from "~/i18n";
 import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { mediaCount, mediaLabel, mediaShort } from "./media";
+import { isDecisionDialect } from "./render";
 import { readStoredJson, writeStored } from "~/storage";
 import { inZone } from "~/format/zone";
 import { CodeText } from "~/kaeso/code-text";
@@ -284,6 +285,8 @@ const EMBEDDINGS_DIALECTS: readonly string[] = ["openai_embeddings", "gemini_emb
 export const isEmbedding = (row: Pick<LogView, "ingress_dialect" | "egress_dialect">) =>
   EMBEDDINGS_DIALECTS.includes(row.ingress_dialect) || (row.egress_dialect !== null && EMBEDDINGS_DIALECTS.includes(row.egress_dialect));
 
+export const isDecision = (row: Pick<LogView, "ingress_dialect">) => isDecisionDialect(row.ingress_dialect);
+
 export const cachedShare = (u: LogView["usage"]): number | null => {
   const input = inputTokens(u);
   return input > 0 ? u.cache_read_tokens / input : null;
@@ -310,6 +313,7 @@ function TokensCell({ row }: { row: LogView }) {
     u.cache_read_tokens && t("logs.tokens.cacheRead", "{count} cache read", { count: formatNumber(u.cache_read_tokens) }),
     u.cache_write_tokens && t("logs.tokens.cacheWrite", "{count} cache write", { count: formatNumber(u.cache_write_tokens) }),
     u.reasoning_tokens && t("logs.tokens.reasoning", "{count} reasoning", { count: formatNumber(u.reasoning_tokens) }),
+    isDecision(row) && t("logs.tokens.decision", "A decision; its output tokens cost nothing"),
   ].filter(Boolean);
   if (u.estimated) detail.unshift(t("logs.tokens.estimated", "Estimated: the stream ended before the provider's final count"));
   const text = `${u.estimated ? "≈ " : ""}${formatNumber(inputTokens(u))} / ${formatNumber(u.output_tokens)}`;

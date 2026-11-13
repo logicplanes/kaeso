@@ -333,6 +333,10 @@ The error body follows ElevenLabs' documented shape, with the same value in `cod
 
 An error ElevenLabs itself sent reaches the app as ElevenLabs sent it, with its status. `Retry-After` gives the wait in whole seconds, rounded up. A path Kaeso doesn't serve, such as `/v1/dubbing`, answers 404 in this shape ([ElevenLabs API](elevenlabs.md#what-kaeso-refuses)).
 
+## System One format
+
+An app on `/v1/systemone` gets errors in TypeSafe's shape, as TypeSafe's SDK reads them: `{"detail": "…"}` with the message, or a list of problems with their `loc` for a field the request got wrong. An overloaded provider answers 529. Errors on `/v1/decisions` are in the [OpenAI format](#openai-formats), and errors on `/v1beta/decisions` in the [Gemini format](#gemini-format); a Gemini safety block keeps its `code`, such as `safety`. The [Decisions API](decisions.md#what-is-refused) lists what Kaeso refuses.
+
 ## Causes
 
 The message names the cause and what to do. These are the causes behind each status:
