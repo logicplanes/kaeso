@@ -477,6 +477,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a TypeSafe key, which has no fixed prefix, with TypeSafe's console keys page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "typesafe", name: "TypeSafe decisions", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "TypeSafe");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your TypeSafe API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: (name) => name.startsWith("console.typesafe.ai") });
+    expect(link).toHaveAttribute("href", "https://console.typesafe.ai/keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(
+      "Create one at console.typesafe.ai under API keys.",
+    );
+    const secret = within(dialog).getByLabelText("TypeSafe API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "ts-0123abcd");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "TypeSafe decisions");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("TypeSafe decisions is the TypeSafe default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "typesafe", name: "TypeSafe decisions", secret: "ts-0123abcd", make_default: false },
+    ]);
+  });
+
   it("adds a Cloudflare AI Gateway token with the account it calls and, optionally, its gateway", async () => {
     on(
       "POST",

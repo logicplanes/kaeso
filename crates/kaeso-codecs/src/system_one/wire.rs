@@ -2,7 +2,7 @@ use kaeso_kpp::RawJson;
 use serde::{Deserialize, Serialize};
 use serde_json::Number;
 
-use crate::wire::{B64, Maybe};
+use crate::wire::{B64, Ext, Maybe};
 
 /// `SystemOneRequest` as an app sends it.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -135,4 +135,16 @@ pub(super) struct BoxWire {
 pub(super) struct RefusalAnswerWire {
     #[serde(rename = "type")]
     pub ty: String,
+}
+
+/// TypeSafe's own listing, `ModelMetadataList`: `{"models": [{"name", "description",
+/// "release_date"}]}`.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub(super) struct ModelsWire {
+    pub models: Vec<Ext<ModelWire>>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub(super) struct ModelWire {
+    pub name: String,
 }

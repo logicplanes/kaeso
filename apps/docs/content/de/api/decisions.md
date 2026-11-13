@@ -125,6 +125,7 @@ Kaeso sendet Entscheidungen über die eigene Decisions-API jedes Anbieters, glei
 | Baseten | System One | `/v1/systemone` | Bilder in einer Nutzernachricht, höchstens 16; keine Box-Fragen |
 | Fireworks AI | System One | `/inference/v1/systemone` | nur Text; keine Box-Fragen |
 | Perplexity | System One | `/v1/decisions` | Decider-Modelle; Bilder als Data-URLs im State, höchstens 8; keine Box-Fragen |
+| TypeSafe | System One | `/v1/systemone` | Jev; Bilder als Assets oder hochgeladene Teile; Box-Fragen mit Jev 1.14; langer Kontext, wenn eine Anfrage ihn braucht |
 
 Alle anderen Anbieter, Gemini Enterprise Agent Platform und eigene Anbieter haben in Kaeso noch keine Decisions-API. Eine Anfrage an einen von ihnen wird abgelehnt, bevor etwas gesendet wird, zum Beispiel „Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.“. Ebenso eine Anfrage an OpenAI in einem Projekt, dessen OpenAI-Schlüssel ein [ChatGPT-Konto](../console/provider-keys.md#mit-einem-chatgpt-konto-anmelden) ist.
 
@@ -147,7 +148,7 @@ Ein reines Entscheidungsmodell lehnt Chat, Token-Zählung und Embeddings ab: „
 
 - **Konfidenz** bedeutet bei jedem Anbieter etwas anderes. Wechselt eine Antwort das Format, berechnet Kaeso sie aus den Wahrscheinlichkeiten nach der Regel des Formats der App; eine Antwort im eigenen Format des Anbieters behält dessen Wert.
 - **Ablehnungen.** OpenAI kann einzelne Fragen ablehnen. Eine System-One-App erhält `{"type": "refusal"}` unter dem Schlüssel der Frage; eine Gemini-App, die keine Ablehnung pro Frage kennt, erhält 400 mit den abgelehnten Fragen.
-- **`kaeso-adapted`** nennt, was der Anbieter nur in anderer Form annimmt: `names` (Fragen umbenannt in `q0`, `q1` und so weiter), `booleans` (Auswahlwerte `true` und `false` als Text), `levels`, `criteria` (Ja/Nein-Kriterien in die Anweisungen von OpenAI eingefügt), `state` (JSON-State als Text gesendet) und `instructions`.
+- **`kaeso-adapted`** nennt, was der Anbieter nur in anderer Form annimmt: `names` (Fragen umbenannt in `q0`, `q1` und so weiter), `booleans` (Auswahlwerte `true` und `false` als Text), `levels`, `criteria` (Ja/Nein-Kriterien in die Anweisungen von OpenAI eingefügt), `state` (JSON-State als Text gesendet), `instructions` und `long_context` (der Long-Context-Header von TypeSafe, gesendet für eine Anfrage, die Kaeso über dem üblichen Kontext von TypeSafe schätzt).
 - **`kaeso-left-out`** nennt Hinweise, für die das Format des Anbieters keinen Platz hat: `cache` (`prompt_cache_*` von OpenAI) und `user` (`safety_identifier`).
 
 ## Kosten, Cache und Logs

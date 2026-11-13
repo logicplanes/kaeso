@@ -24,6 +24,7 @@ const providers: ProviderPickerOption[] = [
   { id: "ollama-cloud", name: "Ollama Cloud" },
   { id: "openrouter", name: "OpenRouter" },
   { id: "perplexity", name: "Perplexity" },
+  { id: "typesafe", name: "TypeSafe" },
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
   { id: "siliconflow", name: "SiliconFlow" },

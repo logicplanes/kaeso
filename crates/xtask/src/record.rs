@@ -795,6 +795,10 @@ mod tests {
             Dialect::SystemOne.path_at(known("openrouter")),
             Some("/v1/systemone")
         );
+        let typesafe = known("typesafe");
+        assert!(Dialect::SystemOne.speaks(typesafe));
+        assert_eq!(Dialect::SystemOne.path_at(typesafe), Some("/v1/systemone"));
+        assert!(!Dialect::OpenaiChat.speaks(typesafe));
         assert!(!Dialect::GeminiDecisions.speaks(known("openrouter")));
         assert_eq!(
             args(&["gemini_embeddings", "--all"]).dialect,
@@ -815,6 +819,7 @@ mod tests {
         assert_eq!(id(&["openai_chat", "--all"]).unwrap(), "openai");
         assert_eq!(id(&["openai_embeddings", "--all"]).unwrap(), "openai");
         assert_eq!(id(&["gemini", "--all"]).unwrap(), "google");
+        assert_eq!(id(&["system_one", "--all"]).unwrap(), "typesafe");
         assert_eq!(
             id(&["gemini_embeddings", "--provider", "google", "--all"]).unwrap(),
             "google"

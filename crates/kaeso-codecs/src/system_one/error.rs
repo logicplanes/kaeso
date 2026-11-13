@@ -1,6 +1,8 @@
 //! System One's errors (<https://docs.typesafe.ai/api/errors>): `{"detail": …}` with a string or
 //! an object for a broken rule (400), `{"detail": [{"loc", "msg", "type"}]}` for a body that fails
-//! validation (422), and 401, 413, 415, 429 and 529 for the rest.
+//! validation (422), and 401, 413, 415, 429 and 529 for the rest. A refused key is
+//! `{"detail": {"error_type": "authentication_error", "message": …}}`: 401 for a key TypeSafe
+//! doesn't know and 403 for a request without one (recorded 2026-11-13).
 
 use kaeso_kpp::{ErrorKind, KppError, Origin};
 use serde_json::{Value, json};
@@ -9,9 +11,12 @@ use super::DIALECT;
 use crate::codec::{EncodedError, HeaderList, parse_retry_after};
 use crate::wire::Short;
 
-fn kind_for(status: u16, text: &str) -> ErrorKind {
+fn kind_for(status: u16, text: &str, detail: &Value) -> ErrorKind {
     if text.contains("max_tokens_exceeded") {
         return ErrorKind::ContextTooLong;
+    }
+    if detail.get("error_type").and_then(Value::as_str) == Some("authentication_error") {
+        return ErrorKind::Authentication;
     }
     match status {
         400 | 415 | 422 => ErrorKind::InvalidRequest,
@@ -78,7 +83,7 @@ pub(crate) fn decode(status: u16, headers: &HeaderList, body: &[u8]) -> KppError
         Short(&message, 2000).to_string()
     };
     let text = String::from_utf8_lossy(body);
-    let mut err = KppError::new(kind_for(status, &text), message)
+    let mut err = KppError::new(kind_for(status, &text, detail), message)
         .with_status(status)
         .with_origin(Origin::new(DIALECT));
     if let Some(p) = param {
@@ -216,13 +221,19 @@ mod tests {
     }
 
     #[test]
-    fn kinds_follow_the_status_and_the_context_code() {
-        assert_eq!(kind_for(529, ""), ErrorKind::Overloaded);
-        assert_eq!(kind_for(415, ""), ErrorKind::InvalidRequest);
+    fn kinds_follow_the_status_the_context_code_and_a_refused_key() {
+        let none = Value::Null;
+        assert_eq!(kind_for(529, "", &none), ErrorKind::Overloaded);
+        assert_eq!(kind_for(415, "", &none), ErrorKind::InvalidRequest);
         assert_eq!(
-            kind_for(400, "max_tokens_exceeded"),
+            kind_for(400, "max_tokens_exceeded", &none),
             ErrorKind::ContextTooLong
         );
-        assert_eq!(kind_for(418, ""), ErrorKind::ProviderError);
+        assert_eq!(kind_for(418, "", &none), ErrorKind::ProviderError);
+        assert_eq!(kind_for(403, "", &none), ErrorKind::PermissionDenied);
+        let refused = json!({"error_type": "authentication_error", "message": "no key"});
+        assert_eq!(kind_for(403, "", &refused), ErrorKind::Authentication);
+        let other = json!({"error_type": "permission_error"});
+        assert_eq!(kind_for(403, "", &other), ErrorKind::PermissionDenied);
     }
 }

@@ -1,0 +1,24 @@
+{
+  "models": [
+    {
+      "name": "jev-latest",
+      "description": "The most recent stable, official release.",
+      "release_date": "2026-10-14"
+    },
+    {
+      "name": "jev-preview",
+      "description": "The most recent release, official or not.",
+      "release_date": "2026-10-14"
+    },
+    {
+      "name": "jev-1.14.0",
+      "description": "Jev 1.14: text and images; choice, score, noul and box questions.",
+      "release_date": "2026-10-14"
+    },
+    {
+      "name": "jev-1.13.0",
+      "description": "Jev 1.13: text and images; choice, score and noul questions.",
+      "release_date": "2026-09-15"
+    }
+  ]
+}

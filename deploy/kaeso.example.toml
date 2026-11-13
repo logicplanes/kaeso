@@ -155,6 +155,9 @@ base_url = "https://api.cloudflare.com"
 [providers.perplexity]
 base_url = "https://api.perplexity.ai"
 
+[providers.typesafe]
+base_url = "https://api.typesafe.ai"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

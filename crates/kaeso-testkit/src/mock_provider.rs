@@ -598,6 +598,13 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     {
         return crate::mock_decisions::answer(d, &body, &headers);
     }
+    // TypeSafe lists its models in its own shape and has no `GET /v1/models/{id}`.
+    if method == Method::GET && path == MODELS && marker(&key, "models") == Some("typesafe") {
+        return json_file(
+            &ctx.fixtures
+                .join("system_one/providers/typesafe/models/list.json"),
+        );
+    }
     if method == Method::GET {
         let endless = marker(&key, "models") == Some("endless");
         let file = match (path == MODELS, anthropic, uri.query().is_none() || endless) {
@@ -1153,7 +1160,7 @@ fn key_text(headers: &HeaderMap) -> String {
 fn answers_route_not_found(models: Option<&str>, path: &str) -> bool {
     match models {
         Some("absent") => true,
-        Some("list-only" | "list-refuses-key") => path != MODELS,
+        Some("list-only" | "list-refuses-key" | "typesafe") => path != MODELS,
         _ => false,
     }
 }

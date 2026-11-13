@@ -8,11 +8,9 @@ Schlagen Sie hier jedes Feld des Formats System One von TypeSafe nach: wohin es 
 
 - **Codec:** `kaeso_codecs::system_one::SystemOne` (`crates/kaeso-codecs/src/system_one/`)
 - **Endpunkte:** `POST /v1/systemone`, als JSON oder als Upload mit `multipart/form-data`, und die [Modell-Endpunkte](#modelle) von OpenAI
-- **Fixtures:** `crates/kaeso-codecs/fixtures/system_one/`, aus dem OpenAPI-Dokument und der Dokumentation von TypeSafe gebaut, keine aufgezeichnet
+- **Fixtures:** `crates/kaeso-codecs/fixtures/system_one/`, aus dem OpenAPI-Dokument und der Dokumentation von TypeSafe gebaut; nur die zwei Antworten von TypeSafe auf abgelehnte Schlüssel in `providers/typesafe/` sind aufgezeichnet
 
 **Quellen.** Das OpenAPI-Dokument von TypeSafe `https://api.typesafe.ai/openapi.json` in Version 0.2.0 (`SystemOneRequest`, `Question`, `NoulCriteria`, `Asset`, `SystemOneResponse`, `Answer`, `HTTPBadRequestError`, `HTTPValidationError`) und seine Seiten zu [System One](https://docs.typesafe.ai/api/system-one), [Bildern](https://docs.typesafe.ai/images), [Fehlern](https://docs.typesafe.ai/api/errors) und [Konfidenz](https://docs.typesafe.ai/confidence), gelesen am 2026-11-12.
-
-Das Gateway leitet Entscheidungsanfragen noch nicht weiter; der Codec ist dafür bereit.
 
 ## Lesart der Tabellen
 
@@ -47,7 +45,7 @@ Eine Entscheidungsanfrage wird zu `Request::Decide(DecideRequest)` dekodiert. Ih
 | `assets.*.part` | `Asset.source = Source::Base64` typisiert | Nur in einem Upload: die Bytes des genannten Teils, ein Ausschnitt des Bodys. Form `part`, `part_type` und `filename`. Ein `data_base64` daneben bleibt Extras, weil TypeSafe es ignoriert. |
 | unbekannte Schlüssel | Extras | Auf jeder Ebene: Anfrage, Frage, Kriterien, Asset. |
 | Header `typesafe-danger-zone-images` | Extras `header:typesafe-danger-zone-images` | Wird nur an System One weitergeleitet. |
-| Header `typesafe-danger-zone-long-context` | Extras `header:typesafe-danger-zone-long-context` | Wird nur an System One weitergeleitet. |
+| Header `typesafe-danger-zone-long-context` | Extras `header:typesafe-danger-zone-long-context` | Wird nur an System One weitergeleitet. Kaeso sendet ihn TypeSafe auch selbst, wenn eine Anfrage ihn braucht ([TypeSafe](#typesafe)). |
 
 Der erste Teil eines Uploads ist `request`, die JSON-Anfrage. Jeder andere Teil ist ein Bild, das genau ein Asset in `part` nennt, mit dem Typ `image/png`, `image/jpeg`, `image/jpg`, `application/octet-stream` oder keinem. Ein fehlender, ungenutzter oder doppelter Teil oder ein anderer Typ ist `InvalidRequest`. Uploads gehen nur an TypeSafe wieder als Uploads; andere Anbieter bekommen die Bilder als Base64.
 
@@ -118,7 +116,7 @@ Entscheidungen werden nicht gestreamt. Der Stream-Encoder gibt für jedes Event 
 | Status | Body | KPP |
 |---|---|---|
 | 400 | `{"detail": "…"}` oder `{"detail": {"message": …}}` | `InvalidRequest`; `ContextTooLong`, wenn der Body `max_tokens_exceeded` nennt |
-| 401 | `{"detail": …}` | `Authentication` |
+| 401, oder 403 mit `detail.error_type` `authentication_error` | `{"detail": …}` | `Authentication`; mit diesem 403 antwortet TypeSafe auf eine Anfrage ohne Schlüssel |
 | 413 | `{"detail": …}` | `RequestTooLarge` |
 | 415 | `{"detail": …}` | `InvalidRequest` |
 | 422 | `{"detail": [{"loc", "msg", "type", "input"?, "ctx"?}]}` | `InvalidRequest`, die Stelle des ersten Problems ohne `body` in `param` |
@@ -129,15 +127,17 @@ Ein Body ohne `detail` wird wie ein OpenAI-Fehler gelesen; das deckt die `error`
 
 ## Modelle
 
-`GET /v1/models` von TypeSafe antwortet mit `{"models": [{name, description, release_date}]}`, und kein Header unterscheidet das SDK von TypeSafe von dem von OpenAI. Dieser Codec liest und schreibt die Modellliste von OpenAI, wie unter [Modelle](openai-chat.md#modelle) auf der Seite zu OpenAI Chat Completions beschrieben.
+`GET /v1/models` von TypeSafe antwortet mit `{"models": [{name, description, release_date}]}`, und kein Header unterscheidet das SDK von TypeSafe von dem von OpenAI. Dieser Codec liest und schreibt die Modellliste von OpenAI, wie unter [Modelle](openai-chat.md#modelle) auf der Seite zu OpenAI Chat Completions beschrieben. Von einem Anbieter liest er auch die eigene Modellliste von TypeSafe: Jeder `name` ist eine Modell-ID, `description` und `release_date` bleiben in den Extras. TypeSafe hat kein `GET /v1/models/{model}`.
 
 ## Anbieter, die dieses Format verwenden
 
-Jeder Anbieter hat ein `SystemOneProfile`, und andere Anbieter als TypeSafe legen ihre Fixtures in `fixtures/system_one/providers/<id>/` ab ([Fixtures](fixtures.md)).
+Jeder Anbieter hat ein `SystemOneProfile` und legt ab, was nur er sendet, in `fixtures/system_one/providers/<id>/` ([Fixtures](fixtures.md)).
 
 ### TypeSafe
 
-`SystemOneProfile::TYPESAFE`, `POST /v1/systemone`. Bilder gehen in `assets` oder als Teile eines Uploads, PNG und JPEG mit 280 bis 1568 Pixeln je Seite und höchstens 16 MiB, nur Standbilder, mit `TypeSafe-Danger-Zone-Images: true`, sobald eine Anfrage ein Bild oder eine Box-Frage enthält. Box-Fragen brauchen Jev 1.14. Der Header für langen Kontext geht nur mit, wenn die App ihn gesendet hat. Bis zu 255 Optionen und 10 Stufen.
+`SystemOneProfile::TYPESAFE`, `POST /v1/systemone`. Bilder gehen in `assets` oder als Teile eines Uploads, PNG und JPEG mit 280 bis 1568 Pixeln je Seite und höchstens 16 MiB, nur Standbilder, mit `TypeSafe-Danger-Zone-Images: true`, sobald eine Anfrage ein Bild oder eine Box-Frage enthält. Box-Fragen brauchen Jev 1.14. Bis zu 255 Optionen und 10 Stufen.
+
+Ohne `TypeSafe-Danger-Zone-Long-Context: true` bekommt eine Anfrage 64k Token für den State mit allen Fragen und 32k für den State mit einer Frage; mit dem Header 262k für beides ([Models](https://docs.typesafe.ai/models#long-context)). `long_context` im Profil hält die üblichen Grenzen. Schätzt der Encoder den State mit seinen Fragen über einer davon, zu 4 Byte Text je Token und ohne Bilder, für die TypeSafe noch keine Zählung veröffentlicht, sendet er den Header und nennt `long_context` in `adapted`. Einen Header, den die App selbst gesendet hat, leitet er unverändert weiter, und nichts wird angepasst. Langer Kontext kostet je Token gleich viel.
 
 ### OpenRouter
 

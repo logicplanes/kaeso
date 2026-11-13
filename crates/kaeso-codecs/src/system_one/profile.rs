@@ -71,6 +71,14 @@ impl IdRule {
     }
 }
 
+/// The context a provider gives a request unless it asks for long context, in tokens: the state
+/// and every question together, and the state with any one question.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ContextLimits {
+    pub request: u64,
+    pub question: u64,
+}
+
 /// How a provider that speaks a form of TypeSafe's System One API takes decision requests: its
 /// path, where it wants images, which question types and image formats it takes, and its limits.
 /// A request the provider can't take is refused before it is sent.
@@ -87,6 +95,10 @@ pub struct SystemOneProfile {
     pub model_field: ModelField,
     /// Whether requests with images or box questions carry `TypeSafe-Danger-Zone-Images: true`.
     pub images_header: bool,
+    /// The context a request gets without `TypeSafe-Danger-Zone-Long-Context: true`; a request
+    /// estimated beyond it is sent with that header, named in `adapted` as `long_context`.
+    /// `None` for a provider without the header.
+    pub long_context: Option<ContextLimits>,
     /// Whether images an app uploaded as `multipart/form-data` parts are sent as parts again.
     pub multipart: bool,
     /// Whether the provider answers box questions.
@@ -121,7 +133,8 @@ const MIB: usize = 1024 * 1024;
 impl SystemOneProfile {
     /// TypeSafe (`api.typesafe.ai`): images as `assets`, uploaded parts kept, box questions, PNG
     /// and JPEG of 280 to 1568 pixels a side and at most 16 MiB, never resized
-    /// (<https://docs.typesafe.ai/images#limits>).
+    /// (<https://docs.typesafe.ai/images#limits>), and 64k tokens a request and 32k a question
+    /// without the long-context header (<https://docs.typesafe.ai/models#context-length>).
     pub const TYPESAFE: SystemOneProfile = SystemOneProfile {
         name: "TypeSafe",
         path: "/v1/systemone",
@@ -129,6 +142,10 @@ impl SystemOneProfile {
         envelope: Envelope::None,
         model_field: ModelField::AsSent,
         images_header: true,
+        long_context: Some(ContextLimits {
+            request: 64 * 1024,
+            question: 32 * 1024,
+        }),
         multipart: true,
         box_questions: true,
         unknown_fields: true,
@@ -150,6 +167,7 @@ impl SystemOneProfile {
         name: "OpenRouter",
         multipart: false,
         images_header: false,
+        long_context: None,
         media: MediaPlacement::StateOrAssets,
         image_types: &[],
         image_px: None,
@@ -166,6 +184,7 @@ impl SystemOneProfile {
         path: "/v1/decisions",
         media: MediaPlacement::State,
         images_header: false,
+        long_context: None,
         multipart: false,
         box_questions: false,
         unknown_fields: false,
@@ -184,6 +203,7 @@ impl SystemOneProfile {
         name: "Baseten",
         media: MediaPlacement::Conversation,
         images_header: false,
+        long_context: None,
         multipart: false,
         box_questions: false,
         max_images: Some(16),
@@ -199,6 +219,7 @@ impl SystemOneProfile {
         name: "Fireworks AI",
         media: MediaPlacement::None,
         images_header: false,
+        long_context: None,
         multipart: false,
         box_questions: false,
         ..SystemOneProfile::TYPESAFE
@@ -215,6 +236,7 @@ impl SystemOneProfile {
         envelope: Envelope::Result,
         model_field: ModelField::ShortName("@cf/cloudflare/"),
         images_header: false,
+        long_context: None,
         multipart: false,
         box_questions: false,
         unknown_fields: true,
@@ -243,6 +265,7 @@ impl SystemOneProfile {
         max_options: None,
         max_levels: None,
         images_header: false,
+        long_context: None,
         multipart: false,
         image_types: &[],
         image_px: None,
