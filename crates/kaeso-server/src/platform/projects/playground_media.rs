@@ -1,7 +1,8 @@
-//! The Playground's media requests: images, speech, sound effects, music, transcripts and
-//! videos, sent as the signed-in member through the model pipeline in the formats apps use
-//! (OpenAI's Images, Audio and Videos APIs, ElevenLabs' sound effects and music), charged to the
-//! project and logged with the source `playground`.
+//! The Playground's media and decision requests: images, speech, sound effects, music,
+//! transcripts, videos and decisions, sent as the signed-in member through the model pipeline in
+//! the formats apps use (OpenAI's Images, Audio and Videos APIs, ElevenLabs' sound effects and
+//! music, TypeSafe's System One API), charged to the project and logged with the source
+//! `playground`.
 
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, header};
@@ -17,6 +18,7 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 use super::playground::{Ask, answer_with};
+use crate::config::BodyLimitsConfig;
 use crate::model_api::hooks::{Caller as ModelCaller, Source, VideoCall};
 use crate::model_api::pipeline::{self, Incoming};
 use crate::model_api::videos::{self, VideoIncoming, Viewer};
@@ -43,6 +45,8 @@ pub enum PlaygroundMode {
     Transcription,
     /// A video from a prompt, made as a job to wait for.
     Video,
+    /// Answers to typed questions about a state, each with its probabilities.
+    Decision,
 }
 
 /// How the Playground sizes images for this model.
@@ -66,6 +70,65 @@ pub struct PlaygroundImageOptions {
     pub qualities: Vec<String>,
     #[doc = "Whether it takes a pixel size."]
     pub size: PlaygroundImageSize,
+}
+
+/// What a model that makes decisions takes in the Playground, through its provider's decisions
+/// API.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, ToSchema)]
+pub struct PlaygroundDecisionOptions {
+    #[doc = "The question types it answers: `predicate`, `choice`, `score`, and `box` where the\n\
+        provider takes box questions."]
+    pub question_types: Vec<String>,
+    #[doc = "The most questions one request may ask; `null` when no limit is known."]
+    pub max_questions: Option<u32>,
+    #[doc = "The most options one choice question may have; `null` when no limit is known."]
+    pub max_options: Option<u32>,
+    #[doc = "The most levels one score question may have; `null` when no limit is known."]
+    pub max_levels: Option<u32>,
+    #[doc = "Whether the state may hold images."]
+    pub images: bool,
+    #[doc = "The most images one request may show; `null` when no limit is known."]
+    pub max_images: Option<u32>,
+    #[doc = "The largest decision request Kaeso takes, in bytes, images included as sent."]
+    #[schema(example = 67108864)]
+    pub max_request_bytes: u64,
+    #[doc = "Whether the project's provider key is an account that can't call the provider's\n\
+        decisions API, such as a ChatGPT account; decisions fail until the project uses an API key."]
+    pub needs_api_key: bool,
+}
+
+const QUESTION_TYPES: [&str; 4] = ["predicate", "choice", "score", "box"];
+
+fn least(a: Option<u32>, b: Option<usize>) -> Option<u32> {
+    let b = b.map(|b| u32::try_from(b).unwrap_or(u32::MAX));
+    match (a, b) {
+        (Some(a), Some(b)) => Some(a.min(b)),
+        (a, b) => a.or(b),
+    }
+}
+
+// The catalogue's limits for the model, narrowed by what its provider's decisions API takes.
+fn decision_options(
+    limits: &BodyLimitsConfig,
+    eff: &Effective,
+) -> Option<PlaygroundDecisionOptions> {
+    let fields = eff.fields.decisions.as_ref()?;
+    let egress = eff.provider.decisions(&eff.model_id)?;
+    let system_one = (egress.dialect == DialectId::SystemOne).then_some(egress.system_one);
+    Some(PlaygroundDecisionOptions {
+        question_types: QUESTION_TYPES
+            .iter()
+            .filter(|t| fields.answers(t) && (**t != "box" || egress.box_questions()))
+            .map(|t| (*t).to_owned())
+            .collect(),
+        max_questions: least(fields.max_questions, egress.max_questions()),
+        max_options: least(fields.max_options, system_one.and_then(|p| p.max_options)),
+        max_levels: least(fields.max_levels, system_one.and_then(|p| p.max_levels)),
+        images: eff.accepts("image"),
+        max_images: least(fields.max_images, system_one.and_then(|p| p.max_images)),
+        max_request_bytes: limits.decisions.0,
+        needs_api_key: false,
+    })
 }
 
 const DEFAULT_MAX_IMAGES: u32 = 10;
@@ -133,8 +196,13 @@ fn has(list: Option<&Vec<String>>, modality: &str) -> bool {
 
 /// The model's mode: its kind in the catalogue where it has one, otherwise what it takes and
 /// makes and which of its provider's APIs serve it. `None` for a model the Playground can't try,
-/// such as embeddings, rerankers and realtime models.
+/// such as embeddings, rerankers and realtime models. A model that both generates text and makes
+/// decisions is `Text`, with [`ModeOptions::decisions`] for the Playground's decision mode.
 pub(super) fn mode_of(eff: &Effective, kind: Option<&str>) -> Option<PlaygroundMode> {
+    if eff.decides_only() || kind == Some("decision") {
+        let decides = eff.decides() && eff.provider.decisions(&eff.model_id).is_some();
+        return decides.then_some(PlaygroundMode::Decision);
+    }
     let f = &eff.fields;
     let (input, output) = (f.input_modalities.as_ref(), f.output_modalities.as_ref());
     let id = eff.model_id.as_str();
@@ -150,8 +218,8 @@ pub(super) fn mode_of(eff: &Effective, kind: Option<&str>) -> Option<PlaygroundM
             Some(PlaygroundMode::Transcription)
         }
         Some(
-            "embedding" | "reranking" | "realtime" | "decision" | "image" | "video" | "speech"
-            | "sound_effects" | "music" | "transcription",
+            "embedding" | "reranking" | "realtime" | "image" | "video" | "speech" | "sound_effects"
+            | "music" | "transcription",
         ) => return None,
         Some(_) => None,
         None if has(output, "image") && eff.provider.images(id).is_some() => {
@@ -173,8 +241,7 @@ pub(super) fn mode_of(eff: &Effective, kind: Option<&str>) -> Option<PlaygroundM
         return media;
     }
     let chats = |l: Option<&Vec<String>>| l.is_none_or(|l| l.iter().any(|m| m == "text"));
-    (!eff.is_embeddings() && !eff.decides_only() && chats(input) && chats(output))
-        .then_some(PlaygroundMode::Text)
+    (!eff.is_embeddings() && chats(input) && chats(output)).then_some(PlaygroundMode::Text)
 }
 
 /// What the Playground offers a model of each mode.
@@ -183,11 +250,15 @@ pub(super) struct ModeOptions {
     pub voices: Vec<String>,
     pub translations: bool,
     pub durations: bool,
+    pub decisions: Option<PlaygroundDecisionOptions>,
     pub max_request_bytes: u64,
 }
 
-pub(super) fn options(state: &AppState, eff: &Effective, mode: PlaygroundMode) -> ModeOptions {
-    let limits = &state.config.body_limits;
+pub(super) fn options(
+    limits: &BodyLimitsConfig,
+    eff: &Effective,
+    mode: PlaygroundMode,
+) -> ModeOptions {
     let accepts_images = has(eff.fields.input_modalities.as_ref(), "image");
     ModeOptions {
         image: (mode == PlaygroundMode::Image)
@@ -201,10 +272,14 @@ pub(super) fn options(state: &AppState, eff: &Effective, mode: PlaygroundMode) -
         translations: mode == PlaygroundMode::Transcription && translates(eff),
         durations: matches!(mode, PlaygroundMode::SoundEffects | PlaygroundMode::Music)
             && takes_lengths(eff),
+        decisions: matches!(mode, PlaygroundMode::Text | PlaygroundMode::Decision)
+            .then(|| decision_options(limits, eff))
+            .flatten(),
         max_request_bytes: match mode {
             PlaygroundMode::Text => limits.model_api.0,
             PlaygroundMode::Image => limits.images.0,
             PlaygroundMode::Transcription => limits.audio.0,
+            PlaygroundMode::Decision => limits.decisions.0,
             PlaygroundMode::Speech
             | PlaygroundMode::SoundEffects
             | PlaygroundMode::Music
@@ -216,6 +291,11 @@ pub(super) fn options(state: &AppState, eff: &Effective, mode: PlaygroundMode) -
 const MEDIA: Ask = Ask {
     too_large: "The upload is larger than Kaeso accepts for this model.",
     unreadable: "Kaeso can't read this request for the model; check its settings.",
+};
+
+const DECISIONS: Ask = Ask {
+    too_large: "The decision request is larger than Kaeso accepts for this model.",
+    unreadable: "The request is not a System One request Kaeso can read.",
 };
 
 /// The pipeline's request for one Playground call.
@@ -274,6 +354,17 @@ async fn send(
     body: axum::body::Body,
     call: Call,
 ) -> ApiResult<Response> {
+    send_as(state, ctx, headers, body, call, &MEDIA).await
+}
+
+async fn send_as(
+    state: AppState,
+    ctx: &Ctx,
+    headers: &HeaderMap,
+    body: axum::body::Body,
+    call: Call,
+    ask: &'static Ask,
+) -> ApiResult<Response> {
     let caller = member(ctx)?;
     let incoming = Incoming {
         ingress: call.ingress,
@@ -294,7 +385,7 @@ async fn send(
         video: call.video,
         generation: None,
     };
-    Ok(pipeline::serve_with(state, incoming, answer_with(&MEDIA)).await)
+    Ok(pipeline::serve_with(state, incoming, answer_with(ask)).await)
 }
 
 fn image(state: &AppState, op: ImageOperation) -> Call {
@@ -579,6 +670,96 @@ pub async fn video_create(
     send(state, &ctx, &headers, body, call).await
 }
 
+fn decision_call(state: &AppState) -> Call {
+    Call {
+        ingress: DialectId::SystemOne,
+        kind: RequestKind::Decide,
+        max_body: state.config.body_limits.decisions.as_usize(),
+        image: None,
+        transcription: None,
+        elevenlabs: None,
+        video: None,
+    }
+}
+
+#[derive(Debug, ToSchema)]
+#[schema(
+    description = "A Playground decision request: a TypeSafe System One request, whatever format\n\
+    the model's provider takes. The console sends this subset; the body is decoded like a\n\
+    `/v1/systemone` body, so other System One fields are taken as there."
+)]
+pub struct PlaygroundDecisionRequest {
+    #[doc = "A decision model of this project's catalogue, or a model that also makes decisions:\n\
+        its id, `provider/model`, or an alias of the project."]
+    #[schema(example = "jev-1.14.0")]
+    pub model: String,
+    #[doc = "What the questions are about: text, or a JSON object or array. An image is named in\n\
+        it by its key in `assets`."]
+    #[schema(value_type = Value)]
+    pub state: serde_json::Value,
+    #[doc = "The questions, under keys the reply's `answers` use again, in the order to ask them.\n\
+        Each has a `type`: `noul` (yes or no, with optional `criteria.true` and `criteria.false`),\n\
+        `choice` (`criteria`: each option's value as a key, its description as the value),\n\
+        `score` (`criteria`: the levels' descriptions, lowest first) or `box` (where something\n\
+        is in the image), and optional `instructions`."]
+    #[schema(value_type = Object)]
+    pub questions: serde_json::Value,
+    #[doc = "Images the state names, under the key it names them by: `type` `image`, `format`\n\
+        (`png`, `jpg`, `jpeg`) and `data_base64`."]
+    #[schema(value_type = Option<Object>)]
+    pub assets: Option<serde_json::Value>,
+}
+
+#[derive(Debug, ToSchema)]
+#[schema(
+    description = "A Playground decision reply: TypeSafe System One's, whatever format the\n\
+    model's provider answered in."
+)]
+pub struct PlaygroundDecisionReply {
+    #[doc = "The model that answered."]
+    pub model: String,
+    #[doc = "One answer under each question's key: `noul` (the probability of yes), `choice`\n\
+        (the chosen option's value, `probabilities` per value, `confidence`), `score` (the\n\
+        expected level, `probabilities` and `legend` per level, `confidence`), `box` (`top`,\n\
+        `bottom`, `left`, `right` as fractions of the image, `confidence`), or `type` `refusal`\n\
+        when the provider refused that question."]
+    #[schema(value_type = Object)]
+    pub answers: serde_json::Value,
+    #[doc = "`input_tokens` and `output_tokens`."]
+    #[schema(value_type = Object)]
+    pub usage: serde_json::Value,
+}
+
+#[utoipa::path(
+    post,
+    path = "/orgs/{org}/projects/{project}/playground/decisions",
+    summary = "Asks a decision model typed questions in the Playground as the signed-in member.",
+    description = "A TypeSafe System One request (`model`, `state`, `questions`, `assets`), as JSON or\n\
+    as `multipart/form-data` whose first part is `request`, to one of the project's models that\n\
+    make decisions, as the signed-in member, up to `KAESO_BODY_LIMITS_DECISIONS`. Kaeso sends it\n\
+    in the format the model's provider takes and answers in System One's. Charged to the project,\n\
+    counted against its limits and logged with the source `playground`; needs a console session.",
+    tag = "projects",
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path)),
+    request_body(content = PlaygroundDecisionRequest, content_type = "application/json"),
+    responses(
+        (status = 200, description = "The answers, with the `kaeso-cost` header.", body = PlaygroundDecisionReply),
+        (status = 400, description = "The model makes no decisions, or can't take a question, an image or as many questions (`invalid_request`).", body = crate::platform::error::ErrorEnvelope),
+        (status = 413, description = "The body is larger than Kaeso takes for this model (`request_too_large`).", body = crate::platform::error::ErrorEnvelope),
+        (status = 502, description = "The provider failed or refused the provider key (`provider_error`).", body = crate::platform::error::ErrorEnvelope),
+    )
+)]
+pub async fn decisions(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_p): Path<(String, String)>,
+    headers: HeaderMap,
+    body: axum::body::Body,
+) -> ApiResult<Response> {
+    let call = decision_call(&state);
+    send_as(state, &ctx, &headers, body, call, &DECISIONS).await
+}
+
 fn video_error(e: &KppError) -> ApiError {
     match (&e.kind, e.param.as_deref()) {
         (_, _) if videos::is_unavailable(e) => ApiError::Unavailable(
@@ -721,7 +902,8 @@ pub async fn video_delete(
 
 #[cfg(test)]
 mod tests {
-    use kaeso_core::catalogue::Fields;
+    use crate::config::ByteSize;
+    use kaeso_core::catalogue::{DecisionFields, Fields};
     use kaeso_core::providers::ProviderRef;
 
     use super::*;
@@ -781,20 +963,135 @@ mod tests {
         }
     }
 
+    fn decider(provider: &str, id: &str, fields: DecisionFields) -> Effective {
+        let mut eff = model(provider, id, &["text", "image"], &[]);
+        eff.fields.decisions = Some(fields);
+        eff
+    }
+
     #[test]
-    fn the_playground_leaves_decision_only_models_out_until_it_asks_questions() {
-        let mut decider = model("openrouter", "typesafe/jev-1.14", &["text"], &["text"]);
-        assert_eq!(mode_of(&decider, Some("decision")), None);
-        decider.fields.decisions = Some(kaeso_core::catalogue::DecisionFields {
+    fn decision_models_take_the_decision_mode_and_dual_models_keep_text() {
+        let only = DecisionFields {
             only: true,
-            ..Default::default()
-        });
-        assert_eq!(mode_of(&decider, None), None);
+            ..DecisionFields::default()
+        };
+        let jev = decider("openrouter", "typesafe/jev-1.14", only.clone());
+        assert_eq!(
+            mode_of(&jev, Some("decision")),
+            Some(PlaygroundMode::Decision)
+        );
+        assert_eq!(mode_of(&jev, None), Some(PlaygroundMode::Decision));
+        let undecided = model("openrouter", "typesafe/jev-1.14", &["text"], &[]);
+        assert_eq!(
+            mode_of(&undecided, Some("decision")),
+            None,
+            "a decision kind without decisions makes nothing the Playground can ask"
+        );
+        let unserved = decider("anthropic", "claude-decider", only);
+        assert_eq!(mode_of(&unserved, None), None);
         let mut luna = model("openai", "gpt-6-luna", &["text"], &["text"]);
-        luna.fields.decisions = Some(kaeso_core::catalogue::DecisionFields::default());
+        luna.fields.decisions = Some(DecisionFields::default());
         assert_eq!(
             mode_of(&luna, Some("generation")),
             Some(PlaygroundMode::Text)
+        );
+    }
+
+    #[test]
+    fn a_custom_providers_decision_model_is_asked_like_a_built_in_one() {
+        use kaeso_core::providers::{CustomAuth, CustomProvider, DecisionsApi, Draft, MediaApi};
+        let custom = |media: Vec<MediaApi>, decisions: Option<DecisionsApi>| {
+            ProviderRef::Custom(std::sync::Arc::new(
+                CustomProvider::new(Draft {
+                    uuid: uuid::Uuid::now_v7(),
+                    id: kaeso_core::provider::ProviderId::parse("liquid").unwrap(),
+                    name: "Liquid".into(),
+                    base_url: "https://api.liquid.example".into(),
+                    auth: CustomAuth::Bearer,
+                    generation: DialectId::OpenAiChat,
+                    embeddings: None,
+                    count_tokens: None,
+                    server: None,
+                    media,
+                    decisions,
+                })
+                .unwrap(),
+            ))
+        };
+        let only = DecisionFields {
+            only: true,
+            ..DecisionFields::default()
+        };
+        let mut d1 = decider("openai", "d1", only);
+        d1.provider = custom(vec![MediaApi::Decisions], None);
+        assert_eq!(mode_of(&d1, None), Some(PlaygroundMode::Decision));
+        let d = decision_options(&limits(), &d1).unwrap();
+        assert_eq!(d.question_types, ["predicate", "choice", "score"]);
+        d1.provider = custom(Vec::new(), None);
+        assert_eq!(
+            mode_of(&d1, None),
+            None,
+            "a server with its decisions API off can't be asked"
+        );
+    }
+
+    fn limits() -> BodyLimitsConfig {
+        BodyLimitsConfig {
+            model_api: ByteSize(32 << 20),
+            images: ByteSize(64 << 20),
+            audio: ByteSize(26 << 20),
+            decisions: ByteSize(64 << 20),
+            in_flight: ByteSize(1 << 30),
+            platform_api: ByteSize(1 << 20),
+            provider_response: ByteSize(256 << 20),
+        }
+    }
+
+    #[test]
+    fn decision_options_narrow_the_catalogue_by_the_providers_decisions_api() {
+        let limits = limits();
+        let typesafe = DecisionFields {
+            only: true,
+            question_types: Some(QUESTION_TYPES.map(str::to_owned).to_vec()),
+            max_options: Some(300),
+            ..DecisionFields::default()
+        };
+        let jev = decider("typesafe", "jev-1.14.0", typesafe.clone());
+        let o = options(&limits, &jev, PlaygroundMode::Decision);
+        assert_eq!(o.max_request_bytes, limits.decisions.0);
+        let d = o.decisions.unwrap();
+        assert_eq!(d.question_types, ["predicate", "choice", "score", "box"]);
+        assert_eq!((d.max_options, d.max_levels), (Some(255), Some(10)));
+        assert!(d.images && !d.needs_api_key);
+        assert_eq!(d.max_request_bytes, o.max_request_bytes);
+
+        let perplexity = decider("perplexity", "pplx-decider-v1.2", typesafe);
+        let d = options(&limits, &perplexity, PlaygroundMode::Decision)
+            .decisions
+            .unwrap();
+        assert!(
+            !d.question_types.iter().any(|t| t == "box"),
+            "box questions go only where the provider takes them"
+        );
+
+        let mut luna = model("openai", "gpt-6-luna", &["text"], &["text"]);
+        luna.fields.decisions = Some(DecisionFields {
+            max_questions: Some(1_000),
+            max_levels: Some(10),
+            ..DecisionFields::default()
+        });
+        let o = options(&limits, &luna, PlaygroundMode::Text);
+        assert_eq!(o.max_request_bytes, limits.model_api.0);
+        let d = o.decisions.unwrap();
+        assert_eq!(d.question_types, ["predicate", "choice", "score"]);
+        assert_eq!((d.max_questions, d.max_levels), (Some(400), Some(10)));
+        assert!(!d.images);
+        assert_eq!(d.max_request_bytes, limits.decisions.0);
+
+        let claude = model("anthropic", "claude-haiku-4-5", &["text"], &["text"]);
+        assert_eq!(
+            options(&limits, &claude, PlaygroundMode::Text).decisions,
+            None
         );
     }
 

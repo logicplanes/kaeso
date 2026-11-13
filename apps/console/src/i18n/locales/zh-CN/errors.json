@@ -752,5 +752,7 @@
   "errors.model.maxOptions": "模型 `{model}` 每个选择题最多接受 {max} 个选项。",
   "errors.model.maxLevels": "模型 `{model}` 每个评分题最多接受 {max} 个等级。",
   "errors.model.maxImages": "模型 `{model}` 每个请求最多接受 {max} 张图片。",
-  "errors.modelApi.accountNoDecisions": "{product} 账户无法做出决策。请改为在此项目中使用 {provider} 的 API 密钥。"
+  "errors.modelApi.accountNoDecisions": "{product} 账户无法做出决策。请改为在此项目中使用 {provider} 的 API 密钥。",
+  "errors.decisionTooLarge": "决策请求超过了 Kaeso 对此模型接受的大小。",
+  "errors.notSystemOneRequest": "该请求不是 Kaeso 可读取的 System One 请求。"
 }

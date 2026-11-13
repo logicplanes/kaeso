@@ -48,5 +48,6 @@
   "playground.undoClear": "撤销",
   "playground.emptyThread": "在下方发送提示词即可开始。",
   "playground.emptyColumn": "从下一条发送的提示词起，回答会显示在这里。",
-  "playground.videoFailed": "服务商未能生成视频。请重试。"
+  "playground.videoFailed": "服务商未能生成视频。请重试。",
+  "playground.mode.decision": "决策"
 }

@@ -15,6 +15,7 @@ const MODE_LABELS: Record<Exclude<Mode, "text">, () => string> = {
   music: () => t("playground.mode.music", "Music"),
   transcription: () => t("playground.mode.transcription", "Transcription"),
   video: () => t("playground.mode.video", "Video"),
+  decision: () => t("playground.mode.decision", "Decisions"),
 };
 
 export const modeLabel = (mode: Exclude<Mode, "text">): string => MODE_LABELS[mode]();
