@@ -176,7 +176,7 @@ Replies to Gemini apps from other dialects get `role: "model"`, `index: 0`, and 
 
 ### Usage
 
-`promptTokenCount` includes the cached and tool-use prompt tokens, so `input_tokens = promptTokenCount + toolUsePromptTokenCount − cachedContentTokenCount`, `cache_read_tokens = cachedContentTokenCount`, `output_tokens = candidatesTokenCount + thoughtsTokenCount` and `reasoning_tokens = thoughtsTokenCount` ([usage](cross-format.md#usage)). `Usage::raw` keeps the whole `usageMetadata`. Usage of other dialects is written as `promptTokenCount`, `candidatesTokenCount`, `totalTokenCount`, and `cachedContentTokenCount` and `thoughtsTokenCount` when they aren't 0.
+`promptTokenCount` includes the cached prompt tokens but not the tool-use ones, so `input_tokens = promptTokenCount + toolUsePromptTokenCount − cachedContentTokenCount`, `cache_read_tokens = cachedContentTokenCount`, `output_tokens = candidatesTokenCount + thoughtsTokenCount` and `reasoning_tokens = thoughtsTokenCount` ([usage](cross-format.md#usage)). `promptTokensDetails` counts the cached tokens too, so `input_image_tokens` and `input_audio_tokens` are its `IMAGE` and `AUDIO` counts minus those of `cacheTokensDetails`, and `cache_read_image_tokens` is the `IMAGE` count of `cacheTokensDetails`. `Usage::raw` keeps the whole `usageMetadata`. Usage of other dialects is written as `promptTokenCount`, `candidatesTokenCount`, `totalTokenCount`, and `cachedContentTokenCount` and `thoughtsTokenCount` when they aren't 0.
 
 ## Token counts
 

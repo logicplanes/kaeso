@@ -780,6 +780,81 @@ fn replies_map_finish_reasons_usage_and_blocked_prompts() {
 }
 
 #[test]
+fn cached_image_and_audio_tokens_are_not_counted_again_as_uncached_input() {
+    let usage = json!({
+        "promptTokenCount": 4564,
+        "cachedContentTokenCount": 4120,
+        "candidatesTokenCount": 12,
+        "totalTokenCount": 4576,
+        "promptTokensDetails": [
+            {"modality": "TEXT", "tokenCount": 74},
+            {"modality": "IMAGE", "tokenCount": 1290},
+            {"modality": "AUDIO", "tokenCount": 3200}
+        ],
+        "cacheTokensDetails": [
+            {"modality": "TEXT", "tokenCount": 30},
+            {"modality": "IMAGE", "tokenCount": 1290},
+            {"modality": "AUDIO", "tokenCount": 2800}
+        ]
+    });
+    let body = json!({
+        "candidates": [{"content": {"parts": [{"text": "A fox."}], "role": "model"}, "finishReason": "STOP"}],
+        "usageMetadata": usage,
+        "modelVersion": MODEL,
+        "responseId": "r1"
+    });
+    let check = |u: &kaeso_kpp::Usage| {
+        assert_eq!(u.input_tokens, 444);
+        assert_eq!(u.cache_read_tokens, 4120);
+        assert_eq!(u.input_image_tokens, Some(0));
+        assert_eq!(u.cache_read_image_tokens, Some(1290));
+        assert_eq!(u.input_audio_tokens, Some(400));
+    };
+    let Reply::Generate(r) = Gemini::decode_response(
+        200,
+        &HeaderList::new(),
+        &serde_json::to_vec(&body).unwrap(),
+        &generate_ctx(),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    check(&r.usage);
+    let sse = format!("data: {body}\n\n");
+    let streamed = decode_stream(sse.as_bytes(), 0)
+        .into_iter()
+        .find_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => d.usage,
+            _ => None,
+        })
+        .unwrap();
+    check(&streamed);
+
+    let mut uncached = body;
+    uncached["usageMetadata"] = json!({
+        "promptTokenCount": 1300,
+        "candidatesTokenCount": 12,
+        "promptTokensDetails": [
+            {"modality": "TEXT", "tokenCount": 10},
+            {"modality": "IMAGE", "tokenCount": 1290}
+        ]
+    });
+    let Reply::Generate(r) = Gemini::decode_response(
+        200,
+        &HeaderList::new(),
+        &serde_json::to_vec(&uncached).unwrap(),
+        &generate_ctx(),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    assert_eq!(r.usage.input_tokens, 1300);
+    assert_eq!(r.usage.input_image_tokens, Some(1290));
+    assert_eq!(r.usage.cache_read_image_tokens, None);
+    assert_eq!(r.usage.input_audio_tokens, None);
+}
+
+#[test]
 fn errors_name_their_kind_and_retry_delay() {
     let err = |name: &str| {
         let meta = sidecar(DIR, "errors", name, "meta").unwrap();
