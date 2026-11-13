@@ -4,7 +4,7 @@ test.describe.configure({ mode: "serial" });
 
 test("a project budget, a member limit above it is warned about, then edited and removed", async ({ page }) => {
   await signInToProject(page);
-  await page.getByRole("link", { name: "Limits" }).click();
+  await page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: "Limits" }).click();
   await expect(page).toHaveTitle(/^Limits · /);
   await expect(page.getByText("No limits yet")).toBeVisible();
 

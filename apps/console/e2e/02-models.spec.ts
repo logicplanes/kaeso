@@ -31,7 +31,7 @@ async function searchFor(page: Page, query: string) {
 
 async function openModels(page: Page) {
   await signInToProject(page);
-  await page.getByRole("link", { name: "Models" }).click();
+  await page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: "Models" }).click();
   await expect(page).toHaveTitle(/^Models · /);
 }
 
