@@ -284,6 +284,34 @@ fn media_without_a_stated_type_is_known_by_how_its_file_starts() {
 }
 
 #[test]
+fn images_sent_as_base64_without_a_data_url_are_left_out() {
+    let unknown = noise(60);
+    let object = format!(
+        r#"{{"model":"clef","images":[{{"content_type":"image/webp","base64":"{unknown}"}}]}}"#
+    );
+    assert_eq!(
+        stripped(&object)["images"][0]["base64"]["kaeso_media"],
+        json!({ "media_type": "image/webp", "bytes": 60, "reason": "not_kept" })
+    );
+    let long = noise(120);
+    let bare = format!(r#"{{"model":"clef","images":["{long}","{long}"]}}"#);
+    let out = stripped(&bare);
+    for i in 0..2 {
+        assert_eq!(out["images"][i]["kaeso_media"]["bytes"], 120, "{i}");
+    }
+    let photo = format!(r#"{{"images":["{}"]}}"#, b64(&PNG));
+    assert_eq!(stripped(&photo)["images"][0], png_left_out());
+    for kept in [
+        r#"{"images":["front-door-camera-2026-11-13","https://example.com/cat.png"]}"#,
+        r#"{"images":["file-0123456789abcdefghijklmnopqrstuvwxyz0123"]}"#,
+        r#"{"images":[{"content_type":"image/png","base64":"short"}]}"#,
+        r#"{"base64":"0123456789abcdef0123456789abcdef0123456789abcdef"}"#,
+    ] {
+        assert_eq!(off(kept), None, "{kept}");
+    }
+}
+
+#[test]
 fn text_that_only_looks_like_media_stays() {
     let signature = "c2lnbmF0dXJl".repeat(40);
     let sound_like = b64(b"\xff\xfb\x90\0 an encrypted thought, not a sound, of some length here");

@@ -1,0 +1,45 @@
+{
+  "result": {
+    "model": "clef-flash",
+    "answers": {
+      "urgent": {
+        "type": "noul",
+        "noul": 0.9319
+      },
+      "team": {
+        "type": "choice",
+        "choice": "technical",
+        "probabilities": {
+          "billing": 0.0693,
+          "technical": 0.91,
+          "sales": 0.0207
+        },
+        "confidence": 0.7499
+      },
+      "severity": {
+        "type": "score",
+        "score": 2.7327,
+        "legend": {
+          "0": "No impact",
+          "1": "Minor",
+          "2": "Major",
+          "3": "Critical"
+        },
+        "probabilities": {
+          "0": 0.0185,
+          "1": 0.0178,
+          "2": 0.1762,
+          "3": 0.7875
+        },
+        "confidence": 0.5357
+      }
+    },
+    "usage": {
+      "input_tokens": 346,
+      "output_tokens": 0
+    }
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}

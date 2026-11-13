@@ -126,6 +126,7 @@ Kaeso sendet Entscheidungen über die eigene Decisions-API jedes Anbieters, glei
 | Fireworks AI | System One | `/inference/v1/systemone` | nur Text; keine Box-Fragen |
 | Perplexity | System One | `/v1/decisions` | Decider-Modelle; Bilder als Data-URLs im State, höchstens 8; keine Box-Fragen |
 | TypeSafe | System One | `/v1/systemone` | Jev; Bilder als Assets oder hochgeladene Teile; Box-Fragen mit Jev 1.14; langer Kontext, wenn eine Anfrage ihn braucht |
+| Cloudflare AI Gateway | System One | `/client/v4/accounts/{account_id}/ai/run/@cf/cloudflare/{model}` | Clef, Clef-flash und Clef-omni, über das Gateway des Schlüssels; höchstens 64 Fragen und 4 Bilder; keine Box-Fragen |
 | Ein eigener Anbieter | System One oder OpenAI Decisions | der Pfad, den sein Admin festlegt | sobald ein Admin der Organisation Entscheidungen einschaltet, mit dem gewählten Platz für Bilder ([Eigene Anbieter](../console/custom-providers.md#entscheidungen)) |
 
 Alle anderen Anbieter und Gemini Enterprise Agent Platform haben in Kaeso noch keine Decisions-API. Eine Anfrage an einen von ihnen wird abgelehnt, bevor etwas gesendet wird, zum Beispiel „Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.“. Ebenso eine Anfrage an OpenAI in einem Projekt, dessen OpenAI-Schlüssel ein [ChatGPT-Konto](../console/provider-keys.md#mit-einem-chatgpt-konto-anmelden) ist.
@@ -149,7 +150,7 @@ Ein reines Entscheidungsmodell lehnt Chat, Token-Zählung und Embeddings ab: „
 
 - **Konfidenz** bedeutet bei jedem Anbieter etwas anderes. Wechselt eine Antwort das Format, berechnet Kaeso sie aus den Wahrscheinlichkeiten nach der Regel des Formats der App; eine Antwort im eigenen Format des Anbieters behält dessen Wert.
 - **Ablehnungen.** OpenAI kann einzelne Fragen ablehnen. Eine System-One-App erhält `{"type": "refusal"}` unter dem Schlüssel der Frage; eine Gemini-App, die keine Ablehnung pro Frage kennt, erhält 400 mit den abgelehnten Fragen.
-- **`kaeso-adapted`** nennt, was der Anbieter nur in anderer Form annimmt: `names` (Fragen umbenannt in `q0`, `q1` und so weiter), `booleans` (Auswahlwerte `true` und `false` als Text), `levels`, `criteria` (Ja/Nein-Kriterien in die Anweisungen von OpenAI eingefügt), `state` (JSON-State als Text gesendet), `instructions` und `long_context` (der Long-Context-Header von TypeSafe, gesendet für eine Anfrage, die Kaeso über dem üblichen Kontext von TypeSafe schätzt).
+- **`kaeso-adapted`** nennt, was der Anbieter nur in anderer Form annimmt: `names` (Fragen umbenannt in `q0`, `q1` und so weiter), `booleans` (Auswahlwerte `true` und `false` als Text), `levels`, `criteria` (Ja/Nein-Kriterien in die Anweisungen von OpenAI eingefügt), `state` (JSON-State als Text gesendet), `instructions`, `long_context` (der Long-Context-Header von TypeSafe, gesendet für eine Anfrage, die Kaeso über dem üblichen Kontext von TypeSafe schätzt) und `image_order` (Bilder vor den State gerückt, wie Clef von Cloudflare sie annimmt).
 - **`kaeso-left-out`** nennt Hinweise, für die das Format des Anbieters keinen Platz hat: `cache` (`prompt_cache_*` von OpenAI) und `user` (`safety_identifier`).
 
 ## Kosten, Cache und Logs

@@ -9,10 +9,10 @@ A snapshot of the catalogue of [KPMR](https://kpmr.kaeso.app), the Kaeso Provide
 | | |
 |---|---|
 | Source | `https://kpmr.kaeso.app/v1/catalogue` |
-| Revision | `2026-11-13T01:21:33Z-2b34fed2dce0` |
-| Generated | 2026-11-13T01:21:33Z |
-| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `baseten`, `cerebras`, `cloudflare-ai-gateway`, `cohere`, `deepseek`, `elevenlabs`, `fireworks-ai`, `gemini-agent-platform`, `google`, `groq`, `huggingface`, `minimax`, `mistral`, `moonshotai`, `nebius`, `nvidia`, `ollama-cloud`, `openai`, `openrouter`, `perplexity`, `sambanova`, `scaleway`, `siliconflow`, `standardcompute`, `togetherai`, `typesafe`, `vercel`, `xai`, `zai`); 2006 models |
-| SHA-256 | `e5ec7484c4f2c15834d3ae4fd2862e8c8637efac84966ff3d71d5537116c450c` |
+| Revision | `2026-11-13T03:52:05Z-5e885becd4fa` |
+| Generated | 2026-11-13T03:52:05Z |
+| Content | the providers Kaeso calls (`alibaba`, `anthropic`, `baseten`, `cerebras`, `cloudflare-ai-gateway`, `cohere`, `deepseek`, `elevenlabs`, `fireworks-ai`, `gemini-agent-platform`, `google`, `groq`, `huggingface`, `minimax`, `mistral`, `moonshotai`, `nebius`, `nvidia`, `ollama-cloud`, `openai`, `openrouter`, `perplexity`, `sambanova`, `scaleway`, `siliconflow`, `standardcompute`, `togetherai`, `typesafe`, `vercel`, `xai`, `zai`); 2009 models |
+| SHA-256 | `89bed96dcce524866a2ae55940ef54da0d62c56152edf8b7018edd92d32e0c44` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 To refresh it for a release, download the catalogue and check its signature against the built-in key:

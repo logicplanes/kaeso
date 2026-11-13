@@ -159,6 +159,108 @@ expression: outcomes
     "param": null,
     "unsupported": "service_tier"
   },
+  "providers/cloudflare-ai-gateway/support": {
+    "adapted": [],
+    "body": {
+      "input": "Checkout has been failing for every customer for the last hour.",
+      "model": "clef",
+      "questions": {
+        "severity": {
+          "criteria": [
+            "No impact",
+            "Minor",
+            "Major",
+            "Critical"
+          ],
+          "instructions": "How severe is the customer impact?",
+          "type": "score"
+        },
+        "team": {
+          "criteria": {
+            "billing": "Payments, invoices, and refunds",
+            "sales": "Plans and upgrades",
+            "technical": "Outages, errors, and configuration"
+          },
+          "instructions": "Which team should handle this request?",
+          "type": "choice"
+        },
+        "urgent": {
+          "instructions": "Is this support request urgent?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "providers/cloudflare-ai-gateway/support-flash": {
+    "adapted": [],
+    "body": {
+      "input": "Checkout has been failing for every customer for the last hour.",
+      "model": "clef-flash",
+      "questions": {
+        "severity": {
+          "criteria": [
+            "No impact",
+            "Minor",
+            "Major",
+            "Critical"
+          ],
+          "instructions": "How severe is the customer impact?",
+          "type": "score"
+        },
+        "team": {
+          "criteria": {
+            "billing": "Payments, invoices, and refunds",
+            "sales": "Plans and upgrades",
+            "technical": "Outages, errors, and configuration"
+          },
+          "instructions": "Which team should handle this request?",
+          "type": "choice"
+        },
+        "urgent": {
+          "instructions": "Is this support request urgent?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
+  "providers/cloudflare-ai-gateway/support-omni": {
+    "adapted": [],
+    "body": {
+      "input": "Checkout has been failing for every customer for the last hour.",
+      "model": "clef-omni",
+      "questions": {
+        "severity": {
+          "criteria": [
+            "No impact",
+            "Minor",
+            "Major",
+            "Critical"
+          ],
+          "instructions": "How severe is the customer impact?",
+          "type": "score"
+        },
+        "team": {
+          "criteria": {
+            "billing": "Payments, invoices, and refunds",
+            "sales": "Plans and upgrades",
+            "technical": "Outages, errors, and configuration"
+          },
+          "instructions": "Which team should handle this request?",
+          "type": "choice"
+        },
+        "urgent": {
+          "instructions": "Is this support request urgent?",
+          "type": "noul"
+        }
+      }
+    },
+    "left_out": [],
+    "path": "/v1beta/decisions"
+  },
   "providers/openrouter/listing-box": {
     "kind": "unsupported",
     "message": "Gemini's Decisions API answers no box questions; send them to a System One provider that does, such as TypeSafe.",

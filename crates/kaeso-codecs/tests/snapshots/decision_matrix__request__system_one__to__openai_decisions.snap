@@ -181,6 +181,168 @@ expression: outcomes
     "param": null,
     "unsupported": "service_tier"
   },
+  "providers/cloudflare-ai-gateway/support": {
+    "adapted": [],
+    "body": {
+      "input": "Checkout has been failing for every customer for the last hour.",
+      "model": "clef",
+      "questions": [
+        {
+          "instructions": "Is this support request urgent?",
+          "name": "urgent",
+          "type": "predicate"
+        },
+        {
+          "choices": [
+            {
+              "description": "Payments, invoices, and refunds",
+              "value": "billing"
+            },
+            {
+              "description": "Outages, errors, and configuration",
+              "value": "technical"
+            },
+            {
+              "description": "Plans and upgrades",
+              "value": "sales"
+            }
+          ],
+          "instructions": "Which team should handle this request?",
+          "name": "team",
+          "type": "choice"
+        },
+        {
+          "instructions": "How severe is the customer impact?",
+          "levels": [
+            {
+              "label": "No impact"
+            },
+            {
+              "label": "Minor"
+            },
+            {
+              "label": "Major"
+            },
+            {
+              "label": "Critical"
+            }
+          ],
+          "name": "severity",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "providers/cloudflare-ai-gateway/support-flash": {
+    "adapted": [],
+    "body": {
+      "input": "Checkout has been failing for every customer for the last hour.",
+      "model": "clef-flash",
+      "questions": [
+        {
+          "instructions": "Is this support request urgent?",
+          "name": "urgent",
+          "type": "predicate"
+        },
+        {
+          "choices": [
+            {
+              "description": "Payments, invoices, and refunds",
+              "value": "billing"
+            },
+            {
+              "description": "Outages, errors, and configuration",
+              "value": "technical"
+            },
+            {
+              "description": "Plans and upgrades",
+              "value": "sales"
+            }
+          ],
+          "instructions": "Which team should handle this request?",
+          "name": "team",
+          "type": "choice"
+        },
+        {
+          "instructions": "How severe is the customer impact?",
+          "levels": [
+            {
+              "label": "No impact"
+            },
+            {
+              "label": "Minor"
+            },
+            {
+              "label": "Major"
+            },
+            {
+              "label": "Critical"
+            }
+          ],
+          "name": "severity",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
+  "providers/cloudflare-ai-gateway/support-omni": {
+    "adapted": [],
+    "body": {
+      "input": "Checkout has been failing for every customer for the last hour.",
+      "model": "clef-omni",
+      "questions": [
+        {
+          "instructions": "Is this support request urgent?",
+          "name": "urgent",
+          "type": "predicate"
+        },
+        {
+          "choices": [
+            {
+              "description": "Payments, invoices, and refunds",
+              "value": "billing"
+            },
+            {
+              "description": "Outages, errors, and configuration",
+              "value": "technical"
+            },
+            {
+              "description": "Plans and upgrades",
+              "value": "sales"
+            }
+          ],
+          "instructions": "Which team should handle this request?",
+          "name": "team",
+          "type": "choice"
+        },
+        {
+          "instructions": "How severe is the customer impact?",
+          "levels": [
+            {
+              "label": "No impact"
+            },
+            {
+              "label": "Minor"
+            },
+            {
+              "label": "Major"
+            },
+            {
+              "label": "Critical"
+            }
+          ],
+          "name": "severity",
+          "type": "score"
+        }
+      ]
+    },
+    "left_out": [],
+    "path": "/v1/decisions"
+  },
   "providers/openrouter/listing-box": {
     "kind": "unsupported",
     "message": "The provider answers no box questions; send them to a System One provider that does, such as TypeSafe.",

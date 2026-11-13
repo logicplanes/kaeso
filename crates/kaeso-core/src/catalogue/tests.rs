@@ -2741,6 +2741,11 @@ fn decisions_go_to_the_providers_decisions_api_in_its_own_format() {
         ("perplexity", "pplx-decider-v1.2", DialectId::SystemOne),
         ("typesafe", "jev-latest", DialectId::SystemOne),
         ("typesafe", "jev-1.13.0", DialectId::SystemOne),
+        (
+            "cloudflare-ai-gateway",
+            "@cf/cloudflare/clef",
+            DialectId::SystemOne,
+        ),
     ] {
         let e = eff(&entry(provider, model));
         let plan = prepare(&mut decide(vec![yes_no()]), DialectId::SystemOne, &e).unwrap();
@@ -2775,6 +2780,15 @@ fn decisions_are_refused_where_the_model_or_its_provider_cannot_answer_them() {
         )
         .2,
         "Cloudflare AI Gateway offers no decisions API Kaeso can call, so `typesafe/jev` can't make decisions."
+    );
+    assert_eq!(
+        refused(
+            "cloudflare-ai-gateway",
+            "@cf/zai-org/glm-4.7-flash",
+            &mut decide(vec![yes_no()])
+        )
+        .2,
+        "The model `@cf/zai-org/glm-4.7-flash` is a generation model; it can't answer decision questions."
     );
     assert_eq!(
         refused("openrouter", "openai/gpt-5", &mut decide(vec![yes_no()])).2,

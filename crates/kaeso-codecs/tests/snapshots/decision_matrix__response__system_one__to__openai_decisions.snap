@@ -202,6 +202,216 @@ expression: outcomes
   "providers/baseten/screenshot": {
     "request_refused": "service_tier"
   },
+  "providers/cloudflare-ai-gateway/recorded-support": {
+    "answers": [
+      {
+        "name": "urgent",
+        "probability": 0.9895,
+        "type": "predicate"
+      },
+      {
+        "choice": "technical",
+        "confidence": 0.7411,
+        "name": "team",
+        "probabilities": [
+          {
+            "probability": 0.1584,
+            "value": "billing"
+          },
+          {
+            "probability": 0.8274,
+            "value": "technical"
+          },
+          {
+            "probability": 0.0142,
+            "value": "sales"
+          }
+        ],
+        "type": "choice"
+      },
+      {
+        "confidence": 0.9485,
+        "name": "severity",
+        "probabilities": [
+          {
+            "label": "No impact",
+            "probability": 0.0043,
+            "value": 0
+          },
+          {
+            "label": "Minor",
+            "probability": 0.0047,
+            "value": 1
+          },
+          {
+            "label": "Major",
+            "probability": 0.0292,
+            "value": 2
+          },
+          {
+            "label": "Critical",
+            "probability": 0.9618,
+            "value": 3
+          }
+        ],
+        "score": 2.9484,
+        "type": "score"
+      }
+    ],
+    "model": "@cf/cloudflare/clef",
+    "usage": {
+      "input_tokens": 346,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 346
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-support-flash": {
+    "answers": [
+      {
+        "name": "urgent",
+        "probability": 0.9319,
+        "type": "predicate"
+      },
+      {
+        "choice": "technical",
+        "confidence": 0.8649999999999999,
+        "name": "team",
+        "probabilities": [
+          {
+            "probability": 0.0693,
+            "value": "billing"
+          },
+          {
+            "probability": 0.91,
+            "value": "technical"
+          },
+          {
+            "probability": 0.0207,
+            "value": "sales"
+          }
+        ],
+        "type": "choice"
+      },
+      {
+        "confidence": 0.7327,
+        "name": "severity",
+        "probabilities": [
+          {
+            "label": "No impact",
+            "probability": 0.0185,
+            "value": 0
+          },
+          {
+            "label": "Minor",
+            "probability": 0.0178,
+            "value": 1
+          },
+          {
+            "label": "Major",
+            "probability": 0.1762,
+            "value": 2
+          },
+          {
+            "label": "Critical",
+            "probability": 0.7875,
+            "value": 3
+          }
+        ],
+        "score": 2.7327,
+        "type": "score"
+      }
+    ],
+    "model": "@cf/cloudflare/clef-flash",
+    "usage": {
+      "input_tokens": 346,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 346
+    }
+  },
+  "providers/cloudflare-ai-gateway/recorded-support-omni": {
+    "answers": [
+      {
+        "name": "urgent",
+        "probability": 0.9865,
+        "type": "predicate"
+      },
+      {
+        "choice": "technical",
+        "confidence": 0.6427,
+        "name": "team",
+        "probabilities": [
+          {
+            "probability": 0.2322,
+            "value": "billing"
+          },
+          {
+            "probability": 0.7618,
+            "value": "technical"
+          },
+          {
+            "probability": 0.006,
+            "value": "sales"
+          }
+        ],
+        "type": "choice"
+      },
+      {
+        "confidence": 0.7853,
+        "name": "severity",
+        "probabilities": [
+          {
+            "label": "No impact",
+            "probability": 0.0052,
+            "value": 0
+          },
+          {
+            "label": "Minor",
+            "probability": 0.0047,
+            "value": 1
+          },
+          {
+            "label": "Major",
+            "probability": 0.1897,
+            "value": 2
+          },
+          {
+            "label": "Critical",
+            "probability": 0.8004,
+            "value": 3
+          }
+        ],
+        "score": 2.7853,
+        "type": "score"
+      }
+    ],
+    "model": "@cf/cloudflare/clef-omni",
+    "usage": {
+      "input_tokens": 341,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 341
+    }
+  },
   "providers/openrouter/listing-box": {
     "request_refused": "box question"
   },

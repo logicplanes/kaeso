@@ -8,7 +8,7 @@ Schlagen Sie hier jedes Feld des Formats System One von TypeSafe nach: wohin es 
 
 - **Codec:** `kaeso_codecs::system_one::SystemOne` (`crates/kaeso-codecs/src/system_one/`)
 - **Endpunkte:** `POST /v1/systemone`, als JSON oder als Upload mit `multipart/form-data`, und die [Modell-Endpunkte](#modelle) von OpenAI
-- **Fixtures:** `crates/kaeso-codecs/fixtures/system_one/`, aus dem OpenAPI-Dokument und der Dokumentation von TypeSafe gebaut; nur die zwei Antworten von TypeSafe auf abgelehnte Schlüssel in `providers/typesafe/` sind aufgezeichnet
+- **Fixtures:** `crates/kaeso-codecs/fixtures/system_one/`, aus dem OpenAPI-Dokument und der Dokumentation von TypeSafe gebaut; aufgezeichnet sind die zwei Antworten von TypeSafe auf abgelehnte Schlüssel in `providers/typesafe/` und die Antworten und Ablehnungen von Clef bei Cloudflare in `providers/cloudflare-ai-gateway/`
 
 **Quellen.** Das OpenAPI-Dokument von TypeSafe `https://api.typesafe.ai/openapi.json` in Version 0.2.0 (`SystemOneRequest`, `Question`, `NoulCriteria`, `Asset`, `SystemOneResponse`, `Answer`, `HTTPBadRequestError`, `HTTPValidationError`) und seine Seiten zu [System One](https://docs.typesafe.ai/api/system-one), [Bildern](https://docs.typesafe.ai/images), [Fehlern](https://docs.typesafe.ai/api/errors) und [Konfidenz](https://docs.typesafe.ai/confidence), gelesen am 2026-11-12.
 
@@ -61,10 +61,10 @@ Jedes Bild ist ein Asset, auf das Strings verweisen. Wohin es geht, entscheidet 
 | `State` | Ein `image_url`-Teil mit Data-URL anstelle jeder Referenz, die ein ganzer String im Zustand ist | Eine Referenz in einem längeren String, in Anweisungen oder in Beschreibungen |
 | `StateOrAssets` | Teile, wo die App Teile gesendet hat, `assets` für die übrigen | Bild-URLs in `assets` |
 | `Conversation` | Eine Benutzernachricht unter `state.messages`: jeder String ein `text`-Teil, jedes Bild ein `image_url`-Teil | Bilder in einem anderen Zustand als Text, einer Liste von Strings oder `{"messages": …}` |
-| `Root` | Eine Liste `images` von Data-URLs auf oberster Ebene, der Reihe nach aus einem Zustands-Array genommen | Eine Referenz an jeder anderen Stelle als als ganzes Element eines Zustands-Arrays |
+| `Root` | Eine Liste `images` von Data-URLs auf oberster Ebene, der Reihe nach aus einem Zustands-Array genommen; ein Bild, das auf andere Elemente folgte, rückt vor den Zustand, in `adapted` als `image_order` genannt | Eine Referenz an jeder anderen Stelle als als ganzes Element eines Zustands-Arrays |
 | `None` | Nichts | Jedes Bild |
 
-Vor dem Senden liest der Codec Format und Größe jedes Bildes aus seinem Header, ohne es zu dekodieren (`kaeso_codecs::image_size`), und lehnt ab, was das Profil ablehnt. Bilder werden nie umgewandelt oder skaliert. Die Ablehnungen nennen `image URL`, `image format`, `image size` oder `animated image`, mit dem Feld in `param`.
+Vor dem Senden liest der Codec Format und Größe jedes Bildes aus seinem Header, ohne es zu dekodieren (`kaeso_codecs::image_size`), und lehnt ab, was das Profil ablehnt: seine Formate, seine Bytes je Bild und je Anfrage, seine Pixel je Seite oder je Bild. Bilder werden nie umgewandelt oder skaliert. Die Ablehnungen nennen `image URL`, `image format`, `image size` oder `animated image`, mit dem Feld in `param`.
 
 ## Fragen und Optionen
 
@@ -75,6 +75,8 @@ Vor dem Senden liest der Codec Format und Größe jedes Bildes aus seinem Header
 | `ChoiceValue::Bool` | `"true"`, `"false"` | In `adapted` als `booleans` genannt. `true` und `"true"` in einer Frage sind `Unsupported` (`repeated choice value`). |
 | `Level` mit `label` und Text-`description` | `"label: description"` | In `adapted` als `levels` genannt. Ein Label allein wird als Stufe geschrieben. |
 | `QuestionKind::Box` | `box` | `Unsupported` (`box question`), wo das Profil keine beantwortet. |
+| `Choice.options`, `Score.levels` | `criteria` | Weniger als `min_options` oder `min_levels` des Profils oder mehr als `max_options` oder `max_levels` ist `Unsupported` (`options`, `levels`). |
+| `Question.instructions` | `instructions` | Eine Frage ohne sie oder mit leerem Text ist `Unsupported` (`question without instructions`), wo `instructions_required` des Profils gesetzt ist. |
 | `DecideRequest.cache`, `Block.cache` | nichts | Hinweise, für die System One keinen Platz hat, in `left_out` als `cache` genannt. |
 | `DecideRequest.user` | nichts | Ein Hinweis, in `left_out` als `user` genannt. |
 | `DecisionInput::Messages` | der Zustand | Nur eine Benutzernachricht; ihre Text-, JSON- und Bildblöcke werden zu einem String oder einem Array. Mehr Nachrichten sind `Unsupported` (`conversation input`). |
@@ -85,7 +87,7 @@ Der Decoder liest jede Antwort unter dem Schlüssel, mit dem ihre Frage gesendet
 
 | Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
-| `model` | `DecideResponse.model` typisiert | Das Modell, das geantwortet hat, etwa `jev-1.14.0` für `jev-latest`. |
+| `model` | `DecideResponse.model` typisiert | Das Modell, das geantwortet hat, etwa `jev-1.14.0` für `jev-latest`. Ein Kurzname, den `ModelField::ShortName` des Profils geschrieben hat, bekommt sein Präfix zurück, sodass `clef` von Cloudflare als `@cf/cloudflare/clef` gelesen wird. |
 | `answers.*` noul | `AnswerValue::Predicate(PredicateAnswer { probability })` typisiert | `noul` ist die Wahrscheinlichkeit für Ja. |
 | `answers.*` choice | `AnswerValue::Choice(ChoiceAnswer { option, probabilities })` typisiert | `option` ist der Index der gewählten Option; `probabilities` hat einen Eintrag je Option, `None`, wo die Antwort keinen hat. |
 | `answers.*` score | `AnswerValue::Score(ScoreAnswer { score, probabilities })` typisiert | `probabilities` nach Stufe, aus den Schlüsseln `"0"`, `"1"`, …. |
@@ -157,7 +159,14 @@ Ohne `TypeSafe-Danger-Zone-Long-Context: true` bekommt eine Anfrage 64k Token f�
 
 ### Cloudflare Workers AI
 
-`SystemOneProfile::CLOUDFLARE_WORKERS_AI`, `POST /ai/run/@cf/cloudflare/{model}`, nach der [Modellseite von Clef](https://developers.cloudflare.com/workers-ai/models/clef/). Der Body nennt das Modell mit seinem Kurznamen, etwa `clef`. Eine Anfrage nimmt höchstens 64 Fragen mit Schlüsseln aus Buchstaben, Ziffern, `_`, `.` und `-` und höchstens 4 Bilder in PNG, JPEG oder WebP mit je 4 MiB in einer Liste `images` auf oberster Ebene. Die Antwort ist das `result` der Hülle von Cloudflare. Das Gateway sendet noch nicht dorthin.
+`SystemOneProfile::CLOUDFLARE_WORKERS_AI`, für die Clef-Modelle von Cloudflare. Quellen, gelesen am 2026-11-13: die Modellseiten von [Clef](https://developers.cloudflare.com/workers-ai/models/clef/), [Clef-flash](https://developers.cloudflare.com/workers-ai/models/clef-flash/) und [Clef-omni](https://developers.cloudflare.com/workers-ai/models/clef-omni/) mit ihren `schema-input.json` und `schema-output.json`, die [Fehler](https://developers.cloudflare.com/workers-ai/platform/errors/) von Workers AI und die [REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/#call-a-workers-ai-model) von AI Gateway, die den Workers-AI-Pfad mit dem Modell darin beibehält und ihn über das in `cf-aig-gateway-id` genannte Gateway leitet.
+
+- **Pfad.** `/run/@cf/cloudflare/{model}` neben der `/v1`-Wurzel des Schlüssels: `POST /client/v4/accounts/{account_id}/ai/run/@cf/cloudflare/clef`. Der Body nennt das Modell mit seinem Kurznamen, `clef`, `clef-flash` oder `clef-omni`; ein anderer Name ist ein 422.
+- **Grenzen.** 1 bis 64 Fragen mit Anweisungen, Schlüssel aus Buchstaben, Ziffern, `_`, `.` und `-` mit bis zu 100 Zeichen, 2 bis 255 Optionen und 2 bis 10 Stufen; keine Box-Fragen. Cloudflare lehnt Felder ab, die es nicht dokumentiert, daher sind eigene Felder einer App vor dem Senden `Unsupported`.
+- **Bilder.** Eine Liste `images` auf oberster Ebene aus Data-URLs in PNG, JPEG oder WebP, höchstens 4, je höchstens 4 MiB und 16 Megapixel, zusammen 8 MiB. Clef-omni nimmt auch `audio` und `videos` an, für die KPP keinen Platz hat.
+- **Antworten.** Die Antwort ist das `result` der Hülle von Cloudflare, `{"result", "success", "errors", "messages"}`. Eine Ja-Nein-Antwort hat keine `confidence`. Fehler kommen in der Hülle mit `success: false`, etwa 401 mit Code 10000 für ein abgelehntes Token, 422 mit Code 3030, der die verletzte Schema-Regel nennt, und 400 mit Code 2001 für ein Gateway, das das Konto nicht hat.
+
+Live-Prüfungen am 2026-11-13: Die dokumentierte Anfrage antwortete auf allen drei Modellen mit 200, mit und ohne `cf-aig-gateway-id`; die Grenzen oben kamen als die Ablehnungen zurück, die in `providers/cloudflare-ai-gateway/errors/` aufgezeichnet sind; und ein Zustand mit 10.350 Tokens wurde ganz gelesen. Der Zustand wird also nur gekürzt, um in den Kontext des Modells zu passen, wie die Modellseiten sagen, nicht bei etwa 2.000 Tokens.
 
 ### Andere Server
 

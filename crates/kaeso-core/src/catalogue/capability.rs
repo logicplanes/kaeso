@@ -320,7 +320,7 @@ pub fn prepare(
         }
         Request::Decide(d) => {
             let Some(decisions) = eff.provider.decisions(name) else {
-                let message = if eff.provider.has_decisions() {
+                let message = if eff.provider.has_decisions() && !eff.decides() {
                     generation_only(name)
                 } else {
                     no_media_api(

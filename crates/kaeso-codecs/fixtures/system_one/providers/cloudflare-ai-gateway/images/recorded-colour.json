@@ -1,0 +1,24 @@
+{
+  "result": {
+    "model": "clef",
+    "answers": {
+      "colour": {
+        "type": "choice",
+        "choice": "red",
+        "probabilities": {
+          "red": 0.9937,
+          "blue": 0.0031,
+          "green": 0.0032
+        },
+        "confidence": 0.9813
+      }
+    },
+    "usage": {
+      "input_tokens": 218,
+      "output_tokens": 0
+    }
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}

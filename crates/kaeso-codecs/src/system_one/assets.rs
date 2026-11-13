@@ -270,7 +270,11 @@ pub(super) fn check_image(
         );
     }
     let checks_format = !profile.image_types.is_empty();
-    if !checks_format && profile.image_px.is_none() && profile.animated_images {
+    if !checks_format
+        && profile.image_px.is_none()
+        && profile.image_pixels.is_none()
+        && profile.animated_images
+    {
         return Ok(());
     }
     let types = match profile.image_types {
@@ -298,6 +302,19 @@ pub(super) fn check_image(
         return refuse(
             "animated image",
             format!("{name} takes only still images; send one frame as a PNG or JPEG."),
+        );
+    }
+    if let Some(max) = profile.image_pixels
+        && u64::from(info.width) * u64::from(info.height) > max
+    {
+        return refuse(
+            "image size",
+            format!(
+                "{name} takes images of at most {} megapixels; this one is {}×{}. Resize it before sending.",
+                max / 1_000_000,
+                info.width,
+                info.height
+            ),
         );
     }
     if let Some((min, max)) = profile.image_px

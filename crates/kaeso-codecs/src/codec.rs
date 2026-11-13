@@ -288,7 +288,9 @@ pub struct EgressCtx {
     pub base_path: Option<String>,
     /// What takes the place of `/v1` for a provider whose API path names the account, such as
     /// Cloudflare's `/client/v4/accounts/{account_id}/ai/v1`: Chat Completions, Responses and
-    /// Messages send their usual path under it. A [`EgressCtx::base_path`] goes first.
+    /// Messages send their usual path under it, and a path outside `/v1`, such as Workers AI's
+    /// `/run/@cf/cloudflare/clef`, goes beside it, under the root without its `/v1`. A
+    /// [`EgressCtx::base_path`] goes first.
     pub api_root: Option<String>,
     /// The audio format the request asked for, which tells a reply decoder the media type of
     /// audio the provider doesn't label, as Chat Completions' `message.audio`. The encoder sets
@@ -454,7 +456,7 @@ impl EgressCtx {
         self
     }
 
-    /// Sends Chat Completions, Responses and Messages requests under `root` in place of `/v1`
+    /// Sends requests under `root` in place of `/v1`, and requests outside `/v1` beside it
     /// ([`EgressCtx::api_root`]); a trailing slash is ignored.
     #[must_use]
     pub fn with_api_root(mut self, root: impl Into<String>) -> Self {
@@ -550,12 +552,19 @@ impl EncodedError {
     }
 }
 
-/// A dialect's `/v1/…` path under the context's API root, which takes the place of `/v1`
-/// ([`EgressCtx::api_root`]); the path itself without one.
+/// A dialect's path under the context's API root, which takes the place of `/v1`
+/// ([`EgressCtx::api_root`]): a `/v1/…` path under the root, any other path under the root
+/// without its `/v1`; the path itself without a root.
 pub(crate) fn under_api_root(ctx: &EgressCtx, path: &str) -> String {
-    match (&ctx.api_root, path.strip_prefix("/v1")) {
-        (Some(base), Some(rest)) => format!("{base}{rest}"),
-        _ => path.to_owned(),
+    let Some(root) = &ctx.api_root else {
+        return path.to_owned();
+    };
+    match path.strip_prefix("/v1") {
+        Some(rest) if rest.is_empty() || rest.starts_with('/') => format!("{root}{rest}"),
+        _ => match root.strip_suffix("/v1") {
+            Some(beside) => format!("{beside}{path}"),
+            None => path.to_owned(),
+        },
     }
 }
 

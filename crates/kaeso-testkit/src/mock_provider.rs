@@ -12,6 +12,7 @@ use axum::extract::State;
 use axum::http::{HeaderMap, Method, StatusCode, Uri};
 use axum::response::{IntoResponse, Response};
 use kaeso_codecs::gemini::{GeminiAction, split_model_action};
+use kaeso_kpp::DialectId;
 use tokio::sync::watch;
 
 #[derive(Clone, Debug)]
@@ -438,13 +439,17 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     }
     let path = platform.map_or(path, |p| p.as_ai_studio);
     // Cloudflare's REST API names the account: `/client/v4/accounts/{id}/ai/v1/…` serves the
-    // dialects' `/v1/…` paths, and `…/ai/models/search` its Workers AI model search.
+    // dialects' `/v1/…` paths, `…/ai/models/search` its Workers AI model search and
+    // `…/ai/run/@cf/cloudflare/{model}` Clef's System One decisions.
     let path =
         match cloudflare_path(&path) {
             Some(CloudflarePath::ModelSearch) if method == Method::GET => {
                 return json_file(&ctx.fixtures.join(
                     "openai_chat/providers/cloudflare-ai-gateway/account/search-recorded.json",
                 ));
+            }
+            Some(CloudflarePath::Run(model)) if method == Method::POST => {
+                return cloudflare_run(&ctx.fixtures, &model, &body, &headers, &text);
             }
             Some(CloudflarePath::Api(rest)) => rest,
             _ => path,
@@ -980,6 +985,54 @@ struct PlatformPath {
 enum CloudflarePath {
     Api(String),
     ModelSearch,
+    Run(String),
+}
+
+// Clef answers a System One body whose `model` is the path's short name, in Cloudflare's
+// `{"result": …}` envelope; a refused token, another model or `[mock:error=<name>]` gets one of
+// the errors recorded from Cloudflare in `system_one/providers/cloudflare-ai-gateway/errors/`.
+fn cloudflare_run(
+    fixtures: &Path,
+    model: &str,
+    body: &Bytes,
+    headers: &HeaderMap,
+    text: &str,
+) -> Response {
+    let dir = fixtures.join("system_one");
+    let error = |name: &str| {
+        error_response(
+            &dir,
+            &format!("providers/cloudflare-ai-gateway/recorded-{name}"),
+        )
+    };
+    let bearer = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.starts_with("Bearer ") && v.len() > 7);
+    if !bearer {
+        return error("invalid-token-401");
+    }
+    if let Some(name) = marker(text, "error") {
+        return error(name);
+    }
+    let named = serde_json::from_slice::<serde_json::Value>(body)
+        .ok()
+        .and_then(|v| v.get("model").and_then(|m| m.as_str()).map(str::to_owned));
+    if named.as_deref().map(str::trim) != model.strip_prefix("@cf/cloudflare/") {
+        return error("wrong-model-422");
+    }
+    let Some(result) = crate::mock_decisions::reply(DialectId::SystemOne, body, headers)
+        .and_then(|b| serde_json::from_slice::<serde_json::Value>(&b).ok())
+    else {
+        return StatusCode::UNPROCESSABLE_ENTITY.into_response();
+    };
+    axum::Json(serde_json::json!({
+        "result": result,
+        "success": true,
+        "errors": [],
+        "messages": [],
+    }))
+    .into_response()
 }
 
 fn cloudflare_path(path: &str) -> Option<CloudflarePath> {
@@ -991,6 +1044,9 @@ fn cloudflare_path(path: &str) -> Option<CloudflarePath> {
     let rest = rest.strip_prefix("ai")?;
     if rest == "/models/search" {
         return Some(CloudflarePath::ModelSearch);
+    }
+    if let Some(model) = rest.strip_prefix("/run/") {
+        return Some(CloudflarePath::Run(model.to_owned()));
     }
     rest.starts_with("/v1/")
         .then(|| CloudflarePath::Api(rest.to_owned()))

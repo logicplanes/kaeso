@@ -8,7 +8,7 @@ order: 8
 
 - **编解码器：**`kaeso_codecs::system_one::SystemOne`（`crates/kaeso-codecs/src/system_one/`）
 - **端点：**`POST /v1/systemone`，以 JSON 或 `multipart/form-data` 上传发送，以及 OpenAI 的[模型端点](#模型)
-- **Fixture：**`crates/kaeso-codecs/fixtures/system_one/`，根据 TypeSafe 的 OpenAPI 文档和文档构建；只有 `providers/typesafe/` 中 TypeSafe 对被拒密钥的两个回复是录制的
+- **Fixture：**`crates/kaeso-codecs/fixtures/system_one/`，根据 TypeSafe 的 OpenAPI 文档和文档构建；录制的是 `providers/typesafe/` 中 TypeSafe 对被拒密钥的两个回复，以及 `providers/cloudflare-ai-gateway/` 中 Cloudflare 的 Clef 回复和拒绝
 
 **来源。** TypeSafe 的 OpenAPI 文档 `https://api.typesafe.ai/openapi.json` 0.2.0 版（`SystemOneRequest`、`Question`、`NoulCriteria`、`Asset`、`SystemOneResponse`、`Answer`、`HTTPBadRequestError`、`HTTPValidationError`），以及它关于 [System One](https://docs.typesafe.ai/api/system-one)、[图片](https://docs.typesafe.ai/images)、[错误](https://docs.typesafe.ai/api/errors)和[置信度](https://docs.typesafe.ai/confidence)的页面，阅读于 2026-11-12。
 
@@ -61,10 +61,10 @@ order: 8
 | `State` | 在状态中每个作为完整字符串的引用处写入带 data URL 的 `image_url` 部分 | 较长字符串中的引用、说明或描述中的引用 |
 | `StateOrAssets` | 应用发送部分之处写成部分，其余写成 `assets` | `assets` 中的图片 URL |
 | `Conversation` | `state.messages` 下的一条用户消息：每个字符串是 `text` 部分，每张图片是 `image_url` 部分 | 状态不是文本、字符串列表或 `{"messages": …}` 时其中的图片 |
-| `Root` | 顶层的 `images` 列表，由 data URL 组成，按顺序从状态数组中取出 | 不是状态数组完整元素的任何引用 |
+| `Root` | 顶层的 `images` 列表，由 data URL 组成，按顺序从状态数组中取出；排在其他元素之后的图片会移到状态之前，在 `adapted` 中记为 `image_order` | 不是状态数组完整元素的任何引用 |
 | `None` | 无 | 所有图片 |
 
-发送之前，编解码器从每张图片的头部读取其格式和尺寸，不进行解码（`kaeso_codecs::image_size`），并拒绝配置文件所拒绝的内容。图片从不转换或缩放。拒绝信息会指明 `image URL`、`image format`、`image size` 或 `animated image`，字段位于 `param`。
+发送之前，编解码器从每张图片的头部读取其格式和尺寸，不进行解码（`kaeso_codecs::image_size`），并拒绝配置文件所拒绝的内容：它的格式、每张图片和每个请求的字节数、每边或每张图片的像素数。图片从不转换或缩放。拒绝信息会指明 `image URL`、`image format`、`image size` 或 `animated image`，字段位于 `param`。
 
 ## 问题与选项
 
@@ -75,6 +75,8 @@ order: 8
 | `ChoiceValue::Bool` | `"true"`、`"false"` | 在 `adapted` 中记为 `booleans`。同一问题中同时出现 `true` 和 `"true"` 为 `Unsupported`（`repeated choice value`）。 |
 | 带 `label` 和文本 `description` 的 `Level` | `"label: description"` | 在 `adapted` 中记为 `levels`。只有标签时写出标签。 |
 | `QuestionKind::Box` | `box` | 配置文件不回答 box 问题时为 `Unsupported`（`box question`）。 |
+| `Choice.options`、`Score.levels` | `criteria` | 少于配置文件的 `min_options` 或 `min_levels`，或多于其 `max_options` 或 `max_levels`，为 `Unsupported`（`options`、`levels`）。 |
+| `Question.instructions` | `instructions` | 配置文件设置了 `instructions_required` 时，没有指令或指令为空文本的问题为 `Unsupported`（`question without instructions`）。 |
 | `DecideRequest.cache`、`Block.cache` | 无 | System One 没有对应位置的提示，在 `left_out` 中记为 `cache`。 |
 | `DecideRequest.user` | 无 | 一个提示，在 `left_out` 中记为 `user`。 |
 | `DecisionInput::Messages` | 状态 | 只接受一条用户消息；其文本、JSON 和图片块成为一个字符串或数组。更多消息为 `Unsupported`（`conversation input`）。 |
@@ -85,7 +87,7 @@ order: 8
 
 | 线路字段 | KPP | 说明 |
 |---|---|---|
-| `model` | `DecideResponse.model`（类型化） | 实际回答的模型，例如 `jev-latest` 对应的 `jev-1.14.0`。 |
+| `model` | `DecideResponse.model`（类型化） | 实际回答的模型，例如 `jev-latest` 对应的 `jev-1.14.0`。配置文件的 `ModelField::ShortName` 写出的短名称会补回前缀，因此 Cloudflare 的 `clef` 读作 `@cf/cloudflare/clef`。 |
 | `answers.*` noul | `AnswerValue::Predicate(PredicateAnswer { probability })`（类型化） | `noul` 是“是”的概率。 |
 | `answers.*` choice | `AnswerValue::Choice(ChoiceAnswer { option, probabilities })`（类型化） | `option` 是所选选项的索引；`probabilities` 每个选项一项，回复中没有的为 `None`。 |
 | `answers.*` score | `AnswerValue::Score(ScoreAnswer { score, probabilities })`（类型化） | `probabilities` 按级别排列，来自键 `"0"`、`"1"` 等。 |
@@ -157,7 +159,14 @@ TypeSafe 的 `GET /v1/models` 返回 `{"models": [{name, description, release_da
 
 ### Cloudflare Workers AI
 
-`SystemOneProfile::CLOUDFLARE_WORKERS_AI`，`POST /ai/run/@cf/cloudflare/{model}`，依据 [Clef 模型页面](https://developers.cloudflare.com/workers-ai/models/clef/)。请求体以短名称指定模型，例如 `clef`。一个请求最多 64 个问题，键由字母、数字、`_`、`.` 和 `-` 组成；顶层 `images` 列表中最多 4 张 PNG、JPEG 或 WebP 图片，每张最大 4 MiB。回复是 Cloudflare 封装中的 `result`。网关尚未向其发送请求。
+`SystemOneProfile::CLOUDFLARE_WORKERS_AI`，用于 Cloudflare 的 Clef 模型。来源（阅读于 2026-11-13）：[Clef](https://developers.cloudflare.com/workers-ai/models/clef/)、[Clef-flash](https://developers.cloudflare.com/workers-ai/models/clef-flash/) 和 [Clef-omni](https://developers.cloudflare.com/workers-ai/models/clef-omni/) 的模型页面及其 `schema-input.json` 和 `schema-output.json`，Workers AI 的[错误](https://developers.cloudflare.com/workers-ai/platform/errors/)，以及 AI Gateway 的 [REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/#call-a-workers-ai-model)：它保留路径中带模型的 Workers AI 路径，并经由 `cf-aig-gateway-id` 指定的网关转发。
+
+- **路径。**在密钥的 `/v1` 根旁边的 `/run/@cf/cloudflare/{model}`：`POST /client/v4/accounts/{account_id}/ai/run/@cf/cloudflare/clef`。请求体以短名称指定模型：`clef`、`clef-flash` 或 `clef-omni`；其他名称返回 422。
+- **限制。**1 到 64 个带指令的问题，键由字母、数字、`_`、`.` 和 `-` 组成，最多 100 个字符，2 到 255 个选项，2 到 10 个等级；不支持 box 问题。Cloudflare 会拒绝它未记录的字段，因此应用自己的字段在发送前即为 `Unsupported`。
+- **图片。**顶层的 `images` 列表，由 PNG、JPEG 或 WebP 的 data URL 组成，最多 4 张，每张最大 4 MiB 和 1600 万像素，合计 8 MiB。Clef-omni 还接受 `audio` 和 `videos`，KPP 中没有它们的位置。
+- **回复。**答案是 Cloudflare 封装中的 `result`：`{"result", "success", "errors", "messages"}`。是非答案没有 `confidence`。错误以 `success: false` 的封装返回，例如令牌被拒时为 401、代码 10000，请求违反某条 schema 规则时为 422、代码 3030 并指明该规则，账户没有所指网关时为 400、代码 2001。
+
+2026-11-13 的实时检查：文档中的请求在三个模型上都返回 200，带或不带 `cf-aig-gateway-id` 均如此；上述限制以 `providers/cloudflare-ai-gateway/errors/` 中录制的拒绝返回；一个 10,350 Token 的状态被完整读取。因此，正如模型页面所说，状态只会截断到适合模型的上下文，而不是在约 2,000 Token 处截断。
 
 ### 其他服务器
 

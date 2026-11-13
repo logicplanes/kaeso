@@ -232,6 +232,8 @@ e2e/.venv/bin/pytest -q e2e/sdk
 | 服务商密钥中的 `[mock:models=typesafe]` | `GET /v1/models` 返回 TypeSafe 自己的模型列表，`GET /v1/models/{id}` 返回裸 404，与 TypeSafe 相同 |
 | 服务商密钥中的 `[mock:models=endless]` | 让 Anthropic 的模型列表停留在第一页 |
 
+在 Cloudflare 的账户路径上，模拟服务商在 `…/ai/run/@cf/cloudflare/{model}` 以 Cloudflare 的封装回答 Clef；其中的 `[mock:error=NAME]` 选择 `system_one/providers/cloudflare-ai-gateway/errors/` 中的错误 `recorded-NAME`。
+
 `MockProvider::gate()` 创建一个闸门并返回它的标记。`wait_for(n)` 在 `n` 个请求到达后返回，`open()` 放行所有请求。测试就是这样在不使用 sleep 的情况下让请求保持在进行中。
 
 ### MCP 门户测试套件

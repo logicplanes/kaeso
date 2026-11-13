@@ -379,3 +379,296 @@ async fn a_check_finds_workers_ai_models_in_cloudflare_search_and_cannot_tell_fo
         vec![format!("/client/v4/accounts/{ACCOUNT}/ai/models/search"); 3]
     );
 }
+
+const CLEF: &str = "@cf/cloudflare/clef";
+const CLEF_FLASH: &str = "@cf/cloudflare/clef-flash";
+// A 1×1 PNG.
+const PNG: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+#[derive(Clone, Copy, Debug)]
+enum App {
+    OpenAi,
+    SystemOne,
+    Gemini,
+}
+
+const APPS: [App; 3] = [App::OpenAi, App::SystemOne, App::Gemini];
+
+impl App {
+    fn path(self, env: &Env) -> String {
+        match self {
+            App::OpenAi => "/v1/decisions".to_owned(),
+            App::SystemOne => "/v1/systemone".to_owned(),
+            App::Gemini => format!("/v1beta/decisions?key={}", env.key),
+        }
+    }
+
+    // A yes/no, a choice and a score question about a support message, after `images` photos.
+    fn body(self, model: &str, images: usize) -> Value {
+        let text = "I was charged twice; refund me.";
+        let url = format!("data:image/png;base64,{PNG}");
+        match self {
+            App::OpenAi => {
+                let mut content: Vec<Value> = (0..images)
+                    .map(|_| json!({ "type": "input_image", "image_url": url }))
+                    .collect();
+                content.push(json!({ "type": "input_text", "text": text }));
+                json!({ "model": model, "input": [{ "role": "user", "content": content }], "questions": [
+                    { "type": "predicate", "name": "refund", "instructions": "Does the customer ask for a refund?" },
+                    { "type": "choice", "name": "team", "instructions": "Which team handles it?",
+                      "choices": [{ "value": "billing" }, { "value": "support" }] },
+                    { "type": "score", "name": "urgency", "instructions": "How urgent is it?",
+                      "levels": [{ "label": "low" }, { "label": "high" }] }
+                ] })
+            }
+            App::SystemOne => {
+                let mut state: Vec<Value> =
+                    (0..images).map(|i| json!(format!("<photo-{i}>"))).collect();
+                state.push(json!(text));
+                let assets: serde_json::Map<String, Value> = (0..images)
+                    .map(|i| {
+                        (
+                            format!("<photo-{i}>"),
+                            json!({ "type": "image", "format": "png", "data_base64": PNG }),
+                        )
+                    })
+                    .collect();
+                let mut body = json!({ "model": model, "state": state, "questions": {
+                    "refund": { "type": "noul", "instructions": "Does the customer ask for a refund?" },
+                    "team": { "type": "choice", "instructions": "Which team handles it?",
+                              "criteria": { "billing": "Payments and refunds.", "support": "Everything else." } },
+                    "urgency": { "type": "score", "instructions": "How urgent is it?", "criteria": ["low", "high"] }
+                } });
+                if images > 0 {
+                    body["assets"] = Value::Object(assets);
+                }
+                body
+            }
+            App::Gemini => {
+                let mut parts: Vec<Value> = (0..images)
+                    .map(|_| json!({ "type": "image", "data": PNG, "mime_type": "image/png" }))
+                    .collect();
+                parts.push(json!({ "type": "text", "text": text }));
+                json!({ "model": model, "input": parts, "questions": {
+                    "refund": { "type": "noul", "instructions": "Does the customer ask for a refund?" },
+                    "team": { "type": "choice", "instructions": "Which team handles it?",
+                              "criteria": { "billing": "Payments and refunds.", "support": "Everything else." } },
+                    "urgency": { "type": "score", "instructions": "How urgent is it?", "criteria": ["low", "high"] }
+                } })
+            }
+        }
+    }
+
+    fn refund(self, reply: &Value) -> f64 {
+        match self {
+            App::OpenAi => reply["answers"][0]["probability"].as_f64().unwrap(),
+            App::SystemOne | App::Gemini => reply["answers"]["refund"]["noul"].as_f64().unwrap(),
+        }
+    }
+
+    fn error_message(self, reply: &Value) -> String {
+        match self {
+            App::OpenAi | App::Gemini => reply["error"]["message"].as_str().unwrap().to_owned(),
+            App::SystemOne => match &reply["detail"] {
+                Value::String(s) => s.clone(),
+                other => other.to_string(),
+            },
+        }
+    }
+}
+
+async fn clef_env(gateway: Option<&str>) -> Env {
+    let env = env_with(gateway).await;
+    for model in [CLEF, CLEF_FLASH] {
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+                json!({ "provider": "cloudflare-ai-gateway", "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{model}: {:?}", r.body);
+    }
+    env
+}
+
+async fn decide(env: &Env, app: App, body: Value) -> common::v1::Answer {
+    let auth = match app {
+        App::Gemini => None,
+        App::OpenAi | App::SystemOne => Some(env.key.as_str()),
+    };
+    call(env, &app.path(env), auth, false, Some(body)).await
+}
+
+#[tokio::test]
+async fn clef_answers_every_decision_format_at_the_keys_account_through_its_gateway() {
+    let env = clef_env(Some(GATEWAY)).await;
+    for app in APPS {
+        for (model, short) in [(CLEF, "clef"), (CLEF_FLASH, "clef-flash")] {
+            env.mock.clear();
+            let r = decide(&env, app, app.body(model, 0)).await;
+            assert_eq!(r.status, StatusCode::OK, "{app:?} {model}: {}", r.text());
+            assert!(
+                (app.refund(&r.json()) - 0.82).abs() < 1e-9,
+                "{app:?}: {}",
+                r.text()
+            );
+            assert_eq!(r.header("kaeso-provider"), Some("cloudflare-ai-gateway"));
+            assert_eq!(r.header("kaeso-model"), Some(model));
+            let sent = env.mock.last().unwrap();
+            assert_eq!(
+                sent.path,
+                format!("/client/v4/accounts/{ACCOUNT}/ai/run/{model}")
+            );
+            assert_eq!(
+                sent.header("authorization"),
+                Some(format!("Bearer {SECRET}").as_str())
+            );
+            assert_eq!(sent.header("cf-aig-gateway-id"), Some(GATEWAY));
+            let body = sent.json();
+            assert_eq!(body["model"], short, "{body}");
+            assert!(body["questions"]["refund"].is_object(), "{body}");
+            assert!(body.get("images").is_none(), "{body}");
+            if let App::SystemOne = app {
+                assert_eq!(
+                    r.json()["model"],
+                    model,
+                    "a reply names the model's full id"
+                );
+            }
+            let o = env
+                .capture
+                .recorded(r.header("kaeso-request-id").unwrap())
+                .await;
+            assert_eq!(o.egress.unwrap().as_str(), "system_one");
+            assert_eq!(o.usage.clone().unwrap().input_tokens, 120);
+        }
+    }
+    let r = decide(&env, App::SystemOne, App::SystemOne.body(CLEF, 0)).await;
+    let o = env
+        .capture
+        .recorded(r.header("kaeso-request-id").unwrap())
+        .await;
+    assert_eq!(
+        kaeso_server::services::usage::costed(&o).1,
+        rust_decimal::Decimal::new(288, 7),
+        "120 input tokens at $0.24 per million"
+    );
+
+    let env = clef_env(None).await;
+    let r = decide(&env, App::OpenAi, App::OpenAi.body(CLEF, 0)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(env.mock.last().unwrap().header("cf-aig-gateway-id"), None);
+}
+
+#[tokio::test]
+async fn clef_takes_up_to_four_images_from_every_format_in_a_list_of_its_own() {
+    let env = clef_env(Some(GATEWAY)).await;
+    for app in APPS {
+        env.mock.clear();
+        let r = decide(&env, app, app.body(CLEF, 4)).await;
+        assert_eq!(r.status, StatusCode::OK, "{app:?}: {}", r.text());
+        let body = env.mock.last().unwrap().json();
+        let images = body["images"].as_array().unwrap();
+        assert_eq!(images.len(), 4, "{app:?}: {body}");
+        assert!(
+            images
+                .iter()
+                .all(|i| i.as_str().unwrap().starts_with("data:image/png;base64,"))
+        );
+        assert_eq!(
+            body["state"],
+            json!(["I was charged twice; refund me."]),
+            "{app:?}"
+        );
+
+        env.mock.clear();
+        let r = decide(&env, app, app.body(CLEF, 5)).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{app:?}: {}", r.text());
+        let message = app.error_message(&r.json());
+        assert!(message.contains("at most 4 images"), "{app:?}: {message}");
+        assert!(env.mock.received().is_empty(), "{app:?}");
+    }
+}
+
+#[tokio::test]
+async fn questions_clef_cant_take_are_refused_before_anything_is_sent() {
+    let env = clef_env(Some(GATEWAY)).await;
+    env.mock.clear();
+    let many = |n: usize| {
+        let questions: serde_json::Map<String, Value> = (0..n)
+            .map(|i| {
+                (
+                    format!("q{i}"),
+                    json!({ "type": "noul", "instructions": "Urgent?" }),
+                )
+            })
+            .collect();
+        json!({ "model": CLEF, "state": "Hi", "questions": questions })
+    };
+    let r = decide(&env, App::SystemOne, many(65)).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        App::SystemOne
+            .error_message(&r.json())
+            .contains("at most 64 questions"),
+        "{}",
+        r.text()
+    );
+    let boxed = json!({ "model": CLEF, "state": "A photo",
+        "questions": { "where": { "type": "box", "instructions": "the cat" } } });
+    let r = decide(&env, App::SystemOne, boxed).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        App::SystemOne.error_message(&r.json()),
+        format!("The model `{CLEF}` does not answer box questions.")
+    );
+    let mut extra = App::SystemOne.body(CLEF, 0);
+    extra["priority"] = json!("high");
+    let r = decide(&env, App::SystemOne, extra).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        App::SystemOne
+            .error_message(&r.json())
+            .contains("`priority`"),
+        "{}",
+        r.text()
+    );
+    let one_level = json!({ "model": CLEF, "input": "Hi", "questions": [
+        { "type": "score", "name": "urgency", "instructions": "How urgent?", "levels": [{ "label": "only" }] }] });
+    let r = decide(&env, App::OpenAi, one_level).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(env.mock.received().is_empty(), "{:?}", env.mock.received());
+
+    let r = decide(&env, App::SystemOne, many(64)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let generation = decide(&env, App::SystemOne, App::SystemOne.body(WORKERS_AI, 0)).await;
+    assert_eq!(
+        App::SystemOne.error_message(&generation.json()),
+        format!(
+            "The model `{WORKERS_AI}` is a generation model; it can't answer decision questions."
+        )
+    );
+}
+
+#[tokio::test]
+async fn cloudflare_refusals_of_a_decision_reach_apps_in_their_own_format() {
+    let env = clef_env(Some(GATEWAY)).await;
+    for app in APPS {
+        let mut body = app.body(CLEF, 0);
+        let marker = "[mock:error=unknown-gateway-400]";
+        match app {
+            App::SystemOne => body["state"] = json!(format!("Hi {marker}")),
+            App::OpenAi => body["input"][0]["content"][0]["text"] = json!(format!("Hi {marker}")),
+            App::Gemini => body["input"][0]["text"] = json!(format!("Hi {marker}")),
+        }
+        let r = decide(&env, app, body).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{app:?}: {}", r.text());
+        assert_eq!(
+            app.error_message(&r.json()),
+            "Please configure AI Gateway in the Cloudflare dashboard",
+            "{app:?}"
+        );
+    }
+}

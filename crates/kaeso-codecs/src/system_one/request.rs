@@ -687,6 +687,16 @@ impl Writer<'_> {
             Some(_) => return Err(unknown("instructions").with_param(param)),
             None => None,
         };
+        if profile.instructions_required && instructions.as_deref().is_none_or(|i| i == "\"\"") {
+            return Err(unsupported(
+                "question without instructions",
+                format!(
+                    "{} needs instructions for every question; give this one instructions.",
+                    profile.name
+                ),
+            )
+            .with_param(format!("{param}.instructions")));
+        }
         let mut options = Vec::new();
         let (ty, criteria) = match &q.kind {
             QuestionKind::Predicate(p) => {
@@ -720,6 +730,18 @@ impl Writer<'_> {
                 ("noul", criteria)
             }
             QuestionKind::Choice(c) => {
+                if c.options.len() < profile.min_options {
+                    return Err(unsupported(
+                        "options",
+                        format!(
+                            "{} takes at least {} options per choice question; this one has {}.",
+                            profile.name,
+                            profile.min_options,
+                            c.options.len()
+                        ),
+                    )
+                    .with_param(param));
+                }
                 if let Some(max) = profile.max_options
                     && c.options.len() > max
                 {
@@ -762,6 +784,18 @@ impl Writer<'_> {
                 )
             }
             QuestionKind::Score(s) => {
+                if s.levels.len() < profile.min_levels {
+                    return Err(unsupported(
+                        "levels",
+                        format!(
+                            "{} takes at least {} levels per score question; this one has {}.",
+                            profile.name,
+                            profile.min_levels,
+                            s.levels.len()
+                        ),
+                    )
+                    .with_param(param));
+                }
                 if let Some(max) = profile.max_levels
                     && s.levels.len() > max
                 {
@@ -887,6 +921,27 @@ fn place(
     for (reference, asset) in &w.assets {
         check_image(&asset.source, &profile, &format!("assets.{reference}"))?;
     }
+    if let Some(max) = profile.images_bytes {
+        let total: usize = w
+            .assets
+            .values()
+            .map(|a| match &a.source {
+                Source::Base64(b) => b.data.len(),
+                _ => 0,
+            })
+            .sum();
+        if total > max {
+            return Err(unsupported(
+                "image size",
+                format!(
+                    "{} takes at most {} MiB of images per request; these have {total} bytes.",
+                    profile.name,
+                    max / (1024 * 1024)
+                ),
+            )
+            .with_param("assets"));
+        }
+    }
     let as_parts: Vec<String> = w
         .assets
         .iter()
@@ -1007,7 +1062,14 @@ fn place(
                     .ok()
                     .filter(|s| item.get().starts_with('"') && refs.contains(s));
                 match reference.and_then(|r| w.assets.get(&r)) {
-                    Some(asset) => images.push(quoted(&data_url(asset, w.dry)?)),
+                    Some(asset) => {
+                        // The provider shows its `images` before the state, so an image that
+                        // followed other items moves.
+                        if !kept.is_empty() {
+                            Writer::note(&mut w.adapted, "image_order");
+                        }
+                        images.push(quoted(&data_url(asset, w.dry)?));
+                    }
                     None => kept.push(item.get().to_owned()),
                 }
             }
