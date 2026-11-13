@@ -201,6 +201,14 @@ fn error_fixtures_read_as_their_kinds_and_reach_apps_as_sent() {
             "providers/perplexity/noul-needs-criteria-400",
             ErrorKind::InvalidRequest,
         ),
+        (
+            "providers/typesafe/recorded-invalid-key-401",
+            ErrorKind::Authentication,
+        ),
+        (
+            "providers/typesafe/recorded-missing-key-403",
+            ErrorKind::Authentication,
+        ),
     ];
     let all = fixtures(DIR, "errors", "json");
     assert_eq!(all.len(), expected.len());
@@ -221,7 +229,7 @@ fn error_fixtures_read_as_their_kinds_and_reach_apps_as_sent() {
         assert_eq!(&err.kind, kind, "{name}");
         assert!(!err.message.is_empty(), "{name}");
         let out = SystemOne::encode_error(&err);
-        if name.starts_with("providers/") {
+        if name.starts_with("providers/") && !name.starts_with("providers/typesafe/") {
             let sent: Value = serde_json::from_slice(&out.body).unwrap();
             assert_eq!(sent["detail"], err.message.as_str(), "{name}");
             continue;
@@ -1172,6 +1180,120 @@ fn a_box_answer_without_confidence_keeps_its_null() {
         )
         .is_err()
     );
+}
+
+#[test]
+fn typesafes_own_listing_is_read_too() {
+    let listing = |name: &str| {
+        std::fs::read(
+            crate::test_support::fixtures_dir()
+                .join(DIR)
+                .join("providers/typesafe/models")
+                .join(format!("{name}.json")),
+        )
+        .unwrap()
+    };
+    for name in ["list-doc", "list"] {
+        let list = SystemOne::decode_models(200, &HeaderList::new(), &listing(name))
+            .unwrap_or_else(|e| panic!("{name}: {e}"));
+        assert!(list.models.iter().any(|m| m.id == "jev-latest"), "{name}");
+        let first = &list.models[0];
+        assert!(first.extras.fields.contains_key("description"), "{name}");
+        assert!(first.extras.fields.contains_key("release_date"), "{name}");
+    }
+    let full = listing("list");
+    let ids: Vec<String> = SystemOne::decode_models(200, &HeaderList::new(), &full)
+        .unwrap()
+        .models
+        .into_iter()
+        .map(|m| m.id)
+        .collect();
+    assert_eq!(
+        ids,
+        ["jev-latest", "jev-preview", "jev-1.14.0", "jev-1.13.0"]
+    );
+    for bad in [
+        &br#"{"models":[{"description":"no name"}]}"#[..],
+        br#"{"models":3}"#,
+    ] {
+        assert_eq!(
+            SystemOne::decode_models(200, &HeaderList::new(), bad)
+                .unwrap_err()
+                .kind,
+            ErrorKind::ProviderError
+        );
+    }
+    let refused = fixtures(DIR, "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/typesafe/recorded-missing-key-403")
+        .unwrap()
+        .1;
+    let err = SystemOne::decode_models(403, &HeaderList::new(), &refused).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::Authentication);
+    assert_eq!(
+        err.message,
+        "Must supply an API key! Check your request and try again."
+    );
+}
+
+#[test]
+fn long_requests_ask_typesafe_for_long_context() {
+    let long_context = |enc: &EncodedRequest| {
+        enc.headers
+            .iter()
+            .filter(|(k, _)| k.eq_ignore_ascii_case("typesafe-danger-zone-long-context"))
+            .count()
+    };
+    let adapted = |c: &EgressCtx| c.adapted.iter().any(|a| a == "long_context");
+    let with_state = |bytes: usize, instructions: usize| {
+        DecideRequest::new("jev-latest", DecisionInput::Text("x".repeat(bytes)))
+            .with_question(noul("renews", &"y".repeat(instructions)))
+    };
+    // 64k tokens a request and 32k a question, at 4 bytes a token.
+    let limits = SystemOneProfile::TYPESAFE.long_context.unwrap();
+    assert_eq!((limits.request, limits.question), (65_536, 32_768));
+    let short = with_state(1000, 10);
+    let (enc, c) = encode(&short, SystemOneProfile::TYPESAFE).unwrap();
+    assert_eq!((long_context(&enc), adapted(&c)), (0, false));
+    // The state with its one question is beyond 32k tokens, though the request is within 64k.
+    let one_question = with_state(140_000, 10);
+    let (enc, c) = encode(&one_question, SystemOneProfile::TYPESAFE).unwrap();
+    assert_eq!(
+        enc.headers.get("typesafe-danger-zone-long-context"),
+        Some("true")
+    );
+    assert!(adapted(&c));
+    // Just within both: 32,768 tokens are 131,072 bytes, quotes included.
+    let (enc, _) = encode(&with_state(131_000, 10), SystemOneProfile::TYPESAFE).unwrap();
+    assert_eq!(long_context(&enc), 0);
+    // Many short questions about a short state add up beyond 64k tokens.
+    let mut many = with_state(10, 10);
+    many.questions = (0..40)
+        .map(|i| noul(&format!("q{i}"), &"z".repeat(7000)))
+        .collect();
+    let (enc, c) = encode(&many, SystemOneProfile::TYPESAFE).unwrap();
+    assert_eq!((long_context(&enc), adapted(&c)), (1, true));
+    // Only TypeSafe has the header.
+    for profile in [
+        SystemOneProfile::OPENROUTER,
+        SystemOneProfile::PERPLEXITY,
+        SystemOneProfile::BASETEN,
+        SystemOneProfile::GENERIC,
+    ] {
+        let (enc, c) = encode(&one_question, profile).unwrap();
+        assert_eq!(
+            (long_context(&enc), adapted(&c)),
+            (0, false),
+            "{}",
+            profile.name
+        );
+    }
+    // An app that sent the header itself keeps it, once, and nothing is adapted.
+    let (body, h) = request_fixture("long-context");
+    let mut own = decode_with(&body, &h);
+    own.input = DecisionInput::Text("x".repeat(300_000));
+    let (enc, c) = encode(&own, SystemOneProfile::TYPESAFE).unwrap();
+    assert_eq!((long_context(&enc), adapted(&c)), (1, false));
 }
 
 #[test]

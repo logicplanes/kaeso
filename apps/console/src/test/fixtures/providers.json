@@ -664,6 +664,26 @@
       "account_scope": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "typesafe",
+      "name": "TypeSafe",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://console.typesafe.ai/keys",
+        "label": "API keys"
+      },
+      "key_prefix": null,
+      "dialects": ["system_one"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

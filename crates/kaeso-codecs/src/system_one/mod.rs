@@ -16,7 +16,7 @@ mod wire;
 #[cfg(test)]
 mod tests;
 
-pub use profile::{Envelope, IdRule, MediaPlacement, ModelField, SystemOneProfile};
+pub use profile::{ContextLimits, Envelope, IdRule, MediaPlacement, ModelField, SystemOneProfile};
 
 use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Origin, Reply, Request, RequestKind,
@@ -28,8 +28,32 @@ use crate::codec::{
     StreamEncoder,
 };
 use crate::multipart::Upload;
+use crate::wire::{Ext, extras_from};
 
 pub(crate) const DIALECT: DialectId = DialectId::SystemOne;
+
+// TypeSafe's own listing, which names each model and alias under `models`; its description and
+// release date stay in extras.
+fn typesafe_models(body: &[u8]) -> Option<ModelList> {
+    let Ext {
+        known: w,
+        extra,
+        verbatim,
+    } = Ext::<wire::ModelsWire>::from_slice(body).ok()?;
+    let origin = Origin::new(DIALECT);
+    let models = w
+        .models
+        .into_iter()
+        .map(|m| {
+            let mut info = ModelInfo::new(m.known.name);
+            info.extras = extras_from(&origin, m.extra, m.verbatim);
+            info
+        })
+        .collect();
+    let mut list = ModelList::new(models);
+    list.extras = extras_from(&origin, extra, verbatim);
+    Some(list)
+}
 
 /// The path apps send System One requests to.
 pub const SYSTEM_ONE_PATH: &str = "/v1/systemone";
@@ -176,6 +200,7 @@ impl Codec for SystemOne {
             return Err(Self::decode_error(status, headers, body));
         }
         crate::openai_models::decode_models(LISTING, body)
+            .or_else(|e| typesafe_models(body).ok_or(e))
     }
 
     fn decode_model(status: u16, headers: &HeaderList, body: &[u8]) -> Result<ModelInfo, KppError> {

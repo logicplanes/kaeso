@@ -8,11 +8,9 @@ order: 8
 
 - **编解码器：**`kaeso_codecs::system_one::SystemOne`（`crates/kaeso-codecs/src/system_one/`）
 - **端点：**`POST /v1/systemone`，以 JSON 或 `multipart/form-data` 上传发送，以及 OpenAI 的[模型端点](#模型)
-- **Fixture：**`crates/kaeso-codecs/fixtures/system_one/`，根据 TypeSafe 的 OpenAPI 文档和文档构建，没有录制的
+- **Fixture：**`crates/kaeso-codecs/fixtures/system_one/`，根据 TypeSafe 的 OpenAPI 文档和文档构建；只有 `providers/typesafe/` 中 TypeSafe 对被拒密钥的两个回复是录制的
 
 **来源。** TypeSafe 的 OpenAPI 文档 `https://api.typesafe.ai/openapi.json` 0.2.0 版（`SystemOneRequest`、`Question`、`NoulCriteria`、`Asset`、`SystemOneResponse`、`Answer`、`HTTPBadRequestError`、`HTTPValidationError`），以及它关于 [System One](https://docs.typesafe.ai/api/system-one)、[图片](https://docs.typesafe.ai/images)、[错误](https://docs.typesafe.ai/api/errors)和[置信度](https://docs.typesafe.ai/confidence)的页面，阅读于 2026-11-12。
-
-网关尚未转发决策请求；编解码器已为此做好准备。
 
 ## 表格的读法
 
@@ -47,7 +45,7 @@ order: 8
 | `assets.*.part` | `Asset.source = Source::Base64`（类型化） | 仅限上传：所命名部分的字节，是请求体的一个切片。形式标记 `part`、`part_type` 和 `filename`。旁边的 `data_base64` 作为 extras 保留，因为 TypeSafe 会忽略它。 |
 | 未知键 | extras | 在每一层：请求、问题、criteria、资产。 |
 | 请求头 `typesafe-danger-zone-images` | extras `header:typesafe-danger-zone-images` | 只转发给 System One。 |
-| 请求头 `typesafe-danger-zone-long-context` | extras `header:typesafe-danger-zone-long-context` | 只转发给 System One。 |
+| 请求头 `typesafe-danger-zone-long-context` | extras `header:typesafe-danger-zone-long-context` | 只转发给 System One。请求需要时，Kaeso 也会自行把它发送给 TypeSafe（[TypeSafe](#typesafe)）。 |
 
 上传的第一个部分是 `request`，即 JSON 请求。其他每个部分都是一张图片，恰好由一个资产在 `part` 中指名，类型为 `image/png`、`image/jpeg`、`image/jpg`、`application/octet-stream` 或没有类型。缺失、未使用或重复的部分，或其他类型，都是 `InvalidRequest`。上传只在发往 TypeSafe 时仍以上传形式发送；其他服务商以 base64 接收图片。
 
@@ -118,7 +116,7 @@ Perplexity 计算评分题置信度时，以到最可能级别的距离为基准
 | 状态码 | 响应体 | KPP |
 |---|---|---|
 | 400 | `{"detail": "…"}` 或 `{"detail": {"message": …}}` | `InvalidRequest`；响应体提到 `max_tokens_exceeded` 时为 `ContextTooLong` |
-| 401 | `{"detail": …}` | `Authentication` |
+| 401，或 `detail.error_type` 为 `authentication_error` 的 403 | `{"detail": …}` | `Authentication`；TypeSafe 对不带密钥的请求返回这种 403 |
 | 413 | `{"detail": …}` | `RequestTooLarge` |
 | 415 | `{"detail": …}` | `InvalidRequest` |
 | 422 | `{"detail": [{"loc", "msg", "type", "input"?, "ctx"?}]}` | `InvalidRequest`，第一个问题去掉 `body` 后的位置写入 `param` |
@@ -129,15 +127,17 @@ Perplexity 计算评分题置信度时，以到最可能级别的距离为基准
 
 ## 模型
 
-TypeSafe 的 `GET /v1/models` 返回 `{"models": [{name, description, release_date}]}`，没有任何请求头能区分 TypeSafe 的 SDK 和 OpenAI 的 SDK。本编解码器读写 OpenAI 的模型列表，如 OpenAI Chat Completions 页面的[模型](openai-chat.md#模型)一节所述。
+TypeSafe 的 `GET /v1/models` 返回 `{"models": [{name, description, release_date}]}`，没有任何请求头能区分 TypeSafe 的 SDK 和 OpenAI 的 SDK。本编解码器读写 OpenAI 的模型列表，如 OpenAI Chat Completions 页面的[模型](openai-chat.md#模型)一节所述。从服务商读取时，它也能读取 TypeSafe 自己的模型列表：每个 `name` 是一个模型 ID，`description` 和 `release_date` 保留在 extras 中。TypeSafe 没有 `GET /v1/models/{model}`。
 
 ## 使用此格式的服务商
 
-每个服务商都有一个 `SystemOneProfile`，TypeSafe 以外的服务商把 fixture 放在 `fixtures/system_one/providers/<id>/` 中（[Fixture](fixtures.md)）。
+每个服务商都有一个 `SystemOneProfile`，并把只有它才发送的内容放在 `fixtures/system_one/providers/<id>/` 中（[Fixture](fixtures.md)）。
 
 ### TypeSafe
 
-`SystemOneProfile::TYPESAFE`，`POST /v1/systemone`。图片放在 `assets` 中或作为上传的部分，PNG 和 JPEG，每边 280 到 1568 像素，最大 16 MiB，只接受静态图片；请求包含图片或 box 问题时都会带上 `TypeSafe-Danger-Zone-Images: true`。box 问题需要 Jev 1.14。长上下文请求头只在应用发送时才转发。最多 255 个选项和 10 个级别。
+`SystemOneProfile::TYPESAFE`，`POST /v1/systemone`。图片放在 `assets` 中或作为上传的部分，PNG 和 JPEG，每边 280 到 1568 像素，最大 16 MiB，只接受静态图片；请求包含图片或 box 问题时都会带上 `TypeSafe-Danger-Zone-Images: true`。box 问题需要 Jev 1.14。最多 255 个选项和 10 个级别。
+
+不带 `TypeSafe-Danger-Zone-Long-Context: true` 时，一个请求中 state 加全部问题最多 64k token，state 加任一问题最多 32k；带上它时两者都是 262k（[Models](https://docs.typesafe.ai/models#long-context)）。profile 的 `long_context` 保存默认限制。编码器按每 token 4 字节文本、且不计图片（TypeSafe 尚未公布图片的计数方法）估算 state 及其问题，超过任一限制时就发送该请求头，并在 `adapted` 中记为 `long_context`。应用自己发送的请求头会原样转发，不记为改写。长上下文每 token 价格不变。
 
 ### OpenRouter
 

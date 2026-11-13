@@ -2139,6 +2139,50 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
     },
+    Provider {
+        id: "typesafe",
+        name: "TypeSafe",
+        // Keys are made in the console's keys page (https://docs.typesafe.ai/introduction/quickstart)
+        // and have no documented prefix.
+        key_page: KeyPage {
+            url: "https://console.typesafe.ai/keys",
+            label: "API keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.typesafe.ai",
+        auth: AuthStyle::Bearer,
+        // TypeSafe answers decision questions and writes no text, so its only format is System
+        // One, as ElevenLabs' is its audio API; a generation request never reaches it past the
+        // catalogue's checks, and the System One codec refuses one that does.
+        generation: DialectId::SystemOne,
+        count_tokens: None,
+        embeddings: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[DecisionsEgress::system_one(SystemOneProfile::TYPESAFE)],
+        dialects: &[DialectId::SystemOne],
+        // A refused key is a 401, a missing one a 403, both with `error_type:
+        // "authentication_error"`, which the System One codec reads as a refused key.
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /v1/models` lists "the models and aliases available to the authenticated account"
+        // in TypeSafe's own shape (https://api.typesafe.ai/openapi.json, `ModelMetadataList`),
+        // and there is no `GET /v1/models/{model}`; whether it lists every versioned id isn't
+        // documented, so a model it leaves out is inconclusive, never unavailable.
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("TypeSafe"),
+        responses: ResponsesProfile::compatible("TypeSafe"),
+        messages: MessagesProfile::compatible("TypeSafe"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+    },
 ];
 
 const _: () = {
@@ -2435,7 +2479,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe"
         );
     }
 
@@ -2514,7 +2558,7 @@ mod tests {
             .filter(|p| p.listing == ModelListing::Partial)
             .map(|p| p.id)
             .collect();
-        assert_eq!(partial, ["standardcompute", "perplexity"]);
+        assert_eq!(partial, ["standardcompute", "perplexity", "typesafe"]);
     }
 
     #[test]
@@ -3373,6 +3417,7 @@ mod tests {
             ("baseten", SystemOneProfile::BASETEN),
             ("fireworks-ai", SystemOneProfile::FIREWORKS),
             ("perplexity", SystemOneProfile::PERPLEXITY),
+            ("typesafe", SystemOneProfile::TYPESAFE),
         ] {
             let e = egress(id, "any/model").unwrap();
             assert_eq!((e.dialect, e.system_one), (DialectId::SystemOne, profile));
@@ -3388,18 +3433,66 @@ mod tests {
             "baseten",
             "fireworks-ai",
             "perplexity",
+            "typesafe",
         ];
         for p in PROVIDERS {
             assert_eq!(!p.decisions.is_empty(), served.contains(&p.id), "{}", p.id);
+            // Only a provider whose one API is a decisions API names its format, as its only one.
+            let decision_formats: Vec<_> = p
+                .dialects
+                .iter()
+                .filter(|d| {
+                    matches!(
+                        d,
+                        DialectId::OpenAiDecisions
+                            | DialectId::SystemOne
+                            | DialectId::GeminiDecisions
+                    )
+                })
+                .collect();
             assert!(
-                !p.dialects.iter().any(|d| matches!(
-                    d,
-                    DialectId::OpenAiDecisions | DialectId::SystemOne | DialectId::GeminiDecisions
-                )),
+                decision_formats.is_empty()
+                    || (p.dialects.len() == 1
+                        && p.decisions.iter().all(|e| e.dialect == p.generation)),
                 "{} lists a decision format as a generation format",
                 p.id
             );
         }
+    }
+
+    #[test]
+    fn typesafe_answers_decisions_in_system_one_and_nothing_else() {
+        let p = provider("typesafe").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "TypeSafe",
+                AuthStyle::Bearer,
+                DialectId::SystemOne,
+                &[DialectId::SystemOne][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://api.typesafe.ai");
+        assert_eq!(p.key_page.url, "https://console.typesafe.ai/keys");
+        assert_eq!(
+            (p.key_prefix, p.count_tokens, p.embeddings),
+            (None, None, None)
+        );
+        assert!(
+            p.images.is_empty()
+                && p.speech.is_empty()
+                && p.transcriptions.is_empty()
+                && p.videos.is_empty()
+        );
+        let e = p.decisions.iter().find(|e| e.serves("jev-latest")).unwrap();
+        assert_eq!(e.system_one, SystemOneProfile::TYPESAFE);
+        assert!(e.box_questions() && e.max_questions().is_none());
+        assert_eq!(e.system_one.path, "/v1/systemone");
+        assert!(e.system_one.images_header && e.system_one.long_context.is_some());
+        assert_eq!(p.listing, ModelListing::Partial);
+        let listed = ["jev-latest".to_owned()];
+        assert_eq!(p.listing.serves(&listed, "jev-latest"), Some(true));
+        assert_eq!(p.listing.serves(&listed, "jev-1.13.0"), None);
     }
 
     #[test]
@@ -3451,7 +3544,8 @@ mod tests {
                 "siliconflow",
                 "standardcompute",
                 "cloudflare-ai-gateway",
-                "perplexity"
+                "perplexity",
+                "typesafe"
             ]
         );
         assert_eq!(

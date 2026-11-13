@@ -229,6 +229,7 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 | `[mock:models=absent]` in the provider key | Answers both models endpoints with a bare 404 |
 | `[mock:models=list-only]` in the provider key | Answers only `GET /v1/models/{id}` with a bare 404 |
 | `[mock:models=list-refuses-key]` in the provider key | Answers `GET /v1/models/{id}` with a bare 404 and `GET /v1/models` with the format's wrong-key error |
+| `[mock:models=typesafe]` in the provider key | Answers `GET /v1/models` with TypeSafe's own listing and `GET /v1/models/{id}` with a bare 404, as TypeSafe does |
 | `[mock:models=endless]` in the provider key | Keeps the Anthropic listing on its first page |
 
 `MockProvider::gate()` makes a gate and returns its marker. `wait_for(n)` returns once `n` requests have reached it, and `open()` lets them all through. That is how a test holds a request in flight without a sleep.

@@ -8,11 +8,9 @@ Look up any field of TypeSafe's System One format here: where it goes in KPP, ho
 
 - **Codec:** `kaeso_codecs::system_one::SystemOne` (`crates/kaeso-codecs/src/system_one/`)
 - **Endpoints:** `POST /v1/systemone`, as JSON or as a `multipart/form-data` upload, and the OpenAI [models](#models) endpoints
-- **Fixtures:** `crates/kaeso-codecs/fixtures/system_one/`, spec-built from TypeSafe's OpenAPI document and documentation, none recorded
+- **Fixtures:** `crates/kaeso-codecs/fixtures/system_one/`, spec-built from TypeSafe's OpenAPI document and documentation; only TypeSafe's two refused-key replies in `providers/typesafe/` are recorded
 
 **Sources.** TypeSafe's OpenAPI document `https://api.typesafe.ai/openapi.json`, version 0.2.0 (`SystemOneRequest`, `Question`, `NoulCriteria`, `Asset`, `SystemOneResponse`, `Answer`, `HTTPBadRequestError`, `HTTPValidationError`), and its pages on [System One](https://docs.typesafe.ai/api/system-one), [images](https://docs.typesafe.ai/images), [errors](https://docs.typesafe.ai/api/errors) and [confidence](https://docs.typesafe.ai/confidence), read on 2026-11-12.
-
-The gateway doesn't route decision requests yet; the codec is ready for it.
 
 ## How to read the tables
 
@@ -47,7 +45,7 @@ A decision request decodes to `Request::Decide(DecideRequest)`. Its questions ke
 | `assets.*.part` | `Asset.source = Source::Base64` typed | In an upload only: the bytes of the named part, a slice of the body. Form `part`, `part_type` and `filename`. A `data_base64` beside it stays extras, as TypeSafe ignores it. |
 | unknown keys | extras | At every level: request, question, criteria, asset. |
 | header `typesafe-danger-zone-images` | extras `header:typesafe-danger-zone-images` | Forwarded to System One only. |
-| header `typesafe-danger-zone-long-context` | extras `header:typesafe-danger-zone-long-context` | Forwarded to System One only. |
+| header `typesafe-danger-zone-long-context` | extras `header:typesafe-danger-zone-long-context` | Forwarded to System One only. Kaeso also sends it to TypeSafe itself when a request needs it ([TypeSafe](#typesafe)). |
 
 An upload's first part is `request`, the JSON request. Every other part is an image that exactly one asset names in `part`, with the type `image/png`, `image/jpeg`, `image/jpg`, `application/octet-stream` or none. A missing, unused or repeated part, or another type, is `InvalidRequest`. Uploads are re-sent as uploads only to TypeSafe; other providers get the images as base64.
 
@@ -118,7 +116,7 @@ Decisions don't stream. The stream encoder returns `Unsupported` (`streaming`) f
 | Status | Body | KPP |
 |---|---|---|
 | 400 | `{"detail": "…"}` or `{"detail": {"message": …}}` | `InvalidRequest`; `ContextTooLong` when the body names `max_tokens_exceeded` |
-| 401 | `{"detail": …}` | `Authentication` |
+| 401, or 403 with `detail.error_type` `authentication_error` | `{"detail": …}` | `Authentication`; TypeSafe answers a request without a key with that 403 |
 | 413 | `{"detail": …}` | `RequestTooLarge` |
 | 415 | `{"detail": …}` | `InvalidRequest` |
 | 422 | `{"detail": [{"loc", "msg", "type", "input"?, "ctx"?}]}` | `InvalidRequest`, the first problem's location without `body` in `param` |
@@ -129,15 +127,17 @@ A body without `detail` is read like an OpenAI error, which covers OpenRouter's 
 
 ## Models
 
-TypeSafe's `GET /v1/models` answers `{"models": [{name, description, release_date}]}`, and no header tells TypeSafe's SDK from OpenAI's. This codec reads and writes OpenAI's listing, as described under [models](openai-chat.md#models) on the OpenAI Chat Completions page.
+TypeSafe's `GET /v1/models` answers `{"models": [{name, description, release_date}]}`, and no header tells TypeSafe's SDK from OpenAI's. This codec reads and writes OpenAI's listing, as described under [models](openai-chat.md#models) on the OpenAI Chat Completions page. From a provider it also reads TypeSafe's own listing: each `name` is a model id, and `description` and `release_date` stay in extras. TypeSafe has no `GET /v1/models/{model}`.
 
 ## Providers that use this format
 
-Each provider has a `SystemOneProfile`, and providers other than TypeSafe keep their fixtures in `fixtures/system_one/providers/<id>/` ([fixtures](fixtures.md)).
+Each provider has a `SystemOneProfile` and keeps what only it sends in `fixtures/system_one/providers/<id>/` ([fixtures](fixtures.md)).
 
 ### TypeSafe
 
-`SystemOneProfile::TYPESAFE`, `POST /v1/systemone`. Images go in `assets` or as upload parts, PNG and JPEG of 280 to 1568 pixels a side and at most 16 MiB, still images only, with `TypeSafe-Danger-Zone-Images: true` whenever a request has an image or a box question. Box questions need Jev 1.14. The long-context header goes only when the app sent it. Up to 255 options and 10 levels.
+`SystemOneProfile::TYPESAFE`, `POST /v1/systemone`. Images go in `assets` or as upload parts, PNG and JPEG of 280 to 1568 pixels a side and at most 16 MiB, still images only, with `TypeSafe-Danger-Zone-Images: true` whenever a request has an image or a box question. Box questions need Jev 1.14. Up to 255 options and 10 levels.
+
+Without `TypeSafe-Danger-Zone-Long-Context: true`, a request gets 64k tokens for the state and every question and 32k for the state and any one question; with it, 262k for both ([models](https://docs.typesafe.ai/models#long-context)). The profile's `long_context` holds the default limits. When the encoder estimates the state and its questions beyond either one, at 4 bytes of text a token and without images, for which TypeSafe publishes no count yet, it sends the header and names `long_context` in `adapted`. A header the app sent itself is forwarded as it is, and nothing is adapted. Long context costs the same per token.
 
 ### OpenRouter
 

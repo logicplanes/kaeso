@@ -125,6 +125,7 @@ sequenceDiagram
 | Baseten | System One | `/v1/systemone` | 图片放在用户消息中，最多 16 张；不支持边界框问题 |
 | Fireworks AI | System One | `/inference/v1/systemone` | 仅文本；不支持边界框问题 |
 | Perplexity | System One | `/v1/decisions` | Decider 模型；图片以 data URL 放在 state 中，最多 8 张；不支持边界框问题 |
+| TypeSafe | System One | `/v1/systemone` | Jev；图片作为 assets 或上传的分段；Jev 1.14 支持边界框问题；请求需要时使用长上下文 |
 
 其他所有服务商、Gemini Enterprise Agent Platform 和自定义服务商在 Kaeso 中还没有决策 API。发往它们的请求会在发送任何内容之前被拒绝，例如“Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.”。如果项目的 OpenAI 密钥是 [ChatGPT 账户](../console/provider-keys.md#使用-chatgpt-账户登录)，发往 OpenAI 的请求同样会被拒绝。
 
@@ -147,7 +148,7 @@ Kaeso 在发送之前拒绝模型或其服务商无法接受的内容，并以�
 
 - **置信度**在每个服务商那里含义不同。回答跨格式时，Kaeso 按应用所用格式的规则从概率计算置信度；服务商自己格式的回复保留服务商的值。
 - **拒绝。** OpenAI 可能拒绝单个问题。System One 应用在该问题的键下得到 `{"type": "refusal"}`；Gemini 应用没有按问题的拒绝，会得到一个指明被拒绝问题的 400。
-- **`kaeso-adapted`** 指明服务商只以其他形式接受的内容：`names`（问题重命名为 `q0`、`q1` 等）、`booleans`（选择值 `true` 和 `false` 以文本发送）、`levels`、`criteria`（是/否标准并入 OpenAI 的指令）、`state`（JSON state 以文本发送）和 `instructions`。
+- **`kaeso-adapted`** 指明服务商只以其他形式接受的内容：`names`（问题重命名为 `q0`、`q1` 等）、`booleans`（选择值 `true` 和 `false` 以文本发送）、`levels`、`criteria`（是/否标准并入 OpenAI 的指令）、`state`（JSON state 以文本发送）、`instructions` 和 `long_context`（TypeSafe 的长上下文标头，当 Kaeso 估计请求超出 TypeSafe 的默认上下文时发送）。
 - **`kaeso-left-out`** 指明服务商格式没有位置的提示：`cache`（OpenAI 的 `prompt_cache_*`）和 `user`（`safety_identifier`）。
 
 ## 费用、缓存和日志

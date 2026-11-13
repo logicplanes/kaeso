@@ -7,6 +7,7 @@ Wire bodies for TypeSafe's System One API, `POST /v1/systemone`: typed questions
 - TypeSafe's OpenAPI document `https://api.typesafe.ai/openapi.json`, version 0.2.0, read on 2026-11-12: `SystemOneRequest`, `Question` (`NoulQuestion`, `ChoiceQuestion`, `ScoreQuestion`, `BoxQuestion`), `NoulCriteria`, `Asset`, `SystemOneResponse`, `Answer`, `Usage`, `HTTPBadRequestError`, `HTTPValidationError`, `ValidationError`, and the `multipart/form-data` request body.
 - TypeSafe's documentation, read on 2026-11-12: https://docs.typesafe.ai/api/system-one, https://docs.typesafe.ai/images, https://docs.typesafe.ai/api/errors, https://docs.typesafe.ai/confidence.
 - The request and response examples of the OpenAPI document (`noul`, `choice`, `score`, `box`) are verbatim (`doc:`). Everything else is built from the schema (`schema:`). Every file is spec-built: no key was used, so nothing here is a live recording.
+- TypeSafe's refused-key replies and its own model listing are in `providers/typesafe/`; its two refused-key replies there are the only recorded files, taken without a key.
 
 The layout and the provenance marks (`doc:`, `sdk:`, `schema:`) are in [Fixtures and recordings](https://docs.kaeso.app/development/kpp/fixtures), and the rules every constructed fixture follows in [Fixture conventions](https://docs.kaeso.app/development/kpp/fixture-conventions). Each folder's `README.md` lists every file, what it covers and its provenance.
 

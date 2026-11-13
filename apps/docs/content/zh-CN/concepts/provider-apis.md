@@ -46,6 +46,7 @@ order: 2
 | SpaceX `xai` | 支持：Grok 模型 | 不提供 | 支持：`grok-imagine-image*` | 支持：`grok-tts` | 支持：`grok-voice-transcribe-2.0` | 不提供 | 支持：`grok-imagine-video*` | 不提供 | 不提供 | [REST API reference](https://docs.x.ai/developers/rest-api-reference) |
 | Standard Compute `standardcompute` | 支持：智能路由（`standardcompute`）及其列出的模型 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [API 参考](https://docs.standardcompute.com/api) |
 | Together AI `togetherai` | 支持：Together 的模型 | 支持：专用端点上的模型，因为 Together 没有无服务器嵌入模型 | 支持：FLUX、Seedream、Qwen-Image | 支持：Orpheus、Cartesia Sonic、Kokoro | 支持：Whisper、Parakeet、Nemotron ASR | 支持：`openai/whisper-large-v3` | 支持：Seedance、Wan 等 | 不提供 | 不提供 | [Serverless models](https://docs.together.ai/docs/serverless-models) |
+| TypeSafe `typesafe` | 不提供：TypeSafe 不生成文本 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 支持：Jev，即 `jev-1.14.0` 和 `jev-1.13.0`，以及别名 `jev-latest` 和 `jev-preview`，System One 位于 `/v1/systemone`，支持图片和边界框问题 | [Models](https://docs.typesafe.ai/models)，查阅于 2026-11-12 |
 | Vercel `vercel` | 支持：其目录 | 支持：其嵌入模型 | 支持：其图片模型 | 支持：其语音合成模型 | 支持：其转写模型 | 不提供 | 拒绝：Vercel 只通过其 AI SDK 记录视频，没有 HTTP 接口 | 拒绝：Kaeso 只为语音合成调用 Vercel 的语音模型 | 支持：其决策模型，OpenAI Decisions | [Modalities](https://vercel.com/docs/ai-gateway/modalities) |
 | Z.ai `zai` | 支持：GLM 模型 | 不提供 | 支持：`glm-image` | 不提供 | 支持：`glm-asr-2512` | 不提供 | 支持：`cogvideox-3` | 不提供 | 不提供 | [API reference](https://docs.z.ai/llms.txt) |
 

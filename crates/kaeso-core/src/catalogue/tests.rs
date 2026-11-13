@@ -2738,6 +2738,8 @@ fn decisions_go_to_the_providers_decisions_api_in_its_own_format() {
         ("openrouter", "typesafe/jev-1.14", DialectId::SystemOne),
         ("vercel", "typesafe-ai/jev", DialectId::OpenAiDecisions),
         ("perplexity", "pplx-decider-v1.2", DialectId::SystemOne),
+        ("typesafe", "jev-latest", DialectId::SystemOne),
+        ("typesafe", "jev-1.13.0", DialectId::SystemOne),
     ] {
         let e = eff(&entry(provider, model));
         let plan = prepare(&mut decide(vec![yes_no()]), DialectId::SystemOne, &e).unwrap();
@@ -2791,6 +2793,29 @@ fn decisions_are_refused_where_the_model_or_its_provider_cannot_answer_them() {
             Some("questions"),
             "The model `gemini-decision-1` does not answer box questions.".into()
         )
+    );
+    assert_eq!(
+        refused(
+            "typesafe",
+            "jev-1.13.0",
+            &mut decide(vec![
+                yes_no(),
+                kaeso_kpp::QuestionKind::Box(kaeso_kpp::BoxQuestion::new())
+            ])
+        )
+        .2,
+        "The model `jev-1.13.0` does not answer box questions."
+    );
+    let mut boxed = decide(vec![kaeso_kpp::QuestionKind::Box(
+        kaeso_kpp::BoxQuestion::new(),
+    )]);
+    assert!(
+        prepare(
+            &mut boxed,
+            DialectId::SystemOne,
+            &eff(&entry("typesafe", "jev-1.14.0"))
+        )
+        .is_ok()
     );
     let mut many = decide((0..401).map(|_| yes_no()).collect());
     assert_eq!(
@@ -2849,6 +2874,18 @@ fn a_decision_only_model_refuses_chat_token_counts_and_embeddings() {
         let u = prepare(&mut req, DialectId::OpenAiChat, &gemini).unwrap_err();
         assert_eq!((u.param, u.message.as_str()), (Some("model"), message));
     }
+    let jev = eff(&entry("typesafe", "jev-latest"));
+    assert_eq!(jev.dialect, DialectId::SystemOne);
+    let u = prepare(
+        &mut Request::Generate(user_request()),
+        DialectId::AnthropicMessages,
+        &jev,
+    )
+    .unwrap_err();
+    assert_eq!(
+        u.message,
+        "The model `jev-latest` is a decision model; send it to `/v1/decisions` or `/v1/systemone`."
+    );
     let luna = eff(&entry("openai", "gpt-6-luna"));
     assert!(
         prepare(

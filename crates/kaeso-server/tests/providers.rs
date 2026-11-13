@@ -269,6 +269,21 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         perplexity["key_page"],
         json!({ "url": "https://console.perplexity.ai/project/keys", "label": "API Keys" })
     );
+    let typesafe = listed.iter().find(|p| p["id"] == "typesafe").unwrap();
+    assert_eq!(typesafe["name"], "TypeSafe");
+    assert_eq!(typesafe["dialects"], json!(["system_one"]));
+    assert_eq!(
+        (
+            &typesafe["count_tokens"],
+            &typesafe["embeddings"],
+            &typesafe["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &Value::Null)
+    );
+    assert_eq!(
+        typesafe["key_page"],
+        json!({ "url": "https://console.typesafe.ai/keys", "label": "API keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

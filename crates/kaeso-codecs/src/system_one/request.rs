@@ -11,7 +11,7 @@ use super::assets::{
     STATE_PART, check_image, data_url, fresh_reference, image_part, quoted, raw, rewrite, strings,
     take_state_images,
 };
-use super::profile::{MediaPlacement, ModelField, SystemOneProfile};
+use super::profile::{ContextLimits, MediaPlacement, ModelField, SystemOneProfile};
 use super::wire::{AssetWire, NoulCriteriaWire, QuestionWire, RequestIn, RequestOut};
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header, under_api_root};
 use crate::cross::check_foreign;
@@ -35,6 +35,9 @@ const FORM_PART_TYPE: &str = "part_type";
 const FORM_FILENAME: &str = "filename";
 const DATA_BASE64: &str = "data_base64";
 const IMAGES_HEADER: &str = "typesafe-danger-zone-images";
+const LONG_CONTEXT_HEADER: &str = "typesafe-danger-zone-long-context";
+/// Bytes of text per token when Kaeso estimates a request's context, as its limits do.
+const BYTES_PER_TOKEN: usize = 4;
 
 /// The most bytes one part of an uploaded System One form may hold.
 pub(super) const MAX_PART_BYTES: usize = 64 * 1024 * 1024;
@@ -549,9 +552,20 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
     ctx.decision_questions = built.sent;
     let mut headers = HeaderList::new().with("content-type", built.content_type);
     if built.images_header {
-        headers.push("typesafe-danger-zone-images", "true");
+        headers.push(IMAGES_HEADER, "true");
     }
-    if r.extras.is_from(DIALECT) {
+    let own = r.extras.is_from(DIALECT);
+    let asked_long = own
+        && r.extras
+            .headers()
+            .any(|(name, _)| name.eq_ignore_ascii_case(LONG_CONTEXT_HEADER));
+    if built.long_context && !asked_long {
+        headers.push(LONG_CONTEXT_HEADER, "true");
+        if !ctx.adapted.iter().any(|a| a == "long_context") {
+            ctx.adapted.push("long_context".to_owned());
+        }
+    }
+    if own {
         for (name, value) in r.extras.headers() {
             let set = built.images_header && name.eq_ignore_ascii_case(IMAGES_HEADER);
             if is_forwarded_header(DIALECT, name) && !set {
@@ -567,6 +581,7 @@ struct Built {
     content_type: String,
     path: String,
     images_header: bool,
+    long_context: bool,
     sent: Vec<SentQuestion>,
     adapted: Vec<&'static str>,
     left_out: Vec<&'static str>,
@@ -1135,6 +1150,9 @@ fn build(r: &DecideRequest, ctx: &EgressCtx, dry: bool) -> Result<Built, KppErro
         .iter()
         .any(|q| matches!(q.kind, QuestionKind::Box(_)));
     let images_header = profile.images_header && (assets.is_some() || has_box);
+    let long_context = profile
+        .long_context
+        .is_some_and(|limits| beyond(limits, &state, &questions));
     let model = match profile.model_field {
         ModelField::ShortName(prefix) => {
             r.model.strip_prefix(prefix).unwrap_or(&r.model).to_owned()
@@ -1173,10 +1191,22 @@ fn build(r: &DecideRequest, ctx: &EgressCtx, dry: bool) -> Result<Built, KppErro
         content_type,
         path,
         images_header,
+        long_context,
         sent,
         adapted: w.adapted,
         left_out: w.left_out,
     })
+}
+
+// Whether the request's text is estimated beyond the context the provider gives without the
+// long-context header: the state and every question, or the state and its longest question.
+// Images aren't counted, as TypeSafe publishes no rule for their tokens yet.
+fn beyond(limits: ContextLimits, state: &str, questions: &[(String, RawJson)]) -> bool {
+    let tokens = |bytes: usize| u64::try_from(bytes.div_ceil(BYTES_PER_TOKEN)).unwrap_or(u64::MAX);
+    let sizes = questions.iter().map(|(_, q)| q.get().len());
+    let all = state.len().saturating_add(sizes.clone().sum());
+    let longest = state.len().saturating_add(sizes.max().unwrap_or(0));
+    tokens(all) > limits.request || tokens(longest) > limits.question
 }
 
 fn multipart_body(
