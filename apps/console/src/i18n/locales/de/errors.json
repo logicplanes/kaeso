@@ -752,5 +752,7 @@
   "errors.model.maxOptions": "Das Modell `{model}` nimmt höchstens {max} Optionen pro Auswahlfrage an.",
   "errors.model.maxLevels": "Das Modell `{model}` nimmt höchstens {max} Stufen pro Bewertungsfrage an.",
   "errors.model.maxImages": "Das Modell `{model}` nimmt höchstens {max} Bilder pro Anfrage an.",
-  "errors.modelApi.accountNoDecisions": "Ein {product}-Konto kann keine Entscheidungen treffen. Stattdessen in diesem Projekt einen API-Schlüssel für {provider} verwenden."
+  "errors.modelApi.accountNoDecisions": "Ein {product}-Konto kann keine Entscheidungen treffen. Stattdessen in diesem Projekt einen API-Schlüssel für {provider} verwenden.",
+  "errors.decisionTooLarge": "Die Entscheidungsanfrage ist größer, als Kaeso für dieses Modell annimmt.",
+  "errors.notSystemOneRequest": "Die Anfrage ist keine System-One-Anfrage, die Kaeso lesen kann."
 }

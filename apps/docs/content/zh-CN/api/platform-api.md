@@ -247,12 +247,13 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 | 路由 | 作用 |
 | --- | --- |
-| `GET orgs/{org}/projects/{project}/playground/models` | 列出成员可以调用的模型：不含嵌入、重排序和实时模型的目录，再按成员的模型访问范围收窄。每个模型都带有 `mode`（`text`、`image`、`speech`、`sound_effects`、`music`、`transcription` 或 `video`）、名称、别名、推理强度、限额和价格，是否接受 `temperature`、项目是否有对应的服务商密钥、`max_request_bytes` 中它接受的最大请求（聊天、图片和转写采用模型 API 的上限，其他提示词采用 Platform API 的上限），以及与其模式相应的图片选项、`voices`、`translations` 或 `durations`。 |
+| `GET orgs/{org}/projects/{project}/playground/models` | 列出成员可以调用的模型：不含嵌入、重排序和实时模型的目录，再按成员的模型访问范围收窄。每个模型都带有 `mode`（`text`、`image`、`speech`、`sound_effects`、`music`、`transcription`、`video` 或 `decision`）、名称、别名、推理强度、限额和价格，是否接受 `temperature`、项目是否有对应的服务商密钥、`max_request_bytes` 中它接受的最大请求（聊天、图片、转写和决策采用模型 API 的上限，其他提示词采用 Platform API 的上限），以及与其模式相应的图片选项、`voices`、`translations` 或 `durations`。能做决策的模型还带有 `decisions`：其服务商接受的问题类型和上限。带 `decisions` 的 `text` 模型（例如 GPT-6 Luna）也能回答问题。 |
 | `POST orgs/{org}/projects/{project}/playground/responses` | 接受带 `"stream": true` 的 OpenAI Responses 请求，并以 `/v1/responses` 发送的事件流响应，包括保活注释。 |
 | `POST orgs/{org}/projects/{project}/playground/images/generations`、`…/images/edits` | 接受 [`/v1/images/generations` 和 `/v1/images/edits`](images.md) 的请求体，并以相同方式响应。 |
 | `POST orgs/{org}/projects/{project}/playground/audio/speech`、`…/audio/transcriptions`、`…/audio/translations` | 接受[音频 API](audio.md) 的请求体，并以相同方式响应。 |
 | `POST orgs/{org}/projects/{project}/playground/sound-effects`、`…/music` | 接受 ElevenLabs [`/v1/sound-generation` 和 `/v1/music`](elevenlabs.md) 的请求体，并以音频响应。 |
 | `POST orgs/{org}/projects/{project}/playground/videos`；`GET`、`DELETE …/videos/{video}`；`GET …/videos/{video}/content` | 像 [`/v1/videos`](videos.md) 一样启动视频任务，跟踪、取消或删除它，并流式传输其文件。成员只能看到自己在试验场中启动的视频。 |
+| `POST orgs/{org}/projects/{project}/playground/decisions` | 接受 [`/v1/systemone`](decisions.md) 的请求体（JSON 或 multipart），适用于任何带 `decisions` 的模型。Kaeso 以模型服务商接受的格式发送它，并以 System One 的格式响应：每个问题的键下是其 `answers`，另附 `usage`。 |
 | `POST orgs/{org}/projects/{project}/tools/{tool}/call` | 以调用者的身份，通过项目的门户用 `arguments` 调用项目的一个工具。该工具必须已开启并已批准，调用者的工具访问范围和工具调用速率都适用，调用会以来源 `playground` 记录。响应中包含工具的 `result`，调用被拒绝时则包含 `error`。 |
 
 请求接受 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary`、`tools` 和必须为 `true` 的 `stream`。`tools` 包含模型可以调用的 Responses `function` 工具，试验场只在被要求时才执行调用。`headers` 像应用一样发送最多 20 个请求头，供路由的条件和分流读取，不能包含凭据。`route` 用于试用一条路由而不解析 `model`，此时 `model` 指明其别名；`alias` 指明 `route` 编辑的已保存别名。使用[会话](automation.md#改用会话)：
@@ -281,7 +282,8 @@ curl -N "$project/playground/responses" \
 
 | 状态码 | `type` | 原因 |
 | --- | --- | --- |
-| 400 | `invalid_request` | 模型不在目录中时，`param` 为 `model`。`"stream": false` 时为 `stream`。 |
+| 400 | `invalid_request` | 模型不在目录中时，`param` 为 `model`。`"stream": false` 时为 `stream`。模型无法接受的决策（例如边界框问题或问题过多）指明 `questions`。 |
+| 413 | `request_too_large` | 请求体大于 `max_request_bytes`。 |
 | 404 | `not_found` | 服务商不向项目的服务商密钥提供该模型，消息与 `/v1` 应用收到的相同（[服务商不提供的模型](errors.md#服务商不提供的模型)）；或者服务商对请求中指定的其他内容返回了 404。 |
 | 403 | `permission_denied` | 模型不在成员的模型访问范围内。 |
 | 409 | `conflict` | 项目已归档，或没有该模型服务商的服务商密钥。 |

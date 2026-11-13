@@ -85,6 +85,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::video_create)))
         .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::video_get, playground_media::video_delete)))
         .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::video_content)))
+        .routes(s.route(Access::Project(R::PlaygroundUse), routes!(playground_media::decisions)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::list)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(aliases::create)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::trace)))

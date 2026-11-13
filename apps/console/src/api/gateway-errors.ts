@@ -764,6 +764,8 @@ const messages = (): Rule[] => [
   rule("errors.conversationTooLarge", () => t("errors.conversationTooLarge", "The conversation is larger than Kaeso accepts.")),
   rule("errors.notResponsesRequest", () => t("errors.notResponsesRequest", "The request is not a Responses request Kaeso can read.")),
   rule("errors.uploadTooLarge", () => t("errors.uploadTooLarge", "The upload is larger than Kaeso accepts for this model.")),
+  rule("errors.decisionTooLarge", () => t("errors.decisionTooLarge", "The decision request is larger than Kaeso accepts for this model.")),
+  rule("errors.notSystemOneRequest", () => t("errors.notSystemOneRequest", "The request is not a System One request Kaeso can read.")),
   rule("errors.mediaUnreadable", () => t("errors.mediaUnreadable", "Kaeso can't read this request for the model; check its settings.")),
   rule("errors.videoNotYours", () => t("errors.videoNotYours", "No video of yours in this project has this id.")),
   rule("errors.videoVariant", () => t("errors.videoVariant", "`variant` must be `video`, `thumbnail` or `spritesheet`.")),

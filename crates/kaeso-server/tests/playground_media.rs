@@ -643,6 +643,219 @@ async fn a_member_follows_downloads_and_cancels_their_own_videos_only() {
     assert_eq!(get(id).await.status, StatusCode::NOT_FOUND);
 }
 
+const TYPESAFE_SECRET: &str = "ts-test-playground-decisions-0123456789abcdef";
+const GOOGLE_SECRET: &str = "AIzaSyTestGooglePlaygroundDecisions000000";
+
+async fn decisions_env(extra: Option<&[(&str, &str)]>) -> Env {
+    let env = common::v1::env(Some(Arc::new(Capture::default())), extra).await;
+    let org = &env.owner.org_id;
+    for (provider, secret) in [("typesafe", TYPESAFE_SECRET), ("google", GOOGLE_SECRET)] {
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{org}/credentials"),
+                json!({ "provider": provider, "name": provider, "secret": secret }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{provider}: {:?}", r.body);
+    }
+    for (provider, model) in [
+        ("typesafe", "jev-1.14.0"),
+        ("openai", "gpt-6-luna"),
+        ("google", "gemini-decision-1"),
+    ] {
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{org}/projects/{}/models", env.project),
+                json!({ "provider": provider, "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{model}: {:?}", r.body);
+    }
+    env
+}
+
+// A 300×300 PNG header: TypeSafe takes images of 280 to 1568 pixels a side.
+fn photo() -> String {
+    use base64::Engine as _;
+    let mut b = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR".to_vec();
+    b.extend(300u32.to_be_bytes());
+    b.extend(300u32.to_be_bytes());
+    b.extend([8, 2, 0, 0, 0, 0, 0, 0, 0]);
+    base64::engine::general_purpose::STANDARD.encode(b)
+}
+
+fn questions(model: &str) -> Value {
+    json!({
+        "model": model,
+        "state": "I was charged twice for order 1182; refund me.",
+        "questions": {
+            "refund": { "type": "noul", "instructions": "Does the customer ask for a refund?",
+                        "criteria": { "true": "They ask for money back.", "false": "They don't." } },
+            "team": { "type": "choice", "instructions": "Which team handles it?",
+                      "criteria": { "billing": "Payments and refunds.", "support": "Everything else." } },
+            "urgency": { "type": "score", "instructions": "How urgent is it?",
+                         "criteria": ["Low", "Medium", "High"] }
+        }
+    })
+}
+
+#[tokio::test]
+async fn decision_models_are_listed_with_the_questions_and_limits_their_providers_take() {
+    let env = decisions_env(None).await;
+    let r = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/playground/models",
+                env.owner.org_id, env.project
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let models = r.body["data"].as_array().unwrap();
+    let of = |id: &str| {
+        models
+            .iter()
+            .find(|m| m["model_id"] == id)
+            .unwrap_or_else(|| panic!("{id} listed"))
+    };
+    let jev = of("jev-1.14.0");
+    assert_eq!(jev["mode"], "decision");
+    assert_eq!(jev["max_request_bytes"], json!(64u64 << 20));
+    assert_eq!(
+        jev["decisions"]["question_types"],
+        json!(["predicate", "choice", "score", "box"])
+    );
+    assert_eq!(jev["decisions"]["max_levels"], 10);
+    assert_eq!(jev["decisions"]["images"], true);
+    assert_eq!(jev["decisions"]["needs_api_key"], false);
+    let gemini = of("gemini-decision-1");
+    assert_eq!(gemini["mode"], "decision");
+    assert_eq!(gemini["decisions"]["max_questions"], 1000);
+    let luna = of("gpt-6-luna");
+    assert_eq!(
+        luna["mode"], "text",
+        "a model that also chats keeps its text mode"
+    );
+    assert_eq!(
+        luna["decisions"]["question_types"],
+        json!(["predicate", "choice", "score"])
+    );
+    assert_eq!(luna["decisions"]["max_questions"], 400);
+    assert_eq!(luna["decisions"]["max_request_bytes"], json!(64u64 << 20));
+    assert_eq!(of("claude-haiku-4-5")["decisions"], Value::Null);
+}
+
+#[tokio::test]
+async fn a_member_asks_decision_models_typed_questions_and_hears_what_they_cost() {
+    let env = decisions_env(None).await;
+    for (model, provider, egress) in [
+        ("jev-1.14.0", "typesafe", "system_one"),
+        ("gpt-6-luna", "openai", "openai_decisions"),
+        ("gemini-decision-1", "google", "gemini_decisions"),
+    ] {
+        env.mock.clear();
+        let r = post_json(&env, "decisions", questions(model)).await;
+        assert_eq!(r.status, StatusCode::OK, "{model}: {}", r.text());
+        let reply = r.json();
+        assert!(
+            (reply["answers"]["refund"]["noul"].as_f64().unwrap() - 0.82).abs() < 1e-9,
+            "{model}: {reply}"
+        );
+        assert!(
+            reply["answers"]["team"]["probabilities"].is_object(),
+            "{reply}"
+        );
+        assert!(reply["answers"]["urgency"]["score"].is_number(), "{reply}");
+        assert!(reply["usage"]["input_tokens"].is_u64(), "{reply}");
+        assert_eq!(r.header("kaeso-provider"), Some(provider));
+        let cost = r.header("kaeso-cost").unwrap();
+        assert!(cost.parse::<f64>().unwrap() > 0.0, "{model}: {cost}");
+        let o = last(&env).await;
+        by_member(&env, &o);
+        assert_eq!(o.egress.unwrap().as_str(), egress);
+        assert_eq!(kaeso_server::services::logs::endpoint(&o), "systemone");
+        let sent = env.mock.last().unwrap();
+        assert!(sent.header("cookie").is_none());
+    }
+
+    let pictured = json!({
+        "model": "jev-1.14.0",
+        "state": { "photo": "door_photo", "note": "A delivery photo." },
+        "questions": { "door": { "type": "box", "instructions": "Where is the door in `door_photo`?" } },
+        "assets": { "door_photo": { "type": "image", "format": "png", "data_base64": photo() } }
+    });
+    let r = post_json(&env, "decisions", pictured).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["answers"]["door"]["box"]["top"], 0.1);
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.json()["assets"]["door_photo"]["data_base64"], photo());
+    let content = logged_content(&env).await;
+    assert_eq!(
+        content["request"]["assets"]["door_photo"]["data_base64"]["kaeso_media"]["reason"],
+        "not_kept",
+        "{content}"
+    );
+    assert!(content["reply"]["decide"].is_object(), "{content}");
+}
+
+#[tokio::test]
+async fn decisions_a_model_cant_take_are_refused_before_anything_is_sent() {
+    let env = decisions_env(Some(&[("KAESO_BODY_LIMITS_DECISIONS", "4KiB")])).await;
+    env.mock.clear();
+    let refused = |r: &Answer| {
+        let e = &r.json()["error"];
+        (
+            r.status,
+            e["message"].as_str().unwrap_or_default().to_owned(),
+            e["param"].clone(),
+        )
+    };
+    let r = post_json(&env, "decisions", questions("claude-haiku-4-5")).await;
+    assert_eq!(
+        refused(&r),
+        (
+            StatusCode::BAD_REQUEST,
+            "Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.".to_owned(),
+            json!("model")
+        )
+    );
+    let boxed = json!({ "model": "gpt-6-luna", "state": "A photo",
+        "questions": { "where": { "type": "box", "instructions": "the cat" } } });
+    let r = post_json(&env, "decisions", boxed).await;
+    assert_eq!(
+        refused(&r),
+        (
+            StatusCode::BAD_REQUEST,
+            "The model `gpt-6-luna` does not answer box questions.".to_owned(),
+            json!("questions")
+        )
+    );
+    let r = post_json(
+        &env,
+        "decisions",
+        json!({ "model": "jev-1.14.0", "state": "Hi" }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "invalid_request");
+    let big = post_json(
+        &env,
+        "decisions",
+        json!({ "model": "jev-1.14.0", "state": "a".repeat(8 << 10),
+                "questions": { "q": { "type": "noul" } } }),
+    )
+    .await;
+    assert_eq!(big.status, StatusCode::PAYLOAD_TOO_LARGE, "{}", big.text());
+    assert_eq!(big.json()["error"]["type"], "request_too_large");
+    assert!(env.mock.received().is_empty(), "{:?}", env.mock.received());
+}
+
 async fn join(app: &App, owner: &Owner, email: &str, preset: &str) -> (String, String) {
     common::join_first_project(
         app,
@@ -713,6 +926,18 @@ async fn sessions_rights_and_body_limits_are_checked_before_anything_is_sent() {
         Some((
             "application/json",
             br#"{"model":"tts-1","input":"Hi","voice":"alloy"}"#.to_vec(),
+        )),
+    )
+    .await;
+    assert_eq!(refused.status, StatusCode::FORBIDDEN, "{}", refused.text());
+    let refused = send(
+        &env.app,
+        Method::POST,
+        &path(&env, "decisions"),
+        &viewer,
+        Some((
+            "application/json",
+            serde_json::to_vec(&questions("gpt-6-luna")).unwrap(),
         )),
     )
     .await;

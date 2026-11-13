@@ -26,6 +26,7 @@
   "playground.media.speech": "Speech",
   "playground.media.video": "Video",
   "playground.microphoneRefused": "The microphone isn't available; allow it in the browser.",
+  "playground.mode.decision": "Decisions",
   "playground.mode.image": "Images",
   "playground.mode.music": "Music",
   "playground.mode.soundEffects": "Sound effects",

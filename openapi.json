@@ -18153,6 +18153,119 @@
         "x-kaeso-access": "right:playground.use"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/playground/decisions": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Asks a decision model typed questions in the Playground as the signed-in member.",
+        "description": "A TypeSafe System One request (`model`, `state`, `questions`, `assets`), as JSON or\nas `multipart/form-data` whose first part is `request`, to one of the project's models that\nmake decisions, as the signed-in member, up to `KAESO_BODY_LIMITS_DECISIONS`. Kaeso sends it\nin the format the model's provider takes and answers in System One's. Charged to the project,\ncounted against its limits and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectPlaygroundDecisions",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaygroundDecisionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The answers, with the `kaeso-cost` header.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaygroundDecisionReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The model makes no decisions, or can't take a question, an image or as many questions (`invalid_request`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "description": "The body is larger than Kaeso takes for this model (`request_too_large`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "502": {
+            "description": "The provider failed or refused the provider key (`provider_error`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:playground.use"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/playground/images/edits": {
       "post": {
         "tags": [
@@ -18357,7 +18470,7 @@
           "projects"
         ],
         "summary": "The models the signed-in member can call in the Playground.",
-        "description": "The project's catalogue without embeddings, reranking and realtime models,\nnarrowed by the member's model access, with each model's `mode` (text, image, speech,\nsound effects, music, transcription or video) and what the Playground shows and offers\nfor it (reasoning, efforts, temperature, voices, image options, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "The project's catalogue without embeddings, reranking and realtime models,\nnarrowed by the member's model access, with each model's `mode` (text, image, speech,\nsound effects, music, transcription, video or decision) and what the Playground shows and\noffers for it (reasoning, efforts, temperature, voices, image options, decision question\ntypes and limits, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectPlaygroundModels",
         "parameters": [
           {
@@ -30402,6 +30515,17 @@
                   "description": "The context window in tokens.",
                   "minimum": 0
                 },
+                "decisions": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/PlaygroundDecisionOptions",
+                      "description": "For a model that makes decisions through its provider: the question types and limits\nit takes. A `decision` model has it always; a `text` model that also makes decisions has\nit too, and takes the Playground's questions in its decision mode."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "display_name": {
                   "type": "string",
                   "description": "The name to show.",
@@ -34878,6 +35002,129 @@
           }
         }
       },
+      "PlaygroundDecisionOptions": {
+        "type": "object",
+        "description": "What a model that makes decisions takes in the Playground, through its provider's decisions\nAPI.",
+        "required": [
+          "question_types",
+          "images",
+          "max_request_bytes",
+          "needs_api_key"
+        ],
+        "properties": {
+          "images": {
+            "type": "boolean",
+            "description": "Whether the state may hold images."
+          },
+          "max_images": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most images one request may show; `null` when no limit is known.",
+            "minimum": 0
+          },
+          "max_levels": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most levels one score question may have; `null` when no limit is known.",
+            "minimum": 0
+          },
+          "max_options": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most options one choice question may have; `null` when no limit is known.",
+            "minimum": 0
+          },
+          "max_questions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most questions one request may ask; `null` when no limit is known.",
+            "minimum": 0
+          },
+          "max_request_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The largest decision request Kaeso takes, in bytes, images included as sent.",
+            "example": 67108864,
+            "minimum": 0
+          },
+          "needs_api_key": {
+            "type": "boolean",
+            "description": "Whether the project's provider key is an account that can't call the provider's\ndecisions API, such as a ChatGPT account; decisions fail until the project uses an API key."
+          },
+          "question_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The question types it answers: `predicate`, `choice`, `score`, and `box` where the\nprovider takes box questions."
+          }
+        }
+      },
+      "PlaygroundDecisionReply": {
+        "type": "object",
+        "description": "A Playground decision reply: TypeSafe System One's, whatever format the\nmodel's provider answered in.",
+        "required": [
+          "model",
+          "answers",
+          "usage"
+        ],
+        "properties": {
+          "answers": {
+            "type": "object",
+            "description": "One answer under each question's key: `noul` (the probability of yes), `choice`\n(the chosen option's value, `probabilities` per value, `confidence`), `score` (the\nexpected level, `probabilities` and `legend` per level, `confidence`), `box` (`top`,\n`bottom`, `left`, `right` as fractions of the image, `confidence`), or `type` `refusal`\nwhen the provider refused that question."
+          },
+          "model": {
+            "type": "string",
+            "description": "The model that answered."
+          },
+          "usage": {
+            "type": "object",
+            "description": "`input_tokens` and `output_tokens`."
+          }
+        }
+      },
+      "PlaygroundDecisionRequest": {
+        "type": "object",
+        "description": "A Playground decision request: a TypeSafe System One request, whatever format\nthe model's provider takes. The console sends this subset; the body is decoded like a\n`/v1/systemone` body, so other System One fields are taken as there.",
+        "required": [
+          "model",
+          "state",
+          "questions"
+        ],
+        "properties": {
+          "assets": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Images the state names, under the key it names them by: `type` `image`, `format`\n(`png`, `jpg`, `jpeg`) and `data_base64`."
+          },
+          "model": {
+            "type": "string",
+            "description": "A decision model of this project's catalogue, or a model that also makes decisions:\nits id, `provider/model`, or an alias of the project.",
+            "example": "jev-1.14.0"
+          },
+          "questions": {
+            "type": "object",
+            "description": "The questions, under keys the reply's `answers` use again, in the order to ask them.\nEach has a `type`: `noul` (yes or no, with optional `criteria.true` and `criteria.false`),\n`choice` (`criteria`: each option's value as a key, its description as the value),\n`score` (`criteria`: the levels' descriptions, lowest first) or `box` (where something\nis in the image), and optional `instructions`."
+          },
+          "state": {
+            "description": "What the questions are about: text, or a JSON object or array. An image is named in\nit by its key in `assets`."
+          }
+        }
+      },
       "PlaygroundImageOptions": {
         "type": "object",
         "description": "What an image model takes in the Playground.",
@@ -34929,7 +35176,8 @@
           "sound_effects",
           "music",
           "transcription",
-          "video"
+          "video",
+          "decision"
         ]
       },
       "PlaygroundModel": {
@@ -34990,6 +35238,17 @@
             "format": "int64",
             "description": "The context window in tokens.",
             "minimum": 0
+          },
+          "decisions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PlaygroundDecisionOptions",
+                "description": "For a model that makes decisions through its provider: the question types and limits\nit takes. A `decision` model has it always; a `text` model that also makes decisions has\nit too, and takes the Playground's questions in its decision mode."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "display_name": {
             "type": "string",

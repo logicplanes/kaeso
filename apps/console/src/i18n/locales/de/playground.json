@@ -48,5 +48,6 @@
   "playground.undoClear": "Rückgängig",
   "playground.emptyThread": "Unten einen Prompt senden, um zu beginnen.",
   "playground.emptyColumn": "Antworten erscheinen hier ab dem nächsten gesendeten Prompt.",
-  "playground.videoFailed": "Der Anbieter konnte das Video nicht erstellen. Bitte erneut versuchen."
+  "playground.videoFailed": "Der Anbieter konnte das Video nicht erstellen. Bitte erneut versuchen.",
+  "playground.mode.decision": "Entscheidungen"
 }

@@ -15,7 +15,9 @@ use serde_json::value::RawValue;
 use utoipa::ToSchema;
 
 use super::aliases::{TestHeader, check_route};
-use super::playground_media::{PlaygroundImageOptions, PlaygroundMode, mode_of, options};
+use super::playground_media::{
+    PlaygroundDecisionOptions, PlaygroundImageOptions, PlaygroundMode, mode_of, options,
+};
 
 use crate::model_api::errors::stamp;
 use crate::model_api::hooks::{Caller as ModelCaller, Source};
@@ -597,6 +599,10 @@ pub struct PlaygroundModel {
     pub translations: bool,
     #[doc = "For a sound effect or music model: whether it takes a length."]
     pub durations: bool,
+    #[doc = "For a model that makes decisions through its provider: the question types and limits\n\
+        it takes. A `decision` model has it always; a `text` model that also makes decisions has\n\
+        it too, and takes the Playground's questions in its decision mode."]
+    pub decisions: Option<PlaygroundDecisionOptions>,
 }
 
 #[utoipa::path(
@@ -605,8 +611,9 @@ pub struct PlaygroundModel {
     summary = "The models the signed-in member can call in the Playground.",
     description = "The project's catalogue without embeddings, reranking and realtime models,\n\
     narrowed by the member's model access, with each model's `mode` (text, image, speech,\n\
-    sound effects, music, transcription or video) and what the Playground shows and offers\n\
-    for it (reasoning, efforts, temperature, voices, image options, prices). A reply's cost is `(input − cached) ×\n\
+    sound effects, music, transcription, video or decision) and what the Playground shows and\n\
+    offers for it (reasoning, efforts, temperature, voices, image options, decision question\n\
+    types and limits, prices). A reply's cost is `(input − cached) ×\n\
     input_price + cached × cache_read_price + output × output_price`, per\n\
     million tokens, at the prices of the highest of `price_tiers` whose\n\
     `context_above` the input exceeds, as the request log charges it\n\
@@ -650,7 +657,7 @@ pub async fn models(
         let Some(mode) = mode_of(&eff, kind) else {
             continue;
         };
-        let options = options(&state, &eff, mode);
+        let mut options = options(&state.config.body_limits, &eff, mode);
         let key = match keys.iter().find(|(p, _)| p == eff.provider.id()) {
             Some((_, method)) => *method,
             None => {
@@ -665,8 +672,11 @@ pub async fn models(
             }
         };
         let provider_key = key.is_some() || eff.provider.auth().is_none();
-        let needs_api_key =
-            mode != PlaygroundMode::Text && key.is_some_and(crate::model_api::accounts::text_only);
+        let text_only = key.is_some_and(crate::model_api::accounts::text_only);
+        let needs_api_key = mode != PlaygroundMode::Text && text_only;
+        if let Some(d) = options.decisions.as_mut() {
+            d.needs_api_key = text_only;
+        }
         let f = &eff.fields;
         let price = |p: Option<rust_decimal::Decimal>| p.map(|d| d.normalize().to_string());
         out.push(PlaygroundModel {
@@ -700,6 +710,7 @@ pub async fn models(
             voices: options.voices,
             translations: options.translations,
             durations: options.durations,
+            decisions: options.decisions,
         });
     }
     Ok(axum::Json(List::complete(out)))
