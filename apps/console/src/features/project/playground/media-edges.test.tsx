@@ -12,6 +12,11 @@ import { imagesExpected, panelOptions } from "./modes";
 import { newResponse } from "./responses";
 import { useRecorder } from "./use-recorder";
 
+// The prompt's own form: a sent turn shows its attachments too, under the same name.
+function composer(): HTMLElement {
+  return screen.getByRole("textbox", { name: "Prompt" }).closest("form") as HTMLElement;
+}
+
 const MODELS = "orgs/:org/projects/:project/playground/models";
 const PLAYGROUND = `/orgs/${ORG}/projects/${PROJECT}/playground`;
 const route = (rest: string) => `orgs/:org/projects/:project/playground/${rest}`;
@@ -210,7 +215,7 @@ describe("a media turn that fails or is stopped", () => {
     const { user } = await renderApp(`${PLAYGROUND}?models=openai/gpt-image-2`);
     await screen.findByRole("button", { name: "Attach images" });
     await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, new File([new Uint8Array(8)], "dock.png", { type: "image/png" }));
-    await screen.findByRole("list", { name: "Attachments" });
+    await within(composer()).findByRole("list", { name: "Attachments" });
     await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Make it night");
     await user.click(screen.getByRole("button", { name: "Send" }));
     expect(await screen.findByText("The image is too small to edit.")).toBeInTheDocument();

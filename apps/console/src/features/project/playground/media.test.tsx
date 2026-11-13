@@ -7,6 +7,11 @@ import { renderApp } from "~/test/render";
 import { playgroundModel } from "~/test/fixtures/project-logs";
 import { videoPolling } from "./media";
 
+// The prompt's own form: a sent turn shows its attachments too, under the same name.
+function composer(): HTMLElement {
+  return screen.getByRole("textbox", { name: "Prompt" }).closest("form") as HTMLElement;
+}
+
 const MODELS = "orgs/:org/projects/:project/playground/models";
 const PLAYGROUND = `/orgs/${ORG}/projects/${PROJECT}/playground`;
 const route = (rest: string) => `orgs/:org/projects/:project/playground/${rest}`;
@@ -109,7 +114,7 @@ describe("Playground media", () => {
     const { user } = await open("openai/gpt-image-2");
     await screen.findByRole("button", { name: "Attach images" });
     await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, new File([new Uint8Array(4)], "dock.png", { type: "image/png" }));
-    await screen.findByRole("list", { name: "Attachments" });
+    await within(composer()).findByRole("list", { name: "Attachments" });
     await send(user, "Add a red crane");
     const answer = await screen.findByRole("article", { name: "GPT Image 2 response" });
     expect(await within(answer).findByText("Unknown")).toBeInTheDocument();
@@ -201,7 +206,7 @@ describe("Playground media", () => {
     expect(await screen.findByText("Attach or record audio for this model to transcribe.")).toBeInTheDocument();
 
     await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, new File([new Uint8Array(8)], "standup.mp3", { type: "audio/mpeg" }));
-    await screen.findByRole("list", { name: "Attachments" });
+    await within(composer()).findByRole("list", { name: "Attachments" });
     await send(user, "");
     expect(await screen.findByText("The parcel left the dock this morning.")).toBeInTheDocument();
     expect(String(requests("POST", route("audio/transcriptions"))[0]?.body)).toContain('filename="standup.mp3"');
@@ -210,7 +215,7 @@ describe("Playground media", () => {
     await user.click(await screen.findByRole("radio", { name: "In English" }));
     await user.keyboard("{Escape}");
     await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, new File([new Uint8Array(8)], "standup.mp3", { type: "audio/mpeg" }));
-    await screen.findByRole("list", { name: "Attachments" });
+    await within(composer()).findByRole("list", { name: "Attachments" });
     await send(user, "");
     expect(await screen.findByText("The parcel left the dock.")).toBeInTheDocument();
   });
@@ -306,7 +311,7 @@ describe("Playground media", () => {
     const stopRecording = await screen.findByRole("button", { name: "Stop recording" });
     expect(stopRecording).toHaveAttribute("aria-pressed", "true");
     await user.click(stopRecording);
-    const waiting = await screen.findByRole("list", { name: "Attachments" });
+    const waiting = await within(composer()).findByRole("list", { name: "Attachments" });
     expect(within(waiting).getByText(/^Recording /)).toBeInTheDocument();
     expect(stop).toHaveBeenCalled();
 
