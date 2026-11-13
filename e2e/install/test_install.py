@@ -60,14 +60,21 @@ def image_id(reference: str) -> str:
     return subprocess.check_output(["docker", "image", "inspect", "--format", "{{.Id}}", reference], text=True).strip()
 
 
-def poll(fetch, what: str, seconds: float = 120):
+def poll(fetch, what: str, seconds: float = 120, explain: Callable[[], str] | None = None):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         found = fetch()
         if found:
             return found
         time.sleep(1)
-    raise TimeoutError(f"{what} did not happen within {seconds} seconds")
+    detail = f"\n{explain()}" if explain else ""
+    raise TimeoutError(f"{what} did not happen within {seconds} seconds{detail}")
+
+
+def recent_logs(install: Install, *services: str) -> str:
+    """The last lines each service logged, so a timeout says what the install was doing."""
+    out = install.run("logs", "--no-color", "--tail", "60", *services, check=False, capture_output=True)
+    return out.stdout + out.stderr
 
 
 @pytest.fixture(scope="module")
@@ -181,7 +188,7 @@ def test_a_fresh_install_serves_both_sdks_and_records_usage(install, owner):
         usage = http.get(f"/platform/v1{base}/usage?group_by=model").json()
         return len(logs.get("data", [])) == 2 and sum(r["requests"] for r in usage.get("data", [])) == 2
 
-    poll(recorded, "two log entries and their usage", seconds=30)
+    poll(recorded, "two log entries and their usage", seconds=30, explain=lambda: recent_logs(install, "gateway", "clickhouse"))
 
 
 def test_agents_reach_the_mcp_server_and_its_sign_in_through_the_proxy(install):
@@ -224,7 +231,7 @@ def test_the_gateway_logs_the_address_caddy_saw_and_never_one_the_client_sends(i
         rows = owner.get(f"{base}/logs").json().get("data", [])
         return [row["client_ip"] for row in rows] if len(rows) >= 3 else None
 
-    addresses = poll(logged, "the third log entry", seconds=30)
+    addresses = poll(logged, "the third log entry", seconds=30, explain=lambda: recent_logs(install, "gateway", "clickhouse"))
     caddy = subprocess.run(
         ["docker", "inspect", "--format", f'{{{{(index .NetworkSettings.Networks "{PROJECT}_edge").IPAddress}}}}', f"{PROJECT}-caddy-1"],
         capture_output=True,
