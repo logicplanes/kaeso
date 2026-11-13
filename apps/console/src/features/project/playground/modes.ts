@@ -1,8 +1,9 @@
-import type { ImageParameterOptions, ParameterPanelProps, PlaygroundParameters, ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
+import type { DecisionQuestion, ImageParameterOptions, ParameterPanelProps, PlaygroundParameters, ReasoningEffort } from "@logicplanes/kaeso-ui/playground";
 import type { PlaygroundModel } from "~/api/queries/playground";
 import { EFFORTS } from "~/format/playground-search";
 import { t } from "~/i18n";
-import { filesFor, type TurnFile } from "./attachments";
+import { DECISION_IMAGES, filesFor, type TurnFile } from "./attachments";
+import { asks, decisionRun } from "./decisions";
 import { mediaRun, type MediaContext } from "./media";
 import { requestFor } from "./request";
 import type { Mode, Turn } from "./responses";
@@ -20,7 +21,7 @@ const MODE_LABELS: Record<Exclude<Mode, "text">, () => string> = {
 
 export const modeLabel = (mode: Exclude<Mode, "text">): string => MODE_LABELS[mode]();
 
-/** What one column sends for a prompt, in its model's mode. */
+/** What one column sends for a prompt: the questions to a model that answers them, otherwise the prompt in its model's mode. */
 export function sendFor(
   ctx: MediaContext,
   m: PlaygroundModel,
@@ -28,7 +29,12 @@ export function sendFor(
   prompt: string,
   files: readonly TurnFile[],
   p: PlaygroundParameters,
+  questions: readonly DecisionQuestion[],
 ): Sent {
+  if (asks(m, questions)) {
+    const images = m.decisions?.images ? files.filter((f) => DECISION_IMAGES.includes(f.type)) : [];
+    return { mode: "decision", files: images, questions: [...questions], media: decisionRun(ctx, m, questions, prompt, images) };
+  }
   const taken = filesFor(m, files);
   return m.mode === "text"
     ? { mode: "text", files: taken, request: requestFor(m, turns, prompt, p, taken) }

@@ -54,4 +54,10 @@ describe("Thread", () => {
     );
     expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(1);
   });
+
+  it("says a decision stopped before the model answered", () => {
+    const stopped: Turn = { id: "d", mode: "decision", prompt: "A parcel arrived broken.", response: { ...newResponse(0), status: "stopped", endedAt: 5 } };
+    render(<Thread turns={[stopped]} model={null} label="Jev 1.14" threadKey="col1" onRetry={() => undefined} />);
+    expect(screen.getByRole("article", { name: "Jev 1.14 response" })).toHaveTextContent("Stopped before the model answered.");
+  });
 });

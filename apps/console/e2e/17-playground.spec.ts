@@ -90,6 +90,37 @@ test("a refusal shows the gateway's message in its column", async ({ page }) => 
   await expect(page.getByRole("region", { name: "Notifications" }).getByText(/provider|try again/i)).toHaveCount(0);
 });
 
+test("a model that makes decisions answers the questions with probabilities, beside a chat model", async ({ page }) => {
+  await signInAsOwner(page);
+  const headers = { origin: new URL(page.url()).origin };
+  const added = await page.request.post(`/platform/v1/orgs/${org}/projects/${project}/models`, {
+    headers,
+    data: { provider: "openai", model_id: "gpt-6-luna" },
+  });
+  expect(added.ok()).toBe(true);
+  await page.goto(`/orgs/${org}/projects/${project}/playground?models=openai/gpt-6-luna,openai/gpt-5.4-mini`);
+  const prompt = page.getByRole("textbox", { name: "Prompt" });
+  await expect(prompt).toHaveAttribute("placeholder", "Send a prompt to every model");
+
+  await page.getByRole("button", { name: "Questions", exact: true }).click();
+  const sheet = page.getByRole("dialog", { name: "Questions" });
+  await sheet.getByRole("button", { name: "Add question" }).click();
+  await sheet.getByRole("textbox", { name: "Name" }).fill("refund");
+  await sheet.getByRole("textbox", { name: "Instructions" }).fill("Does the customer ask for a refund?");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Questions (1)" })).toBeVisible();
+  await expect(prompt).toHaveAttribute("placeholder", "Send what the questions are about to every model");
+
+  await prompt.fill("My parcel arrived broken; I want my money back.");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  const answer = column(page, /^GPT-6 Luna$/).getByRole("article", { name: "GPT-6 Luna response" });
+  const refund = answer.getByRole("listitem", { name: "refund" });
+  await expect(refund.getByText("82%")).toBeVisible({ timeout: 20_000 });
+  await expect(refund.getByText("Yes").first()).toBeVisible();
+  await expect(answer.getByRole("definition").filter({ hasText: /^\$/ })).toBeVisible();
+  await expect(reply(page, /^GPT-5\.4 mini$/)).not.toBeEmpty();
+});
+
 test("playground requests are in the request log with a Playground tag and filter by source", async ({ page }) => {
   await signInAsOwner(page);
   await page.goto(`/orgs/${org}/projects/${project}/logs`);

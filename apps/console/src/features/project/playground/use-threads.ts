@@ -3,6 +3,7 @@ import { isApiError } from "~/api/errors";
 import { streamPlayground, type PlaygroundRequest } from "~/api/playground";
 import { locale, t } from "~/i18n";
 import { applyEvent, endResponse, isLive, newResponse, type Mode, type ResponseState, type Turn } from "./responses";
+import type { DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
 import type { TurnFile } from "./attachments";
 import type { MediaRun } from "./media";
 
@@ -24,9 +25,10 @@ let next = 0;
 const id = (prefix: string) => `${prefix}${++next}`;
 const newThread = (): Thread => ({ key: id("col"), turns: [] });
 
-/** What one column sends: a chat request it streams, or a media request it runs. */
-/** What a column sends: a chat request, or a media run of the model's mode. */
-export type Sent = { mode: Mode; files: TurnFile[] } & ({ request: PlaygroundRequest; media?: undefined } | { media: MediaRun; request?: undefined });
+/** What a column sends: a chat request, or a media run of the model's mode with the questions a decision asks. */
+export type Sent = { mode: Mode; files: TurnFile[]; questions?: DecisionQuestion[] | undefined } & (
+  { request: PlaygroundRequest; media?: undefined } | { media: MediaRun; request?: undefined }
+);
 export type Send = Sent & { column: number };
 
 // Audio a turn made plays from a blob: link that holds its bytes until it is revoked.
@@ -193,7 +195,14 @@ export function useThreads(
       const now = performance.now();
       const turns = sends.map((s) => ({
         ...s,
-        turn: { id: id("turn"), mode: s.mode, prompt, ...(s.files.length ? { files: s.files } : {}), response: newResponse(now) } satisfies Turn,
+        turn: {
+          id: id("turn"),
+          mode: s.mode,
+          prompt,
+          ...(s.files.length ? { files: s.files } : {}),
+          ...(s.questions ? { questions: s.questions } : {}),
+          response: newResponse(now),
+        } satisfies Turn,
       }));
       for (const t of turns) live.current.set(t.turn.id, t.turn.response);
       release(cleared.current);
@@ -214,6 +223,7 @@ export function useThreads(
         mode: again.mode,
         prompt: last.prompt,
         ...(again.files.length ? { files: again.files } : {}),
+        ...(again.questions ? { questions: again.questions } : {}),
         response: newResponse(performance.now()),
       };
       live.current.set(turn.id, turn.response);

@@ -14,6 +14,8 @@ export interface TurnFile {
 // The image types every provider's vision input takes: OpenAI, Anthropic and Gemini all read these.
 const IMAGES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const PDF = "application/pdf";
+/** The image types System One's `assets` take: `png`, `jpg` and `jpeg`. */
+export const DECISION_IMAGES = ["image/png", "image/jpeg"];
 const AUDIO = "audio/*";
 
 // The prompt's text, the history and the request's own fields ride along with the files.
@@ -31,6 +33,8 @@ export function typesOf(m: PlaygroundModel): string[] {
       return m.image?.edits ? IMAGES : [];
     case "transcription":
       return [AUDIO];
+    case "decision":
+      return m.decisions?.images ? DECISION_IMAGES : [];
     default:
       return [];
   }

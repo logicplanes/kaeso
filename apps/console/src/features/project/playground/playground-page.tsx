@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Button, Empty, Text, icons } from "@logicplanes/kaeso-ui";
-import { CompareGrid, Composer, ModelPicker, ParameterPanel } from "@logicplanes/kaeso-ui/playground";
+import { AppFrame, Button, Empty, Sheet, Text, icons } from "@logicplanes/kaeso-ui";
+import { CompareGrid, Composer, ModelPicker, ParameterPanel, QuestionEditor, type DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
 import { useProjectRights } from "~/auth/rights";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
@@ -25,6 +25,7 @@ import { patchSearch, type SearchPatch } from "~/search";
 import { acceptOf, fileId, fileRules, readFile, shown, sizeOf, type TurnFile } from "./attachments";
 import { imagesExpected, modeLabel, panelOptions, sendFor } from "./modes";
 import { canRecord, useRecorder } from "./use-recorder";
+import { asks, editorLimits, problemOf } from "./decisions";
 
 const fullReason = () => t("playground.full", "Compare up to {count} models at once", { count: MAX_COLUMNS });
 
@@ -42,6 +43,7 @@ interface Conversation {
   threads: ThreadState[];
 }
 const conversationKey = (project: string) => [...PLAYGROUND_CONVERSATION, project];
+const questionsKey = (project: string) => [...PLAYGROUND_CONVERSATION, project, "questions"];
 const warnOnLeave = (e: BeforeUnloadEvent) => e.preventDefault();
 const CLEARED = "playground:cleared";
 
@@ -51,10 +53,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const catalogue = useQuery(playgroundModelsQuery(org, project));
   const providers = useProviders(org);
   const chat = useMemo(
-    () =>
-      (catalogue.data ?? [])
-        .filter((m) => m.mode !== "decision")
-        .sort((a, b) => providers.byName(a.provider, b.provider) || a.display_name.localeCompare(b.display_name)),
+    () => [...(catalogue.data ?? [])].sort((a, b) => providers.byName(a.provider, b.provider) || a.display_name.localeCompare(b.display_name)),
     [catalogue.data, providers],
   );
   const byRef = useMemo(() => new Map(chat.map((m) => [modelRef(m), m])), [chat]);
@@ -148,19 +147,36 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   };
   const [files, setFiles] = useState<TurnFile[]>([]);
   const waiting = useMemo(() => shown(files), [files]);
+  const [questions, setQuestionsNow] = useState<DecisionQuestion[]>(() => recall<DecisionQuestion[]>(questionsKey(project)) ?? []);
+  const setQuestions = (next: DecisionQuestion[]) => {
+    setQuestionsNow(next);
+    remember(questionsKey(project), next);
+  };
+  const [editing, setEditing] = useState(false);
   const media = { org, project, now: () => performance.now() };
   const submit = (text: string) => {
+    const asked = models.find((m): m is PlaygroundModel => !!m && asks(m, questions));
+    const problem = !asked
+      ? null
+      : questions.length
+        ? problemOf(questions)
+        : t("playground.decisions.none", "Add a question for {model} to answer.", { model: asked.display_name });
+    if (problem) {
+      toast.error(problem);
+      setEditing(true);
+      return;
+    }
     const sends = threads.flatMap((thread, i) => {
       const m = models[i];
-      return m ? [{ column: i, ...sendFor(media, m, thread.turns, text, files, parameters) }] : [];
+      return m ? [{ column: i, ...sendFor(media, m, thread.turns, text, files, parameters, questions) }] : [];
     });
     send(text, sends);
     changePrompt("");
     setFiles([]);
   };
-  const latest = useRef({ threads, models, parameters, retry, media });
+  const latest = useRef({ threads, models, parameters, retry, media, questions });
   useEffect(() => {
-    latest.current = { threads, models, parameters, retry, media };
+    latest.current = { threads, models, parameters, retry, media, questions };
   });
   const retryThread = useCallback((key: string) => {
     const now = latest.current;
@@ -168,7 +184,8 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
     const m = now.models[i];
     const thread = now.threads[i];
     const last = thread?.turns.at(-1);
-    if (m && thread && last) now.retry(i, sendFor(now.media, m, thread.turns.slice(0, -1), last.prompt, last.files ?? [], now.parameters));
+    if (m && thread && last)
+      now.retry(i, sendFor(now.media, m, thread.turns.slice(0, -1), last.prompt, last.files ?? [], now.parameters, last.questions ?? []));
   }, []);
 
   const noModels = catalogue.isSuccess && chat.length === 0;
@@ -259,12 +276,19 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
         ? t("playground.attachImagesPdfs", "Attach images or PDFs")
         : t("playground.attachPdfs", "Attach PDFs")
       : t("playground.attachImages", "Attach images");
+  const deciders = chosen.filter((m) => m.decisions);
+  const asking = chosen.some((m) => asks(m, questions));
+  const limits = editorLimits(deciders);
   const placeholder =
     modes.size === 1 && modes.has("transcription")
       ? t("playground.promptAudio", "Attach or record audio, and add a note if it helps")
-      : refs.length > 1
-        ? t("playground.promptEvery", "Send a prompt to every model")
-        : t("playground.prompt", "Send a prompt");
+      : asking
+        ? refs.length > 1
+          ? t("playground.promptStateEvery", "Send what the questions are about to every model")
+          : t("playground.promptState", "Describe what the questions are about")
+        : refs.length > 1
+          ? t("playground.promptEvery", "Send a prompt to every model")
+          : t("playground.prompt", "Send a prompt");
 
   return (
     <>
@@ -397,6 +421,34 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           />
                         }
                       />
+                      {deciders.length > 0 && (
+                        <Sheet
+                          open={editing}
+                          onOpenChange={setEditing}
+                          modal={false}
+                          size="md"
+                          title={t("playground.decisions.title", "Questions")}
+                          trigger={
+                            <Button size="sm" variant="ghost" leadingIcon={icons.list} pressed={editing}>
+                              {questions.length
+                                ? t("playground.decisions.count", "Questions ({count})", { count: questions.length })
+                                : t("playground.decisions.title", "Questions")}
+                            </Button>
+                          }
+                        >
+                          <Text as="p" variant="small" tone="secondary" className="mb-16">
+                            {t("playground.decisions.subtitle", "Models that make decisions answer these about what you send.")}
+                          </Text>
+                          <QuestionEditor
+                            value={questions}
+                            onValueChange={setQuestions}
+                            allowBox={limits.allowBox}
+                            maxQuestions={limits.maxQuestions}
+                            maxOptions={limits.maxOptions}
+                            maxLevels={limits.maxLevels}
+                          />
+                        </Sheet>
+                      )}
                       {recordable && (
                         <Button
                           size="sm"

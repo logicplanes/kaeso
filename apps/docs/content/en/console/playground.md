@@ -6,11 +6,11 @@ order: 10
 
 The **Playground** sends a prompt to up to four of the project's models at once and shows their replies side by side. Each column is its own conversation. Using it needs the right **Use the Playground**, which project admins and developers have.
 
-It lists every kind of model the project can call, and each column takes the form of its model's kind: text, images, speech, sound effects, music, transcription or video. Embeddings, reranking and realtime models aren't listed, nor are models that only make decisions.
+It lists every kind of model the project can call, and each column takes the form of its model's kind: text, images, speech, sound effects, music, transcription, video or decisions. Embeddings, reranking and realtime models aren't listed.
 
 ## Compare models
 
-1. Choose a model for the first column, and choose **Add column** for each further one. Search by name, id or provider, or narrow the list to one provider; models are grouped by provider, and the ones you chose recently come first. You can't choose a model whose provider has no key for this project, or one marked [Unavailable](models-and-aliases.md) because the provider doesn't serve it to the project's key. A model marked **Needs an API key** can't be chosen either: the project's key for its provider is an account, such as a [ChatGPT account](provider-keys.md#sign-in-with-a-chatgpt-account), which can't make images, speech or transcriptions.
+1. Choose a model for the first column, and choose **Add column** for each further one. Search by name, id or provider, or narrow the list to one provider; models are grouped by provider, and the ones you chose recently come first. You can't choose a model whose provider has no key for this project, or one marked [Unavailable](models-and-aliases.md) because the provider doesn't serve it to the project's key. A model marked **Needs an API key** can't be chosen either: the project's key for its provider is an account, such as a [ChatGPT account](provider-keys.md#sign-in-with-a-chatgpt-account), which can't make images, speech, transcriptions or decisions.
 2. Send a prompt to every model. When a chosen model reads files, the attach button adds them, named for what the models take, such as **Attach images**; dropping or pasting them into the prompt box works too. Each model gets the files it reads: images and PDFs for a text model, an image for an image model that edits, audio for a transcription model. A text model gets them again with every later turn.
 3. Read the replies. A column follows a reply as it arrives until you scroll up, and follows again when you scroll back to its end. Each reply shows the time to the first token, the total time, the tokens and the cost. A reply that failed shows the reason in its column, and one the model cut off says why, such as **Stopped at the output limit**. **Retry** sends that turn again.
 
@@ -33,6 +33,25 @@ One prompt goes to every column, so a text model and an image model can answer i
 A video job takes minutes. The Playground asks about it every few seconds, less often the longer it runs. **Cancel** or **Stop** cancels it at the provider. Only you see the videos you start in the Playground.
 
 A media reply shows the time it took and its cost. The cost reads **Unknown** when the model has no price for what it made, such as a recording whose length the browser doesn't state.
+
+## Ask decision models
+
+A decision model answers typed questions about what you send, each answer with its probabilities. A column with a decision model, such as Jev or Gemini Decision 1, asks it the questions. A model that also chats, such as GPT-6 Luna, chats until there are questions and is asked them from then on.
+
+1. Choose **Questions** beside the prompt box, then **Add question** for each question. Each has a type, a name and instructions:
+
+   | Type | The model answers |
+   | --- | --- |
+   | Yes/no | Yes or no, with what each means when you say so |
+   | Choice | One of the options, each a value with what it means |
+   | Score | A level from 0 up, each with a label or what it means |
+   | Box | Where something is on the attached image, offered only when every chosen model draws boxes |
+
+   Names must differ; a question without one is numbered. The questions keep to the strictest limits of the chosen models, such as GPT-6 Luna's 400 questions.
+2. Send what the questions are about: text, or JSON when the prompt is a JSON object or array. Attach PNG or JPEG images when the model reads images; the text then goes first, each image after it.
+3. Read the answers. Each question shows the answer, a bar with the probability of each option or level, and the confidence when the model gives one. A box is drawn on the image. A question the model refused says so in its row, and a refused request shows the reason in the column.
+
+A chat model in the same comparison gets the same text and images as its prompt. The questions stay while the console is open in this tab, and each turn keeps the questions it asked. A decision shows the time it took, its tokens and its cost.
 
 ## Set parameters
 

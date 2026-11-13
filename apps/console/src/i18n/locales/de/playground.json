@@ -49,5 +49,18 @@
   "playground.emptyThread": "Unten einen Prompt senden, um zu beginnen.",
   "playground.emptyColumn": "Antworten erscheinen hier ab dem nächsten gesendeten Prompt.",
   "playground.videoFailed": "Der Anbieter konnte das Video nicht erstellen. Bitte erneut versuchen.",
-  "playground.mode.decision": "Entscheidungen"
+  "playground.mode.decision": "Entscheidungen",
+  "playground.decisions.count": "Fragen ({count})",
+  "playground.decisions.emptyLevel": "Beschreiben Sie jede Stufe von {question}.",
+  "playground.decisions.emptyOption": "Geben Sie jeder Option von {question} einen Wert.",
+  "playground.decisions.none": "Fügen Sie eine Frage hinzu, die {model} beantwortet.",
+  "playground.decisions.question": "Frage {index}",
+  "playground.decisions.sameName": "Zwei Fragen heißen {name}; benennen Sie eine um.",
+  "playground.decisions.sameOption": "Zwei Optionen von {question} haben denselben Wert.",
+  "playground.decisions.stopped": "Gestoppt, bevor das Modell antwortete.",
+  "playground.decisions.subtitle": "Modelle, die Entscheidungen treffen, beantworten sie zu dem, was Sie senden.",
+  "playground.decisions.title": "Fragen",
+  "playground.decisions.unreadable": "Die Antworten des Modells ließen sich nicht lesen. Bitte erneut versuchen.",
+  "playground.promptState": "Beschreiben, worum es in den Fragen geht",
+  "playground.promptStateEvery": "An alle Modelle senden, worum es in den Fragen geht"
 }
