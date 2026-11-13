@@ -196,7 +196,7 @@ from google.genai import errors
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
+    http_options={"base_url": "https://kaeso.example.com"},
 )
 
 try:
@@ -214,7 +214,7 @@ import { ApiError, GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
 });
 
 try {
@@ -335,7 +335,7 @@ An error ElevenLabs itself sent reaches the app as ElevenLabs sent it, with its 
 
 ## System One format
 
-An app on `/v1/systemone` gets errors in TypeSafe's shape, as TypeSafe's SDK reads them: `{"detail": "…"}` with the message, or a list of problems with their `loc` for a field the request got wrong. An overloaded provider answers 529. Errors on `/v1/decisions` are in the [OpenAI format](#openai-formats), and errors on `/v1beta/decisions` in the [Gemini format](#gemini-format); a Gemini safety block keeps its `code`, such as `safety`. The [Decisions API](decisions.md#what-is-refused) lists what Kaeso refuses.
+An app on `/v1/systemone` gets errors in TypeSafe's shape, as TypeSafe's SDK reads them: `{"detail": "…"}` with the message, or a list of problems with their `loc` for a field the request got wrong. An overloaded provider answers 529. Errors on `/v1/decisions` are in the [OpenAI format](#openai-formats), and errors on `/v1beta/decisions`, or on `/v1/decisions` with Gemini's key, in the [Gemini format](#gemini-format); a Gemini safety block keeps its `code`, such as `safety`. The [Decisions API](decisions.md#what-is-refused) lists what Kaeso refuses.
 
 ## Causes
 

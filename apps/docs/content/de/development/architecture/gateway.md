@@ -37,7 +37,7 @@ Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, 
 
 | Code | Wo |
 | --- | --- |
-| Die Modell-API (`/v1`, `/v1beta` für das Gemini-Format in `model_api/gemini.rs` und `/v2` für die Stimmenliste von ElevenLabs in `model_api/elevenlabs.rs`) | `crates/kaeso-server/src/model_api` |
+| Die Modell-API (`/v1`, `/v1beta` für das Gemini-Format in `model_api/gemini.rs`, das auch die Pfade von Gemini unter `/v1` beantwortet, und `/v2` für die Stimmenliste von ElevenLabs in `model_api/elevenlabs.rs`) | `crates/kaeso-server/src/model_api` |
 | Die Platform API (`/platform/v1`) | `crates/kaeso-server/src/platform` |
 | Der MCP-Server und seine OAuth-Anmeldung (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | Die Services, die beide nutzen | `crates/kaeso-server/src/services` |

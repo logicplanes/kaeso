@@ -37,7 +37,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 | 代码 | 位置 |
 | --- | --- |
-| 模型 API（`/v1`，`model_api/gemini.rs` 中 Gemini 格式的 `/v1beta`，以及 `model_api/elevenlabs.rs` 中 ElevenLabs 声音列表的 `/v2`） | `crates/kaeso-server/src/model_api` |
+| 模型 API（`/v1`，`model_api/gemini.rs` 中 Gemini 格式的 `/v1beta`（它也回答 `/v1` 下 Gemini 的路径），以及 `model_api/elevenlabs.rs` 中 ElevenLabs 声音列表的 `/v2`） | `crates/kaeso-server/src/model_api` |
 | Platform API（`/platform/v1`） | `crates/kaeso-server/src/platform` |
 | MCP 服务器及其 OAuth 登录（`/mcp`、`/oauth`） | `crates/kaeso-server/src/mcp` |
 | 两者共用的服务 | `crates/kaeso-server/src/services` |

@@ -37,7 +37,7 @@ A Platform API request authenticates with a session cookie, an API key with plat
 
 | Code | Where |
 | --- | --- |
-| The model API (`/v1`, `/v1beta` for the Gemini format in `model_api/gemini.rs`, and `/v2` for ElevenLabs' voice list in `model_api/elevenlabs.rs`) | `crates/kaeso-server/src/model_api` |
+| The model API (`/v1`, `/v1beta` for the Gemini format in `model_api/gemini.rs`, which also answers Gemini's paths under `/v1`, and `/v2` for ElevenLabs' voice list in `model_api/elevenlabs.rs`) | `crates/kaeso-server/src/model_api` |
 | The Platform API (`/platform/v1`) | `crates/kaeso-server/src/platform` |
 | The MCP server and its OAuth sign-in (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
 | The services both use | `crates/kaeso-server/src/services` |

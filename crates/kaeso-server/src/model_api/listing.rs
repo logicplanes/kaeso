@@ -138,8 +138,17 @@ pub async fn list(
     query: &str,
 ) -> Response {
     let dialect = dispatch::models_dialect(&header_list(headers));
-    let default_limit = (dialect == DialectId::AnthropicMessages).then_some(20);
-    list_as(state, headers, client, query, dialect, default_limit).await
+    list_as(state, headers, client, query, dialect).await
+}
+
+// Anthropic's `GET /v1/models` pages 20 models by default (`limit`), Gemini's `models.list` 50
+// (`pageSize`); OpenAI's listing isn't paged.
+fn default_limit(dialect: DialectId) -> Option<u32> {
+    match dialect {
+        DialectId::AnthropicMessages => Some(20),
+        DialectId::Gemini => Some(50),
+        _ => None,
+    }
 }
 
 pub async fn list_as(
@@ -148,9 +157,17 @@ pub async fn list_as(
     client: Option<IpAddr>,
     query: &str,
     dialect: DialectId,
-    default_limit: Option<u32>,
 ) -> Response {
-    match list_inner(state, headers, client, query, dialect, default_limit).await {
+    match list_inner(
+        state,
+        headers,
+        client,
+        query,
+        dialect,
+        default_limit(dialect),
+    )
+    .await
+    {
         Ok(body) => json(body),
         Err(e) => respond(dialect, &e, &Served::default()),
     }

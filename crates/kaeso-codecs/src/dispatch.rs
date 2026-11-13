@@ -372,11 +372,16 @@ pub fn reports_item_progress(dialect: DialectId, frame: &RawItem) -> bool {
     }
 }
 
+/// The format an app speaks on a path several APIs share, such as `GET /v1/models`, chosen by
+/// its headers: `anthropic-version` is Anthropic, `xi-api-key` ElevenLabs, `x-goog-api-key`
+/// without `authorization` Gemini (google-genai's key header), and anything else OpenAI.
 pub fn models_dialect(headers: &HeaderList) -> DialectId {
     if headers.get("anthropic-version").is_some() {
         DialectId::AnthropicMessages
     } else if headers.get("xi-api-key").is_some() {
         DialectId::ElevenLabs
+    } else if headers.get("x-goog-api-key").is_some() && headers.get("authorization").is_none() {
+        DialectId::Gemini
     } else {
         DialectId::OpenAiChat
     }
@@ -644,7 +649,7 @@ mod tests {
     }
 
     #[test]
-    fn models_dialect_follows_the_anthropic_version_header() {
+    fn models_dialect_follows_the_apps_version_and_key_headers() {
         let anthropic = HeaderList::new().with("Anthropic-Version", "2023-06-01");
         assert_eq!(models_dialect(&anthropic), DialectId::AnthropicMessages);
         let openai = HeaderList::new().with("authorization", "Bearer x");
@@ -652,6 +657,14 @@ mod tests {
         assert_eq!(models_dialect(&HeaderList::new()), DialectId::OpenAiChat);
         let beta_only = HeaderList::new().with("anthropic-beta", "x");
         assert_eq!(models_dialect(&beta_only), DialectId::OpenAiChat);
+        let gemini = HeaderList::new().with("X-Goog-Api-Key", "k");
+        assert_eq!(models_dialect(&gemini), DialectId::Gemini);
+        let both = HeaderList::new()
+            .with("x-goog-api-key", "k")
+            .with("authorization", "Bearer x");
+        assert_eq!(models_dialect(&both), DialectId::OpenAiChat);
+        let eleven = HeaderList::new().with("xi-api-key", "k");
+        assert_eq!(models_dialect(&eleven), DialectId::ElevenLabs);
     }
 
     #[test]

@@ -120,6 +120,45 @@ fn the_edge_answers_each_api_in_the_gateways_own_error_format() {
     }
 }
 
+fn matcher(caddyfile: &str, name: &str) -> String {
+    caddyfile
+        .lines()
+        .find(|l| l.trim().starts_with(&format!("@{name} ")))
+        .unwrap_or_else(|| panic!("no matcher @{name}"))
+        .trim()
+        .to_owned()
+}
+
+#[test]
+fn gemini_calls_under_v1_and_requests_with_geminis_key_get_geminis_shape() {
+    let edge = std::fs::read_to_string(format!(
+        "{}/../../deploy/console/edge.Caddyfile",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap();
+    let gemini = matcher(&config("caddyfile"), "gemini");
+    assert_eq!(gemini, matcher(&edge, "gemini"));
+    let methods: Vec<&str> = kaeso_codecs::gemini::GeminiAction::ALL
+        .iter()
+        .map(|a| a.as_str())
+        .collect();
+    assert!(
+        gemini.contains(&format!(
+            "path_regexp('^/v1/models/.+:({})$')",
+            methods.join("|")
+        )),
+        "every Gemini method under /v1/models, and no other: {gemini}"
+    );
+    for part in [
+        "path('/v1beta', '/v1beta/*')",
+        "header({'X-Goog-Api-Key': '*'}) || query({'key': '*'})",
+        "!header({'Authorization': '*'})",
+        "path('/v1/models', '/v1/models/*', '/v1/decisions')",
+    ] {
+        assert!(gemini.contains(part), "{part} missing in {gemini}");
+    }
+}
+
 fn inline(page: &str, tag: &str) -> String {
     let open = format!("<{tag}>");
     let start = page.find(&open).unwrap() + open.len();

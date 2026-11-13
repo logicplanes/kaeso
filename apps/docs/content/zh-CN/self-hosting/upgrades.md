@@ -230,7 +230,7 @@ flowchart TD
 | 控制台页面 | 503，并显示一个使用浏览器语言的页面，说明正在发生什么，每 5 秒检查一次，Kaeso 恢复后自动返回 |
 | `/platform/v1/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` | 503，带有 Platform API 的错误，类型为 `unavailable` |
 | `/v1/messages`，以及带 `anthropic-version` 请求头的其他 `/v1/*`，但 `/v1/chat/completions`、`/v1/responses`、`/v1/responses/*`、`/v1/embeddings`、`/v1/decisions` 和 `/v1/systemone` 除外 | 529，带有 Anthropic 的 `overloaded_error` |
-| `/v1beta` 和 `/v1beta/*` | 503，带有 Gemini 的 `UNAVAILABLE` 错误 |
+| `/v1beta` 和 `/v1beta/*`，`/v1/models/*` 下 Gemini 的方法，以及带有 `x-goog-api-key` 请求头或 `key` 查询参数且没有 `Authorization` 请求头的 `/v1/models`、`/v1/models/*` 和 `/v1/decisions` | 503，带有 Gemini 的 `UNAVAILABLE` 错误 |
 | `/v1/systemone` | 529，带有 System One 的 `detail` |
 | `/v2` 和 `/v2/*`，以及其他带 `xi-api-key` 请求头的请求 | 503，带有 ElevenLabs 的 `service_unavailable` 错误 |
 | 其他 `/v1/*` | 503，带有 OpenAI 的 `service_unavailable_error` |

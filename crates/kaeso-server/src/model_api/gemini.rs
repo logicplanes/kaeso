@@ -1,9 +1,10 @@
 use axum::Router;
 use axum::body::Body;
 use axum::extract::{Extension, OriginalUri, Request, State};
-use axum::http::{HeaderMap, HeaderValue, StatusCode, Uri};
+use axum::http::{HeaderMap, HeaderValue, Method, StatusCode, Uri};
 use axum::response::Response;
 use axum::routing::get;
+use kaeso_codecs::dispatch;
 use kaeso_codecs::gemini::{GeminiAction, split_model_action};
 use kaeso_core::id::RequestId;
 use kaeso_kpp::{DialectId, ErrorKind, KppError, RequestKind};
@@ -18,6 +19,10 @@ pub const PREFIX: &str = "/v1beta";
 
 const MODELS: &str = "/v1beta/models";
 
+// google-genai 3 calls Gemini's stable version, `/v1`, by default; Google serves the same model
+// paths and bodies there (https://ai.google.dev/gemini-api/docs/api-versions).
+const V1_MODELS: &str = "/v1/models";
+
 const DECISIONS: &str = "/v1beta/decisions";
 
 // Google's REST examples put the key in `?key=`; google-genai sends `x-goog-api-key`.
@@ -25,11 +30,29 @@ const KEY_PARAM: &str = "key";
 
 const KEY_HEADER: &str = "x-goog-api-key";
 
-// Gemini's listing pages 50 models by default (`models.list`, `pageSize`).
-const DEFAULT_PAGE_SIZE: u32 = 50;
-
 pub fn is_gemini_path(path: &str) -> bool {
-    path == PREFIX || path.starts_with("/v1beta/")
+    path == PREFIX || path.starts_with("/v1beta/") || names_method(path)
+}
+
+// `/v1/models/{model}:{method}` with a method only Gemini has; `/v1/models/{id}` alone is also
+// OpenAI's and Anthropic's model path.
+fn names_method(path: &str) -> bool {
+    path.strip_prefix(V1_MODELS)
+        .and_then(|r| r.strip_prefix('/'))
+        .and_then(|r| r.rsplit_once(':'))
+        .is_some_and(|(_, method)| GeminiAction::from_wire(method).is_some())
+}
+
+// On a path several APIs share, an app speaks Gemini when it sends `x-goog-api-key` (or `?key=`,
+// once `lift_query` has moved it there) and no `authorization`, as google-genai does.
+pub(super) fn speaks_gemini(headers: &HeaderMap) -> bool {
+    dispatch::models_dialect(&pipeline::header_list(headers)) == DialectId::Gemini
+}
+
+pub(super) fn lift_query(uri: &Uri, headers: &mut HeaderMap) -> Vec<(String, String)> {
+    let mut pairs = query_pairs(uri);
+    lift_key(headers, &mut pairs);
+    pairs
 }
 
 fn refuse(err: KppError) -> Response {
@@ -113,13 +136,25 @@ fn checked_call(rest: &str, pairs: &[(String, String)]) -> Result<GeminiCall, Kp
 }
 
 fn rest_of(uri: &Uri) -> &str {
-    uri.path()
-        .strip_prefix(MODELS)
+    let path = uri.path();
+    path.strip_prefix(MODELS)
+        .or_else(|| path.strip_prefix(V1_MODELS))
         .and_then(|r| r.strip_prefix('/'))
         .unwrap_or("")
 }
 
-async fn call(
+// An app that speaks Gemini gets Gemini's 404 for a method Kaeso doesn't serve; any other app
+// gets its own 405 for a POST to `/v1/models/{id}`.
+pub(super) fn is_v1_call(uri: &Uri, headers: &HeaderMap) -> bool {
+    if names_method(uri.path()) {
+        return true;
+    }
+    let mut headers = headers.clone();
+    lift_query(uri, &mut headers);
+    speaks_gemini(&headers)
+}
+
+pub(super) async fn call(
     State(state): State<AppState>,
     Extension(request_id): Extension<RequestId>,
     ip: ClientIp,
@@ -128,8 +163,7 @@ async fn call(
 ) -> Response {
     let (parts, body) = req.into_parts();
     let mut headers = parts.headers;
-    let mut pairs = query_pairs(&uri);
-    lift_key(&mut headers, &mut pairs);
+    let pairs = lift_query(&uri, &mut headers);
     let call = match checked_call(rest_of(&uri), &pairs) {
         Ok(call) => call,
         Err(e) => return refuse(e),
@@ -170,8 +204,18 @@ async fn decisions(
 ) -> Response {
     let (parts, body) = req.into_parts();
     let mut headers = parts.headers;
-    let mut pairs = query_pairs(&uri);
-    lift_key(&mut headers, &mut pairs);
+    let pairs = lift_query(&uri, &mut headers);
+    decide(state, request_id, ip, headers, &pairs, body).await
+}
+
+pub(super) async fn decide(
+    state: AppState,
+    request_id: RequestId,
+    ip: ClientIp,
+    headers: HeaderMap,
+    pairs: &[(String, String)],
+    body: Body,
+) -> Response {
     if let Some((name, _)) = pairs.first() {
         return refuse(unknown_parameter(name));
     }
@@ -201,11 +245,9 @@ async fn decisions(
     .await
 }
 
-fn listing_query(uri: &Uri, headers: &mut HeaderMap) -> String {
-    let mut pairs = query_pairs(uri);
-    lift_key(headers, &mut pairs);
+pub(super) fn listing_query(uri: &Uri, headers: &mut HeaderMap) -> String {
     url::form_urlencoded::Serializer::new(String::new())
-        .extend_pairs(pairs)
+        .extend_pairs(lift_query(uri, headers))
         .finish()
 }
 
@@ -216,25 +258,16 @@ async fn models_list(
     OriginalUri(uri): OriginalUri,
 ) -> Response {
     let query = listing_query(&uri, &mut headers);
-    listing::list_as(
-        &state,
-        &headers,
-        ip.0,
-        &query,
-        DialectId::Gemini,
-        Some(DEFAULT_PAGE_SIZE),
-    )
-    .await
+    listing::list_as(&state, &headers, ip.0, &query, DialectId::Gemini).await
 }
 
-async fn models_get(
+pub(super) async fn models_get(
     State(state): State<AppState>,
     ip: ClientIp,
     mut headers: HeaderMap,
     OriginalUri(uri): OriginalUri,
 ) -> Response {
-    let mut pairs = query_pairs(&uri);
-    lift_key(&mut headers, &mut pairs);
+    let pairs = lift_query(&uri, &mut headers);
     if let Some((name, _)) = pairs.first() {
         return refuse(unknown_parameter(name));
     }
@@ -252,7 +285,7 @@ pub(super) async fn not_found(OriginalUri(uri): OriginalUri, _body: Body) -> Res
     ))
 }
 
-pub(super) fn method_not_allowed(path: &str, method: &axum::http::Method) -> Response {
+pub(super) fn method_not_allowed(path: &str, method: &Method) -> Response {
     let mut resp = refuse(error(
         ErrorKind::InvalidRequest,
         405,
@@ -260,18 +293,6 @@ pub(super) fn method_not_allowed(path: &str, method: &axum::http::Method) -> Res
     ));
     *resp.status_mut() = StatusCode::METHOD_NOT_ALLOWED;
     resp
-}
-
-// google-genai with `api_version="v1"` calls `/v1/models/{model}:{method}`, where `/v1/models`
-// belongs to the OpenAI and Anthropic listings; such an app gets pointed to `/v1beta`.
-pub(super) fn on_v1(method_path: &str) -> Option<Response> {
-    let (_, method) = method_path.rsplit_once(':')?;
-    GeminiAction::from_wire(method)?;
-    Some(refuse(error(
-        ErrorKind::NotFound,
-        404,
-        "Kaeso serves the Gemini API under `/v1beta`; set the SDK's API version to `v1beta`.",
-    )))
 }
 
 pub fn router() -> Router<AppState> {
@@ -347,13 +368,44 @@ mod tests {
     }
 
     #[test]
-    fn only_gemini_methods_on_v1_are_pointed_to_v1beta() {
-        assert!(on_v1("gemini-3.5-flash:generateContent").is_some());
-        assert!(on_v1("gpt-4o").is_none());
-        assert!(on_v1("a:b").is_none());
+    fn a_gemini_path_is_under_v1beta_or_names_a_gemini_method_under_v1() {
         assert!(is_gemini_path("/v1beta"));
         assert!(is_gemini_path("/v1beta/models"));
+        assert!(is_gemini_path(
+            "/v1/models/gemini-3.5-flash:generateContent"
+        ));
+        assert!(is_gemini_path("/v1/models/openrouter/a:b:countTokens"));
         assert!(!is_gemini_path("/v1betax"));
         assert!(!is_gemini_path("/v1/models"));
+        assert!(!is_gemini_path("/v1/models/gpt-4o"));
+        assert!(!is_gemini_path("/v1/models/ft:gpt-4o:acme::abc"));
+        assert!(!is_gemini_path("/v1/modelsx/m:generateContent"));
+        assert!(!is_gemini_path("/v1/decisions"));
+    }
+
+    #[test]
+    fn a_post_under_v1_models_is_gemini_by_its_method_or_its_key() {
+        let uri = |u: &str| u.parse::<Uri>().unwrap();
+        let none = HeaderMap::new();
+        assert!(is_v1_call(&uri("/v1/models/gpt-4o:embedContent"), &none));
+        assert!(!is_v1_call(
+            &uri("/v1/models/m:batchGenerateContent"),
+            &none
+        ));
+        assert!(is_v1_call(
+            &uri("/v1/models/m:batchGenerateContent?key=sk-kso-a"),
+            &none
+        ));
+        let mut goog = HeaderMap::new();
+        goog.insert(KEY_HEADER, HeaderValue::from_static("sk-kso-a"));
+        assert!(is_v1_call(&uri("/v1/models/m"), &goog));
+        let mut bearer = goog.clone();
+        bearer.insert("authorization", HeaderValue::from_static("Bearer sk-kso-a"));
+        assert!(!is_v1_call(
+            &uri("/v1/models/m:batchGenerateContent"),
+            &bearer
+        ));
+        assert!(rest_of(&uri("/v1/models/m:countTokens")) == "m:countTokens");
+        assert!(rest_of(&uri("/v1beta/models/m:countTokens")) == "m:countTokens");
     }
 }

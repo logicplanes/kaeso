@@ -121,7 +121,7 @@ from google import genai
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
+    http_options={"base_url": "https://kaeso.example.com"},
 )
 
 response = client.models.generate_content(
@@ -136,7 +136,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
 });
 
 const response = await ai.models.generateContent({
@@ -166,12 +166,12 @@ console.log(response.text);
 | `POST /v1/audio/speech` | OpenAI Speech（[音频 API](audio.md)） |
 | `POST /v1/audio/transcriptions`、`POST /v1/audio/translations` | OpenAI Transcriptions（[音频 API](audio.md)） |
 | `POST /v1/videos`、`GET /v1/videos`、`GET /v1/videos/{video_id}`、`DELETE /v1/videos/{video_id}`、`GET /v1/videos/{video_id}/content`、`POST /v1/videos/{video_id}/remix` | OpenAI Videos（[视频 API](videos.md)） |
-| `POST /v1/decisions` | OpenAI Decisions（[决策 API](decisions.md)） |
+| `POST /v1/decisions` | OpenAI Decisions；带 Gemini 的密钥时为 Gemini Decisions（[决策 API](decisions.md)） |
 | `POST /v1/systemone` | System One（[决策 API](decisions.md)） |
 | `POST /v1/text-to-speech/{voice_id}`、`/v1/text-to-dialogue`、`/v1/sound-generation`、`/v1/music`、`/v1/voice-changer/{voice_id}`、`/v1/speech-to-text`、`/v1/flows/image`、`GET /v1/voices`、`/v2/voices` | ElevenLabs（[ElevenLabs API](elevenlabs.md)） |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages，统计 Token |
-| `GET /v1/models` | 该密钥可调用的模型 |
+| `GET /v1/models` | 该密钥可调用的模型（[列出模型](#列出模型)） |
 | `GET /v1/models/{model}` | 其中某一个模型 |
 | `POST /v1beta/models/{model}:generateContent` | Gemini |
 | `POST /v1beta/models/{model}:streamGenerateContent?alt=sse` | Gemini，流式 |
@@ -182,17 +182,17 @@ console.log(response.text);
 | `GET /v1beta/models/{model}` | 其中某一个模型，采用 Gemini 格式 |
 | `POST /v1beta/decisions` | Gemini Decisions（[决策 API](decisions.md)） |
 
-在 `/v1beta` 路径中，`{model}` 可以是任何[模型名称](#模型名称)，例如 `claude-haiku-4-5`。
+与 Google 一样，Kaeso 也在 `/v1` 下提供 Gemini 的路径：`google-genai` 3 及以后的版本默认调用 `/v1`，更早的版本调用 `/v1beta`。`POST /v1/models/{model}:{method}` 始终是 Gemini。请求带有 Gemini 的密钥（`x-goog-api-key` 或 `?key=`）且没有 `Authorization` 请求头时，`GET /v1/models`、`GET /v1/models/{model}` 和 `POST /v1/decisions` 采用 Gemini 格式回答。在 Gemini 路径中，`{model}` 可以是任何[模型名称](#模型名称)，例如 `claude-haiku-4-5`。
 
 `/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/provider-apis.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。同样，`/v1/decisions`、`/v1/systemone` 和 `/v1beta/decisions` 只服务决策模型，纯决策模型也不服务任何其他端点（[决策 API](decisions.md)）。
 
-`/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式；带有 `xi-api-key` 请求头时采用 ElevenLabs 的格式；否则采用 OpenAI 格式。
+`/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式；带有 `xi-api-key` 请求头时采用 ElevenLabs 的格式；带有 Gemini 的密钥时采用 Gemini 格式；否则采用 OpenAI 格式。
 
-在 `/v1beta` 下，所有错误都采用 Gemini 格式。其他方法（例如 `batchGenerateContent`）和其他路径（例如文件或缓存内容）返回 404。已知路径使用了错误的方法则返回 405。调用只接受查询参数 `key` 和 `alt`，其他参数返回 400。`/v1` 下的 Gemini 调用（`google-genai` 设置 `api_version="v1"` 时会这样调用）返回 404，消息会指向 `/v1beta`。
+在 `/v1beta` 下，以及 `/v1` 下的 Gemini 调用，所有错误都采用 Gemini 格式。其他方法（例如 `batchGenerateContent`）和其他路径（例如文件或缓存内容）返回 404。已知路径使用了错误的方法则返回 405。调用只接受查询参数 `key` 和 `alt`，其他参数返回 400。
 
 ### 列出模型
 
-`GET /v1/models` 以同样的方式选择格式：带 `anthropic-version` 请求头时采用 Anthropic 的格式，带 `xi-api-key` 请求头时采用 ElevenLabs 的格式（[ElevenLabs API](elevenlabs.md#端点)）。`GET /v1beta/models` 始终采用 Gemini 格式，并把每个模型命名为 `models/<name>`。列表先列出该密钥可调用的目录模型，再列出项目中指向这些模型的别名。每个模型以其自身的 ID 列出；如果其自身的 ID 不能指向它（例如另一个服务商提供同一 ID），则以 `provider/model` 列出（[模型名称](#模型名称)）。服务商不向项目的服务商密钥提供的模型不会列出（[可用性](../console/models-and-aliases.md#可用性)）。
+`GET /v1/models` 以同样的方式选择格式：带 `anthropic-version` 请求头时采用 Anthropic 的格式，带 `xi-api-key` 请求头时采用 ElevenLabs 的格式（[ElevenLabs API](elevenlabs.md#端点)），带 Gemini 的密钥且没有 `Authorization` 请求头时采用 Gemini 的格式。`GET /v1beta/models` 始终采用 Gemini 格式，并把每个模型命名为 `models/<name>`。列表先列出该密钥可调用的目录模型，再列出项目中指向这些模型的别名。每个模型以其自身的 ID 列出；如果其自身的 ID 不能指向它（例如另一个服务商提供同一 ID），则以 `provider/model` 列出（[模型名称](#模型名称)）。服务商不向项目的服务商密钥提供的模型不会列出（[可用性](../console/models-and-aliases.md#可用性)）。
 
 | | OpenAI 格式 | Anthropic 格式 | Gemini 格式 |
 | --- | --- | --- | --- |
@@ -212,7 +212,7 @@ x-goog-api-key: sk-kso-…
 xi-api-key: sk-kso-…
 ```
 
-请求发送了多个时，优先使用 `x-api-key`，其次是 `x-goog-api-key`，然后是 `xi-api-key`，最后是 `Authorization`。在 `/v1beta` 下，密钥也可以像 Google 的 REST 示例那样放在查询参数中，即 `?key=sk-kso-…`。只有在没有请求头携带密钥时，Kaeso 才使用它，而且查询参数中的密钥绝不会进入日志，也不会发给服务商。密钥决定所属项目。它以其成员或服务账号的权限和模型访问范围行事，该成员或服务账号需要 `api.request` 权限。
+请求发送了多个时，优先使用 `x-api-key`，其次是 `x-goog-api-key`，然后是 `xi-api-key`，最后是 `Authorization`。在 Gemini 的路径上（`/v1beta` 和 `/v1` 下），密钥也可以像 Google 的 REST 示例那样放在查询参数中，即 `?key=sk-kso-…`。只有在没有请求头携带密钥时，Kaeso 才使用它，而且查询参数中的密钥绝不会进入日志，也不会发给服务商。密钥决定所属项目。它以其成员或服务账号的权限和模型访问范围行事，该成员或服务账号需要 `api.request` 权限。
 
 仅具有平台访问权限的密钥和组织平台密钥（`sk-kso-org-…`），Kaeso 以 403 拒绝：它们从不调用模型。如何创建和限制密钥，见 [API 密钥](../console/api-keys.md)。
 

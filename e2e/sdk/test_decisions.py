@@ -21,10 +21,10 @@ def ts(install) -> TypeSafeClient:
 
 
 @pytest.fixture
-def gd(install) -> genai.Client:
+def gd(install, gemini_version) -> genai.Client:
     return genai.Client(
         api_key=install.key,
-        http_options=types.HttpOptions(base_url=install.url, api_version="v1beta", retry_options=types.HttpRetryOptions(attempts=1)),
+        http_options=types.HttpOptions(base_url=install.url, api_version=gemini_version, retry_options=types.HttpRetryOptions(attempts=1)),
     )
 
 

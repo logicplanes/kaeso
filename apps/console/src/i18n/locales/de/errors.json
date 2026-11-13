@@ -476,7 +476,6 @@
   "errors.modelApi.geminiNameMethod": "Nennen Sie ein Modell und eine Methode, etwa `gemini-3.5-flash:generateContent`.",
   "errors.modelApi.geminiAltValue": "Kaeso streamt Gemini-Antworten nur als Server-Sent Events, nicht als `alt={value}`; senden Sie `alt=sse`.",
   "errors.modelApi.geminiAltMissing": "Kaeso streamt Gemini-Antworten nur als Server-Sent Events; ergänzen Sie `alt=sse` in der URL.",
-  "errors.modelApi.geminiOnV1": "Kaeso bedient die Gemini-API unter `/v1beta`; stellen Sie die API-Version des SDK auf `v1beta`.",
   "errors.modelApi.keysUnavailable": "Kaeso kann API-Schlüssel gerade nicht prüfen. Gleich erneut versuchen.",
   "errors.modelApi.method": "`{path}` nimmt keine `{method}`-Anfragen an.",
   "errors.modelApi.modelsUnavailable": "Kaeso kann die Modelle dieses Projekts gerade nicht laden. Gleich erneut versuchen.",

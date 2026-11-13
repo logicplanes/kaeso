@@ -47,7 +47,7 @@ const decision = await client.decisions.create({
 console.log(decision.answers);
 ```
 
-TypeSafe's Python SDK and google-genai work the same way. Point the TypeSafe client at Kaeso's root, and set google-genai's API version to `v1beta`:
+TypeSafe's Python SDK and google-genai work the same way. Point both clients at Kaeso's root:
 
 ```python tab="TypeSafe SDK"
 import os
@@ -69,7 +69,7 @@ from google.genai import types
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options=types.HttpOptions(base_url="https://kaeso.example.com", api_version="v1beta"),
+    http_options=types.HttpOptions(base_url="https://kaeso.example.com"),
 )
 decision = client.decisions.create(
     model="gemini-decision-1",
@@ -85,9 +85,9 @@ print(decision.answers["refund"].noul)
 | --- | --- | --- | --- |
 | `POST /v1/decisions` | OpenAI's Decisions API | `Authorization: Bearer` | JSON: `model`, `input`, `questions`, `prompt_cache_key`, `prompt_cache_options`, `safety_identifier` |
 | `POST /v1/systemone` | TypeSafe's System One API | `Authorization: Bearer` | JSON, or an upload whose first part `request` holds the JSON and whose other parts the images `assets` name; gzip or zstd |
-| `POST /v1beta/decisions` | Gemini's Decisions API | `x-goog-api-key` or `?key=` | JSON: `model`, `input`, `questions` |
+| `POST /v1beta/decisions`, or `POST /v1/decisions` with Gemini's key | Gemini's Decisions API | `x-goog-api-key` or `?key=` | JSON: `model`, `input`, `questions` |
 
-Decision replies are never streamed. The body of each endpoint is bounded by [`body_limits.decisions`](../self-hosting/configuration.md#request-and-response-bodies), 64 MiB by default. A System One body sent to `/v1/decisions`, as some SDKs do, is refused with a 400 that points to `/v1/systemone`; Kaeso never guesses a format from a body's shape. TypeSafe's `GET /v1/models` isn't served: no header tells its SDK from OpenAI's, so `/v1/models` answers in OpenAI's shape and lists decision models like any model.
+`/v1/decisions` takes Gemini's body when the request carries `x-goog-api-key` or `?key=` and no `Authorization` header, as `google-genai` 3 sends it by default; the OpenAI SDK sends `Authorization: Bearer` and gets OpenAI's format. Decision replies are never streamed. The body of each endpoint is bounded by [`body_limits.decisions`](../self-hosting/configuration.md#request-and-response-bodies), 64 MiB by default. A System One body sent to `/v1/decisions`, as some SDKs do, is refused with a 400 that points to `/v1/systemone`; Kaeso never guesses a format from a body's shape. TypeSafe's `GET /v1/models` isn't served: no header tells its SDK from OpenAI's, so `/v1/models` answers in OpenAI's shape and lists decision models like any model.
 
 Keys, model resolution with aliases and routes, limits and budgets, request logs and errors in the app's own format work as for every other model request.
 

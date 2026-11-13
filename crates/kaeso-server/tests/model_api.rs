@@ -719,6 +719,61 @@ async fn rejections_are_errors_in_the_apps_format() {
 }
 
 #[tokio::test]
+async fn rejections_under_v1_are_in_geminis_shape_for_geminis_key_or_a_gemini_method() {
+    let env = env().await;
+    let send = |method: &str, path: &str, key: Option<(&str, String)>| {
+        let mut req = Request::builder().method(method).uri(path);
+        if let Some((name, value)) = key {
+            req = req.header(name, value);
+        }
+        req.body(Body::empty()).unwrap()
+    };
+    let goog = || Some(("x-goog-api-key", env.key.clone()));
+    let bearer = || Some(("authorization", format!("Bearer {}", env.key)));
+    let query = format!("/v1/nope?key={}", env.key);
+    let cases = [
+        (send("GET", "/v1/nope", goog()), 404, true),
+        (send("GET", &query, None), 404, true),
+        (send("GET", "/v1/nope", bearer()), 404, false),
+        (send("POST", "/v1/models", goog()), 405, true),
+        (send("POST", "/v1/models", bearer()), 405, false),
+        (send("GET", "/v1/decisions", goog()), 405, true),
+        (send("GET", "/v1/decisions", bearer()), 405, false),
+        (send("PUT", "/v1/models/m:countTokens", bearer()), 405, true),
+        (
+            send("PUT", "/v1/models/ft:gpt-4o:acme::abc", bearer()),
+            405,
+            false,
+        ),
+        (
+            send("POST", "/v1/models/m:batchGenerateContent", goog()),
+            404,
+            true,
+        ),
+        (
+            send("POST", "/v1/models/m:batchGenerateContent", bearer()),
+            405,
+            false,
+        ),
+    ];
+    for (req, status, gemini) in cases {
+        let what = format!("{} {}", req.method(), req.uri().path());
+        let resp = env.app.router.clone().oneshot(req).await.unwrap();
+        assert_eq!(resp.status().as_u16(), status, "{what}");
+        let body: serde_json::Value =
+            serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
+        if gemini {
+            assert_eq!(body["error"]["code"], status, "{what}: {body}");
+            assert!(body["error"]["status"].is_string(), "{what}: {body}");
+        } else {
+            assert!(body["error"]["type"].is_string(), "{what}: {body}");
+            assert!(body["error"].get("status").is_none(), "{what}: {body}");
+        }
+    }
+    assert!(env.mock.received().is_empty());
+}
+
+#[tokio::test]
 async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_words() {
     let env = env().await;
     let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);

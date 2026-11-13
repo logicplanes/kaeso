@@ -34,7 +34,7 @@ Gemini 请求在路径中写明模型和方法，因此编解码器根据请求�
 | 模型路径 | `EgressCtx::gemini_profile` 上的 `GeminiProfile::models_path`。`GeminiProfile::GOOGLE_AI_STUDIO` 为 `/v1beta/models`；`with_models_path` 可为每个请求设置其他路径，例如 `/v1/projects/{project}/locations/{location}/publishers/google/models`。 |
 | 模型 | 一个经过百分号编码的路径段，`:` 也会编码。开头的 `models/` 是同一模型的资源名，会被去掉；`tunedModels/<id>` 指向模型路径旁边的微调模型。`.` 和 `..` 为 `InvalidRequest`，与[获取模型](codec-design.md#模型列表)相同。 |
 | 方法 | `GeminiAction`：`generateContent` 和 `streamGenerateContent`（`RequestKind::Generate`，是否流式由方法决定）、`countTokens`（`CountTokens`）、`embedContent` 和 `batchEmbedContents`（`Embed`，即方言 `gemini_embeddings`）。`streamGenerateContent` 会加上 `?alt=sse`。 |
-| 解码 | `dispatch::decode_gemini_request(model, action, body, headers)`；对 `limits::Checked` 已计数的请求体使用 `decode_checked_gemini_request`。`gemini::split_model_action` 拆分 `gemini-3.5-flash:streamGenerateContent` 这样的路径段。不带路径的 `dispatch::decode_request` 会以空模型解码生成请求体。网关用这两者在 `/v1beta/models/{model}:{method}` 上为 Gemini 应用提供服务（`crates/kaeso-server/src/model_api/gemini.rs`）。 |
+| 解码 | `dispatch::decode_gemini_request(model, action, body, headers)`；对 `limits::Checked` 已计数的请求体使用 `decode_checked_gemini_request`。`gemini::split_model_action` 拆分 `gemini-3.5-flash:streamGenerateContent` 这样的路径段。不带路径的 `dispatch::decode_request` 会以空模型解码生成请求体。网关用这两者在 `/v1beta/models/{model}:{method}` 和 `/v1/models/{model}:{method}` 上为 Gemini 应用提供服务（`crates/kaeso-server/src/model_api/gemini.rs`）。 |
 | 每个 content 都带角色 | `GeminiProfile::role_on_every_content`：应用发送的不带 `role` 的 content 会得到 `user`。Google AI Studio 下关闭，Gemini Enterprise Agent Platform 下开启。 |
 
 ## 请求

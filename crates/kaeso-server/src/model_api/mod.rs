@@ -169,8 +169,25 @@ macro_rules! decision_endpoint {
     };
 }
 
-decision_endpoint!(decisions, DialectId::OpenAiDecisions);
+decision_endpoint!(openai_decisions, DialectId::OpenAiDecisions);
 decision_endpoint!(systemone, DialectId::SystemOne);
+
+// `/v1/decisions` is OpenAI's Decisions API, and the path google-genai 3 posts Gemini's to by
+// default; the key header tells them apart, never the body.
+async fn decisions(
+    state: State<AppState>,
+    id: Extension<RequestId>,
+    ip: ClientIp,
+    OriginalUri(uri): OriginalUri,
+    req: Request,
+) -> Response {
+    let (mut parts, body) = req.into_parts();
+    let pairs = gemini::lift_query(&uri, &mut parts.headers);
+    if gemini::speaks_gemini(&parts.headers) {
+        return gemini::decide(state.0, id.0, ip, parts.headers, &pairs, body).await;
+    }
+    openai_decisions(state, id, ip, Request::from_parts(parts, body)).await
+}
 
 transcription_endpoint!(audio_transcriptions, TranscriptionOperation::Transcribe);
 transcription_endpoint!(audio_translations, TranscriptionOperation::Translate);
@@ -219,10 +236,11 @@ endpoint!(
 async fn models_list(
     State(state): State<AppState>,
     ip: ClientIp,
-    headers: HeaderMap,
+    mut headers: HeaderMap,
     OriginalUri(uri): OriginalUri,
 ) -> Response {
-    listing::list(&state, &headers, ip.0, uri.query().unwrap_or("")).await
+    let query = gemini::listing_query(&uri, &mut headers);
+    listing::list(&state, &headers, ip.0, &query).await
 }
 
 async fn models_get(
@@ -231,6 +249,9 @@ async fn models_get(
     headers: HeaderMap,
     OriginalUri(uri): OriginalUri,
 ) -> Response {
+    if gemini::speaks_gemini(&lifted(&headers, &uri)) {
+        return gemini::models_get(State(state), ip, headers, OriginalUri(uri)).await;
+    }
     let raw = uri.path().strip_prefix("/v1/models/").unwrap_or("");
     let id = percent_encoding::percent_decode_str(raw)
         .decode_utf8_lossy()
@@ -242,7 +263,15 @@ fn header_dialect(headers: &HeaderMap) -> DialectId {
     dispatch::models_dialect(&pipeline::header_list(headers))
 }
 
+// The headers as the app's format is chosen from them, with a `?key=` counted as `x-goog-api-key`.
+fn lifted(headers: &HeaderMap, uri: &axum::http::Uri) -> HeaderMap {
+    let mut headers = headers.clone();
+    gemini::lift_query(uri, &mut headers);
+    headers
+}
+
 async fn not_found(headers: HeaderMap, OriginalUri(uri): OriginalUri, _body: Body) -> Response {
+    let headers = lifted(&headers, &uri);
     if header_dialect(&headers) == DialectId::ElevenLabs {
         return elevenlabs::management(OriginalUri(uri)).await;
     }
@@ -258,12 +287,16 @@ async fn not_found(headers: HeaderMap, OriginalUri(uri): OriginalUri, _body: Bod
 }
 
 async fn models_post(
+    state: State<AppState>,
+    id: Extension<RequestId>,
+    ip: ClientIp,
     OriginalUri(uri): OriginalUri,
-    method: Method,
-    headers: HeaderMap,
+    req: Request,
 ) -> Response {
-    let raw = uri.path().strip_prefix("/v1/models/").unwrap_or("");
-    gemini::on_v1(raw).unwrap_or_else(|| not_allowed(&method, &headers, uri.path()))
+    if gemini::is_v1_call(&uri, req.headers()) {
+        return gemini::call(state, id, ip, OriginalUri(uri), req).await;
+    }
+    not_allowed(req.method(), req.headers(), uri.path())
 }
 
 async fn method_not_allowed(
@@ -275,7 +308,7 @@ async fn method_not_allowed(
     if gemini::is_gemini_path(uri.path()) {
         return gemini::method_not_allowed(uri.path(), &method);
     }
-    not_allowed(&method, &headers, uri.path())
+    not_allowed(&method, &lifted(&headers, &uri), uri.path())
 }
 
 fn not_allowed(method: &Method, headers: &HeaderMap, path: &str) -> Response {
