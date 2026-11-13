@@ -636,7 +636,13 @@ async fn rejections_are_errors_in_the_apps_format() {
         (raw("GET", "/v1/decisions", false, None, ""), 405, false),
         (raw("GET", "/v1/systemone", true, None, ""), 405, true),
         (
-            raw("POST", "/v1/decisions", false, Some("application/json"), "{"),
+            raw(
+                "POST",
+                "/v1/decisions",
+                false,
+                Some("application/json"),
+                "{",
+            ),
             400,
             false,
         ),

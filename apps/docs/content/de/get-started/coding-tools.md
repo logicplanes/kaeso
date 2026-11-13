@@ -66,6 +66,32 @@ Modelle ohne Websuche, etwa Mistral, bekommen die Anfrage ohne sie. Claude und G
 > [!NOTE]
 > Kaeso speichert keine Antworten zwischen Zügen. Eine Anfrage, die den Anbieter bittet, eine Antwort zu speichern oder fortzusetzen (`store: true`, `previous_response_id`), lehnt Kaeso mit einem Fehler ab, der das sagt.
 
+## Entscheidungsmodelle in OpenCode
+
+[OpenCode](https://opencode.ai/docs/providers/) ruft Entscheidungsmodelle im System-One-Format auf, das Kaeso unter `/v1/systemone` bedient. Fügen Sie Kaeso als Anbieter hinzu und kennzeichnen Sie jedes [Entscheidungsmodell](../api/decisions.md) mit `type: "decision"`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "providers": {
+    "kaeso": {
+      "name": "Kaeso",
+      "env": ["KAESO_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": { "baseURL": "https://kaeso.example.com/v1" },
+      "models": {
+        "jev-latest": {
+          "type": "decision",
+          "compatibility": { "mediaInput": "assets" },
+        },
+      },
+    },
+  },
+}
+```
+
+Der Schlüssel des Modells ist sein Name in Ihrem Kaeso-Projekt. Mit `mediaInput: "assets"` sendet OpenCode Bilder als System-One-Assets, die Form, die Kaeso liest; Kaeso legt sie dorthin, wo der Anbieter des Modells sie erwartet.
+
 ## Andere Tools einrichten
 
 Jedes Tool, in dem Sie eine Basis-URL für OpenAI oder Anthropic setzen können, funktioniert genauso:

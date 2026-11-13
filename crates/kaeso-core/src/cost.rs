@@ -537,7 +537,10 @@ mod tests {
             None
         );
         let decide = prices(Some(dec!(0.042)), Some(dec!(0)));
-        assert_eq!(unpriced_model(&decide, &none, RequestKind::Decide, "m"), None);
+        assert_eq!(
+            unpriced_model(&decide, &none, RequestKind::Decide, "m"),
+            None
+        );
         assert!(unpriced_model(&none, &none, RequestKind::Decide, "m").is_some());
     }
 

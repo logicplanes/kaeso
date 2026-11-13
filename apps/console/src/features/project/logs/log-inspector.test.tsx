@@ -566,10 +566,7 @@ describe("LogInspector", () => {
       format: 2,
       decide: {
         model: "gpt-6-luna",
-        answers: [
-          { value: { predicate: { probability: 0.82 } } },
-          { value: { choice: { option: 1, probabilities: [0.1, 0.9] } }, confidence: 0.8 },
-        ],
+        answers: [{ value: { predicate: { probability: 0.82 } } }, { value: { choice: { option: 1, probabilities: [0.1, 0.9] } }, confidence: 0.8 }],
         usage: { input_tokens: 120, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0 },
       },
     };
@@ -608,7 +605,10 @@ describe("LogInspector", () => {
     const asked = {
       model: "gpt-6-luna",
       input: [{ role: "user", content: [{ type: "input_text", text: "Export fails in Safari." }] }],
-      questions: [{ type: "score", levels: [{}, { label: "high" }] }, { type: "predicate", name: "bug", instructions: "A bug?" }],
+      questions: [
+        { type: "score", levels: [{}, { label: "high" }] },
+        { type: "predicate", name: "bug", instructions: "A bug?" },
+      ],
     };
     logsData({ rows: [logRow()], entries: [logEntry({ ingress_dialect: "openai_decisions", content: logContent(asked, null) })] });
     const { user } = await renderApp(projectPath("logs?log=req_0001"));

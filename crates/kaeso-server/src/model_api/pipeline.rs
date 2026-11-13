@@ -1042,12 +1042,9 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         }
         // A System One upload is logged as its fields; a JSON body as sent, its media taken out
         // when the log is written. Decisions are billed by token, so they have no media units.
-        Request::Decide(r) => {
-            if keep_content && decision_upload {
-                rec.outcome().request_body =
-                    logged_upload(request_bytes, r, super::media::logged_decision, keep_media)
-                        .await;
-            }
+        Request::Decide(r) if keep_content && decision_upload => {
+            rec.outcome().request_body =
+                logged_upload(request_bytes, r, super::media::logged_decision, keep_media).await;
         }
         _ => {}
     }

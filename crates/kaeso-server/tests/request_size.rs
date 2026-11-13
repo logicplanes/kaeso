@@ -149,10 +149,7 @@ async fn decision_endpoints_take_bodies_up_to_their_own_limit() {
     .await;
     env.app
         .post(
-            &format!(
-                "/orgs/{}/projects/{}/models",
-                env.owner.org_id, env.project
-            ),
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
             json!({ "provider": "openai", "model_id": "gpt-6-luna" }),
             Some(&env.owner.cookie),
         )
@@ -163,8 +160,11 @@ async fn decision_endpoints_take_bodies_up_to_their_own_limit() {
             "questions": { "refund": { "type": "noul", "instructions": "A refund?" } } }))
         .unwrap()
     };
-    let send = |path: &str, body: Vec<u8>| env.app.router.clone().oneshot(post(path, &env.key, body));
-    let r = send("/v1/systemone", decide("a".repeat(100 << 10))).await.unwrap();
+    let send =
+        |path: &str, body: Vec<u8>| env.app.router.clone().oneshot(post(path, &env.key, body));
+    let r = send("/v1/systemone", decide("a".repeat(100 << 10)))
+        .await
+        .unwrap();
     assert_eq!(r.status(), StatusCode::OK);
     let r = call(
         &env,
@@ -176,11 +176,16 @@ async fn decision_endpoints_take_bodies_up_to_their_own_limit() {
     .await;
     assert_eq!(r.status, StatusCode::PAYLOAD_TOO_LARGE);
     env.mock.clear();
-    let r = send("/v1/systemone", decide("a".repeat(300 << 10))).await.unwrap();
+    let r = send("/v1/systemone", decide("a".repeat(300 << 10)))
+        .await
+        .unwrap();
     assert_eq!(r.status(), StatusCode::PAYLOAD_TOO_LARGE);
     let body: Value =
         serde_json::from_slice(&r.into_body().collect().await.unwrap().to_bytes()).unwrap();
-    assert_eq!(body["detail"], "The request body is larger than 262144 bytes.");
+    assert_eq!(
+        body["detail"],
+        "The request body is larger than 262144 bytes."
+    );
     let gemini = Request::builder()
         .uri("/v1beta/decisions")
         .method("POST")

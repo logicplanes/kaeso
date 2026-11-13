@@ -1123,6 +1123,9 @@ mod tests {
         assert!(is_current(&model("openai", "gpt-6-luna")));
         let mut decision = model("openai", "gpt-6-luna");
         decision.kind = Some("decision".into());
-        assert!(!is_current(&decision), "output text or not, kind decision is not current");
+        assert!(
+            !is_current(&decision),
+            "output text or not, kind decision is not current"
+        );
     }
 }

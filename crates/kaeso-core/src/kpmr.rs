@@ -598,7 +598,9 @@ mod tests {
             let m: Model =
                 serde_json::from_str(&format!(r#"{{"id": "m", "decisions": {odd}}}"#)).unwrap();
             assert!(
-                m.decisions.as_ref().is_none_or(|d| d.question_types.is_empty()),
+                m.decisions
+                    .as_ref()
+                    .is_none_or(|d| d.question_types.is_empty()),
                 "{odd}"
             );
         }

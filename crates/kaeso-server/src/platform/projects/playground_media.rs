@@ -792,7 +792,10 @@ mod tests {
         assert_eq!(mode_of(&decider, None), None);
         let mut luna = model("openai", "gpt-6-luna", &["text"], &["text"]);
         luna.fields.decisions = Some(kaeso_core::catalogue::DecisionFields::default());
-        assert_eq!(mode_of(&luna, Some("generation")), Some(PlaygroundMode::Text));
+        assert_eq!(
+            mode_of(&luna, Some("generation")),
+            Some(PlaygroundMode::Text)
+        );
     }
 
     #[test]

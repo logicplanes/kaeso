@@ -227,7 +227,10 @@ async fn send_to(
         .app
         .router
         .clone()
-        .oneshot(req.body(Body::from(serde_json::to_vec(body).unwrap())).unwrap())
+        .oneshot(
+            req.body(Body::from(serde_json::to_vec(body).unwrap()))
+                .unwrap(),
+        )
         .await
         .unwrap();
     let status = resp.status();
@@ -263,7 +266,12 @@ async fn every_decision_format_reaches_every_decisions_provider_in_its_own_forma
     for app in APPS {
         for t in &TARGETS {
             env.mock.clear();
-            let r = send(&env, app, &app.body(t.model, "I was charged twice; refund me.")).await;
+            let r = send(
+                &env,
+                app,
+                &app.body(t.model, "I was charged twice; refund me."),
+            )
+            .await;
             assert_eq!(
                 r.status,
                 StatusCode::OK,
@@ -290,10 +298,13 @@ async fn every_decision_format_reaches_every_decisions_provider_in_its_own_forma
             }
             let o = outcome(&env, &r).await;
             assert_eq!(o.egress.unwrap().as_str(), t.format);
-            assert_eq!(kaeso_server::services::logs::endpoint(&o), match app {
-                App::SystemOne => "systemone",
-                App::OpenAi | App::Gemini => "decisions",
-            });
+            assert_eq!(
+                kaeso_server::services::logs::endpoint(&o),
+                match app {
+                    App::SystemOne => "systemone",
+                    App::OpenAi | App::Gemini => "decisions",
+                }
+            );
         }
     }
     let gemini = send(&env, App::Gemini, &App::Gemini.body("gpt-6-luna", "Hi")).await;
@@ -307,7 +318,12 @@ async fn every_decision_format_reaches_every_decisions_provider_in_its_own_forma
         key.header("authorization"),
         Some(format!("Bearer {}", common::v1::OPENAI_SECRET).as_str())
     );
-    send(&env, App::OpenAi, &App::OpenAi.body("gemini-decision-1", "Hi")).await;
+    send(
+        &env,
+        App::OpenAi,
+        &App::OpenAi.body("gemini-decision-1", "Hi"),
+    )
+    .await;
     let sent = env.mock.last().unwrap();
     assert_eq!(sent.header("x-goog-api-key"), Some(GOOGLE_SECRET));
 }
@@ -369,7 +385,14 @@ async fn decisions_kaeso_cant_send_are_refused_before_anything_is_sent() {
     assert!(env.mock.received().is_empty(), "{:?}", env.mock.received());
 
     let chat = common::v1::chat("gemini-decision-1", "Hi");
-    let r = common::v1::call(&env, "/v1/chat/completions", Some(&env.key), false, Some(chat)).await;
+    let r = common::v1::call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat),
+    )
+    .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST);
     assert_eq!(
         r.json()["error"]["message"],
@@ -377,10 +400,19 @@ async fn decisions_kaeso_cant_send_are_refused_before_anything_is_sent() {
     );
 
     let system_one_at_decisions = App::SystemOne.body("gpt-6-luna", "Hi");
-    let r = send_to(&env, "/v1/decisions", App::OpenAi, &system_one_at_decisions, &[]).await;
+    let r = send_to(
+        &env,
+        "/v1/decisions",
+        App::OpenAi,
+        &system_one_at_decisions,
+        &[],
+    )
+    .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert!(
-        App::OpenAi.error_message(&r.json()).contains("/v1/systemone"),
+        App::OpenAi
+            .error_message(&r.json())
+            .contains("/v1/systemone"),
         "{}",
         r.text()
     );
@@ -414,7 +446,12 @@ async fn errors_reach_each_app_in_its_own_format() {
     ] {
         let body = app.body(model, &format!("Hi [mock:error={fixture}]"));
         let r = send(&env, app, &body).await;
-        assert!(r.status.is_server_error(), "{app:?}: {} {}", r.status, r.text());
+        assert!(
+            r.status.is_server_error(),
+            "{app:?}: {} {}",
+            r.status,
+            r.text()
+        );
         let message = app.error_message(&r.json());
         assert!(!message.is_empty(), "{app:?}: {}", r.text());
     }
@@ -441,17 +478,43 @@ async fn errors_reach_each_app_in_its_own_format() {
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.json()["answers"]["refund"]["type"], "refusal");
+    let r = send_to(
+        &env,
+        "/v1/decisions",
+        App::OpenAi,
+        &App::SystemOne.body("gpt-6-luna", "Hi"),
+        &[],
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert!(
+        r.json()["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("`/v1/systemone`"),
+        "a System One body sent to OpenAI's path is pointed to its own: {}",
+        r.text()
+    );
 }
 
 #[tokio::test]
 async fn usage_and_cost_follow_each_providers_report_and_output_is_free() {
     let env = env().await;
-    let r = send(&env, App::SystemOne, &App::SystemOne.body("gpt-6-luna", "Hi")).await;
+    let r = send(
+        &env,
+        App::SystemOne,
+        &App::SystemOne.body("gpt-6-luna", "Hi"),
+    )
+    .await;
     let o = outcome(&env, &r).await;
     let u = o.usage.clone().unwrap();
     assert_eq!((u.input_tokens, u.cache_read_tokens), (200, 1000));
     assert!(!o.usage_estimated);
-    assert_eq!(catalogue_cost(&o), Decimal::new(3, 5), "200 × $0.10 + 1,000 × $0.01 per million");
+    assert_eq!(
+        catalogue_cost(&o),
+        Decimal::new(3, 5),
+        "200 × $0.10 + 1,000 × $0.01 per million"
+    );
 
     let png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
     let with_image = json!({ "model": "gemini-decision-1", "input": [{ "role": "user", "content": [
@@ -491,9 +554,18 @@ async fn usage_and_cost_follow_each_providers_report_and_output_is_free() {
         )
         .await
         .expect_status(StatusCode::OK);
-    let r = send(&env, App::OpenAi, &App::OpenAi.body("pplx-decider-v1.2", "Hi")).await;
+    let r = send(
+        &env,
+        App::OpenAi,
+        &App::OpenAi.body("pplx-decider-v1.2", "Hi"),
+    )
+    .await;
     let o = outcome(&env, &r).await;
-    assert_eq!(o.usage.as_ref().unwrap().output_tokens, 3, "one per question");
+    assert_eq!(
+        o.usage.as_ref().unwrap().output_tokens,
+        3,
+        "one per question"
+    );
     assert_eq!(
         catalogue_cost(&o),
         Decimal::new(24, 7),
@@ -515,7 +587,14 @@ async fn adaptations_and_hints_left_out_are_named_in_the_reply_headers() {
     let r = send(&env, App::OpenAi, &with_user).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(r.header("kaeso-left-out"), Some("user"));
-    assert!(env.mock.last().unwrap().json().get("safety_identifier").is_none());
+    assert!(
+        env.mock
+            .last()
+            .unwrap()
+            .json()
+            .get("safety_identifier")
+            .is_none()
+    );
 }
 
 async fn logged_content(env: &Env, o: &Outcome) -> Value {
@@ -560,7 +639,10 @@ async fn decisions_are_logged_with_their_request_and_answers() {
     );
     assert_eq!(content["reply"]["format"], 2, "{content}");
     let answer = &content["reply"]["decide"]["answers"][0];
-    assert_eq!(answer["value"]["predicate"]["probability"], 0.82, "{content}");
+    assert_eq!(
+        answer["value"]["predicate"]["probability"], 0.82,
+        "{content}"
+    );
 }
 
 #[tokio::test]
@@ -644,7 +726,12 @@ async fn a_repeated_decision_is_answered_from_the_response_cache() {
         .expect_status(StatusCode::OK);
     let body = App::SystemOne.body("gemini-decision-1", "Cache me");
     let first = send(&env, App::SystemOne, &body).await;
-    assert_eq!(first.header("kaeso-cache"), Some("miss"), "{}", first.text());
+    assert_eq!(
+        first.header("kaeso-cache"),
+        Some("miss"),
+        "{}",
+        first.text()
+    );
     let sent = env.mock.received().len();
     let second = send(&env, App::SystemOne, &body).await;
     assert_eq!(second.header("kaeso-cache"), Some("hit"));
@@ -714,10 +801,25 @@ async fn an_alias_falls_back_from_a_step_that_cant_decide_to_one_that_can() {
         )
         .await
         .expect_status(StatusCode::CREATED);
-    let r = send(&env, App::SystemOne, &App::SystemOne.body("by-format", "Hi")).await;
-    assert_eq!(r.header("kaeso-model"), Some("pplx-decider-v1.2"), "{}", r.text());
+    let r = send(
+        &env,
+        App::SystemOne,
+        &App::SystemOne.body("by-format", "Hi"),
+    )
+    .await;
+    assert_eq!(
+        r.header("kaeso-model"),
+        Some("pplx-decider-v1.2"),
+        "{}",
+        r.text()
+    );
     let r = send(&env, App::OpenAi, &App::OpenAi.body("by-format", "Hi")).await;
-    assert_eq!(r.header("kaeso-model"), Some("gemini-decision-1"), "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-model"),
+        Some("gemini-decision-1"),
+        "{}",
+        r.text()
+    );
 }
 
 #[tokio::test]

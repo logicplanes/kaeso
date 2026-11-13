@@ -66,6 +66,32 @@ Models without web search, such as Mistral, get the request without it. Claude a
 > [!NOTE]
 > Kaeso stores no responses between turns. It refuses a request that asks the provider to store or continue a response (`store: true`, `previous_response_id`), with an error that says so.
 
+## Add decision models to OpenCode
+
+[OpenCode](https://opencode.ai/docs/providers/) calls decision models in the System One format, which Kaeso serves at `/v1/systemone`. Add Kaeso as a provider, and mark each [decision model](../api/decisions.md) with `type: "decision"`:
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "providers": {
+    "kaeso": {
+      "name": "Kaeso",
+      "env": ["KAESO_API_KEY"],
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": { "baseURL": "https://kaeso.example.com/v1" },
+      "models": {
+        "jev-latest": {
+          "type": "decision",
+          "compatibility": { "mediaInput": "assets" },
+        },
+      },
+    },
+  },
+}
+```
+
+The model's key is its name in your Kaeso project. `mediaInput: "assets"` makes OpenCode send images as System One assets, the form Kaeso reads; Kaeso places them where the model's provider takes them.
+
 ## Set up other tools
 
 Any tool that lets you set an OpenAI or Anthropic base URL works the same way:

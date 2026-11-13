@@ -16,8 +16,8 @@ use axum::response::{IntoResponse, Response};
 use kaeso_codecs::{EncodeCtx, HeaderList, dispatch};
 use kaeso_kpp::{
     Answer, AnswerValue, Block, BoxAnswer, ChoiceAnswer, DecideRequest, DecideResponse,
-    DecisionInput, DialectId, Instructions, PredicateAnswer, QuestionKind, Refusal, Reply,
-    Request, RequestKind, ScoreAnswer, Usage,
+    DecisionInput, DialectId, Instructions, PredicateAnswer, QuestionKind, Refusal, Reply, Request,
+    RequestKind, ScoreAnswer, Usage,
 };
 
 /// The decision format a request to `path` is in; `None` for any other request.

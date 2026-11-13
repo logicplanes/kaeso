@@ -535,7 +535,10 @@ mod tests {
         assert!(cacheable(RequestKind::Embed, false));
         assert!(cacheable(RequestKind::Decide, false));
         assert_eq!(kind_name(RequestKind::Decide), "decide");
-        assert_ne!(kind_name(RequestKind::Decide), kind_name(RequestKind::Image));
+        assert_ne!(
+            kind_name(RequestKind::Decide),
+            kind_name(RequestKind::Image)
+        );
         assert!(!cacheable(RequestKind::Generate, true));
         assert!(!cacheable(RequestKind::CountTokens, false));
     }

@@ -97,10 +97,7 @@ impl Dialect {
     // A decision format goes to the path of the provider's decisions API, such as Perplexity's
     // `/v1/decisions` for System One bodies.
     fn path_at(self, service: Service) -> Option<&'static str> {
-        let egress = service
-            .decisions
-            .iter()
-            .find(|e| e.dialect == self.id());
+        let egress = service.decisions.iter().find(|e| e.dialect == self.id());
         match (self, egress) {
             (Self::SystemOne, Some(e)) => Some(e.system_one.path),
             (Self::OpenaiDecisions, Some(e)) => Some(e.openai.path),
@@ -790,7 +787,10 @@ mod tests {
         assert_eq!(Dialect::SystemOne.count(), None);
         let perplexity = known("perplexity");
         assert!(Dialect::SystemOne.speaks(perplexity));
-        assert_eq!(Dialect::SystemOne.path_at(perplexity), Some("/v1/decisions"));
+        assert_eq!(
+            Dialect::SystemOne.path_at(perplexity),
+            Some("/v1/decisions")
+        );
         assert_eq!(
             Dialect::SystemOne.path_at(known("openrouter")),
             Some("/v1/systemone")

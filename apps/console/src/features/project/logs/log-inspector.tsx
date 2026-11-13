@@ -626,7 +626,10 @@ function DecisionRequest({ decision }: { decision: DecisionView }) {
                 <Text>{q.instructions ? `${kindLabel(q.kind)}: ${q.instructions}` : kindLabel(q.kind)}</Text>
                 {(q.options?.length || q.levels?.length) && (
                   <Text variant="small" tone="secondary">
-                    {(q.options ?? []).map((o) => o.value).concat((q.levels ?? []).map((l, n) => l.label || String(n))).join(" · ")}
+                    {(q.options ?? [])
+                      .map((o) => o.value)
+                      .concat((q.levels ?? []).map((l, n) => l.label || String(n)))
+                      .join(" · ")}
                   </Text>
                 )}
               </span>

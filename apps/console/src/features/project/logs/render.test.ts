@@ -817,7 +817,14 @@ describe("decision bodies it can't read", () => {
   it("refuses odd questions in every form, instead of guessing", () => {
     for (const odd of ["x", { type: 5 }, { type: "extract" }, { type: "choice", choices: ["billing"] }]) expect(openai(odd)).toBeNull();
     for (const odd of [7, { type: 5 }, { type: "choice", criteria: ["billing"] }]) expect(keyed(odd)).toBeNull();
-    for (const odd of ["x", { kind: "predicate" }, { kind: {} }, { kind: { extract: {} } }, { kind: { choice: { options: [{ value: "billing" }] } } }, { kind: { choice: { options: ["x"] } } }])
+    for (const odd of [
+      "x",
+      { kind: "predicate" },
+      { kind: {} },
+      { kind: { extract: {} } },
+      { kind: { choice: { options: [{ value: "billing" }] } } },
+      { kind: { choice: { options: ["x"] } } },
+    ])
       expect(kpp(odd)).toBeNull();
     expect(decisionView("system_one", { state: "x", questions: [{ kind: { box: {} } }] })).toEqual({ state: undefined, questions: [{ kind: "box" }] });
   });

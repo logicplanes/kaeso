@@ -2765,7 +2765,12 @@ fn decisions_are_refused_where_the_model_or_its_provider_cannot_answer_them() {
         "Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions."
     );
     assert_eq!(
-        refused("cloudflare-ai-gateway", "typesafe/jev", &mut decide(vec![yes_no()])).2,
+        refused(
+            "cloudflare-ai-gateway",
+            "typesafe/jev",
+            &mut decide(vec![yes_no()])
+        )
+        .2,
         "Cloudflare AI Gateway offers no decisions API Kaeso can call, so `typesafe/jev` can't make decisions."
     );
     assert_eq!(
@@ -2773,7 +2778,14 @@ fn decisions_are_refused_where_the_model_or_its_provider_cannot_answer_them() {
         "The model `openai/gpt-5` is a generation model; it can't answer decision questions."
     );
     assert_eq!(
-        refused("google", "gemini-decision-1", &mut decide(vec![yes_no(), kaeso_kpp::QuestionKind::Box(kaeso_kpp::BoxQuestion::new())])),
+        refused(
+            "google",
+            "gemini-decision-1",
+            &mut decide(vec![
+                yes_no(),
+                kaeso_kpp::QuestionKind::Box(kaeso_kpp::BoxQuestion::new())
+            ])
+        ),
         (
             "question type",
             Some("questions"),
@@ -2786,7 +2798,12 @@ fn decisions_are_refused_where_the_model_or_its_provider_cannot_answer_them() {
         "The model `gpt-6-luna` answers at most 400 questions per request."
     );
     assert_eq!(
-        refused("perplexity", "pplx-decider-v1.2", &mut decide(vec![choice(256)])).2,
+        refused(
+            "perplexity",
+            "pplx-decider-v1.2",
+            &mut decide(vec![choice(256)])
+        )
+        .2,
         "The model `pplx-decider-v1.2` takes at most 255 options per choice question."
     );
     assert_eq!(
@@ -2803,22 +2820,27 @@ fn decisions_are_refused_where_the_model_or_its_provider_cannot_answer_them() {
     let u = prepare(&mut with_image.clone(), DialectId::SystemOne, &text_only).unwrap_err();
     assert_eq!(
         (u.param, u.message.as_str()),
-        (Some("state"), "The model `gemini-decision-1` does not accept images.")
+        (
+            Some("state"),
+            "The model `gemini-decision-1` does not accept images."
+        )
     );
     let mut one_image = eff(&entry("google", "gemini-decision-1"));
     one_image.fields.decisions.as_mut().unwrap().max_images = Some(0);
     let u = prepare(&mut with_image, DialectId::GeminiDecisions, &one_image).unwrap_err();
     assert_eq!(
         (u.param, u.message.as_str()),
-        (Some("input"), "The model `gemini-decision-1` takes at most 0 images per request.")
+        (
+            Some("input"),
+            "The model `gemini-decision-1` takes at most 0 images per request."
+        )
     );
 }
 
 #[test]
 fn a_decision_only_model_refuses_chat_token_counts_and_embeddings() {
     let gemini = eff(&entry("google", "gemini-decision-1"));
-    let message =
-        "The model `gemini-decision-1` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.";
+    let message = "The model `gemini-decision-1` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.";
     for mut req in [
         Request::Generate(user_request()),
         Request::CountTokens(user_request()),
@@ -2828,7 +2850,14 @@ fn a_decision_only_model_refuses_chat_token_counts_and_embeddings() {
         assert_eq!((u.param, u.message.as_str()), (Some("model"), message));
     }
     let luna = eff(&entry("openai", "gpt-6-luna"));
-    assert!(prepare(&mut Request::Generate(user_request()), DialectId::OpenAiResponses, &luna).is_ok());
+    assert!(
+        prepare(
+            &mut Request::Generate(user_request()),
+            DialectId::OpenAiResponses,
+            &luna
+        )
+        .is_ok()
+    );
 }
 
 #[test]
@@ -2877,7 +2906,10 @@ fn decisions_are_set_by_hand_only_where_the_provider_has_a_decisions_api() {
             "The limits in `decisions` must be positive.",
         ),
     ] {
-        assert_eq!(with(bad).validate(&openrouter).unwrap_err().message, message);
+        assert_eq!(
+            with(bad).validate(&openrouter).unwrap_err().message,
+            message
+        );
     }
     let mut patched = Fields::default();
     patched

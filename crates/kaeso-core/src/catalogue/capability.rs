@@ -420,7 +420,11 @@ fn check_decision(
     let is_image = |b: &&Block| matches!(b, Block::Image(_));
     let mut images = d.assets.len();
     if let DecisionInput::Messages(messages) = &d.input {
-        images += messages.iter().flat_map(|m| &m.blocks).filter(is_image).count();
+        images += messages
+            .iter()
+            .flat_map(|m| &m.blocks)
+            .filter(is_image)
+            .count();
     }
     for q in &d.questions {
         if let Some(Instructions::Blocks(blocks)) = &q.instructions {

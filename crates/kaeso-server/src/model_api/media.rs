@@ -7,8 +7,9 @@ use kaeso_core::cost::MediaUnits;
 use kaeso_core::provider::AuthStyle;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{
-    AudioInput, Block, DecideRequest, DecisionInput, ImageRequest, ImageResponse, ImageSize, RequestKind, Source, SpeechRequest,
-    SpeechResponse, TranscriptionRequest, TranscriptionResponse,
+    AudioInput, Block, DecideRequest, DecisionInput, ImageRequest, ImageResponse, ImageSize,
+    RequestKind, Source, SpeechRequest, SpeechResponse, TranscriptionRequest,
+    TranscriptionResponse,
 };
 use kaeso_kpp::{DialectId, KppError};
 use kaeso_upstream::{Call, Guard, Outgoing, ResponseBody, Timeouts};

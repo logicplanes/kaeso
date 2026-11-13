@@ -220,7 +220,13 @@ function decisions(res, dialect, body, shape) {
       const named = { name: q.name ?? null };
       if (q.type === "choice") {
         const p = spread(q.choices.length);
-        return { type: "choice", ...named, choice: q.choices[0].value, probabilities: q.choices.map((c, i) => ({ value: c.value, probability: p[i] })), confidence: 0.6 };
+        return {
+          type: "choice",
+          ...named,
+          choice: q.choices[0].value,
+          probabilities: q.choices.map((c, i) => ({ value: c.value, probability: p[i] })),
+          confidence: 0.6,
+        };
       }
       if (q.type === "score") {
         const { p, score } = scored(q.levels.length);
@@ -228,7 +234,13 @@ function decisions(res, dialect, body, shape) {
       }
       return { type: "predicate", ...named, probability: YES };
     });
-    const usage = { input_tokens: shape.input, input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 }, output_tokens: 0, output_tokens_details: { reasoning_tokens: 0 }, total_tokens: shape.input };
+    const usage = {
+      input_tokens: shape.input,
+      input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 },
+      output_tokens: 0,
+      output_tokens_details: { reasoning_tokens: 0 },
+      total_tokens: shape.input,
+    };
     return sendJson(res, 200, { model: body.model, answers, usage });
   }
   const gemini = dialect === "gemini_decisions";
@@ -242,14 +254,28 @@ function decisions(res, dialect, body, shape) {
       if (q.type === "score") {
         const levels = q.criteria ?? [];
         const { p, score } = scored(levels.length);
-        return [key, { type: "score", score, legend: byIndex(levels.map((l) => (typeof l === "string" ? l : JSON.stringify(l)))), probabilities: byIndex(p), confidence: gemini ? 0.6 : 0.5 }];
+        return [
+          key,
+          {
+            type: "score",
+            score,
+            legend: byIndex(levels.map((l) => (typeof l === "string" ? l : JSON.stringify(l)))),
+            probabilities: byIndex(p),
+            confidence: gemini ? 0.6 : 0.5,
+          },
+        ];
       }
       if (q.type === "box") return [key, { type: "box", box: { top: 0.1, bottom: 0.9, left: 0.2, right: 0.8 }, confidence: null }];
       return [key, gemini ? { type: "noul", noul: YES, confidence: YES } : { type: "noul", noul: YES }];
     }),
   );
   if (gemini) {
-    const usage = { total_input_tokens: shape.input, input_tokens_by_modality: [{ modality: "text", tokens: shape.input }], total_output_tokens: 0, total_tokens: shape.input };
+    const usage = {
+      total_input_tokens: shape.input,
+      input_tokens_by_modality: [{ modality: "text", tokens: shape.input }],
+      total_output_tokens: 0,
+      total_tokens: shape.input,
+    };
     return sendJson(res, 200, { answers, usage });
   }
   return sendJson(res, 200, { model: body.model, answers, usage: { input_tokens: shape.input, output_tokens: Object.keys(answers).length } });

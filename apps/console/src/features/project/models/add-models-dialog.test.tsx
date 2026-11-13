@@ -230,7 +230,10 @@ describe("AddModelsDialog", () => {
     signedIn();
     projectData();
     modelsApi({
-      hits: [searchHit({ model_id: "gpt-6-luna", decisions: true, input_price: "0.1", output_price: "0" }), searchHit({ model_id: "gpt-5-mini", output_price: null })],
+      hits: [
+        searchHit({ model_id: "gpt-6-luna", decisions: true, input_price: "0.1", output_price: "0" }),
+        searchHit({ model_id: "gpt-5-mini", output_price: null }),
+      ],
     });
     const { dialog } = await open();
 

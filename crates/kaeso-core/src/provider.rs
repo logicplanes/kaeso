@@ -3380,7 +3380,15 @@ mod tests {
             assert!(!e.from_root && e.auth.is_none(), "{id}");
         }
         assert_eq!(SystemOneProfile::PERPLEXITY.path, "/v1/decisions");
-        let served = ["openai", "google", "openrouter", "vercel", "baseten", "fireworks-ai", "perplexity"];
+        let served = [
+            "openai",
+            "google",
+            "openrouter",
+            "vercel",
+            "baseten",
+            "fireworks-ai",
+            "perplexity",
+        ];
         for p in PROVIDERS {
             assert_eq!(!p.decisions.is_empty(), served.contains(&p.id), "{}", p.id);
             assert!(

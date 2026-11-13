@@ -155,13 +155,7 @@ function logRow(next, ctx, req) {
     duration = Math.round(first + ((output - reasoning) / tps) * 1000 + (req.fallbackMs ?? 0));
     ttfb = stream ? Math.round(first + (req.fallbackMs ?? 0)) : Math.max(1, duration - 1 - Math.floor(next() * 12));
   }
-  const egress = embedding
-    ? "openai_embeddings"
-    : decision
-      ? "openai_decisions"
-      : model.provider === "openai"
-        ? "openai_responses"
-        : "anthropic_messages";
+  const egress = embedding ? "openai_embeddings" : decision ? "openai_decisions" : model.provider === "openai" ? "openai_responses" : "anthropic_messages";
   const row = {
     request_id: uuid7(req.at),
     ...caller,
