@@ -121,7 +121,7 @@ from google import genai
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
+    http_options={"base_url": "https://kaeso.example.com"},
 )
 
 response = client.models.generate_content(
@@ -136,7 +136,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
 });
 
 const response = await ai.models.generateContent({
@@ -166,12 +166,12 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 | `POST /v1/audio/speech` | OpenAI Speech ([Audio-API](audio.md)) |
 | `POST /v1/audio/transcriptions`, `POST /v1/audio/translations` | OpenAI Transcriptions ([Audio-API](audio.md)) |
 | `POST /v1/videos`, `GET /v1/videos`, `GET /v1/videos/{video_id}`, `DELETE /v1/videos/{video_id}`, `GET /v1/videos/{video_id}/content`, `POST /v1/videos/{video_id}/remix` | OpenAI Videos ([Videos-API](videos.md)) |
-| `POST /v1/decisions` | OpenAI Decisions ([Decisions-API](decisions.md)) |
+| `POST /v1/decisions` | OpenAI Decisions, oder Gemini Decisions mit dem Schlüssel von Gemini ([Decisions-API](decisions.md)) |
 | `POST /v1/systemone` | System One ([Decisions-API](decisions.md)) |
 | `POST /v1/text-to-speech/{voice_id}`, `/v1/text-to-dialogue`, `/v1/sound-generation`, `/v1/music`, `/v1/voice-changer/{voice_id}`, `/v1/speech-to-text`, `/v1/flows/image`, `GET /v1/voices`, `/v2/voices` | ElevenLabs ([ElevenLabs-API](elevenlabs.md)) |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages, Token zählen |
-| `GET /v1/models` | Die Modelle, die der Schlüssel aufrufen darf |
+| `GET /v1/models` | Die Modelle, die der Schlüssel aufrufen darf ([Modelle auflisten](#modelle-auflisten)) |
 | `GET /v1/models/{model}` | Eines davon |
 | `POST /v1beta/models/{model}:generateContent` | Gemini |
 | `POST /v1beta/models/{model}:streamGenerateContent?alt=sse` | Gemini, gestreamt |
@@ -182,17 +182,17 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 | `GET /v1beta/models/{model}` | Eines davon, im Gemini-Format |
 | `POST /v1beta/decisions` | Gemini Decisions ([Decisions-API](decisions.md)) |
 
-In einem `/v1beta`-Pfad ist `{model}` ein beliebiger [Modellname](#modellnamen), etwa `claude-haiku-4-5`.
+Kaeso bedient die Pfade von Gemini auch unter `/v1`, wie Google: `google-genai` ruft ab Version 3 standardmäßig `/v1` auf, frühere Versionen `/v1beta`. `POST /v1/models/{model}:{method}` ist immer Gemini. `GET /v1/models`, `GET /v1/models/{model}` und `POST /v1/decisions` antworten im Gemini-Format, wenn die Anfrage den Schlüssel von Gemini trägt, `x-goog-api-key` oder `?key=`, und keinen Header `Authorization`. In einem Gemini-Pfad ist `{model}` ein beliebiger [Modellname](#modellnamen), etwa `claude-haiku-4-5`.
 
 `/v1/embeddings`, `:embedContent` und `:batchEmbedContents` bedienen nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/provider-apis.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt. Ebenso bedienen `/v1/decisions`, `/v1/systemone` und `/v1beta/decisions` nur Entscheidungsmodelle, und ein reines Entscheidungsmodell bedient keinen anderen Endpunkt ([Decisions-API](decisions.md)).
 
-Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, im Format von ElevenLabs, wenn sie einen `xi-api-key`-Header hat, und sonst im OpenAI-Format.
+Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, im Format von ElevenLabs, wenn sie einen `xi-api-key`-Header hat, im Gemini-Format, wenn sie den Schlüssel von Gemini trägt, und sonst im OpenAI-Format.
 
-Unter `/v1beta` kommt jeder Fehler im Gemini-Format. Andere Methoden wie `batchGenerateContent` und andere Pfade wie Dateien oder Cached Contents erhalten 404. Ein bekannter Pfad mit der falschen Methode erhält 405. Ein Aufruf nimmt nur die Query-Parameter `key` und `alt` an, jeder andere erhält 400. Ein Gemini-Aufruf unter `/v1`, wie ihn `google-genai` mit `api_version="v1"` sendet, erhält 404 mit einer Meldung, die auf `/v1beta` verweist.
+Unter `/v1beta` und für Gemini-Aufrufe unter `/v1` kommt jeder Fehler im Gemini-Format. Andere Methoden wie `batchGenerateContent` und andere Pfade wie Dateien oder Cached Contents erhalten 404. Ein bekannter Pfad mit der falschen Methode erhält 405. Ein Aufruf nimmt nur die Query-Parameter `key` und `alt` an, jeder andere erhält 400.
 
 ### Modelle auflisten
 
-`GET /v1/models` wählt sein Format ebenso: das von Anthropic mit einem Header `anthropic-version`, das von ElevenLabs mit einem Header `xi-api-key` ([ElevenLabs API](elevenlabs.md#endpunkte)). `GET /v1beta/models` antwortet immer im Gemini-Format und nennt jedes Modell `models/<name>`. Die Liste enthält die Katalogmodelle, die der Schlüssel aufrufen darf, danach die Aliasse des Projekts, die auf sie zeigen. Jedes Modell steht mit seiner eigenen ID in der Liste, oder als `provider/model`, wenn seine eigene ID nicht zu ihm führt, etwa weil ein anderer Anbieter dieselbe ID anbietet ([Modellnamen](#modellnamen)). Ein Modell, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, fehlt ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
+`GET /v1/models` wählt sein Format ebenso: das von Anthropic mit einem Header `anthropic-version`, das von ElevenLabs mit einem Header `xi-api-key` ([ElevenLabs API](elevenlabs.md#endpunkte)), das von Gemini mit dem Schlüssel von Gemini und ohne Header `Authorization`. `GET /v1beta/models` antwortet immer im Gemini-Format und nennt jedes Modell `models/<name>`. Die Liste enthält die Katalogmodelle, die der Schlüssel aufrufen darf, danach die Aliasse des Projekts, die auf sie zeigen. Jedes Modell steht mit seiner eigenen ID in der Liste, oder als `provider/model`, wenn seine eigene ID nicht zu ihm führt, etwa weil ein anderer Anbieter dieselbe ID anbietet ([Modellnamen](#modellnamen)). Ein Modell, das der Anbieter dem Anbieter-Schlüssel des Projekts nicht bereitstellt, fehlt ([Verfügbarkeit](../console/models-and-aliases.md#verfügbarkeit)).
 
 | | OpenAI-Format | Anthropic-Format | Gemini-Format |
 | --- | --- | --- | --- |
@@ -212,7 +212,7 @@ x-goog-api-key: sk-kso-…
 xi-api-key: sk-kso-…
 ```
 
-Sendet eine Anfrage mehrere, gilt `x-api-key`, dann `x-goog-api-key`, dann `xi-api-key`, dann `Authorization`. Unter `/v1beta` kann der Schlüssel auch in der Query stehen, als `?key=sk-kso-…`, wie in Googles REST-Beispielen. Kaeso nutzt ihn nur, wenn kein Header einen Schlüssel trägt, und der Schlüssel aus der Query erreicht nie die Protokolle oder den Anbieter. Der Schlüssel bestimmt das Projekt. Er handelt mit den Rechten und dem Modellzugriff seines Mitglieds oder Dienstkontos, das dafür das Recht `api.request` braucht.
+Sendet eine Anfrage mehrere, gilt `x-api-key`, dann `x-goog-api-key`, dann `xi-api-key`, dann `Authorization`. Auf den Pfaden von Gemini, unter `/v1beta` und `/v1`, kann der Schlüssel auch in der Query stehen, als `?key=sk-kso-…`, wie in Googles REST-Beispielen. Kaeso nutzt ihn nur, wenn kein Header einen Schlüssel trägt, und der Schlüssel aus der Query erreicht nie die Protokolle oder den Anbieter. Der Schlüssel bestimmt das Projekt. Er handelt mit den Rechten und dem Modellzugriff seines Mitglieds oder Dienstkontos, das dafür das Recht `api.request` braucht.
 
 Schlüssel nur mit Plattformzugriff und Plattform-Schlüssel der Organisation (`sk-kso-org-…`) lehnt Kaeso mit 403 ab: Sie rufen nie Modelle auf. [API-Schlüssel](../console/api-keys.md) erklärt, wie Sie Schlüssel erstellen und begrenzen.
 

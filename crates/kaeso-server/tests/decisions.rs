@@ -845,6 +845,62 @@ async fn a_gemini_app_sends_its_key_in_the_query_and_no_other_parameter() {
 }
 
 #[tokio::test]
+async fn v1_decisions_takes_geminis_body_only_from_an_app_with_geminis_key() {
+    let env = env().await;
+    let gemini = App::Gemini.body("gpt-6-luna", "I was charged twice; refund me.");
+    let r = send_to(&env, "/v1/decisions", App::Gemini, &gemini, &[]).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert!(
+        (App::Gemini.refund_probability(&r.json()) - 0.82).abs() < 1e-9,
+        "{}",
+        r.text()
+    );
+    let o = outcome(&env, &r).await;
+    assert_eq!(o.ingress, kaeso_kpp::DialectId::GeminiDecisions);
+    assert_eq!(kaeso_server::services::logs::endpoint(&o), "decisions");
+
+    let req = Request::builder()
+        .uri(format!("/v1/decisions?key={}", env.key))
+        .method("POST")
+        .header("content-type", "application/json")
+        .body(Body::from(serde_json::to_vec(&gemini).unwrap()))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert!(env.mock.last().unwrap().query.is_none());
+    let r = send_to(&env, "/v1/decisions?alt=sse", App::Gemini, &gemini, &[]).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST);
+    assert_eq!(r.json()["error"]["status"], "INVALID_ARGUMENT");
+
+    let bearer = format!("Bearer {}", env.key);
+    let r = send_to(
+        &env,
+        "/v1/decisions",
+        App::Gemini,
+        &gemini,
+        &[("authorization", bearer.as_str())],
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["type"],
+        "invalid_request_error",
+        "an app that also sends `Authorization` speaks OpenAI's format: {}",
+        r.text()
+    );
+    let r = send_to(&env, "/v1/decisions", App::OpenAi, &gemini, &[]).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "invalid_request_error");
+    let openai = App::OpenAi.body("gpt-6-luna", "Hi");
+    let r = send_to(&env, "/v1/decisions", App::OpenAi, &openai, &[]).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        outcome(&env, &r).await.ingress,
+        kaeso_kpp::DialectId::OpenAiDecisions
+    );
+}
+
+#[tokio::test]
 async fn the_catalogue_names_the_format_a_decision_only_model_is_sent_in() {
     let env = env().await;
     let r = env

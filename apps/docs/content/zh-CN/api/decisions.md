@@ -47,7 +47,7 @@ const decision = await client.decisions.create({
 console.log(decision.answers);
 ```
 
-TypeSafe 的 Python SDK 和 google-genai 的用法相同。将 TypeSafe 客户端指向 Kaeso 的根地址，并将 google-genai 的 API 版本设为 `v1beta`：
+TypeSafe 的 Python SDK 和 google-genai 的用法相同。将两个客户端都指向 Kaeso 的根地址：
 
 ```python tab="TypeSafe SDK"
 import os
@@ -69,7 +69,7 @@ from google.genai import types
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options=types.HttpOptions(base_url="https://kaeso.example.com", api_version="v1beta"),
+    http_options=types.HttpOptions(base_url="https://kaeso.example.com"),
 )
 decision = client.decisions.create(
     model="gemini-decision-1",
@@ -85,9 +85,9 @@ print(decision.answers["refund"].noul)
 | --- | --- | --- | --- |
 | `POST /v1/decisions` | OpenAI 的 Decisions API | `Authorization: Bearer` | JSON：`model`、`input`、`questions`、`prompt_cache_key`、`prompt_cache_options`、`safety_identifier` |
 | `POST /v1/systemone` | TypeSafe 的 System One API | `Authorization: Bearer` | JSON，或一次上传：第一部分 `request` 是 JSON，其余部分是 `assets` 指名的图片；可用 gzip 或 zstd |
-| `POST /v1beta/decisions` | Gemini 的 Decisions API | `x-goog-api-key` 或 `?key=` | JSON：`model`、`input`、`questions` |
+| `POST /v1beta/decisions`，或带 Gemini 密钥的 `POST /v1/decisions` | Gemini 的 Decisions API | `x-goog-api-key` 或 `?key=` | JSON：`model`、`input`、`questions` |
 
-决策回复从不流式返回。每个端点的请求体受 [`body_limits.decisions`](../self-hosting/configuration.md#请求体与响应体) 限制，默认 64 MiB。发往 `/v1/decisions` 的 System One 请求体（有些 SDK 会这样发送）会以 400 拒绝，并指向 `/v1/systemone`；Kaeso 从不根据请求体的形状猜测格式。Kaeso 不提供 TypeSafe 的 `GET /v1/models`：没有任何请求头能区分它的 SDK 和 OpenAI 的 SDK，因此 `/v1/models` 以 OpenAI 的形式回答，并像列出其他模型一样列出决策模型。
+请求带有 `x-goog-api-key` 或 `?key=` 且没有 `Authorization` 请求头时，`/v1/decisions` 接受 Gemini 的请求体，`google-genai` 3 默认就这样发送；OpenAI 的 SDK 发送 `Authorization: Bearer`，得到 OpenAI 的格式。决策回复从不流式返回。每个端点的请求体受 [`body_limits.decisions`](../self-hosting/configuration.md#请求体与响应体) 限制，默认 64 MiB。发往 `/v1/decisions` 的 System One 请求体（有些 SDK 会这样发送）会以 400 拒绝，并指向 `/v1/systemone`；Kaeso 从不根据请求体的形状猜测格式。Kaeso 不提供 TypeSafe 的 `GET /v1/models`：没有任何请求头能区分它的 SDK 和 OpenAI 的 SDK，因此 `/v1/models` 以 OpenAI 的形式回答，并像列出其他模型一样列出决策模型。
 
 密钥、通过别名和路由解析模型、限额和预算、请求日志以及应用自己格式的错误，都与其他模型请求相同。
 

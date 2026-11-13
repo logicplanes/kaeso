@@ -359,7 +359,7 @@ configs:
       		vars @updating message "Kaeso is being updated; try again in a minute."
       		@platform path /platform/* /mcp /mcp/* /oauth/* /.well-known/oauth-*
       		@anthropic expression path('/v1/messages', '/v1/messages/*') || (header({'Anthropic-Version': '*'}) && !path('/v1/chat/completions', '/v1/responses', '/v1/responses/*', '/v1/embeddings', '/v1/decisions', '/v1/systemone'))
-      		@gemini path /v1beta /v1beta/*
+      		@gemini expression path('/v1beta', '/v1beta/*') || path_regexp('^/v1/models/.+:(generateContent|streamGenerateContent|countTokens|embedContent|batchEmbedContents)$') || ((header({'X-Goog-Api-Key': '*'}) || query({'key': '*'})) && !header({'Authorization': '*'}) && path('/v1/models', '/v1/models/*', '/v1/decisions'))
       		@systemone path /v1/systemone
       		@elevenlabs expression path('/v2', '/v2/*') || header({'Xi-Api-Key': '*'})
       		@openai path /v1 /v1/*

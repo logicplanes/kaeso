@@ -105,7 +105,7 @@ for (const block of message.content) {
 
 ## 使用 Google Gen AI SDK
 
-把基础 URL 设为 `https://kaeso.example.com`，不带版本，并把 API 版本设为 `v1beta`：`google-genai` 3 及以后的版本默认使用 `v1`。SDK 以 `x-goog-api-key` 发送密钥：
+把基础 URL 设为 `https://kaeso.example.com`，不带版本：`google-genai` 会自行加上 API 版本。它以 `x-goog-api-key` 发送密钥：
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1beta/models/claude-haiku-4-5:generateContent \
@@ -124,7 +124,7 @@ from google import genai
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
+    http_options={"base_url": "https://kaeso.example.com"},
 )
 
 response = client.models.generate_content(
@@ -139,7 +139,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
 });
 
 const response = await ai.models.generateContent({
@@ -149,7 +149,7 @@ const response = await ai.models.generateContent({
 console.log(response.text);
 ```
 
-Kaeso 只在 `/v1beta` 下提供 Gemini API；使用 `v1` 的客户端会收到 404，消息会指向 `/v1beta`。要流式接收回复，调用 `generate_content_stream`。SDK 会用 `alt=sse` 请求服务器发送事件，这是 Kaeso 发给 Gemini 应用的唯一一种流：
+Kaeso 在 `/v1beta` 和 `/v1` 下都提供 Gemini API，因此 SDK 的默认版本可以直接使用：`google-genai` 3 起为 `v1`，之前为 `v1beta`。要流式接收回复，调用 `generate_content_stream`。SDK 会用 `alt=sse` 请求服务器发送事件，这是 Kaeso 发给 Gemini 应用的唯一一种流：
 
 ```bash tab="curl"
 curl -N "https://kaeso.example.com/v1beta/models/claude-haiku-4-5:streamGenerateContent?alt=sse" \
@@ -168,7 +168,7 @@ from google import genai
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
+    http_options={"base_url": "https://kaeso.example.com"},
 )
 
 stream = client.models.generate_content_stream(
@@ -184,7 +184,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
 });
 
 const stream = await ai.models.generateContentStream({

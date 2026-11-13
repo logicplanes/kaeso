@@ -276,7 +276,7 @@ Der Codec liest aus dem Text keine Bedeutung. Ein Anbieter, dessen Antwort auf e
 
 ## Modelle
 
-`GET /v1/models` und `GET /v1/models/{model}` sind in `crates/kaeso-codecs/src/openai_models.rs` umgesetzt, das die Codecs für Chat, Responses und Embeddings gemeinsam nutzen, weil alle OpenAI-APIs Modelle in derselben Gestalt auflisten. Die Fixtures liegen in `fixtures/openai_chat/models/`, und alle drei Codecs prüfen an ihnen den Round Trip. Quellen: die Schemas `Model` und `ListModelsResponse` der Spezifikation und die Operationen `listModels` und `retrieveModel`, deren `x-oaiMeta`-Beispiele als Fixtures dienen. Die Anfrage einer App ist OpenAI, wenn sie keinen Header `anthropic-version` trägt (`dispatch::models_dialect`, siehe [Modelllisten](codec-design.md#modelllisten)); das Gateway kodiert dann mit `openai_chat`.
+`GET /v1/models` und `GET /v1/models/{model}` sind in `crates/kaeso-codecs/src/openai_models.rs` umgesetzt, das die Codecs für Chat, Responses und Embeddings gemeinsam nutzen, weil alle OpenAI-APIs Modelle in derselben Gestalt auflisten. Die Fixtures liegen in `fixtures/openai_chat/models/`, und alle drei Codecs prüfen an ihnen den Round Trip. Quellen: die Schemas `Model` und `ListModelsResponse` der Spezifikation und die Operationen `listModels` und `retrieveModel`, deren `x-oaiMeta`-Beispiele als Fixtures dienen. Die Anfrage einer App ist OpenAI, wenn sie keinen Header trägt, der ein anderes Format nennt (`dispatch::models_dialect`, siehe [Modelllisten](codec-design.md#modelllisten)); das Gateway kodiert dann mit `openai_chat`.
 
 ### Query-Parameter
 

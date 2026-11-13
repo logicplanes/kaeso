@@ -890,9 +890,6 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.geminiAltMissing", () =>
     t("errors.modelApi.geminiAltMissing", "Kaeso streams Gemini replies as server-sent events only; add `alt=sse` to the URL."),
   ),
-  rule("errors.modelApi.geminiOnV1", () =>
-    t("errors.modelApi.geminiOnV1", "Kaeso serves the Gemini API under `/v1beta`; set the SDK's API version to `v1beta`."),
-  ),
   rule("errors.modelApi.keysUnavailable", () => t("errors.modelApi.keysUnavailable", "Kaeso cannot check API keys right now. Try again shortly.")),
   rule("errors.modelApi.platformKey", () =>
     t("errors.modelApi.platformKey", "Org platform keys manage Kaeso through the Platform API and cannot call models. Use a project API key."),

@@ -276,7 +276,7 @@ Kaeso 无法作为 `ErrorResponse` 读取的错误体只按 HTTP 状态码确定
 
 ## 模型
 
-`GET /v1/models` 和 `GET /v1/models/{model}` 实现在 `crates/kaeso-codecs/src/openai_models.rs` 中，由 Chat、Responses 和 Embeddings 编解码器共用，因为所有 OpenAI API 都以同一种结构列出模型。fixture 位于 `fixtures/openai_chat/models/`，三个编解码器都会对它们做往返测试。来源：规范中的 `Model` 和 `ListModelsResponse` schema，以及 `listModels` 和 `retrieveModel` 操作，其 `x-oaiMeta` 示例被用作 fixture。应用的请求不带 `anthropic-version` 请求头时即为 OpenAI 格式（`dispatch::models_dialect`，见[模型列表](codec-design.md#模型列表)）；网关随后用 `openai_chat` 编码。
+`GET /v1/models` 和 `GET /v1/models/{model}` 实现在 `crates/kaeso-codecs/src/openai_models.rs` 中，由 Chat、Responses 和 Embeddings 编解码器共用，因为所有 OpenAI API 都以同一种结构列出模型。fixture 位于 `fixtures/openai_chat/models/`，三个编解码器都会对它们做往返测试。来源：规范中的 `Model` 和 `ListModelsResponse` schema，以及 `listModels` 和 `retrieveModel` 操作，其 `x-oaiMeta` 示例被用作 fixture。应用的请求不带指明其他格式的请求头时即为 OpenAI 格式（`dispatch::models_dialect`，见[模型列表](codec-design.md#模型列表)）；网关随后用 `openai_chat` 编码。
 
 ### 查询参数
 

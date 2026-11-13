@@ -14,6 +14,7 @@ use tower::ServiceExt;
 enum Key<'a> {
     Header(&'a str),
     Query(&'a str),
+    Bearer(&'a str),
     None,
 }
 
@@ -26,8 +27,10 @@ async fn gemini(env: &Env, method: &str, path: &str, key: Key<'_>, body: Option<
         _ => path.to_owned(),
     };
     let mut req = Request::builder().uri(&path).method(method);
-    if let Key::Header(k) = key {
-        req = req.header("x-goog-api-key", k);
+    match key {
+        Key::Header(k) => req = req.header("x-goog-api-key", k),
+        Key::Bearer(k) => req = req.header("authorization", format!("Bearer {k}")),
+        Key::Query(_) | Key::None => {}
     }
     let req = match body {
         Some(b) => req
@@ -224,19 +227,6 @@ async fn refusals_reach_a_gemini_app_in_geminis_error_shape() {
     )
     .await;
     gemini_error(&r, 405, "INVALID_ARGUMENT");
-    let message = gemini_error(
-        &gemini(
-            &env,
-            "POST",
-            "/v1/models/gemini-3.5-flash:generateContent",
-            Key::Header(&env.key),
-            Some(ask("Hello")),
-        )
-        .await,
-        404,
-        "NOT_FOUND",
-    );
-    assert!(message.contains("`v1beta`"), "{message}");
     let r = gemini(
         &env,
         "POST",
@@ -439,4 +429,284 @@ async fn a_gemini_app_on_claude_keeps_claudes_thinking_through_a_tool_loop() {
         blocks.last().unwrap()["id"],
         "toolu_01afnDK4mGFJyw1zWvMT248V"
     );
+}
+
+const PREFIXES: [&str; 2] = ["/v1beta", "/v1"];
+
+#[tokio::test]
+async fn a_gemini_app_on_v1_generates_streams_counts_and_embeds_as_on_v1beta() {
+    let env = env().await;
+    for prefix in PREFIXES {
+        for key in [
+            Key::Header(&env.key),
+            Key::Query(&env.key),
+            Key::Bearer(&env.key),
+        ] {
+            let r = gemini(
+                &env,
+                "POST",
+                &format!("{prefix}/models/claude-haiku-4-5:generateContent"),
+                key,
+                Some(ask("Hello [mock:fixture=text-simple]")),
+            )
+            .await;
+            assert_eq!(r.status, StatusCode::OK, "{prefix}: {}", r.text());
+            assert_eq!(r.json()["candidates"][0]["content"]["role"], "model");
+            assert_eq!(env.mock.last().unwrap().query, None);
+        }
+        let r = gemini(
+            &env,
+            "POST",
+            &format!("{prefix}/models/claude-haiku-4-5:streamGenerateContent?alt=sse"),
+            Key::Header(&env.key),
+            Some(ask("Hello")),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{prefix}: {}", r.text());
+        assert!(r.text().contains("\"finishReason\""), "{}", r.text());
+        let r = gemini(
+            &env,
+            "POST",
+            &format!("{prefix}/models/claude-haiku-4-5:countTokens"),
+            Key::Header(&env.key),
+            Some(ask("Hello")),
+        )
+        .await;
+        assert_eq!(r.json()["totalTokens"], 14, "{prefix}: {}", r.text());
+        let r = gemini(
+            &env,
+            "POST",
+            &format!("{prefix}/models/text-embedding-3-small:embedContent"),
+            Key::Header(&env.key),
+            Some(json!({ "content": { "parts": [{ "text": "refund policy" }] } })),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{prefix}: {}", r.text());
+        assert!(
+            r.json()["embedding"]["values"][0].is_number(),
+            "{}",
+            r.text()
+        );
+        let r = gemini(
+            &env,
+            "POST",
+            &format!("{prefix}/models/text-embedding-3-small:batchEmbedContents"),
+            Key::Header(&env.key),
+            Some(json!({ "requests": [
+                { "model": "models/text-embedding-3-small", "content": { "parts": [{ "text": "refund policy [mock:fixture=recorded-string-array]" }] } },
+                { "model": "models/text-embedding-3-small", "content": { "parts": [{ "text": "shipping times" }] } }
+            ] })),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{prefix}: {}", r.text());
+        assert_eq!(r.json()["embeddings"].as_array().unwrap().len(), 2);
+    }
+    let outcomes = env.outcomes().await;
+    let mut endpoints: Vec<&str> = outcomes
+        .iter()
+        .map(kaeso_server::services::logs::endpoint)
+        .collect();
+    endpoints.sort_unstable();
+    endpoints.dedup();
+    assert_eq!(
+        endpoints,
+        [
+            "models:batchEmbedContents",
+            "models:countTokens",
+            "models:embedContent",
+            "models:generateContent",
+            "models:streamGenerateContent"
+        ],
+        "a call is logged the same under both versions"
+    );
+}
+
+#[tokio::test]
+async fn v1_models_answers_in_geminis_shape_only_with_geminis_key() {
+    let env = env().await;
+    let names = |r: &Answer| -> Vec<String> {
+        r.json()["models"]
+            .as_array()
+            .unwrap_or_else(|| panic!("not Gemini's listing: {}", r.text()))
+            .iter()
+            .map(|m| m["name"].as_str().unwrap().to_owned())
+            .collect()
+    };
+    let beta = names(&gemini(&env, "GET", "/v1beta/models", Key::Header(&env.key), None).await);
+    for key in [Key::Header(&env.key), Key::Query(&env.key)] {
+        let r = gemini(&env, "GET", "/v1/models", key, None).await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        assert_eq!(names(&r), beta);
+    }
+    let r = gemini(
+        &env,
+        "GET",
+        "/v1/models?pageSize=1",
+        Key::Header(&env.key),
+        None,
+    )
+    .await;
+    assert_eq!(names(&r).len(), 1);
+    assert!(r.json()["nextPageToken"].is_string(), "{}", r.text());
+    let r = gemini(
+        &env,
+        "GET",
+        "/v1/models/claude-haiku-4-5",
+        Key::Query(&env.key),
+        None,
+    )
+    .await;
+    assert_eq!(r.json()["name"], "models/claude-haiku-4-5", "{}", r.text());
+    gemini_error(
+        &gemini(
+            &env,
+            "GET",
+            "/v1/models/claude-haiku-4-5?alt=json",
+            Key::Header(&env.key),
+            None,
+        )
+        .await,
+        400,
+        "INVALID_ARGUMENT",
+    );
+    let message = gemini_error(
+        &gemini(
+            &env,
+            "GET",
+            "/v1/models/no-such-model",
+            Key::Header(&env.key),
+            None,
+        )
+        .await,
+        404,
+        "NOT_FOUND",
+    );
+    assert!(message.contains("`no-such-model`"), "{message}");
+    gemini_error(
+        &gemini(
+            &env,
+            "GET",
+            "/v1/models",
+            Key::Query("sk-kso-not-a-key"),
+            None,
+        )
+        .await,
+        401,
+        "UNAUTHENTICATED",
+    );
+
+    let r = gemini(&env, "GET", "/v1/models", Key::Bearer(&env.key), None).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.json()["object"], "list", "{}", r.text());
+    let r = gemini(
+        &env,
+        "GET",
+        "/v1/models/claude-haiku-4-5",
+        Key::Bearer(&env.key),
+        None,
+    )
+    .await;
+    assert_eq!(r.json()["id"], "claude-haiku-4-5", "{}", r.text());
+    let req = Request::builder()
+        .uri("/v1/models")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("x-goog-api-key", env.key.as_str())
+        .body(Body::empty())
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    let body: Value =
+        serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes()).unwrap();
+    assert_eq!(
+        body["object"], "list",
+        "`authorization` keeps OpenAI's shape"
+    );
+}
+
+#[tokio::test]
+async fn errors_under_v1_are_geminis_for_gemini_calls_and_geminis_key() {
+    let env = env().await;
+    let message = gemini_error(
+        &gemini(
+            &env,
+            "POST",
+            "/v1/models/claude-haiku-4-5:batchGenerateContent",
+            Key::Header(&env.key),
+            Some(ask("Hello")),
+        )
+        .await,
+        404,
+        "NOT_FOUND",
+    );
+    assert!(message.contains("`batchGenerateContent`"), "{message}");
+    gemini_error(
+        &gemini(
+            &env,
+            "POST",
+            "/v1/models/claude-haiku-4-5",
+            Key::Query(&env.key),
+            Some(ask("Hello")),
+        )
+        .await,
+        404,
+        "NOT_FOUND",
+    );
+    gemini_error(
+        &gemini(
+            &env,
+            "POST",
+            "/v1/models/claude-haiku-4-5:streamGenerateContent",
+            Key::Bearer(&env.key),
+            Some(ask("Hello")),
+        )
+        .await,
+        400,
+        "INVALID_ARGUMENT",
+    );
+    for method in ["GET", "DELETE"] {
+        let r = gemini(
+            &env,
+            method,
+            "/v1/models/claude-haiku-4-5:generateContent",
+            Key::Bearer(&env.key),
+            None,
+        )
+        .await;
+        if method == "DELETE" {
+            gemini_error(&r, 405, "INVALID_ARGUMENT");
+        } else {
+            assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+        }
+    }
+    gemini_error(
+        &gemini(&env, "DELETE", "/v1/decisions", Key::Header(&env.key), None).await,
+        405,
+        "INVALID_ARGUMENT",
+    );
+    for key in [Key::Header(&env.key), Key::Query(&env.key)] {
+        gemini_error(
+            &gemini(&env, "GET", "/v1/files", key, None).await,
+            404,
+            "NOT_FOUND",
+        );
+    }
+
+    let r = gemini(
+        &env,
+        "POST",
+        "/v1/models/claude-haiku-4-5:batchGenerateContent",
+        Key::Bearer(&env.key),
+        Some(ask("Hello")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::METHOD_NOT_ALLOWED, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["type"],
+        "invalid_request_error",
+        "{}",
+        r.text()
+    );
+    let r = gemini(&env, "GET", "/v1/files", Key::Bearer(&env.key), None).await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND);
+    assert!(r.json()["error"]["type"].is_string(), "{}", r.text());
+    assert!(env.mock.received().is_empty());
 }

@@ -224,12 +224,17 @@ def an(install: Install) -> anthropic.Anthropic:
     return anthropic.Anthropic(base_url=install.url, api_key=install.key, max_retries=0)
 
 
+@pytest.fixture(params=[None, "v1beta"], ids=["v1", "v1beta"])
+def gemini_version(request) -> str | None:
+    return request.param
+
+
 @pytest.fixture
-def gg(install: Install) -> genai.Client:
+def gg(install: Install, gemini_version: str | None) -> genai.Client:
     return genai.Client(
         api_key=install.key,
         http_options=types.HttpOptions(
-            base_url=install.url, api_version="v1beta", retry_options=types.HttpRetryOptions(attempts=1)
+            base_url=install.url, api_version=gemini_version, retry_options=types.HttpRetryOptions(attempts=1)
         ),
     )
 

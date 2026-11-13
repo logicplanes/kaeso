@@ -196,7 +196,7 @@ from google.genai import errors
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
+    http_options={"base_url": "https://kaeso.example.com"},
 )
 
 try:
@@ -214,7 +214,7 @@ import { ApiError, GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
 });
 
 try {
@@ -335,7 +335,7 @@ Einen Fehler, den ElevenLabs selbst sendet, erhält die App so, wie ElevenLabs i
 
 ## System-One-Format
 
-Eine App an `/v1/systemone` erhält Fehler in der Form von TypeSafe, wie das SDK von TypeSafe sie liest: `{"detail": "…"}` mit der Meldung oder eine Liste von Problemen mit ihrem `loc` für ein Feld, das die Anfrage falsch gesetzt hat. Ein überlasteter Anbieter antwortet mit 529. Fehler an `/v1/decisions` kommen im [OpenAI-Format](#openai-formate), Fehler an `/v1beta/decisions` im [Gemini-Format](#gemini-format); eine Sicherheitssperre von Gemini behält ihren `code`, etwa `safety`. Die [Decisions-API](decisions.md#was-abgelehnt-wird) listet, was Kaeso ablehnt.
+Eine App an `/v1/systemone` erhält Fehler in der Form von TypeSafe, wie das SDK von TypeSafe sie liest: `{"detail": "…"}` mit der Meldung oder eine Liste von Problemen mit ihrem `loc` für ein Feld, das die Anfrage falsch gesetzt hat. Ein überlasteter Anbieter antwortet mit 529. Fehler an `/v1/decisions` kommen im [OpenAI-Format](#openai-formate), Fehler an `/v1beta/decisions`, oder an `/v1/decisions` mit dem Schlüssel von Gemini, im [Gemini-Format](#gemini-format); eine Sicherheitssperre von Gemini behält ihren `code`, etwa `safety`. Die [Decisions-API](decisions.md#was-abgelehnt-wird) listet, was Kaeso ablehnt.
 
 ## Ursachen
 

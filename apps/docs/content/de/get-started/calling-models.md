@@ -105,7 +105,7 @@ Jeder Endpunkt nimmt den Schlüssel in `Authorization: Bearer`, `x-api-key`, `x-
 
 ## Google Gen AI SDK verwenden
 
-Setzen Sie die Basis-URL auf `https://kaeso.example.com`, ohne Version, und die API-Version auf `v1beta`: `google-genai` nimmt ab Version 3 sonst `v1`. Das SDK sendet den Schlüssel als `x-goog-api-key`:
+Setzen Sie die Basis-URL auf `https://kaeso.example.com`, ohne Version: `google-genai` hängt die API-Version selbst an. Es sendet den Schlüssel als `x-goog-api-key`:
 
 ```bash tab="curl"
 curl https://kaeso.example.com/v1beta/models/claude-haiku-4-5:generateContent \
@@ -124,7 +124,7 @@ from google import genai
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
+    http_options={"base_url": "https://kaeso.example.com"},
 )
 
 response = client.models.generate_content(
@@ -139,7 +139,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
 });
 
 const response = await ai.models.generateContent({
@@ -149,7 +149,7 @@ const response = await ai.models.generateContent({
 console.log(response.text);
 ```
 
-Kaeso bedient die Gemini API nur unter `/v1beta`; ein Client mit `v1` erhält 404 mit einer Meldung, die dorthin verweist. Zum Streamen rufen Sie `generate_content_stream` auf. Das SDK fordert mit `alt=sse` Server-Sent Events an, die einzige Art von Stream, die Kaeso an Gemini-Apps sendet:
+Kaeso bedient die Gemini API unter `/v1beta` und `/v1`, daher funktioniert die Standardversion des SDK, `v1` ab `google-genai` 3 und davor `v1beta`. Zum Streamen rufen Sie `generate_content_stream` auf. Das SDK fordert mit `alt=sse` Server-Sent Events an, die einzige Art von Stream, die Kaeso an Gemini-Apps sendet:
 
 ```bash tab="curl"
 curl -N "https://kaeso.example.com/v1beta/models/claude-haiku-4-5:streamGenerateContent?alt=sse" \
@@ -168,7 +168,7 @@ from google import genai
 
 client = genai.Client(
     api_key=os.environ["KAESO_API_KEY"],
-    http_options={"base_url": "https://kaeso.example.com", "api_version": "v1beta"},
+    http_options={"base_url": "https://kaeso.example.com"},
 )
 
 stream = client.models.generate_content_stream(
@@ -184,7 +184,7 @@ import { GoogleGenAI } from "@google/genai";
 
 const ai = new GoogleGenAI({
   apiKey: process.env.KAESO_API_KEY,
-  httpOptions: { baseUrl: "https://kaeso.example.com", apiVersion: "v1beta" },
+  httpOptions: { baseUrl: "https://kaeso.example.com" },
 });
 
 const stream = await ai.models.generateContentStream({

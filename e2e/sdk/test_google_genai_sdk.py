@@ -167,11 +167,11 @@ def test_models(gg: genai.Client):
     assert e.value.code == 404 and e.value.status == "NOT_FOUND"
 
 
-def test_errors_are_in_geminis_shape(install, gg: genai.Client):
+def test_errors_are_in_geminis_shape(install, gg: genai.Client, gemini_version):
     stranger = genai.Client(
         api_key="sk-kso-not-a-key",
         http_options=types.HttpOptions(
-            base_url=install.url, api_version="v1beta", retry_options=types.HttpRetryOptions(attempts=1)
+            base_url=install.url, api_version=gemini_version, retry_options=types.HttpRetryOptions(attempts=1)
         ),
     )
     with pytest.raises(errors.ClientError) as e:
@@ -190,11 +190,13 @@ def test_errors_are_in_geminis_shape(install, gg: genai.Client):
     assert e.value.code == 503 and e.value.status == "UNAVAILABLE"
 
 
-def test_a_v1_client_is_pointed_to_v1beta(install):
-    v1 = genai.Client(
+def test_the_sdks_default_version_is_v1(install, mock):
+    seen = []
+    default = genai.Client(
         api_key=install.key,
-        http_options=types.HttpOptions(base_url=install.url, api_version="v1", retry_options=types.HttpRetryOptions(attempts=1)),
+        http_options=types.HttpOptions(
+            base_url=install.url, client_args={"event_hooks": {"request": [lambda r: seen.append(r.url.path)]}}
+        ),
     )
-    with pytest.raises(errors.ClientError) as e:
-        v1.models.generate_content(model="claude-haiku-4-5", contents="Hello")
-    assert e.value.code == 404 and "`v1beta`" in e.value.message
+    assert default.models.generate_content(model="claude-haiku-4-5", contents="Hello").text
+    assert seen == ["/v1/models/claude-haiku-4-5:generateContent"]
