@@ -75,7 +75,7 @@ describe("PlaygroundPage", () => {
     expect(JSON.stringify(sent[0]?.body)).toContain("Hi");
   });
 
-  it("doesn't offer decision models, which answer questions rather than prompts", async () => {
+  it("offers decision models, marked as such", async () => {
     signedIn();
     const jev = playgroundModel({ id: "cm_j", provider: "typesafe", model: "jev-1.14.0", model_id: "jev-1.14.0", display_name: "Jev 1.14", mode: "decision" });
     on("GET", MODELS, page([jev, claude]));
@@ -83,8 +83,7 @@ describe("PlaygroundPage", () => {
     await screen.findByText("claude-opus-5-5");
     await user.click(screen.getByRole("button", { description: "Model" }));
     const listbox = await screen.findByRole("listbox");
-    expect(within(listbox).getByRole("option", { name: /Claude Opus 5.5/ })).toBeInTheDocument();
-    expect(within(listbox).queryByRole("option", { name: /Jev 1.14/ })).not.toBeInTheDocument();
+    expect(within(listbox).getByRole("option", { name: /Jev 1.14 jev-1.14.0 Decisions/ })).toBeInTheDocument();
   });
 
   it("offers to add models when the project has none to try", async () => {

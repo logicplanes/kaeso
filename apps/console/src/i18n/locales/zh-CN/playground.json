@@ -49,5 +49,18 @@
   "playground.emptyThread": "在下方发送提示词即可开始。",
   "playground.emptyColumn": "从下一条发送的提示词起，回答会显示在这里。",
   "playground.videoFailed": "服务商未能生成视频。请重试。",
-  "playground.mode.decision": "决策"
+  "playground.mode.decision": "决策",
+  "playground.decisions.count": "问题（{count}）",
+  "playground.decisions.emptyLevel": "请为 {question} 的每个等级填写描述。",
+  "playground.decisions.emptyOption": "请为 {question} 的每个选项填写值。",
+  "playground.decisions.none": "请添加一个问题供 {model} 回答。",
+  "playground.decisions.question": "问题 {index}",
+  "playground.decisions.sameName": "有两个问题都叫 {name}；请重命名其中一个。",
+  "playground.decisions.sameOption": "{question} 有两个选项的值相同。",
+  "playground.decisions.stopped": "在模型回答之前已停止。",
+  "playground.decisions.subtitle": "能做决策的模型会针对您发送的内容回答这些问题。",
+  "playground.decisions.title": "问题",
+  "playground.decisions.unreadable": "无法读取模型的回答。请重试。",
+  "playground.promptState": "描述这些问题针对的内容",
+  "playground.promptStateEvery": "向每个模型发送这些问题针对的内容"
 }

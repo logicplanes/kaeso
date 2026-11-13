@@ -1,6 +1,17 @@
 import { memo } from "react";
 import type { PlaygroundModel } from "~/api/queries/playground";
-import { MediaResponse, ResponseMetrics, ResponseView, Thread as Turns, UserMessage, type MediaKind, type MediaStatus } from "@logicplanes/kaeso-ui/playground";
+import {
+  DecisionResponse,
+  MediaResponse,
+  ResponseMetrics,
+  ResponseView,
+  Thread as Turns,
+  UserMessage,
+  type DecisionImage,
+  type DecisionStatus,
+  type MediaKind,
+  type MediaStatus,
+} from "@logicplanes/kaeso-ui/playground";
 import { metricsOf } from "./metrics";
 import { t } from "~/i18n";
 import { shown } from "./attachments";
@@ -22,6 +33,24 @@ function mediaStatus(r: ResponseState): MediaStatus {
       return "done";
   }
 }
+
+function decisionStatus(r: ResponseState): DecisionStatus {
+  switch (r.status) {
+    case "waiting":
+    case "streaming":
+      return "pending";
+    case "failed":
+    case "stopped":
+      return "error";
+    default:
+      return "done";
+  }
+}
+
+const imageOf = (turn: Turn): DecisionImage | undefined => {
+  const file = turn.files?.find((f) => f.type.startsWith("image/"));
+  return file ? { src: file.data, alt: file.name } : undefined;
+};
 
 const errorOf = (r: ResponseState) =>
   r.error ? (r.requestId ? t("playground.errorWithRequest", "{error} Request {id}", { error: r.error, id: r.requestId }) : r.error) : undefined;
@@ -54,7 +83,18 @@ const TurnView = memo(function TurnView({
   return (
     <div className="flex min-w-0 flex-col gap-12">
       <UserMessage attachments={shown(turn.files)}>{turn.prompt}</UserMessage>
-      {kind ? (
+      {mode === "decision" ? (
+        <DecisionResponse
+          aria-label={name}
+          questions={turn.questions ?? []}
+          answers={r.answers}
+          status={decisionStatus(r)}
+          image={imageOf(turn)}
+          {...(r.status === "stopped" ? { error: t("playground.decisions.stopped", "Stopped before the model answered.") } : error ? { error } : {})}
+          {...(onRetry ? { onRetry: () => onRetry(threadKey) } : {})}
+          {...(metrics ? { footer: metrics } : {})}
+        />
+      ) : kind ? (
         <MediaResponse
           aria-label={name}
           kind={kind}

@@ -1,5 +1,5 @@
 import { userContent, type TurnFile } from "./attachments";
-import type { MediaItem, ResponseViewProps } from "@logicplanes/kaeso-ui/playground";
+import type { DecisionAnswer, DecisionQuestion, MediaItem, ResponseViewProps } from "@logicplanes/kaeso-ui/playground";
 import type { PlaygroundModel } from "~/api/queries/playground";
 import { t } from "~/i18n";
 
@@ -36,6 +36,8 @@ export interface ResponseState {
   progress?: number | null | undefined;
   cost?: string | null | undefined;
   costKnown?: boolean | undefined;
+  /** A decision's answers, in the order of the questions the turn asked. */
+  answers?: (DecisionAnswer | null)[] | undefined;
 }
 
 export type Mode = PlaygroundModel["mode"];
@@ -175,6 +177,8 @@ export interface Turn {
   mode?: Mode | undefined;
   prompt: string;
   files?: TurnFile[] | undefined;
+  /** The questions a decision turn asked, as sent. */
+  questions?: DecisionQuestion[] | undefined;
   response: ResponseState;
 }
 

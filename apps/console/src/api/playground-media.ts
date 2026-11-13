@@ -11,6 +11,7 @@ export const MEDIA_ROUTES = {
   soundEffects: `${BASE}/sound-effects`,
   music: `${BASE}/music`,
   videos: `${BASE}/videos`,
+  decisions: `${BASE}/decisions`,
 } as const;
 
 export type MediaRoute = keyof typeof MEDIA_ROUTES;
