@@ -333,6 +333,10 @@ Der Fehler-Body folgt der dokumentierten Form von ElevenLabs, mit demselben Wert
 
 Einen Fehler, den ElevenLabs selbst sendet, erhält die App so, wie ElevenLabs ihn gesendet hat, mit seinem Status. `Retry-After` nennt die Wartezeit in ganzen Sekunden, aufgerundet. Ein Pfad, den Kaeso nicht bedient, etwa `/v1/dubbing`, erhält 404 in dieser Form ([ElevenLabs API](elevenlabs.md#was-kaeso-ablehnt)).
 
+## System-One-Format
+
+Eine App an `/v1/systemone` erhält Fehler in der Form von TypeSafe, wie das SDK von TypeSafe sie liest: `{"detail": "…"}` mit der Meldung oder eine Liste von Problemen mit ihrem `loc` für ein Feld, das die Anfrage falsch gesetzt hat. Ein überlasteter Anbieter antwortet mit 529. Fehler an `/v1/decisions` kommen im [OpenAI-Format](#openai-formate), Fehler an `/v1beta/decisions` im [Gemini-Format](#gemini-format); eine Sicherheitssperre von Gemini behält ihren `code`, etwa `safety`. Die [Decisions-API](decisions.md#was-abgelehnt-wird) listet, was Kaeso ablehnt.
+
 ## Ursachen
 
 Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter jedem Status:

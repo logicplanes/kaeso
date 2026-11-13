@@ -390,6 +390,7 @@ pub struct BodyLimitsConfig {
     pub model_api: ByteSize,
     pub images: ByteSize,
     pub audio: ByteSize,
+    pub decisions: ByteSize,
     pub in_flight: ByteSize,
     pub platform_api: ByteSize,
     pub provider_response: ByteSize,
@@ -653,6 +654,7 @@ impl Config {
             ("body_limits.model_api", self.body_limits.model_api),
             ("body_limits.images", self.body_limits.images),
             ("body_limits.audio", self.body_limits.audio),
+            ("body_limits.decisions", self.body_limits.decisions),
             ("body_limits.in_flight", self.body_limits.in_flight),
             ("body_limits.platform_api", self.body_limits.platform_api),
             (

@@ -880,6 +880,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             .map_err(|r| Failure::new(unread_encoding(r), Stage::Request))?,
         Source::Playground => Encoding::Identity,
     };
+    let decision_upload = kind == RequestKind::Decide
+        && headers
+            .get(axum::http::header::CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|ct| kaeso_codecs::multipart::form_boundary(ct).is_ok());
     let limit = max_body;
     let reading = Instant::now();
     let ((read, upload), ()) = tokio::join!(
@@ -924,7 +929,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         let uploads = transcription.is_some()
             || elevenlabs
                 .as_ref()
-                .is_some_and(|c| c.kind() == RequestKind::Transcription);
+                .is_some_and(|c| c.kind() == RequestKind::Transcription)
+            || decision_upload;
         if image.is_none() && video.is_none() && generation.is_none() && !uploads {
             if body.len() < OFF_THREAD_BYTES {
                 o.request_body = Some(body.clone());
@@ -1033,6 +1039,15 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                         .await;
             }
             rec.outcome().media = Some(super::videos::units_of_request(r));
+        }
+        // A System One upload is logged as its fields; a JSON body as sent, its media taken out
+        // when the log is written. Decisions are billed by token, so they have no media units.
+        Request::Decide(r) => {
+            if keep_content && decision_upload {
+                rec.outcome().request_body =
+                    logged_upload(request_bytes, r, super::media::logged_decision, keep_media)
+                        .await;
+            }
         }
         _ => {}
     }
@@ -1250,7 +1265,11 @@ async fn attempt(
         o.model_id = Some(eff.model_id.clone());
         o.provider = Some(eff.provider.metric_label());
         o.custom_provider = eff.provider.custom().map(|c| c.id().to_string());
-        o.prices = Some(eff.fields.clone());
+        o.prices = Some(if kind == RequestKind::Decide {
+            kaeso_core::cost::decision_prices(&eff.fields)
+        } else {
+            eff.fields.clone()
+        });
     }
     let mut plan = capability::prepare(&mut req, ingress, &eff).map_err(|u| {
         let mut e = KppError::unsupported(u.capability, u.message).with_status(400);
@@ -1272,6 +1291,7 @@ async fn attempt(
         Request::Speech(r) => r.model.clone_from(&eff.model_id),
         Request::Transcription(r) => r.model.clone_from(&eff.model_id),
         Request::Video(r) => r.model.clone_from(&eff.model_id),
+        Request::Decide(d) => d.model.clone_from(&eff.model_id),
         _ => {}
     }
     let playground = rec.outcome().source == super::hooks::Source::Playground;
@@ -1586,6 +1606,7 @@ async fn attempt(
             RequestKind::Generate => stream || chatgpt.is_some(),
             RequestKind::Image | RequestKind::Transcription => !ectx.stream.is_off(),
             RequestKind::Speech => dispatch::reads_reply_as_stream(plan.dialect, &ectx),
+            RequestKind::Decide => false,
             _ => false,
         },
         timeouts,
@@ -1920,6 +1941,7 @@ async fn attempt(
                     Reply::Image(i) if i.model.is_empty() => i.model = model_id,
                     Reply::Speech(r) if r.model.is_empty() => r.model = model_id,
                     Reply::Transcription(r) if r.model.is_empty() => r.model = model_id,
+                    Reply::Decide(r) if r.model.is_empty() => r.model = model_id,
                     _ => {}
                 }
                 Ok::<_, KppError>(reply)
@@ -2332,7 +2354,7 @@ async fn answer_with(
     let media_type = rec.outcome().content_type.take();
     match reply {
         Reply::Generate(r) => rec.outcome().reply = Some(r),
-        Reply::Image(_) | Reply::Speech(_) | Reply::Transcription(_)
+        Reply::Image(_) | Reply::Speech(_) | Reply::Transcription(_) | Reply::Decide(_)
             if rec.outcome().content_kept =>
         {
             rec.outcome().media_reply = Some(reply);
@@ -2430,6 +2452,7 @@ async fn replay(
     o.response_model = match &stored.reply {
         Reply::Generate(r) => Some(r.model.clone()),
         Reply::Embed(e) => Some(e.model.clone()),
+        Reply::Decide(d) => Some(d.model.clone()),
         _ => None,
     };
     let mut done = answer_with(state, rec, stored.reply, out, carry, served).await?;
@@ -2489,6 +2512,7 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
     let (usage, model) = match reply {
         Reply::Generate(r) => (&r.usage, &r.model),
         Reply::Embed(e) => (&e.usage, &e.model),
+        Reply::Decide(d) => (&d.usage, &d.model),
         // Speech and transcripts are billed by characters, duration or the tokens reported.
         Reply::Speech(r) => {
             let o = rec.outcome();
@@ -2578,6 +2602,11 @@ pub(super) fn egress_ctx(
     }
     if let Some(transcriptions) = provider.transcriptions(model) {
         ctx = ctx.with_transcriptions_profile(transcriptions.profile);
+    }
+    if let Some(decisions) = provider.decisions(model) {
+        ctx = ctx
+            .with_system_one_profile(decisions.system_one)
+            .with_decisions_profile(decisions.openai);
     }
     if let Some(a) = flags.adaptive_thinking {
         ctx = ctx.with_adaptive_thinking(a);

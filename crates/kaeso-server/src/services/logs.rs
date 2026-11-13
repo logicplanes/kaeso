@@ -529,6 +529,8 @@ pub fn endpoint(o: &Outcome) -> &'static str {
         (DialectId::OpenAiResponses, _) => "responses",
         (DialectId::OpenAiEmbeddings, _) => "embeddings",
         (DialectId::OpenAiSpeech, _) => "audio/speech",
+        (DialectId::OpenAiDecisions | DialectId::GeminiDecisions, _) => "decisions",
+        (DialectId::SystemOne, _) => "systemone",
         _ => "chat/completions",
     }
 }
@@ -1229,10 +1231,12 @@ mod tests {
             Source::bytes("audio/mpeg", &b"ID3\x04"[..]),
         ));
         let transcript = Reply::Transcription(TranscriptionResponse::new("whisper-1", "Hello."));
+        let decide = Reply::Decide(decide_reply());
         for (name, reply) in [
             ("image", image),
             ("speech", speech),
             ("transcription", transcript),
+            ("decide", decide),
         ] {
             for (keep, kept) in [(Keep::media(), "kept"), (Keep::nothing(), "left_out")] {
                 let stored = media_reply_json(&reply, &mut keep.clone()).unwrap();
@@ -1244,6 +1248,47 @@ mod tests {
                     serde_json::to_string_pretty(&value).unwrap()
                 );
             }
+        }
+    }
+
+    fn decide_reply() -> kaeso_kpp::DecideResponse {
+        use kaeso_kpp::{
+            Answer, AnswerValue, ChoiceAnswer, DecideResponse, PredicateAnswer, Refusal,
+            ScoreAnswer,
+        };
+        let mut reply = DecideResponse::new(
+            "gpt-6-luna",
+            vec![
+                Answer::new(AnswerValue::Predicate(PredicateAnswer::new(0.82))),
+                Answer::new(AnswerValue::Choice(ChoiceAnswer::new(
+                    1,
+                    vec![Some(0.1), Some(0.7), Some(0.2)],
+                )))
+                .with_confidence(Some(0.55)),
+                Answer::new(AnswerValue::Score(ScoreAnswer::new(
+                    1.4,
+                    vec![Some(0.1), Some(0.4), Some(0.5)],
+                )))
+                .with_confidence(Some(0.3)),
+                Answer::new(AnswerValue::Refusal(Refusal::new())),
+            ],
+        );
+        reply.usage = kaeso_kpp::Usage::new(1200, 0);
+        reply.usage.cache_read_tokens = 1024;
+        reply
+    }
+
+    #[test]
+    fn decisions_are_logged_at_their_own_endpoints() {
+        let mut o = crate::model_api::pipeline::blank_outcome(kaeso_core::id::RequestId::new());
+        o.kind = RequestKind::Decide;
+        for (ingress, name) in [
+            (DialectId::OpenAiDecisions, "decisions"),
+            (DialectId::SystemOne, "systemone"),
+            (DialectId::GeminiDecisions, "decisions"),
+        ] {
+            o.ingress = ingress;
+            assert_eq!(endpoint(&o), name, "{ingress}");
         }
     }
 

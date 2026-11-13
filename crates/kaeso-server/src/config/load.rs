@@ -381,6 +381,7 @@ mod tests {
         assert_eq!(c.body_limits.model_api.0, 32 << 20);
         assert_eq!(c.body_limits.images.0, 64 << 20);
         assert_eq!(c.body_limits.audio.0, 26 << 20);
+        assert_eq!(c.body_limits.decisions.0, 64 << 20);
         assert_eq!(c.body_limits.in_flight.0, 512 << 20);
         assert_eq!(c.body_limits.platform_api.0, 1 << 20);
         assert_eq!(c.body_limits.provider_response.0, 128 << 20);

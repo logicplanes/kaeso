@@ -6,7 +6,7 @@ use axum::response::Response;
 use axum::routing::get;
 use kaeso_codecs::gemini::{GeminiAction, split_model_action};
 use kaeso_core::id::RequestId;
-use kaeso_kpp::{DialectId, ErrorKind, KppError};
+use kaeso_kpp::{DialectId, ErrorKind, KppError, RequestKind};
 
 use super::errors::{Served, error, respond};
 use super::pipeline::{self, GeminiCall, Incoming};
@@ -17,6 +17,8 @@ use crate::state::AppState;
 pub const PREFIX: &str = "/v1beta";
 
 const MODELS: &str = "/v1beta/models";
+
+const DECISIONS: &str = "/v1beta/decisions";
 
 // Google's REST examples put the key in `?key=`; google-genai sends `x-goog-api-key`.
 const KEY_PARAM: &str = "key";
@@ -158,6 +160,47 @@ async fn call(
     .await
 }
 
+// Gemini's Decisions API names the model in the body, not the path (`POST /v1beta/decisions`).
+async fn decisions(
+    State(state): State<AppState>,
+    Extension(request_id): Extension<RequestId>,
+    ip: ClientIp,
+    OriginalUri(uri): OriginalUri,
+    req: Request,
+) -> Response {
+    let (parts, body) = req.into_parts();
+    let mut headers = parts.headers;
+    let mut pairs = query_pairs(&uri);
+    lift_key(&mut headers, &mut pairs);
+    if let Some((name, _)) = pairs.first() {
+        return refuse(unknown_parameter(name));
+    }
+    let max_body = state.config.body_limits.decisions.as_usize();
+    pipeline::serve(
+        state,
+        Incoming {
+            ingress: DialectId::GeminiDecisions,
+            kind: RequestKind::Decide,
+            headers,
+            body,
+            request_id,
+            client_ip: ip.0,
+            caller: None,
+            source: hooks::Source::Api,
+            stream_only: false,
+            max_body,
+            alias: None,
+            gemini: None,
+            image: None,
+            transcription: None,
+            elevenlabs: None,
+            video: None,
+            generation: None,
+        },
+    )
+    .await
+}
+
 fn listing_query(uri: &Uri, headers: &mut HeaderMap) -> String {
     let mut pairs = query_pairs(uri);
     lift_key(headers, &mut pairs);
@@ -235,6 +278,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route(MODELS, get(models_list))
         .route("/v1beta/models/{*rest}", get(models_get).post(call))
+        .route(DECISIONS, axum::routing::post(decisions))
         .route(PREFIX, axum::routing::any(not_found))
         .route("/v1beta/{*rest}", axum::routing::any(not_found))
 }

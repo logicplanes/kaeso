@@ -70,7 +70,17 @@ const SPLIT_HEADER_EXAMPLE = "x-user-id";
 const MODEL_FIELD = "model";
 const SNIPPETS = { curl: "curl", python: "Python", ts: "TypeScript" } as const;
 
-const FORMATS: readonly RouteFormat[] = ["openai_chat", "openai_responses", "anthropic_messages", "openai_embeddings", "gemini", "gemini_embeddings"];
+const FORMATS: readonly RouteFormat[] = [
+  "openai_chat",
+  "openai_responses",
+  "anthropic_messages",
+  "openai_embeddings",
+  "gemini",
+  "gemini_embeddings",
+  "openai_decisions",
+  "system_one",
+  "gemini_decisions",
+];
 const FEATURES: readonly RouteFeature[] = ["images", "pdfs", "tools", "reasoning", "structured_output", "streaming"];
 
 const update = <T extends DraftStep>(ctx: InspectorContext, step: T, change: (s: T) => T, coalesce?: string) =>

@@ -97,6 +97,7 @@ pub fn prepare(
         .flatten();
     match req {
         Request::Embed(_) => {
+            refuse_decision_only(eff)?;
             if !eff.is_embeddings() {
                 return Err(refuse(
                     "embeddings",
@@ -126,6 +127,7 @@ pub fn prepare(
             })
         }
         Request::Generate(g) => {
+            refuse_decision_only(eff)?;
             let mut adapted = adaptive_to_budget(g, ingress, eff);
             let mut left_out = leave_out_reasoning(g, ingress, eff);
             left_out.extend(leave_out_temperature(g, ingress, eff));
@@ -151,6 +153,7 @@ pub fn prepare(
             })
         }
         Request::CountTokens(g) => {
+            refuse_decision_only(eff)?;
             let Some(dialect) = eff.provider.count_tokens_for(eff.dialect) else {
                 return Err(refuse(
                     "token counting",
@@ -315,12 +318,142 @@ pub fn prepare(
             }
             Ok(media_plan(videos.dialect))
         }
+        Request::Decide(d) => {
+            let Some(decisions) = eff.provider.decisions(name) else {
+                let message = if eff.provider.has_decisions() {
+                    generation_only(name)
+                } else {
+                    format!(
+                        "{} offers no decisions API Kaeso can call, so `{name}` can't make decisions.",
+                        eff.provider.name()
+                    )
+                };
+                return Err(refuse("decisions", Some("model"), message));
+            };
+            check_decision(d, ingress, eff)?;
+            Ok(media_plan(decisions.dialect))
+        }
         _ => Err(refuse(
             "endpoint",
             None,
             format!("The model `{name}` cannot serve this endpoint."),
         )),
     }
+}
+
+fn generation_only(name: &str) -> String {
+    format!("The model `{name}` is a generation model; it can't answer decision questions.")
+}
+
+// The app's own name for what a decision request is about.
+fn decision_input_param(ingress: DialectId) -> &'static str {
+    match ingress {
+        DialectId::SystemOne => "state",
+        _ => "input",
+    }
+}
+
+fn check_decision(
+    d: &kaeso_kpp::DecideRequest,
+    ingress: DialectId,
+    eff: &Effective,
+) -> Result<(), Unsupported> {
+    use kaeso_kpp::{Block, DecisionInput, Instructions, QuestionKind};
+    let name = eff.model_id.as_str();
+    let Some(fields) = eff.fields.decisions.as_ref() else {
+        return Err(refuse("decisions", Some("model"), generation_only(name)));
+    };
+    let input = Some(decision_input_param(ingress));
+    let caps = d.required_capabilities();
+    for (needed, modality, words) in [
+        (caps.images, "image", "images"),
+        (caps.pdf, "pdf", "PDF documents"),
+        (caps.audio_input, "audio", "audio"),
+        (caps.video_input, "video", "video"),
+    ] {
+        if needed && !eff.accepts(modality) {
+            return Err(refuse(
+                "decision input",
+                input,
+                format!("The model `{name}` does not accept {words}."),
+            ));
+        }
+    }
+    if let Some(q) = d.questions.iter().find(|q| !fields.answers(q.type_name())) {
+        return Err(refuse(
+            "question type",
+            Some("questions"),
+            format!(
+                "The model `{name}` does not answer {} questions.",
+                q.type_name()
+            ),
+        ));
+    }
+    let over = |limit: Option<u32>, n: usize| limit.is_some_and(|l| n > l as usize);
+    if over(fields.max_questions, d.questions.len()) {
+        return Err(refuse(
+            "questions",
+            Some("questions"),
+            format!(
+                "The model `{name}` answers at most {} questions per request.",
+                fields.max_questions.unwrap_or_default()
+            ),
+        ));
+    }
+    for q in &d.questions {
+        let (count, limit, words) = match &q.kind {
+            QuestionKind::Choice(c) => (c.options.len(), fields.max_options, "options per choice"),
+            QuestionKind::Score(s) => (s.levels.len(), fields.max_levels, "levels per score"),
+            _ => continue,
+        };
+        if over(limit, count) {
+            return Err(refuse(
+                "questions",
+                Some("questions"),
+                format!(
+                    "The model `{name}` takes at most {} {words} question.",
+                    limit.unwrap_or_default()
+                ),
+            ));
+        }
+    }
+    let is_image = |b: &&Block| matches!(b, Block::Image(_));
+    let mut images = d.assets.len();
+    if let DecisionInput::Messages(messages) = &d.input {
+        images += messages.iter().flat_map(|m| &m.blocks).filter(is_image).count();
+    }
+    for q in &d.questions {
+        if let Some(Instructions::Blocks(blocks)) = &q.instructions {
+            images += blocks.iter().filter(is_image).count();
+        }
+    }
+    if over(fields.max_images, images) {
+        return Err(refuse(
+            "images",
+            input,
+            format!(
+                "The model `{name}` takes at most {} images per request.",
+                fields.max_images.unwrap_or_default()
+            ),
+        ));
+    }
+    Ok(())
+}
+
+// A decision-only model answers typed questions and generates nothing, so chat, token counts
+// and embeddings are refused before its provider is asked.
+fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
+    if !eff.decides_only() {
+        return Ok(());
+    }
+    Err(refuse(
+        "decisions",
+        Some("model"),
+        format!(
+            "The model `{}` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.",
+            eff.model_id
+        ),
+    ))
 }
 
 fn produces(eff: &Effective, modality: &str) -> bool {

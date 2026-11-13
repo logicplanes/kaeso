@@ -63,7 +63,8 @@ Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine
 - Bilder, PDFs, Tools, ein JSON-Schema, `enabled`-Denken oder ein Denk-Budget;
 - eine Aufwandsstufe, die Kaeso nicht kennt;
 - eine erzwungene Tool-Wahl (`required`, `any` oder ein benanntes Tool) für ein Modell, das keine annimmt, etwa Claude Fable 5.1, Opus 5.5 und Sonnet 5.5;
-- Embeddings von einem Generierungsmodell oder Text von einem Embeddings-Modell.
+- Embeddings von einem Generierungsmodell oder Text von einem Embeddings-Modell;
+- Entscheidungen von einem Generierungsmodell oder Text von einem reinen Entscheidungsmodell ([Decisions-API](../api/decisions.md#was-abgelehnt-wird)).
 
 Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken, und ein Modell, das nur die Standardtemperatur annimmt, keine Temperatur. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat. Eine Aufwandsstufe, die das Modell nicht nennt, wird zur nächstgelegenen Stufe, die es nennt, und adaptives Denken für ein Claude-Modell ohne adaptives Denken zu `enabled`-Denken mit Budget; das nennt der Header `kaeso-adapted` der Antwort ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
 

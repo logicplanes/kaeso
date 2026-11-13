@@ -65,9 +65,19 @@ fn messages(caddyfile: &str) -> Vec<String> {
 fn the_edge_answers_each_api_in_the_gateways_own_error_format() {
     let caddyfile = config("caddyfile");
     let bodies = responses(&caddyfile);
-    assert_eq!(bodies.len(), 5, "{bodies:?}");
+    assert_eq!(bodies.len(), 6, "{bodies:?}");
     let texts = messages(&caddyfile);
     assert_eq!(texts.len(), 2, "{texts:?}");
+    let anthropic = caddyfile
+        .lines()
+        .find(|l| l.trim().starts_with("@anthropic "))
+        .unwrap();
+    for path in ["'/v1/decisions'", "'/v1/systemone'", "'/v1/embeddings'"] {
+        assert!(
+            anthropic.contains(path),
+            "an Anthropic-Version header must not turn {path} errors into Anthropic's shape"
+        );
+    }
     for message in &texts {
         assert_eq!(common::copy::sent_problem(message), None, "{message}");
         let filled: Vec<(Value, u16)> = bodies
@@ -92,8 +102,9 @@ fn the_edge_answers_each_api_in_the_gateways_own_error_format() {
         for (dialect, (body, status)) in [
             (DialectId::AnthropicMessages, &filled[1]),
             (DialectId::Gemini, &filled[2]),
-            (DialectId::ElevenLabs, &filled[3]),
-            (DialectId::OpenAiChat, &filled[4]),
+            (DialectId::SystemOne, &filled[3]),
+            (DialectId::ElevenLabs, &filled[4]),
+            (DialectId::OpenAiChat, &filled[5]),
         ] {
             let encoded = dispatch::encode_error(
                 dialect,

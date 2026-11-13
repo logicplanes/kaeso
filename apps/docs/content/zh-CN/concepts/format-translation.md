@@ -23,7 +23,7 @@ flowchart TD
   encode -- Messages --> provider
 ```
 
-KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器：OpenAI Chat Completions、Responses 和 Embeddings，Anthropic Messages，以及 Gemini 及其嵌入。回复沿同一条路返回，流式回复则逐个事件处理。嵌入请求只会发往嵌入模型，而只有部分[服务商](supported-providers.md)提供嵌入模型。[模型 API](../api/model-api.md) 列出了每种格式的端点。
+KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器：OpenAI Chat Completions、Responses 和 Embeddings，Anthropic Messages，以及 Gemini 及其嵌入。回复沿同一条路返回，流式回复则逐个事件处理。嵌入请求只会发往嵌入模型，而只有部分[服务商](supported-providers.md)提供嵌入模型。OpenAI、TypeSafe 和 Gemini 决策格式的决策只在这三种格式之间转换，并且只发往决策模型（[决策 API](../api/decisions.md)）。[模型 API](../api/model-api.md) 列出了每种格式的端点。
 
 ## 三条规则
 

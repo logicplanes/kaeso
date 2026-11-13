@@ -72,7 +72,7 @@ Kaeso vergleicht die Anfrage, die es nach dem Übersetzen an den Anbieter senden
 
 - **Im Projekt geteilt.** Alle Schlüssel und Mitglieder des Projekts teilen seine Einträge. Kein anderes Projekt und keine andere Organisation liest sie je.
 - **Eine Antwort je Anfrage.** Ein Treffer liefert die Antwort, die das Modell beim ersten Mal gab, auch wenn ein neuer Aufruf wegen `temperature` anders antworten würde.
-- **Gecacht.** Erfolgreiche Anfragen ohne Stream an `/v1/chat/completions`, `/v1/responses`, `/v1/messages` und `/v1/embeddings` sowie an `:generateContent`, `:embedContent` und `:batchEmbedContents` von Gemini.
+- **Gecacht.** Erfolgreiche Anfragen ohne Stream an `/v1/chat/completions`, `/v1/responses`, `/v1/messages`, `/v1/embeddings`, `/v1/decisions` und `/v1/systemone` sowie an `/v1beta/decisions`, `:generateContent`, `:embedContent` und `:batchEmbedContents` von Gemini.
 - **Nicht gecacht.** Gestreamte Anfragen, Token-Zählungen, Fehler und Antworten, die größer sind, als die Installation erlaubt (1 MiB, sofern der Betreiber es nicht geändert hat).
 
 ## Einzelne Anfrage steuern

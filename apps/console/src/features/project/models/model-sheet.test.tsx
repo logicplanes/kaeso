@@ -112,6 +112,27 @@ describe("ModelSheet", () => {
     await waitFor(() => expect(own).toHaveTextContent("Long-context pricesAbove 128K: $4.00 / $20.00overrideReset to KPMR"));
   });
 
+  it("shows what a decision model answers and its limits", async () => {
+    setUp([
+      catalogueModel({
+        model_id: "gemini-decision-1",
+        provider: "google",
+        effective: {
+          ...catalogueModel().effective,
+          display_name: "Gemini Decision 1",
+          output_modalities: [],
+          decisions: { only: true, max_questions: 1000, max_options: 255 },
+        },
+      }),
+    ]);
+    await renderApp(projectPath("models?model=cm_sonnet"));
+    const s = await sheet("Gemini Decision 1");
+    expect(await within(s).findByText("Decisions only")).toBeInTheDocument();
+    expect(s).toHaveTextContent("Yes/no, Choice, Score");
+    expect(s).toHaveTextContent("At most 1,000 questions");
+    expect(s).toHaveTextContent("At most 255 options per choice");
+  });
+
   it("marks a model KPMR no longer lists", async () => {
     setUp([catalogueModel({ listed: false, delisted_at: "2026-09-01T00:00:00Z" }), catalogueModel({ id: "cm_old", model_id: "claude-2", listed: false })]);
     const { router } = await renderApp(projectPath("models?model=cm_sonnet"));

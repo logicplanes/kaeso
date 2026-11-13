@@ -342,7 +342,7 @@ function ModelMeta({ m }: { m: CatalogueModelView }) {
           </Text>
         )}
         <Tag size="sm" variant="outline">
-          {dialectPill(m.egress_dialect)}
+          {dialectPill(m.egress_dialect, !!f.decisions?.only)}
         </Tag>
         {f.context_limit ? (
           <Tooltip content={t("models.contextHint", "Context window: {tokens} tokens", { tokens: formatNumber(f.context_limit) })}>

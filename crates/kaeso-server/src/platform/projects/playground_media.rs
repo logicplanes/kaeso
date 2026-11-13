@@ -150,8 +150,8 @@ pub(super) fn mode_of(eff: &Effective, kind: Option<&str>) -> Option<PlaygroundM
             Some(PlaygroundMode::Transcription)
         }
         Some(
-            "embedding" | "reranking" | "realtime" | "image" | "video" | "speech" | "sound_effects"
-            | "music" | "transcription",
+            "embedding" | "reranking" | "realtime" | "decision" | "image" | "video" | "speech"
+            | "sound_effects" | "music" | "transcription",
         ) => return None,
         Some(_) => None,
         None if has(output, "image") && eff.provider.images(id).is_some() => {
@@ -173,7 +173,8 @@ pub(super) fn mode_of(eff: &Effective, kind: Option<&str>) -> Option<PlaygroundM
         return media;
     }
     let chats = |l: Option<&Vec<String>>| l.is_none_or(|l| l.iter().any(|m| m == "text"));
-    (!eff.is_embeddings() && chats(input) && chats(output)).then_some(PlaygroundMode::Text)
+    (!eff.is_embeddings() && !eff.decides_only() && chats(input) && chats(output))
+        .then_some(PlaygroundMode::Text)
 }
 
 /// What the Playground offers a model of each mode.
@@ -778,6 +779,20 @@ mod tests {
         for (eff, mode) in cases {
             assert_eq!(mode_of(&eff, None), mode, "{}", eff.model_id);
         }
+    }
+
+    #[test]
+    fn the_playground_leaves_decision_only_models_out_until_it_asks_questions() {
+        let mut decider = model("openrouter", "typesafe/jev-1.14", &["text"], &["text"]);
+        assert_eq!(mode_of(&decider, Some("decision")), None);
+        decider.fields.decisions = Some(kaeso_core::catalogue::DecisionFields {
+            only: true,
+            ..Default::default()
+        });
+        assert_eq!(mode_of(&decider, None), None);
+        let mut luna = model("openai", "gpt-6-luna", &["text"], &["text"]);
+        luna.fields.decisions = Some(kaeso_core::catalogue::DecisionFields::default());
+        assert_eq!(mode_of(&luna, Some("generation")), Some(PlaygroundMode::Text));
     }
 
     #[test]

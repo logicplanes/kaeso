@@ -3,6 +3,7 @@
 pub mod google;
 pub mod grok;
 pub mod mcp;
+pub mod mock_decisions;
 pub mod mock_provider;
 pub mod mock_realtime;
 pub mod mock_videos;

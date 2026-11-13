@@ -5,7 +5,7 @@ import type { LogBlock, LogMessage } from "./render";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { Markdown, safeHref } from "@logicplanes/kaeso-ui/markdown";
-import { Reasoning } from "@logicplanes/kaeso-ui/playground";
+import { DecisionResponse, Reasoning, type DecisionAnswer, type DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
 
 const roleLabel = (role: ConversationMessage["role"]): string =>
   ({
@@ -207,4 +207,9 @@ export default function Conversation({ messages }: { messages: LogMessage[] }) {
       })}
     </div>
   );
+}
+
+/** A logged decision's answers, each with its probabilities, beside the questions as the app sent them. */
+export function DecisionAnswers({ questions, answers }: { questions: DecisionQuestion[]; answers: DecisionAnswer[] }) {
+  return <DecisionResponse questions={questions} answers={answers} status="done" aria-label={t("logs.decision.answers", "Answers")} />;
 }

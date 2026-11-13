@@ -168,7 +168,11 @@ pub struct Request<'a> {
 }
 
 pub fn cacheable(kind: RequestKind, stream: bool) -> bool {
-    !stream && matches!(kind, RequestKind::Generate | RequestKind::Embed)
+    !stream
+        && matches!(
+            kind,
+            RequestKind::Generate | RequestKind::Embed | RequestKind::Decide
+        )
 }
 
 fn kind_name(kind: RequestKind) -> &'static str {
@@ -176,6 +180,7 @@ fn kind_name(kind: RequestKind) -> &'static str {
         RequestKind::Generate => "generate",
         RequestKind::Embed => "embed",
         RequestKind::CountTokens => "count_tokens",
+        RequestKind::Decide => "decide",
         _ => "other",
     }
 }
@@ -525,9 +530,12 @@ mod tests {
     }
 
     #[test]
-    fn only_non_streamed_generations_and_embeddings_are_cacheable() {
+    fn only_non_streamed_generations_embeddings_and_decisions_are_cacheable() {
         assert!(cacheable(RequestKind::Generate, false));
         assert!(cacheable(RequestKind::Embed, false));
+        assert!(cacheable(RequestKind::Decide, false));
+        assert_eq!(kind_name(RequestKind::Decide), "decide");
+        assert_ne!(kind_name(RequestKind::Decide), kind_name(RequestKind::Image));
         assert!(!cacheable(RequestKind::Generate, true));
         assert!(!cacheable(RequestKind::CountTokens, false));
     }

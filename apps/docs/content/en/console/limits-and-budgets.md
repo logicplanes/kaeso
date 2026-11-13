@@ -44,7 +44,7 @@ Kaeso prices a request by its tokens. Some features also bill per call or at a h
 - `mcp_servers`, `web_search_options`, OpenRouter's `plugins` or xAI's `search_parameters`;
 - a `service_tier` other than `auto`, `default`, `flex`, `on_demand` or `standard_only`, such as `priority`;
 - the `anthropic-beta` `context-1m-…`, which bills long prompts at a higher rate;
-- a model without an input or output price, or with a price of zero, unless an admin set that price on the model by hand. Embeddings need only an input price.
+- a model without an input or output price, or with a price of zero, unless an admin set that price on the model by hand. Embeddings and decisions need only an input price, and a decision's output is never billed.
 
 Tools the app runs itself pass: functions and custom tools, Anthropic's `bash`, `text_editor`, `computer` and `memory`, and OpenAI's `local_shell`, `apply_patch`, `computer_use_preview` and the `namespace` tools that group functions. Token budgets and rates don't refuse these features, and without a spend budget every feature passes.
 

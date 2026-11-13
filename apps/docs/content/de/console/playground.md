@@ -6,7 +6,7 @@ order: 10
 
 Der **Playground** sendet einen Prompt an bis zu vier Modelle des Projekts zugleich und zeigt ihre Antworten nebeneinander. Jede Spalte ist ein eigenes Gespräch. Ihn zu nutzen erfordert das Recht **Playground nutzen**, das Admins und Entwickler eines Projekts haben.
 
-Er listet jede Art von Modell, die das Projekt aufrufen kann, und jede Spalte nimmt die Form der Art ihres Modells an: Text, Bilder, Sprache, Soundeffekte, Musik, Transkription oder Video. Embeddings-, Reranking- und Echtzeitmodelle fehlen.
+Er listet jede Art von Modell, die das Projekt aufrufen kann, und jede Spalte nimmt die Form der Art ihres Modells an: Text, Bilder, Sprache, Soundeffekte, Musik, Transkription oder Video. Embeddings-, Reranking- und Echtzeitmodelle fehlen, ebenso Modelle, die nur Entscheidungen treffen.
 
 ## Modelle vergleichen
 

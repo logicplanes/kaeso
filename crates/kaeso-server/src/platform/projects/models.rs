@@ -265,6 +265,9 @@ pub struct SearchHit {
     #[doc = "Whether it is a router that picks a model for each request, such as Standard\n\
         Compute's `standardcompute`; routers come first among their provider's models."]
     pub router: bool,
+    #[doc = "Whether it answers decision questions at `/v1/decisions`, `/v1/systemone` and\n\
+        `/v1beta/decisions`, alone or as well as generating."]
+    pub decisions: bool,
     #[doc = "The catalogue entry, if the project has it."]
     pub catalogue_model_id: Option<CatalogueModelId>,
     #[doc = "USD per million input tokens, as an entry would start with it."]
@@ -303,7 +306,7 @@ fn newest_after_routers(a: &SearchHit, b: &SearchHit) -> std::cmp::Ordering {
 }
 
 fn is_current(m: &kaeso_core::kpmr::Model) -> bool {
-    if m.is_deprecated() {
+    if m.is_deprecated() || m.is_decision_only() {
         return false;
     }
     m.egress_dialect() == Some(kaeso_kpp::DialectId::OpenAiEmbeddings)
@@ -379,6 +382,7 @@ pub async fn search(
                 release_date: m.release_date.clone(),
                 deprecated: m.is_deprecated(),
                 router: m.is_router(),
+                decisions: m.is_decision_only() || m.decisions.is_some(),
                 catalogue_model_id: in_catalogue
                     .get(&(pid.as_str(), mid.as_str()))
                     .map(|id| CatalogueModelId::from_uuid(*id)),
@@ -1071,6 +1075,7 @@ mod tests {
             release_date: release.map(str::to_owned),
             deprecated: false,
             router,
+            decisions: false,
             catalogue_model_id: None,
             input_price: None,
             output_price: None,
@@ -1107,5 +1112,17 @@ mod tests {
                 ("standardcompute", "example/undated"),
             ]
         );
+    }
+
+    #[test]
+    fn decision_only_models_are_not_current_and_dual_models_are() {
+        let snapshot = kaeso_core::kpmr::embedded().unwrap();
+        let model = |p: &str, m: &str| snapshot.model(p, m).unwrap().clone();
+        assert!(!is_current(&model("google", "gemini-decision-1")));
+        assert!(!is_current(&model("openrouter", "typesafe/jev-1.14")));
+        assert!(is_current(&model("openai", "gpt-6-luna")));
+        let mut decision = model("openai", "gpt-6-luna");
+        decision.kind = Some("decision".into());
+        assert!(!is_current(&decision), "output text or not, kind decision is not current");
     }
 }

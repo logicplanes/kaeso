@@ -12,7 +12,8 @@ use time::macros::format_description;
 
 use kaeso_codecs::gemini::{GeminiAction, GeminiProfile};
 use kaeso_codecs::{
-    anthropic_messages, is_forwarded_header, openai_chat, openai_embeddings, openai_responses,
+    anthropic_messages, gemini_decisions, is_forwarded_header, openai_chat, openai_decisions,
+    openai_embeddings, openai_responses, system_one,
 };
 use kaeso_core::provider::{Provider, lookup};
 use kaeso_kpp::DialectId;
@@ -35,6 +36,9 @@ pub(crate) enum Dialect {
     OpenaiEmbeddings,
     Gemini,
     GeminiEmbeddings,
+    OpenaiDecisions,
+    SystemOne,
+    GeminiDecisions,
 }
 
 impl Dialect {
@@ -46,6 +50,9 @@ impl Dialect {
             Self::OpenaiEmbeddings => DialectId::OpenAiEmbeddings,
             Self::Gemini => DialectId::Gemini,
             Self::GeminiEmbeddings => DialectId::GeminiEmbeddings,
+            Self::OpenaiDecisions => DialectId::OpenAiDecisions,
+            Self::SystemOne => DialectId::SystemOne,
+            Self::GeminiDecisions => DialectId::GeminiDecisions,
         }
     }
 
@@ -64,8 +71,13 @@ impl Dialect {
     fn default_provider(self) -> &'static str {
         match self {
             Self::AnthropicMessages => "anthropic",
-            Self::Gemini | Self::GeminiEmbeddings => "google",
-            Self::OpenaiChat | Self::OpenaiResponses | Self::OpenaiEmbeddings => "openai",
+            Self::Gemini | Self::GeminiEmbeddings | Self::GeminiDecisions => "google",
+            Self::OpenaiChat
+            | Self::OpenaiResponses
+            | Self::OpenaiEmbeddings
+            | Self::OpenaiDecisions => "openai",
+            // System One's own fixtures are TypeSafe's; other servers record with --provider.
+            Self::SystemOne => "typesafe",
         }
     }
 
@@ -75,8 +87,30 @@ impl Dialect {
             Self::OpenaiChat => Some(openai_chat::CHAT_COMPLETIONS_PATH),
             Self::OpenaiResponses => Some(openai_responses::RESPONSES_PATH),
             Self::OpenaiEmbeddings => Some(openai_embeddings::EMBEDDINGS_PATH),
+            Self::OpenaiDecisions => Some(openai_decisions::DECISIONS_PATH),
+            Self::SystemOne => Some(system_one::SYSTEM_ONE_PATH),
+            Self::GeminiDecisions => Some(gemini_decisions::GEMINI_DECISIONS_PATH),
             Self::Gemini | Self::GeminiEmbeddings => None,
         }
+    }
+
+    // A decision format goes to the path of the provider's decisions API, such as Perplexity's
+    // `/v1/decisions` for System One bodies.
+    fn path_at(self, service: Service) -> Option<&'static str> {
+        let egress = service
+            .decisions
+            .iter()
+            .find(|e| e.dialect == self.id());
+        match (self, egress) {
+            (Self::SystemOne, Some(e)) => Some(e.system_one.path),
+            (Self::OpenaiDecisions, Some(e)) => Some(e.openai.path),
+            _ => self.path(),
+        }
+    }
+
+    fn speaks(self, service: Service) -> bool {
+        service.dialects.contains(&self.id())
+            || service.decisions.iter().any(|e| e.dialect == self.id())
     }
 
     fn count(self) -> Option<(&'static str, &'static str)> {
@@ -86,7 +120,12 @@ impl Dialect {
             }
             Self::OpenaiResponses => Some((openai_responses::INPUT_TOKENS_PATH, "input_tokens")),
             Self::Gemini => Some(("", "count_tokens")),
-            Self::OpenaiChat | Self::OpenaiEmbeddings | Self::GeminiEmbeddings => None,
+            Self::OpenaiChat
+            | Self::OpenaiEmbeddings
+            | Self::GeminiEmbeddings
+            | Self::OpenaiDecisions
+            | Self::SystemOne
+            | Self::GeminiDecisions => None,
         }
     }
 
@@ -191,7 +230,7 @@ pub(crate) async fn run(
 ) -> Result<(), Error> {
     let service = endpoint.service;
     let dialect = args.dialect.id();
-    if !service.dialects.contains(&dialect) {
+    if !args.dialect.speaks(service) {
         let spoken: Vec<&str> = service.dialects.iter().map(|d| d.as_str()).collect();
         return Err(Error::Invalid(format!(
             "{} does not speak {dialect}; it speaks {}",
@@ -248,7 +287,7 @@ pub(crate) async fn run(
             endpoint.base_url.trim_end_matches('/'),
             count
                 .map(|(path, _)| path)
-                .or(args.dialect.path())
+                .or(args.dialect.path_at(service))
                 .unwrap_or_default()
         ),
         model: args.model.as_deref(),
@@ -690,6 +729,7 @@ mod tests {
         speech: &[],
         transcriptions: &[],
         videos: &[],
+        decisions: &[],
         dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -741,6 +781,21 @@ mod tests {
         assert_eq!(Dialect::OpenaiChat.path(), Some("/v1/chat/completions"));
         assert_eq!(Dialect::OpenaiEmbeddings.path(), Some("/v1/embeddings"));
         assert_eq!(Dialect::Gemini.path(), None);
+        assert_eq!(
+            args(&["system_one", "--all"]).dialect.path(),
+            Some("/v1/systemone")
+        );
+        assert_eq!(Dialect::GeminiDecisions.path(), Some("/v1beta/decisions"));
+        assert_eq!(Dialect::OpenaiDecisions.folder(), "openai_decisions");
+        assert_eq!(Dialect::SystemOne.count(), None);
+        let perplexity = known("perplexity");
+        assert!(Dialect::SystemOne.speaks(perplexity));
+        assert_eq!(Dialect::SystemOne.path_at(perplexity), Some("/v1/decisions"));
+        assert_eq!(
+            Dialect::SystemOne.path_at(known("openrouter")),
+            Some("/v1/systemone")
+        );
+        assert!(!Dialect::GeminiDecisions.speaks(known("openrouter")));
         assert_eq!(
             args(&["gemini_embeddings", "--all"]).dialect,
             Dialect::GeminiEmbeddings

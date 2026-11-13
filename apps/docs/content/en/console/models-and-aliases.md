@@ -65,6 +65,10 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 | Timeout | How many seconds a request to this model may take. Empty uses the install's request timeout |
 | Released | The model's release date |
 
+## Decision models
+
+A decision model answers typed questions at `/v1/decisions`, `/v1/systemone` and `/v1beta/decisions` ([Decisions API](../api/decisions.md)). The add dialog marks such models **Decisions**, and **Add every current** model leaves out models that only make decisions; add them one by one. A model's sheet lists under **Decisions** whether it only makes decisions, the question types it answers and its limits. For a custom model on a provider with a decisions API, choose **Decisions** under **Outputs**; it then needs only its inputs and its input price. The Playground doesn't list models that only make decisions yet.
+
 ## Remove a model
 
 Choose **Remove from catalogue** in a model's sheet. Kaeso refuses requests for the model from then on, and model lists that name it lose it. Aliases that route only to it are deleted; routes that also use other models skip it.

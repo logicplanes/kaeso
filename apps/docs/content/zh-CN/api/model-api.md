@@ -166,6 +166,8 @@ console.log(response.text);
 | `POST /v1/audio/speech` | OpenAI Speech（[音频 API](audio.md)） |
 | `POST /v1/audio/transcriptions`、`POST /v1/audio/translations` | OpenAI Transcriptions（[音频 API](audio.md)） |
 | `POST /v1/videos`、`GET /v1/videos`、`GET /v1/videos/{video_id}`、`DELETE /v1/videos/{video_id}`、`GET /v1/videos/{video_id}/content`、`POST /v1/videos/{video_id}/remix` | OpenAI Videos（[视频 API](videos.md)） |
+| `POST /v1/decisions` | OpenAI Decisions（[决策 API](decisions.md)） |
+| `POST /v1/systemone` | System One（[决策 API](decisions.md)） |
 | `POST /v1/text-to-speech/{voice_id}`、`/v1/text-to-dialogue`、`/v1/sound-generation`、`/v1/music`、`/v1/voice-changer/{voice_id}`、`/v1/speech-to-text`、`/v1/flows/image`、`GET /v1/voices`、`/v2/voices` | ElevenLabs（[ElevenLabs API](elevenlabs.md)） |
 | `POST /v1/messages` | Anthropic Messages |
 | `POST /v1/messages/count_tokens` | Anthropic Messages，统计 Token |
@@ -178,10 +180,11 @@ console.log(response.text);
 | `POST /v1beta/models/{model}:batchEmbedContents` | Gemini 嵌入，多个输入 |
 | `GET /v1beta/models` | 该密钥可调用的模型，采用 Gemini 格式 |
 | `GET /v1beta/models/{model}` | 其中某一个模型，采用 Gemini 格式 |
+| `POST /v1beta/decisions` | Gemini Decisions（[决策 API](decisions.md)） |
 
 在 `/v1beta` 路径中，`{model}` 可以是任何[模型名称](#模型名称)，例如 `claude-haiku-4-5`。
 
-`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/provider-apis.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。
+`/v1/embeddings`、`:embedContent` 和 `:batchEmbedContents` 只服务嵌入模型，这类模型只有部分[服务商](../concepts/provider-apis.md)提供；嵌入模型也不服务其他端点。混用两者的请求，Kaeso 返回 400。同样，`/v1/decisions`、`/v1/systemone` 和 `/v1beta/decisions` 只服务决策模型，纯决策模型也不服务任何其他端点（[决策 API](decisions.md)）。
 
 `/v1` 下的其他路径返回 404，已知路径使用了错误的方法则返回 405。请求带有 `anthropic-version` 请求头时，这两种错误采用 Anthropic 格式；带有 `xi-api-key` 请求头时采用 ElevenLabs 的格式；否则采用 OpenAI 格式。
 

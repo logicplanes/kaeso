@@ -406,7 +406,7 @@ impl WorstCase {
                 .or(prices.output_limit)
                 .or(context)
                 .map(within),
-            kaeso_kpp::Request::Embed(_) => Some(0),
+            kaeso_kpp::Request::Embed(_) | kaeso_kpp::Request::Decide(_) => Some(0),
             _ => return WorstCase::FREE,
         };
         let usage = kaeso_kpp::Usage::new(input, output.unwrap_or(0));
@@ -737,6 +737,24 @@ mod tests {
         let mut g = kaeso_kpp::GenerateRequest::new("m");
         g.sampling.max_output_tokens = max_output;
         kaeso_kpp::Request::Generate(g)
+    }
+
+    #[test]
+    fn a_decision_reserves_its_input_at_the_dearest_input_price_and_no_output() {
+        let decide = kaeso_kpp::Request::Decide(kaeso_kpp::DecideRequest::new(
+            "m",
+            kaeso_kpp::DecisionInput::Text("state".into()),
+        ));
+        let mut prices = priced("0.1", "0.5");
+        prices.cache_write_price = Some(dec!(0.125));
+        let worst = WorstCase::of(&decide, 4000, &prices, openai());
+        let input = crate::estimate::tokens_of_bytes(4000);
+        assert!(worst.bounded);
+        assert_eq!(worst.tokens, i64::try_from(input).unwrap());
+        assert_eq!(
+            worst.nano_usd,
+            crate::cost::nano_usd(Decimal::from(input) * dec!(0.125) / dec!(1000000))
+        );
     }
 
     #[test]

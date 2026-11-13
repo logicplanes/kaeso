@@ -553,7 +553,10 @@ function hitColumns(providerName: (id: string) => string, review: (modelId: stri
             ) : h.deprecated ? (
               <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
             ) : (
-              h.router && <Badge tone="info">{t("models.router", "Router")}</Badge>
+              <>
+                {h.router && <Badge tone="info">{t("models.router", "Router")}</Badge>}
+                {h.decisions && <Badge tone="info">{t("models.decisionsBadge", "Decisions")}</Badge>}
+              </>
             )}
           </span>
         ),

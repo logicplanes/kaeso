@@ -68,6 +68,15 @@ KPMR 是 Logicplanes 在 [kpmr.kaeso.app](https://kpmr.kaeso.app) 运行的服�
 - **`gateway.egress_dialect`** 指明 Kaeso 调用该模型所用的 API 格式（当它不是服务商的默认格式时）。
 - **未知的键会被忽略。**格式 1 中新增的字段不会影响旧版网关；会影响旧版网关的变更将成为格式 2。
 
+### 决策模型
+
+决策模型用概率回答类型化问题，而不是写出文本（[决策 API](../api/decisions.md)）。KPMR 用两种方式标记它：
+
+- **`kind: "decision"`** 表示只做决策的模型，例如 `gemini-decision-1`。它的输出模态为空，因此不认识决策的网关不会把它作为聊天模型提供。
+- **`decisions`** 出现在任何回答问题的模型上，包括也写文本的模型，例如 `gpt-6-luna`：`question_types`（`predicate`、`choice`、`score`、`box`），以及 `max_questions`、`max_options`、`max_levels` 和 `max_images`，未知时为 `null`。
+
+决策模型按输入 token 计费；其输出价格为 `0`。
+
 ## 网关如何获取目录
 
 一个任务每五分钟检查一次网关是否该再次询问 KPMR。`kpmr.interval` 为 `auto` 时，它跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；设为 `6h` 这样的时长则以该时长为准。尝试失败后，网关会在一小时内再次尝试。

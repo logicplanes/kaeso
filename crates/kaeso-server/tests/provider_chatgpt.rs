@@ -866,3 +866,31 @@ async fn images_speech_and_transcriptions_need_an_api_key() {
     assert!(p.sent().is_empty(), "{:?}", p.sent());
     p.services.cleanup().await;
 }
+
+#[tokio::test]
+async fn decisions_need_an_api_key() {
+    let p = plan().await;
+    p.app
+        .post(
+            &format!("{}/models", p.base()),
+            json!({ "provider": "openai", "model_id": "gpt-6-luna" }),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let r = p
+        .call(
+            "/v1/decisions",
+            false,
+            json!({ "model": "gpt-6-luna", "input": "I was charged twice.",
+                    "questions": [{ "type": "predicate", "instructions": "A refund?" }] }),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "A ChatGPT account can't make decisions. Use an API key for OpenAI in this project instead."
+    );
+    assert_eq!(r.json()["error"]["param"], "model");
+    assert!(p.sent().is_empty(), "{:?}", p.sent());
+}

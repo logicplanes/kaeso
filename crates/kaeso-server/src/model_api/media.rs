@@ -7,7 +7,7 @@ use kaeso_core::cost::MediaUnits;
 use kaeso_core::provider::AuthStyle;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{
-    AudioInput, ImageRequest, ImageResponse, ImageSize, RequestKind, Source, SpeechRequest,
+    AudioInput, Block, DecideRequest, DecisionInput, ImageRequest, ImageResponse, ImageSize, RequestKind, Source, SpeechRequest,
     SpeechResponse, TranscriptionRequest, TranscriptionResponse,
 };
 use kaeso_kpp::{DialectId, KppError};
@@ -48,6 +48,24 @@ pub(super) fn logged_speech(r: &SpeechRequest, mut keep: Keep) -> Bytes {
     let mut left_out = LeftOut::default();
     if let Some(audio) = kept.audio.as_mut() {
         left_out.fit(&mut audio.source, &mut keep);
+    }
+    written(&left_out, &kept)
+}
+
+/// A decision request uploaded as `multipart/form-data`, as the log keeps it: every field, each
+/// image that isn't kept replaced by its media type and size.
+pub(super) fn logged_decision(r: &DecideRequest, mut keep: Keep) -> Bytes {
+    let mut kept = r.clone();
+    let mut left_out = LeftOut::default();
+    for asset in kept.assets.values_mut() {
+        left_out.fit(&mut asset.source, &mut keep);
+    }
+    if let DecisionInput::Messages(messages) = &mut kept.input {
+        for block in messages.iter_mut().flat_map(|m| m.blocks.iter_mut()) {
+            if let Block::Image(image) = block {
+                left_out.fit(&mut image.source, &mut keep);
+            }
+        }
     }
     written(&left_out, &kept)
 }
@@ -135,6 +153,10 @@ pub(super) fn egress_of(
             auth: e.auth,
         }),
         RequestKind::Transcription => provider.transcriptions(model).map(|e| MediaEgress {
+            from_root: e.from_root,
+            auth: e.auth,
+        }),
+        RequestKind::Decide => provider.decisions(model).map(|e| MediaEgress {
             from_root: e.from_root,
             auth: e.auth,
         }),
@@ -314,6 +336,39 @@ mod tests {
         );
         assert_eq!(logged.matches(r#""reason":"not_kept""#).count(), 2);
         assert!(logged.contains("https://example.com/a.png") && logged.contains("\"hat\""));
+    }
+
+    #[test]
+    fn logged_decision_uploads_keep_fields_and_drop_image_bytes() {
+        let image = || Source::base64("image/png", "AAAAAAAA").unwrap();
+        let r = DecideRequest::new(
+            "jev-1.14.0",
+            DecisionInput::Messages(vec![kaeso_kpp::Message::new(
+                kaeso_kpp::Role::User,
+                vec![Block::text("Is <img> a cat?"), Block::image(image())],
+            )]),
+        )
+        .with_asset("<img>", kaeso_kpp::Asset::new(image()));
+        let kept = String::from_utf8(logged_decision(&r, Keep::media()).to_vec()).unwrap();
+        assert_eq!(kept.matches("AAAAAAAA").count(), 2, "{kept}");
+        let logged = String::from_utf8(logged_decision(&r, Keep::nothing()).to_vec()).unwrap();
+        assert!(!logged.contains("AAAA"), "{logged}");
+        assert_eq!(logged.matches(r#""reason":"not_kept""#).count(), 2);
+        assert!(logged.contains("Is <img> a cat?"), "{logged}");
+    }
+
+    #[test]
+    fn decisions_go_where_the_providers_decisions_api_is() {
+        let openrouter: ProviderRef = kaeso_core::provider::provider("openrouter").unwrap().into();
+        let anthropic: ProviderRef = kaeso_core::provider::provider("anthropic").unwrap().into();
+        assert_eq!(
+            egress_of(&openrouter, RequestKind::Decide, "typesafe/jev-1.14"),
+            Some(MediaEgress {
+                from_root: false,
+                auth: None
+            })
+        );
+        assert_eq!(egress_of(&anthropic, RequestKind::Decide, "m"), None);
     }
 
     #[test]

@@ -23,6 +23,7 @@ GOOGLE_SECRET = "AIzaSyTestGoogleE2eCredential00000000"
 ELEVENLABS_SECRET = "sk_test-elevenlabs-e2e-credential-0000000"
 XAI_SECRET = "xai-test-e2e-credential"
 MINIMAX_SECRET = "sk-test-minimax-e2e-credential"
+OPENROUTER_SECRET = "sk-or-v1-test-openrouter-e2e-credential"
 SETUP_LINK = re.compile(r"#token=(\S+)")
 
 
@@ -103,6 +104,7 @@ def gateway():
         KAESO_PROVIDERS_ELEVENLABS_BASE_URL=mock_url,
         KAESO_PROVIDERS_XAI_BASE_URL=mock_url,
         KAESO_PROVIDERS_MINIMAX_BASE_URL=mock_url,
+        KAESO_PROVIDERS_OPENROUTER_BASE_URL=mock_url,
         KAESO_STREAMS_KEEPALIVE_INTERVAL="1s",
     )
     log_path = LOGS / "gateway.log"
@@ -145,6 +147,7 @@ class Install:
             ("elevenlabs", ELEVENLABS_SECRET),
             ("xai", XAI_SECRET),
             ("minimax", MINIMAX_SECRET),
+            ("openrouter", OPENROUTER_SECRET),
         ):
             self.post(
                 f"/platform/v1/orgs/{self.org}/credentials",
@@ -172,6 +175,9 @@ class Install:
             ("elevenlabs", "gpt-image-1.5", None),
             ("xai", "grok-imagine-video-1.5", None),
             ("minimax", "MiniMax-Hailuo-2.3", None),
+            ("openai", "gpt-6-luna", None),
+            ("google", "gemini-decision-1", None),
+            ("openrouter", "typesafe/jev-1.14", None),
         ):
             body = {"provider": provider, "model_id": model}
             if overrides:

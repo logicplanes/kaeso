@@ -77,12 +77,36 @@ pub fn unpriced_model(
         RequestKind::Transcription => {
             by_unit || input || prices.input_audio_price.is_some_and(|p| p > Decimal::ZERO)
         }
+        RequestKind::Decide => input,
         _ => true,
     };
     (!known).then(|| Unpriced {
         param: "model",
         feature: model.to_owned(),
     })
+}
+
+/// The prices of a decision: input and cache tokens only. Decision providers bill no output,
+/// though some report output tokens, and a model that also generates keeps its output price
+/// for generation.
+#[must_use]
+pub fn decision_prices(prices: &Fields) -> Fields {
+    let zero = Some(Decimal::ZERO);
+    Fields {
+        output_price: zero,
+        output_image_price: zero,
+        output_audio_price: zero,
+        price_tiers: prices.price_tiers.as_ref().map(|tiers| {
+            tiers
+                .iter()
+                .map(|t| crate::catalogue::PriceTier {
+                    output_price: zero,
+                    ..t.clone()
+                })
+                .collect()
+        }),
+        ..prices.clone()
+    }
 }
 
 pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
@@ -512,6 +536,34 @@ mod tests {
             unpriced_model(&none, &none, RequestKind::CountTokens, "m"),
             None
         );
+        let decide = prices(Some(dec!(0.042)), Some(dec!(0)));
+        assert_eq!(unpriced_model(&decide, &none, RequestKind::Decide, "m"), None);
+        assert!(unpriced_model(&none, &none, RequestKind::Decide, "m").is_some());
+    }
+
+    #[test]
+    fn a_decision_costs_its_input_and_cache_tokens_and_never_its_output() {
+        let mut prices = Fields {
+            input_price: Some(dec!(0.1)),
+            output_price: Some(dec!(0.5)),
+            cache_read_price: Some(dec!(0.01)),
+            cache_write_price: Some(dec!(0.125)),
+            ..Fields::default()
+        };
+        prices.price_tiers = Some(vec![crate::catalogue::PriceTier {
+            context_above: 272_000,
+            input_price: Some(dec!(0.2)),
+            output_price: Some(dec!(0.75)),
+            ..crate::catalogue::PriceTier::default()
+        }]);
+        let mut u = Usage::default();
+        u.input_tokens = 100_000;
+        u.output_tokens = 3;
+        u.cache_read_tokens = 100_000;
+        let decided = decision_prices(&prices);
+        assert_eq!(cost(&u, &decided), dec!(0.011));
+        assert!(cost(&u, &prices) > dec!(0.011));
+        assert_eq!(decided.price_tiers.unwrap()[0].output_price, Some(dec!(0)));
     }
 
     #[test]

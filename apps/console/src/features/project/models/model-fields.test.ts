@@ -1,6 +1,7 @@
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { afterEach, describe, expect, it } from "vitest";
-import { contextLabel, dialectPill, tierLabels, unitPriceLabels } from "./model-fields";
+import { contextLabel, decisionLabels, dialectPill, tierLabels, unitPriceLabels } from "./model-fields";
+import { changedFields, decisionsOf, draftFrom, draftProblem } from "./model-form";
 
 const limits = [8192, 128_000, 200_000, 1_048_576, 2_000_000];
 
@@ -100,5 +101,47 @@ describe("unitPriceLabels", () => {
     expect(unitPriceLabels(f)).toEqual(["$0.28 per video of output (768p, 6 s long)", "$0.20 per video of output"]);
     expect(dialectPill("xai_videos")).toBe("videos");
     expect(dialectPill("veo")).toBe("videos");
+  });
+});
+
+describe("decisions", () => {
+  it("lists what a decision model answers and its limits", () => {
+    expect(decisionLabels({ only: true, max_questions: 1000, max_options: 255 })).toEqual([
+      "Decisions only",
+      "Yes/no, Choice, Score",
+      "At most 1,000 questions",
+      "At most 255 options per choice",
+    ]);
+    expect(decisionLabels({ question_types: ["choice", "box"], max_levels: 10, max_images: 4 })).toEqual([
+      "Decisions and generation",
+      "Choice, Box",
+      "At most 10 levels per score",
+      "At most 4 images",
+    ]);
+    expect(decisionLabels({ question_types: ["extract"] })[1]).toBe("extract");
+    expect(dialectPill("openai_chat", true)).toBe("decisions");
+    expect(dialectPill("system_one")).toBe("decisions");
+    expect(dialectPill("openai_chat")).toBe("chat");
+  });
+
+  it("edits decisions as an output and changes nothing a model already had", () => {
+    const luna = { output_modalities: ["text"], decisions: { max_questions: 400, only: false } };
+    const draft = draftFrom(luna);
+    expect(draft.output_modalities).toEqual(["text", "decisions"]);
+    expect(changedFields(draft, luna, [])).toEqual({});
+    expect(changedFields({ ...draft, output_modalities: ["decisions"] }, luna, [])).toEqual({
+      output_modalities: [],
+      decisions: { only: true, max_questions: 400 },
+    });
+    expect(changedFields({ ...draft, output_modalities: ["text"] }, luna, [])).toEqual({ decisions: null });
+    expect(decisionsOf({ max_images: 2, only: false, question_types: ["choice"] })).toEqual({ question_types: ["choice"], max_images: 2 });
+    expect(decisionsOf(null)).toBeNull();
+  });
+
+  it("asks a custom decision model for its inputs and input price only", () => {
+    const custom = { ...draftFrom({}), output_modalities: ["decisions"] };
+    expect(draftProblem(custom, true)).toBe("A custom model needs its inputs and outputs.");
+    expect(draftProblem({ ...custom, input_modalities: ["text"] }, true)).toBe("A custom decision model needs its input price.");
+    expect(draftProblem({ ...custom, input_modalities: ["text"], input_price: "0.042" }, true)).toBeNull();
   });
 });

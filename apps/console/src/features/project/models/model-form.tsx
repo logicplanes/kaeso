@@ -1,5 +1,5 @@
 import { Checkbox, CheckboxGroup, Field, Input, NumberInput, Select, Switch, Text } from "@logicplanes/kaeso-ui";
-import type { Fields } from "~/api/generated/types";
+import type { DecisionFields, Fields } from "~/api/generated/types";
 import { dialectLabel } from "~/format/labels";
 import { t } from "~/i18n";
 
@@ -24,12 +24,13 @@ export interface FieldDraft {
   forced_tool_choice: boolean;
   efforts: string[];
   timeout_seconds: string;
+  decision_limits: DecisionFields | null;
 }
 
 const adaptiveThinking = (dialects: readonly string[]) => dialects.includes("anthropic_messages");
 
 const INPUTS = ["text", "image", "pdf", "audio", "video"];
-const OUTPUTS = ["text", "image", "audio", "embedding"];
+const OUTPUTS = ["text", "image", "audio", "embedding", "decisions"];
 const EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
 
 const num = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
@@ -38,7 +39,7 @@ export function draftFrom(f: Fields): FieldDraft {
   return {
     display_name: f.display_name ?? "",
     input_modalities: f.input_modalities ?? [],
-    output_modalities: f.output_modalities ?? [],
+    output_modalities: [...(f.output_modalities ?? []), ...(f.decisions ? ["decisions"] : [])],
     context_limit: num(f.context_limit),
     output_limit: num(f.output_limit),
     input_price: f.input_price ?? "",
@@ -56,8 +57,25 @@ export function draftFrom(f: Fields): FieldDraft {
     forced_tool_choice: f.forced_tool_choice !== false,
     efforts: f.efforts ?? [],
     timeout_seconds: num(f.timeout_seconds),
+    decision_limits: f.decisions ?? null,
   };
 }
+
+// The same decisions object however it was written: its keys in one order, `only` left out when false.
+export function decisionsOf(d: DecisionFields | null | undefined): DecisionFields | null {
+  if (!d) return null;
+  const out: DecisionFields = {};
+  if (d.only) out.only = true;
+  if (d.question_types) out.question_types = d.question_types;
+  for (const key of ["max_questions", "max_options", "max_levels", "max_images"] as const) {
+    const v = d[key];
+    if (v !== null && v !== undefined) out[key] = v;
+  }
+  return out;
+}
+
+const decides = (d: FieldDraft) => d.output_modalities.includes("decisions");
+const decidesOnly = (d: FieldDraft) => decides(d) && !d.output_modalities.some((m) => m !== "decisions");
 
 function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
   const int = (v: string) => (v.trim() === "" ? null : Number(v));
@@ -65,7 +83,7 @@ function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
   return {
     display_name: text(d.display_name),
     input_modalities: d.input_modalities,
-    output_modalities: d.output_modalities,
+    output_modalities: d.output_modalities.filter((m) => m !== "decisions"),
     context_limit: int(d.context_limit),
     output_limit: int(d.output_limit),
     input_price: text(d.input_price),
@@ -83,6 +101,7 @@ function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
     forced_tool_choice: d.forced_tool_choice,
     efforts: d.efforts,
     timeout_seconds: int(d.timeout_seconds),
+    decisions: decides(d) ? decisionsOf({ ...d.decision_limits, only: decidesOnly(d) }) : null,
   };
 }
 
@@ -97,6 +116,7 @@ const asList = (v: unknown) => (Array.isArray(v) ? [...(v as string[])].sort() :
 const LISTS = new Set(["input_modalities", "output_modalities", "efforts"]);
 
 function sameValue(key: string, v: unknown, b: unknown): boolean {
+  if (key === "decisions") return same(decisionsOf(v as DecisionFields | null), decisionsOf(b as DecisionFields | null));
   if (PRICES.has(key)) return samePrice(v as string | null, b as string | null);
   if (BOOLS.has(key)) return asBool(v) === asBool(b);
   if (ACCEPTED_UNLESS_FALSE.has(key)) return accepts(v) === accepts(b);
@@ -124,7 +144,10 @@ export function draftProblem(d: FieldDraft, custom: boolean): string | null {
   if (![d.input_price, d.output_price, d.cache_read_price, d.cache_write_price, d.cache_write_1h_price].every(price))
     return t("models.problem.price", "Prices are decimal amounts in USD, like 3.00.");
   if (![d.context_limit, d.output_limit, d.timeout_seconds].every(whole)) return t("models.problem.whole", "Limits and the timeout are whole numbers.");
-  if (custom) {
+  if (custom && decidesOnly(d)) {
+    if (!d.input_modalities.length) return t("models.problem.modalities", "A custom model needs its inputs and outputs.");
+    if (!d.input_price) return t("models.problem.decisionPrice", "A custom decision model needs its input price.");
+  } else if (custom) {
     if (!d.input_modalities.length || !d.output_modalities.length) return t("models.problem.modalities", "A custom model needs its inputs and outputs.");
     if (!d.context_limit || !d.output_limit) return t("models.problem.limits", "A custom model needs its context and output limits.");
     if (!d.input_price || !d.output_price) return t("models.problem.prices", "A custom model needs its input and output prices.");
@@ -290,6 +313,8 @@ export function modalityLabel(m: string): string {
       return t("models.modality.video", "Video");
     case "embedding":
       return t("models.modality.embedding", "Embeddings");
+    case "decisions":
+      return t("models.modality.decisions", "Decisions");
     default:
       return m;
   }

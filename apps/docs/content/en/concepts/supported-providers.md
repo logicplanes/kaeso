@@ -9,7 +9,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 ## Columns
 
 - **Provider.** The name the console shows, then the id. The id names the provider in model names, such as `groq/llama-3.3-70b-versatile`, and in [settings](../self-hosting/configuration.md#provider-settings).
-- **Formats.** The API formats Kaeso calls the provider with. A model uses the first one unless its **Sends as** value names another ([a model's values](../console/models-and-aliases.md#change-a-models-values)). **Embeddings** and **Gemini Embeddings** mean the provider has embeddings models, which serve `/v1/embeddings`. **Token counts** means it counts tokens for `/v1/messages/count_tokens` and `/v1/responses/input_tokens`.
+- **Formats.** The API formats Kaeso calls the provider with. A model uses the first one unless its **Sends as** value names another ([a model's values](../console/models-and-aliases.md#change-a-models-values)). **Embeddings** and **Gemini Embeddings** mean the provider has embeddings models, which serve `/v1/embeddings`. **Token counts** means it counts tokens for `/v1/messages/count_tokens` and `/v1/responses/input_tokens`. Decisions go through each provider's own decisions API, which [APIs by provider](provider-apis.md) lists.
 - **Host.** The host of the provider's default base URL, which the install must reach. A [base URL you set](../self-hosting/configuration.md#provider-settings) replaces it.
 - **Key.** Where you create a key, and how the key starts ([provider keys](../console/provider-keys.md)).
 

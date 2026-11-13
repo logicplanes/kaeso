@@ -1,0 +1,56 @@
+---
+source: crates/kaeso-server/src/services/logs.rs
+expression: "serde_json::to_string_pretty(&value).unwrap()"
+---
+{
+  "decide": {
+    "answers": [
+      {
+        "value": {
+          "predicate": {
+            "probability": 0.82
+          }
+        }
+      },
+      {
+        "confidence": 0.55,
+        "value": {
+          "choice": {
+            "option": 1,
+            "probabilities": [
+              0.1,
+              0.7,
+              0.2
+            ]
+          }
+        }
+      },
+      {
+        "confidence": 0.3,
+        "value": {
+          "score": {
+            "probabilities": [
+              0.1,
+              0.4,
+              0.5
+            ],
+            "score": 1.4
+          }
+        }
+      },
+      {
+        "value": {
+          "refusal": {}
+        }
+      }
+    ],
+    "model": "gpt-6-luna",
+    "usage": {
+      "cache_read_tokens": 1024,
+      "cache_write_tokens": 0,
+      "input_tokens": 1200,
+      "output_tokens": 0
+    }
+  },
+  "format": 2
+}

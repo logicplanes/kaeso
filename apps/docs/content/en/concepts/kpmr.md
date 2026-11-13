@@ -68,6 +68,15 @@ The catalogue is a JSON document in Kaeso's own format, versioned by a format nu
 - **`gateway.egress_dialect`** names the API format Kaeso sends the model in, when it isn't the provider's default.
 - **Unknown keys are ignored.** A new field in format 1 doesn't break an older gateway; a change that would break it becomes format 2.
 
+### Decision models
+
+A decision model answers typed questions with probabilities instead of writing text ([Decisions API](../api/decisions.md)). KPMR marks it in two ways:
+
+- **`kind: "decision"`** for a model that only makes decisions, such as `gemini-decision-1`. Its output modalities are empty, so a gateway that doesn't know decisions never offers it for chat.
+- **`decisions`** on any model that answers questions, also one that writes text, such as `gpt-6-luna`: `question_types` (`predicate`, `choice`, `score`, `box`), and `max_questions`, `max_options`, `max_levels` and `max_images`, each `null` when unknown.
+
+Decision models cost their input tokens; their output price is `0`.
+
 ## How the gateway fetches it
 
 A job checks every five minutes whether the gateway is due to ask KPMR again. With `kpmr.interval` at `auto`, it follows the catalogue's `refresh_seconds`, kept between 5 minutes and 24 hours; a duration such as `6h` replaces it. After a failed attempt, the gateway tries again within an hour.

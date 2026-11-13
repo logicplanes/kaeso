@@ -737,5 +737,17 @@
   "errors.imageGenerationsUnavailable": "Kaeso 暂时无法读取其图片生成；请稍后重试。",
   "errors.imageKeyReplaced": "启动此图片的服务商密钥已被替换，因此 Kaeso 无法访问它。",
   "errors.imageModelGone": "{provider} 已不再提供此图片的模型。",
-  "errors.imageNotKept": "Kaeso 已启动图片生成，但无法跟踪它；请稍后重试。"
+  "errors.imageNotKept": "Kaeso 已启动图片生成，但无法跟踪它；请稍后重试。",
+  "errors.noDecisionsAtProvider": "{provider} 没有 Kaeso 可调用的决策 API，因此 `{name}` 无法做出决策。",
+  "errors.decisionsNotAtProvider": "{provider} 没有 Kaeso 可调用的决策 API；请删除 `decisions`。",
+  "errors.decisionsQuestionTypes": "`decisions.question_types` 必须至少列出一种类型。",
+  "errors.decisionsLimits": "`decisions` 中的限制必须为正数。",
+  "errors.model.notDecisionModel": "模型 `{model}` 是生成模型，无法回答决策问题。",
+  "errors.model.decisionOnly": "模型 `{model}` 是决策模型；请将其发送到 `/v1/decisions` 或 `/v1/systemone`。",
+  "errors.model.questionType": "模型 `{model}` 不回答 {type} 类型的问题。",
+  "errors.model.maxQuestions": "模型 `{model}` 每个请求最多回答 {max} 个问题。",
+  "errors.model.maxOptions": "模型 `{model}` 每个选择题最多接受 {max} 个选项。",
+  "errors.model.maxLevels": "模型 `{model}` 每个评分题最多接受 {max} 个等级。",
+  "errors.model.maxImages": "模型 `{model}` 每个请求最多接受 {max} 张图片。",
+  "errors.modelApi.accountNoDecisions": "{product} 账户无法做出决策。请改为在此项目中使用 {provider} 的 API 密钥。"
 }

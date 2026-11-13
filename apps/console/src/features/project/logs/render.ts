@@ -1,4 +1,5 @@
 import type { ContentBlock, ConversationMessage } from "@logicplanes/kaeso-ui";
+import type { DecisionAnswer, DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
 import type { LeftOut } from "./left-out";
 import { mediaOf, type Kept } from "./logged-media";
 import { formatNumber } from "@logicplanes/kaeso-ui/format";
@@ -557,7 +558,7 @@ function kppBlock(b: Json, unknown: Json[]): LogBlock | null {
 
 // Format 2 is a reply that isn't a chat reply, under its kind: `{"format": 2, "image": {…}}`.
 const MEDIA_REPLY_FORMAT = 2;
-const MEDIA_REPLY_KINDS = ["image", "speech", "transcription"];
+const MEDIA_REPLY_KINDS = ["image", "speech", "transcription", "decide"];
 export const isKnownReplyForm = (reply: Json): boolean =>
   !isObj(reply) || !("format" in reply) || (reply.format === MEDIA_REPLY_FORMAT && MEDIA_REPLY_KINDS.some((kind) => isObj(reply[kind])));
 
@@ -567,6 +568,154 @@ export function replyView(reply: Json): ReplyView | null {
     const unknown: Json[] = [];
     const blocks = reply.blocks.flatMap((b) => kppBlock(b, unknown) ?? []);
     return { blocks, unknown, stop: stopLabel(reply.stop), model: str(reply.model) ?? "", id: str(reply.id) ?? "" };
+  } catch (e) {
+    if (e instanceof Unmapped) return null;
+    throw e;
+  }
+}
+
+export const DECISION_DIALECTS: readonly string[] = ["openai_decisions", "system_one", "gemini_decisions"];
+export const isDecisionDialect = (dialect: string | null | undefined): boolean => !!dialect && DECISION_DIALECTS.includes(dialect);
+
+export interface DecisionView {
+  state: Json;
+  questions: DecisionQuestion[];
+}
+
+// A description or instructions may be text, JSON or parts; the log shows text as written and anything else as JSON.
+const textOf = (v: Json): string | undefined => {
+  if (v === null || v === undefined) return undefined;
+  if (typeof v === "string") return v;
+  if (Array.isArray(v) && v.every((p) => isObj(p) && typeof p.text === "string")) return v.map((p) => (p as Obj).text as string).join("\n");
+  if (isObj(v) && Object.keys(v).length === 1) {
+    const [tag, inner] = Object.entries(v)[0] as [string, Json];
+    if (tag === "text" && typeof inner === "string") return inner;
+    if (tag === "json") return JSON.stringify(inner);
+  }
+  return JSON.stringify(v);
+};
+
+const KINDS: Record<string, DecisionQuestion["kind"]> = { predicate: "predicate", noul: "predicate", choice: "choice", score: "score", box: "box" };
+
+function openaiQuestion(q: Json): DecisionQuestion {
+  if (!isObj(q)) return fail();
+  const kind = KINDS[str(q.type) ?? ""] ?? fail();
+  const instructions = textOf(q.instructions);
+  return {
+    kind,
+    ...(str(q.name) ? { name: String(q.name) } : {}),
+    ...(instructions ? { instructions } : {}),
+    ...(kind === "choice"
+      ? {
+          options: arr(q.choices).map((c) => {
+            const description = isObj(c) ? textOf(c.description) : undefined;
+            return { value: isObj(c) ? String(c.value) : fail(), ...(description ? { description } : {}) };
+          }),
+        }
+      : {}),
+    ...(kind === "score"
+      ? {
+          levels: arr(q.levels).map((l) => {
+            const description = isObj(l) ? textOf(l.description) : undefined;
+            return { ...(isObj(l) && str(l.label) ? { label: String(l.label) } : {}), ...(description ? { description } : {}) };
+          }),
+        }
+      : {}),
+  };
+}
+
+// System One's and Gemini's questions are keyed; a yes/no question's criteria name what yes and no mean.
+function keyedQuestion(name: string, q: Json, gemini: boolean): DecisionQuestion {
+  if (!isObj(q)) return fail();
+  const kind = KINDS[str(q.type) ?? ""] ?? fail();
+  const instructions = textOf(q.instructions);
+  const criteria = q.criteria;
+  const base: DecisionQuestion = { name, kind, ...(instructions ? { instructions } : {}) };
+  if (kind === "predicate" && isObj(criteria)) {
+    const yes = textOf(gemini ? criteria.true_description : criteria.true);
+    const no = textOf(gemini ? criteria.false_description : criteria.false);
+    return { ...base, ...(yes ? { whenTrue: yes } : {}), ...(no ? { whenFalse: no } : {}) };
+  }
+  if (kind === "choice") {
+    if (!isObj(criteria)) return fail();
+    return {
+      ...base,
+      options: Object.entries(criteria).map(([value, d]) => {
+        const description = textOf(d);
+        return { value, ...(description ? { description } : {}) };
+      }),
+    };
+  }
+  if (kind === "score") return { ...base, levels: arr(criteria).map((l) => ({ label: textOf(l) ?? "" })) };
+  return base;
+}
+
+// A System One upload is logged as Kaeso's own form: questions in order, each kind under its name.
+function kppQuestion(q: Json): DecisionQuestion {
+  if (!isObj(q) || !isObj(q.kind)) return fail();
+  const [tag, x] = Object.entries(q.kind)[0] ?? fail();
+  const kind = KINDS[tag] ?? fail();
+  const body = isObj(x) ? x : {};
+  const instructions = textOf(q.instructions);
+  const value = (v: Json) => (isObj(v) ? String(Object.values(v)[0]) : fail());
+  return {
+    kind,
+    ...(str(q.name) ? { name: String(q.name) } : {}),
+    ...(instructions ? { instructions } : {}),
+    ...(kind === "choice" ? { options: arr(body.options).map((o) => ({ value: isObj(o) ? value(o.value) : fail() })) } : {}),
+    ...(kind === "score" ? { levels: arr(body.levels).map((l) => ({ ...(isObj(l) && str(l.label) ? { label: String(l.label) } : {}) })) } : {}),
+  };
+}
+
+export function decisionView(dialect: string, body: Json): DecisionView | null {
+  if (!isObj(body) || !isDecisionDialect(dialect)) return null;
+  try {
+    if (Array.isArray(body.questions) && dialect !== "openai_decisions") {
+      const input = isObj(body.input) ? (Object.values(body.input)[0] as Json) : body.input;
+      return { state: input, questions: body.questions.map(kppQuestion) };
+    }
+    if (dialect === "openai_decisions") return Array.isArray(body.questions) ? { state: body.input, questions: body.questions.map(openaiQuestion) } : null;
+    if (!isObj(body.questions)) return null;
+    const gemini = dialect === "gemini_decisions";
+    return {
+      state: gemini ? body.input : body.state,
+      questions: Object.entries(body.questions).map(([name, q]) => keyedQuestion(name, q, gemini)),
+    };
+  } catch (e) {
+    if (e instanceof Unmapped) return null;
+    throw e;
+  }
+}
+
+const probabilities = (v: Json): (number | null)[] => arr(v).map((p) => (typeof p === "number" ? p : null));
+
+function kppAnswer(a: Json): DecisionAnswer {
+  if (!isObj(a) || !isObj(a.value)) return fail();
+  const [tag, x] = Object.entries(a.value)[0] ?? fail();
+  const v = isObj(x) ? x : {};
+  const confidence = typeof a.confidence === "number" ? { confidence: a.confidence } : {};
+  const n = (k: string) => (typeof v[k] === "number" ? (v[k] as number) : fail());
+  switch (tag) {
+    case "predicate":
+      return { kind: "predicate", probability: n("probability"), ...confidence };
+    case "choice":
+      return { kind: "choice", option: n("option"), probabilities: probabilities(v.probabilities), ...confidence };
+    case "score":
+      return { kind: "score", score: n("score"), probabilities: probabilities(v.probabilities), ...confidence };
+    case "box":
+      return { kind: "box", top: n("top"), bottom: n("bottom"), left: n("left"), right: n("right"), ...confidence };
+    case "refusal":
+      return { kind: "refusal" };
+    default:
+      return fail();
+  }
+}
+
+/** The answers of a logged decision reply, `{"format": 2, "decide": {…}}`, in question order. */
+export function decisionAnswers(reply: Json): { model: string; answers: DecisionAnswer[] } | null {
+  if (!isObj(reply) || reply.format !== MEDIA_REPLY_FORMAT || !isObj(reply.decide)) return null;
+  try {
+    return { model: str(reply.decide.model) ?? "", answers: arr(reply.decide.answers).map(kppAnswer) };
   } catch (e) {
     if (e instanceof Unmapped) return null;
     throw e;

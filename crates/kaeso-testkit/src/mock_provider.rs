@@ -478,8 +478,11 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     let anthropic = path.starts_with("/v1/messages")
         || (path.starts_with("/v1/models") && headers.contains_key("x-api-key"));
     let gemini = gemini_call(&path);
+    let decision = crate::mock_decisions::dialect(&path, &body);
     let dialect = if let Some((_, action)) = &gemini {
         action.dialect().as_str()
+    } else if let Some(d) = decision {
+        d.as_str()
     } else if path.starts_with(GEMINI_MODELS) {
         "gemini"
     } else if anthropic {
@@ -510,7 +513,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             || anthropic && headers.get("x-api-key").is_some_and(|v| !v.is_empty())
             || headers.get("xi-api-key").is_some_and(|v| !v.is_empty())
     };
-    if !authed && dialect.starts_with("gemini") {
+    if !authed && dialect.starts_with("gemini") && decision.is_none() {
         return error_response(&ctx.fixtures.join("gemini"), key_refused(dialect));
     }
     if !authed {
@@ -589,6 +592,12 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     if method == Method::GET && dialect == "gemini" {
         return gemini_models(&dir.join("models"), &path, uri.query());
     }
+    if let Some(d) = decision
+        && method == Method::POST
+        && marker(&text, "fixture").is_none()
+    {
+        return crate::mock_decisions::answer(d, &body, &headers);
+    }
     if method == Method::GET {
         let endless = marker(&key, "models") == Some("endless");
         let file = match (path == MODELS, anthropic, uri.query().is_none() || endless) {
@@ -609,6 +618,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     let tag = marker(&text, "tag").map(str::to_owned);
     if !counting
         && dialect != "openai_embeddings"
+        && decision.is_none()
         && let Some(shape) = synth::Shape::of(&text, body.len())
         && let Ok(id) = dialect.parse::<kaeso_kpp::DialectId>()
     {
@@ -1152,6 +1162,8 @@ fn key_refused(dialect: &str) -> &'static str {
     match dialect {
         "anthropic_messages" => "authentication",
         "gemini" | "gemini_embeddings" => "recorded-error-invalid-key",
+        "gemini_decisions" => "invalid-api-key-400",
+        "system_one" => "unauthorized-401",
         "openai_chat" => "invalid-api-key",
         _ => "invalid-api-key-401",
     }

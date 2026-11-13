@@ -214,6 +214,49 @@ fn known_dialect<'de, D: Deserializer<'de>>(d: D) -> Result<Option<DialectId>, D
     Ok(Option::<Value>::deserialize(d)?.and_then(|v| serde_json::from_value(v).ok()))
 }
 
+/// The question types KPP names, in the order Kaeso lists them.
+pub const QUESTION_TYPES: [&str; 4] = ["predicate", "choice", "score", "box"];
+
+/// What a decision model answers: its question types and its limits. A type or limit only a
+/// newer gateway knows is left out instead of making this one skip the model.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Decisions {
+    #[serde(default, deserialize_with = "known_question_types")]
+    pub question_types: Vec<String>,
+    #[serde(default, deserialize_with = "count")]
+    pub max_questions: Option<u32>,
+    #[serde(default, deserialize_with = "count")]
+    pub max_options: Option<u32>,
+    #[serde(default, deserialize_with = "count")]
+    pub max_levels: Option<u32>,
+    #[serde(default, deserialize_with = "count")]
+    pub max_images: Option<u32>,
+}
+
+fn known_question_types<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<String>, D::Error> {
+    let Some(Value::Array(items)) = Option::<Value>::deserialize(d)? else {
+        return Ok(Vec::new());
+    };
+    Ok(items
+        .into_iter()
+        .filter_map(|v| v.as_str().map(str::to_owned))
+        .filter(|t| QUESTION_TYPES.contains(&t.as_str()))
+        .collect())
+}
+
+fn count<'de, D: Deserializer<'de>>(d: D) -> Result<Option<u32>, D::Error> {
+    Ok(Option::<Value>::deserialize(d)?
+        .and_then(|v| v.as_u64())
+        .and_then(|n| u32::try_from(n).ok())
+        .filter(|n| *n > 0))
+}
+
+fn tolerant_decisions<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Decisions>, D::Error> {
+    Ok(Option::<Value>::deserialize(d)?
+        .filter(Value::is_object)
+        .and_then(|v| serde_json::from_value(v).ok()))
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
     pub id: String,
@@ -239,6 +282,8 @@ pub struct Model {
     pub reasoning: Option<Reasoning>,
     #[serde(default)]
     pub gateway: Option<Gateway>,
+    #[serde(default, deserialize_with = "tolerant_decisions")]
+    pub decisions: Option<Decisions>,
 }
 
 impl Model {
@@ -248,6 +293,11 @@ impl Model {
 
     pub fn egress_dialect(&self) -> Option<DialectId> {
         self.gateway.as_ref().and_then(|g| g.egress_dialect)
+    }
+
+    /// Whether the model answers decision questions only and generates nothing.
+    pub fn is_decision_only(&self) -> bool {
+        self.kind.as_deref() == Some("decision")
     }
 
     pub fn is_router(&self) -> bool {
@@ -518,6 +568,40 @@ mod tests {
             "sources": {{"models_dev": null}}, "provider_ids": ["anthropic", "openai", "zeta"], "providers": {providers}}}"#
         )
         .into_bytes()
+    }
+
+    #[test]
+    fn decision_models_carry_their_question_types_and_limits_and_odd_values_are_left_out() {
+        let c = parse(EMBEDDED.as_bytes(), &known_ids()).unwrap().catalogue;
+        let luna = c.model("openai", "gpt-6-luna").unwrap();
+        assert!(!luna.is_decision_only());
+        let d = luna.decisions.as_ref().unwrap();
+        assert_eq!(d.question_types, ["predicate", "choice", "score"]);
+        assert_eq!((d.max_questions, d.max_levels), (Some(400), Some(10)));
+        let gemini = c.model("google", "gemini-decision-1").unwrap();
+        assert!(gemini.is_decision_only());
+        assert_eq!(gemini.decisions.as_ref().unwrap().max_questions, Some(1000));
+        assert!(c.model("openai", "gpt-5.5").unwrap().decisions.is_none());
+
+        let m: Model = serde_json::from_str(
+            r#"{"id": "m", "kind": "decision", "decisions": {"question_types": ["choice", "extract", 3, "box"],
+            "max_questions": "many", "max_options": 0, "max_levels": 10, "max_images": -1, "later": true}}"#,
+        )
+        .unwrap();
+        let d = m.decisions.unwrap();
+        assert_eq!(d.question_types, ["choice", "box"]);
+        assert_eq!(
+            (d.max_questions, d.max_options, d.max_levels, d.max_images),
+            (None, None, Some(10), None)
+        );
+        for odd in [r#""yes""#, "[]", "null", r#"{"question_types": "choice"}"#] {
+            let m: Model =
+                serde_json::from_str(&format!(r#"{{"id": "m", "decisions": {odd}}}"#)).unwrap();
+            assert!(
+                m.decisions.as_ref().is_none_or(|d| d.question_types.is_empty()),
+                "{odd}"
+            );
+        }
     }
 
     #[test]

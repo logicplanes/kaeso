@@ -210,6 +210,11 @@ mod tests {
             20_000
         );
         assert_eq!(
+            estimate(RequestKind::Decide, 0, &shape(1000, 0, 0, 0)),
+            5000,
+            "a decision's images are base64 in the body and in the request sent, like a chat's"
+        );
+        assert_eq!(
             estimate(
                 RequestKind::Generate,
                 0,

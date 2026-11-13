@@ -64,6 +64,24 @@ describe("LogsPage", () => {
     expect(lastQuery().to).toBeUndefined();
   });
 
+  it("says a decision's output tokens cost nothing", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()] });
+    logsData({
+      rows: [
+        logRow({
+          ingress_dialect: "system_one",
+          egress_dialect: "openai_decisions",
+          usage: { input_tokens: 200, output_tokens: 0, cache_read_tokens: 1000, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false },
+        }),
+      ],
+    });
+    const { user } = await renderApp(projectPath("logs"));
+
+    const decision = await screen.findByRole("row", { name: /200 OK/ });
+    await hoverReason(user, within(decision).getByText("1,200 / 0"), /1,000 cache read · A decision; its output tokens cost nothing/);
+  });
+
   it("writes the gateway's messages in the person's language and names the provider whose own words a message is", async () => {
     signedIn();
     projectData();

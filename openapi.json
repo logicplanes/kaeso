@@ -14999,7 +14999,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions` or\n`elevenlabs`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions`,\n`elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15008,7 +15008,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech` or\n`elevenlabs`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech`,\n`elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15240,7 +15240,7 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions` or\n`elevenlabs`.",
+            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions`,\n`elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -15249,7 +15249,7 @@
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech` or\n`elevenlabs`.",
+            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech`,\n`elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -25571,6 +25571,63 @@
           }
         }
       },
+      "DecisionFields": {
+        "type": "object",
+        "description": "What a decision model answers at `/v1/decisions`, `/v1/systemone` and\n`/v1beta/decisions`: its question types and its limits.",
+        "properties": {
+          "max_images": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most images one request may show.",
+            "minimum": 0
+          },
+          "max_levels": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most levels one score question may have.",
+            "minimum": 0
+          },
+          "max_options": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most options one choice question may have.",
+            "minimum": 0
+          },
+          "max_questions": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The most questions one request may ask.",
+            "minimum": 0
+          },
+          "only": {
+            "type": "boolean",
+            "description": "Whether it answers decision questions only and generates no text."
+          },
+          "question_types": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "The question types it answers: `predicate`, `choice`, `score`, `box`; absent\nmeans the first three."
+          }
+        },
+        "additionalProperties": false
+      },
       "DeletionRequest": {
         "type": "object",
         "description": "A deletion of logs in a time range.",
@@ -25927,6 +25984,17 @@
             "description": "The context window in tokens.",
             "minimum": 0
           },
+          "decisions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecisionFields",
+                "description": "What it answers as a decision model; absent for a model that makes no decisions."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "display_name": {
             "type": [
               "string",
@@ -26165,6 +26233,17 @@
             "format": "int64",
             "description": "The context window in tokens.",
             "minimum": 0
+          },
+          "decisions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DecisionFields",
+                "description": "What it answers as a decision model; absent for a model that makes no decisions."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "display_name": {
             "type": [
@@ -29363,7 +29442,7 @@
                 },
                 "endpoint": {
                   "type": "string",
-                  "description": "The endpoint, e.g. `chat/completions`, or the Gemini method on the model,\ne.g. `models:generateContent`."
+                  "description": "The endpoint, e.g. `chat/completions` or `decisions`, or the Gemini method on\nthe model, e.g. `models:generateContent`."
                 },
                 "error_kind": {
                   "type": [
@@ -31907,7 +31986,7 @@
           },
           "endpoint": {
             "type": "string",
-            "description": "The endpoint, e.g. `chat/completions`, or the Gemini method on the model,\ne.g. `models:generateContent`."
+            "description": "The endpoint, e.g. `chat/completions` or `decisions`, or the Gemini method on\nthe model, e.g. `models:generateContent`."
           },
           "error_kind": {
             "type": [
@@ -36754,7 +36833,10 @@
           "anthropic_messages",
           "openai_embeddings",
           "gemini",
-          "gemini_embeddings"
+          "gemini_embeddings",
+          "openai_decisions",
+          "system_one",
+          "gemini_decisions"
         ]
       },
       "RouteFormatRule": {
@@ -37342,7 +37424,8 @@
           "provider",
           "model_id",
           "deprecated",
-          "router"
+          "router",
+          "decisions"
         ],
         "properties": {
           "catalogue_model_id": {
@@ -37364,6 +37447,10 @@
             "format": "int64",
             "description": "The context window in tokens.",
             "minimum": 0
+          },
+          "decisions": {
+            "type": "boolean",
+            "description": "Whether it answers decision questions at `/v1/decisions`, `/v1/systemone` and\n`/v1beta/decisions`, alone or as well as generating."
           },
           "deprecated": {
             "type": "boolean",

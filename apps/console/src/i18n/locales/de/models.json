@@ -437,5 +437,19 @@
   "models.field.inputAudioPrice": "Preis für Audioeingabe",
   "models.field.outputAudioPrice": "Preis für Audioausgabe",
   "models.unit.video": "Video",
-  "models.unit.duration": "{seconds} s lang"
+  "models.unit.duration": "{seconds} s lang",
+  "models.decisionsBadge": "Entscheidungen",
+  "models.question.predicate": "Ja/Nein",
+  "models.question.choice": "Auswahl",
+  "models.question.score": "Bewertung",
+  "models.question.box": "Box",
+  "models.decisions.maxQuestions": "Höchstens {count} Fragen",
+  "models.decisions.maxOptions": "Höchstens {count} Optionen pro Auswahl",
+  "models.decisions.maxLevels": "Höchstens {count} Stufen pro Bewertung",
+  "models.decisions.maxImages": "Höchstens {count} Bilder",
+  "models.decisions.only": "Nur Entscheidungen",
+  "models.decisions.also": "Entscheidungen und Generierung",
+  "models.field.decisions": "Entscheidungen",
+  "models.problem.decisionPrice": "Ein eigenes Entscheidungsmodell braucht seinen Eingabepreis.",
+  "models.modality.decisions": "Entscheidungen"
 }
