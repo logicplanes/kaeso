@@ -680,10 +680,15 @@ async fn decisions_env(extra: Option<&[(&str, &str)]>) -> Env {
 
 // A 300×300 PNG header: TypeSafe takes images of 280 to 1568 pixels a side.
 fn photo() -> String {
+    png_of(300)
+}
+
+// The base64 of a PNG header `side` pixels square.
+fn png_of(side: u32) -> String {
     use base64::Engine as _;
     let mut b = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR".to_vec();
-    b.extend(300u32.to_be_bytes());
-    b.extend(300u32.to_be_bytes());
+    b.extend(side.to_be_bytes());
+    b.extend(side.to_be_bytes());
     b.extend([8, 2, 0, 0, 0, 0, 0, 0, 0]);
     base64::engine::general_purpose::STANDARD.encode(b)
 }
@@ -844,6 +849,16 @@ async fn decisions_a_model_cant_take_are_refused_before_anything_is_sent() {
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["type"], "invalid_request");
+    let tiny = json!({ "model": "jev-1.14.0", "state": "Is this a door? <img>",
+        "questions": { "door": { "type": "noul" } },
+        "assets": { "<img>": { "type": "image", "format": "png", "data_base64": png_of(1) } } });
+    let r = post_json(&env, "decisions", tiny).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "TypeSafe takes images of 280 to 1568 pixels a side and never resizes them, so resize this 1×1 image before sending.",
+        "the member reads the provider's reason, not a general refusal"
+    );
     let big = post_json(
         &env,
         "decisions",
