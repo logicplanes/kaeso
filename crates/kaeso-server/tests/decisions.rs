@@ -843,3 +843,35 @@ async fn a_gemini_app_sends_its_key_in_the_query_and_no_other_parameter() {
     assert_eq!(r.status, StatusCode::UNPROCESSABLE_ENTITY, "{}", r.text());
     assert_eq!(r.json()["detail"][0]["loc"], json!(["body", "state"]));
 }
+
+#[tokio::test]
+async fn the_catalogue_names_the_format_a_decision_only_model_is_sent_in() {
+    let env = env().await;
+    let r = env
+        .app
+        .get(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let sent_as = |model: &str| {
+        r.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["model_id"] == model)
+            .unwrap_or_else(|| panic!("{model} is in the catalogue: {}", r.body))["egress_dialect"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    assert_eq!(sent_as("gemini-decision-1"), "gemini_decisions");
+    assert_eq!(sent_as("pplx-decider-v1.2"), "system_one");
+    assert_eq!(sent_as(MAMMOTH), "system_one");
+    assert_eq!(
+        sent_as("gpt-6-luna"),
+        "openai_responses",
+        "a model that also generates keeps its generation format"
+    );
+}

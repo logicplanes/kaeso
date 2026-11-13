@@ -24316,7 +24316,7 @@
           },
           "egress_dialect": {
             "type": "string",
-            "description": "The dialect Kaeso sends to the provider.",
+            "description": "The dialect Kaeso sends to the provider; a decision-only model's is its decisions dialect.",
             "example": "anthropic_messages"
           },
           "id": {
@@ -28390,7 +28390,7 @@
                 },
                 "egress_dialect": {
                   "type": "string",
-                  "description": "The dialect Kaeso sends to the provider.",
+                  "description": "The dialect Kaeso sends to the provider; a decision-only model's is its decisions dialect.",
                   "example": "anthropic_messages"
                 },
                 "id": {

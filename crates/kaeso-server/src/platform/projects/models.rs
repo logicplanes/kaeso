@@ -61,7 +61,7 @@ pub struct CatalogueModelView {
     pub overrides: Fields,
     #[doc = "The values in use: override, else KPMR's."]
     pub effective: Fields,
-    #[doc = "The dialect Kaeso sends to the provider."]
+    #[doc = "The dialect Kaeso sends to the provider; a decision-only model's is its decisions dialect."]
     #[schema(example = "anthropic_messages")]
     pub egress_dialect: String,
     #[doc = "Aliases pointing at it."]
@@ -129,7 +129,14 @@ fn named_view(
 ) -> ApiResult<CatalogueModelView> {
     let entry = row.entry()?;
     let (effective, egress_dialect) = match service::effective(state, &entry, providers) {
-        Some(eff) => (eff.fields, eff.dialect.as_str()),
+        Some(eff) => {
+            let dialect = eff
+                .decides_only()
+                .then(|| eff.provider.decisions(&eff.model_id))
+                .flatten()
+                .map_or(eff.dialect, |d| d.dialect);
+            (eff.fields, dialect.as_str())
+        }
         None if row.custom => (
             entry.overrides.clone(),
             entry.overrides.egress_dialect.map_or("", |d| d.as_str()),
