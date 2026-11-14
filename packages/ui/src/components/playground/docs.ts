@@ -60,9 +60,18 @@ export const docs = {
       value: "The message being written, when you control it.",
     },
   },
+  DecisionQuestions: {
+    description:
+      "The questions a decision model was asked, read only, in the order the app sent them: each with its name, type and instructions, then what its answers mean: what yes and no mean, each option's value and description, or each level's number, label and description. A hairline sits between questions; a question without instructions or an option without a description says so.",
+    props: {
+      "aria-label": "The list's accessible name (\"Questions\" by default, in the provider's language).",
+      layout: "The list of questions, a hairline between them.",
+      questions: "The questions as they were sent: kind, name, instructions, and what yes and no, the options or the levels mean.",
+    },
+  },
   DecisionResponse: {
     description:
-      "A decision model's answers, one row per question in the order asked: its name and type, the answer (Yes or No, the chosen option, the score on its scale), the confidence when the provider gives one, and a probability bar for every option or level, the answer's bar marked. A box question draws its box on the image and gives its edges as numbers. While the answers are on their way every row holds its room with quiet placeholders, so nothing moves when they arrive; a refused question says so in its row, and a failure shows its error in place of the answers.",
+      "A decision model's answers, one row per question in the order asked, a hairline between rows: its name, type and the confidence when the provider gives one, the instructions when asked for, then a probability bar for every option or level with the answer's bar marked, and a score's value on its scale. Labels, bars and values line up in columns. A box question draws its box on the image and gives its edges as numbers. While the answers are on their way every row holds its room with quiet placeholders, so nothing moves when they arrive; a missing answer reads “No answer”, a refused question says so in its row, and a failure shows its error in place of the answers.",
     props: {
       answers:
         "The answers in question order: a yes probability, a chosen option index with a probability per option, a score with a probability per level, a box's four edges from 0 to 1, or a refusal with its reason. A probability left out reads “Not given”; a missing answer reads “No answer”.",
@@ -74,6 +83,7 @@ export const docs = {
         "Bars shown per question before “Show all” (8 by default): the most likely ones and the answer's, in their order, so a choice of 200 options stays short.",
       onRetry: "Sends the call again: a Retry button after a failure, and a quiet Retry circle under the answers.",
       questions: "The questions as they were sent: kind, name, and the options or levels whose labels name the bars.",
+      showInstructions: "Shows each question's instructions under its name, where the questions aren't on screen beside the answers, as in a request log.",
       status: "Where the call stands: waiting for answers, answered, or failed.",
     },
   },
@@ -163,7 +173,7 @@ export const docs = {
       "aria-label": "The meter's accessible name, when the label isn't plain text.",
       highlight: "Marks the bar as the answer: the data colour, medium-weight text, and “chosen” after its value for screen readers.",
       label: "What the probability is of: an option, a level, Yes or No.",
-      layout: "Label, bar and value on one line, or the label and value above the bar.",
+      layout: "Label, bar and value on one line, the label and value above the bar, or one row of a `grid-cols-meter` grid so a list's bars line up.",
       pending: "The value is on its way: the track pulses quietly and screen readers skip it.",
       value: "The probability from 0 to 1; null or absent when the provider left it out.",
     },
