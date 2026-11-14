@@ -52,6 +52,21 @@ describe("lazyModule", () => {
     expect(reimport.mock.calls).toEqual([[`${chunk}?retry=1`]]);
   });
 
+  it.each([
+    ["WebKit", () => new TypeError("Importing a module script failed.")],
+    ["Firefox", () => new TypeError(`error loading dynamically imported module: ${chunk}?retry=1`)],
+  ])("asks for no other address while the fresh one fails to download in %s", async (_, failure) => {
+    const load = vi.fn(() => Promise.reject(new TypeError("Importing a module script failed.")));
+    const reimport = vi.fn<(url: string) => Promise<string>>().mockRejectedValueOnce(failure()).mockResolvedValue("sheet");
+    const m = lazyModule(bundled(load), { base, reimport });
+    await expect(m.load()).rejects.toThrow("Importing a module script failed.");
+    await expect(m.load()).rejects.toThrow(failure().message);
+    await expect(m.load()).resolves.toBe("sheet");
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(reimport.mock.calls).toEqual([[`${chunk}?retry=1`], [`${chunk}?retry=2`]]);
+    expect(m.current()).toBe("sheet");
+  });
+
   it("falls back to its loader when the fresh address can't be imported", async () => {
     const load = vi.fn<() => Promise<string>>().mockRejectedValueOnce(new TypeError("Importing a module script failed.")).mockResolvedValue("sheet");
     const reimport = vi.fn<(url: string) => Promise<string>>().mockRejectedValue(new TypeError("Only URLs with a scheme in: file and data are supported"));
