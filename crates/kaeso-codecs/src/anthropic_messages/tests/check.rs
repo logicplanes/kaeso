@@ -322,3 +322,51 @@ fn encode_request_checks_with_the_provider() {
     assert_eq!(e.unsupported_feature(), Some("file id"));
     assert!(e.message.contains("file_x"));
 }
+
+#[test]
+fn check_refuses_documents_and_videos_given_as_data_urls_without_base64() {
+    let mut r = chat_request();
+    r.messages[0]
+        .blocks
+        .push(Block::Document(DocumentBlock::new(Source::Url(
+            "data:application/pdf,raw".into(),
+        ))));
+    assert_eq!(feature(r), "data URL without base64 encoding");
+
+    let mut r = chat_request();
+    r.messages[0]
+        .blocks
+        .push(Block::video(Source::Url("data:video/mp4,raw".into())));
+    let req = Request::Generate(r);
+    let ctx = EgressCtx::new(&req).with_messages_profile(
+        MessagesProfile::compatible("MiniMax").with_video(MINIMAX_VIDEO_MEDIA_TYPES),
+    );
+    let e = AnthropicMessages::check(&req, &ctx).unwrap_err();
+    assert_eq!(
+        e.unsupported_feature(),
+        Some("data URL without base64 encoding")
+    );
+    assert_eq!(
+        e.message,
+        "`data URL without base64 encoding` is not supported by Anthropic Messages. Send the video as a base64 data URL or as base64 data."
+    );
+}
+
+#[test]
+fn check_refuses_a_video_that_is_neither_base64_nor_a_url() {
+    let mut r = chat_request();
+    r.messages[0]
+        .blocks
+        .push(Block::video(Source::text("video/mp4", "frames")));
+    let req = Request::Generate(r);
+    let ctx = EgressCtx::new(&req).with_messages_profile(
+        MessagesProfile::compatible("MiniMax").with_video(MINIMAX_VIDEO_MEDIA_TYPES),
+    );
+    let e = AnthropicMessages::check(&req, &ctx).unwrap_err();
+    assert_eq!(e.unsupported_feature(), Some("video source"));
+    assert_eq!(e.param.as_deref(), Some("messages[0].blocks[1]"));
+    assert_eq!(
+        e.message,
+        "MiniMax takes videos as base64 data or a URL; send the video one of those ways."
+    );
+}

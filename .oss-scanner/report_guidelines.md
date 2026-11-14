@@ -11,7 +11,7 @@ Use these sections, in this order, and keep the whole report under two pages:
 3. **Attacker**: the starting position, using the attacker names from the threat model's table (anyone on the internet, a holder of a project API key, a member with a given role or rights, an organization admin, an instance admin, a provider, an MCP server, an identity provider). Say what they must already have, such as a key with the Tools ability or a custom role with one extra right.
 4. **Affected code**: the commit or version, and the files and functions, as `path:line`. Name the public route or entry point that reaches the faulty code, such as `POST /platform/v1/orgs/{org}/projects/{project}/keys` or `POST /v1/chat/completions`.
 5. **Configuration**: the settings it needs, if any differ from the defaults (for example request logs on, a custom provider, an MCP server with a per-person connection, single sign-on required).
-6. **Reproduction**: preferably a failing test in `crates/kaeso-server/tests` that uses the helpers in `tests/common`, or a failing unit test next to the code. Otherwise, the exact HTTP requests in order, with their bodies. Show the output that proves the impact.
+6. **Reproduction**: preferably a failing test in `crates/kaeso-server/tests/server` that uses the helpers in `tests/server/common`, or a failing unit test next to the code. Otherwise, the exact HTTP requests in order, with their bodies. Show the output that proves the impact.
 7. **Suggested fix**: one paragraph. The patch goes in its own attachment.
 
 ## What every report should state

@@ -51,6 +51,14 @@ updates:
       - dependency-name: "@types/node"
         update-types:
           - version-update:semver-major
+      # A `select` that throws re-renders forever from 5.105.2 (TanStack/query#12532), fixed around 5.107.
+      - dependency-name: "@tanstack/react-query"
+        versions:
+          - ">=5.105.2 <5.107.0"
+      # 6.44.1 reports the lazily loaded sidebar menus as unused; 6.45.0 fixes it (webpro-nl/knip#2336).
+      - dependency-name: knip
+        versions:
+          - "6.44.1"
 
   - package-ecosystem: pip
     directory: /e2e
