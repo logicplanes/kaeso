@@ -19,6 +19,10 @@ mod tests_audio;
 mod tests_edges;
 #[cfg(test)]
 mod tests_images;
+#[cfg(test)]
+mod tests_parts;
+#[cfg(test)]
+mod tests_speech;
 
 use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request, RequestKind,
