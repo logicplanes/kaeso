@@ -149,3 +149,19 @@ opt-level = 3
 
 [profile.dev.package.num-bigint-dig]
 opt-level = 3
+
+# Every gateway test opens several PostgreSQL connections, each with a SCRAM handshake of 4096
+# HMAC-SHA-256 rounds, and hashes the model catalogue; unoptimized, that is about a sixth of a
+# test's time.
+[profile.dev.package.sha2]
+opt-level = 3
+
+[profile.dev.package.hmac]
+opt-level = 3
+
+[profile.dev.package.hybrid-array]
+opt-level = 3
+
+# Every HTTP client the gateway builds decodes the system's root certificates.
+[profile.dev.package.rustls-pki-types]
+opt-level = 3
