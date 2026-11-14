@@ -607,6 +607,11 @@
 @utility grid-cols-term {
   grid-template-columns: fit-content(220px) 1fr;
 }
+/* A list of probability bars: labels as wide as the longest up to 200px, the bars, then values as wide as the widest,
+   so every bar starts and ends at the same place. */
+@utility grid-cols-meter {
+  grid-template-columns: fit-content(200px) minmax(0, 1fr) max-content;
+}
 
 @utility min-w-anchor {
   min-width: var(--k-anchor-width, var(--anchor-width));

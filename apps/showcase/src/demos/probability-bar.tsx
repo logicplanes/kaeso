@@ -64,6 +64,14 @@ export function States() {
       <StateSection title="Stacked">
         <ProbabilityBar layout="stacked" label="The document is an invoice" value={0.9731} />
       </StateSection>
+      <StateSection title="Rows in a grid">
+        <div className="grid grid-cols-meter gap-x-12 gap-y-6">
+          <ProbabilityBar layout="row" label="This month" value={0.47} />
+          <ProbabilityBar layout="row" label="This week" value={0.44} highlight />
+          <ProbabilityBar layout="row" label="Today" value={0.09} />
+          <ProbabilityBar layout="row" label="Next quarter" />
+        </div>
+      </StateSection>
     </div>
   );
 }

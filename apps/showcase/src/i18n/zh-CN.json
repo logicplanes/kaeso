@@ -1255,5 +1255,11 @@
   "Options a choice takes at most (255 by default): Add option turns off there and says so.": "选择题最多可有的选项数（默认 255）：达到上限时“添加选项”被禁用，并显示提示。",
   "Questions at most; none by default.": "问题数量上限；默认没有上限。",
   "Called with the changed questions. A question added here has an `id`; empty optional text is left out.": "在问题变化时调用，传入修改后的问题。在此添加的问题带有 `id`；空的可选文本会被省略。",
-  "The questions, in order. Give each an `id` so its fields keep their place when one above it is removed.": "按顺序排列的问题。为每个问题设置 `id`，这样删除上方的问题时，其字段仍保持原位。"
+  "The questions, in order. Give each an `id` so its fields keep their place when one above it is removed.": "按顺序排列的问题。为每个问题设置 `id`，这样删除上方的问题时，其字段仍保持原位。",
+  "The questions a decision model was asked, read only: each with its type and instructions, then what yes and no, each option or each level means.": "向决策模型提出的问题，只读：每个问题的类型和说明，以及“是”和“否”、每个选项或每个等级的含义。",
+  "The list's accessible name (\"Questions\" by default, in the provider's language).": "列表的无障碍名称（默认为“问题”，使用提供方的语言）。",
+  "The list of questions, a hairline between them.": "问题列表，问题之间有一条细线。",
+  "The questions as they were sent: kind, name, instructions, and what yes and no, the options or the levels mean.": "按发送时的样子显示的问题：类型、名称、说明，以及“是”和“否”、各选项或各等级的含义。",
+  "Shows each question's instructions under its name, where the questions aren't on screen beside the answers, as in a request log.": "在每个问题的名称下显示其说明，用于问题不在答案旁边显示的地方，例如请求日志。",
+  "Label, bar and value on one line, the label and value above the bar, or one row of a `grid-cols-meter` grid so a list's bars line up.": "标签、进度条和数值在同一行，标签和数值在进度条上方，或作为 `grid-cols-meter` 网格中的一行，使列表中的进度条对齐。"
 }

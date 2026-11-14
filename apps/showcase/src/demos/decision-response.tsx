@@ -79,6 +79,9 @@ export function States() {
       <StateSection title="Answered">
         <DecisionResponse questions={triageQuestions} answers={triageAnswers} image={receipt} footer={metrics} onRetry={none} />
       </StateSection>
+      <StateSection title="With instructions, as in a request log">
+        <DecisionResponse questions={textQuestions} answers={triageAnswers} showInstructions />
+      </StateSection>
       <StateSection title="A box without its image">
         <DecisionResponse questions={triageQuestions.slice(3)} answers={triageAnswers.slice(3)} />
       </StateSection>

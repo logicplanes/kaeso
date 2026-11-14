@@ -39,7 +39,6 @@ import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { cachedShare, isEmbedding, sentWithoutBreakpoint } from "./columns";
 import { mediaCount, mediaLabel } from "./media";
 import { decisionAnswers, decisionView, embeddingsView, isKnownReplyForm, replyView, requestView, type DecisionView } from "./render";
-import { kindLabel } from "./decision-labels";
 import { collectMedia, forReading } from "./logged-media";
 import { MediaList } from "./kept-media";
 import { microseconds, seconds, startedLabel } from "./timing";
@@ -179,7 +178,9 @@ function Body({
       <Tabs.Panel value="overview">
         <Overview org={org} project={project} e={e} keyName={keyName} />
       </Tabs.Panel>
-      <Tabs.Panel value="request">{canContent ? <RequestTab e={e} Conversation={conversation} /> : <NoRight org={org} project={project} />}</Tabs.Panel>
+      <Tabs.Panel value="request">
+        {canContent ? <RequestTab e={e} Conversation={conversation} Decision={loaded} /> : <NoRight org={org} project={project} />}
+      </Tabs.Panel>
       <Tabs.Panel value="reply">
         {canContent ? <ReplyTab e={e} Conversation={conversation} Answers={loaded?.DecisionAnswers} /> : <NoRight org={org} project={project} />}
       </Tabs.Panel>
@@ -535,7 +536,7 @@ function TabHeader({ children, control }: { children: ReactNode; control?: React
 
 type ConversationView = ConversationModule["default"] | undefined;
 
-function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: ConversationView }) {
+function RequestTab({ e, Conversation, Decision }: { e: LogEntryView; Conversation: ConversationView; Decision: ConversationModule | undefined }) {
   const [raw, setRaw] = useState(false);
   const body = e.content?.request as unknown;
   // Kept media is megabytes of base64: reading it again on every render would decode it anew and restart players.
@@ -559,7 +560,7 @@ function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: Conver
           <JsonView value={readable} defaultDepth={4} />
         </>
       ) : decision ? (
-        <DecisionRequest decision={decision} />
+        <DecisionRequest decision={decision} parts={Decision} />
       ) : embeddings ? (
         <Text>{t("logs.inspector.inputsEmbedded", "{count, plural, one {# input embedded.} other {# inputs embedded.}}", { count: embeddings.inputs })}</Text>
       ) : (
@@ -609,33 +610,21 @@ function RequestTab({ e, Conversation }: { e: LogEntryView; Conversation: Conver
 
 type AnswersView = ConversationModule["DecisionAnswers"] | undefined;
 
-function DecisionRequest({ decision }: { decision: DecisionView }) {
+function DecisionRequest({ decision, parts }: { decision: DecisionView; parts: ConversationModule | undefined }) {
   const state = useMemo(() => forReading(decision.state), [decision.state]);
   return (
     <>
       <Section title={t("logs.decision.state", "What the questions are about")} spacing="none">
-        {typeof decision.state === "string" ? <Text>{decision.state}</Text> : <JsonView value={state} defaultDepth={3} />}
+        {typeof decision.state !== "string" ? (
+          <JsonView value={state} defaultDepth={3} />
+        ) : parts ? (
+          <parts.DecisionState text={decision.state} />
+        ) : (
+          <ConversationPending messages={1} />
+        )}
       </Section>
       <Section title={t("logs.decision.questions", "Questions")} spacing="none">
-        <KeyValue
-          layout="stacked"
-          items={decision.questions.map((q, i) => ({
-            label: q.name || t("logs.decision.question", "Question {n}", { n: formatNumber(i + 1) }),
-            value: (
-              <span className="flex min-w-0 flex-col gap-4">
-                <Text>{q.instructions ? `${kindLabel(q.kind)}: ${q.instructions}` : kindLabel(q.kind)}</Text>
-                {(q.options?.length || q.levels?.length) && (
-                  <Text variant="small" tone="secondary">
-                    {(q.options ?? [])
-                      .map((o) => o.value)
-                      .concat((q.levels ?? []).map((l, n) => l.label || String(n)))
-                      .join(" · ")}
-                  </Text>
-                )}
-              </span>
-            ),
-          }))}
-        />
+        {parts ? <parts.DecisionQuestions questions={decision.questions} /> : <ConversationPending messages={decision.questions.length} />}
       </Section>
     </>
   );
