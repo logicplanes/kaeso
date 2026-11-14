@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { add, gatewayAlias, summary } from "./lcov.mjs";
+import { add, gatewayAlias, ignored, summary } from "./lcov.mjs";
 
 const report = (path, lines) => `TN:\nSF:${path}\n${lines.map(([n, hits]) => `DA:${n},${hits}`).join("\n")}\nLF:${lines.length}\nend_of_record\n`;
 
@@ -49,6 +49,20 @@ test("the shards read the minimum and the ignored files from the coverage-gatewa
   assert.ok(alias.minimum >= 91);
   assert.ok(new RegExp(alias.ignore).test("/crates/kaeso-testkit/src/oidc.rs"));
   assert.ok(!new RegExp(alias.ignore).test("/crates/kaeso-server/src/lib.rs"));
+});
+
+test("the shards' reports leave out the packages the alias excludes, and only those", () => {
+  const alias = gatewayAlias(readFileSync(new URL("../.cargo/config.toml", import.meta.url), "utf8"));
+  assert.deepEqual(alias.excluded, ["kaeso-kpp", "kaeso-codecs", "kpp-conformance", "xtask"]);
+  const ignore = new RegExp(ignored(alias));
+  for (const name of alias.excluded) assert.ok(ignore.test(`/work/crates/${name}/src/lib.rs`), name);
+  assert.ok(ignore.test("/work/crates/kaeso-testkit/src/oidc.rs"));
+  assert.ok(!ignore.test("/work/crates/kaeso-server/src/lib.rs"));
+  assert.ok(!ignore.test("/work/crates/kaeso-core/src/lib.rs"));
+});
+
+test("an alias that excludes nothing ignores only its own files", () => {
+  assert.equal(ignored({ ignore: "/tests/", excluded: [] }), "/tests/");
 });
 
 test("a config without the alias is refused", () => {
