@@ -109,9 +109,9 @@
   "devDependencies": {
     "@hugeicons/core-free-icons": "4.4.0",
     "@hugeicons/react": "1.1.10",
-    "@tailwindcss/node": "4.3.4",
-    "@tailwindcss/oxide": "4.3.4",
-    "@tailwindcss/vite": "4.3.4",
+    "@tailwindcss/node": "4.3.5",
+    "@tailwindcss/oxide": "4.3.5",
+    "@tailwindcss/vite": "4.3.5",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.8",
@@ -127,14 +127,14 @@
     "@vitest/coverage-v8": "5.1.0",
     "axe-core": "4.14.0",
     "happy-dom": "21.0.4",
-    "oxlint": "1.91.0",
+    "oxlint": "1.92.0",
     "react": "19.3.1",
     "react-docgen-typescript": "2.4.0",
     "react-dom": "19.3.1",
-    "tailwindcss": "4.3.4",
+    "tailwindcss": "4.3.5",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
-    "vite": "8.3.5",
+    "vite": "8.3.6",
     "vitest": "5.1.0"
   }
 }
