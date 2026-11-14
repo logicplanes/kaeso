@@ -34,7 +34,7 @@
     "@logicplanes/kaeso-tokens": "workspace:*",
     "@logicplanes/kaeso-ui": "workspace:*",
     "@tailwindcss/vite": "4.3.4",
-    "astro": "7.4.5",
+    "astro": "7.4.7",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "4.3.4"

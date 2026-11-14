@@ -3,6 +3,7 @@
 // The only test in its binary: the allocator counts every thread of the process, the mock
 // provider's included.
 
+#[path = "server/common/mod.rs"]
 mod common;
 
 use axum::body::Body;

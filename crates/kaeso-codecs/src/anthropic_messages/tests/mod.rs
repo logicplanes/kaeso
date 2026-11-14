@@ -81,6 +81,7 @@ fn chat_request() -> GenerateRequest {
     r
 }
 
+mod blocks;
 mod check;
 mod malformed;
 mod profile;

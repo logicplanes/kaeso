@@ -1,11 +1,12 @@
 use kaeso_kpp::{
-    Block, CacheHint, Citation, DialectId, DocumentBlock, EmbedInput, EmbedRequest, ErrorKind,
-    Extras, GenerateRequest, ImageBlock, Message, Opaque, OpaqueKind, Origin, RawItem, RawJson,
-    ReasoningBlock, ReasoningConfig, ReasoningEffort, ReasoningMode, ReasoningSummary, Request,
-    Role, Source, TextBlock, ToolDef,
+    AudioBlock, AudioFormat, AudioOutput, Block, CacheHint, Citation, DialectId, DocumentBlock,
+    EmbedInput, EmbedRequest, ErrorKind, Extras, GenerateRequest, ImageBlock, JsonBlock, Message,
+    Modality, Opaque, OpaqueKind, Origin, RawItem, RawJson, ReasoningBlock, ReasoningConfig,
+    ReasoningEffort, ReasoningMode, ReasoningSummary, Request, Role, Source, TextBlock, ToolDef,
+    VideoBlock,
 };
 
-use super::OpenAiChat;
+use super::{ChatProfile, OpenAiChat};
 use crate::codec::{Codec, EgressCtx};
 
 fn raw(s: &str) -> RawJson {
@@ -330,4 +331,129 @@ fn invalid_requests_fail_validation_after_the_feature_rules() {
 fn inline_text_images_are_refused() {
     let img = ImageBlock::new(Source::text("image/svg+xml", "<svg/>"));
     assert_eq!(feature(with_user_block(Block::Image(img))), "image source");
+}
+
+fn refusal_of(req: GenerateRequest, profile: ChatProfile) -> (String, Option<String>) {
+    let req = Request::Generate(req);
+    let err =
+        OpenAiChat::check(&req, &EgressCtx::new(&req).with_chat_profile(profile)).unwrap_err();
+    (
+        err.unsupported_feature()
+            .unwrap_or_else(|| panic!("not Unsupported: {err:?}"))
+            .to_owned(),
+        err.param,
+    )
+}
+
+fn gemini_app(mut r: GenerateRequest) -> GenerateRequest {
+    r.extras.origin = Some(Origin::new(DialectId::Gemini));
+    r
+}
+
+#[test]
+fn audio_output_settings_chat_cannot_send_are_refused_with_the_app_s_field() {
+    let mut r = gemini_app(base());
+    r.output_modalities = vec![Modality::Text, Modality::Other("video".into())];
+    assert_eq!(
+        refusal_of(r, ChatProfile::OPENAI),
+        (
+            "output modality `video`".to_owned(),
+            Some("generationConfig.responseModalities".to_owned())
+        )
+    );
+
+    let mut r = base();
+    r.output_modalities = vec![Modality::Text];
+    r.audio_output = Some(AudioOutput::new(Some("marin".into()), None));
+    assert_eq!(
+        refusal_of(r, ChatProfile::OPENAI),
+        (
+            "audio output settings without audio output".to_owned(),
+            Some("audio.voice".to_owned())
+        )
+    );
+
+    let mut r = base();
+    r.output_modalities = vec![Modality::Text, Modality::Audio];
+    r.audio_output = Some(AudioOutput::new(
+        Some("marin".into()),
+        Some(AudioFormat::Other("ogg".into())),
+    ));
+    assert_eq!(
+        refusal_of(r.clone(), ChatProfile::OPENAI),
+        (
+            "audio format `ogg`".to_owned(),
+            Some("audio.format".to_owned())
+        )
+    );
+    r.audio_output = Some(AudioOutput::new(
+        Some("marin".into()),
+        Some(AudioFormat::Mp3),
+    ));
+    let (body, _) = encode_body(r);
+    assert_eq!(
+        body["audio"],
+        serde_json::json!({"voice": "marin", "format": "mp3"})
+    );
+}
+
+#[test]
+fn audio_in_system_messages_is_refused_where_it_was_written() {
+    let audio = Block::Audio(AudioBlock::new(
+        Source::base64("audio/wav", "UklG").unwrap(),
+    ));
+    let r = base().with_message(Message::new(Role::System, vec![audio]));
+    assert_eq!(
+        refusal_of(r, ChatProfile::OPENAI),
+        (
+            "audio in system, developer and tool messages".to_owned(),
+            Some("messages[1].blocks[0]".to_owned())
+        )
+    );
+}
+
+#[test]
+fn a_provider_that_takes_video_url_parts_takes_them_in_user_messages_as_links_or_data() {
+    let video_url = ChatProfile::compatible("Example Cloud").with_video_url();
+    let video = |source| Block::Video(VideoBlock::new(source));
+    let r = base().with_message(Message::new(
+        Role::Assistant,
+        vec![video(Source::Url("https://example.com/a.mp4".into()))],
+    ));
+    assert_eq!(
+        refusal_of(r.clone(), video_url),
+        (
+            "video in assistant messages".to_owned(),
+            Some("messages[1].blocks[0]".to_owned())
+        )
+    );
+    assert_eq!(refusal_of(r, ChatProfile::OPENAI).0, "video block");
+    for source in [
+        Source::file_id(DialectId::OpenAiChat, "file-1"),
+        Source::text("video/mp4", "frames"),
+    ] {
+        assert_eq!(
+            refusal_of(with_user_block(video(source)), video_url),
+            (
+                "video source".to_owned(),
+                Some("messages[0].blocks[0]".to_owned())
+            )
+        );
+    }
+    let req = Request::Generate(with_user_block(video(Source::Url(
+        "https://example.com/a.mp4".into(),
+    ))));
+    OpenAiChat::check(&req, &EgressCtx::new(&req).with_chat_profile(video_url)).unwrap();
+}
+
+#[test]
+fn json_blocks_are_refused_naming_the_block() {
+    let r = with_user_block(Block::Json(JsonBlock::new(raw(r#"{"a":1}"#))));
+    assert_eq!(
+        refusal_of(r, ChatProfile::OPENAI),
+        (
+            "json block".to_owned(),
+            Some("messages[0].blocks[0]".to_owned())
+        )
+    );
 }

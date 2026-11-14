@@ -1,6 +1,6 @@
 use kaeso_kpp::{
-    Block, DialectId, ErrorKind, GenerateRequest, KppError, Message, Origin, RawJson, Request,
-    Role, StreamMode,
+    Block, DialectId, ErrorKind, GenerateRequest, KppError, Message, Origin, RawJson, Reply,
+    Request, RequestKind, Role, StreamMode,
 };
 use serde_json::{Value, json};
 
@@ -8,8 +8,9 @@ use super::profile::sends_known;
 use super::tests::decode;
 use super::wire::ChatRequest;
 use super::{ChatProfile, OpenAiChat, OutputLimit, RequestProfile, SeedField};
-use crate::codec::{Codec, EgressCtx};
+use crate::codec::{Codec, EgressCtx, HeaderList};
 use crate::test_support::fixtures;
+use crate::{ToolPatterns, dispatch};
 
 const STRICT: ChatProfile = ChatProfile::compatible("Example Cloud")
     .max_tokens()
@@ -1156,4 +1157,130 @@ fn perplexity_refuses_tools_and_the_fields_its_api_reference_leaves_out() {
             )
         );
     }
+}
+
+#[test]
+fn a_profile_built_at_runtime_sends_its_own_path_and_no_stream_options() {
+    let profile = ChatProfile::compatible("Example Cloud")
+        .at_path("/v1/answers")
+        .without_stream_options();
+    let req = chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "Hi"}],
+        "stream": true,
+        "stream_options": {"include_usage": true}
+    }));
+    let mut ctx = EgressCtx::new(&req).with_chat_profile(profile);
+    let out = OpenAiChat::encode_request(&req, &mut ctx).unwrap();
+    assert_eq!(out.path, "/v1/answers");
+    let sent: Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(sent["stream"], true);
+    assert!(sent.get("stream_options").is_none(), "{sent}");
+}
+
+#[test]
+fn a_profile_refusing_only_message_names_lets_another_format_s_refusal_through() {
+    let profile = ChatProfile::compatible("Example Cloud")
+        .without_prefill()
+        .refusing_in_messages(&["name"]);
+    let mut req = foreign(DialectId::OpenAiResponses);
+    req.messages = vec![
+        Message::user("Tell me a secret."),
+        Message::new(
+            Role::Assistant,
+            vec![Block::Refusal(kaeso_kpp::RefusalBlock::new(
+                "I cannot share that.",
+            ))],
+        ),
+        Message::user("Then say hello."),
+    ];
+    let sent = encode_with(&Request::Generate(req.clone()), profile).unwrap();
+    assert_eq!(sent["messages"][1]["refusal"], "I cannot share that.");
+
+    req.messages.pop();
+    let err = encode_with(&Request::Generate(req), profile).unwrap_err();
+    assert_eq!(
+        refusal(&err),
+        (
+            Some("assistant prefill"),
+            Some("messages[1]"),
+            "Example Cloud cannot continue a prefilled assistant message; end the conversation with a user message."
+                .to_owned()
+        )
+    );
+
+    let err = encode_with(
+        &chat(json!({"model": "m", "messages": [
+            {"role": "user", "content": "Hi", "name": "ada"}
+        ]})),
+        profile,
+    )
+    .unwrap_err();
+    assert_eq!(
+        refusal(&err),
+        (
+            Some("name"),
+            Some("messages[0].name"),
+            "`messages[0].name` is not supported by Example Cloud; remove it from the request."
+                .to_owned()
+        )
+    );
+}
+
+#[test]
+fn a_profile_that_compiles_tool_patterns_sends_hex_escapes_for_nul() {
+    let profile = ChatProfile::compatible("Example Cloud").tool_patterns(ToolPatterns::Compiled);
+    let req = chat(json!({
+        "model": "m",
+        "messages": [{"role": "user", "content": "Save it."}],
+        "tools": [{"type": "function", "function": {"name": "save", "parameters": {
+            "type": "object",
+            "properties": {"path": {"type": "string", "pattern": r"^[^\0]*$"}}
+        }}}]
+    }));
+    let mut ctx = EgressCtx::new(&req).with_chat_profile(profile);
+    let out = dispatch::encode_request(DialectId::OpenAiChat, &req, &mut ctx).unwrap();
+    let sent: Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(
+        sent["tools"][0]["function"]["parameters"]["properties"]["path"]["pattern"],
+        r"^[^\x00]*$"
+    );
+    assert_eq!(ctx.adapted, ["tools[0]"]);
+}
+
+#[test]
+fn a_profile_reading_thinking_parts_and_an_error_detail_shows_both_to_the_app() {
+    let profile = ChatProfile::compatible("Example Cloud")
+        .thinking_parts()
+        .error_detail(&["error", "metadata", "raw"]);
+    let ctx =
+        EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off).with_chat_profile(profile);
+    let body = json!({
+        "id": "x", "object": "chat.completion", "created": 1, "model": "m",
+        "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": [
+            {"type": "thinking", "thinking": [{"type": "text", "text": "Plan."}]},
+            {"type": "text", "text": "Hello."}
+        ]}}]
+    });
+    let reply =
+        OpenAiChat::decode_response(200, &HeaderList::new(), body.to_string().as_bytes(), &ctx)
+            .unwrap();
+    let Reply::Generate(reply) = reply else {
+        panic!("not a reply: {reply:?}")
+    };
+    assert!(
+        matches!(&reply.blocks[..], [Block::Reasoning(_), Block::Text(t)] if t.text == "Hello."),
+        "{:?}",
+        reply.blocks
+    );
+
+    let error = json!({"error": {"message": "Provider returned error", "code": 503,
+        "metadata": {"raw": "the upstream model is overloaded"}}});
+    let err =
+        OpenAiChat::decode_response(503, &HeaderList::new(), error.to_string().as_bytes(), &ctx)
+            .unwrap_err();
+    assert_eq!(
+        err.message,
+        "Provider returned error: the upstream model is overloaded"
+    );
 }
