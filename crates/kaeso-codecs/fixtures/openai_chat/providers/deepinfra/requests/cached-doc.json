@@ -1,0 +1,14 @@
+{
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful coding assistant."
+    },
+    {
+      "role": "user",
+      "content": "How do I use async/await?"
+    }
+  ],
+  "prompt_cache_key": "user123-chat456"
+}

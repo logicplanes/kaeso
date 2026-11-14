@@ -25,6 +25,25 @@ Sources: Baseten's [Model APIs](https://docs.baseten.co/inference/model-apis/ove
 
 Baseten's Messages endpoint isn't used: its schema takes only text and tool blocks, without thinking or images. Its Responses API, which stores nothing, isn't used either: Messages and Responses apps reach Baseten through Chat Completions. Model APIs serve no embeddings, images, audio or token counts.
 
+## DeepInfra
+
+Sources: DeepInfra's [OpenAPI document](https://api.deepinfra.com/openapi.json) and its [Chat Completions](https://docs.deepinfra.com/chat/overview.md), [streaming](https://docs.deepinfra.com/chat/streaming.md), [tool calling](https://docs.deepinfra.com/chat/tool-calling.md), [prompt caching](https://docs.deepinfra.com/chat/prompt-caching.md) and [authentication](https://docs.deepinfra.com/account/authentication.md) guides, read 2026-11-14. No key was available: one reply in `fixtures/openai_chat/providers/deepinfra/` is a reply DeepInfra sent, published in another project's issue, and the others and the stream are built from the guides; the listing and the key errors were answered live, without a valid key. DeepInfra's guides write the base URL as `https://api.deepinfra.com/v1/openai`; its OpenAPI document serves the same API at `/v1/…`, so Kaeso's base URL is `https://api.deepinfra.com`, which takes `Authorization: Bearer`.
+
+| DeepInfra field | KPP | Notes |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`; assistant messages take it back. |
+| `max_completion_tokens` | `max_tokens` | The schema has only `max_tokens` (`max_tokens()`). |
+| the `developer` role | `Role::System` | The schema lists `system`, `user`, `assistant` and `tool`, so `system_role()` sends `system`. |
+| `user` | `user` | The schema has no `safety_identifier`, so the end user's id goes as `user` (`end_user_as_user()`). |
+| `video_url` parts | `Block::Video` | `with_video_url()`. |
+| `parallel_tool_calls`, `top_logprobs`, `logit_bias`, `metadata`, `store` and the other fields the schema leaves out | refused | DeepInfra drops undeclared fields without a word, so the profile refuses them; `parallel_tool_calls: true` only allows parallel calls and is left out. |
+| `top_k`, `min_p`, `repetition_penalty`, `fail_fast`, `models`, `prompt_cache_options`, `cache_salt`, `chat_template_kwargs` and the `reasoning` object | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `usage.estimated_cost`, `prompt_tokens_details` with `cache_write_tokens`, `name: null` | extras and raw usage | Left out towards other dialects (`responses/greeting-published`, `responses/cached-doc`). |
+| a 403 `{"detail": {"error": …}}` for a key without the `inference` scope | `KppError` | `PermissionDenied`, with DeepInfra's message (`errors/missing-scope-doc`). |
+| `GET /v1/models` with `root`, `parent` and DeepInfra's `metadata` | `ModelList` | Answered without a key (`models/list-recorded`), so a model check can't spot a wrong key. There is no `GET /v1/models/{model}`. |
+
+DeepInfra's Responses API stores nothing and isn't used: Responses apps reach DeepInfra through Chat Completions. Its Anthropic-compatible endpoint and token count live under `/anthropic/v1`, outside the `/v1` of the other formats, so Kaeso refuses token counts. Its images, speech, transcriptions and videos in OpenAI's formats aren't used until KPMR lists the models with their prices.
+
 ## Fireworks AI
 
 Sources: Fireworks' [Create Chat Completion](https://docs.fireworks.ai/api-reference/post-chatcompletions) reference (its OpenAPI document), [OpenAI compatibility](https://docs.fireworks.ai/tools-sdks/openai-compatibility) and [reasoning](https://docs.fireworks.ai/guides/reasoning) pages, read 2026-11-09. No key was available, so the replies and the stream in `fixtures/openai_chat/providers/fireworks-ai/` are built from them; the errors were answered live, without a valid key. Kaeso's base URL is `https://api.fireworks.ai/inference`, which takes `Authorization: Bearer` with a `fw_` key.

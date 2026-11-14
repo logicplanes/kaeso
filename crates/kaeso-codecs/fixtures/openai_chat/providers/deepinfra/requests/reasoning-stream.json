@@ -1,0 +1,14 @@
+{
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 times 23?"
+    }
+  ],
+  "reasoning_effort": "low",
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

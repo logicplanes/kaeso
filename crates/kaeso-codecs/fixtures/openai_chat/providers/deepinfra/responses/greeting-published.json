@@ -1,0 +1,27 @@
+{
+  "id": "chatcmpl-RJz5cb7iTXK27Wnklx5j9XW9",
+  "object": "chat.completion",
+  "created": 1770503902,
+  "model": "openai/gpt-oss-120b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! How can I help you today?",
+        "reasoning_content": "User just greets. We respond kindly.",
+        "name": null,
+        "tool_calls": []
+      },
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 56,
+    "total_tokens": 84,
+    "completion_tokens": 28,
+    "estimated_cost": 0.0000075040000000000005,
+    "prompt_tokens_details": null
+  }
+}

@@ -64,6 +64,7 @@ mod provider_cerebras;
 mod provider_chatgpt;
 mod provider_cloudflare_ai_gateway;
 mod provider_cohere;
+mod provider_deepinfra;
 mod provider_errors;
 mod provider_fireworks_ai;
 mod provider_gemini_agent_platform;

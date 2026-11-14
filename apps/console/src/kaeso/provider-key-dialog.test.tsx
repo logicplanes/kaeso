@@ -435,6 +435,28 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a DeepInfra key, which has no fixed prefix, with DeepInfra's dashboard as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "deepinfra", name: "DeepInfra prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "DeepInfra");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your DeepInfra API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "deepinfra.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://deepinfra.com/dash/keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe("Create one at deepinfra.com under API keys.");
+    const secret = within(dialog).getByLabelText("DeepInfra API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "deepinfra-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "DeepInfra prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("DeepInfra prod is the DeepInfra default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "deepinfra", name: "DeepInfra prod", secret: "deepinfra-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a Standard Compute key, which has no fixed prefix, with its dashboard's API Keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "standardcompute", name: "Standard Compute plan", is_default: true }));
     const { user, dialog } = await open();

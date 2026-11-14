@@ -22,6 +22,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("Cerebras").reasoning_fields(&["reasoning"]),
     ),
     (
+        "deepinfra",
+        ChatProfile::compatible("DeepInfra").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "deepseek",
         ChatProfile::compatible("DeepSeek").reasoning_fields(&["reasoning_content"]),
     ),
@@ -229,6 +233,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ("cerebras", "recorded-reasoning", "reasoning"),
         ("cerebras", "recorded-reasoning-sent-back", "reasoning"),
         ("cerebras", "recorded-system-mid-conversation", "reasoning"),
+        ("deepinfra", "greeting-published", "reasoning_content"),
         (
             "deepseek",
             "recorded-thinking-reasoning-content",

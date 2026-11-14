@@ -25,6 +25,25 @@ Quellen: die Übersicht [Model APIs](https://docs.baseten.co/inference/model-api
 
 Der Messages-Endpunkt von Baseten wird nicht genutzt: Sein Schema nimmt nur Text- und Tool-Blöcke an, ohne Thinking oder Bilder. Auch seine Responses API, die nichts speichert, wird nicht genutzt: Messages- und Responses-Apps erreichen Baseten über Chat Completions. Model APIs bieten weder Embeddings noch Bilder, Audio oder Token-Zählungen an.
 
+## DeepInfra
+
+Quellen: das [OpenAPI document](https://api.deepinfra.com/openapi.json) von DeepInfra und seine Anleitungen zu [Chat Completions](https://docs.deepinfra.com/chat/overview.md), [Streaming](https://docs.deepinfra.com/chat/streaming.md), [Tool-Aufrufen](https://docs.deepinfra.com/chat/tool-calling.md), [Prompt-Caching](https://docs.deepinfra.com/chat/prompt-caching.md) und [Authentifizierung](https://docs.deepinfra.com/account/authentication.md), gelesen am 2026-11-14. Es gab keinen Schlüssel: Eine Antwort in `fixtures/openai_chat/providers/deepinfra/` ist eine Antwort, die DeepInfra gesendet hat, veröffentlicht im Issue eines anderen Projekts, die übrigen und der Stream sind aus den Anleitungen gebaut; die Modellliste und die Schlüsselfehler kamen live, ohne gültigen Schlüssel. Die Anleitungen von DeepInfra schreiben die Basis-URL als `https://api.deepinfra.com/v1/openai`; sein OpenAPI-Dokument bietet dieselbe API unter `/v1/…` an, daher ist Kaesos Basis-URL `https://api.deepinfra.com`, die `Authorization: Bearer` annimmt.
+
+| DeepInfra-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Über `reasoning_fields` des Profils; Assistant-Nachrichten nehmen es zurück. |
+| `max_completion_tokens` | `max_tokens` | Das Schema hat nur `max_tokens` (`max_tokens()`). |
+| die Rolle `developer` | `Role::System` | Das Schema führt `system`, `user`, `assistant` und `tool`, daher sendet `system_role()` `system`. |
+| `user` | `user` | Das Schema hat kein `safety_identifier`, daher geht die ID des Endnutzers als `user` (`end_user_as_user()`). |
+| `video_url`-Teile | `Block::Video` | `with_video_url()`. |
+| `parallel_tool_calls`, `top_logprobs`, `logit_bias`, `metadata`, `store` und die anderen Felder, die das Schema nicht kennt | abgelehnt | DeepInfra verwirft nicht deklarierte Felder kommentarlos, daher lehnt das Profil sie ab; `parallel_tool_calls: true` erlaubt nur parallele Aufrufe und wird weggelassen. |
+| `top_k`, `min_p`, `repetition_penalty`, `fail_fast`, `models`, `prompt_cache_options`, `cache_salt`, `chat_template_kwargs` und das Objekt `reasoning` | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere reine Chat-Felder. |
+| `usage.estimated_cost`, `prompt_tokens_details` mit `cache_write_tokens`, `name: null` | Extras und rohe Nutzung | Gegenüber anderen Dialekten weggelassen (`responses/greeting-published`, `responses/cached-doc`). |
+| ein 403 `{"detail": {"error": …}}` für einen Schlüssel ohne den Scope `inference` | `KppError` | `PermissionDenied`, mit der Meldung von DeepInfra (`errors/missing-scope-doc`). |
+| `GET /v1/models` mit `root`, `parent` und DeepInfras `metadata` | `ModelList` | Ohne Schlüssel beantwortet (`models/list-recorded`), daher kann eine Modellprüfung einen falschen Schlüssel nicht erkennen. Es gibt kein `GET /v1/models/{model}`. |
+
+Die Responses API von DeepInfra speichert nichts und wird nicht genutzt: Responses-Apps erreichen DeepInfra über Chat Completions. Sein Anthropic-kompatibler Endpunkt und die Token-Zählung liegen unter `/anthropic/v1`, außerhalb des `/v1` der anderen Formate, daher lehnt Kaeso Token-Zählungen ab. Seine Bilder, Sprache, Transkriptionen und Videos in OpenAIs Formaten werden nicht genutzt, bis KPMR die Modelle mit ihren Preisen listet.
+
 ## Fireworks AI
 
 Quellen: Fireworks' Referenz [Create Chat Completion](https://docs.fireworks.ai/api-reference/post-chatcompletions) (sein OpenAPI-Dokument) und die Seiten [OpenAI compatibility](https://docs.fireworks.ai/tools-sdks/openai-compatibility) und [Reasoning](https://docs.fireworks.ai/guides/reasoning), gelesen am 2026-11-09. Es gab keinen Schlüssel, daher sind die Antworten und der Stream in `fixtures/openai_chat/providers/fireworks-ai/` daraus gebaut; die Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://api.fireworks.ai/inference`, die `Authorization: Bearer` mit einem `fw_`-Schlüssel annimmt.

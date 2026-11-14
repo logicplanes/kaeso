@@ -1851,6 +1851,76 @@ expression: outcomes
       }
     }
   },
+  "providers/deepinfra/cached-doc": {
+    "content": [
+      {
+        "text": "Mark the function `async` and `await` each promise inside it.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-9vLp2QeXcN7tWm4KjHs1aBdF",
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 4800,
+      "input_tokens": 200,
+      "output_tokens": 50
+    }
+  },
+  "providers/deepinfra/greeting-published": {
+    "content": [
+      {
+        "text": "Hello! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-RJz5cb7iTXK27Wnklx5j9XW9",
+    "model": "openai/gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 56,
+      "output_tokens": 28
+    }
+  },
+  "providers/deepinfra/tools-doc": {
+    "content": [
+      {
+        "id": "call_X0xYqdnoUonPJpQ6HEadxLHE",
+        "input": {
+          "location": "San Francisco"
+        },
+        "name": "get_current_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-6dWkqT3s0aHn2cJm8vRrYbXe",
+    "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 176,
+      "output_tokens": 37
+    }
+  },
   "providers/deepseek/recorded-json-object-system": {
     "content": [
       {

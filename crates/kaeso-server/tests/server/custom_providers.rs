@@ -1413,7 +1413,7 @@ struct Lab {
 
 const OPENAI_MODELS: &str = r#"{"object":"list","data":[
     {"id":"meta-llama/Llama-3.3-70B-Instruct","object":"model","created":1730000000,"owned_by":"vllm","max_model_len":131072},
-    {"id":"BAAI/bge-m3","object":"model","created":1730000000,"owned_by":"vllm"}]}"#;
+    {"id":"Snowflake/snowflake-arctic-embed-l-v2.0","object":"model","created":1730000000,"owned_by":"vllm"}]}"#;
 
 const ANTHROPIC_MODELS: &str = r#"{"data":[
     {"id":"lab-sonnet","type":"model","display_name":"Lab Sonnet","created_at":"2025-05-14T00:00:00Z","max_input_tokens":200000,"max_tokens":64000}],
@@ -1549,7 +1549,7 @@ async fn kaeso_detects_an_openai_compatible_server_from_its_base_url_and_key() {
             "server": "vllm",
             "media": ["transcriptions"],
             "models": [
-                { "model_id": "BAAI/bge-m3", "context_limit": null, "output_limit": null },
+                { "model_id": "Snowflake/snowflake-arctic-embed-l-v2.0", "context_limit": null, "output_limit": null },
                 { "model_id": "meta-llama/Llama-3.3-70B-Instruct", "context_limit": 131072, "output_limit": null },
             ],
         })
@@ -1882,7 +1882,7 @@ async fn offered_models_come_with_the_limits_and_capabilities_kaeso_found_and_pr
         .as_array()
         .unwrap()
         .iter()
-        .find(|m| m["model_id"] == "BAAI/bge-m3")
+        .find(|m| m["model_id"] == "Snowflake/snowflake-arctic-embed-l-v2.0")
         .unwrap()
         .clone();
     assert_eq!(unknown["detected"], json!({}), "{unknown}");

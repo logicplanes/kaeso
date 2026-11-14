@@ -1,0 +1,30 @@
+{
+  "id": "chatcmpl-9vLp2QeXcN7tWm4KjHs1aBdF",
+  "object": "chat.completion",
+  "created": 1794657660,
+  "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Mark the function `async` and `await` each promise inside it.",
+        "reasoning_content": null,
+        "name": null,
+        "tool_calls": []
+      },
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 5000,
+    "completion_tokens": 50,
+    "total_tokens": 5050,
+    "estimated_cost": 0.0000847,
+    "prompt_tokens_details": {
+      "cached_tokens": 4800,
+      "cache_write_tokens": null
+    }
+  }
+}

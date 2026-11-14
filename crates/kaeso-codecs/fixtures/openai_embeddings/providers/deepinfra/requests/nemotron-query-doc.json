@@ -1,0 +1,6 @@
+{
+  "model": "nvidia/Nemotron-3.5-Embed-1B-BF16",
+  "input": "How fast did revenue grow last quarter?",
+  "encoding_format": "float",
+  "input_type": "query"
+}

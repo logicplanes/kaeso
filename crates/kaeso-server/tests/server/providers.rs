@@ -284,6 +284,24 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         typesafe["key_page"],
         json!({ "url": "https://console.typesafe.ai/keys", "label": "API keys" })
     );
+    let deepinfra = listed.iter().find(|p| p["id"] == "deepinfra").unwrap();
+    assert_eq!(deepinfra["name"], "DeepInfra");
+    assert_eq!(
+        deepinfra["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        (
+            &deepinfra["count_tokens"],
+            &deepinfra["embeddings"],
+            &deepinfra["key_prefix"]
+        ),
+        (&Value::Null, &json!("openai_embeddings"), &Value::Null)
+    );
+    assert_eq!(
+        deepinfra["key_page"],
+        json!({ "url": "https://deepinfra.com/dash/keys", "label": "API keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

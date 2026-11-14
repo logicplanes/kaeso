@@ -25,6 +25,25 @@ nav: 推理云
 
 Baseten 的 Messages 端点不被使用：它的 schema 只接受文本和工具块，不接受思考内容或图像。它不存储任何内容的 Responses API 也不被使用：Messages 和 Responses 应用通过 Chat Completions 访问 Baseten。Model APIs 不提供嵌入、图像、音频或 Token 计数。
 
+## DeepInfra
+
+来源：DeepInfra 的 [OpenAPI document](https://api.deepinfra.com/openapi.json) 及其 [Chat Completions](https://docs.deepinfra.com/chat/overview.md)、[流式传输](https://docs.deepinfra.com/chat/streaming.md)、[工具调用](https://docs.deepinfra.com/chat/tool-calling.md)、[提示缓存](https://docs.deepinfra.com/chat/prompt-caching.md)和[认证](https://docs.deepinfra.com/account/authentication.md)指南，2026-11-14 阅读。由于没有可用的密钥：`fixtures/openai_chat/providers/deepinfra/` 中的一个回复是 DeepInfra 实际发送、发布在另一个项目 issue 中的回复，其余回复和流据指南构建；模型列表和密钥错误是在没有有效密钥的情况下实时返回的。DeepInfra 的指南将基础 URL 写为 `https://api.deepinfra.com/v1/openai`；它的 OpenAPI 文档在 `/v1/…` 下提供同一 API，因此 Kaeso 的基础 URL 为 `https://api.deepinfra.com`，使用 `Authorization: Bearer`。
+
+| DeepInfra 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`；assistant 消息会将其传回。 |
+| `max_completion_tokens` | `max_tokens` | schema 只有 `max_tokens`（`max_tokens()`）。 |
+| `developer` 角色 | `Role::System` | schema 列出 `system`、`user`、`assistant` 和 `tool`，因此 `system_role()` 发送 `system`。 |
+| `user` | `user` | schema 没有 `safety_identifier`，因此终端用户的 ID 以 `user` 发送（`end_user_as_user()`）。 |
+| `video_url` 部分 | `Block::Video` | `with_video_url()`。 |
+| `parallel_tool_calls`、`top_logprobs`、`logit_bias`、`metadata`、`store` 以及 schema 中没有的其他字段 | 拒绝 | DeepInfra 会悄悄丢弃未声明的字段，因此配置会拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略。 |
+| `top_k`、`min_p`、`repetition_penalty`、`fail_fast`、`models`、`prompt_cache_options`、`cache_salt`、`chat_template_kwargs` 和 `reasoning` 对象 | extras | 当请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
+| `usage.estimated_cost`、带 `cache_write_tokens` 的 `prompt_tokens_details`、`name: null` | extras 和原始用量 | 发往其他方言时省略（`responses/greeting-published`、`responses/cached-doc`）。 |
+| 缺少 `inference` 权限范围的密钥收到的 403 `{"detail": {"error": …}}` | `KppError` | `PermissionDenied`，带 DeepInfra 的消息（`errors/missing-scope-doc`）。 |
+| 带 `root`、`parent` 和 DeepInfra `metadata` 的 `GET /v1/models` | `ModelList` | 无需密钥即可返回（`models/list-recorded`），因此模型检查无法发现错误的密钥。没有 `GET /v1/models/{model}`。 |
+
+DeepInfra 的 Responses API 不存储任何内容，不被使用：Responses 应用通过 Chat Completions 访问 DeepInfra。它的 Anthropic 兼容端点和 Token 计数位于 `/anthropic/v1` 下，在其他格式的 `/v1` 之外，因此 Kaeso 拒绝 Token 计数。在 KPMR 收录这些模型及其价格之前，它以 OpenAI 格式提供的图像、语音合成、转写和视频不被使用。
+
 ## Fireworks AI
 
 来源：Fireworks 的 [Create Chat Completion](https://docs.fireworks.ai/api-reference/post-chatcompletions) 参考（其 OpenAPI 文档）以及 [OpenAI compatibility](https://docs.fireworks.ai/tools-sdks/openai-compatibility) 和 [reasoning](https://docs.fireworks.ai/guides/reasoning) 页面，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/fireworks-ai/` 中的回复和流都据此构建；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://api.fireworks.ai/inference`，使用 `Authorization: Bearer` 和 `fw_` 开头的密钥。
