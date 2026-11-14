@@ -166,7 +166,7 @@ tRich("signIn.newHere", "New here? {link}", {
 
 Die Fehlermeldungen des Gateways, die Namen, Beschreibungen und Kategorien im Rechtekatalog sowie Namen und Beschreibungen der eingebauten Rollen kommen auf Englisch an. Der API-Client (`src/api/`) übersetzt, was er kennt, sobald Antworten eintreffen, mit den Schlüsseln `errors.*` und `rights.*`. Rechte und Rollen übersetzt er über ihre ID, Meldungen über ihren englischen Text und ihre Werte. Was er nicht kennt, erscheint so, wie das Gateway es geschrieben hat.
 
-Ein Sprachwechsel lädt die Daten neu. `crates/kaeso-server/tests/error_copy.rs` schlägt fehl, wenn das Gateway eine Meldung schreibt, für die `src/api/gateway-errors.ts` keine Regel hat; eine neue Meldung kommt deshalb mit ihrer deutschen und chinesischen Fassung im selben Pull Request.
+Ein Sprachwechsel lädt die Daten neu. `crates/kaeso-server/tests/server/error_copy.rs` schlägt fehl, wenn das Gateway eine Meldung schreibt, für die `src/api/gateway-errors.ts` keine Regel hat; eine neue Meldung kommt deshalb mit ihrer deutschen und chinesischen Fassung im selben Pull Request.
 
 ## Die UI-Bibliothek
 
