@@ -907,3 +907,255 @@ fn model_listings_use_openai_s_shape() {
     );
     OpenAiImages::encode_models_request(&OpenAiImages::decode_models_query("").unwrap()).unwrap();
 }
+
+fn form(parts: &[(&str, Option<&str>, &[u8])]) -> Result<ImageRequest, kaeso_kpp::KppError> {
+    let mut body = Vec::new();
+    for (name, filename, value) in parts {
+        body.extend_from_slice(b"--b\r\nContent-Disposition: form-data; name=\"");
+        body.extend_from_slice(name.as_bytes());
+        body.push(b'"');
+        if let Some(f) = filename {
+            body.extend_from_slice(format!("; filename=\"{f}\"").as_bytes());
+        }
+        body.extend_from_slice(b"\r\n\r\n");
+        body.extend_from_slice(value);
+        body.extend_from_slice(b"\r\n");
+    }
+    body.extend_from_slice(b"--b--\r\n");
+    let headers = HeaderList::new().with("content-type", "multipart/form-data; boundary=b");
+    match OpenAiImages::decode_call(ImageOperation::Edit, &body, &headers)? {
+        Request::Image(r) => Ok(r),
+        other => panic!("{other:?}"),
+    }
+}
+
+#[test]
+fn an_app_s_beta_header_reaches_the_provider() {
+    let headers = json_headers().with("OpenAI-Beta", "images=v2");
+    let r = decode(
+        ImageOperation::Generate,
+        br#"{"model":"m","prompt":"fox"}"#,
+        &headers,
+    );
+    let req = Request::Image(r.clone());
+    OpenAiImages::check(&req, &egress(ImagesProfile::OPENAI, &r)).unwrap();
+    let (enc, _) = encode(ImagesProfile::OPENAI, &r).unwrap();
+    assert_eq!(enc.headers.get("openai-beta"), Some("images=v2"));
+    assert_eq!(enc.headers.get("content-type"), Some("application/json"));
+}
+
+#[test]
+fn image_references_that_are_not_one_link_or_one_file_id_are_refused_with_their_place() {
+    let edit = |body: &str| {
+        OpenAiImages::decode_call(ImageOperation::Edit, body.as_bytes(), &json_headers())
+            .unwrap_err()
+    };
+    let err = edit(
+        r#"{"model":"m","prompt":"p","images":[{"image_url":"https://example.com/a.png","detail":"low"}]}"#,
+    );
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.param.as_deref(), Some("images[0]"));
+    assert!(
+        err.message
+            .contains("an image reference takes only `image_url` or `file_id`"),
+        "{}",
+        err.message
+    );
+    for images in [
+        r#"[{"image_url":"https://example.com/a.png","file_id":"file-1"}]"#,
+        "[{}]",
+    ] {
+        let err = edit(&format!(
+            r#"{{"model":"m","prompt":"p","images":{images}}}"#
+        ));
+        assert_eq!(err.param.as_deref(), Some("images[0]"), "{images}");
+        assert!(
+            err.message
+                .contains("needs exactly one of `image_url` and `file_id`"),
+            "{}",
+            err.message
+        );
+    }
+    let err =
+        edit(r#"{"model":"m","prompt":"p","images":[],"mask":{"file_id":"a","image_url":"b"}}"#);
+    assert_eq!(err.param.as_deref(), Some("mask"));
+}
+
+#[test]
+fn a_json_field_written_twice_is_refused_naming_it() {
+    let err = OpenAiImages::decode_call(
+        ImageOperation::Generate,
+        br#"{"model":"m","prompt":"a","prompt":"b"}"#,
+        &json_headers(),
+    )
+    .unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.param.as_deref(), Some("prompt"));
+}
+
+#[test]
+fn b64_json_and_a_user_beside_a_safety_identifier_reach_openai_as_written() {
+    let body = br#"{"model":"m","prompt":"fox","response_format":"b64_json","safety_identifier":"s1","user":"u1"}"#;
+    let r = decode(ImageOperation::Generate, body, &json_headers());
+    assert_eq!(r.delivery, Some(ImageDelivery::Base64));
+    assert_eq!(r.user.as_deref(), Some("s1"));
+    let (enc, _) = encode(ImagesProfile::OPENAI, &r).unwrap();
+    assert_json_eq("generate", body, &enc.body);
+}
+
+#[test]
+fn upload_fields_that_cannot_be_read_are_refused_with_the_field() {
+    let many: Vec<(String, Option<&str>, &[u8])> = (0..=MAX_FORM_PARTS)
+        .map(|i| (format!("f{i}"), None, b"v".as_slice()))
+        .collect();
+    let many: Vec<(&str, Option<&str>, &[u8])> =
+        many.iter().map(|(n, f, v)| (n.as_str(), *f, *v)).collect();
+    let err = form(&many).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.message, "The upload has more than 64 parts.");
+
+    let err = form(&[("prompt", None, b"\xff\xfe")]).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("prompt"));
+    assert!(
+        err.message.contains("`prompt` is not UTF-8 text"),
+        "{}",
+        err.message
+    );
+
+    let err = form(&[("prompt", None, b"a"), ("prompt", None, b"b")]).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("prompt"));
+    assert!(
+        err.message.contains("`prompt` is sent more than once"),
+        "{}",
+        err.message
+    );
+
+    let err = form(&[("n", None, b"5000000000")]).unwrap_err();
+    assert_eq!(
+        (err.param.as_deref(), err.message.as_str()),
+        (Some("n"), "`n` is too large.")
+    );
+
+    let err = form(&[("seed", None, b"lucky")]).unwrap_err();
+    assert_eq!(
+        (err.param.as_deref(), err.message.as_str()),
+        (Some("seed"), "`seed` must be a whole number, not `lucky`.")
+    );
+}
+
+#[test]
+fn an_upload_without_a_media_type_and_with_stream_off_goes_out_as_sent() {
+    let r = form(&[
+        ("model", None, b"gpt-image-2"),
+        ("prompt", None, b"hat"),
+        ("stream", None, b"false"),
+        ("image[]", Some("fox.raw"), b"\x00\x01"),
+    ])
+    .unwrap();
+    assert!(r.stream.is_off());
+    assert_eq!(
+        r.images[0].source.media_type(),
+        Some("application/octet-stream")
+    );
+    let (enc, ctx) = encode(ImagesProfile::OPENAI, &r).unwrap();
+    assert!(ctx.stream.is_off());
+    let ct = enc.headers.get("content-type").unwrap();
+    let parts = parts_of(ct, &enc.body);
+    assert!(
+        parts.contains(&("stream".to_owned(), None, b"false".to_vec())),
+        "{parts:?}"
+    );
+    assert!(
+        parts.contains(&(
+            "image[]".to_owned(),
+            Some("fox.raw".to_owned()),
+            b"\x00\x01".to_vec()
+        )),
+        "{parts:?}"
+    );
+}
+
+#[test]
+fn an_edit_image_that_is_neither_bytes_a_link_nor_a_file_id_is_refused() {
+    let edit = ImageRequest::new("m", ImageOperation::Edit)
+        .with_prompt("hat")
+        .with_image(ImageInput::new(Source::text("image/svg+xml", "<svg/>")));
+    let err = encode(ImagesProfile::OPENAI, &edit).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.param.as_deref(), Some("image"));
+}
+
+#[test]
+fn file_ids_cannot_reach_providers_that_take_links_or_data_urls() {
+    let mut edit = ImageRequest::new("m", ImageOperation::Edit).with_prompt("hat");
+    edit.images.push(ImageInput::new(Source::file_id(
+        DialectId::OpenAiImages,
+        "file-1",
+    )));
+    assert_eq!(
+        refusal(ImagesProfile::XAI, &edit),
+        (
+            "image".to_owned(),
+            "`file ids` is not supported by OpenAI Images. SpaceX does not take file ids; upload the image or send it as a link.".to_owned()
+        )
+    );
+    assert_eq!(
+        refusal(ImagesProfile::QWENCLOUD, &edit),
+        (
+            "image".to_owned(),
+            "`file ids` is not supported by OpenAI Images. QwenCloud does not take file ids; upload the image or send it as a link.".to_owned()
+        )
+    );
+}
+
+#[test]
+fn only_image_requests_are_encoded() {
+    let req = Request::Generate(kaeso_kpp::GenerateRequest::new("m"));
+    let mut ctx = EgressCtx::new(&req);
+    let err = OpenAiImages::encode_request(&req, &mut ctx).unwrap_err();
+    assert!(matches!(err.kind, ErrorKind::Unsupported { .. }), "{err:?}");
+}
+
+#[test]
+fn a_request_without_a_model_or_prompt_and_an_auto_size_sends_only_what_each_provider_spells() {
+    let mut r = ImageRequest::new("", ImageOperation::Generate);
+    let (enc, _) = encode(ImagesProfile::OPENAI, &r).unwrap();
+    assert_eq!(body_of(&enc), json!({}));
+    r.size = Some(ImageSize::Auto);
+    let (enc, _) = encode(ImagesProfile::OPENAI, &r).unwrap();
+    assert_eq!(body_of(&enc), json!({"size": "auto"}));
+    for p in [ImagesProfile::TOGETHER, ImagesProfile::XAI] {
+        let (enc, _) = encode(p, &r).unwrap();
+        assert_eq!(body_of(&enc), json!({}), "{}", p.provider);
+    }
+}
+
+#[test]
+fn a_markup_link_cannot_go_into_an_upload() {
+    let mut edit = ImageRequest::new("m", ImageOperation::Edit)
+        .with_prompt("hat")
+        .with_image(png());
+    edit.extras = kaeso_kpp::Extras::new(DialectId::OpenAiImages).with_field(
+        "markup",
+        kaeso_kpp::RawJson::from_string(r#"{"image_url":"https://example.com/m.png"}"#.into())
+            .unwrap(),
+    );
+    let err = encode(ImagesProfile::OPENAI, &edit).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.param.as_deref(), Some("markup"));
+    assert!(
+        err.message
+            .contains("`markup` must be an upload or a data URL"),
+        "{}",
+        err.message
+    );
+}
+
+#[test]
+fn fields_an_app_wrote_as_null_reach_openai_as_null() {
+    let body = br#"{"model":"m","prompt":"fox","n":null,"quality":null}"#;
+    let r = decode(ImageOperation::Generate, body, &json_headers());
+    assert_eq!((r.count, r.quality.as_ref()), (None, None));
+    let (enc, _) = encode(ImagesProfile::OPENAI, &r).unwrap();
+    assert_json_eq("generate", body, &enc.body);
+}

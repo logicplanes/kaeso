@@ -407,6 +407,25 @@ fn more_messages_than_the_limit_are_refused_naming_the_field() {
 }
 
 #[test]
+fn more_gemini_contents_than_the_limit_are_refused_naming_contents() {
+    let over = format!(
+        r#"{{"contents": [{}]}}"#,
+        repeated(
+            r#"{"role":"user","parts":[{"text":"a"}]}"#,
+            MAX_MESSAGES + 1
+        )
+    );
+    let err = request_shape(DialectId::Gemini, over.as_bytes()).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.status, Some(400));
+    assert_eq!(
+        err.message,
+        "`contents` holds more than 100000 contents; Kaeso takes at most 100000."
+    );
+    assert_eq!(err.param.as_deref(), Some("contents"));
+}
+
+#[test]
 fn a_message_with_too_many_blocks_is_refused_and_each_message_counts_on_its_own() {
     let blocks = |n| repeated(r#"{"type":"text","text":"a"}"#, n);
     let full = format!(
@@ -468,7 +487,7 @@ fn too_many_tools_or_embedding_inputs_are_refused() {
 #[test]
 fn an_escaped_key_is_counted_like_the_key_it_spells() {
     let body = format!(
-        r#"{{"model": "m", "messages": [{}]}}"#,
+        r#"{{"model": "m", "m\u0065ssages": [{}]}}"#,
         repeated(r#"{"role":"user","content":"a"}"#, MAX_MESSAGES + 1)
     );
     assert_eq!(refused(C, &body).param.as_deref(), Some("messages"));
