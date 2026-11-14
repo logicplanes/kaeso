@@ -190,14 +190,14 @@ Ein Pull muss ein Kaeso-Image per Digest nennen, und ein Compose-Runner muss gen
 
 Caddy liest das Wartungs-Flag aus dem Volume `maintenance`. Solange es existiert, bekommt jede Anfrage sofort die Wartungsantwort; sonst bekommt sie ein `502`, `503` oder `504` des Gateways oder der Konsole.
 
-`/kaeso-maintenance.json` liefert das Flag aus, etwa `{"state":"updating","step":"migrating"}`, sodass die Seite den Schritt nennen kann. Die Seite steht inline in `compose.yaml`, mit einer Content Security Policy, die ihren eigenen Stil und ihr eigenes Skript per Hash erlaubt. `crates/kaeso-server/tests/edge.rs` prüft, dass die JSON-Antworten dem entsprechen, was `ApiError` und `kaeso_codecs::dispatch::encode_error` erzeugen, und dass die Hashes stimmen.
+`/kaeso-maintenance.json` liefert das Flag aus, etwa `{"state":"updating","step":"migrating"}`, sodass die Seite den Schritt nennen kann. Die Seite steht inline in `compose.yaml`, mit einer Content Security Policy, die ihren eigenen Stil und ihr eigenes Skript per Hash erlaubt. `crates/kaeso-server/tests/server/edge.rs` prüft, dass die JSON-Antworten dem entsprechen, was `ApiError` und `kaeso_codecs::dispatch::encode_error` erzeugen, und dass die Hashes stimmen.
 
 ## Tests
 
 | Wo | Was |
 | --- | --- |
 | `crates/kaeso-update` | Versions-Tags, Kanäle, der Plan mit Major-Versionen, Schritten von Hand, Vorabversionen und dem Protokoll, das er braucht, das Manifest und das Protokoll |
-| `crates/kaeso-server/tests/updates.rs` | Das Gateway gegen ein Mock-GitHub und einen Mock-Updater: bedingte Anfragen, Backoff und seine Obergrenze von einer Stunde, Manifeste, Rechte, das Audit-Log, die Sperre für ein Update und jedes Ende |
+| `crates/kaeso-server/tests/server/updates.rs` | Das Gateway gegen ein Mock-GitHub und einen Mock-Updater: bedingte Anfragen, Backoff und seine Obergrenze von einer Stunde, Manifeste, Rechte, das Audit-Log, die Sperre für ein Update und jedes Ende |
 | `crates/kaeso-updater/tests/verify.rs` | Die echten Attestierungen von Kaeso 0.1.0 bestehen; ein anderes Image, ein anderer Commit, Workflow, eine andere Signatur oder ein anderer Logeintrag nicht |
 | `crates/kaeso-updater/src/guard.rs` | Container, die in einem erweiternden `HostConfig`-Feld vom ersetzten abweichen, andere Namen und andere Images werden abgelehnt, ebenso ein Compose-Runner mit weiteren Einstellungen |
 | `crates/kaeso-updater/src/compose_cli.rs` | Der Docker-Compose-Befehl jeder Aufgabe gegen ein nachgebildetes Programm und abgelehnte Images ohne Digest |

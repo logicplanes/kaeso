@@ -60,11 +60,8 @@ RUN pnpm install --frozen-lockfile \
     && python3 -m venv e2e/.venv \
     && e2e/.venv/bin/pip install --no-cache-dir --require-hashes -r e2e/requirements.txt
 
-# Each of kaeso-server's integration test files links the whole gateway into its own binary, and all of them together
-# take tens of gigabytes. One is built so that every dependency is; the rest compile in about a minute each when run.
 RUN cargo build --workspace --all-features --locked \
-    && cargo nextest run --workspace --exclude kaeso-server --all-features --locked --no-run \
-    && cargo nextest run -p kaeso-server --all-features --locked --no-run --lib --test authorization
+    && cargo nextest run --workspace --all-features --locked --no-run
 
 # The fuzz workspace builds with nightly and AddressSanitizer; a broken nightly must not stop the scan.
 RUN cargo fetch --manifest-path fuzz/Cargo.toml --locked \

@@ -190,14 +190,14 @@ Docker Compose 不能在更新器自己的容器中运行：重建更新器会�
 
 Caddy 从 `maintenance` 卷读取维护标志。标志存在时，每个请求都会立即得到维护应答；否则，网关或控制台返回 `502`、`503` 或 `504` 时才会得到它。
 
-`/kaeso-maintenance.json` 提供该标志，例如 `{"state":"updating","step":"migrating"}`，这样页面能说出当前步骤。该页面内联在 `compose.yaml` 中，其内容安全策略按哈希只允许它自己的样式和脚本。`crates/kaeso-server/tests/edge.rs` 检查 JSON 应答与 `ApiError` 和 `kaeso_codecs::dispatch::encode_error` 生成的内容一致，并检查哈希匹配。
+`/kaeso-maintenance.json` 提供该标志，例如 `{"state":"updating","step":"migrating"}`，这样页面能说出当前步骤。该页面内联在 `compose.yaml` 中，其内容安全策略按哈希只允许它自己的样式和脚本。`crates/kaeso-server/tests/server/edge.rs` 检查 JSON 应答与 `ApiError` 和 `kaeso_codecs::dispatch::encode_error` 生成的内容一致，并检查哈希匹配。
 
 ## 测试
 
 | 位置 | 内容 |
 | --- | --- |
 | `crates/kaeso-update` | 版本标签、通道、包含主版本、手动步骤、预发布和所需协议的计划、清单和协议 |
-| `crates/kaeso-server/tests/updates.rs` | 网关对接模拟的 GitHub 和更新器：条件请求、退避及其一小时上限、清单、权限、审计日志、单一更新锁以及每种结束方式 |
+| `crates/kaeso-server/tests/server/updates.rs` | 网关对接模拟的 GitHub 和更新器：条件请求、退避及其一小时上限、清单、权限、审计日志、单一更新锁以及每种结束方式 |
 | `crates/kaeso-updater/tests/verify.rs` | Kaeso 0.1.0 的真实证明能通过验证；换成其他镜像、提交、工作流、签名或日志条目则不能 |
 | `crates/kaeso-updater/src/guard.rs` | 在会放宽权限的 `HostConfig` 字段上与被替换容器不同的容器、其他名称和其他镜像都会被拒绝，设置更宽的 compose 运行器也会被拒绝 |
 | `crates/kaeso-updater/src/compose_cli.rs` | 每个任务对接模拟程序时的 Docker Compose 命令，以及被拒绝的未固定摘要的镜像 |
