@@ -138,6 +138,8 @@ jobs:
               - .gitignore
             workflows:
               - .github/workflows/**
+              - .github/actions/**
+              - .github/scripts/**
       - name: Areas
         env:
           RUST: ${{ steps.filter.outcome != 'success' || steps.filter.outputs.rust == 'true' }}
@@ -164,8 +166,9 @@ jobs:
             echo "| Workflows | $WORKFLOWS |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  comments:
-    name: Comments
+  repository:
+    name: Repository checks
+    needs: changes
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -179,6 +182,7 @@ jobs:
             exit 1
           fi
       - name: Code blocks in Markdown contain no comments
+        if: ${{ !cancelled() }}
         run: |
           node -e '
             const { execFileSync } = require("node:child_process");
@@ -204,18 +208,8 @@ jobs:
             }
             process.exit(found ? 1 : 0);
           '
-
-  workflows:
-    name: Workflows
-    needs: changes
-    if: needs.changes.outputs.workflows == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
       - name: actionlint
+        if: ${{ !cancelled() && needs.changes.outputs.workflows == 'true' }}
         env:
           VERSION: 1.7.12
           SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
@@ -226,23 +220,20 @@ jobs:
           echo "$SHA256  $archive" | sha256sum -c -
           tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
           "$RUNNER_TEMP/actionlint" -color
-
-  rust-format:
-    name: Rust format
-    needs: changes
-    if: needs.changes.outputs.rust == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - run: rustup toolchain install
-      - run: cargo fmt --all --check
-      - run: cargo fmt --all --check --manifest-path fuzz/Cargo.toml
+      - name: The self-hosting package is valid
+        if: ${{ !cancelled() && needs.changes.outputs.deploy == 'true' }}
+        run: docker compose -f deploy/compose.yaml --env-file deploy/.env.example config -q
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_SUPERUSER_PASSWORD: ci
+          CLICKHOUSE_PASSWORD: ci
+          VALKEY_PASSWORD: ci
+      - name: The development stack is valid
+        if: ${{ !cancelled() && needs.changes.outputs.deploy == 'true' }}
+        run: docker compose -f deploy/compose.dev.yaml --profile console config -q
 
   rust-lint:
-    name: Rust lint
+    name: Rust checks
     needs: changes
     if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
@@ -251,15 +242,39 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - name: Pull PostgreSQL while the toolchain installs
+        run: nohup docker compose -f deploy/compose.dev.yaml pull --quiet postgres > "$RUNNER_TEMP/pull.log" 2>&1 &
       - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
+      - run: cargo fmt --all --check
+      - if: ${{ !cancelled() }}
+        run: cargo fmt --all --check --manifest-path fuzz/Cargo.toml
+      - if: ${{ !cancelled() }}
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           workspaces: |
             .
             fuzz
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - run: cargo clippy --workspace --all-targets --all-features
-      - run: cargo clippy --manifest-path fuzz/Cargo.toml --all-targets
+      - if: ${{ !cancelled() }}
+        uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2
+        with:
+          tool: sqlx-cli
+      - if: ${{ !cancelled() }}
+        run: cargo clippy --workspace --all-targets --all-features
+      - if: ${{ !cancelled() }}
+        run: cargo clippy --manifest-path fuzz/Cargo.toml --all-targets
+      - name: The fuzz targets build
+        if: ${{ !cancelled() }}
+        run: cargo check --manifest-path fuzz/Cargo.toml --bins
+      - if: ${{ !cancelled() }}
+        run: docker compose -f deploy/compose.dev.yaml up -d --wait postgres
+      - name: The query data in .sqlx is current, after the migrations
+        if: ${{ !cancelled() }}
+        env:
+          DATABASE_URL: postgres://kaeso:kaeso@127.0.0.1:55432/kaeso
+        run: |
+          cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres
+          cargo sqlx prepare --workspace --check
 
   test-kpp:
     name: Test KPP
@@ -473,49 +488,6 @@ jobs:
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
       - run: cargo test -p xtask -p kpp-conformance
-      - run: cargo test -p kaeso-server --test docs_paths
-
-  query-data:
-    name: Query data
-    needs: changes
-    if: needs.changes.outputs.rust == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    env:
-      DATABASE_URL: postgres://kaeso:kaeso@127.0.0.1:55432/kaeso
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - name: Pull PostgreSQL while the toolchain installs
-        run: nohup docker compose -f deploy/compose.dev.yaml pull --quiet postgres > "$RUNNER_TEMP/pull.log" 2>&1 &
-      - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
-        with:
-          save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2
-        with:
-          tool: sqlx-cli
-      - run: docker compose -f deploy/compose.dev.yaml up -d --wait postgres
-      - run: cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres
-      - run: cargo sqlx prepare --workspace --check
-
-  openapi:
-    name: OpenAPI document
-    needs: changes
-    if: needs.changes.outputs.rust == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
-        with:
-          shared-key: openapi
-          save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - run: cargo run -q -p kaeso -- openapi | diff - openapi.json
 
   rust-dependencies:
     name: Rust dependencies
@@ -535,23 +507,6 @@ jobs:
           manifest-path: crates/kaeso-codecs/Cargo.toml
           command: check
 
-  fuzz:
-    name: Fuzz targets
-    needs: changes
-    if: needs.changes.outputs.rust == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - run: rustup toolchain install
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
-        with:
-          workspaces: fuzz
-          save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - run: cargo check --manifest-path fuzz/Cargo.toml --bins
-
   sdk-conformance:
     name: SDK conformance
     needs: changes
@@ -566,16 +521,11 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
-        with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: e2e/requirements.txt
-      - run: pip install --require-hashes -r e2e/requirements.txt
+      - uses: ./.github/actions/python
       - run: pytest -q e2e/conformance
 
   sdk-e2e:
-    name: SDK end-to-end
+    name: SDK end-to-end and OpenAPI document
     needs: changes
     if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-24.04
@@ -590,35 +540,16 @@ jobs:
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           save-if: ${{ github.ref == 'refs/heads/dev' }}
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
-        with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: e2e/requirements.txt
-      - run: pip install --require-hashes -r e2e/requirements.txt
+      - uses: ./.github/actions/python
       - run: docker compose -f deploy/compose.dev.yaml up -d --wait
-      - run: pytest -q e2e/sdk
-      - run: pytest -q e2e/mcp
-
-  compose:
-    name: Compose config
-    needs: changes
-    if: needs.changes.outputs.deploy == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - name: The self-hosting package is valid
-        run: docker compose -f deploy/compose.yaml --env-file deploy/.env.example config -q
-        env:
-          POSTGRES_PASSWORD: ci
-          POSTGRES_SUPERUSER_PASSWORD: ci
-          CLICKHOUSE_PASSWORD: ci
-          VALKEY_PASSWORD: ci
-      - name: The development stack is valid
-        run: docker compose -f deploy/compose.dev.yaml --profile console config -q
+      - name: Build the gateway and the test kit once, for every step below
+        run: cargo build -p kaeso -p kaeso-testkit --bins
+      - name: The OpenAPI document is current
+        run: target/debug/kaeso openapi | diff - openapi.json
+      - if: ${{ !cancelled() }}
+        run: pytest -q e2e/sdk
+      - if: ${{ !cancelled() }}
+        run: pytest -q e2e/mcp
 
   image-gateway:
     name: Images (gateway)
@@ -628,6 +559,8 @@ jobs:
     timeout-minutes: 30
     env:
       DOCKER_BUILD_RECORD_RETENTION_DAYS: 3
+      PROFILE: ${{ github.event_name == 'pull_request' && 'pr' || 'release' }}
+      SCOPE: ${{ github.event_name == 'pull_request' && '-pr' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -645,10 +578,12 @@ jobs:
           context: .
           file: deploy/gateway.Dockerfile
           target: gateway
-          build-args: VERSION=${{ steps.version.outputs.gateway }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.gateway }}
+            PROFILE=${{ env.PROFILE }}
           tags: kaeso-gateway:ci
           outputs: type=docker,dest=${{ runner.temp }}/images/gateway.tar
-          cache-from: type=gha,scope=ci-gateway
+          cache-from: type=gha,scope=ci-gateway${{ env.SCOPE }}
           cache-to: ${{ github.ref == 'refs/heads/dev' && 'type=gha,mode=max,scope=ci-gateway' || '' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -666,6 +601,8 @@ jobs:
     timeout-minutes: 30
     env:
       DOCKER_BUILD_RECORD_RETENTION_DAYS: 3
+      PROFILE: ${{ github.event_name == 'pull_request' && 'pr' || 'release' }}
+      SCOPE: ${{ github.event_name == 'pull_request' && '-pr' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -678,11 +615,12 @@ jobs:
           context: .
           file: deploy/gateway.Dockerfile
           target: mock
+          build-args: PROFILE=${{ env.PROFILE }}
           tags: kaeso-mock:ci
           outputs: type=docker,dest=${{ runner.temp }}/images/mock.tar
           cache-from: |
-            type=gha,scope=ci-gateway
-            type=gha,scope=ci-mock
+            type=gha,scope=ci-gateway${{ env.SCOPE }}
+            type=gha,scope=ci-mock${{ env.SCOPE }}
           cache-to: ${{ github.ref == 'refs/heads/dev' && 'type=gha,mode=max,scope=ci-mock' || '' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -700,6 +638,8 @@ jobs:
     timeout-minutes: 30
     env:
       DOCKER_BUILD_RECORD_RETENTION_DAYS: 3
+      PROFILE: ${{ github.event_name == 'pull_request' && 'pr' || 'release' }}
+      SCOPE: ${{ github.event_name == 'pull_request' && '-pr' || '' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -716,10 +656,12 @@ jobs:
         with:
           context: .
           file: deploy/updater.Dockerfile
-          build-args: VERSION=${{ steps.version.outputs.gateway }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.gateway }}
+            PROFILE=${{ env.PROFILE }}
           tags: kaeso-updater:ci
           outputs: type=docker,dest=${{ runner.temp }}/images/updater.tar
-          cache-from: type=gha,scope=ci-updater
+          cache-from: type=gha,scope=ci-updater${{ env.SCOPE }}
           cache-to: ${{ github.ref == 'refs/heads/dev' && 'type=gha,mode=max,scope=ci-updater' || '' }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
@@ -774,6 +716,52 @@ jobs:
           retention-days: 1
           compression-level: 0
 
+  # Pull requests read dev's caches, so dev builds the Rust images once more the way pull requests build them.
+  image-pull-request-cache:
+    name: Images (pull request cache)
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      DOCKER_BUILD_RECORD_RETENTION_DAYS: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+      - name: Gateway image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: deploy/gateway.Dockerfile
+          target: gateway
+          build-args: PROFILE=pr
+          outputs: type=cacheonly
+          cache-from: type=gha,scope=ci-gateway-pr
+          cache-to: type=gha,mode=max,scope=ci-gateway-pr
+      - name: Mock provider image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: deploy/gateway.Dockerfile
+          target: mock
+          build-args: PROFILE=pr
+          outputs: type=cacheonly
+          cache-from: |
+            type=gha,scope=ci-gateway-pr
+            type=gha,scope=ci-mock-pr
+          cache-to: type=gha,mode=max,scope=ci-mock-pr
+      - name: Updater image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: .
+          file: deploy/updater.Dockerfile
+          build-args: PROFILE=pr
+          outputs: type=cacheonly
+          cache-from: type=gha,scope=ci-updater-pr
+          cache-to: type=gha,mode=max,scope=ci-updater-pr
+
   install:
     name: Install test
     needs: [changes, image-gateway, image-mock, image-updater, image-console]
@@ -795,12 +783,7 @@ jobs:
           merge-multiple: true
           path: ${{ runner.temp }}/images
       - run: for image in "$RUNNER_TEMP"/images/*.tar; do docker load --input "$image"; done
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
-        with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: e2e/requirements.txt
-      - run: pip install --require-hashes -r e2e/requirements.txt
+      - uses: ./.github/actions/python
       - name: Install OpenTofu
         run: |
           set -euo pipefail
@@ -817,8 +800,8 @@ jobs:
         env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tofu-plugins
 
-  node-lint:
-    name: TypeScript lint
+  node-checks:
+    name: TypeScript checks
     needs: changes
     if: needs.changes.outputs.node == 'true' || needs.changes.outputs.repository == 'true'
     runs-on: ubuntu-24.04
@@ -827,141 +810,87 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - run: pnpm format:check
-      - run: pnpm build:packages
-      - run: pnpm --filter kaeso-console generate
-      - run: pnpm lint
-      - run: pnpm i18n
+      - uses: ./.github/actions/node
       - run: pnpm knip
-
-  node-typecheck:
-    name: TypeScript typecheck
-    needs: changes
-    if: needs.changes.outputs.node == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - run: pnpm typecheck
-
-  libraries:
-    name: TypeScript libraries
-    needs: changes
-    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.node == 'true' || needs.changes.outputs.deploy == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - run: pnpm build:packages
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        with:
-          name: libraries
-          path: |
-            packages/tokens/dist
-            packages/ui/dist
-            packages/ui/ai
-          if-no-files-found: error
-          retention-days: 1
+      - name: pnpm format:check, pnpm lint, pnpm i18n and pnpm audit, at the same time
+        if: ${{ !cancelled() }}
+        run: >-
+          .github/scripts/together.sh
+          "pnpm format:check=pnpm format:check"
+          "pnpm lint=pnpm lint"
+          "pnpm i18n=pnpm i18n"
+          "pnpm audit=pnpm audit --prod --audit-level high"
+      - if: ${{ !cancelled() }}
+        run: pnpm typecheck
 
   node-test:
-    name: TypeScript test (${{ matrix.suite }})
-    needs: [changes, libraries]
+    name: TypeScript test (tokens, docs, showcase, scripts, mcp-views)
+    needs: changes
     if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - suite: tokens
-            dir: packages/tokens
-            command: pnpm --filter @logicplanes/kaeso-tokens test
-          - suite: ui
-            dir: packages/ui
-            command: pnpm --filter @logicplanes/kaeso-ui test
-          - suite: docs
-            dir: apps/docs
-            command: pnpm --filter kaeso-docs test
-            chromium: true
-          - suite: showcase
-            dir: apps/showcase
-            command: pnpm --filter kaeso-showcase test
-          - suite: scripts
-            dir: scripts
-            command: node --test 'scripts/*.test.mjs'
-          - suite: mcp-views
-            dir: apps/mcp-views
-            command: pnpm --filter kaeso-mcp-views test
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - uses: ./.github/actions/node
         with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - id: playwright
-        if: matrix.chromium
-        name: Playwright version
-        run: echo "version=$(pnpm --filter kaeso-docs exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-      - if: matrix.chromium
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
-      - if: matrix.chromium
-        run: pnpm --filter kaeso-docs exec playwright install --with-deps chromium
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: libraries
-          path: packages
-      - run: ${{ matrix.command }}
+          libraries: true
+          playwright: kaeso-docs
+      - run: pnpm --filter @logicplanes/kaeso-tokens test
+      - if: ${{ !cancelled() }}
+        run: pnpm --filter kaeso-docs test
+      - if: ${{ !cancelled() }}
+        run: pnpm --filter kaeso-showcase test
+      - if: ${{ !cancelled() }}
+        run: node --test 'scripts/*.test.mjs'
+      - if: ${{ !cancelled() }}
+        run: pnpm --filter kaeso-mcp-views test
       - name: Coverage summary
         if: always()
-        env:
-          DIR: ${{ matrix.dir }}
         run: |
-          file="$DIR/coverage/coverage-summary.json"
+          {
+            echo "### TypeScript coverage"
+            echo "| Package | Lines | Statements | Branches | Functions |"
+            echo "| --- | ---: | ---: | ---: | ---: |"
+            for dir in packages/tokens apps/docs apps/mcp-views; do
+              file="$dir/coverage/coverage-summary.json"
+              if [[ -f "$file" ]]; then
+                node -e 'const t = require(process.argv[1]).total; console.log(["", process.argv[2], ...["lines", "statements", "branches", "functions"].map((k) => t[k].pct + "%"), ""].join(" | ").trim())' "$PWD/$file" "$dir"
+              fi
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  node-test-ui:
+    name: TypeScript test (ui)
+    needs: changes
+    if: needs.changes.outputs.node == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/node
+        with:
+          libraries: true
+      - run: pnpm --filter @logicplanes/kaeso-ui test
+      - name: Coverage summary
+        if: always()
+        run: |
+          file="packages/ui/coverage/coverage-summary.json"
           if [[ -f "$file" ]]; then
             {
               echo "### TypeScript coverage"
               echo "| Package | Lines | Statements | Branches | Functions |"
               echo "| --- | ---: | ---: | ---: | ---: |"
-              node -e 'const t = require(process.argv[1]).total; console.log(["", process.argv[2], ...["lines", "statements", "branches", "functions"].map((k) => t[k].pct + "%"), ""].join(" | ").trim())' "$PWD/$file" "$DIR"
+              node -e 'const t = require(process.argv[1]).total; console.log(["", "packages/ui", ...["lines", "statements", "branches", "functions"].map((k) => t[k].pct + "%"), ""].join(" | ").trim())' "$PWD/$file"
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   node-test-console:
     name: TypeScript test (console ${{ matrix.shard }}/6)
-    needs: [changes, libraries]
+    needs: changes
     if: needs.changes.outputs.console == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -975,17 +904,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - uses: ./.github/actions/node
         with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: libraries
-          path: packages
+          libraries: true
       - run: pnpm --filter kaeso-console generate
       - name: A sixth of the tests, recording their coverage for TypeScript test (console coverage)
         run: pnpm --filter kaeso-console exec vitest run --coverage --coverage.thresholds=false --shard="$SHARD/6" --reporter=default --reporter=blob --outputFile.blob="$RUNNER_TEMP/vitest/blob-$SHARD.json"
@@ -1006,13 +927,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: ./.github/actions/node
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: vitest-console-*
@@ -1043,13 +958,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
+      - uses: ./.github/actions/node
       - run: pnpm build
       - name: The gateway ships the MCP view this checkout builds
         run: git diff --exit-code -- crates/kaeso-server/assets/mcp-stats.html
@@ -1071,7 +980,7 @@ jobs:
 
   e2e-console:
     name: End-to-end console (${{ matrix.part }}/5)
-    needs: [changes, libraries, image-gateway]
+    needs: [changes, image-gateway]
     if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.console == 'true' || needs.changes.outputs.deploy == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -1120,25 +1029,10 @@ jobs:
           name: image-gateway
           path: ${{ runner.temp }}/images
       - run: docker load --input "$RUNNER_TEMP/images/gateway.tar"
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - uses: ./.github/actions/node
         with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: libraries
-          path: packages
-      - id: playwright
-        name: Playwright version
-        run: echo "version=$(pnpm --filter kaeso-console exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
-      - run: pnpm --filter kaeso-console exec playwright install --with-deps chromium
+          libraries: true
+          playwright: kaeso-console
       - run: pnpm --filter kaeso-console generate
       - name: Playwright
         env:
@@ -1166,13 +1060,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - uses: ./.github/actions/node
         with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline --filter kaeso-console
+          filter: kaeso-console
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: blob-console-*
@@ -1191,7 +1081,7 @@ jobs:
 
   e2e-docs:
     name: End-to-end docs
-    needs: [changes, libraries]
+    needs: changes
     if: needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -1199,25 +1089,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - uses: ./.github/actions/node
         with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: libraries
-          path: packages
-      - id: playwright
-        name: Playwright version
-        run: echo "version=$(pnpm --filter kaeso-docs exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-chromium
-      - run: pnpm --filter kaeso-docs exec playwright install --with-deps chromium
+          libraries: true
+          playwright: kaeso-docs
       - run: pnpm --filter kaeso-docs e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: failure()
@@ -1230,10 +1105,10 @@ jobs:
 
   e2e-showcase:
     name: End-to-end showcase (${{ matrix.project }} ${{ matrix.shard }}/${{ matrix.shards }})
-    needs: [changes, libraries, node-build]
+    needs: [changes, node-build]
     if: needs.changes.outputs.showcase == 'true'
     runs-on: ubuntu-24.04
-    # Installing WebKit system packages from the runner's Ubuntu mirror alone has taken over 20 minutes.
+    # Installing WebKit's system packages from the runner's Ubuntu mirror alone has taken over 20 minutes.
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -1252,34 +1127,19 @@ jobs:
             shard: 1
     env:
       PROJECT: ${{ matrix.project }}
-      BROWSER: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - uses: ./.github/actions/node
         with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-        with:
-          name: libraries
-          path: packages
+          libraries: true
+          playwright: kaeso-showcase
+          browser: ${{ matrix.browser }}
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: showcase
           path: apps/showcase/dist
-      - id: playwright
-        name: Playwright version
-        run: echo "version=$(pnpm --filter kaeso-showcase exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-${{ matrix.browser }}
-      - run: pnpm --filter kaeso-showcase exec playwright install --with-deps "$BROWSER"
       - name: Playwright
         env:
           SHARD: ${{ matrix.shard }}/${{ matrix.shards }}
@@ -1304,13 +1164,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      - uses: ./.github/actions/node
         with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline --filter kaeso-showcase
+          filter: kaeso-showcase
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: blob-showcase-*
@@ -1327,64 +1183,38 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  node-dependencies:
-    name: TypeScript dependencies
-    needs: changes
-    if: needs.changes.outputs.node == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile --prefer-offline
-      - run: pnpm audit --prod --audit-level high
-
   ci:
     name: CI
     if: always()
     needs:
       - changes
-      - comments
-      - workflows
-      - rust-format
+      - repository
       - rust-lint
       - test-kpp
       - msrv
+      - published-crates
+      - fuzz-runs
       - test-gateway
       - coverage-gateway
       - repository-tooling
-      - query-data
-      - openapi
       - rust-dependencies
-      - fuzz
-      - published-crates
-      - fuzz-runs
       - sdk-conformance
       - sdk-e2e
-      - compose
       - image-gateway
       - image-mock
       - image-updater
       - image-console
+      - image-pull-request-cache
       - install
-      - node-lint
-      - node-typecheck
-      - libraries
+      - node-checks
       - node-test
+      - node-test-ui
       - node-test-console
       - node-coverage-console
       - node-build
       - e2e-console
       - e2e-docs
       - e2e-showcase
-      - node-dependencies
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
@@ -1393,4 +1223,4 @@ jobs:
           NEEDS: ${{ toJSON(needs) }}
         run: |
           jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
-          jq -e '.changes.result == "success" and .comments.result == "success" and (to_entries | all(.value.result == "success" or .value.result == "skipped"))' <<< "$NEEDS" > /dev/null
+          jq -e '.changes.result == "success" and .repository.result == "success" and (to_entries | all(.value.result == "success" or .value.result == "skipped"))' <<< "$NEEDS" > /dev/null
