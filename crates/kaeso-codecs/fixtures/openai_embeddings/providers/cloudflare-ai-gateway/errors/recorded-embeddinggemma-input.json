@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "AiError: Bad input: Error: oneOf at '/' not met, 0 matches: required properties at '/' are 'input', required properties at '/' are 'messages' (00000000-0000-0000-0000-000000000000)",
+      "code": 5006
+    }
+  ],
+  "success": false,
+  "result": {},
+  "messages": []
+}

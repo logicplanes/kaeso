@@ -1,0 +1,4 @@
+{
+  "model": "@cf/baai/bge-kaeso-none",
+  "input": "hi"
+}

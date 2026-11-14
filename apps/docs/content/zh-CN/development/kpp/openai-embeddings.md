@@ -121,3 +121,7 @@ order: 8
 ### SiliconFlow
 
 来源：SiliconFlow 的 [create embeddings](https://docs.siliconflow.com/en/api-reference/embeddings/create-embeddings) 参考（2026-11-10 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/siliconflow/`，其中的错误是在没有有效密钥的情况下实时返回的。它的模型包括 `Qwen/Qwen3-Embedding-8B`、`-4B` 和 `-0.6B` 以及 `BAAI/bge-m3`。只有 Qwen3 模型接受 `dimensions`，一个请求最多包含 32 个字符串。回复带有 `usage.completion_tokens: 0`，保留在 extras 中。SiliconFlow 的错误没有 `error` 对象；应用会以 OpenAI 的形式收到，并带有 SiliconFlow 的消息。
+
+### Cloudflare AI Gateway
+
+来源：Workers AI 的 [OpenAI compatibility](https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/) 页面和[模型页面](https://developers.cloudflare.com/workers-ai/models/)（2026-11-14 阅读），其中只有请求示例而没有回复，以及实时录制的 `fixtures/openai_embeddings/providers/cloudflare-ai-gateway/`。Kaeso 把请求发送到 `/client/v4/accounts/{account_id}/ai/v1/embeddings`，以密钥的账户替代 `/v1`，密钥指定了网关时附带其网关头。回复包含 `object`、`data` 和 `model`，没有 `usage`，因此 Kaeso 会估算请求的 Token 数。Workers AI 会忽略 `dimensions` 并返回模型的完整维度，因此该服务商的嵌入配置会拒绝它（`without_dimensions()`）；它对 `encoding_format: "base64"` 返回浮点数，编解码器会按应用要求的编码交给应用。`@cf/google/embeddinggemma-2` 即使带有 `input`，该路径也返回 400，因此 KPMR 未收录它。

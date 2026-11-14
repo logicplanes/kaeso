@@ -218,7 +218,12 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(cloudflare["name"], "Cloudflare AI Gateway");
     assert_eq!(
         cloudflare["dialects"],
-        json!(["openai_chat", "openai_responses", "anthropic_messages"])
+        json!([
+            "openai_chat",
+            "openai_responses",
+            "anthropic_messages",
+            "openai_embeddings"
+        ])
     );
     assert_eq!(
         (
@@ -226,7 +231,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             &cloudflare["embeddings"],
             &cloudflare["key_prefix"]
         ),
-        (&Value::Null, &Value::Null, &Value::Null)
+        (&Value::Null, &json!("openai_embeddings"), &Value::Null)
     );
     assert_eq!(
         cloudflare["account_scope"],

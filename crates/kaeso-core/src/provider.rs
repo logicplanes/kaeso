@@ -7,6 +7,7 @@ use kaeso_codecs::anthropic_messages::{FixedValue, MINIMAX_VIDEO_MEDIA_TYPES, Me
 use kaeso_codecs::gemini::GeminiProfile;
 use kaeso_codecs::openai_chat::ChatProfile;
 use kaeso_codecs::openai_decisions::DecisionsProfile;
+use kaeso_codecs::openai_embeddings::EmbeddingsProfile;
 use kaeso_codecs::openai_images::ImagesProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_codecs::openai_speech::SpeechProfile;
@@ -674,6 +675,9 @@ pub struct Provider {
     pub generation: DialectId,
     pub count_tokens: Option<DialectId>,
     pub embeddings: Option<DialectId>,
+    /// How the provider takes OpenAI embeddings requests, for a provider whose `embeddings` is
+    /// `openai_embeddings`.
+    pub embeddings_profile: EmbeddingsProfile,
     /// Where Kaeso sends image requests, by model, the first match winning; empty for a
     /// provider that offers no image API.
     pub images: &'static [ImagesEgress],
@@ -752,6 +756,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiResponses,
         count_tokens: Some(DialectId::OpenAiResponses),
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress::openai(ImagesProfile::OPENAI)],
         speech: &[SpeechEgress::openai(SpeechProfile::OPENAI)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::OPENAI)],
@@ -795,6 +800,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -828,6 +834,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -866,6 +873,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiResponses,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress::openai(ImagesProfile::XAI)],
         speech: &[SpeechEgress::openai(SpeechProfile::XAI)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::XAI)],
@@ -912,6 +920,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress::openai(ImagesProfile::TOGETHER)],
         speech: &[SpeechEgress::openai(SpeechProfile::TOGETHER)],
         transcriptions: &[TranscriptionsEgress::openai(
@@ -951,6 +960,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[SpeechEgress::openai(SpeechProfile::GROQ)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::GROQ)],
@@ -990,6 +1000,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress::openai(ImagesProfile::OPENROUTER)],
         speech: &[SpeechEgress::openai(SpeechProfile::OPENROUTER)],
         transcriptions: &[TranscriptionsEgress::openai(
@@ -1031,6 +1042,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[SpeechEgress::openai(SpeechProfile::MISTRAL)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::MISTRAL)],
@@ -1085,6 +1097,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress::openai(ImagesProfile::VERCEL)],
         speech: &[SpeechEgress::openai(SpeechProfile::VERCEL)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::VERCEL)],
@@ -1123,6 +1136,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[TranscriptionsEgress {
@@ -1179,6 +1193,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1215,6 +1230,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1264,6 +1280,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         // QwenCloud's OpenAI-compatible image mode serves Qwen-Image 3.0 and 2.1 Pro only
         // (https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai);
         // its other image models answer on DashScope's own API.
@@ -1337,6 +1354,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1378,6 +1396,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress {
             dialect: DialectId::OpenAiImages,
             profile: ImagesProfile::ZAI,
@@ -1423,6 +1442,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::AnthropicMessages,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress {
             dialect: DialectId::MinimaxImages,
             profile: ImagesProfile::OPENAI,
@@ -1491,6 +1511,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::ElevenLabs,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[
             ImagesEgress::elevenlabs().for_models("gpt-image-*"),
             ImagesEgress::elevenlabs().for_models("gemini-*-image"),
@@ -1541,6 +1562,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::Gemini,
         count_tokens: Some(DialectId::Gemini),
         embeddings: Some(DialectId::GeminiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress::gemini()],
         speech: &[SpeechEgress::gemini()],
         transcriptions: &[TranscriptionsEgress::gemini()],
@@ -1575,6 +1597,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::Gemini,
         count_tokens: Some(DialectId::Gemini),
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[ImagesEgress::gemini()],
         speech: &[SpeechEgress::gemini()],
         transcriptions: &[TranscriptionsEgress::gemini()],
@@ -1656,6 +1679,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1698,6 +1722,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1737,6 +1762,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1778,6 +1804,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[TranscriptionsEgress::openai(
@@ -1819,6 +1846,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1860,6 +1888,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1900,6 +1929,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1940,6 +1970,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[SpeechEgress::openai(SpeechProfile::SILICONFLOW)],
         transcriptions: &[TranscriptionsEgress::openai(
@@ -1986,6 +2017,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2033,7 +2065,13 @@ pub const PROVIDERS: &[Provider] = &[
         // egress dialect where it isn't Chat Completions.
         generation: DialectId::OpenAiChat,
         count_tokens: None,
-        embeddings: None,
+        // Workers AI's embedding models answer OpenAI's embeddings API under the account's
+        // `/ai/v1`, and leave out `dimensions` and `usage` (recorded live); `/ai/v1/embeddings`
+        // isn't among the AI Gateway REST API's paths, but answers through a gateway too
+        // (https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/).
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::compatible("Cloudflare AI Gateway")
+            .without_dimensions(),
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2050,6 +2088,7 @@ pub const PROVIDERS: &[Provider] = &[
             DialectId::OpenAiChat,
             DialectId::OpenAiResponses,
             DialectId::AnthropicMessages,
+            DialectId::OpenAiEmbeddings,
         ],
         refused_key_messages: &[],
         context_window_messages: &[],
@@ -2092,6 +2131,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2164,6 +2204,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::SystemOne,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2208,6 +2249,7 @@ pub const PROVIDERS: &[Provider] = &[
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2754,6 +2796,21 @@ mod tests {
             .map(|p| p.id)
             .collect();
         assert_eq!(scoped, ["cloudflare-ai-gateway"]);
+    }
+
+    #[test]
+    fn cloudflare_embeds_with_workers_ai_and_refuses_the_dimensions_it_ignores() {
+        let p = provider("cloudflare-ai-gateway").unwrap();
+        assert_eq!(p.embeddings, Some(DialectId::OpenAiEmbeddings));
+        assert!(p.dialects.contains(&DialectId::OpenAiEmbeddings));
+        assert_eq!(p.embeddings_profile.provider, "Cloudflare AI Gateway");
+        assert!(!p.embeddings_profile.dimensions);
+        let others: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| p.embeddings_profile != EmbeddingsProfile::OPENAI)
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(others, ["cloudflare-ai-gateway"]);
     }
 
     #[test]

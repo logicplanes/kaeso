@@ -2652,6 +2652,30 @@ fn standard_compute_models_speak_chat_completions_without_prices_and_smart_routi
 }
 
 #[test]
+fn workers_ai_embedding_models_embed_through_cloudflare_at_their_neuron_prices() {
+    let m3 = eff(&entry("cloudflare-ai-gateway", "@cf/baai/bge-m3"));
+    assert!(m3.is_embeddings());
+    assert_eq!(
+        (m3.dialect, m3.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.011825)))
+    );
+    assert_eq!(
+        m3.provider.embeddings_profile().provider,
+        "Cloudflare AI Gateway"
+    );
+    assert!(!m3.provider.embeddings_profile().dimensions);
+    let models = &snapshot().providers["cloudflare-ai-gateway"].models;
+    assert_eq!(
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some("embedding"))
+            .count(),
+        6
+    );
+    assert!(!models.contains_key("@cf/google/embeddinggemma-2"));
+}
+
+#[test]
 fn cloudflare_models_go_out_in_the_format_cloudflare_lists_with_their_efforts_and_prices() {
     let claude = eff(&entry(
         "cloudflare-ai-gateway",

@@ -672,3 +672,53 @@ async fn cloudflare_refusals_of_a_decision_reach_apps_in_their_own_format() {
         );
     }
 }
+
+#[tokio::test]
+async fn workers_ai_embeds_through_the_keys_account_with_or_without_a_gateway_and_refuses_dimensions()
+ {
+    for gateway in [None, Some(GATEWAY)] {
+        let env = env_with(gateway).await;
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+                json!({ "provider": "cloudflare-ai-gateway", "model_id": "@cf/baai/bge-m3" }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+        let r = call(
+            &env,
+            "/v1/embeddings",
+            Some(&env.key),
+            false,
+            Some(json!({
+                "model": "@cf/baai/bge-m3",
+                "input": ["The food was delicious and the waiter was friendly. [mock:fixture=providers/cloudflare-ai-gateway/recorded-bge-m3]"],
+            })),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        assert_eq!(r.header("kaeso-provider"), Some("cloudflare-ai-gateway"));
+        assert_eq!(r.json()["data"].as_array().unwrap().len(), 2);
+        let sent = sent(&env, "embeddings");
+        assert_eq!(sent.header("cf-aig-gateway-id"), gateway);
+        assert_eq!(sent.json()["model"], "@cf/baai/bge-m3");
+
+        env.mock.clear();
+        let r = call(
+            &env,
+            "/v1/embeddings",
+            Some(&env.key),
+            false,
+            Some(json!({ "model": "@cf/baai/bge-m3", "input": "hi", "dimensions": 256 })),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+        assert_eq!(
+            r.json()["error"]["message"],
+            "`dimensions` is not supported by Cloudflare AI Gateway; remove it from the request."
+        );
+        assert!(env.mock.received().is_empty());
+    }
+}
