@@ -2549,6 +2549,40 @@ fn nebius_models_speak_chat_completions_with_kpmrs_prices_and_its_embeddings_emb
 }
 
 #[test]
+fn deepinfra_models_speak_chat_completions_and_its_embedding_models_embed_with_their_prices() {
+    let flash = eff(&entry("deepinfra", "deepseek-ai/DeepSeek-V4-Flash-0731"));
+    assert_eq!(flash.dialect, DialectId::OpenAiChat);
+    assert_eq!(flash.provider.chat().provider, "DeepInfra");
+    assert_eq!(
+        (
+            flash.fields.input_price,
+            flash.fields.output_price,
+            flash.fields.cache_read_price
+        ),
+        (Some(dec!(0.06)), Some(dec!(0.18)), Some(dec!(0.015)))
+    );
+    assert_eq!(
+        effort_levels(&flash, DialectId::OpenAiChat),
+        ["low", "high", "max"]
+    );
+    assert_eq!(flash.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    let embed = eff(&entry("deepinfra", "Qwen/Qwen3-Embedding-8B"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.01)))
+    );
+    let models = &snapshot().providers["deepinfra"].models;
+    assert_eq!(
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some("embedding"))
+            .count(),
+        25
+    );
+}
+
+#[test]
 fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
     let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

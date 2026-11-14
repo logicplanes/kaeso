@@ -2219,6 +2219,113 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/deepinfra/cached-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "How do I use async/await?",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful coding assistant.",
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "prompt_cache_key": "user123-chat456",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepinfra/greeting-published": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-120b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepinfra/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "hi",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepinfra/missing-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "hi",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepinfra/reasoning-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is 17 times 23?",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/deepinfra/tools-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "What is the weather in San Francisco?",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_current_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "providers/deepseek/authentication-fails": {
     "body": {
       "input": [

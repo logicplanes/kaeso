@@ -2657,6 +2657,135 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/deepinfra/cached-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "How do I use async/await?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful coding assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4-Flash-0731:generateContent"
+  },
+  "providers/deepinfra/greeting-published": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b:generateContent"
+  },
+  "providers/deepinfra/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4-Flash-0731:generateContent"
+  },
+  "providers/deepinfra/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4-Flash-0731:generateContent"
+  },
+  "providers/deepinfra/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4-Flash-0731:streamGenerateContent?alt=sse"
+  },
+  "providers/deepinfra/tools-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in San Francisco?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a given location",
+              "name": "get_current_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "The city and state, e.g. San Francisco, CA",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4-Flash-0731:generateContent"
+  },
   "providers/deepseek/authentication-fails": {
     "body": {
       "contents": [

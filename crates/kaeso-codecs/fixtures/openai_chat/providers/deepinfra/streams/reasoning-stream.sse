@@ -1,0 +1,12 @@
+data: {"id":"chatcmpl-4hGt7YpQ2cXw9LmNb3VsRzKe","object":"chat.completion.chunk","created":1794657720,"model":"deepseek-ai/DeepSeek-V4-Flash-0731","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null,"logprobs":null}]}
+
+data: {"id":"chatcmpl-4hGt7YpQ2cXw9LmNb3VsRzKe","object":"chat.completion.chunk","created":1794657720,"model":"deepseek-ai/DeepSeek-V4-Flash-0731","choices":[{"index":0,"delta":{"reasoning_content":"17 times 20 is 340, "},"finish_reason":null,"logprobs":null}]}
+
+data: {"id":"chatcmpl-4hGt7YpQ2cXw9LmNb3VsRzKe","object":"chat.completion.chunk","created":1794657720,"model":"deepseek-ai/DeepSeek-V4-Flash-0731","choices":[{"index":0,"delta":{"reasoning_content":"plus 51 is 391."},"finish_reason":null,"logprobs":null}]}
+
+data: {"id":"chatcmpl-4hGt7YpQ2cXw9LmNb3VsRzKe","object":"chat.completion.chunk","created":1794657720,"model":"deepseek-ai/DeepSeek-V4-Flash-0731","choices":[{"index":0,"delta":{"content":"17 × 23 = 391."},"finish_reason":null,"logprobs":null}]}
+
+data: {"id":"chatcmpl-4hGt7YpQ2cXw9LmNb3VsRzKe","object":"chat.completion.chunk","created":1794657720,"model":"deepseek-ai/DeepSeek-V4-Flash-0731","choices":[{"index":0,"delta":{},"finish_reason":"stop","logprobs":null}],"usage":{"prompt_tokens":14,"total_tokens":45,"completion_tokens":31,"estimated_cost":0.0000094,"prompt_tokens_details":{"cached_tokens":0,"cache_write_tokens":null}}}
+
+data: [DONE]
+

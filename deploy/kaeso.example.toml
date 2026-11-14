@@ -158,6 +158,9 @@ base_url = "https://api.perplexity.ai"
 [providers.typesafe]
 base_url = "https://api.typesafe.ai"
 
+[providers.deepinfra]
+base_url = "https://api.deepinfra.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

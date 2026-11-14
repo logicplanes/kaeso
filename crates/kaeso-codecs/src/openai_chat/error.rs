@@ -195,8 +195,13 @@ fn union_tag(part: &str, after_index: bool) -> bool {
 fn validation(detail: &Value, status: Option<u16>) -> Option<(String, Option<String>)> {
     let items = match detail {
         Value::String(text) => return Some((quoted(text, status), None)),
+        // DeepInfra refuses a key without the scope a request needs with `{"detail": {"error":
+        // …}}` (https://docs.deepinfra.com/account/authentication.md#scopes).
         Value::Object(fields) => {
-            let text = fields.get("message")?.as_str()?;
+            let text = fields
+                .get("message")
+                .or_else(|| fields.get("error"))?
+                .as_str()?;
             return Some((quoted(text, status), None));
         }
         Value::Array(items) => items,

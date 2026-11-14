@@ -192,6 +192,10 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         "providers/mistral/recorded-system-name-multiturn",
         ErrorKind::InvalidRequest,
     ),
+    (
+        "providers/deepinfra/missing-scope-doc",
+        ErrorKind::PermissionDenied,
+    ),
 ];
 
 const COHERE: &str = "providers/cohere/";

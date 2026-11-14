@@ -1835,6 +1835,82 @@ expression: outcomes
       "totalTokenCount": 199
     }
   },
+  "providers/deepinfra/cached-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Mark the function `async` and `await` each promise inside it."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "responseId": "chatcmpl-9vLp2QeXcN7tWm4KjHs1aBdF",
+    "usageMetadata": {
+      "cachedContentTokenCount": 4800,
+      "candidatesTokenCount": 50,
+      "promptTokenCount": 5000,
+      "totalTokenCount": 5050
+    }
+  },
+  "providers/deepinfra/greeting-published": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! How can I help you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-oss-120b",
+    "responseId": "chatcmpl-RJz5cb7iTXK27Wnklx5j9XW9",
+    "usageMetadata": {
+      "candidatesTokenCount": 28,
+      "promptTokenCount": 56,
+      "totalTokenCount": 84
+    }
+  },
+  "providers/deepinfra/tools-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "functionCall": {
+                "args": {
+                  "location": "San Francisco"
+                },
+                "id": "call_X0xYqdnoUonPJpQ6HEadxLHE",
+                "name": "get_current_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-ai/DeepSeek-V4-Flash-0731",
+    "responseId": "chatcmpl-6dWkqT3s0aHn2cJm8vRrYbXe",
+    "usageMetadata": {
+      "candidatesTokenCount": 37,
+      "promptTokenCount": 176,
+      "totalTokenCount": 213
+    }
+  },
   "providers/deepseek/recorded-json-object-system": {
     "candidates": [
       {

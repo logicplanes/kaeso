@@ -2190,6 +2190,67 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
     },
+    Provider {
+        id: "deepinfra",
+        name: "DeepInfra",
+        // A key needs the `inference` scope, which every new key starts with
+        // (https://docs.deepinfra.com/account/authentication.md).
+        key_page: KeyPage {
+            url: "https://deepinfra.com/dash/keys",
+            label: "API keys",
+        },
+        key_prefix: None,
+        // DeepInfra's guides write the base URL as `https://api.deepinfra.com/v1/openai`; its
+        // OpenAPI document serves the same API at `/v1/…` under the host
+        // (https://api.deepinfra.com/openapi.json).
+        default_base_url: "https://api.deepinfra.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
+        end_user_limit: None,
+        // `OpenAIChatCompletionsIn` in DeepInfra's OpenAPI document has only `max_tokens`, the end
+        // user as `user`, the roles `system`, `user`, `assistant` and `tool`, `video_url` parts
+        // and `reasoning_content` on assistant messages, and none of the fields refused here,
+        // which it would otherwise drop without a word (https://api.deepinfra.com/openapi.json).
+        chat: ChatProfile::compatible("DeepInfra")
+            .max_tokens()
+            .system_role()
+            .end_user_as_user()
+            .with_video_url()
+            .reasoning_fields(&["reasoning_content"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "logit_bias",
+                "metadata",
+                "modalities",
+                "parallel_tool_calls",
+                "prediction",
+                "prompt_cache_retention",
+                "store",
+                "top_logprobs",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("DeepInfra"),
+        messages: MessagesProfile::compatible("DeepInfra"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+    },
 ];
 
 const _: () = {
@@ -2267,6 +2328,7 @@ pub fn ids() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kaeso_codecs::openai_chat::{EndUserField, OutputLimit};
     use kaeso_codecs::openai_responses::{InputItems, ReasoningReplay, WebSearchTool};
     use kaeso_codecs::{EgressCtx, HeaderList, dispatch};
     use kaeso_kpp::{Request, RequestKind};
@@ -2486,7 +2548,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra"
         );
     }
 
@@ -2596,6 +2658,40 @@ mod tests {
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         let listed = ["perplexity/sonar".to_owned()];
         assert_eq!(p.listing.serves(&listed, "sonar-pro"), None);
+    }
+
+    #[test]
+    fn deepinfra_serves_chat_and_embeddings_under_its_host_and_refuses_what_its_schema_leaves_out()
+    {
+        let p = provider("deepinfra").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "DeepInfra",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://api.deepinfra.com");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), None)
+        );
+        assert_eq!(p.key_page.url, "https://deepinfra.com/dash/keys");
+        assert_eq!(p.listing, ModelListing::Complete);
+        assert_eq!(p.chat.provider, "DeepInfra");
+        assert_eq!(p.chat.request.path, "/v1/chat/completions");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::MaxTokens);
+        assert_eq!(p.chat.request.end_user_field, EndUserField::User);
+        assert!(!p.chat.request.developer_role && p.chat.request.video_url);
+        assert!(p.chat.request.cache_key && p.chat.request.stream_options);
+        assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
+        for field in ["parallel_tool_calls", "top_logprobs", "logit_bias", "store"] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
     }
 
     #[test]
@@ -3566,7 +3662,8 @@ mod tests {
                 "standardcompute",
                 "cloudflare-ai-gateway",
                 "perplexity",
-                "typesafe"
+                "typesafe",
+                "deepinfra"
             ]
         );
         assert_eq!(

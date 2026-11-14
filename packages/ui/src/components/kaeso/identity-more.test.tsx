@@ -202,6 +202,7 @@ const MARKED_PROVIDERS = {
   "cloudflare-ai-gateway": "Cloudflare AI Gateway",
   perplexity: "Perplexity",
   typesafe: "TypeSafe",
+  deepinfra: "DeepInfra",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

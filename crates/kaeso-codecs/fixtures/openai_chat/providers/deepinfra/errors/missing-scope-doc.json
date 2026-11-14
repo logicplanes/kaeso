@@ -1,0 +1,5 @@
+{
+  "detail": {
+    "error": "this API key does not have the 'inference' scope"
+  }
+}
