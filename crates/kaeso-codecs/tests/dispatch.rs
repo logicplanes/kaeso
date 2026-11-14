@@ -1,13 +1,15 @@
 use kaeso_codecs::anthropic_messages::AnthropicMessages;
+use kaeso_codecs::elevenlabs::ElevenLabsCall;
 use kaeso_codecs::gemini::Gemini;
 use kaeso_codecs::gemini_embeddings::GeminiEmbeddings;
+use kaeso_codecs::limits::Checked;
 use kaeso_codecs::openai_chat::OpenAiChat;
 use kaeso_codecs::openai_embeddings::OpenAiEmbeddings;
 use kaeso_codecs::openai_responses::OpenAiResponses;
 use kaeso_codecs::{Codec, EgressCtx, HeaderList, dispatch};
 use kaeso_kpp::{
-    Block, DialectId, DocumentBlock, ErrorKind, GenerateRequest, Message, Origin, RawItem, RawJson,
-    Request, RequestKind, Role, Source, StreamMode,
+    Block, DialectId, DocumentBlock, ErrorKind, GenerateRequest, ImageOperation, Message, Origin,
+    RawItem, RawJson, Request, RequestKind, Role, Source, StreamMode, VideoOperation, VideoRequest,
 };
 
 const DIALECTS: [DialectId; 6] = [
@@ -358,4 +360,115 @@ fn only_a_responses_stream_folds_an_item_it_does_not_model_into_the_item_it_ende
     assert!(dispatch::reports_item_progress(r, &progress));
     assert!(!dispatch::reports_item_progress(r, &other));
     assert!(!dispatch::reports_item_progress(a, &progress));
+}
+
+#[test]
+fn a_checked_body_of_every_json_dialect_decodes_as_the_dialect_decodes_it() {
+    let json = HeaderList::new().with("content-type", "application/json");
+    let mut compared = 0;
+    for dialect in DialectId::ALL {
+        if matches!(
+            dialect,
+            DialectId::Gemini
+                | DialectId::GeminiEmbeddings
+                | DialectId::OpenAiImages
+                | DialectId::OpenAiTranscriptions
+        ) {
+            continue;
+        }
+        let kinds: &[RequestKind] = if dialect == DialectId::OpenAiVideos {
+            &[RequestKind::Video, RequestKind::Decide]
+        } else {
+            &[
+                RequestKind::Generate,
+                RequestKind::Image,
+                RequestKind::Speech,
+                RequestKind::Video,
+                RequestKind::Decide,
+            ]
+        };
+        for &kind in kinds {
+            let body = br#"{"model":"m","prompt":"A fox","text":"Hi","model_id":"m"}"#;
+            let direct = dispatch::decode_request(dialect, kind, body, &json);
+            let checked = Checked::new(dialect, &body[..])
+                .and_then(|c| dispatch::decode_checked_request(kind, &c, &json));
+            assert_eq!(
+                format!("{checked:?}"),
+                format!("{direct:?}"),
+                "{dialect} {kind:?}"
+            );
+            compared += usize::from(checked.is_ok());
+        }
+    }
+    assert!(compared >= 10, "only {compared} decoded");
+}
+
+#[test]
+fn a_checked_gemini_body_is_sent_to_the_path_decoder() {
+    for dialect in [DialectId::Gemini, DialectId::GeminiEmbeddings] {
+        let checked = Checked::new(dialect, &b"{}"[..]).unwrap();
+        let err =
+            dispatch::decode_checked_request(RequestKind::Generate, &checked, &HeaderList::new())
+                .unwrap_err();
+        assert_eq!(err.kind, ErrorKind::InvalidRequest);
+        assert_eq!(
+            err.message,
+            format!(
+                "A {} request names its model and method in the path; decode it with `decode_gemini_request`.",
+                dialect.display_name()
+            )
+        );
+    }
+}
+
+#[test]
+fn an_images_api_body_decodes_for_the_operation_its_path_names() {
+    let headers = HeaderList::new().with("content-type", "application/json");
+    let req = dispatch::decode_image_request(
+        ImageOperation::Generate,
+        br#"{"model":"gpt-image-1","prompt":"A fox"}"#,
+        &headers,
+    )
+    .unwrap();
+    let Request::Image(r) = req else {
+        panic!("{req:?}")
+    };
+    assert_eq!(
+        (r.model.as_str(), r.prompt.as_deref(), r.operation),
+        ("gpt-image-1", Some("A fox"), ImageOperation::Generate)
+    );
+    let deep = format!("{}{}", "[".repeat(200), "]".repeat(200));
+    let err = dispatch::decode_image_request(ImageOperation::Generate, deep.as_bytes(), &headers)
+        .unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+}
+
+#[test]
+fn a_checked_elevenlabs_body_decodes_as_the_call_decodes_it() {
+    let call = ElevenLabsCall::from_path("/v1/sound-generation", "").unwrap();
+    let headers = HeaderList::new().with("content-type", "application/json");
+    let body = br#"{"text":"Rain on a tin roof"}"#;
+    let direct = dispatch::decode_elevenlabs_request(&call, body, &headers).unwrap();
+    let checked = Checked::new(DialectId::ElevenLabs, body.to_vec()).unwrap();
+    let again = dispatch::decode_checked_elevenlabs_request(&call, &checked, &headers).unwrap();
+    assert_eq!(again, direct);
+    assert!(matches!(&again, Request::Speech(_)), "{again:?}");
+}
+
+#[test]
+fn a_remix_of_a_real_video_id_is_sent_and_only_elevenlabs_waits_between_task_polls() {
+    let mut remix = VideoRequest::new("sora-2", VideoOperation::Remix).with_prompt("Add snow");
+    remix.remix_of = Some("video_123".into());
+    let req = Request::Video(remix);
+    let enc =
+        dispatch::encode_request(DialectId::OpenAiVideos, &req, &mut EgressCtx::new(&req)).unwrap();
+    assert!(enc.path.contains("video_123"), "{}", enc.path);
+    for dialect in DialectId::ALL {
+        let gap = dispatch::task_poll_gap(dialect);
+        if dialect == DialectId::ElevenLabs {
+            assert_eq!(gap, std::time::Duration::from_secs(2));
+        } else {
+            assert_eq!(gap, std::time::Duration::ZERO, "{dialect}");
+        }
+    }
 }
