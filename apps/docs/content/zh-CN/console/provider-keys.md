@@ -45,7 +45,7 @@ Kaeso 会检查该文件是否为 `token_uri` 为 `https://oauth2.googleapis.com
 1. 在 Cloudflare 控制台中，于 **My Profile → API Tokens** 或账户的 **Manage account → Account API Tokens** 下，为该账户创建一个具有 **Account → Workers AI → Read** 权限的令牌。每个模型请求都需要此权限，第三方模型也一样（见 [REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/#authentication)）；只有 AI Gateway 权限的令牌会被拒绝。
 2. 从账户主页或控制台地址中复制账户 ID（见[查找账户和区域 ID](https://developers.cloudflare.com/fundamentals/account/find-account-and-zone-ids/)）。
 3. 在 Kaeso 的**服务商**页面选择**添加服务商密钥**，然后选择 **Cloudflare AI Gateway**，粘贴令牌和账户 ID。
-4. 可选填写**网关**：该账户某个网关的 ID。请求随后经过该网关，使用其日志、缓存、速率限制和防护规则，并可调用其别名（`custom/…`）和动态路由（`dynamic/…`）。未填写时，请求经过账户的 `default` 网关，Cloudflare 会在第一次请求时创建该网关。
+4. 可选填写**网关**：该账户某个网关的 ID。请求随后经过该网关，使用其日志、缓存、速率限制和防护规则，并可调用其别名（`custom/…`）和动态路由（`dynamic/…`）。未填写时，第三方模型的请求经过账户的 `default` 网关，Cloudflare 会在第一次此类请求时创建该网关；Workers AI 模型则被直接调用，不经过网关。
 
 第三方模型使用账户的 Unified Billing 额度付费，或使用网关上以别名 `default` 存储的服务商密钥付费（见[自带密钥](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/)）。两者都没有时，Cloudflare 会回复余额不足，应用会收到因计费原因被拒绝的服务商密钥。Workers AI 模型通过 Workers AI 计费，即使账户没有额度也可以使用。
 

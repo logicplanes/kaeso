@@ -1,0 +1,7 @@
+{
+  "model": "@cf/baai/bge-m3",
+  "input": [
+    "The food was delicious and the waiter was friendly.",
+    "The quick brown fox jumps over the lazy dog."
+  ]
+}

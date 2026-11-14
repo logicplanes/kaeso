@@ -150,9 +150,10 @@ fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_with
 #[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
-        // NVIDIA answers with RFC 9457 problem documents and SiliconFlow with `{"code", "message", "data"}`;
-        // apps get both in OpenAI's shape.
+        // NVIDIA answers with RFC 9457 problem documents, SiliconFlow with `{"code", "message", "data"}`
+        // and Cloudflare with its `errors` envelope; apps get them in OpenAI's shape.
         if FOREIGN_ERROR_BODIES.contains(&name.as_str())
+            || name.starts_with("providers/cloudflare-ai-gateway/")
             || name.starts_with("providers/cohere/")
             || name.starts_with("providers/nvidia/")
             || name.starts_with("providers/siliconflow/")
@@ -473,4 +474,72 @@ fn a_siliconflow_error_reaches_embeddings_apps_as_an_openai_error_with_its_messa
     assert_eq!(out.status, 401);
     let sent: Value = serde_json::from_slice(&out.body).unwrap();
     assert_eq!(sent["error"]["message"], err.message.as_str());
+}
+
+#[test]
+fn an_account_scoped_provider_gets_embeddings_under_its_api_root_and_its_refused_dimensions() {
+    let req = Request::Embed(decode(br#"{"model":"@cf/baai/bge-m3","input":"hi"}"#));
+    let cloudflare = EmbeddingsProfile::compatible("Cloudflare AI Gateway").without_dimensions();
+    let mut ctx = EgressCtx::new(&req)
+        .with_api_root("/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1")
+        .with_embeddings_profile(cloudflare);
+    let enc = OpenAiEmbeddings::encode_request(&req, &mut ctx).unwrap();
+    assert_eq!(
+        enc.path,
+        "/client/v4/accounts/0123456789abcdef0123456789abcdef/ai/v1/embeddings"
+    );
+
+    let sized = Request::Embed(decode(
+        br#"{"model":"@cf/baai/bge-m3","input":"hi","dimensions":256}"#,
+    ));
+    let e = OpenAiEmbeddings::encode_request(
+        &sized,
+        &mut EgressCtx::new(&sized).with_embeddings_profile(cloudflare),
+    )
+    .unwrap_err();
+    assert!(matches!(e.kind, ErrorKind::Unsupported { .. }), "{e:?}");
+    assert_eq!(
+        (e.param.as_deref(), e.message.as_str()),
+        (
+            Some("dimensions"),
+            "`dimensions` is not supported by Cloudflare AI Gateway; remove it from the request."
+        )
+    );
+    let mut openai = EgressCtx::new(&sized);
+    assert!(OpenAiEmbeddings::encode_request(&sized, &mut openai).is_ok());
+    assert_eq!(EmbeddingsProfile::default(), EmbeddingsProfile::OPENAI);
+}
+
+#[test]
+fn cloudflare_envelopes_reach_embeddings_apps_with_cloudflares_message_and_kind() {
+    for (name, kind, message) in [
+        (
+            "recorded-invalid-api-key",
+            ErrorKind::Authentication,
+            "Authentication error",
+        ),
+        (
+            "recorded-unknown-model",
+            ErrorKind::InvalidRequest,
+            "AiError: No such model: No such model @cf/baai/bge-kaeso-none or task (00000000-0000-0000-0000-000000000000)",
+        ),
+    ] {
+        let name = format!("providers/cloudflare-ai-gateway/{name}");
+        let status = u16::try_from(
+            sidecar(DIR, "errors", &name, "meta").unwrap()["status"]
+                .as_u64()
+                .unwrap(),
+        )
+        .unwrap();
+        let err =
+            OpenAiEmbeddings::decode_error(status, &HeaderList::new(), &fixture("errors", &name));
+        assert_eq!(
+            (&err.kind, err.message.as_str(), err.status),
+            (&kind, message, Some(status)),
+            "{name}"
+        );
+        let sent: Value =
+            serde_json::from_slice(&OpenAiEmbeddings::encode_error(&err).body).unwrap();
+        assert_eq!(sent["error"]["message"], message, "{name}");
+    }
 }

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use kaeso_codecs::anthropic_messages::MessagesProfile;
 use kaeso_codecs::gemini::GeminiProfile;
 use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_embeddings::EmbeddingsProfile;
 use kaeso_codecs::openai_responses::ResponsesProfile;
 use kaeso_kpp::DialectId;
 use serde::{Deserialize, Serialize};
@@ -700,6 +701,13 @@ impl ProviderRef {
                 Some(s) => s.server().chat,
                 None => ChatProfile::OPENAI.without_verbosity(),
             },
+        }
+    }
+
+    pub fn embeddings_profile(&self) -> EmbeddingsProfile {
+        match self {
+            ProviderRef::BuiltIn(p) => p.embeddings_profile,
+            ProviderRef::Custom(_) => EmbeddingsProfile::OPENAI,
         }
     }
 

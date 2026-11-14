@@ -4,6 +4,7 @@ use crate::anthropic_messages::MessagesProfile;
 use crate::gemini::GeminiProfile;
 use crate::openai_chat::ChatProfile;
 use crate::openai_decisions::DecisionsProfile;
+use crate::openai_embeddings::EmbeddingsProfile;
 use crate::openai_images::ImagesProfile;
 use crate::openai_responses::ResponsesProfile;
 use crate::openai_speech::SpeechProfile;
@@ -260,6 +261,8 @@ pub struct EgressCtx {
     pub speech_profile: SpeechProfile,
     /// How a provider that speaks a form of OpenAI's transcription API takes transcriptions.
     pub transcriptions_profile: TranscriptionsProfile,
+    /// How a provider that speaks a form of OpenAI's embeddings API takes embeddings requests.
+    pub embeddings_profile: EmbeddingsProfile,
     /// How a provider that speaks a form of OpenAI's Videos API takes video jobs.
     pub videos_profile: VideosProfile,
     /// How a provider that speaks a form of TypeSafe's System One API takes decision requests.
@@ -335,6 +338,7 @@ impl EgressCtx {
             images_profile: ImagesProfile::OPENAI,
             speech_profile: SpeechProfile::OPENAI,
             transcriptions_profile: TranscriptionsProfile::OPENAI,
+            embeddings_profile: EmbeddingsProfile::OPENAI,
             videos_profile: VideosProfile::OPENAI,
             system_one_profile: SystemOneProfile::TYPESAFE,
             decisions_profile: DecisionsProfile::OPENAI,
@@ -419,6 +423,13 @@ impl EgressCtx {
     #[must_use]
     pub fn with_transcriptions_profile(mut self, profile: TranscriptionsProfile) -> Self {
         self.transcriptions_profile = profile;
+        self
+    }
+
+    /// Sends embeddings requests in the form `profile` describes.
+    #[must_use]
+    pub fn with_embeddings_profile(mut self, profile: EmbeddingsProfile) -> Self {
+        self.embeddings_profile = profile;
         self
     }
 

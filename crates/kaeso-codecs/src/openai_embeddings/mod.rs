@@ -1,3 +1,4 @@
+mod profile;
 mod request;
 mod response;
 mod wire;
@@ -14,6 +15,8 @@ use crate::codec::{
     Codec, EgressCtx, EncodeCtx, EncodedError, EncodedRequest, HeaderList, StreamDecoder,
     StreamEncoder,
 };
+
+pub use profile::EmbeddingsProfile;
 
 const DIALECT: DialectId = DialectId::OpenAiEmbeddings;
 

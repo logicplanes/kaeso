@@ -1,0 +1,4 @@
+{
+  "model": "@cf/google/embeddinggemma-2",
+  "input": "The food was delicious."
+}

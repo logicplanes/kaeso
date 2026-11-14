@@ -189,6 +189,17 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
     let Request::Embed(r) = req else {
         return Err(KppError::unsupported_by("generation request", DIALECT, ""));
     };
+    let profile = ctx.embeddings_profile;
+    if r.dimensions.is_some() && !profile.dimensions {
+        return Err(KppError::unsupported(
+            "dimensions",
+            format!(
+                "`dimensions` is not supported by {}; remove it from the request.",
+                profile.provider
+            ),
+        )
+        .with_param("dimensions"));
+    }
     let mut headers = HeaderList::new().with("content-type", "application/json");
     if r.extras.is_from(DIALECT) {
         for (name, value) in r.extras.headers() {
@@ -198,7 +209,7 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
         }
     }
     Ok(EncodedRequest::post_json(
-        super::EMBEDDINGS_PATH,
+        crate::codec::under_api_root(ctx, super::EMBEDDINGS_PATH),
         headers,
         body(r)?,
     ))

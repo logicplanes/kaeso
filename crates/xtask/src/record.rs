@@ -723,6 +723,7 @@ mod tests {
         generation: DialectId::OpenAiChat,
         count_tokens: None,
         embeddings: None,
+        embeddings_profile: kaeso_codecs::openai_embeddings::EmbeddingsProfile::OPENAI,
         images: &[],
         speech: &[],
         transcriptions: &[],

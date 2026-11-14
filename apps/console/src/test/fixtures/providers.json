@@ -630,9 +630,9 @@
         "label": "API Tokens"
       },
       "key_prefix": null,
-      "dialects": ["openai_chat", "openai_responses", "anthropic_messages"],
+      "dialects": ["openai_chat", "openai_responses", "anthropic_messages", "openai_embeddings"],
       "count_tokens": null,
-      "embeddings": null,
+      "embeddings": "openai_embeddings",
       "account": null,
       "service_account": null,
       "account_scope": {

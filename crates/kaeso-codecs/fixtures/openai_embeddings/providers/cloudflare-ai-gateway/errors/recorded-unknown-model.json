@@ -1,0 +1,11 @@
+{
+  "errors": [
+    {
+      "message": "AiError: No such model: No such model @cf/baai/bge-kaeso-none or task (00000000-0000-0000-0000-000000000000)",
+      "code": 5007
+    }
+  ],
+  "success": false,
+  "result": {},
+  "messages": []
+}

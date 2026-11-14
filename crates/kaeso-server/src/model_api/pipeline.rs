@@ -2590,7 +2590,8 @@ pub(super) fn egress_ctx(
         .with_chat_profile(provider.chat())
         .with_responses_profile(provider.responses())
         .with_messages_profile(provider.messages())
-        .with_gemini_profile(provider.gemini());
+        .with_gemini_profile(provider.gemini())
+        .with_embeddings_profile(provider.embeddings_profile());
     if let Some(images) = provider.images(model) {
         ctx = ctx.with_images_profile(images.profile);
     }
