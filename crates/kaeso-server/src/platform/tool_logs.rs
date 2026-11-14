@@ -13,6 +13,7 @@ use kaeso_core::rights::ProjectRight;
 use kaeso_store::clickhouse::ClickHouse;
 use kaeso_store::clickhouse::tool_calls::{self as store, Filter, ToolCallRow};
 use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use utoipa::{IntoParams, ToSchema};
@@ -23,7 +24,7 @@ use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::keys::Party;
 use crate::platform::logs::{
-    ExportParams, csv_text, decode_cursor, log_store, parse_time, unavailable,
+    ExportParams, csv_text, decode_cursor, log_store, parse_time, stored_json, unavailable,
 };
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query};
@@ -223,17 +224,10 @@ pub struct ToolCallEntryView {
 pub struct ToolCallContentView {
     #[doc = "The arguments as the client sent them."]
     #[schema(value_type = Object)]
-    pub arguments: serde_json::Value,
+    pub arguments: Box<RawValue>,
     #[doc = "The JSON-RPC answer the client got."]
     #[schema(value_type = Object)]
-    pub result: serde_json::Value,
-}
-
-fn json_or_text(s: &str) -> serde_json::Value {
-    if s.is_empty() {
-        return serde_json::Value::Null;
-    }
-    serde_json::from_str(s).unwrap_or_else(|_| serde_json::Value::String(s.to_owned()))
+    pub result: Box<RawValue>,
 }
 
 #[utoipa::path(
@@ -262,8 +256,8 @@ pub async fn get(
             .await
             .map_err(unavailable)?
             .map(|c| ToolCallContentView {
-                arguments: json_or_text(&c.arguments),
-                result: json_or_text(&c.result),
+                arguments: stored_json(&c.arguments),
+                result: stored_json(&c.result),
             })
     } else {
         None
@@ -374,8 +368,8 @@ async fn next_chunk(s: &mut ExportState) -> Option<Result<Bytes, std::io::Error>
                 .iter()
                 .find(|c| c.id == r.id)
                 .map(|c| ToolCallContentView {
-                    arguments: json_or_text(&c.arguments),
-                    result: json_or_text(&c.result),
+                    arguments: stored_json(&c.arguments),
+                    result: stored_json(&c.result),
                 });
             serde_json::to_string(&ToolCallEntryView { call, content })
         } else {
