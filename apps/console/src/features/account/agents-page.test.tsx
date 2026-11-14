@@ -52,16 +52,21 @@ describe("the agents tab", () => {
     expect(screen.getByText(`${window.location.origin}/mcp`)).toBeInTheDocument();
   });
 
-  it("shows how to add this instance's MCP server to Claude Code, Cursor and GitHub Copilot", async () => {
+  it("shows how to add this instance's MCP server to Claude, Cursor and GitHub Copilot", async () => {
     signedIn();
     agentApi();
     const { user } = await renderApp("/settings/account/agents");
     const url = `${window.location.origin}/mcp`;
-    await user.click(await screen.findByRole("button", { name: "Add to Claude Code" }));
-    let dialog = await screen.findByRole("dialog", { name: "Add Kaeso to Claude Code" });
-    expect(within(dialog).getByText("Connect the server, then run /mcp to sign in.")).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: "Add to Claude" }));
+    let dialog = await screen.findByRole("dialog", { name: "Add Kaeso to Claude" });
+    const connector = new URL(within(dialog).getByRole("link", { name: "Add to Claude" }).getAttribute("href") ?? "");
+    expect(`${connector.origin}${connector.pathname}`).toBe("https://claude.ai/customize/connectors");
+    expect(connector.searchParams.get("modal")).toBe("add-custom-connector");
+    expect(connector.searchParams.get("connectorName")).toBe("Kaeso");
+    expect(connector.searchParams.get("connectorUrl")).toBe(url);
+    expect(within(dialog).getByText("In Claude Code, connect the server, then run /mcp to sign in.")).toBeInTheDocument();
     await waitFor(() => expect(dialog).toHaveTextContent(`claude mcp add --transport http --scope user kaeso ${url}`));
-    expect(within(dialog).getByText("The plugin adds Kaeso's skill, which teaches your agent the tools and can connect the server too.")).toBeInTheDocument();
+    expect(within(dialog).getByText(`Or install the plugin, which adds Kaeso's skill, and enter ${url} when it asks for the address.`)).toBeInTheDocument();
     await waitFor(() => expect(dialog).toHaveTextContent("/plugin install kaeso --marketplace logicplanes/kaeso"));
     expect(within(dialog).queryByRole("tab")).toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "Finish" }));
