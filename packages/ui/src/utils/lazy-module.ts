@@ -26,9 +26,12 @@ export interface LazyModuleOptions<T> {
 }
 
 const CHROMIUM_FAILED_FETCH = /^Failed to fetch dynamically imported module: (\S+)$/;
+const FIREFOX_FAILED_FETCH = /^error loading dynamically imported module: \S+$/;
+const WEBKIT_FAILED_FETCH = /^Importing a module script failed\.$/;
+const FAILED_FETCH = [CHROMIUM_FAILED_FETCH, FIREFOX_FAILED_FETCH, WEBKIT_FAILED_FETCH];
 const IMPORTED = /\bimport\(\s*(["'`])([^"'`$]+)\1\s*\)/;
 
-const downloadFailed = (error: unknown) => error instanceof Error && CHROMIUM_FAILED_FETCH.test(error.message);
+const downloadFailed = (error: unknown) => error instanceof Error && FAILED_FETCH.some((failed) => failed.test(error.message));
 
 function failedAddress(error: unknown, load: () => unknown, base: (() => string) | undefined): string | undefined {
   const named = error instanceof Error ? CHROMIUM_FAILED_FETCH.exec(error.message)?.[1] : undefined;
