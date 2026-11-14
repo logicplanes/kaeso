@@ -1,0 +1,10 @@
+{
+  "model": "solar-pro4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, how are you?"
+    }
+  ],
+  "stream": true
+}

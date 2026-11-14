@@ -125,3 +125,7 @@ order: 8
 ### Cloudflare AI Gateway
 
 来源：Workers AI 的 [OpenAI compatibility](https://developers.cloudflare.com/workers-ai/configuration/open-ai-compatibility/) 页面和[模型页面](https://developers.cloudflare.com/workers-ai/models/)（2026-11-14 阅读），其中只有请求示例而没有回复，以及实时录制的 `fixtures/openai_embeddings/providers/cloudflare-ai-gateway/`。Kaeso 把请求发送到 `/client/v4/accounts/{account_id}/ai/v1/embeddings`，以密钥的账户替代 `/v1`，密钥指定了网关时附带其网关头。回复包含 `object`、`data` 和 `model`，没有 `usage`，因此 Kaeso 会估算请求的 Token 数。Workers AI 会忽略 `dimensions` 并返回模型的完整维度，因此该服务商的嵌入配置会拒绝它（`without_dimensions()`）；它对 `encoding_format: "base64"` 返回浮点数，编解码器会按应用要求的编码交给应用。`@cf/google/embeddinggemma-2` 即使带有 `input`，该路径也返回 400，因此 KPMR 未收录它。
+
+### Upstage
+
+来源：Upstage 的 [embeddings 参考](https://console.upstage.ai/api/embeddings) 和 [embeddings 指南](https://console.upstage.ai/docs/capabilities/embed)（2026-11-14 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/upstage/`，其中的错误是在没有有效密钥的情况下实时返回的。它的模型是 `solar-embedding-2-query` 和 `solar-embedding-2-passage`，以及 Solar Embedding 1 的别名 `embedding-query` 和 `embedding-passage`（于 2026-12-31 停用）。查询和段落是不同的模型，向量为 1,024 维且已归一化。一个请求最多包含 100 个字符串。参考没有记录 `dimensions`、`encoding_format` 或 `user`；由于每个向量都是模型的完整维度，Kaeso 拒绝 `dimensions`（`without_dimensions()`）。

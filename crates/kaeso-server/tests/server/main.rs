@@ -85,6 +85,7 @@ mod provider_scaleway;
 mod provider_siliconflow;
 mod provider_standardcompute;
 mod provider_typesafe;
+mod provider_upstage;
 mod provider_vercel;
 mod provider_xai;
 mod provider_zai;

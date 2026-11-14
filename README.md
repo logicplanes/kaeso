@@ -76,7 +76,7 @@ print(client.responses.create(model="claude-haiku-5-5", input="Hello").output_te
 
 The Anthropic SDK works the same way with `base_url="https://kaeso.example.com"`. Kaeso translates the request and the reply between the formats ([calling models](https://docs.kaeso.app/get-started/calling-models)).
 
-Built in are Anthropic, Baseten, Cerebras, Cohere, DeepInfra, DeepSeek, ElevenLabs, Fireworks AI, Gemini Enterprise Agent Platform, Google AI Studio, Groq, Hugging Face, MiniMax, Mistral, Moonshot, Nebius Token Factory, NVIDIA, Ollama Cloud, OpenAI, OpenRouter, QwenCloud, SambaNova, Scaleway, SiliconFlow, SpaceX (xAI), Together AI, Vercel and Z.ai ([supported providers](https://docs.kaeso.app/concepts/supported-providers)). A server of your own, such as vLLM, Ollama, LM Studio or llama.cpp, joins as a [custom provider](https://docs.kaeso.app/console/custom-providers).
+Built in are Anthropic, Baseten, Cerebras, Cohere, DeepInfra, DeepSeek, ElevenLabs, Fireworks AI, Gemini Enterprise Agent Platform, Google AI Studio, Groq, Hugging Face, MiniMax, Mistral, Moonshot, Nebius Token Factory, NVIDIA, Ollama Cloud, OpenAI, OpenRouter, QwenCloud, SambaNova, Scaleway, SiliconFlow, SpaceX (xAI), Together AI, Upstage, Vercel and Z.ai ([supported providers](https://docs.kaeso.app/concepts/supported-providers)). A server of your own, such as vLLM, Ollama, LM Studio or llama.cpp, joins as a [custom provider](https://docs.kaeso.app/console/custom-providers).
 
 ## The console
 

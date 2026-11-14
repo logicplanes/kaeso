@@ -4248,6 +4248,101 @@ expression: outcomes
       "totalTokenCount": 552
     }
   },
+  "providers/upstage/greeting-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hi! I'm doing well, thank you for asking. How are you doing today? Is there anything I can help you with?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "solar-pro4-260806",
+    "responseId": "f91f4bf3-d0c8-47f0-92cf-118933b7cb83",
+    "usageMetadata": {
+      "candidatesTokenCount": 29,
+      "promptTokenCount": 57,
+      "totalTokenCount": 86
+    }
+  },
+  "providers/upstage/greeting-reasoning-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! I'm doing well, thank you for asking. I'm an AI assistant, so I'm always ready to help you with whatever you need. How are you doing today? Is there anything specific I can assist you with?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "solar-pro4-260806",
+    "responseId": "75c4def7-5cc8-43eb-9558-545009063a3b",
+    "usageMetadata": {
+      "candidatesTokenCount": 49,
+      "promptTokenCount": 57,
+      "thoughtsTokenCount": 17,
+      "totalTokenCount": 123
+    }
+  },
+  "providers/upstage/reasoning-medium-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "$70.40"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "solar-pro4-260806",
+    "responseId": "b8592385-8fa2-442f-9838-71b2086ee310",
+    "usageMetadata": {
+      "candidatesTokenCount": 8,
+      "promptTokenCount": 86,
+      "thoughtsTokenCount": 363,
+      "totalTokenCount": 457
+    }
+  },
+  "providers/upstage/structured-output-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\n  \"category\": \"billing\",\n  \"urgent\": true,\n  \"reply\": \"Dear Customer,\\n\\nThank you for reaching out. I am truly sorry to hear about the duplicate charge on your subscription. I understand how concerning this is.\\n\\nThis ticket is marked as high priority. To help us investigate and issue a refund if necessary, please reply with the following details:\\n- Date and amount of both charges\\n- Transaction IDs (if available)\\n\\nWe aim to resolve this within 24-48 hours. Thank you for your patience.\\n\\nBest regards,\\nSupport Team\"\n}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "solar-pro4-260806",
+    "responseId": "b84cc249-fc79-4e84-bedc-eac25f88a90a",
+    "usageMetadata": {
+      "candidatesTokenCount": 130,
+      "promptTokenCount": 71,
+      "thoughtsTokenCount": 423,
+      "totalTokenCount": 624
+    }
+  },
   "providers/vercel/recorded-basic": {
     "candidates": [
       {

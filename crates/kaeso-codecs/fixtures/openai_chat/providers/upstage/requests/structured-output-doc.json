@@ -1,0 +1,44 @@
+{
+  "model": "solar-pro4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Classify this urgent support ticket and draft a short reply: I was charged twice for my subscription."
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "support_ticket",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "billing",
+              "technical",
+              "account"
+            ],
+            "description": "The topic the ticket belongs to."
+          },
+          "urgent": {
+            "type": "boolean",
+            "description": "Whether the ticket needs an immediate response."
+          },
+          "reply": {
+            "type": "string",
+            "description": "A short reply to send to the customer."
+          }
+        },
+        "required": [
+          "category",
+          "urgent",
+          "reply"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

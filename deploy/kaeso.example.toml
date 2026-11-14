@@ -161,6 +161,9 @@ base_url = "https://api.typesafe.ai"
 [providers.deepinfra]
 base_url = "https://api.deepinfra.com"
 
+[providers.upstage]
+base_url = "https://api.upstage.ai"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

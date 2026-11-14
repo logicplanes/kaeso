@@ -2583,6 +2583,45 @@ fn deepinfra_models_speak_chat_completions_and_its_embedding_models_embed_with_t
 }
 
 #[test]
+fn upstage_models_speak_chat_completions_and_its_embedding_models_embed_with_their_prices() {
+    let pro = eff(&entry("upstage", "solar-pro4"));
+    assert_eq!(pro.dialect, DialectId::OpenAiChat);
+    assert_eq!(pro.provider.chat().provider, "Upstage");
+    assert_eq!(
+        (
+            pro.fields.input_price,
+            pro.fields.output_price,
+            pro.fields.cache_read_price
+        ),
+        (Some(dec!(0.3)), Some(dec!(1.2)), Some(dec!(0.06)))
+    );
+    assert_eq!(
+        effort_levels(&pro, DialectId::OpenAiChat),
+        ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
+    );
+    assert_eq!(pro.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    let embed = eff(&entry("upstage", "solar-embedding-2-query"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.02)))
+    );
+    let snap = snapshot();
+    for retired in ["solar-pro3", "solar-pro2", "solar-mini", "embedding-query"] {
+        assert!(entry("upstage", retired).is_deprecated(&snap), "{retired}");
+    }
+    assert!(!entry("upstage", "solar-mini4").is_deprecated(&snap));
+    let models = &snap.providers["upstage"].models;
+    assert_eq!(
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some("embedding"))
+            .count(),
+        4
+    );
+}
+
+#[test]
 fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
     let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

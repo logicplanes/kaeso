@@ -1,0 +1,9 @@
+{
+  "model": "solar-pro4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ]
+}
