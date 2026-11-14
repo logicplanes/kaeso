@@ -82,7 +82,7 @@ Out of scope: `crates/kaeso-testkit` (mock provider, mock identity provider, tes
 
 ## How to exercise it in this image
 
-The image has the Rust toolchain from `rust-toolchain.toml`, nightly with `cargo-fuzz`, `cargo-nextest`, Node.js and pnpm with `node_modules` installed, Python with `e2e/.venv`, and PostgreSQL 18, ClickHouse and Valkey. The workspace, its binaries and every test binary except most of `kaeso-server`'s integration tests are built in `/src/target`; each of those compiles in about a minute the first time it runs, because all its dependencies are already built. There is no network and no Docker.
+The image has the Rust toolchain from `rust-toolchain.toml`, nightly with `cargo-fuzz`, `cargo-nextest`, Node.js and pnpm with `node_modules` installed, Python with `e2e/.venv`, and PostgreSQL 18, ClickHouse and Valkey. The workspace, its binaries and every test binary are built in `/src/target`. There is no network and no Docker.
 
 Start the databases first. The `KAESO_TEST_*` variables already point the tests at them, and each test creates and drops its own database:
 
@@ -94,11 +94,11 @@ Run the whole Rust suite, or one crate or test file:
 
 ```sh
 cargo nextest run --workspace --all-features
-cargo nextest run -p kaeso-server --test authorization
+cargo nextest run -p kaeso-server --test server authorization::
 cargo nextest run -p kaeso-codecs
 ```
 
-The gateway's integration tests in `crates/kaeso-server/tests` start a real gateway in-process against fresh databases and the mock provider. They are the best place to write a reproducer. `tests/common` has helpers that create users, organizations, projects, roles, keys and provider keys. Good starting points are `authorization.rs`, `keys.rs`, `mcp_portal.rs`, `portal_signin.rs`, `agents.rs`, `oidc.rs`, `custom_providers.rs`, `limits.rs`, `logged_secrets.rs`, `logs.rs` and `cors.rs`.
+The gateway's integration tests in `crates/kaeso-server/tests/server` are one test binary with a module per file, named in `main.rs`; they start a real gateway in-process against fresh databases and the mock provider. They are the best place to write a reproducer. `tests/server/common` has helpers that create users, organizations, projects, roles, keys and provider keys. Good starting points are `authorization.rs`, `keys.rs`, `mcp_portal.rs`, `portal_signin.rs`, `agents.rs`, `oidc.rs`, `custom_providers.rs`, `limits.rs`, `logged_secrets.rs`, `logs.rs` and `cors.rs`.
 
 The fuzz targets are built in `fuzz/target/<host triple>/release/`, one per KPP decoder plus `sse`, `mcp` and `audio_length`. Their seed corpora are `crates/kaeso-codecs/fixtures/<format>` and `crates/kaeso-mcp/fixtures`:
 

@@ -122,6 +122,8 @@ Die Coverage-Befehle sind Aliasse in `.cargo/config.toml`, wo auch ihre Schwelle
 
 `cargo coverage-gateway` führt außerdem jedes Szenario des [Gateway-Benchmarks](benchmark.md) in kleiner Größe aus. Es schlägt bei einem offen gebliebenen Stream fehl, bei einem Abbruch, der den Anbieter nie erreicht, oder bei Speicher, der ohne Grenze wächst, nie bei einer Zeit.
 
+Die Integrationstests des Gateways in `crates/kaeso-server/tests/server` sind ein einziges Test-Binary mit einem Modul pro Datei, sodass das Gateway nur einmal hineingelinkt wird. `cargo test -p kaeso-server --test server limits::` führt die Tests aus `limits.rs` aus. Eine neue Datei braucht eine `mod`-Zeile in `main.rs`; ein Test im Binary schlägt fehl, wenn die Zeile fehlt. Ein Test, der einen Prozess für sich allein braucht, etwa `crates/kaeso-server/tests/inline_media_memory.rs`, der jede Allokation seines Prozesses zählt, bleibt eine Datei in `crates/kaeso-server/tests` und damit ein eigenes Binary.
+
 `cargo sqlx prepare --check` braucht `DATABASE_URL=postgres://kaeso:kaeso@127.0.0.1:55432/kaeso` mit angewandten Migrationen. Das Gateway des Stacks wendet sie beim Start an. Ohne den Stack führen Sie `cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres` aus.
 
 `kaeso-kpp` und `kaeso-codecs` nennen das älteste unterstützte Rust als `rust-version` in ihrer `Cargo.toml`, und CI testet jedes Crate damit. Um das selbst zu tun, installieren Sie diese Version mit `rustup toolchain install <version>` und führen `cargo +<version> test --locked -p <crate>` aus.
@@ -145,11 +147,11 @@ Manche Tests vergleichen mit geprüften `insta`-Snapshots. Ändert sich einer, p
 | Snapshot | Enthält | Ebenfalls aktualisieren |
 | --- | --- | --- |
 | `crates/kaeso-core/src/rights/snapshots/` | Jedes Recht und jede eingebaute Rolle | [Rechte](../concepts/rights.md) |
-| `crates/kaeso-server/tests/snapshots/` | Jede Einstellung mit Standardwert und Beschreibung | [Konfiguration](../self-hosting/configuration.md) und `deploy/kaeso.example.toml` |
+| `crates/kaeso-server/tests/server/snapshots/` | Jede Einstellung mit Standardwert und Beschreibung | [Konfiguration](../self-hosting/configuration.md) und `deploy/kaeso.example.toml` |
 | `crates/kaeso-codecs/tests/snapshots/` | Die Ergebnisse der dialektübergreifenden Matrix und der Entscheidungsmatrix | Die Mapping-Seite des Dialekts ([KPP-Interna](kpp/index.md#tests)) |
 | `crates/kaeso-mail/src/snapshots/` | Text und HTML jeder E-Mail | |
 
-Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/error_copy.rs` prüft jede Meldung, die die Platform API senden kann, gegen die [Regeln für Fehlermeldungen](architecture/gateway.md#fehlermeldungen). `crates/xtask/tests/docs_paths.rs` prüft, dass jeder Repository-Pfad und jeder relative Link in den Markdown-Dateien im Wurzelverzeichnis und in `crates/`, `deploy/`, `e2e/`, `fuzz/` und `.github/` auf etwas Vorhandenes zeigt. `crates/kaeso-core/tests/supported_providers.rs` prüft, dass [Unterstützte Anbieter](../concepts/supported-providers.md) in jeder Sprache jeden Anbieter aus `PROVIDERS` mit seinen Formaten und seinem Host listet; ein neuer Anbieter bekommt dort also eine Zeile.
+Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/server/error_copy.rs` prüft jede Meldung, die die Platform API senden kann, gegen die [Regeln für Fehlermeldungen](architecture/gateway.md#fehlermeldungen). `crates/xtask/tests/docs_paths.rs` prüft, dass jeder Repository-Pfad und jeder relative Link in den Markdown-Dateien im Wurzelverzeichnis und in `crates/`, `deploy/`, `e2e/`, `fuzz/` und `.github/` auf etwas Vorhandenes zeigt. `crates/kaeso-core/tests/supported_providers.rs` prüft, dass [Unterstützte Anbieter](../concepts/supported-providers.md) in jeder Sprache jeden Anbieter aus `PROVIDERS` mit seinen Formaten und seinem Host listet; ein neuer Anbieter bekommt dort also eine Zeile.
 
 ## End-to-End-Tests
 
