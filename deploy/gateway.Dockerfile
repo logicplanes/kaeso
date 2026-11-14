@@ -18,14 +18,15 @@ RUN cargo build --profile "${PROFILE}" --locked -p kaeso \
  && rm -rf target
 
 FROM chef AS mock-build
+ARG PROFILE=release
 COPY --from=plan /src/recipe.json recipe.json
-RUN cargo chef cook --release --locked -p kaeso-testkit --bin kaeso-testkit --recipe-path recipe.json
+RUN cargo chef cook --profile "${PROFILE}" --locked -p kaeso-testkit --bin kaeso-testkit --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --locked -p kaeso-testkit --bin kaeso-testkit \
- && cp target/release/kaeso-testkit /kaeso-testkit \
+RUN cargo build --profile "${PROFILE}" --locked -p kaeso-testkit --bin kaeso-testkit \
+ && cp "target/${PROFILE}/kaeso-testkit" /kaeso-testkit \
  && rm -rf target
 
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cc66d222f0a7ec996b78a99fe76a969bc80b539a5016ad866c14d1949bc6d0ab AS mock
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2 AS mock
 COPY --from=mock-build --chmod=0555 /kaeso-testkit /usr/local/bin/kaeso-testkit
 COPY --from=mock-build --chmod=0555 /src/crates/kaeso-codecs/fixtures /fixtures
 USER nonroot:nonroot
@@ -33,7 +34,7 @@ ENV KAESO_KPP_FIXTURES=/fixtures
 EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/kaeso-testkit", "mock-provider", "0.0.0.0:8080"]
 
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cc66d222f0a7ec996b78a99fe76a969bc80b539a5016ad866c14d1949bc6d0ab AS gateway
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2 AS gateway
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Kaeso gateway" \
       org.opencontainers.image.description="The Kaeso gateway: one OpenAI- and Anthropic-compatible API for your applications, with keys, routing, limits and usage under your control." \

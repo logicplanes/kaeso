@@ -149,7 +149,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 | `crates/kaeso-codecs/tests/snapshots/` | 跨方言矩阵和决策矩阵的结果 | 该方言的映射页面（[KPP 内部实现](kpp/index.md#测试)） |
 | `crates/kaeso-mail/src/snapshots/` | 每封邮件的文本和 HTML | |
 
-另有三个测试守护文本。`crates/kaeso-server/tests/error_copy.rs` 按照[错误文案规则](architecture/gateway.md#错误消息)检查 Platform API 可能发送的每条消息。`crates/kaeso-server/tests/docs_paths.rs` 检查根目录以及 `crates/`、`deploy/`、`e2e/`、`fuzz/` 和 `.github/` 中 Markdown 文件里的每个仓库路径和相对链接都指向存在的内容。`crates/kaeso-core/tests/supported_providers.rs` 检查[支持的服务商](../concepts/supported-providers.md)在每种语言中都列出了 `PROVIDERS` 中的每个服务商及其格式和主机，因此添加服务商时要在那里添加一行。
+另有三个测试守护文本。`crates/kaeso-server/tests/error_copy.rs` 按照[错误文案规则](architecture/gateway.md#错误消息)检查 Platform API 可能发送的每条消息。`crates/xtask/tests/docs_paths.rs` 检查根目录以及 `crates/`、`deploy/`、`e2e/`、`fuzz/` 和 `.github/` 中 Markdown 文件里的每个仓库路径和相对链接都指向存在的内容。`crates/kaeso-core/tests/supported_providers.rs` 检查[支持的服务商](../concepts/supported-providers.md)在每种语言中都列出了 `PROVIDERS` 中的每个服务商及其格式和主机，因此添加服务商时要在那里添加一行。
 
 ## 端到端测试
 
@@ -286,37 +286,32 @@ cargo +nightly fuzz run decode_openai_chat \
 
 ## 持续集成
 
-CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 `dev` 和 `prod` 时运行，也在 Release 工作流中运行。在拉取请求上，它的第一个作业判断哪些领域有改动，未改动领域的作业会被跳过。控制台、文档站点和展示站点各自的套件（它们的单元测试和端到端测试，以及控制台的镜像和安装测试）只在该应用、`packages/` 或工作区的 Node.js 配置有改动时运行，因此修改文档页面不会运行控制台的套件。在其他所有情况下，每个作业都会运行。对拉取请求或 `dev` 的新推送会取消之前的运行，因此 `dev` 只为最新提交运行全部作业。
+CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 `dev` 和 `prod` 时运行，也在 Release 工作流中运行。在拉取请求上，它的第一个作业判断哪些领域有改动，未改动领域的作业会被跳过。控制台、文档站点和展示站点各自的套件（它们的单元测试和端到端测试，以及控制台的镜像和安装测试）只在该应用、`packages/` 或工作区的 Node.js 配置有改动时运行，因此修改文档页面不会运行控制台的套件。在其他所有情况下，每个作业都会运行。包含多项检查的作业会运行其中每一项，即使某一项已经失败，因此一次运行就能显示所有问题。对拉取请求或 `dev` 的新推送会取消之前的运行，因此 `dev` 只为最新提交运行全部作业。
 
-唯一必需的检查是 **CI**。当 **Changes** 和 **Comments** 通过，且其他每个作业都通过或被跳过时，它才通过。指向 `dev` 的拉取请求在它变绿之前无法合并（[合并](contributing.md#合并)）。
+唯一必需的检查是 **CI**。当 **Changes** 和 **Repository checks** 通过，且其他每个作业都通过或被跳过时，它才通过。指向 `dev` 的拉取请求在它变绿之前无法合并（[合并](contributing.md#合并)）。
 
 | 作业 | 运行内容 |
 | --- | --- |
 | Changes | 判断拉取请求改动了哪些领域 |
-| Comments | 注释中没有 `TODO`、`FIXME`、`XXX` 或 `HACK` 备注，Markdown 代码块中没有注释 |
-| Workflows | `actionlint` |
-| Rust format、Rust lint | 对工作区和 `fuzz/` 运行 `cargo fmt` 和 `cargo clippy` |
+| Repository checks | 注释中没有 `TODO`、`FIXME`、`XXX` 或 `HACK` 备注，Markdown 代码块中没有注释；工作流有改动时运行 `actionlint`；`deploy/` 有改动时对两个 Compose 文件运行 `docker compose config` |
+| Rust checks | 对工作区和 `fuzz/` 运行 `cargo fmt` 和 `cargo clippy`，对模糊测试目标运行 `cargo check`，然后执行 PostgreSQL 迁移并运行 `cargo sqlx prepare --workspace --check` |
 | Test KPP | `cargo coverage-kpp` 以及 `kaeso-kpp` 和 `kaeso-codecs` 的文档测试 |
 | Minimum Rust version | 用各自的 `rust-version` 对每个 KPP crate 运行 `cargo check` 和 `cargo test` |
 | Test gateway | 在开发栈上运行 `cargo coverage-gateway`，分为四个分片，另一个作业合并它们的行覆盖率，并按该别名的阈值检查 |
-| Repository tooling | `node scripts/version.mjs check`、`cargo test -p xtask -p kpp-conformance` 和 `cargo test -p kaeso-server --test docs_paths` |
-| Query data | 先执行 PostgreSQL 迁移，再运行 `cargo sqlx prepare --workspace --check` |
-| OpenAPI document | `openapi.json` 是最新的 |
+| Repository tooling | `node scripts/version.mjs check` 和 `cargo test -p xtask -p kpp-conformance` |
 | Rust dependencies | 用工作区和 KPP 的政策运行 `cargo deny check` |
-| Fuzz targets | 模糊测试目标能够构建 |
 | Published crates | 为 `kaeso-kpp` 和 `kaeso-codecs` 运行 `cargo publish --dry-run` 和把警告视为错误的 `cargo doc`，并运行 `cargo semver-checks`：对照最近发布的版本检查是否适合次版本发布；在拉取请求中对照其基础提交检查是否适合补丁发布，除非它带有 `breaking` 标签 |
 | Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，在四个作业中以每个目标 30 秒运行 **Fuzz** 工作流；推送到 `dev` 时不运行，由夜间运行覆盖 |
-| SDK conformance、SDK end-to-end | `pytest -q e2e/conformance`、`pytest -q e2e/sdk` 和 `pytest -q e2e/mcp` |
-| Compose config | 对两个 Compose 文件运行 `docker compose config` |
-| Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台 |
+| SDK conformance | `pytest -q e2e/conformance` |
+| SDK end-to-end and OpenAPI document | 构建一次网关，检查 `openapi.json` 是最新的，然后运行 `pytest -q e2e/sdk` 和 `pytest -q e2e/mcp` |
+| Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台。拉取请求用 `Cargo.toml` 中的 `pr` 配置构建三个 Rust 镜像，它像 `dev` 一样编译，只需一小部分时间；`dev`、`prod` 和发布用 `release` 构建它们，在 `dev` 上 **Images (pull request cache)** 还会用 `pr` 再构建一次，以填充拉取请求读取的缓存 |
 | Install test | 用这些镜像运行 `pytest -q e2e/install` |
-| TypeScript lint | `pnpm format:check`、`pnpm lint`、`pnpm i18n` 和 `pnpm knip` |
-| TypeScript typecheck | `pnpm typecheck` |
-| TypeScript libraries | `pnpm build:packages`，为所有需要这些库的作业构建一次 |
-| TypeScript test | `pnpm test`，每个工作区一个作业；控制台分六个分片，其覆盖率由另一个作业合并并检查 |
+| TypeScript checks | 先运行 `pnpm knip`，再同时运行 `pnpm format:check`、`pnpm lint`、`pnpm i18n` 和 `pnpm audit --prod --audit-level high`，最后运行 `pnpm typecheck` |
+| TypeScript test | `pnpm test`：UI 库在一个作业中，令牌、文档站点、展示站点、脚本和 MCP 视图在另一个作业中，控制台分六个分片，其覆盖率由另一个作业合并并检查 |
 | TypeScript build | `pnpm build`、`pnpm licenses:check` 和 `pnpm release:check` |
 | End-to-end console、docs 和 showcase | 每个包的 `e2e`；控制台分五部分，展示站点分多个分片，其无障碍检查使用单独的分片，其 WebKit 测试在单独的一个作业中运行 |
-| TypeScript dependencies | `pnpm audit --prod --audit-level high` |
+
+需要已构建的 `packages/tokens` 和 `packages/ui` 的作业会从缓存中恢复构建结果，缓存键是构建所读取的每个已跟踪文件的内容；内容是新的时才构建它们。
 
 端到端分片失败时，**End-to-end console report** 或 **End-to-end showcase report** 作业会把各分片的结果合并成一份 HTML 报告，即制品 `playwright-console` 或 `playwright-showcase`。
 

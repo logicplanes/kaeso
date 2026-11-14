@@ -1,12 +1,12 @@
 # caddy:2.11.7-alpine is built with Go 1.26.8 and x/net 0.59.0; Go 1.26.9 and x/net 0.60.0 fix
 # GO-2026-6603, GO-2026-6609, GO-2026-6610, GO-2026-6611, GO-2026-6612 and GO-2026-6617.
-FROM golang:1.27.2-alpine@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS caddy
+FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS caddy
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local XCADDY_GO_BUILD_FLAGS="-trimpath -ldflags=-buildid="
 RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.4.7 \
   && xcaddy build v2.11.7 --output /caddy --replace golang.org/x/net=golang.org/x/net@v0.60.0 \
   && go version -m /caddy | grep -qE '^\s+(dep|=>)\s+golang\.org/x/net\s+v0\.60\.0\s'
 
-FROM node:24.22.1-alpine@sha256:06d7adf3e0ef61a13f1d28682726366f97a15aa1888c934d3ecec86c33918b53 AS build
+FROM node:24.22.2-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8 AS build
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./

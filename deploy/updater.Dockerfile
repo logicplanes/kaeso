@@ -28,15 +28,16 @@ COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS build
+ARG PROFILE=release
 COPY --from=plan /src/recipe.json recipe.json
-RUN cargo chef cook --release --locked -p kaeso-updater --recipe-path recipe.json
+RUN cargo chef cook --profile "${PROFILE}" --locked -p kaeso-updater --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --locked -p kaeso-updater \
- && cp target/release/kaeso-updater /kaeso-updater \
+RUN cargo build --profile "${PROFILE}" --locked -p kaeso-updater \
+ && cp "target/${PROFILE}/kaeso-updater" /kaeso-updater \
  && rm -rf target \
  && mkdir -p /dirs/kaeso /dirs/maintenance /dirs/state
 
-FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cc66d222f0a7ec996b78a99fe76a969bc80b539a5016ad866c14d1949bc6d0ab
+FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Kaeso updater" \
       org.opencontainers.image.description="The optional Kaeso updater: verifies a Kaeso release and switches a Docker Compose install to it." \
