@@ -148,17 +148,44 @@ fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_with
 }
 
 #[test]
+fn an_ovhcloud_key_refusal_with_a_bare_message_reaches_apps_in_openais_shape() {
+    let name = "providers/ovhcloud/recorded-invalid-api-key";
+    let body = fixture("errors", name);
+    let err = OpenAiEmbeddings::decode_error(403, &HeaderList::new(), &body);
+    let message = "Forbidden: authentication failed.  Please generate a new one at https://kepler.ai.cloud.ovh.net/v1/oauth/ovh/authorize?iam_action=publicCloudProject:ai:endpoints/call";
+    assert_eq!(
+        (&err.kind, err.status, err.message.as_str()),
+        (&ErrorKind::PermissionDenied, Some(403), message)
+    );
+    let out = OpenAiEmbeddings::encode_error(&err);
+    assert_eq!(out.status, 403);
+    let sent: Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(sent["error"]["message"], message);
+    let body = fixture("errors", "providers/ovhcloud/recorded-bge-m3-dimensions");
+    let err = OpenAiEmbeddings::decode_error(400, &HeaderList::new(), &body);
+    assert_eq!(
+        (&err.kind, err.message.as_str()),
+        (
+            &ErrorKind::InvalidRequest,
+            "feature 'dimensions' is not currently supported"
+        )
+    );
+}
+
+#[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
         // NVIDIA answers with RFC 9457 problem documents, SiliconFlow with `{"code", "message", "data"}`,
-        // Cloudflare with its `errors` envelope, IONOS with its `messages` and Novita AI with
-        // `{"code", "reason", "message", "metadata"}`; apps get them in OpenAI's shape.
+        // Cloudflare with its `errors` envelope, IONOS with its `messages`, Novita AI with
+        // `{"code", "reason", "message", "metadata"}` and OVHcloud with a bare `message`; apps get
+        // them in OpenAI's shape.
         if FOREIGN_ERROR_BODIES.contains(&name.as_str())
             || name.starts_with("providers/cloudflare-ai-gateway/")
             || name.starts_with("providers/ionos/")
             || name.starts_with("providers/cohere/")
             || name.starts_with("providers/novita-ai/")
             || name.starts_with("providers/nvidia/")
+            || name.starts_with("providers/ovhcloud/")
             || name.starts_with("providers/siliconflow/")
         {
             continue;

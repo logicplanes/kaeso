@@ -207,6 +207,7 @@ const MARKED_PROVIDERS = {
   ionos: "IONOS AI Model Hub",
   "novita-ai": "Novita AI",
   volcengine: "Volcengine Ark",
+  ovhcloud: "OVHcloud AI Endpoints",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

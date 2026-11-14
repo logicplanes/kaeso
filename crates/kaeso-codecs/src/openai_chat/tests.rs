@@ -228,6 +228,14 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         "providers/novita-ai/service-unavailable-doc",
         ErrorKind::Overloaded,
     ),
+    (
+        "providers/ovhcloud/recorded-invalid-api-key",
+        ErrorKind::PermissionDenied,
+    ),
+    (
+        "providers/ovhcloud/recorded-developer-role-mistral",
+        ErrorKind::InvalidRequest,
+    ),
 ];
 
 const COHERE: &str = "providers/cohere/";
@@ -1337,5 +1345,34 @@ fn moonshot_error_types_choose_the_kind_where_the_status_alone_would_mislead() {
         assert_eq!(err.kind, kind, "{name}");
         let original: Value = serde_json::from_slice(body).unwrap();
         assert_eq!(err.message, original["error"]["message"], "{name}");
+    }
+}
+
+#[test]
+fn a_vllm_refusal_passed_on_as_text_in_a_bare_message_reaches_apps_with_its_own_message() {
+    let (_, body) = fixtures(D, "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/ovhcloud/recorded-developer-role-mistral")
+        .unwrap();
+    let err = OpenAiChat::decode_error(400, &HeaderList::new(), &body);
+    assert_eq!(
+        (err.kind, err.message.as_str()),
+        (
+            ErrorKind::InvalidRequest,
+            "The provider returned an error (HTTP 400): Unknown message role: developer."
+        )
+    );
+    for text in [
+        "{not json",
+        "{\"error\": \"plain\"}",
+        "{\"error\": {\"message\": \" \"}}",
+    ] {
+        let body = serde_json::json!({ "message": text }).to_string();
+        let err = OpenAiChat::decode_error(400, &HeaderList::new(), body.as_bytes());
+        assert_eq!(
+            err.message,
+            format!("The provider returned an error (HTTP 400): {text}."),
+            "{text}"
+        );
     }
 }

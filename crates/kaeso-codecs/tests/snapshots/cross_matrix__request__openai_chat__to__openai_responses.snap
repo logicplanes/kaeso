@@ -3983,6 +3983,220 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/ovhcloud/recorded-developer-role-mistral": {
+    "message": "`max_completion_tokens 8` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
+    "param": "max_completion_tokens",
+    "unsupported": "max_completion_tokens 8"
+  },
+  "providers/ovhcloud/recorded-greeting": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "instructions": "You answer in one short sentence.",
+      "max_output_tokens": 256,
+      "model": "gpt-oss-20b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ovhcloud/recorded-invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-20b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ovhcloud/recorded-json-schema": {
+    "body": {
+      "input": [
+        {
+          "content": "I live in Lyon, in France.",
+          "role": "user"
+        }
+      ],
+      "instructions": "Extract the city and the country.",
+      "model": "Mistral-Small-3.2-24B-Instruct-2506",
+      "store": false,
+      "temperature": 0.0,
+      "text": {
+        "format": {
+          "name": "place",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": "string"
+              },
+              "country": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city",
+              "country"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ovhcloud/recorded-reasoning-stream": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Say hello in three words.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-20b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ovhcloud/recorded-service-tier": {
+    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/ovhcloud/recorded-thinking-length": {
+    "body": {
+      "input": [
+        {
+          "content": "What is 17 times 23?",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 16,
+      "model": "Qwen3.5-9B",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ovhcloud/recorded-tool-result": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        },
+        {
+          "content": "",
+          "role": "assistant"
+        },
+        {
+          "arguments": "{\"city\": \"Paris\"}",
+          "call_id": "chatcmpl-tool-955a8bc324c15bff",
+          "name": "get_weather",
+          "type": "function_call"
+        },
+        {
+          "call_id": "chatcmpl-tool-955a8bc324c15bff",
+          "output": "{\"temperature_c\": 14, \"sky\": \"cloudy\"}",
+          "type": "function_call_output"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather in a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ovhcloud/recorded-tools": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "What is the weather in Paris?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss-120b",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false,
+      "tool_choice": "required",
+      "tools": [
+        {
+          "description": "Get the current weather in a city",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ovhcloud/recorded-unknown-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "kaeso-no-such-model",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/perplexity/json-schema": {
     "message": "`disable_search` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

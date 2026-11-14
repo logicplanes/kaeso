@@ -1,0 +1,10 @@
+{
+  "model": "gpt-oss-20b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ],
+  "service_tier": "auto"
+}

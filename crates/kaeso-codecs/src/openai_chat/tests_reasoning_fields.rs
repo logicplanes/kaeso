@@ -73,6 +73,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("OpenRouter").reasoning_fields(&["reasoning"]),
     ),
     (
+        "ovhcloud",
+        ChatProfile::compatible("OVHcloud AI Endpoints").reasoning_fields(&["reasoning"]),
+    ),
+    (
         "sambanova",
         ChatProfile::compatible("SambaNova").reasoning_fields(&["reasoning"]),
     ),
@@ -275,6 +279,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ("ollama-cloud", "recorded-reasoning-object", "reasoning"),
         ("ollama-cloud", "recorded-reasoning-sent-back", "reasoning"),
         ("openrouter", "recorded-free-reasoning", "reasoning"),
+        ("ovhcloud", "recorded-greeting", "reasoning"),
         ("siliconflow", "reasoning-doc", "reasoning_content"),
         ("togetherai", "recorded-reasoning-reply", "reasoning"),
         (
@@ -394,6 +399,39 @@ fn cerebras_reasoning_comes_before_its_tool_call_in_replies_and_streams() {
     assert_eq!(got.reasoning, streamed_field(&bytes, "reasoning"));
     assert_eq!(got.order[..2], ["reasoning 0", "stop 0"]);
     assert_eq!(got.order[2], "tool call 1");
+}
+
+#[test]
+fn ovhcloud_reasoning_comes_before_its_tool_call_and_a_reply_cut_while_thinking_is_reasoning_only()
+{
+    let resp = reply(
+        "ovhcloud",
+        &recorded("responses", "json", "ovhcloud", "recorded-tools"),
+    );
+    assert!(
+        matches!(&resp.blocks[0], Block::Reasoning(r) if r.text == ["We need to call function."]),
+        "{:?}",
+        resp.blocks
+    );
+    assert!(
+        resp.blocks
+            .iter()
+            .any(|b| matches!(b, Block::ToolCall(c) if c.name == "get_weather")),
+        "{:?}",
+        resp.blocks
+    );
+    let resp = reply(
+        "ovhcloud",
+        &recorded("responses", "json", "ovhcloud", "recorded-thinking-length"),
+    );
+    assert!(
+        matches!(&resp.blocks[..], [Block::Reasoning(_)]),
+        "{:?}",
+        resp.blocks
+    );
+    let anthropic = encode_reply(DialectId::AnthropicMessages, &resp);
+    assert_eq!(anthropic["content"][0]["type"], "thinking");
+    assert_eq!(anthropic["stop_reason"], "max_tokens");
 }
 
 #[test]
@@ -628,6 +666,12 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
         ("nvidia", "reasoning-stream", "reasoning_content", answered),
         (
             "ollama-cloud",
+            "recorded-reasoning-stream",
+            "reasoning",
+            answered,
+        ),
+        (
+            "ovhcloud",
             "recorded-reasoning-stream",
             "reasoning",
             answered,

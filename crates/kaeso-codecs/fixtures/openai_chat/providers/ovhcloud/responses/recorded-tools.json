@@ -1,0 +1,35 @@
+{
+  "id": "chatcmpl-b444baf2cad75069",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning": "We need to call function.",
+        "tool_calls": [
+          {
+            "id": "chatcmpl-tool-955a8bc324c15bff",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "created": 1794676330,
+  "model": "gpt-oss-120b",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 128,
+    "completion_tokens": 34,
+    "total_tokens": 162,
+    "completion_tokens_details": {
+      "reasoning_tokens": 15
+    }
+  }
+}

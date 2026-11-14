@@ -3834,6 +3834,126 @@ expression: outcomes
       "totalTokenCount": 403
     }
   },
+  "providers/ovhcloud/recorded-greeting": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-20b",
+    "responseId": "chatcmpl-860bdfe6ef235b6e",
+    "usageMetadata": {
+      "candidatesTokenCount": 51,
+      "promptTokenCount": 79,
+      "totalTokenCount": 130
+    }
+  },
+  "providers/ovhcloud/recorded-json-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{ \"city\": \"Lyon\", \"country\": \"France\" }"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "Mistral-Small-3.2-24B-Instruct-2506",
+    "responseId": "chatcmpl-a6e5b652a0dc4f32",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 20,
+      "totalTokenCount": 36
+    }
+  },
+  "providers/ovhcloud/recorded-thinking-length": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "modelVersion": "Qwen3.5-9B",
+    "responseId": "chatcmpl-b829a0b0e04dceb1",
+    "usageMetadata": {
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 20,
+      "totalTokenCount": 36
+    }
+  },
+  "providers/ovhcloud/recorded-tool-result": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "In Paris today it's cloudy with a temperature of about **14 °C**."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-83352ca11c1c8373",
+    "usageMetadata": {
+      "candidatesTokenCount": 20,
+      "promptTokenCount": 185,
+      "totalTokenCount": 205
+    }
+  },
+  "providers/ovhcloud/recorded-tools": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "chatcmpl-tool-955a8bc324c15bff",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-oss-120b",
+    "responseId": "chatcmpl-b444baf2cad75069",
+    "usageMetadata": {
+      "candidatesTokenCount": 19,
+      "promptTokenCount": 128,
+      "thoughtsTokenCount": 15,
+      "totalTokenCount": 162
+    }
+  },
   "providers/perplexity/citations-doc": {
     "candidates": [
       {

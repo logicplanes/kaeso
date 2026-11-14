@@ -1,0 +1,37 @@
+{
+  "model": "Mistral-Small-3.2-24B-Instruct-2506",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Extract the city and the country."
+    },
+    {
+      "role": "user",
+      "content": "I live in Lyon, in France."
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "place",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "city",
+          "country"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "temperature": 0
+}

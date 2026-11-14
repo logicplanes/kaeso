@@ -1,0 +1,51 @@
+{
+  "model": "gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Paris?"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "reasoning": "We need to call function.",
+      "tool_calls": [
+        {
+          "id": "chatcmpl-tool-955a8bc324c15bff",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\": \"Paris\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "chatcmpl-tool-955a8bc324c15bff",
+      "content": "{\"temperature_c\": 14, \"sky\": \"cloudy\"}"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather in a city",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto",
+  "reasoning_effort": "low"
+}

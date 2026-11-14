@@ -1,0 +1,10 @@
+{
+  "model": "Qwen3.5-9B",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is 17 times 23?"
+    }
+  ],
+  "max_completion_tokens": 16
+}

@@ -224,6 +224,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_IONOS_BASE_URL`<br>`providers.ionos.base_url` | text | `https://openai.inference.de-txl.ionos.com` | Base URL of the IONOS AI Model Hub API. |
 | `KAESO_PROVIDERS_NOVITA_AI_BASE_URL`<br>`providers.novita-ai.base_url` | text | `https://api.novita.ai/openai` | Base URL of the Novita AI API. |
 | `KAESO_PROVIDERS_VOLCENGINE_BASE_URL`<br>`providers.volcengine.base_url` | text | `https://ark.cn-beijing.volces.com/api/v3` | Base URL of the Volcengine Ark API. |
+| `KAESO_PROVIDERS_OVHCLOUD_BASE_URL`<br>`providers.ovhcloud.base_url` | text | `https://oai.endpoints.kepler.ai.cloud.ovh.net` | Base URL of the OVHcloud AI Endpoints API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

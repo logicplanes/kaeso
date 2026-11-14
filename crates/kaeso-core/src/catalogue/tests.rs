@@ -2725,6 +2725,59 @@ fn volcengine_models_speak_chat_completions_with_their_prices_and_ark_marks_old_
 }
 
 #[test]
+fn ovhcloud_models_speak_chat_completions_under_the_ids_it_serves_and_its_embedding_models_embed() {
+    let gpt_oss = eff(&entry("ovhcloud", "gpt-oss-120b"));
+    assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);
+    assert_eq!(gpt_oss.provider.chat().provider, "OVHcloud AI Endpoints");
+    assert_eq!(
+        (gpt_oss.fields.input_price, gpt_oss.fields.output_price),
+        (Some(dec!(0.09)), Some(dec!(0.47)))
+    );
+    assert_eq!(
+        effort_levels(&gpt_oss, DialectId::OpenAiChat),
+        ["low", "medium", "high"]
+    );
+    assert_eq!(
+        gpt_oss.provider.count_tokens_for(DialectId::OpenAiChat),
+        None
+    );
+    let qwen = eff(&entry("ovhcloud", "Qwen3.8-27B"));
+    assert_eq!(
+        (qwen.fields.input_price, qwen.fields.output_price),
+        (Some(dec!(0.47)), Some(dec!(3.19)))
+    );
+    assert_eq!(
+        effort_levels(&qwen, DialectId::OpenAiChat),
+        ["none", "low", "medium", "xhigh"]
+    );
+    let models = &snapshot().providers["ovhcloud"].models;
+    for (id, listed) in [
+        ("qwen3guard-gen-0.6b", "Qwen3Guard-Gen-0.6B"),
+        ("qwen3.5-9b", "Qwen3.5-9B"),
+    ] {
+        assert_eq!(models[id].status.as_deref(), Some("deprecated"), "{id}");
+        assert_ne!(
+            models[listed].status.as_deref(),
+            Some("deprecated"),
+            "{listed}"
+        );
+    }
+    let embed = eff(&entry("ovhcloud", "Qwen3-Embedding-8B"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.12)))
+    );
+    assert_eq!(
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some("embedding"))
+            .count(),
+        3
+    );
+}
+
+#[test]
 fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
     let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

@@ -1,0 +1,5 @@
+{
+  "model": "bge-m3",
+  "input": "Hello",
+  "dimensions": 256
+}

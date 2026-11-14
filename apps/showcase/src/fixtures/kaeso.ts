@@ -58,6 +58,7 @@ export const providers = [
   { id: "ionos", name: "IONOS AI Model Hub" },
   { id: "novita-ai", name: "Novita AI" },
   { id: "volcengine", name: "Volcengine Ark" },
+  { id: "ovhcloud", name: "OVHcloud AI Endpoints" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

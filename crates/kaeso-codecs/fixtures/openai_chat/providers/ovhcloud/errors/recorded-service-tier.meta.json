@@ -1,0 +1,11 @@
+{
+  "status": 400,
+  "encoded": {
+    "error": {
+      "message": "The provider returned an error (HTTP 400): feature 'extra arguments: {\"service_tier\":\"auto\"}' is not currently supported.",
+      "type": "invalid_request_error",
+      "param": null,
+      "code": null
+    }
+  }
+}

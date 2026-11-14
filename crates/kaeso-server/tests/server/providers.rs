@@ -377,6 +377,27 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         volcengine["key_page"],
         json!({ "url": "https://ark.volcengine.com/region:cn-beijing/apiKey", "label": "API Key 管理" })
     );
+    let ovhcloud = listed.iter().find(|p| p["id"] == "ovhcloud").unwrap();
+    assert_eq!(ovhcloud["name"], "OVHcloud AI Endpoints");
+    assert_eq!(
+        ovhcloud["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        (
+            &ovhcloud["count_tokens"],
+            &ovhcloud["embeddings"],
+            &ovhcloud["key_prefix"]
+        ),
+        (&Value::Null, &json!("openai_embeddings"), &Value::Null)
+    );
+    assert_eq!(
+        ovhcloud["key_page"],
+        json!({
+            "url": "https://www.ovh.com/manager/#/public-cloud/",
+            "label": "Public Cloud → AI Endpoints → API keys"
+        })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

@@ -81,6 +81,7 @@ mod provider_novita_ai;
 mod provider_nvidia;
 mod provider_ollama_cloud;
 mod provider_openrouter;
+mod provider_ovhcloud;
 mod provider_perplexity;
 mod provider_sambanova;
 mod provider_scaleway;

@@ -1,0 +1,23 @@
+{
+  "id": "chatcmpl-860bdfe6ef235b6e",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello!",
+        "reasoning": "The user says: \"Hi\". The instruction from system: \"You answer in one short sentence.\" So we reply politely like \"Hello!\" or something short. Just one short sentence. Okay.",
+        "tool_calls": []
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "created": 1794676329,
+  "model": "gpt-oss-20b",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 79,
+    "completion_tokens": 51,
+    "total_tokens": 130
+  }
+}

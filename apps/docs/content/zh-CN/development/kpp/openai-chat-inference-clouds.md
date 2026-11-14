@@ -210,6 +210,23 @@ NVIDIA 不提供 Responses、Messages 或 Token 计数：`/v1/responses` 和 `/v
 | OpenAI 格式的错误，`type` 为 `api_error`、`not_found_error` 或 `invalid_request_error` | `KppError` | 类型取决于状态码：401 表示密钥错误，402 表示套餐不包含该模型（`errors/recorded-model-outside-plan`），404 表示模型不存在。 |
 | `GET /v1/models`：OpenAI 的列表、`owned_by: "ollama"`，以及顶层采用 Codex 模型目录格式的 `models` 数组 | `ModelList`、extras | Ollama 返回模型列表和 `GET /v1/models/{model}` 时不检查密钥，因此模型检查无法发现错误的密钥。 |
 
+## OVHcloud AI Endpoints
+
+来源：AI Endpoints 的 [OpenAPI document](https://oai.endpoints.kepler.ai.cloud.ovh.net/doc/gpt-oss-120b/openapi.json) 及其 [Getting started](https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-getting-started.md)、[Capabilities](https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md)、[Function calling](https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-function-calling.md) 和 [Structured output](https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-structured-output.md) 指南，2026-11-14 阅读。AI Endpoints 不带密钥也会回答，每个 IP 每个模型每分钟 2 次请求，因此 `fixtures/openai_chat/providers/ovhcloud/` 中的回复、流、模型列表和错误均于 2026-11-14 不带密钥实时录制，密钥错误使用虚构的密钥。Kaeso 的基础 URL 是 `https://oai.endpoints.kepler.ai.cloud.ovh.net`，即去掉 `/v1` 的文档基础地址，使用 `Authorization: Bearer`。OVHcloud 在法国托管这些模型。
+
+| AI Endpoints 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`；assistant 消息可以将其带回（`requests/recorded-tool-result`）。在思考时被截断的回复没有 `content`（`responses/recorded-thinking-length`）。 |
+| `developer` 角色 | `Role::System` | Mistral Small 3.2 对它返回 400（`errors/recorded-developer-role-mistral`），因此 `system_role()` 发送 `system`。 |
+| `user`、`safety_identifier` | 省略 | `user` 返回 400，schema 也未声明其他终端用户字段（`without_end_user()`）。 |
+| `metadata`、`store`、`modalities`、`audio`、`prediction`、`prompt_cache_key`、`web_search_options`、`functions`、`function_call` | 拒绝 | 未声明，而解析器至少会悄悄放行 `metadata`、`store`、`prediction`、`prompt_cache_key` 和 `web_search_options`；Responses 应用的缓存键会被省略（`without_cache_key()`）。 |
+| 其他未声明的字段，例如 `service_tier`、`verbosity` 和 `top_k` | 原样发送 | AI Endpoints 返回 400 并逐一列出（`errors/recorded-service-tier`）。 |
+| `tool_calls: []`、delta 上的 `"name": "assistant"`、usage 块上的 `system_fingerprint` | extras | 转到其他方言时省略。 |
+| 仅含 `{"message": …}` 的错误，或其中以 JSON 文本形式包含的 vLLM 错误 | `KppError` | 消息连同状态码一起引用，并从文本中读出嵌套的 `error.message`。403“Forbidden: authentication failed.”表示密钥被拒绝（`refused_key_messages`、`errors/recorded-invalid-api-key`）。 |
+| 带有 `pricing`（每 Token 美元）、`context_length` 和 `max_completion_tokens` 的 `GET /v1/models` | `ModelList` | 列出所有类型的模型，并以 403 拒绝错误的密钥（`models/list-recorded`）。 |
+
+AI Endpoints 的 Responses API 要求 `store: false`，因此不使用：Responses 应用通过 Chat Completions 访问它。它不提供 Messages 或 Token 计数。模型 ID 区分大小写；小写别名的回复在 `model` 中给出列表中的 ID，因此 KPMR 收录 `GET /v1/models` 列出的 ID。在 KPMR 收录带价格的转写模型之前，不使用它的转写。
+
 ## SambaNova
 
 来源：SambaNova 的 [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json)（SambaNova cloud API 1.2.0）及其 [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility)、[文本生成](https://docs.sambanova.ai/docs/en/features/text-generation)和 [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes) 页面，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/sambanova/` 包含该文档自己的示例回复和示例流、据此构建的回复、SambaCloud 无需密钥即提供的模型列表，以及在没有有效密钥的情况下实时返回的错误。Kaeso 的基础 URL 为 `https://api.sambanova.ai`，使用 `Authorization: Bearer`。
