@@ -149,7 +149,7 @@ Some tests compare against reviewed `insta` snapshots. When one changes, review 
 | `crates/kaeso-codecs/tests/snapshots/` | The outcomes of the cross-dialect matrix and the decision matrix | The dialect's mapping page ([KPP internals](kpp/index.md#tests)) |
 | `crates/kaeso-mail/src/snapshots/` | The text and HTML of every email | |
 
-Three more tests guard text. `crates/kaeso-server/tests/error_copy.rs` checks every message the Platform API can send against the [error copy rules](architecture/gateway.md#error-messages). `crates/kaeso-server/tests/docs_paths.rs` checks that every repository path and relative link in the Markdown files at the root and in `crates/`, `deploy/`, `e2e/`, `fuzz/` and `.github/` points at something that exists. `crates/kaeso-core/tests/supported_providers.rs` checks that [supported providers](../concepts/supported-providers.md) lists every provider in `PROVIDERS` with its formats and host, in every language, so adding a provider adds a row there.
+Three more tests guard text. `crates/kaeso-server/tests/error_copy.rs` checks every message the Platform API can send against the [error copy rules](architecture/gateway.md#error-messages). `crates/xtask/tests/docs_paths.rs` checks that every repository path and relative link in the Markdown files at the root and in `crates/`, `deploy/`, `e2e/`, `fuzz/` and `.github/` points at something that exists. `crates/kaeso-core/tests/supported_providers.rs` checks that [supported providers](../concepts/supported-providers.md) lists every provider in `PROVIDERS` with its formats and host, in every language, so adding a provider adds a row there.
 
 ## End-to-end tests
 
@@ -282,41 +282,36 @@ cargo +nightly fuzz run decode_openai_chat \
   -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-The **Fuzz** workflow runs every target for 10 minutes each night, and for 30 seconds on every pull request that changes KPP, `crates/kaeso-mcp` or `fuzz/`, where four jobs share the targets. It fails on a crash and keeps the input as an artifact: `fuzz-crash-<target>` at night, `fuzz-crash-<shard>` on a pull request. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
+The **Fuzz** workflow runs every target for 10 minutes each night, and for 30 seconds on every pull request that changes KPP, `crates/kaeso-mcp` or `fuzz/`, where four jobs share the targets, each running two at a time. It fails on a crash and keeps the input as an artifact: `fuzz-crash-<target>` at night, `fuzz-crash-<shard>` on a pull request. A crash is written to `fuzz/artifacts/<target>/`. Reproduce it with `cargo +nightly fuzz run <target> <file>`, turn it into a regression test in the codec, then fix the codec.
 
 ## Continuous integration
 
-The CI workflow, `.github/workflows/ci.yml`, runs on every pull request, on every push to `dev` and `prod`, and inside the Release workflow. On a pull request, its first job decides which areas changed, and the jobs of unchanged areas are skipped. The console's, the docs site's and the showcase's own suites (their unit tests and end-to-end tests, and the images and install test for the console) run only when that app, `packages/` or the workspace's Node.js setup changed, so a change to a docs page doesn't run the console's. Everywhere else, every job runs. A new push to a pull request or to `dev` cancels the run before it, so `dev` runs every job only for its latest commit.
+The CI workflow, `.github/workflows/ci.yml`, runs on every pull request, on every push to `dev` and `prod`, and inside the Release workflow. On a pull request, its first job decides which areas changed, and the jobs of unchanged areas are skipped. The console's, the docs site's and the showcase's own suites (their unit tests and end-to-end tests, and the images and install test for the console) run only when that app, `packages/` or the workspace's Node.js setup changed, so a change to a docs page doesn't run the console's. Everywhere else, every job runs. A job that runs several checks runs each of them, also after one failed, so one run shows everything that is wrong. A new push to a pull request or to `dev` cancels the run before it, so `dev` runs every job only for its latest commit.
 
-The one required check is **CI**. It passes when **Changes** and **Comments** passed and every other job passed or was skipped. A pull request into `dev` can't be merged until it is green ([get it merged](contributing.md#get-it-merged)).
+The one required check is **CI**. It passes when **Changes** and **Repository checks** passed and every other job passed or was skipped. A pull request into `dev` can't be merged until it is green ([get it merged](contributing.md#get-it-merged)).
 
 | Job | Runs |
 | --- | --- |
 | Changes | Decides which areas a pull request changes |
-| Comments | No `TODO`, `FIXME`, `XXX` or `HACK` notes in comments, and no comments in Markdown code blocks |
-| Workflows | `actionlint` |
-| Rust format, Rust lint | `cargo fmt` and `cargo clippy`, for the workspace and `fuzz/` |
+| Repository checks | No `TODO`, `FIXME`, `XXX` or `HACK` notes in comments and no comments in Markdown code blocks; `actionlint` when a workflow changed; `docker compose config` for both Compose files when `deploy/` changed |
+| Rust checks | `cargo fmt` and `cargo clippy` for the workspace and `fuzz/`, `cargo check` of the fuzz targets, then the PostgreSQL migrations and `cargo sqlx prepare --workspace --check` |
 | Test KPP | `cargo coverage-kpp` and the doc tests of `kaeso-kpp` and `kaeso-codecs` |
 | Minimum Rust version | `cargo check` and `cargo test` of each KPP crate with its `rust-version` |
 | Test gateway | `cargo coverage-gateway`, with the development stack, in four shards whose line coverage is merged and checked against the alias's threshold in one more job |
-| Repository tooling | `node scripts/version.mjs check`, `cargo test -p xtask -p kpp-conformance` and `cargo test -p kaeso-server --test docs_paths` |
-| Query data | The PostgreSQL migrations, then `cargo sqlx prepare --workspace --check` |
-| OpenAPI document | `openapi.json` is current |
+| Repository tooling | `node scripts/version.mjs check` and `cargo test -p xtask -p kpp-conformance` |
 | Rust dependencies | `cargo deny check`, with the workspace's policy and KPP's |
-| Fuzz targets | The fuzz targets build |
 | Published crates | `cargo publish --dry-run` and `cargo doc` with warnings as errors for `kaeso-kpp` and `kaeso-codecs`, and `cargo semver-checks`: against the last published version for a minor release, and on a pull request against its base for a patch release, unless it is labelled `breaking` |
-| Fuzz runs | The **Fuzz** workflow for 30 seconds per target in four jobs, when KPP, `crates/kaeso-mcp` or `fuzz/` changed; not on a push to `dev`, which the nightly run covers |
-| SDK conformance, SDK end-to-end | `pytest -q e2e/conformance`, `pytest -q e2e/sdk` and `pytest -q e2e/mcp` |
-| Compose config | `docker compose config` for both Compose files |
-| Images (gateway, mock provider, updater, console) | Build the four images; the console's job also checks that its image serves the console with a content security policy |
+| Fuzz runs | The **Fuzz** workflow for 30 seconds per target in four jobs, each running two targets at a time, when KPP, `crates/kaeso-mcp` or `fuzz/` changed; not on a push to `dev`, which the nightly run covers |
+| SDK conformance | `pytest -q e2e/conformance` |
+| SDK end-to-end and OpenAPI document | Builds the gateway once, checks that `openapi.json` is current, then runs `pytest -q e2e/sdk` and `pytest -q e2e/mcp` |
+| Images (gateway, mock provider, updater, console) | Build the four images; the console's job also checks that its image serves the console with a content security policy. A pull request builds the three Rust images with the `pr` profile of `Cargo.toml`, which compiles like `dev` and takes a fraction of the time; `dev`, `prod` and releases build them with `release`, and on `dev` **Images (pull request cache)** builds them with `pr` once more, for the cache pull requests read |
 | Install test | `pytest -q e2e/install` with those images |
-| TypeScript lint | `pnpm format:check`, `pnpm lint`, `pnpm i18n` and `pnpm knip` |
-| TypeScript typecheck | `pnpm typecheck` |
-| TypeScript libraries | `pnpm build:packages`, once for every job that needs the libraries |
-| TypeScript test | `pnpm test`, one job per workspace, the console's in six shards whose coverage is merged and checked in one more job |
+| TypeScript checks | `pnpm knip`, then `pnpm format:check`, `pnpm lint`, `pnpm i18n` and `pnpm audit --prod --audit-level high` at the same time, then `pnpm typecheck` |
+| TypeScript test | `pnpm test`: the UI library in one job, the tokens, the docs site, the showcase, the scripts and the MCP views in another, and the console in six shards whose coverage is merged and checked in one more job |
 | TypeScript build | `pnpm build`, `pnpm licenses:check` and `pnpm release:check` |
 | End-to-end console, docs and showcase | Each package's `e2e`, the console's in five parts and the showcase's in shards, its accessibility checks in shards of their own and its WebKit test in one job of its own |
-| TypeScript dependencies | `pnpm audit --prod --audit-level high` |
+
+Jobs that need `packages/tokens` and `packages/ui` built restore the build from a cache whose key is the content of every tracked file the build reads, and build them when that content is new.
 
 When an end-to-end shard fails, the job **End-to-end console report** or **End-to-end showcase report** merges the shards' results into one HTML report, the artifact `playwright-console` or `playwright-showcase`.
 

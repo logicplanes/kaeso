@@ -16,7 +16,7 @@ on:
         type: number
         default: 30
       shards:
-        description: Jobs that share the targets, each running its targets one after another
+        description: Jobs that share the targets, each running two of its targets at a time
         type: number
         default: 4
 
@@ -109,6 +109,7 @@ jobs:
           retention-days: 30
 
   # CI shares the targets among a few jobs: one build each instead of one per target, and fewer runners waiting.
+  # A job runs two targets at a time, so each still has a processor core to itself.
   fuzz-shards:
     name: Fuzz (${{ matrix.shard }}/${{ inputs.shards }})
     if: ${{ inputs.shards }}
@@ -147,19 +148,41 @@ jobs:
       - uses: taiki-e/install-action@3a3daafd3b7f23b8f65d9f5ba2db203fb59b79e2
         with:
           tool: cargo-fuzz
-      - name: Run this shard's targets with the fixtures as their seed corpus
+      - name: Run this shard's targets with the fixtures as their seed corpus, two at a time
         run: |
           set -euo pipefail
           host="$(rustc +nightly -vV | sed -n 's/^host: //p')"
           mapfile -t targets < <(sed -n 's/^name = "\(.*\)"$/\1/p' fuzz/Cargo.toml | grep -vx kpp-fuzz | sort | awk -v shard="$SHARD" -v shards="$SHARDS" '(NR - 1) % shards == shard - 1')
-          for target in "${targets[@]}"; do
-            seed=crates/kaeso-codecs/fixtures
+          cargo +nightly fuzz build --target "$host"
+          fuzz() {
+            local target="$1" seed=crates/kaeso-codecs/fixtures
             if [[ "$target" == decode_* ]]; then seed="$seed/${target#decode_}"; fi
             if [[ "$target" == mcp ]]; then seed=crates/kaeso-mcp/fixtures; fi
             mkdir -p "fuzz/corpus/$target"
             cargo +nightly fuzz run --target "$host" "$target" "fuzz/corpus/$target" "$seed" -- -max_total_time="$SECONDS_PER_TARGET" -rss_limit_mb=2048 -max_len=65536
-            echo "\`$target\` ran for $SECONDS_PER_TARGET seconds without a crash." >> "$GITHUB_STEP_SUMMARY"
+          }
+          crashed=0
+          for ((first = 0; first < ${#targets[@]}; first += 2)); do
+            pids=()
+            for target in "${targets[@]:first:2}"; do
+              fuzz "$target" > "$RUNNER_TEMP/$target.log" 2>&1 &
+              pids+=("$!")
+            done
+            for i in "${!pids[@]}"; do
+              target="${targets[first + i]}"
+              if wait "${pids[$i]}"; then
+                echo "::group::$target"
+                cat "$RUNNER_TEMP/$target.log"
+                echo "::endgroup::"
+                echo "\`$target\` ran for $SECONDS_PER_TARGET seconds without a crash." >> "$GITHUB_STEP_SUMMARY"
+              else
+                cat "$RUNNER_TEMP/$target.log"
+                echo "::error::The fuzz target $target failed."
+                crashed=1
+              fi
+            done
           done
+          exit "$crashed"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: failure()
         with:
