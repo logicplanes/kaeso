@@ -5969,6 +5969,226 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/upstage/greeting-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi, how are you?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/upstage/greeting-reasoning-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi, how are you?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/upstage/invalid-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/upstage/reasoning-medium-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "An $80 item gets a 20% discount, then 10% tax is added. What is the final price? Answer with only the dollar amount.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "output_config": {
+        "effort": "medium"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/upstage/reasoning-stream-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi, how are you?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/upstage/structured-output-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Classify this urgent support ticket and draft a short reply: I was charged twice for my subscription.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "output_config": {
+        "format": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "description": "The topic the ticket belongs to.",
+                "enum": [
+                  "billing",
+                  "technical",
+                  "account"
+                ],
+                "type": "string"
+              },
+              "reply": {
+                "description": "A short reply to send to the customer.",
+                "type": "string"
+              },
+              "urgent": {
+                "description": "Whether the ticket needs an immediate response.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "category",
+              "urgent",
+              "reply"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/upstage/tools-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What's the weather like in Seoul?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "tool_choice": {
+        "disable_parallel_tool_use": true,
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather in a given location",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_current_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "providers/vercel/basic": {
     "body": {
       "max_tokens": 64,

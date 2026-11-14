@@ -1,0 +1,10 @@
+{
+  "model": "solar-pro4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "An $80 item gets a 20% discount, then 10% tax is added. What is the final price? Answer with only the dollar amount."
+    }
+  ],
+  "reasoning_effort": "medium"
+}

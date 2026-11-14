@@ -80,6 +80,7 @@ Jeder eingebaute Anbieter, dessen Profil von dem von OpenAI abweicht, steht unte
 | SpaceX (`xai`) | `reasoning_fields(["reasoning_content"])`, `with_message_bookkeeping()`, `tool_schema_root(ToolSchemaRoot::ObjectUnions)` | xAIs Chat-Completions-Referenz (`reasoning_content`); xAIs Leitfaden zu Function Calling (eine Objekt-Wurzel oder eine Union von Objekten); Grok CLI, xAIs eigener Client, sendet ihm bei jedem Assistenten-Zug `model_id` (`requests/grok-cli-model-id.json`); `responses/recorded-reasoning-content` und `streams/recorded-reasoning-content-stream` |
 | Standard Compute (`standardcompute`) | `reasoning_fields(["reasoning"])` | Die Seiten [Chat Completions](https://docs.standardcompute.com/api/chat-completions) und [Reasoning](https://docs.standardcompute.com/reasoning) von Standard Compute, gelesen am 2026-11-12; `streams/recorded-routed-reasoning-stream` (`delta.reasoning` mit `reasoning_details`) |
 | Together AI (`togetherai`) | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AIs Chat-Completions-Referenz; der Schlüssel hängt vom Modell ab: `responses/recorded-sampling-extras` (`reasoning_content`), `responses/recorded-reasoning-reply` und `streams/recorded-reasoning-stream` (`reasoning`) |
+| Upstage (`upstage`) | `max_tokens()`, `system_role()`, `without_end_user()`, `reasoning_fields(["reasoning"])`; lehnt `audio`, `function_call`, `functions`, `logit_bias`, `logprobs`, `metadata`, `modalities`, `prediction`, `prompt_cache_retention`, `seed`, `service_tier`, `stop`, `store`, `top_logprobs`, `verbosity` und `web_search_options` ab | Die [API reference](https://console.upstage.ai/api/chat) von Upstage (nur `max_tokens`, die Rollen `system`, `user`, `assistant` und `tool`, kein `user` oder `safety_identifier`, keines der abgelehnten Felder, `reasoning` an der Nachricht und am Delta), gelesen am 2026-11-14; daraus gebaut in `fixtures/openai_chat/providers/upstage/` |
 | Vercel (`vercel`) | `reasoning_fields(["reasoning"])` | Vercels Seite zu Reasoning bei Chat Completions (`message.reasoning` und `delta.reasoning`, daneben `reasoning_details`); `responses/recorded-reasoning` und `streams/recorded-reasoning-stream` |
 
 ## Anbieter mit diesem Format
@@ -260,3 +261,20 @@ Quellen: die Seiten [Chat-Completions-Referenz](https://inference-docs.cerebras.
 | `GET /v1/models` | `ModelList` | Die Modelle, die der Schlüssel aufrufen darf, mit `created: 0` und `owned_by: "Cerebras"`; ein falscher Schlüssel erhält 401, sodass eine Modellprüfung ihn erkennt. |
 
 Cerebras hat keinen Endpunkt für Responses, Messages, Embeddings oder Token-Zählung (alle antworten mit 404), deshalb sind `embeddings` und `count_tokens` `None`.
+
+### Upstage
+
+Quellen: die [API reference](https://console.upstage.ai/api/chat) von Upstage und seine Seiten [reasoning](https://console.upstage.ai/docs/capabilities/generate/reasoning), [structured outputs](https://console.upstage.ai/docs/capabilities/generate/structured-outputs), [tool calling](https://console.upstage.ai/docs/capabilities/generate/tool-calling) und [error codes](https://console.upstage.ai/docs/resources/error-codes), gelesen am 2026-11-14. Nicht mit einem erfolgreichen Aufruf getestet: Die Antworten und der Stream in `fixtures/openai_chat/providers/upstage/` sind die Beispiele der Referenz und der Leitfäden, der Fehler kam live, ohne gültigen Schlüssel. Die Leitfäden von Upstage schreiben die Basis-URL als `https://api.upstage.ai/v1`, daher ist Kaesos Basis-URL `https://api.upstage.ai`, die `Authorization: Bearer` annimmt; die älteren Pfade `/v1/solar/…` antworten weiterhin. Die Region Korea ist der Host `kr.api.upstage.ai` mit denselben Pfaden.
+
+| Upstage-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Über `reasoning_fields` des Profils. Das Thinking ist aus, solange `reasoning_effort` nicht `low` bis `max` ist; `none` und `minimal` schalten es aus. |
+| `max_completion_tokens` | `max_tokens` | Die Referenz hat nur `max_tokens` (`max_tokens()`). |
+| die Rolle `developer` | `Role::System` | Die Referenz führt `system`, `user`, `assistant` und `tool`, daher sendet `system_role()` `system`. |
+| die ID eines Endnutzers | weggelassen | Die Referenz hat kein `user` oder `safety_identifier` (`without_end_user()`). |
+| `stop`, `seed`, `logprobs`, `logit_bias`, `metadata`, `store` und die anderen Felder, die die Referenz auslässt | abgelehnt | Die Dokumentation sagt nicht, ob Upstage ein nicht deklariertes Feld ablehnt oder verwirft, daher lehnt das Profil sie ab. |
+| `id` als bloße UUID, `system_fingerprint: null`, `logprobs: null`, das `model` eines datierten Stands | Round-Trip | `responses/greeting-doc`. |
+| 401 `invalid_api_key` mit `param: ""` | `KppError` | Ein abgelehnter Schlüssel; ein fehlender Schlüssel erhält denselben Body (`errors/recorded-invalid-api-key`). |
+| `GET /v1/models` | `ModelList` | Braucht einen Schlüssel und steht nicht in der Referenz, daher ist die Liste unvollständig; ein `GET /v1/models/{model}` gibt es nicht (404 `text/plain`). |
+
+Upstage bietet außerdem eine zustandslose Responses-API und einen Anthropic-Messages-Endpunkt an, die Kaeso nicht nutzt: Responses- und Anthropic-Apps erreichen Upstage über Chat Completions. Eine Token-Zählung gibt es nicht, daher lehnt Kaeso Token-Zählungen ab. Seine Embeddings nutzen die Form von OpenAI ([OpenAI Embeddings](openai-embeddings.md#upstage)); seine APIs für Dokument-Parsing und OCR sind keine OpenAI-Formate.

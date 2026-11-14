@@ -4265,6 +4265,106 @@ expression: outcomes
       "output_tokens": 107
     }
   },
+  "providers/upstage/greeting-doc": {
+    "content": [
+      {
+        "text": "Hi! I'm doing well, thank you for asking. How are you doing today? Is there anything I can help you with?",
+        "type": "text"
+      }
+    ],
+    "id": "f91f4bf3-d0c8-47f0-92cf-118933b7cb83",
+    "model": "solar-pro4-260806",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 57,
+      "output_tokens": 29,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/upstage/greeting-reasoning-doc": {
+    "content": [
+      {
+        "text": "Hello! I'm doing well, thank you for asking. I'm an AI assistant, so I'm always ready to help you with whatever you need. How are you doing today? Is there anything specific I can assist you with?",
+        "type": "text"
+      }
+    ],
+    "id": "75c4def7-5cc8-43eb-9558-545009063a3b",
+    "model": "solar-pro4-260806",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 57,
+      "output_tokens": 66,
+      "output_tokens_details": {
+        "thinking_tokens": 17
+      }
+    }
+  },
+  "providers/upstage/reasoning-medium-doc": {
+    "content": [
+      {
+        "text": "$70.40",
+        "type": "text"
+      }
+    ],
+    "id": "b8592385-8fa2-442f-9838-71b2086ee310",
+    "model": "solar-pro4-260806",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 86,
+      "output_tokens": 371,
+      "output_tokens_details": {
+        "thinking_tokens": 363
+      }
+    }
+  },
+  "providers/upstage/structured-output-doc": {
+    "content": [
+      {
+        "text": "{\n  \"category\": \"billing\",\n  \"urgent\": true,\n  \"reply\": \"Dear Customer,\\n\\nThank you for reaching out. I am truly sorry to hear about the duplicate charge on your subscription. I understand how concerning this is.\\n\\nThis ticket is marked as high priority. To help us investigate and issue a refund if necessary, please reply with the following details:\\n- Date and amount of both charges\\n- Transaction IDs (if available)\\n\\nWe aim to resolve this within 24-48 hours. Thank you for your patience.\\n\\nBest regards,\\nSupport Team\"\n}",
+        "type": "text"
+      }
+    ],
+    "id": "b84cc249-fc79-4e84-bedc-eac25f88a90a",
+    "model": "solar-pro4-260806",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 71,
+      "output_tokens": 553,
+      "output_tokens_details": {
+        "thinking_tokens": 423
+      }
+    }
+  },
   "providers/vercel/recorded-basic": {
     "content": [
       {
