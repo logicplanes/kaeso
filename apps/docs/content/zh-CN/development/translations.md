@@ -166,7 +166,7 @@ tRich("signIn.newHere", "New here? {link}", {
 
 网关的错误消息、权限目录中的名称、描述和类别，以及内置角色的名称和描述，都以英语送达。API 客户端会在应答到达时翻译它认识的内容（`src/api/`，键为 `errors.*` 和 `rights.*`）。它按 ID 翻译权限和角色，按英语原文及其值翻译消息。它不认识的内容按网关的原文显示。
 
-切换语言会重新加载数据。当网关写出的消息在 `src/api/gateway-errors.ts` 中没有对应规则时，`crates/kaeso-server/tests/error_copy.rs` 会失败，因此新消息要在同一个拉取请求中附上德语和中文。
+切换语言会重新加载数据。当网关写出的消息在 `src/api/gateway-errors.ts` 中没有对应规则时，`crates/kaeso-server/tests/server/error_copy.rs` 会失败，因此新消息要在同一个拉取请求中附上德语和中文。
 
 ## UI 库
 

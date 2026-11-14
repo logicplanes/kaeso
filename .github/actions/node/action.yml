@@ -1,0 +1,69 @@
+name: Node.js workspace
+description: Installs pnpm, Node.js and the workspace's dependencies and, when asked, the built libraries and a Playwright browser.
+
+inputs:
+  filter:
+    description: Install only this workspace package and what it depends on
+    default: ""
+  libraries:
+    description: Build packages/tokens and packages/ui, or restore them when this content was built before
+    default: "false"
+  playwright:
+    description: The workspace package whose Playwright version installs the browser
+    default: ""
+  browser:
+    description: The Playwright browser to install
+    default: chromium
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+      with:
+        node-version-file: .node-version
+        cache: pnpm
+        cache-dependency-path: pnpm-lock.yaml
+    - shell: bash
+      env:
+        FILTER: ${{ inputs.filter }}
+      run: pnpm install --frozen-lockfile --prefer-offline ${FILTER:+--filter "$FILTER"}
+    # The key names the content of every tracked file a library build reads, so a hit is the build of exactly this source.
+    - id: libraries
+      if: inputs.libraries == 'true'
+      shell: bash
+      run: echo "key=libraries-${RUNNER_OS}-${RUNNER_ARCH}-$(git ls-files -s -- packages patches package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json .node-version | sha256sum | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+    - id: built
+      if: inputs.libraries == 'true'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: |
+          packages/tokens/dist
+          packages/ui/dist
+          packages/ui/ai
+        key: ${{ steps.libraries.outputs.key }}
+    - if: inputs.libraries == 'true' && steps.built.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm build:packages
+    - id: playwright
+      if: inputs.playwright != ''
+      shell: bash
+      env:
+        PACKAGE: ${{ inputs.playwright }}
+      run: echo "version=$(pnpm --filter "$PACKAGE" exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+    - if: inputs.playwright != ''
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-${{ inputs.browser }}
+    # The runner image has Chromium's system packages; apt runs only when the browser can't start without it.
+    - if: inputs.playwright != ''
+      shell: bash
+      env:
+        PACKAGE: ${{ inputs.playwright }}
+        BROWSER: ${{ inputs.browser }}
+      run: |
+        pnpm --filter "$PACKAGE" exec playwright install "$BROWSER"
+        if ! pnpm --filter "$PACKAGE" exec node -e 'require("@playwright/test")[process.env.BROWSER].launch().then((browser) => browser.close())'; then
+          pnpm --filter "$PACKAGE" exec playwright install-deps "$BROWSER"
+        fi

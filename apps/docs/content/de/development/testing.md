@@ -122,6 +122,8 @@ Die Coverage-Befehle sind Aliasse in `.cargo/config.toml`, wo auch ihre Schwelle
 
 `cargo coverage-gateway` führt außerdem jedes Szenario des [Gateway-Benchmarks](benchmark.md) in kleiner Größe aus. Es schlägt bei einem offen gebliebenen Stream fehl, bei einem Abbruch, der den Anbieter nie erreicht, oder bei Speicher, der ohne Grenze wächst, nie bei einer Zeit.
 
+Die Integrationstests des Gateways in `crates/kaeso-server/tests/server` sind ein einziges Test-Binary mit einem Modul pro Datei, sodass das Gateway nur einmal hineingelinkt wird. `cargo test -p kaeso-server --test server limits::` führt die Tests aus `limits.rs` aus. Eine neue Datei braucht eine `mod`-Zeile in `main.rs`; ein Test im Binary schlägt fehl, wenn die Zeile fehlt. Ein Test, der einen Prozess für sich allein braucht, etwa `crates/kaeso-server/tests/inline_media_memory.rs`, der jede Allokation seines Prozesses zählt, bleibt eine Datei in `crates/kaeso-server/tests` und damit ein eigenes Binary.
+
 `cargo sqlx prepare --check` braucht `DATABASE_URL=postgres://kaeso:kaeso@127.0.0.1:55432/kaeso` mit angewandten Migrationen. Das Gateway des Stacks wendet sie beim Start an. Ohne den Stack führen Sie `cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres` aus.
 
 `kaeso-kpp` und `kaeso-codecs` nennen das älteste unterstützte Rust als `rust-version` in ihrer `Cargo.toml`, und CI testet jedes Crate damit. Um das selbst zu tun, installieren Sie diese Version mit `rustup toolchain install <version>` und führen `cargo +<version> test --locked -p <crate>` aus.
@@ -145,11 +147,11 @@ Manche Tests vergleichen mit geprüften `insta`-Snapshots. Ändert sich einer, p
 | Snapshot | Enthält | Ebenfalls aktualisieren |
 | --- | --- | --- |
 | `crates/kaeso-core/src/rights/snapshots/` | Jedes Recht und jede eingebaute Rolle | [Rechte](../concepts/rights.md) |
-| `crates/kaeso-server/tests/snapshots/` | Jede Einstellung mit Standardwert und Beschreibung | [Konfiguration](../self-hosting/configuration.md) und `deploy/kaeso.example.toml` |
+| `crates/kaeso-server/tests/server/snapshots/` | Jede Einstellung mit Standardwert und Beschreibung | [Konfiguration](../self-hosting/configuration.md) und `deploy/kaeso.example.toml` |
 | `crates/kaeso-codecs/tests/snapshots/` | Die Ergebnisse der dialektübergreifenden Matrix und der Entscheidungsmatrix | Die Mapping-Seite des Dialekts ([KPP-Interna](kpp/index.md#tests)) |
 | `crates/kaeso-mail/src/snapshots/` | Text und HTML jeder E-Mail | |
 
-Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/error_copy.rs` prüft jede Meldung, die die Platform API senden kann, gegen die [Regeln für Fehlermeldungen](architecture/gateway.md#fehlermeldungen). `crates/kaeso-server/tests/docs_paths.rs` prüft, dass jeder Repository-Pfad und jeder relative Link in den Markdown-Dateien im Wurzelverzeichnis und in `crates/`, `deploy/`, `e2e/`, `fuzz/` und `.github/` auf etwas Vorhandenes zeigt. `crates/kaeso-core/tests/supported_providers.rs` prüft, dass [Unterstützte Anbieter](../concepts/supported-providers.md) in jeder Sprache jeden Anbieter aus `PROVIDERS` mit seinen Formaten und seinem Host listet; ein neuer Anbieter bekommt dort also eine Zeile.
+Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/server/error_copy.rs` prüft jede Meldung, die die Platform API senden kann, gegen die [Regeln für Fehlermeldungen](architecture/gateway.md#fehlermeldungen). `crates/xtask/tests/docs_paths.rs` prüft, dass jeder Repository-Pfad und jeder relative Link in den Markdown-Dateien im Wurzelverzeichnis und in `crates/`, `deploy/`, `e2e/`, `fuzz/` und `.github/` auf etwas Vorhandenes zeigt. `crates/kaeso-core/tests/supported_providers.rs` prüft, dass [Unterstützte Anbieter](../concepts/supported-providers.md) in jeder Sprache jeden Anbieter aus `PROVIDERS` mit seinen Formaten und seinem Host listet; ein neuer Anbieter bekommt dort also eine Zeile.
 
 ## End-to-End-Tests
 
@@ -286,37 +288,32 @@ Der Workflow **Fuzz** lässt jedes Target jede Nacht 10 Minuten laufen und 30 Se
 
 ## Continuous Integration
 
-Der CI-Workflow, `.github/workflows/ci.yml`, läuft für jeden Pull Request, bei jedem Push auf `dev` und `prod` und innerhalb des Release-Workflows. Bei einem Pull Request entscheidet sein erster Job, welche Bereiche sich geändert haben, und die Jobs unveränderter Bereiche werden übersprungen. Die eigenen Suiten der Konsole, der Docs-Site und des Showcase (ihre Unit- und End-to-End-Tests, für die Konsole auch die Images und der Installationstest) laufen nur, wenn sich diese App, `packages/` oder das Node.js-Setup des Workspace geändert hat; eine Änderung an einer Docs-Seite startet also nicht die der Konsole. Überall sonst läuft jeder Job. Ein neuer Push auf einen Pull Request oder auf `dev` bricht den Lauf davor ab, sodass `dev` nur für seinen neuesten Commit alle Jobs ausführt.
+Der CI-Workflow, `.github/workflows/ci.yml`, läuft für jeden Pull Request, bei jedem Push auf `dev` und `prod` und innerhalb des Release-Workflows. Bei einem Pull Request entscheidet sein erster Job, welche Bereiche sich geändert haben, und die Jobs unveränderter Bereiche werden übersprungen. Die eigenen Suiten der Konsole, der Docs-Site und des Showcase (ihre Unit- und End-to-End-Tests, für die Konsole auch die Images und der Installationstest) laufen nur, wenn sich diese App, `packages/` oder das Node.js-Setup des Workspace geändert hat; eine Änderung an einer Docs-Seite startet also nicht die der Konsole. Überall sonst läuft jeder Job. Ein Job mit mehreren Prüfungen führt jede davon aus, auch nachdem eine fehlgeschlagen ist; ein Lauf zeigt also alles, was nicht stimmt. Ein neuer Push auf einen Pull Request oder auf `dev` bricht den Lauf davor ab, sodass `dev` nur für seinen neuesten Commit alle Jobs ausführt.
 
-Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und **Comments** bestanden haben und jeder andere Job bestanden hat oder übersprungen wurde. Ein Pull Request nach `dev` lässt sich erst mergen, wenn sie grün ist ([Pull Request mergen lassen](contributing.md#pull-request-mergen-lassen)).
+Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und **Repository checks** bestanden haben und jeder andere Job bestanden hat oder übersprungen wurde. Ein Pull Request nach `dev` lässt sich erst mergen, wenn sie grün ist ([Pull Request mergen lassen](contributing.md#pull-request-mergen-lassen)).
 
 | Job | Führt aus |
 | --- | --- |
 | Changes | Entscheidet, welche Bereiche ein Pull Request ändert |
-| Comments | Keine `TODO`-, `FIXME`-, `XXX`- oder `HACK`-Notizen in Kommentaren und keine Kommentare in Codeblöcken in Markdown |
-| Workflows | `actionlint` |
-| Rust format, Rust lint | `cargo fmt` und `cargo clippy`, für den Workspace und `fuzz/` |
+| Repository checks | Keine `TODO`-, `FIXME`-, `XXX`- oder `HACK`-Notizen in Kommentaren und keine Kommentare in Codeblöcken in Markdown; `actionlint`, wenn sich ein Workflow geändert hat; `docker compose config` für beide Compose-Dateien, wenn sich `deploy/` geändert hat |
+| Rust checks | `cargo fmt` und `cargo clippy` für den Workspace und `fuzz/`, `cargo check` der Fuzz-Targets, dann die PostgreSQL-Migrationen und `cargo sqlx prepare --workspace --check` |
 | Test KPP | `cargo coverage-kpp` und die Doc-Tests von `kaeso-kpp` und `kaeso-codecs` |
 | Minimum Rust version | `cargo check` und `cargo test` jedes KPP-Crates mit seiner `rust-version` |
 | Test gateway | `cargo coverage-gateway`, mit dem Entwicklungs-Stack, in vier Shards, deren Zeilenabdeckung ein weiterer Job zusammenführt und gegen den Schwellenwert des Alias prüft |
-| Repository tooling | `node scripts/version.mjs check`, `cargo test -p xtask -p kpp-conformance` und `cargo test -p kaeso-server --test docs_paths` |
-| Query data | Die PostgreSQL-Migrationen, dann `cargo sqlx prepare --workspace --check` |
-| OpenAPI document | `openapi.json` ist aktuell |
+| Repository tooling | `node scripts/version.mjs check` und `cargo test -p xtask -p kpp-conformance` |
 | Rust dependencies | `cargo deny check`, mit der Richtlinie des Workspaces und der von KPP |
-| Fuzz targets | Die Fuzz-Targets bauen |
 | Published crates | `cargo publish --dry-run` und `cargo doc` mit Warnungen als Fehler für `kaeso-kpp` und `kaeso-codecs`, und `cargo semver-checks`: gegen die zuletzt veröffentlichte Version für ein Minor-Release und bei einem Pull Request gegen seine Basis für ein Patch-Release, außer er trägt das Label `breaking` |
 | Fuzz runs | Der Workflow **Fuzz** mit 30 Sekunden je Target in vier Jobs, wenn sich KPP, `crates/kaeso-mcp` oder `fuzz/` geändert hat; nicht bei einem Push auf `dev`, den der nächtliche Lauf abdeckt |
-| SDK conformance, SDK end-to-end | `pytest -q e2e/conformance`, `pytest -q e2e/sdk` und `pytest -q e2e/mcp` |
-| Compose config | `docker compose config` für beide Compose-Dateien |
-| Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert |
+| SDK conformance | `pytest -q e2e/conformance` |
+| SDK end-to-end and OpenAPI document | Baut das Gateway einmal, prüft, dass `openapi.json` aktuell ist, und führt dann `pytest -q e2e/sdk` und `pytest -q e2e/mcp` aus |
+| Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert. Ein Pull Request baut die drei Rust-Images mit dem Profil `pr` aus `Cargo.toml`, das wie `dev` kompiliert und einen Bruchteil der Zeit braucht; `dev`, `prod` und Releases bauen sie mit `release`, und auf `dev` baut **Images (pull request cache)** sie ein weiteres Mal mit `pr`, für den Cache, den Pull Requests lesen |
 | Install test | `pytest -q e2e/install` mit diesen Images |
-| TypeScript lint | `pnpm format:check`, `pnpm lint`, `pnpm i18n` und `pnpm knip` |
-| TypeScript typecheck | `pnpm typecheck` |
-| TypeScript libraries | `pnpm build:packages`, einmal für jeden Job, der die Bibliotheken braucht |
-| TypeScript test | `pnpm test`, ein Job pro Workspace; die Konsole in sechs Shards, deren Coverage ein weiterer Job zusammenführt und prüft |
+| TypeScript checks | `pnpm knip`, dann gleichzeitig `pnpm format:check`, `pnpm lint`, `pnpm i18n` und `pnpm audit --prod --audit-level high`, dann `pnpm typecheck` |
+| TypeScript test | `pnpm test`: die UI-Bibliothek in einem Job, die Tokens, die Docs-Site, der Showcase, die Skripte und die MCP-Ansichten in einem weiteren und die Konsole in sechs Shards, deren Coverage ein weiterer Job zusammenführt und prüft |
 | TypeScript build | `pnpm build`, `pnpm licenses:check` und `pnpm release:check` |
 | End-to-end console, docs und showcase | Das `e2e` jedes Pakets; die Konsole in fünf Teilen, der Showcase in Shards, seine Barrierefreiheitsprüfungen in eigenen Shards und sein WebKit-Test in einem eigenen Job |
-| TypeScript dependencies | `pnpm audit --prod --audit-level high` |
+
+Jobs, die `packages/tokens` und `packages/ui` gebaut brauchen, holen den Build aus einem Cache, dessen Schlüssel der Inhalt jeder versionierten Datei ist, die der Build liest, und bauen sie, wenn dieser Inhalt neu ist.
 
 Schlägt ein End-to-End-Shard fehl, führt der Job **End-to-end console report** oder **End-to-end showcase report** die Ergebnisse der Shards zu einem HTML-Bericht zusammen, dem Artefakt `playwright-console` oder `playwright-showcase`.
 

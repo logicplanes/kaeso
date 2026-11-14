@@ -190,14 +190,14 @@ A pull must name a Kaeso image by digest, and a compose runner must take exactly
 
 Caddy reads the maintenance flag from the `maintenance` volume. While it exists, every request gets the maintenance answer at once; otherwise a `502`, `503` or `504` from the gateway or the console does.
 
-`/kaeso-maintenance.json` serves the flag, such as `{"state":"updating","step":"migrating"}`, so the page can name the step. The page is inline in `compose.yaml`, with a content security policy that allows its own style and script by hash. `crates/kaeso-server/tests/edge.rs` checks that the JSON answers match what `ApiError` and `kaeso_codecs::dispatch::encode_error` produce, and that the hashes match.
+`/kaeso-maintenance.json` serves the flag, such as `{"state":"updating","step":"migrating"}`, so the page can name the step. The page is inline in `compose.yaml`, with a content security policy that allows its own style and script by hash. `crates/kaeso-server/tests/server/edge.rs` checks that the JSON answers match what `ApiError` and `kaeso_codecs::dispatch::encode_error` produce, and that the hashes match.
 
 ## Tests
 
 | Where | What |
 | --- | --- |
 | `crates/kaeso-update` | Version tags, channels, the plan with majors, manual steps, pre-releases and the protocol it needs, the manifest and the protocol |
-| `crates/kaeso-server/tests/updates.rs` | The gateway against a mock GitHub and a mock updater: conditional requests, backoff and its one-hour cap, manifests, rights, the audit log, the one-update lock and every ending |
+| `crates/kaeso-server/tests/server/updates.rs` | The gateway against a mock GitHub and a mock updater: conditional requests, backoff and its one-hour cap, manifests, rights, the audit log, the one-update lock and every ending |
 | `crates/kaeso-updater/tests/verify.rs` | The real attestations of Kaeso 0.1.0 verify; another image, commit, workflow, signature or log entry doesn't |
 | `crates/kaeso-updater/src/guard.rs` | Containers that differ from the replaced one in a widening `HostConfig` field, other names and other images are refused, and so is a compose runner with wider settings |
 | `crates/kaeso-updater/src/compose_cli.rs` | Every task's Docker Compose command against a fake binary, and unpinned images refused |

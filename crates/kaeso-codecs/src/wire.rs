@@ -431,6 +431,11 @@ mod one_pass {
                 assert!(read::<Block>(unsettled).is_none(), "{unsettled}");
             }
         }
+
+        #[test]
+        fn a_type_that_is_not_a_struct_is_left_to_two_passes() {
+            assert!(read::<serde_json::Value>(r#"{"a":1}"#).is_none());
+        }
     }
 }
 
@@ -1179,5 +1184,77 @@ mod tests {
     fn short_truncates_on_char_boundaries() {
         assert_eq!(Short("héllo", 2).to_string(), "h…");
         assert_eq!(Short("hi", 5).to_string(), "hi");
+    }
+
+    #[test]
+    fn struct_fields_of_a_type_that_is_not_a_struct_are_empty() {
+        assert!(struct_fields::<Value>().is_empty());
+        assert!(struct_fields::<IndexMap<String, u32>>().is_empty());
+    }
+
+    #[test]
+    fn string_or_list_refuses_anything_else_naming_what_it_takes() {
+        for text in ["-3", "1.5", "{}", "{\"a\":1}", "null", "true", "3"] {
+            let err = serde_json::from_str::<StringOr<Value>>(text).unwrap_err();
+            assert!(
+                err.to_string().starts_with("expected a string or an array"),
+                "{text}: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn text_borrows_plain_strings_and_copies_escaped_ones() {
+        let plain: Text<'_> = serde_json::from_str(r#""hi""#).unwrap();
+        assert!(matches!(plain.0, Cow::Borrowed("hi")));
+        let escaped: Text<'_> = serde_json::from_str(r#""a\nb""#).unwrap();
+        assert!(matches!(escaped.0, Cow::Owned(_)));
+        assert_eq!(escaped.as_str(), "a\nb");
+        assert_eq!(serde_json::to_string(&escaped).unwrap(), r#""a\nb""#);
+        let owned = Text::deserialize(Value::String("from a value".into())).unwrap();
+        assert_eq!(owned.as_str(), "from a value");
+        let err = serde_json::from_str::<Text<'_>>("3").unwrap_err();
+        assert!(err.to_string().contains("expected a string"), "{err}");
+    }
+
+    #[test]
+    fn a_body_json_cannot_hold_is_reported_as_a_kaeso_bug() {
+        let map: std::collections::BTreeMap<(u8, u8), u8> = [((1, 2), 3)].into();
+        let err = to_body(&map).unwrap_err();
+        assert_eq!(err.kind, kaeso_kpp::ErrorKind::ProviderError);
+        assert!(
+            err.message
+                .starts_with("Kaeso could not serialize a message (")
+                && err
+                    .message
+                    .ends_with("This is a bug in Kaeso; please report it."),
+            "{}",
+            err.message
+        );
+    }
+
+    #[test]
+    fn b64_defaults_to_empty_text_and_writes_bytes_as_base64() {
+        assert_eq!(B64::default(), B64::Text(String::new()));
+        let bytes = bytes::Bytes::from_static(b"\x89PNG");
+        assert_eq!(
+            B64::Bytes(bytes.clone())
+                .into_source("image/png", "image")
+                .unwrap(),
+            Source::bytes("image/png", bytes.clone())
+        );
+        assert_eq!(
+            serde_json::to_string(&B64::Bytes(bytes)).unwrap(),
+            r#""iVBORw==""#
+        );
+        let err = B64::Text("not base64!".into())
+            .into_source("image/png", "image")
+            .unwrap_err();
+        assert_eq!(err.param.as_deref(), Some("image"));
+    }
+
+    #[test]
+    fn data_urls_that_are_not_base64_are_not_read_as_media() {
+        assert_eq!(parse_data_url("data:text/plain;charset=utf-8,hello"), None);
     }
 }
