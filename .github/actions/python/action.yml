@@ -1,0 +1,23 @@
+name: Python suites
+description: Puts Python 3.13 and the packages of e2e/requirements.txt on the path.
+
+runs:
+  using: composite
+  steps:
+    - id: python
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+      with:
+        python-version: "3.13"
+    # The environment is restored whole: it is the install of exactly this requirements file with this Python.
+    - id: environment
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: e2e/.venv
+        key: python-${{ runner.os }}-${{ runner.arch }}-${{ steps.python.outputs.python-version }}-${{ hashFiles('e2e/requirements.txt') }}
+    - if: steps.environment.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        python -m venv e2e/.venv
+        e2e/.venv/bin/pip install --require-hashes -r e2e/requirements.txt
+    - shell: bash
+      run: echo "$GITHUB_WORKSPACE/e2e/.venv/bin" >> "$GITHUB_PATH"
