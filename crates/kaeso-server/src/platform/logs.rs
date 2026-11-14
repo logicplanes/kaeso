@@ -16,6 +16,7 @@ use kaeso_store::clickhouse::ClickHouse;
 use kaeso_store::clickhouse::logs::{self as ch, Filter, LogRow};
 use kaeso_store::pg::{instance, log_jobs, orgs, projects};
 use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 use utoipa::{IntoParams, ToSchema};
@@ -1137,25 +1138,30 @@ pub struct LogEntryView {
 #[derive(Clone, Debug, Serialize, ToSchema)]
 #[schema(description = "Request and reply bodies.")]
 pub struct ContentView {
-    #[doc = "The app's request body (JSON when it was JSON)."]
+    #[doc = "The app's request body (JSON when it was JSON), with its keys in the order the app sent them."]
     #[schema(value_type = Object)]
-    pub request: serde_json::Value,
+    pub request: Box<RawValue>,
     #[doc = "The reply in KPP form, including what the app's format could not show."]
     #[schema(value_type = Object)]
-    pub reply: serde_json::Value,
+    pub reply: Box<RawValue>,
+}
+
+/// Logged JSON as it was written, so an object's keys keep their order: System One and Gemini
+/// name their decision questions and options as object keys, and their answers come back in
+/// that order. Text that isn't JSON is a JSON string; nothing logged is `null`.
+pub(crate) fn stored_json(s: &str) -> Box<RawValue> {
+    if s.is_empty() {
+        return RawValue::NULL.to_owned();
+    }
+    RawValue::from_string(s.to_owned())
+        .or_else(|_| serde_json::value::to_raw_value(s))
+        .unwrap_or_else(|_| RawValue::NULL.to_owned())
 }
 
 fn content_view(c: &ch::ContentRow) -> ContentView {
-    let parse = |s: &str| {
-        if s.is_empty() {
-            serde_json::Value::Null
-        } else {
-            serde_json::from_str(s).unwrap_or_else(|_| serde_json::Value::String(s.to_owned()))
-        }
-    };
     ContentView {
-        request: parse(&c.request_body),
-        reply: parse(&c.reply),
+        request: stored_json(&c.request_body),
+        reply: stored_json(&c.reply),
     }
 }
 
@@ -1415,18 +1421,16 @@ async fn next_chunk(s: &mut ExportState) -> Option<Result<Bytes, std::io::Error>
         if s.csv {
             out.push_str(&csv_line(&v));
         } else {
-            let mut obj = serde_json::to_value(&v).unwrap_or_default();
-            if s.content
-                && let Some(map) = obj.as_object_mut()
-            {
+            let line = if s.content {
                 let content = contents
                     .iter()
                     .find(|c| c.request_id == r.request_id)
-                    .map(|c| serde_json::to_value(content_view(c)).unwrap_or_default())
-                    .unwrap_or(serde_json::Value::Null);
-                map.insert("content".into(), content);
-            }
-            out.push_str(&obj.to_string());
+                    .map(content_view);
+                serde_json::to_string(&LogEntryView { log: v, content })
+            } else {
+                serde_json::to_string(&v)
+            };
+            out.push_str(&line.unwrap_or_default());
             out.push('\n');
         }
     }
