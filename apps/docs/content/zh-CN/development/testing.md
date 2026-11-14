@@ -282,7 +282,7 @@ cargo +nightly fuzz run decode_openai_chat \
   -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-**Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP、`crates/kaeso-mcp` 或 `fuzz/` 的拉取请求，则由四个作业分担各目标，每个作业同时运行两个目标，让每个目标运行 30 秒。出现崩溃时它会失败，并把输入保存为制品：夜间为 `fuzz-crash-<target>`，拉取请求中为 `fuzz-crash-<shard>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
+**Fuzz** 工作流每晚让每个目标运行 10 分钟；每个修改 KPP、`crates/kaeso-mcp` 或 `fuzz/` 的拉取请求，则由四个作业分担各目标，让每个目标运行 30 秒。出现崩溃时它会失败，并把输入保存为制品：夜间为 `fuzz-crash-<target>`，拉取请求中为 `fuzz-crash-<shard>`。崩溃会写入 `fuzz/artifacts/<target>/`。用 `cargo +nightly fuzz run <target> <file>` 复现它，把它变成编解码器中的回归测试，然后修复编解码器。
 
 ## 持续集成
 
@@ -301,7 +301,7 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | Repository tooling | `node scripts/version.mjs check` 和 `cargo test -p xtask -p kpp-conformance` |
 | Rust dependencies | 用工作区和 KPP 的政策运行 `cargo deny check` |
 | Published crates | 为 `kaeso-kpp` 和 `kaeso-codecs` 运行 `cargo publish --dry-run` 和把警告视为错误的 `cargo doc`，并运行 `cargo semver-checks`：对照最近发布的版本检查是否适合次版本发布；在拉取请求中对照其基础提交检查是否适合补丁发布，除非它带有 `breaking` 标签 |
-| Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，在四个作业中以每个目标 30 秒运行 **Fuzz** 工作流，每个作业同时运行两个目标；推送到 `dev` 时不运行，由夜间运行覆盖 |
+| Fuzz runs | KPP、`crates/kaeso-mcp` 或 `fuzz/` 有变化时，在四个作业中以每个目标 30 秒运行 **Fuzz** 工作流；推送到 `dev` 时不运行，由夜间运行覆盖 |
 | SDK conformance | `pytest -q e2e/conformance` |
 | SDK end-to-end and OpenAPI document | 构建一次网关，检查 `openapi.json` 是最新的，然后运行 `pytest -q e2e/sdk` 和 `pytest -q e2e/mcp` |
 | Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台。拉取请求用 `Cargo.toml` 中的 `pr` 配置构建三个 Rust 镜像，它像 `dev` 一样编译，只需一小部分时间；`dev`、`prod` 和发布用 `release` 构建它们，在 `dev` 上 **Images (pull request cache)** 还会用 `pr` 再构建一次，以填充拉取请求读取的缓存 |

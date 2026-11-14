@@ -545,7 +545,7 @@ jobs:
       - name: Build the gateway and the test kit once, for every step below
         run: cargo build -p kaeso -p kaeso-testkit --bins
       - name: The OpenAPI document is current
-        run: cargo run -q -p kaeso -- openapi | diff - openapi.json
+        run: target/debug/kaeso openapi | diff - openapi.json
       - if: ${{ !cancelled() }}
         run: pytest -q e2e/sdk
       - if: ${{ !cancelled() }}

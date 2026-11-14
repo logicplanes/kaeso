@@ -282,7 +282,7 @@ cargo +nightly fuzz run decode_openai_chat \
   -- -max_total_time=600 -rss_limit_mb=2048 -max_len=65536
 ```
 
-Der Workflow **Fuzz** lässt jedes Target jede Nacht 10 Minuten laufen und 30 Sekunden bei jedem Pull Request, der KPP, `crates/kaeso-mcp` oder `fuzz/` ändert; dort teilen sich vier Jobs die Targets und lassen je zwei gleichzeitig laufen. Er schlägt bei einem Absturz fehl und behält die Eingabe als Artefakt: nachts `fuzz-crash-<target>`, bei einem Pull Request `fuzz-crash-<shard>`. Ein Absturz landet in `fuzz/artifacts/<target>/`. Reproduzieren Sie ihn mit `cargo +nightly fuzz run <target> <file>`, machen Sie daraus einen Regressionstest im Codec und korrigieren Sie dann den Codec.
+Der Workflow **Fuzz** lässt jedes Target jede Nacht 10 Minuten laufen und 30 Sekunden bei jedem Pull Request, der KPP, `crates/kaeso-mcp` oder `fuzz/` ändert; dort teilen sich vier Jobs die Targets. Er schlägt bei einem Absturz fehl und behält die Eingabe als Artefakt: nachts `fuzz-crash-<target>`, bei einem Pull Request `fuzz-crash-<shard>`. Ein Absturz landet in `fuzz/artifacts/<target>/`. Reproduzieren Sie ihn mit `cargo +nightly fuzz run <target> <file>`, machen Sie daraus einen Regressionstest im Codec und korrigieren Sie dann den Codec.
 
 ## Continuous Integration
 
@@ -301,7 +301,7 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | Repository tooling | `node scripts/version.mjs check` und `cargo test -p xtask -p kpp-conformance` |
 | Rust dependencies | `cargo deny check`, mit der Richtlinie des Workspaces und der von KPP |
 | Published crates | `cargo publish --dry-run` und `cargo doc` mit Warnungen als Fehler für `kaeso-kpp` und `kaeso-codecs`, und `cargo semver-checks`: gegen die zuletzt veröffentlichte Version für ein Minor-Release und bei einem Pull Request gegen seine Basis für ein Patch-Release, außer er trägt das Label `breaking` |
-| Fuzz runs | Der Workflow **Fuzz** mit 30 Sekunden je Target in vier Jobs, die je zwei Targets gleichzeitig laufen lassen, wenn sich KPP, `crates/kaeso-mcp` oder `fuzz/` geändert hat; nicht bei einem Push auf `dev`, den der nächtliche Lauf abdeckt |
+| Fuzz runs | Der Workflow **Fuzz** mit 30 Sekunden je Target in vier Jobs, wenn sich KPP, `crates/kaeso-mcp` oder `fuzz/` geändert hat; nicht bei einem Push auf `dev`, den der nächtliche Lauf abdeckt |
 | SDK conformance | `pytest -q e2e/conformance` |
 | SDK end-to-end and OpenAPI document | Baut das Gateway einmal, prüft, dass `openapi.json` aktuell ist, und führt dann `pytest -q e2e/sdk` und `pytest -q e2e/mcp` aus |
 | Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert. Ein Pull Request baut die drei Rust-Images mit dem Profil `pr` aus `Cargo.toml`, das wie `dev` kompiliert und einen Bruchteil der Zeit braucht; `dev`, `prod` und Releases bauen sie mit `release`, und auf `dev` baut **Images (pull request cache)** sie ein weiteres Mal mit `pr`, für den Cache, den Pull Requests lesen |
