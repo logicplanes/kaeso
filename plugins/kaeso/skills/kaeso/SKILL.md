@@ -1,6 +1,6 @@
 ---
 name: kaeso
-description: Use when the user asks about their Kaeso AI gateway, such as its organizations, projects, API keys, models, aliases and their routes, provider keys, limits, usage, costs, request logs or audit log, or wants to change any of them. Also use it to connect Claude Code to their Kaeso install.
+description: Use when the user asks about their Kaeso AI gateway, such as its organizations, projects, API keys, models, aliases and their routes, provider keys, limits, usage, costs, request logs or audit log, or wants to change any of them. Also use it to connect Claude to their Kaeso install.
 ---
 
 # Working with Kaeso
@@ -9,11 +9,10 @@ Kaeso is a self-hosted AI gateway. The `kaeso` MCP server gives you one tool per
 
 ## Connecting Kaeso
 
-If the `kaeso` MCP tools aren't available, connect the server first:
+If the `kaeso` MCP tools aren't available, connect the server first. You need the address of the user's Kaeso install, such as `https://kaeso.example.com`; ask for it if you don't have it.
 
-1. Ask the user for the address of their Kaeso install, such as `https://kaeso.example.com`.
-2. Run `claude mcp add --transport http --scope user kaeso https://<their install>/mcp` with that address.
-3. Tell them to run `/mcp`, choose `kaeso` and sign in through their browser, where they choose what you may do. If `/mcp` doesn't list `kaeso` yet, they restart Claude Code first.
+- In Claude Code, the plugin asks for the server's address when it is installed, and `/plugin configure kaeso@kaeso` changes it. Otherwise run `claude mcp add --transport http --scope user kaeso https://<their install>/mcp`. Then tell them to run `/mcp`, choose `kaeso` and sign in through their browser, where they choose what you may do. If `/mcp` doesn't list `kaeso` yet, they restart Claude Code first.
+- In Claude on the web, in the desktop and mobile apps and in Cowork, you can't run commands. Give them the link `https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kaeso&connectorUrl=` followed by their install's address and `/mcp`, percent-encoded, so `https://kaeso.example.com/mcp` becomes `https%3A%2F%2Fkaeso.example.com%2Fmcp`. It opens **Add custom connector** with the values filled in. Or they open **Customize** › **Connectors**, choose **Add custom connector** and enter the name `Kaeso` and that address. After **Connect**, they sign in through their browser; a new conversation then has the tools.
 
 ## Calling the tools
 

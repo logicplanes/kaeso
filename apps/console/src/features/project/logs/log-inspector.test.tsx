@@ -585,15 +585,28 @@ describe("LogInspector", () => {
     const { user } = await renderApp(projectPath("logs?log=req_0001"));
 
     const request = await openTab(user, "Request");
-    expect(request).toHaveTextContent("I was charged twice; refund me.");
-    expect(within(request).getByText("refund")).toBeInTheDocument();
-    expect(request).toHaveTextContent("Yes/no: Does the customer ask for a refund?");
-    expect(request).toHaveTextContent("billing · support");
+    expect(await within(request).findByText("I was charged twice; refund me.")).toBeInTheDocument();
+    const asks = await within(request).findByRole("list", { name: "Questions" });
+    const [refund, team] = within(asks).getAllByRole("listitem") as [HTMLElement, HTMLElement];
+    expect(refund).toHaveAccessibleName("refund");
+    expect(within(refund).getByText("Yes/no")).toBeInTheDocument();
+    expect(within(refund).getByText("Does the customer ask for a refund?")).toBeInTheDocument();
+    expect(team).toHaveAccessibleName("team");
+    expect(
+      within(team)
+        .getAllByRole("term")
+        .map((t) => t.textContent),
+    ).toEqual(["billing", "support"]);
+    expect(within(team).getByText("Payments.")).toBeInTheDocument();
+    expect(within(team).getByText("Everything else.")).toBeInTheDocument();
     const reply = await openTab(user, "Reply");
     expect(reply).toHaveTextContent("Each answer with its probabilities, in the order the questions were asked.");
     const answers = await within(reply).findByRole("article", { name: "Answers" });
-    expect(answers).toHaveTextContent("refund");
-    expect(answers).toHaveTextContent("support");
+    const chosen = within(answers).getByRole("listitem", { name: "team" });
+    expect(within(chosen).getByText("Which team?")).toBeInTheDocument();
+    expect(within(chosen).getByRole("meter", { name: "support" })).toHaveAttribute("aria-valuetext", "90%, chosen");
+    expect(within(chosen).getByText("Confidence 80%")).toBeInTheDocument();
+    expect(within(answers).getByRole("meter", { name: "Yes" })).toHaveAttribute("aria-valuetext", "82%, chosen");
     await user.click(within(reply).getByRole("switch", { name: "Show raw" }));
     await waitFor(() => expect(within(reply).queryByRole("article", { name: "Answers" })).not.toBeInTheDocument());
     expect(reply).toHaveTextContent("decide");
@@ -614,9 +627,13 @@ describe("LogInspector", () => {
     const { user } = await renderApp(projectPath("logs?log=req_0001"));
 
     const request = await openTab(user, "Request");
-    expect(within(request).getByText("Question 1")).toBeInTheDocument();
-    expect(request).toHaveTextContent("0 · high");
-    expect(request).toHaveTextContent("Yes/no: A bug?");
+    const asks = await within(request).findByRole("list", { name: "Questions" });
+    const [first, bug] = within(asks).getAllByRole("listitem") as [HTMLElement, HTMLElement];
+    expect(first).toHaveAccessibleName("Question 1");
+    expect(within(first).getByText("No instructions")).toBeInTheDocument();
+    expect(within(first).getByText("No description")).toBeInTheDocument();
+    expect(within(first).getByText("high")).toBeInTheDocument();
+    expect(within(bug).getByText("A bug?")).toBeInTheDocument();
     expect(request).toHaveTextContent(`"role": "user"`);
   });
 

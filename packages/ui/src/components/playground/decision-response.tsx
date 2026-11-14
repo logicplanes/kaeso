@@ -34,6 +34,7 @@ export interface DecisionResponseProps {
   status?: DecisionStatus | undefined;
   image?: DecisionImage | undefined;
   maxBars?: number | undefined;
+  showInstructions?: boolean | undefined;
   error?: string | undefined;
   onRetry?: (() => void) | undefined;
   footer?: ReactNode | undefined;
@@ -66,10 +67,12 @@ function Bars({ bars, pending, max, unit, t }: { bars: readonly Bar[]; pending: 
   const shown = all || !cut ? bars.map((_, i) => i) : pending ? bars.slice(0, max).map((_, i) => i) : shownBars(bars, max);
   return (
     <div className="flex flex-col gap-4">
-      <div id={listId} className="flex flex-col gap-4">
+      <div id={listId} className="grid grid-cols-meter gap-x-12 gap-y-6">
         {shown.map((i) => {
           const bar = bars[i];
-          return bar ? <ProbabilityBar key={i} label={bar.label} value={bar.value} highlight={!pending && bar.highlight} pending={pending} /> : null;
+          return bar ? (
+            <ProbabilityBar key={i} layout="row" label={bar.label} value={bar.value} highlight={!pending && bar.highlight} pending={pending} />
+          ) : null;
         })}
       </div>
       {cut && (
@@ -156,6 +159,7 @@ function QuestionAnswer({
   pending,
   image,
   maxBars,
+  showInstructions,
 }: {
   question: DecisionQuestion;
   index: number;
@@ -163,6 +167,7 @@ function QuestionAnswer({
   pending: boolean;
   image: DecisionImage | undefined;
   maxBars: number;
+  showInstructions: boolean;
 }) {
   const t = useUiText();
   const formatters = useFormatters();
@@ -171,84 +176,90 @@ function QuestionAnswer({
   const kind = question.kind;
   const own = answer && (answer.kind === kind || answer.kind === "refusal") ? answer : undefined;
   const refused = own?.kind === "refusal" ? own : undefined;
+  const answered = !!own && !refused;
   const confidence = own && own.kind !== "refusal" && typeof own.confidence === "number" && Number.isFinite(own.confidence) ? own.confidence : undefined;
+  const instructions = showInstructions ? question.instructions?.trim() : undefined;
 
-  let text: string | undefined;
+  let score: { value: string; max: string; level: string | undefined } | undefined;
   let bars: Bar[] | undefined;
   let unit: "options" | "levels" = "options";
   if (kind === "predicate") {
     const p = own?.kind === "predicate" && Number.isFinite(own.probability) ? clamp01(own.probability) : undefined;
-    const yes = t("decisionResponse.yes", "Yes");
-    const no = t("decisionResponse.no", "No");
-    if (p !== undefined) text = p >= 0.5 ? yes : no;
     bars = [
-      { label: yes, value: p, highlight: p !== undefined && p >= 0.5 },
-      { label: no, value: p === undefined ? undefined : 1 - p, highlight: p !== undefined && p < 0.5 },
+      { label: t("decisionResponse.yes", "Yes"), value: p, highlight: p !== undefined && p >= 0.5 },
+      { label: t("decisionResponse.no", "No"), value: p === undefined ? undefined : 1 - p, highlight: p !== undefined && p < 0.5 },
     ];
   } else if (kind === "choice") {
     const options = question.options ?? [];
     const chosen = own?.kind === "choice" ? own.option : undefined;
     const probabilities = own?.kind === "choice" ? (own.probabilities ?? []) : [];
-    if (chosen !== undefined) text = optionLabel(t, options[chosen], chosen);
     bars = options.map((o, i) => ({ label: optionLabel(t, o, i), value: probabilities[i], highlight: i === chosen }));
   } else if (kind === "score") {
     unit = "levels";
     const levels = question.levels ?? [];
-    const score = own?.kind === "score" && Number.isFinite(own.score) ? own.score : undefined;
+    const value = own?.kind === "score" && Number.isFinite(own.score) ? own.score : undefined;
     const probabilities = own?.kind === "score" ? (own.probabilities ?? []) : [];
-    const nearest = score === undefined ? undefined : Math.max(0, Math.min(levels.length - 1, Math.round(score)));
-    if (score !== undefined) {
-      const values = { score: formatNumber(score, { maximumFractionDigits: 2 }), max: formatNumber(Math.max(0, levels.length - 1)) };
-      const near = nearest !== undefined ? levels[nearest]?.label?.trim() : undefined;
-      text = near
-        ? t("decisionResponse.scoreNear", "{score} of {max}, nearest {level}", { ...values, level: near })
-        : t("decisionResponse.score", "{score} of {max}", values);
+    const nearest = value === undefined ? undefined : Math.max(0, Math.min(levels.length - 1, Math.round(value)));
+    if (value !== undefined) {
+      score = {
+        value: formatNumber(value, { maximumFractionDigits: 2 }),
+        max: formatNumber(Math.max(0, levels.length - 1)),
+        level: nearest !== undefined ? levels[nearest]?.label?.trim() || undefined : undefined,
+      };
     }
     bars = levels.map((l, i) => ({ label: levelLabel(t, l, i), value: probabilities[i], highlight: i === nearest }));
   }
 
-  return (
-    <li className="flex min-w-0 flex-col gap-8 px-12" aria-labelledby={nameId} data-kind={kind} data-refused={refused ? "" : undefined}>
-      <div className="flex min-w-0 items-baseline justify-between gap-12">
-        <span id={nameId} className="min-w-0 text-body font-medium text-fg wrap-anywhere">
-          {questionName(t, question, index)}
+  const meta = (
+    <span className="flex shrink-0 items-baseline gap-12 text-small text-fg-tertiary">
+      {confidence !== undefined && (
+        <span className="tabular">
+          {t("decisionResponse.confidence", "Confidence {percent}", { percent: probabilityText(clamp01(confidence), t, formatters) })}
         </span>
-        <span className="shrink-0 text-small text-fg-tertiary">{kindLabel(t, kind)}</span>
+      )}
+      <span>{kindLabel(t, kind)}</span>
+    </span>
+  );
+
+  return (
+    <li
+      className="flex min-w-0 flex-col gap-12 px-12 py-16 not-first:hairline-t first:pt-0 last:pb-0"
+      aria-labelledby={nameId}
+      data-kind={kind}
+      data-refused={refused ? "" : undefined}
+    >
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-12 gap-y-4">
+          <span id={nameId} className="min-w-0 text-body font-medium text-fg wrap-anywhere">
+            {questionName(t, question, index)}
+          </span>
+          {meta}
+        </div>
+        {instructions && <span className="max-w-prose text-small text-fg-secondary wrap-break-word">{instructions}</span>}
       </div>
       {refused ? (
         <div className="flex min-h-22 flex-col gap-4">
           <span className="text-body text-fg-secondary">{t("decisionResponse.refused", "Refused: the model declined to answer this question")}</span>
           {refused.reason && <span className="text-small text-fg-tertiary wrap-anywhere">{refused.reason}</span>}
         </div>
+      ) : !pending && !answered ? (
+        <span className="flex min-h-22 items-center text-body text-fg-tertiary">{t("decisionResponse.noAnswer", "No answer")}</span>
       ) : (
         <>
-          {kind !== "box" && (
-            <div className="flex min-h-22 flex-wrap items-baseline gap-x-12 gap-y-4">
-              {pending ? (
+          {kind === "score" && (
+            <div className="flex min-h-22 items-baseline">
+              {pending || !score ? (
                 <span aria-hidden className={cn("h-12 w-120 self-center rounded-pill bg-fill-1", WAITING)} />
-              ) : text !== undefined ? (
-                <span className="min-w-0 text-body text-fg wrap-anywhere">{text}</span>
               ) : (
-                <span className="text-body text-fg-tertiary">{t("decisionResponse.noAnswer", "No answer")}</span>
-              )}
-              {confidence !== undefined && (
-                <span className="text-small text-fg-tertiary tabular">
-                  {t("decisionResponse.confidence", "Confidence {percent}", { percent: probabilityText(clamp01(confidence), t, formatters) })}
+                <span className="min-w-0 text-body text-fg tabular wrap-anywhere">
+                  {score.level
+                    ? t("decisionResponse.scoreNear", "{score} of {max}, nearest {level}", { score: score.value, max: score.max, level: score.level })
+                    : t("decisionResponse.score", "{score} of {max}", { score: score.value, max: score.max })}
                 </span>
               )}
             </div>
           )}
-          {kind === "box" && (
-            <>
-              {!pending && !own && <span className="text-body text-fg-tertiary">{t("decisionResponse.noAnswer", "No answer")}</span>}
-              <BoxAnswer answer={own?.kind === "box" ? own : undefined} image={image} t={t} />
-              {confidence !== undefined && (
-                <span className="text-small text-fg-tertiary tabular">
-                  {t("decisionResponse.confidence", "Confidence {percent}", { percent: probabilityText(clamp01(confidence), t, formatters) })}
-                </span>
-              )}
-            </>
-          )}
+          {kind === "box" && <BoxAnswer answer={own?.kind === "box" ? own : undefined} image={image} t={t} />}
           {bars && bars.length > 0 && <Bars bars={bars} pending={pending} max={maxBars} unit={unit} t={t} />}
         </>
       )}
@@ -257,7 +268,7 @@ function QuestionAnswer({
 }
 
 export const DecisionResponse = forwardRef<HTMLElement, DecisionResponseProps>(function DecisionResponse(
-  { questions, answers = [], status = "done", image, maxBars = 8, error, onRetry, footer, "aria-label": ariaLabelProp, className },
+  { questions, answers = [], status = "done", image, maxBars = 8, showInstructions = false, error, onRetry, footer, "aria-label": ariaLabelProp, className },
   ref,
 ) {
   const t = useUiText();
@@ -295,9 +306,18 @@ export const DecisionResponse = forwardRef<HTMLElement, DecisionResponseProps>(f
           )}
         </div>
       ) : (
-        <ol className="flex min-w-0 flex-col gap-24">
+        <ol className="flex min-w-0 flex-col">
           {questions.map((q, i) => (
-            <QuestionAnswer key={q.id ?? i} question={q} index={i} answer={pending ? undefined : answers[i]} pending={pending} image={image} maxBars={bars} />
+            <QuestionAnswer
+              key={q.id ?? i}
+              question={q}
+              index={i}
+              answer={pending ? undefined : answers[i]}
+              pending={pending}
+              image={image}
+              maxBars={bars}
+              showInstructions={showInstructions}
+            />
           ))}
         </ol>
       )}
