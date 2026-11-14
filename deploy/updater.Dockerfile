@@ -28,11 +28,12 @@ COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS build
+ARG PROFILE=release
 COPY --from=plan /src/recipe.json recipe.json
-RUN cargo chef cook --release --locked -p kaeso-updater --recipe-path recipe.json
+RUN cargo chef cook --profile "${PROFILE}" --locked -p kaeso-updater --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --locked -p kaeso-updater \
- && cp target/release/kaeso-updater /kaeso-updater \
+RUN cargo build --profile "${PROFILE}" --locked -p kaeso-updater \
+ && cp "target/${PROFILE}/kaeso-updater" /kaeso-updater \
  && rm -rf target \
  && mkdir -p /dirs/kaeso /dirs/maintenance /dirs/state
 

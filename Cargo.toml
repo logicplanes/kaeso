@@ -132,6 +132,11 @@ inherits = "release"
 lto = "thin"
 codegen-units = 1
 
+# CI builds a pull request's images with this profile: the code as dev compiles it, without the minutes an optimized build takes.
+[profile.pr]
+inherits = "dev"
+debug = false
+
 [profile.dev.package.argon2]
 opt-level = 3
 

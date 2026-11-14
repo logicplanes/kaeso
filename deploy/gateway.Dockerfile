@@ -18,11 +18,12 @@ RUN cargo build --profile "${PROFILE}" --locked -p kaeso \
  && rm -rf target
 
 FROM chef AS mock-build
+ARG PROFILE=release
 COPY --from=plan /src/recipe.json recipe.json
-RUN cargo chef cook --release --locked -p kaeso-testkit --bin kaeso-testkit --recipe-path recipe.json
+RUN cargo chef cook --profile "${PROFILE}" --locked -p kaeso-testkit --bin kaeso-testkit --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --locked -p kaeso-testkit --bin kaeso-testkit \
- && cp target/release/kaeso-testkit /kaeso-testkit \
+RUN cargo build --profile "${PROFILE}" --locked -p kaeso-testkit --bin kaeso-testkit \
+ && cp "target/${PROFILE}/kaeso-testkit" /kaeso-testkit \
  && rm -rf target
 
 FROM gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2 AS mock
