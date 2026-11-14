@@ -278,12 +278,7 @@
   "logs.media.fileTooLarge": "文件（{detail}），过大，无法保留",
   "logs.tokens.decision": "决策；其输出 token 不计费",
   "logs.decision.answers": "回答",
-  "logs.decision.kind.predicate": "是/否",
-  "logs.decision.kind.choice": "选择",
-  "logs.decision.kind.score": "评分",
-  "logs.decision.kind.box": "边界框",
   "logs.decision.state": "问题针对的内容",
   "logs.decision.questions": "问题",
-  "logs.decision.question": "问题 {n}",
   "logs.decision.replyHint": "每个回答及其概率，按提问顺序排列。"
 }

@@ -11,6 +11,10 @@ export const KAESO_PROBABILITY_BAR_VARIANTS = {
       description: "The label, a 6px bar and the value on one line, so a list of options lines up (default)",
     },
     stacked: { classes: "flex flex-col gap-6", description: "The label and the value above a full-width bar, for one probability alone" },
+    row: {
+      classes: "col-span-full grid min-h-22 grid-cols-subgrid items-center",
+      description: "One row of a `grid-cols-meter` grid: labels, bars and values line up in columns as wide as the longest label and value",
+    },
   },
 } as const;
 export const KAESO_PROBABILITY_BAR_DEFAULT_VARIANTS = { layout: "inline" } as const;
@@ -55,7 +59,7 @@ export const ProbabilityBar = forwardRef<HTMLDivElement, ProbabilityBarProps>(fu
         id={labelId}
         className={cn(
           "min-w-0 text-small wrap-anywhere",
-          layout === "inline" ? "w-120 shrink-0" : "flex-1",
+          layout === "inline" ? "w-120 shrink-0" : layout === "stacked" && "flex-1",
           highlight ? "font-medium text-fg" : "text-fg-secondary",
         )}
       >
@@ -67,6 +71,7 @@ export const ProbabilityBar = forwardRef<HTMLDivElement, ProbabilityBarProps>(fu
       className={cn(
         "shrink-0 text-small tabular",
         layout === "inline" && "w-48 text-end",
+        layout === "row" && "text-end",
         highlight ? "font-medium text-fg" : missing ? "text-fg-tertiary" : "text-fg-secondary",
       )}
     >
@@ -74,8 +79,8 @@ export const ProbabilityBar = forwardRef<HTMLDivElement, ProbabilityBarProps>(fu
     </span>
   );
   const track =
-    missing && layout === "inline" ? (
-      <span className="min-w-0 flex-1 truncate text-small text-fg-tertiary">{missingText}</span>
+    missing && layout !== "stacked" ? (
+      <span className={cn("min-w-0 truncate text-small text-fg-tertiary", layout === "row" ? "col-span-2" : "flex-1")}>{missingText}</span>
     ) : (
       <span
         aria-hidden
@@ -94,9 +99,9 @@ export const ProbabilityBar = forwardRef<HTMLDivElement, ProbabilityBarProps>(fu
       </span>
     );
   const body =
-    layout === "inline" ? (
+    layout !== "stacked" ? (
       <>
-        {labelEl}
+        {labelEl ?? (layout === "row" ? <span /> : null)}
         {track}
         {!missing && valueEl}
       </>

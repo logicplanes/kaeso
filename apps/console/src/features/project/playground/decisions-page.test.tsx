@@ -122,7 +122,8 @@ describe("Playground decisions", () => {
     expect(screen.getByRole("button", { name: "Questions (1)" })).toBeInTheDocument();
     await send(user, "Ship it today please");
     const answer = await screen.findByRole("article", { name: "Jev 1.14 response" });
-    await waitFor(() => expect(within(answer).getAllByText("No").length).toBeGreaterThan(1));
+    expect(await within(answer).findByRole("meter", { name: "No" })).toHaveAttribute("aria-valuetext", expect.stringMatching(/, chosen$/));
+    expect(within(answer).getAllByText("No")).toHaveLength(1);
     expect(requests("POST", DECISIONS)[0]?.body).toMatchObject({ questions: { q1: { type: "noul", instructions: "Is it urgent?" } } });
   });
 
