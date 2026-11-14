@@ -122,6 +122,8 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 
 `cargo coverage-gateway` 还会以小规模运行[网关基准测试](benchmark.md)的每个场景。出现仍然打开的流、未到达服务商的断开连接或无限增长的内存时它会失败，但从不因时间而失败。
 
+`crates/kaeso-server/tests/server` 中的网关集成测试是一个测试可执行文件，每个文件是其中的一个模块，因此网关只需链接进去一次。`cargo test -p kaeso-server --test server limits::` 运行 `limits.rs` 中的测试。新文件需要在 `main.rs` 中有一行 `mod`；缺少这一行时，该可执行文件中的一个测试会失败。需要独占一个进程的测试留在 `crates/kaeso-server/tests` 中，各自成为一个可执行文件，例如 `crates/kaeso-server/tests/inline_media_memory.rs`，它统计所在进程的每一次内存分配。
+
 `cargo sqlx prepare --check` 需要 `DATABASE_URL=postgres://kaeso:kaeso@127.0.0.1:55432/kaeso`，并且迁移已经执行。开发栈中的网关启动时会执行迁移；没有网关时，运行 `cargo sqlx migrate run --source crates/kaeso-store/migrations/postgres`。
 
 `kaeso-kpp` 和 `kaeso-codecs` 在各自的 `Cargo.toml` 中用 `rust-version` 声明支持的最低 Rust 版本，CI 会用这个版本测试每个 crate。要自己验证，用 `rustup toolchain install <version>` 安装该版本，再运行 `cargo +<version> test --locked -p <crate>`。
@@ -145,11 +147,11 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 | 快照 | 内容 | 同时更新 |
 | --- | --- | --- |
 | `crates/kaeso-core/src/rights/snapshots/` | 每个权限和内置角色 | [权限](../concepts/rights.md) |
-| `crates/kaeso-server/tests/snapshots/` | 每项设置及其默认值和说明 | [配置](../self-hosting/configuration.md)和 `deploy/kaeso.example.toml` |
+| `crates/kaeso-server/tests/server/snapshots/` | 每项设置及其默认值和说明 | [配置](../self-hosting/configuration.md)和 `deploy/kaeso.example.toml` |
 | `crates/kaeso-codecs/tests/snapshots/` | 跨方言矩阵和决策矩阵的结果 | 该方言的映射页面（[KPP 内部实现](kpp/index.md#测试)） |
 | `crates/kaeso-mail/src/snapshots/` | 每封邮件的文本和 HTML | |
 
-另有三个测试守护文本。`crates/kaeso-server/tests/error_copy.rs` 按照[错误文案规则](architecture/gateway.md#错误消息)检查 Platform API 可能发送的每条消息。`crates/xtask/tests/docs_paths.rs` 检查根目录以及 `crates/`、`deploy/`、`e2e/`、`fuzz/` 和 `.github/` 中 Markdown 文件里的每个仓库路径和相对链接都指向存在的内容。`crates/kaeso-core/tests/supported_providers.rs` 检查[支持的服务商](../concepts/supported-providers.md)在每种语言中都列出了 `PROVIDERS` 中的每个服务商及其格式和主机，因此添加服务商时要在那里添加一行。
+另有三个测试守护文本。`crates/kaeso-server/tests/server/error_copy.rs` 按照[错误文案规则](architecture/gateway.md#错误消息)检查 Platform API 可能发送的每条消息。`crates/xtask/tests/docs_paths.rs` 检查根目录以及 `crates/`、`deploy/`、`e2e/`、`fuzz/` 和 `.github/` 中 Markdown 文件里的每个仓库路径和相对链接都指向存在的内容。`crates/kaeso-core/tests/supported_providers.rs` 检查[支持的服务商](../concepts/supported-providers.md)在每种语言中都列出了 `PROVIDERS` 中的每个服务商及其格式和主机，因此添加服务商时要在那里添加一行。
 
 ## 端到端测试
 

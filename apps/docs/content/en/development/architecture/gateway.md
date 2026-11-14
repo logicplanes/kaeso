@@ -157,4 +157,4 @@ The console shows the Platform API's `message` as it is, in a toast, so every me
 - No internal names, such as ClickHouse, Valkey, configuration keys or module paths, and no trailing technical detail. Log those with `tracing`.
 - Internal causes, such as `ApiError::internal` and log lines, start with a lowercase letter. Messages for people start with a capital letter or a code span.
 
-`crates/kaeso-server/tests/error_copy.rs` scans the code behind the Platform API and fails on a message that breaks these rules. The integration tests check every answer they receive (`crates/kaeso-server/tests/common/copy.rs`). The model API keeps its providers' error formats, so these rules don't apply to it.
+`crates/kaeso-server/tests/server/error_copy.rs` scans the code behind the Platform API and fails on a message that breaks these rules. The integration tests check every answer they receive (`crates/kaeso-server/tests/server/common/copy.rs`). The model API keeps its providers' error formats, so these rules don't apply to it.
