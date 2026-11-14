@@ -20,19 +20,29 @@ claude mcp add --transport http kaeso https://kaeso.example.com/mcp
 
 下面每种客户端都会自行通过 OAuth 登录。它从服务器的第一个响应中找到 Kaeso 的登录方式，完成注册并打开您的浏览器，您无需复制任何密钥。
 
-控制台中的**账户** › **智能体**会在您实例的 MCP 地址旁显示 Claude Code、Cursor 和 GitHub Copilot 的标志。点击任一标志即可打开该客户端的步骤，并已填好您实例的地址：Claude Code 的命令和插件、**添加到 Cursor**，以及用于 GitHub Copilot 的**添加到 VS Code**。
+控制台中的**账户** › **智能体**会在您实例的 MCP 地址旁显示 Claude、Cursor 和 GitHub Copilot 的标志。点击任一标志即可打开该客户端的步骤，并已填好您实例的地址：**添加到 Claude** 以及 Claude Code 的命令和插件、**添加到 Cursor**，以及用于 GitHub Copilot 的**添加到 VS Code**。
 
 ### Claude Code
 
-上面的命令把服务器添加到当前项目。加上 `--scope user` 可在所有项目中使用。`/mcp` 负责登录，撤销智能体后也用它重新登录。
+上面的命令会把服务器添加到当前项目。加上 `--scope user` 后，它在每个项目中都可用。`/mcp` 用于登录，撤销智能体之后也用它重新登录。
 
-Kaeso 插件会添加 Kaeso 的技能。它教智能体使用服务器的工具；如果服务器尚未连接，它会询问您实例的地址并完成连接：
+Kaeso 插件会添加 Kaeso 的技能，它教智能体使用服务器的工具。安装时 Claude Code 会询问您实例的地址，例如 `https://kaeso.example.com/mcp`，并为您连接服务器：
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso
 ```
 
-要获得插件的每个新版本，请在 `/plugin` › **Marketplaces** 中为 `kaeso` 市场开启自动更新。
+之后要更改地址，请运行 `/plugin configure kaeso@kaeso`。要获得插件的每个新版本，请在 `/plugin` › **Marketplaces** 中为 `kaeso` 市场开启自动更新。
+
+### 网页版、桌面版和移动版 Claude 以及 Cowork
+
+这些环境无法运行命令，请将 Kaeso 添加为自定义连接器。打开**Customize** › **Connectors**，选择 **Add custom connector**，名称填 `Kaeso`，再填入实例的 MCP 地址，然后选择 **Connect** 并登录。也可以打开下面的链接，在 `connectorUrl=` 之后填入经百分号编码的实例地址，表单会自动填好：
+
+```text
+https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kaeso&connectorUrl=https%3A%2F%2Fkaeso.example.com%2Fmcp
+```
+
+控制台的**添加到 Claude** 按钮会用您实例的地址生成这个链接。之后的新对话就有这些工具。Kaeso 插件的技能会向还没有工具的智能体给出同样的步骤，所以您也可以直接请 Claude 连接 Kaeso。
 
 ### Codex
 

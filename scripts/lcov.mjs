@@ -33,7 +33,7 @@ export function summary(files) {
   return { total, covered, percent: total === 0 ? 100 : (covered / total) * 100 };
 }
 
-// The shards take the minimum and the ignored files from the `coverage-gateway` alias, the command people run locally.
+// The shards take the minimum, the ignored files and the excluded packages from the `coverage-gateway` alias, the command people run locally.
 export function gatewayAlias(config) {
   const alias = /^coverage-gateway = \[([^\]]*)\]/ms.exec(config);
   if (!alias) throw new Error("no coverage-gateway alias in .cargo/config.toml");
@@ -43,14 +43,20 @@ export function gatewayAlias(config) {
     if (index < 0 || index + 1 >= args.length) throw new Error(`coverage-gateway has no ${flag}`);
     return args[index + 1];
   };
-  return { minimum: Number(after("--fail-under-lines")), ignore: after("--ignore-filename-regex") };
+  const excluded = args.filter((_, index) => args[index - 1] === "--exclude");
+  return { minimum: Number(after("--fail-under-lines")), ignore: after("--ignore-filename-regex"), excluded };
+}
+
+// `cargo llvm-cov report` doesn't know which packages the test run excluded, so their files are ignored by path, as the alias's own report does.
+export function ignored(alias) {
+  return alias.excluded.length === 0 ? alias.ignore : `${alias.ignore}|/crates/(${alias.excluded.join("|")})/`;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
   const [command, ...reports] = process.argv.slice(2);
   const alias = gatewayAlias(readFileSync(new URL("../.cargo/config.toml", import.meta.url), "utf8"));
   if (command === "ignore") {
-    console.log(alias.ignore);
+    console.log(ignored(alias));
   } else if (command === "check" && reports.length > 0) {
     const files = new Map();
     for (const report of reports) add(files, readFileSync(report, "utf8"));
