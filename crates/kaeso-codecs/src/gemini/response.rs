@@ -116,10 +116,17 @@ pub(crate) fn decode_usage(raw: &Raw, origin: &Origin) -> Result<Usage, KppError
     );
     u.cache_read_tokens = w.cached_content_token_count;
     u.reasoning_tokens = (w.thoughts_token_count > 0).then_some(w.thoughts_token_count);
-    u.input_image_tokens = modality_tokens(&value, "promptTokensDetails", "IMAGE");
+    // `promptTokensDetails` counts the cached tokens too, like `promptTokenCount`; KPP's
+    // `input_*_tokens` are shares of `input_tokens`, which leaves the cache out.
+    let uncached = |modality| {
+        modality_tokens(&value, "promptTokensDetails", modality).map(|n| {
+            n.saturating_sub(modality_tokens(&value, "cacheTokensDetails", modality).unwrap_or(0))
+        })
+    };
+    u.input_image_tokens = uncached("IMAGE");
     u.cache_read_image_tokens = modality_tokens(&value, "cacheTokensDetails", "IMAGE");
     u.output_image_tokens = modality_tokens(&value, "candidatesTokensDetails", "IMAGE");
-    u.input_audio_tokens = modality_tokens(&value, "promptTokensDetails", "AUDIO");
+    u.input_audio_tokens = uncached("AUDIO");
     u.output_audio_tokens = modality_tokens(&value, "candidatesTokensDetails", "AUDIO");
     u.raw = Some(RawUsage::new(origin.clone(), value));
     Ok(u)

@@ -176,7 +176,7 @@ Antworten an Gemini-Apps aus anderen Dialekten bekommen `role: "model"`, `index:
 
 ### Nutzung
 
-`promptTokenCount` enthält die gecachten Prompt-Token und die der Tool-Nutzung. Daher gilt `input_tokens = promptTokenCount + toolUsePromptTokenCount − cachedContentTokenCount`, `cache_read_tokens = cachedContentTokenCount`, `output_tokens = candidatesTokenCount + thoughtsTokenCount` und `reasoning_tokens = thoughtsTokenCount` ([Nutzung](cross-format.md#nutzung)). `Usage::raw` bewahrt das ganze `usageMetadata` auf. Die Nutzung anderer Dialekte wird als `promptTokenCount`, `candidatesTokenCount` und `totalTokenCount` geschrieben, dazu `cachedContentTokenCount` und `thoughtsTokenCount`, wenn sie nicht 0 sind.
+`promptTokenCount` enthält die gecachten Prompt-Token, aber nicht die der Tool-Nutzung. Daher gilt `input_tokens = promptTokenCount + toolUsePromptTokenCount − cachedContentTokenCount`, `cache_read_tokens = cachedContentTokenCount`, `output_tokens = candidatesTokenCount + thoughtsTokenCount` und `reasoning_tokens = thoughtsTokenCount` ([Nutzung](cross-format.md#nutzung)). Auch `promptTokensDetails` zählt die gecachten Token mit. Daher sind `input_image_tokens` und `input_audio_tokens` seine `IMAGE`- und `AUDIO`-Zahlen abzüglich derer in `cacheTokensDetails`, und `cache_read_image_tokens` ist die `IMAGE`-Zahl in `cacheTokensDetails`. `Usage::raw` bewahrt das ganze `usageMetadata` auf. Die Nutzung anderer Dialekte wird als `promptTokenCount`, `candidatesTokenCount` und `totalTokenCount` geschrieben, dazu `cachedContentTokenCount` und `thoughtsTokenCount`, wenn sie nicht 0 sind.
 
 ## Token-Zählung
 

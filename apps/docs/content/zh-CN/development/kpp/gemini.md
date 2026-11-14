@@ -176,7 +176,7 @@ Schema `GenerateContentResponse`。
 
 ### 用量
 
-`promptTokenCount` 包含已缓存的 Token 和工具使用的提示 Token，因此 `input_tokens = promptTokenCount + toolUsePromptTokenCount − cachedContentTokenCount`，`cache_read_tokens = cachedContentTokenCount`，`output_tokens = candidatesTokenCount + thoughtsTokenCount`，`reasoning_tokens = thoughtsTokenCount`（[用量](cross-format.md#用量)）。`Usage::raw` 保存完整的 `usageMetadata`。其他方言的用量写为 `promptTokenCount`、`candidatesTokenCount`、`totalTokenCount`，不为 0 时另写 `cachedContentTokenCount` 和 `thoughtsTokenCount`。
+`promptTokenCount` 包含已缓存的 Token，但不包含工具使用的提示 Token，因此 `input_tokens = promptTokenCount + toolUsePromptTokenCount − cachedContentTokenCount`，`cache_read_tokens = cachedContentTokenCount`，`output_tokens = candidatesTokenCount + thoughtsTokenCount`，`reasoning_tokens = thoughtsTokenCount`（[用量](cross-format.md#用量)）。`promptTokensDetails` 同样计入已缓存的 Token，因此 `input_image_tokens` 和 `input_audio_tokens` 是其中 `IMAGE` 和 `AUDIO` 的数量减去 `cacheTokensDetails` 中的对应数量，`cache_read_image_tokens` 是 `cacheTokensDetails` 中 `IMAGE` 的数量。`Usage::raw` 保存完整的 `usageMetadata`。其他方言的用量写为 `promptTokenCount`、`candidatesTokenCount`、`totalTokenCount`，不为 0 时另写 `cachedContentTokenCount` 和 `thoughtsTokenCount`。
 
 ## Token 计数
 
