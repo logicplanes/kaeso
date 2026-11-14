@@ -24659,7 +24659,7 @@
           },
           "request": {
             "type": "object",
-            "description": "The app's request body (JSON when it was JSON)."
+            "description": "The app's request body (JSON when it was JSON), with its keys in the order the app sent them."
           }
         }
       },
