@@ -166,7 +166,7 @@ tRich("signIn.newHere", "New here? {link}", {
 
 The gateway's error messages, the names, descriptions and categories in the rights catalogue, and the built-in roles' names and descriptions arrive in English. The API client (`src/api/`) translates the ones it knows as answers arrive, with the keys `errors.*` and `rights.*`. It translates rights and roles by their id, and messages by their English and their values. Anything it doesn't know is shown as the gateway wrote it.
 
-Switching languages loads the data again. `crates/kaeso-server/tests/error_copy.rs` fails when the gateway writes a message without a rule in `src/api/gateway-errors.ts`, so a new message comes with its German and Chinese in the same pull request.
+Switching languages loads the data again. `crates/kaeso-server/tests/server/error_copy.rs` fails when the gateway writes a message without a rule in `src/api/gateway-errors.ts`, so a new message comes with its German and Chinese in the same pull request.
 
 ## The UI library
 

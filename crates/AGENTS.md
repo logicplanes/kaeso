@@ -51,7 +51,7 @@ The console shows the Platform API's `message` as it is, in a toast, so every me
 - No internal names (ClickHouse, Valkey, configuration keys, module paths) and no trailing technical detail: log those with `tracing`.
 - Internal causes (`ApiError::internal`, `#[error]` of internal types, log lines) start lowercase; copy starts with a capital letter or a code span.
 
-`crates/kaeso-server/tests/error_copy.rs` and `crates/kaeso-server/tests/common/copy.rs` enforce it. The console translates every message it can show (`apps/console/src/api/gateway-errors.ts`); `error_copy.rs` fails on a message without a rule there, so a new message comes with its German and Chinese in the same pull request. The model API (`/v1`) keeps its providers' error formats.
+`crates/kaeso-server/tests/server/error_copy.rs` and `crates/kaeso-server/tests/server/common/copy.rs` enforce it. The console translates every message it can show (`apps/console/src/api/gateway-errors.ts`); `error_copy.rs` fails on a message without a rule there, so a new message comes with its German and Chinese in the same pull request. The model API (`/v1`) keeps its providers' error formats.
 
 ## KPP rules
 
@@ -69,6 +69,7 @@ The console shows the Platform API's `message` as it is, in a toast, so every me
 
 - **No panics in library code.** No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, panicking indexing or `unsafe` outside tests and the binary's startup (workspace lints, `#![forbid(unsafe_code)]`). Fix the code instead of adding `#[allow]`.
 - **Use the property and snapshot tools.** `kaeso_codecs::testing` for JSON and SSE comparisons, `insta` for snapshots, `proptest` for properties; a case a property test finds becomes an explicit regression test.
-- **Review snapshot diffs** and update what depends on them: rights and roles (`crates/kaeso-core/src/rights/snapshots/`) and settings (`crates/kaeso-server/tests/snapshots/`) change their documentation pages; cross-dialect outcomes (`crates/kaeso-codecs/tests/snapshots/`, `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`) change the mapping pages; emails live in `crates/kaeso-mail/src/snapshots/`.
+- **Review snapshot diffs** and update what depends on them: rights and roles (`crates/kaeso-core/src/rights/snapshots/`) and settings (`crates/kaeso-server/tests/server/snapshots/`) change their documentation pages; cross-dialect outcomes (`crates/kaeso-codecs/tests/snapshots/`, `INSTA_UPDATE=always cargo test -p kaeso-codecs --test cross_matrix`) change the mapping pages; emails live in `crates/kaeso-mail/src/snapshots/`.
 - **Refresh the model data** with `cargo xtask kpmr`; never edit `crates/kaeso-core/data/kpmr.json` by hand.
 - Tests that need databases always fail, never skip, when the development stack is down.
+- **The gateway's integration tests are one test binary**, `crates/kaeso-server/tests/server`, so the gateway is linked into them once. A new file there is a module named in `main.rs` that reads the helpers as `crate::common`. Only a test that needs a process to itself, such as `crates/kaeso-server/tests/inline_media_memory.rs`, is a file in `crates/kaeso-server/tests`.

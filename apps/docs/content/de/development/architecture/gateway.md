@@ -157,4 +157,4 @@ Die Konsole zeigt die `message` der Platform API unverändert in einem Toast, da
 - Keine internen Namen wie ClickHouse, Valkey, Konfigurationsschlüssel oder Modulpfade und keine angehängten technischen Details. Protokollieren Sie diese mit `tracing`.
 - Interne Ursachen wie `ApiError::internal` und Logzeilen beginnen mit einem Kleinbuchstaben. Meldungen für Menschen beginnen mit einem Großbuchstaben oder einem Code-Span.
 
-`crates/kaeso-server/tests/error_copy.rs` durchsucht den Code hinter der Platform API und schlägt bei einer Meldung fehl, die gegen diese Regeln verstößt. Die Integrationstests prüfen jede Antwort, die sie erhalten (`crates/kaeso-server/tests/common/copy.rs`). Die Modell-API behält die Fehlerformate ihrer Anbieter, daher gelten diese Regeln für sie nicht.
+`crates/kaeso-server/tests/server/error_copy.rs` durchsucht den Code hinter der Platform API und schlägt bei einer Meldung fehl, die gegen diese Regeln verstößt. Die Integrationstests prüfen jede Antwort, die sie erhalten (`crates/kaeso-server/tests/server/common/copy.rs`). Die Modell-API behält die Fehlerformate ihrer Anbieter, daher gelten diese Regeln für sie nicht.
