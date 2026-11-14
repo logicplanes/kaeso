@@ -1,0 +1,27 @@
+{
+  "id": "REPLACED_ID",
+  "object": "chat.completion",
+  "model": "hy-mt2-plus",
+  "created": 1775146513,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Please ensure that all attendees have received the agenda before the meeting starts."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 35,
+    "completion_tokens": 15,
+    "total_tokens": 50,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  }
+}

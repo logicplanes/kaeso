@@ -4480,6 +4480,189 @@ expression: outcomes
       "totalTokenCount": 110
     }
   },
+  "providers/tencent-tokenhub/agent-tools-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "我来帮你查询深圳今天的天气情况。"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "深圳"
+                },
+                "id": "chatcmpl-tool-b39c6375f812783a",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "hy4",
+    "responseId": "REPLACED_ID",
+    "usageMetadata": {
+      "candidatesTokenCount": 111,
+      "promptTokenCount": 209,
+      "totalTokenCount": 320
+    }
+  },
+  "providers/tencent-tokenhub/introduce-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "我是混元，是由腾讯开发的大模型。我可以进行信息处理、逻辑响应，像回答问题、解决问题、学习新知识、创造内容，还能进行闲聊，并且支持文字、图片、文件等多种交流方式。"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "hy4",
+    "responseId": "REPLACED_ID",
+    "usageMetadata": {
+      "candidatesTokenCount": 46,
+      "promptTokenCount": 28,
+      "thoughtsTokenCount": 175,
+      "totalTokenCount": 249
+    }
+  },
+  "providers/tencent-tokenhub/json-schema-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "{\n  \"name\": \"张三\",\n  \"age\": 35,\n  \"occupation\": \"高级软件工程师\",\n  \"skills\": [\"Python\", \"Java\", \"机器学习\"]\n}"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "hy4",
+    "responseId": "REPLACED_ID",
+    "usageMetadata": {
+      "candidatesTokenCount": 42,
+      "promptTokenCount": 45,
+      "thoughtsTokenCount": 252,
+      "totalTokenCount": 339
+    }
+  },
+  "providers/tencent-tokenhub/reasoning-effort-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "小明原本有5个苹果，给了小红2个后剩下：  \n5 - 2 = 3（个）  \n然后又买了3个，现在共有：  \n3 + 3 = 6（个）  \n\n所以最后还剩 **6个** 苹果。"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "hy4",
+    "responseId": "REPLACED_ID",
+    "usageMetadata": {
+      "candidatesTokenCount": 136,
+      "promptTokenCount": 3,
+      "totalTokenCount": 139
+    }
+  },
+  "providers/tencent-tokenhub/thinking-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "小明最后还剩 **6个** 苹果。\n\n计算过程：\n1. 一开始有 5 个苹果；\n2. 给了小红 2 个后，剩下：5 - 2 = 3 个；\n3. 又买了 3 个后，变成：3 + 3 = 6 个。"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "hy4",
+    "responseId": "REPLACED_ID",
+    "usageMetadata": {
+      "candidatesTokenCount": 72,
+      "promptTokenCount": 31,
+      "thoughtsTokenCount": 106,
+      "totalTokenCount": 209
+    }
+  },
+  "providers/tencent-tokenhub/tools-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "我来帮你查询深圳今天的天气情况。"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "深圳"
+                },
+                "id": "REPLACED_ID",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "hy4",
+    "responseId": "REPLACED_ID",
+    "usageMetadata": {
+      "candidatesTokenCount": 24,
+      "promptTokenCount": 199,
+      "thoughtsTokenCount": 19,
+      "totalTokenCount": 242
+    }
+  },
+  "providers/tencent-tokenhub/translation-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Please ensure that all attendees have received the agenda before the meeting starts."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "hy-mt2-plus",
+    "responseId": "REPLACED_ID",
+    "usageMetadata": {
+      "candidatesTokenCount": 15,
+      "promptTokenCount": 35,
+      "totalTokenCount": 50
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "candidates": [
       {

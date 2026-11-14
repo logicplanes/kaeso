@@ -1,0 +1,11 @@
+data: {"id": "REPLACED_ID", "object": "chat.completion.chunk", "created": 1779958293, "model": "hy4", "choices": [{"index": 0, "delta": {"role": "assistant"}}]}
+
+data: {"id": "REPLACED_ID", "object": "chat.completion.chunk", "created": 1779958293, "model": "hy4", "choices": [{"index": 0, "delta": {"content": "你好"}}]}
+
+data: {"id": "REPLACED_ID", "object": "chat.completion.chunk", "created": 1779958293, "model": "hy4", "choices": [{"index": 0, "delta": {"content": "帮你的吗"}}]}
+
+data: {"id": "REPLACED_ID", "object": "chat.completion.chunk", "created": 1779958293, "model": "hy4", "choices": [{"index": 0, "delta": {"content": " 😊"}, "finish_reason": "stop"}]}
+
+data: {"id": "REPLACED_ID", "object": "chat.completion.chunk", "created": 1779958293, "model": "hy4", "choices": [], "usage": {"prompt_tokens": 16, "completion_tokens": 11, "total_tokens": 27, "prompt_tokens_details": {"cached_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0}}}
+
+data: [DONE]

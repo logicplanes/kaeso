@@ -60,6 +60,12 @@ pub(crate) fn kind_for_code(code: &str) -> Option<ErrorKind> {
         c if c.starts_with("invalid_image") || c.starts_with("image_") || c.ends_with("_image") => {
             ErrorKind::InvalidRequest
         }
+        // Tencent TokenHub's six-digit codes, where its HTTP status alone says less: input
+        // beyond the context and an unknown model both answer 400, a content filter 451
+        // (https://cloud.tencent.com/document/product/1823/131595).
+        "400003" => ErrorKind::ContextTooLong,
+        "400004" => ErrorKind::NotFound,
+        "451001" => ErrorKind::ContentFiltered,
         _ => return None,
     })
 }

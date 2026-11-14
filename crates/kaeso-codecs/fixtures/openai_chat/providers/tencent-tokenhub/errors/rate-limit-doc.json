@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": 429001,
+    "message": "The request rate exceeds the current model deepseek-v4-flash-202605 limit 60. Please reduce the request frequency or contact Tencent Cloud support to request a higher limit.",
+    "message_zh": "请求速率超过当前模型 deepseek-v4-flash-202605 阈值 60，请降低访问频率或联系腾讯云售后申请更高限额。",
+    "request_id": "req-00000000"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [
+        0.0123,
+        -0.0456,
+        0.0789
+      ]
+    }
+  ],
+  "model": "kinfra-text-embedding-0.6b",
+  "usage": {
+    "prompt_tokens": 10,
+    "total_tokens": 10,
+    "prompt_tokens_details": {
+      "text_tokens": 10,
+      "image_tokens": 0,
+      "video_tokens": 0
+    }
+  }
+}

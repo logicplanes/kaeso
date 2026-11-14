@@ -34,6 +34,7 @@ const providers: ProviderPickerOption[] = [
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
   { id: "siliconflow", name: "SiliconFlow" },
+  { id: "tencent-tokenhub", name: "Tencent TokenHub" },
   { id: "standardcompute", name: "Standard Compute" },
   { id: "stepfun-ai", name: "StepFun" },
   { id: "togetherai", name: "Together AI" },

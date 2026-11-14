@@ -93,6 +93,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("SiliconFlow").reasoning_fields(&["reasoning_content"]),
     ),
     (
+        "tencent-tokenhub",
+        ChatProfile::compatible("Tencent TokenHub").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "stepfun-ai",
         ChatProfile::compatible("StepFun").reasoning_fields(&["reasoning", "reasoning_content"]),
     ),
@@ -287,6 +291,9 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ("siliconflow", "reasoning-doc", "reasoning_content"),
         ("stepfun-ai", "reasoning-effort-schema", "reasoning"),
         ("stepfun-ai", "both-reasoning-fields-schema", "reasoning"),
+        ("tencent-tokenhub", "introduce-doc", "reasoning_content"),
+        ("tencent-tokenhub", "thinking-doc", "reasoning_content"),
+        ("tencent-tokenhub", "json-schema-doc", "reasoning_content"),
         ("togetherai", "recorded-reasoning-reply", "reasoning"),
         (
             "togetherai",

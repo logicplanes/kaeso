@@ -1,0 +1,36 @@
+{
+  "model": "hy4",
+  "messages": [
+    {
+      "role": "system",
+      "content": "你是一个 Agent，必须按步骤推理并调用工具完成任务。"
+    },
+    {
+      "role": "user",
+      "content": "深圳今天天气怎么样？"
+    }
+  ],
+  "stream": false,
+  "tool_choice": "auto",
+  "reasoning_effort": "high",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "获取某地天气信息，输入 location。",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "location"
+          ]
+        }
+      }
+    }
+  ]
+}

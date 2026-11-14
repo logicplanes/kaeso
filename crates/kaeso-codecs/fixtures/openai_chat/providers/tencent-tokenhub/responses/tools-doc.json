@@ -1,0 +1,38 @@
+{
+  "id": "REPLACED_ID",
+  "object": "chat.completion",
+  "model": "hy4",
+  "created": 1775146513,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "我来帮你查询深圳今天的天气情况。",
+        "reasoning_content": "用户问深圳今天的天气怎么样。我需要调用get_weather函数来获取深圳的天气信息。",
+        "tool_calls": [
+          {
+            "id": "REPLACED_ID",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"深圳\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 199,
+    "completion_tokens": 43,
+    "total_tokens": 242,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 19
+    }
+  }
+}

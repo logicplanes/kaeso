@@ -1,0 +1,19 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "hy4",
+      "object": "model",
+      "name": "hy4",
+      "created": 1783267200,
+      "status": "online"
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "object": "model",
+      "name": "DeepSeek-V4-Pro",
+      "created": 1776960000,
+      "status": "online"
+    }
+  ]
+}

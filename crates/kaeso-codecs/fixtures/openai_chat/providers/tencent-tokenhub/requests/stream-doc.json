@@ -1,0 +1,13 @@
+{
+  "model": "hy4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "你好"
+    }
+  ],
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

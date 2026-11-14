@@ -60,6 +60,7 @@ export const providers = [
   { id: "volcengine", name: "Volcengine Ark" },
   { id: "ovhcloud", name: "OVHcloud AI Endpoints" },
   { id: "stepfun-ai", name: "StepFun" },
+  { id: "tencent-tokenhub", name: "Tencent TokenHub" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

@@ -1,0 +1,11 @@
+{
+  "model": "hy4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "你好，请简单介绍一下你自己。"
+    }
+  ],
+  "stream": false,
+  "temperature": 0.9
+}

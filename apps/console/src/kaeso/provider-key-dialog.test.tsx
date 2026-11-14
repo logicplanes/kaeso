@@ -457,6 +457,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Tencent TokenHub key, which has no fixed prefix, with Tencent Cloud's console as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "tencent-tokenhub", name: "TokenHub Guangzhou", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Tencent TokenHub");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Tencent TokenHub API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "console.cloud.tencent.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://console.cloud.tencent.com/tokenhub/apikey");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at console.cloud.tencent.com under API Key management.",
+    );
+    const secret = within(dialog).getByLabelText("Tencent TokenHub API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "tokenhub-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "TokenHub Guangzhou");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("TokenHub Guangzhou is the Tencent TokenHub default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "tencent-tokenhub", name: "TokenHub Guangzhou", secret: "tokenhub-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a StepFun key, which has no fixed prefix, with StepFun's Interface Keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "stepfun-ai", name: "StepFun prod", is_default: true }));
     const { user, dialog } = await open();

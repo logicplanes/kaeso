@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "The model or service ID gpt-9-turbo does not exist. Please check whether the service ID is correct. Service IDs are available in the Online Inference Service list in the console. See: https://cloud.tencent.com/document/product/1823/130079",
+    "message_zh": "请求中的模型或服务 ID gpt-9-turbo 不存在，请检查服务 ID 是否正确。服务 ID 可在控制台的在线推理服务列表中查看，查看链接：https://cloud.tencent.com/document/product/1823/130079",
+    "code": "400004",
+    "type": "gateway_error",
+    "request_id": "00000000-0000-0000-0000-000000000000"
+  }
+}

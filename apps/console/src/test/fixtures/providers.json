@@ -824,6 +824,26 @@
       "account_scope": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "tencent-tokenhub",
+      "name": "Tencent TokenHub",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://console.cloud.tencent.com/tokenhub/apikey",
+        "label": "API Key management"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

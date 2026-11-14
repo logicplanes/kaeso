@@ -1,0 +1,9 @@
+{
+  "model": "hy4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "hi"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "model": "kinfra-text-embedding-0.6b",
+  "input": "腾讯云 TokenHub 是一站式 AI 大模型服务平台。",
+  "encoding_format": "float"
+}

@@ -2812,6 +2812,48 @@ fn stepfun_models_speak_chat_completions_with_their_prices_efforts_and_cache_hit
 }
 
 #[test]
+fn tencent_tokenhub_models_speak_chat_completions_with_tokenhubs_prices_and_efforts_and_its_text_embedders_embed()
+ {
+    let hy3 = eff(&entry("tencent-tokenhub", "hy3"));
+    assert_eq!(hy3.dialect, DialectId::OpenAiChat);
+    assert_eq!(hy3.provider.chat().provider, "Tencent TokenHub");
+    assert_eq!(
+        (
+            hy3.fields.input_price,
+            hy3.fields.output_price,
+            hy3.fields.cache_read_price
+        ),
+        (Some(dec!(0.139)), Some(dec!(0.556)), Some(dec!(0.03475)))
+    );
+    assert_eq!(effort_levels(&hy3, DialectId::OpenAiChat), ["low", "high"]);
+    assert_eq!(hy3.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    let hy4 = eff(&entry("tencent-tokenhub", "hy4"));
+    assert_eq!(effort_levels(&hy4, DialectId::OpenAiChat), ["high"]);
+    assert_eq!(
+        effort_levels(
+            &eff(&entry("tencent-tokenhub", "deepseek-v4-pro")),
+            DialectId::OpenAiChat
+        ),
+        ["low", "high", "max", "none"]
+    );
+    let embed = eff(&entry("tencent-tokenhub", "kinfra-text-embedding-0.6b"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.0695)))
+    );
+    let models = &snapshot().providers["tencent-tokenhub"].models;
+    assert_eq!(
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some("embedding"))
+            .count(),
+        2
+    );
+    assert_eq!(models["hy3-preview"].status.as_deref(), Some("deprecated"));
+}
+
+#[test]
 fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
     let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

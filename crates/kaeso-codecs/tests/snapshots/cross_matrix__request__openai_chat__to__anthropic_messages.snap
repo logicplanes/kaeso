@@ -6657,6 +6657,396 @@ expression: outcomes
     "param": "messages[0].blocks[0]",
     "unsupported": "video block"
   },
+  "providers/tencent-tokenhub/agent-tools-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "深圳今天天气怎么样？",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4",
+      "output_config": {
+        "effort": "high"
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "你是一个 Agent，必须按步骤推理并调用工具完成任务。",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "获取某地天气信息，输入 location。",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/introduce-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "你好，请简单介绍一下你自己。",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4",
+      "temperature": 0.9
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/invalid-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/json-schema-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "请从以下文本中提取人物信息：张三，35岁，是一名高级软件工程师，擅长Python、Java和机器学习。",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4",
+      "output_config": {
+        "format": {
+          "schema": {
+            "properties": {
+              "age": {
+                "description": "年龄",
+                "type": "integer"
+              },
+              "name": {
+                "description": "人物姓名",
+                "type": "string"
+              },
+              "occupation": {
+                "description": "职业",
+                "type": "string"
+              },
+              "skills": {
+                "description": "技能列表",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "name",
+              "age",
+              "occupation",
+              "skills"
+            ],
+            "type": "object"
+          },
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/missing-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/reasoning-effort-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "小明有5个苹果，给了小红2个，又买了3个，最后还剩几个？",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4",
+      "output_config": {
+        "effort": "high"
+      },
+      "thinking": {
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/reasoning-sent-back-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "深圳今天天气怎么样？",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "text": "我来帮你查询深圳今天的天气情况。",
+              "type": "text"
+            },
+            {
+              "id": "chatcmpl-tool-b39c6375f812783a",
+              "input": {
+                "location": "深圳"
+              },
+              "name": "get_weather",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "Cloudy，气温 7~13°C",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "chatcmpl-tool-b39c6375f812783a",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4",
+      "output_config": {
+        "effort": "high"
+      },
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "你是一个 Agent，必须按步骤推理并调用工具完成任务。",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "type": "adaptive"
+      },
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "获取某地天气信息，输入 location。",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/stream-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "你好",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/thinking-doc": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/tencent-tokenhub/tools-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "深圳今天天气怎么样？",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy4",
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "获取指定城市的当前天气信息",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "城市名称，例如：北京",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/tencent-tokenhub/translation-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "将以下文本翻译为英语，注意只需要输出翻译后的结果，不要额外解释： 会议开始前请确认所有参会人员都收到了议程。",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "hy-mt2-plus"
+    },
+    "path": "/v1/messages"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
     "param": null,

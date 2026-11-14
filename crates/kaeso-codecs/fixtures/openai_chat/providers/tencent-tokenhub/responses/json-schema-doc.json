@@ -1,0 +1,28 @@
+{
+  "id": "REPLACED_ID",
+  "object": "chat.completion",
+  "model": "hy4",
+  "created": 1775146513,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\n  \"name\": \"张三\",\n  \"age\": 35,\n  \"occupation\": \"高级软件工程师\",\n  \"skills\": [\"Python\", \"Java\", \"机器学习\"]\n}",
+        "reasoning_content": "We need answer in Chinese. User asks: \"请从以下文本中提取人物信息：张三，35岁，是一名高级软件工程师，擅长Python、Java和机器学习。\" Need extract person info. We can present structured fields: 姓名: 张三; 年龄: 35岁; 职业/职位: 高级软件工程师; 技能: Python、Java、机器学习. Possibly also mention we can format. The task is simple. Need not overcomplicate. Ensure answer directly. Maybe include a table or JSON. Since asked extract person info. I can output JSON and/or bullet list. Let's craft concise. Use Chinese. Could say: \"提取结果如下：\" then bullet list. Maybe include raw text? Not needed. Let's provide structured info.\n\nNeed consider if there is ambiguity: \"高级软件工程师\" is job title. \"擅长\" are skills/proficient in. Age 35. Name 张三. Good.\n\nLet's final: \n{\n  \"姓名\": \"张三\",\n  \"年龄\": 35,\n  \"职业\": \"高级软件工程师\",\n  \"技能\": [\"Python\", \"Java\", \"机器学习\"]\n}\nOr with units. Maybe note age unit岁. That's it."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 45,
+    "completion_tokens": 294,
+    "total_tokens": 339,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 252
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "id": "REPLACED_ID",
+  "object": "chat.completion",
+  "created": 1775146546,
+  "model": "hy4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "小明最后还剩 **6个** 苹果。\n\n计算过程：\n1. 一开始有 5 个苹果；\n2. 给了小红 2 个后，剩下：5 - 2 = 3 个；\n3. 又买了 3 个后，变成：3 + 3 = 6 个。",
+        "reasoning_content": "用户问：小明有5个苹果，给了小红2个，又买了3个，最后还剩几个？\n我们来一步步计算：\n初始：5个苹果\n给了小红2个：5 - 2 = 3个\n又买了3个：3 + 3 = 6个\n最后还剩6个苹果。\n\n确认一下有没有语言陷阱。\"给了小红2个\"是减去，\"又买了3个\"是加上。\n5 - 2 + 3 = 6。\n答案应该是6个。"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 31,
+    "completion_tokens": 178,
+    "total_tokens": 209,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 106
+    }
+  }
+}
