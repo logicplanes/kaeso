@@ -645,6 +645,62 @@ async fn decisions_are_logged_with_their_request_and_answers() {
     );
 }
 
+async fn platform_text(env: &Env, path: &str) -> String {
+    let req = Request::builder()
+        .uri(format!("/platform/v1{path}"))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(Body::empty())
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+    String::from_utf8(bytes.to_vec()).unwrap()
+}
+
+// System One names its questions and a choice's options as object keys, and the answers come back
+// in that order: the log serves the body as the app wrote it, so the console labels each answer
+// with its own question and option.
+#[tokio::test]
+async fn a_logged_decision_keeps_its_questions_and_options_in_the_apps_order() {
+    let env = env().await;
+    let body = r#"{"model": "typesafe/jev-1.14", "state": "I was charged twice.", "questions": {
+        "team": {"type": "choice", "instructions": "Which team?",
+                 "criteria": {"support": "Everything else.", "billing": "Payments."}},
+        "refund": {"type": "noul", "instructions": "A refund?"}}}"#;
+    let req = Request::builder()
+        .uri(App::SystemOne.path())
+        .method("POST")
+        .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {}", env.key))
+        .body(Body::from(body))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let id = resp.headers()["kaeso-request-id"]
+        .to_str()
+        .unwrap()
+        .to_owned();
+    env.app.state.in_flight.settled().await;
+    let o = env.capture.recorded(&id).await;
+    logged_content(&env, &o).await;
+    let base = format!("/orgs/{}/projects/{}/logs", env.owner.org_id, env.project);
+    for text in [
+        platform_text(&env, &format!("{base}/{id}")).await,
+        platform_text(&env, &format!("{base}/export?include_content=true")).await,
+    ] {
+        let at = |key: &str| {
+            text.find(&format!("\"{key}\""))
+                .unwrap_or_else(|| panic!("{key} in {text}"))
+        };
+        assert!(at("team") < at("refund"), "{text}");
+        assert!(at("support") < at("billing"), "{text}");
+        assert!(at("state") < at("questions"), "{text}");
+    }
+}
+
 #[tokio::test]
 async fn a_multipart_system_one_upload_is_decided_and_logged_as_its_fields() {
     let env = env().await;
