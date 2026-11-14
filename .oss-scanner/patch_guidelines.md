@@ -19,7 +19,7 @@
 ## Tests
 
 - Add a regression test that fails without the fix and passes with it, asserting on what an attacker or a user sees: the status code, the error body, the data that must not come back.
-- Gateway fixes: an integration test in the nearest file in `crates/kaeso-server/tests`, using `tests/common`. KPP fixes: a unit test next to the codec and, for a decoder crash, the crashing input as a fixture.
+- Gateway fixes: an integration test in the nearest file in `crates/kaeso-server/tests/server`, using `tests/server/common`. KPP fixes: a unit test next to the codec and, for a decoder crash, the crashing input as a fixture.
 - Tests are deterministic: no sleeps, injected clocks.
 - Run the affected crate's tests with `cargo nextest run -p <crate>` after `.oss-scanner/services start`, and `cargo clippy -p <crate> --all-targets --all-features -- -D warnings`.
 

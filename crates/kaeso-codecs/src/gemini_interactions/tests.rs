@@ -237,3 +237,198 @@ fn the_agent_platform_serves_interactions_under_its_global_location_without_dele
     let delete = GeminiInteractions::encode_video_delete("v1_abc", "m", &studio).unwrap();
     assert_eq!(delete.unwrap().path, "/v1beta/interactions/v1_abc");
 }
+
+#[test]
+fn an_input_that_is_neither_a_prompt_nor_images_is_refused_naming_input() {
+    let refused = |body: &[u8]| {
+        GeminiInteractions::decode_request(RequestKind::Video, body, &HeaderList::new())
+            .unwrap_err()
+    };
+    let no_source = refused(br#"{"model":"m","input":[{"type":"image","mime_type":"image/png"}]}"#);
+    assert_eq!(no_source.message, "An image item takes `data` or `uri`.");
+    assert_eq!(no_source.param.as_deref(), Some("input"));
+    let bad_data = refused(br#"{"model":"m","input":[{"type":"image","data":"not base64!"}]}"#);
+    assert_eq!(bad_data.kind, ErrorKind::InvalidRequest);
+    assert_eq!(bad_data.param.as_deref(), Some("data"));
+    let strings = refused(br#"{"model":"m","input":["A fox"]}"#);
+    assert_eq!(strings.message, "`input` lists objects.");
+    assert_eq!(strings.param.as_deref(), Some("input"));
+    let number = refused(br#"{"model":"m","input":7}"#);
+    assert_eq!(number.message, "`input` is text or a list.");
+    assert_eq!(number.param.as_deref(), Some("input"));
+}
+
+#[test]
+fn images_without_a_task_or_prompt_go_back_as_the_app_sent_them() {
+    let sent = json!({
+        "model": "gemini-omni-1.2-flash",
+        "input": [{"type": "image", "uri": "https://example.com/a.png"}],
+        "generation_config": {"temperature": 0.5},
+    });
+    let req = GeminiInteractions::decode_request(
+        RequestKind::Video,
+        &serde_json::to_vec(&sent).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Video(r) = &req else { panic!() };
+    assert_eq!(r.prompt, None);
+    assert_eq!(r.images[0].role, VideoImageRole::FirstFrame);
+    let mut ctx = EgressCtx::new(&req);
+    let body: Value = serde_json::from_slice(
+        &GeminiInteractions::encode_request(&req, &mut ctx)
+            .unwrap()
+            .body,
+    )
+    .unwrap();
+    let mut expected = sent;
+    expected["response_format"] = json!({"type": "video"});
+    assert_eq!(body, expected);
+
+    let extension = json!({
+        "model": "gemini-omni-1.2-flash",
+        "input": [{"type": "text", "text": "Go on"}, {"type": "image", "uri": "https://example.com/a.png"}],
+        "generation_config": {"video_config": {"task": "video_extension"}},
+        "response_format": {"type": "video"},
+    });
+    let req = GeminiInteractions::decode_request(
+        RequestKind::Video,
+        &serde_json::to_vec(&extension).unwrap(),
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req);
+    let body: Value = serde_json::from_slice(
+        &GeminiInteractions::encode_request(&req, &mut ctx)
+            .unwrap()
+            .body,
+    )
+    .unwrap();
+    assert_eq!(
+        body["generation_config"]["video_config"]["task"],
+        "video_extension"
+    );
+}
+
+#[test]
+fn a_remix_without_its_video_file_ids_and_unknown_formats_are_refused_before_sending() {
+    let base =
+        VideoRequest::new("gemini-omni-1.2-flash", VideoOperation::Generate).with_prompt("p");
+    let refused = |r: &VideoRequest| {
+        let err = encode(r).unwrap_err();
+        assert!(matches!(err.kind, ErrorKind::Unsupported { .. }), "{err:?}");
+        (err.param.unwrap_or_default(), err.message)
+    };
+    let mut remix = base.clone();
+    remix.operation = VideoOperation::Remix;
+    let (param, message) = refused(&remix);
+    assert_eq!(param, "video_id");
+    assert!(
+        message.contains("a remix without its earlier video"),
+        "{message}"
+    );
+    let file = base.clone().with_image(VideoImage::new(
+        Source::file_id(Origin::new(D), "files/abc"),
+        VideoImageRole::FirstFrame,
+    ));
+    let (param, message) = refused(&file);
+    assert_eq!(param, "input_reference");
+    assert!(message.contains("file ids"), "{message}");
+    let mut res = base.clone();
+    res.resolution = Some("8k".into());
+    let (param, message) = refused(&res);
+    assert_eq!(param, "resolution");
+    assert!(message.contains("`8k`"), "{message}");
+    let mut square = base;
+    square.aspect_ratio = Some("1:1".into());
+    let (param, message) = refused(&square);
+    assert_eq!(param, "aspect_ratio");
+    assert!(message.contains("`1:1`"), "{message}");
+}
+
+#[test]
+fn only_video_outputs_that_carry_their_bytes_or_link_are_read() {
+    let ctx = round_trips::ctx();
+    let body = json!({
+        "id": "v1_a",
+        "status": "completed",
+        "steps": [
+            {"type": "user_input", "content": [{"type": "video", "uri": "https://example.com/in.mp4"}]},
+            {"type": "model_output", "content": [
+                {"type": "text", "text": "Here it is."},
+                {"type": "video", "data": "not base64!"},
+                {"type": "video", "mime_type": "video/webm"},
+                {"type": "video", "uri": "https://example.com/out.mp4"},
+            ]},
+        ],
+        "usage": {"total_input_tokens": 5, "total_output_tokens": 7},
+    });
+    let job = GeminiInteractions::decode_video_poll(
+        200,
+        &HeaderList::new(),
+        &serde_json::to_vec(&body).unwrap(),
+        &ctx,
+    )
+    .unwrap();
+    assert_eq!(job.status, VideoStatus::Completed);
+    assert_eq!(job.outputs.len(), 1);
+    assert_eq!(
+        job.outputs[0].source,
+        Source::Url("https://example.com/out.mp4".into())
+    );
+    let usage = job.usage.unwrap();
+    assert_eq!(
+        (
+            usage.input_tokens,
+            usage.output_tokens,
+            usage.reasoning_tokens
+        ),
+        (5, 7, None)
+    );
+}
+
+#[test]
+fn an_interaction_that_ends_without_a_video_or_error_names_its_status() {
+    let ctx = round_trips::ctx();
+    let job = GeminiInteractions::decode_video_poll(
+        200,
+        &HeaderList::new(),
+        br#"{"id":"v1_a","status":"cancelled"}"#,
+        &ctx,
+    )
+    .unwrap();
+    assert_eq!(job.status, VideoStatus::Failed);
+    let error = job.error.unwrap();
+    assert_eq!(error.code, "cancelled");
+    assert_eq!(
+        error.message,
+        "The interaction ended as `cancelled` without a video."
+    );
+    let unnamed = GeminiInteractions::decode_response(
+        200,
+        &HeaderList::new(),
+        br#"{"status":"in_progress"}"#,
+        &ctx,
+    )
+    .unwrap_err();
+    assert_eq!(unnamed.kind, ErrorKind::ProviderError);
+    assert_eq!(
+        unnamed.message,
+        "Google started an interaction without naming its `id`."
+    );
+}
+
+#[test]
+fn a_job_from_another_format_is_written_with_its_status() {
+    let ctx = EncodeCtx::new(RequestKind::Video, kaeso_kpp::StreamMode::Off);
+    for (status, wire) in [
+        (VideoStatus::Completed, "completed"),
+        (VideoStatus::Failed, "failed"),
+        (VideoStatus::InProgress, "in_progress"),
+    ] {
+        let job = kaeso_kpp::VideoJob::new("", status);
+        let body = GeminiInteractions::encode_response(&Reply::Video(job), &ctx).unwrap();
+        let v: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(v, json!({"status": wire}));
+    }
+}

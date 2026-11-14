@@ -1970,3 +1970,187 @@ fn a_short_model_name_in_a_reply_gets_its_prefix_back() {
         assert_eq!(r.model, read, "{sent}");
     }
 }
+
+#[test]
+fn an_upload_without_a_boundary_or_with_an_oversized_part_is_refused() {
+    let no_boundary = HeaderList::new().with("content-type", "multipart/form-data");
+    let err = SystemOne::decode_request(RequestKind::Decide, b"--b--", &no_boundary).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(
+        err.message,
+        "The request is not a valid System One upload: the content type must be `multipart/form-data` with a boundary."
+    );
+    let (json, _) = request_fixture_in("requests/multipart", "door");
+    let photo = vec![0; request::MAX_PART_BYTES + 1];
+    let form = FormWriter::write(&[
+        FormField::Typed("request", "application/json", &json),
+        FormField::File("door-photo", "door.jpg", "image/jpeg", &photo),
+    ]);
+    let h = HeaderList::new().with("content-type", form.content_type());
+    let err = SystemOne::decode_request(RequestKind::Decide, &form.into_body(), &h).unwrap_err();
+    assert_eq!(
+        (err.kind, err.status),
+        (ErrorKind::RequestTooLarge, Some(413))
+    );
+    assert_eq!(
+        err.message,
+        "The upload is too large: the part `door-photo` is larger than 67108864 bytes."
+    );
+}
+
+#[test]
+fn an_image_part_without_a_type_or_file_name_goes_back_under_its_own_name() {
+    let (json, _) = request_fixture_in("requests/multipart", "door");
+    let photo = png(300, 300);
+    let form = FormWriter::write(&[
+        FormField::Typed("request", "application/json", &json),
+        FormField::Typed("door-photo", "image/png", &photo),
+    ]);
+    let h = HeaderList::new().with("content-type", form.content_type());
+    let typed = decode_with(&form.into_body(), &h);
+    let Source::Base64(b) = &typed.assets["a3f1c2e8-door"].source else {
+        panic!()
+    };
+    assert_eq!(b.media_type, "image/png");
+
+    let mut body = b"--kaeso\r\nContent-Disposition: form-data; name=\"request\"\r\n\r\n".to_vec();
+    body.extend(&json);
+    body.extend(b"\r\n--kaeso\r\nContent-Disposition: form-data; name=\"door-photo\"\r\n\r\n");
+    let photo = jpeg(300, 300);
+    body.extend(&photo);
+    body.extend(b"\r\n--kaeso--\r\n");
+    let h = HeaderList::new().with("content-type", "multipart/form-data; boundary=kaeso");
+    let bare = decode_with(&body, &h);
+    let Source::Base64(b) = &bare.assets["a3f1c2e8-door"].source else {
+        panic!()
+    };
+    assert_eq!(
+        (b.media_type.as_str(), b.data.as_ref()),
+        ("image/jpeg", photo.as_slice())
+    );
+
+    let (enc, _) = encode(&bare, SystemOneProfile::TYPESAFE).unwrap();
+    let boundary =
+        crate::multipart::form_boundary(enc.headers.get("content-type").unwrap()).unwrap();
+    let parts = crate::multipart::read_form(
+        &enc.body,
+        &boundary,
+        crate::multipart::FormLimits::new(4, 1 << 20),
+    )
+    .unwrap();
+    assert_eq!(
+        (
+            parts[1].name.as_str(),
+            parts[1].filename.as_deref(),
+            parts[1].content_type.as_deref()
+        ),
+        ("door-photo", Some("door-photo"), Some("image/jpeg"))
+    );
+    assert_eq!(parts[1].body, photo.as_slice());
+}
+
+#[test]
+fn a_body_that_ends_early_is_refused_without_naming_a_field() {
+    let err = SystemOne::decode_request(
+        RequestKind::Decide,
+        br#"{"model":"jev-latest","state":"s","questions":{}"#,
+        &HeaderList::new(),
+    )
+    .unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.param, None);
+    assert!(
+        err.message
+            .starts_with("The request body is not a valid System One request: "),
+        "{}",
+        err.message
+    );
+}
+
+#[test]
+fn a_null_score_level_reads_as_a_level_without_a_description() {
+    let req = decode(
+        br#"{"model":"jev-latest","state":"s","questions":{"rating":{"type":"score","criteria":[null,"high"]}}}"#,
+    );
+    let QuestionKind::Score(s) = &req.questions[0].kind else {
+        panic!()
+    };
+    assert_eq!(s.levels[0].description, None);
+    assert_eq!(
+        s.levels[1].description,
+        Some(Description::Text("high".into()))
+    );
+}
+
+#[test]
+fn a_score_level_with_a_structured_description_and_a_label_is_refused() {
+    let rating = |level: Level| {
+        DecideRequest::new("jev-latest", DecisionInput::Text("s".into())).with_question(
+            Question::new(
+                Some("rating".into()),
+                QuestionKind::Score(Score::new(vec![level])),
+            )
+            .with_instructions(kaeso_kpp::Instructions::Text("Rate it.".into())),
+        )
+    };
+    let structured = Level::new(
+        Some("high".into()),
+        Some(Description::Json(
+            RawJson::from_string(r#"{"min":8}"#.into()).unwrap(),
+        )),
+    );
+    for level in [structured, Level::new(None, None)] {
+        let err = encode(&rating(level), SystemOneProfile::TYPESAFE).unwrap_err();
+        assert!(matches!(err.kind, ErrorKind::Unsupported { .. }), "{err:?}");
+        assert_eq!(err.param.as_deref(), Some("questions[0]"));
+        assert!(
+            err.message
+                .contains("give every level a text label or description"),
+            "{}",
+            err.message
+        );
+    }
+}
+
+#[test]
+fn encoding_again_with_the_same_context_names_each_note_once() {
+    let mut r = DecideRequest::new("jev-latest", DecisionInput::Text("x".repeat(140_000)))
+        .with_question(Question::new(
+            Some("ok".into()),
+            QuestionKind::Choice(Choice::new(vec![
+                ChoiceOption::new(ChoiceValue::Bool(true), None),
+                ChoiceOption::new(ChoiceValue::Bool(false), None),
+            ])),
+        ));
+    r.user = Some("user-1".into());
+    let req = Request::Decide(r);
+    let mut c = ctx(SystemOneProfile::TYPESAFE, &req);
+    let first = SystemOne::encode_request(&req, &mut c).unwrap();
+    let again = SystemOne::encode_request(&req, &mut c).unwrap();
+    assert_eq!(first.body, again.body);
+    assert_eq!(c.adapted, ["booleans", "long_context"]);
+    assert_eq!(c.left_out, ["user"]);
+}
+
+#[test]
+fn a_text_state_that_is_one_image_becomes_a_baseten_user_message() {
+    let req = DecideRequest::new("jev-latest", DecisionInput::Text("img-1".into()))
+        .with_question(noul("seen", "Is a person in the photo?"))
+        .with_asset(
+            "img-1",
+            Asset::new(Source::bytes("image/png", png(300, 300))),
+        );
+    let (enc, _) = encode(&req, SystemOneProfile::BASETEN).unwrap();
+    let sent = body_of(&enc);
+    let message = &sent["state"]["messages"][0];
+    assert_eq!(message["role"], "user");
+    assert_eq!(message["content"].as_array().unwrap().len(), 1);
+    assert_eq!(message["content"][0]["type"], "image_url");
+    assert!(
+        message["content"][0]["image_url"]["url"]
+            .as_str()
+            .unwrap()
+            .starts_with("data:image/png;base64,iVBOR")
+    );
+    assert!(sent.get("assets").is_none());
+}
