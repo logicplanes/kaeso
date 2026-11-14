@@ -407,3 +407,129 @@ fn listings_are_written_as_documented_and_their_queries_read() {
         assert_eq!(e.param.as_deref(), Some(param), "{query}");
     }
 }
+
+#[test]
+fn each_models_own_ratios_resolutions_and_qualities_are_sent() {
+    let body = |r: &ImageRequest| -> serde_json::Value {
+        serde_json::from_slice(&sent(r).unwrap().body).unwrap()
+    };
+    let mut sunburst = image("gpt-image-2.5-sunburst");
+    sunburst.quality = Some(ImageQuality::Max);
+    sunburst.size = Some(ImageSize::Auto);
+    let v = body(&sunburst);
+    assert_eq!(
+        (v["quality"].as_str(), v["aspect_ratio"].as_str()),
+        (Some("max"), Some("auto"))
+    );
+
+    let mut flash = image("gemini-3.1-flash-image");
+    flash.aspect_ratio = Some("1:8".into());
+    flash.resolution = Some("512".into());
+    let v = body(&flash);
+    assert_eq!(
+        (v["aspect_ratio"].as_str(), v["resolution"].as_str()),
+        (Some("1:8"), Some("512"))
+    );
+
+    let mut lite = image("gemini-3.1-flash-lite-image");
+    lite.resolution = Some("1K".into());
+    assert_eq!(body(&lite)["resolution"], "1K");
+    lite.resolution = Some("2K".into());
+    let err = sent(&lite).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("resolution"));
+    assert!(
+        err.message
+            .contains("`2K` on `gemini-3.1-flash-lite-image`"),
+        "{}",
+        err.message
+    );
+    lite.resolution = None;
+    lite.aspect_ratio = Some("1:8".into());
+    assert_eq!(
+        sent(&lite).unwrap_err().param.as_deref(),
+        Some("aspect_ratio")
+    );
+
+    let mut seedream = image("bytedance-seedream-5-lite");
+    seedream.resolution = Some("3K".into());
+    seedream.seed = Some(7);
+    let v = body(&seedream);
+    assert_eq!(
+        (v["resolution"].as_str(), v["seed"].as_i64()),
+        (Some("3K"), Some(7))
+    );
+    seedream.size = Some(ImageSize::pixels(1536, 1024));
+    let err = sent(&seedream).unwrap_err();
+    assert_eq!(err.param.as_deref(), Some("size"));
+    assert!(
+        err.message.contains("`3:2` on `bytedance-seedream-5-lite`"),
+        "{}",
+        err.message
+    );
+
+    let mut portrait = image("gpt-image-1");
+    portrait.size = Some(ImageSize::pixels(1024, 1536));
+    portrait.background = Some(ImageBackground::Other("checkerboard".into()));
+    let v = body(&portrait);
+    assert_eq!(
+        (v["aspect_ratio"].as_str(), v["background"].as_str()),
+        (Some("2:3"), Some("checkerboard"))
+    );
+}
+
+#[test]
+fn a_mask_without_an_image_is_refused_and_the_user_is_left_out() {
+    let mut masked = image("gpt-image-1");
+    masked.mask = Some(ImageInput::new(
+        Source::base64("image/png", "AA==").unwrap(),
+    ));
+    let err = sent(&masked).unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.message, "A `mask` needs an image to edit.");
+    assert_eq!(err.param.as_deref(), Some("mask"));
+
+    let mut tagged = image("gpt-image-1");
+    tagged.user = Some("user-1".into());
+    let req = Request::Image(tagged);
+    let mut ctx = EgressCtx::new(&req);
+    let enc = ElevenLabs::encode_request(&req, &mut ctx).unwrap();
+    assert_eq!(ctx.left_out, ["user"]);
+    assert!(!String::from_utf8_lossy(&enc.body).contains("user-1"));
+}
+
+#[test]
+fn an_inline_image_that_is_not_base64_is_refused_naming_its_field() {
+    let err = ElevenLabs::decode_request(
+        RequestKind::Image,
+        br#"{"model_id":"gpt-image-1","prompt":"p","images":[{"type":"inline_base64","mime_type":"image/png","content_base64":"not base64!"}]}"#,
+        &HeaderList::new(),
+    )
+    .unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.param.as_deref(), Some("images"));
+}
+
+#[test]
+fn a_finished_generation_without_a_link_and_each_failure_reason_read_as_their_kinds() {
+    let ctx = EgressCtx::for_kind(RequestKind::Image, StreamMode::Off);
+    let read = |body: &[u8]| ElevenLabs::decode_response(200, &HeaderList::new(), body, &ctx);
+    let linkless = read(br#"{"id":"x","status":"completed"}"#).unwrap_err();
+    assert_eq!(linkless.kind, ErrorKind::ProviderError);
+    assert_eq!(
+        linkless.message,
+        "ElevenLabs finished an image generation without its link."
+    );
+    for (reason, kind, status) in [
+        ("invalid_parameters", ErrorKind::InvalidRequest, 400),
+        ("charging_failed", ErrorKind::Billing, 402),
+        ("internal_error", ErrorKind::ProviderError, 502),
+    ] {
+        let body = format!(r#"{{"id":"x","status":"failed","failure_reason":"{reason}"}}"#);
+        let e = read(body.as_bytes()).unwrap_err();
+        assert_eq!((e.kind, e.status), (kind, Some(status)), "{reason}");
+        assert_eq!(
+            e.message, "ElevenLabs could not make the image.",
+            "{reason}"
+        );
+    }
+}
