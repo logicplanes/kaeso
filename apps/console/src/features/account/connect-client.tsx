@@ -8,11 +8,13 @@ export const mcpUrl = (): string => `${window.location.origin}/mcp`;
 const VSCODE_CONFIG = ".vscode/mcp.json";
 const CLIENTS: readonly ClientMark[] = ["claude", "cursor", "github-copilot"];
 
-const clientName = (client: ClientMark): string => (client === "claude" ? "Claude Code" : client === "cursor" ? "Cursor" : "GitHub Copilot");
+const clientName = (client: ClientMark): string => (client === "claude" ? "Claude" : client === "cursor" ? "Cursor" : "GitHub Copilot");
 
 // Install links as Cursor and VS Code document them: https://cursor.com/docs/context/mcp/install-links and
 // https://code.visualstudio.com/docs/copilot/guides/mcp-developer-guide
 const cursorLink = (): string => `cursor://anysphere.cursor-deeplink/mcp/install?name=kaeso&config=${btoa(JSON.stringify({ url: mcpUrl() }))}`;
+const claudeLink = (): string =>
+  `https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kaeso&connectorUrl=${encodeURIComponent(mcpUrl())}`;
 const vscodeLink = (): string => `vscode:mcp/install?${encodeURIComponent(JSON.stringify({ name: "kaeso", type: "http", url: mcpUrl() }))}`;
 
 function Steps({ client }: { client: ClientMark }) {
@@ -20,12 +22,20 @@ function Steps({ client }: { client: ClientMark }) {
   if (client === "claude")
     return (
       <div className="flex flex-col gap-12">
+        <Button variant="primary" fullWidth href={claudeLink()} target="_blank" rel="noopener noreferrer">
+          {t("account.addToClaude", "Add to Claude")}
+        </Button>
         <Text variant="small" tone="secondary">
-          {t("account.connectClaudeServer", "Connect the server, then run /mcp to sign in.")}
+          {t("account.connectClaudeApps", "For claude.ai, the desktop and mobile apps and Cowork: this adds Kaeso as a custom connector.")}
+        </Text>
+        <Text variant="small" tone="secondary">
+          {t("account.connectClaudeServer", "In Claude Code, connect the server, then run /mcp to sign in.")}
         </Text>
         <CodeBlock copy lang="bash" code={`claude mcp add --transport http --scope user kaeso ${mcpUrl()}`} />
         <Text variant="small" tone="secondary">
-          {t("account.connectClaudePlugin", "The plugin adds Kaeso's skill, which teaches your agent the tools and can connect the server too.")}
+          {t("account.connectClaudePlugin", "Or install the plugin, which adds Kaeso's skill, and enter {url} when it asks for the address.", {
+            url: mcpUrl(),
+          })}
         </Text>
         <CodeBlock copy lang="text" code="/plugin install kaeso --marketplace logicplanes/kaeso" />
       </div>
