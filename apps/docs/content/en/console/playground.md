@@ -49,7 +49,7 @@ A decision model answers typed questions about what you send, each answer with i
 
    Names must differ; a question without one is numbered. The questions keep to the strictest limits of the chosen models, such as GPT-6 Luna's 400 questions.
 2. Send what the questions are about: text, or JSON when the prompt is a JSON object or array. Attach PNG or JPEG images when the model reads images; the text then goes first, each image after it.
-3. Read the answers. Each question shows the answer, a bar with the probability of each option or level, and the confidence when the model gives one. A box is drawn on the image. A question the model refused says so in its row, and a refused request shows the reason in the column.
+3. Read the answers. Each question shows a bar with the probability of each option or level, the answer's bar marked, a score's value on its scale, and the confidence when the model gives one. A box is drawn on the image. A question the model refused says so in its row, and a refused request shows the reason in the column.
 
 A chat model in the same comparison gets the same text and images as its prompt. The questions stay while the console is open in this tab, and each turn keeps the questions it asked. A decision shows the time it took, its tokens and its cost.
 

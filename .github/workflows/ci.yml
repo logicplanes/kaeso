@@ -457,7 +457,9 @@ jobs:
           merge-multiple: true
           path: ${{ runner.temp }}/lcov
       - name: The four shards together cover the gateway's lines as far as cargo coverage-gateway requires
-        run: node scripts/lcov.mjs check "$RUNNER_TEMP"/lcov/lcov-*.info | tee "$RUNNER_TEMP/summary.txt"
+        run: |
+          set -o pipefail
+          node scripts/lcov.mjs check "$RUNNER_TEMP"/lcov/lcov-*.info | tee "$RUNNER_TEMP/summary.txt"
       - name: Coverage summary
         if: always()
         run: |
@@ -545,9 +547,11 @@ jobs:
       - name: Build the gateway and the test kit once, for every step below
         run: cargo build -p kaeso -p kaeso-testkit --bins
       - name: The OpenAPI document is current
-        run: target/debug/kaeso openapi | diff - openapi.json
+        run: |
+          set -o pipefail
+          target/debug/kaeso openapi | diff - openapi.json
       - if: ${{ !cancelled() }}
-        run: pytest -q e2e/sdk
+        run: pytest -q --durations=15 e2e/sdk
       - if: ${{ !cancelled() }}
         run: pytest -q e2e/mcp
 
@@ -796,7 +800,7 @@ jobs:
         with:
           path: ${{ runner.temp }}/tofu-plugins
           key: tofu-plugins-${{ hashFiles('deploy/gcp/*/.terraform.lock.hcl') }}
-      - run: mkdir -p "$TF_PLUGIN_CACHE_DIR" && pytest -q e2e/install
+      - run: mkdir -p "$TF_PLUGIN_CACHE_DIR" && pytest -q --durations=25 e2e/install
         env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tofu-plugins
 

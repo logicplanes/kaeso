@@ -20,6 +20,8 @@ export { KAESO_PROBABILITY_BAR_DEFAULT_VARIANTS, KAESO_PROBABILITY_BAR_VARIANTS,
 export type { ProbabilityBarProps } from "./probability-bar.js";
 export { DecisionResponse, KAESO_DECISION_RESPONSE_DEFAULT_VARIANTS, KAESO_DECISION_RESPONSE_VARIANTS } from "./decision-response.js";
 export type { DecisionImage, DecisionResponseProps, DecisionStatus } from "./decision-response.js";
+export { DecisionQuestions, KAESO_DECISION_QUESTIONS_DEFAULT_VARIANTS, KAESO_DECISION_QUESTIONS_VARIANTS } from "./decision-questions.js";
+export type { DecisionQuestionsProps } from "./decision-questions.js";
 export { KAESO_QUESTION_EDITOR_DEFAULT_VARIANTS, KAESO_QUESTION_EDITOR_VARIANTS, QuestionEditor } from "./question-editor.js";
 export type { QuestionEditorProps } from "./question-editor.js";
 export type { DecisionAnswer, DecisionKind, DecisionLevel, DecisionOption, DecisionQuestion } from "./decision-types.js";

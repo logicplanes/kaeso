@@ -133,9 +133,10 @@ describe("DecisionResponse", () => {
     expect(container.querySelector("[data-box]")).toBeNull();
     expect(screen.getByText("Top").nextElementSibling).toHaveTextContent("20%");
     expect(screen.getByText("Bottom").nextElementSibling).toHaveTextContent("40%");
-    expect(screen.getByText("Confidence 92%")).toBeInTheDocument();
-    expect(screen.getByText("No", { selector: ".text-body" })).toBeInTheDocument();
+    expect(within(screen.getAllByRole("listitem")[0]!).getByText("Confidence 92%")).toBeInTheDocument();
+    expect(screen.getAllByText("No")).toHaveLength(1);
     expect(screen.getByRole("meter", { name: "No" })).toHaveAttribute("aria-valuetext", "88%, chosen");
+    expect(screen.getByRole("meter", { name: "Yes" })).toHaveAttribute("aria-valuetext", "12%");
   });
 
   it("says when a question was refused, and when an answer is missing or of the wrong kind", () => {
@@ -160,10 +161,34 @@ describe("DecisionResponse", () => {
     expect(within(unsafe!).queryByRole("meter")).toBeNull();
     expect(second).toHaveAccessibleName("Question 2");
     expect(within(second!).getByText("No answer")).toBeInTheDocument();
-    expect(within(second!).getAllByText("Not given")).toHaveLength(2);
-    expect(within(third!).getByText("Level 0")).toBeInTheDocument();
+    expect(within(second!).queryByText("Not given")).toBeNull();
+    expect(within(second!).queryByText("a")).toBeNull();
     expect(within(third!).getByText("No answer")).toBeInTheDocument();
+    expect(within(third!).queryByText("Level 0")).toBeNull();
     expect(within(fourth!).getByText("No answer")).toBeInTheDocument();
+  });
+
+  it("names each question with its type and confidence, shows instructions only when asked, and lines its bars up in one grid", () => {
+    const questions = [
+      {
+        kind: "choice" as const,
+        name: "team",
+        instructions: "Which team should handle it?",
+        options: [{ value: "finance" }, { value: "a much longer option" }],
+      },
+    ];
+    const answers = [{ kind: "choice" as const, option: 0, probabilities: [0.8, 0.2], confidence: 0.6 }];
+    const { container, rerender } = render(<DecisionResponse questions={questions} answers={answers} />);
+    expect(screen.queryByText("Which team should handle it?")).toBeNull();
+    const team = screen.getByRole("listitem", { name: "team" });
+    expect(within(team).getByText("Confidence 60%")).toBeInTheDocument();
+    expect(within(team).getByText("Choice")).toBeInTheDocument();
+    expect(screen.getAllByText("finance")).toHaveLength(1);
+    const grid = container.querySelector(".grid-cols-meter");
+    expect(grid?.querySelectorAll("[data-probability-bar]")).toHaveLength(2);
+    for (const bar of grid!.querySelectorAll("[data-probability-bar]")) expect(bar).toHaveClass("grid-cols-subgrid", "col-span-full");
+    rerender(<DecisionResponse questions={questions} answers={answers} showInstructions />);
+    expect(within(screen.getByRole("listitem", { name: "team" })).getByText("Which team should handle it?")).toBeInTheDocument();
   });
 
   it("shows the most likely options of a long choice first, and all of them on request", async () => {

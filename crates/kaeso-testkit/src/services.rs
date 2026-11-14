@@ -197,8 +197,11 @@ async fn create(
 ) -> TestServices {
     let admin_url = SecretString::from(pg);
     let clickhouse_url = SecretString::from(ch);
+    let mut admin = PgConnection::connect(admin_url.expose_secret())
+        .await
+        .expect("connect to KAESO_TEST_POSTGRES_URL");
     if !SWEPT.swap(true, Ordering::SeqCst) {
-        match sweep(&admin_url, &clickhouse_url, SystemTime::now(), SWEEP_AGE).await {
+        match sweep_on(&mut admin, &clickhouse_url, SystemTime::now(), SWEEP_AGE).await {
             Ok(dropped) if !dropped.is_empty() => eprintln!(
                 "kaeso-testkit: dropped {} unused test databases older than {} hours",
                 dropped.len(),
@@ -218,9 +221,6 @@ async fn create(
     };
     let name = databases.name.clone();
 
-    let mut admin = PgConnection::connect(databases.admin_url.expose_secret())
-        .await
-        .expect("connect to KAESO_TEST_POSTGRES_URL");
     let template = migrated_template(&mut admin, &databases.admin_url).await;
     sqlx::query(sqlx::AssertSqlSafe(format!(
         "CREATE DATABASE {name} TEMPLATE {template}"
@@ -241,14 +241,13 @@ async fn create(
         .expect("KAESO_TEST_POSTGRES_URL is a URL");
     url.set_path(&name);
     let pg_url = SecretString::from(url.to_string());
+    // The copy of the template is already migrated, and many tests reach PostgreSQL only through
+    // the gateway's own pool; a connection costs a password handshake, so this pool opens its
+    // first one when a test asks for it.
     let pool = PgPoolOptions::new()
         .max_connections(10)
-        .connect(url.as_str())
-        .await
-        .expect("connect to the test database");
-    kaeso_store::pg::migrate(&pool)
-        .await
-        .expect("migrate the test database");
+        .connect_lazy(url.as_str())
+        .expect("KAESO_TEST_POSTGRES_URL is a PostgreSQL URL");
 
     let server = ClickHouse::new(&databases.clickhouse_url, "default").expect("ClickHouse client");
     let comment = match kind {
@@ -479,6 +478,20 @@ pub async fn drop_databases(
         let mut admin = PgConnection::connect(admin_url.expose_secret())
             .await
             .map_err(fail("connect to KAESO_TEST_POSTGRES_URL"))?;
+        // DROP DATABASE … WITH (FORCE) looks only every 100 ms whether the sessions it ended are
+        // gone; ending them first and looking every millisecond leaves it nothing to wait for.
+        let _ = sqlx::query(sqlx::AssertSqlSafe(format!(
+            "DO $$ BEGIN \
+               PERFORM pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{name}'; \
+               FOR i IN 1..500 LOOP \
+                 PERFORM pg_stat_clear_snapshot(); \
+                 EXIT WHEN NOT EXISTS (SELECT FROM pg_stat_activity WHERE datname = '{name}'); \
+                 PERFORM pg_sleep(0.001); \
+               END LOOP; \
+             END $$"
+        )))
+        .execute(&mut admin)
+        .await;
         let dropped = sqlx::query(sqlx::AssertSqlSafe(format!(
             "DROP DATABASE IF EXISTS {name} WITH (FORCE)"
         )))
@@ -511,10 +524,21 @@ pub async fn sweep(
     now: SystemTime,
     max_age: Duration,
 ) -> Result<Vec<String>, ServicesError> {
-    let mut dropped = Vec::new();
     let mut admin = PgConnection::connect(admin_url.expose_secret())
         .await
         .map_err(fail("connect to KAESO_TEST_POSTGRES_URL"))?;
+    let dropped = sweep_on(&mut admin, clickhouse_url, now, max_age).await;
+    let _ = admin.close().await;
+    dropped
+}
+
+async fn sweep_on(
+    admin: &mut PgConnection,
+    clickhouse_url: &SecretString,
+    now: SystemTime,
+    max_age: Duration,
+) -> Result<Vec<String>, ServicesError> {
+    let mut dropped = Vec::new();
     let idle: Vec<(String,)> = sqlx::query_as(
         "SELECT d.datname::text FROM pg_database d \
          WHERE d.datname ~ '^t_[0-9a-f]{32}$' \
@@ -522,7 +546,7 @@ pub async fn sweep(
            AND NOT EXISTS (SELECT 1 FROM pg_stat_activity a WHERE a.datid = d.oid)",
     )
     .bind(TEST_MARK)
-    .fetch_all(&mut admin)
+    .fetch_all(&mut *admin)
     .await
     .map_err(fail("list the test databases in PostgreSQL"))?;
     for (name,) in idle {
@@ -532,7 +556,7 @@ pub async fn sweep(
         let drop = sqlx::query(sqlx::AssertSqlSafe(format!(
             "DROP DATABASE IF EXISTS {name}"
         )))
-        .execute(&mut admin)
+        .execute(&mut *admin)
         .await;
         if drop.is_ok() {
             dropped.push(name);
@@ -541,13 +565,12 @@ pub async fn sweep(
     let remaining: HashSet<String> = sqlx::query_as::<_, (String,)>(
         "SELECT datname::text FROM pg_database WHERE datname ~ '^t_'",
     )
-    .fetch_all(&mut admin)
+    .fetch_all(&mut *admin)
     .await
     .map_err(fail("list the test databases in PostgreSQL"))?
     .into_iter()
     .map(|(name,)| name)
     .collect();
-    let _ = admin.close().await;
 
     #[derive(clickhouse::Row, Deserialize)]
     struct Name {
