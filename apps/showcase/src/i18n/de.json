@@ -1255,5 +1255,11 @@
   "Options a choice takes at most (255 by default): Add option turns off there and says so.": "Wie viele Optionen eine Auswahl höchstens hat (standardmäßig 255): Dort wird „Option hinzufügen“ deaktiviert und sagt es.",
   "Questions at most; none by default.": "Höchstzahl der Fragen; standardmäßig keine.",
   "Called with the changed questions. A question added here has an `id`; empty optional text is left out.": "Wird mit den geänderten Fragen aufgerufen. Eine hier hinzugefügte Frage hat eine `id`; leerer optionaler Text wird weggelassen.",
-  "The questions, in order. Give each an `id` so its fields keep their place when one above it is removed.": "Die Fragen, in ihrer Reihenfolge. Geben Sie jeder eine `id`, damit ihre Felder ihren Platz behalten, wenn eine darüber entfernt wird."
+  "The questions, in order. Give each an `id` so its fields keep their place when one above it is removed.": "Die Fragen, in ihrer Reihenfolge. Geben Sie jeder eine `id`, damit ihre Felder ihren Platz behalten, wenn eine darüber entfernt wird.",
+  "The questions a decision model was asked, read only: each with its type and instructions, then what yes and no, each option or each level means.": "Die Fragen an ein Entscheidungsmodell, nur zum Lesen: jede mit ihrem Typ und ihren Anweisungen, dann was Ja und Nein, jede Option oder jede Stufe bedeutet.",
+  "The list's accessible name (\"Questions\" by default, in the provider's language).": "Der barrierefreie Name der Liste (standardmäßig „Fragen“, in der Sprache des Providers).",
+  "The list of questions, a hairline between them.": "Die Liste der Fragen, mit einer Haarlinie dazwischen.",
+  "The questions as they were sent: kind, name, instructions, and what yes and no, the options or the levels mean.": "Die Fragen, wie sie gesendet wurden: Art, Name, Anweisungen und was Ja und Nein, die Optionen oder die Stufen bedeuten.",
+  "Shows each question's instructions under its name, where the questions aren't on screen beside the answers, as in a request log.": "Zeigt die Anweisungen jeder Frage unter ihrem Namen, wo die Fragen nicht neben den Antworten zu sehen sind, wie in einem Anfrageprotokoll.",
+  "Label, bar and value on one line, the label and value above the bar, or one row of a `grid-cols-meter` grid so a list's bars line up.": "Bezeichnung, Balken und Wert in einer Zeile, Bezeichnung und Wert über dem Balken, oder eine Zeile eines `grid-cols-meter`-Rasters, damit die Balken einer Liste übereinander stehen."
 }

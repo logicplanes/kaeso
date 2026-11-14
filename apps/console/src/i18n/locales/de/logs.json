@@ -278,12 +278,7 @@
   "logs.media.fileTooLarge": "Datei ({detail}), zu groß zum Aufbewahren",
   "logs.tokens.decision": "Eine Entscheidung; ihre Ausgabe-Tokens kosten nichts",
   "logs.decision.answers": "Antworten",
-  "logs.decision.kind.predicate": "Ja/Nein",
-  "logs.decision.kind.choice": "Auswahl",
-  "logs.decision.kind.score": "Bewertung",
-  "logs.decision.kind.box": "Box",
   "logs.decision.state": "Worum es in den Fragen geht",
   "logs.decision.questions": "Fragen",
-  "logs.decision.question": "Frage {n}",
   "logs.decision.replyHint": "Jede Antwort mit ihren Wahrscheinlichkeiten, in der Reihenfolge der Fragen."
 }

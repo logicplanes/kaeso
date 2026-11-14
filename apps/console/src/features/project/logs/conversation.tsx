@@ -5,7 +5,13 @@ import type { LogBlock, LogMessage } from "./render";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { Markdown, safeHref } from "@logicplanes/kaeso-ui/markdown";
-import { DecisionResponse, Reasoning, type DecisionAnswer, type DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
+import {
+  DecisionQuestions as DecisionQuestionList,
+  DecisionResponse,
+  Reasoning,
+  type DecisionAnswer,
+  type DecisionQuestion,
+} from "@logicplanes/kaeso-ui/playground";
 
 const roleLabel = (role: ConversationMessage["role"]): string =>
   ({
@@ -209,7 +215,17 @@ export default function Conversation({ messages }: { messages: LogMessage[] }) {
   );
 }
 
-/** A logged decision's answers, each with its probabilities, beside the questions as the app sent them. */
+/** A logged decision's answers, each with its probabilities and its question's instructions, in the order the app asked. */
 export function DecisionAnswers({ questions, answers }: { questions: DecisionQuestion[]; answers: DecisionAnswer[] }) {
-  return <DecisionResponse questions={questions} answers={answers} status="done" aria-label={t("logs.decision.answers", "Answers")} />;
+  return <DecisionResponse questions={questions} answers={answers} status="done" showInstructions aria-label={t("logs.decision.answers", "Answers")} />;
+}
+
+/** What a logged decision's questions are about, when the app sent it as text: as the log shows a message's text. */
+export function DecisionState({ text }: { text: string }) {
+  return <Markdown text={text} className="mx-12" />;
+}
+
+/** A logged decision's questions as the app sent them: instructions, and what yes and no, each option or each level means. */
+export function DecisionQuestions({ questions }: { questions: DecisionQuestion[] }) {
+  return <DecisionQuestionList questions={questions} aria-label={t("logs.decision.questions", "Questions")} />;
 }

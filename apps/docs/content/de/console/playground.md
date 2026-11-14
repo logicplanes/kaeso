@@ -49,7 +49,7 @@ Ein Entscheidungsmodell beantwortet typisierte Fragen zu dem, was Sie senden, je
 
    Namen müssen sich unterscheiden; eine Frage ohne Namen wird nummeriert. Die Fragen halten die strengsten Grenzen der gewählten Modelle ein, etwa die 400 Fragen von GPT-6 Luna.
 2. Senden Sie, worum es in den Fragen geht: Text oder JSON, wenn der Prompt ein JSON-Objekt oder -Array ist. Hängen Sie PNG- oder JPEG-Bilder an, wenn das Modell Bilder liest; dann kommt zuerst der Text, danach jedes Bild.
-3. Lesen Sie die Antworten. Jede Frage zeigt die Antwort, einen Balken mit der Wahrscheinlichkeit jeder Option oder Stufe und die Konfidenz, wenn das Modell sie angibt. Eine Box wird auf das Bild gezeichnet. Eine Frage, die das Modell ablehnte, sagt das in ihrer Zeile, und eine abgelehnte Anfrage zeigt den Grund in der Spalte.
+3. Lesen Sie die Antworten. Jede Frage zeigt einen Balken mit der Wahrscheinlichkeit jeder Option oder Stufe, der Balken der Antwort hervorgehoben, den Wert einer Bewertung auf ihrer Skala und die Konfidenz, wenn das Modell sie angibt. Eine Box wird auf das Bild gezeichnet. Eine Frage, die das Modell ablehnte, sagt das in ihrer Zeile, und eine abgelehnte Anfrage zeigt den Grund in der Spalte.
 
 Ein Chatmodell im selben Vergleich erhält denselben Text und dieselben Bilder als Prompt. Die Fragen bleiben, solange die Konsole in diesem Tab offen ist, und jede Runde behält die Fragen, die sie stellte. Eine Entscheidung zeigt ihre Dauer, ihre Tokens und ihre Kosten.
 
