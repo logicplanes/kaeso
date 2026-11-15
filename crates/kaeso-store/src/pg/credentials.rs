@@ -522,6 +522,36 @@ pub async fn touch(
     Ok(())
 }
 
+/// A signed-in provider account whose access token runs out by a given time.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Renewable {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub provider: String,
+    pub auth_method: String,
+    pub expires_at: OffsetDateTime,
+}
+
+/// The signed-in accounts whose access token runs out by `by` and that were used since
+/// `used_since`, soonest first.
+pub async fn renewable(
+    db: impl PgExecutor<'_>,
+    by: OffsetDateTime,
+    used_since: OffsetDateTime,
+) -> Result<Vec<Renewable>, StoreError> {
+    Ok(sqlx::query_as!(
+        Renewable,
+        r#"SELECT id, org_id, provider, auth_method, expires_at AS "expires_at!" FROM provider_credentials
+         WHERE auth_method IN ('chatgpt', 'grok') AND auth_error IS NULL
+         AND expires_at IS NOT NULL AND expires_at <= $1 AND last_used_at >= $2
+         ORDER BY expires_at"#,
+        by,
+        used_since
+    )
+    .fetch_all(db)
+    .await?)
+}
+
 pub async fn all_sealed(db: impl PgExecutor<'_>) -> Result<Vec<SealedRow>, StoreError> {
     Ok(sqlx::query_as!(
         SealedRow,

@@ -1289,6 +1289,110 @@ async fn an_account_renews_once_however_many_instances_need_it() {
     s.cleanup().await;
 }
 
+async fn last_used(app: &App) -> Option<time::OffsetDateTime> {
+    sqlx::query_scalar("SELECT last_used_at FROM provider_credentials")
+        .fetch_one(&app.state.pg)
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn an_account_in_use_is_renewed_before_a_request_finds_it_due() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let project = common::first_project(&app, &owner).await;
+    let first = secret_of(&app, &owner, &project).await.unwrap();
+    common::eventually("the account's use is recorded", || async {
+        last_used(&app).await.is_some()
+    })
+    .await;
+
+    app.clock.advance(time::Duration::minutes(52));
+    credentials::renew_ahead(&app.state).await.unwrap();
+    assert_eq!(
+        oauth.refreshes(),
+        0,
+        "eight minutes left need no renewal yet"
+    );
+
+    app.clock.advance(time::Duration::minutes(2));
+    credentials::renew_ahead(&app.state).await.unwrap();
+    assert_eq!(oauth.refreshes(), 1, "renewed with six minutes left");
+    credentials::renew_ahead(&app.state).await.unwrap();
+    assert_eq!(
+        oauth.refreshes(),
+        1,
+        "a renewed account is not renewed again"
+    );
+
+    app.clock.advance(time::Duration::minutes(2));
+    let renewed = secret_of(&app, &owner, &project).await.unwrap();
+    assert_ne!(renewed, first, "the request finds the renewed token");
+    assert_eq!(
+        oauth.refreshes(),
+        1,
+        "the request didn't wait for a renewal"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_account_left_unused_for_a_week_is_renewed_only_when_it_is_used() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    let project = common::first_project(&app, &owner).await;
+
+    app.clock.advance(time::Duration::minutes(54));
+    credentials::renew_ahead(&app.state).await.unwrap();
+    assert_eq!(
+        oauth.refreshes(),
+        0,
+        "an account nobody used is not renewed"
+    );
+
+    let week_ago = app.clock.now() - credentials::RENEW_IF_USED_WITHIN - time::Duration::minutes(1);
+    sqlx::query("UPDATE provider_credentials SET last_used_at = $1")
+        .bind(week_ago)
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    credentials::renew_ahead(&app.state).await.unwrap();
+    assert_eq!(oauth.refreshes(), 0, "nor one last used over a week ago");
+
+    app.clock.advance(time::Duration::minutes(2));
+    secret_of(&app, &owner, &project).await.unwrap();
+    assert_eq!(oauth.refreshes(), 1, "its next request renews it as before");
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn renewing_ahead_waits_for_the_time_openai_allows() {
+    let s = TestServices::start().await;
+    let oauth = MockOAuth::start().await;
+    let app = App::start_signing_in(&s, &oauth).await;
+    let owner = app.setup().await;
+    oauth.refresh_not_before(7200);
+    common::sign_in_chatgpt(&app, &owner, &oauth, "Plan", "ada@example.com").await;
+    oauth.refresh_not_before(0);
+    let project = common::first_project(&app, &owner).await;
+    secret_of(&app, &owner, &project).await.unwrap();
+    common::eventually("the account's use is recorded", || async {
+        last_used(&app).await.is_some()
+    })
+    .await;
+
+    app.clock.advance(time::Duration::minutes(54));
+    credentials::renew_ahead(&app.state).await.unwrap();
+    assert_eq!(oauth.refreshes(), 0, "OpenAI asked to wait");
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn an_account_whose_session_ended_asks_for_a_new_sign_in() {
     let s = TestServices::start().await;
