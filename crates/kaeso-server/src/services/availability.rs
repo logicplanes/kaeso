@@ -290,6 +290,14 @@ pub async fn probe(
     if crate::services::agent_platform::is_agent_platform(&eff.provider) {
         return crate::services::agent_platform::probe(state, credential, eff).await;
     }
+    // bedrock-runtime lists no models: `GET /openai/v1/models` answers 404
+    // `UnknownOperationException` (https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html),
+    // and whether a key may call a model shows only in a request Bedrock bills.
+    if crate::services::regional::regional(&eff.provider).is_some() {
+        return Probe::Inconclusive(KppError::provider(
+            "the provider lists no models where the key calls it",
+        ));
+    }
     let asked = Asked {
         state,
         credential,

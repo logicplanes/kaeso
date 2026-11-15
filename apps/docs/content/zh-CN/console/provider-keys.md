@@ -51,6 +51,17 @@ Kaeso 会检查该文件是否为 `token_uri` 为 `https://oauth2.googleapis.com
 
 列表会在密钥旁显示账户 ID 和网关。要把密钥改到其他账户或网关，请在其菜单中选择**编辑**。
 
+## Amazon Bedrock 密钥
+
+对于 Amazon Bedrock，服务商密钥是 Bedrock API 密钥，并注明其请求运行所在的区域。
+
+1. 在 [Amazon Bedrock 控制台](https://console.aws.amazon.com/bedrock/)中选择 **API keys**，然后在 **Long-term API keys** 或 **Short-term API keys** 下生成密钥（见 [Bedrock API 密钥](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html)）。长期密钥以 `ABSK` 开头，有效期至你设置的到期时间。短期密钥以 `bedrock-api-key-` 开头，最多有效 12 小时，且只能在生成它的区域使用，因此请在它过期前在 Kaeso 中替换它。
+2. 在 Kaeso 的**服务商**页面选择**添加服务商密钥**，然后选择 **Amazon Bedrock**，粘贴密钥并选择其**区域**：密钥调用其模型的区域；对于短期密钥，即生成它的区域。
+
+密钥的身份需要对其调用的模型拥有 `bedrock:InvokeModel` 权限，流式回复还需要 `bedrock:InvokeModelWithResponseStream`（见[端点](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html)）。密钥能调用哪些推理配置文件（例如 `us.anthropic.claude-sonnet-5` 或 `global.openai.gpt-6-sol`）取决于其区域：`us.` 配置文件可从美国的区域调用，`eu.` 配置文件可从欧洲的区域调用（见[跨区域推理](https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html)）。
+
+列表会在密钥旁显示区域。要把密钥改到其他区域，请在其菜单中选择**编辑**。
+
 ## 使用 ChatGPT 账户登录
 
 对于 OpenAI，服务商密钥也可以是一个 ChatGPT 账户。其请求随后使用该账户的 ChatGPT 套餐，而不是 OpenAI API 账户，并受套餐限额约束。
@@ -106,7 +117,7 @@ Grok 账户像 xAI API 密钥一样处理请求，使用该账户的令牌发送
 | 替换 | 为同一个密钥换上新的密钥值，例如在服务商处轮换之后；服务账号密钥则换上新的 JSON 密钥文件 |
 | 重新登录 | 用于账户：重新登录同一个账户，例如在其显示**已退出登录**或**无 API 访问权限**之后，并结束其之前在 OpenAI 或 xAI 的会话 |
 | 管理用量 | 用于 ChatGPT 账户：打开 ChatGPT 的用量设置，账户所有者可在其中查看和限制 Kaeso 的用量 |
-| 重命名 | 更改控制台中显示的名称。服务账号密钥的这一项为**编辑**，还可以更改位置；Cloudflare AI Gateway 密钥的**编辑**还可以更改账户和网关 |
+| 重命名 | 更改控制台中显示的名称。服务账号密钥的这一项为**编辑**，还可以更改位置；Cloudflare AI Gateway 密钥的**编辑**还可以更改账户和网关，Amazon Bedrock 密钥的**编辑**还可以更改区域 |
 | 删除 | 移除密钥。其项目改回使用默认密钥。对于账户，Kaeso 还会结束其在 OpenAI 或 xAI 的会话 |
 
 当服务商结束了账户的会话时，例如其所有者在 ChatGPT 中断开了 Kaeso，该账户会显示**已退出登录**。当 xAI 拒绝 Grok 账户的套餐时，该账户会显示**无 API 访问权限**。这两种情况下，账户的请求都会失败，直到拥有**更改服务商密钥**权限的人选择**重新登录**。

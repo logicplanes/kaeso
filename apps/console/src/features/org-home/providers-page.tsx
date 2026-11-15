@@ -38,6 +38,7 @@ import { useOrgPartyName } from "~/features/org/party";
 import { docsPage } from "~/format/docs";
 import { AccountScopeFields, isAccountId, isGatewayId } from "~/kaeso/account-scope-fields";
 import { ProviderKeyDialog } from "~/kaeso/provider-key-dialog";
+import { RegionField } from "~/kaeso/region-field";
 import { keyTitle, useProviders, type Providers } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
 import { OrgHeader } from "~/shell/org-header";
@@ -254,7 +255,13 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
             r.key.account && signsIn(r.key) ? { id: "account", label: t("orgHome.account", "Account"), value: r.key.account } : null,
             r.key.account && !signsIn(r.key) ? { id: "service-account", label: t("orgHome.serviceAccount", "Service account"), value: r.key.account } : null,
             r.key.project ? { id: "project", label: t("orgHome.project", "Project"), value: r.key.project } : null,
-            r.key.location ? { id: "location", label: t("orgHome.location", "Location"), value: r.key.location } : null,
+            r.key.location
+              ? {
+                  id: "location",
+                  label: r.key.auth_method === "api_key" ? t("orgHome.region", "Region") : t("orgHome.location", "Location"),
+                  value: r.key.location,
+                }
+              : null,
             r.key.account_id ? { id: "account-id", label: t("orgHome.accountId", "Account ID"), value: compactAccountId(r.key.account_id) } : null,
             r.key.account_id
               ? { id: "gateway", label: t("orgHome.gateway", "Gateway"), value: r.key.gateway_id ?? t("orgHome.defaultGateway", "default") }
@@ -520,7 +527,9 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
   const [location, setLocation] = useState(credential.location);
   const [accountId, setAccountId] = useState(credential.account_id ?? "");
   const [gatewayId, setGatewayId] = useState(credential.gateway_id ?? "");
-  const locations = providers.get(credential.provider)?.service_account?.locations ?? [];
+  const known = providers.get(credential.provider);
+  const regional = credential.auth_method === "api_key" && known?.regions ? { provider: known.name, regions: known.regions } : null;
+  const locations = known?.service_account?.locations ?? [];
   const scopePage = credential.account_id ? providers.get(credential.provider)?.account_scope?.account_page : undefined;
   const trimmed = name.trim();
   const moved = location !== credential.location;
@@ -562,7 +571,9 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
         ? t("kaeso.providerKey.gatewayIdBlocked", "A gateway ID has only letters, digits, hyphens and underscores")
         : trimmed === credential.name && !moved && !rescoped
           ? location
-            ? t("orgHome.changeFirst", "Change the name or the location first")
+            ? regional
+              ? t("orgHome.changeRegionFirst", "Change the name or the region first")
+              : t("orgHome.changeFirst", "Change the name or the location first")
             : credential.account_id
               ? t("orgHome.changeScopeFirst", "Change the name, the account or the gateway first")
               : t("orgHome.changeNameFirst", "Change the name first")
@@ -598,7 +609,8 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
     >
       <div className="flex flex-col gap-12">
         <Input label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} maxLength={100} autoFocus />
-        {location && (
+        {location && regional && <RegionField provider={regional.provider} regions={regional.regions} region={location} onRegion={setLocation} />}
+        {location && !regional && (
           <Select
             fullWidth
             label={t("kaeso.providerKey.location", "Location")}

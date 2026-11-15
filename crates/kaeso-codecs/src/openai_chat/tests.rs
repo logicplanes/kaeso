@@ -30,6 +30,10 @@ const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
 const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
     (
+        "providers/amazon-bedrock/recorded-native-invalid-api-key",
+        ErrorKind::PermissionDenied,
+    ),
+    (
         "providers/cloudflare-ai-gateway/recorded-image-base64-detail",
         ErrorKind::InvalidRequest,
     ),
@@ -413,6 +417,14 @@ fn mistral_error_bodies_reach_apps_with_mistrals_message() {
         assert_eq!(sent["error"]["message"], err.message.as_str(), "{name}");
     }
     for (name, message) in [
+        (
+            "providers/amazon-bedrock/recorded-native-invalid-api-key",
+            "The provider returned an error (HTTP 403): Invalid API Key format: Must start with pre-defined prefix.",
+        ),
+        (
+            "providers/amazon-bedrock/recorded-refused-api-key",
+            "Authentication failed: Please make sure your API Key is valid.",
+        ),
         (
             "providers/mistral/greedy-sampling",
             "top_p must be 1 when using greedy sampling.",

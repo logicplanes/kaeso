@@ -1,0 +1,20 @@
+{
+  "model": "openai.gpt-oss-20b-1:0",
+  "amazon-bedrock-guardrailConfig": {
+    "tagSuffix": "xyz"
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! How can I help you today?"
+    },
+    {
+      "role": "user",
+      "content": "What is the weather like today?"
+    }
+  ]
+}

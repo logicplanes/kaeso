@@ -759,6 +759,104 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/amazon-bedrock/greeting-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/guardrail-config-doc": {
+    "message": "`amazon-bedrock-guardrailConfig` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "amazon-bedrock-guardrailConfig"
+  },
+  "providers/amazon-bedrock/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/long-term-key-format": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/missing-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/refused-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/short-term-key-format": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/system-stream-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "openai.gpt-oss-120b",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/baseten/invalid-api-key": {
     "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

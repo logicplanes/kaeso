@@ -196,7 +196,7 @@ mod tests {
         let url = with_providers("https://kpmr.example.com/v1/catalogue").unwrap();
         let query = url.query().unwrap();
         assert!(
-            query.starts_with("providers=alibaba%2Canthropic%2C"),
+            query.starts_with("providers=alibaba%2Camazon-bedrock%2Canthropic%2C"),
             "{query}"
         );
         assert!(with_providers("not a url").is_err());

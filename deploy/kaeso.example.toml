@@ -185,6 +185,9 @@ base_url = "https://tokenhub.tencentmaas.com"
 [providers.venice]
 base_url = "https://api.venice.ai/api"
 
+[providers.amazon-bedrock]
+base_url = "https://bedrock-runtime.us-east-1.amazonaws.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

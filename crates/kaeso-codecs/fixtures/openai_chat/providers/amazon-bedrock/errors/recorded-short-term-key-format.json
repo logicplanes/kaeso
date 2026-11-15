@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Missing required parameters in the API Key",
+    "type": "permission_denied_error",
+    "param": null,
+    "code": "access_denied"
+  }
+}

@@ -475,9 +475,7 @@ const messages = (): Rule[] => [
     t("errors.customProvider.decisionsOff", "Add `decisions` to `media` to turn decisions on, or leave `decisions` out."),
   ),
   rule("errors.customProvider.keysFirst", () => t("errors.customProvider.keysFirst", "Delete the provider's keys before switching it to no key.")),
-  rule("errors.serviceAccount.locationOnly", () =>
-    t("errors.serviceAccount.locationOnly", "Only a service account key calls a location; leave `location` out."),
-  ),
+  rule("errors.noLocation", () => t("errors.noLocation", "This key calls no location; leave `location` out.")),
   rule("errors.serviceAccount.notTaken", (v) => t("errors.serviceAccount.notTaken", "{provider} takes no service account key; add an API key.", v)),
   rule("errors.serviceAccount.notJson", () => t("errors.serviceAccount.notJson", "Paste the service account's whole JSON key file.")),
   rule("errors.serviceAccount.tooLong", () => t("errors.serviceAccount.tooLong", "The JSON key is longer than 16 KiB; paste the file Google Cloud made.")),
@@ -501,6 +499,12 @@ const messages = (): Rule[] => [
   ),
   rule("errors.serviceAccount.location", () =>
     t("errors.serviceAccount.location", "Kaeso doesn't call that location for this provider; choose one from the list."),
+  ),
+  rule("errors.region.missing", (v) => t("errors.region.missing", "{provider} keys call one region; give it as `location`.", v)),
+  rule("errors.region.unknown", () => t("errors.region.unknown", "Kaeso doesn't call that region for this provider; choose one from the list.")),
+  rule("errors.region.keyWithout", (v) => t("errors.region.keyWithout", "The {provider} key names no region; edit it and choose its region.", v)),
+  rule("errors.region.ownApiOnly", (v) =>
+    t("errors.region.ownApiOnly", "{provider} serves `{model}` only through its own API, which Kaeso doesn't call yet.", v),
   ),
   rule("errors.accountScope.accountId", () => t("errors.accountScope.accountId", "The account id is 32 hexadecimal characters, as the dashboard shows it.")),
   rule("errors.accountScope.accountMissing", (v) => t("errors.accountScope.accountMissing", "{provider} calls an account; give its `account_id`.", v)),

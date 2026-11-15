@@ -907,6 +907,168 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/amazon-bedrock/greeting-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/amazon-bedrock/guardrail-config-doc": {
+    "message": "`amazon-bedrock-guardrailConfig` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "amazon-bedrock-guardrailConfig"
+  },
+  "providers/amazon-bedrock/invalid-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/amazon-bedrock/long-term-key-format": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/amazon-bedrock/missing-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/amazon-bedrock/refused-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/amazon-bedrock/short-term-key-format": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b-1:0"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/amazon-bedrock/system-stream-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "openai.gpt-oss-120b",
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful assistant.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "providers/baseten/invalid-api-key": {
     "body": {
       "max_tokens": 1,

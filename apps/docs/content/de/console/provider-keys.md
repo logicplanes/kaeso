@@ -51,6 +51,17 @@ Modelle anderer Anbieter werden mit den Unified-Billing-Guthaben des Kontos beza
 
 Die Liste zeigt die Konto-ID und das Gateway neben dem Schlüssel. Um den Schlüssel auf ein anderes Konto oder Gateway umzustellen, wählen Sie **Bearbeiten** in seinem Menü.
 
+## Schlüssel für Amazon Bedrock
+
+Für Amazon Bedrock ist ein Anbieter-Schlüssel ein Bedrock-API-Schlüssel, und er nennt die Region, in der seine Anfragen laufen.
+
+1. Wählen Sie in der [Amazon-Bedrock-Konsole](https://console.aws.amazon.com/bedrock/) **API keys** und erzeugen Sie dann einen Schlüssel unter **Long-term API keys** oder **Short-term API keys** ([Bedrock-API-Schlüssel](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html)). Ein langfristiger Schlüssel beginnt mit `ABSK` und gilt bis zum Ablaufdatum, das Sie festlegen. Ein kurzfristiger Schlüssel beginnt mit `bedrock-api-key-`, gilt höchstens 12 Stunden und nur in der Region, die ihn erzeugt hat; ersetzen Sie ihn in Kaeso also, bevor er abläuft.
+2. Wählen Sie in Kaeso unter **Anbieter** **Anbieter-Schlüssel hinzufügen**, dann **Amazon Bedrock**, fügen Sie den Schlüssel ein und wählen Sie seine **Region**: die Region, deren Modelle der Schlüssel aufruft, bei einem kurzfristigen Schlüssel die, die ihn erzeugt hat.
+
+Die Identität des Schlüssels braucht `bedrock:InvokeModel` für die Modelle, die er aufruft, und `bedrock:InvokeModelWithResponseStream` für gestreamte Antworten ([Endpunkte](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html)). Welche Inferenzprofile ein Schlüssel aufrufen kann, etwa `us.anthropic.claude-sonnet-5` oder `global.openai.gpt-6-sol`, hängt von seiner Region ab: Ein `us.`-Profil funktioniert aus Regionen in den USA, ein `eu.`-Profil aus Regionen in Europa ([regionsübergreifende Inferenz](https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html)).
+
+Die Liste zeigt die Region neben dem Schlüssel. Um den Schlüssel auf eine andere Region umzustellen, wählen Sie **Bearbeiten** in seinem Menü.
+
 ## Mit einem ChatGPT-Konto anmelden
 
 Für OpenAI kann ein Anbieter-Schlüssel auch ein ChatGPT-Konto sein. Seine Anfragen nutzen dann das ChatGPT-Abo des Kontos statt eines OpenAI-API-Kontos, im Rahmen der Limits des Abos.
@@ -106,7 +117,7 @@ Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die 
 | Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem Sie ihn beim Anbieter rotiert haben; bei einem Dienstkonto-Schlüssel eine neue JSON-Schlüsseldatei |
 | Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** oder **Kein API-Zugang** zeigt, und beendet seine vorherige Sitzung bei OpenAI oder xAI |
 | Nutzung verwalten | Für ein ChatGPT-Konto: öffnet die Nutzungseinstellungen von ChatGPT, in denen sein Inhaber prüft und begrenzt, was Kaeso nutzt |
-| Umbenennen | Ändert den Namen, den die Konsole zeigt. Bei einem Dienstkonto-Schlüssel heißt es **Bearbeiten** und ändert auch den Standort, bei einem Schlüssel für Cloudflare AI Gateway das Konto und das Gateway |
+| Umbenennen | Ändert den Namen, den die Konsole zeigt. Bei einem Dienstkonto-Schlüssel heißt es **Bearbeiten** und ändert auch den Standort, bei einem Schlüssel für Cloudflare AI Gateway das Konto und das Gateway, bei einem Schlüssel für Amazon Bedrock die Region |
 | Löschen | Entfernt den Schlüssel. Seine Projekte nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI oder xAI |
 
 Ein Konto zeigt **Abgemeldet**, wenn der Anbieter seine Sitzung beendet hat, etwa nachdem sein Inhaber Kaeso in ChatGPT getrennt hat. Ein Grok-Konto zeigt **Kein API-Zugang**, wenn xAI sein Abo ablehnt. In beiden Fällen schlagen seine Anfragen fehl, bis jemand mit **Anbieter-Schlüssel ändern** **Erneut anmelden** wählt.

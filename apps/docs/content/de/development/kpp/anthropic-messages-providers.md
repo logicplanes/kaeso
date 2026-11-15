@@ -23,7 +23,19 @@ Ablehnungen geschehen, während die Anfrage für das Ziel angepasst wird, vor de
 
 | Anbieter | Einstellungen | Quellen |
 |---|---|---|
+| Amazon Bedrock (`amazon-bedrock`) | lehnt `mcp_servers` und `container` ab | Anthropics Seite [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) zu bedrock-runtime, gelesen am 2026-11-14, die den MCP-Connector und Agent Skills als nicht unterstützt nennt |
 | MiniMax (`minimax`) | lehnt `top_k`, `stop_sequences`, `mcp_servers`, `container` und `context_management` ab; `sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`; `auto_tool_choice_only()`; `with_video(MINIMAX_VIDEO_MEDIA_TYPES)` (MP4, AVI, MOV, MKV, aus `MediaSource`) | MiniMax' Seite zur [Anthropic-API-Kompatibilität](https://platform.minimax.io/docs/api-reference/text-anthropic-api), gelesen am 2026-11-08, deren Tabelle `temperature`, `top_p`, `top_k`, `stop_sequences`, `mcp_servers`, `context_management` und `container` als ignoriert führt, sagt, dass MiniMax immer eine `temperature` von 1 und ein `top_p` von 0.95 verwendet, und für `tool_choice` nur `auto` unterstützt |
+
+## Amazon Bedrock
+
+Quellen: die [Messages-Anleitung](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html) von AWS und Anthropics Seite [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy), gelesen am 2026-11-14, und die Live-Fehler in `fixtures/anthropic_messages/providers/amazon-bedrock/`. Ein Bedrock-Modell wird als Messages gesendet, wenn der Katalog dieses Format für es nennt; KPMR tut das für die Claude-Modelle, die die Tabelle zur API-Kompatibilität von AWS mit Messages listet. Nicht mit einem erfolgreichen Aufruf getestet: AWS veröffentlicht keine Antwort dieses Pfads.
+
+| Feld bei Amazon Bedrock | KPP | Hinweise |
+|---|---|---|
+| Messages unter `/anthropic/v1/messages` auf `bedrock-runtime.{region}.amazonaws.com` | `EgressCtx::api_root` | `/anthropic/v1` tritt an die Stelle von `/v1`; der Schlüssel geht als `x-api-key`, `model` bleibt im Body, und `anthropic-version` ist `2023-06-01`, wie AWS' `curl`-Beispiel sie sendet. |
+| ein abgelehnter Schlüssel als 403 `permission_error` | `KppError` | `PermissionDenied` aus dem Typ; das Gateway liest Bedrocks Meldungen zu einem fehlerhaften, einem unsignierten und einem unbekannten Schlüssel als abgelehnten Schlüssel (`errors/recorded-*-key*`). |
+| `POST /v1/messages/count_tokens` | — | bedrock-runtime zählt Tokens nur unter `/model/{modelId}/count-tokens` im eigenen Format, und die Zählung in Anthropics Form gibt es nur auf bedrock-mantle ([Token zählen](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)); daher lehnt Kaeso Token-Zählungen ab. |
+| Streams | Anthropics SSE | AWS beschreibt den Stream dieses Pfads nicht weiter, als dass Anthropics SDK damit funktioniert. |
 
 ## Vercel
 

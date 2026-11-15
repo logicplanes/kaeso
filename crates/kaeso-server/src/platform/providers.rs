@@ -62,6 +62,10 @@ pub struct ProviderView {
         each key also gives `account_id`, and may give `gateway_id`. `null` for\n\
         other providers."]
     pub account_scope: Option<AccountScopeView>,
+    #[doc = "For a provider whose keys each call one region, such as Amazon Bedrock:\n\
+        each API key also gives its region as `location`. `null` for other\n\
+        providers."]
+    pub regions: Option<RegionsView>,
     #[doc = "Which format a model id is sent in when its catalogue entry names\n\
         none, the first matching pattern winning; models no pattern matches go\n\
         in the first of `dialects`. Empty for most providers."]
@@ -123,6 +127,16 @@ pub struct AccountScopeView {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "The regions a provider's API keys may call.")]
+pub struct RegionsView {
+    #[doc = "The provider's page that lists its regions."]
+    pub regions_page: KeyPageView,
+    #[doc = "The regions Kaeso calls, as the provider writes them."]
+    #[schema(example = json!(["us-east-1", "eu-central-1"]))]
+    pub regions: Vec<&'static str>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "A page on the provider's own site.")]
 pub struct KeyPageView {
     #[doc = "The page, an `https` URL."]
@@ -170,6 +184,13 @@ impl ProviderView {
                 },
                 gateway_header: a.gateway_header,
             }),
+            regions: p.regional.map(|r| RegionsView {
+                regions_page: KeyPageView {
+                    url: r.regions_page.url,
+                    label: r.regions_page.label,
+                },
+                regions: r.regions.to_vec(),
+            }),
             model_routes: p
                 .routes
                 .iter()
@@ -197,6 +218,7 @@ impl ProviderView {
             account: None,
             service_account: None,
             account_scope: None,
+            regions: None,
             model_routes: Vec::new(),
             server: p.server(),
         }

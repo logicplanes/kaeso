@@ -587,7 +587,43 @@ async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
         !credentials::set_location(&s.pg, org, account, "eu")
             .await
             .unwrap(),
-        "only a service account key has a location"
+        "an account has no location"
+    );
+    let regional = |id, location: Option<&'static str>| NewCredential {
+        provider: "amazon-bedrock",
+        last4: "0001",
+        location,
+        ..new(id, "api_key", None, None)
+    };
+    let bedrock = uuid::Uuid::now_v7();
+    credentials::insert(&s.pg, &regional(bedrock, Some("eu-central-1")))
+        .await
+        .unwrap();
+    assert!(
+        credentials::insert(&s.pg, &regional(uuid::Uuid::now_v7(), Some("EU-CENTRAL-1")))
+            .await
+            .is_err(),
+        "regions follow AWS's codes"
+    );
+    assert!(
+        credentials::set_location(&s.pg, org, bedrock, "us-gov-west-1")
+            .await
+            .unwrap()
+    );
+    let moved = credentials::sealed(&s.pg, org, bedrock)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(moved.location.as_deref(), Some("us-gov-west-1"));
+    let plain = uuid::Uuid::now_v7();
+    credentials::insert(&s.pg, &regional(plain, None))
+        .await
+        .unwrap();
+    assert!(
+        !credentials::set_location(&s.pg, org, plain, "eu-central-1")
+            .await
+            .unwrap(),
+        "an API key without a region gets none"
     );
 
     let account_id = "0123456789abcdef0123456789abcdef";

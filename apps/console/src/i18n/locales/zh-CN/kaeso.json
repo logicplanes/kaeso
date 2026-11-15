@@ -433,5 +433,10 @@
   "kaeso.overview.efficiency": "效率",
   "kaeso.overview.efficiencyHint": "有多少输入来自缓存，以及每个请求的用量",
   "kaeso.overview.noCost": "此时段没有费用",
-  "kaeso.overview.spendHint": "本月的走势，以及时段内费用的去向"
+  "kaeso.overview.spendHint": "本月的走势，以及时段内费用的去向",
+  "kaeso.providerKey.region": "区域",
+  "kaeso.providerKey.regionHint": "{provider} 在何处运行此密钥的请求。{link}",
+  "kaeso.providerKey.regionWhere": "区域列表",
+  "kaeso.providerKey.regionPlaceholder": "选择区域",
+  "kaeso.providerKey.regionBlocked": "请选择密钥的区域"
 }

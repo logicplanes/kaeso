@@ -140,7 +140,10 @@ fn other_shape(raw: &Value, status: Option<u16>) -> Option<OtherShape> {
         .and_then(Value::as_str)
         .is_some_and(|o| o.eq_ignore_ascii_case("error"))
         || raw.get("type").is_some_and(Value::is_string);
-    let (message, param) = match (object_error, raw.get("message"), raw.get("detail")) {
+    // AWS's JSON services answer `{"Message": …}`, as bedrock-runtime does for its own
+    // operations (recorded live).
+    let message = raw.get("message").or_else(|| raw.get("Message"));
+    let (message, param) = match (object_error, message, raw.get("detail")) {
         (true, Some(Value::String(m)), _) => (m.trim().to_owned(), text("param")),
         (true, Some(nested), _) => validation(nested.get("detail")?, status)?,
         (_, _, Some(detail)) => validation(detail, status)?,

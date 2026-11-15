@@ -827,6 +827,114 @@ expression: outcomes
     },
     "path": "/v1beta/models/claude-opus-5-5:generateContent"
   },
+  "providers/amazon-bedrock/explain-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain quantum computing in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/us.anthropic.claude-sonnet-5:generateContent"
+  },
+  "providers/amazon-bedrock/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain quantum computing in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/us.anthropic.claude-sonnet-5:generateContent"
+  },
+  "providers/amazon-bedrock/long-term-key-format": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain quantum computing in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/us.anthropic.claude-sonnet-5:generateContent"
+  },
+  "providers/amazon-bedrock/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain quantum computing in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/us.anthropic.claude-sonnet-5:generateContent"
+  },
+  "providers/amazon-bedrock/refused-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain quantum computing in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/us.anthropic.claude-sonnet-5:generateContent"
+  },
+  "providers/amazon-bedrock/short-term-key-format": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain quantum computing in one sentence."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024
+      }
+    },
+    "path": "/v1beta/models/us.anthropic.claude-sonnet-5:generateContent"
+  },
   "providers/cloudflare-ai-gateway/insufficient-balance": {
     "body": {
       "contents": [

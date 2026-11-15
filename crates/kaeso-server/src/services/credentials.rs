@@ -30,6 +30,8 @@ pub struct Resolved {
     /// The account, and optionally the gateway, a key of a provider whose API path names the
     /// account calls, such as Cloudflare AI Gateway.
     pub scope: Option<KeyScope>,
+    /// The region an API key of a regional provider, such as Amazon Bedrock, calls.
+    pub region: Option<String>,
     keyless: bool,
     last_touched: AtomicI64,
 }
@@ -79,6 +81,7 @@ impl Resolved {
             account: None,
             google: None,
             scope: None,
+            region: None,
             keyless: true,
             last_touched: AtomicI64::new(0),
         }
@@ -397,6 +400,10 @@ fn open(
             account_id,
             gateway_id: row.gateway_id.clone(),
         }),
+        region: row
+            .location
+            .clone()
+            .filter(|_| method == AuthMethod::ApiKey),
         keyless: false,
         last_touched: AtomicI64::new(0),
     })

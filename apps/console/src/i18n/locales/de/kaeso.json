@@ -433,5 +433,10 @@
   "kaeso.overview.efficiency": "Effizienz",
   "kaeso.overview.efficiencyHint": "Wie viel Eingabe aus dem Cache kam und was eine Anfrage verbraucht",
   "kaeso.overview.noCost": "Keine Kosten in diesem Zeitraum",
-  "kaeso.overview.spendHint": "Wohin dieser Monat steuert und wohin die Kosten des Zeitraums gingen"
+  "kaeso.overview.spendHint": "Wohin dieser Monat steuert und wohin die Kosten des Zeitraums gingen",
+  "kaeso.providerKey.region": "Region",
+  "kaeso.providerKey.regionHint": "Wo {provider} die Anfragen des Schlüssels ausführt. {link}",
+  "kaeso.providerKey.regionWhere": "Regionen",
+  "kaeso.providerKey.regionPlaceholder": "Region wählen",
+  "kaeso.providerKey.regionBlocked": "Die Region des Schlüssels wählen"
 }

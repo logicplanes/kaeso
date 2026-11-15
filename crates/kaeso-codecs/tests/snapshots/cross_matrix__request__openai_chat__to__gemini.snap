@@ -861,6 +861,123 @@ expression: outcomes
     "param": null,
     "unsupported": "web_search_options"
   },
+  "providers/amazon-bedrock/greeting-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai.gpt-oss-120b-1%3A0:generateContent"
+  },
+  "providers/amazon-bedrock/guardrail-config-doc": {
+    "message": "`amazon-bedrock-guardrailConfig` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "amazon-bedrock-guardrailConfig"
+  },
+  "providers/amazon-bedrock/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai.gpt-oss-120b-1%3A0:generateContent"
+  },
+  "providers/amazon-bedrock/long-term-key-format": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai.gpt-oss-120b-1%3A0:generateContent"
+  },
+  "providers/amazon-bedrock/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai.gpt-oss-120b-1%3A0:generateContent"
+  },
+  "providers/amazon-bedrock/refused-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai.gpt-oss-120b-1%3A0:generateContent"
+  },
+  "providers/amazon-bedrock/short-term-key-format": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai.gpt-oss-120b-1%3A0:generateContent"
+  },
+  "providers/amazon-bedrock/system-stream-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/openai.gpt-oss-120b:streamGenerateContent?alt=sse"
+  },
   "providers/baseten/invalid-api-key": {
     "body": {
       "contents": [

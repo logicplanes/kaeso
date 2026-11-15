@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Authorization header is missing",
+    "type": "permission_denied_error",
+    "param": null,
+    "code": "access_denied"
+  }
+}

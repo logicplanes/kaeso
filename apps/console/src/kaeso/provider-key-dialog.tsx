@@ -24,6 +24,7 @@ import { toast } from "~/shell/toast";
 import { openBlankTab } from "./blank-tab";
 import { DeviceCode, type DeviceState } from "./device-sign-in";
 import { AccountScopeFields, isAccountId, isGatewayId } from "./account-scope-fields";
+import { RegionField } from "./region-field";
 import { ServiceAccountFields, serviceAccountBlocked } from "./service-account-fields";
 import { keyTitle, providerOptions, useProviders } from "./providers";
 
@@ -117,6 +118,7 @@ export function ProviderKeyDialog({
   const account: AccountSignInView | null = known?.account ?? null;
   const serviceAccount: ServiceAccountSignInView | null = known?.service_account ?? null;
   const accountScope = !replace && known?.account_scope ? known.account_scope : null;
+  const regions = !replace && known?.regions ? known.regions : null;
   const signingIn = method === "account" && account !== null;
   const withServiceAccount = method === "service_account" && serviceAccount !== null;
   const chosenLocation = location ?? serviceAccount?.default_location ?? "";
@@ -253,6 +255,7 @@ export function ProviderKeyDialog({
                 secret: secret.trim(),
                 make_default: makeDefault,
                 ...(accountScope ? { account_id: accountId.trim().toLowerCase(), ...(gatewayId.trim() ? { gateway_id: gatewayId.trim() } : {}) } : {}),
+                ...(regions && location ? { location } : {}),
               },
         }),
       );
@@ -286,9 +289,11 @@ export function ProviderKeyDialog({
           ? t("kaeso.providerKey.accountIdBlocked", "Give the 32-character account ID")
           : accountScope && gatewayId.trim() && !isGatewayId(gatewayId)
             ? t("kaeso.providerKey.gatewayIdBlocked", "A gateway ID has only letters, digits, hyphens and underscores")
-            : !replace && !name.trim()
-              ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
-              : undefined,
+            : regions && !location
+              ? t("kaeso.providerKey.regionBlocked", "Choose the key's region")
+              : !replace && !name.trim()
+                ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
+                : undefined,
     content: (
       <div className="flex flex-col gap-12">
         <Input
@@ -300,6 +305,7 @@ export function ProviderKeyDialog({
           autoComplete="off"
           autoFocus
         />
+        {regions && <RegionField provider={label} regions={regions} region={location} onRegion={setLocation} />}
         {accountScope && (
           <AccountScopeFields
             page={accountScope.account_page}
@@ -569,7 +575,7 @@ export function ProviderKeyDialog({
       : waiting && (replace || name.trim())
     : withServiceAccount
       ? !serviceAccountBlocked(secret) && (replace || name.trim())
-      : secret.trim() && !/\s/.test(secret.trim()) && (replace || name.trim());
+      : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && (replace || name.trim());
 
   return (
     <StepDialog

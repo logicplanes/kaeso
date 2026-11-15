@@ -9,6 +9,20 @@ Inference clouds that host open models speak [OpenAI Chat Completions](openai-ch
 
 Their fixtures are in `fixtures/openai_chat/providers/<id>/` ([fixtures](fixtures.md)).
 
+## Amazon Bedrock
+
+Sources: AWS's [endpoints](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html), [Chat Completions](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html), [Messages](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html) and [API keys](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html) guides and its [API compatibility](https://docs.aws.amazon.com/bedrock/latest/userguide/models-api-compatibility.html) table, read 2026-11-14. Not tested with a successful call: AWS publishes no reply of these routes, so `fixtures/openai_chat/providers/amazon-bedrock/` holds the guides' requests and errors answered live with made-up keys. Each key calls one region, at `https://bedrock-runtime.{region}.amazonaws.com`, with `Authorization: Bearer`; the provider's `Regional` entry in `provider.rs` lists the regions and gives each dialect its API root there.
+
+| Amazon Bedrock field | KPP | Notes |
+|---|---|---|
+| Chat Completions at `/openai/v1/chat/completions` | `EgressCtx::api_root` | `/openai/v1` takes the place of `/v1`; the body is OpenAI's. Claude models go to `/anthropic/v1/messages` instead ([Messages providers](anthropic-messages-providers.md#amazon-bedrock)). |
+| `amazon-bedrock-guardrailConfig` | extras | Bedrock's own body field for a guardrail (`requests/guardrail-config-doc`); refused when the request goes to another dialect. |
+| 401 `permission_denied_error` with `code: "access_denied"` | `KppError` | `Authentication` from the status; a malformed, an unsigned and an unknown key each have a message of their own (`errors/recorded-*-key*`). |
+| `{"Message": …}` with `x-amzn-ErrorType` | `KppError` | The shape bedrock-runtime answers its own operations with; the message is read from `Message`, the kind from the status (`errors/recorded-native-invalid-api-key`). |
+| `GET /openai/v1/models` | — | Not served (404 `UnknownOperationException`), so a model check is inconclusive and sends nothing. |
+
+A model the catalogue names no format for is served only through Bedrock's own InvokeModel and Converse APIs, whose AWS event streams KPP doesn't read, and is refused before sending. Bedrock's Responses route is unused: Responses apps reach it through Chat Completions. Token counts are refused: bedrock-runtime counts them only in its own format, at `/model/{modelId}/count-tokens`.
+
 ## Baseten
 
 Sources: Baseten's [Model APIs](https://docs.baseten.co/inference/model-apis/overview) overview, its Chat Completions, Messages and Responses OpenAPI documents, its [reasoning](https://docs.baseten.co/inference/model-apis/reasoning) and [streaming](https://docs.baseten.co/inference/streaming) guides and its [inference errors](https://docs.baseten.co/inference/errors) page, read 2026-11-10. Not tested with a successful call: the reply in `fixtures/openai_chat/providers/baseten/` is the reasoning guide's own example and the stream the streaming guide's own excerpt, completed from the schema; the error was answered live, without a valid key. Kaeso's base URL is `https://inference.baseten.co`, which takes `Authorization: Bearer`.
