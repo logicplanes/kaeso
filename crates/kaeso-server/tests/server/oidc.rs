@@ -2690,7 +2690,14 @@ async fn an_operator_chooses_the_instance_admins_sso_org_from_the_server() {
     let elsewhere = another_org(&app, "Elsewhere").await;
     let set = |org: String| {
         let app = &app;
-        async move { operator_set(&app.state, &org).await.unwrap() }
+        async move {
+            kaeso_server::services::notifications::dispatch::notifying(
+                &app.state,
+                operator_set(&app.state, &org),
+            )
+            .await
+            .unwrap()
+        }
     };
     let audited = || async {
         app.get(
@@ -2730,6 +2737,13 @@ async fn an_operator_chooses_the_instance_admins_sso_org_from_the_server() {
     );
     let events = audited().await;
     assert_eq!(events.len(), 1);
+    assert!(
+        app.mail
+            .to("owner@example.com")
+            .iter()
+            .any(|m| m.subject.contains("Admin sign-in changed")),
+        "the change notifies as it does from the console"
+    );
     assert_eq!(events[0]["actor"]["kind"], "system");
     assert_eq!(events[0]["before"], json!({ "org": null, "name": null }));
     assert_eq!(
