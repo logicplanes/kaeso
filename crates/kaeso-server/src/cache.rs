@@ -1,7 +1,9 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, LazyLock, OnceLock};
 use std::time::{Duration, Instant};
 
+use futures::FutureExt;
+use futures::future::BoxFuture;
 use moka::future::Cache;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -15,6 +17,20 @@ pub const TTL: Duration = Duration::from_secs(30);
 pub const UNSUBSCRIBED_TTL: Duration = Duration::from_secs(2);
 
 pub const REFRESH_AFTER: Duration = Duration::from_secs(20);
+
+// An entry a caller asked for within this long is loaded again before it runs out, even when
+// nobody asks for it meanwhile: an app that pauses between requests, as a person reading an
+// agent's answer does, then finds its key and its project's settings in memory. An entry left
+// alone for longer runs out as before, and every entry is still never older than `TTL`.
+pub const KEEP_WARM: Duration = Duration::from_secs(15 * 60);
+
+// How often the entries are looked over for a load ahead of time. Shorter than what is left of
+// an entry when it becomes due, `TTL - REFRESH_AFTER`, so none runs out between two looks.
+pub const WARM_EVERY: Duration = Duration::from_secs(5);
+
+// The most loads ahead of time one cache runs at once, so they never take all of the database
+// connections that requests wait for.
+const WARM_AT_ONCE: usize = 4;
 
 const KEY_BLOCK_TTL: Duration = Duration::from_secs(3600);
 // A player asks for a finished video in many ranges while it plays and seeks; the job's files
@@ -104,10 +120,70 @@ impl Flights {
     }
 }
 
+type Reload<V> = Arc<dyn Fn() -> BoxFuture<'static, Result<Option<V>, String>> + Send + Sync>;
+
+// A day before the first use, so a use can be dated back, as the tests do.
+static EPOCH: LazyLock<Instant> = LazyLock::new(|| {
+    let now = Instant::now();
+    now.checked_sub(Duration::from_secs(86_400)).unwrap_or(now)
+});
+
+fn millis_since_epoch(at: Instant) -> u64 {
+    u64::try_from(at.saturating_duration_since(*EPOCH).as_millis()).unwrap_or(u64::MAX)
+}
+
+// Shared by every copy of one entry and kept across its reloads: when a caller last asked for
+// it, and how to load it again ahead of time.
+struct Warm<V> {
+    used: AtomicU64,
+    reload: OnceLock<Reload<V>>,
+}
+
+impl<V: Send + Sync + 'static> Warm<V> {
+    fn new() -> Arc<Warm<V>> {
+        Arc::new(Warm {
+            used: AtomicU64::new(millis_since_epoch(Instant::now())),
+            reload: OnceLock::new(),
+        })
+    }
+
+    fn used(&self) {
+        self.used
+            .store(millis_since_epoch(Instant::now()), Ordering::Relaxed);
+    }
+
+    fn wanted(&self, now: Instant) -> bool {
+        let idle = millis_since_epoch(now).saturating_sub(self.used.load(Ordering::Relaxed));
+        u128::from(idle) <= KEEP_WARM.as_millis()
+    }
+
+    // The first loader a caller hands over is kept; every caller of one key loads the same row.
+    fn reload_with<E, F, Fut>(&self, load: &F)
+    where
+        F: FnOnce() -> Fut + Clone + Send + Sync + 'static,
+        Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
+        E: std::fmt::Display + Send + 'static,
+    {
+        if self.reload.get().is_some() {
+            return;
+        }
+        let load = load.clone();
+        let _ = self.reload.set(Arc::new(move || {
+            let load = load.clone();
+            async move { load().await.map_err(|e| e.to_string()) }.boxed()
+        }));
+    }
+
+    fn reload(&self) -> Option<Reload<V>> {
+        self.reload.get().cloned()
+    }
+}
+
 #[derive(Clone)]
 struct Held<V> {
     value: Arc<V>,
     until: Instant,
+    warm: Arc<Warm<V>>,
 }
 
 const VERSION_TTL: Duration = Duration::from_secs(600);
@@ -208,6 +284,7 @@ where
             && let Some(h) = self.memory.get(key).await
         {
             if h.until > Instant::now() {
+                h.warm.used();
                 return Some(h);
             }
             self.memory.invalidate(key).await;
@@ -217,6 +294,7 @@ where
             Held {
                 value,
                 until: now + UNSUBSCRIBED_TTL,
+                warm: Warm::new(),
             }
         })
     }
@@ -239,31 +317,103 @@ where
         Box::pin(self.load_once(key, seen, load)).await
     }
 
+    // Like `get_or_load`, and the entry is loaded again ahead of time: in the background once a
+    // caller finds it in its last third, and by `keep_warm` while callers keep asking for it.
     pub async fn get_or_refresh<E, F, Fut>(&self, key: &str, load: F) -> Result<Option<Arc<V>>, E>
     where
-        F: FnOnce() -> Fut + Send + 'static,
+        F: FnOnce() -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
         E: std::fmt::Display + Send + 'static,
     {
         let seen = self.subscription.seen();
         if let Some(h) = self.held(key, seen).await {
+            h.warm.reload_with(&load);
             self.refresh_if_due(key, seen, &h, load).await;
             return Ok(Some(h.value));
         }
-        Box::pin(self.load_once(key, seen, load)).await
+        let reload = load.clone();
+        let loaded = Box::pin(self.load_once(key, seen, load)).await?;
+        self.keep_warm_with(key, &reload).await;
+        Ok(loaded)
     }
 
     // Like `cached`, for a caller that loads a missing entry its own way but keeps a hot one fresh.
     pub async fn cached_or_refresh<E, F, Fut>(&self, key: &str, load: F) -> Option<Arc<V>>
     where
-        F: FnOnce() -> Fut + Send + 'static,
+        F: FnOnce() -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
         E: std::fmt::Display + Send + 'static,
     {
         let seen = self.subscription.seen();
         let h = self.held(key, seen).await?;
+        h.warm.reload_with(&load);
         self.refresh_if_due(key, seen, &h, load).await;
         Some(h.value)
+    }
+
+    // Hands an entry loaded its own way, such as with a check before the load, the loader that
+    // keeps it warm.
+    pub async fn keep_warm_with<E, F, Fut>(&self, key: &str, load: &F)
+    where
+        F: FnOnce() -> Fut + Clone + Send + Sync + 'static,
+        Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
+        E: std::fmt::Display + Send + 'static,
+    {
+        if let Some(h) = self.memory.get(key).await {
+            h.warm.reload_with(load);
+        }
+    }
+
+    // Loads again, before they run out, the entries callers asked for within `KEEP_WARM`.
+    // Returns how many it loaded.
+    async fn keep_warm(&self) -> usize {
+        let seen = self.subscription.seen();
+        if !seen.subscribed {
+            return 0;
+        }
+        let now = Instant::now();
+        let due: Vec<(String, Arc<Warm<V>>, Reload<V>)> = self
+            .memory
+            .iter()
+            .filter(|(_, h)| {
+                h.until > now
+                    && h.until.saturating_duration_since(now) <= self.fresh_enough()
+                    && h.warm.wanted(now)
+            })
+            .filter_map(|(key, h)| {
+                let reload = h.warm.reload()?;
+                Some((key.as_ref().clone(), h.warm, reload))
+            })
+            .collect();
+        let mut loaded = 0;
+        let mut due = due.into_iter();
+        loop {
+            let mut running = Vec::with_capacity(WARM_AT_ONCE);
+            for (key, warm, reload) in due.by_ref().take(WARM_AT_ONCE) {
+                running.push(self.warm_one(key, seen, warm, reload));
+            }
+            if running.is_empty() {
+                return loaded;
+            }
+            loaded += futures::future::join_all(running)
+                .await
+                .into_iter()
+                .sum::<usize>();
+        }
+    }
+
+    async fn warm_one(
+        &self,
+        key: String,
+        seen: Seen,
+        warm: Arc<Warm<V>>,
+        reload: Reload<V>,
+    ) -> usize {
+        let Ok(guard) = self.flights.lane(&key).await.try_lock_owned() else {
+            return 0;
+        };
+        self.reload(key, seen, || reload(), guard, warm).await;
+        1
     }
 
     fn fresh_enough(&self) -> Duration {
@@ -282,7 +432,9 @@ where
             && h.until.saturating_duration_since(Instant::now()) <= self.fresh_enough()
             && let Ok(guard) = self.flights.lane(key).await.try_lock_owned()
         {
-            self.refresh(key, seen, load, guard);
+            let cache = self.clone();
+            let (key, warm) = (key.to_owned(), h.warm.clone());
+            tokio::spawn(async move { cache.reload(key, seen, load, guard, warm).await });
         }
     }
 
@@ -335,55 +487,62 @@ where
         Ok(Some(value))
     }
 
-    fn refresh<E, F, Fut>(&self, key: &str, seen: Seen, load: F, guard: OwnedMutexGuard<()>)
-    where
-        F: FnOnce() -> Fut + Send + 'static,
-        Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
-        E: std::fmt::Display + Send + 'static,
+    // The entry keeps its `Warm`, so a reload neither counts as a use nor loses its loader.
+    async fn reload<E, F, Fut>(
+        &self,
+        key: String,
+        seen: Seen,
+        load: F,
+        guard: OwnedMutexGuard<()>,
+        warm: Arc<Warm<V>>,
+    ) where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Option<V>, E>>,
+        E: std::fmt::Display,
     {
-        let cache = self.clone();
-        let key = key.to_owned();
         let dropped = self.dropped.load(Ordering::Acquire);
-        tokio::spawn(async move {
-            // Another instance may have refreshed the shared entry already; then it is enough.
-            let version = match cache.valkey_get(&key).await {
-                Some(Shared::Found(value, left)) if left > cache.fresh_enough() => {
-                    if cache.dropped.load(Ordering::Acquire) == dropped {
-                        cache.remember(&key, Arc::new(value), seen, left).await;
-                    }
-                    drop(guard);
-                    return;
+        // Another instance may have refreshed the shared entry already; then it is enough.
+        let version = match self.valkey_get(&key).await {
+            Some(Shared::Found(value, left)) if left > self.fresh_enough() => {
+                if self.dropped.load(Ordering::Acquire) == dropped {
+                    self.keep(&key, Arc::new(value), seen, left, warm).await;
                 }
-                Some(Shared::Missing(version)) => Some(version),
-                Some(Shared::Found(..)) => cache.version(&key).await,
-                None => None,
-            };
-            let loaded = load().await;
-            let undisturbed =
-                cache.subscription.still(seen) && cache.dropped.load(Ordering::Acquire) == dropped;
-            match loaded {
-                Ok(Some(value)) if undisturbed => {
-                    let value = Arc::new(value);
-                    let kept = match version {
-                        Some(v) => cache.valkey_fill(&key, &value, &v).await,
-                        None => true,
-                    };
-                    if kept {
-                        cache.remember(&key, value, seen, TTL).await;
-                    }
-                }
-                Ok(Some(_)) => {}
-                Ok(None) if undisturbed => cache.drop_local(&key).await,
-                Ok(None) => {}
-                Err(e) => {
-                    tracing::debug!(cache = cache.name, error = %e, "cannot refresh a cache entry ahead of time; it expires as usual");
+                drop(guard);
+                return;
+            }
+            Some(Shared::Missing(version)) => Some(version),
+            Some(Shared::Found(..)) => self.version(&key).await,
+            None => None,
+        };
+        let loaded = load().await;
+        let undisturbed =
+            self.subscription.still(seen) && self.dropped.load(Ordering::Acquire) == dropped;
+        match loaded {
+            Ok(Some(value)) if undisturbed => {
+                let value = Arc::new(value);
+                let kept = match version {
+                    Some(v) => self.valkey_fill(&key, &value, &v).await,
+                    None => true,
+                };
+                if kept {
+                    self.keep(&key, value, seen, TTL, warm).await;
                 }
             }
-            drop(guard);
-        });
+            Ok(Some(_)) => {}
+            Ok(None) if undisturbed => self.drop_local(&key).await,
+            Ok(None) => {}
+            Err(e) => {
+                tracing::debug!(cache = self.name, error = %e, "cannot refresh a cache entry ahead of time; it expires as usual");
+            }
+        }
+        drop(guard);
     }
 
     async fn remember(&self, key: &str, value: Arc<V>, seen: Seen, left: Duration) {
+        self.keep(key, value, seen, left, Warm::new()).await;
+    }
+
+    async fn keep(&self, key: &str, value: Arc<V>, seen: Seen, left: Duration, warm: Arc<Warm<V>>) {
         if self.subscription.still(seen) {
             let now = Instant::now();
             self.memory
@@ -392,6 +551,7 @@ where
                     Held {
                         value,
                         until: now + left.min(TTL),
+                        warm,
                     },
                 )
                 .await;
@@ -539,6 +699,7 @@ pub struct MemoryCache<V: Send + Sync + 'static> {
 struct Loaded<V> {
     value: Arc<V>,
     at: Instant,
+    warm: Arc<Warm<V>>,
 }
 
 impl<V> Clone for Loaded<V> {
@@ -546,6 +707,7 @@ impl<V> Clone for Loaded<V> {
         Loaded {
             value: self.value.clone(),
             at: self.at,
+            warm: self.warm.clone(),
         }
     }
 }
@@ -596,11 +758,12 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
     }
 
     async fn loaded(&self, key: &str, seen: Seen) -> Option<Loaded<V>> {
-        if seen.subscribed {
-            self.memory.get(key).await
-        } else {
-            None
+        if !seen.subscribed {
+            return None;
         }
+        let l = self.memory.get(key).await?;
+        l.warm.used();
+        Some(l)
     }
 
     async fn held(&self, key: &str, seen: Seen) -> Option<Arc<V>> {
@@ -637,53 +800,118 @@ impl<V: Send + Sync + 'static> MemoryCache<V> {
         load: F,
     ) -> Result<Option<Arc<V>>, E>
     where
-        F: FnOnce() -> Fut + Send + 'static,
+        F: FnOnce() -> Fut + Clone + Send + Sync + 'static,
         Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
         E: std::fmt::Display + Send + 'static,
     {
         let key = format!("{group}:{rest}");
         let seen = self.subscription.seen();
         if let Some(l) = self.loaded(&key, seen).await {
+            l.warm.reload_with(&load);
             if l.at.elapsed() >= self.refresh_after
                 && let Ok(guard) = self.flights.lane(&key).await.try_lock_owned()
             {
-                self.refresh(key, seen, load, guard);
+                let cache = self.clone();
+                tokio::spawn(async move { cache.reload(key, seen, load, guard, l.warm).await });
             }
             return Ok(Some(l.value));
         }
         if let Some(v) = self.fallback.get(&key).await {
             return Ok(Some(v));
         }
-        Box::pin(self.load_once(key, seen, load)).await
+        let reload = load.clone();
+        let loaded = Box::pin(self.load_once(key.clone(), seen, load)).await?;
+        if let Some(l) = self.memory.get(&key).await {
+            l.warm.reload_with(&reload);
+        }
+        Ok(loaded)
     }
 
-    fn refresh<E, F, Fut>(&self, key: String, seen: Seen, load: F, guard: OwnedMutexGuard<()>)
-    where
-        F: FnOnce() -> Fut + Send + 'static,
-        Fut: Future<Output = Result<Option<V>, E>> + Send + 'static,
-        E: std::fmt::Display + Send + 'static,
+    // The entry keeps its `Warm`, so a reload neither counts as a use nor loses its loader.
+    async fn reload<E, F, Fut>(
+        &self,
+        key: String,
+        seen: Seen,
+        load: F,
+        guard: OwnedMutexGuard<()>,
+        warm: Arc<Warm<V>>,
+    ) where
+        F: FnOnce() -> Fut,
+        Fut: Future<Output = Result<Option<V>, E>>,
+        E: std::fmt::Display,
     {
-        let cache = self.clone();
         let dropped = self.dropped.load(Ordering::Acquire);
-        tokio::spawn(async move {
-            let loaded = load().await;
-            let undisturbed =
-                cache.subscription.still(seen) && cache.dropped.load(Ordering::Acquire) == dropped;
-            match loaded {
-                Ok(Some(value)) if undisturbed => cache.remember(key, Arc::new(value)).await,
-                Ok(None) if undisturbed => cache.memory.invalidate(&key).await,
-                Ok(_) => {}
-                Err(e) => {
-                    tracing::debug!(cache = cache.name, error = %e, "cannot refresh a cache entry ahead of time; it expires as usual");
-                }
+        let loaded = load().await;
+        let undisturbed =
+            self.subscription.still(seen) && self.dropped.load(Ordering::Acquire) == dropped;
+        match loaded {
+            Ok(Some(value)) if undisturbed => self.keep(key, Arc::new(value), warm).await,
+            Ok(None) if undisturbed => self.memory.invalidate(&key).await,
+            Ok(_) => {}
+            Err(e) => {
+                tracing::debug!(cache = self.name, error = %e, "cannot refresh a cache entry ahead of time; it expires as usual");
             }
-            drop(guard);
-        });
+        }
+        drop(guard);
+    }
+
+    // Loads again, before they run out, the entries callers asked for within `KEEP_WARM`.
+    // Returns how many it loaded.
+    async fn keep_warm(&self) -> usize {
+        let seen = self.subscription.seen();
+        if !seen.subscribed {
+            return 0;
+        }
+        let now = Instant::now();
+        let due: Vec<(String, Arc<Warm<V>>, Reload<V>)> = self
+            .memory
+            .iter()
+            .filter(|(_, l)| {
+                now.saturating_duration_since(l.at) >= self.refresh_after && l.warm.wanted(now)
+            })
+            .filter_map(|(key, l)| {
+                let reload = l.warm.reload()?;
+                Some((key.as_ref().clone(), l.warm, reload))
+            })
+            .collect();
+        let mut loaded = 0;
+        let mut due = due.into_iter();
+        loop {
+            let mut running = Vec::with_capacity(WARM_AT_ONCE);
+            for (key, warm, reload) in due.by_ref().take(WARM_AT_ONCE) {
+                running.push(self.warm_one(key, seen, warm, reload));
+            }
+            if running.is_empty() {
+                return loaded;
+            }
+            loaded += futures::future::join_all(running)
+                .await
+                .into_iter()
+                .sum::<usize>();
+        }
+    }
+
+    async fn warm_one(
+        &self,
+        key: String,
+        seen: Seen,
+        warm: Arc<Warm<V>>,
+        reload: Reload<V>,
+    ) -> usize {
+        let Ok(guard) = self.flights.lane(&key).await.try_lock_owned() else {
+            return 0;
+        };
+        self.reload(key, seen, || reload(), guard, warm).await;
+        1
     }
 
     async fn remember(&self, key: String, value: Arc<V>) {
+        self.keep(key, value, Warm::new()).await;
+    }
+
+    async fn keep(&self, key: String, value: Arc<V>, warm: Arc<Warm<V>>) {
         let at = Instant::now();
-        self.memory.insert(key, Loaded { value, at }).await;
+        self.memory.insert(key, Loaded { value, at, warm }).await;
     }
 
     async fn load_once<E, F, Fut>(
@@ -881,6 +1109,42 @@ impl Caches {
 
     pub fn is_subscribed(&self) -> bool {
         self.subscription.seen().subscribed
+    }
+
+    // One look over every cache that loads its entries ahead of time; see `KEEP_WARM`.
+    pub async fn keep_warm(&self) -> usize {
+        let (a, b, c, d, e, f, g, h, i, j, k) = tokio::join!(
+            self.api_keys.keep_warm(),
+            self.org_keys.keep_warm(),
+            self.credentials.keep_warm(),
+            self.project_models.keep_warm(),
+            self.project_limits.keep_warm(),
+            self.log_settings.keep_warm(),
+            self.response_cache.keep_warm(),
+            self.sessions.keep_warm(),
+            self.portal.keep_warm(),
+            self.portal_tokens.keep_warm(),
+            self.mcp_credentials.keep_warm(),
+        );
+        a + b + c + d + e + f + g + h + i + j + k
+    }
+
+    pub fn spawn_keep_warm(&self, shutdown: tokio_util::sync::CancellationToken) {
+        let caches = self.clone();
+        tokio::spawn(async move {
+            let mut every = tokio::time::interval(WARM_EVERY);
+            every.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            loop {
+                tokio::select! {
+                    () = shutdown.cancelled() => return,
+                    _ = every.tick() => {}
+                }
+                let loaded = caches.keep_warm().await;
+                if loaded > 0 {
+                    tracing::debug!(loaded, "loaded cache entries again before they ran out");
+                }
+            }
+        });
     }
 
     async fn apply(&self, event: Invalidation) {
@@ -1354,5 +1618,123 @@ mod tests {
             tokio::task::yield_now().await;
         }
         assert!(cache.cached("k").await.is_none());
+    }
+
+    fn counting(
+        loads: &Arc<AtomicUsize>,
+    ) -> impl FnOnce() -> futures::future::Ready<Result<Option<String>, String>>
+    + Clone
+    + Send
+    + Sync
+    + 'static {
+        let loads = loads.clone();
+        move || {
+            let n = loads.fetch_add(1, Ordering::SeqCst) + 1;
+            futures::future::ready(Ok(Some(format!("v{n}"))))
+        }
+    }
+
+    fn idle_since(warm: &Warm<String>, ago: Duration) {
+        let at = Instant::now().checked_sub(ago).unwrap_or_else(Instant::now);
+        warm.used.store(millis_since_epoch(at), Ordering::Relaxed);
+    }
+
+    #[tokio::test]
+    async fn an_entry_asked_for_recently_is_loaded_again_before_it_runs_out() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let mut cache = cache(&subscription);
+        cache.refresh_after = Duration::ZERO;
+        let loads = Arc::new(AtomicUsize::new(0));
+        let first = cache.get_or_refresh("k", counting(&loads)).await;
+        assert_eq!(first, Ok(Some(Arc::new("v1".to_owned()))));
+        assert_eq!(cache.keep_warm().await, 1);
+        assert_eq!(cache.cached("k").await.as_deref(), Some(&"v2".to_owned()));
+        assert_eq!(
+            cache.keep_warm().await,
+            1,
+            "the loader stays with the entry"
+        );
+        assert_eq!(cache.cached("k").await.as_deref(), Some(&"v3".to_owned()));
+        assert_eq!(loads.load(Ordering::SeqCst), 3);
+    }
+
+    #[tokio::test]
+    async fn an_entry_nobody_asked_for_lately_is_left_to_run_out() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let mut cache = cache(&subscription);
+        cache.refresh_after = Duration::ZERO;
+        let loads = Arc::new(AtomicUsize::new(0));
+        let _ = cache.get_or_refresh("k", counting(&loads)).await;
+        let held = cache
+            .memory
+            .get("k")
+            .await
+            .unwrap_or_else(|| panic!("kept"));
+        idle_since(&held.warm, KEEP_WARM + Duration::from_secs(1));
+        assert_eq!(cache.keep_warm().await, 0);
+        assert_eq!(loads.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn an_entry_with_time_left_is_not_loaded_ahead_of_time() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let cache = cache(&subscription);
+        let loads = Arc::new(AtomicUsize::new(0));
+        let _ = cache.get_or_refresh("k", counting(&loads)).await;
+        assert_eq!(cache.keep_warm().await, 0);
+        assert_eq!(loads.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn an_entry_loaded_without_a_loader_is_kept_warm_once_it_is_handed_one() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let mut cache = cache(&subscription);
+        cache.refresh_after = Duration::ZERO;
+        let loads = Arc::new(AtomicUsize::new(0));
+        let load = counting(&loads);
+        let _ = cache.get_or_load("k", load.clone()).await;
+        assert_eq!(cache.keep_warm().await, 0, "no loader yet");
+        cache.keep_warm_with("k", &load).await;
+        assert_eq!(cache.keep_warm().await, 1);
+        assert_eq!(cache.cached("k").await.as_deref(), Some(&"v2".to_owned()));
+    }
+
+    #[tokio::test]
+    async fn nothing_is_loaded_ahead_of_time_without_the_subscription() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let mut cache = cache(&subscription);
+        cache.refresh_after = Duration::ZERO;
+        let loads = Arc::new(AtomicUsize::new(0));
+        let _ = cache.get_or_refresh("k", counting(&loads)).await;
+        subscription.set(false);
+        assert_eq!(cache.keep_warm().await, 0);
+        assert_eq!(loads.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn a_memory_entry_asked_for_recently_is_loaded_again_before_it_runs_out() {
+        let subscription = Arc::new(Subscription::default());
+        subscription.set(true);
+        let cache = memory_cache(&subscription);
+        let loads = Arc::new(AtomicUsize::new(0));
+        let first = cache
+            .get_or_refresh("org", "p:openai", counting(&loads))
+            .await;
+        assert_eq!(first, Ok(Some(Arc::new("v1".to_owned()))));
+        assert_eq!(cache.keep_warm().await, 1);
+        assert_eq!(current(&cache).await.as_deref(), Some(&"v2".to_owned()));
+        let loaded = cache
+            .memory
+            .get("org:p:openai")
+            .await
+            .unwrap_or_else(|| panic!("kept"));
+        idle_since(&loaded.warm, KEEP_WARM + Duration::from_secs(1));
+        assert_eq!(cache.keep_warm().await, 0);
+        assert_eq!(loads.load(Ordering::SeqCst), 2);
     }
 }
