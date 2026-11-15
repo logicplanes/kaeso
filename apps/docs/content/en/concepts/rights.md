@@ -280,6 +280,7 @@ Every route under `instance/*` checks one of these rights. An instance admin's c
 | `instance.orgs.view` | View organizations | See every organization with its members, projects and usage. |  |
 | `instance.orgs.manage` | Manage organizations | Create and rename organizations, appoint owners and schedule or cancel their deletion. | sensitive; needs `instance.orgs.view` |
 | `instance.audit_log.view` | View instance audit log | Read the instance audit log. |  |
+| `instance.audit_log.export` | Export instance audit log | Export the instance audit log. | needs `instance.audit_log.view` |
 
 ## Account rights
 

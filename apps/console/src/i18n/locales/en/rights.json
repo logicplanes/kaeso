@@ -56,6 +56,8 @@
   "rights.guardrailsManage.name": "Manage guardrails",
   "rights.guardrailsView.description": "See the organization's guardrails and the projects that use them (never their secrets).",
   "rights.guardrailsView.name": "View guardrails",
+  "rights.instanceAuditLogExport.description": "Export the instance audit log.",
+  "rights.instanceAuditLogExport.name": "Export instance audit log",
   "rights.instanceAuditLogView.description": "Read the instance audit log.",
   "rights.instanceAuditLogView.name": "View instance audit log",
   "rights.instanceOrgsManage.description": "Create and rename organizations, appoint owners and schedule or cancel their deletion.",

@@ -465,7 +465,9 @@ function AuditEventSheet({
   );
 }
 
-export function AuditExportButton({ org, filters }: { org: string; filters: AuditFilters }) {
+export function AuditExportButton({ scope, filters }: { scope: { org: string } | { instance: true }; filters: AuditFilters }) {
+  const base = "org" in scope ? `/platform/v1/orgs/${scope.org}/audit-log` : "/platform/v1/instance/audit-log";
+  const name = "org" in scope ? `kaeso-audit-log-${scope.org}.jsonl` : "kaeso-instance-audit-log.jsonl";
   const exportLog = () => {
     if (showExportProgress()) return;
     const q = new URLSearchParams(Object.entries(auditParams(filters)).map(([k, v]) => [k, String(v)]));
@@ -473,9 +475,9 @@ export function AuditExportButton({ org, filters }: { org: string; filters: Audi
       title: (size) =>
         size ? t("kaeso.audit.exportingSize", "Exporting audit events · {size}", { size }) : t("kaeso.audit.exporting", "Exporting audit events"),
       done: t("kaeso.audit.exported", "Audit log exported"),
-      url: `/platform/v1/orgs/${org}/audit-log/export?${q.toString()}`,
-      check: `/platform/v1/orgs/${org}/audit-log?${q.toString()}&limit=1`,
-      file: { name: `kaeso-audit-log-${org}.jsonl`, description: t("kaeso.audit.jsonLines", "JSON Lines"), mime: "application/x-ndjson", extension: "jsonl" },
+      url: `${base}/export?${q.toString()}`,
+      check: `${base}?${q.toString()}&limit=1`,
+      file: { name, description: t("kaeso.audit.jsonLines", "JSON Lines"), mime: "application/x-ndjson", extension: "jsonl" },
     });
   };
   return (

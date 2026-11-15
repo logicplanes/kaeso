@@ -280,6 +280,7 @@ Jede Route unter `instance/*` prüft eines dieser Rechte. Die Konsolensitzung ei
 | `instance.orgs.view` | Organisationen ansehen | Jede Organisation mit ihren Mitgliedern, Projekten und ihrer Nutzung sehen. |  |
 | `instance.orgs.manage` | Organisationen verwalten | Organisationen erstellen und umbenennen, Inhaber ernennen und ihre Löschung planen oder abbrechen. | sensibel; erfordert `instance.orgs.view` |
 | `instance.audit_log.view` | Instanz-Audit-Log ansehen | Das Audit-Log der Instanz lesen. |  |
+| `instance.audit_log.export` | Instanz-Audit-Log exportieren | Das Audit-Log der Instanz exportieren. | erfordert `instance.audit_log.view` |
 
 ## Kontorechte
 

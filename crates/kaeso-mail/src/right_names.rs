@@ -89,6 +89,12 @@ const NAMES: &[(&str, &str, &str, &str)] = &[
         "查看防护规则",
     ),
     (
+        "instance.audit_log.export",
+        "Export instance audit log",
+        "Instanz-Audit-Log exportieren",
+        "导出实例审计日志",
+    ),
+    (
         "instance.audit_log.view",
         "View instance audit log",
         "Instanz-Audit-Log ansehen",

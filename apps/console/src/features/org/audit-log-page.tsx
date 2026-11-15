@@ -55,7 +55,7 @@ export function OrgAuditLogPage({ org, search }: { org: string; search: AuditSea
       hidden={t("org.auditLog.hidden", "You can't see the audit log here")}
       right="audit_log.view"
       description={t("org.auditLog.description", "Every change in the organization: who made it, when and what.")}
-      actions={rights.has("audit_log.export") ? <AuditExportButton org={org} filters={filtersOf(search)} /> : undefined}
+      actions={rights.has("audit_log.export") ? <AuditExportButton scope={{ org }} filters={filtersOf(search)} /> : undefined}
     >
       <AuditLog
         scope={{ org }}

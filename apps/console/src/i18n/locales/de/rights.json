@@ -223,6 +223,8 @@
   "rights.instanceUsersManage.name": "Benutzer verwalten",
   "rights.instanceUsersView.description": "Jedes Konto der Instanz und seine Organisationen sehen.",
   "rights.instanceUsersView.name": "Benutzer ansehen",
+  "rights.instanceAuditLogExport.description": "Das Audit-Log der Instanz exportieren.",
+  "rights.instanceAuditLogExport.name": "Instanz-Audit-Log exportieren",
   "rights.webhooksView.name": "Webhooks ansehen",
   "rights.webhooksView.description": "Die Webhooks der Organisation sehen, was sie empfangen und ihre letzten Zustellungen (nie Geheimnisse).",
   "rights.webhooksManage.name": "Webhooks verwalten",
