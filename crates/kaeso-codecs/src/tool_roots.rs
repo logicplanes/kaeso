@@ -70,6 +70,19 @@ struct RootKeys<'a> {
     all_of: Option<&'a RawValue>,
 }
 
+// Whether a root combines schemas and whether it lacks a `type`, from one scan of its keys; a
+// root that repeats a key is read by serde_json, as before.
+fn root_shape(raw: &RawJson) -> (bool, bool) {
+    match crate::scan::members(raw.get()) {
+        Some(keys) => (
+            keys.iter()
+                .any(|(k, v)| matches!(k.as_ref(), "oneOf" | "anyOf" | "allOf") && *v != "null"),
+            !keys.iter().any(|(k, v)| k == "type" && *v != "null"),
+        ),
+        None => (has_combinator(raw), lacks_type(raw)),
+    }
+}
+
 fn has_combinator(raw: &RawJson) -> bool {
     serde_json::from_str::<RootKeys<'_>>(raw.get())
         .is_ok_and(|k| k.one_of.is_some() || k.any_of.is_some() || k.all_of.is_some())
@@ -108,8 +121,9 @@ pub(crate) fn for_target(
         let Some(raw) = f.parameters.as_ref() else {
             continue;
         };
-        if !has_combinator(raw) {
-            if typed(wanted) && lacks_type(raw) {
+        let (combinator, untyped_root) = root_shape(raw);
+        if !combinator {
+            if typed(wanted) && untyped_root {
                 untyped.push(i);
             }
             continue;
@@ -905,4 +919,35 @@ fn close(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod root_shape_tests {
+    use super::*;
+
+    #[test]
+    fn one_scan_of_the_root_answers_as_serde_json_does() {
+        for json in [
+            r#"{"type":"object","properties":{"a":{"type":"string"}}}"#,
+            r#"{"properties":{"a":{"type":"string","oneOf":[]}}}"#,
+            r#"{"anyOf":[{"type":"string"},{"type":"number"}]}"#,
+            r#"{"oneOf":null,"type":null}"#,
+            r#"{ "allOf" : [ {} ] , "type" : "object" }"#,
+            r#"{"\u0074ype":"object"}"#,
+            r#"{"type":"object","type":"object"}"#,
+            r#"{"oneOf":[],"oneOf":[]}"#,
+            r#"{"x":1,"x":2,"anyOf":[{}]}"#,
+            r#"{"x":1,"x":2}"#,
+            "{}",
+            "[]",
+            "true",
+        ] {
+            let raw = RawJson::from_string(json.to_owned()).unwrap_or_else(|e| panic!("{e}"));
+            assert_eq!(
+                root_shape(&raw),
+                (has_combinator(&raw), lacks_type(&raw)),
+                "{json}"
+            );
+        }
+    }
 }
