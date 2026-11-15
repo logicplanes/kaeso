@@ -903,6 +903,9 @@ const messages = (): Rule[] => [
     (v) => t("errors.model.effortLevels", "The model `{model}` supports the effort levels {levels}; `{effort}` is not one of them.", v),
     { levels: "codeList" },
   ),
+  rule("errors.modelApi.logContentHeader", () =>
+    t("errors.modelApi.logContentHeader", "The header `kaeso-log-content` takes only `off`, which keeps this request's content out of the request log."),
+  ),
   rule("errors.modelApi.timeoutHeader", () =>
     t("errors.modelApi.timeoutHeader", "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600."),
   ),

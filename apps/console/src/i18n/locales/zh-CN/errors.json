@@ -769,5 +769,6 @@
   "errors.model.rerankOnly": "模型 `{model}` 是重排序模型；请将其发送到 `/v1/rerank`。",
   "errors.model.generationNoRerank": "模型 `{model}` 是生成模型，无法对文档重排序。",
   "errors.model.embeddingsNoRerank": "模型 `{model}` 是嵌入模型，无法对文档重排序。",
-  "errors.modelApi.timeoutHeader": "请求头 `kaeso-timeout` 必须是 1 到 3600 之间的整数秒。"
+  "errors.modelApi.timeoutHeader": "请求头 `kaeso-timeout` 必须是 1 到 3600 之间的整数秒。",
+  "errors.modelApi.logContentHeader": "请求头 `kaeso-log-content` 只接受 `off`，它会让此请求的内容不进入请求日志。"
 }
