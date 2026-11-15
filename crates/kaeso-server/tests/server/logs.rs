@@ -2465,3 +2465,102 @@ async fn kaeso_log_content_off_keeps_one_requests_content_out_of_the_log() {
     );
     assert!(!without.to_string().contains("4111"), "{without}");
 }
+
+#[tokio::test]
+async fn the_request_log_filters_by_alias_fallback_endpoint_and_cost() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let base_row = || {
+        row(
+            org.uuid(),
+            project.uuid(),
+            now - time::Duration::minutes(1),
+            1,
+        )
+        .0
+    };
+    // Costs are stored with 12 decimal places: 0.5 USD is 5 * 10^11.
+    let usd = |micro: i128| micro * 1_000_000;
+    let rows = [
+        LogRow {
+            alias: "fast".into(),
+            fallbacks: "[{\"status\":529}]".into(),
+            endpoint: "chat/completions".into(),
+            cost: usd(600_000),
+            ..base_row()
+        },
+        LogRow {
+            alias: "fast".into(),
+            endpoint: "chat/completions".into(),
+            cost: usd(500_000),
+            ..base_row()
+        },
+        LogRow {
+            alias: "fastest".into(),
+            endpoint: "responses".into(),
+            cost: usd(499_999),
+            ..base_row()
+        },
+        LogRow {
+            endpoint: "messages".into(),
+            cost: 0,
+            ..base_row()
+        },
+    ];
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
+        .await
+        .unwrap();
+    let count = |query: &'static str| {
+        let env = &env;
+        async move { logs(env, query).await["data"].as_array().unwrap().len() }
+    };
+    assert_eq!(count("?alias=fast").await, 2, "the exact name");
+    assert_eq!(count("?alias=fast&fell_back=true").await, 1);
+    assert_eq!(count("?fell_back=false").await, 3);
+    assert_eq!(count("?endpoint=chat/completions").await, 2);
+    assert_eq!(count("?endpoint=messages").await, 1);
+    assert_eq!(count("?min_cost=0.5").await, 2, "0.499999 is below it");
+    assert_eq!(count("?min_cost=0.500000000000").await, 2);
+    assert_eq!(count("?min_cost=0").await, 4);
+    assert_eq!(count("?alias=fast&min_cost=0.55").await, 1);
+
+    for (query, param) in [
+        ("?endpoint=chat", "endpoint"),
+        ("?min_cost=-1", "min_cost"),
+        ("?min_cost=cheap", "min_cost"),
+        ("?min_cost=0.0000000000001", "min_cost"),
+    ] {
+        let r = env
+            .app
+            .get(&format!("{}/logs{query}", base(&env)), &env.owner.cookie)
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{query}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], param, "{query}");
+    }
+
+    let req = axum::http::Request::builder()
+        .uri(format!(
+            "/platform/v1{}/logs/export?alias=fast&fell_back=true",
+            base(&env)
+        ))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let export = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    assert_eq!(
+        std::str::from_utf8(&export).unwrap().lines().count(),
+        1,
+        "the export takes the same filters"
+    );
+}

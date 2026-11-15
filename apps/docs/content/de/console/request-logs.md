@@ -13,7 +13,7 @@ Kaeso protokolliert jede Modellanfrage: das Modell, den Anbieter, den Status, To
 
 Öffnen Sie die Seite **Anfrageprotokolle** eines Projekts. Sie listet Anfragen, die neuesten zuerst, aus der letzten Stunde, den letzten 24 Stunden, 7 Tagen oder 30 Tagen oder einem selbst gewählten Zeitraum.
 
-- **Filter hinzufügen** grenzt die Liste nach Schlüssel, Mitglied, Modell, Anbieter, Status, Fehlerart, Streaming und Quelle ein: die API oder der Playground. **Nur fehlgeschlagene** behält die Fehler.
+- **Filter hinzufügen** grenzt die Liste nach Schlüssel, Mitglied, Modell, Anbieter, Alias, App- und Anbieterformat, Endpunkt, Status, Fehlerart, Streaming, Quelle (die API oder der Playground) und Kosten ab einem Betrag ein. **Nur fehlgeschlagene** behält die Fehler und **Zurückgefallen** die Anfragen, deren Alias-Route auf einen späteren Schritt zurückfiel.
 - **Format der App** und **Format des Anbieters** grenzen sie auf eine Route ein, etwa OpenAI Responses zu Anthropic Messages. Caching, Overhead und Fehler unterscheiden sich oft zwischen Routen.
 - **Live** fügt neue Anfragen hinzu, sobald sie eintreffen. Wenn Sie nach unten gescrollt haben, nennt ein Button die Zahl der neuen.
 - Die Anzeigeoptionen wählen die Spalten und die Dichte.

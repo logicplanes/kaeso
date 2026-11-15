@@ -15033,6 +15033,42 @@
               "format": "int32",
               "minimum": 0
             }
+          },
+          {
+            "name": "alias",
+            "in": "query",
+            "description": "Only requests to this alias, by its exact name.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fell_back",
+            "in": "query",
+            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "description": "Only requests to this endpoint, as the log names it.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/LoggedEndpoint"
+            }
+          },
+          {
+            "name": "min_cost",
+            "in": "query",
+            "description": "Only requests that cost at least this much, in USD, as a decimal string\nsuch as `0.5`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -15273,6 +15309,42 @@
               "type": "integer",
               "format": "int32",
               "minimum": 0
+            }
+          },
+          {
+            "name": "alias",
+            "in": "query",
+            "description": "Only requests to this alias, by its exact name.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fell_back",
+            "in": "query",
+            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "description": "Only requests to this endpoint, as the log names it.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/LoggedEndpoint"
+            }
+          },
+          {
+            "name": "min_cost",
+            "in": "query",
+            "description": "Only requests that cost at least this much, in USD, as a decimal string\nsuch as `0.5`.",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -32508,6 +32580,51 @@
             "description": "User agent."
           }
         }
+      },
+      "LoggedEndpoint": {
+        "type": "string",
+        "description": "An endpoint, as the request log names it: the path after the API version, or the Gemini method on the model.",
+        "enum": [
+          "audio/speech",
+          "audio/transcriptions",
+          "audio/translations",
+          "chat/completions",
+          "decisions",
+          "embeddings",
+          "flows/image",
+          "flows/image/completed",
+          "images/edits",
+          "images/generations",
+          "images/variations",
+          "messages",
+          "messages/count_tokens",
+          "models:batchEmbedContents",
+          "models:countTokens",
+          "models:embedContent",
+          "models:generateContent",
+          "models:streamGenerateContent",
+          "music",
+          "rerank",
+          "responses",
+          "responses/input_tokens",
+          "sound-generation",
+          "speech-to-text",
+          "speech-to-text/realtime",
+          "systemone",
+          "text-to-dialogue",
+          "text-to-dialogue/multi-stream-input",
+          "text-to-dialogue/stream-input",
+          "text-to-speech",
+          "text-to-speech/multi-stream-input",
+          "text-to-speech/stream-input",
+          "videos",
+          "videos/completed",
+          "videos/remix",
+          "voice-changer"
+        ],
+        "examples": [
+          "responses"
+        ]
       },
       "MagicLinkRequest": {
         "type": "object",

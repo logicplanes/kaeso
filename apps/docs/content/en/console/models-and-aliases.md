@@ -82,7 +82,7 @@ On the **Aliases** tab, choose **Create alias**. The route editor fills the page
 
 Conditions and splits branch downward, their branches side by side; a model's fallbacks hang under it on a dashed line, in the order they are tried, so the route stays as narrow as its widest row of steps. A step's menu, from its **⋯** or with Shift F10, puts a step before it, moves a model to be tried earlier or later, swaps a condition's **Then** and **Else**, or removes it. ⌘Z undoes, ⌘⇧Z redoes and ⌘S saves.
 
-Requests take the route once you choose **Save**. **Audit log** is the [audit log](organizations-and-projects.md#read-the-audit-log) of this alias alone: who created, changed or deleted it, and when, filtered by actor and days. Choose an entry to see the alias before and after; **Restore this version** puts that route back in the editor, and it takes effect once you save it.
+Requests take the route once you choose **Save**. **Audit log** is the [audit log](organizations-and-projects.md#read-the-audit-log) of this alias alone: who created, changed or deleted it, and when, filtered by actor and days. Choose an entry to see the alias before and after; **Restore this version** puts that route back in the editor, and it takes effect once you save it. **See its requests** opens the [request log](request-logs.md) filtered to this alias, for someone who may read it.
 
 ### Test a route
 

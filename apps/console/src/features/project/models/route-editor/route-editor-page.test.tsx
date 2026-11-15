@@ -212,6 +212,21 @@ describe("RouteEditorPage", () => {
     expect(dialog).toHaveTextContent('"model": "cm_haiku"');
   });
 
+  it("opens the alias's requests in the request log", async () => {
+    setUp();
+    const { user, router } = await renderApp(projectPath("models/aliases/al_fast"));
+    await user.click(await screen.findByRole("button", { name: "See its requests" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/logs`));
+    expect(router.state.location.search).toEqual({ alias: "fast" });
+  });
+
+  it("offers the alias's requests only to people who read the request log", async () => {
+    setUp({ rights: without("logs.metadata.view") });
+    await renderApp(projectPath("models/aliases/al_fast"));
+    expect(await screen.findByRole("heading", { name: "fast" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "See its requests" })).not.toBeInTheDocument();
+  });
+
   it("shows the alias's own audit log and restores a version from an event", async () => {
     setUp({ members: [projectMember({ user: { id: "usr_grace", name: "Grace Hopper" } })] });
     on("GET", AUDIT, ({ query }: { query: URLSearchParams }) =>

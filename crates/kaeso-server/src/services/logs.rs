@@ -463,6 +463,46 @@ impl From<Cached> for LogSettings {
     }
 }
 
+/// Every value `endpoint` gives, for the request log's `endpoint` filter.
+pub const ENDPOINTS: &[&str] = &[
+    "audio/speech",
+    "audio/transcriptions",
+    "audio/translations",
+    "chat/completions",
+    "decisions",
+    "embeddings",
+    "flows/image",
+    "flows/image/completed",
+    "images/edits",
+    "images/generations",
+    "images/variations",
+    "messages",
+    "messages/count_tokens",
+    "models:batchEmbedContents",
+    "models:countTokens",
+    "models:embedContent",
+    "models:generateContent",
+    "models:streamGenerateContent",
+    "music",
+    "rerank",
+    "responses",
+    "responses/input_tokens",
+    "sound-generation",
+    "speech-to-text",
+    "speech-to-text/realtime",
+    "systemone",
+    "text-to-dialogue",
+    "text-to-dialogue/multi-stream-input",
+    "text-to-dialogue/stream-input",
+    "text-to-speech",
+    "text-to-speech/multi-stream-input",
+    "text-to-speech/stream-input",
+    "videos",
+    "videos/completed",
+    "videos/remix",
+    "voice-changer",
+];
+
 pub fn endpoint(o: &Outcome) -> &'static str {
     let (ingress, kind, gemini, image, transcription) =
         (o.ingress, o.kind, o.gemini, o.image, o.transcription);
@@ -1002,6 +1042,20 @@ pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_endpoint_filter_lists_every_endpoint_the_log_names() {
+        // Every string `endpoint` returns, read from its source, is one the filter accepts.
+        let source = include_str!("logs.rs");
+        let start = source.find("pub fn endpoint(o: &Outcome)").unwrap();
+        let end = start + source[start..].find("\n}\n").unwrap();
+        let mut named: Vec<&str> = source[start..end].split('"').skip(1).step_by(2).collect();
+        named.sort_unstable();
+        named.dedup();
+        let mut listed = ENDPOINTS.to_vec();
+        listed.sort_unstable();
+        assert_eq!(named, listed);
+    }
 
     fn row(size: u64) -> Entry {
         Entry {

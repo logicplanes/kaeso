@@ -135,6 +135,13 @@ pub struct Filter {
     pub egress_dialect: Option<String>,
     pub response_cache: Option<String>,
     pub min_duration_ms: Option<u32>,
+    /// The alias the app named, exactly.
+    pub alias: Option<String>,
+    /// Whether an earlier route step failed and a later one answered.
+    pub fell_back: Option<bool>,
+    pub endpoint: Option<String>,
+    /// A decimal amount in USD, compared as a decimal, never as a float.
+    pub min_cost: Option<String>,
 }
 
 pub async fn search(
@@ -250,6 +257,25 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(ms) = f.min_duration_ms {
         sql.push_str(" AND duration_ms >= ?");
         binds.push(Bind::I64(i64::from(ms)));
+    }
+    if let Some(a) = &f.alias {
+        sql.push_str(" AND alias = ?");
+        binds.push(Bind::Str(a.clone()));
+    }
+    if let Some(fell) = f.fell_back {
+        sql.push_str(if fell {
+            " AND fallbacks != ''"
+        } else {
+            " AND fallbacks = ''"
+        });
+    }
+    if let Some(e) = &f.endpoint {
+        sql.push_str(" AND endpoint = ?");
+        binds.push(Bind::Str(e.clone()));
+    }
+    if let Some(c) = &f.min_cost {
+        sql.push_str(" AND cost >= toDecimal128(?, 12)");
+        binds.push(Bind::Str(c.clone()));
     }
 }
 

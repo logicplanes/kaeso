@@ -354,6 +354,7 @@
   "models.route.ruleN": "Rule {n}",
   "models.route.save": "Save",
   "models.route.secretHeaderHint": "Routes can't read headers that carry credentials.",
+  "models.route.seeRequests": "See its requests",
   "models.route.sendHint": "Send a request through this route as you; the log marks it Playground.",
   "models.route.sendMode": "Real request",
   "models.route.sent.answered": "Answered",

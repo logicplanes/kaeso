@@ -656,6 +656,17 @@ pub struct LogFilter {
     #[doc = "Only requests that took at least this many milliseconds in total\n\
         (`duration_ms`), such as the `duration_p95_ms` of a timeline bucket."]
     pub min_duration_ms: Option<u32>,
+    #[doc = "Only requests to this alias, by its exact name."]
+    pub alias: Option<String>,
+    #[doc = "Only requests where an alias route fell back to a later step (`true`), or\n\
+        where none did (`false`)."]
+    pub fell_back: Option<bool>,
+    #[doc = "Only requests to this endpoint, as the log names it."]
+    #[param(value_type = Option<super::LoggedEndpoint>)]
+    pub endpoint: Option<String>,
+    #[doc = "Only requests that cost at least this much, in USD, as a decimal string\n\
+        such as `0.5`."]
+    pub min_cost: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -762,8 +773,40 @@ impl LogFilter {
                 .transpose()?,
             response_cache: self.response_cache.map(|c| c.as_str().to_owned()),
             min_duration_ms: self.min_duration_ms,
+            alias: self.alias.clone(),
+            fell_back: self.fell_back,
+            endpoint: self.endpoint.as_deref().map(endpoint_filter).transpose()?,
+            min_cost: self.min_cost.as_deref().map(cost_filter).transpose()?,
         })
     }
+}
+
+fn endpoint_filter(e: &str) -> ApiResult<String> {
+    crate::services::logs::ENDPOINTS
+        .iter()
+        .find(|known| **known == e)
+        .map(|known| (*known).to_owned())
+        .ok_or_else(|| {
+            ApiError::invalid(
+                "endpoint",
+                "`endpoint` must be an endpoint, such as `responses`.",
+            )
+        })
+}
+
+// Up to the log's 12 decimal places, and never negative.
+fn cost_filter(c: &str) -> ApiResult<String> {
+    use std::str::FromStr as _;
+    rust_decimal::Decimal::from_str(c.trim())
+        .ok()
+        .filter(|d| !d.is_sign_negative() && d.scale() <= 12)
+        .map(|d| d.normalize().to_string())
+        .ok_or_else(|| {
+            ApiError::invalid(
+                "min_cost",
+                "`min_cost` must be an amount in USD, such as `0.5`.",
+            )
+        })
 }
 
 const SOURCES: [&str; 2] = ["api", "playground"];

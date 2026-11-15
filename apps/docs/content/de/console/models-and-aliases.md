@@ -82,7 +82,7 @@ Wählen Sie auf dem Tab **Aliasse** **Alias erstellen**. Der Routen-Editor füll
 
 Bedingungen und Aufteilungen verzweigen nach unten, ihre Zweige nebeneinander; die Fallbacks eines Modells hängen auf einer gestrichelten Linie darunter, in der Reihenfolge, in der sie versucht werden, sodass die Route so schmal bleibt wie ihre breiteste Reihe von Schritten. Das Menü eines Schritts, über sein **⋯** oder mit Umschalt F10, setzt einen Schritt davor, lässt ein Modell früher oder später versuchen, tauscht **Dann** und **Sonst** einer Bedingung oder entfernt ihn. ⌘Z macht rückgängig, ⌘⇧Z wiederholt und ⌘S speichert.
 
-Anfragen nehmen die Route, sobald Sie **Speichern** wählen. **Audit-Log** ist das [Audit-Log](organizations-and-projects.md#audit-log-lesen) nur dieses Alias: wer ihn wann erstellt, geändert oder gelöscht hat, gefiltert nach Akteur und Tagen. Wählen Sie einen Eintrag, um den Alias davor und danach zu sehen; **Diese Version wiederherstellen** holt diese Route zurück in den Editor, und sie gilt, sobald Sie speichern.
+Anfragen nehmen die Route, sobald Sie **Speichern** wählen. **Audit-Log** ist das [Audit-Log](organizations-and-projects.md#audit-log-lesen) nur dieses Alias: wer ihn wann erstellt, geändert oder gelöscht hat, gefiltert nach Akteur und Tagen. Wählen Sie einen Eintrag, um den Alias davor und danach zu sehen; **Diese Version wiederherstellen** holt diese Route zurück in den Editor, und sie gilt, sobald Sie speichern. **Anfragen ansehen** öffnet das [Anfrageprotokoll](request-logs.md), gefiltert auf diesen Alias, für alle, die es lesen dürfen.
 
 ### Eine Route testen
 

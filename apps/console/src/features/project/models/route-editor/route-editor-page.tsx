@@ -540,6 +540,16 @@ function Editor({
                 />
               </>
             )}
+            {saved && logs && rights.has("logs.metadata.view") && (
+              <Button
+                size="sm"
+                variant="ghost"
+                leadingIcon={icons.requestLog}
+                onClick={() => void navigate({ to: "/orgs/$org/projects/$project/logs", params: { org, project }, search: { alias: saved.name } })}
+              >
+                {t("models.route.seeRequests", "See its requests")}
+              </Button>
+            )}
             <Button size="sm" icon={icons.code} variant="ghost" aria-label={t("models.route.showJson", "Show as JSON")} onClick={() => setJson(true)} />
             {saved && !readOnly && (
               <Button size="sm" icon={icons.delete} variant="ghost" aria-label={t("models.alias.delete", "Delete alias")} onClick={() => setDeleting(true)} />

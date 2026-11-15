@@ -4,8 +4,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { AppFrame, Button, DataTable, DisplayOptions, Empty, type FilterChipChoice, useProviderGroups, Toolbar, icons } from "@logicplanes/kaeso-ui";
 import { useModelGroups } from "@logicplanes/kaeso-ui/playground";
 import { isApiError } from "~/api/errors";
-import { logsInfiniteQuery, type LogFilters } from "~/api/queries/logs";
-import { catalogueQuery } from "~/api/queries/models";
+import { ENDPOINTS, logsInfiniteQuery, type LogFilters } from "~/api/queries/logs";
+import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
+import { formatPrice } from "@logicplanes/kaeso-ui/format";
 import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviderFilterOptions, useProviders } from "~/kaeso/providers";
@@ -49,10 +50,30 @@ export type LogsSearch = LogFilters & {
 };
 
 const STATUSES = [200, 400, 401, 403, 404, 408, 413, 422, 429, 499, 500, 502, 503, 504, 529];
-type FilterId = "key" | "member" | "model" | "provider" | "ingress" | "egress" | "status" | "error" | "stream" | "source" | "failed";
-type ChoiceFilterId = Exclude<FilterId, "failed">;
-const isChoice = (id: string): id is ChoiceFilterId => id !== "failed";
-const FILTER_IDS: FilterId[] = ["key", "member", "model", "provider", "ingress", "egress", "status", "failed", "error", "stream", "source"];
+// Amounts a request may cost at least, in USD, from a cent upwards.
+const MIN_COSTS = ["0.01", "0.1", "1", "10"];
+type FlagFilterId = "failed" | "fell_back";
+type FilterId =
+  "key" | "member" | "model" | "provider" | "alias" | "ingress" | "egress" | "endpoint" | "status" | "error" | "stream" | "source" | "min_cost" | FlagFilterId;
+type ChoiceFilterId = Exclude<FilterId, FlagFilterId>;
+const isChoice = (id: string): id is ChoiceFilterId => id !== "failed" && id !== "fell_back";
+const FILTER_IDS: FilterId[] = [
+  "key",
+  "member",
+  "model",
+  "provider",
+  "alias",
+  "fell_back",
+  "ingress",
+  "egress",
+  "endpoint",
+  "status",
+  "failed",
+  "error",
+  "stream",
+  "source",
+  "min_cost",
+];
 const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPatch<LogsSearch> } = {
   key: (key) => ({ key }),
   member: (member) => ({ member }),
@@ -60,6 +81,9 @@ const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPa
   provider: (provider) => ({ provider }),
   ingress: (ingress) => ({ ingress }),
   egress: (egress) => ({ egress }),
+  alias: (alias) => ({ alias }),
+  endpoint: (endpoint) => ({ endpoint }),
+  min_cost: (min_cost) => ({ min_cost }),
   error: (error) => ({ error }),
   status: (v) => ({ status: v ? Number(v) : undefined }),
   stream: (v) => ({ stream: v === undefined ? undefined : v === "true" }),
@@ -78,6 +102,10 @@ const filterLabel = (id: FilterId): string =>
     error: t("logs.filter.error", "Error kind"),
     stream: t("logs.filter.streaming", "Streaming"),
     source: t("logs.filter.source", "Source"),
+    alias: t("logs.filter.alias", "Alias"),
+    fell_back: t("logs.filter.fellBack", "Fell back"),
+    endpoint: t("logs.filter.endpoint", "Endpoint"),
+    min_cost: t("logs.filter.minCost", "Cost at least"),
   })[id];
 
 export function LogsPage({ org, project, search }: { org: string; project: string; search: LogsSearch }) {
@@ -88,6 +116,8 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const logs = useInfiniteQuery(logsInfiniteQuery(org, project, filters));
   const { keyName, keyOptions, memberOptions } = usePartyFilters(org, project);
   const catalogue = useQuery(catalogueQuery(org, project));
+  // Someone who reads the log may not see the aliases; the chip then offers none.
+  const aliases = useQuery({ ...aliasesQuery(org, project), meta: { quiet: true } });
   const providers = useProviderFilterOptions(org);
   const catalog = useProviders(org);
   const partyName = usePartyName(org, project);
@@ -150,15 +180,21 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
             ? ERROR_KIND_IDS.map((k) => ({ value: k, label: errorKindLabel(k) }))
             : id === "ingress" || id === "egress"
               ? Object.keys(DIALECTS).map((d) => ({ value: d, label: dialectLabel(d) }))
-              : id === "stream"
-                ? [
-                    { value: "true", label: t("logs.filter.streamed", "Streamed") },
-                    { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
-                  ]
-                : [
-                    { value: "api", label: "API" },
-                    { value: "playground", label: t("logs.source.playground", "Playground") },
-                  ];
+              : id === "alias"
+                ? (aliases.data ?? []).map((a) => ({ value: a.name, label: a.name }))
+                : id === "endpoint"
+                  ? ENDPOINTS.map((e) => ({ value: e, label: e }))
+                  : id === "min_cost"
+                    ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
+                    : id === "stream"
+                      ? [
+                          { value: "true", label: t("logs.filter.streamed", "Streamed") },
+                          { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                        ]
+                      : [
+                          { value: "api", label: "API" },
+                          { value: "playground", label: t("logs.source.playground", "Playground") },
+                        ];
   const current = (id: ChoiceFilterId): string | undefined =>
     id === "status"
       ? filters.status
@@ -173,7 +209,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
     id === "model" ? modelLabel(value) : id === "provider" ? catalog.name(value) : (choice(id).find((c) => c.value === value)?.label ?? value);
   const filterDefs: FilterDef[] = FILTER_IDS.map((id) =>
     !isChoice(id)
-      ? { id, label: filterLabel(id), flag: true, value: filters.failed ? "true" : undefined }
+      ? { id, label: filterLabel(id), flag: true, value: filters[id] ? "true" : undefined }
       : {
           id,
           label: filterLabel(id),
@@ -183,11 +219,11 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
             ? { groups: modelGroups, width: "lg" as const }
             : id === "provider"
               ? { groups: providerGroups, width: "sm" as const }
-              : { values: choice(id), searchable: id === "key" || id === "member" }),
+              : { values: choice(id), searchable: id === "key" || id === "member" || id === "alias" || id === "endpoint" }),
         },
   );
   const setFilter = (id: string, v: string | undefined) =>
-    isChoice(id) ? setSearch({ ...CHOICE_PATCH[id](v), log: undefined }) : setSearch({ failed: v ? true : undefined });
+    isChoice(id) ? setSearch({ ...CHOICE_PATCH[id](v), log: undefined }) : setSearch({ [id]: v ? true : undefined, log: undefined });
   const filtered = filterDefs.some((f) => f.value !== undefined);
 
   const canExport = rights.has("logs.export");
