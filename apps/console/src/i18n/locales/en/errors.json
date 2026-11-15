@@ -384,6 +384,7 @@
   "errors.modelApi.idNotInUrl": "An id in this request can't be part of the provider's URL; use the real id.",
   "errors.modelApi.keyRefused": "The provider refused this project's provider key. Ask an organization admin to check it under Providers.",
   "errors.modelApi.keysUnavailable": "Kaeso cannot check API keys right now. Try again shortly.",
+  "errors.modelApi.logContentHeader": "The header `kaeso-log-content` takes only `off`, which keeps this request's content out of the request log.",
   "errors.modelApi.method": "`{path}` does not accept `{method}` requests.",
   "errors.modelApi.modelsUnavailable": "Kaeso cannot load this project's models right now. Try again shortly.",
   "errors.modelApi.noBaseUrl": "No base URL is configured for this provider.",

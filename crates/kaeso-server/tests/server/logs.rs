@@ -2395,3 +2395,73 @@ async fn the_request_log_finds_requests_that_took_long() {
     durations.sort_unstable();
     assert_eq!(durations, [900, 4000]);
 }
+
+#[tokio::test]
+async fn kaeso_log_content_off_keeps_one_requests_content_out_of_the_log() {
+    use axum::body::Body;
+    use axum::http::Request;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    let env = env(&[]).await;
+    let send = |value: Option<&'static str>| {
+        let env = &env;
+        async move {
+            let mut req = Request::builder()
+                .uri("/v1/chat/completions")
+                .method("POST")
+                .header("authorization", format!("Bearer {}", env.key))
+                .header("content-type", "application/json");
+            if let Some(v) = value {
+                req = req.header("kaeso-log-content", v);
+            }
+            let req = req
+                .body(Body::from(
+                    serde_json::to_vec(&json!({
+                        "model": "claude-haiku-4-5",
+                        "messages": [{ "role": "user", "content": "My card is 4111 1111 1111 1111" }],
+                    }))
+                    .unwrap(),
+                ))
+                .unwrap();
+            let resp = env.app.router.clone().oneshot(req).await.unwrap();
+            let status = resp.status();
+            let id = resp
+                .headers()
+                .get("kaeso-request-id")
+                .map(|v| v.to_str().unwrap().to_owned());
+            let body: Value =
+                serde_json::from_slice(&resp.into_body().collect().await.unwrap().to_bytes())
+                    .unwrap();
+            (status, id.unwrap_or_default(), body)
+        }
+    };
+    let (status, kept, _) = send(None).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, off, _) = send(Some("off")).await;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _, refused) = send(Some("no")).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{refused}");
+    assert_eq!(refused["error"]["param"], "kaeso-log-content");
+    flush(&env).await;
+
+    let entry = |id: String| {
+        let env = &env;
+        async move {
+            env.app
+                .get(&format!("{}/logs/{id}", base(env)), &env.owner.cookie)
+                .await
+                .body
+        }
+    };
+    let with_content = entry(kept).await;
+    assert_eq!(with_content["has_content"], true, "{with_content}");
+    let without = entry(off).await;
+    assert_eq!(without["has_content"], false, "{without}");
+    assert_eq!(without["content"], Value::Null, "{without}");
+    assert_eq!(without["status"], 200);
+    assert_eq!(
+        without["model"], "claude-haiku-4-5",
+        "metadata is still logged"
+    );
+    assert!(!without.to_string().contains("4111"), "{without}");
+}

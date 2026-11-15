@@ -245,6 +245,10 @@ Gemini 应用则像 `google-genai` 那样调用 `:streamGenerateContent?alt=sse`
 - **失败。** 流一旦开始就无法再更改状态码。服务商出错，或在回复完成前结束流时，流会以采用应用所用格式的错误事件结束。
 - **断开。** 应用在流的最后一个事件之前断开连接时，Kaeso 会立即停止向服务商发出的请求，并按已用量计费。最后一个事件已到达应用的流视为已完成，即使应用随即断开连接也是如此。
 
+## 不记录内容
+
+记录内容的项目可以用请求头 `kaeso-log-content: off` 让单个请求的内容不进入[请求日志](../console/request-logs.md)，例如包含客户支付信息的提示词。日志仍会保存该请求的元数据，例如模型、Token、费用、状态、耗时和密钥，但不保存应用发送或收到的内容，也不保存其媒体。该请求头只能关闭内容记录，不能开启，其他值返回 400。它不会让回复不进入[响应缓存](#响应缓存)；如需如此，请另加 `Cache-Control: no-store`。
+
 ## 超时
 
 请求可以用请求头 `kaeso-timeout` 缩短 Kaeso 等待服务商的时间，单位为秒，取值 1 到 3600，例如最多等待 20 秒的应用可发送 `kaeso-timeout: 20`。它会把等待第一个字节的时间（以及非流式回复等待整个回复的时间）降到实例和模型的设置以下，但从不延长；流的空闲超时保持不变。在[别名路由](../concepts/alias-routes.md)后面，它适用于请求到达的每个步骤：超时的步骤以 `unavailable` 和 504 失败，因此在 `unavailable` 时回退的路由会继续并及时作答。其他值返回 400。SDK 自身的 `timeout` 则会直接关闭连接，应用因此永远收不到回退的回答。
@@ -278,7 +282,7 @@ Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没�
 只有当另一个源以 CORS 响应头应答时，浏览器才允许网页调用它。在 `KAESO_CORS_ALLOWED_ORIGINS` 列出您的 Web 应用的源（例如 `https://app.example.com,http://localhost:5173`）之前，Kaeso 不发送任何 CORS 响应头（[浏览器应用](../self-hosting/configuration.md#浏览器应用)）。列出之后，以下规则仅适用于 `/v1`、`/v1beta` 和 `/v2`：
 
 - **精确匹配源。** 协议、主机和端口都必须一致：`https://app.example.com` 既不放行 `http://app.example.com`，也不放行 `https://www.app.example.com`。Kaeso 会在启动时拒绝 `*`，因为它会让任何网站都能用访问者持有的密钥发送请求。
-- **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST, DELETE` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key`、`x-goog-api-key`、`x-goog-api-client`、`xi-api-key` 和 `x-stainless-…`，以及[响应缓存](#响应缓存)读取的 `cache-control` 和 `kaeso-timeout`（[超时](#超时)）。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
+- **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST, DELETE` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key`、`x-goog-api-key`、`x-goog-api-client`、`xi-api-key` 和 `x-stainless-…`，以及[响应缓存](#响应缓存)读取的 `cache-control` 、`kaeso-timeout`（[超时](#超时)）和 `kaeso-log-content`（[不记录内容](#不记录内容)）。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
 - **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms`，以便应用读取这些响应头。
 - **其他源**得不到 CORS 响应头，因此浏览器会拦截调用，它们的预检请求得到空的 204。`/v1`、`/v1beta` 和 `/v2` 上的每个响应都带有 `Vary: Origin`，以便缓存区分这些响应。
 - **不使用 Cookie。** 由于密钥通过请求头传递，Kaeso 从不发送 `Access-Control-Allow-Credentials`。Platform API、健康检查和指标从不响应跨源请求。

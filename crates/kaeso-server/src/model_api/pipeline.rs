@@ -959,7 +959,13 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .await
         .map_err(at(Stage::Request))?;
     let kept = crate::services::logs::keeps(state, caller.project_id).await;
-    let (keep_content, keep_media) = (kept.content, kept.media);
+    // `kaeso-log-content: off` keeps one request's content out of a project that logs it; it
+    // never turns content on.
+    let (keep_content, keep_media) = if content_off(&headers).map_err(at(Stage::Request))? {
+        (false, false)
+    } else {
+        (kept.content, kept.media)
+    };
     if keep_content {
         let o = rec.outcome();
         o.content_kept = true;
@@ -1210,6 +1216,22 @@ impl Shared<'_> {
         self.decoded
             .saturating_mul(copies)
             .saturating_add(self.logged)
+    }
+}
+
+/// `off` keeps a request's content and media out of the request log: `kaeso-log-content`.
+pub const LOG_CONTENT_HEADER: &str = "kaeso-log-content";
+
+fn content_off(headers: &HeaderMap) -> Result<bool, KppError> {
+    match headers.get(LOG_CONTENT_HEADER).map(|v| v.to_str().map(str::trim)) {
+        None => Ok(false),
+        Some(Ok(v)) if v.eq_ignore_ascii_case("off") => Ok(true),
+        Some(_) => Err(error(
+            ErrorKind::InvalidRequest,
+            400,
+            "The header `kaeso-log-content` takes only `off`, which keeps this request's content out of the request log.",
+        )
+        .with_param(LOG_CONTENT_HEADER)),
     }
 }
 
