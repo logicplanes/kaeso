@@ -37,6 +37,7 @@ pub struct Inner {
     pub tool_usage: crate::services::usage::ToolBatch,
     pub distrusted: crate::services::limits::Distrusted,
     pub rebuilds: crate::services::limits::Rebuilds,
+    pub charging: crate::services::limits::Charging,
     pub logs: crate::services::logs::Buffer,
     /// The trace exporter, when `otel.endpoint` is set.
     pub otel: Option<Arc<crate::services::otel::Exporter>>,
@@ -136,6 +137,7 @@ impl AppState {
             tool_usage: crate::services::usage::ToolBatch::default(),
             distrusted: crate::services::limits::Distrusted::default(),
             rebuilds: crate::services::limits::Rebuilds::default(),
+            charging: crate::services::limits::Charging::default(),
             logs: crate::services::logs::Buffer::default(),
             otel,
             webhooks,

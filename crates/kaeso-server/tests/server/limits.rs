@@ -790,6 +790,40 @@ async fn counters_are_rebuilt_from_postgres_after_valkey_loses_them() {
 }
 
 #[tokio::test]
+async fn a_rebuild_waits_for_a_request_between_its_batch_and_its_charge() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    limit(&env, json!({ "level": "key", "key": id, "kind": "token_budget", "period": "total", "amount": 100 })).await;
+    assert_eq!(ask(&env, &secret).await.status, StatusCode::OK);
+    env.app.state.in_flight.settled().await;
+    let mut conn = env.services.valkey.conn();
+    let keys: Vec<String> = redis::cmd("KEYS")
+        .arg(format!("{}*", env.services.valkey_prefix))
+        .query_async(&mut conn)
+        .await
+        .unwrap();
+    for k in keys {
+        let _: () = redis::cmd("DEL")
+            .arg(k)
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+    }
+    // As a request that has added its usage to the batch but not charged the counter yet.
+    let finishing = env.app.state.charging.finishing().await;
+    let next = ask(&env, &secret);
+    tokio::pin!(next);
+    assert!(
+        tokio::time::timeout(Duration::from_millis(300), &mut next)
+            .await
+            .is_err(),
+        "the missing counter isn't rebuilt halfway through a finishing request"
+    );
+    drop(finishing);
+    assert_eq!(next.await.status, StatusCode::OK);
+}
+
+#[tokio::test]
 async fn parallel_requests_never_overrun_a_budget() {
     let env = common::v1::env(None, None).await;
     let (secret, id) = key_of(&env, "k", json!({})).await;
