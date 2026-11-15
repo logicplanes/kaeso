@@ -127,12 +127,12 @@ impl std::fmt::Debug for Resolved {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ResolveError {
+    // Answered as the install's problem, like a refused key: the app can't fix it, and the
+    // answer names no organization or Platform API path.
     #[error(
-        "No credential for the provider `{provider}` is set up for this project. An org admin adds a key for it \
-         with POST /platform/v1/orgs/{org}/credentials, makes one of the org's keys the default, or assigns one \
-         to this project."
+        "This project has no provider key for {provider}. Ask an organization admin to add one under Providers."
     )]
-    Missing { provider: String, org: OrgId },
+    Missing { provider: String },
     #[error("the stored credential cannot be decrypted: {0}")]
     Crypto(#[from] CryptoError),
     #[error(transparent)]
@@ -199,7 +199,14 @@ pub async fn for_provider_member(
 ) -> Result<std::sync::Arc<Resolved>, ResolveError> {
     match provider.custom() {
         Some(c) if c.auth() == CustomAuth::None => Ok(std::sync::Arc::new(Resolved::keyless(c))),
-        _ => resolve_member(state, org, project, provider.id(), member).await,
+        _ => resolve_member(state, org, project, provider.id(), member)
+            .await
+            .map_err(|e| match e {
+                ResolveError::Missing { .. } => ResolveError::Missing {
+                    provider: provider.name().to_owned(),
+                },
+                other => other,
+            }),
     }
 }
 
@@ -444,7 +451,6 @@ async fn cached(
         .await?;
     found.ok_or_else(|| ResolveError::Missing {
         provider: provider.to_owned(),
-        org,
     })
 }
 

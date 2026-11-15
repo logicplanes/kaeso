@@ -1984,7 +1984,7 @@ async fn attempt(
     )
     .await
     .map_err(|e| match e {
-        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::InvalidRequest, 400, e.to_string()).with_param("model")),
+        CredentialError::Missing { .. } => fail(Stage::MissingCredential(eff.provider.name().to_owned()))(error(ErrorKind::ProviderError, 502, e.to_string())),
         CredentialError::Crypto(_) => {
             tracing::error!(provider = eff.provider.id(), "a provider credential cannot be decrypted");
             fail(Stage::Credential)(error(ErrorKind::ProviderError, 500, "Kaeso cannot decrypt the provider credential. The operator must check the configured master keys."))

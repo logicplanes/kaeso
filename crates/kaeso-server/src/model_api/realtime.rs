@@ -324,7 +324,7 @@ impl Opening {
         .await
         .map_err(|e| match e {
             crate::services::credentials::ResolveError::Missing { .. } => {
-                error(ErrorKind::InvalidRequest, 400, e.to_string())
+                error(ErrorKind::ProviderError, 502, e.to_string())
             }
             other => {
                 tracing::error!(error = %other, "cannot load the ElevenLabs credential");

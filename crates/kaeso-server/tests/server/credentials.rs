@@ -201,9 +201,9 @@ async fn projects_use_their_assigned_key_then_the_default() {
         .to_owned();
 
     let err = secret_of(&app, &owner, &project).await.unwrap_err();
-    assert!(
-        err.contains("`openai`") && err.contains("/credentials"),
-        "{err}"
+    assert_eq!(
+        err,
+        "This project has no provider key for openai. Ask an organization admin to add one under Providers."
     );
     let (org_id, project_id) = ids(&owner, &project);
     assert!(matches!(
