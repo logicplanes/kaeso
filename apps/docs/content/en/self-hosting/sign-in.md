@@ -113,9 +113,10 @@ A sign-in through single sign-on administers the instance only once an instance 
 
 ## Get back in
 
-When no way in works, print a one-time sign-in link for an existing account on the server. This helps when the identity provider is down or misconfigured, or the setup session ended before single sign-on worked:
+When no way in works, print a one-time sign-in link for an existing account on the server. This helps when the identity provider is down or misconfigured, or the setup session ended before single sign-on worked. To find the address of an instance admin, list them first; `kaeso user list` without `--instance-admins` lists every account, and `--search` narrows it by address or name. Each line gives the address, name, state, whether the account is an instance admin and uses two-factor authentication, and when it was created:
 
 ```bash
+docker compose exec gateway kaeso user list --instance-admins
 docker compose exec gateway kaeso user sign-in-link owner@example.com
 ```
 

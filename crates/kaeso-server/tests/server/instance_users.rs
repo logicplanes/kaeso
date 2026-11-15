@@ -325,3 +325,44 @@ async fn instance_admins_see_which_orgs_a_user_belongs_to() {
         .await;
     assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
 }
+
+#[tokio::test]
+async fn an_operator_lists_the_accounts_and_finds_the_instance_admins() {
+    use kaeso_server::services::users::operator_list;
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let (_, grace) = join(&app, &owner, "grace@example.com", "Grace Hopper").await;
+    join(&app, &owner, "ada@example.com", "Ada Lovelace").await;
+    app.post(
+        &format!("/instance/users/{grace}/deactivate"),
+        json!({}),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let all = operator_list(&app.state, false, None).await.unwrap();
+    let rows: Vec<(&str, &str, bool)> = all
+        .iter()
+        .map(|u| (u.email.as_str(), u.state.as_str(), u.instance_admin))
+        .collect();
+    assert_eq!(rows.len(), 3, "{rows:?}");
+    assert!(rows.contains(&("owner@example.com", "active", true)));
+    assert!(rows.contains(&("grace@example.com", "deactivated", false)));
+    assert!(rows.contains(&("ada@example.com", "active", false)));
+    assert!(all.iter().all(|u| !u.two_factor));
+
+    let admins = operator_list(&app.state, true, None).await.unwrap();
+    assert_eq!(
+        admins.iter().map(|u| u.email.as_str()).collect::<Vec<_>>(),
+        ["owner@example.com"]
+    );
+    let found = operator_list(&app.state, false, Some("lovelace"))
+        .await
+        .unwrap();
+    assert_eq!(
+        found.iter().map(|u| u.name.as_str()).collect::<Vec<_>>(),
+        ["Ada Lovelace"]
+    );
+}
