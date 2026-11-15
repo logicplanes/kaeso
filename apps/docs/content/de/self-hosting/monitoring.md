@@ -75,6 +75,8 @@ services:
 | `kaeso_key_failure_blocks_total` | Jeder Anstieg: Eine Adresse rät API-Schlüssel |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` oder `dropped`: Prüfen Sie die Einstellungen für [E-Mail](email.md) |
 | `kaeso_build_info{version}` | Die laufende Version |
+| `kaeso_connections_open`, `kaeso_connections_max` | Verbindungen, die das Gateway gerade bedient, und die meisten, die es gleichzeitig bedient (`server.max_connections`); an der Grenze warten neue. Alarmieren Sie bei `kaeso_connections_open / kaeso_connections_max` und fügen Sie Gateways hinzu, bevor der Wert 1 erreicht |
+| `kaeso_model_requests_in_flight` | Modellanfragen, die gerade bedient werden, Streams und Echtzeitsitzungen eingeschlossen, bis jede endet |
 | `kaeso_update_available{version}` | 1 mit dem neuesten Release des Kanals der Installation als `version`, solange es neuer als die laufende Version ist, sonst 0 mit der laufenden Version; fehlt, solange Update-Prüfungen aus sind ([Neue Releases](upgrades.md#neue-releases)) |
 
 ## Protokolle

@@ -502,6 +502,7 @@ impl Session {
         let mut last = started;
         let mut checks = tokio::time::interval_at(started + BUDGET_CHECKS, BUDGET_CHECKS);
         let _held = state.in_flight.token();
+        let _serving = crate::metrics::Serving::start();
         let cut = state.in_flight.cut();
         let mut client_closed = false;
         let mut provider_closed = None;

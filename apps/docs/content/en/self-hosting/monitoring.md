@@ -75,6 +75,8 @@ services:
 | `kaeso_key_failure_blocks_total` | Any increase: an address is guessing API keys |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` or `dropped`: check the [email](email.md) settings |
 | `kaeso_build_info{version}` | The running version |
+| `kaeso_connections_open`, `kaeso_connections_max` | Connections the gateway serves now, and the most it serves at once (`server.max_connections`); at the limit, new ones wait. Alert on `kaeso_connections_open / kaeso_connections_max` and add gateways before it reaches 1 |
+| `kaeso_model_requests_in_flight` | Model requests being served now, streams and realtime sessions included, until each ends |
 | `kaeso_update_available{version}` | 1 with the newest release offered on the install's channel as `version` while it is newer than the running one, 0 with the running version while it isn't; absent while update checks are off ([new releases](upgrades.md#new-releases)) |
 
 ## Logs

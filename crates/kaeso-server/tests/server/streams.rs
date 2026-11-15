@@ -148,6 +148,7 @@ async fn headers_and_keepalives_reach_a_waiting_chat_app_at_once() {
         kaeso_server::serve::Connections {
             header_read_timeout: Duration::from_secs(30),
             max: 4096,
+            metered: true,
         },
         CancellationToken::new(),
     ));
@@ -1064,4 +1065,46 @@ async fn the_request_log_counts_the_keepalives_written_in_place_of_hidden_events
         0,
         "the provider's own pings are its events"
     );
+}
+
+#[tokio::test]
+async fn a_stream_counts_as_a_model_request_in_flight_until_it_ends() {
+    use axum::body::Body;
+    use axum::http::Request;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
+    let handle = recorder.handle();
+    let _local = metrics::set_default_local_recorder(&recorder);
+    let env = env(&[]).await;
+    let in_flight = || -> f64 {
+        handle
+            .render()
+            .lines()
+            .find_map(|l| l.strip_prefix("kaeso_model_requests_in_flight "))
+            .map_or(0.0, |v| v.parse().unwrap())
+    };
+    let body = streaming(messages("claude-haiku-4-5", "Tell me a story [mock:slow]"));
+    let req = Request::builder()
+        .uri("/v1/messages")
+        .method("POST")
+        .header("x-api-key", &env.key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .body(Body::from(serde_json::to_vec(&body).unwrap()))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), 200);
+    assert_eq!(in_flight(), 1.0, "the stream outlives its handler");
+    resp.into_body().collect().await.unwrap();
+    env.app.state.in_flight.settled().await;
+    let mut left = in_flight();
+    for _ in 0..100 {
+        if left == 0.0 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        left = in_flight();
+    }
+    assert_eq!(left, 0.0);
 }
