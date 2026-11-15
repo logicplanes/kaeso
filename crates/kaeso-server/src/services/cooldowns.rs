@@ -13,6 +13,10 @@ use uuid::Uuid;
 const ACCOUNT: Duration = Duration::minutes(5);
 const MODEL: Duration = Duration::seconds(30);
 const LONGEST_RETRY_AFTER: Duration = Duration::minutes(5);
+// A plan's usage limit lasts until the plan resets, often hours later, and its provider asks
+// apps to pause rather than guess when: the account stays out of routes for at least
+// `ACCOUNT`, and as long as the provider says, up to an hour.
+const LONGEST_PLAN_LIMIT: Duration = Duration::hours(1);
 const MOST_HELD: usize = 4096;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,6 +30,8 @@ pub enum Cause<'a> {
     Unreachable,
     KeyRefused,
     Provider(&'a KppError),
+    /// An account's plan reached its usage limit: every model of the account waits.
+    PlanLimit(&'a KppError),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -303,6 +309,12 @@ pub fn length(cause: Cause<'_>) -> Option<(Reach, Duration)> {
     match cause {
         Cause::Unreachable => Some((Reach::Model, MODEL)),
         Cause::KeyRefused => Some((Reach::Provider, ACCOUNT)),
+        Cause::PlanLimit(err) => Some((
+            Reach::Provider,
+            err.retry_after
+                .and_then(|d| Duration::try_from(d).ok())
+                .map_or(ACCOUNT, |d| d.clamp(ACCOUNT, LONGEST_PLAN_LIMIT)),
+        )),
         Cause::Provider(err) => match err.kind {
             ErrorKind::Billing => Some((Reach::Provider, ACCOUNT)),
             ErrorKind::NotFound => Some((Reach::Model, ACCOUNT)),
@@ -446,6 +458,36 @@ mod tests {
         let later = now + MODEL;
         m.hold(&at(FABLE), Reach::Model, held(later + MODEL), later);
         assert!(m.held(&at(FABLE), later).is_some());
+    }
+
+    #[test]
+    fn a_reached_plan_limit_holds_the_account_at_least_as_long_as_an_empty_balance() {
+        let mut limited = KppError::new(ErrorKind::RateLimited, "plan limit");
+        assert_eq!(
+            length(Cause::PlanLimit(&limited)),
+            Some((Reach::Provider, ACCOUNT))
+        );
+        limited.retry_after = Some(std::time::Duration::from_secs(30));
+        assert_eq!(
+            length(Cause::PlanLimit(&limited)),
+            Some((Reach::Provider, ACCOUNT)),
+            "never shorter"
+        );
+        limited.retry_after = Some(std::time::Duration::from_secs(1_800));
+        assert_eq!(
+            length(Cause::PlanLimit(&limited)),
+            Some((Reach::Provider, Duration::minutes(30)))
+        );
+        limited.retry_after = Some(std::time::Duration::from_secs(86_400));
+        assert_eq!(
+            length(Cause::PlanLimit(&limited)),
+            Some((Reach::Provider, LONGEST_PLAN_LIMIT))
+        );
+        assert_eq!(
+            length(Cause::Provider(&limited)),
+            Some((Reach::Model, LONGEST_RETRY_AFTER)),
+            "a passing rate limit holds only its model"
+        );
     }
 
     #[test]

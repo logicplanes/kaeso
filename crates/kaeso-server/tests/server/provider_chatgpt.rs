@@ -66,6 +66,8 @@ async fn plan_with(env: &[(&str, &str)]) -> Plan {
     let capture = Arc::new(Capture::default());
     let mut env = env.to_vec();
     env.push(("KAESO_PROVIDERS_OPENAI_BASE_URL", api.base_url.as_str()));
+    // For a test that falls back to another provider.
+    env.push(("KAESO_PROVIDERS_ANTHROPIC_BASE_URL", api.base_url.as_str()));
     let app = App::start_full(
         &s,
         &env,
@@ -892,4 +894,100 @@ async fn decisions_need_an_api_key() {
     );
     assert_eq!(r.json()["error"]["param"], "model");
     assert!(p.sent().is_empty(), "{:?}", p.sent());
+}
+
+#[tokio::test]
+async fn a_reached_plan_limit_keeps_every_model_of_the_account_out_of_routes() {
+    let p = plan().await;
+    let base = p.base();
+    // Another provider to fall back on, served by the same mock as the API.
+    let anthropic = p
+        .app
+        .post(
+            &format!("/orgs/{}/credentials", p.owner.org_id),
+            json!({ "provider": "anthropic", "name": "Claude", "secret": "sk-ant-test-credential-0009" }),
+            Some(&p.owner.cookie),
+        )
+        .await;
+    assert_eq!(
+        anthropic.status,
+        StatusCode::CREATED,
+        "{:?}",
+        anthropic.body
+    );
+    p.app
+        .post(
+            &format!("{base}/models"),
+            json!({ "provider": "anthropic", "model_id": "claude-haiku-4-5" }),
+            Some(&p.owner.cookie),
+        )
+        .await;
+    let models = p.app.get(&format!("{base}/models"), &p.owner.cookie).await;
+    let id = |model: &str| {
+        models.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|m| m["model_id"] == model)
+            .unwrap_or_else(|| panic!("{model}: {:?}", models.body))["id"]
+            .as_str()
+            .unwrap()
+            .to_owned()
+    };
+    for (name, first) in [("plan", "gpt-5"), ("plan-mini", "gpt-5-mini")] {
+        p.app
+            .post(
+                &format!("{base}/aliases"),
+                json!({ "name": name, "route": { "type": "model", "model": id(first), "fallback": { "type": "model", "model": id("claude-haiku-4-5") } } }),
+                Some(&p.owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+    }
+
+    p.oauth.reply_with(Reply::UsageLimit);
+    let r = p
+        .call("/v1/chat/completions", false, chat("plan", "Hi"))
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+    assert_eq!(p.sent().len(), 1);
+
+    // The account's other model waits too, also for a streamed request.
+    let mut streamed = chat("plan-mini", "Hi");
+    streamed["stream"] = json!(true);
+    let r = p.call("/v1/chat/completions", false, streamed).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+    assert_eq!(p.sent().len(), 1, "the account was skipped");
+
+    p.app.clock.advance(time::Duration::minutes(4));
+    p.call("/v1/chat/completions", false, chat("plan", "Hi"))
+        .await;
+    assert_eq!(p.sent().len(), 1, "still within the account's hold");
+    p.app.clock.advance(time::Duration::minutes(2));
+    p.oauth.reply_with(Reply::UsageLimitInStream);
+    let mut streamed = chat("plan", "Hi");
+    streamed["stream"] = json!(true);
+    let r = p.call("/v1/chat/completions", false, streamed).await;
+    assert_eq!(
+        r.header("kaeso-model"),
+        Some("claude-haiku-4-5"),
+        "{}",
+        r.text()
+    );
+    assert_eq!(
+        p.sent().len(),
+        2,
+        "tried again after the hold, and held again"
+    );
+    p.app.clock.advance(time::Duration::minutes(1));
+    p.call("/v1/chat/completions", false, chat("plan-mini", "Hi"))
+        .await;
+    assert_eq!(
+        p.sent().len(),
+        2,
+        "a stream that failed before output holds it too"
+    );
+    p.services.cleanup().await;
 }

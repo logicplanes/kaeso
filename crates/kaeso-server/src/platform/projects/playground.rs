@@ -445,7 +445,7 @@ fn refusal(f: &Failure, ask: &Ask) -> ApiError {
             ),
             e,
         ),
-        Stage::Provider => from_provider(e),
+        Stage::Provider | Stage::PlanLimit => from_provider(e),
         Stage::KeyRefused => from_provider(f.logged()),
         Stage::Unserved(_) => ApiError::NotFound(e.message.clone()),
         Stage::Reply => provider_error(

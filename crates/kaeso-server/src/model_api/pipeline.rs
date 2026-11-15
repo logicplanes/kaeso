@@ -368,6 +368,9 @@ pub enum Stage {
     Reply,
     Guardrail,
     Shutdown,
+    /// An account's plan reached its usage limit: like a provider refusal, but it holds every
+    /// model of the account.
+    PlanLimit,
 }
 
 #[derive(Clone, Debug)]
@@ -2507,7 +2510,8 @@ async fn attempt(
                 }
                 stream::Gathered::Provider(err) => {
                     count_upstream_error(err.kind.as_str(), provider);
-                    fail(Stage::Provider)(super::accounts::account_error(account, err))
+                    let (stage, err) = provider_failed(account, err);
+                    fail(stage)(err)
                 }
                 stream::Gathered::Broken(err) => fail(Stage::Reply)(err),
             })?;
@@ -2538,12 +2542,12 @@ async fn attempt(
                 {
                     redact_key_fragments(&mut err);
                     count_upstream_error(err.kind.as_str(), provider);
-                    let mut err = super::accounts::account_error(account, err);
+                    let (stage, mut err) = provider_failed(account, err);
                     // The status the app's format gives this kind, as the app will get it.
                     if err.status.is_none() {
                         err.status = Some(dispatch::encode_error(ingress, &err).status);
                     }
-                    return Err(fail(Stage::Provider)(err));
+                    return Err(fail(stage)(err));
                 }
             }
             let chunks = if kind == RequestKind::Generate
@@ -2707,7 +2711,7 @@ async fn attempt(
                     &ectx,
                 );
                 count_upstream_error(err.kind.as_str(), provider);
-                let err = super::accounts::account_error(account, err);
+                let (stage, err) = provider_failed(account, err);
                 if err.kind == ErrorKind::NotFound && !credential.is_keyless() {
                     match Box::pin(state.availability.probe(state, &credential, &eff)).await {
                         Probe::Unserved => {
@@ -2722,7 +2726,7 @@ async fn attempt(
                             )));
                         }
                         Probe::Served => {
-                            let mut failure = fail(Stage::Provider)(err);
+                            let mut failure = fail(stage)(err);
                             failure.not_found_in_request = true;
                             return Err(failure);
                         }
@@ -2764,7 +2768,7 @@ async fn attempt(
                     failure.provider_said = Some(said);
                     return Err(failure);
                 }
-                return Err(fail(Stage::Provider)(err));
+                return Err(fail(stage)(err));
             }
             if sh.generation {
                 let generation =
@@ -2917,6 +2921,7 @@ async fn hold(
         Stage::KeyRefused => cooldowns::Cause::KeyRefused,
         Stage::Provider if failure.not_found_in_request => return None,
         Stage::Provider => cooldowns::Cause::Provider(&failure.err),
+        Stage::PlanLimit => cooldowns::Cause::PlanLimit(&failure.err),
         _ => return None,
     };
     let (Some((reach, length)), Next::Fall(reason)) = (cooldowns::length(cause), classify(failure))
@@ -2945,6 +2950,21 @@ enum Next {
     Stop,
 }
 
+// A provider's error as the attempt fails with it: an account's reached plan limit holds the
+// whole account, any other error what its kind says.
+fn provider_failed(
+    account: Option<kaeso_core::provider::AccountSignIn>,
+    err: KppError,
+) -> (Stage, KppError) {
+    match super::accounts::plan_limit(account, &err) {
+        Some(limited) => (Stage::PlanLimit, limited),
+        None => (
+            Stage::Provider,
+            super::accounts::account_error(account, err),
+        ),
+    }
+}
+
 fn classify(f: &Failure) -> Next {
     match &f.stage {
         Stage::Setup
@@ -2962,6 +2982,7 @@ fn classify(f: &Failure) -> Next {
         Stage::Limits => Next::Fall(RouteFailure::Limited),
         Stage::Provider if f.not_found_in_request => Next::Fall(RouteFailure::Rejected),
         Stage::Provider => Next::Fall(provider_failure(&f.err)),
+        Stage::PlanLimit => Next::Fall(RouteFailure::Limited),
         Stage::Caller
         | Stage::Request
         | Stage::Catalogue

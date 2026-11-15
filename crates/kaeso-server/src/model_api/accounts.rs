@@ -68,11 +68,16 @@ pub(super) fn account_error(account: Option<AccountSignIn>, err: KppError) -> Kp
 
 pub(super) fn plan_limit(account: Option<AccountSignIn>, err: &KppError) -> Option<KppError> {
     match account.and_then(|a| a.usage_url.map(|url| (a.product, url))) {
-        Some((product, url)) if err.kind == ErrorKind::Billing => Some(error(
-            ErrorKind::RateLimited,
-            429,
-            format!("Your {product} plan's usage limit is reached. Review it at {url}."),
-        )),
+        Some((product, url)) if err.kind == ErrorKind::Billing => {
+            let mut limited = error(
+                ErrorKind::RateLimited,
+                429,
+                format!("Your {product} plan's usage limit is reached. Review it at {url}."),
+            );
+            // A wait the provider named still holds the account that long.
+            limited.retry_after = err.retry_after;
+            Some(limited)
+        }
         _ => None,
     }
 }
