@@ -427,7 +427,7 @@
   "errors.logDeletionsWaiting": "仍有 {count} 个日志删除任务在等待，请在其完成后重试。",
   "errors.ifMatchForm": "`If-Match` 必须是来自 `ETag` 的实体标签，例如“3”。",
   "errors.updates.noUpdater": "未安装更新器，请手动更新此实例。",
-  "errors.updates.notNewest": "这不是最新的可用版本，请重新检查更新。",
+  "errors.updates.notNewest": "现在有更新的版本可用，请更新到该版本。",
   "errors.updates.manualSteps": "此版本需要手动操作，请按照升级指南更新。",
   "errors.updates.updaterOutdated": "更新器版本过旧，无法应用此版本，请先手动更新更新器。",
   "errors.updates.alreadyRunning": "已有更新正在进行，请等待其完成。",

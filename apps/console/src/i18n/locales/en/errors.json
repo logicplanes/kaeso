@@ -820,7 +820,7 @@
   "errors.updates.hourRange": "Choose an hour from 0 to 23.",
   "errors.updates.manualSteps": "This release needs steps by hand; follow the upgrade guide.",
   "errors.updates.noUpdater": "The updater isn't installed; update this install by hand.",
-  "errors.updates.notNewest": "That isn't the newest offered release; check for updates again.",
+  "errors.updates.notNewest": "A newer release is offered now; update to that one.",
   "errors.updates.updaterBusy": "The updater is busy with another update; try again later.",
   "errors.updates.updaterOutdated": "The updater is too old for this release; update it by hand first.",
   "errors.updates.updaterRefused": "The updater refused the update; nothing was changed.",

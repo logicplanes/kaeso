@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
 import { available, release, updateJob, updateSettings, updates } from "~/test/fixtures/instance-account";
-import { hoverReason } from "~/test/fixtures/org";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import type { UpdatesView } from "~/api/generated/types";
@@ -93,6 +93,27 @@ describe("instance updates page", () => {
     await user.click(screen.getByRole("button", { name: "Reload the console" }));
     expect(reload).toHaveBeenCalledOnce();
     reload.mockRestore();
+  });
+
+  it("offers the newer release when the one confirmed is no longer the newest", async () => {
+    signedIn();
+    let newer = false;
+    on("GET", "instance/updates", () => {
+      const r = release(newer ? { version: "40.4.4", url: "https://github.com/logicplanes/kaeso/releases/tag/v40.4.4" } : {});
+      return available({ latest: r, releases: [r] });
+    });
+    history();
+    on("POST", "instance/updates/apply", () => {
+      newer = true;
+      return apiError(422, "invalid_request", "A newer release is offered now; update to that one.", { param: "version" });
+    });
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Update to 40.4.3" }));
+    await user.click(within(await screen.findByRole("dialog", { name: "Update to Kaeso 40.4.3?" })).getByRole("button", { name: "Update now" }));
+    expect(await notifications().findByText("A newer release is offered now; update to that one.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(await screen.findByRole("button", { name: "Update to 40.4.4" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Update to 40.4.3" })).not.toBeInTheDocument();
   });
 
   it("cancels a confirmation, and sends it with the keyboard", async () => {

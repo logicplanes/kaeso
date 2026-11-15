@@ -427,7 +427,7 @@
   "errors.logDeletionsWaiting": "{count} Protokoll-Löschungen stehen noch aus; erneut versuchen, sobald sie gelaufen sind.",
   "errors.ifMatchForm": "`If-Match` muss ein Entity-Tag aus `ETag` sein, etwa „3“.",
   "errors.updates.noUpdater": "Der Updater ist nicht installiert; aktualisieren Sie diese Installation von Hand.",
-  "errors.updates.notNewest": "Das ist nicht das neueste angebotene Release; erneut nach Updates suchen.",
+  "errors.updates.notNewest": "Inzwischen wird ein neueres Release angeboten; aktualisieren Sie auf dieses.",
   "errors.updates.manualSteps": "Dieses Release verlangt Schritte von Hand; folgen Sie der Upgrade-Anleitung.",
   "errors.updates.updaterOutdated": "Der Updater ist zu alt für dieses Release; aktualisieren Sie ihn zuerst von Hand.",
   "errors.updates.alreadyRunning": "Ein Update läuft bereits; warten Sie, bis es abgeschlossen ist.",

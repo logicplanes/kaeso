@@ -882,7 +882,7 @@ const messages = (): Rule[] => [
   }),
   rule("errors.ifMatchForm", () => t("errors.ifMatchForm", '`If-Match` must be an entity tag from `ETag`, such as "3".')),
   rule("errors.updates.noUpdater", () => t("errors.updates.noUpdater", "The updater isn't installed; update this install by hand.")),
-  rule("errors.updates.notNewest", () => t("errors.updates.notNewest", "That isn't the newest offered release; check for updates again.")),
+  rule("errors.updates.notNewest", () => t("errors.updates.notNewest", "A newer release is offered now; update to that one.")),
   rule("errors.updates.manualSteps", () => t("errors.updates.manualSteps", "This release needs steps by hand; follow the upgrade guide.")),
   rule("errors.updates.updaterOutdated", () => t("errors.updates.updaterOutdated", "The updater is too old for this release; update it by hand first.")),
   rule("errors.updates.alreadyRunning", () => t("errors.updates.alreadyRunning", "An update is already running; wait for it to finish.")),
