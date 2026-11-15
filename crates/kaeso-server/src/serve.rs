@@ -68,6 +68,9 @@ const METRICS_MAX_CONNECTIONS: usize = 64;
 pub struct Connections {
     pub header_read_timeout: Duration,
     pub max: usize,
+    /// Whether `kaeso_connections_open` and `kaeso_connections_max` count this listener's
+    /// connections: the public listener's, not the metrics listener's.
+    pub metered: bool,
 }
 
 #[derive(Debug, Default)]
@@ -263,6 +266,7 @@ pub async fn run(
             Connections {
                 header_read_timeout,
                 max: config.server.max_connections,
+                metered: true,
             },
             state.in_flight.cutter()
         ),
@@ -274,6 +278,7 @@ pub async fn run(
             Connections {
                 header_read_timeout,
                 max: METRICS_MAX_CONNECTIONS,
+                metered: false,
             },
             CancellationToken::new()
         ),
@@ -369,6 +374,21 @@ fn connection_builder(header_read_timeout: Duration) -> Builder<TokioExecutor> {
     builder
 }
 
+struct OpenConnection;
+
+impl OpenConnection {
+    fn start() -> OpenConnection {
+        metrics::gauge!(crate::metrics::CONNECTIONS_OPEN).increment(1.0);
+        OpenConnection
+    }
+}
+
+impl Drop for OpenConnection {
+    fn drop(&mut self) {
+        metrics::gauge!(crate::metrics::CONNECTIONS_OPEN).decrement(1.0);
+    }
+}
+
 async fn accept_until(
     listener: TcpListener,
     router: Router,
@@ -380,6 +400,9 @@ async fn accept_until(
     let builder = Arc::new(connection_builder(header_read_timeout));
     let connections = TaskTracker::new();
     let slots = Arc::new(Semaphore::new(limits.max));
+    if limits.metered {
+        metrics::gauge!(crate::metrics::CONNECTIONS_MAX).set(limits.max as f64);
+    }
     let mut full = false;
     loop {
         let slot = match slots.clone().try_acquire_owned() {
@@ -429,8 +452,10 @@ async fn accept_until(
             header_read_timeout,
             kill.clone(),
         );
+        let open = limits.metered.then(OpenConnection::start);
         connections.spawn(async move {
             served.await;
+            drop(open);
             drop(slot);
         });
     }

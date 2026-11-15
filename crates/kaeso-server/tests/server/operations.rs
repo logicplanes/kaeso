@@ -430,6 +430,7 @@ fn connections(header_read_timeout: Duration, max: usize) -> kaeso_server::serve
     kaeso_server::serve::Connections {
         header_read_timeout,
         max,
+        metered: true,
     }
 }
 
@@ -521,6 +522,40 @@ async fn connections_over_the_limit_wait_until_one_closes() {
         .expect("served once the first closed");
     assert!(reply.contains("200 OK"), "{reply}");
     assert_eq!(entered.recv().await, Some(second_peer));
+    shutdown.cancel();
+}
+
+#[tokio::test]
+async fn the_connection_gauges_count_open_connections_against_the_limit() {
+    let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
+    let handle = recorder.handle();
+    let _local = metrics::set_default_local_recorder(&recorder);
+    let gauge = |name: &str| -> f64 {
+        handle
+            .render()
+            .lines()
+            .find_map(|l| l.strip_prefix(&format!("{name} ")))
+            .map_or(0.0, |v| v.parse().unwrap())
+    };
+    let router = Router::new().route("/", get(|| async { "hi" }));
+    let (addr, shutdown) = serving_at_most(router, Duration::from_secs(30), 3).await;
+    let mut first = TcpStream::connect(addr).await.unwrap();
+    assert!(answer_to(&mut first).await.contains("200 OK"));
+    let mut second = TcpStream::connect(addr).await.unwrap();
+    assert!(answer_to(&mut second).await.contains("200 OK"));
+    assert_eq!(gauge("kaeso_connections_open"), 2.0);
+    assert_eq!(gauge("kaeso_connections_max"), 3.0);
+    drop(first);
+    drop(second);
+    let mut open = gauge("kaeso_connections_open");
+    for _ in 0..100 {
+        if open == 0.0 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(20)).await;
+        open = gauge("kaeso_connections_open");
+    }
+    assert_eq!(open, 0.0, "closed connections leave the gauge");
     shutdown.cancel();
 }
 

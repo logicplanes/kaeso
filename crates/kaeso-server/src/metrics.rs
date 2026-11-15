@@ -33,6 +33,9 @@ pub const EMAILS: &str = "kaeso_emails_total";
 pub const BUILD_INFO: &str = "kaeso_build_info";
 pub const UPDATE_AVAILABLE: &str = "kaeso_update_available";
 pub const KPMR_FETCHED: &str = "kaeso_kpmr_fetched_timestamp_seconds";
+pub const CONNECTIONS_OPEN: &str = "kaeso_connections_open";
+pub const CONNECTIONS_MAX: &str = "kaeso_connections_max";
+pub const MODEL_REQUESTS_IN_FLIGHT: &str = "kaeso_model_requests_in_flight";
 pub const KPMR_LAST_ATTEMPT: &str = "kaeso_kpmr_last_attempt_timestamp_seconds";
 pub const KPMR_LAST_ATTEMPT_FAILED: &str = "kaeso_kpmr_last_attempt_failed";
 
@@ -123,6 +126,18 @@ pub fn describe() {
     describe_counter!(EMAILS, "Emails by kind and outcome.");
     describe_gauge!(BUILD_INFO, "Build information.");
     describe_gauge!(
+        CONNECTIONS_OPEN,
+        "Connections the public listener serves now; at kaeso_connections_max, new ones wait."
+    );
+    describe_gauge!(
+        CONNECTIONS_MAX,
+        "The most connections the public listener serves at once (server.max_connections)."
+    );
+    describe_gauge!(
+        MODEL_REQUESTS_IN_FLIGHT,
+        "Model requests being served, streams and realtime sessions included."
+    );
+    describe_gauge!(
         KPMR_FETCHED,
         Unit::Seconds,
         "When KPMR published the model data in use, or generated the built-in snapshot; it moves only when KPMR publishes new data."
@@ -141,6 +156,24 @@ pub fn describe() {
         "1 while a newer release is offered on the install's channel, with it as version; 0 with the running version while the install is up to date. Absent while update checks are off."
     );
     metrics::gauge!(BUILD_INFO, "version" => env!("CARGO_PKG_VERSION")).set(1.0);
+}
+
+/// One model request being served, streams included, counted in
+/// `kaeso_model_requests_in_flight` until it is dropped.
+#[derive(Debug)]
+pub struct Serving(());
+
+impl Serving {
+    pub fn start() -> Serving {
+        metrics::gauge!(MODEL_REQUESTS_IN_FLIGHT).increment(1.0);
+        Serving(())
+    }
+}
+
+impl Drop for Serving {
+    fn drop(&mut self) {
+        metrics::gauge!(MODEL_REQUESTS_IN_FLIGHT).decrement(1.0);
+    }
 }
 
 /// The time of the model data in use.

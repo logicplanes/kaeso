@@ -92,6 +92,8 @@ pub(super) struct Recording {
     held: Option<super::memory::Held>,
     keep_in_cache: Option<response_cache::Slot>,
     logging: Option<tokio::task::JoinHandle<(Bytes, Keep)>>,
+    // Moves into a stream's pump, so a stream counts until it ends.
+    serving: Option<crate::metrics::Serving>,
 }
 
 impl Recording {
@@ -386,6 +388,7 @@ pub async fn serve_with(
         held: None,
         keep_in_cache: None,
         logging: None,
+        serving: Some(crate::metrics::Serving::start()),
     };
     let cut = state.in_flight.cut();
     let done = tokio::select! {
@@ -1771,6 +1774,7 @@ async fn attempt(
                 held: rec.held.take(),
                 keep_in_cache: None,
                 logging: rec.logging.take(),
+                serving: rec.serving.take(),
             };
             let keepalive = state.config.streams.keepalive_interval;
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
