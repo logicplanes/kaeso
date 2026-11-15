@@ -63,6 +63,24 @@ Quellen: die Seiten [Chat-Completions-Referenz](https://inference-docs.cerebras.
 
 Cerebras hat keinen Endpunkt für Responses, Messages, Embeddings oder Token-Zählung (alle antworten mit 404), deshalb sind `embeddings` und `count_tokens` `None`.
 
+## Azure
+
+Quellen: Azures v1-OpenAPI-Dokument (`azure-v1-v1-generated.json` in [azure-rest-api-specs](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/ai/data-plane/OpenAI.v1)) und die Seiten [API-Lebenszyklus](https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle), [Endpunkte](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/endpoints), [Content-Streaming](https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/content-streaming) und [Inhaltsfilter](https://learn.microsoft.com/en-us/azure/foundry-classic/openai/concepts/content-filter-annotations), gelesen am 2026-11-14. Es stand kein Schlüssel zur Verfügung: Eine Antwort in `fixtures/openai_chat/providers/azure/` ist eine Antwort, die Azure gesendet hat, veröffentlicht in einer Stack-Overflow-Antwort, die übrigen und die Streams sind die Beispiele der Dokumentation; die Schlüsselfehler wurden live mit einem erfundenen Schlüssel beantwortet. Jeder Schlüssel trägt den Endpunkt seiner Ressource, etwa `https://example.openai.azure.com`, und Kaeso ruft `{endpoint}/openai/v1/…` mit dem Schlüssel in `api-key` auf, ohne `api-version`.
+
+| Azure-Feld | KPP | Hinweise |
+|---|---|---|
+| `model` | der Name des Deployments | Der `upstream_model` des Modells, wenn es einen hat, sonst seine ID. |
+| `prompt_filter_results` (oder `prompt_annotations`), `choices[].content_filter_results` | Extras | Kommen für Chat-Apps unverändert zurück, gegenüber anderen Dialekten ausgelassen (`responses/greeting-published`). |
+| ein erster Chunk mit leerem `id`, `object` und `model` und `choices: []` | Start | ID und Modell der Antwort kommen aus dem nächsten Chunk (`streams/filter-pass-doc`). |
+| Chunks, deren Choice nur `content_filter_results` und `content_filter_offsets` enthält | Extras | Auch nach `finish_reason: "stop"`; sie tragen keinen Text. |
+| `finish_reason: "content_filter"` | `StopReason::ContentFilter` | Auch in einem Chunk ohne `delta` (`streams/filter-blocked-doc`) und in einer Antwort ohne `content` (`responses/filtered-blocklist-doc`). |
+| ein 400 mit `code: "content_filter"` und `innererror` | `KppError` | `ContentFiltered`, mit Azures Meldung (`errors/content-filter-prompt-doc`). |
+| `error.code` als Zahl in einem String, etwa `"401"` | `KppError` | Die Art folgt dem Status (`errors/recorded-invalid-api-key`). |
+| `{"statusCode": 401, "message": …}` | `KppError` | Azures Antwort auf einen Bearer, der wie ein Entra-ID-Token aussieht (`errors/recorded-entra-token`); Kaeso sendet `api-key`, Apps sehen sie also nur von einem anderen Client. |
+| `GET /openai/v1/models` | `ModelList` | Die Modelle, die eine Ressource bereitstellen kann, nicht ihre Deployments; eine Modellprüfung zeigt daher nur, ob der Schlüssel und sein Endpunkt funktionieren (`ModelListing::Catalogue`). |
+
+Die v1-API bietet Responses mit OpenAIs Anfragekörper an, dazu `content_filters` in Antworten, die in den Extras bleiben; Kaeso sendet ein Modell als Responses, wenn sein Wert **Sendet als** das sagt (`fixtures/openai_responses/providers/azure/`). Claude-Deployments beantworten nur Anthropics Messages API unter `{endpoint}/anthropic`, und Bilder, Sprache, Transkriptionen und Videos gibt es in der v1-API nur in der Vorschau, daher ruft Kaeso keines davon auf. Token-Zählungen werden abgelehnt.
+
 ## DeepInfra
 
 Quellen: das [OpenAPI document](https://api.deepinfra.com/openapi.json) von DeepInfra und seine Anleitungen zu [Chat Completions](https://docs.deepinfra.com/chat/overview.md), [Streaming](https://docs.deepinfra.com/chat/streaming.md), [Tool-Aufrufen](https://docs.deepinfra.com/chat/tool-calling.md), [Prompt-Caching](https://docs.deepinfra.com/chat/prompt-caching.md) und [Authentifizierung](https://docs.deepinfra.com/account/authentication.md), gelesen am 2026-11-14. Es gab keinen Schlüssel: Eine Antwort in `fixtures/openai_chat/providers/deepinfra/` ist eine Antwort, die DeepInfra gesendet hat, veröffentlicht im Issue eines anderen Projekts, die übrigen und der Stream sind aus den Anleitungen gebaut; die Modellliste und die Schlüsselfehler kamen live, ohne gültigen Schlüssel. Die Anleitungen von DeepInfra schreiben die Basis-URL als `https://api.deepinfra.com/v1/openai`; sein OpenAPI-Dokument bietet dieselbe API unter `/v1/…` an, daher ist Kaesos Basis-URL `https://api.deepinfra.com`, die `Authorization: Bearer` annimmt.

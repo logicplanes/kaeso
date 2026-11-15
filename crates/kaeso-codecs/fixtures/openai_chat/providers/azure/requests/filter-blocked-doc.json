@@ -1,0 +1,10 @@
+{
+  "model": "gpt-35-turbo",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tell me the lyrics of Hey Jude."
+    }
+  ],
+  "stream": true
+}

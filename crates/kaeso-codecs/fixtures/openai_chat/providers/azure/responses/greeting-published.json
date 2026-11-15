@@ -1,0 +1,62 @@
+{
+  "choices": [
+    {
+      "content_filter_results": {
+        "hate": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "self_harm": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "sexual": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "violence": {
+          "filtered": false,
+          "severity": "safe"
+        }
+      },
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Hi there! How can I assist you today?",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1690229943,
+  "id": "chatcmpl-sdkopsdvomsdvpomi156sdv",
+  "model": "gpt-35-turbo",
+  "object": "chat.completion",
+  "prompt_annotations": [
+    {
+      "content_filter_results": {
+        "hate": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "self_harm": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "sexual": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "violence": {
+          "filtered": false,
+          "severity": "safe"
+        }
+      },
+      "prompt_index": 0
+    }
+  ],
+  "usage": {
+    "completion_tokens": 11,
+    "prompt_tokens": 127,
+    "total_tokens": 138
+  }
+}

@@ -215,6 +215,7 @@ const MARKED_PROVIDERS = {
   "stepfun-ai": "StepFun",
   "tencent-tokenhub": "Tencent TokenHub",
   venice: "Venice",
+  azure: "Azure",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

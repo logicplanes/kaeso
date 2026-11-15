@@ -1069,6 +1069,122 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/azure/filter-blocked-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tell me the lyrics of Hey Jude.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-35-turbo",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/azure/filter-pass-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "What is color?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-35-turbo",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
+  "providers/azure/filtered-blocklist-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Tell me about my pizza.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-35-turbo"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/azure/greeting-published": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-35-turbo",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful assistant.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/azure/invalid-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4o"
+    },
+    "path": "/v1/messages"
+  },
   "providers/baseten/invalid-api-key": {
     "body": {
       "max_tokens": 1,

@@ -6,6 +6,7 @@ use std::time::Duration;
 use bytes::Bytes;
 use kaeso_codecs::{EgressCtx, EncodedRequest, HeaderList, dispatch};
 use kaeso_core::catalogue::{Effective, Entry};
+use kaeso_core::provider::ModelListing;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{
     DialectId, ErrorKind, KppError, ModelInfo, ModelList, ModelsQuery, RequestKind, StreamMode,
@@ -171,8 +172,11 @@ impl Asked<'_> {
             ),
             None => None,
         };
+        let keyed =
+            crate::services::key_endpoint::base(self.state, self.provider, self.credential)?;
         let Some(base) = account_base
             .as_ref()
+            .or(keyed.as_ref())
             .or_else(|| crate::model_api::pipeline::base_url(self.state, self.provider))
         else {
             return Err(KppError::provider(format!(
@@ -311,6 +315,9 @@ pub async fn probe(
     } {
         return account_probe(&asked, &scoped, &eff.model_id).await;
     }
+    if eff.provider.listing() == ModelListing::Catalogue {
+        return catalogue_probe(&asked, eff, credential, listings).await;
+    }
     if asked.plan_catalogue() {
         let listing = listings
             .get(
@@ -339,7 +346,7 @@ pub async fn probe(
     }
     let request = match dispatch::encode_model_request_with(
         eff.dialect,
-        &eff.model_id,
+        eff.sent_model(),
         &models_ctx(&eff.provider),
     ) {
         Ok(r) => r,
@@ -364,13 +371,40 @@ pub async fn probe(
         )
         .await;
     match listing.as_ref() {
-        Listing::Complete(ids) => match eff.provider.listing().serves(ids, &eff.model_id) {
+        Listing::Complete(ids) => match eff.provider.listing().serves(ids, eff.sent_model()) {
             Some(true) => Probe::Served,
             Some(false) => Probe::Unserved,
             None => Probe::Inconclusive(not_found),
         },
         Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
         Listing::Unfinished | Listing::Failed(_) => Probe::Inconclusive(not_found),
+    }
+}
+
+// A listing of the models a provider offers rather than the ones the key can call, such as
+// Azure's, which lists what a resource may deploy and not its deployments, never says whether the
+// key's resource serves a model: reading it only shows whether the key and its endpoint work.
+async fn catalogue_probe(
+    asked: &Asked<'_>,
+    eff: &Effective,
+    credential: &Resolved,
+    listings: &Listings,
+) -> Probe {
+    let listing = listings
+        .get(
+            (eff.provider.id().to_owned(), eff.dialect, credential.key()),
+            asked,
+        )
+        .await;
+    match listing.as_ref() {
+        Listing::Failed(e) if e.kind == ErrorKind::Authentication => Probe::Failed(e.clone()),
+        Listing::Failed(e) => Probe::Inconclusive(e.clone()),
+        Listing::Complete(_) | Listing::Unfinished => {
+            Probe::Inconclusive(KppError::provider(format!(
+                "{} lists the models a resource may deploy, not its deployments, so only a request tells whether it serves this one",
+                eff.provider.name()
+            )))
+        }
     }
 }
 

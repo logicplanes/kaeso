@@ -491,6 +491,7 @@ async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
         location: None,
         account_id: None,
         gateway_id: None,
+        endpoint: None,
     };
     let account = uuid::Uuid::now_v7();
     credentials::insert(
@@ -682,6 +683,74 @@ async fn an_account_credential_refreshes_in_place_until_it_is_signed_out() {
         "only a key that names an account moves to another"
     );
 
+    let endpoint = "https://example.openai.azure.com";
+    let keyed = |id, endpoint: Option<&'static str>| NewCredential {
+        provider: "azure",
+        last4: "beef",
+        endpoint,
+        ..new(id, "api_key", None, None)
+    };
+    let azure = uuid::Uuid::now_v7();
+    credentials::insert(&s.pg, &keyed(azure, Some(endpoint)))
+        .await
+        .unwrap();
+    for (bad, why) in [
+        (
+            "https://Example.openai.azure.com",
+            "an endpoint is kept lowercase",
+        ),
+        ("http://example.openai.azure.com", "an endpoint is https"),
+        (
+            "https://example.openai.azure.com/openai",
+            "an endpoint has no path",
+        ),
+    ] {
+        assert!(
+            credentials::insert(&s.pg, &keyed(uuid::Uuid::now_v7(), Some(bad)))
+                .await
+                .is_err(),
+            "{why}"
+        );
+    }
+    assert!(
+        credentials::insert(
+            &s.pg,
+            &NewCredential {
+                endpoint: Some(endpoint),
+                ..scoped(uuid::Uuid::now_v7(), Some(account_id), None)
+            }
+        )
+        .await
+        .is_err(),
+        "a key names an account or an endpoint, not both"
+    );
+    let before = credentials::sealed(&s.pg, org, azure)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(before.endpoint.as_deref(), Some(endpoint));
+    let other = "https://other.services.ai.azure.com";
+    assert!(
+        credentials::set_endpoint(&s.pg, org, azure, other)
+            .await
+            .unwrap()
+    );
+    let after = credentials::sealed(&s.pg, org, azure)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        (after.endpoint.as_deref(), after.revision),
+        (Some(other), before.revision + 1),
+        "a new endpoint is a new revision, so cached keys are read again"
+    );
+    assert!(
+        !credentials::set_endpoint(&s.pg, org, cf, other)
+            .await
+            .unwrap(),
+        "only a key that names an endpoint moves to another"
+    );
+
     let later = now + time::Duration::hours(1);
     let sealed = Sealed {
         ciphertext: &[4],
@@ -866,6 +935,7 @@ async fn a_grok_account_can_lose_its_api_access() {
         location: None,
         account_id: None,
         gateway_id: None,
+        endpoint: None,
     };
     let grok = uuid::Uuid::now_v7();
     credentials::insert(&s.pg, &new(grok, "grok"))

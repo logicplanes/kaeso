@@ -23,6 +23,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -44,6 +45,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -65,6 +67,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -91,6 +94,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -112,6 +116,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -133,6 +138,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -154,6 +160,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -175,6 +182,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -196,6 +204,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -217,6 +226,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -238,6 +248,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -259,6 +270,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -280,6 +292,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -301,6 +314,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -322,6 +336,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -343,6 +358,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -364,6 +380,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -385,6 +402,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -446,6 +464,7 @@
       },
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [
         {
           "pattern": "claude-*",
@@ -476,6 +495,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -497,6 +517,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -518,6 +539,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -539,6 +561,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -560,6 +583,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -581,6 +605,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -602,6 +627,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -623,6 +649,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -644,6 +671,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -671,6 +699,7 @@
         "gateway_header": "cf-aig-gateway-id"
       },
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -692,6 +721,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -713,6 +743,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -734,6 +765,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -755,6 +787,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -776,6 +809,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -797,6 +831,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -818,6 +853,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -839,6 +875,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -860,6 +897,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -881,6 +919,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -902,6 +941,7 @@
       "service_account": null,
       "account_scope": null,
       "regions": null,
+      "key_endpoint": null,
       "model_routes": [],
       "server": null
     },
@@ -951,6 +991,36 @@
           "us-gov-east-1",
           "us-gov-west-1"
         ]
+      },
+      "key_endpoint": null,
+      "model_routes": [],
+      "server": null
+    },
+    {
+      "id": "azure",
+      "name": "Azure",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://portal.azure.com/",
+        "label": "Keys and Endpoint"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "openai_responses", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "regions": null,
+      "key_endpoint": {
+        "page": {
+          "url": "https://learn.microsoft.com/en-us/azure/ai-services/authentication",
+          "label": "Find the key and endpoint"
+        },
+        "hosts": [".openai.azure.com", ".services.ai.azure.com", ".cognitiveservices.azure.com"],
+        "example": "https://example.openai.azure.com"
       },
       "model_routes": [],
       "server": null

@@ -66,6 +66,10 @@ pub struct ProviderView {
         each API key also gives its region as `location`. `null` for other\n\
         providers."]
     pub regions: Option<RegionsView>,
+    #[doc = "For a provider whose keys each belong to one resource with an address of its\n\
+        own, such as Azure: each key also gives the resource's `endpoint`. `null` for\n\
+        other providers."]
+    pub key_endpoint: Option<KeyEndpointView>,
     #[doc = "Which format a model id is sent in when its catalogue entry names\n\
         none, the first matching pattern winning; models no pattern matches go\n\
         in the first of `dialects`. Empty for most providers."]
@@ -137,6 +141,19 @@ pub struct RegionsView {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "The resource endpoint a provider's keys carry.")]
+pub struct KeyEndpointView {
+    #[doc = "The provider's page that says where to find the endpoint."]
+    pub page: KeyPageView,
+    #[doc = "The host suffixes an endpoint may end in."]
+    #[schema(example = json!([".openai.azure.com"]))]
+    pub hosts: Vec<&'static str>,
+    #[doc = "An endpoint, for showing its form."]
+    #[schema(example = "https://example.openai.azure.com")]
+    pub example: &'static str,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "A page on the provider's own site.")]
 pub struct KeyPageView {
     #[doc = "The page, an `https` URL."]
@@ -191,6 +208,14 @@ impl ProviderView {
                 },
                 regions: r.regions.to_vec(),
             }),
+            key_endpoint: p.key_endpoint.map(|e| KeyEndpointView {
+                page: KeyPageView {
+                    url: e.page.url,
+                    label: e.page.label,
+                },
+                hosts: e.hosts.to_vec(),
+                example: e.example,
+            }),
             model_routes: p
                 .routes
                 .iter()
@@ -219,6 +244,7 @@ impl ProviderView {
             service_account: None,
             account_scope: None,
             regions: None,
+            key_endpoint: None,
             model_routes: Vec::new(),
             server: p.server(),
         }

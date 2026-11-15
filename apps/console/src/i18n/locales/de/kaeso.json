@@ -438,5 +438,13 @@
   "kaeso.providerKey.regionHint": "Wo {provider} die Anfragen des Schlüssels ausführt. {link}",
   "kaeso.providerKey.regionWhere": "Regionen",
   "kaeso.providerKey.regionPlaceholder": "Region wählen",
-  "kaeso.providerKey.regionBlocked": "Die Region des Schlüssels wählen"
+  "kaeso.providerKey.regionBlocked": "Die Region des Schlüssels wählen",
+  "kaeso.providerKey.endpointNotUrl": "Fügen Sie den Endpunkt als URL ein, beginnend mit https://.",
+  "kaeso.providerKey.endpointHttps": "Verwenden Sie eine https-Adresse ohne Benutzernamen, Abfrage oder Fragment.",
+  "kaeso.providerKey.endpointHost": "Verwenden Sie die Adresse der Ressource, etwa {example}.",
+  "kaeso.providerKey.endpointPath": "Lassen Sie den Pfad weg; Kaeso fügt den der API selbst an.",
+  "kaeso.providerKey.endpoint": "Endpunkt",
+  "kaeso.providerKey.endpointHint": "Die Adresse der Ressource, zu der der Schlüssel gehört, neben dem Schlüssel angezeigt. {link}",
+  "kaeso.providerKey.endpointWhere": "Wo Sie ihn finden",
+  "kaeso.providerKey.endpointBlocked": "Fügen Sie den Endpunkt der Ressource des Schlüssels ein"
 }

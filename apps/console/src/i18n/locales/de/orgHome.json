@@ -356,5 +356,8 @@
   "orgHome.changeFirst": "Zuerst den Namen oder den Standort ändern",
   "orgHome.editKey": "{title} bearbeiten",
   "orgHome.region": "Region",
-  "orgHome.changeRegionFirst": "Zuerst den Namen oder die Region ändern"
+  "orgHome.changeRegionFirst": "Zuerst den Namen oder die Region ändern",
+  "orgHome.endpoint": "Endpunkt",
+  "orgHome.keyReaddressed": "{name} ruft jetzt {endpoint} auf",
+  "orgHome.changeEndpointFirst": "Ändern Sie zuerst den Namen oder den Endpunkt"
 }

@@ -2039,6 +2039,27 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "providers/azure/bitter-lesson-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Explain what the bitter lesson is?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3-0324"
+    },
+    "path": "/v1/messages"
+  },
   "providers/vercel/gpt-reasoning-encrypted": {
     "body": {
       "max_tokens": 1024,

@@ -192,6 +192,13 @@ impl ChatProfile {
         self
     }
 
+    /// The provider takes OpenAI's `verbosity`, which [`ChatProfile::compatible`] leaves out.
+    #[must_use]
+    pub const fn with_verbosity(mut self) -> Self {
+        self.request.verbosity = true;
+        self
+    }
+
     #[must_use]
     pub const fn without_cache_key(mut self) -> Self {
         self.request.cache_key = false;

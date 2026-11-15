@@ -3417,3 +3417,58 @@ fn venice_models_speak_chat_completions_with_venices_prices_and_efforts_and_its_
         9
     );
 }
+
+#[test]
+fn azure_models_speak_chat_completions_at_global_standard_prices_and_its_embedding_models_embed() {
+    let gpt = eff(&entry("azure", "gpt-5"));
+    assert_eq!(gpt.dialect, DialectId::OpenAiChat);
+    assert_eq!(gpt.provider.chat().provider, "Azure");
+    assert_eq!(
+        (
+            gpt.fields.input_price,
+            gpt.fields.output_price,
+            gpt.fields.cache_read_price
+        ),
+        (Some(dec!(1.25)), Some(dec!(10)), Some(dec!(0.125)))
+    );
+    assert_eq!(
+        effort_levels(&gpt, DialectId::OpenAiChat),
+        ["minimal", "low", "medium", "high"]
+    );
+    assert_eq!(gpt.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    assert_eq!(
+        gpt.sent_model(),
+        "gpt-5",
+        "a deployment named like the model"
+    );
+    let embed = eff(&entry("azure", "text-embedding-3-small"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.02)))
+    );
+}
+
+#[test]
+fn a_provider_model_id_is_sent_in_place_of_the_model_id_and_has_no_spaces() {
+    let mut e = entry("azure", "gpt-5");
+    e.overrides.upstream_model = Some("gpt5-prod".into());
+    assert_eq!(eff(&e).sent_model(), "gpt5-prod");
+    let azure = ProviderRef::from(crate::provider::provider("azure").unwrap());
+    for bad in ["", "gpt 5", "gpt\t5", &"a".repeat(257)] {
+        let fields = Fields {
+            upstream_model: Some(bad.to_owned()),
+            ..Fields::default()
+        };
+        assert_eq!(
+            fields.validate(&azure).unwrap_err().field,
+            "upstream_model",
+            "{bad:?}"
+        );
+    }
+    let fields = Fields {
+        upstream_model: Some("gpt-5.1_prod:eu".into()),
+        ..Fields::default()
+    };
+    assert!(fields.validate(&azure).is_ok());
+}

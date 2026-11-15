@@ -745,6 +745,7 @@ mod tests {
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     };
 
     fn known(id: &str) -> &'static Provider {

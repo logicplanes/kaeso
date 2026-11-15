@@ -451,5 +451,8 @@
   "models.decisions.also": "决策和生成",
   "models.field.decisions": "决策",
   "models.problem.decisionPrice": "自定义决策模型需要其输入价格。",
-  "models.modality.decisions": "决策"
+  "models.modality.decisions": "决策",
+  "models.field.upstreamModel": "服务商模型 ID",
+  "models.problem.upstreamModel": "服务商模型 ID 不能包含空格。",
+  "models.upstreamModelHint": "服务商收到的 ID，用来代替模型的 ID，例如 Azure 部署的名称。留空则发送模型的 ID。"
 }

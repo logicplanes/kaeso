@@ -58,6 +58,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             "service_account": null,
             "account_scope": null,
             "regions": null,
+            "key_endpoint": null,
             "model_routes": [],
             "server": null,
         })
@@ -289,6 +290,31 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(
         typesafe["key_page"],
         json!({ "url": "https://console.typesafe.ai/keys", "label": "API keys" })
+    );
+    let azure = listed.iter().find(|p| p["id"] == "azure").unwrap();
+    assert_eq!(azure["name"], "Azure");
+    assert_eq!(
+        azure["dialects"],
+        json!(["openai_chat", "openai_responses", "openai_embeddings"])
+    );
+    assert_eq!(
+        (
+            &azure["count_tokens"],
+            &azure["embeddings"],
+            &azure["key_prefix"]
+        ),
+        (&Value::Null, &json!("openai_embeddings"), &Value::Null)
+    );
+    assert_eq!(
+        azure["key_endpoint"],
+        json!({
+            "page": {
+                "url": "https://learn.microsoft.com/en-us/azure/ai-services/authentication",
+                "label": "Find the key and endpoint"
+            },
+            "hosts": [".openai.azure.com", ".services.ai.azure.com", ".cognitiveservices.azure.com"],
+            "example": "https://example.openai.azure.com"
+        })
     );
     let deepinfra = listed.iter().find(|p| p["id"] == "deepinfra").unwrap();
     assert_eq!(deepinfra["name"], "DeepInfra");

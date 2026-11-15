@@ -1,0 +1,4 @@
+{
+  "statusCode": 401,
+  "message": "Unauthorized. Access token is missing, invalid, audience is incorrect (urn:ms.scopedToken or urn:ms.faceSessionToken), or have expired."
+}

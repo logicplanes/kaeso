@@ -176,6 +176,8 @@ export const providerMark = {
   "tencent-tokenhub-sky": mode("#009bf2", "#00a3ff"),
   "tencent-tokenhub-teal": mode("#00a4b4", "#00c8dc"),
   venice: mode("#0e2942", "#f7f5ed"),
+  // Fluent's themeSecondary, the next step of Azure's blue, so the mark reads on the dark tile.
+  azure: mode("#0078d4", "#2b88d8"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),

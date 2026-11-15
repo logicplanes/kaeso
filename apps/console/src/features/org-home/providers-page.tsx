@@ -37,6 +37,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgPartyName } from "~/features/org/party";
 import { docsPage } from "~/format/docs";
 import { AccountScopeFields, isAccountId, isGatewayId } from "~/kaeso/account-scope-fields";
+import { EndpointField, endpointProblem } from "~/kaeso/endpoint-field";
 import { ProviderKeyDialog } from "~/kaeso/provider-key-dialog";
 import { RegionField } from "~/kaeso/region-field";
 import { keyTitle, useProviders, type Providers } from "~/kaeso/providers";
@@ -70,6 +71,11 @@ const joined = (names: string[]) => names.join(t("orgHome.listSeparator", ", "))
 function namesLine(names: string[]): string {
   if (names.length <= 2) return joined(names);
   return t("orgHome.namesAndMore", "{names} and {count} more", { names: joined(names.slice(0, 2)), count: names.length - 2 });
+}
+
+// The gateway keeps an endpoint as `https://` and the host, without a path.
+function endpointHost(v: string): string {
+  return v.replace(/^https:\/\//, "");
 }
 
 function compactAccountId(v: string): string {
@@ -207,7 +213,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
             )}
             {canChange && (
               <Menu.Item icon={icons.edit} onClick={() => setRenaming(k)}>
-                {k.location || k.account_id ? t("common.edit", "Edit") : t("common.rename", "Rename")}
+                {k.location || k.account_id || k.endpoint ? t("common.edit", "Edit") : t("common.rename", "Rename")}
               </Menu.Item>
             )}
             {canDelete && (
@@ -262,6 +268,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
                   value: r.key.location,
                 }
               : null,
+            r.key.endpoint ? { id: "endpoint", label: t("orgHome.endpoint", "Endpoint"), value: endpointHost(r.key.endpoint) } : null,
             r.key.account_id ? { id: "account-id", label: t("orgHome.accountId", "Account ID"), value: compactAccountId(r.key.account_id) } : null,
             r.key.account_id
               ? { id: "gateway", label: t("orgHome.gateway", "Gateway"), value: r.key.gateway_id ?? t("orgHome.defaultGateway", "default") }
@@ -530,11 +537,14 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
   const known = providers.get(credential.provider);
   const regional = credential.auth_method === "api_key" && known?.regions ? { provider: known.name, regions: known.regions } : null;
   const locations = known?.service_account?.locations ?? [];
+  const [endpoint, setEndpoint] = useState(credential.endpoint ?? "");
+  const endpointRule = credential.endpoint ? providers.get(credential.provider)?.key_endpoint : undefined;
   const scopePage = credential.account_id ? providers.get(credential.provider)?.account_scope?.account_page : undefined;
   const trimmed = name.trim();
   const moved = location !== credential.location;
   const rescoped = !!credential.account_id && (accountId.trim().toLowerCase() !== credential.account_id || gatewayId.trim() !== (credential.gateway_id ?? ""));
-  const editing = !!location || !!credential.account_id;
+  const readdressed = !!credential.endpoint && endpoint.trim() !== credential.endpoint;
+  const editing = !!location || !!credential.account_id || !!credential.endpoint;
   const rename = useApiMutation({
     mutationFn: async () =>
       data(
@@ -544,6 +554,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
             name: trimmed,
             ...(moved ? { location: String(location) } : {}),
             ...(rescoped ? { account_id: accountId.trim().toLowerCase(), gateway_id: gatewayId.trim() } : {}),
+            ...(readdressed ? { endpoint: endpoint.trim() } : {}),
           },
         }),
       ),
@@ -552,32 +563,38 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
       toast(
         moved
           ? t("orgHome.keyMoved", "{name} now calls {location}", { name: k.name, location: String(k.location) })
-          : rescoped
-            ? t("orgHome.keyRescoped", "{name} now calls {account} via {gateway}", {
-                name: k.name,
-                gateway: k.gateway_id ?? t("orgHome.defaultGateway", "default"),
-                account: String(k.account_id),
-              })
-            : t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }),
+          : readdressed
+            ? t("orgHome.keyReaddressed", "{name} now calls {endpoint}", { name: k.name, endpoint: endpointHost(String(k.endpoint)) })
+            : rescoped
+              ? t("orgHome.keyRescoped", "{name} now calls {account} via {gateway}", {
+                  name: k.name,
+                  gateway: k.gateway_id ?? t("orgHome.defaultGateway", "default"),
+                  account: String(k.account_id),
+                })
+              : t("orgHome.keyRenamed", "Renamed to {name}", { name: k.name }),
       );
       onClose();
     },
   });
   const blocked = !trimmed
     ? t("orgHome.keyNameNeeded", "Give the key a name")
-    : credential.account_id && !isAccountId(accountId)
-      ? t("kaeso.providerKey.accountIdBlocked", "Give the 32-character account ID")
-      : credential.account_id && gatewayId.trim() && !isGatewayId(gatewayId)
-        ? t("kaeso.providerKey.gatewayIdBlocked", "A gateway ID has only letters, digits, hyphens and underscores")
-        : trimmed === credential.name && !moved && !rescoped
-          ? location
-            ? regional
-              ? t("orgHome.changeRegionFirst", "Change the name or the region first")
-              : t("orgHome.changeFirst", "Change the name or the location first")
-            : credential.account_id
-              ? t("orgHome.changeScopeFirst", "Change the name, the account or the gateway first")
-              : t("orgHome.changeNameFirst", "Change the name first")
-          : undefined;
+    : endpointRule && endpointProblem(endpoint, endpointRule)
+      ? endpointProblem(endpoint, endpointRule)
+      : credential.account_id && !isAccountId(accountId)
+        ? t("kaeso.providerKey.accountIdBlocked", "Give the 32-character account ID")
+        : credential.account_id && gatewayId.trim() && !isGatewayId(gatewayId)
+          ? t("kaeso.providerKey.gatewayIdBlocked", "A gateway ID has only letters, digits, hyphens and underscores")
+          : trimmed === credential.name && !moved && !rescoped && !readdressed
+            ? location
+              ? regional
+                ? t("orgHome.changeRegionFirst", "Change the name or the region first")
+                : t("orgHome.changeFirst", "Change the name or the location first")
+              : credential.account_id
+                ? t("orgHome.changeScopeFirst", "Change the name, the account or the gateway first")
+                : credential.endpoint
+                  ? t("orgHome.changeEndpointFirst", "Change the name or the endpoint first")
+                  : t("orgHome.changeNameFirst", "Change the name first")
+            : undefined;
   return (
     <Dialog
       busy={rename.isPending}
@@ -620,6 +637,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
             options={locations.map((l) => ({ value: l, label: l }))}
           />
         )}
+        {endpointRule && <EndpointField rule={endpointRule} value={endpoint} onValue={setEndpoint} />}
         {scopePage && <AccountScopeFields page={scopePage} accountId={accountId} onAccountId={setAccountId} gatewayId={gatewayId} onGatewayId={setGatewayId} />}
       </div>
     </Dialog>

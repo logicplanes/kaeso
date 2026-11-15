@@ -32,6 +32,9 @@ pub struct Resolved {
     pub scope: Option<KeyScope>,
     /// The region an API key of a regional provider, such as Amazon Bedrock, calls.
     pub region: Option<String>,
+    /// The endpoint of the resource a key of a provider whose keys each belong to one resource
+    /// calls, such as an Azure resource's `https://example.openai.azure.com`.
+    pub endpoint: Option<String>,
     keyless: bool,
     last_touched: AtomicI64,
 }
@@ -82,6 +85,7 @@ impl Resolved {
             google: None,
             scope: None,
             region: None,
+            endpoint: None,
             keyless: true,
             last_touched: AtomicI64::new(0),
         }
@@ -404,6 +408,7 @@ fn open(
             .location
             .clone()
             .filter(|_| method == AuthMethod::ApiKey),
+        endpoint: row.endpoint.clone(),
         keyless: false,
         last_touched: AtomicI64::new(0),
     })
@@ -459,6 +464,7 @@ mod tests {
             location: None,
             account_id: None,
             gateway_id: None,
+            endpoint: None,
         }
     }
 

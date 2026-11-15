@@ -163,6 +163,7 @@ export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind
     { key: "forced_tool_choice", label: t("models.field.forcedToolChoice", "Forced tool choice"), kind: "bool" },
     { key: "efforts", label: t("models.field.efforts", "Efforts"), kind: "list" },
     { key: "timeout_seconds", label: t("models.field.timeout", "Timeout"), kind: "number" },
+    { key: "upstream_model", label: t("models.field.upstreamModel", "Provider model ID"), kind: "text" },
     { key: "release_date", label: t("models.field.released", "Released"), kind: "date" },
     { key: "decisions", label: t("models.field.decisions", "Decisions"), kind: "decisions" },
   ];

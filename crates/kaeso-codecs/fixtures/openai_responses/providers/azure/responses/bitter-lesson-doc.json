@@ -1,0 +1,24 @@
+{
+  "id": "resp_...",
+  "object": "response",
+  "created_at": 1738368234,
+  "model": "deepseek-v3-0324",
+  "status": "completed",
+  "output": [
+    {
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "The bitter lesson refers to a key insight in AI research that emphasizes the importance of general-purpose learning methods that leverage computation, rather than human-designed domain-specific approaches. It suggests that methods which scale with increased computation tend to be more effective in the long run."
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 28,
+    "output_tokens": 52,
+    "total_tokens": 80
+  }
+}

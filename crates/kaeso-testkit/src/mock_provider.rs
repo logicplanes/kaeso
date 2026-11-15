@@ -474,6 +474,12 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     ) {
         return resp;
     }
+    // Azure's v1 API answers the dialects' `/v1/…` paths under `{endpoint}/openai`;
+    // the video mock above keeps `/openai/v1/videos` for a custom provider of OpenAI's Videos API.
+    let path = match path.strip_prefix("/openai") {
+        Some(rest) if rest.starts_with("/v1/") => rest.to_owned(),
+        _ => path,
+    };
     let headers = if headers.contains_key("authorization") && path.starts_with(GEMINI_MODELS) {
         let mut h = headers;
         h.remove("authorization");
@@ -522,6 +528,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         bearer
             || anthropic && headers.get("x-api-key").is_some_and(|v| !v.is_empty())
             || headers.get("xi-api-key").is_some_and(|v| !v.is_empty())
+            || headers.get("api-key").is_some_and(|v| !v.is_empty())
     };
     if !authed && dialect.starts_with("gemini") && decision.is_none() {
         return error_response(&ctx.fixtures.join("gemini"), key_refused(dialect));

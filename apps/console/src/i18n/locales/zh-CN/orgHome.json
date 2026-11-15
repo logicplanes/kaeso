@@ -356,5 +356,8 @@
   "orgHome.changeFirst": "请先更改名称或位置",
   "orgHome.editKey": "编辑 {title}",
   "orgHome.region": "区域",
-  "orgHome.changeRegionFirst": "请先更改名称或区域"
+  "orgHome.changeRegionFirst": "请先更改名称或区域",
+  "orgHome.endpoint": "端点",
+  "orgHome.keyReaddressed": "{name} 现在调用 {endpoint}",
+  "orgHome.changeEndpointFirst": "请先更改名称或端点"
 }

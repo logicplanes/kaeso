@@ -34,6 +34,10 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::PermissionDenied,
     ),
     (
+        "providers/azure/recorded-entra-token",
+        ErrorKind::Authentication,
+    ),
+    (
         "providers/cloudflare-ai-gateway/recorded-image-base64-detail",
         ErrorKind::InvalidRequest,
     ),

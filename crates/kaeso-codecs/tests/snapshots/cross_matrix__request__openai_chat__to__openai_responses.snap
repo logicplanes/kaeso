@@ -857,6 +857,74 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/azure/filter-blocked-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Tell me the lyrics of Hey Jude.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-35-turbo",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/azure/filter-pass-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "What is color?",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-35-turbo",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/azure/filtered-blocklist-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Tell me about my pizza.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-35-turbo",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/azure/greeting-published": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "gpt-35-turbo",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/azure/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-4o",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/baseten/invalid-api-key": {
     "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

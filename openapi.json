@@ -8306,7 +8306,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Renames a provider key, and moves a service account key to another location, a\nkey that calls a region to another region, or a key that calls an account to another\naccount or gateway.",
+        "summary": "Renames a provider key, and moves a service account key to another location, a\nkey that calls a region to another region, a key that calls an account to another account\nor gateway, or a key that belongs to a resource to another endpoint.",
         "description": "**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "patchOrgsOrgCredentialsCredential",
         "parameters": [
@@ -24922,6 +24922,14 @@
             "$ref": "#/components/schemas/KeyMethod",
             "description": "What `secret` is: `api_key` (the default) or `google_service_account`\nfor a provider whose `service_account` isn't `null`."
           },
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a provider whose `key_endpoint` isn't `null`, such as `azure`, the\nendpoint of the resource the key belongs to, such as\n`https://example.openai.azure.com`; a pasted `/openai/v1` is dropped.\nRequired for such a provider, refused for others.",
+            "example": "https://example.openai.azure.com"
+          },
           "gateway_id": {
             "type": [
               "string",
@@ -24949,7 +24957,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n`elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n`sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n`standardcompute`, `cloudflare-ai-gateway`, `perplexity`, `typesafe`,\n`deepinfra`, `upstage`, `ionos`, `novita-ai`, `volcengine`, `ovhcloud`, `stepfun-ai`,\n`tencent-tokenhub`, `venice`, `amazon-bedrock`, or one of the organization's custom\nproviders that takes a key."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n`elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n`sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n`standardcompute`, `cloudflare-ai-gateway`, `perplexity`, `typesafe`,\n`deepinfra`, `upstage`, `ionos`, `novita-ai`, `volcengine`, `ovhcloud`, `stepfun-ai`,\n`tencent-tokenhub`, `venice`, `amazon-bedrock`, `azure`, or one of the organization's\ncustom providers that takes a key."
           },
           "secret": {
             "type": "string",
@@ -24994,7 +25002,7 @@
       },
       "CredentialRename": {
         "type": "object",
-        "description": "A new name, for a service account key a new location, for a key that\ncalls a region a new region, and for a key that calls an account a new account or\ngateway.",
+        "description": "A new name, for a service account key a new location, for a key that\ncalls a region a new region, for a key that calls an account a new account or gateway,\nand for a key that belongs to a resource a new endpoint.",
         "required": [
           "name"
         ],
@@ -25005,6 +25013,13 @@
               "null"
             ],
             "description": "For a key that calls an account, the account it calls from now on;\nunchanged when absent."
+          },
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a key that belongs to a resource, the endpoint it calls from now on;\nunchanged when absent."
           },
           "gateway_id": {
             "type": [
@@ -25041,6 +25056,13 @@
               "null"
             ],
             "description": "For a key that calls an account, a new account id; unchanged when absent."
+          },
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a key that belongs to a resource, a new endpoint; unchanged when absent."
           },
           "gateway_id": {
             "type": [
@@ -25127,6 +25149,14 @@
           "created_by": {
             "$ref": "#/components/schemas/Party",
             "description": "Who added it."
+          },
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The resource a key of a provider whose keys each belong to one resource\ncalls, such as an Azure resource's endpoint; `null` for other keys.",
+            "example": "https://example.openai.azure.com"
           },
           "gateway_id": {
             "type": [
@@ -26391,6 +26421,14 @@
               "$ref": "#/components/schemas/UnitPrice"
             },
             "description": "Prices per image, megapixel, second, minute, hour or million characters, for\nmodels a provider bills by unit; they add to the token prices."
+          },
+          "upstream_model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The id Kaeso sends to the provider instead of the model's id, such as an\nAzure deployment's name; the model's id when absent.",
+            "example": "gpt-5-production"
           }
         },
         "additionalProperties": false
@@ -26647,6 +26685,14 @@
               "$ref": "#/components/schemas/UnitPrice"
             },
             "description": "Prices per image, megapixel, second, minute, hour or million characters, for\nmodels a provider bills by unit; they add to the token prices."
+          },
+          "upstream_model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The id Kaeso sends to the provider instead of the model's id, such as an\nAzure deployment's name; the model's id when absent.",
+            "example": "gpt-5-production"
           }
         },
         "additionalProperties": false
@@ -27604,6 +27650,36 @@
           }
         ],
         "description": "A new key."
+      },
+      "KeyEndpointView": {
+        "type": "object",
+        "description": "The resource endpoint a provider's keys carry.",
+        "required": [
+          "page",
+          "hosts",
+          "example"
+        ],
+        "properties": {
+          "example": {
+            "type": "string",
+            "description": "An endpoint, for showing its form.",
+            "example": "https://example.openai.azure.com"
+          },
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The host suffixes an endpoint may end in.",
+            "example": [
+              ".openai.azure.com"
+            ]
+          },
+          "page": {
+            "$ref": "#/components/schemas/KeyPageView",
+            "description": "The provider's page that says where to find the endpoint."
+          }
+        }
       },
       "KeyLimit": {
         "type": "object",
@@ -28736,6 +28812,14 @@
                 "created_by": {
                   "$ref": "#/components/schemas/Party",
                   "description": "Who added it."
+                },
+                "endpoint": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The resource a key of a provider whose keys each belong to one resource\ncalls, such as an Azure resource's endpoint; `null` for other keys.",
+                  "example": "https://example.openai.azure.com"
                 },
                 "gateway_id": {
                   "type": [
@@ -31190,6 +31274,17 @@
                 "id": {
                   "$ref": "#/components/schemas/ProviderId",
                   "description": "The id, which names the provider in model names such as\n`groq/llama-3.3-70b-versatile`, in provider keys and in settings."
+                },
+                "key_endpoint": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/KeyEndpointView",
+                      "description": "For a provider whose keys each belong to one resource with an address of its\nown, such as Azure: each key also gives the resource's `endpoint`. `null` for\nother providers."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "key_page": {
                   "oneOf": [
@@ -36579,6 +36674,17 @@
           "id": {
             "$ref": "#/components/schemas/ProviderId",
             "description": "The id, which names the provider in model names such as\n`groq/llama-3.3-70b-versatile`, in provider keys and in settings."
+          },
+          "key_endpoint": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/KeyEndpointView",
+                "description": "For a provider whose keys each belong to one resource with an address of its\nown, such as Azure: each key also gives the resource's `endpoint`. `null` for\nother providers."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "key_page": {
             "oneOf": [

@@ -118,6 +118,7 @@
   "models.field.thinkingBinding": "Thinking binding",
   "models.field.timeout": "Timeout",
   "models.field.unitPrices": "Prices per unit",
+  "models.field.upstreamModel": "Provider model ID",
   "models.fieldReset": "{field} reset to KPMR",
   "models.filter": "Filter models",
   "models.filters": "Filters",
@@ -170,6 +171,7 @@
   "models.problem.modalities": "A custom model needs its inputs and outputs.",
   "models.problem.price": "Prices are decimal amounts in USD, like 3.00.",
   "models.problem.prices": "A custom model needs its input and output prices.",
+  "models.problem.upstreamModel": "The provider model ID can't contain spaces.",
   "models.problem.whole": "Limits and the timeout are whole numbers.",
   "models.question.box": "Box",
   "models.question.choice": "Choice",
@@ -450,6 +452,7 @@
   "models.unit.withoutSound": "without sound",
   "models.unitPrice": "{price} per {unit} of {side}",
   "models.unitPriceEstimate": "{price}, estimated",
+  "models.upstreamModelHint": "The ID the provider gets instead of the model's, such as an Azure deployment name. Empty sends the model's ID.",
   "models.valuesInUse": "Values in use",
   "models.wantAll": "Want them all? {all}"
 }

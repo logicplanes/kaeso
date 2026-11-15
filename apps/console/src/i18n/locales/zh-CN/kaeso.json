@@ -438,5 +438,13 @@
   "kaeso.providerKey.regionHint": "{provider} 在何处运行此密钥的请求。{link}",
   "kaeso.providerKey.regionWhere": "区域列表",
   "kaeso.providerKey.regionPlaceholder": "选择区域",
-  "kaeso.providerKey.regionBlocked": "请选择密钥的区域"
+  "kaeso.providerKey.regionBlocked": "请选择密钥的区域",
+  "kaeso.providerKey.endpointNotUrl": "请以 URL 形式粘贴端点，以 https:// 开头。",
+  "kaeso.providerKey.endpointHttps": "请使用不含用户名、查询参数或片段的 https 地址。",
+  "kaeso.providerKey.endpointHost": "请使用资源的地址，例如 {example}。",
+  "kaeso.providerKey.endpointPath": "请去掉路径；Kaeso 会自行添加 API 的路径。",
+  "kaeso.providerKey.endpoint": "端点",
+  "kaeso.providerKey.endpointHint": "密钥所属资源的地址，显示在密钥旁边。{link}",
+  "kaeso.providerKey.endpointWhere": "在哪里找到它",
+  "kaeso.providerKey.endpointBlocked": "请粘贴密钥所属资源的端点"
 }

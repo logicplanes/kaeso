@@ -5,7 +5,9 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use kaeso_core::google::{KeyProblem, ServiceAccountKey};
 use kaeso_core::id::{CredentialId, OrgId, ProjectId};
-use kaeso_core::provider::{AccountScope, AuthMethod, ProviderId, ServiceAccountSignIn};
+use kaeso_core::provider::{
+    AccountScope, AuthMethod, EndpointProblem, ProviderId, ServiceAccountSignIn,
+};
 use kaeso_core::providers::ProviderRef;
 use kaeso_store::pg::catalogue;
 use kaeso_store::pg::credentials::{self, AssignmentRow, CredentialRow, NewCredential};
@@ -82,6 +84,10 @@ pub struct CredentialView {
         Gateway id; `null` for the account's default gateway and for other keys."]
     #[schema(example = "production")]
     pub gateway_id: Option<String>,
+    #[doc = "The resource a key of a provider whose keys each belong to one resource\n\
+        calls, such as an Azure resource's endpoint; `null` for other keys."]
+    #[schema(example = "https://example.openai.azure.com")]
+    pub endpoint: Option<String>,
     #[doc = "Why the account can't make requests until someone signs in again:\n\
         `signed_out` when the provider ended its session, `no_api_access` when its\n\
         plan doesn't include API access; `null` while it works."]
@@ -174,6 +180,7 @@ impl CredentialView {
             location: r.location.clone(),
             account_id: r.account_id.clone(),
             gateway_id: r.gateway_id.clone(),
+            endpoint: r.endpoint.clone(),
             auth_error: r.auth_error.as_deref().map(|e| match e {
                 service::NO_API_ACCESS => AuthErrorView::NoApiAccess,
                 _ => AuthErrorView::SignedOut,
@@ -198,8 +205,8 @@ pub struct CredentialCreate {
         `sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n\
         `standardcompute`, `cloudflare-ai-gateway`, `perplexity`, `typesafe`,\n\
         `deepinfra`, `upstage`, `ionos`, `novita-ai`, `volcengine`, `ovhcloud`, `stepfun-ai`,\n\
-        `tencent-tokenhub`, `venice`, `amazon-bedrock`, or one of the organization's custom\n\
-        providers that takes a key."]
+        `tencent-tokenhub`, `venice`, `amazon-bedrock`, `azure`, or one of the organization's\n\
+        custom providers that takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]
@@ -235,6 +242,12 @@ pub struct CredentialCreate {
         absent."]
     #[schema(example = "production")]
     pub gateway_id: Option<String>,
+    #[doc = "For a provider whose `key_endpoint` isn't `null`, such as `azure`, the\n\
+        endpoint of the resource the key belongs to, such as\n\
+        `https://example.openai.azure.com`; a pasted `/openai/v1` is dropped.\n\
+        Required for such a provider, refused for others."]
+    #[schema(example = "https://example.openai.azure.com")]
+    pub endpoint: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, ToSchema)]
@@ -266,14 +279,16 @@ pub struct CredentialReplace {
     #[doc = "For a key that calls an account, a new gateway, or an empty string for\n\
         the account's default gateway; unchanged when absent."]
     pub gateway_id: Option<String>,
+    #[doc = "For a key that belongs to a resource, a new endpoint; unchanged when absent."]
+    pub endpoint: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 #[schema(
     description = "A new name, for a service account key a new location, for a key that\n\
-    calls a region a new region, and for a key that calls an account a new account or\n\
-    gateway."
+    calls a region a new region, for a key that calls an account a new account or gateway,\n\
+    and for a key that belongs to a resource a new endpoint."
 )]
 pub struct CredentialRename {
     #[doc = "A name to recognise the key by."]
@@ -288,6 +303,9 @@ pub struct CredentialRename {
     #[doc = "For a key that calls an account, the gateway from now on, or an empty\n\
         string for the account's default gateway; unchanged when absent."]
     pub gateway_id: Option<String>,
+    #[doc = "For a key that belongs to a resource, the endpoint it calls from now on;\n\
+        unchanged when absent."]
+    pub endpoint: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -310,6 +328,7 @@ impl std::fmt::Debug for CredentialCreate {
             .field("location", &self.location)
             .field("account_id", &self.account_id)
             .field("gateway_id", &self.gateway_id)
+            .field("endpoint", &self.endpoint)
             .finish_non_exhaustive()
     }
 }
@@ -321,6 +340,7 @@ impl std::fmt::Debug for CredentialReplace {
             .field("location", &self.location)
             .field("account_id", &self.account_id)
             .field("gateway_id", &self.gateway_id)
+            .field("endpoint", &self.endpoint)
             .finish_non_exhaustive()
     }
 }
@@ -440,6 +460,7 @@ pub async fn create(
                 req.gateway_id.as_deref(),
                 None,
             )?;
+            let endpoint = endpoint(&provider, req.endpoint.as_deref(), None)?;
             let (secret, last4) = validate_secret(&req.secret)?;
             add(
                 &state,
@@ -451,7 +472,10 @@ pub async fn create(
                     name: &name,
                     make_default: req.make_default,
                     secret,
-                    auth: Auth::key(&last4).scoped(scope.as_ref()).in_region(region),
+                    auth: Auth::key(&last4)
+                        .scoped(scope.as_ref())
+                        .in_region(region)
+                        .at(endpoint.as_deref()),
                 },
             )
             .await?
@@ -461,6 +485,12 @@ pub async fn create(
                 return Err(ApiError::invalid(
                     "account_id",
                     format!("A service account key {NO_SCOPE}"),
+                ));
+            }
+            if req.endpoint.is_some() {
+                return Err(ApiError::invalid(
+                    "endpoint",
+                    format!("A service account key {NO_ENDPOINT}"),
                 ));
             }
             let sign_in = service_account_sign_in(&provider)?;
@@ -604,6 +634,7 @@ pub(super) struct Auth<'a> {
     pub project: Option<&'a str>,
     pub location: Option<&'a str>,
     pub scope: Option<&'a Scope>,
+    pub endpoint: Option<&'a str>,
 }
 
 impl<'a> Auth<'a> {
@@ -616,7 +647,13 @@ impl<'a> Auth<'a> {
             project: None,
             location: None,
             scope: None,
+            endpoint: None,
         }
+    }
+
+    fn at(mut self, endpoint: Option<&'a str>) -> Auth<'a> {
+        self.endpoint = endpoint;
+        self
     }
 
     fn scoped(mut self, scope: Option<&'a Scope>) -> Auth<'a> {
@@ -638,6 +675,7 @@ impl<'a> Auth<'a> {
             project: Some(key.project_id()),
             location: Some(location),
             scope: None,
+            endpoint: None,
         }
     }
 }
@@ -713,6 +751,58 @@ pub(super) fn scope(
     }))
 }
 
+const NO_ENDPOINT: &str = "takes no endpoint; leave `endpoint` out.";
+
+/// The endpoint a new key, or a replaced or edited one starting from `before`, calls: required
+/// for a provider whose keys each belong to a resource, refused for every other provider.
+pub(super) fn endpoint(
+    provider: &ProviderRef,
+    wanted: Option<&str>,
+    before: Option<&str>,
+) -> ApiResult<Option<String>> {
+    let Some(rule) = provider.built_in().and_then(|p| p.key_endpoint) else {
+        if wanted.is_some() {
+            return Err(ApiError::invalid(
+                "endpoint",
+                format!("{} {NO_ENDPOINT}", provider.name()),
+            ));
+        }
+        return Ok(None);
+    };
+    let Some(wanted) = wanted else {
+        return match before {
+            Some(b) => Ok(Some(b.to_owned())),
+            None => Err(ApiError::invalid(
+                "endpoint",
+                format!(
+                    "{} keys belong to a resource; give its `endpoint`.",
+                    provider.name()
+                ),
+            )),
+        };
+    };
+    rule.parse(wanted).map(Some).map_err(|problem| {
+        let message = match problem {
+            EndpointProblem::NotUrl
+            | EndpointProblem::NotHttps
+            | EndpointProblem::UserInfo
+            | EndpointProblem::Query => {
+                "The endpoint must be an https URL without a user name, query or fragment."
+                    .to_owned()
+            }
+            EndpointProblem::Host => format!(
+                "The endpoint must be a resource's address, such as `{}`.",
+                rule.example
+            ),
+            EndpointProblem::Path => {
+                "The endpoint has a path Kaeso doesn't call; give the resource's address only."
+                    .to_owned()
+            }
+        };
+        ApiError::invalid("endpoint", message)
+    })
+}
+
 impl CredentialView {
     fn scope(&self) -> Option<Scope> {
         self.account_id.clone().map(|account_id| Scope {
@@ -763,6 +853,7 @@ pub(super) async fn add(
             location: a.auth.location,
             account_id: a.auth.scope.map(|s| s.account_id.as_str()),
             gateway_id: a.auth.scope.and_then(|s| s.gateway_id.as_deref()),
+            endpoint: a.auth.endpoint,
         },
     )
     .await?;
@@ -853,6 +944,12 @@ pub async fn replace(
         None => before.name.clone(),
     };
     if before.method() == AuthMethod::GoogleServiceAccount {
+        if req.endpoint.is_some() {
+            return Err(ApiError::invalid(
+                "endpoint",
+                format!("A service account key {NO_ENDPOINT}"),
+            ));
+        }
         let provider = provider_in_org(&state, org, &before.provider).await?;
         let sign_in = service_account_sign_in(&provider)?;
         let key = service_account_key(&req.secret)?;
@@ -877,8 +974,16 @@ pub async fn replace(
         req.gateway_id.as_deref(),
         before.scope().as_ref(),
     )?;
+    let endpoint = endpoint(
+        &provider,
+        req.endpoint.as_deref(),
+        before.endpoint.as_deref(),
+    )?;
     let (secret, last4) = validate_secret(&req.secret)?;
-    let auth = Auth::key(&last4).scoped(scope.as_ref()).in_region(region);
+    let auth = Auth::key(&last4)
+        .scoped(scope.as_ref())
+        .in_region(region)
+        .at(endpoint.as_deref());
     let after = rewrite(&state, &ctx, tx, &before, &name, secret, auth).await?;
     Ok(Json(after))
 }
@@ -922,6 +1027,7 @@ pub(super) async fn rewrite(
             location: auth.location,
             account_id: auth.scope.map(|s| s.account_id.as_str()),
             gateway_id: auth.scope.and_then(|s| s.gateway_id.as_deref()),
+            endpoint: auth.endpoint,
         },
     )
     .await?;
@@ -945,8 +1051,8 @@ pub(super) async fn rewrite(
     patch,
     path = "/orgs/{org}/credentials/{credential}",
     summary = "Renames a provider key, and moves a service account key to another location, a\n\
-    key that calls a region to another region, or a key that calls an account to another\n\
-    account or gateway.",
+    key that calls a region to another region, a key that calls an account to another account\n\
+    or gateway, or a key that belongs to a resource to another endpoint.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
     request_body = CredentialRename,
@@ -998,7 +1104,18 @@ pub async fn rename(
     if let Some(s) = &rescoped {
         credentials::set_scope(&mut *tx, org, id, &s.account_id, s.gateway_id.as_deref()).await?;
     }
-    let moved = moved.is_some() || rescoped.is_some();
+    let readdressed = match req.endpoint.as_deref() {
+        Some(wanted) => {
+            let provider = provider_in_org(&state, org, &before.provider).await?;
+            endpoint(&provider, Some(wanted), before.endpoint.as_deref())?
+                .filter(|e| before.endpoint.as_deref() != Some(e.as_str()))
+        }
+        None => None,
+    };
+    if let Some(e) = &readdressed {
+        credentials::set_endpoint(&mut *tx, org, id, e).await?;
+    }
+    let moved = moved.is_some() || rescoped.is_some() || readdressed.is_some();
     let after = view(&mut tx, org, id).await?;
     ctx.audit(Some(ctx.org()?.id()), Action::CredentialRename)
         .target("credential", before.id)

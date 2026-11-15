@@ -908,6 +908,45 @@ expression: outcomes
       "output_tokens": 30
     }
   },
+  "providers/azure/filtered-blocklist-doc": {
+    "content": [],
+    "id": "chatcmpl-85NkyY0AkeBMunOjyxivQSiTaxGAl",
+    "model": "gpt-35-turbo",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "refusal",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 27,
+      "output_tokens": 75
+    }
+  },
+  "providers/azure/greeting-published": {
+    "content": [
+      {
+        "text": "Hi there! How can I assist you today?",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-sdkopsdvomsdvpomi156sdv",
+    "model": "gpt-35-turbo",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 127,
+      "output_tokens": 11
+    }
+  },
   "providers/baseten/reasoning-doc": {
     "content": [
       {

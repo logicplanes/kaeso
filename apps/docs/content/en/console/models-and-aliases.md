@@ -63,6 +63,7 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 | Adaptive thinking, efforts | How the model's reasoning is turned on, and the efforts it takes |
 | Thinking binding | Whether an Anthropic model checks that replayed thinking comes from the same conversation. For such a model, Kaeso asks Anthropic to drop thinking that apps in other formats send back changed, instead of failing the request |
 | Timeout | How many seconds a request to this model may take. Empty uses the install's request timeout |
+| Provider model ID | The ID Kaeso sends to the provider instead of the model's ID, such as the name of an Azure deployment when it isn't the model's ID. Logs and usage keep the model's ID. Empty sends the model's ID |
 | Released | The model's release date |
 
 ## Decision models

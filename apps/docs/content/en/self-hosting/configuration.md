@@ -229,6 +229,7 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | `KAESO_PROVIDERS_TENCENT_TOKENHUB_BASE_URL`<br>`providers.tencent-tokenhub.base_url` | text | `https://tokenhub.tencentmaas.com` | Base URL of the Tencent TokenHub API. |
 | `KAESO_PROVIDERS_VENICE_BASE_URL`<br>`providers.venice.base_url` | text | `https://api.venice.ai/api` | Base URL of the Venice API. |
 | `KAESO_PROVIDERS_AMAZON_BEDROCK_BASE_URL`<br>`providers.amazon-bedrock.base_url` | text | `https://bedrock-runtime.us-east-1.amazonaws.com` | Base URL of the Amazon Bedrock API. |
+| `KAESO_PROVIDERS_AZURE_BASE_URL`<br>`providers.azure.base_url` | text | `https://openai.azure.com` | Where Kaeso sends every Azure request instead of each key's resource endpoint, such as an API gateway in front of Azure; unused while it is the default. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

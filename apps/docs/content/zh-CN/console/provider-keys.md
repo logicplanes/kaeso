@@ -62,6 +62,18 @@ Kaeso 会检查该文件是否为 `token_uri` 为 `https://oauth2.googleapis.com
 
 列表会在密钥旁显示区域。要把密钥改到其他区域，请在其菜单中选择**编辑**。
 
+## Azure 密钥
+
+对于 Azure，服务商密钥是某个 Azure OpenAI 或 Foundry 资源的密钥，并注明该资源的端点。
+
+1. 在 [Azure 门户](https://portal.azure.com/)中打开该资源及其 **Resource Management → Keys and Endpoint** 页面（见[查找密钥和端点](https://learn.microsoft.com/en-us/azure/ai-services/authentication)）。
+2. 复制 **KEY 1** 或 **KEY 2**，以及 **Endpoint**，例如 `https://example.openai.azure.com`。以 `.services.ai.azure.com` 或 `.cognitiveservices.azure.com` 结尾的端点也可以，一并粘贴的 `/openai/v1` 会被去掉。
+3. 在 Kaeso 的**服务商**页面选择**添加服务商密钥**，然后选择 **Azure**，粘贴密钥和端点。
+
+Kaeso 调用该资源的 OpenAI v1 API，即 `{endpoint}/openai/v1`，密钥放在 `api-key` 中。请求指定的是该资源的部署：Kaeso 发送模型 ID，部署名称不同时发送模型的**服务商模型 ID**（[更改模型的参数](models-and-aliases.md#更改模型的参数)）。尚不支持使用 Microsoft Entra ID 登录。
+
+列表会在密钥旁显示端点的主机名。要把密钥改到其他资源，请在其菜单中选择**编辑**并填写另一个资源的端点；同一资源的新密钥会保留端点。
+
 ## 使用 ChatGPT 账户登录
 
 对于 OpenAI，服务商密钥也可以是一个 ChatGPT 账户。其请求随后使用该账户的 ChatGPT 套餐，而不是 OpenAI API 账户，并受套餐限额约束。

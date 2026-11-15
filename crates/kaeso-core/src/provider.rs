@@ -143,6 +143,8 @@ pub enum AuthStyle {
     XGoogApiKey,
     /// ElevenLabs' `xi-api-key` header.
     XiApiKey,
+    /// Azure's `api-key` header.
+    ApiKey,
 }
 
 impl AuthStyle {
@@ -152,13 +154,17 @@ impl AuthStyle {
             AuthStyle::XApiKey => "x-api-key",
             AuthStyle::XGoogApiKey => "x-goog-api-key",
             AuthStyle::XiApiKey => "xi-api-key",
+            AuthStyle::ApiKey => "api-key",
         }
     }
 
     pub fn header_value(self, key: &str) -> String {
         match self {
             AuthStyle::Bearer => format!("Bearer {key}"),
-            AuthStyle::XApiKey | AuthStyle::XGoogApiKey | AuthStyle::XiApiKey => key.to_owned(),
+            AuthStyle::XApiKey
+            | AuthStyle::XGoogApiKey
+            | AuthStyle::XiApiKey
+            | AuthStyle::ApiKey => key.to_owned(),
         }
     }
 }
@@ -663,6 +669,94 @@ impl Regional {
     }
 }
 
+/// A provider whose keys each belong to one resource with an address of its own, such as an
+/// Azure resource's `https://{resource}.openai.azure.com`. Each key carries that endpoint, which
+/// takes the place of the provider's base URL for the key's requests.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct KeyEndpoint {
+    /// Where the console points for the endpoint.
+    pub page: KeyPage,
+    /// The host suffixes an endpoint may end in, each with its leading dot.
+    pub hosts: &'static [&'static str],
+    /// The path under the endpoint that the dialects' `/v1/…` paths go under, such as Azure's
+    /// `/openai`, so that `/v1/chat/completions` is sent to `/openai/v1/chat/completions`.
+    pub path: &'static str,
+    /// The paths an endpoint may be pasted with, longest first; Kaeso keeps the endpoint without
+    /// them.
+    pub pasted_paths: &'static [&'static str],
+    /// An endpoint the console shows as an example.
+    pub example: &'static str,
+}
+
+/// Why an endpoint isn't one a [`KeyEndpoint`] takes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EndpointProblem {
+    /// It isn't a URL, or is longer than 2048 characters.
+    NotUrl,
+    /// It isn't `https`.
+    NotHttps,
+    /// It holds a user name or password.
+    UserInfo,
+    /// It has a query or a fragment.
+    Query,
+    /// Its host isn't one of the provider's.
+    Host,
+    /// It has a path other than the ones Kaeso drops.
+    Path,
+}
+
+impl KeyEndpoint {
+    /// The endpoint as Kaeso keeps it, `https://` and the lowercase host, from what someone pasted.
+    pub fn parse(&self, input: &str) -> Result<String, EndpointProblem> {
+        let input = input.trim();
+        if input.len() > 2048 {
+            return Err(EndpointProblem::NotUrl);
+        }
+        let url = url::Url::parse(input).map_err(|_| EndpointProblem::NotUrl)?;
+        if url.scheme() != "https" {
+            return Err(EndpointProblem::NotHttps);
+        }
+        if !url.username().is_empty() || url.password().is_some() {
+            return Err(EndpointProblem::UserInfo);
+        }
+        if url.query().is_some() || url.fragment().is_some() {
+            return Err(EndpointProblem::Query);
+        }
+        let Some(url::Host::Domain(host)) = url.host() else {
+            return Err(EndpointProblem::Host);
+        };
+        let resource = self
+            .hosts
+            .iter()
+            .find_map(|suffix| host.strip_suffix(suffix))
+            .ok_or(EndpointProblem::Host)?;
+        let plain =
+            |b: u8| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'-' | b'.');
+        if resource.is_empty()
+            || url.port().is_some()
+            || !host.bytes().all(plain)
+            || resource.starts_with(['-', '.'])
+        {
+            return Err(EndpointProblem::Host);
+        }
+        let path = url.path().trim_end_matches('/');
+        if !path.is_empty()
+            && !self
+                .pasted_paths
+                .iter()
+                .any(|p| path.eq_ignore_ascii_case(p))
+        {
+            return Err(EndpointProblem::Path);
+        }
+        Ok(format!("https://{host}"))
+    }
+
+    /// The base URL of a key's requests: its endpoint and the provider's path.
+    pub fn base(&self, endpoint: &str) -> String {
+        format!("{}{}", endpoint.trim_end_matches('/'), self.path)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AccountSignIn {
     pub method: AuthMethod,
@@ -675,6 +769,10 @@ pub struct AccountSignIn {
 pub enum ModelListing {
     Complete,
     Partial,
+    /// The listing names the models the provider offers, not the ones a key can call, such as
+    /// Azure's, which lists what a resource may deploy rather than its deployments: a model check
+    /// only shows that the key works.
+    Catalogue,
 }
 
 impl ModelListing {
@@ -690,6 +788,7 @@ impl ModelListing {
         match self {
             ModelListing::Complete => Some(ids.any(|id| id == model)),
             ModelListing::Partial => ids.any(|id| loosely_equal(id, model)).then_some(true),
+            ModelListing::Catalogue => None,
         }
     }
 }
@@ -751,6 +850,7 @@ pub struct Provider {
     /// ([`Provider::account_scope`]) goes first.
     pub api_root: Option<&'static str>,
     pub regional: Option<Regional>,
+    pub key_endpoint: Option<KeyEndpoint>,
 }
 
 // The locations that serve Gemini or Claude models, from the tables of
@@ -857,6 +957,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -899,6 +1000,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "deepseek",
@@ -940,6 +1042,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "xai",
@@ -983,6 +1086,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -1031,6 +1135,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "groq",
@@ -1073,6 +1178,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "openrouter",
@@ -1117,6 +1223,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "mistral",
@@ -1174,6 +1281,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "vercel",
@@ -1215,6 +1323,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "cohere",
@@ -1274,6 +1383,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "ollama-cloud",
@@ -1313,6 +1423,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "moonshotai",
@@ -1365,6 +1476,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "alibaba",
@@ -1441,6 +1553,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "cerebras",
@@ -1485,6 +1598,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "zai",
@@ -1533,6 +1647,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "minimax",
@@ -1602,6 +1717,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "elevenlabs",
@@ -1656,6 +1772,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "google",
@@ -1693,6 +1810,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "gemini-agent-platform",
@@ -1778,6 +1896,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "fireworks-ai",
@@ -1823,6 +1942,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "nebius",
@@ -1865,6 +1985,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "sambanova",
@@ -1909,6 +2030,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "scaleway",
@@ -1953,6 +2075,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "huggingface",
@@ -1997,6 +2120,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "nvidia",
@@ -2040,6 +2164,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "baseten",
@@ -2083,6 +2208,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "siliconflow",
@@ -2132,6 +2258,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "standardcompute",
@@ -2174,6 +2301,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "cloudflare-ai-gateway",
@@ -2248,6 +2376,7 @@ pub const PROVIDERS: &[Provider] = &[
         }),
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "perplexity",
@@ -2320,6 +2449,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "typesafe",
@@ -2367,6 +2497,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "deepinfra",
@@ -2431,6 +2562,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "upstage",
@@ -2508,6 +2640,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "ionos",
@@ -2575,6 +2708,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "novita-ai",
@@ -2652,6 +2786,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "volcengine",
@@ -2741,6 +2876,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: Some(""),
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "ovhcloud",
@@ -2815,6 +2951,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "stepfun-ai",
@@ -2889,6 +3026,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "tencent-tokenhub",
@@ -2956,6 +3094,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "venice",
@@ -3014,6 +3153,7 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
         regional: None,
+        key_endpoint: None,
     },
     Provider {
         id: "amazon-bedrock",
@@ -3083,6 +3223,86 @@ pub const PROVIDERS: &[Provider] = &[
                 (DialectId::AnthropicMessages, "/anthropic/v1"),
             ],
             auth: &[(DialectId::AnthropicMessages, AuthStyle::XApiKey)],
+        }),
+        key_endpoint: None,
+    },
+    Provider {
+        id: "azure",
+        name: "Azure",
+        // A resource's KEY 1 or KEY 2, on its "Keys and Endpoint" page in the Azure portal, with
+        // the endpoint beside it; keys have no prefix and differ in length between older and
+        // newer resources (https://learn.microsoft.com/en-us/azure/ai-services/authentication).
+        // Microsoft Entra ID tokens are not taken yet.
+        key_page: KeyPage {
+            url: "https://portal.azure.com/",
+            label: "Keys and Endpoint",
+        },
+        key_prefix: None,
+        // Never called while it is the default: each key's endpoint takes its place
+        // (`key_endpoint`). An install may set it to send every Azure request elsewhere, such as
+        // through an API gateway in front of Azure.
+        default_base_url: "https://openai.azure.com",
+        // The v1 API takes the key as `api-key` or as a bearer token; a bearer that looks like a
+        // JWT is read as an Entra ID token and refused in another shape (recorded live), so the
+        // key goes as `api-key` (https://learn.microsoft.com/en-us/rest/api/microsoft-foundry/azureopenai/models?view=rest-microsoft-foundry-v1).
+        auth: AuthStyle::ApiKey,
+        // `{endpoint}/openai/v1` serves Chat Completions, Responses and Embeddings without an
+        // `api-version` (https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle).
+        // Deployments that don't take the Responses API answer `400 Model not supported`
+        // (https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/endpoints), so
+        // Chat Completions is the default. Images and audio are preview-only on v1, and Claude
+        // deployments answer only Anthropic's Messages API under `/anthropic`.
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::OpenAiResponses,
+            DialectId::OpenAiEmbeddings,
+        ],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /openai/v1/models` lists the models a resource may deploy, not its deployments.
+        listing: ModelListing::Catalogue,
+        end_user_limit: None,
+        // The v1 OpenAPI document's `CreateChatCompletionRequest` has every field of OpenAI's,
+        // `verbosity` and the `developer` role included (Azure/azure-rest-api-specs,
+        // specification/ai/data-plane/OpenAI.v1/azure-v1-v1-generated.json). Azure answers a
+        // field it doesn't know with 400 "Unrecognized request argument supplied", so nothing
+        // is refused here.
+        chat: ChatProfile::compatible("Azure").with_verbosity(),
+        responses: ResponsesProfile::compatible("Azure"),
+        messages: MessagesProfile::compatible("Azure"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+        regional: None,
+        // The resource endpoint on the same page as the key; the v1 API answers under
+        // `{endpoint}/openai/v1` on all three hosts, which Microsoft's SDKs accept as Azure's
+        // (https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/endpoints).
+        key_endpoint: Some(KeyEndpoint {
+            page: KeyPage {
+                url: "https://learn.microsoft.com/en-us/azure/ai-services/authentication",
+                label: "Find the key and endpoint",
+            },
+            hosts: &[
+                ".openai.azure.com",
+                ".services.ai.azure.com",
+                ".cognitiveservices.azure.com",
+            ],
+            path: "/openai",
+            pasted_paths: &["/openai/v1", "/openai"],
+            example: "https://example.openai.azure.com",
         }),
     },
 ];
@@ -3382,7 +3602,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure"
         );
     }
 
@@ -3957,6 +4177,134 @@ mod tests {
     }
 
     #[test]
+    fn azure_calls_each_keys_resource_with_an_api_key_header_and_sends_chat_as_openai_writes_it() {
+        let p = provider("azure").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Azure",
+                AuthStyle::ApiKey,
+                DialectId::OpenAiChat,
+                &[
+                    DialectId::OpenAiChat,
+                    DialectId::OpenAiResponses,
+                    DialectId::OpenAiEmbeddings
+                ][..]
+            )
+        );
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), None)
+        );
+        assert_eq!(p.listing, ModelListing::Catalogue);
+        assert_eq!(p.chat.provider, "Azure");
+        assert_eq!(p.chat.request.path, "/v1/chat/completions");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::AsWritten);
+        assert_eq!(
+            p.chat.request.end_user_field,
+            EndUserField::SafetyIdentifier
+        );
+        assert!(p.chat.request.developer_role && p.chat.request.verbosity);
+        assert!(p.chat.request.cache_key && p.chat.request.stream_options);
+        assert!(p.chat.request.refused_fields.is_empty());
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+        let endpoint = p.key_endpoint.unwrap();
+        assert_eq!(
+            endpoint.base("https://example.openai.azure.com"),
+            "https://example.openai.azure.com/openai"
+        );
+        let scoped: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| p.key_endpoint.is_some())
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(scoped, ["azure"]);
+    }
+
+    #[test]
+    fn an_azure_endpoint_is_an_https_resource_host_and_loses_a_pasted_api_path() {
+        let endpoint = provider("azure").unwrap().key_endpoint.unwrap();
+        for (pasted, kept) in [
+            (
+                "https://example.openai.azure.com",
+                "https://example.openai.azure.com",
+            ),
+            (
+                " https://Example.OpenAI.Azure.com/ ",
+                "https://example.openai.azure.com",
+            ),
+            (
+                "https://example.openai.azure.com/openai/v1/",
+                "https://example.openai.azure.com",
+            ),
+            (
+                "https://example.openai.azure.com/openai",
+                "https://example.openai.azure.com",
+            ),
+            (
+                "https://example.services.ai.azure.com/openai/v1",
+                "https://example.services.ai.azure.com",
+            ),
+            (
+                "https://example.cognitiveservices.azure.com",
+                "https://example.cognitiveservices.azure.com",
+            ),
+        ] {
+            assert_eq!(endpoint.parse(pasted).as_deref(), Ok(kept), "{pasted}");
+        }
+        for (pasted, problem) in [
+            ("example.openai.azure.com", EndpointProblem::NotUrl),
+            ("http://example.openai.azure.com", EndpointProblem::NotHttps),
+            (
+                "https://user:pw@example.openai.azure.com",
+                EndpointProblem::UserInfo,
+            ),
+            (
+                "https://example.openai.azure.com/?api-version=v1",
+                EndpointProblem::Query,
+            ),
+            (
+                "https://example.openai.azure.com/#keys",
+                EndpointProblem::Query,
+            ),
+            ("https://example.com", EndpointProblem::Host),
+            ("https://openai.azure.com", EndpointProblem::Host),
+            (
+                "https://example.openai.azure.com.example.com",
+                EndpointProblem::Host,
+            ),
+            (
+                "https://example.openai.azure.com:8443",
+                EndpointProblem::Host,
+            ),
+            ("https://192.0.2.1", EndpointProblem::Host),
+            (
+                "https://under_score.openai.azure.com",
+                EndpointProblem::Host,
+            ),
+            ("https://.openai.azure.com", EndpointProblem::Host),
+            (
+                "https://example.openai.azure.com/anthropic",
+                EndpointProblem::Path,
+            ),
+            (
+                "https://example.services.ai.azure.com/api/projects/p",
+                EndpointProblem::Path,
+            ),
+        ] {
+            assert_eq!(endpoint.parse(pasted), Err(problem), "{pasted}");
+        }
+    }
+
+    #[test]
+    fn a_catalogue_listing_says_nothing_of_any_model() {
+        let ids = ["gpt-5".to_owned()];
+        assert_eq!(ModelListing::Catalogue.serves(&ids, "gpt-5"), None);
+        assert_eq!(ModelListing::Catalogue.serves(&ids, "my-gpt"), None);
+    }
+
+    #[test]
     fn a_partial_listing_matches_ids_without_case_or_dots_and_says_nothing_of_a_model_it_leaves_out()
      {
         let ids = ["StandardCompute".to_owned(), "z-ai/glm-5.3".to_owned()];
@@ -4047,13 +4395,17 @@ mod tests {
             [
                 AuthStyle::Bearer,
                 AuthStyle::XApiKey,
-                AuthStyle::XGoogApiKey
+                AuthStyle::XGoogApiKey,
+                AuthStyle::XiApiKey,
+                AuthStyle::ApiKey
             ]
             .map(|s| (s.header_name(), s.header_value("k-1"))),
             [
                 ("authorization", "Bearer k-1".to_owned()),
                 ("x-api-key", "k-1".to_owned()),
                 ("x-goog-api-key", "k-1".to_owned()),
+                ("xi-api-key", "k-1".to_owned()),
+                ("api-key", "k-1".to_owned()),
             ]
         );
     }
@@ -4957,7 +5309,8 @@ mod tests {
                 "stepfun-ai",
                 "tencent-tokenhub",
                 "venice",
-                "amazon-bedrock"
+                "amazon-bedrock",
+                "azure"
             ]
         );
         assert_eq!(

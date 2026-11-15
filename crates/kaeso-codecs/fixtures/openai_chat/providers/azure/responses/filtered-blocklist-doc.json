@@ -1,0 +1,67 @@
+{
+  "id": "chatcmpl-85NkyY0AkeBMunOjyxivQSiTaxGAl",
+  "object": "chat.completion",
+  "created": 1696293652,
+  "model": "gpt-35-turbo",
+  "prompt_filter_results": [
+    {
+      "prompt_index": 0,
+      "content_filter_results": {
+        "hate": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "self_harm": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "sexual": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "violence": {
+          "filtered": false,
+          "severity": "safe"
+        }
+      }
+    }
+  ],
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "content_filter",
+      "message": {
+        "role": "assistant"
+      },
+      "content_filter_results": {
+        "custom_blocklists": [
+          {
+            "filtered": true,
+            "id": "myBlocklistName"
+          }
+        ],
+        "hate": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "self_harm": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "sexual": {
+          "filtered": false,
+          "severity": "safe"
+        },
+        "violence": {
+          "filtered": false,
+          "severity": "safe"
+        }
+      }
+    }
+  ],
+  "usage": {
+    "completion_tokens": 75,
+    "prompt_tokens": 27,
+    "total_tokens": 102
+  }
+}
