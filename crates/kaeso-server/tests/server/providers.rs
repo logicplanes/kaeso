@@ -57,6 +57,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             "account": null,
             "service_account": null,
             "account_scope": null,
+            "regions": null,
             "model_routes": [],
             "server": null,
         })
@@ -343,6 +344,25 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         ionos["key_page"],
         json!({ "url": "https://dcd.ionos.com", "label": "Management → Token Manager" })
     );
+    let bedrock = listed.iter().find(|p| p["id"] == "amazon-bedrock").unwrap();
+    assert_eq!(bedrock["name"], "Amazon Bedrock");
+    assert_eq!(
+        bedrock["dialects"],
+        json!(["openai_chat", "anthropic_messages"])
+    );
+    assert_eq!(
+        (
+            &bedrock["count_tokens"],
+            &bedrock["embeddings"],
+            &bedrock["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &Value::Null)
+    );
+    assert_eq!(
+        bedrock["key_page"],
+        json!({ "url": "https://console.aws.amazon.com/bedrock/", "label": "API keys" })
+    );
+    assert_eq!(bedrock["regions"]["regions"][0], "us-east-1");
 
     let novita = listed.iter().find(|p| p["id"] == "novita-ai").unwrap();
     assert_eq!(novita["name"], "Novita AI");

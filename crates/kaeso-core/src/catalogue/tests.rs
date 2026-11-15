@@ -2854,6 +2854,59 @@ fn tencent_tokenhub_models_speak_chat_completions_with_tokenhubs_prices_and_effo
 }
 
 #[test]
+fn amazon_bedrock_sends_claude_as_messages_and_names_no_format_for_models_it_serves_only_natively()
+{
+    let claude = eff(&entry("amazon-bedrock", "us.anthropic.claude-sonnet-5"));
+    assert_eq!(claude.dialect, DialectId::AnthropicMessages);
+    assert_eq!(
+        claude.fields.egress_dialect,
+        Some(DialectId::AnthropicMessages)
+    );
+    assert_eq!(claude.provider.messages().provider, "Amazon Bedrock");
+    assert_eq!(
+        (
+            claude.fields.input_price,
+            claude.fields.output_price,
+            claude.fields.cache_read_price,
+            claude.fields.cache_write_price
+        ),
+        (
+            Some(dec!(2.2)),
+            Some(dec!(11)),
+            Some(dec!(0.22)),
+            Some(dec!(2.75))
+        )
+    );
+    assert_eq!(
+        claude
+            .provider
+            .count_tokens_for(DialectId::AnthropicMessages),
+        None
+    );
+    let deepseek = eff(&entry("amazon-bedrock", "deepseek.v3.2"));
+    assert_eq!(
+        (deepseek.dialect, deepseek.fields.egress_dialect),
+        (DialectId::OpenAiChat, Some(DialectId::OpenAiChat))
+    );
+    assert_eq!(
+        (deepseek.fields.input_price, deepseek.fields.output_price),
+        (Some(dec!(0.62)), Some(dec!(1.85)))
+    );
+    let gpt = eff(&entry("amazon-bedrock", "global.openai.gpt-6-sol"));
+    assert_eq!(gpt.fields.egress_dialect, Some(DialectId::OpenAiChat));
+    for native in [
+        "amazon.nova-pro-v1:0",
+        "us.meta.llama4-scout-17b-instruct-v1:0",
+        "anthropic.claude-sonnet-4-6",
+        "openai.gpt-6-sol",
+    ] {
+        let e = eff(&entry("amazon-bedrock", native));
+        assert_eq!(e.fields.egress_dialect, None, "{native}");
+        assert!(e.fields.input_price.is_some(), "{native}");
+    }
+}
+
+#[test]
 fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
     let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

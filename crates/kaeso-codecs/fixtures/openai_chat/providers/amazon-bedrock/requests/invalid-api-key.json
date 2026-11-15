@@ -1,0 +1,9 @@
+{
+  "model": "openai.gpt-oss-120b-1:0",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ]
+}

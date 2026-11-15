@@ -70,7 +70,8 @@ pub struct CredentialView {
     #[schema(example = "kaeso-example")]
     pub project: Option<String>,
     #[doc = "The location a service account key calls, such as `global` or\n\
-        `us-central1`; `null` for other keys."]
+        `us-central1`, or the region an API key of a provider whose `regions` isn't\n\
+        `null` calls, such as `eu-central-1`; `null` for other keys."]
     #[schema(example = "global")]
     pub location: Option<String>,
     #[doc = "The account a key of a provider whose API names the account calls,\n\
@@ -197,8 +198,8 @@ pub struct CredentialCreate {
         `sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n\
         `standardcompute`, `cloudflare-ai-gateway`, `perplexity`, `typesafe`,\n\
         `deepinfra`, `upstage`, `ionos`, `novita-ai`, `volcengine`, `ovhcloud`, `stepfun-ai`,\n\
-        `tencent-tokenhub`, `venice`, or one of the organization's custom providers that takes a\n\
-        key."]
+        `tencent-tokenhub`, `venice`, `amazon-bedrock`, or one of the organization's custom\n\
+        providers that takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]
@@ -218,7 +219,10 @@ pub struct CredentialCreate {
     #[serde(default)]
     pub auth_method: KeyMethod,
     #[doc = "The location a service account key calls, one of the provider's\n\
-        `service_account.locations`; its `default_location` when absent."]
+        `service_account.locations`; its `default_location` when absent. For an API\n\
+        key of a provider whose `regions` isn't `null`, such as `amazon-bedrock`, the\n\
+        region it calls, one of `regions.regions`: required for such a provider,\n\
+        refused for other API keys."]
     #[schema(example = "global")]
     pub location: Option<String>,
     #[doc = "For a provider whose `account_scope` isn't `null`, such as\n\
@@ -254,7 +258,8 @@ pub struct CredentialReplace {
     pub secret: String,
     #[doc = "A new name; unchanged when absent."]
     pub name: Option<String>,
-    #[doc = "For a service account key, a new location; unchanged when absent."]
+    #[doc = "For a service account key a new location, for a key that calls a region\n\
+        a new region; unchanged when absent."]
     pub location: Option<String>,
     #[doc = "For a key that calls an account, a new account id; unchanged when absent."]
     pub account_id: Option<String>,
@@ -266,15 +271,16 @@ pub struct CredentialReplace {
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
 #[schema(
-    description = "A new name, for a service account key a new location, and for a key that\n\
-    calls an account a new account or gateway."
+    description = "A new name, for a service account key a new location, for a key that\n\
+    calls a region a new region, and for a key that calls an account a new account or\n\
+    gateway."
 )]
 pub struct CredentialRename {
     #[doc = "A name to recognise the key by."]
     #[schema(example = "Production OpenAI key")]
     pub name: String,
-    #[doc = "For a service account key, the location it calls from now on;\n\
-        unchanged when absent."]
+    #[doc = "For a service account key the location it calls from now on, for a key\n\
+        that calls a region the region; unchanged when absent."]
     pub location: Option<String>,
     #[doc = "For a key that calls an account, the account it calls from now on;\n\
         unchanged when absent."]
@@ -427,12 +433,7 @@ pub async fn create(
     let name = validate_name(&req.name)?;
     let view = match req.auth_method {
         KeyMethod::ApiKey => {
-            if req.location.is_some() {
-                return Err(ApiError::invalid(
-                    "location",
-                    "Only a service account key calls a location; leave `location` out.",
-                ));
-            }
+            let region = region(&provider, req.location.as_deref(), None)?;
             let scope = scope(
                 &provider,
                 req.account_id.as_deref(),
@@ -450,7 +451,7 @@ pub async fn create(
                     name: &name,
                     make_default: req.make_default,
                     secret,
-                    auth: Auth::key(&last4).scoped(scope.as_ref()),
+                    auth: Auth::key(&last4).scoped(scope.as_ref()).in_region(region),
                 },
             )
             .await?
@@ -557,6 +558,44 @@ pub(super) fn location(
         })
 }
 
+const NO_LOCATION: &str = "This key calls no location; leave `location` out.";
+
+/// The region an API key calls, or a replaced or edited one starting from `before`: one of the
+/// provider's regions and required for a regional provider, refused for every other provider.
+pub(super) fn region(
+    provider: &ProviderRef,
+    wanted: Option<&str>,
+    before: Option<&str>,
+) -> ApiResult<Option<&'static str>> {
+    let Some(regional) = provider.built_in().and_then(|p| p.regional) else {
+        if wanted.is_some() {
+            return Err(ApiError::invalid("location", NO_LOCATION));
+        }
+        return Ok(None);
+    };
+    let Some(wanted) = wanted.map(str::trim).or(before) else {
+        return Err(ApiError::invalid(
+            "location",
+            format!(
+                "{} keys call one region; give it as `location`.",
+                provider.name()
+            ),
+        ));
+    };
+    regional
+        .regions
+        .iter()
+        .copied()
+        .find(|r| *r == wanted)
+        .map(Some)
+        .ok_or_else(|| {
+            ApiError::invalid(
+                "location",
+                "Kaeso doesn't call that region for this provider; choose one from the list.",
+            )
+        })
+}
+
 pub(super) struct Auth<'a> {
     pub method: AuthMethod,
     pub last4: &'a str,
@@ -582,6 +621,11 @@ impl<'a> Auth<'a> {
 
     fn scoped(mut self, scope: Option<&'a Scope>) -> Auth<'a> {
         self.scope = scope;
+        self
+    }
+
+    fn in_region(mut self, region: Option<&'a str>) -> Auth<'a> {
+        self.location = region;
         self
     }
 
@@ -821,13 +865,12 @@ pub async fn replace(
         let after = rewrite(&state, &ctx, tx, &before, &name, req.secret.trim(), auth).await?;
         return Ok(Json(after));
     }
-    if req.location.is_some() {
-        return Err(ApiError::invalid(
-            "location",
-            "Only a service account key calls a location; leave `location` out.",
-        ));
-    }
     let provider = provider_in_org(&state, org, &before.provider).await?;
+    let region = region(
+        &provider,
+        req.location.as_deref(),
+        before.location.as_deref(),
+    )?;
     let scope = scope(
         &provider,
         req.account_id.as_deref(),
@@ -835,7 +878,7 @@ pub async fn replace(
         before.scope().as_ref(),
     )?;
     let (secret, last4) = validate_secret(&req.secret)?;
-    let auth = Auth::key(&last4).scoped(scope.as_ref());
+    let auth = Auth::key(&last4).scoped(scope.as_ref()).in_region(region);
     let after = rewrite(&state, &ctx, tx, &before, &name, secret, auth).await?;
     Ok(Json(after))
 }
@@ -901,8 +944,9 @@ pub(super) async fn rewrite(
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/credentials/{credential}",
-    summary = "Renames a provider key, and moves a service account key to another location or\n\
-    a key that calls an account to another account or gateway.",
+    summary = "Renames a provider key, and moves a service account key to another location, a\n\
+    key that calls a region to another region, or a key that calls an account to another\n\
+    account or gateway.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
     request_body = CredentialRename,
@@ -928,12 +972,12 @@ pub async fn rename(
             let location = location(service_account_sign_in(&provider)?, Some(wanted))?;
             Some(location).filter(|l| before.location.as_deref() != Some(*l))
         }
-        Some(_) => {
-            return Err(ApiError::invalid(
-                "location",
-                "Only a service account key calls a location; leave `location` out.",
-            ));
+        Some(wanted) if before.method() == AuthMethod::ApiKey => {
+            let provider = provider_in_org(&state, org, &before.provider).await?;
+            region(&provider, Some(wanted), None)?
+                .filter(|r| before.location.as_deref() != Some(*r))
         }
+        Some(_) => return Err(ApiError::invalid("location", NO_LOCATION)),
         None => None,
     };
     if let Some(location) = moved {

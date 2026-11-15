@@ -1,0 +1,7 @@
+{
+  "type": "error",
+  "error": {
+    "type": "permission_error",
+    "message": "Invalid API Key format: Must start with pre-defined prefix"
+  }
+}

@@ -1461,6 +1461,21 @@ async fn attempt(
     if let Some(s) = &scoped {
         ectx = s.apply(ectx);
     }
+    let regional = crate::services::regional::egress(
+        state,
+        &eff.provider,
+        &credential,
+        plan.dialect,
+        &eff.model_id,
+        eff.fields.egress_dialect.is_some(),
+    )
+    .map_err(|e| match e {
+        crate::services::regional::EgressError::Refused(e) => fail(Stage::Capability)(e),
+        crate::services::regional::EgressError::Setup(e) => fail(Stage::Credential)(e),
+    })?;
+    if let Some(r) = &regional {
+        ectx = r.apply(ectx);
+    }
     let dialect = plan.dialect;
     let (req, mut ectx, encoded) = off_thread(request_bytes, move || {
         let encoded = dispatch::encode_request(dialect, &req, &mut ectx);
@@ -1556,11 +1571,11 @@ async fn attempt(
         ),
         None => None,
     };
-    let base = match (&account_base, &platform) {
-        (Some(base), _) | (None, Some(crate::services::agent_platform::Egress { base, .. })) => {
-            base
-        }
-        (None, None) => base_url(state, &eff.provider).ok_or_else(|| {
+    let base = match (&account_base, &platform, &regional) {
+        (Some(base), _, _)
+        | (None, Some(crate::services::agent_platform::Egress { base, .. }), _)
+        | (None, None, Some(crate::services::regional::Egress { base, .. })) => base,
+        (None, None, None) => base_url(state, &eff.provider).ok_or_else(|| {
             fail(Stage::Setup)(error(
                 ErrorKind::ProviderError,
                 500,
@@ -1587,10 +1602,11 @@ async fn attempt(
         count_upstream_error(transport_kind(&e), provider);
         fail(Stage::Upstream)(upstream_error(&e))
     };
-    let auth = match (&platform, media.and_then(|i| i.auth)) {
-        (Some(p), _) => Some(p.auth),
-        (None, Some(auth)) => Some(auth),
-        (None, None) => eff.provider.auth(),
+    let auth = match (&platform, &regional, media.and_then(|i| i.auth)) {
+        (Some(p), _, _) => Some(p.auth),
+        (None, Some(r), _) => Some(r.auth),
+        (None, None, Some(auth)) => Some(auth),
+        (None, None, None) => eff.provider.auth(),
     };
     let secret = platform.as_ref().map_or(&credential.secret, |p| &p.secret);
     let sending = state.upstream.send(Call {

@@ -23,7 +23,19 @@ nav: Messages 服务商
 
 | 服务商 | 设置 | 来源 |
 |---|---|---|
+| Amazon Bedrock（`amazon-bedrock`） | 拒绝 `mcp_servers` 和 `container` | Anthropic 关于 bedrock-runtime 的 [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) 页面，2026-11-14 阅读，其中列出 MCP 连接器和 Agent Skills 不受支持 |
 | MiniMax（`minimax`） | 拒绝 `top_k`、`stop_sequences`、`mcp_servers`、`container` 和 `context_management`；`sampling_fixed_at([("temperature", 1), ("top_p", 0.95)])`；`auto_tool_choice_only()`；`with_video(MINIMAX_VIDEO_MEDIA_TYPES)` | MiniMax 的 [Anthropic API 兼容性](https://platform.minimax.io/docs/api-reference/text-anthropic-api)页面（2026-11-08 阅读），其表格将 `temperature`、`top_p`、`top_k`、`stop_sequences`、`mcp_servers`、`context_management` 和 `container` 列为被忽略，说明 MiniMax 始终使用 1 的 `temperature` 和 0.95 的 `top_p`，并且 `tool_choice` 只支持 `auto` |
+
+## Amazon Bedrock
+
+来源：AWS 的 [Messages 指南](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html)和 Anthropic 的 [Claude on Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy) 页面（2026-11-14 阅读），以及 `fixtures/anthropic_messages/providers/amazon-bedrock/` 中实时得到的错误。当目录为某个 Bedrock 模型注明 Messages 格式时，该模型以 Messages 发送；对于 AWS API 兼容性表中列出 Messages 的 Claude 模型，KPMR 会这样注明。未通过成功的调用测试：AWS 未公开此路径的任何回复。
+
+| Amazon Bedrock 字段 | KPP | 说明 |
+|---|---|---|
+| `bedrock-runtime.{region}.amazonaws.com` 上 `/anthropic/v1/messages` 的 Messages | `EgressCtx::api_root` | `/anthropic/v1` 取代 `/v1`；密钥作为 `x-api-key` 发送，`model` 保留在请求体中，`anthropic-version` 为 `2023-06-01`，与 AWS 的 `curl` 示例一致。 |
+| 以 403 `permission_error` 返回的被拒绝密钥 | `KppError` | 按类型为 `PermissionDenied`；网关把 Bedrock 针对格式错误、未签名和未知密钥的消息视为被拒绝的密钥（`errors/recorded-*-key*`）。 |
+| `POST /v1/messages/count_tokens` | — | bedrock-runtime 只在 `/model/{modelId}/count-tokens` 以自有格式计数，Anthropic 格式的计数只在 bedrock-mantle 上提供（见[计算 Token](https://docs.aws.amazon.com/bedrock/latest/userguide/count-tokens.html)），因此 Kaeso 拒绝 Token 计数。 |
+| 流 | Anthropic 的 SSE | AWS 对此路径的流只说明 Anthropic SDK 可以使用它，没有更多描述。 |
 
 ## Vercel
 

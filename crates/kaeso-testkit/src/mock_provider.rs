@@ -454,6 +454,11 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             Some(CloudflarePath::Api(rest)) => rest,
             _ => path,
         };
+    // Amazon Bedrock's runtime host serves Anthropic Messages at `/anthropic/v1/messages`.
+    let path = match path.strip_prefix("/anthropic") {
+        Some(rest) if rest.starts_with("/v1/messages") => rest.to_owned(),
+        _ => path,
+    };
     if method == Method::GET && path == format!("/api/v1/tasks/{DASHSCOPE_IMAGE_TASK}") {
         return dashscope_json(&ctx.fixtures, "polls/images/succeeded.json")
             .unwrap_or_else(|| StatusCode::INTERNAL_SERVER_ERROR.into_response());

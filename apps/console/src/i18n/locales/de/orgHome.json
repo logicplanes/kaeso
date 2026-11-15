@@ -354,5 +354,7 @@
   "orgHome.changeScopeFirst": "Ändern Sie zuerst den Namen, das Konto oder das Gateway",
   "orgHome.keyMoved": "{name} ruft jetzt {location} auf",
   "orgHome.changeFirst": "Zuerst den Namen oder den Standort ändern",
-  "orgHome.editKey": "{title} bearbeiten"
+  "orgHome.editKey": "{title} bearbeiten",
+  "orgHome.region": "Region",
+  "orgHome.changeRegionFirst": "Zuerst den Namen oder die Region ändern"
 }

@@ -738,6 +738,90 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/amazon-bedrock/explain-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "us.anthropic.claude-sonnet-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "us.anthropic.claude-sonnet-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/long-term-key-format": {
+    "body": {
+      "input": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "us.anthropic.claude-sonnet-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/missing-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "us.anthropic.claude-sonnet-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/refused-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "us.anthropic.claude-sonnet-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/amazon-bedrock/short-term-key-format": {
+    "body": {
+      "input": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "us.anthropic.claude-sonnet-5",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
   "providers/cloudflare-ai-gateway/insufficient-balance": {
     "body": {
       "input": [

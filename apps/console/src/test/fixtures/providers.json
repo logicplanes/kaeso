@@ -22,6 +22,7 @@
       },
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -42,6 +43,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -62,6 +64,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -87,6 +90,7 @@
       },
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -107,6 +111,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -127,6 +132,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -147,6 +153,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -167,6 +174,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -187,6 +195,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -207,6 +216,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -227,6 +237,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -247,6 +258,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -267,6 +279,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -287,6 +300,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -307,6 +321,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -327,6 +342,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -347,6 +363,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -367,6 +384,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -427,6 +445,7 @@
         "default_location": "global"
       },
       "account_scope": null,
+      "regions": null,
       "model_routes": [
         {
           "pattern": "claude-*",
@@ -456,6 +475,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -476,6 +496,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -496,6 +517,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -516,6 +538,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -536,6 +559,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -556,6 +580,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -576,6 +601,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -596,6 +622,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -616,6 +643,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -642,6 +670,7 @@
         },
         "gateway_header": "cf-aig-gateway-id"
       },
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -662,6 +691,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -682,6 +712,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -702,6 +733,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -722,6 +754,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -742,6 +775,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -762,6 +796,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -782,6 +817,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -802,6 +838,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -822,6 +859,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -842,6 +880,7 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
       "model_routes": [],
       "server": null
     },
@@ -862,6 +901,57 @@
       "account": null,
       "service_account": null,
       "account_scope": null,
+      "regions": null,
+      "model_routes": [],
+      "server": null
+    },
+    {
+      "id": "amazon-bedrock",
+      "name": "Amazon Bedrock",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://console.aws.amazon.com/bedrock/",
+        "label": "API keys"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "anthropic_messages"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "regions": {
+        "regions_page": {
+          "url": "https://docs.aws.amazon.com/general/latest/gr/bedrock.html",
+          "label": "Amazon Bedrock endpoints"
+        },
+        "regions": [
+          "us-east-1",
+          "us-east-2",
+          "us-west-2",
+          "ca-central-1",
+          "sa-east-1",
+          "eu-central-1",
+          "eu-central-2",
+          "eu-north-1",
+          "eu-south-1",
+          "eu-south-2",
+          "eu-west-1",
+          "eu-west-2",
+          "eu-west-3",
+          "ap-northeast-1",
+          "ap-northeast-2",
+          "ap-northeast-3",
+          "ap-south-1",
+          "ap-south-2",
+          "ap-southeast-1",
+          "ap-southeast-2",
+          "us-gov-east-1",
+          "us-gov-west-1"
+        ]
+      },
       "model_routes": [],
       "server": null
     }

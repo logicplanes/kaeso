@@ -312,6 +312,34 @@ describe("organization providers", () => {
     ]);
   });
 
+  it("shows an Amazon Bedrock key's region and moves it to another region", async () => {
+    signedIn();
+    const bedrock = credential({ id: "cred_bedrock", provider: "amazon-bedrock", name: "Bedrock", location: "us-east-1", last4: "0001" });
+    keys([production, bedrock]);
+    on("PATCH", "orgs/:org/credentials/:credential", ({ body }: { body: { name: string; location?: string } }) => ({
+      ...bedrock,
+      name: body.name,
+      location: body.location ?? bedrock.location,
+    }));
+    const { user } = await renderApp(PATH);
+
+    const key = await row("Bedrock");
+    expect(key).toHaveTextContent("Region");
+    expect(key).toHaveTextContent("us-east-1");
+    await user.click(await screen.findByRole("button", { name: "Actions for Amazon Bedrock · Bedrock" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Amazon Bedrock · Bedrock" });
+    await user.hover(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Change the name or the region first")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("combobox", { name: "Region" }));
+    await user.click(await screen.findByRole("option", { name: "eu-west-3" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await notifications().findByText("Bedrock now calls eu-west-3")).toBeInTheDocument();
+    expect(requests("PATCH", "orgs/:org/credentials/:credential").map((r) => [r.params.credential, r.body])).toEqual([
+      ["cred_bedrock", { name: "Bedrock", location: "eu-west-3" }],
+    ]);
+  });
+
   it("shows a Cloudflare key's account and gateway and moves it to the account's default gateway", async () => {
     signedIn();
     const cf = credential({

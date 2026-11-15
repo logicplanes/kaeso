@@ -9,6 +9,20 @@ nav: 推理云
 
 它们的 fixture 位于 `fixtures/openai_chat/providers/<id>/`（[fixtures](fixtures.md)）。
 
+## Amazon Bedrock
+
+来源：AWS 关于[端点](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html)、[Chat Completions](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-chat-completions.html)、[Messages](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html) 和 [API 密钥](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html)的指南及其 [API 兼容性](https://docs.aws.amazon.com/bedrock/latest/userguide/models-api-compatibility.html)表，2026-11-14 阅读。未通过成功的调用测试：AWS 未公开这些路径的任何回复，因此 `fixtures/openai_chat/providers/amazon-bedrock/` 中是指南里的请求，以及用虚构密钥实时得到的错误。每个密钥调用一个区域，即 `https://bedrock-runtime.{region}.amazonaws.com`，使用 `Authorization: Bearer`；`provider.rs` 中该服务商的 `Regional` 条目列出各区域，并为每种方言指定其在该主机上的 API 根路径。
+
+| Amazon Bedrock 字段 | KPP | 说明 |
+|---|---|---|
+| `/openai/v1/chat/completions` 上的 Chat Completions | `EgressCtx::api_root` | `/openai/v1` 取代 `/v1`；请求体与 OpenAI 相同。Claude 模型改为发送到 `/anthropic/v1/messages`（见 [Messages 服务商](anthropic-messages-providers.md#amazon-bedrock)）。 |
+| `amazon-bedrock-guardrailConfig` | extras | Bedrock 自有的防护规则请求体字段（`requests/guardrail-config-doc`）；请求发往其他方言时会被拒绝。 |
+| 401 `permission_denied_error`，`code: "access_denied"` | `KppError` | 按状态码为 `Authentication`；格式错误、未签名和未知的密钥各有自己的消息（`errors/recorded-*-key*`）。 |
+| 带 `x-amzn-ErrorType` 的 `{"Message": …}` | `KppError` | bedrock-runtime 回复其自有操作时使用的格式；消息从 `Message` 读取，类型按状态码（`errors/recorded-native-invalid-api-key`）。 |
+| `GET /openai/v1/models` | — | 不提供（404 `UnknownOperationException`），因此模型检查无法确定，也不发送任何请求。 |
+
+目录未注明格式的模型，Bedrock 只通过其自有 API InvokeModel 和 Converse 提供，KPP 不读取它们的 AWS 事件流，因此这类模型会在发送前被拒绝。Bedrock 的 Responses 路径不被使用：Responses 应用通过 Chat Completions 访问它。Token 计数会被拒绝：bedrock-runtime 只在 `/model/{modelId}/count-tokens` 以自有格式计数。
+
 ## Baseten
 
 来源：Baseten 的 [Model APIs](https://docs.baseten.co/inference/model-apis/overview) 概览、其 Chat Completions、Messages 和 Responses 的 OpenAPI 文档、[reasoning](https://docs.baseten.co/inference/model-apis/reasoning) 和[流式](https://docs.baseten.co/inference/streaming)指南，以及[推理错误](https://docs.baseten.co/inference/errors)页面，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/baseten/` 中的回复是 reasoning 指南自己的示例，流是流式指南自己的摘录，并按 schema 补全；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://inference.baseten.co`，使用 `Authorization: Bearer`。

@@ -59,6 +59,7 @@ mod playground_media;
 mod portal_signin;
 mod project_people;
 mod provider_alibaba;
+mod provider_amazon_bedrock;
 mod provider_baseten;
 mod provider_cerebras;
 mod provider_chatgpt;

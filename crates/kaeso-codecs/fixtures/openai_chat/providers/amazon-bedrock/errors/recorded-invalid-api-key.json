@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Invalid API Key format: Must start with pre-defined prefix",
+    "type": "permission_denied_error",
+    "param": null,
+    "code": "access_denied"
+  }
+}

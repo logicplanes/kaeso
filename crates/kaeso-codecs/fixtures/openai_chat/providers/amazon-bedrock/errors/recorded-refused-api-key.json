@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Authentication failed: Please make sure your API Key is valid.",
+    "type": "permission_denied_error",
+    "param": null,
+    "code": "access_denied"
+  }
+}

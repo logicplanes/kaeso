@@ -763,6 +763,84 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/amazon-bedrock/explain-doc": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "us.anthropic.claude-sonnet-5"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/amazon-bedrock/invalid-api-key": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "us.anthropic.claude-sonnet-5"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/amazon-bedrock/long-term-key-format": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "us.anthropic.claude-sonnet-5"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/amazon-bedrock/missing-api-key": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "us.anthropic.claude-sonnet-5"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/amazon-bedrock/refused-api-key": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "us.anthropic.claude-sonnet-5"
+    },
+    "path": "/v1/chat/completions"
+  },
+  "providers/amazon-bedrock/short-term-key-format": {
+    "body": {
+      "max_completion_tokens": 1024,
+      "messages": [
+        {
+          "content": "Explain quantum computing in one sentence.",
+          "role": "user"
+        }
+      ],
+      "model": "us.anthropic.claude-sonnet-5"
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/cloudflare-ai-gateway/insufficient-balance": {
     "body": {
       "max_completion_tokens": 16,

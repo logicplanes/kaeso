@@ -243,7 +243,8 @@ pub async fn set_location(
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE provider_credentials SET location = $3, revision = revision + 1, updated_at = now() \
-         WHERE org_id = $1 AND id = $2 AND auth_method = 'google_service_account'",
+         WHERE org_id = $1 AND id = $2 AND (auth_method = 'google_service_account' \
+         OR (auth_method = 'api_key' AND location IS NOT NULL))",
         org_id,
         id,
         location

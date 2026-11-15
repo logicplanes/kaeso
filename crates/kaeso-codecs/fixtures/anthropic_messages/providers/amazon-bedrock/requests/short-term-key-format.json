@@ -1,0 +1,10 @@
+{
+  "model": "us.anthropic.claude-sonnet-5",
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain quantum computing in one sentence."
+    }
+  ]
+}

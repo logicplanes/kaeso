@@ -354,5 +354,7 @@
   "orgHome.changeScopeFirst": "请先更改名称、账户或网关",
   "orgHome.keyMoved": "{name} 现在调用 {location}",
   "orgHome.changeFirst": "请先更改名称或位置",
-  "orgHome.editKey": "编辑 {title}"
+  "orgHome.editKey": "编辑 {title}",
+  "orgHome.region": "区域",
+  "orgHome.changeRegionFirst": "请先更改名称或区域"
 }

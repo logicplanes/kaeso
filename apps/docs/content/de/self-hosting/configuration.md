@@ -228,6 +228,7 @@ Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, d
 | `KAESO_PROVIDERS_STEPFUN_AI_BASE_URL`<br>`providers.stepfun-ai.base_url` | Text | `https://api.stepfun.ai` | Basis-URL der StepFun-API. |
 | `KAESO_PROVIDERS_TENCENT_TOKENHUB_BASE_URL`<br>`providers.tencent-tokenhub.base_url` | Text | `https://tokenhub.tencentmaas.com` | Basis-URL der Tencent TokenHub-API. |
 | `KAESO_PROVIDERS_VENICE_BASE_URL`<br>`providers.venice.base_url` | Text | `https://api.venice.ai/api` | Basis-URL der Venice-API. |
+| `KAESO_PROVIDERS_AMAZON_BEDROCK_BASE_URL`<br>`providers.amazon-bedrock.base_url` | Text | `https://bedrock-runtime.us-east-1.amazonaws.com` | Basis-URL der Amazon-Bedrock-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |
@@ -332,7 +333,7 @@ In der Konsole können Instanz-Admins das Anlegen von Konten und Organisationen 
 
 ## Anbietereinstellungen
 
-Jeder Anbieter hat eigene Einstellungen, benannt nach seiner ID: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und jedem `-` als `_`. Jeder Anbieter, den Kaeso aufruft, hat ein Feld, `base_url` ([Aufrufe an Anbieter](#aufrufe-an-anbieter)). Bei Gemini Enterprise Agent Platform ruft die Voreinstellung den Standort jedes Dienstkonto-Schlüssels an dessen eigenem Host auf; jede andere Basis-URL, etwa ein Private-Service-Connect-Endpunkt, bedient jeden Standort so, wie sie ist.
+Jeder Anbieter hat eigene Einstellungen, benannt nach seiner ID: den TOML-Schlüssel `providers.<id>.<field>` und die Variable `KAESO_PROVIDERS_<ID>_<FIELD>`, mit der ID in Großbuchstaben und jedem `-` als `_`. Jeder Anbieter, den Kaeso aufruft, hat ein Feld, `base_url` ([Aufrufe an Anbieter](#aufrufe-an-anbieter)). Bei Gemini Enterprise Agent Platform ruft die Voreinstellung den Standort jedes Dienstkonto-Schlüssels an dessen eigenem Host auf; jede andere Basis-URL, etwa ein Private-Service-Connect-Endpunkt, bedient jeden Standort so, wie sie ist. Bei Amazon Bedrock ruft die Voreinstellung die Region jedes Schlüssels an deren eigenem Runtime-Host auf; jede andere Basis-URL, etwa ein VPC-Endpunkt, bedient jede Region so, wie sie ist.
 
 Eine Anbieter-ID besteht aus Kleinbuchstaben und Ziffern mit einzelnen Bindestrichen dazwischen. Eine Anbieter-Variable oder -Tabelle mit einer anderen ID, oder mit der ID eines Anbieters, den Kaeso nicht aufruft, hält das Gateway beim Start an. Die Meldung nennt sie und listet die Anbieter auf.
 

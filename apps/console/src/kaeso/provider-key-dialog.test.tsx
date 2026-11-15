@@ -435,6 +435,34 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds an Amazon Bedrock key with the region its requests run in", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "amazon-bedrock", name: "Bedrock", is_default: true, location: "eu-central-1" }));
+    const { user, dialog } = await open();
+    const add = () => within(dialog).getByRole("button", { name: "Add key" });
+
+    await choose(user, dialog, "Amazon Bedrock");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Amazon Bedrock API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "console.aws.amazon.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://console.aws.amazon.com/bedrock/");
+    expect(within(dialog).getByRole("link", { name: "Regions (opens in a new tab)" })).toHaveAttribute(
+      "href",
+      "https://docs.aws.amazon.com/general/latest/gr/bedrock.html",
+    );
+    expect(within(dialog).getByLabelText("Amazon Bedrock API key")).not.toHaveAttribute("placeholder");
+    await user.type(within(dialog).getByLabelText("Amazon Bedrock API key"), "ABSKexample0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Bedrock");
+    await hoverReason(user, add(), "Choose the key's region");
+    await user.click(within(dialog).getByRole("combobox", { name: "Region" }));
+    await user.click(await screen.findByRole("option", { name: "eu-central-1" }));
+    await user.click(add());
+
+    expect(await notifications().findByText("Bedrock is the Amazon Bedrock default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "amazon-bedrock", name: "Bedrock", secret: "ABSKexample0123", make_default: false, location: "eu-central-1" },
+    ]);
+  });
+
   it("adds a DeepInfra key, which has no fixed prefix, with DeepInfra's dashboard as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "deepinfra", name: "DeepInfra prod", is_default: true }));
     const { user, dialog } = await open();

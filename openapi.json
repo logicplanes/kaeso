@@ -8306,7 +8306,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Renames a provider key, and moves a service account key to another location or\na key that calls an account to another account or gateway.",
+        "summary": "Renames a provider key, and moves a service account key to another location, a\nkey that calls a region to another region, or a key that calls an account to another\naccount or gateway.",
         "description": "**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "patchOrgsOrgCredentialsCredential",
         "parameters": [
@@ -24935,7 +24935,7 @@
               "string",
               "null"
             ],
-            "description": "The location a service account key calls, one of the provider's\n`service_account.locations`; its `default_location` when absent.",
+            "description": "The location a service account key calls, one of the provider's\n`service_account.locations`; its `default_location` when absent. For an API\nkey of a provider whose `regions` isn't `null`, such as `amazon-bedrock`, the\nregion it calls, one of `regions.regions`: required for such a provider,\nrefused for other API keys.",
             "example": "global"
           },
           "make_default": {
@@ -24949,7 +24949,7 @@
           },
           "provider": {
             "$ref": "#/components/schemas/ProviderId",
-            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n`elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n`sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n`standardcompute`, `cloudflare-ai-gateway`, `perplexity`, `typesafe`,\n`deepinfra`, `upstage`, `ionos`, `novita-ai`, `volcengine`, `ovhcloud`, `stepfun-ai`,\n`tencent-tokenhub`, `venice`, or one of the organization's custom providers that takes a\nkey."
+            "description": "The id of a provider Kaeso calls: `openai`, `anthropic`, `deepseek`, `xai`,\n`togetherai`, `groq`, `openrouter`, `mistral`, `vercel`, `cohere`,\n`ollama-cloud`, `moonshotai`, `alibaba`, `cerebras`, `zai`, `minimax`,\n`elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n`sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n`standardcompute`, `cloudflare-ai-gateway`, `perplexity`, `typesafe`,\n`deepinfra`, `upstage`, `ionos`, `novita-ai`, `volcengine`, `ovhcloud`, `stepfun-ai`,\n`tencent-tokenhub`, `venice`, `amazon-bedrock`, or one of the organization's custom\nproviders that takes a key."
           },
           "secret": {
             "type": "string",
@@ -24994,7 +24994,7 @@
       },
       "CredentialRename": {
         "type": "object",
-        "description": "A new name, for a service account key a new location, and for a key that\ncalls an account a new account or gateway.",
+        "description": "A new name, for a service account key a new location, for a key that\ncalls a region a new region, and for a key that calls an account a new account or\ngateway.",
         "required": [
           "name"
         ],
@@ -25018,7 +25018,7 @@
               "string",
               "null"
             ],
-            "description": "For a service account key, the location it calls from now on;\nunchanged when absent."
+            "description": "For a service account key the location it calls from now on, for a key\nthat calls a region the region; unchanged when absent."
           },
           "name": {
             "type": "string",
@@ -25054,7 +25054,7 @@
               "string",
               "null"
             ],
-            "description": "For a service account key, a new location; unchanged when absent."
+            "description": "For a service account key a new location, for a key that calls a region\na new region; unchanged when absent."
           },
           "name": {
             "type": [
@@ -25167,7 +25167,7 @@
               "string",
               "null"
             ],
-            "description": "The location a service account key calls, such as `global` or\n`us-central1`; `null` for other keys.",
+            "description": "The location a service account key calls, such as `global` or\n`us-central1`, or the region an API key of a provider whose `regions` isn't\n`null` calls, such as `eu-central-1`; `null` for other keys.",
             "example": "global"
           },
           "name": {
@@ -28776,7 +28776,7 @@
                     "string",
                     "null"
                   ],
-                  "description": "The location a service account key calls, such as `global` or\n`us-central1`; `null` for other keys.",
+                  "description": "The location a service account key calls, such as `global` or\n`us-central1`, or the region an API key of a provider whose `regions` isn't\n`null` calls, such as `eu-central-1`; `null` for other keys.",
                   "example": "global"
                 },
                 "name": {
@@ -31221,6 +31221,17 @@
                   "type": "string",
                   "description": "The name people see.",
                   "example": "Groq"
+                },
+                "regions": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/RegionsView",
+                      "description": "For a provider whose keys each call one region, such as Amazon Bedrock:\neach API key also gives its region as `location`. `null` for other\nproviders."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "server": {
                   "oneOf": [
@@ -36600,6 +36611,17 @@
             "description": "The name people see.",
             "example": "Groq"
           },
+          "regions": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RegionsView",
+                "description": "For a provider whose keys each call one region, such as Amazon Bedrock:\neach API key also gives its region as `location`. `null` for other\nproviders."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "server": {
             "oneOf": [
               {
@@ -36625,6 +36647,31 @@
           "takes_key": {
             "type": "boolean",
             "description": "Whether requests to it carry a provider key; `false` for a custom\nprovider that takes none."
+          }
+        }
+      },
+      "RegionsView": {
+        "type": "object",
+        "description": "The regions a provider's API keys may call.",
+        "required": [
+          "regions_page",
+          "regions"
+        ],
+        "properties": {
+          "regions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The regions Kaeso calls, as the provider writes them.",
+            "example": [
+              "us-east-1",
+              "eu-central-1"
+            ]
+          },
+          "regions_page": {
+            "$ref": "#/components/schemas/KeyPageView",
+            "description": "The provider's page that lists its regions."
           }
         }
       },

@@ -622,6 +622,47 @@ impl AccountScope {
     }
 }
 
+/// A provider whose keys each call one region, every region on a host of its own, such as
+/// Amazon Bedrock's `bedrock-runtime.{region}.amazonaws.com`. Each key carries its region; a
+/// model whose catalogue entry names no egress dialect is served there only through the
+/// provider's own API, which Kaeso doesn't speak, and is refused before sending.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Regional {
+    /// Where the console points for the regions.
+    pub regions_page: KeyPage,
+    pub regions: &'static [&'static str],
+    /// The host of a region, `{region}` standing for it.
+    pub host: &'static str,
+    /// What takes the place of `/v1` on the host, for each dialect Kaeso sends there.
+    pub api_roots: &'static [(DialectId, &'static str)],
+    /// The auth header each dialect takes when it differs from the provider's.
+    pub auth: &'static [(DialectId, AuthStyle)],
+}
+
+impl Regional {
+    pub fn serves(&self, region: &str) -> bool {
+        self.regions.contains(&region)
+    }
+
+    pub fn base_url(&self, region: &str) -> String {
+        format!("https://{}", self.host.replace("{region}", region))
+    }
+
+    pub fn api_root(&self, dialect: DialectId) -> Option<&'static str> {
+        self.api_roots
+            .iter()
+            .find(|(d, _)| *d == dialect)
+            .map(|(_, root)| *root)
+    }
+
+    pub fn auth(&self, dialect: DialectId) -> Option<AuthStyle> {
+        self.auth
+            .iter()
+            .find(|(d, _)| *d == dialect)
+            .map(|(_, auth)| *auth)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AccountSignIn {
     pub method: AuthMethod,
@@ -709,6 +750,7 @@ pub struct Provider {
     /// API root, as Volcengine Ark's `…/api/v3`; `None` for `/v1`. A key's account scope
     /// ([`Provider::account_scope`]) goes first.
     pub api_root: Option<&'static str>,
+    pub regional: Option<Regional>,
 }
 
 // The locations that serve Gemini or Claude models, from the tables of
@@ -746,6 +788,33 @@ const AGENT_PLATFORM_LOCATIONS: &[&str] = &[
     "me-central1",
     "me-central2",
     "me-west1",
+];
+
+// The regions with a `bedrock-runtime` endpoint in https://docs.aws.amazon.com/general/latest/gr/bedrock.html
+// (2026-11-14).
+const BEDROCK_REGIONS: &[&str] = &[
+    "us-east-1",
+    "us-east-2",
+    "us-west-2",
+    "ca-central-1",
+    "sa-east-1",
+    "eu-central-1",
+    "eu-central-2",
+    "eu-north-1",
+    "eu-south-1",
+    "eu-south-2",
+    "eu-west-1",
+    "eu-west-2",
+    "eu-west-3",
+    "ap-northeast-1",
+    "ap-northeast-2",
+    "ap-northeast-3",
+    "ap-south-1",
+    "ap-south-2",
+    "ap-southeast-1",
+    "ap-southeast-2",
+    "us-gov-east-1",
+    "us-gov-west-1",
 ];
 
 pub const PROVIDERS: &[Provider] = &[
@@ -787,6 +856,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -828,6 +898,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "deepseek",
@@ -868,6 +939,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "xai",
@@ -910,6 +982,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -957,6 +1030,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "groq",
@@ -998,6 +1072,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "openrouter",
@@ -1041,6 +1116,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "mistral",
@@ -1097,6 +1173,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "vercel",
@@ -1137,6 +1214,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "cohere",
@@ -1195,6 +1273,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "ollama-cloud",
@@ -1233,6 +1312,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "moonshotai",
@@ -1284,6 +1364,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "alibaba",
@@ -1359,6 +1440,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "cerebras",
@@ -1402,6 +1484,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "zai",
@@ -1449,6 +1532,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "minimax",
@@ -1517,6 +1601,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "elevenlabs",
@@ -1570,6 +1655,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "google",
@@ -1606,6 +1692,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "gemini-agent-platform",
@@ -1690,6 +1777,7 @@ pub const PROVIDERS: &[Provider] = &[
         }),
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "fireworks-ai",
@@ -1734,6 +1822,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "nebius",
@@ -1775,6 +1864,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "sambanova",
@@ -1818,6 +1908,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "scaleway",
@@ -1861,6 +1952,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "huggingface",
@@ -1904,6 +1996,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "nvidia",
@@ -1946,6 +2039,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "baseten",
@@ -1988,6 +2082,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "siliconflow",
@@ -2036,6 +2131,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "standardcompute",
@@ -2077,6 +2173,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "cloudflare-ai-gateway",
@@ -2150,6 +2247,7 @@ pub const PROVIDERS: &[Provider] = &[
             gateway_header: "cf-aig-gateway-id",
         }),
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "perplexity",
@@ -2221,6 +2319,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "typesafe",
@@ -2267,6 +2366,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "deepinfra",
@@ -2330,6 +2430,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "upstage",
@@ -2406,6 +2507,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "ionos",
@@ -2472,6 +2574,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "novita-ai",
@@ -2548,6 +2651,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "volcengine",
@@ -2636,6 +2740,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: Some(""),
+        regional: None,
     },
     Provider {
         id: "ovhcloud",
@@ -2709,6 +2814,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "stepfun-ai",
@@ -2782,6 +2888,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "tencent-tokenhub",
@@ -2848,6 +2955,7 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
     },
     Provider {
         id: "venice",
@@ -2905,6 +3013,77 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
         api_root: None,
+        regional: None,
+    },
+    Provider {
+        id: "amazon-bedrock",
+        name: "Amazon Bedrock",
+        // Bedrock API keys are made under API keys in the Bedrock console: long-term keys start
+        // `ABSK`, short-term ones `bedrock-api-key-`, so no one prefix fits
+        // (https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html).
+        key_page: KeyPage {
+            url: "https://console.aws.amazon.com/bedrock/",
+            label: "API keys",
+        },
+        key_prefix: None,
+        // Each key's region picks its own runtime host; a base URL set to anything else, such as
+        // a VPC endpoint, serves every key as it is.
+        default_base_url: "https://bedrock-runtime.us-east-1.amazonaws.com",
+        auth: AuthStyle::Bearer,
+        // bedrock-runtime serves Chat Completions at `/openai/v1` and Anthropic Messages at
+        // `/anthropic/v1` (https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html);
+        // KPMR names the one each model takes, from AWS's API compatibility table.
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        // A refused key is a 401 on the Chat Completions route but a 403 `permission_error` on
+        // the Messages route, with these messages for a malformed, an unsigned and an unknown key
+        // (recorded live).
+        refused_key_messages: &[
+            "Invalid API Key format",
+            "Missing required parameters in the API Key",
+            "Authentication failed",
+        ],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // bedrock-runtime lists no models (`GET /openai/v1/models` is a 404
+        // `UnknownOperationException`), so a model check is inconclusive (services::regional).
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Amazon Bedrock"),
+        responses: ResponsesProfile::compatible("Amazon Bedrock"),
+        // The Claude features Anthropic lists as unavailable on bedrock-runtime
+        // (https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy).
+        messages: MessagesProfile::compatible("Amazon Bedrock")
+            .refusing(&["mcp_servers", "container"]),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        // The Messages route takes the key as `x-api-key`
+        // (https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html).
+        api_root: None,
+        regional: Some(Regional {
+            regions_page: KeyPage {
+                url: "https://docs.aws.amazon.com/general/latest/gr/bedrock.html",
+                label: "Amazon Bedrock endpoints",
+            },
+            regions: BEDROCK_REGIONS,
+            host: "bedrock-runtime.{region}.amazonaws.com",
+            api_roots: &[
+                (DialectId::OpenAiChat, "/openai/v1"),
+                (DialectId::AnthropicMessages, "/anthropic/v1"),
+            ],
+            auth: &[(DialectId::AnthropicMessages, AuthStyle::XApiKey)],
+        }),
     },
 ];
 
@@ -3203,7 +3382,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock"
         );
     }
 
@@ -3291,7 +3470,8 @@ mod tests {
                 "upstage",
                 "novita-ai",
                 "volcengine",
-                "venice"
+                "venice",
+                "amazon-bedrock"
             ]
         );
     }
@@ -3718,6 +3898,60 @@ mod tests {
                 "false"
             )]
         );
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn amazon_bedrock_calls_each_keys_region_with_chat_completions_and_messages_and_counts_no_tokens()
+     {
+        let p = provider("amazon-bedrock").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Amazon Bedrock",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::AnthropicMessages][..]
+            )
+        );
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix, p.listing),
+            (None, None, None, ModelListing::Partial)
+        );
+        assert!(p.refuses_key("Invalid API Key format: Must start with pre-defined prefix"));
+        assert!(p.refuses_key("Invalid API Key format: Delimiter ':' not found"));
+        assert!(p.refuses_key("Missing required parameters in the API Key"));
+        assert!(p.refuses_key("Authentication failed: Please make sure your API Key is valid."));
+        assert!(!p.refuses_key("Too many requests, please wait before trying again."));
+        assert_eq!(p.messages.refused_fields, ["mcp_servers", "container"]);
+        assert!(p.routes.is_empty() && p.account_scope.is_none());
+        let r = p.regional.unwrap();
+        assert_eq!(r.regions.len(), 22);
+        assert!(r.serves("eu-central-1") && r.serves("us-gov-west-1"));
+        assert!(!r.serves("us-west-1") && !r.serves("global") && !r.serves("EU-CENTRAL-1"));
+        assert_eq!(
+            r.base_url("eu-central-1"),
+            "https://bedrock-runtime.eu-central-1.amazonaws.com"
+        );
+        assert_eq!(p.default_base_url, r.base_url("us-east-1"));
+        assert_eq!(r.api_root(DialectId::OpenAiChat), Some("/openai/v1"));
+        assert_eq!(
+            r.api_root(DialectId::AnthropicMessages),
+            Some("/anthropic/v1")
+        );
+        assert_eq!(r.api_root(DialectId::OpenAiResponses), None);
+        assert_eq!(
+            r.auth(DialectId::AnthropicMessages),
+            Some(AuthStyle::XApiKey)
+        );
+        assert_eq!(r.auth(DialectId::OpenAiChat), None);
+        let regional: Vec<&str> = PROVIDERS
+            .iter()
+            .filter(|p| p.regional.is_some())
+            .map(|p| p.id)
+            .collect();
+        assert_eq!(regional, ["amazon-bedrock"]);
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
     }
@@ -4722,7 +4956,8 @@ mod tests {
                 "ovhcloud",
                 "stepfun-ai",
                 "tencent-tokenhub",
-                "venice"
+                "venice",
+                "amazon-bedrock"
             ]
         );
         assert_eq!(

@@ -51,6 +51,17 @@ Third-party models are paid with the account's Unified Billing credits, or with 
 
 The list shows the account ID and the gateway beside the key. To move the key to another account or gateway, choose **Edit** in its menu.
 
+## Amazon Bedrock keys
+
+For Amazon Bedrock, a provider key is a Bedrock API key, and it names the region its requests run in.
+
+1. In the [Amazon Bedrock console](https://console.aws.amazon.com/bedrock/), choose **API keys**, then generate a key under **Long-term API keys** or **Short-term API keys** ([Bedrock API keys](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html)). A long-term key starts `ABSK` and lasts until the expiry you set. A short-term key starts `bedrock-api-key-`, lasts at most 12 hours and works only in the region that made it, so replace it in Kaeso before it expires.
+2. In Kaeso, on **Providers**, choose **Add provider key**, then **Amazon Bedrock**, paste the key and choose its **Region**: the region whose models the key calls, for a short-term key the one that made it.
+
+The key's identity needs `bedrock:InvokeModel` on the models it calls, and `bedrock:InvokeModelWithResponseStream` for streamed replies ([endpoints](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html)). Which inference profiles a key can call, such as `us.anthropic.claude-sonnet-5` or `global.openai.gpt-6-sol`, depends on its region: a `us.` profile works from regions in the United States, an `eu.` profile from regions in Europe ([cross-Region inference](https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html)).
+
+The list shows the region beside the key. To move the key to another region, choose **Edit** in its menu.
+
 ## Sign in with a ChatGPT account
 
 For OpenAI, a provider key can also be a ChatGPT account. Its requests then use the account's ChatGPT plan instead of an OpenAI API account, within the plan's limits.
@@ -106,7 +117,7 @@ The list shows each key's name, its last four characters, the projects that use 
 | Replace | Takes a new secret for the same key, for example after you rotated it at the provider; for a service account key, a new JSON key file |
 | Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** or **No API access**, and ends its previous session at OpenAI or xAI |
 | Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |
-| Rename | Changes the name the console shows. For a service account key it's **Edit**, which also changes the location; for a Cloudflare AI Gateway key, **Edit** also changes the account and the gateway |
+| Rename | Changes the name the console shows. For a service account key it's **Edit**, which also changes the location; for a Cloudflare AI Gateway key, **Edit** also changes the account and the gateway, and for an Amazon Bedrock key the region |
 | Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI or xAI |
 
 An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT. A Grok account shows **No API access** when xAI refuses its plan. In both cases, its requests fail until someone with **Change provider keys** chooses **Sign in again**.

@@ -27,6 +27,7 @@ pub mod notifications;
 pub mod orgs;
 pub mod provider_accounts;
 pub mod provider_detection;
+pub mod regional;
 pub mod response_cache;
 pub mod sso;
 pub mod updater;
