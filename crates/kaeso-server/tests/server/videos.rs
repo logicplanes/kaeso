@@ -177,6 +177,11 @@ async fn an_openai_app_makes_a_spacex_video_and_kaeso_bills_it_once_when_it_ends
     assert_eq!(video["status"], "queued");
     assert_eq!(video["model"], "grok-imagine-video-1.5");
     assert_eq!(
+        r.header("kaeso-cost"),
+        None,
+        "the job is billed when it ends"
+    );
+    assert_eq!(
         (video["seconds"].as_str(), video["size"].as_str()),
         (Some("8"), Some("1280x720"))
     );

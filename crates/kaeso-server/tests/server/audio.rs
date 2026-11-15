@@ -410,6 +410,7 @@ async fn audio_length_is_read_from_the_file_when_the_provider_reports_none() {
     let o = outcome(&env).await;
     assert_eq!(o.media.as_ref().unwrap().input_ms, 0);
     assert!(!kaeso_server::services::usage::cost_known(&o));
+    assert_eq!(r.header("kaeso-cost"), Some("unknown"));
 
     let r = env
         .app

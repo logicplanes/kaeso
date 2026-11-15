@@ -258,6 +258,7 @@ Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没�
 | --- | --- |
 | `kaeso-request-id` | 请求的 ID，`req_…`，每个响应都有。请求日志显示同一 ID |
 | `kaeso-upstream-request-id` | 服务商为其响应给出的 ID（其 `request-id`、`x-request-id`，或 Cloudflare AI Gateway 的 `cf-aig-log-id`），供其支持团队使用。出现在回复和服务商已作答的错误中，取自作答的路由步骤；命中响应缓存、尚无服务商作答或服务商未发送时没有此头。请求日志将其显示为**上游请求** |
+| `kaeso-cost` | 非流式回复的费用，与其请求日志条目将记录的相同：以美元计的金额，命中响应缓存时为 `0`，模型对其产出没有价格时为 `unknown`。仅当密钥所有者在项目中拥有 `costs.view` 时才有；视频任务或图像生成的开始请求没有此头，它们在结束时计费 |
 | `kaeso-provider` | 处理该请求的服务商，例如 `anthropic`；确定模型后即带有，错误响应也包括在内 |
 | `kaeso-model` | 服务商的模型 ID；确定模型后即带有，错误响应也包括在内 |
 | `kaeso-left-out` | Kaeso 因模型没有对应项而省略的内容，按请求中的名称列出，例如 `tools[1], text.verbosity`、只接受默认温度的模型的 `temperature`，或系统消息推理强度的 `messages[4].output_config.effort`；对话中的项按类型和 ID 列出，例如 `web_search_call ws_67c9…`。只出现在省略了内容的响应上（[省略的工具](../development/kpp/cross-format.md#省略的工具)、[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)） |
@@ -273,7 +274,7 @@ Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没�
 
 - **精确匹配源。** 协议、主机和端口都必须一致：`https://app.example.com` 既不放行 `http://app.example.com`，也不放行 `https://www.app.example.com`。Kaeso 会在启动时拒绝 `*`，因为它会让任何网站都能用访问者持有的密钥发送请求。
 - **预检请求。** 来自已列出源、带有 `Origin` 和 `Access-Control-Request-Method` 的 `OPTIONS` 请求无需密钥即返回 204。响应带有值为该源的 `Access-Control-Allow-Origin`、`Access-Control-Allow-Methods: GET, POST, DELETE` 和 `Access-Control-Max-Age: 7200`。`Access-Control-Allow-Headers` 列出所请求的请求头里官方 SDK 会发送的那些：`authorization`、`x-api-key`、`content-type`、`accept`、`user-agent`、`anthropic-version`、`anthropic-beta`、`anthropic-dangerous-direct-browser-access`、`openai-organization`、`openai-project`、`openai-beta`、`idempotency-key`、`x-goog-api-key`、`x-goog-api-client`、`xi-api-key` 和 `x-stainless-…`，以及[响应缓存](#响应缓存)读取的 `cache-control`。预检请求不是模型请求：不记录日志、不计费，也不计入限额。
-- **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-upstream-request-id, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms`，以便应用读取这些响应头。
+- **响应。** 发往已列出源的每个响应（包括错误响应）都带有值为该源的 `Access-Control-Allow-Origin`，以及 `Access-Control-Expose-Headers: kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms`，以便应用读取这些响应头。
 - **其他源**得不到 CORS 响应头，因此浏览器会拦截调用，它们的预检请求得到空的 204。`/v1`、`/v1beta` 和 `/v2` 上的每个响应都带有 `Vary: Origin`，以便缓存区分这些响应。
 - **不使用 Cookie。** 由于密钥通过请求头传递，Kaeso 从不发送 `Access-Control-Allow-Credentials`。Platform API、健康检查和指标从不响应跨源请求。
 
