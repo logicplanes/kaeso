@@ -1246,6 +1246,7 @@ async fn attempt(
         left_out: Vec::new(),
         adapted: Vec::new(),
         route: Vec::new(),
+        upstream_request_id: None,
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -1658,6 +1659,20 @@ async fn attempt(
         // Cloudflare AI Gateway's log entry for the request.
         .or_else(|| resp.headers.get("cf-aig-log-id"))
         .map(str::to_owned);
+    // Replies and errors from here on carry the provider's id for its support.
+    let served = Served {
+        upstream_request_id: rec.outcome().upstream_request_id.clone(),
+        ..served.clone()
+    };
+    let fail = |stage: Stage| {
+        let served = served.clone();
+        move |err: KppError| Failure {
+            err,
+            served,
+            stage,
+            provider_said: None,
+        }
+    };
     if plan.dialect == DialectId::ElevenLabs
         && let Some(billed) = kaeso_codecs::elevenlabs::billed_characters(&resp.headers)
         && let Some(media) = rec.outcome().media.as_mut()

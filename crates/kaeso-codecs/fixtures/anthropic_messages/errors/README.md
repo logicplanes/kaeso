@@ -37,4 +37,4 @@
 | `timeout.json` | 504 `timeout_error`. | schema: ErrorResponse, GatewayTimeoutError |
 | `timeout.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, GatewayTimeoutError |
 | `overloaded.json` | 529 `overloaded_error` (message 'Overloaded' as in the streaming doc). | schema: ErrorResponse, OverloadedError |
-| `overloaded.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, OverloadedError |
+| `overloaded.meta.json` | HTTP status, and the `request-id` header Anthropic sends with every answer, the body's `request_id`. | schema: ErrorResponse, OverloadedError; header: https://platform.claude.com/docs/en/api/errors#request-id |

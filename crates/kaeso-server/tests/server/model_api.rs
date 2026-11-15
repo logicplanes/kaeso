@@ -422,6 +422,11 @@ async fn errors_arrive_in_the_apps_format() {
     )
     .await;
     assert!(r.status.is_server_error(), "{}", r.status);
+    assert_eq!(
+        r.header("kaeso-upstream-request-id"),
+        Some("req_011CMeCSVvpKS9NrLro7CU5X"),
+        "an error the provider answered carries its id"
+    );
     assert!(r.json()["error"]["message"].as_str().is_some());
     let started = std::time::Instant::now();
     let r = call(

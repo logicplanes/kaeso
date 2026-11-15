@@ -14,6 +14,7 @@ pub const LEFT_OUT_HEADER: &str = "kaeso-left-out";
 pub const ADAPTED_HEADER: &str = "kaeso-adapted";
 pub const ROUTE_HEADER: &str = "kaeso-route";
 pub const TIMING_HEADER: &str = "server-timing";
+pub const UPSTREAM_REQUEST_ID_HEADER: &str = "kaeso-upstream-request-id";
 
 #[derive(Clone, Debug, Default)]
 pub struct Served {
@@ -22,6 +23,9 @@ pub struct Served {
     pub left_out: Vec<String>,
     pub adapted: Vec<String>,
     pub route: Vec<Walked>,
+    /// The id the provider gave its answer, for its support: `request-id`, `x-request-id` or
+    /// Cloudflare AI Gateway's `cf-aig-log-id`. Absent on a cache hit and before any answer.
+    pub upstream_request_id: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -57,6 +61,11 @@ pub fn stamp(resp: &mut Response, served: &Served) {
         && let Ok(v) = HeaderValue::from_str(&served.adapted.join(", "))
     {
         resp.headers_mut().insert(ADAPTED_HEADER, v);
+    }
+    if let Some(id) = &served.upstream_request_id
+        && let Ok(v) = HeaderValue::from_str(id)
+    {
+        resp.headers_mut().insert(UPSTREAM_REQUEST_ID_HEADER, v);
     }
     stamp_route(resp, &served.route);
 }
