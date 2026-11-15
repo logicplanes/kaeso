@@ -45,7 +45,8 @@ pub const PREFIX: &str = "/platform/v1";
         description = "Manage a Kaeso install: organizations, projects, members, keys, provider credentials, models, limits, usage and logs. Every operation names the single right it checks. Errors are `{\"error\": {\"type\", \"message\", \"param\"}}`. Lists are paginated with `limit` and `after`.",
         license(name = "MIT", identifier = "MIT"),
     ),
-    components(schemas(ErrorEnvelope, error::ErrorBody)),
+    // The request log filters' formats, which only parameters name, so nothing else adds them.
+    components(schemas(ErrorEnvelope, error::ErrorBody, RequestFormat)),
     modifiers(&Components),
     tags(
         (name = "auth", description = "Sign-in and sessions"),
@@ -336,6 +337,27 @@ fn operation_name(path: &str) -> String {
     }
     out
 }
+
+// Schemas built from the code's own lists, so the reference can't fall behind them.
+
+/// A format Kaeso reads from apps or writes to providers, as the request log names it. Its values
+/// come from `DialectId::ALL`, the list the filters accept, so the reference can't fall behind.
+pub struct RequestFormat;
+
+impl utoipa::PartialSchema for RequestFormat {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        utoipa::openapi::ObjectBuilder::new()
+            .schema_type(utoipa::openapi::schema::Type::String)
+            .description(Some(
+                "A request format, as the request log names it: the format an app sent or the one Kaeso sent to the provider.",
+            ))
+            .enum_values(Some(kaeso_kpp::DialectId::ALL.iter().map(|d| d.as_str())))
+            .examples(["openai_responses"])
+            .into()
+    }
+}
+
+impl utoipa::ToSchema for RequestFormat {}
 
 #[cfg(test)]
 mod tests {

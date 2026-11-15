@@ -14999,19 +14999,19 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions`,\n`elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`.",
+            "description": "Only requests the app sent in this format.",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/RequestFormat"
             }
           },
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech`,\n`elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`.",
+            "description": "Only requests Kaeso sent to the provider in this format.",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/RequestFormat"
             }
           },
           {
@@ -15240,19 +15240,19 @@
           {
             "name": "ingress_dialect",
             "in": "query",
-            "description": "Only requests the app sent in this format: `anthropic_messages`,\n`openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n`gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions`,\n`elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`.",
+            "description": "Only requests the app sent in this format.",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/RequestFormat"
             }
           },
           {
             "name": "egress_dialect",
             "in": "query",
-            "description": "Only requests Kaeso sent to the provider in this format:\n`anthropic_messages`, `openai_chat`, `openai_responses`,\n`openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n`minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech`,\n`elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`.",
+            "description": "Only requests Kaeso sent to the provider in this format.",
             "required": false,
             "schema": {
-              "type": "string"
+              "$ref": "#/components/schemas/RequestFormat"
             }
           },
           {
@@ -29760,7 +29760,7 @@
                 },
                 "egress_dialect": {
                   "type": "string",
-                  "description": "The provider's dialect."
+                  "description": "The format Kaeso sent to the provider; empty when no provider was called."
                 },
                 "endpoint": {
                   "type": "string",
@@ -29797,7 +29797,7 @@
                 },
                 "ingress_dialect": {
                   "type": "string",
-                  "description": "The app's dialect."
+                  "description": "The format the app sent."
                 },
                 "key_id": {
                   "oneOf": [
@@ -32345,7 +32345,7 @@
           },
           "egress_dialect": {
             "type": "string",
-            "description": "The provider's dialect."
+            "description": "The format Kaeso sent to the provider; empty when no provider was called."
           },
           "endpoint": {
             "type": "string",
@@ -32382,7 +32382,7 @@
           },
           "ingress_dialect": {
             "type": "string",
-            "description": "The app's dialect."
+            "description": "The format the app sent."
           },
           "key_id": {
             "oneOf": [
@@ -36902,6 +36902,41 @@
             "description": "The role that would give it."
           }
         }
+      },
+      "RequestFormat": {
+        "type": "string",
+        "description": "A request format, as the request log names it: the format an app sent or the one Kaeso sent to the provider.",
+        "enum": [
+          "anthropic_messages",
+          "openai_chat",
+          "openai_responses",
+          "openai_embeddings",
+          "gemini",
+          "gemini_embeddings",
+          "openai_images",
+          "minimax_images",
+          "openai_speech",
+          "openai_transcriptions",
+          "minimax_speech",
+          "elevenlabs",
+          "openai_videos",
+          "xai_videos",
+          "minimax_videos",
+          "zai_videos",
+          "openrouter_videos",
+          "veo",
+          "gemini_interactions",
+          "dashscope",
+          "system_one",
+          "openai_decisions",
+          "gemini_decisions",
+          "cohere_rerank",
+          "voyage_rerank",
+          "jina_rerank"
+        ],
+        "examples": [
+          "openai_responses"
+        ]
       },
       "RequestId": {
         "type": "string",

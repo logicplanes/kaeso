@@ -1,7 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { dayEnd, dayStart } from "~/format/zone";
 import { api, data } from "../client";
-import type { LogEntryView, LogView, ToolCallEntryView, ToolCallView } from "../generated/types";
+import type { LogEntryView, LogView, RequestFormat, ToolCallEntryView, ToolCallView } from "../generated/types";
 import { nextPageParam, refetchOnFocusWhileOnePage, type Page } from "../paging";
 
 export type LogRange = "1h" | "24h" | "7d" | "30d";
@@ -41,8 +41,9 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.error ? { error_kind: f.error } : {}),
     ...(f.stream !== undefined ? { stream: f.stream } : {}),
     ...(f.source ? { source: f.source } : {}),
-    ...(f.ingress ? { ingress_dialect: f.ingress } : {}),
-    ...(f.egress ? { egress_dialect: f.egress } : {}),
+    // The URL may hold any text; the gateway refuses a format it doesn't know.
+    ...(f.ingress ? { ingress_dialect: f.ingress as RequestFormat } : {}),
+    ...(f.egress ? { egress_dialect: f.egress as RequestFormat } : {}),
   };
 }
 
