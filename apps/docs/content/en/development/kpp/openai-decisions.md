@@ -117,6 +117,7 @@ The encoder writes what KPP holds, and refuses before sending what OpenAI's form
 | `usage.input_tokens` | `usage.input_tokens` typed | OpenAI counts cache reads and writes in it, KPP doesn't, so both are subtracted. |
 | `usage.input_tokens_details.cached_tokens` | `usage.cache_read_tokens` typed | |
 | `usage.input_tokens_details.cache_write_tokens` | `usage.cache_write_tokens` typed | |
+| `usage.input_tokens_details.cache_write_tokens_details.ttl_12h_tokens` | `usage.cache_write_breakdown.ephemeral_12h` typed | The writes kept for 12 hours, at 2.5 times the input price, as for [Responses](openai-responses.md). |
 | `usage.output_tokens` | `usage.output_tokens` typed | 0 at OpenAI. |
 | `usage.output_tokens_details.reasoning_tokens` | `usage.reasoning_tokens` typed | |
 | `usage` | `usage.raw` | `total_tokens` and other keys come back in the same format. |

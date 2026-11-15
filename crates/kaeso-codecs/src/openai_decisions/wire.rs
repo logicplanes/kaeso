@@ -215,6 +215,24 @@ pub(super) struct InputDetailsWire {
     pub cached_tokens: u64,
     #[serde(default)]
     pub cache_write_tokens: u64,
+    #[serde(default)]
+    pub cache_write_tokens_details: Option<CacheWriteTtls>,
+}
+
+/// `input_tokens_details.cache_write_tokens_details` of OpenAI's usage: the writes kept for 30
+/// minutes and for 12 hours, billed at 1.25 and 2.5 times the input price
+/// (https://developers.openai.com/api/docs/guides/prompt-caching).
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+pub(crate) struct CacheWriteTtls {
+    #[serde(default)]
+    pub ttl_12h_tokens: u64,
+}
+
+impl CacheWriteTtls {
+    pub(crate) fn breakdown(self) -> Option<kaeso_kpp::CacheWriteBreakdown> {
+        (self.ttl_12h_tokens > 0)
+            .then(|| kaeso_kpp::CacheWriteBreakdown::twelve_hours(self.ttl_12h_tokens))
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]

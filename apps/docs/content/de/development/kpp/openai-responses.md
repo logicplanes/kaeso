@@ -252,6 +252,7 @@ Alle übrigen Eigenschaften der abgedeckten Schemas, nach Namen:
 | `ResponseUsage.input_tokens` | `usage.input_tokens` + `usage.cache_read_tokens` + `usage.cache_write_tokens` ([Nutzung](cross-format.md#nutzung)) |
 | `ResponseUsage.input_tokens_details.cached_tokens` | `usage.cache_read_tokens` |
 | `ResponseUsage.input_tokens_details.cache_write_tokens` | `usage.cache_write_tokens` |
+| `ResponseUsage.input_tokens_details.cache_write_tokens_details.ttl_12h_tokens` | `usage.cache_write_breakdown.ephemeral_12h`, die 12 Stunden gehaltenen Schreibvorgänge, die das 2,5-Fache des Eingabepreises kosten; der Rest sind die 30-Minuten-Schreibvorgänge (`ttl_30m_tokens`) zum Cache-Schreibpreis |
 | `ResponseUsage.output_tokens` | `usage.output_tokens` |
 | `ResponseUsage.output_tokens_details.reasoning_tokens` | `usage.reasoning_tokens` |
 | `ResponseUsage.total_tokens` | abgeleitet (Eingabe + Ausgabe); das Originalobjekt liegt in `usage.raw` und hat für diesen Dialekt Vorrang |

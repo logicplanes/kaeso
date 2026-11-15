@@ -122,6 +122,11 @@ pub(super) fn decode(
             );
             usage.cache_read_tokens = cached;
             usage.cache_write_tokens = written;
+            usage.cache_write_breakdown = parsed
+                .input_tokens_details
+                .as_ref()
+                .and_then(|d| d.cache_write_tokens_details)
+                .and_then(super::wire::CacheWriteTtls::breakdown);
             usage.reasoning_tokens = parsed.output_tokens_details.map(|d| d.reasoning_tokens);
             usage.raw = u.to_value().ok().map(|v| RawUsage::new(origin.clone(), v));
             resp.usage = usage;

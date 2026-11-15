@@ -19,6 +19,10 @@ pub const COST_RAW_MAX: i128 = 10_i128.pow(38) - 1;
 // other providers: https://platform.claude.com/docs/en/about-claude/pricing
 const ONE_HOUR_WRITE_FACTOR: Decimal = Decimal::from_parts(2, 0, 0, false, 0);
 
+// OpenAI bills a cache write kept for 12 hours at 2.5 times the input price:
+// https://developers.openai.com/api/docs/guides/prompt-caching
+const TWELVE_HOUR_WRITE_FACTOR: Decimal = Decimal::from_parts(25, 0, 0, false, 1);
+
 pub fn one_hour_cache_write_price(prices: &Fields) -> Option<Decimal> {
     prices.cache_write_1h_price.or_else(|| {
         prices
@@ -168,6 +172,10 @@ pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
         .cache_write_breakdown
         .as_ref()
         .map_or(0, |b| b.ephemeral_1h.min(usage.cache_write_tokens));
+    let twelve_hours = usage.cache_write_breakdown.as_ref().map_or(0, |b| {
+        b.ephemeral_12h
+            .min(usage.cache_write_tokens.saturating_sub(one_hour))
+    });
     // Image tokens are a share of each count, billed at the image price when the model has one.
     let image_in = usage
         .input_image_tokens
@@ -215,10 +223,19 @@ pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
                 .or(prices.input_price),
         ),
         (
-            usage.cache_write_tokens.saturating_sub(one_hour),
+            usage
+                .cache_write_tokens
+                .saturating_sub(one_hour)
+                .saturating_sub(twelve_hours),
             prices.cache_write_price.or(prices.input_price),
         ),
         (one_hour, one_hour_cache_write_price(prices)),
+        (
+            twelve_hours,
+            prices
+                .input_price
+                .and_then(|p| p.checked_mul(TWELVE_HOUR_WRITE_FACTOR)),
+        ),
     ]
     .into_iter()
     .try_fold(Decimal::ZERO, |sum, (tokens, price)| {
@@ -785,6 +802,23 @@ mod tests {
         assert_eq!(cost(&u, &prices), dec!(17.75));
         u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::new(0, 9_000_000));
         assert_eq!(cost(&u, &prices), dec!(21));
+    }
+
+    #[test]
+    fn twelve_hour_cache_writes_cost_two_and_a_half_times_the_input_price() {
+        let prices = Fields {
+            input_price: Some(dec!(2)),
+            output_price: Some(dec!(10)),
+            cache_read_price: Some(dec!(0.2)),
+            cache_write_price: Some(dec!(2.5)),
+            ..Fields::default()
+        };
+        let mut u = Usage::default();
+        u.cache_write_tokens = 7_000_000;
+        u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::twelve_hours(4_000_000));
+        assert_eq!(cost(&u, &prices), dec!(27.5), "3M at 2.5, 4M at 5");
+        u.cache_write_breakdown = Some(kaeso_kpp::CacheWriteBreakdown::twelve_hours(9_000_000));
+        assert_eq!(cost(&u, &prices), dec!(35), "never more than the writes");
     }
 
     #[test]
