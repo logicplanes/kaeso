@@ -263,7 +263,7 @@ Chat Completions hat kein Feld für das Reasoning eines Modells, und das Gemini-
 
 ## Antwort-Cache
 
-Ein Projekt kann eine wiederholte, gleiche Anfrage aus einer gespeicherten Antwort beantworten ([Antwort-Cache](../console/response-cache.md)). Senden Sie `Cache-Control: no-cache`, um den Anbieter erneut zu fragen und die neue Antwort zu speichern, oder `Cache-Control: no-store`, um den Cache für diese Anfrage zu umgehen.
+Ein Projekt kann eine wiederholte, gleiche Anfrage aus einer gespeicherten Antwort beantworten ([Antwort-Cache](../console/response-cache.md)). Senden Sie `Cache-Control: no-cache`, um den Anbieter erneut zu fragen und die neue Antwort zu speichern, `Cache-Control: no-store`, um den Cache für diese Anfrage zu umgehen, `Cache-Control: max-age=60`, um nur eine in der letzten Minute gespeicherte Antwort zu nehmen, oder `Cache-Control: only-if-cached`, um aus dem Cache oder mit 504 zu antworten, ohne den Anbieter aufzurufen.
 
 ## Antwort-Header
 

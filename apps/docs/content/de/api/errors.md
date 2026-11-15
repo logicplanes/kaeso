@@ -375,6 +375,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 503 | Eine Guardrail, die bei Fehlern ablehnt, hat nicht rechtzeitig geantwortet, war nicht erreichbar oder gab kein Urteil, oder Kaeso kann die Guardrails des Projekts nicht laden. Die OpenAI-Formate antworten darauf mit 500. |
 | 503 | Der Anbieter ist überlastet, in den OpenAI-Formaten und im Gemini-Format. |
 | 504 | Der Anbieter hat nicht rechtzeitig geantwortet. |
+| 504 | Die Anfrage sendete `Cache-Control: only-if-cached`, und keine gespeicherte Antwort beantwortet sie ([Antwort-Cache](../console/response-cache.md#einzelne-anfrage-steuern)). |
 | 529 | Der Anbieter ist überlastet, im Anthropic-Format. |
 
 Hat ein Stream begonnen, kann sich sein Status nicht mehr ändern. Scheitert der Anbieter oder beendet er den Stream zu früh, endet der Stream mit einem Fehler-Event im Format Ihrer App.

@@ -263,7 +263,7 @@ Chat Completions has no field for a model's reasoning, and the Gemini format has
 
 ## Response cache
 
-A project can answer a repeated identical request from a stored reply ([response cache](../console/response-cache.md)). Send `Cache-Control: no-cache` to ask the provider again and store the new reply, or `Cache-Control: no-store` to skip the cache for that request.
+A project can answer a repeated identical request from a stored reply ([response cache](../console/response-cache.md)). Send `Cache-Control: no-cache` to ask the provider again and store the new reply, `Cache-Control: no-store` to skip the cache for that request, `Cache-Control: max-age=60` to take only a reply stored in the last minute, or `Cache-Control: only-if-cached` to answer from the cache or with 504, never calling the provider.
 
 ## Response headers
 

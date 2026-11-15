@@ -288,6 +288,96 @@ async fn cache_control_skips_the_lookup_or_the_whole_cache() {
 }
 
 #[tokio::test]
+async fn max_age_takes_only_a_young_enough_reply_and_replaces_an_older_one() {
+    let env = env(&[]).await;
+    turn_on(&env).await;
+    let first = ask(&env, &env.key, hello(), None).await;
+    assert_eq!(first.header("kaeso-cache"), Some("miss"));
+
+    env.app.clock.advance(time::Duration::seconds(30));
+    let fresh = ask(&env, &env.key, hello(), Some("max-age=60")).await;
+    assert_eq!(fresh.header("kaeso-cache"), Some("hit"));
+    assert_eq!(fresh.header("age"), Some("30"));
+    assert_eq!(text(&fresh), text(&first));
+
+    env.app.clock.advance(time::Duration::seconds(60));
+    let old = ask(&env, &env.key, hello(), Some("max-age=60")).await;
+    assert_eq!(old.header("kaeso-cache"), Some("miss"), "90 seconds old");
+    assert_eq!(env.mock.received().len(), 2);
+    let again = ask(&env, &env.key, hello(), None).await;
+    assert_eq!(again.header("kaeso-cache"), Some("hit"));
+    assert_eq!(again.header("age"), Some("0"), "the new reply replaced it");
+    assert_eq!(text(&again), text(&old));
+
+    let zero = ask(&env, &env.key, hello(), Some("max-age=0")).await;
+    assert_eq!(zero.header("kaeso-cache"), Some("miss"), "as no-cache");
+    assert_eq!(env.mock.received().len(), 3);
+}
+
+#[tokio::test]
+async fn only_if_cached_answers_from_the_cache_or_504_and_never_calls_the_provider() {
+    let env = env(&[]).await;
+    let refused = |a: &Answer| {
+        assert_eq!(a.status, StatusCode::GATEWAY_TIMEOUT, "{}", a.text());
+        assert_eq!(
+            a.json()["error"]["message"],
+            "No cached reply answers this request, and `only-if-cached` keeps it from the provider."
+        );
+    };
+    let off = ask(&env, &env.key, hello(), Some("only-if-cached")).await;
+    refused(&off);
+    assert_eq!(off.header("kaeso-cache"), None, "the cache is off");
+
+    turn_on(&env).await;
+    let miss = ask(&env, &env.key, hello(), Some("only-if-cached")).await;
+    refused(&miss);
+    assert_eq!(miss.header("kaeso-cache"), Some("miss"));
+    assert!(
+        env.mock.received().is_empty(),
+        "the provider was never called"
+    );
+
+    let first = ask(&env, &env.key, hello(), None).await;
+    assert_eq!(first.header("kaeso-cache"), Some("miss"));
+    let hit = ask(&env, &env.key, hello(), Some("only-if-cached")).await;
+    assert_eq!(hit.status, StatusCode::OK);
+    assert_eq!(hit.header("kaeso-cache"), Some("hit"));
+    assert_eq!(text(&hit), text(&first));
+
+    env.app.clock.advance(time::Duration::seconds(120));
+    let stale = ask(&env, &env.key, hello(), Some("only-if-cached, max-age=60")).await;
+    refused(&stale);
+    for nothing_from_the_cache in ["only-if-cached, no-cache", "only-if-cached, no-store"] {
+        let a = ask(&env, &env.key, hello(), Some(nothing_from_the_cache)).await;
+        refused(&a);
+    }
+    let mut streamed = hello();
+    streamed["stream"] = json!(true);
+    let stream = ask(&env, &env.key, streamed, Some("only-if-cached")).await;
+    refused(&stream);
+    assert_eq!(stream.header("kaeso-cache"), Some("bypass"));
+    assert_eq!(
+        env.mock.received().len(),
+        1,
+        "only the first request reached it"
+    );
+
+    let logs = logged(&env, "?status=504").await;
+    assert_eq!(logs.len(), 6, "{logs:?}");
+    assert!(logs.iter().all(|l| l["cost"] == "0"), "{logs:?}");
+    let mut verdicts: Vec<String> = logs
+        .iter()
+        .map(|l| l["response_cache"].as_str().unwrap_or("off").to_owned())
+        .collect();
+    verdicts.sort();
+    assert_eq!(
+        verdicts,
+        ["bypass", "bypass", "miss", "miss", "miss", "off"],
+        "the cache was off for the first; a stream and no-store pass it by"
+    );
+}
+
+#[tokio::test]
 async fn streams_and_token_counts_pass_the_cache_by() {
     let env = env(&[]).await;
     turn_on(&env).await;

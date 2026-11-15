@@ -467,6 +467,8 @@ fn refusal(f: &Failure, ask: &Ask) -> ApiError {
         Stage::Shutdown => ApiError::Unavailable(
             "Kaeso is restarting and ended this request; send it again.".into(),
         ),
+        // The Playground sends no `Cache-Control`.
+        Stage::NotCached => ApiError::Unavailable(e.message.clone()),
         Stage::CustomProvidersOff => ApiError::Conflict(own(
             &e.message,
             "Custom providers are turned off on this install; ask its operator.",
