@@ -563,6 +563,42 @@ pub async fn logical_total(ch: &ClickHouse) -> Result<u64, StoreError> {
         .bytes)
 }
 
+/// Brings the expiry of an organization's entries down to `days` after they started, where it is
+/// later, so no entry outlives a retention that was shortened after it was written. ClickHouse
+/// recalculates the TTL of the parts the mutation rewrites, so they expire by the new value.
+pub async fn shorten_expiry(
+    ch: &ClickHouse,
+    org: Uuid,
+    days: u32,
+    content_only: bool,
+) -> Result<(), StoreError> {
+    let tables: &[&str] = if content_only {
+        &["request_content", "tool_call_content"]
+    } else {
+        &[
+            "request_log",
+            "request_content",
+            "tool_calls",
+            "tool_call_content",
+        ]
+    };
+    for table in tables {
+        ch.client()
+            .query(
+                "ALTER TABLE ? UPDATE expires_at = toDateTime(started_at) + toIntervalDay(?) \
+                 WHERE org_id = ? AND expires_at > toDateTime(started_at) + toIntervalDay(?)",
+            )
+            .with_setting("mutations_sync", "0")
+            .bind(clickhouse::sql::Identifier(table))
+            .bind(days)
+            .bind(org)
+            .bind(days)
+            .execute()
+            .await?;
+    }
+    Ok(())
+}
+
 pub async fn delete_range(
     ch: &ClickHouse,
     org: Uuid,
