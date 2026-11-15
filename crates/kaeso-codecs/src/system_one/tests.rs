@@ -2068,18 +2068,33 @@ fn a_body_that_ends_early_is_refused_without_naming_a_field() {
 }
 
 #[test]
-fn a_null_score_level_reads_as_a_level_without_a_description() {
+fn a_null_score_level_is_refused_as_it_comes_in_since_it_could_not_go_out() {
+    let err = SystemOne::decode_request(
+        RequestKind::Decide,
+        br#"{"model":"jev-latest","state":"s","questions":{"rating":{"type":"score","criteria":["low",null,"high"]}}}"#,
+        &HeaderList::new(),
+    )
+    .unwrap_err();
+    assert_eq!(err.kind, ErrorKind::InvalidRequest);
+    assert_eq!(err.param.as_deref(), Some("questions.rating.criteria[1]"));
+    assert_eq!(
+        err.message,
+        "Every level of a `score` question needs a text or a value; `null` is neither."
+    );
     let req = decode(
-        br#"{"model":"jev-latest","state":"s","questions":{"rating":{"type":"score","criteria":[null,"high"]}}}"#,
+        br#"{"model":"jev-latest","state":"s","questions":{"rating":{"type":"score","criteria":["low",{"min":8}]}}}"#,
     );
     let QuestionKind::Score(s) = &req.questions[0].kind else {
         panic!()
     };
-    assert_eq!(s.levels[0].description, None);
     assert_eq!(
-        s.levels[1].description,
-        Some(Description::Text("high".into()))
+        s.levels[0].description,
+        Some(Description::Text("low".into()))
     );
+    assert!(matches!(
+        s.levels[1].description,
+        Some(Description::Json(_))
+    ));
 }
 
 #[test]

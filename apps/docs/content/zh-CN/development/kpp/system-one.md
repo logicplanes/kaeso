@@ -36,7 +36,7 @@ order: 8
 | noul 的 `criteria` 对象 | `Predicate.when_true`、`.when_false`（类型化） | `true` 和 `false` 为 `Description::Text` 或 `Description::Json`；`null` 是形式标记（`verbatim`）。对象本身是形式标记 `criteria_object`，因此 `{}` 能原样返回。 |
 | noul 的 `criteria` 为 `null` | 形式标记（`verbatim`） | |
 | choice 的 `criteria` 对象 | `Choice.options`（类型化） | 每个键按顺序成为 `ChoiceValue::Text`；其描述与 noul 相同。描述为 `null` 时是选项上的形式标记 `null`。 |
-| score 的 `criteria` 数组 | `Score.levels`（类型化） | 每一项是该级别的 `description`；级别 `i` 的分值为 `i`。 |
+| score 的 `criteria` 数组 | `Score.levels`（类型化） | 每一项是该级别的 `description`；级别 `i` 的分值为 `i`。值为 `null` 的项会被拒绝（`InvalidRequest`），因为它无法写回。 |
 | box 的 `criteria` | extras | box 问题没有 criteria；即使发送了也保留在问题上。 |
 | `assets` | `assets`（类型化） | 以引用为键，保持顺序。 |
 | `assets.*.type` | 无 | 必须是 `image`，否则为 `InvalidRequest`；缺失时为形式标记 `no_type`。 |

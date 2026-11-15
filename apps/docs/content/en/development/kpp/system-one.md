@@ -36,7 +36,7 @@ A decision request decodes to `Request::Decide(DecideRequest)`. Its questions ke
 | noul `criteria` object | `Predicate.when_true`, `.when_false` typed | `true` and `false` as `Description::Text` or `Description::Json`; `null` is form (`verbatim`). The object itself is form `criteria_object`, so `{}` comes back. |
 | noul `criteria` `null` | form (`verbatim`) | |
 | choice `criteria` object | `Choice.options` typed | Each key is `ChoiceValue::Text`, in order; its description as for noul. A `null` description is form `null` on the option. |
-| score `criteria` array | `Score.levels` typed | Each item is the level's `description`; level `i` scores `i`. |
+| score `criteria` array | `Score.levels` typed | Each item is the level's `description`; level `i` scores `i`. A `null` item is refused (`InvalidRequest`), since it couldn't be written back. |
 | box `criteria` | extras | A box question has no criteria; one sent anyway stays on the question. |
 | `assets` | `assets` typed | Keyed by reference, in order. |
 | `assets.*.type` | none | Must be `image`, else `InvalidRequest`; absent is form `no_type`. |
