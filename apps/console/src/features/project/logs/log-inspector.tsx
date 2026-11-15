@@ -474,13 +474,15 @@ function Overview({
           label={common.cost()}
           value={e.cost_known ? costUSD(e.cost) : t("kaeso.usage.costUnknown", "Unknown")}
           detail={
-            !e.cost_known
-              ? t("logs.inspector.costUnknown", "No price for what it made")
-              : e.cost_basis === "measured"
-                ? t("logs.inspector.costMeasured", "From the audio's length, which Kaeso read from the file")
-                : u.estimated
-                  ? t("logs.inspector.estimated", "Estimated")
-                  : undefined
+            e.cost_basis === "none"
+              ? t("logs.inspector.notBilled", "Not billed")
+              : !e.cost_known
+                ? t("logs.inspector.costUnknown", "No price for what it made")
+                : e.cost_basis === "measured"
+                  ? t("logs.inspector.costMeasured", "From the audio's length, which Kaeso read from the file")
+                  : u.estimated
+                    ? t("logs.inspector.estimated", "Estimated")
+                    : undefined
           }
         />
       </StatGroup>

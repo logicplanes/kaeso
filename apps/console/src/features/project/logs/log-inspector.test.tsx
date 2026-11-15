@@ -243,6 +243,13 @@ describe("LogInspector", () => {
     expect(await within(await sheet()).findByText("From the audio's length, which Kaeso read from the file")).toBeInTheDocument();
   });
 
+  it("says a request that cost nothing wasn't billed", async () => {
+    signedIn();
+    logsData({ rows: [logRow()], entries: [logEntry({ status: 404, error_kind: "not_found", cost: "0", cost_basis: "none" })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(await within(await sheet()).findByText("Not billed")).toBeInTheDocument();
+  });
+
   it("shows the characters of speech and the length of transcribed audio", async () => {
     signedIn();
     projectData();

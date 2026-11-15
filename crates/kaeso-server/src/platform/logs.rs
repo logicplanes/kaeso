@@ -713,12 +713,22 @@ pub enum CostBasis {
     #[doc = "The length of the audio the request sent, read by Kaeso from the file's header\n\
         because the provider reported none."]
     Measured,
+    #[doc = "Tokens Kaeso estimated, because the app went away or the provider reported no\n\
+        usage."]
+    Estimated,
+    #[doc = "Nothing was billed: Kaeso or the provider refused or failed the request, the\n\
+        response cache answered it, or it started a job that is billed when it ends."]
+    #[serde(rename = "none")]
+    NotBilled,
 }
 
 impl CostBasis {
+    // Entries logged before `none` and `estimated` existed read as `reported`.
     fn of(stored: &str) -> CostBasis {
         match stored {
             "measured" => CostBasis::Measured,
+            "estimated" => CostBasis::Estimated,
+            "none" => CostBasis::NotBilled,
             _ => CostBasis::Reported,
         }
     }
@@ -727,6 +737,8 @@ impl CostBasis {
         match self {
             CostBasis::Reported => "reported",
             CostBasis::Measured => "measured",
+            CostBasis::Estimated => "estimated",
+            CostBasis::NotBilled => "none",
         }
     }
 }
@@ -997,9 +1009,11 @@ pub struct LogView {
         request made or heard, such as a video model without a price per clip; `cost`\n\
         is then 0 and means unknown."]
     pub cost_known: bool,
-    #[doc = "What the cost's units come from: `reported` by the provider, or `measured`\n\
-        by Kaeso when the provider bills by the length of audio it was sent but\n\
-        reported none, and Kaeso read the length from the file's header."]
+    #[doc = "What the cost rests on: `none` when nothing was billed, `measured` by Kaeso\n\
+        when the provider bills by the length of audio it was sent but reported none\n\
+        and Kaeso read the length from the file's header, `estimated` when Kaeso\n\
+        estimated the tokens, or `reported` by the provider. Entries logged before\n\
+        `none` and `estimated` existed say `reported`."]
     pub cost_basis: CostBasis,
     #[doc = "User agent."]
     pub user_agent: String,
