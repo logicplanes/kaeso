@@ -51,6 +51,9 @@ pub enum Access {
     Org(OrgRight),
     OrgSession(OrgRight),
     Project(ProjectRight),
+    // A project right whose handler then takes only a console session, such as the Playground's:
+    // documented for sessions alone, so no agent gets a tool for it.
+    ProjectSession(ProjectRight),
 }
 
 impl Access {
@@ -63,7 +66,7 @@ impl Access {
             Access::Instance(r) => format!("right:{}", r.as_str()),
             Access::Me(r) => format!("right:{}", r.as_str()),
             Access::Org(r) | Access::OrgSession(r) => format!("right:{}", r.as_str()),
-            Access::Project(r) => format!("right:{}", r.as_str()),
+            Access::Project(r) | Access::ProjectSession(r) => format!("right:{}", r.as_str()),
         }
     }
 
@@ -107,6 +110,10 @@ impl Access {
                     ""
                 }
             ),
+            Access::ProjectSession(r) => format!(
+                "**Right:** `{}` on the project in the path; a console session only.",
+                r.as_str()
+            ),
             Access::Project(r) => format!(
                 "**Right:** `{}` on the project in the path{}.",
                 r.as_str(),
@@ -122,7 +129,7 @@ impl Access {
     fn right(self) -> Option<Right> {
         match self {
             Access::Org(r) | Access::OrgSession(r) => Some(Right::Org(r)),
-            Access::Project(r) => Some(Right::Project(r)),
+            Access::Project(r) | Access::ProjectSession(r) => Some(Right::Project(r)),
             _ => None,
         }
     }
@@ -198,9 +205,11 @@ fn document(op: &mut Operation, access: Access) {
     let scheme = |name: &str| SecurityRequirement::new(name, Vec::<String>::new());
     op.security = Some(match access {
         Access::Public => vec![SecurityRequirement::default()],
-        Access::Session | Access::Account | Access::InstanceAdmin | Access::OrgSession(_) => {
-            vec![scheme("session")]
-        }
+        Access::Session
+        | Access::Account
+        | Access::InstanceAdmin
+        | Access::OrgSession(_)
+        | Access::ProjectSession(_) => vec![scheme("session")],
         Access::Org(r) if r.needs_session() => vec![scheme("session")],
         Access::Instance(_) | Access::Me(_) => vec![scheme("session"), scheme("agent")],
         Access::Org(_) | Access::Project(_) => {
@@ -552,7 +561,7 @@ async fn check(
             }
             ctx.org = Some(scope.0);
         }
-        Access::Project(right) => {
+        Access::Project(right) | Access::ProjectSession(right) => {
             let org = path_id::<OrgId>(params, "org", "organization")?;
             let project = path_id::<ProjectId>(params, "project", "project")?;
             let (org_scope, project_scope) = match &ctx.caller {

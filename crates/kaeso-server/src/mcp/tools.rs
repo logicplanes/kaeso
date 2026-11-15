@@ -91,13 +91,11 @@ pub fn snake(operation_id: &str) -> String {
 }
 
 // These check a right an agent can hold, but their handlers then refuse anything but a console
-// session (minting platform keys, the Playground) or answer with an image, not JSON.
+// session (minting platform keys) or answer with an image, not JSON.
 const NOT_TOOLS: &[&str] = &[
     "get_me_avatars_hash",
-    "get_orgs_org_projects_project_playground_models",
     "post_orgs_org_platform_keys",
     "post_orgs_org_platform_keys_key_rotate",
-    "post_orgs_org_projects_project_playground_responses",
 ];
 
 fn agent_usable(op: &Value) -> bool {
@@ -393,6 +391,12 @@ mod tests {
             "get_me_sessions",
             "put_instance_settings_admin_sso",
             "put_orgs_org_security_agents",
+            "get_orgs_org_projects_project_playground_models",
+            "post_orgs_org_projects_project_playground_responses",
+            "post_orgs_org_projects_project_playground_images_generations",
+            "post_orgs_org_projects_project_playground_decisions",
+            "get_orgs_org_projects_project_playground_videos_video_content",
+            "delete_orgs_org_projects_project_playground_videos_video",
         ]
         .into_iter()
         .chain(NOT_TOOLS.iter().copied())
