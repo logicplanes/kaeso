@@ -2277,6 +2277,83 @@ async fn the_timeline_counts_requests_by_minute_and_hour() {
 }
 
 #[tokio::test]
+async fn the_timeline_counts_a_finished_job_once_with_its_cost_and_no_zero_duration() {
+    let env = env(&[]).await;
+    let hour = env
+        .app
+        .clock
+        .now()
+        .replace_minute(0)
+        .unwrap()
+        .replace_second(0)
+        .unwrap()
+        .replace_nanosecond(0)
+        .unwrap()
+        - time::Duration::hours(2);
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let five = hour + time::Duration::minutes(5);
+    let started = LogRow {
+        endpoint: "videos".into(),
+        duration_ms: 400,
+        ttfb_ms: Some(400),
+        ..row(org.uuid(), project.uuid(), five, 1).0
+    };
+    let mut completed = LogRow {
+        endpoint: "videos/completed".into(),
+        duration_ms: 0,
+        ttfb_ms: None,
+        status: 502,
+        ..row(org.uuid(), project.uuid(), five, 1).0
+    };
+    completed.cost = 2_000_000_000;
+    let image = LogRow {
+        endpoint: "flows/image/completed".into(),
+        duration_ms: 0,
+        ttfb_ms: None,
+        ..row(org.uuid(), project.uuid(), five, 1).0
+    };
+    ch::insert_logs(
+        env.app.state.clickhouse.as_ref().unwrap(),
+        &[started, completed, image],
+    )
+    .await
+    .unwrap();
+    let rfc = |t: OffsetDateTime| {
+        t.format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let r = env
+        .app
+        .get(
+            &format!(
+                "{}/usage/timeline?from={}&to={}&step=minute",
+                base(&env),
+                rfc(hour),
+                rfc(hour + time::Duration::hours(1))
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let data = r.body["data"].as_array().unwrap();
+    assert_eq!(data.len(), 1, "{data:?}");
+    assert_eq!(data[0]["requests"], 1);
+    assert_eq!(data[0]["errors"], 0);
+    assert_eq!(data[0]["cost"], "0.002");
+    assert_eq!(data[0]["input_tokens"], 3);
+    assert_eq!(
+        (
+            &data[0]["duration_p50_ms"],
+            &data[0]["duration_p95_ms"],
+            &data[0]["duration_max_ms"],
+            &data[0]["ttfb_p50_ms"]
+        ),
+        (&json!(400), &json!(400), &json!(400), &json!(400))
+    );
+}
+
+#[tokio::test]
 async fn the_timeline_filters_groups_and_measures_latency() {
     let env = env(&[]).await;
     let hour = env
