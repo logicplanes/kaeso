@@ -8,7 +8,6 @@ use crate::services::mcp_tools;
 use crate::state::AppState;
 
 const BATCH: i64 = 50;
-const SHORTEST: Duration = Duration::from_secs(60);
 
 // Each server's check comes up to a tenth of the interval early, by its id, so servers added at
 // the same time don't call out in the same minute every time.
@@ -27,7 +26,7 @@ fn time(d: Duration) -> time::Duration {
 // One server at a time: a sync calls the server, and an instance with many servers should not
 // open as many connections at once.
 pub async fn run(state: AppState) -> Result<String, JobError> {
-    let interval = state.config.mcp_servers.sync_interval.max(SHORTEST);
+    let interval = state.config.mcp_servers.sync_interval;
     let now = state.clock.now();
     let earliest = now - time(interval) + time(interval / 10);
     let mut synced = 0usize;

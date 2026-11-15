@@ -168,7 +168,7 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | --- | --- | --- | --- |
 | `KAESO_KPMR_SYNC`<br>`kpmr.sync` | bool | `true` | Fetch the model data from KPMR, the Kaeso Provider & Model Registry. Off for installs without internet; the built-in snapshot is used. |
 | `KAESO_KPMR_URL`<br>`kpmr.url` | text | `https://kpmr.kaeso.app/v1/catalogue` | Where the KPMR catalogue is fetched from, KPMR or a mirror: `https`, or `http` on localhost; redirects must stay on its host and `https`, at most 3. |
-| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | text | `auto` | How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration such as `6h`. |
+| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | text | `auto` | How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration of at least 5 minutes, such as `6h`. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | text | — | Comma-separated keys to trust besides KPMR's built-in one, each `<key id>:<base64 Ed25519 public key>`, for a registry of your own; a catalogue whose signature no trusted key verifies is refused. |
 
 ### Updates

@@ -108,7 +108,7 @@ const ROWS: &[Row] = &[
     s("key_failures.window", "KAESO_KEY_FAILURES_WINDOW", Text, Some("1m"), false, "The window of `key_failures.per_address`: 1s to 1h."),
     s("kpmr.sync", "KAESO_KPMR_SYNC", Bool, Some("true"), false, "Fetch the model data from KPMR, the Kaeso Provider & Model Registry. Off for installs without internet; the built-in snapshot is used."),
     s("kpmr.url", "KAESO_KPMR_URL", Text, Some("https://kpmr.kaeso.app/v1/catalogue"), false, "Where the KPMR catalogue is fetched from, KPMR or a mirror: `https`, or `http` on localhost; redirects must stay on its host and `https`, at most 3."),
-    s("kpmr.interval", "KAESO_KPMR_INTERVAL", Text, Some("auto"), false, "How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration such as `6h`."),
+    s("kpmr.interval", "KAESO_KPMR_INTERVAL", Text, Some("auto"), false, "How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration of at least 5 minutes, such as `6h`."),
     s("kpmr.public_keys", "KAESO_KPMR_PUBLIC_KEYS", Text, None, false, "Comma-separated keys to trust besides KPMR's built-in one, each `<key id>:<base64 Ed25519 public key>`, for a registry of your own; a catalogue whose signature no trusted key verifies is refused."),
     s("updates.check", "KAESO_UPDATES_CHECK", Bool, Some("true"), false, "Look for new Kaeso releases every 5 minutes; turn it off for installs without internet."),
     s("updates.channel", "KAESO_UPDATES_CHANNEL", Text, Some("stable"), false, "The releases a new install is offered: `stable`, or `prerelease` for pre-releases too; instance admins change it later in the console."),
