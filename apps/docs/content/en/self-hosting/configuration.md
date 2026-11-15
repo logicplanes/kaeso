@@ -237,7 +237,7 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |
 | `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT`<br>`upstream.stream_idle_timeout` | text | `300s` | Streaming: longest silence between two chunks; at most 24h. |
 
-A model in a project's catalogue can set its own timeouts ([models and aliases](../console/models-and-aliases.md)).
+A model in a project's catalogue can set its own timeouts ([models and aliases](../console/models-and-aliases.md)), and a request can shorten them with `kaeso-timeout` ([timeouts](../api/model-api.md#timeouts)).
 
 The gateway calls providers through the proxy in `HTTPS_PROXY` (or `HTTP_PROXY` for `http` base URLs, or `ALL_PROXY`) when its environment sets one, except for the hosts in `NO_PROXY`. The proxy sees the provider keys of `http` calls, so use `https` base URLs through it. Custom providers are the exception: the gateway calls them directly ([custom providers](#custom-providers)).
 

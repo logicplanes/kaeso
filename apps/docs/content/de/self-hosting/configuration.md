@@ -237,7 +237,7 @@ Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, d
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |
 | `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT`<br>`upstream.stream_idle_timeout` | Text | `300s` | Streaming: längste Stille zwischen zwei Chunks; höchstens 24h. |
 
-Ein Modell im Katalog eines Projekts kann eigene Zeitlimits festlegen ([Modelle und Aliasse](../console/models-and-aliases.md)).
+Ein Modell im Katalog eines Projekts kann eigene Zeitlimits festlegen ([Modelle und Aliasse](../console/models-and-aliases.md)), und eine Anfrage kann sie mit `kaeso-timeout` verkürzen ([Zeitlimits](../api/model-api.md#zeitlimits)).
 
 Das Gateway ruft Anbieter über den Proxy in `HTTPS_PROXY` auf (oder `HTTP_PROXY` für `http`-Basis-URLs, oder `ALL_PROXY`), wenn seine Umgebung einen setzt, außer für die Hosts in `NO_PROXY`. Der Proxy sieht die Anbieter-Schlüssel von `http`-Aufrufen, verwenden Sie über ihn also `https`-Basis-URLs. Eigene Anbieter sind die Ausnahme: Das Gateway ruft sie direkt auf ([Eigene Anbieter](#eigene-anbieter)).
 

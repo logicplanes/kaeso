@@ -1101,6 +1101,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         ));
     }
 
+    let timeout = requested_timeout(&headers).map_err(|e| Failure::new(e, Stage::Request))?;
+
     let models = project_models(
         state,
         caller.project_id,
@@ -1122,6 +1124,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         request_bytes,
         decoded,
         logged,
+        timeout,
     };
     let target = match &alias {
         Some(a) => Resolved::Alias(a),
@@ -1199,6 +1202,7 @@ struct Shared<'a> {
     request_bytes: usize,
     decoded: u64,
     logged: u64,
+    timeout: Option<u32>,
 }
 
 impl Shared<'_> {
@@ -1207,6 +1211,29 @@ impl Shared<'_> {
             .saturating_mul(copies)
             .saturating_add(self.logged)
     }
+}
+
+/// How long the app lets each provider take, in seconds, at most: `kaeso-timeout`.
+pub const TIMEOUT_HEADER: &str = "kaeso-timeout";
+
+fn requested_timeout(headers: &HeaderMap) -> Result<Option<u32>, KppError> {
+    let Some(value) = headers.get(TIMEOUT_HEADER) else {
+        return Ok(None);
+    };
+    value
+        .to_str()
+        .ok()
+        .and_then(|v| v.trim().parse::<u32>().ok())
+        .filter(|s| (1..=3600).contains(s))
+        .map(Some)
+        .ok_or_else(|| {
+            error(
+                ErrorKind::InvalidRequest,
+                400,
+                "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600.",
+            )
+            .with_param(TIMEOUT_HEADER)
+        })
 }
 
 fn begin_attempt(rec: &mut Recording) {
@@ -1245,6 +1272,7 @@ async fn attempt(
         stream,
         keep_content,
         request_bytes,
+        timeout,
         ..
     } = *sh;
     let retained = |copies: u64| sh.retained(copies);
@@ -1361,7 +1389,8 @@ async fn attempt(
         idle: u.stream_idle_timeout,
     }
     .with_model_override(eff.fields.timeout_seconds)
-    .with_step_override(step_timeout, stream);
+    .with_step_override(step_timeout, stream)
+    .shortened_to(timeout, stream);
     let credential = credentials::for_provider(
         state,
         OrgId::from_uuid(caller.org_id),

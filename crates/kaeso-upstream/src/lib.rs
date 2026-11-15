@@ -48,6 +48,54 @@ impl Timeouts {
         }
         self
     }
+
+    /// The `kaeso-timeout` a request sent: it lowers the wait for the first byte, and for the
+    /// whole answer when it isn't streamed, but never raises either. A stream's idle timeout
+    /// stays as configured.
+    #[must_use]
+    pub fn shortened_to(mut self, seconds: Option<u32>, streamed: bool) -> Timeouts {
+        if let Some(s) = seconds {
+            let d = Duration::from_secs(u64::from(s));
+            self.first_byte = self.first_byte.min(d);
+            if !streamed {
+                self.request = self.request.min(d);
+            }
+        }
+        self
+    }
+}
+
+#[cfg(test)]
+mod timeout_tests {
+    use super::*;
+
+    #[test]
+    fn a_requested_timeout_only_shortens() {
+        let base = Timeouts {
+            request: Duration::from_secs(600),
+            first_byte: Duration::from_secs(60),
+            idle: Duration::from_secs(30),
+        };
+        let short = base.shortened_to(Some(5), false);
+        assert_eq!(
+            (short.request, short.first_byte, short.idle),
+            (Duration::from_secs(5), Duration::from_secs(5), base.idle)
+        );
+        let streamed = base.shortened_to(Some(5), true);
+        assert_eq!(
+            (streamed.request, streamed.first_byte, streamed.idle),
+            (base.request, Duration::from_secs(5), base.idle),
+            "a stream keeps its request and idle timeouts"
+        );
+        assert_eq!(base.shortened_to(Some(3600), false), base, "never longer");
+        assert_eq!(
+            base.with_model_override(Some(10))
+                .shortened_to(Some(20), false),
+            base.with_model_override(Some(10)),
+            "nor longer than the model's"
+        );
+        assert_eq!(base.shortened_to(None, false), base);
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -237,7 +237,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | 文本 | `60s` | 流式：等待服务商第一个字节的时间；最多 24h。 |
 | `KAESO_UPSTREAM_STREAM_IDLE_TIMEOUT`<br>`upstream.stream_idle_timeout` | 文本 | `300s` | 流式：两个数据块之间的最长静默时间；最多 24h。 |
 
-项目目录中的模型可以设置自己的超时（[模型和别名](../console/models-and-aliases.md)）。
+项目目录中的模型可以设置自己的超时（[模型和别名](../console/models-and-aliases.md)），请求也可以用 `kaeso-timeout` 缩短超时（[超时](../api/model-api.md#超时)）。
 
 当网关的环境设置了代理时，网关会通过 `HTTPS_PROXY`（`http` 基础 URL 用 `HTTP_PROXY`，或 `ALL_PROXY`）中的代理调用服务商，`NO_PROXY` 中的主机除外。代理能看到 `http` 调用中的服务商密钥，因此通过代理时请使用 `https` 基础 URL。自定义服务商除外：网关直接调用它们（[自定义服务商](#自定义服务商)）。
 
