@@ -54,10 +54,12 @@ pub enum DialectId {
     GeminiDecisions,
     #[serde(rename = "cohere_rerank")]
     CohereRerank,
+    #[serde(rename = "voyage_rerank")]
+    VoyageRerank,
 }
 
 impl DialectId {
-    pub const ALL: [DialectId; 24] = [
+    pub const ALL: [DialectId; 25] = [
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
         DialectId::OpenAiResponses,
@@ -82,6 +84,7 @@ impl DialectId {
         DialectId::OpenAiDecisions,
         DialectId::GeminiDecisions,
         DialectId::CohereRerank,
+        DialectId::VoyageRerank,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -110,6 +113,7 @@ impl DialectId {
             DialectId::OpenAiDecisions => "openai_decisions",
             DialectId::GeminiDecisions => "gemini_decisions",
             DialectId::CohereRerank => "cohere_rerank",
+            DialectId::VoyageRerank => "voyage_rerank",
         }
     }
 
@@ -139,6 +143,7 @@ impl DialectId {
             DialectId::OpenAiDecisions => "OpenAI Decisions",
             DialectId::GeminiDecisions => "Gemini Decisions",
             DialectId::CohereRerank => "Cohere Rerank",
+            DialectId::VoyageRerank => "Voyage Rerank",
         }
     }
 }

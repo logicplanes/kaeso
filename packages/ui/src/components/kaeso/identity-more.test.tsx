@@ -216,6 +216,7 @@ const MARKED_PROVIDERS = {
   "tencent-tokenhub": "Tencent TokenHub",
   venice: "Venice",
   azure: "Azure",
+  voyage: "Voyage AI",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

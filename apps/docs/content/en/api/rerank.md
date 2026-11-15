@@ -66,7 +66,7 @@ The reply lists the documents by their position in the request:
 | --- | --- | --- | --- |
 | `POST /v1/rerank`, `POST /v2/rerank` | Cohere's rerank format | `Authorization: Bearer` | JSON: `model`, `query`, `documents`, `top_n`, `max_tokens_per_doc`, `return_documents` |
 
-Both paths take the same body: `/v2/rerank` is where the Cohere SDK sends it, `/v1/rerank` where most other clients do. Rerank replies are never streamed, and the body is bounded by [`body_limits.model_api`](../self-hosting/configuration.md#request-and-response-bodies), like chat requests. A request holds at most 10,000 documents; providers take fewer, and Cohere recommends at most 1,000.
+Both paths take the same body: `/v2/rerank` is where the Cohere SDK sends it, `/v1/rerank` where most other clients do. Rerank replies are never streamed, and the body is bounded by [`body_limits.model_api`](../self-hosting/configuration.md#request-and-response-bodies), like chat requests. A request holds at most 10,000 documents; providers take fewer: Cohere recommends at most 1,000, and Voyage AI takes at most 1,000.
 
 | Field | Meaning |
 | --- | --- |
@@ -86,6 +86,9 @@ Keys, model resolution with aliases and routes, limits and budgets, request logs
 | Provider | Format sent | Path | Models |
 | --- | --- | --- | --- |
 | Cohere | Cohere Rerank v2 | `/v2/rerank`, at the root of Cohere's host beside its compatibility API | Rerank 5, `rerank-v5.0-pro` and `rerank-v5.0-fast` |
+| Voyage AI | Voyage Rerank ([mapping](../development/kpp/voyage-rerank.md)) | `/v1/rerank` | `rerank-3`, `rerank-3-lite` and the older `rerank-2.5`, `rerank-2.5-lite`, `rerank-2` and `rerank-2-lite` |
+
+Voyage AI gets `top_n` as `top_k` and each document as its text; its reply's documents come back as `{"text": "…"}`, and its `usage.total_tokens` as `billed_units.input_tokens`.
 
 A model is a rerank model when [KPMR](../concepts/kpmr.md) gives it the kind `reranking`. Rerank models of a provider whose rerank API Kaeso doesn't call yet, such as NVIDIA's, are refused before anything is sent: "Kaeso calls no rerank models on NVIDIA, so `nvidia/rerank-qa-mistral-4b` can't rerank documents.".
 
@@ -95,14 +98,16 @@ Kaeso refuses before sending, with a 400 in Cohere's shape:
 
 - a generation or embeddings model: "The model `command-a-03-2025` is a generation model; it cannot rerank documents.";
 - an empty `documents` list, a `top_n` or `max_tokens_per_doc` of 0, or a document that is neither a string nor an object with `text`;
-- a document with fields beside `text` for a provider that takes text only, such as Cohere.
+- a document with fields beside `text` for a provider that takes text only, such as Cohere and Voyage AI;
+- `max_tokens_per_doc` for Voyage AI, which cuts each document at the model's limit itself;
+- Cohere's own fields, such as `relevant_spans`, for a provider other than Cohere.
 
 A rerank model refuses chat, token counts and embeddings: "The model `rerank-v5.0-fast` is a rerank model; send it to `/v1/rerank`.".
 
 ## Scores, costs, cache and logs
 
 - **Scores** are the provider's, passed on unchanged. Cohere's lie between 0 and 1; other providers don't document a range, so don't compare scores across providers.
-- **Costs.** A rerank request costs the tokens the provider bills at the model's input price. Cohere's Rerank 5 reports them as `billed_units.input_tokens`. Older Cohere models bill search units, which Kaeso logs but can't price. A model without an input price costs **Unknown**, and [budgets](../console/limits-and-budgets.md) refuse it. Budgets reserve the query once per document, as providers bill it.
+- **Costs.** A rerank request costs the tokens the provider bills at the model's input price. Cohere's Rerank 5 reports them as `billed_units.input_tokens`; Voyage AI bills the query's tokens once per document plus every document's tokens and reports them as `usage.total_tokens`. Older Cohere models bill search units, which Kaeso logs but can't price. A model without an input price costs **Unknown**, and [budgets](../console/limits-and-budgets.md) refuse it. Budgets reserve the query once per document, as providers bill it.
 - **Response cache.** The [response cache](../console/response-cache.md) answers a repeated rerank request like a repeated chat request.
 - **Logs.** The [request log](../console/request-logs.md) shows the endpoint `rerank`, the request and the scored results.
 

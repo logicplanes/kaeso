@@ -3556,3 +3556,34 @@ fn anthropic_and_openai_models_price_their_web_searches() {
         assert_eq!((search.usd, search.of.as_str()), (dec!(0.01), "input"));
     }
 }
+
+#[test]
+fn voyage_embedders_embed_and_its_rerankers_rerank_at_voyages_prices() {
+    let embed = eff(&entry("voyage", "voyage-4-lite"));
+    assert!(embed.is_embeddings() && !embed.is_rerank());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.02)))
+    );
+    assert_eq!(embed.provider.embeddings_profile().provider, "Voyage AI");
+    let rerank = eff(&entry("voyage", "rerank-3"));
+    assert!(rerank.is_rerank() && !rerank.is_embeddings());
+    assert_eq!(
+        (rerank.dialect, rerank.fields.input_price),
+        (DialectId::VoyageRerank, Some(dec!(0.05)))
+    );
+    let docs = vec![kaeso_kpp::RerankDocument::new("a")];
+    let mut req = Request::Rerank(kaeso_kpp::RerankRequest::new("m", "q", docs));
+    let plan = prepare(&mut req, DialectId::CohereRerank, &rerank).unwrap();
+    assert_eq!(plan.dialect, DialectId::VoyageRerank);
+    let mut chat = Request::Generate(user(vec![Block::text("hi")]));
+    assert!(prepare(&mut chat, DialectId::OpenAiChat, &embed).is_err());
+    let models = &snapshot().providers["voyage"].models;
+    let count = |kind: &str| {
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some(kind))
+            .count()
+    };
+    assert_eq!((count("embedding"), count("reranking")), (11, 6));
+}

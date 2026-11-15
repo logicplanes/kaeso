@@ -287,7 +287,7 @@ export const isEmbedding = (row: Pick<LogView, "ingress_dialect" | "egress_diale
 
 export const isDecision = (row: Pick<LogView, "ingress_dialect">) => isDecisionDialect(row.ingress_dialect);
 
-const RERANK_DIALECTS: readonly string[] = ["cohere_rerank"];
+const RERANK_DIALECTS: readonly string[] = ["cohere_rerank", "voyage_rerank"];
 
 /** Whether the request was a rerank request, which no provider caches. */
 export const isRerank = (row: Pick<LogView, "ingress_dialect" | "egress_dialect">) =>

@@ -28,6 +28,7 @@ Every codec change starts with a fixture: a real request body, reply, stream or 
 | `openai_decisions/` | OpenAI's Decisions API (`/v1/decisions`); every reply has a request of the same name |
 | `gemini_decisions/` | Gemini's Decisions API (`/v1beta/decisions`); every reply has a request of the same name |
 | `cohere_rerank/` | Cohere's rerank format (`/v1/rerank`, `/v2/rerank`); `requests/object-documents.json` is the one request Kaeso writes to Cohere in another form |
+| `voyage_rerank/` | Voyage AI's rerank format (`/v1/rerank` at Voyage AI) |
 | `xai_videos/`, `minimax_videos/`, `zai_videos/`, `openrouter_videos/`, `veo/`, `gemini_interactions/`, `dashscope/` | The providers' video APIs; `responses/` holds the replies that start a job, `polls/` the providers' answers when a job is asked about, `minimax_videos/files/` a file id turned into a link; `dashscope/` also holds images, speech and transcriptions under `requests/`, `responses/` and `streams/` in folders of their own |
 
 Each dialect folder has `requests/`, `responses/`, `streams/` where the endpoint streams, and `errors/`.

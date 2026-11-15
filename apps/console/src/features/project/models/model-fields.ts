@@ -132,6 +132,7 @@ export function dialectPill(d: string, decisionsOnly = false): string {
       system_one: "decisions",
       gemini_decisions: "decisions",
       cohere_rerank: "rerank",
+      voyage_rerank: "rerank",
     }[d] ?? d
   );
 }

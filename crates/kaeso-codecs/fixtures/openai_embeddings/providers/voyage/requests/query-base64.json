@@ -1,0 +1,9 @@
+{
+  "input": "When is the conference call scheduled?",
+  "model": "voyage-4-lite",
+  "input_type": "query",
+  "output_dimension": 256,
+  "output_dtype": "float",
+  "truncation": true,
+  "encoding_format": "base64"
+}

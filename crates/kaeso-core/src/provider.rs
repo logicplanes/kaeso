@@ -1534,10 +1534,10 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
-        rerank: None,
         // QwenCloud's OpenAI-compatible image mode serves Qwen-Image 3.0 and 2.1 Pro only
         // (https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai);
         // its other image models answer on DashScope's own API.
+        rerank: None,
         images: &[
             ImagesEgress::openai(ImagesProfile::QWENCLOUD)
                 .for_models("qwen-image-3.0*")
@@ -3221,8 +3221,8 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
-        api_root: None,
         regional: None,
+        api_root: None,
         key_endpoint: None,
     },
     Provider {
@@ -3376,6 +3376,55 @@ pub const PROVIDERS: &[Provider] = &[
             pasted_paths: &["/openai/v1", "/openai"],
             example: "https://example.openai.azure.com",
         }),
+    },
+    Provider {
+        id: "voyage",
+        name: "Voyage AI",
+        // MongoDB sells Voyage AI's API as the Atlas Embedding and Reranking API: model API keys
+        // (`al-…`) are made in Atlas under AI Model APIs
+        // (https://www.mongodb.com/docs/voyageai/management/api-keys/). Keys from Voyage's own
+        // dashboard (`pa-…`) work against `https://api.voyageai.com`, and keys scoped to a region
+        // against `https://eu.ai.mongodb.com` or `https://us.ai.mongodb.com`, each as a base URL
+        // of its own (https://www.mongodb.com/docs/voyageai/api-reference/overview/).
+        key_page: KeyPage {
+            url: "https://www.mongodb.com/docs/voyageai/management/api-keys/",
+            label: "Model API keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://ai.mongodb.com",
+        auth: AuthStyle::Bearer,
+        // Voyage AI writes no text: its models embed and rerank, so a model without a kind of
+        // its own is an embeddings model and a chat request never reaches it.
+        generation: DialectId::OpenAiEmbeddings,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::VOYAGE,
+        // `POST /v1/rerank`, with `top_k` and string documents
+        // (https://www.mongodb.com/docs/api/doc/atlas-embedding-and-reranking-api.json).
+        rerank: Some(RerankEgress::of(DialectId::VoyageRerank)),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // Voyage AI serves no `GET /v1/models` (404, recorded 2026-11-14).
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Voyage AI"),
+        responses: ResponsesProfile::compatible("Voyage AI"),
+        messages: MessagesProfile::compatible("Voyage AI"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+        regional: None,
+        key_endpoint: None,
     },
 ];
 
@@ -3674,7 +3723,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage"
         );
     }
 
@@ -3763,7 +3812,8 @@ mod tests {
                 "novita-ai",
                 "volcengine",
                 "venice",
-                "amazon-bedrock"
+                "amazon-bedrock",
+                "voyage"
             ]
         );
     }
@@ -4377,6 +4427,42 @@ mod tests {
     }
 
     #[test]
+    fn voyage_embeds_and_reranks_at_mongodb_with_its_own_field_names_and_writes_no_text() {
+        let p = provider("voyage").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Voyage AI",
+                AuthStyle::Bearer,
+                DialectId::OpenAiEmbeddings,
+                &[DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://ai.mongodb.com");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), None)
+        );
+        let e = p.embeddings_profile;
+        assert_eq!(
+            (e.provider, e.dimensions_field),
+            ("Voyage AI", "output_dimension")
+        );
+        assert_eq!(e.dimension_sizes, [256, 512, 1024, 2048]);
+        assert!(e.dimensions && !e.user && !e.float_encoding && !e.token_inputs);
+        assert_eq!(
+            p.rerank,
+            Some(RerankEgress {
+                dialect: DialectId::VoyageRerank,
+                from_root: false
+            })
+        );
+        assert_eq!(p.listing, ModelListing::Partial);
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
     fn a_partial_listing_matches_ids_without_case_or_dots_and_says_nothing_of_a_model_it_leaves_out()
      {
         let ids = ["StandardCompute".to_owned(), "z-ai/glm-5.3".to_owned()];
@@ -4456,7 +4542,8 @@ mod tests {
                 "cloudflare-ai-gateway",
                 "upstage",
                 "novita-ai",
-                "tencent-tokenhub"
+                "tencent-tokenhub",
+                "voyage"
             ]
         );
     }
@@ -5382,7 +5469,8 @@ mod tests {
                 "tencent-tokenhub",
                 "venice",
                 "amazon-bedrock",
-                "azure"
+                "azure",
+                "voyage"
             ]
         );
         assert_eq!(

@@ -33,6 +33,7 @@ export const providers = [
   { id: "openrouter", name: "OpenRouter" },
   { id: "mistral", name: "Mistral" },
   { id: "venice", name: "Venice" },
+  { id: "voyage", name: "Voyage AI" },
   { id: "vercel", name: "Vercel" },
   { id: "ollama-cloud", name: "Ollama Cloud" },
   { id: "moonshotai", name: "Moonshot" },

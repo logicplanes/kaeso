@@ -131,9 +131,13 @@ pub(crate) fn decode(
             value.as_ref().and_then(|v| {
                 crate::cloudflare::envelope_message(v).or_else(|| crate::ionos::envelope_message(v))
             }),
-            value
-                .as_ref()
-                .and_then(|v| v.get("error").or_else(|| v.get("message"))),
+            // A bare `error` or `message`, or FastAPI's `detail` (Voyage AI, Jina AI) outside an
+            // RFC 9457 problem document, whose `title` belongs with it.
+            value.as_ref().and_then(|v| {
+                v.get("error")
+                    .or_else(|| v.get("message"))
+                    .or_else(|| v.get("title").is_none().then(|| v.get("detail")).flatten())
+            }),
         ) {
             (Some(message), _) => KppError::new(kind_for(Some(status), None, None), message),
             (None, Some(Value::String(message))) if !message.trim().is_empty() => {

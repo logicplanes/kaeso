@@ -26,6 +26,7 @@ use crate::openai_videos::OpenAiVideos;
 use crate::openrouter_videos::OpenRouterVideos;
 use crate::system_one::SystemOne;
 use crate::veo::Veo;
+use crate::voyage_rerank::VoyageRerank;
 use crate::xai_videos::XaiVideos;
 use crate::zai_videos::ZaiVideos;
 use crate::{
@@ -60,6 +61,7 @@ macro_rules! dispatch {
             DialectId::OpenAiDecisions => Ok(OpenAiDecisions::$f($($arg),*)),
             DialectId::GeminiDecisions => Ok(GeminiDecisions::$f($($arg),*)),
             DialectId::CohereRerank => Ok(CohereRerank::$f($($arg),*)),
+            DialectId::VoyageRerank => Ok(VoyageRerank::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -96,6 +98,7 @@ pub fn decode_checked_request<B: RequestBody>(
             | DialectId::OpenAiDecisions
             | DialectId::GeminiDecisions
             | DialectId::CohereRerank
+            | DialectId::VoyageRerank
     ) {
         crate::decisions::refuse_kind(kind, checked.dialect())?;
     }
@@ -132,6 +135,7 @@ pub fn decode_checked_request<B: RequestBody>(
         DialectId::OpenAiDecisions => OpenAiDecisions::decode_checked(kind, body, headers),
         DialectId::GeminiDecisions => GeminiDecisions::decode_checked(kind, body, headers),
         DialectId::CohereRerank => CohereRerank::decode_checked(kind, body, headers),
+        DialectId::VoyageRerank => VoyageRerank::decode_checked(kind, body, headers),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }

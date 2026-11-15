@@ -52,6 +52,7 @@ pub mod openai_videos;
 pub mod openrouter_videos;
 pub mod system_one;
 pub mod veo;
+pub mod voyage_rerank;
 pub mod xai_videos;
 pub mod zai_videos;
 

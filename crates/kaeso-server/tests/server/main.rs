@@ -96,6 +96,7 @@ mod provider_upstage;
 mod provider_venice;
 mod provider_vercel;
 mod provider_volcengine;
+mod provider_voyage;
 mod provider_xai;
 mod provider_zai;
 mod providers;

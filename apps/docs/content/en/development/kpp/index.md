@@ -101,6 +101,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `openai_decisions` | OpenAI's Decisions API (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
 | `gemini_decisions` | Gemini's Decisions API (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
 | `cohere_rerank` | Cohere's rerank format (`/v1/rerank`, `/v2/rerank`) ([Cohere Rerank](cohere-rerank.md)) |
+| `voyage_rerank` | Voyage AI's rerank format, as a provider's ([Voyage Rerank](voyage-rerank.md)) |
 | `multipart` | The bounded `multipart/form-data` reader and writer of image, audio and video uploads, and of System One's image parts |
 
 | Shared module | Job |

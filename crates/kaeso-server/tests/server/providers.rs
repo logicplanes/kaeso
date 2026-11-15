@@ -69,6 +69,31 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(mistral["embeddings"], "openai_embeddings");
     let cohere = listed.iter().find(|p| p["id"] == "cohere").unwrap();
     assert_eq!(cohere["rerank"], "cohere_rerank");
+    let voyage = listed.iter().find(|p| p["id"] == "voyage").unwrap();
+    assert_eq!(voyage["name"], "Voyage AI");
+    assert_eq!(
+        (
+            &voyage["dialects"],
+            &voyage["embeddings"],
+            &voyage["rerank"],
+            &voyage["count_tokens"],
+            &voyage["key_prefix"]
+        ),
+        (
+            &json!(["openai_embeddings"]),
+            &json!("openai_embeddings"),
+            &json!("voyage_rerank"),
+            &Value::Null,
+            &Value::Null
+        )
+    );
+    assert_eq!(
+        voyage["key_page"],
+        json!({
+            "url": "https://www.mongodb.com/docs/voyageai/management/api-keys/",
+            "label": "Model API keys"
+        })
+    );
     let openai = listed.iter().find(|p| p["id"] == "openai").unwrap();
     assert_eq!(
         openai["dialects"],

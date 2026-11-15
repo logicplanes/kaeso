@@ -230,6 +230,7 @@ Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, d
 | `KAESO_PROVIDERS_VENICE_BASE_URL`<br>`providers.venice.base_url` | Text | `https://api.venice.ai/api` | Basis-URL der Venice-API. |
 | `KAESO_PROVIDERS_AMAZON_BEDROCK_BASE_URL`<br>`providers.amazon-bedrock.base_url` | Text | `https://bedrock-runtime.us-east-1.amazonaws.com` | Basis-URL der Amazon-Bedrock-API. |
 | `KAESO_PROVIDERS_AZURE_BASE_URL`<br>`providers.azure.base_url` | Text | `https://openai.azure.com` | Wohin Kaeso jede Azure-Anfrage statt an den Ressourcen-Endpunkt des Schlüssels schickt, etwa an ein API-Gateway vor Azure; ungenutzt, solange der Standard gilt. |
+| `KAESO_PROVIDERS_VOYAGE_BASE_URL`<br>`providers.voyage.base_url` | Text | `https://ai.mongodb.com` | Basis-URL der Voyage-AI-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |
