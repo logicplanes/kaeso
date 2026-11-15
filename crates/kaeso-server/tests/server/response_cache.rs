@@ -133,6 +133,7 @@ async fn a_repeated_request_is_answered_from_the_cache_at_no_provider_cost() {
     assert_eq!(first.header("kaeso-cache"), Some("miss"));
     assert_eq!(first.header("age"), None);
     let upstream = first.header("kaeso-upstream-request-id").map(str::to_owned);
+    let charged = first.header("kaeso-cost").map(str::to_owned);
     assert!(upstream.is_some(), "the provider's id");
 
     env.app.clock.advance(time::Duration::seconds(7));
@@ -147,6 +148,7 @@ async fn a_repeated_request_is_answered_from_the_cache_at_no_provider_cost() {
         None,
         "no provider answered a hit"
     );
+    assert_eq!(second.header("kaeso-cost"), Some("0"));
     assert_eq!(text(&second), text(&first));
     assert_eq!(second.json()["usage"], first.json()["usage"]);
     assert_eq!(env.mock.received().len(), 1, "the provider was called once");
@@ -166,6 +168,11 @@ async fn a_repeated_request_is_answered_from_the_cache_at_no_provider_cost() {
     assert!(hit["ttfb_ms"].is_null(), "no provider answered: {hit}");
     assert_eq!(hit["upstream_request_id"], "");
     assert_eq!(miss["upstream_request_id"].as_str(), upstream.as_deref());
+    assert_eq!(
+        miss["cost"].as_str(),
+        charged.as_deref(),
+        "the reply says what the log says"
+    );
 
     let only_hits = logged(&env, "?response_cache=hit").await;
     assert_eq!(only_hits.len(), 1);

@@ -239,6 +239,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
     Outcome {
         request_id,
         caller: None,
+        sees_cost: false,
         source: Source::Api,
         ingress: DialectId::OpenAiChat,
         kind: RequestKind::Generate,
@@ -401,9 +402,13 @@ pub async fn serve_with(
     match done {
         Ok(Done::Complete(mut resp, status)) => {
             rec.time(&mut resp);
-            if rec.outcome().source == super::hooks::Source::Playground {
-                rec.outcome().status = status;
-                cost_header(rec.outcome(), &mut resp);
+            let outcome = rec.outcome();
+            // The start of a video job or an image generation is billed when the job ends.
+            if (outcome.source == super::hooks::Source::Playground || outcome.sees_cost)
+                && !crate::services::usage::billed_when_done(outcome)
+            {
+                outcome.status = status;
+                cost_header(outcome, &mut resp);
             }
             rec.finish(status).await;
             resp
@@ -429,8 +434,9 @@ pub async fn serve_with(
     }
 }
 
-/// What a Playground reply was charged, as its request log will say: the amount, or
-/// `unknown` where the model has no price for what it made.
+/// What a complete reply was charged, as its request log will say: the amount, `0` for a
+/// response cache hit, or `unknown` where the model has no price for what it made. Playground
+/// replies carry it, and model API replies whose key's owner may see the project's costs.
 pub const COST_HEADER: &str = "kaeso-cost";
 
 fn cost_header(outcome: &Outcome, resp: &mut Response) {
@@ -863,6 +869,8 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             let key = auth::authenticate(state, &headers, client_ip)
                 .await
                 .map_err(|e| Failure::new(e, Stage::Caller))?;
+            rec.outcome().sees_cost = crate::auth::keys::project_rights(&key)
+                .contains(kaeso_core::rights::ProjectRight::CostsView);
             Caller {
                 org_id: key.org_id,
                 project_id: key.project_id,

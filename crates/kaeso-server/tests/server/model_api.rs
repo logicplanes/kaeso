@@ -1224,3 +1224,72 @@ async fn a_key_with_a_model_list_gets_no_other_model_from_models_cached_before_i
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
 }
+
+#[tokio::test]
+async fn a_complete_reply_says_what_it_cost_to_a_key_whose_owner_sees_costs() {
+    let env = env().await;
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let o = env.outcomes().await.pop().unwrap();
+    let logged = kaeso_server::services::usage::costed(&o)
+        .1
+        .normalize()
+        .to_string();
+    assert_ne!(logged, "0");
+    assert_eq!(r.header("kaeso-cost"), Some(logged.as_str()));
+
+    let streamed = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(json!({ "model": "claude-haiku-4-5", "stream": true, "messages": [{ "role": "user", "content": "Hi" }] })),
+    )
+    .await;
+    assert_eq!(streamed.status, StatusCode::OK);
+    assert_eq!(streamed.header("kaeso-cost"), None, "streams carry none");
+
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let account = env
+        .app
+        .post(
+            &format!("{base}/service-accounts"),
+            json!({ "name": "no-costs", "role": "developer", "rights_removed": ["costs.view"] }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(account.status, StatusCode::CREATED, "{:?}", account.body);
+    let key = env
+        .app
+        .post(
+            &format!(
+                "{base}/service-accounts/{}/keys",
+                account.body["id"].as_str().unwrap()
+            ),
+            json!({ "name": "no-costs" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(key.status, StatusCode::CREATED, "{:?}", key.body);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(key.body["secret"].as_str().unwrap()),
+        false,
+        Some(chat("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-cost"),
+        None,
+        "the owner may not see the project's costs"
+    );
+}

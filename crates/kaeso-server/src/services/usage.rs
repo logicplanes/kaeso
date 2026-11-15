@@ -445,7 +445,7 @@ fn completes_job(outcome: &Outcome) -> bool {
         || outcome.generation == Some(crate::model_api::hooks::GenerationCall::Completed)
 }
 
-fn billed_when_done(outcome: &Outcome) -> bool {
+pub fn billed_when_done(outcome: &Outcome) -> bool {
     matches!(
         outcome.video,
         Some(

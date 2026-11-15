@@ -139,6 +139,9 @@ pub struct StreamProgress {
 pub struct Outcome {
     pub request_id: RequestId,
     pub caller: Option<Caller>,
+    /// Whether the key's owner may see the project's costs (`costs.view`), so a reply may say
+    /// what it cost.
+    pub sees_cost: bool,
     pub source: Source,
     pub ingress: DialectId,
     pub kind: RequestKind,
