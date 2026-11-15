@@ -6,7 +6,8 @@ import { logRow } from "~/test/fixtures/project-logs";
 import { apply, load } from "~/i18n";
 import { COLUMNS, isEmbedding, isRerank, logColumns, logsLayout, providerInModel, type LogsLayout } from "./columns";
 
-const shown = COLUMNS.filter((c) => c !== "request" && c !== "agent");
+const OPTIONAL = ["request", "agent", "client", "alias", "formats", "cache", "fallbacks", "upstream"];
+const shown = COLUMNS.filter((c) => !OPTIONAL.includes(c));
 
 describe("logsLayout", () => {
   it("keeps the provider's name while the columns people compare fit, and its mark alone below that", () => {
@@ -108,6 +109,59 @@ describe("logColumns", () => {
     );
     const parts = [...screen.getByRole("cell").querySelectorAll(".\\@container > *")].map((e) => e.textContent);
     expect(parts).toEqual(["gpt-5.4-mini", "Client disconnected", "Playground", "The app closed the connection."]);
+  });
+
+  it("shows the client, alias, formats, response cache, fallbacks and the provider's request id", () => {
+    const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => id });
+    const ids = ["client", "alias", "formats", "cache", "fallbacks", "upstream"] as const;
+    const rows = [
+      logRow({
+        id: "req_1",
+        client_ip: "203.0.113.9",
+        alias: "fast",
+        ingress_dialect: "openai_chat",
+        egress_dialect: "anthropic_messages",
+        response_cache: "hit",
+        fallbacks: [
+          {
+            catalogue_model_id: "cm_1",
+            model: "anthropic/claude-haiku-4-5",
+            path: "route",
+            status: 529,
+            error_kind: "overloaded",
+            error_message: "",
+            duration_ms: 10,
+            skipped: false,
+          },
+        ],
+        upstream_request_id: "req_upstream_1",
+      }),
+      logRow({
+        id: "req_2",
+        alias: null,
+        ingress_dialect: "openai_chat",
+        egress_dialect: "openai_chat",
+        response_cache: null,
+        fallbacks: [],
+        upstream_request_id: "",
+      }),
+      logRow({ id: "req_3", response_cache: "miss" }),
+      logRow({ id: "req_4", response_cache: "bypass" }),
+    ];
+    render(<DataTable aria-label="Requests" data={rows} columns={ids.map((c) => all[c])} getRowId={(r) => r.id} />);
+    const [first, second] = screen.getAllByRole("row").slice(1);
+    const texts = (row: HTMLElement | undefined) =>
+      within(row as HTMLElement)
+        .getAllByRole("cell")
+        .map((c) => c.textContent);
+    expect(texts(first)).toEqual(["203.0.113.9", "fast", "OpenAI Chat Completions → Anthropic Messages", "Hit", "1", "req_upstream_1"]);
+    expect(texts(second)).toEqual(["203.0.113.7", "", "OpenAI Chat Completions", "", "", ""]);
+    expect(
+      screen
+        .getAllByRole("row")
+        .slice(3)
+        .map((r) => texts(r)[3]),
+    ).toEqual(["Miss", "Bypass"]);
   });
 
   it("names the model the app asked for, then the outcome, when a request was refused before a model was chosen", () => {

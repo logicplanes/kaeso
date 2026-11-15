@@ -16,7 +16,7 @@ Open a project's **Request logs** page. It lists requests newest first, from the
 - **Add filter** narrows the list by key, member, model, the model or alias name the app sent (also one that no longer exists), provider, alias, app and provider format, endpoint, status, outcome (**Failed** or **Succeeded**), error kind, streaming, source (the API or the Playground), the [response cache](response-cache.md)'s answer, a duration of at least **Slower than**, and a cost of at least an amount. **Fell back** keeps the requests whose alias route fell back to a later step. Choosing an hour under **Slowest hours** in the overview opens that day's requests at least as slow as the hour's 95th percentile.
 - **App format** and **Provider format** narrow it to one route, such as OpenAI Responses to Anthropic Messages. Caching, overhead and errors often differ between routes.
 - **Live** adds new requests as they arrive. Once you have scrolled down, a button says how many are new.
-- The display options choose the columns and the density.
+- The display options choose the columns and the density. Besides the ones shown at first, they offer the request id, user agent, client IP, alias, formats (the app's, and the provider's after an arrow when Kaeso translated), the response cache's answer, the number of fallbacks and the provider's request id. The console remembers the choice.
 - **Open a request by id** finds the request whose `kaeso-request-id` header your app received.
 
 Reading the logs needs the right **View request logs**.

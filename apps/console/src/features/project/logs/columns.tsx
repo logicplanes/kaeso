@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
-import { errorKindLabel } from "~/format/labels";
+import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { requestUSD } from "~/format/money";
 import { locale, t, type Locale } from "~/i18n";
 import { common } from "~/i18n/common";
@@ -29,6 +29,12 @@ export const COLUMNS = [
   "principal",
   "request",
   "agent",
+  "client",
+  "alias",
+  "formats",
+  "cache",
+  "fallbacks",
+  "upstream",
 ] as const;
 export type ColumnId = (typeof COLUMNS)[number];
 export const columnLabel = (id: ColumnId): string =>
@@ -47,6 +53,12 @@ export const columnLabel = (id: ColumnId): string =>
     principal: t("logs.column.principal", "Principal"),
     request: t("logs.column.requestId", "Request id"),
     agent: t("logs.column.userAgent", "User agent"),
+    client: t("logs.column.clientIp", "Client IP"),
+    alias: t("logs.column.alias", "Alias"),
+    formats: t("logs.column.formats", "Formats"),
+    cache: t("logs.column.responseCache", "Response cache"),
+    fallbacks: t("logs.column.fallbacks", "Fallbacks"),
+    upstream: t("logs.column.upstreamRequest", "Upstream request"),
   })[id];
 const DAY_TIME_WIDTH: Record<Locale, number> = { en: 148, de: 156, "zh-CN": 164 };
 const SHORT_DAY_TIME_WIDTH: Record<Locale, number> = { en: 128, de: 136, "zh-CN": 144 };
@@ -90,7 +102,15 @@ function zoneName(): string {
   const parts = new Intl.DateTimeFormat(locale() === "en" ? "en-GB" : locale(), { timeZoneName: "short", ...inZone() }).formatToParts(new Date());
   return parts.find((p) => p.type === "timeZoneName")?.value ?? "UTC";
 }
-const DEFAULT_COLUMNS: ColumnId[] = COLUMNS.filter((c) => c !== "request" && c !== "agent");
+// Shown only once someone turns them on under the display options.
+const OPTIONAL: readonly ColumnId[] = ["request", "agent", "client", "alias", "formats", "cache", "fallbacks", "upstream"];
+const DEFAULT_COLUMNS: ColumnId[] = COLUMNS.filter((c) => !OPTIONAL.includes(c));
+
+const CACHE_VERDICTS: Record<NonNullable<LogView["response_cache"]>, () => string> = {
+  hit: () => t("logs.cache.hit", "Hit"),
+  miss: () => t("logs.cache.miss", "Miss"),
+  bypass: () => t("logs.cache.bypass", "Bypass"),
+};
 
 const COLUMNS_KEY = "kaeso:logs-columns";
 
@@ -229,6 +249,32 @@ export function logColumns({
       (v) => <CopyButton display="inline" value={v} label={t("logs.copyRequestId", "Copy request id")} />,
     ),
     agent: col.text({ id: "agent", header: columnLabel("agent"), size: 200, priority: 5 }, (r: LogView) => r.user_agent),
+    client: col.custom(
+      { id: "client", header: columnLabel("client"), size: 136, priority: 5 },
+      (r: LogView) => r.client_ip,
+      (v) => <Text mono>{v}</Text>,
+    ),
+    alias: col.text({ id: "alias", header: columnLabel("alias"), size: 136, priority: 5 }, (r: LogView) => r.alias ?? ""),
+    // The app's format, and the provider's after an arrow when Kaeso translated.
+    formats: col.text({ id: "formats", header: columnLabel("formats"), size: 240, priority: 5 }, (r: LogView) =>
+      r.egress_dialect && r.egress_dialect !== r.ingress_dialect
+        ? `${dialectLabel(r.ingress_dialect)} → ${dialectLabel(r.egress_dialect)}`
+        : dialectLabel(r.ingress_dialect),
+    ),
+    cache: col.text({ id: "cache", header: columnLabel("cache"), size: 120, priority: 5 }, (r: LogView) =>
+      r.response_cache ? CACHE_VERDICTS[r.response_cache]() : "",
+    ),
+    fallbacks: col.custom(
+      { id: "fallbacks", header: columnLabel("fallbacks"), size: 104, priority: 5 },
+      (r: LogView) => r.fallbacks.length,
+      (v) => (v > 0 ? formatNumber(v) : null),
+      { align: "end" },
+    ),
+    upstream: col.custom(
+      { id: "upstream", header: columnLabel("upstream"), size: 248, priority: 5 },
+      (r: LogView) => r.upstream_request_id,
+      (v) => (v ? <CopyButton display="inline" value={v} label={t("logs.copyUpstreamRequestId", "Copy the provider's request id")} /> : null),
+    ),
   };
 }
 

@@ -292,5 +292,15 @@
   "logs.filter.cacheHit": "由缓存应答",
   "logs.filter.cacheMiss": "已发送给服务商",
   "logs.filter.cacheBypass": "未经过缓存",
-  "logs.filter.slowerThan": "慢于"
+  "logs.filter.slowerThan": "慢于",
+  "logs.column.clientIp": "客户端 IP",
+  "logs.column.alias": "别名",
+  "logs.column.formats": "格式",
+  "logs.column.responseCache": "响应缓存",
+  "logs.column.fallbacks": "回退",
+  "logs.column.upstreamRequest": "上游请求",
+  "logs.cache.hit": "命中",
+  "logs.cache.miss": "未命中",
+  "logs.cache.bypass": "绕过",
+  "logs.copyUpstreamRequestId": "复制服务商的请求 ID"
 }
