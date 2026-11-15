@@ -1,0 +1,11 @@
+{
+  "model_id": "sonic-3.5",
+  "transcript": "Hola, mundo.",
+  "voice": "ef191366-f52f-447a-a398-ed8c0f2943a1",
+  "output_format": {
+    "container": "raw",
+    "encoding": "pcm_s16le",
+    "sample_rate": 24000
+  },
+  "language": "es"
+}

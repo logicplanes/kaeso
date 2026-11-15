@@ -1,0 +1,16 @@
+{
+  "model_id": "sonic-3.6",
+  "transcript": "Hello, world!",
+  "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+  "output_format": {
+    "container": "wav",
+    "encoding": "pcm_s16le",
+    "sample_rate": 24000
+  },
+  "generation_config": {
+    "speed": 1.2,
+    "volume": 1.0,
+    "emotion": "calm"
+  },
+  "normalization": "auto"
+}

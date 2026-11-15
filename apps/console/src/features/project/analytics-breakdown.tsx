@@ -328,6 +328,7 @@ const SHORT_DIALECTS: Record<string, string> = {
   jina_rerank: "Jina Rerank",
   fal: "fal",
   replicate: "Replicate",
+  cartesia: "Cartesia",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
 

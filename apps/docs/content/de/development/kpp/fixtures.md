@@ -32,6 +32,7 @@ Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer
 | `jina_rerank/` | Das Rerank-Format von Jina AI (`/v1/rerank` bei Jina AI) |
 | `voyage_rerank/` | Das Rerank-Format von Voyage AI (`/v1/rerank` bei Voyage AI) |
 | `replicate/` | Die Predictions von Replicate; `requests/images/` und `requests/videos/` mit dem Modell in `<name>.meta.json`, `predictions/` die Predictions, mit denen Replicate antwortet, `models/` die Sammlung der offiziellen Modelle |
+| `cartesia/` | Die API von Cartesia; `requests/speech/` die Bodys von `/tts/bytes`, `responses/stt/` die Transkripte von `/stt`, `plain/` ein Fehler als reiner Text |
 | `xai_videos/`, `minimax_videos/`, `zai_videos/`, `openrouter_videos/`, `veo/`, `gemini_interactions/`, `dashscope/` | Die Video-APIs der Anbieter; `responses/` hält die Antworten, die einen Job starten, `polls/` die Antworten der Anbieter auf die Frage nach einem Job, `minimax_videos/files/` eine Datei-ID, die zum Link wird; `dashscope/` hält außerdem Bilder, Sprachausgaben und Transkriptionen in eigenen Ordnern unter `requests/`, `responses/` und `streams/` |
 | `fal/` | Die Queue von fal; `requests/images/` und `requests/videos/` mit dem Modell in `<name>.meta.json`, `queue/` die Antworten auf Einreichung und Status, `results/` die Ausgaben der Modelle, `moderated/` das schwarze Sicherheitsbild von FLUX |
 

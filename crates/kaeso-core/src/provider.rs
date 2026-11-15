@@ -3680,6 +3680,58 @@ pub const PROVIDERS: &[Provider] = &[
         regional: None,
         key_endpoint: None,
     },
+    Provider {
+        id: "cartesia",
+        name: "Cartesia",
+        // Keys (`sk_car_…`) are made at play.cartesia.ai; admin keys (`sk_car_admin_…`) are
+        // refused on speech and transcription (https://docs.cartesia.ai/use-the-api/api-conventions).
+        key_page: KeyPage {
+            url: "https://play.cartesia.ai/keys",
+            label: "API Keys",
+        },
+        key_prefix: Some("sk_car_"),
+        default_base_url: "https://api.cartesia.ai",
+        // "Cartesia accepts both `X-Api-Key` and `Authorization` headers"
+        // (https://docs.cartesia.ai/get-started/authenticate-your-client-applications).
+        auth: AuthStyle::XApiKey,
+        // Cartesia speaks and transcribes; it writes no text, so a generation request never
+        // reaches it past the catalogue's checks.
+        generation: DialectId::Cartesia,
+        count_tokens: None,
+        embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
+        images: &[],
+        speech: &[SpeechEgress {
+            dialect: DialectId::Cartesia,
+            ..SpeechEgress::ANY
+        }],
+        transcriptions: &[TranscriptionsEgress {
+            dialect: DialectId::Cartesia,
+            ..TranscriptionsEgress::ANY
+        }],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::Cartesia],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // Cartesia lists no models; the model check reads one voice, which only shows that the
+        // key works.
+        listing: ModelListing::Catalogue,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Cartesia"),
+        responses: ResponsesProfile::compatible("Cartesia"),
+        messages: MessagesProfile::compatible("Cartesia"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+        regional: None,
+        key_endpoint: None,
+    },
 ];
 
 const _: () = {
@@ -3982,7 +4034,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate, deepgram"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate, deepgram, cartesia"
         );
     }
 
@@ -4799,6 +4851,38 @@ mod tests {
             assert_eq!(videos.dialect, DialectId::Replicate, "{model}");
         }
         assert!(p.speech.is_empty() && p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn cartesia_speaks_and_transcribes_in_its_own_dialect_with_a_key_header() {
+        let p = provider("cartesia").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Cartesia",
+                AuthStyle::XApiKey,
+                DialectId::Cartesia,
+                &[DialectId::Cartesia][..]
+            )
+        );
+        assert_eq!(
+            (p.default_base_url, p.key_prefix, p.listing),
+            (
+                "https://api.cartesia.ai",
+                Some("sk_car_"),
+                ModelListing::Catalogue
+            )
+        );
+        assert_eq!(p.key_page.url, "https://play.cartesia.ai/keys");
+        let speech = p.speech.iter().find(|e| e.serves("sonic-3.6")).unwrap();
+        assert_eq!(speech.dialect, DialectId::Cartesia);
+        let stt = p
+            .transcriptions
+            .iter()
+            .find(|e| e.serves("ink-whisper"))
+            .unwrap();
+        assert_eq!(stt.dialect, DialectId::Cartesia);
+        assert!(p.images.is_empty() && p.videos.is_empty() && p.embeddings.is_none());
     }
 
     #[test]
@@ -5884,7 +5968,8 @@ mod tests {
                 "jina",
                 "fal",
                 "replicate",
-                "deepgram"
+                "deepgram",
+                "cartesia"
             ]
         );
         assert_eq!(

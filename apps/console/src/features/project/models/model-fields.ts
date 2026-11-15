@@ -138,6 +138,7 @@ export function dialectPill(d: string, decisionsOnly = false): string {
       bedrock_converse: "converse",
       fal: "fal",
       replicate: "replicate",
+      cartesia: "cartesia",
     }[d] ?? d
   );
 }

@@ -1341,6 +1341,32 @@
       "linked_billing": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "cartesia",
+      "name": "Cartesia",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://play.cartesia.ai/keys",
+        "label": "API Keys"
+      },
+      "key_prefix": "sk_car_",
+      "dialects": ["cartesia"],
+      "count_tokens": null,
+      "embeddings": null,
+      "rerank": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "regions": null,
+      "key_endpoint": null,
+      "aws": null,
+      "entra_id": null,
+      "linked_billing": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,
