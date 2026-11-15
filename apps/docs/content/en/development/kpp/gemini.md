@@ -163,7 +163,7 @@ Schema `GenerateContentResponse`.
 | `usageMetadata` | `usage` | See [usage](#usage). |
 | `promptFeedback`, `modelStatus` and other keys | fields | |
 
-Replies to Gemini apps from other dialects get `role: "model"`, `index: 0`, and the reply's id and model. Reasoning of other dialects is left out, as for Chat Completions apps ([replies](cross-format.md#replies)): a thought part can't carry a [reasoning blob](reasoning.md#reasoning-blobs), because the `google-genai` SDK reads `thoughtSignature` as base64.
+Replies to Gemini apps from other dialects get `role: "model"`, `index: 0`, and the reply's id and model. Tool call arguments that aren't an object, such as text cut off by the output limit or an array, become `{"input": …}` and `null` becomes `{}`, in streams too, since `functionCall.args` is an object that google-genai refuses as anything else. Reasoning of other dialects is left out, as for Chat Completions apps ([replies](cross-format.md#replies)): a thought part can't carry a [reasoning blob](reasoning.md#reasoning-blobs), because the `google-genai` SDK reads `thoughtSignature` as base64.
 
 ### Finish reasons
 

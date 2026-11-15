@@ -527,3 +527,73 @@ fn a_count_tokens_field_without_an_equivalent_is_refused_under_the_name_the_app_
         assert!(!err.message.contains("count:"), "{}", err.message);
     }
 }
+
+#[test]
+fn another_formats_tool_arguments_reach_a_gemini_app_as_an_object_in_both_paths() {
+    let chat_reply = |arguments: &str| {
+        json!({
+            "id": "chatcmpl-1", "object": "chat.completion", "created": 1, "model": "m",
+            "choices": [{"index": 0, "finish_reason": "length", "message": {
+                "role": "assistant", "content": null,
+                "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "read", "arguments": arguments}}]
+            }}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
+        })
+    };
+    let req = Request::Generate(GenerateRequest::new("m").with_message(Message::user("hi")));
+    let ectx = EgressCtx::new(&req);
+    let gemini_ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::Off);
+    let stream_ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::on(true));
+    for (arguments, expected) in [
+        (
+            r#"{"path": "/tmp/a"#,
+            json!({"input": "{\"path\": \"/tmp/a"}),
+        ),
+        ("[1,2]", json!({"input": [1, 2]})),
+        ("null", json!({})),
+        (r#"{"path": "/tmp/a"}"#, json!({"path": "/tmp/a"})),
+    ] {
+        let body = serde_json::to_vec(&chat_reply(arguments)).unwrap();
+        let reply = crate::dispatch::decode_response(
+            DialectId::OpenAiChat,
+            200,
+            &HeaderList::new(),
+            &body,
+            &ectx,
+        )
+        .unwrap();
+        let written: Value = serde_json::from_slice(
+            &crate::dispatch::encode_response(DialectId::Gemini, &reply, &gemini_ctx).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            written["candidates"][0]["content"]["parts"][0]["functionCall"]["args"], expected,
+            "unstreamed {arguments}"
+        );
+
+        let mut enc = crate::dispatch::stream_encoder(DialectId::Gemini, &stream_ctx).unwrap();
+        let mut out = Vec::new();
+        for e in [
+            StreamEvent::BlockStart(kaeso_kpp::BlockStart::new(
+                0,
+                kaeso_kpp::BlockHeader::ToolCall(kaeso_kpp::ToolCallHeader::new("call_1", "read")),
+            )),
+            StreamEvent::BlockDelta(kaeso_kpp::BlockDelta::new(
+                0,
+                kaeso_kpp::Delta::ToolArguments(arguments.into()),
+            )),
+            StreamEvent::BlockStop(kaeso_kpp::BlockStop::new(0)),
+        ] {
+            out.extend(enc.encode(&e).unwrap());
+        }
+        out.extend(enc.finish().unwrap());
+        let text = String::from_utf8(out).unwrap();
+        let chunk: Value =
+            serde_json::from_str(text.lines().find_map(|l| l.strip_prefix("data: ")).unwrap())
+                .unwrap();
+        assert_eq!(
+            chunk["candidates"][0]["content"]["parts"][0]["functionCall"]["args"], expected,
+            "streamed {arguments}: {text}"
+        );
+    }
+}

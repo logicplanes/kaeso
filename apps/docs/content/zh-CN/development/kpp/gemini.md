@@ -163,7 +163,7 @@ Schema `GenerateContentResponse`。
 | `usageMetadata` | `usage` | 见[用量](#用量)。 |
 | `promptFeedback`、`modelStatus` 以及其他键 | 字段 | |
 
-来自其他方言、发往 Gemini 应用的回复会得到 `role: "model"`、`index: 0`，以及回复的 ID 和模型。其他方言的推理会被省略，与 Chat Completions 应用相同（[回复](cross-format.md#回复)）：思考 part 无法携带[推理数据块](reasoning.md#推理数据块)，因为 `google-genai` SDK 把 `thoughtSignature` 当作 Base64 读取。
+来自其他方言、发往 Gemini 应用的回复会得到 `role: "model"`、`index: 0`，以及回复的 ID 和模型。不是对象的工具调用参数（例如被输出上限截断的文本或数组）会变为 `{"input": …}`，`null` 会变为 `{}`，流中也是如此，因为 `functionCall.args` 是对象，google-genai 会拒绝其他类型。其他方言的推理会被省略，与 Chat Completions 应用相同（[回复](cross-format.md#回复)）：思考 part 无法携带[推理数据块](reasoning.md#推理数据块)，因为 `google-genai` SDK 把 `thoughtSignature` 当作 Base64 读取。
 
 ### 结束原因
 
