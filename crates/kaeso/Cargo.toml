@@ -10,6 +10,7 @@ homepage.workspace = true
 publish.workspace = true
 
 [dependencies]
+mimalloc.workspace = true
 kaeso-server.workspace = true
 kaeso-crypto.workspace = true
 anyhow.workspace = true
