@@ -34,6 +34,8 @@ pub const BUILD_INFO: &str = "kaeso_build_info";
 pub const UPDATE_AVAILABLE: &str = "kaeso_update_available";
 pub const KPMR_FETCHED: &str = "kaeso_kpmr_fetched_timestamp_seconds";
 pub const CONNECTIONS_OPEN: &str = "kaeso_connections_open";
+pub const TOOL_CALLS: &str = "kaeso_tool_calls_total";
+pub const TOOL_CALL_DURATION: &str = "kaeso_tool_call_duration_seconds";
 pub const CONNECTIONS_MAX: &str = "kaeso_connections_max";
 pub const MODEL_REQUESTS_IN_FLIGHT: &str = "kaeso_model_requests_in_flight";
 pub const KPMR_LAST_ATTEMPT: &str = "kaeso_kpmr_last_attempt_timestamp_seconds";
@@ -125,6 +127,15 @@ pub fn describe() {
     );
     describe_counter!(EMAILS, "Emails by kind and outcome.");
     describe_gauge!(BUILD_INFO, "Build information.");
+    describe_counter!(
+        TOOL_CALLS,
+        "Tool calls through the MCP portal and the Playground by source, status (ok, refused, error) and error type."
+    );
+    describe_histogram!(
+        TOOL_CALL_DURATION,
+        Unit::Seconds,
+        "Tool call duration by source and status."
+    );
     describe_gauge!(
         CONNECTIONS_OPEN,
         "Connections the public listener serves now; at kaeso_connections_max, new ones wait."
