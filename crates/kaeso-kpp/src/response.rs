@@ -105,6 +105,10 @@ pub struct Usage {
     /// The audio tokens among `output_tokens`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_audio_tokens: Option<u64>,
+    /// The web searches the provider ran and bills per search, such as Anthropic's server web
+    /// search and OpenAI's `web_search` tool.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub web_searches: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raw: Option<RawUsage>,
 }

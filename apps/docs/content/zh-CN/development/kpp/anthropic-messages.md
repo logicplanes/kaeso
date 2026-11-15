@@ -175,6 +175,7 @@ Schema `Message`。
 | `usage.cache_creation.ephemeral_5m_input_tokens` / `ephemeral_1h_input_tokens` | `usage.cache_write_breakdown` | |
 | `usage.output_tokens` | `usage.output_tokens` | 包含思考。 |
 | `usage.output_tokens_details.thinking_tokens` | `usage.reasoning_tokens` | |
+| `usage.server_tool_use.web_search_requests` | `usage.web_searches` | Anthropic 按次计费的搜索；流的最后一次用量统计该回复的所有搜索。 |
 | 整个 `usage`（含 `server_tool_use`、`service_tier`、`inference_geo`、`iterations` 和未知键） | `usage.raw`（绑定到其来源） | 对 Anthropic 回复会以相同的键和值重新写出。 |
 
 来自其他方言的回复（`encode_response`）会得到 `type: "message"`、`role: "assistant"`、`stop_sequence: null`（或相应的序列）以及 `stop_details: null`。用量由类型化字段构建：`cache_creation` 来自细分数据或为 `null`，已知 `reasoning_tokens` 时会写出 `output_tokens_details`。

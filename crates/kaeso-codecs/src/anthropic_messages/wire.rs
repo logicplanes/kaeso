@@ -279,6 +279,14 @@ pub(crate) struct UsageW {
     pub(crate) output_tokens: Option<u64>,
     #[serde(default)]
     pub(crate) output_tokens_details: Option<OutputTokensDetailsW>,
+    #[serde(default)]
+    pub(crate) server_tool_use: Option<ServerToolUseW>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub(crate) struct ServerToolUseW {
+    #[serde(default)]
+    pub(crate) web_search_requests: Option<u64>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]

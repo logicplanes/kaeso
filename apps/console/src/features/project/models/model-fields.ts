@@ -62,7 +62,10 @@ export function unitPriceLabels(f: Fields): string[] {
     const minimum = u.minimum_seconds ? t("models.unit.minimumSeconds", "at least {seconds} s", { seconds: formatNumber(u.minimum_seconds) }) : undefined;
     const length = u.duration ? t("models.unit.duration", "{seconds} s long", { seconds: formatNumber(u.duration) }) : undefined;
     const conditions = [u.size, u.quality, u.resolution, length, sound, minimum].filter((c): c is string => !!c);
-    const label = t("models.unitPrice", "{price} per {unit} of {side}", { price: formatUSD(u.usd), unit, side });
+    const label =
+      u.per === "search"
+        ? t("models.unitPriceSearch", "{price} per web search", { price: formatUSD(u.usd) })
+        : t("models.unitPrice", "{price} per {unit} of {side}", { price: formatUSD(u.usd), unit, side });
     const shown = conditions.length ? `${label} (${conditions.join(t("models.listSeparator", ", "))})` : label;
     return u.estimate ? t("models.unitPriceEstimate", "{price}, estimated", { price: shown }) : shown;
   });

@@ -304,6 +304,7 @@ pub const UNITS: &[&str] = &[
     "hour",
     "million_characters",
     "video",
+    "search",
 ];
 
 const MAX_UNIT_PRICES: usize = 32;
@@ -320,7 +321,7 @@ const MAX_UNIT_PRICES: usize = 32;
 )]
 pub struct UnitPrice {
     #[doc = "The unit: `image`, `megapixel`, `second`, `minute`, `hour`,\n\
-        `million_characters` or `video`."]
+        `million_characters`, `video` or `search`, a web search the provider ran."]
     #[cfg_attr(feature = "openapi", schema(example = "image"))]
     pub per: String,
     #[doc = "Whether the unit is of the input or the output: `input` or `output`."]

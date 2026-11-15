@@ -422,6 +422,7 @@
   "models.unit.input": "输入",
   "models.unit.output": "输出",
   "models.unitPrice": "{side}每{unit} {price}",
+  "models.unitPriceSearch": "每次网页搜索 {price}",
   "models.unitPriceEstimate": "{price}（估算）",
   "models.field.inputImagePrice": "图片输入价格",
   "models.field.outputImagePrice": "图片输出价格",
