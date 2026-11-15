@@ -279,6 +279,15 @@ async fn only_a_keys_owner_rotates_it_and_a_service_accounts_key_needs_its_right
         .await;
     assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
     assert_eq!(r.body["error"]["right"], "keys.own.manage");
+    let mine = app
+        .get(&format!("/me/keys/{second}"), &dev)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(mine.body["id"], second.as_str());
+    let r = app
+        .post(&format!("/me/keys/{second}/disable"), json!({}), Some(&dev))
+        .await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
 
     let account = created(
         &app,
