@@ -1,0 +1,29 @@
+{
+  "id": "00000000000000000000000000000000",
+  "object": "chat.completion",
+  "created": 1794672060,
+  "model": "step-3.7-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "There are three 'r's in strawberry.",
+        "reasoning": "s-t-r-a-w-b-e-r-r-y: one r after t, two before y.",
+        "reasoning_content": "s-t-r-a-w-b-e-r-r-y: one r after t, two before y."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 30,
+    "total_tokens": 50,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 19
+    }
+  }
+}

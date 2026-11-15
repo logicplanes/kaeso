@@ -337,6 +337,10 @@ pub(crate) struct UsageWire {
     pub(crate) completion_tokens: u64,
     #[serde(default, deserialize_with = "null_as_default")]
     pub(crate) total_tokens: u64,
+    // StepFun reports cache hits beside the counts, not in `prompt_tokens_details`
+    // (https://platform.stepfun.ai/docs/en/guides/developer/prompt-cache).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) cached_tokens: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) prompt_tokens_details: Option<PromptTokensDetails>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

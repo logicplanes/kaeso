@@ -1,0 +1,10 @@
+{
+  "model": "step-3.7-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "How many 'r's are in the word strawberry?"
+    }
+  ],
+  "stream": true
+}

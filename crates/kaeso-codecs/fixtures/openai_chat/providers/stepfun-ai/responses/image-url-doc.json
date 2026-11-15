@@ -1,0 +1,21 @@
+{
+  "id": "298ad5e6-033a-41f8-9801-43be6e106f22",
+  "object": "chat.completion",
+  "created": 1710145618,
+  "model": "step-5-preview",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "In the soft light of dusk, a modern building comes into view with a striking red exterior that contrasts with its surroundings. The ground floor features spacious glass windows that fill the interior with natural light. A prominent sign stands on one side of the building, and the neatly arranged windows along the top showcase a modern design.\n\nIn the open area in front of the building, a bare tree sways gently in the breeze. The ground beneath is covered with gravel, adding a touch of nature to the space. On one side of the plaza, small lights cast a warm glow that feels especially cozy at twilight.\n\nThe area around the building is tidy, and the road is free of vehicles, giving a very peaceful feeling. In the distance, you can see the outlines of other buildings and the sun about to set, adding depth to the scene. The whole setting conveys a calm and orderly sense of urban life."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 497,
+    "completion_tokens": 169,
+    "total_tokens": 666
+  }
+}

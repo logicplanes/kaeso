@@ -1,0 +1,22 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "object": "chat.completion",
+  "created": 1794672000,
+  "model": "step-5-preview",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Reinforcement learning trains an agent by trial and error. The agent acts in an environment and receives rewards or penalties. Over time it learns a policy that maximizes its total reward.",
+        "reasoning": "The user wants three sentences on reinforcement learning: the agent, the rewards, and the learned policy."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 18,
+    "completion_tokens": 61,
+    "total_tokens": 79
+  }
+}

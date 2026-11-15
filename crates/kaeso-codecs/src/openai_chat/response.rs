@@ -492,6 +492,7 @@ fn usage_from_wire(wire: &UsageWire) -> Usage {
     let details = wire.prompt_tokens_details.as_ref();
     let cached = details
         .and_then(|d| d.cached_tokens)
+        .or(wire.cached_tokens)
         .unwrap_or(0)
         .min(wire.prompt_tokens);
     let written = details
@@ -543,6 +544,7 @@ pub(crate) fn encode_usage(usage: &Usage) -> Value {
         prompt_tokens: prompt,
         completion_tokens: usage.output_tokens,
         total_tokens: prompt.saturating_add(usage.output_tokens),
+        cached_tokens: None,
         prompt_tokens_details: Some(details),
         completion_tokens_details: (usage.reasoning_tokens.is_some()
             || usage.output_audio_tokens.is_some())

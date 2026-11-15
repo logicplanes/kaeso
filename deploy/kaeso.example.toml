@@ -176,6 +176,9 @@ base_url = "https://ark.cn-beijing.volces.com/api/v3"
 [providers.ovhcloud]
 base_url = "https://oai.endpoints.kepler.ai.cloud.ovh.net"
 
+[providers.stepfun-ai]
+base_url = "https://api.stepfun.ai"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

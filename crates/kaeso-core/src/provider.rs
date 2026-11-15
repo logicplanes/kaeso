@@ -2710,6 +2710,79 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
     },
+    Provider {
+        id: "stepfun-ai",
+        name: "StepFun",
+        // Keys are made on the Interface Keys page and have no documented prefix; the China
+        // service (platform.stepfun.com, `https://api.stepfun.com`) has accounts and keys of its
+        // own (https://platform.stepfun.ai/docs/en/quickstart/overview).
+        key_page: KeyPage {
+            url: "https://platform.stepfun.ai/interface-key",
+            label: "Interface Keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.stepfun.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /v1/models` answers only with a key and lists chat and speech models alike
+        // (https://platform.stepfun.ai/docs/en/api-reference/models/list).
+        listing: ModelListing::Complete,
+        end_user_limit: None,
+        // StepFun's Chat Completions reference lists only `max_tokens`, the roles `system`,
+        // `user`, `assistant` and `tool`, no end-user or cache-key field, `video_url` parts and
+        // usage in every stream chunk without `stream_options`; reasoning comes as `reasoning`,
+        // or as `reasoning_content` with `reasoning_format: "deepseek-style"`. Whether it refuses
+        // the fields it leaves out isn't documented, so they are refused here
+        // (https://platform.stepfun.ai/docs/en/api-reference/chat/chat-completion-create).
+        chat: ChatProfile::compatible("StepFun")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .without_cache_key()
+            .without_stream_options()
+            .with_video_url()
+            .reasoning_fields(&["reasoning", "reasoning_content"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "logit_bias",
+                "logprobs",
+                "metadata",
+                "modalities",
+                "parallel_tool_calls",
+                "prediction",
+                "presence_penalty",
+                "prompt_cache_key",
+                "prompt_cache_retention",
+                "seed",
+                "service_tier",
+                "store",
+                "top_logprobs",
+                "web_search_options",
+            ])
+            .refusing_in_messages(&["name"]),
+        responses: ResponsesProfile::compatible("StepFun"),
+        messages: MessagesProfile::compatible("StepFun"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+    },
 ];
 
 const _: () = {
@@ -3007,7 +3080,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai"
         );
     }
 
@@ -3159,6 +3232,56 @@ mod tests {
         for field in ["parallel_tool_calls", "top_logprobs", "logit_bias", "store"] {
             assert!(p.chat.request.refused_fields.contains(&field), "{field}");
         }
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn stepfun_serves_chat_under_its_host_and_refuses_what_its_chat_reference_leaves_out() {
+        let p = provider("stepfun-ai").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "StepFun",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://api.stepfun.ai");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, None, None)
+        );
+        assert_eq!(
+            (p.key_page.url, p.key_page.label),
+            (
+                "https://platform.stepfun.ai/interface-key",
+                "Interface Keys"
+            )
+        );
+        assert_eq!(p.listing, ModelListing::Complete);
+        assert_eq!(p.chat.provider, "StepFun");
+        assert_eq!(p.chat.request.path, "/v1/chat/completions");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::MaxTokens);
+        assert!(!p.chat.request.developer_role && p.chat.request.video_url);
+        assert!(!p.chat.request.end_user && !p.chat.request.cache_key);
+        assert!(!p.chat.request.stream_options);
+        assert_eq!(
+            p.chat.reply.reasoning_fields,
+            ["reasoning", "reasoning_content"]
+        );
+        for field in [
+            "parallel_tool_calls",
+            "presence_penalty",
+            "logprobs",
+            "seed",
+            "store",
+        ] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert!(!p.chat.request.refused_fields.contains(&"tool_choice"));
+        assert_eq!(p.chat.request.refused_message_fields, ["name"]);
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
     }
@@ -4377,7 +4500,8 @@ mod tests {
                 "ionos",
                 "novita-ai",
                 "volcengine",
-                "ovhcloud"
+                "ovhcloud",
+                "stepfun-ai"
             ]
         );
         assert_eq!(

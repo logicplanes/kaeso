@@ -804,6 +804,26 @@
       "account_scope": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "stepfun-ai",
+      "name": "StepFun",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://platform.stepfun.ai/interface-key",
+        "label": "Interface Keys"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

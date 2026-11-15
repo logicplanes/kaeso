@@ -4330,6 +4330,156 @@ expression: outcomes
       "totalTokenCount": 413
     }
   },
+  "providers/stepfun-ai/both-reasoning-fields-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "There are three 'r's in strawberry."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "step-3.7-flash",
+    "responseId": "00000000000000000000000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 20,
+      "thoughtsTokenCount": 19,
+      "totalTokenCount": 50
+    }
+  },
+  "providers/stepfun-ai/cached-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "xxx"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "step-5-preview",
+    "responseId": "22ebae159c8f10c8657253671c8f7f17.6de8d4f65f5ba3dddeb693a1aa83de1e",
+    "usageMetadata": {
+      "cachedContentTokenCount": 512,
+      "candidatesTokenCount": 120,
+      "promptTokenCount": 591,
+      "totalTokenCount": 711
+    }
+  },
+  "providers/stepfun-ai/image-url-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "In the soft light of dusk, a modern building comes into view with a striking red exterior that contrasts with its surroundings. The ground floor features spacious glass windows that fill the interior with natural light. A prominent sign stands on one side of the building, and the neatly arranged windows along the top showcase a modern design.\n\nIn the open area in front of the building, a bare tree sways gently in the breeze. The ground beneath is covered with gravel, adding a touch of nature to the space. On one side of the plaza, small lights cast a warm glow that feels especially cozy at twilight.\n\nThe area around the building is tidy, and the road is free of vehicles, giving a very peaceful feeling. In the distance, you can see the outlines of other buildings and the sun about to set, adding depth to the scene. The whole setting conveys a calm and orderly sense of urban life."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "step-5-preview",
+    "responseId": "298ad5e6-033a-41f8-9801-43be6e106f22",
+    "usageMetadata": {
+      "candidatesTokenCount": 169,
+      "promptTokenCount": 497,
+      "totalTokenCount": 666
+    }
+  },
+  "providers/stepfun-ai/reasoning-effort-schema": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Reinforcement learning trains an agent by trial and error. The agent acts in an environment and receives rewards or penalties. Over time it learns a policy that maximizes its total reward."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "step-5-preview",
+    "responseId": "00000000-0000-0000-0000-000000000000",
+    "usageMetadata": {
+      "candidatesTokenCount": 61,
+      "promptTokenCount": 18,
+      "totalTokenCount": 79
+    }
+  },
+  "providers/stepfun-ai/text-chat-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! StepFun is a company focused on artificial intelligence technology and is dedicated to developing and providing various AI solutions. Our AI capabilities cover natural language processing, computer vision, and machine learning to help users in many industries improve efficiency and create value.\n\nWe provide a variety of AI products and services, including intelligent customer service, virtual assistants, smart recommendations, and intelligent moderation. These products and services can be applied across industries such as finance, retail, education, and healthcare. By using our AI, users can better understand and analyze data, deliver personalized services and experiences, and improve the efficiency and accuracy of their decisions.\n\nWe value the security and privacy of user data and strictly follow relevant laws, regulations, and industry standards. We believe AI technology should create more benefits for people rather than negative impacts. We will continue to work hard to provide smarter, more efficient, and safer AI solutions."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "step-5-preview",
+    "responseId": "b7b56af0-52a6-483f-a589-948182676a1b",
+    "usageMetadata": {
+      "candidatesTokenCount": 176,
+      "promptTokenCount": 83,
+      "totalTokenCount": 259
+    }
+  },
+  "providers/stepfun-ai/tools-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": " Shanghai "
+                },
+                "id": "call_brg23SRcTgmpm_V0jfP-iA",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "step-5-preview",
+    "responseId": "291c59ebf4017a937a2a42a8ed52581f.c2669ebc05a491c70f821b4e568b6433",
+    "usageMetadata": {
+      "cachedContentTokenCount": 48,
+      "candidatesTokenCount": 16,
+      "promptTokenCount": 94,
+      "totalTokenCount": 110
+    }
+  },
   "providers/togetherai/recorded-json-schema": {
     "candidates": [
       {

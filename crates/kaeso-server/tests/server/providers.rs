@@ -398,6 +398,21 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             "label": "Public Cloud → AI Endpoints → API keys"
         })
     );
+    let stepfun = listed.iter().find(|p| p["id"] == "stepfun-ai").unwrap();
+    assert_eq!(stepfun["name"], "StepFun");
+    assert_eq!(stepfun["dialects"], json!(["openai_chat"]));
+    assert_eq!(
+        (
+            &stepfun["count_tokens"],
+            &stepfun["embeddings"],
+            &stepfun["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &Value::Null)
+    );
+    assert_eq!(
+        stepfun["key_page"],
+        json!({ "url": "https://platform.stepfun.ai/interface-key", "label": "Interface Keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

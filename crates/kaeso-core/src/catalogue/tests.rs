@@ -2778,6 +2778,40 @@ fn ovhcloud_models_speak_chat_completions_under_the_ids_it_serves_and_its_embedd
 }
 
 #[test]
+fn stepfun_models_speak_chat_completions_with_their_prices_efforts_and_cache_hits() {
+    let step = eff(&entry("stepfun-ai", "step-5-preview"));
+    assert_eq!(step.dialect, DialectId::OpenAiChat);
+    assert_eq!(step.provider.chat().provider, "StepFun");
+    assert_eq!(
+        (
+            step.fields.input_price,
+            step.fields.output_price,
+            step.fields.cache_read_price
+        ),
+        (Some(dec!(1)), Some(dec!(2.7)), Some(dec!(0.1)))
+    );
+    assert_eq!(
+        effort_levels(&step, DialectId::OpenAiChat),
+        ["low", "medium", "high"]
+    );
+    assert_eq!(step.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    let flash = eff(&entry("stepfun-ai", "step-3.5-flash-2603"));
+    assert_eq!(
+        effort_levels(&flash, DialectId::OpenAiChat),
+        ["low", "high"]
+    );
+    let vision = eff(&entry("stepfun-ai", "step-1o-turbo-vision"));
+    assert_eq!(
+        (
+            vision.fields.input_price,
+            vision.fields.output_price,
+            vision.fields.cache_read_price
+        ),
+        (Some(dec!(0.36)), Some(dec!(1.15)), Some(dec!(0.07)))
+    );
+}
+
+#[test]
 fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
     let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

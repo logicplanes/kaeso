@@ -1,0 +1,34 @@
+{
+  "model": "step-5-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Extract the person: Wang Ming, age 28."
+    }
+  ],
+  "stream": false,
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "person",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "age"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "age": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "max_tokens": 1024
+}

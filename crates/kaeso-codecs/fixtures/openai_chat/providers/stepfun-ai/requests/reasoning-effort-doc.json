@@ -1,0 +1,11 @@
+{
+  "model": "step-5-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain what reinforcement learning is in three sentences."
+    }
+  ],
+  "reasoning_effort": "medium",
+  "max_tokens": 1024
+}

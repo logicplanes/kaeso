@@ -1,0 +1,9 @@
+{
+  "model": "step-3.5-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "model": "step-5-preview",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are an AI chat assistant provided by StepFun. In addition to being good at Chinese, English, and many other languages, you can also describe the content of user-provided images accurately. While keeping user data safe, you can respond quickly and precisely to users' questions and requests. Your answers and suggestions should reject content related to pornography, gambling, drugs, violence, or terrorism."
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Describe this image with elegant language"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "https://www.stepfun.com/assets/section-1-CTe4nZiO.webp"
+          }
+        }
+      ]
+    }
+  ]
+}

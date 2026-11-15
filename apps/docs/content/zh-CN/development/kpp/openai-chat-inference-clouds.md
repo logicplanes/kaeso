@@ -316,3 +316,24 @@ SiliconFlow 不提供 Responses 或 Token 计数：`/v1/responses` 和 `/v1/mess
 ### API 根路径
 
 API 不在 `/v1` 下的服务商在 `Provider::api_root` 中指定其 API 根路径：即在每种方言的路径中取代 `/v1` 的部分。网关通过 `EgressCtx::with_api_root` 把它交给编解码器（`pipeline::egress_ctx`，以及用于模型列表和模型检查的 `availability::models_ctx`）。Chat Completions、Responses、Messages 和嵌入把各自的 `/v1/…` 路径放在根路径下，OpenAI 模型列表把 `/v1/models` 发送为 `<root>/models`。`Some("")` 表示基础 URL 本身就止于根路径，例如 Volcengine Ark 的 `…/api/v3`，因此 `/v1/chat/completions` 变为 `/chat/completions`；其他所有服务商为 `None`，保留 `/v1`。密钥的账户范围（例如 Cloudflare AI Gateway 的 `/client/v4/accounts/{account_id}/ai/v1`）在之后应用，并取代该根路径；自定义服务商的基础 URL 自行包含其根路径。由于默认基础 URL 止于根路径，管理员设置的基础 URL 就是文档中的地址本身，例如 BytePlus ModelArk 的地址。
+
+## StepFun
+
+来源：StepFun 的 [Chat Completions 参考](https://platform.stepfun.ai/docs/en/api-reference/chat/chat-completion-create)，其[推理](https://platform.stepfun.ai/docs/en/guides/developer/reasoning)、[提示缓存](https://platform.stepfun.ai/docs/en/guides/developer/prompt-cache)、[工具调用](https://platform.stepfun.ai/docs/en/guides/developer/tool-call)和[视频](https://platform.stepfun.ai/docs/en/guides/developer/video-chat)指南及[错误码](https://platform.stepfun.ai/docs/en/api-reference/error-codes)，以及其中国服务的[参考](https://platform.stepfun.com/docs/zh/api-reference/chat/chat-completion-create)和[错误码](https://platform.stepfun.com/docs/zh/api-reference/error-codes)，2026-11-14 阅读。由于没有可用的密钥：`fixtures/openai_chat/providers/stepfun-ai/` 中的回复和文本流是参考和指南中的示例，带推理的回复和流据参考构建，密钥错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://api.stepfun.ai`（中国服务为 `https://api.stepfun.com`），使用 `Authorization: Bearer`。
+
+| StepFun 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning`、`delta.reasoning`，以及 `reasoning_format: "deepseek-style"` 时的 `reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。中国服务的参考会同时发送两个内容相同的字段：读取第一个，另一个保留为 extra（`responses/both-reasoning-fields-schema`）。 |
+| `reasoning_format`（请求） | extras | 当请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
+| 与各项计数并列的 `usage.cached_tokens` | `cache_read_tokens` | 当缺少中国服务参考中列出的 `prompt_tokens_details.cached_tokens` 时读取（`responses/cached-doc`）；`prompt_tokens` 包含缓存的 token。 |
+| `max_completion_tokens`、`developer` 角色 | `max_tokens`、`Role::System` | 参考只有 `max_tokens`，角色为 `system`、`user`、`assistant` 和 `tool`（`max_tokens()`、`system_role()`）。 |
+| `video_url` 部分 | `Block::Video` | `with_video_url()`。 |
+| `user`、`safety_identifier`、Responses 应用的 `prompt_cache_key` | 省略 | 参考没有终端用户或缓存键字段，StepFun 会自行缓存提示（`without_end_user()`、`without_cache_key()`）。 |
+| `stream_options` | 省略 | 每个块都会主动带上累计用量（`without_stream_options()`、`streams/text-doc`）。 |
+| `presence_penalty`、`seed`、`logprobs`、`logit_bias`、`parallel_tool_calls`、`prompt_cache_key`、`store` 以及参考中没有的其他字段，消息中的 `name` | 拒绝 | 文档没有说明 StepFun 会拒绝还是丢弃未声明的字段，因此配置会在发送前拒绝它们；`parallel_tool_calls: true` 只是允许并行调用，会被省略。StepFun 指南中发送的 `tool_choice` 会照常发送。 |
+| 最后一个块之前的 `finish_reason: ""` 和 `role: ""` | 无 | 与其他服务商一样，按没有值读取。 |
+| 带 `finish_reason: "stop"` 的工具调用 | `StopReason::EndTurn` | 文档中的两个工具调用回复都这样结束（`responses/tools-doc`）。Chat 映射把 `stop` 读作一轮结束，因此 Anthropic 应用会收到带 `stop_reason: "end_turn"` 的 `tool_use` 块。 |
+| 没有 `code` 的 `{"error": {"message", "type"}}` 错误 | `KppError` | 错误类型取决于状态码，StepFun 的标识位于 `type`。中国服务的 429 `project_credit_limit_exceeded` 和 `member_project_credit_limit_exceeded` 属于计费拒绝，而不是速率限制。 |
+| `GET /v1/models` | `ModelList` | 需要密钥，并同时列出对话模型和语音模型（`models/list-doc`），因此模型检查能发现错误的密钥。 |
+
+StepFun 的 Anthropic Messages 端点、Responses API 和 Token 计数（`/v1/token/count`）不被使用：所有应用都通过 Chat Completions 访问 StepFun，Kaeso 拒绝 Token 计数。`input_audio` 接受不带 `format` 的 data URL，用于 KPMR 未收录的 StepFun 音频对话模型；它的语音合成、转写和实时 API 也不被使用。

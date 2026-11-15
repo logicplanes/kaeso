@@ -1,0 +1,31 @@
+{
+  "model": "step-5-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What’s the weather in Shanghai right now?"
+    }
+  ],
+  "tool_choice": "auto",
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Check the weather",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "City name (Chinese)"
+            }
+          },
+          "required": [
+            "city"
+          ]
+        }
+      }
+    }
+  ]
+}

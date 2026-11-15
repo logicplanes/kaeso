@@ -23,6 +23,7 @@ pub(super) const REJECTED_REQUESTS: &[(&str, &str)] = &[
 const PROFILE_ONLY_REQUESTS: &[&str] = &[
     "providers/fireworks-ai/video-url",
     "providers/nebius/video-url",
+    "providers/stepfun-ai/video-url-doc",
 ];
 
 const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
@@ -1318,6 +1319,71 @@ fn legacy_function_conversations_round_trip_and_stay_in_their_dialect() {
             .starts_with("`function` message comes from an OpenAI Chat Completions request"),
         "{}",
         err.message
+    );
+}
+
+#[test]
+fn a_cache_hit_counted_beside_the_prompt_tokens_is_read_as_cached_input() {
+    let resp = decode_response_fixture("providers/stepfun-ai/cached-doc");
+    assert_eq!(
+        (
+            resp.usage.input_tokens,
+            resp.usage.cache_read_tokens,
+            resp.usage.output_tokens
+        ),
+        (79, 512, 120)
+    );
+    let resp = decode_response_fixture("providers/stepfun-ai/tools-doc");
+    assert_eq!(
+        (resp.usage.input_tokens, resp.usage.cache_read_tokens),
+        (46, 48)
+    );
+    let both = json!({
+        "id": "c", "object": "chat.completion", "created": 1, "model": "m",
+        "choices": [{"index": 0, "message": {"role": "assistant", "content": "Hi"}, "finish_reason": "stop"}],
+        "usage": {"prompt_tokens": 56, "completion_tokens": 8, "total_tokens": 64, "cached_tokens": 50,
+            "prompt_tokens_details": {"cached_tokens": 40}}
+    });
+    let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off);
+    let Reply::Generate(resp) =
+        OpenAiChat::decode_response(200, &HeaderList::new(), both.to_string().as_bytes(), &ctx)
+            .unwrap()
+    else {
+        panic!("not a reply")
+    };
+    assert_eq!(resp.usage.cache_read_tokens, 40, "the details win");
+}
+
+#[test]
+fn stepfun_credit_limits_are_billing_refusals_although_they_share_429_with_rate_limits() {
+    let decoded = |status: u16, ty: &str, message: &str| {
+        let body = json!({ "error": { "message": message, "type": ty } }).to_string();
+        OpenAiChat::decode_error(status, &HeaderList::new(), body.as_bytes())
+    };
+    for (status, ty, kind) in [
+        (429, "project_credit_limit_exceeded", ErrorKind::Billing),
+        (
+            429,
+            "member_project_credit_limit_exceeded",
+            ErrorKind::Billing,
+        ),
+        (402, "insufficient_credit", ErrorKind::Billing),
+        (429, "rate_limited", ErrorKind::RateLimited),
+    ] {
+        let err = decoded(status, ty, "项目达到当期 Credit 上限");
+        assert_eq!(err.kind, kind, "{ty}");
+        assert_eq!(err.message, "项目达到当期 Credit 上限", "{ty}");
+    }
+    let bodies = fixtures(D, "errors", "json");
+    let live = &bodies
+        .iter()
+        .find(|(n, _)| n == "providers/stepfun-ai/recorded-invalid-api-key")
+        .unwrap()
+        .1;
+    let err = OpenAiChat::decode_error(401, &HeaderList::new(), live);
+    assert_eq!(
+        (err.kind, err.message.as_str()),
+        (ErrorKind::Authentication, "Incorrect API key provided")
     );
 }
 

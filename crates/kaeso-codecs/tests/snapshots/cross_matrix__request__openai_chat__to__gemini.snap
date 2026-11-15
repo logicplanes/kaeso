@@ -5579,6 +5579,225 @@ expression: outcomes
     },
     "path": "/v1beta/models/example%2Fnot-a-model:generateContent"
   },
+  "providers/stepfun-ai/deepseek-style": {
+    "message": "`reasoning_format` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_format"
+  },
+  "providers/stepfun-ai/image-url-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Describe this image with elegant language"
+            },
+            {
+              "fileData": {
+                "fileUri": "https://www.stepfun.com/assets/section-1-CTe4nZiO.webp",
+                "mimeType": "image/webp"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are an AI chat assistant provided by StepFun. In addition to being good at Chinese, English, and many other languages, you can also describe the content of user-provided images accurately. While keeping user data safe, you can respond quickly and precisely to users' questions and requests. Your answers and suggestions should reject content related to pornography, gambling, drugs, violence, or terrorism."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/step-5-preview:generateContent"
+  },
+  "providers/stepfun-ai/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/step-3.5-flash:generateContent"
+  },
+  "providers/stepfun-ai/json-schema-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Extract the person: Wang Ming, age 28."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "age": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "age"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/step-5-preview:generateContent"
+  },
+  "providers/stepfun-ai/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/step-3.5-flash:generateContent"
+  },
+  "providers/stepfun-ai/reasoning-effort-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain what reinforcement learning is in three sentences."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      }
+    },
+    "path": "/v1beta/models/step-5-preview:generateContent"
+  },
+  "providers/stepfun-ai/reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "How many 'r's are in the word strawberry?"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/step-3.7-flash:streamGenerateContent?alt=sse"
+  },
+  "providers/stepfun-ai/text-chat-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello, please introduce StepFun's artificial intelligence!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are an AI chat assistant provided by StepFun. You are good at Chinese, English, and many other languages. While keeping user data safe, you can respond quickly and accurately to users' questions and requests. Your answers and suggestions should reject content related to pornography, gambling, drugs, violence, or terrorism."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/step-5-preview:generateContent"
+  },
+  "providers/stepfun-ai/tools-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What’s the weather in Shanghai right now?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Check the weather",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "City name (Chinese)",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/step-5-preview:generateContent"
+  },
+  "providers/stepfun-ai/video-url-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "fileData": {
+                "fileUri": "https://static-openapi.stepfun.com/static/platform-web/vipcase/case1.mp4",
+                "mimeType": "video/mp4"
+              }
+            },
+            {
+              "text": "Summarize the main points of this video and extract the key information."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/step-5-preview:generateContent"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,

@@ -1696,3 +1696,33 @@ fn an_nvidia_listing_decodes_and_its_problem_documents_keep_nvidias_detail() {
         e.message
     );
 }
+
+#[test]
+fn a_stepfun_listing_mixes_chat_and_speech_models_and_a_wrong_key_is_an_authentication_error() {
+    let body = fixture("openai_chat", "providers/stepfun-ai/list-doc");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(ids, ["step-5-preview", "stepaudio-2.5-tts"]);
+    round_trip(
+        DialectId::OpenAiChat,
+        "providers/stepfun-ai/list-doc",
+        &body,
+    );
+    let body = fixture("openai_chat", "providers/stepfun-ai/retrieve-doc");
+    assert_eq!(model(DialectId::OpenAiChat, &body).id, "step-5-preview");
+    round_trip(
+        DialectId::OpenAiChat,
+        "providers/stepfun-ai/retrieve-doc",
+        &body,
+    );
+    let refused = fixtures("openai_chat", "errors", "json")
+        .into_iter()
+        .find(|(n, _)| n == "providers/stepfun-ai/recorded-invalid-api-key")
+        .unwrap()
+        .1;
+    let e = dispatch::decode_models(DialectId::OpenAiChat, 401, &h(), &refused).unwrap_err();
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (ErrorKind::Authentication, "Incorrect API key provided")
+    );
+}

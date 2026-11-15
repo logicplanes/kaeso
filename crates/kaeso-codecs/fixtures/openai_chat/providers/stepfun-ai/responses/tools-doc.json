@@ -1,0 +1,32 @@
+{
+  "id": "291c59ebf4017a937a2a42a8ed52581f.c2669ebc05a491c70f821b4e568b6433",
+  "object": "chat.completion",
+  "created": 1722505763,
+  "model": "step-5-preview",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call_brg23SRcTgmpm_V0jfP-iA",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \" Shanghai \"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "cached_tokens": 48,
+    "prompt_tokens": 94,
+    "completion_tokens": 16,
+    "total_tokens": 110
+  }
+}

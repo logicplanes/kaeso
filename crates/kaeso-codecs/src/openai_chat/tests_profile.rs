@@ -1413,3 +1413,113 @@ fn a_profile_reading_thinking_parts_and_an_error_detail_shows_both_to_the_app() 
         "Provider returned error: the upstream model is overloaded"
     );
 }
+
+const STEPFUN: ChatProfile = ChatProfile::compatible("StepFun")
+    .max_tokens()
+    .system_role()
+    .without_end_user()
+    .without_cache_key()
+    .without_stream_options()
+    .with_video_url()
+    .reasoning_fields(&["reasoning", "reasoning_content"])
+    .refusing(&[
+        "audio",
+        "function_call",
+        "functions",
+        "logit_bias",
+        "logprobs",
+        "metadata",
+        "modalities",
+        "parallel_tool_calls",
+        "prediction",
+        "presence_penalty",
+        "prompt_cache_key",
+        "prompt_cache_retention",
+        "seed",
+        "service_tier",
+        "store",
+        "top_logprobs",
+        "web_search_options",
+    ])
+    .refusing_in_messages(&["name"]);
+
+#[test]
+fn stepfun_takes_its_documented_requests_as_written_and_video_url_parts() {
+    for (name, body) in fixtures("openai_chat", "requests", "json") {
+        if !name.starts_with("providers/stepfun-ai/") {
+            continue;
+        }
+        let sent = encode_with(&decode(&body).unwrap(), STEPFUN).unwrap();
+        assert_eq!(
+            sent,
+            serde_json::from_slice::<Value>(&body).unwrap(),
+            "{name}"
+        );
+    }
+}
+
+#[test]
+fn stepfun_gets_max_tokens_system_messages_and_no_end_user_cache_key_or_stream_options() {
+    let sent = encode_with(
+        &chat(json!({
+            "model": "step-5-preview",
+            "messages": [
+                {"role": "developer", "content": "Answer briefly."},
+                {"role": "user", "content": "Hi"}
+            ],
+            "max_completion_tokens": 256,
+            "safety_identifier": "user-0001",
+            "stream": true,
+            "stream_options": {"include_usage": true}
+        })),
+        STEPFUN,
+    )
+    .unwrap();
+    assert_eq!(sent["messages"][0]["role"], "system");
+    assert_eq!(
+        (&sent["max_tokens"], sent.get("max_completion_tokens")),
+        (&json!(256), None)
+    );
+    for field in ["safety_identifier", "user", "stream_options"] {
+        assert!(sent.get(field).is_none(), "{field}: {sent}");
+    }
+}
+
+#[test]
+fn stepfun_refuses_the_fields_its_chat_reference_leaves_out() {
+    for (field, value) in [
+        ("presence_penalty", json!(0.5)),
+        ("prompt_cache_key", json!("chat-0001")),
+        ("seed", json!(7)),
+        ("logprobs", json!(true)),
+        ("parallel_tool_calls", json!(false)),
+        ("store", json!(true)),
+    ] {
+        let err = encode_with(
+            &chat(json!({
+                "model": "step-3.7-flash",
+                "messages": [{"role": "user", "content": "Hi"}],
+                field: value
+            })),
+            STEPFUN,
+        )
+        .unwrap_err();
+        assert_eq!(
+            refusal(&err),
+            (
+                Some(field),
+                Some(field),
+                format!("`{field}` is not supported by StepFun; remove it from the request.")
+            )
+        );
+    }
+    let err = encode_with(
+        &chat(json!({
+            "model": "step-3.7-flash",
+            "messages": [{"role": "user", "name": "ada", "content": "Hi"}]
+        })),
+        STEPFUN,
+    )
+    .unwrap_err();
+    assert_eq!(refusal(&err).1, Some("messages[0].name"));
+}
