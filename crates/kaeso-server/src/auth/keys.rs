@@ -135,7 +135,7 @@ async fn find<V, F, Fut>(
 ) -> Result<Option<Arc<V>>, LookupError>
 where
     V: Clone + serde::Serialize + serde::de::DeserializeOwned + Send + Sync + 'static,
-    F: FnOnce(PoolConnection<Postgres>, Vec<u8>) -> Fut + Copy + Send + 'static,
+    F: FnOnce(PoolConnection<Postgres>, Vec<u8>) -> Fut + Copy + Send + Sync + 'static,
     Fut: Future<Output = Result<Option<V>, StoreError>> + Send + 'static,
 {
     let id = hex(hash);
@@ -145,7 +145,11 @@ where
         let conn = pg.acquire().await.map_err(StoreError::from)?;
         load(conn, owned).await
     };
-    if let Some(v) = cache.cached_or_refresh(&id, refresh).await.filter(matches) {
+    if let Some(v) = cache
+        .cached_or_refresh(&id, refresh.clone())
+        .await
+        .filter(matches)
+    {
         return Ok(Some(v));
     }
     let unknown = format!("{name}:{id}");
@@ -169,6 +173,9 @@ where
         })
         .await?
         .filter(matches);
+    if found.is_some() {
+        cache.keep_warm_with(&id, &refresh).await;
+    }
     if found.is_none() {
         state.caches.unknown_keys.insert(unknown, ()).await;
         if let Some(g) = &gate {

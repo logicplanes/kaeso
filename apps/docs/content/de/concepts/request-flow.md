@@ -87,7 +87,7 @@ Apps in den OpenAI-Formaten erhalten diese 503-Antworten als 500, die ihre SDKs 
 
 ## Der Anbieter-Schlüssel
 
-Kaeso nutzt den Anbieter-Schlüssel, der dem Projekt für den Anbieter des Modells zugewiesen ist, sonst den Standard der Organisation für diesen Anbieter. Fehlen beide, erhält die Anfrage 400. Kaeso entschlüsselt den Schlüssel mit dem Hauptschlüssel und hält ihn höchstens 30 Sekunden im Speicher.
+Kaeso nutzt den Anbieter-Schlüssel, der dem Projekt für den Anbieter des Modells zugewiesen ist, sonst den Standard der Organisation für diesen Anbieter. Fehlen beide, erhält die Anfrage 400. Kaeso entschlüsselt den Schlüssel mit dem Hauptschlüssel und hält ihn im Speicher, wobei es ihn mindestens alle 30 Sekunden neu liest. Bis 15 Minuten nach der letzten Anfrage des Projekts liest es ihn vor Ablauf der 30 Sekunden im Hintergrund neu, sodass Anfragen nicht darauf warten.
 
 ## Senden an den Anbieter
 

@@ -237,6 +237,7 @@ pub async fn run(
     spawn_usage_flusher(state.clone(), shutdown.clone(), flushing.clone());
     crate::services::logs::spawn_writer(state.clone(), shutdown.clone(), flushing.clone());
     crate::services::response_cache::spawn_memory_watch(state.clone(), shutdown.clone());
+    state.caches.spawn_keep_warm(shutdown.clone());
 
     crate::setup::announce(&state).await;
     // A restarted gateway says whether it is outdated before the update check's next run.

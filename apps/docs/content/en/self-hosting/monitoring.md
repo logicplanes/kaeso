@@ -54,7 +54,7 @@ services:
 | --- | --- |
 | `kaeso_requests_total{surface, route, status, provider, model}` | A rise in `status=~"5.."` on `surface="model_api"`. `model` is `custom` for models KPMR doesn't list |
 | `kaeso_request_duration_seconds{surface, route}`, `kaeso_time_to_first_byte_seconds{provider}` | Changes in the 99th percentile per route and per provider |
-| `kaeso_gateway_overhead_seconds{provider}` | Kaeso's own time before it calls the provider, without the request upload: checking the key, translating and checking limits. Its buckets start at 0.1 ms. A rise that `kaeso_time_to_first_byte_seconds` doesn't show is Kaeso's, not the provider's |
+| `kaeso_gateway_overhead_seconds{provider}` | Kaeso's own time before it calls the provider, without the request upload and the time an alias's failed steps waited for their providers: checking the key, translating and checking limits. Its buckets start at 0.1 ms. A rise that `kaeso_time_to_first_byte_seconds` doesn't show is Kaeso's, not the provider's |
 | `kaeso_request_upload_seconds{provider}` | The time apps take to send their request bodies. It grows with the size of the prompt and the app's connection; a rise here is the apps' or the network's, not Kaeso's |
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`, `timeout` or `connect`: a provider outage. `authentication` or `billing`: a provider key needs attention |
 | `kaeso_alias_fallbacks_total{provider, reason}` | Steps of [alias routes](../concepts/alias-routes.md) that failed and fell back, or were skipped because they had failed moments ago, by the step's provider. A rise for one provider is an outage your routes are covering |

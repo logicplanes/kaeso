@@ -31,6 +31,8 @@ sequenceDiagram
   Gateway->>Stores: Charge, log
 ```
 
+The key, the project's catalogue, limits and log settings and the provider key a request needs come from memory. Each entry is loaded from PostgreSQL, shared with other instances through Valkey, which also tells them when it changes, and loaded again at least every 30 seconds. An entry a request read within the last 15 minutes is loaded again in the background before it runs out, so a request after a pause doesn't wait for PostgreSQL (`crates/kaeso-server/src/cache.rs`). The `account_renewal` job renews the access tokens of ChatGPT and Grok accounts used within the last week before they are due, so no request waits for the provider's sign-in service (`crates/kaeso-server/src/services/credentials.rs`).
+
 In a project with the [response cache](../../console/response-cache.md) on, the gateway looks the encoded request up in Valkey before it sends it. A hit is decoded from its sealed entry and encoded for the app, without the provider (`crates/kaeso-server/src/services/response_cache.rs`).
 
 A Platform API request authenticates with a session cookie, an API key with platform access, a platform key or an agent's access token. Each endpoint then checks exactly one right, and a service changes PostgreSQL and writes an audit event.

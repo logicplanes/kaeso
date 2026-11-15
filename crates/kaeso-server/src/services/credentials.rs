@@ -139,9 +139,28 @@ fn due(
     earliest: Option<OffsetDateTime>,
     now: OffsetDateTime,
 ) -> bool {
-    now >= expires_at - renew_before(method)
+    due_within(method, expires_at, earliest, now, time::Duration::ZERO)
+}
+
+// Due `ahead` from now, and renewable now: never before the provider allows it.
+fn due_within(
+    method: AuthMethod,
+    expires_at: OffsetDateTime,
+    earliest: Option<OffsetDateTime>,
+    now: OffsetDateTime,
+    ahead: time::Duration,
+) -> bool {
+    now + ahead >= expires_at - renew_before(method)
         && (now >= expires_at || earliest.is_none_or(|e| now >= e))
 }
+
+// The background job renews an account this long before a request would find it due: more than
+// the job's period, so an account in use is renewed before any request waits for it.
+pub const RENEW_AHEAD: time::Duration = time::Duration::minutes(2);
+
+// An account used within this long is renewed in the background, so the first request after a
+// pause of hours, such as a nightly agent run, doesn't wait for the provider's sign-in service.
+pub const RENEW_IF_USED_WITHIN: time::Duration = time::Duration::days(7);
 
 pub fn seal(state: &AppState, id: CredentialId, secret: &str) -> Result<Sealed, CryptoError> {
     kaeso_crypto::seal(&state.keyring, secret.as_bytes(), &aad(id))
@@ -260,28 +279,58 @@ async fn renewed(state: &AppState, r: Renewal) -> Result<(), ResolveError> {
     if current(r.stale.method, cached_now.account, state.clock.now()) {
         return Ok(());
     }
+    let account = Locked {
+        org,
+        id: r.stale.id,
+        method: r.stale.method,
+        product: r.product,
+        cached: cached_now.account,
+    };
+    renew_locked(state, hosts, &account, time::Duration::ZERO)
+        .await
+        .map(|_| ())
+}
+
+struct Locked {
+    org: OrgId,
+    id: CredentialId,
+    method: AuthMethod,
+    product: &'static str,
+    cached: Option<Account>,
+}
+
+// Renews under the credential's lock with its row read again, so two replicas never spend a
+// rotating refresh token twice. Returns whether it renewed.
+async fn renew_locked(
+    state: &AppState,
+    hosts: &crate::services::provider_accounts::Hosts,
+    a: &Locked,
+    ahead: time::Duration,
+) -> Result<bool, ResolveError> {
+    let (org, id) = (a.org, a.id.uuid());
     let mut tx = state.pg.begin().await.map_err(StoreError::from)?;
     credentials::lock_refresh(&mut tx, id).await?;
     let Some(row) = credentials::sealed(&mut *tx, org.uuid(), id).await? else {
-        return Ok(());
+        return Ok(false);
     };
     let now = state.clock.now();
     let expires_at = row.expires_at.unwrap_or(now);
     let tokens = tokens(&state.keyring, &row)?;
-    if row.auth_error.is_some() || !due(r.stale.method, expires_at, tokens.earliest_refresh_at, now)
+    if row.auth_error.is_some()
+        || !due_within(a.method, expires_at, tokens.earliest_refresh_at, now, ahead)
     {
         tx.commit().await.map_err(StoreError::from)?;
-        if outdated(cached_now.account, &row) {
+        if outdated(a.cached, &row) {
             forget_org(state, org.uuid()).await;
         }
-        return Ok(());
+        return Ok(false);
     }
-    match crate::services::provider_accounts::refresh(hosts, r.stale.method, &tokens).await {
+    match crate::services::provider_accounts::refresh(hosts, a.method, &tokens).await {
         Ok(granted) => {
             let renewed_until = granted.expires_at(now);
             let renewed = granted.renew(&tokens);
             let json = renewed.sealed_form().map_err(|_| CryptoError::Malformed)?;
-            let sealed = seal(state, r.stale.id, &json)?;
+            let sealed = seal(state, a.id, &json)?;
             credentials::refreshed(
                 &mut *tx,
                 id,
@@ -296,27 +345,27 @@ async fn renewed(state: &AppState, r: Renewal) -> Result<(), ResolveError> {
             .await?;
             tx.commit().await.map_err(StoreError::from)?;
             forget_org(state, org.uuid()).await;
-            Ok(())
+            Ok(true)
         }
         Err(e) if e.signs_out() => {
-            tracing::warn!(error = %e, credential = %r.stale.id, "the provider ended an account's session; it needs a new sign-in");
+            tracing::warn!(error = %e, credential = %a.id, "the provider ended an account's session; it needs a new sign-in");
             credentials::sign_out(&mut *tx, id, SIGNED_OUT).await?;
             tx.commit().await.map_err(StoreError::from)?;
             forget_org(state, org.uuid()).await;
             crate::services::notifications::system::account_signed_out(state, org.uuid(), id).await;
-            Err(ResolveError::SignedOut { product: r.product })
+            Err(ResolveError::SignedOut { product: a.product })
         }
         Err(AccountError::NoApiAccess) => {
-            tracing::warn!(credential = %r.stale.id, "the provider refused an account's plan; it has no API access");
+            tracing::warn!(credential = %a.id, "the provider refused an account's plan; it has no API access");
             credentials::sign_out(&mut *tx, id, NO_API_ACCESS).await?;
             tx.commit().await.map_err(StoreError::from)?;
             forget_org(state, org.uuid()).await;
-            Err(ResolveError::NoApiAccess { product: r.product })
+            Err(ResolveError::NoApiAccess { product: a.product })
         }
         Err(e) => {
-            tracing::warn!(error = %e, credential = %r.stale.id, "cannot renew an account's access token");
+            tracing::warn!(error = %e, credential = %a.id, "cannot renew an account's access token");
             drop(tx);
-            Ok(())
+            Ok(false)
         }
     }
 }
@@ -433,6 +482,49 @@ fn touch(state: &AppState, resolved: &Resolved) {
             tracing::warn!(error = %e, "cannot record the credential's last use");
         }
     });
+}
+
+// Renews the accounts used within `RENEW_IF_USED_WITHIN` that a request would find due within
+// `RENEW_AHEAD`, so requests find a fresh token instead of waiting for the renewal. Returns a
+// summary for the job's log line.
+pub async fn renew_ahead(state: &AppState) -> Result<String, StoreError> {
+    let now = state.clock.now();
+    let longest = renew_before(AuthMethod::ChatGpt).max(renew_before(AuthMethod::Grok));
+    let soon = credentials::renewable(
+        &state.pg,
+        now + longest + RENEW_AHEAD,
+        now - RENEW_IF_USED_WITHIN,
+    )
+    .await?;
+    let (mut renewed, mut failed) = (0usize, 0usize);
+    for row in soon {
+        let Some(method) = AuthMethod::parse(&row.auth_method).filter(|m| m.is_account()) else {
+            continue;
+        };
+        let Some(hosts) = state.accounts.hosts(method) else {
+            continue;
+        };
+        if row.expires_at - renew_before(method) > now + RENEW_AHEAD {
+            continue;
+        }
+        let account = Locked {
+            org: OrgId::from_uuid(row.org_id),
+            id: CredentialId::from_uuid(row.id),
+            method,
+            product: product_of(&row.provider),
+            cached: None,
+        };
+        let _flight = state.caches.refreshes.board(&row.id.to_string()).await;
+        match renew_locked(state, hosts, &account, RENEW_AHEAD).await {
+            Ok(true) => renewed += 1,
+            Ok(false) => {}
+            Err(e) => {
+                failed += 1;
+                tracing::warn!(error = %e, credential = %account.id, "cannot renew an account's access token ahead of time");
+            }
+        }
+    }
+    Ok(format!("{renewed} accounts renewed ahead, {failed} failed"))
 }
 
 pub async fn forget_org(state: &AppState, org: Uuid) {

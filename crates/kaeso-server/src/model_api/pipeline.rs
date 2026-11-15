@@ -87,6 +87,12 @@ pub(super) struct Recording {
     sink: Arc<dyn Sink>,
     outcome: Option<Outcome>,
     started: Instant,
+    // When the current attempt sent its request to its provider.
+    sent_at: Option<Instant>,
+    // How long the alias steps that failed waited for their providers, each from sending its
+    // request until it failed. It is the providers' time, which their steps' durations show, so
+    // Kaeso's overhead leaves it out (`own_time`).
+    waited: Duration,
     reservation: Reservation,
     sent_input: Option<u64>,
     held: Option<super::memory::Held>,
@@ -114,13 +120,32 @@ impl Recording {
         &self.reservation
     }
 
+    // Kaeso's own time from the request's arrival until `at`: without the request upload and
+    // without the failed steps' waits for their providers. Everything else stays in, as it is
+    // Kaeso's work: routing, the cooldown and limit bookkeeping between steps, and each step's
+    // own decoding, encoding and checks. Restarting the clock for each step would hide that.
+    fn own_time(&mut self, at: Instant) -> Duration {
+        let waited = self.waited;
+        at.saturating_duration_since(self.started)
+            .saturating_sub(self.outcome().upload.unwrap_or_default())
+            .saturating_sub(waited)
+    }
+
+    // An attempt failed at `at`: the time since it sent its request was its provider's. An
+    // attempt that failed before sending waited for no provider. Cooldowns only hold a step for
+    // later requests and never wait, so no other wait of a step is the provider's.
+    fn attempt_failed(&mut self, at: Instant) {
+        if let Some(sent) = self.sent_at.take() {
+            self.waited = self
+                .waited
+                .saturating_add(at.saturating_duration_since(sent));
+        }
+    }
+
     fn timing(&mut self) -> HeaderValue {
-        let elapsed = self.started.elapsed();
+        let own = self.own_time(Instant::now());
         let o = self.outcome();
-        let kaeso = o
-            .overhead
-            .unwrap_or_else(|| elapsed.saturating_sub(o.upload.unwrap_or_default()));
-        server_timing(o.upload, kaeso, o.ttfb)
+        server_timing(o.upload, o.overhead.unwrap_or(own), o.ttfb)
     }
 
     fn time(&mut self, resp: &mut Response) {
@@ -383,6 +408,8 @@ pub async fn serve_with(
         sink: state.sink.clone(),
         outcome: Some(outcome),
         started: Instant::now(),
+        sent_at: None,
+        waited: Duration::ZERO,
         reservation: Reservation::default(),
         sent_input: None,
         held: None,
@@ -1093,7 +1120,6 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         stream,
         keep_content,
         request_bytes,
-        upload,
         decoded,
         logged,
     };
@@ -1171,7 +1197,6 @@ struct Shared<'a> {
     stream: bool,
     keep_content: bool,
     request_bytes: usize,
-    upload: Duration,
     decoded: u64,
     logged: u64,
 }
@@ -1186,6 +1211,7 @@ impl Shared<'_> {
 
 fn begin_attempt(rec: &mut Recording) {
     rec.sent_input = None;
+    rec.sent_at = None;
     rec.keep_in_cache = None;
     let o = rec.outcome();
     o.egress = None;
@@ -1219,7 +1245,6 @@ async fn attempt(
         stream,
         keep_content,
         request_bytes,
-        upload,
         ..
     } = *sh;
     let retained = |copies: u64| sh.retained(copies);
@@ -1615,7 +1640,8 @@ async fn attempt(
     let provider = eff.provider.metric_label();
     rec.sent_input = Some(estimate::tokens_of_bytes(sent));
     let sent_at = Instant::now();
-    rec.outcome().overhead = Some(sent_at.duration_since(rec.started).saturating_sub(upload));
+    rec.sent_at = Some(sent_at);
+    rec.outcome().overhead = Some(rec.own_time(sent_at));
     let gathers = chatgpt.is_some() && !stream && kind == RequestKind::Generate;
     let deadline = tokio::time::Instant::now() + timeouts.request;
     let late = |_: tokio::time::error::Elapsed| {
@@ -1770,6 +1796,8 @@ async fn attempt(
                 sink: rec.sink.clone(),
                 outcome: rec.outcome.take(),
                 started: rec.started,
+                sent_at: rec.sent_at,
+                waited: rec.waited,
                 reservation: std::mem::take(&mut rec.reservation),
                 sent_input: None,
                 held: rec.held.take(),
@@ -2252,7 +2280,8 @@ async fn route(
             step.timeout_seconds,
         ))
         .await;
-        let took = u64::try_from(began.elapsed().as_millis()).unwrap_or(u64::MAX);
+        let ended = Instant::now();
+        let took = u64::try_from(ended.duration_since(began).as_millis()).unwrap_or(u64::MAX);
         let mut failure = match tried {
             Ok(done) => {
                 state.cooldowns.release(&state.valkey, &at).await;
@@ -2266,7 +2295,10 @@ async fn route(
                 });
                 return Ok(done.with_route(&walked));
             }
-            Err(f) => f,
+            Err(f) => {
+                rec.attempt_failed(ended);
+                f
+            }
         };
         let status = failure.err.status.unwrap_or(500);
         walked.push(Walked {
@@ -2495,10 +2527,7 @@ async fn replay(
 ) -> Result<Done, KppError> {
     let age = stored.age(state.clock.now());
     let out = dispatch::encode_response(rec.outcome().ingress, &stored.reply, encode_ctx)?;
-    let overhead = rec
-        .started
-        .elapsed()
-        .saturating_sub(rec.outcome().upload.unwrap_or_default());
+    let overhead = rec.own_time(Instant::now());
     let o = rec.outcome();
     o.usage = Some(stored.usage);
     o.usage_estimated = stored.usage_estimated;

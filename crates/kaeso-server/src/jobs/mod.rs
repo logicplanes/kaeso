@@ -96,6 +96,15 @@ pub fn all() -> Vec<Job> {
             lock: 7,
             run: |s| Box::pin(mcp_sync::run(s)),
         },
+        // Shorter than `RENEW_AHEAD`, so an account in use never waits for its renewal.
+        Job {
+            name: "account_renewal",
+            every: Duration::from_secs(60),
+            lock: 9,
+            run: |s| {
+                Box::pin(async move { Ok(crate::services::credentials::renew_ahead(&s).await?) })
+            },
+        },
     ]
 }
 

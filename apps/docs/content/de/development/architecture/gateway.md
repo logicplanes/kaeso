@@ -31,6 +31,8 @@ sequenceDiagram
   Gateway->>Stores: Verbuchen, protokollieren
 ```
 
+Der Schlüssel, Katalog, Limits und Protokolleinstellungen des Projekts und der Anbieter-Schlüssel, die eine Anfrage braucht, kommen aus dem Speicher. Jeder Eintrag wird aus PostgreSQL geladen, über Valkey mit anderen Instanzen geteilt, das ihnen auch Änderungen meldet, und mindestens alle 30 Sekunden neu geladen. Ein Eintrag, den eine Anfrage in den letzten 15 Minuten gelesen hat, wird im Hintergrund neu geladen, bevor er abläuft, sodass eine Anfrage nach einer Pause nicht auf PostgreSQL wartet (`crates/kaeso-server/src/cache.rs`). Der Job `account_renewal` erneuert die Zugriffstokens von ChatGPT- und Grok-Konten, die in der letzten Woche genutzt wurden, bevor sie fällig werden, sodass keine Anfrage auf den Anmeldedienst des Anbieters wartet (`crates/kaeso-server/src/services/credentials.rs`).
+
 In einem Projekt mit eingeschaltetem [Antwort-Cache](../../console/response-cache.md) schlägt das Gateway die kodierte Anfrage in Valkey nach, bevor es sie sendet. Ein Treffer wird aus seinem versiegelten Eintrag dekodiert und für die App kodiert, ohne den Anbieter (`crates/kaeso-server/src/services/response_cache.rs`).
 
 Eine Anfrage an die Platform API authentifiziert sich mit einem Sitzungscookie, einem API-Schlüssel mit Plattformzugriff, einem Plattform-Schlüssel oder dem Access-Token eines Agenten. Jeder Endpunkt prüft dann genau ein Recht, und ein Service ändert PostgreSQL und schreibt ein Audit-Ereignis.
