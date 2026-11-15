@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
 import { alias, apiKey, catalogueModel, me, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { logContent, logEntry, logRow, logsData, playgroundModel } from "~/test/fixtures/project-logs";
@@ -735,6 +735,43 @@ describe("LogInspector", () => {
     await user.click(within(panel).getByRole("switch", { name: "Show raw" }));
     await waitFor(() => expect(within(panel).queryByRole("region", { name: "System" })).not.toBeInTheDocument());
     expect(panel).toHaveTextContent("messages");
+  });
+
+  it("copies a request it can send again as a curl command, and offers none for an upload", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow(), logRow({ id: "req_0002", endpoint: "audio/transcriptions" }), logRow({ id: "req_0003", endpoint: "rerank" })],
+      entries: [
+        // The endpoint as the gateway logs it.
+        logEntry({ endpoint: "chat/completions", content: logContent(chatRequest, kppReply) }),
+        logEntry({ id: "req_0002", endpoint: "audio/transcriptions", content: logContent({ model: "whisper-1" }, kppReply) }),
+        logEntry({
+          id: "req_0003",
+          endpoint: "rerank",
+          ingress_dialect: "cohere_rerank",
+          content: logContent({ model: "rerank-v3.5", query: "q", documents: ["a"] }, kppReply),
+        }),
+      ],
+    });
+    const writeText = vi.spyOn(navigator.clipboard, "writeText");
+    const { user, router } = await renderApp(projectPath("logs?log=req_0001"));
+    let panel = await openTab(user, "Request");
+    await user.click(within(panel).getByRole("button", { name: "Copy as curl" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    const command = writeText.mock.calls[0]?.[0] ?? "";
+    expect(command).toMatch(new RegExp(`^curl '${window.location.origin}/v1/chat/completions'`));
+    expect(command).toContain('-H "Authorization: Bearer $KAESO_API_KEY"');
+    expect(command).toContain("Where is order 7?");
+
+    await router.navigate({ to: router.state.location.pathname, search: { log: "req_0002" } });
+    panel = await openTab(user, "Request");
+    expect(within(panel).queryByRole("button", { name: "Copy as curl" })).not.toBeInTheDocument();
+
+    await router.navigate({ to: router.state.location.pathname, search: { log: "req_0003" } });
+    panel = await openTab(user, "Request");
+    expect(await within(panel).findByRole("button", { name: "Copy as curl" })).toBeInTheDocument();
+    expect(within(panel).queryByRole("switch", { name: "Show raw" })).not.toBeInTheDocument();
   });
 
   it("shows a body it can't map as JSON", async () => {

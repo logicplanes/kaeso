@@ -281,6 +281,7 @@
   "logs.decision.state": "问题针对的内容",
   "logs.decision.questions": "问题",
   "logs.decision.replyHint": "每个回答及其概率，按提问顺序排列。",
+  "logs.inspector.copyCurl": "复制为 curl",
   "logs.filter.alias": "别名",
   "logs.filter.fellBack": "已回退",
   "logs.filter.endpoint": "端点",
