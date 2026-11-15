@@ -16,7 +16,9 @@ export interface PlaygroundSearch {
   summary?: Exclude<Summary, "auto">;
 }
 
-const MODEL = /^[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9][\w.:@/+-]*$/;
+// A model id is whatever the catalogue holds after the provider, such as OpenRouter's `~…-latest`
+// and Cloudflare's `@cf/…`; an unknown one is ignored later, so only the shape is checked here.
+const MODEL = /^[a-z0-9][a-z0-9._-]*\/[^\s,]+$/;
 
 export function parseModels(value: string | undefined): string[] {
   if (!value) return [];
