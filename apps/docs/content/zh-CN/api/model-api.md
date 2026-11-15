@@ -267,7 +267,7 @@ Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没�
 | `kaeso-route` | 请求在别名路由中到达的每个步骤，按顺序以结构化字段列表（[RFC 9651](https://www.rfc-editor.org/rfc/rfc9651)）给出：步骤的路径、以 `provider/model` 表示的 `model`、`status`（提供商返回的状态，或 Kaeso 为自身失败给出的状态：无法连接提供商或提供商拒绝 Kaeso 的密钥时为 502，未及时应答时为 504），以及失败时的耗时 `dur`（毫秒）。响应本身在应用的格式中可能带有不同的状态，例如 Anthropic 的 529 发给 OpenAI 应用时为 503。密钥无权使用的步骤带 `skipped`，不带模型；因刚刚失败而被跳过的步骤带 `skipped` 和它的模型。例如 `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。只出现在别名请求的响应中（[别名路由](../concepts/alias-routes.md#应用和日志看到的内容)） |
 | `kaeso-cache` | [响应缓存](../console/response-cache.md)应答时为 `hit`，请求发往服务商时为 `miss`，请求无法缓存或应用发送了 `Cache-Control: no-store` 时为 `bypass`。只出现在开启缓存的项目中 |
 | `age` | 缓存的回复存储以来的秒数。只出现在 `kaeso-cache: hit` 时 |
-| `server-timing` | `upload;dur=…`：应用发送请求体所用的毫秒数。随后是 `kaeso;dur=…`：Kaeso 调用服务商之前自身花费的毫秒数，不含上传；请求未到达服务商时，则是到 Kaeso 作出响应为止的时间。最后是 `upstream;dur=…`：服务商返回第一个字节所用的时间，得知后即带有。流式回复随响应头一起发送它，因此 Kaeso 转换流所花的时间只记录在[请求日志](../console/request-logs.md#查看请求)中 |
+| `server-timing` | `upload;dur=…`：应用发送请求体所用的毫秒数。随后是 `kaeso;dur=…`：Kaeso 调用服务商之前自身花费的毫秒数，不含上传，也不含别名中失败步骤等待服务商的时间；请求未到达服务商时，则是到 Kaeso 作出响应为止的时间。最后是 `upstream;dur=…`：服务商返回第一个字节所用的时间，得知后即带有。流式回复随响应头一起发送它，因此 Kaeso 转换流所花的时间只记录在[请求日志](../console/request-logs.md#查看请求)中 |
 
 ## 从浏览器调用
 

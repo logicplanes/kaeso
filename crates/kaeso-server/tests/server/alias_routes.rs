@@ -786,6 +786,54 @@ async fn a_step_that_takes_too_long_moves_on() {
 }
 
 #[tokio::test]
+async fn kaesos_overhead_leaves_out_the_wait_of_a_step_that_fell_back() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    let wait = Duration::from_millis(1000);
+    for stream in [false, true] {
+        let r = ask(
+            &env,
+            App::Chat,
+            "sturdy",
+            "Hi [mock:fail=claude-haiku-4-5 overloaded 1000]",
+            stream,
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "stream {stream}: {}", r.text());
+        assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
+        let o = env
+            .capture
+            .recorded(r.header("kaeso-request-id").unwrap())
+            .await;
+        assert_eq!(o.fallbacks.len(), 1);
+        assert!(
+            o.fallbacks[0].duration_ms >= 1000,
+            "the failed step keeps its wait: {}",
+            o.fallbacks[0].duration_ms
+        );
+        let overhead = o.overhead.unwrap();
+        assert!(
+            overhead < wait / 2,
+            "stream {stream}: Kaeso's overhead without the failed step's wait: {overhead:?}"
+        );
+        assert!(!overhead.is_zero());
+        let timing = r.header("server-timing").unwrap();
+        let kaeso: f64 = timing
+            .split(", ")
+            .find_map(|m| m.strip_prefix("kaeso;dur="))
+            .and_then(|ms| ms.parse().ok())
+            .expect("a kaeso entry");
+        assert!(
+            (kaeso - overhead.as_secs_f64() * 1000.0).abs() < 0.001,
+            "{timing}"
+        );
+        env.app.clock.advance(time::Duration::seconds(31));
+    }
+}
+
+#[tokio::test]
 async fn a_limit_on_one_model_sends_its_requests_to_the_fallback() {
     let env = env().await;
     let claude = model_id(&env, "claude-haiku-4-5").await;

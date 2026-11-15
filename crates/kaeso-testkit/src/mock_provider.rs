@@ -316,12 +316,17 @@ fn marker<'a>(body: &'a str, name: &str) -> Option<&'a str> {
 
 // `[mock:fail=<model> <fixture>]` fails only the requests for that model, so one request
 // can fail on one model and succeed on the next; a body may carry several. The fixture
-// `stall` never answers.
-fn failure_for<'a>(body: &'a str, model: &str) -> Option<&'a str> {
+// `stall` never answers. `[mock:fail=<model> <fixture> <ms>]` answers after `ms` milliseconds,
+// as a provider that is slow to fail.
+fn failure_for<'a>(body: &'a str, model: &str) -> Option<(&'a str, Option<Duration>)> {
     body.match_indices("[mock:fail=").find_map(|(i, start)| {
         let rest = body.get(i + start.len()..)?;
-        let (named, fixture) = rest.get(..rest.find(']')?)?.split_once(' ')?;
-        (named == model).then_some(fixture)
+        let (named, failure) = rest.get(..rest.find(']')?)?.split_once(' ')?;
+        let (fixture, after) = match failure.split_once(' ') {
+            Some((fixture, ms)) => (fixture, ms.parse().ok().map(Duration::from_millis)),
+            None => (failure, None),
+        };
+        (named == model).then_some((fixture, after))
     })
 }
 
@@ -602,7 +607,10 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
                     .map(str::to_owned)
             }),
     };
-    if let Some(name) = asked.as_deref().and_then(|m| failure_for(&text, m)) {
+    if let Some((name, after)) = asked.as_deref().and_then(|m| failure_for(&text, m)) {
+        if let Some(after) = after {
+            tokio::time::sleep(after).await;
+        }
         if name == "stall" {
             std::future::pending::<()>().await;
         }
