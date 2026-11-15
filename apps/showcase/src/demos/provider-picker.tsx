@@ -34,6 +34,7 @@ const providers: ProviderPickerOption[] = [
   { id: "amazon-bedrock", name: "Amazon Bedrock" },
   { id: "azure", name: "Azure" },
   { id: "replicate", name: "Replicate" },
+  { id: "deepgram", name: "Deepgram" },
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
   { id: "siliconflow", name: "SiliconFlow" },

@@ -99,6 +99,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `gemini_interactions` | Gemini Omni's video jobs on the Interactions API of Google AI Studio and Gemini Enterprise Agent Platform ([Gemini Interactions](gemini-interactions.md)) |
 | `dashscope` | QwenCloud's DashScope API: images, speech, transcription and Wan video synthesis ([DashScope](dashscope.md)) |
 | `fal` | fal's queue: images and video jobs of the models Kaeso maps ([fal](fal.md)) |
+| `deepgram` | Deepgram's pre-recorded speech to text (`/v1/listen`) and Aura text to speech (`/v1/speak`) ([Deepgram](deepgram.md)) |
 | `system_one` | TypeSafe's System One API (`/v1/systemone`) and the providers that speak a form of it ([System One](system-one.md)) |
 | `openai_decisions` | OpenAI's Decisions API (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
 | `gemini_decisions` | Gemini's Decisions API (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
@@ -314,6 +315,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [DashScope](dashscope.md): See how images, speech, transcriptions and video jobs map to QwenCloud's DashScope API.
 - [fal](fal.md): See how image requests and video jobs map to fal's queue, model by model.
 - [Replicate](replicate.md): See how image requests and video jobs map to Replicate's predictions, model by model.
+- [Deepgram](deepgram.md): See how transcriptions and speech map to Deepgram's speech-to-text and Aura APIs.
 - [System One](system-one.md): Find where every field of TypeSafe's decision format goes in KPP, and how each provider takes it.
 - [OpenAI Decisions](openai-decisions.md): Find where every field of OpenAI's Decisions API goes in KPP.
 - [Gemini Decisions](gemini-decisions.md): Find where every field of Gemini's Decisions API goes in KPP.

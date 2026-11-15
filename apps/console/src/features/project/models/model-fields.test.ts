@@ -95,6 +95,7 @@ describe("unitPriceLabels", () => {
     expect(dialectPill("bedrock_converse")).toBe("converse");
     expect(dialectPill("fal")).toBe("fal");
     expect(dialectPill("replicate")).toBe("replicate");
+    expect(dialectPill("deepgram")).toBe("deepgram");
   });
 
   it("names prices per video by their length", () => {

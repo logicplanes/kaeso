@@ -1,0 +1,5 @@
+{
+  "err_code": "ASR_PAYMENT_REQUIRED",
+  "err_msg": "Project does not have enough credits for an ASR request and does not have an overage agreement.",
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

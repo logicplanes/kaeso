@@ -136,6 +136,22 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
             assert!(!id.is_empty() && !id.contains('/') && id != "." && id != "..");
         }
     }
+    if dialect == DialectId::Deepgram {
+        let query = if salt.is_multiple_of(2) {
+            "model=nova-3&utterances=true&speed=1.1"
+        } else {
+            ""
+        };
+        let json = headers.clone().with("content-type", "application/json");
+        for kind in [RequestKind::Transcription, RequestKind::Speech] {
+            for h in [&headers, &json] {
+                if let Ok(req) = kaeso_codecs::deepgram::Deepgram::decode_call(kind, query, data, h)
+                {
+                    request(dialect, &req);
+                }
+            }
+        }
+    }
     if dialect == DialectId::ElevenLabs {
         for path in ELEVENLABS_PATHS {
             let query = if salt.is_multiple_of(2) {

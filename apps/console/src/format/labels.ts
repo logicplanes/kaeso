@@ -48,6 +48,7 @@ export const DIALECTS: Record<string, string> = {
   veo: "Veo",
   gemini_interactions: "Gemini Interactions",
   dashscope: "DashScope",
+  deepgram: "Deepgram",
   openai_decisions: "OpenAI Decisions",
   system_one: "System One",
   gemini_decisions: "Gemini Decisions",

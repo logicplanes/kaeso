@@ -35,6 +35,7 @@ pub mod anthropic_messages;
 pub mod bedrock_converse;
 pub mod cohere_rerank;
 pub mod dashscope;
+pub mod deepgram;
 pub mod elevenlabs;
 pub mod fal;
 pub mod gemini;

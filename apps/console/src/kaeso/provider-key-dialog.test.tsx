@@ -440,6 +440,28 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Deepgram key, which has no fixed prefix, with Deepgram's console as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "deepgram", name: "Deepgram prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Deepgram");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Deepgram API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "console.deepgram.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://console.deepgram.com");
+    expect(readable(link.closest("p"))).toBe("Create one at console.deepgram.com under API Keys.");
+    const secret = within(dialog).getByLabelText("Deepgram API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "0123456789abcdef0123456789abcdef01234567");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Deepgram prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Deepgram prod is the Deepgram default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "deepgram", name: "Deepgram prod", secret: "0123456789abcdef0123456789abcdef01234567", make_default: false },
+    ]);
+  });
+
   it("adds an Amazon Bedrock key with the region its requests run in", async () => {
     on("POST", CREDENTIALS, credential({ provider: "amazon-bedrock", name: "Bedrock", is_default: true, location: "eu-central-1" }));
     const { user, dialog } = await open();

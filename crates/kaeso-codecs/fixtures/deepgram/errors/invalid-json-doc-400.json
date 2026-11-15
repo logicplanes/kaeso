@@ -1,0 +1,6 @@
+{
+  "category": "INVALID_JSON",
+  "message": "Invalid JSON submitted.",
+  "details": "Json deserialize error: expected `:` at line 3 column 13",
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

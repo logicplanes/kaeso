@@ -1,0 +1,5 @@
+{
+  "err_code": "INSUFFICIENT_PERMISSIONS",
+  "err_msg": "Project does not have access to the requested model.",
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

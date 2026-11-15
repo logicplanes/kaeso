@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "transaction_key": "deprecated",
+    "request_id": "00000000-0000-0000-0000-000000000000",
+    "sha256": "154e291ecfa8be6ab8343560bcc109008fa7853eb5372533e8efdefc9b504c33",
+    "created": "2026-11-14T17:00:00.000Z",
+    "duration": 4.1,
+    "channels": 1,
+    "models": [
+      "30089e05-99d1-4376-b32e-c263170674af"
+    ],
+    "model_info": {
+      "30089e05-99d1-4376-b32e-c263170674af": {
+        "name": "general-nova-3",
+        "version": "2025-04-17.21547",
+        "arch": "nova-3"
+      }
+    }
+  },
+  "results": {
+    "channels": [
+      {
+        "alternatives": [
+          {
+            "transcript": "Four score and seven years ago. Yes.",
+            "confidence": 0.99,
+            "words": [
+              {
+                "word": "four",
+                "start": 0.41915998,
+                "end": 0.85827994,
+                "confidence": 0.57893836,
+                "punctuated_word": "Four",
+                "speaker": 0,
+                "speaker_confidence": 0.9
+              },
+              {
+                "word": "score",
+                "start": 0.85827994,
+                "end": 1.2973999,
+                "confidence": 0.9,
+                "punctuated_word": "score",
+                "speaker": 0,
+                "speaker_confidence": 0.9
+              },
+              {
+                "word": "and",
+                "start": 1.2973999,
+                "end": 1.5967999,
+                "confidence": 0.9,
+                "punctuated_word": "and",
+                "speaker": 0,
+                "speaker_confidence": 0.9
+              },
+              {
+                "word": "seven",
+                "start": 1.5967999,
+                "end": 2.0359199,
+                "confidence": 0.9,
+                "punctuated_word": "seven",
+                "speaker": 0,
+                "speaker_confidence": 0.9
+              },
+              {
+                "word": "years",
+                "start": 2.0359199,
+                "end": 2.4750398,
+                "confidence": 0.9,
+                "punctuated_word": "years",
+                "speaker": 0,
+                "speaker_confidence": 0.9
+              },
+              {
+                "word": "ago",
+                "start": 2.4750398,
+                "end": 2.9141598,
+                "confidence": 0.9,
+                "punctuated_word": "ago.",
+                "speaker": 0,
+                "speaker_confidence": 0.9
+              },
+              {
+                "word": "yes",
+                "start": 3.5131598,
+                "end": 3.9522798,
+                "confidence": 0.9,
+                "punctuated_word": "Yes.",
+                "speaker": 1,
+                "speaker_confidence": 0.8
+              }
+            ]
+          }
+        ],
+        "detected_language": "en",
+        "language_confidence": 0.98
+      }
+    ],
+    "utterances": [
+      {
+        "start": 0.41915998,
+        "end": 2.9141598,
+        "confidence": 0.88172823,
+        "channel": 0,
+        "transcript": "Four score and seven years ago.",
+        "words": [
+          {
+            "word": "four",
+            "start": 0.41915998,
+            "end": 0.85827994,
+            "confidence": 0.57893836,
+            "punctuated_word": "Four",
+            "speaker": 0,
+            "speaker_confidence": 0.9
+          },
+          {
+            "word": "score",
+            "start": 0.85827994,
+            "end": 1.2973999,
+            "confidence": 0.9,
+            "punctuated_word": "score",
+            "speaker": 0,
+            "speaker_confidence": 0.9
+          },
+          {
+            "word": "and",
+            "start": 1.2973999,
+            "end": 1.5967999,
+            "confidence": 0.9,
+            "punctuated_word": "and",
+            "speaker": 0,
+            "speaker_confidence": 0.9
+          },
+          {
+            "word": "seven",
+            "start": 1.5967999,
+            "end": 2.0359199,
+            "confidence": 0.9,
+            "punctuated_word": "seven",
+            "speaker": 0,
+            "speaker_confidence": 0.9
+          },
+          {
+            "word": "years",
+            "start": 2.0359199,
+            "end": 2.4750398,
+            "confidence": 0.9,
+            "punctuated_word": "years",
+            "speaker": 0,
+            "speaker_confidence": 0.9
+          },
+          {
+            "word": "ago",
+            "start": 2.4750398,
+            "end": 2.9141598,
+            "confidence": 0.9,
+            "punctuated_word": "ago.",
+            "speaker": 0,
+            "speaker_confidence": 0.9
+          }
+        ],
+        "speaker": 0,
+        "id": "2d8211a4-3a5b-4053-8939-edf2b2b389fa"
+      },
+      {
+        "start": 3.5131598,
+        "end": 3.9522798,
+        "confidence": 0.9,
+        "channel": 0,
+        "transcript": "Yes.",
+        "words": [
+          {
+            "word": "yes",
+            "start": 3.5131598,
+            "end": 3.9522798,
+            "confidence": 0.9,
+            "punctuated_word": "Yes.",
+            "speaker": 1,
+            "speaker_confidence": 0.8
+          }
+        ],
+        "speaker": 1,
+        "id": "7f1c2e7a-4c3b-4f53-9a6d-2c1f0e9b8a77"
+      }
+    ]
+  }
+}

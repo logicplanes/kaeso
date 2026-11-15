@@ -1,0 +1,271 @@
+{
+  "stt": [
+    {
+      "name": "general",
+      "canonical_name": "nova-3-general",
+      "architecture": "nova-3",
+      "languages": [
+        "hi"
+      ],
+      "version": "2026-11-13.32878",
+      "uuid": "2a350ac9-beac-4563-be77-460111dffa8e",
+      "batch": false,
+      "streaming": true,
+      "formatted_output": false,
+      "multilingual": false
+    },
+    {
+      "name": "general",
+      "canonical_name": "nova-3-general",
+      "architecture": "nova-3",
+      "languages": [
+        "hi"
+      ],
+      "version": "2026-11-12.34138",
+      "uuid": "894f59a7-ed21-4579-8783-dd712ae031e7",
+      "batch": true,
+      "streaming": false,
+      "formatted_output": false,
+      "multilingual": false
+    },
+    {
+      "name": "2-general",
+      "canonical_name": "nova-2-general",
+      "architecture": "nova-2",
+      "languages": [
+        "en",
+        "es"
+      ],
+      "version": "2025-03-31.17829",
+      "uuid": "bef789aa-8c35-42bd-9a6f-debd79ba6746",
+      "batch": true,
+      "streaming": false,
+      "formatted_output": false,
+      "multilingual": true
+    },
+    {
+      "name": "large",
+      "canonical_name": "whisper-large",
+      "architecture": "whisper",
+      "languages": [
+        "af",
+        "am",
+        "ar",
+        "as",
+        "az",
+        "ba",
+        "be",
+        "bg",
+        "bn",
+        "bo",
+        "br",
+        "bs",
+        "ca",
+        "cs",
+        "cy",
+        "da",
+        "de",
+        "el",
+        "en",
+        "en-AU",
+        "en-GB",
+        "en-IN",
+        "en-NZ",
+        "en-US",
+        "es",
+        "es-419",
+        "es-LATAM",
+        "et",
+        "eu",
+        "fa",
+        "fi",
+        "fo",
+        "fr",
+        "fr-CA",
+        "gl",
+        "gu",
+        "ha",
+        "haw",
+        "he",
+        "hi",
+        "hi-Latn",
+        "hr",
+        "ht",
+        "hu",
+        "hy",
+        "id",
+        "id-ID",
+        "is",
+        "it",
+        "ja",
+        "jw",
+        "ka",
+        "kk",
+        "km",
+        "kn",
+        "ko",
+        "la",
+        "lb",
+        "ln",
+        "lo",
+        "lt",
+        "lv",
+        "mg",
+        "mi",
+        "mk",
+        "ml",
+        "mn",
+        "mr",
+        "ms",
+        "mt",
+        "my",
+        "ne",
+        "nl",
+        "nn",
+        "no",
+        "oc",
+        "pa",
+        "pl",
+        "ps",
+        "pt",
+        "pt-BR",
+        "pt-PT",
+        "ro",
+        "ru",
+        "sa",
+        "sd",
+        "si",
+        "sk",
+        "sl",
+        "sn",
+        "so",
+        "sq",
+        "sr",
+        "su",
+        "sv",
+        "sw",
+        "ta",
+        "te",
+        "tg",
+        "th",
+        "tk",
+        "tl",
+        "tr",
+        "tt",
+        "uk",
+        "ur",
+        "uz",
+        "vi",
+        "yi",
+        "yo",
+        "zh",
+        "zh-CN",
+        "zh-TW"
+      ],
+      "version": "2022-12-08.0",
+      "uuid": "2a000f0d-afa1-4f20-8481-94f8bc30b0b2",
+      "batch": true,
+      "streaming": true,
+      "formatted_output": false,
+      "multilingual": false
+    }
+  ],
+  "tts": [
+    {
+      "name": "thalia",
+      "canonical_name": "aura-2-thalia-en",
+      "architecture": "aura-2",
+      "languages": [
+        "en",
+        "en-US"
+      ],
+      "version": "2025-04-15.4",
+      "uuid": "245b8e7b-d1ae-4de5-92bc-570f6fec666b",
+      "metadata": {
+        "accent": "American",
+        "age": "Adult",
+        "color": "#ffe699",
+        "display_name": null,
+        "image": "https://cdn.sanity.io/images/0dsbfl6j/production/d4880116146588ab7b9f2c5923cb308a93c3eca9-1024x1024.png",
+        "sample": "https://cdn.sanity.io/files/0dsbfl6j/production/e8725b8d3ec0a0bd924c13c84aaeb3acaa0adaac.wav",
+        "tags": [
+          "feminine",
+          "clear",
+          "confident",
+          "energetic",
+          "enthusiastic"
+        ],
+        "use_cases": [
+          "casual chat",
+          "customer service",
+          "IVR"
+        ]
+      }
+    },
+    {
+      "name": "agustina",
+      "canonical_name": "aura-2-agustina-es",
+      "architecture": "aura-2",
+      "languages": [
+        "es",
+        "es-ES"
+      ],
+      "version": "2025-10-07.2",
+      "uuid": "6c6ff0ba-e33e-46c9-9388-da3324bf0b5f",
+      "metadata": {
+        "accent": "Peninsular",
+        "age": "Adult",
+        "color": "#24a3e3",
+        "display_name": "Agustina",
+        "image": "https://cdn.sanity.io/images/0dsbfl6j/production/2fd6b4d7fdf8cdd89dc3db856b388e7c623ff2b0-400x400.png",
+        "sample": "https://cdn.sanity.io/files/0dsbfl6j/production/c86256aa6178bea3825030d6b183dd97aff72250.wav",
+        "tags": [
+          "feminine",
+          "calm",
+          "clear",
+          "expressive",
+          "knowledgeable",
+          "professional"
+        ],
+        "use_cases": [
+          "Interview",
+          "Casual Chat"
+        ]
+      }
+    },
+    {
+      "name": "asteria",
+      "canonical_name": "aura-asteria-en",
+      "architecture": "aura",
+      "languages": [
+        "en",
+        "en-US"
+      ],
+      "version": "2024-11-19.0",
+      "uuid": "ecb76e9d-f2db-4127-8060-79b05590d22f",
+      "metadata": {
+        "accent": "American",
+        "age": "Adult",
+        "color": "#7800ed",
+        "display_name": null,
+        "image": "https://cdn.sanity.io/images/0dsbfl6j/production/17c32bb6a8e61d3d139ab6218635aaaba2d2ec14-144x144.png",
+        "sample": "https://cdn.sanity.io/files/0dsbfl6j/production/fcd00b53e0482cdd7cde043c94c84adccab223a3.wav",
+        "tags": [
+          "feminine",
+          "clear",
+          "confident",
+          "knowledgeable"
+        ],
+        "use_cases": [
+          "customer service"
+        ]
+      }
+    }
+  ],
+  "languages": {
+    "en": "English",
+    "en-US": "English (United States)",
+    "es": "Spanish",
+    "de": "German"
+  }
+}

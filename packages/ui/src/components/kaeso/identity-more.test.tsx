@@ -223,6 +223,7 @@ const MARKED_PROVIDERS = {
   voyage: "Voyage AI",
   jina: "Jina AI",
   replicate: "Replicate",
+  deepgram: "Deepgram",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

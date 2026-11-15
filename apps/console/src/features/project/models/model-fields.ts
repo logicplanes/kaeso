@@ -120,6 +120,7 @@ export function dialectPill(d: string, decisionsOnly = false): string {
       minimax_speech: "speech",
       openai_transcriptions: "transcriptions",
       elevenlabs: "elevenlabs",
+      deepgram: "deepgram",
       openai_videos: "videos",
       xai_videos: "videos",
       minimax_videos: "videos",

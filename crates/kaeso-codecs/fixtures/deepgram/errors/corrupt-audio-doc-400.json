@@ -1,0 +1,5 @@
+{
+  "err_code": "Bad Request",
+  "err_msg": "Bad Request: failed to process audio: corrupt or unsupported data",
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

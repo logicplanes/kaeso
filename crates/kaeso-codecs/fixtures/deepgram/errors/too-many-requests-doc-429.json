@@ -1,0 +1,5 @@
+{
+  "err_code": "TOO_MANY_REQUESTS",
+  "err_msg": "Too many requests. Please try again later",
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

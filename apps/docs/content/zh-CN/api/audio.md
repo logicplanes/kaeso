@@ -57,7 +57,7 @@ console.log(transcript.text);
 
 ## 语音
 
-- **声音。** 只有服务商列出的声音才会传过去：OpenAI 的声音传给 OpenAI，Gemini 的 30 个预置声音传给 Google 模型，SpaceX 的声音 ID 传给 SpaceX。声音取决于模型的服务商（Groq、Together AI、Mistral、OpenRouter、MiniMax、SiliconFlow）按原样接收名称；SiliconFlow 以模型命名声音，例如 `FunAudioLLM/CosyVoice2-0.5B:alex`。QwenCloud 接收其列表为该模型列出的声音，例如 `qwen3-tts-flash` 的 `Cherry`，或声音 ID，例如克隆声音的 ID。ElevenLabs 按 ID 接收声音，即其 `GET /v1/voices` 列出的 ID：把 ID 作为 `voice` 发送，或发送 `{"id": "…"}`；`alloy` 这样的名称会被拒绝，因为 Kaeso 不猜测它对应 ElevenLabs 的哪个声音。
+- **声音。** 只有服务商列出的声音才会传过去：OpenAI 的声音传给 OpenAI，Gemini 的 30 个预置声音传给 Google 模型，SpaceX 的声音 ID 传给 SpaceX。声音取决于模型的服务商（Groq、Together AI、Mistral、OpenRouter、MiniMax、SiliconFlow）按原样接收名称；SiliconFlow 以模型命名声音，例如 `FunAudioLLM/CosyVoice2-0.5B:alex`。QwenCloud 接收其列表为该模型列出的声音，例如 `qwen3-tts-flash` 的 `Cherry`，或声音 ID，例如克隆声音的 ID。ElevenLabs 按 ID 接收声音，即其 `GET /v1/voices` 列出的 ID：把 ID 作为 `voice` 发送，或发送 `{"id": "…"}`；`alloy` 这样的名称会被拒绝，因为 Kaeso 不猜测它对应 ElevenLabs 的哪个声音。Deepgram 把每个声音命名为一个模型：使用 `aura-2` 或 `aura` 时，把 `thalia`（除非请求指定语言，否则为英语）、`agustina-es` 或完整 ID `aura-2-agustina-es` 作为 `voice` 发送。
 - **格式**从不转换。服务商没有的格式会在发送任何内容之前被拒绝，`param` 中为 `response_format`。应用未指定格式时，OpenAI 返回 mp3，因此 Kaeso 向每个服务商都明确请求 mp3；`qwen3-tts-flash` 只生成 wav 和 pcm，因此应用需指定其中之一。
 - **流式。** 音频按服务商发送的样子传给应用。请求 `stream_format: "sse"` 时，Kaeso 为任何服务商写出 `speech.audio.delta` 事件；一次性发送完整音频的服务商会得到一个增量和结束事件。OpenAI 只在事件中报告用量，因此 Kaeso 向 OpenAI 请求事件，再为需要音频的应用还原成音频；`tts-1` 和 `tts-1-hd` 没有事件，按字符计费。音频要等服务商的首批字节到达后才返回状态：服务商在此之前失败时，应用会收到 OpenAI 格式的错误；之后中断时，响应以错误结束，绝不会是一个看似正常结束的残缺文件。
 - **设置**：服务商不支持的设置，例如 Gemini 的 `instructions` 或 Together AI 的 `speed`，会被拒绝，`param` 中给出该字段。
@@ -65,8 +65,8 @@ console.log(transcript.text);
 
 ## 转写和翻译
 
-- **各种形式。** 服务商不支持应用要求的形式时，Kaeso 向它请求带时间的片段，自己写出字幕或片段：Groq 由 `verbose_json` 生成 `srt` 和 `vtt`，Mistral 由其片段生成，Gemini 和 SpaceX 由其带时间的词生成，ElevenLabs 由其词生成。任何服务商的时间信息都无法生成的形式，例如没有说话人的 `diarized_json`，会被拒绝。
-- **链接。** 应用的上传内容以上传形式发送。应用在 `url` 或 `file_url` 中发送的链接，或 ElevenLabs 应用在 `source_url` 中发送的链接，会以链接形式发给接受链接的服务商（Groq 和 SpaceX 的 `url`、Together AI 的 `file`、Mistral 的 `file_url`、OpenRouter 和 ElevenLabs 的 `source_url`）；OpenAI 不接受链接。
+- **各种形式。** 服务商不支持应用要求的形式时，Kaeso 向它请求带时间的片段，自己写出字幕或片段：Groq 由 `verbose_json` 生成 `srt` 和 `vtt`，Mistral 由其片段生成，Gemini 和 SpaceX 由其带时间的词生成，ElevenLabs 由其词生成，Deepgram 由其话语生成。任何服务商的时间信息都无法生成的形式，例如没有说话人的 `diarized_json`，会被拒绝。
+- **链接。** 应用的上传内容以上传形式发送。应用在 `url` 或 `file_url` 中发送的链接，或 ElevenLabs 应用在 `source_url` 中发送的链接，会以链接形式发给接受链接的服务商（Groq、SpaceX 和 Deepgram 的 `url`、Together AI 的 `file`、Mistral 的 `file_url`、OpenRouter 和 ElevenLabs 的 `source_url`）；OpenAI 不接受链接。
 - **流式。** OpenAI、Mistral、Z.ai 和 MiniMax 以流式返回转写稿；Kaeso 把它们写成 `transcript.text.delta` 和 `transcript.text.done`。其他服务商一次性返回，应用会得到一个增量和结束事件。
 - **翻译**只发给有翻译端点的服务商：OpenAI、Groq 和 Together AI。
 - **QwenCloud 的**文件转写模型（`*-filetrans`）只回复异步任务，其流式和实时模型只接受 WebSocket 连接，因此会被拒绝。
@@ -86,6 +86,7 @@ console.log(transcript.text);
 | SpaceX | `/v1/tts` | `/v1/stt`：`grok-voice-transcribe-2.0` | [voice](https://docs.x.ai/developers/rest-api-reference/inference/voice) |
 | MiniMax | `/v1/t2a_v2`：`speech-2.8-*`、`speech-2.6-*`、`speech-02-*` | `/v1/speech_to_text`：`asr-1.0` | [T2A](https://platform.minimax.io/docs/api-reference/speech-t2a-http)、[speech to text](https://platform.minimax.io/docs/api-reference/speech-to-text) |
 | ElevenLabs | 文本转语音：`eleven_v4`、`eleven_v3`、`eleven_multilingual_v2`、`eleven_flash_v2_5` 等 | 语音转文本：`scribe_v2`、`scribe_v2_medical` | [ElevenLabs API](elevenlabs.md) |
+| Deepgram | `/v1/speak`：`aura-2` 和 `aura`，声音放在 `voice` 中；最多 2,000 个字符 | `/v1/listen`：`nova-3`、`whisper-large`；应用未指定语言时检测语言 | [文本转语音](https://developers.deepgram.com/docs/text-to-speech)、[预录音频](https://developers.deepgram.com/docs/pre-recorded-audio) |
 | Z.ai | 不提供 | `/api/paas/v4/audio/transcriptions`：`glm-asr-2512` | [GLM-ASR](https://docs.z.ai/guides/audio/glm-asr-2512) |
 | QwenCloud | DashScope：`qwen-audio-3.1-tts-flash`、`qwen-audio-3.1-tts-plus`、`qwen-audio-3.0-tts-flash`、`qwen-audio-3.0-tts-plus`（mp3、wav、opus、pcm），`qwen3-tts-flash`（wav 或 pcm） | 通过 `chat/completions` 调用 `qwen3-asr-flash`；DashScope：`qwen-audio-3.1-asr-flash`、`qwen-audio-3.0-asr-flash`，`json` 和 `text` | [Qwen-ASR](https://www.alibabacloud.com/help/en/model-studio/qwen-asr-api-reference), [Qwen-Audio-TTS](https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-audio-tts/http-api), [Qwen3-TTS](https://docs.qwencloud.com/api-reference/speech-synthesis/qwen-tts), [Qwen-Audio-ASR](https://docs.qwencloud.com/api-reference/speech-recognition/qwen-audio-asr/http-api) |
 | Cohere | 不提供 | `/v2/audio/transcriptions`：`cohere-transcribe-03-2026`，必须提供 `language` | [transcribe](https://docs.cohere.com/v2/docs/transcribe) |
@@ -97,8 +98,8 @@ console.log(transcript.text);
 
 ## 费用和日志
 
-- **费用。** 语音按字符计费（`tts-1`、Groq、Together AI、Mistral、MiniMax、ElevenLabs、QwenCloud），或按 Token 以模型的音频输出价格计费（`gpt-4o-mini-tts`、Gemini）。转写稿按音频的分钟或小时计费（Whisper、Scribe、Voxtral，Groq 最少按 10 秒计费）或按秒计费（QwenCloud），或按 Token 以音频输入价格计费。价格来自 KPMR 的按单位价格和音频 Token 价格；MiniMax、ElevenLabs 和 QwenCloud 会报告其计费的字符数，Kaeso 采用这些数字。
-- **音频时长**是转写和变声器的计费依据，按以下顺序取得：先用服务商报告的时长（OpenAI 的 `usage.seconds` 和 `duration`、Mistral 的 `prompt_audio_seconds`、ElevenLabs 的 `audio_duration_secs`、QwenCloud 的 `usage.duration`、详细转写的 `duration`）；没有时，用文件头中写明的时长，Kaeso 读取它而不解码音频（WAV、FLAC、MP3、Ogg Opus 和 Vorbis、MP4 和 M4A、WebM 和 Matroska）；仍没有时，费用为**未知**。`text`、`srt` 和 `vtt` 等格式不带用量，ElevenLabs 也不报告变声器的时长，因此它们的费用来自文件。请求日志会把这类费用标为由 Kaeso 测得（`cost_basis: measured`）。文件从不会因为读不出时长而被拒绝；原始 PCM 和浏览器录制、未写明时长的文件，时长保持未知。以链接或文件 ID 发送的音频，Kaeso 从不读取，因此只有服务商的回复能给出其时长。Groq 的 `json` 和 `text` 回复不带时长，因此 Kaeso 向 Groq 请求 `verbose_json`（其中有 Groq 计费所依据的 `duration`），再据此写出应用要求的格式。
+- **费用。** 语音按字符计费（`tts-1`、Groq、Together AI、Mistral、MiniMax、ElevenLabs、QwenCloud、Deepgram），或按 Token 以模型的音频输出价格计费（`gpt-4o-mini-tts`、Gemini）。转写稿按音频的分钟或小时计费（Whisper、Scribe、Voxtral、Nova-3，Groq 最少按 10 秒计费）或按秒计费（QwenCloud），或按 Token 以音频输入价格计费。价格来自 KPMR 的按单位价格和音频 Token 价格；MiniMax、ElevenLabs、QwenCloud 和 Deepgram 会报告其计费的字符数，Kaeso 采用这些数字。
+- **音频时长**是转写和变声器的计费依据，按以下顺序取得：先用服务商报告的时长（OpenAI 的 `usage.seconds` 和 `duration`、Mistral 的 `prompt_audio_seconds`、ElevenLabs 的 `audio_duration_secs`、QwenCloud 的 `usage.duration`、Deepgram 的 `metadata.duration` 乘以声道数、详细转写的 `duration`）；没有时，用文件头中写明的时长，Kaeso 读取它而不解码音频（WAV、FLAC、MP3、Ogg Opus 和 Vorbis、MP4 和 M4A、WebM 和 Matroska）；仍没有时，费用为**未知**。`text`、`srt` 和 `vtt` 等格式不带用量，ElevenLabs 也不报告变声器的时长，因此它们的费用来自文件。请求日志会把这类费用标为由 Kaeso 测得（`cost_basis: measured`）。文件从不会因为读不出时长而被拒绝；原始 PCM 和浏览器录制、未写明时长的文件，时长保持未知。以链接或文件 ID 发送的音频，Kaeso 从不读取，因此只有服务商的回复能给出其时长。Groq 的 `json` 和 `text` 回复不带时长，因此 Kaeso 向 Groq 请求 `verbose_json`（其中有 Groq 计费所依据的 `duration`），再据此写出应用要求的格式。
 - **日志。** [请求日志](../console/request-logs.md)显示端点、语音的字符数或所转写音频的时长，以及格式。除非组织和项目都[保留媒体](../console/request-logs.md#请求和回复中的媒体)，否则上传内容只记录其字段，音频只记录媒体类型和大小。开启内容日志后，转写的文本和语音回复属于记录的内容。
 
 ## 后续步骤

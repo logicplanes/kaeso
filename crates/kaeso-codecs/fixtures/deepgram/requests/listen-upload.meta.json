@@ -1,0 +1,5 @@
+{
+  "kind": "transcription",
+  "query": "model=nova-3-general&detect_language=true",
+  "content_type": "audio/wav"
+}

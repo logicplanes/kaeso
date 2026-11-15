@@ -46,6 +46,7 @@ jobs:
             decode_bedrock_converse,
             decode_cohere_rerank,
             decode_dashscope,
+            decode_deepgram,
             decode_elevenlabs,
             decode_fal,
             decode_gemini,
