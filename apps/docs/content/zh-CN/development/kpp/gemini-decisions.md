@@ -97,7 +97,8 @@ order: 8
 | `score.legend` | 形式标记 `legend` | 回复跨格式时根据请求的级别重新构建。 |
 | `confidence` | `Answer.confidence`（类型化） | 见[置信度](#置信度)。 |
 | `usage.total_input_tokens` | `usage.input_tokens`（类型化） | 减去 `total_cached_tokens`，后者为 `usage.cache_read_tokens`。 |
-| `usage.input_tokens_by_modality` | `usage.input_image_tokens`、`input_audio_tokens`（类型化） | 图片、视频和文档 token 计为图片 token，与 Google 指南的计法相同。 |
+| `usage.input_tokens_by_modality` | `usage.input_image_tokens`、`input_audio_tokens`（类型化） | 图片、视频和文档 token 计为图片 token，与 Google 指南的计法相同。减去它们在 `cached_tokens_by_modality` 中的部分，因为 KPP 的这些份额不含缓存。 |
+| `usage.cached_tokens_by_modality` | `usage.cache_read_image_tokens`（类型化） | 其中的图片、视频和文档 token；缓存的音频 token 留在 `usage.cache_read_tokens` 中。 |
 | `usage.total_output_tokens` | `usage.output_tokens`（类型化） | 在 Google 为 0。 |
 | `usage` | `usage.raw` | 整个用量在相同格式中原样返回。 |
 | `prompt_feedback.block_reason` | 无 | 输入被拦截：`ContentFiltered`，见[错误](#错误)。没有原因时，`prompt_feedback` 保留在 extras 中。 |

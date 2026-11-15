@@ -97,7 +97,8 @@ Der Encoder schreibt, was KPP hält, und lehnt vor dem Senden ab, was das Format
 | `score.legend` | Form `legend` | Aus den Stufen der Anfrage neu gebaut, wenn die Antwort das Format wechselt. |
 | `confidence` | `Answer.confidence` typisiert | Siehe [Konfidenz](#konfidenz). |
 | `usage.total_input_tokens` | `usage.input_tokens` typisiert | Ohne `total_cached_tokens`, das `usage.cache_read_tokens` ist. |
-| `usage.input_tokens_by_modality` | `usage.input_image_tokens`, `input_audio_tokens` typisiert | Bild-, Video- und Dokumenttokens zählen als Bildtokens, wie Googles Leitfaden sie zählt. |
+| `usage.input_tokens_by_modality` | `usage.input_image_tokens`, `input_audio_tokens` typisiert | Bild-, Video- und Dokumenttokens zählen als Bildtokens, wie Googles Leitfaden sie zählt. Ohne ihren Anteil an `cached_tokens_by_modality`, da die Anteile von KPP den Cache auslassen. |
+| `usage.cached_tokens_by_modality` | `usage.cache_read_image_tokens` typisiert | Seine Bild-, Video- und Dokumenttokens; gecachte Audiotokens bleiben in `usage.cache_read_tokens`. |
 | `usage.total_output_tokens` | `usage.output_tokens` typisiert | 0 bei Google. |
 | `usage` | `usage.raw` | Der ganze Verbrauch kommt im selben Format zurück. |
 | `prompt_feedback.block_reason` | keins | Die Eingabe wurde blockiert: `ContentFiltered`, siehe [Fehler](#fehler). Ohne Grund bleibt `prompt_feedback` in den Extras. |

@@ -118,6 +118,8 @@ pub(super) struct UsageWire {
     #[serde(default)]
     pub total_cached_tokens: u64,
     #[serde(default)]
+    pub cached_tokens_by_modality: Vec<ModalityWire>,
+    #[serde(default)]
     pub total_output_tokens: u64,
     #[serde(default)]
     pub total_thought_tokens: Option<u64>,

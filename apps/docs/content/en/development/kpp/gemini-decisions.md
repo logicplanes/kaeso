@@ -97,7 +97,8 @@ The encoder writes what KPP holds, and refuses before sending what Gemini's form
 | `score.legend` | form `legend` | Rebuilt from the request's levels when the reply crosses formats. |
 | `confidence` | `Answer.confidence` typed | See [confidence](#confidence). |
 | `usage.total_input_tokens` | `usage.input_tokens` typed | Less `total_cached_tokens`, which is `usage.cache_read_tokens`. |
-| `usage.input_tokens_by_modality` | `usage.input_image_tokens`, `input_audio_tokens` typed | Image, video and document tokens count as image tokens, as Google's guide counts them. |
+| `usage.input_tokens_by_modality` | `usage.input_image_tokens`, `input_audio_tokens` typed | Image, video and document tokens count as image tokens, as Google's guide counts them. Less their share of `cached_tokens_by_modality`, since KPP's shares leave the cache out. |
+| `usage.cached_tokens_by_modality` | `usage.cache_read_image_tokens` typed | Its image, video and document tokens; cached audio tokens stay in `usage.cache_read_tokens`. |
 | `usage.total_output_tokens` | `usage.output_tokens` typed | 0 at Google. |
 | `usage` | `usage.raw` | The whole usage comes back in the same format. |
 | `prompt_feedback.block_reason` | none | The input was blocked: `ContentFiltered`, see [errors](#errors). Without a reason, `prompt_feedback` stays in extras. |
