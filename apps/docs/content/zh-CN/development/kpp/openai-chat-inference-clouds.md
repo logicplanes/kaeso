@@ -337,3 +337,22 @@ API 不在 `/v1` 下的服务商在 `Provider::api_root` 中指定其 API 根路
 | `GET /v1/models` | `ModelList` | 需要密钥，并同时列出对话模型和语音模型（`models/list-doc`），因此模型检查能发现错误的密钥。 |
 
 StepFun 的 Anthropic Messages 端点、Responses API 和 Token 计数（`/v1/token/count`）不被使用：所有应用都通过 Chat Completions 访问 StepFun，Kaeso 拒绝 Token 计数。`input_audio` 接受不带 `format` 的 data URL，用于 KPMR 未收录的 StepFun 音频对话模型；它的语音合成、转写和实时 API 也不被使用。
+
+## Tencent TokenHub
+
+来源：TokenHub 的 [API 使用说明](https://cloud.tencent.com/document/product/1823/130078)、[Chat Completions 字段说明](https://cloud.tencent.com/document/product/1823/135872)、[深度思考](https://cloud.tencent.com/document/product/1823/131208)、[混元调用指南](https://cloud.tencent.com/document/product/1823/132252)、[错误码](https://cloud.tencent.com/document/product/1823/131595)和[模型列表](https://cloud.tencent.com/document/product/1823/130051)页面，2026-11-14 阅读。由于没有可用的密钥：`fixtures/openai_chat/providers/tencent-tokenhub/` 中的回复和流是混元调用指南的示例，另一个项目 issue 中发布的真实流的两个分块与指南中的流一致，密钥错误是在没有有效密钥的情况下实时返回的。所有路径都位于主机的 `/v1` 下，因此 Kaeso 的基础 URL 为 `https://tokenhub.tencentmaas.com`（广州），使用 `Authorization: Bearer`；其他地域和腾讯云国际站是其他主机，各有自己的密钥。
+
+| TokenHub 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`；assistant 消息会将其传回，Hy4 和 Hy3 需要这样才能在多轮之间保留思考（`requests/reasoning-sent-back-doc`）。 |
+| `developer` 角色 | `Role::System` | 参考列出 `system`、`user`、`assistant` 和 `tool`，因此 `system_role()` 发送 `system`。 |
+| `max_tokens`、`max_completion_tokens` | 原样 | TokenHub 两者都接受，优先使用 `max_completion_tokens`。 |
+| `video_url` 部分 | `Block::Video` | `with_video_url()`。 |
+| `audio`、`modalities`、`logit_bias`、`metadata`、`store`、`service_tier` 以及参考中没有的其他字段 | 拒绝 | TokenHub 会静默忽略未声明的字段（“会被静默忽略”），因此配置会拒绝它们。 |
+| `thinking`、`enable_thinking`、`thinking_budget`、`interleaved_thinking`、`reasoning_split`、`web_search_options`、`extra_body` | extras | 当请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
+| `reasoning_effort` `no_think` | 不发送 | Hy4 和 Hy3 用 `no_think` 关闭思考，它没有对应的 KPP 级别；目录列出 `high`（Hy4）以及 `low`、`high`（Hy3），因此 `none` 会变为模型的最低级别，并在 `kaeso-adapted` 中注明（[始终推理的模型](reasoning.md#始终推理的模型)）。 |
+| `reasoning_details`、`search_info`、`usage.cache_read_tokens`、`usage.cache_write_tokens` | extras 和原始用量 | 发往其他方言时省略。 |
+| 带 `message_zh`、六位数 `code`、`type`、`source`、`request_id` 的错误 | `KppError` | 类别由状态码决定；`type` 在参考和实时回复之间不一致，429 的 `code` 可能是数字且没有 `type`（`errors/rate-limit-doc`）。状态码说明不足时由 `code` 决定类别：`400003`（输入超出上下文）为 `ContextTooLong`，`400004`（模型不存在）为 `NotFound`，`451001` 为 `ContentFiltered`。 |
+| 带 `name` 和 `status`（`online`、`pre-offline`）的 `GET /v1/models` | `ModelList` | 需要密钥（`models/list-doc`）；没有 `GET /v1/models/{model}`。 |
+
+TokenHub 的 Responses 和 Anthropic Messages 端点只支持部分模型，不被使用：Responses 和 Messages 应用通过 Chat Completions 访问 TokenHub，Kaeso 拒绝 Token 计数，因为 TokenHub 不提供。它的图像、视频、语音和多模态嵌入使用它自己的格式。

@@ -246,6 +246,7 @@ The error body is `{error: {message, type, param, code}}`.
 | `type` or `code` `insufficient_quota`, billing codes | `Billing` | 429 `insufficient_quota`, code `insufficient_quota` |
 | `code` `server_is_overloaded` or `service_unavailable_error` | `Overloaded` | see 503 |
 | `code` `content_policy_violation`, `content_filter`, `bio_policy`, `cyber_policy`, `misalignment_policy_violation` or `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`, code `content_policy_violation` |
+| `code` `400003`, `400004` or `451001` (Tencent TokenHub) | `ContextTooLong`, `NotFound` or `ContentFiltered` | as for those kinds |
 | 400, 409, 422 | `InvalidRequest` (and `Unsupported` when encoding) | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
 | 402 | `Billing` | 429 `insufficient_quota`, code `insufficient_quota` |

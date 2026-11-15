@@ -2783,6 +2783,72 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
     },
+    Provider {
+        id: "tencent-tokenhub",
+        name: "Tencent TokenHub",
+        // Keys belong to one region and site and don't work in another; the console makes them
+        // for the region chosen at the top of the page
+        // (https://cloud.tencent.com/document/product/1823/130090).
+        key_page: KeyPage {
+            url: "https://console.cloud.tencent.com/tokenhub/apikey",
+            label: "API Key management",
+        },
+        key_prefix: None,
+        // The Guangzhou region, scheduled in mainland China. Its SDK base URL is
+        // `https://tokenhub.tencentmaas.com/v1`; every path sits under `/v1` on the host
+        // (https://cloud.tencent.com/document/product/1823/130078). Singapore and the
+        // international site's regions are other hosts, set as the base URL.
+        default_base_url: "https://tokenhub.tencentmaas.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        // Its embedding models answer vectors of a fixed size and take no `dimensions`
+        // ("不支持自定义", https://cloud.tencent.com/document/product/1823/133515).
+        embeddings_profile: EmbeddingsProfile::compatible("Tencent TokenHub").without_dimensions(),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        // Reasoning and answer share the output limit
+        // (https://cloud.tencent.com/document/product/1823/132252).
+        reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
+        end_user_limit: None,
+        // TokenHub's Chat Completions reference has the roles `system`, `user`, `assistant` and
+        // `tool`, both output limits, `safety_identifier`, `video_url` parts and
+        // `reasoning_content`, and none of the fields refused here; it ignores undeclared
+        // fields without a word ("会被静默忽略")
+        // (https://cloud.tencent.com/document/product/1823/135872).
+        chat: ChatProfile::compatible("Tencent TokenHub")
+            .system_role()
+            .with_video_url()
+            .reasoning_fields(&["reasoning_content"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "logit_bias",
+                "metadata",
+                "modalities",
+                "prediction",
+                "prompt_cache_retention",
+                "service_tier",
+                "store",
+            ]),
+        responses: ResponsesProfile::compatible("Tencent TokenHub"),
+        messages: MessagesProfile::compatible("Tencent TokenHub"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+    },
 ];
 
 const _: () = {
@@ -3080,7 +3146,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub"
         );
     }
 
@@ -3512,6 +3578,54 @@ mod tests {
     }
 
     #[test]
+    fn tencent_tokenhub_serves_chat_and_embeddings_under_v1_and_refuses_what_its_reference_leaves_out()
+     {
+        let p = provider("tencent-tokenhub").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Tencent TokenHub",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://tokenhub.tencentmaas.com");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), None)
+        );
+        assert_eq!(
+            p.key_page.url,
+            "https://console.cloud.tencent.com/tokenhub/apikey"
+        );
+        assert_eq!(p.listing, ModelListing::Complete);
+        assert_eq!(p.chat.provider, "Tencent TokenHub");
+        assert_eq!(p.chat.request.path, "/v1/chat/completions");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::AsWritten);
+        assert_eq!(
+            p.chat.request.end_user_field,
+            EndUserField::SafetyIdentifier
+        );
+        assert!(!p.chat.request.developer_role && p.chat.request.video_url);
+        assert!(p.chat.request.cache_key && p.chat.request.stream_options);
+        assert!(!p.chat.request.verbosity);
+        assert_eq!(
+            p.embeddings_profile,
+            EmbeddingsProfile::compatible("Tencent TokenHub").without_dimensions()
+        );
+        assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
+        for field in ["logit_bias", "store", "service_tier", "modalities", "audio"] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        for field in ["parallel_tool_calls", "top_logprobs", "web_search_options"] {
+            assert!(!p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
     fn a_partial_listing_matches_ids_without_case_or_dots_and_says_nothing_of_a_model_it_leaves_out()
      {
         let ids = ["StandardCompute".to_owned(), "z-ai/glm-5.3".to_owned()];
@@ -3585,7 +3699,15 @@ mod tests {
             .filter(|p| p.embeddings_profile != EmbeddingsProfile::OPENAI)
             .map(|p| p.id)
             .collect();
-        assert_eq!(others, ["cloudflare-ai-gateway", "upstage", "novita-ai"]);
+        assert_eq!(
+            others,
+            [
+                "cloudflare-ai-gateway",
+                "upstage",
+                "novita-ai",
+                "tencent-tokenhub"
+            ]
+        );
     }
 
     #[test]
@@ -4501,7 +4623,8 @@ mod tests {
                 "novita-ai",
                 "volcengine",
                 "ovhcloud",
-                "stepfun-ai"
+                "stepfun-ai",
+                "tencent-tokenhub"
             ]
         );
         assert_eq!(

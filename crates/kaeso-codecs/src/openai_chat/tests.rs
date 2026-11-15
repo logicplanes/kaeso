@@ -732,6 +732,55 @@ fn error_kinds_follow_the_error_codes_guide() {
     assert_eq!(err.param.as_deref(), Some("messages"));
 }
 
+// TokenHub's `type` differs between its reference and its live answers (`gateway_error`,
+// `authentication_error`) and is missing on a 429 whose `code` is a number; the status gives the
+// kind, and the six-digit `code` where the status says less.
+#[test]
+fn tencent_tokenhub_errors_take_their_kind_from_the_status_and_their_code() {
+    let expect = [
+        ("recorded-invalid-api-key", ErrorKind::Authentication),
+        ("recorded-missing-api-key", ErrorKind::Authentication),
+        ("invalid-api-key-doc", ErrorKind::Authentication),
+        ("missing-parameter-doc", ErrorKind::InvalidRequest),
+        ("model-not-found-doc", ErrorKind::NotFound),
+        ("rate-limit-doc", ErrorKind::RateLimited),
+        ("upstream-doc", ErrorKind::ProviderError),
+    ];
+    for (name, kind) in expect {
+        let name = format!("providers/tencent-tokenhub/{name}");
+        let (_, body) = fixtures(D, "errors", "json")
+            .into_iter()
+            .find(|(n, _)| *n == name)
+            .unwrap();
+        let meta = sidecar(D, "errors", &name, "meta").unwrap();
+        let status = u16::try_from(meta["status"].as_u64().unwrap()).unwrap();
+        let err = OpenAiChat::decode_error(status, &HeaderList::new(), &body);
+        assert_eq!(err.kind, kind, "{name}");
+        assert!(!err.message.is_empty(), "{name}");
+    }
+    let err = OpenAiChat::decode_error(
+        429,
+        &HeaderList::new().with("retry-after", "3"),
+        br#"{"error":{"code":429002,"message":"m","message_zh":"m"}}"#,
+    );
+    assert_eq!(
+        (err.kind, err.retry_after),
+        (ErrorKind::RateLimited, Some(Duration::from_secs(3)))
+    );
+    let err = OpenAiChat::decode_error(
+        400,
+        &HeaderList::new(),
+        br#"{"error":{"message":"m","code":"400003","type":"gateway_error"}}"#,
+    );
+    assert_eq!(err.kind, ErrorKind::ContextTooLong);
+    let err = OpenAiChat::decode_error(
+        451,
+        &HeaderList::new(),
+        br#"{"error":{"message":"m","code":"451001","type":"gateway_error"}}"#,
+    );
+    assert_eq!(err.kind, ErrorKind::ContentFiltered);
+}
+
 #[test]
 fn unknown_error_shapes_take_their_kind_from_the_status() {
     let err = OpenAiChat::decode_error(502, &HeaderList::new(), b"<html>Bad gateway</html>");

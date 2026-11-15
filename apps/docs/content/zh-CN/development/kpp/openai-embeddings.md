@@ -141,3 +141,7 @@ order: 8
 ### OVHcloud AI Endpoints
 
 来源：`bge-m3` 的 [OpenAPI document](https://oai.endpoints.kepler.ai.cloud.ovh.net/doc/bge-m3/openapi.json)（`EmbeddingParameters`），2026-11-14 阅读，以及不带密钥实时录制的 `fixtures/openai_embeddings/providers/ovhcloud/`，其中的错误使用虚构的密钥。OVHcloud 的嵌入模型是 `bge-m3`、`Qwen3-Embedding-8B` 和 `bge-multilingual-gemma2`，OVHcloud 将于 2027-01-21 停用后者。它们接受 `encoding_format` 为 `float` 或 `base64`；`Qwen3-Embedding-8B` 接受 32 到 4096 的 `dimensions`（`responses/recorded-qwen3-dims`，每个 32 个值），维度固定的 `bge-m3` 对它返回 400（`errors/recorded-bge-m3-dimensions`），因此该字段按原样发送。回复不带 `id`。错误的密钥会收到仅含 `message` 的 403，Kaeso 将其报告为密钥被拒绝。
+
+### Tencent TokenHub
+
+来源：TokenHub 的[向量模型](https://cloud.tencent.com/document/product/1823/133515)页面（2026-11-14 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/tencent-tokenhub/`，其中的错误是在没有有效密钥的情况下实时返回的。它的文本模型 `kinfra-text-embedding-0.6b`（1024 维）和 `kinfra-text-embedding-4b`（2560 维）通过 `/v1/embeddings` 提供，每条文本最多 2000 个字符；维度固定，因此该服务商的嵌入配置拒绝 `dimensions`（`without_dimensions()`），页面只记录了 `float` 向量。回复额外带有包含文本、图片和视频 Token 的 `usage.prompt_tokens_details`，保留在原始用量中。多模态的 `kinfra-vl-embedding-*` 在 `/v1/embeddings/multimodal` 为所有输入返回一个向量，不被使用。

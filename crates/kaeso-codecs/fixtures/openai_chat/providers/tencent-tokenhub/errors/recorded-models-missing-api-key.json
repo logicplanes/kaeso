@@ -1,0 +1,10 @@
+{
+  "error": {
+    "type": "authentication_error",
+    "code": "401001",
+    "message": "Authentication information is missing or the authentication method is not recognized. Please check whether the API Key is correct.",
+    "message_zh": "请求未携带认证信息，或认证方式无法识别，请检查 API Key 是否正确。",
+    "source": "gateway",
+    "request_id": "00000000-0000-0000-0000-000000000000"
+  }
+}

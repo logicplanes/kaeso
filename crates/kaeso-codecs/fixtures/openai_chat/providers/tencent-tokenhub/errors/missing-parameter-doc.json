@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "The request parameter messages is invalid or missing. Please check the value of this parameter.",
+    "message_zh": "请求参数 messages 无效或缺失，请检查该参数取值是否正确。",
+    "code": "400002",
+    "type": "gateway_error",
+    "request_id": "00000000-0000-0000-0000-000000000000"
+  }
+}

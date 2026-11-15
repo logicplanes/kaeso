@@ -5798,6 +5798,338 @@ expression: outcomes
     },
     "path": "/v1beta/models/step-5-preview:generateContent"
   },
+  "providers/tencent-tokenhub/agent-tools-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "深圳今天天气怎么样？"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "你是一个 Agent，必须按步骤推理并调用工具完成任务。"
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "获取某地天气信息，输入 location。",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/hy4:generateContent"
+  },
+  "providers/tencent-tokenhub/introduce-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "你好，请简单介绍一下你自己。"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.9
+      }
+    },
+    "path": "/v1beta/models/hy4:generateContent"
+  },
+  "providers/tencent-tokenhub/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/hy4:generateContent"
+  },
+  "providers/tencent-tokenhub/json-schema-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "请从以下文本中提取人物信息：张三，35岁，是一名高级软件工程师，擅长Python、Java和机器学习。"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "properties": {
+            "age": {
+              "description": "年龄",
+              "type": "integer"
+            },
+            "name": {
+              "description": "人物姓名",
+              "type": "string"
+            },
+            "occupation": {
+              "description": "职业",
+              "type": "string"
+            },
+            "skills": {
+              "description": "技能列表",
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "name",
+            "age",
+            "occupation",
+            "skills"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/hy4:generateContent"
+  },
+  "providers/tencent-tokenhub/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/hy4:generateContent"
+  },
+  "providers/tencent-tokenhub/reasoning-effort-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "小明有5个苹果，给了小红2个，又买了3个，最后还剩几个？"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.9,
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      }
+    },
+    "path": "/v1beta/models/hy4:generateContent"
+  },
+  "providers/tencent-tokenhub/reasoning-sent-back-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "深圳今天天气怎么样？"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "我来帮你查询深圳今天的天气情况。"
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "深圳"
+                },
+                "id": "chatcmpl-tool-b39c6375f812783a",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "chatcmpl-tool-b39c6375f812783a",
+                "name": "get_weather",
+                "response": {
+                  "output": "Cloudy，气温 7~13°C"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "HIGH"
+        }
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "你是一个 Agent，必须按步骤推理并调用工具完成任务。"
+          }
+        ]
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "获取某地天气信息，输入 location。",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "location"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/hy4:generateContent"
+  },
+  "providers/tencent-tokenhub/stream-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "你好"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/hy4:streamGenerateContent?alt=sse"
+  },
+  "providers/tencent-tokenhub/thinking-doc": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/tencent-tokenhub/tools-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "深圳今天天气怎么样？"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "获取指定城市的当前天气信息",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "description": "城市名称，例如：北京",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/hy4:generateContent"
+  },
+  "providers/tencent-tokenhub/translation-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "将以下文本翻译为英语，注意只需要输出翻译后的结果，不要额外解释： 会议开始前请确认所有参会人员都收到了议程。"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/hy-mt2-plus:generateContent"
+  },
   "providers/togetherai/context-length-error": {
     "message": "`context_length_exceeded_behavior` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,

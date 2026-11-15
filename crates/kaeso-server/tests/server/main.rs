@@ -88,6 +88,7 @@ mod provider_scaleway;
 mod provider_siliconflow;
 mod provider_standardcompute;
 mod provider_stepfun_ai;
+mod provider_tencent_tokenhub;
 mod provider_typesafe;
 mod provider_upstage;
 mod provider_vercel;

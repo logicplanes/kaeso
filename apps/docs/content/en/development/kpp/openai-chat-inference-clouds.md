@@ -337,3 +337,22 @@ Sources: StepFun's [Chat Completions reference](https://platform.stepfun.ai/docs
 | `GET /v1/models` | `ModelList` | Needs a key and lists chat and speech models alike (`models/list-doc`), so a model check spots a wrong key. |
 
 StepFun's Anthropic Messages endpoint, its Responses API and its token count (`/v1/token/count`) aren't used: every app reaches StepFun through Chat Completions, and Kaeso refuses token counts. `input_audio` takes a data URL without `format`, for StepFun's audio chat models, which KPMR doesn't list; its speech, transcription and realtime APIs aren't used either.
+
+## Tencent TokenHub
+
+Sources: TokenHub's [API usage](https://cloud.tencent.com/document/product/1823/130078), [Chat Completions field reference](https://cloud.tencent.com/document/product/1823/135872), [thinking](https://cloud.tencent.com/document/product/1823/131208), [Hunyuan guide](https://cloud.tencent.com/document/product/1823/132252), [error codes](https://cloud.tencent.com/document/product/1823/131595) and [model list](https://cloud.tencent.com/document/product/1823/130051) pages, read 2026-11-14. No key was available: the replies and the stream in `fixtures/openai_chat/providers/tencent-tokenhub/` are the Hunyuan guide's examples, two chunks of a real stream, published in another project's issue, match the guide's stream, and the key errors were answered live, without a valid key. Every path sits under `/v1` on the host, so Kaeso's base URL is `https://tokenhub.tencentmaas.com` (Guangzhou), which takes `Authorization: Bearer`; other regions and Tencent Cloud's international site are other hosts, each with its own keys.
+
+| TokenHub field | KPP | Notes |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`; assistant messages take it back, which Hy4 and Hy3 need to keep their thinking across turns (`requests/reasoning-sent-back-doc`). |
+| the `developer` role | `Role::System` | The reference lists `system`, `user`, `assistant` and `tool`, so `system_role()` sends `system`. |
+| `max_tokens`, `max_completion_tokens` | as written | TokenHub takes both and prefers `max_completion_tokens`. |
+| `video_url` parts | `Block::Video` | `with_video_url()`. |
+| `audio`, `modalities`, `logit_bias`, `metadata`, `store`, `service_tier` and the other fields the reference leaves out | refused | TokenHub ignores undeclared fields without a word ("会被静默忽略"), so the profile refuses them. |
+| `thinking`, `enable_thinking`, `thinking_budget`, `interleaved_thinking`, `reasoning_split`, `web_search_options`, `extra_body` | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `reasoning_effort` `no_think` | not sent | Hy4 and Hy3 turn thinking off with `no_think`, which has no KPP level; the catalogue lists `high` (Hy4) and `low`, `high` (Hy3), so `none` becomes the model's lowest level, named in `kaeso-adapted` ([models that always reason](reasoning.md#models-that-always-reason)). |
+| `reasoning_details`, `search_info`, `usage.cache_read_tokens`, `usage.cache_write_tokens` | extras and raw usage | Left out towards other dialects. |
+| errors with `message_zh`, a six-digit `code`, `type`, `source`, `request_id` | `KppError` | The kind follows the status; `type` differs between the reference and live answers, and a 429 may carry `code` as a number without `type` (`errors/rate-limit-doc`). The `code` gives the kind where the status says less: `400003` (input beyond the context) `ContextTooLong`, `400004` (unknown model) `NotFound`, `451001` `ContentFiltered`. |
+| `GET /v1/models` with `name` and `status` (`online`, `pre-offline`) | `ModelList` | Needs the key (`models/list-doc`); there is no `GET /v1/models/{model}`. |
+
+TokenHub's Responses and Anthropic Messages endpoints serve only some models and aren't used: Responses and Messages apps reach TokenHub through Chat Completions, and Kaeso refuses token counts, which TokenHub doesn't serve. Its images, videos, speech and the multimodal embeddings use formats of its own.

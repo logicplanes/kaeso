@@ -413,6 +413,30 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         stepfun["key_page"],
         json!({ "url": "https://platform.stepfun.ai/interface-key", "label": "Interface Keys" })
     );
+    let tokenhub = listed
+        .iter()
+        .find(|p| p["id"] == "tencent-tokenhub")
+        .unwrap();
+    assert_eq!(tokenhub["name"], "Tencent TokenHub");
+    assert_eq!(
+        tokenhub["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        (
+            &tokenhub["count_tokens"],
+            &tokenhub["embeddings"],
+            &tokenhub["key_prefix"]
+        ),
+        (&Value::Null, &json!("openai_embeddings"), &Value::Null)
+    );
+    assert_eq!(
+        tokenhub["key_page"],
+        json!({
+            "url": "https://console.cloud.tencent.com/tokenhub/apikey",
+            "label": "API Key management"
+        })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

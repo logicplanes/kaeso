@@ -1,0 +1,45 @@
+{
+  "model": "hy4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "请从以下文本中提取人物信息：张三，35岁，是一名高级软件工程师，擅长Python、Java和机器学习。"
+    }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "person_info",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "人物姓名"
+          },
+          "age": {
+            "type": "integer",
+            "description": "年龄"
+          },
+          "occupation": {
+            "type": "string",
+            "description": "职业"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "技能列表"
+          }
+        },
+        "required": [
+          "name",
+          "age",
+          "occupation",
+          "skills"
+        ]
+      }
+    }
+  }
+}

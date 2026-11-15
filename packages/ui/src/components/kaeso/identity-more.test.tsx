@@ -209,6 +209,7 @@ const MARKED_PROVIDERS = {
   volcengine: "Volcengine Ark",
   ovhcloud: "OVHcloud AI Endpoints",
   "stepfun-ai": "StepFun",
+  "tencent-tokenhub": "Tencent TokenHub",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

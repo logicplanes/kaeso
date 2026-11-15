@@ -337,3 +337,22 @@ Quellen: die [Chat-Completions-Referenz](https://platform.stepfun.ai/docs/en/api
 | `GET /v1/models` | `ModelList` | Braucht einen Schlüssel und listet Chat- und Sprachmodelle gemeinsam (`models/list-doc`), daher erkennt eine Modellprüfung einen falschen Schlüssel. |
 
 Der Anthropic-Messages-Endpunkt von StepFun, seine Responses API und seine Token-Zählung (`/v1/token/count`) werden nicht genutzt: Jede App erreicht StepFun über Chat Completions, und Kaeso lehnt Token-Zählungen ab. `input_audio` nimmt eine Data-URL ohne `format` an, für die Audio-Chat-Modelle von StepFun, die KPMR nicht listet; seine APIs für Sprache, Transkription und Echtzeit werden ebenfalls nicht genutzt.
+
+## Tencent TokenHub
+
+Quellen: die Seiten [API usage](https://cloud.tencent.com/document/product/1823/130078), [Feldreferenz zu Chat Completions](https://cloud.tencent.com/document/product/1823/135872), [Thinking](https://cloud.tencent.com/document/product/1823/131208), [Hunyuan-Anleitung](https://cloud.tencent.com/document/product/1823/132252), [Fehlercodes](https://cloud.tencent.com/document/product/1823/131595) und [Modellliste](https://cloud.tencent.com/document/product/1823/130051) von TokenHub, gelesen am 2026-11-14. Es gab keinen Schlüssel: Die Antworten und der Stream in `fixtures/openai_chat/providers/tencent-tokenhub/` sind die Beispiele der Hunyuan-Anleitung, zwei Chunks eines echten Streams aus dem Issue eines anderen Projekts stimmen mit dem Stream der Anleitung überein, und die Schlüsselfehler kamen live, ohne gültigen Schlüssel. Jeder Pfad liegt unter `/v1` auf dem Host, daher ist Kaesos Basis-URL `https://tokenhub.tencentmaas.com` (Guangzhou), die `Authorization: Bearer` annimmt; andere Regionen und die internationale Website von Tencent Cloud sind andere Hosts mit jeweils eigenen Schlüsseln.
+
+| TokenHub-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Über `reasoning_fields` des Profils; Assistant-Nachrichten nehmen es zurück, was Hy4 und Hy3 brauchen, um ihr Thinking über Runden zu behalten (`requests/reasoning-sent-back-doc`). |
+| die Rolle `developer` | `Role::System` | Die Referenz führt `system`, `user`, `assistant` und `tool`, daher sendet `system_role()` `system`. |
+| `max_tokens`, `max_completion_tokens` | wie geschrieben | TokenHub nimmt beide an und bevorzugt `max_completion_tokens`. |
+| `video_url`-Teile | `Block::Video` | `with_video_url()`. |
+| `audio`, `modalities`, `logit_bias`, `metadata`, `store`, `service_tier` und die anderen Felder, die die Referenz nicht kennt | abgelehnt | TokenHub ignoriert nicht deklarierte Felder kommentarlos („会被静默忽略“), daher lehnt das Profil sie ab. |
+| `thinking`, `enable_thinking`, `thinking_budget`, `interleaved_thinking`, `reasoning_split`, `web_search_options`, `extra_body` | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere reine Chat-Felder. |
+| `reasoning_effort` `no_think` | nicht gesendet | Hy4 und Hy3 schalten das Thinking mit `no_think` ab, das keine KPP-Stufe hat; der Katalog führt `high` (Hy4) und `low`, `high` (Hy3), daher wird `none` zur niedrigsten Stufe des Modells, genannt in `kaeso-adapted` ([Modelle, die immer Reasoning nutzen](reasoning.md#modelle-die-immer-reasoning-nutzen)). |
+| `reasoning_details`, `search_info`, `usage.cache_read_tokens`, `usage.cache_write_tokens` | Extras und rohe Nutzung | Gegenüber anderen Dialekten weggelassen. |
+| Fehler mit `message_zh`, sechsstelligem `code`, `type`, `source`, `request_id` | `KppError` | Die Art folgt dem Status; `type` unterscheidet sich zwischen Referenz und Live-Antworten, und ein 429 kann `code` als Zahl ohne `type` tragen (`errors/rate-limit-doc`). Der `code` gibt die Art, wo der Status weniger sagt: `400003` (Eingabe über dem Kontext) `ContextTooLong`, `400004` (unbekanntes Modell) `NotFound`, `451001` `ContentFiltered`. |
+| `GET /v1/models` mit `name` und `status` (`online`, `pre-offline`) | `ModelList` | Braucht den Schlüssel (`models/list-doc`); es gibt kein `GET /v1/models/{model}`. |
+
+Die Endpunkte für Responses und Anthropic Messages von TokenHub bedienen nur manche Modelle und werden nicht genutzt: Responses- und Messages-Apps erreichen TokenHub über Chat Completions, und Kaeso lehnt Token-Zählungen ab, die TokenHub nicht anbietet. Seine Bilder, Videos, Sprache und die multimodalen Embeddings nutzen eigene Formate.

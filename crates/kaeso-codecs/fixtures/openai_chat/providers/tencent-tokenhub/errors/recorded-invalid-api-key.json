@@ -1,0 +1,10 @@
+{
+  "error": {
+    "type": "authentication_error",
+    "code": "401002",
+    "message": "The API Key does not exist or signature verification failed. Please check whether the API Key is correct. See: https://console.cloud.tencent.com/tokenhub/apikey",
+    "message_zh": "API Key 不存在或签名校验失败，请检查 API Key 是否正确，查看链接：https://console.cloud.tencent.com/tokenhub/apikey",
+    "source": "gateway",
+    "request_id": "00000000-0000-0000-0000-000000000000"
+  }
+}

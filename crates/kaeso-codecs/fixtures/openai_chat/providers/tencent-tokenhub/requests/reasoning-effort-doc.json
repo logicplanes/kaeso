@@ -1,0 +1,12 @@
+{
+  "model": "hy4",
+  "messages": [
+    {
+      "role": "user",
+      "content": "小明有5个苹果，给了小红2个，又买了3个，最后还剩几个？"
+    }
+  ],
+  "stream": false,
+  "temperature": 0.9,
+  "reasoning_effort": "high"
+}

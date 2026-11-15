@@ -1,0 +1,22 @@
+{
+  "id": "REPLACED_ID",
+  "object": "chat.completion",
+  "created": 1775146546,
+  "model": "hy4",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "小明原本有5个苹果，给了小红2个后剩下：  \n5 - 2 = 3（个）  \n然后又买了3个，现在共有：  \n3 + 3 = 6（个）  \n\n所以最后还剩 **6个** 苹果。",
+        "reasoning_content": "我们被问到：\"小明有5个苹果，给了小红2个，又买了3个，最后还剩几个？\" 我们需要逐步计算。\n\n初始：5个苹果。\n给了小红2个：5 - 2 = 3个苹果。\n又买了3个：3 + 3 = 6个苹果。\n所以最后还剩6个苹果。\n\n答案：6。"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 3,
+    "completion_tokens": 136,
+    "total_tokens": 167
+  }
+}

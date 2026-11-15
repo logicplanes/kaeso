@@ -246,6 +246,7 @@ Anthropic 和 Responses 在块开始时就要给出两者，因此解码器按�
 | `type` 或 `code` 为 `insufficient_quota`、计费相关的错误码 | `Billing` | 429 `insufficient_quota`，code `insufficient_quota` |
 | `code` `server_is_overloaded` 或 `service_unavailable_error` | `Overloaded` | 见 503 |
 | `code` `content_policy_violation`、`content_filter`、`bio_policy`、`cyber_policy`、`misalignment_policy_violation` 或 `image_content_policy_violation` | `ContentFiltered` | 400 `invalid_request_error`，code `content_policy_violation` |
+| `code` `400003`、`400004` 或 `451001`（Tencent TokenHub） | `ContextTooLong`、`NotFound` 或 `ContentFiltered` | 与这些类别相同 |
 | 400、409、422 | `InvalidRequest`（编码时还有 `Unsupported`） | 400 `invalid_request_error` |
 | 401 | `Authentication` | 401 `invalid_request_error` |
 | 402 | `Billing` | 429 `insufficient_quota`，code `insufficient_quota` |
