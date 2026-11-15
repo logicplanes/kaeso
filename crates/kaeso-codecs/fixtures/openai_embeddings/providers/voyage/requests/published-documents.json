@@ -1,0 +1,5 @@
+{
+  "input": ["Sample text 1", "Sample text 2"],
+  "model": "voyage-4",
+  "input_type": "document"
+}

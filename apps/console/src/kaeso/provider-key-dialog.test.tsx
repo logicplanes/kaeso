@@ -357,7 +357,8 @@ describe("ProviderKeyDialog", () => {
     );
     const secret = within(dialog).getByLabelText("Mistral API key");
     expect(secret).not.toHaveAttribute("placeholder");
-    await user.type(secret, "AbCdEf0123456789AbCdEf0123456789");
+    await user.click(secret);
+    await user.paste("AbCdEf0123456789AbCdEf0123456789");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Mistral prod");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
@@ -379,7 +380,8 @@ describe("ProviderKeyDialog", () => {
     expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe("Create one at z.ai under API Keys.");
     const secret = within(dialog).getByLabelText("Z.ai API key");
     expect(secret).not.toHaveAttribute("placeholder");
-    await user.type(secret, "0123456789abcdef0123456789abcdef.AbCdEfGhIjKlMnOp");
+    await user.click(secret);
+    await user.paste("0123456789abcdef0123456789abcdef.AbCdEfGhIjKlMnOp");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Z.ai prod");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
@@ -531,6 +533,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Voyage AI model API key, which has no fixed prefix, with MongoDB's key page as its hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "voyage", name: "Voyage retrieval", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Voyage AI");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Voyage AI API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "www.mongodb.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://www.mongodb.com/docs/voyageai/management/api-keys/");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at www.mongodb.com under Model API keys.",
+    );
+    const secret = within(dialog).getByLabelText("Voyage AI API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "al-voyage-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Voyage retrieval");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Voyage retrieval is the Voyage AI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "voyage", name: "Voyage retrieval", secret: "al-voyage-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a StepFun key, which has no fixed prefix, with StepFun's Interface Keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "stepfun-ai", name: "StepFun prod", is_default: true }));
     const { user, dialog } = await open();
@@ -593,7 +619,8 @@ describe("ProviderKeyDialog", () => {
     );
     const secret = within(dialog).getByLabelText("Volcengine Ark API key");
     expect(secret).not.toHaveAttribute("placeholder");
-    await user.type(secret, "00000000-0000-0000-0000-000000000000");
+    await user.click(secret);
+    await user.paste("00000000-0000-0000-0000-000000000000");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Ark prod");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
@@ -763,7 +790,8 @@ describe("ProviderKeyDialog", () => {
     await user.type(account, "1234");
     expect(within(dialog).getByText("An account ID is 32 characters, 0–9 and a–f.")).toBeVisible();
     await user.clear(account);
-    await user.type(account, "0123456789ABCDEF0123456789ABCDEF");
+    await user.click(account);
+    await user.paste("0123456789ABCDEF0123456789ABCDEF");
     const gateway = within(dialog).getByRole("textbox", { name: "Gateway (optional)" });
     await user.type(gateway, "prod eu");
     await hoverReason(user, add(), "A gateway ID has only letters, digits, hyphens and underscores");
@@ -799,7 +827,9 @@ describe("ProviderKeyDialog", () => {
       "href",
       "https://learn.microsoft.com/en-us/azure/ai-services/authentication",
     );
-    await user.type(within(dialog).getByLabelText("Azure API key"), "0123456789abcdef0123456789abcdef");
+    // Keys and endpoints are pasted, which also keeps this long test from re-rendering per key.
+    await user.click(within(dialog).getByLabelText("Azure API key"));
+    await user.paste("0123456789abcdef0123456789abcdef");
     await hoverReason(user, add(), "Paste the endpoint of the key's resource");
     const endpoint = within(dialog).getByRole("textbox", { name: "Endpoint" });
     expect(endpoint).toHaveAttribute("placeholder", "https://example.openai.azure.com");
@@ -810,13 +840,13 @@ describe("ProviderKeyDialog", () => {
       ["https://example.openai.azure.com/anthropic", "Leave out the path; Kaeso adds the API's own."],
     ] as const) {
       await user.clear(endpoint);
-      await user.type(endpoint, typed);
+      await user.paste(typed);
       // The field shows the problem, and the button gives it as its reason.
       expect(endpoint).toHaveAccessibleDescription(expect.stringContaining(problem));
       expect(add()).toHaveAttribute("aria-description", problem);
     }
     await user.clear(endpoint);
-    await user.type(endpoint, "https://example.openai.azure.com/openai/v1/");
+    await user.paste("https://example.openai.azure.com/openai/v1/");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Azure prod");
     await user.click(add());
 
@@ -846,7 +876,8 @@ describe("ProviderKeyDialog", () => {
     );
     const secret = within(dialog).getByLabelText("Scaleway API key");
     expect(secret).not.toHaveAttribute("placeholder");
-    await user.type(secret, "00000000-0000-4000-8000-000000000001");
+    await user.click(secret);
+    await user.paste("00000000-0000-4000-8000-000000000001");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Scaleway prod");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
@@ -952,7 +983,8 @@ describe("ProviderKeyDialog", () => {
     );
     const secret = within(dialog).getByLabelText("Google AI Studio API key");
     expect(secret).not.toHaveAttribute("placeholder");
-    await user.type(secret, "AIzaSyAbCdEf0123456789AbCdEf0123456789");
+    await user.click(secret);
+    await user.paste("AIzaSyAbCdEf0123456789AbCdEf0123456789");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "AI Studio prod");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
@@ -1092,7 +1124,8 @@ describe("ProviderKeyDialog", () => {
     );
     const secret = within(dialog).getByLabelText("Cohere API key");
     expect(secret).not.toHaveAttribute("placeholder");
-    await user.type(secret, "AbCdEf0123456789AbCdEf0123456789AbCdEf01");
+    await user.click(secret);
+    await user.paste("AbCdEf0123456789AbCdEf0123456789AbCdEf01");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Cohere prod");
     await user.click(within(dialog).getByRole("button", { name: "Add key" }));
 
@@ -1205,7 +1238,8 @@ describe("ProviderKeyDialog", () => {
     await user.type(name, "s");
     expect(within(dialog).queryByRole("textbox", { name: "Address of the page" })).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
-    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    await user.click(await within(dialog).findByRole("textbox", { name: "Address of the page" }));
+    await user.paste(CALLBACK);
     await user.keyboard("{Meta>}{Enter}{/Meta}");
 
     expect(await notifications().findByText("OpenAI · Ada's plan added")).toBeInTheDocument();
@@ -1237,7 +1271,8 @@ describe("ProviderKeyDialog", () => {
     expect(within(dialog).queryByRole("textbox", { name: "Address of the page" })).not.toBeInTheDocument();
     await hoverReason(user, within(dialog).getByRole("button", { name: "Add account" }), "Continue with ChatGPT first");
     await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
-    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    await user.click(await within(dialog).findByRole("textbox", { name: "Address of the page" }));
+    await user.paste(CALLBACK);
     await user.click(within(dialog).getByRole("button", { name: "Add account" }));
 
     expect(await notifications().findByText("Ada's plan is the OpenAI default")).toBeInTheDocument();
@@ -1270,7 +1305,8 @@ describe("ProviderKeyDialog", () => {
     const second = { ...ATTEMPT, attempt: "019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5c" };
     on("POST", `${CREDENTIALS}/oauth`, second);
     await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
-    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    await user.click(await within(dialog).findByRole("textbox", { name: "Address of the page" }));
+    await user.paste(CALLBACK);
     await user.click(within(dialog).getByRole("button", { name: "Add account" }));
 
     expect(await notifications().findByText("Ada's plan is the OpenAI default")).toBeInTheDocument();
@@ -1293,7 +1329,9 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await user.type(await within(dialog).findByRole("textbox", { name: "Name" }), "Plan");
     await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
-    await user.type(await within(dialog).findByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    // The address is pasted, as a person copies it from the other tab.
+    await user.click(await within(dialog).findByRole("textbox", { name: "Address of the page" }));
+    await user.paste(CALLBACK);
 
     await user.click(within(dialog).getByRole("button", { name: "Back" }));
     await user.click(await within(dialog).findByRole("radio", { name: /^API key/ }));
@@ -1315,7 +1353,8 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
     const address = await within(dialog).findByRole("textbox", { name: "Address of the page" });
     expect(address).toHaveValue("");
-    await user.type(address, CALLBACK);
+    await user.click(address);
+    await user.paste(CALLBACK);
     await user.click(within(dialog).getByRole("button", { name: "Add account" }));
 
     expect(await notifications().findByText("Ada's plan is the OpenAI default")).toBeInTheDocument();
@@ -1374,7 +1413,8 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Continue with ChatGPT" }));
     await waitFor(() => expect(tab.location.href).toBe(AUTHORIZE));
     expect(requests("POST", `${CREDENTIALS}/:credential/oauth`).map((r) => r.params.credential)).toEqual(["cred_plan"]);
-    await user.type(within(dialog).getByRole("textbox", { name: "Address of the page" }), CALLBACK);
+    await user.click(within(dialog).getByRole("textbox", { name: "Address of the page" }));
+    await user.paste(CALLBACK);
     await user.click(within(dialog).getByRole("button", { name: "Sign in again" }));
 
     expect(await notifications().findByText("OpenAI · Ada's plan signed in again")).toBeInTheDocument();

@@ -193,6 +193,9 @@ base_url = "https://bedrock-runtime.us-east-1.amazonaws.com"
 [providers.azure]
 base_url = "https://openai.azure.com"
 
+[providers.voyage]
+base_url = "https://ai.mongodb.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

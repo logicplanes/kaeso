@@ -1,0 +1,1 @@
+{"detail": "The request body is not valid JSON, or some arguments were not specified properly. In particular, Value 'float' supplied for argument 'encoding_format' is not valid -- accepted values are 'base64'; Argument 'user' is not supported by our API; Argument 'dimensions' is not supported by our API"}

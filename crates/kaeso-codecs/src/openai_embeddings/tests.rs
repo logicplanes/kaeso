@@ -57,7 +57,14 @@ fn every_response_fixture_round_trips() {
         let reply = OpenAiEmbeddings::decode_response(200, &HeaderList::new(), &body, &embed_ctx())
             .unwrap();
         let out = OpenAiEmbeddings::encode_response(&reply, &encode_ctx()).unwrap();
-        assert_json_eq(&name, &body, &out);
+        // Voyage AI reports only `total_tokens`; an OpenAI app gets it as `prompt_tokens` too.
+        let mut expected: Value = serde_json::from_slice(&body).unwrap();
+        if name.starts_with("providers/voyage/") {
+            let usage = expected["usage"].as_object_mut().unwrap();
+            assert!(!usage.contains_key("prompt_tokens"), "{name}");
+            usage.insert("prompt_tokens".into(), usage["total_tokens"].clone());
+        }
+        assert_json_eq(&name, &serde_json::to_vec(&expected).unwrap(), &out);
     }
 }
 
@@ -131,7 +138,7 @@ fn cohere_error_bodies_reach_apps_with_cohere_message() {
 }
 
 #[test]
-fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_without_its_newline() {
+fn a_rejected_key_in_fastapis_detail_is_an_authentication_error_with_its_text() {
     let err = OpenAiEmbeddings::decode_error(
         401,
         &HeaderList::new(),
@@ -139,10 +146,7 @@ fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_with
     );
     assert_eq!(
         (&err.kind, err.message.as_str()),
-        (
-            &ErrorKind::Authentication,
-            "The provider returned HTTP 401 with a body Kaeso could not read: {\"detail\":\"Invalid API Key\"}"
-        )
+        (&ErrorKind::Authentication, "Invalid API Key")
     );
     assert_eq!(OpenAiEmbeddings::encode_error(&err).status, 401);
 }
@@ -177,8 +181,9 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
         // NVIDIA answers with RFC 9457 problem documents, SiliconFlow with `{"code", "message", "data"}`,
         // Cloudflare with its `errors` envelope, IONOS with its `messages`, Novita AI with
-        // `{"code", "reason", "message", "metadata"}`, OVHcloud with a bare `message` and Venice with
-        // `{"error": "<text>"}`; apps get them in OpenAI's shape.
+        // `{"code", "reason", "message", "metadata"}`, OVHcloud with a bare `message`, Venice with
+        // `{"error": "<text>"}` and Voyage AI with `{"detail": "<text>"}`; apps get them in OpenAI's
+        // shape.
         if FOREIGN_ERROR_BODIES.contains(&name.as_str())
             || name.starts_with("providers/cloudflare-ai-gateway/")
             || name.starts_with("providers/ionos/")
@@ -188,6 +193,7 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
             || name.starts_with("providers/ovhcloud/")
             || name.starts_with("providers/siliconflow/")
             || name.starts_with("providers/venice/")
+            || name.starts_with("providers/voyage/")
         {
             continue;
         }
@@ -635,4 +641,45 @@ fn a_novita_ai_error_reaches_embeddings_apps_as_an_openai_error_with_its_message
     assert_eq!(out.status, 403);
     let sent: Value = serde_json::from_slice(&out.body).unwrap();
     assert_eq!(sent["error"]["message"], err.message.as_str());
+}
+
+#[test]
+fn voyage_errors_reach_apps_in_openais_shape_with_voyages_text() {
+    for (name, status, kind) in [
+        (
+            "providers/voyage/recorded-openai-fields-400",
+            400,
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/voyage/recorded-bad-input-400",
+            400,
+            ErrorKind::InvalidRequest,
+        ),
+        (
+            "providers/voyage/recorded-invalid-key-401",
+            401,
+            ErrorKind::Authentication,
+        ),
+        (
+            "providers/voyage/recorded-no-key-401",
+            401,
+            ErrorKind::Authentication,
+        ),
+    ] {
+        let body = fixture("errors", name);
+        let meta = sidecar(DIR, "errors", name, "meta").unwrap();
+        assert_eq!(meta["status"], status, "{name}");
+        let detail: Value = serde_json::from_slice(&body).unwrap();
+        let err = OpenAiEmbeddings::decode_error(status, &HeaderList::new(), &body);
+        assert_eq!(
+            (&err.kind, err.message.as_str()),
+            (&kind, detail["detail"].as_str().unwrap()),
+            "{name}"
+        );
+        let out = OpenAiEmbeddings::encode_error(&err);
+        assert_eq!(out.status, status, "{name}");
+        let sent: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(sent["error"]["message"], detail["detail"], "{name}");
+    }
 }

@@ -230,6 +230,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_PROVIDERS_VENICE_BASE_URL`<br>`providers.venice.base_url` | 文本 | `https://api.venice.ai/api` | Venice API 的基础 URL。 |
 | `KAESO_PROVIDERS_AMAZON_BEDROCK_BASE_URL`<br>`providers.amazon-bedrock.base_url` | 文本 | `https://bedrock-runtime.us-east-1.amazonaws.com` | Amazon Bedrock API 的基础 URL。 |
 | `KAESO_PROVIDERS_AZURE_BASE_URL`<br>`providers.azure.base_url` | 文本 | `https://openai.azure.com` | Kaeso 将每个 Azure 请求发往此处，而不是密钥所属资源的端点，例如 Azure 前面的 API 网关；保持默认值时不使用。 |
+| `KAESO_PROVIDERS_VOYAGE_BASE_URL`<br>`providers.voyage.base_url` | 文本 | `https://ai.mongodb.com` | Voyage AI API 的基础 URL。 |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | 文本 | `60s` | 流式：等待服务商第一个字节的时间；最多 24h。 |

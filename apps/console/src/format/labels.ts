@@ -52,6 +52,7 @@ export const DIALECTS: Record<string, string> = {
   system_one: "System One",
   gemini_decisions: "Gemini Decisions",
   cohere_rerank: "Cohere Rerank",
+  voyage_rerank: "Voyage Rerank",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

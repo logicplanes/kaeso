@@ -5,6 +5,7 @@ use kaeso_kpp::{
 use serde_json::Value;
 
 use super::DIALECT;
+use super::EmbeddingsProfile;
 use super::wire::CreateEmbeddingRequest;
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList, is_forwarded_header};
 use crate::cross::check_foreign;
@@ -162,26 +163,84 @@ pub(super) fn check(req: &Request, target: &Origin) -> Result<(), KppError> {
     check_foreign(req, target)
 }
 
-fn body(r: &EmbedRequest) -> Result<Vec<u8>, KppError> {
+fn body(r: &EmbedRequest, profile: &EmbeddingsProfile) -> Result<Vec<u8>, KppError> {
     let marker = r.extras.form_str(DIALECT, INPUT);
+    let renamed = profile.dimensions_field != "dimensions";
     let mut w = CreateEmbeddingRequest {
         input: encode_input(&r.input, marker)?,
         model: r.model.clone(),
         encoding_format: None,
-        dimensions: r.dimensions,
+        dimensions: r.dimensions.filter(|_| !renamed),
         user: r.user.clone(),
     };
     w.encoding_format = match r.encoding {
         EmbedEncoding::Base64 => Some("base64".to_owned()),
-        _ if r.extras.form_str(DIALECT, ENCODING) == Some("float") => Some("float".to_owned()),
+        _ if r.extras.form_str(DIALECT, ENCODING) == Some("float") && profile.float_encoding => {
+            Some("float".to_owned())
+        }
         _ => None,
     };
-    let ext = Ext::with(
-        w,
-        extra_for(&r.extras, DIALECT),
-        verbatim_from_form(&r.extras, DIALECT, ""),
-    );
-    to_body(&ext)
+    let mut extra = extra_for(&r.extras, DIALECT);
+    let mut verbatim = verbatim_from_form(&r.extras, DIALECT, "");
+    if renamed {
+        // A `null` an app wrote goes under the provider's name too.
+        if let Some(v) = verbatim.shift_remove("dimensions") {
+            verbatim.insert(profile.dimensions_field.to_owned(), v);
+        }
+        if let Some(d) = r.dimensions {
+            let value = RawJson::from_serialize(&d).map_err(|e| {
+                KppError::provider(format!("Kaeso could not serialize `dimensions` ({e})."))
+            })?;
+            extra.insert(profile.dimensions_field.to_owned(), value);
+        }
+    }
+    if !profile.user {
+        // An app's `"user": null` says nothing; a provider without `user` refuses the key.
+        verbatim.shift_remove("user");
+    }
+    to_body(&Ext::with(w, extra, verbatim))
+}
+
+// What the provider can't take of OpenAI's fields is refused here, before anything is sent.
+fn check_profile(r: &EmbedRequest, profile: &EmbeddingsProfile) -> Result<(), KppError> {
+    let provider = profile.provider;
+    if let Some(d) = r.dimensions {
+        if !profile.dimensions {
+            return Err(KppError::unsupported(
+                "dimensions",
+                format!("`dimensions` is not supported by {provider}; remove it from the request."),
+            )
+            .with_param("dimensions"));
+        }
+        if !profile.dimension_sizes.is_empty() && !profile.dimension_sizes.contains(&d) {
+            let sizes = profile
+                .dimension_sizes
+                .iter()
+                .map(u32::to_string)
+                .collect::<Vec<_>>()
+                .join(", ");
+            return Err(KppError::unsupported(
+                "dimensions",
+                format!("{provider} takes `dimensions` of {sizes} only, not {d}."),
+            )
+            .with_param("dimensions"));
+        }
+    }
+    if r.user.is_some() && !profile.user {
+        return Err(KppError::unsupported(
+            "user",
+            format!("`user` is not supported by {provider}; remove it from the request."),
+        )
+        .with_param("user"));
+    }
+    if !profile.token_inputs && r.input.iter().any(|i| matches!(i, EmbedInput::Tokens(_))) {
+        return Err(KppError::unsupported(
+            "token inputs",
+            format!("{provider} takes `input` as text only; send strings instead of token ids."),
+        )
+        .with_param("input"));
+    }
+    Ok(())
 }
 
 pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedRequest, KppError> {
@@ -190,16 +249,7 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
         return Err(KppError::unsupported_by("generation request", DIALECT, ""));
     };
     let profile = ctx.embeddings_profile;
-    if r.dimensions.is_some() && !profile.dimensions {
-        return Err(KppError::unsupported(
-            "dimensions",
-            format!(
-                "`dimensions` is not supported by {}; remove it from the request.",
-                profile.provider
-            ),
-        )
-        .with_param("dimensions"));
-    }
+    check_profile(r, &profile)?;
     let mut headers = HeaderList::new().with("content-type", "application/json");
     if r.extras.is_from(DIALECT) {
         for (name, value) in r.extras.headers() {
@@ -211,6 +261,6 @@ pub(super) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
     Ok(EncodedRequest::post_json(
         crate::codec::under_api_root(ctx, super::EMBEDDINGS_PATH),
         headers,
-        body(r)?,
+        body(r, &profile)?,
     ))
 }

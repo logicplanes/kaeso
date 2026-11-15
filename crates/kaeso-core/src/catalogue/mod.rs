@@ -1066,7 +1066,7 @@ impl Effective {
 const EMBEDDINGS: [DialectId; 2] = [DialectId::OpenAiEmbeddings, DialectId::GeminiEmbeddings];
 
 /// The rerank formats Kaeso speaks.
-pub const RERANK: [DialectId; 1] = [DialectId::CohereRerank];
+pub const RERANK: [DialectId; 2] = [DialectId::CohereRerank, DialectId::VoyageRerank];
 
 pub fn effective(
     entry: &Entry,

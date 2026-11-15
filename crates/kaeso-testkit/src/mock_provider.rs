@@ -509,6 +509,8 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "openai_embeddings"
     } else if path == "/v2/rerank" {
         "cohere_rerank"
+    } else if path == "/v1/rerank" {
+        "voyage_rerank"
     } else if path == "/v1/image_generation" {
         "minimax_images"
     } else if path.starts_with("/v1/images") || path.starts_with("/api/paas/v4/images") {
@@ -645,6 +647,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     if !counting
         && dialect != "openai_embeddings"
         && dialect != "cohere_rerank"
+        && dialect != "voyage_rerank"
         && decision.is_none()
         && let Some(shape) = synth::Shape::of(&text, body.len())
         && let Ok(id) = dialect.parse::<kaeso_kpp::DialectId>()
@@ -728,6 +731,13 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             &dir,
             "responses",
             fixture.as_deref().unwrap_or("max-tokens-per-doc"),
+            "json",
+        ),
+        // Voyage AI's rerank API: `[mock:fixture=NAME]` picks another reply.
+        ("voyage_rerank", _) => fixture_file(
+            &dir,
+            "responses",
+            fixture.as_deref().unwrap_or("basic-live"),
             "json",
         ),
         ("openai_embeddings", _) => {

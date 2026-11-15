@@ -108,10 +108,12 @@ pub(super) fn decode(
     }
     let mut resp = EmbedResponse::new(w.model, data);
     if let Some(u) = &w.usage {
-        let parsed: UsageWire = u
-            .parse()
-            .map_err(|_| bad("`usage.prompt_tokens` is missing"))?;
-        let mut usage = Usage::new(parsed.prompt_tokens, 0);
+        let parsed: UsageWire = u.parse().map_err(|_| bad("`usage` holds no token count"))?;
+        let input = parsed
+            .prompt_tokens
+            .or(parsed.total_tokens)
+            .ok_or_else(|| bad("`usage.prompt_tokens` is missing"))?;
+        let mut usage = Usage::new(input, 0);
         usage.raw = u.to_value().ok().map(|v| RawUsage::new(origin.clone(), v));
         resp.usage = usage;
     }

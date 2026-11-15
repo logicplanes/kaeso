@@ -59,6 +59,7 @@ order: 2
 | Venice `venice` | 支持：Venice 的私有模型和它转发的其他厂商模型，例如 `zai-org-glm-5-1` 和 `claude-opus-5-5` | 支持：它的嵌入模型，例如 `text-embedding-bge-m3` 和 `text-embedding-qwen3-8b` | 暂不支持：Venice 提供 OpenAI 的 Images API，但 KPMR 未收录它的图像模型 | 暂不支持：Venice 为自己的音色提供 OpenAI 的语音 API，但 KPMR 未收录它的语音模型 | 暂不支持：Venice 提供 OpenAI 的转写 API，但 KPMR 未收录它的转写模型 | 不提供 | 拒绝：Venice 的视频 API 是它自己的队列 API | 拒绝：Venice 的音乐 API 是它自己的队列 API | 暂不支持：Venice 在 `/decisions` 提供 System One，但 KPMR 未收录它的决策模型 | [OpenAPI document](https://docs.venice.ai/swagger.yaml)，2026-11-14 查阅 |
 | Vercel `vercel` | 支持：其目录 | 支持：其嵌入模型 | 支持：其图片模型 | 支持：其语音合成模型 | 支持：其转写模型 | 不提供 | 拒绝：Vercel 只通过其 AI SDK 记录视频，没有 HTTP 接口 | 拒绝：Kaeso 只为语音合成调用 Vercel 的语音模型 | 支持：其决策模型，OpenAI Decisions | [Modalities](https://vercel.com/docs/ai-gateway/modalities) |
 | Volcengine Ark `volcengine` | 支持：豆包 Seed 和其他厂商的模型 | 拒绝：方舟只通过 `/embeddings/multimodal` 生成嵌入，整段输入只返回一个向量 | 暂不支持：方舟的 Seedream 模型提供图像 API，但 KPMR 未收录它的图像模型 | 不提供 | 不提供 | 不提供 | 拒绝：方舟的视频生成是它自己的任务 API | 不提供 | 不提供 | [Chat API](https://docs.volcengine.com/docs/zh/ark/chat-api.md) |
+| Voyage AI `voyage` | 不提供：Voyage AI 不生成文本 | 支持：它的文本嵌入模型，例如 `voyage-4` 和 `voyage-code-4` | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [Atlas Embedding and Reranking API](https://www.mongodb.com/docs/voyageai/api-reference/overview/)，查阅于 2026-11-15 |
 | Z.ai `zai` | 支持：GLM 模型 | 不提供 | 支持：`glm-image` | 不提供 | 支持：`glm-asr-2512` | 不提供 | 支持：`cogvideox-3` | 不提供 | 不提供 | [API reference](https://docs.z.ai/llms.txt) |
 
 自定义服务商只有在您为其开启相应 API 后，才能使用 OpenAI 的 Images、音频和 Videos API 以及做决策（[自定义服务商](../console/custom-providers.md)）。
@@ -70,3 +71,4 @@ order: 2
 | 服务商 | 重排序 | 来源 |
 | --- | --- | --- |
 | Cohere `cohere` | 支持：Rerank 5，即 `rerank-v5.0-pro` 和 `rerank-v5.0-fast`，位于 `/v2/rerank` | [Rerank](https://docs.cohere.com/docs/rerank)，查阅于 2026-11-14 |
+| Voyage AI `voyage` | 支持：`rerank-3`、`rerank-3-lite` 以及较早的 `rerank-2.5` 和 `rerank-2` 模型，位于 `/v1/rerank` | [Rerankers](https://www.mongodb.com/docs/voyageai/models/)，查阅于 2026-11-15 |

@@ -227,7 +227,7 @@ impl<'de> serde::Deserialize<'de> for Key<'de> {
 fn child(node: Node, key: &str) -> Option<Node> {
     use DialectId::{
         AnthropicMessages, CohereRerank, Gemini, GeminiDecisions, GeminiEmbeddings, OpenAiChat,
-        OpenAiDecisions, OpenAiEmbeddings, OpenAiResponses, SystemOne,
+        OpenAiDecisions, OpenAiEmbeddings, OpenAiResponses, SystemOne, VoyageRerank,
     };
     Some(match (node, key) {
         (Node::Top(SystemOne), "questions") => Node::DecideQuestions,
@@ -250,7 +250,7 @@ fn child(node: Node, key: &str) -> Option<Node> {
         }
         (Node::Top(d @ OpenAiResponses), "input") => Node::Items(d),
         (Node::Top(OpenAiEmbeddings), "input") => Node::Inputs,
-        (Node::Top(CohereRerank), "documents") => Node::Documents,
+        (Node::Top(CohereRerank | VoyageRerank), "documents") => Node::Documents,
         (Node::Top(d @ (AnthropicMessages | OpenAiChat)), "messages") => Node::Items(d),
         (Node::Top(AnthropicMessages), "system") => Node::Content(Some(Scope::Anthropic(0))),
         (Node::Top(OpenAiChat), "functions") => Node::Tools,

@@ -66,7 +66,7 @@ Die Antwort nennt die Dokumente mit ihrer Position in der Anfrage:
 | --- | --- | --- | --- |
 | `POST /v1/rerank`, `POST /v2/rerank` | Rerank-Format von Cohere | `Authorization: Bearer` | JSON: `model`, `query`, `documents`, `top_n`, `max_tokens_per_doc`, `return_documents` |
 
-Beide Pfade nehmen denselben Body an: An `/v2/rerank` sendet ihn das Cohere-SDK, an `/v1/rerank` die meisten anderen Clients. Rerank-Antworten werden nie gestreamt, und der Body ist wie bei Chat-Anfragen durch [`body_limits.model_api`](../self-hosting/configuration.md#anfrage--und-antwortkörper) begrenzt. Eine Anfrage enthält höchstens 10.000 Dokumente; Anbieter nehmen weniger, und Cohere empfiehlt höchstens 1.000.
+Beide Pfade nehmen denselben Body an: An `/v2/rerank` sendet ihn das Cohere-SDK, an `/v1/rerank` die meisten anderen Clients. Rerank-Antworten werden nie gestreamt, und der Body ist wie bei Chat-Anfragen durch [`body_limits.model_api`](../self-hosting/configuration.md#anfrage--und-antwortkörper) begrenzt. Eine Anfrage enthält höchstens 10.000 Dokumente; Anbieter nehmen weniger: Cohere empfiehlt höchstens 1.000, und Voyage AI nimmt höchstens 1.000 an.
 
 | Feld | Bedeutung |
 | --- | --- |
@@ -86,6 +86,9 @@ Schlüssel, Modellauflösung mit Aliassen und Routen, Limits und Budgets, Anfrag
 | Anbieter | Gesendetes Format | Pfad | Modelle |
 | --- | --- | --- | --- |
 | Cohere | Cohere Rerank v2 | `/v2/rerank`, an der Wurzel von Coheres Host neben seiner Kompatibilitäts-API | Rerank 5, `rerank-v5.0-pro` und `rerank-v5.0-fast` |
+| Voyage AI | Voyage Rerank ([Abbildung](../development/kpp/voyage-rerank.md)) | `/v1/rerank` | `rerank-3`, `rerank-3-lite` und die älteren `rerank-2.5`, `rerank-2.5-lite`, `rerank-2` und `rerank-2-lite` |
+
+Voyage AI bekommt `top_n` als `top_k` und jedes Dokument als seinen Text; die Dokumente seiner Antwort kommen als `{"text": "…"}` zurück und sein `usage.total_tokens` als `billed_units.input_tokens`.
 
 Ein Modell ist ein Rerank-Modell, wenn [KPMR](../concepts/kpmr.md) ihm die Art `reranking` gibt. Rerank-Modelle eines Anbieters, dessen Rerank-API Kaeso noch nicht aufruft, etwa die von NVIDIA, werden abgelehnt, bevor etwas gesendet wird: „Kaeso calls no rerank models on NVIDIA, so `nvidia/rerank-qa-mistral-4b` can't rerank documents.“
 
@@ -95,14 +98,16 @@ Kaeso lehnt vor dem Senden ab, mit einem 400 im Format von Cohere:
 
 - ein Generierungs- oder Embeddings-Modell: „The model `command-a-03-2025` is a generation model; it cannot rerank documents.“;
 - eine leere `documents`-Liste, ein `top_n` oder `max_tokens_per_doc` von 0 oder ein Dokument, das weder ein String noch ein Objekt mit `text` ist;
-- ein Dokument mit Feldern neben `text` für einen Anbieter, der nur Text annimmt, etwa Cohere.
+- ein Dokument mit Feldern neben `text` für einen Anbieter, der nur Text annimmt, etwa Cohere und Voyage AI;
+- `max_tokens_per_doc` für Voyage AI, das jedes Dokument selbst an der Grenze des Modells abschneidet;
+- Coheres eigene Felder, etwa `relevant_spans`, für einen anderen Anbieter als Cohere.
 
 Ein Rerank-Modell lehnt Chat, Token-Zählungen und Embeddings ab: „The model `rerank-v5.0-fast` is a rerank model; send it to `/v1/rerank`.“
 
 ## Bewertungen, Kosten, Cache und Logs
 
 - **Bewertungen** sind die des Anbieters und werden unverändert weitergegeben. Die von Cohere liegen zwischen 0 und 1; andere Anbieter dokumentieren keinen Bereich, vergleichen Sie Bewertungen daher nicht über Anbieter hinweg.
-- **Kosten.** Eine Rerank-Anfrage kostet die Tokens, die der Anbieter abrechnet, zum Eingabepreis des Modells. Rerank 5 von Cohere meldet sie als `billed_units.input_tokens`. Ältere Cohere-Modelle rechnen Sucheinheiten ab, die Kaeso protokolliert, aber nicht bepreisen kann. Ein Modell ohne Eingabepreis kostet **Unbekannt**, und [Budgets](../console/limits-and-budgets.md) lehnen es ab. Budgets reservieren die Suchanfrage einmal pro Dokument, wie die Anbieter sie abrechnen.
+- **Kosten.** Eine Rerank-Anfrage kostet die Tokens, die der Anbieter abrechnet, zum Eingabepreis des Modells. Rerank 5 von Cohere meldet sie als `billed_units.input_tokens`; Voyage AI rechnet die Tokens der Suchanfrage einmal pro Dokument plus die Tokens jedes Dokuments ab und meldet sie als `usage.total_tokens`. Ältere Cohere-Modelle rechnen Sucheinheiten ab, die Kaeso protokolliert, aber nicht bepreisen kann. Ein Modell ohne Eingabepreis kostet **Unbekannt**, und [Budgets](../console/limits-and-budgets.md) lehnen es ab. Budgets reservieren die Suchanfrage einmal pro Dokument, wie die Anbieter sie abrechnen.
 - **Antwort-Cache.** Der [Antwort-Cache](../console/response-cache.md) beantwortet eine wiederholte Rerank-Anfrage wie eine wiederholte Chat-Anfrage.
 - **Logs.** Das [Anfrage-Log](../console/request-logs.md) zeigt den Endpunkt `rerank`, die Anfrage und die bewerteten Ergebnisse.
 

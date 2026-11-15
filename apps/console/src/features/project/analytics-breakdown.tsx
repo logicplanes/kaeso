@@ -228,6 +228,7 @@ const SHORT_DIALECTS: Record<string, string> = {
   system_one: "System One",
   gemini_decisions: "Gemini Decisions",
   cohere_rerank: "Rerank",
+  voyage_rerank: "Voyage Rerank",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
 

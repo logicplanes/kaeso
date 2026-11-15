@@ -33,5 +33,9 @@ pub(super) struct EmbeddingWire {
 
 #[derive(Clone, Debug, Deserialize)]
 pub(super) struct UsageWire {
-    pub prompt_tokens: u64,
+    #[serde(default)]
+    pub prompt_tokens: Option<u64>,
+    /// Voyage AI reports only `total_tokens`, which embeddings bill as input.
+    #[serde(default)]
+    pub total_tokens: Option<u64>,
 }

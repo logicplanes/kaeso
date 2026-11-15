@@ -1066,6 +1066,29 @@
       },
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "voyage",
+      "name": "Voyage AI",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://www.mongodb.com/docs/voyageai/management/api-keys/",
+        "label": "Model API keys"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "rerank": "voyage_rerank",
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "regions": null,
+      "key_endpoint": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,
