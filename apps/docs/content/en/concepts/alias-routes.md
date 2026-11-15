@@ -69,7 +69,7 @@ A step's `timeout_seconds`, 1 to 3600, is how long Kaeso waits for the model's f
 
 A step's `retries`, 0 to 3, is how many times Kaeso tries its model again before the step fails or falls back, when the provider couldn't be reached, broke the connection, answered 5xx or was overloaded. Before each try it waits 0.25 to 2 seconds, or the provider's `Retry-After` when that is 5 seconds or less; a longer one ends the tries. A timeout, a rate limit or a refused request is never tried again: the provider may still be working on a request that timed out, and bill it. The tries share the step's timeout, and none starts once the stream has begun. Without `retries`, the project's **Retries** setting applies, 0 unless set, as it does for a request that names a model ([project settings](../console/organizations-and-projects.md#change-project-settings)).
 
-Nothing falls back once the provider has answered: a stream that breaks off later ends with an error event, as without a route.
+A stream counts as answered once it carries output. One that fails before, such as an account at its plan's limit, falls back like a step that answered with that error. Nothing falls back once the stream has carried output: a stream that breaks off later ends with an error event, as without a route.
 
 ### Steps that are skipped
 

@@ -447,6 +447,53 @@ pub(super) async fn hold(
     Ok(held)
 }
 
+/// The most of an event stream that is read before the reply starts: the events before the
+/// first output are small, such as a response start and pings.
+const PEEK_MOST: usize = 64 * 1024;
+
+/// Reads a provider's event stream until its first event that carries output, and returns the
+/// provider's error when one comes before it: such a stream fails the attempt like an error
+/// status would, and an alias route can fall back. It stops waiting when the first keepalive
+/// would be due, and puts back what it read; a broken connection stays the pump's to report.
+pub(super) async fn peek(
+    chunks: &mut kaeso_upstream::ByteStream,
+    mut decoder: Box<dyn StreamDecoder>,
+    wait: Duration,
+) -> Option<KppError> {
+    let until = Instant::now() + wait;
+    let mut read = Vec::new();
+    let mut size = 0usize;
+    while size < PEEK_MOST {
+        let Ok(next) = tokio::time::timeout_at(until, chunks.next()).await else {
+            break;
+        };
+        match next {
+            Some(Ok(bytes)) => {
+                size = size.saturating_add(bytes.len());
+                let events = decoder.feed(&bytes);
+                read.push(bytes);
+                for event in events {
+                    match event {
+                        StreamEvent::Error(err) => return Some(err),
+                        StreamEvent::ResponseStart(_) | StreamEvent::Extra(_) => {}
+                        _ => {
+                            chunks.put_back(read, None);
+                            return None;
+                        }
+                    }
+                }
+            }
+            Some(Err(e)) => {
+                chunks.put_back(read, Some(e));
+                return None;
+            }
+            None => break,
+        }
+    }
+    chunks.put_back(read, None);
+    None
+}
+
 pub(super) async fn gather(
     mut chunks: kaeso_upstream::ByteStream,
     mut decoder: Box<dyn StreamDecoder>,

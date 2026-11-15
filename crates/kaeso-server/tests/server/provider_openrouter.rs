@@ -151,7 +151,7 @@ async fn an_anthropic_app_gets_openrouter_tool_calls_and_streams_in_its_own_form
 }
 
 #[tokio::test]
-async fn an_error_in_the_middle_of_an_openrouter_stream_reaches_each_app_as_an_error() {
+async fn an_openrouter_stream_that_fails_before_any_output_answers_each_app_with_its_status() {
     let env = env().await;
     let mut stream = messages(
         MODEL,
@@ -159,12 +159,10 @@ async fn an_error_in_the_middle_of_an_openrouter_stream_reaches_each_app_as_an_e
     );
     stream["stream"] = json!(true);
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(stream)).await;
-    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
-    let events = sse_data(&r.text());
-    let error = events.iter().find(|e| e["type"] == "error").unwrap();
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    let error = r.json();
     assert_eq!(error["error"]["type"], "rate_limit_error");
     assert_eq!(error["error"]["message"], "Rate limit exceeded");
-    assert!(!events.iter().any(|e| e["type"] == "message_stop"));
 
     let mut stream = chat(
         MODEL,
@@ -179,11 +177,8 @@ async fn an_error_in_the_middle_of_an_openrouter_stream_reaches_each_app_as_an_e
         Some(stream),
     )
     .await;
-    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
-    let events = sse_data(&r.text());
-    let last = events.last().unwrap();
-    assert_eq!(last["error"]["code"], 429);
-    assert_eq!(last["choices"][0]["finish_reason"], "error");
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert_eq!(r.json()["error"]["message"], "Rate limit exceeded");
 }
 
 #[tokio::test]
