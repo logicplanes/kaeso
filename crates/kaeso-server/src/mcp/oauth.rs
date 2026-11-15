@@ -215,6 +215,12 @@ fn is_loopback(url: &Url) -> bool {
 
 // RFC 8252: native apps receive the code on a loopback address or a private-use scheme; every
 // other address must be HTTPS, and schemes that run code or read files never qualify.
+// OAuth 2.1 leaves `redirect_uri` out of the token request (draft-ietf-oauth-v2-1 §4.1.3), and
+// PKCE binds the code to its client; one that is sent must still be the one authorized.
+fn differs(sent: Option<&str>, authorized: Option<&str>) -> bool {
+    sent.is_some_and(|uri| Some(uri) != authorized)
+}
+
 pub fn redirect_uri_allowed(uri: &str) -> bool {
     if uri.len() > MAX_URI_LEN {
         return false;
@@ -904,7 +910,7 @@ async fn portal_exchange(
             "invalid_client",
             "The grant belongs to another client.",
         ))
-    } else if kind == TokenKind::Code && p.redirect_uri != spent.redirect_uri.as_deref() {
+    } else if kind == TokenKind::Code && differs(p.redirect_uri, spent.redirect_uri.as_deref()) {
         Some(invalid_grant(
             "`redirect_uri` differs from the one authorized.",
         ))
@@ -1027,7 +1033,7 @@ async fn check_grant(
         )));
     }
     if kind == TokenKind::Code {
-        if redirect_uri != spent.redirect_uri.as_deref() {
+        if differs(redirect_uri, spent.redirect_uri.as_deref()) {
             return Ok(Err(invalid_grant(
                 "`redirect_uri` differs from the one authorized.",
             )));
