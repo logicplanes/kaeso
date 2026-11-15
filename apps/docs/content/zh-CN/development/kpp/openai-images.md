@@ -71,7 +71,7 @@ multipart 读取器（`kaeso_codecs::multipart`）不含 I/O 且有上限：最�
 | `background`、`output_format`、`size`、`quality` | `settings` typed | |
 | `usage.input_tokens`（或 OpenRouter 的 `prompt_tokens`） | `usage.input_tokens`，不含 `input_tokens_details.cached_tokens` | 用量对象保留在 `usage.raw` 中。 |
 | `usage.output_tokens`（或 `completion_tokens`） | `usage.output_tokens` | |
-| `usage.input_tokens_details.image_tokens` | `usage.input_image_tokens` | |
+| `usage.input_tokens_details.image_tokens` | `usage.input_image_tokens`，不含缓存部分，缓存部分为 `usage.cache_read_image_tokens` | 回复只给出一个涵盖文本和图像的 `cached_tokens`，因此它先计入图像 token；未缓存的图像 token 不会超过 `input_tokens`。 |
 | `usage.output_tokens_details.image_tokens`（或 `completion_tokens_details`） | `usage.output_image_tokens` | |
 | 没有 `usage` | form `no_usage` | |
 | `svg_usage`、`safety_identifier`、未知键 | extras | |

@@ -137,7 +137,14 @@ pub(super) fn usage_of(raw: &RawJson, origin: &Origin) -> Usage {
         w.output_tokens.or(w.completion_tokens).unwrap_or(0),
     );
     u.cache_read_tokens = cached;
-    u.input_image_tokens = w.input_tokens_details.as_ref().and_then(|d| d.image_tokens);
+    // KPP's `input_image_tokens` are a share of `input_tokens`, which leaves the cache out. The
+    // reply gives one `cached_tokens` for text and images, so the cache counts against the image
+    // tokens first, which keeps the uncached image share within `input_tokens`.
+    if let Some(image) = w.input_tokens_details.as_ref().and_then(|d| d.image_tokens) {
+        let cached_image = image.min(cached);
+        u.input_image_tokens = Some(image - cached_image);
+        u.cache_read_image_tokens = (cached_image > 0).then_some(cached_image);
+    }
     u.output_image_tokens = w
         .output_tokens_details
         .as_ref()

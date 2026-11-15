@@ -71,7 +71,7 @@ Der Multipart-Leser (`kaeso_codecs::multipart`) ist sans-IO und begrenzt: höchs
 | `background`, `output_format`, `size`, `quality` | `settings` typisiert | |
 | `usage.input_tokens` (oder `prompt_tokens` von OpenRouter) | `usage.input_tokens`, ohne `input_tokens_details.cached_tokens` | Das Nutzungsobjekt bleibt in `usage.raw`. |
 | `usage.output_tokens` (oder `completion_tokens`) | `usage.output_tokens` | |
-| `usage.input_tokens_details.image_tokens` | `usage.input_image_tokens` | |
+| `usage.input_tokens_details.image_tokens` | `usage.input_image_tokens`, ohne den gecachten Anteil, der `usage.cache_read_image_tokens` ist | Die Antwort nennt ein `cached_tokens` für Text und Bilder, daher zählt es zuerst gegen die Bild-Tokens; die ungecachten Bild-Tokens übersteigen `input_tokens` nie. |
 | `usage.output_tokens_details.image_tokens` (oder `completion_tokens_details`) | `usage.output_image_tokens` | |
 | kein `usage` | Form `no_usage` | |
 | `svg_usage`, `safety_identifier`, unbekannte Schlüssel | Extras | |
