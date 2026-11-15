@@ -5,7 +5,7 @@ use kaeso_kpp::{DialectId, Extras, HEADER_PREFIX, RawJson};
 use serde_json::Value;
 use serde_json::value::RawValue;
 
-use super::node::{Node, entries_of};
+use super::node::Node;
 use crate::limits::MAX_DEPTH;
 
 pub(super) const SET: &str = "set";
@@ -51,7 +51,7 @@ impl Overrides {
         let mut out = Overrides::default();
         let mut path = Vec::new();
         let keys = Keys { managed, recurse };
-        diff_at(Some(canon), actual, &mut path, &keys, &mut out);
+        diff_at(Some(canon), actual.get(), &mut path, &keys, &mut out);
         out
     }
 
@@ -68,7 +68,15 @@ impl Overrides {
             managed,
             recurse: &[],
         };
-        diff_children_of(Some(canon), actual, entries, &mut path, &keys, &mut out);
+        let entries = entries.map(|e| e.into_iter().map(|(k, v)| (k, v.get())).collect());
+        diff_children_of(
+            Some(canon),
+            actual.get(),
+            entries,
+            &mut path,
+            &keys,
+            &mut out,
+        );
         out
     }
 
@@ -165,9 +173,12 @@ struct Keys<'a> {
     recurse: &'a [&'a str],
 }
 
+// The diff reads JSON that serde_json has already read whole, the app's request or item, so it
+// splits objects and arrays with `crate::scan` instead of checking every value again at every
+// depth, and works on the values' text.
 fn diff_at<'a>(
     canon: Option<&Node>,
-    actual: &'a RawValue,
+    actual: &'a str,
     path: &mut Vec<Cow<'a, str>>,
     keys: &Keys<'_>,
     out: &mut Overrides,
@@ -175,12 +186,12 @@ fn diff_at<'a>(
     // The same bytes parse to the same values at every depth, so walking them records nothing:
     // a schema or item carried raw from the app is compared once, not field by field.
     if let Some(Node::Raw(r)) = canon
-        && r.get() == actual.get()
+        && r.get() == actual
     {
         return;
     }
     let managed = keys.managed;
-    let text = actual.get().trim_start();
+    let text = actual.trim_start();
     if path.len() == 1
         && path.first().is_some_and(|k| managed.contains(&k.as_ref()))
         && text.starts_with('[')
@@ -202,25 +213,27 @@ pub(crate) fn by_key(entries: &[(Cow<'_, str>, &RawValue)]) -> bool {
     entries.iter().all(|(k, _)| plain_key(k))
 }
 
+type TextEntries<'a> = Vec<(Cow<'a, str>, &'a str)>;
+
 fn diff_children<'a>(
     canon: Option<&Node>,
-    actual: &'a RawValue,
+    actual: &'a str,
     path: &mut Vec<Cow<'a, str>>,
     keys: &Keys<'_>,
     out: &mut Overrides,
 ) {
-    diff_children_of(canon, actual, entries_of(actual), path, keys, out);
+    diff_children_of(canon, actual, crate::scan::members(actual), path, keys, out);
 }
 
 fn diff_children_of<'a>(
     canon: Option<&Node>,
-    actual: &'a RawValue,
-    entries: Option<Entries<'a>>,
+    actual: &'a str,
+    entries: Option<TextEntries<'a>>,
     path: &mut Vec<Cow<'a, str>>,
     keys: &Keys<'_>,
     out: &mut Overrides,
 ) {
-    let text = actual.get().trim_start();
+    let text = actual.trim_start();
     let empty = Node::obj();
     let expanded = canon.map(Node::expanded);
     let canon_obj = match &expanded {
@@ -235,11 +248,11 @@ fn diff_children_of<'a>(
             for (k, v) in &aentries {
                 let child = centries.get(k.as_ref());
                 path.push(k.clone());
-                let recurse = v.get().trim_start().starts_with('{')
+                let recurse = v.trim_start().starts_with('{')
                     && keys.recurse.contains(&k.as_ref())
                     && !(child.is_none() && typed_object(v));
                 if child.is_none() && !recurse {
-                    out.set.push((path.join("."), RawJson::from(*v), None));
+                    out.set.push((path.join("."), raw_json(v), None));
                 } else {
                     diff_at(child, v, path, keys, out);
                 }
@@ -255,14 +268,14 @@ fn diff_children_of<'a>(
                 }
             }
             if canon.is_none() && before == out.set.len() + out.unset.len() {
-                out.set.push((path.join("."), RawJson::from(actual), None));
+                out.set.push((path.join("."), raw_json(actual), None));
             }
             return;
         }
     }
     if let Some(Node::Arr(citems)) = expanded.as_deref()
         && text.starts_with('[')
-        && let Ok(aitems) = serde_json::from_str::<Vec<&RawValue>>(actual.get())
+        && let Some(aitems) = crate::scan::elements(actual)
         && aitems.len() == citems.len()
     {
         for (i, (c, a)) in citems.iter().zip(aitems).enumerate() {
@@ -278,12 +291,12 @@ fn diff_children_of<'a>(
 // The keys an object holds, looked up by a scan while there are few of them, as there are in
 // almost every object a provider sends.
 enum Present<'a> {
-    Few(&'a [(Cow<'a, str>, &'a RawValue)]),
+    Few(&'a [(Cow<'a, str>, &'a str)]),
     Many(HashSet<&'a str>),
 }
 
 impl<'a> Present<'a> {
-    fn of(entries: &'a [(Cow<'a, str>, &'a RawValue)]) -> Present<'a> {
+    fn of(entries: &'a [(Cow<'a, str>, &'a str)]) -> Present<'a> {
         if entries.len() <= 16 {
             Present::Few(entries)
         } else {
@@ -305,13 +318,14 @@ fn leaf_str(raw: &str) -> Option<Cow<'_, str>> {
     if !raw.trim_start().starts_with('"') {
         return None;
     }
-    match serde_json::from_str::<&str>(raw) {
-        Ok(s) => Some(Cow::Borrowed(s)),
-        Err(_) => serde_json::from_str::<String>(raw).ok().map(Cow::Owned),
-    }
+    // One read either way: a borrowed `&str` refuses an escaped string with an error that
+    // quotes the whole string, and the string had to be read again.
+    serde_json::from_str::<crate::wire::Text<'_>>(raw)
+        .ok()
+        .map(|t| t.0)
 }
 
-fn same_string(canon: &Node, actual: &RawValue) -> bool {
+fn same_string(canon: &Node, actual: &str) -> bool {
     let canon = match canon {
         Node::Val(Value::String(s)) => Cow::Borrowed(s.as_str()),
         Node::Raw(r) => match leaf_str(r.get()) {
@@ -320,22 +334,32 @@ fn same_string(canon: &Node, actual: &RawValue) -> bool {
         },
         _ => return false,
     };
-    leaf_str(actual.get()).is_some_and(|a| a == canon)
+    leaf_str(actual).is_some_and(|a| a == canon)
 }
 
-fn diff_whole(canon: Option<&Node>, actual: &RawValue, path: &[Cow<'_, str>], out: &mut Overrides) {
+fn diff_whole(canon: Option<&Node>, actual: &str, path: &[Cow<'_, str>], out: &mut Overrides) {
     if canon.is_some_and(|c| same_string(c, actual)) {
         return;
     }
     let canon_value = canon.and_then(|c| c.to_value().ok());
-    let equal = match (&canon_value, serde_json::from_str::<Value>(actual.get())) {
+    let equal = match (&canon_value, serde_json::from_str::<Value>(actual)) {
         (Some(c), Ok(a)) => *c == a,
         _ => false,
     };
     if !equal {
         out.set
-            .push((path.join("."), RawJson::from(actual), canon_value));
+            .push((path.join("."), raw_json(actual), canon_value));
     }
+}
+
+// A value the diff keeps, as the app wrote it. Its text is one whole value of JSON serde_json
+// has read, so it reads again; were it ever not to, it would be kept as a string, not dropped.
+fn raw_json(text: &str) -> RawJson {
+    if let Ok(raw) = serde_json::from_str::<&RawValue>(text) {
+        return RawJson::from(raw);
+    }
+    serde_json::value::to_raw_value(text)
+        .map_or_else(|_| RawJson::from(RawValue::NULL), RawJson::from)
 }
 
 fn plain_key(key: &str) -> bool {
@@ -345,11 +369,9 @@ fn plain_key(key: &str) -> bool {
         && !key.starts_with(HEADER_PREFIX)
 }
 
-fn typed_object(raw: &RawValue) -> bool {
-    entries_of(raw).is_some_and(|e| {
-        e.iter()
-            .any(|(k, v)| k == "type" && v.get().trim() != "\"text\"")
-    })
+fn typed_object(raw: &str) -> bool {
+    crate::scan::members(raw)
+        .is_some_and(|e| e.iter().any(|(k, v)| k == "type" && v.trim() != "\"text\""))
 }
 
 pub(crate) fn is_form(path: &str, value: &Value, canon_has: bool) -> bool {

@@ -7,6 +7,7 @@ use serde::de::{DeserializeSeed, IgnoredAny, MapAccess, SeqAccess, Visitor};
 use serde_json::value::RawValue;
 
 use crate::openai_chat::PartContext;
+use crate::scan::string_end;
 
 /// The most messages (Anthropic Messages, OpenAI Chat Completions) or input items
 /// (OpenAI Responses) one request may hold: Anthropic's documented limit per request.
@@ -152,12 +153,23 @@ enum Over {
 #[derive(Clone, Default)]
 struct Tally {
     shape: RequestShape,
+    // No whitespace outside the body's strings, as SDKs write JSON: no value then has any to
+    // count back in.
+    compact: bool,
     in_message: usize,
     over: Option<Over>,
     second_type: bool,
 }
 
 impl Tally {
+    fn whitespace_in(&self, raw: &RawValue) -> usize {
+        if self.compact {
+            0
+        } else {
+            whitespace_outside_strings(raw.get().as_bytes())
+        }
+    }
+
     fn count<E: serde::de::Error>(&mut self, what: Over) -> Result<(), E> {
         let s = &mut self.shape;
         let over = match what {
@@ -486,7 +498,7 @@ impl<'de> DeserializeSeed<'de> for Element<'_> {
         }
         let (kept, nests) = match self.node.form(raw) {
             Form::Raw => {
-                self.tally.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
+                self.tally.shape.bytes += self.tally.whitespace_in(raw);
                 (true, None)
             }
             Form::Typed => (false, None),
@@ -513,7 +525,7 @@ impl<'de> DeserializeSeed<'de> for Kept<'_> {
 
     fn deserialize<D: serde::Deserializer<'de>>(self, d: D) -> Result<(), D::Error> {
         let raw = <&'de RawValue as serde::Deserialize<'de>>::deserialize(d)?;
-        self.tally.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
+        self.tally.shape.bytes += self.tally.whitespace_in(raw);
         Walk {
             node: self.node,
             tally: self.tally,
@@ -538,7 +550,7 @@ impl<'de> DeserializeSeed<'de> for Opaque<'_> {
             return <IgnoredAny as serde::Deserialize<'de>>::deserialize(d).map(|_| ());
         }
         let raw = <&'de RawValue as serde::Deserialize<'de>>::deserialize(d)?;
-        self.tally.shape.bytes += whitespace_outside_strings(raw.get().as_bytes());
+        self.tally.shape.bytes += self.tally.whitespace_in(raw);
         Ok(())
     }
 }
@@ -550,16 +562,16 @@ fn whitespace_outside_strings(json: &[u8]) -> usize {
         return 0;
     }
     let mut whitespace = 0usize;
-    let mut in_string = false;
-    let mut escaped = false;
-    for &byte in json {
-        match byte {
-            _ if escaped => escaped = false,
-            b'\\' if in_string => escaped = true,
-            b'"' => in_string = !in_string,
-            _ if !in_string && byte.is_ascii_whitespace() => whitespace += 1,
-            _ => {}
+    let mut i = 0usize;
+    while let Some(&byte) = json.get(i) {
+        if byte == b'"' {
+            i = string_end(json, i + 1);
+            continue;
         }
+        if byte.is_ascii_whitespace() {
+            whitespace += 1;
+        }
+        i += 1;
     }
     whitespace
 }
@@ -762,7 +774,7 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
             ..RequestShape::default()
         });
     }
-    let Some(bytes) = significant_bytes(body, MAX_DEPTH) else {
+    let Some(Significant { bytes, whitespace }) = significant_bytes(body, MAX_DEPTH) else {
         return Err(KppError::invalid_request(format!(
             "The body nests more than {MAX_DEPTH} levels deep; Kaeso takes at most {MAX_DEPTH}."
         ))
@@ -770,6 +782,7 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
     };
     let mut tally = Tally::default();
     tally.shape.bytes = bytes;
+    tally.compact = whitespace == 0;
     let mut de = serde_json::Deserializer::from_slice(body);
     let walked = Walk {
         node: Node::Top(dialect),
@@ -791,11 +804,19 @@ fn looks_like_json(body: &[u8]) -> bool {
         .is_some_and(|b| *b == b'{')
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Significant {
+    bytes: usize,
+    // Whitespace outside strings, which `bytes` leaves out.
+    whitespace: usize,
+}
+
 // serde_json skips ignored and raw values without its recursion limit, so the codecs'
 // walks over them would follow any depth; this scan keeps no stack to overflow.
-fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<usize> {
+fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<Significant> {
     let mut depth = 0usize;
     let mut bytes = 0usize;
+    let mut whitespace = 0usize;
     let mut i = 0usize;
     while let Some(&byte) = body.get(i) {
         if byte == b'"' {
@@ -804,7 +825,9 @@ fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<usize> {
             i = end;
             continue;
         }
-        if !byte.is_ascii_whitespace() {
+        if byte.is_ascii_whitespace() {
+            whitespace += 1;
+        } else {
             bytes += 1;
         }
         match byte {
@@ -819,47 +842,7 @@ fn significant_bytes(body: &[u8], depth_limit: usize) -> Option<usize> {
         }
         i += 1;
     }
-    Some(bytes)
-}
-
-// Just past the quote that closes a string whose content starts at `from`, or the end of the
-// body for one that never closes; every byte in between counts, an escaped quote included.
-fn string_end(body: &[u8], mut from: usize) -> usize {
-    loop {
-        let rest = body.get(from..).unwrap_or_default();
-        from += quote_or_backslash(rest);
-        match body.get(from) {
-            Some(b'"') => return from + 1,
-            Some(_) => from += 2,
-            None => return body.len(),
-        }
-        if from >= body.len() {
-            return body.len();
-        }
-    }
-}
-
-// The index of the first `"` or `\` in `bytes`, or its length, eight bytes at a time: strings,
-// most of a request's bytes, hold neither for long stretches.
-fn quote_or_backslash(bytes: &[u8]) -> usize {
-    const ONES: u64 = 0x0101_0101_0101_0101;
-    const HIGH: u64 = 0x8080_8080_8080_8080;
-    let quotes = ONES * u64::from(b'"');
-    let backslashes = ONES * u64::from(b'\\');
-    let (words, rest) = bytes.as_chunks::<8>();
-    for (i, eight) in words.iter().enumerate() {
-        let word = u64::from_le_bytes(*eight);
-        let (q, b) = (word ^ quotes, word ^ backslashes);
-        let found = ((q.wrapping_sub(ONES) & !q) | (b.wrapping_sub(ONES) & !b)) & HIGH;
-        if found != 0 {
-            return i * 8 + (found.trailing_zeros() / 8) as usize;
-        }
-    }
-    words.len() * 8
-        + rest
-            .iter()
-            .position(|&c| c == b'"' || c == b'\\')
-            .unwrap_or(rest.len())
+    Some(Significant { bytes, whitespace })
 }
 
 #[cfg(test)]
@@ -901,6 +884,29 @@ mod tests {
         Some(bytes)
     }
 
+    fn whitespace_outside_strings_of(json: &[u8]) -> usize {
+        whitespace_outside_strings(json)
+    }
+
+    fn byte_by_byte_whitespace(json: &[u8]) -> usize {
+        if !matches!(json.first(), Some(b'{' | b'[')) {
+            return 0;
+        }
+        let mut whitespace = 0usize;
+        let mut in_string = false;
+        let mut escaped = false;
+        for &byte in json {
+            match byte {
+                _ if escaped => escaped = false,
+                b'\\' if in_string => escaped = true,
+                b'"' => in_string = !in_string,
+                _ if !in_string && byte.is_ascii_whitespace() => whitespace += 1,
+                _ => {}
+            }
+        }
+        whitespace
+    }
+
     fn jsonish() -> impl Strategy<Value = Vec<u8>> {
         let byte = prop_oneof![
             Just(b'"'),
@@ -920,7 +926,11 @@ mod tests {
     proptest! {
         #[test]
         fn significant_bytes_count_as_a_byte_by_byte_scan_does(body in jsonish(), limit in 0usize..6) {
-            prop_assert_eq!(significant_bytes(&body, limit), byte_by_byte(&body, limit));
+            prop_assert_eq!(significant_bytes(&body, limit).map(|s| s.bytes), byte_by_byte(&body, limit));
+            prop_assert_eq!(whitespace_outside_strings_of(&body), byte_by_byte_whitespace(&body));
+            if let Some(found) = significant_bytes(&body, limit) {
+                prop_assert_eq!(found.bytes + found.whitespace, body.len());
+            }
         }
     }
 
@@ -935,8 +945,13 @@ mod tests {
                 format!(r#""{filler}"#),
             ] {
                 assert_eq!(
-                    significant_bytes(body.as_bytes(), 3),
+                    significant_bytes(body.as_bytes(), 3).map(|s| s.bytes),
                     byte_by_byte(body.as_bytes(), 3),
+                    "{body}"
+                );
+                assert_eq!(
+                    whitespace_outside_strings_of(body.as_bytes()),
+                    byte_by_byte_whitespace(body.as_bytes()),
                     "{body}"
                 );
             }

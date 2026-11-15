@@ -622,6 +622,10 @@ pub(crate) fn type_tag(raw: &RawValue) -> Result<Option<String>, serde_json::Err
     if !raw.get().trim_start().starts_with('{') {
         return Ok(None);
     }
+    // Most objects settle with a look at their keys; serde_json reads the rest whole.
+    if let Some(found) = crate::scan::object_type(raw.get()) {
+        return Ok(found.map(str::to_owned));
+    }
     Ok(serde_json::from_str::<Tag>(raw.get())?.ty)
 }
 

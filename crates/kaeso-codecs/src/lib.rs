@@ -19,6 +19,7 @@ mod media;
 mod models;
 pub mod multipart;
 mod openai_models;
+mod scan;
 pub mod sse;
 mod struct_fields;
 pub mod testing;

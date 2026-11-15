@@ -144,14 +144,19 @@ pub(crate) fn decode_tool(
     origin: &Origin,
     path: &str,
 ) -> Result<ToolDef, KppError> {
-    let ty = type_tag(raw).ok().flatten();
-    if ty.is_some() && ty.as_deref() != Some("custom") {
-        return Ok(ToolDef::Unknown(RawItem::new(
-            origin.clone(),
-            RawJson::from(raw),
-        )));
+    // A tool that names no `type`, as an app's own tools don't, is read in one pass: the parse
+    // keeps a `type` it meets, and only then is the tag read on its own, as it always was.
+    let parsed = Ext::<ToolW>::from_raw(raw);
+    if parsed.as_ref().map_or(true, |t| t.known._ty.is_some()) {
+        let ty = type_tag(raw).ok().flatten();
+        if ty.is_some() && ty.as_deref() != Some("custom") {
+            return Ok(ToolDef::Unknown(RawItem::new(
+                origin.clone(),
+                RawJson::from(raw),
+            )));
+        }
     }
-    let t: Ext<ToolW> = Ext::from_raw(raw).map_err(|e| {
+    let t: Ext<ToolW> = parsed.map_err(|e| {
         KppError::invalid_request(format!(
             "The request body is not a valid Anthropic Messages request: invalid tool: {}.",
             without_position(&e)
