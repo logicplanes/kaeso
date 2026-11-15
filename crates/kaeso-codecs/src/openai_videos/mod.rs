@@ -35,12 +35,21 @@ impl crate::codec::sealed::Sealed for OpenAiVideos {}
 
 impl OpenAiVideos {
     pub(crate) fn decode_checked(
-        _kind: RequestKind,
+        kind: RequestKind,
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
+        check_kind(kind)?;
         request::decode_create(body, headers)
     }
+}
+
+fn check_kind(kind: RequestKind) -> Result<(), KppError> {
+    crate::decisions::refuse_kind(kind, DIALECT)?;
+    if kind != RequestKind::Video {
+        return Err(crate::video_jobs::not_videos(DIALECT, kind));
+    }
+    Ok(())
 }
 
 /// Decodes the body of `POST /v1/videos/{video_id}/remix`: the new prompt, as JSON or an
@@ -154,10 +163,7 @@ impl Codec for OpenAiVideos {
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
-        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
-        if kind != RequestKind::Video {
-            return Err(crate::video_jobs::not_videos(DIALECT, kind));
-        }
+        check_kind(kind)?;
         crate::limits::request_shape(DIALECT, body)?;
         Self::decode_checked(kind, body, headers)
     }
