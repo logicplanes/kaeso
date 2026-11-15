@@ -393,7 +393,19 @@ impl WorstCase {
         let context = prices.context_limit;
         let within = |n: u64| context.map_or(n, |c| n.min(c));
         let bytes = u64::try_from(body_bytes).unwrap_or(u64::MAX);
-        let input = within(crate::estimate::tokens_of_bytes(bytes));
+        let input = match request {
+            // Rerank providers bill the query once for every document, besides the documents
+            // (https://www.mongodb.com/docs/voyageai/management/billing/), and the context
+            // limit is per document, so it bounds nothing here.
+            kaeso_kpp::Request::Rerank(r) => {
+                let query = u64::try_from(r.query.len()).unwrap_or(u64::MAX);
+                let documents = u64::try_from(r.documents.len()).unwrap_or(u64::MAX);
+                crate::estimate::tokens_of_bytes(query)
+                    .saturating_mul(documents)
+                    .saturating_add(crate::estimate::tokens_of_bytes(bytes))
+            }
+            _ => within(crate::estimate::tokens_of_bytes(bytes)),
+        };
         let prices = &crate::cost::prices_for_prompt(prices, input);
         let limit_holds =
             !(provider.reasoning_beyond_output_limit() && prices.reasoning == Some(true));
@@ -406,7 +418,9 @@ impl WorstCase {
                 .or(prices.output_limit)
                 .or(context)
                 .map(within),
-            kaeso_kpp::Request::Embed(_) | kaeso_kpp::Request::Decide(_) => Some(0),
+            kaeso_kpp::Request::Embed(_)
+            | kaeso_kpp::Request::Decide(_)
+            | kaeso_kpp::Request::Rerank(_) => Some(0),
             _ => return WorstCase::FREE,
         };
         let usage = kaeso_kpp::Usage::new(input, output.unwrap_or(0));
@@ -912,6 +926,19 @@ mod tests {
         let embed = kaeso_kpp::Request::Embed(kaeso_kpp::EmbedRequest::new("e", Vec::new()));
         let w = WorstCase::of(&embed, 400, &prices, openai());
         assert_eq!((w.tokens, w.nano_usd, w.bounded), (100, 100_000, true));
+
+        // A rerank request pays its 40-byte query once per document, and the context limit,
+        // which is per document, bounds nothing.
+        let docs = vec![kaeso_kpp::RerankDocument::new("d"); 3];
+        let rerank =
+            kaeso_kpp::Request::Rerank(kaeso_kpp::RerankRequest::new("r", "q".repeat(40), docs));
+        let w = WorstCase::of(&rerank, 400, &prices, openai());
+        assert_eq!((w.tokens, w.nano_usd, w.bounded), (130, 130_000, true));
+        let small = Fields {
+            context_limit: Some(50),
+            ..prices.clone()
+        };
+        assert_eq!(WorstCase::of(&rerank, 400, &small, openai()).tokens, 130);
 
         let count = kaeso_kpp::Request::CountTokens(kaeso_kpp::GenerateRequest::new("m"));
         assert_eq!(

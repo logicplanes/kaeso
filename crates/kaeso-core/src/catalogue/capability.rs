@@ -98,6 +98,7 @@ pub fn prepare(
     match req {
         Request::Embed(_) => {
             refuse_decision_only(eff)?;
+            refuse_reranker(eff)?;
             if !eff.is_embeddings() {
                 return Err(refuse(
                     "embeddings",
@@ -318,6 +319,32 @@ pub fn prepare(
             }
             Ok(media_plan(videos.dialect))
         }
+        Request::Rerank(_) => {
+            refuse_decision_only(eff)?;
+            if !eff.is_rerank() {
+                let kind = if eff.is_embeddings() {
+                    "an embeddings model"
+                } else {
+                    "a generation model"
+                };
+                return Err(refuse(
+                    "rerank",
+                    Some("model"),
+                    format!("The model `{name}` is {kind}; it cannot rerank documents."),
+                ));
+            }
+            let Some(rerank) = eff.provider.rerank().filter(|r| r.dialect == eff.dialect) else {
+                return Err(refuse(
+                    "rerank",
+                    Some("model"),
+                    format!(
+                        "Kaeso calls no rerank models on {}, so `{name}` can't rerank documents.",
+                        eff.provider.name()
+                    ),
+                ));
+            };
+            Ok(media_plan(rerank.dialect))
+        }
         Request::Decide(d) => {
             let Some(decisions) = eff.provider.decisions(name) else {
                 let message = if eff.provider.has_decisions() && !eff.decides() {
@@ -459,6 +486,20 @@ fn refuse_decision_only(eff: &Effective) -> Result<(), Unsupported> {
         Some("model"),
         format!(
             "The model `{}` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.",
+            eff.model_id
+        ),
+    ))
+}
+
+fn refuse_reranker(eff: &Effective) -> Result<(), Unsupported> {
+    if !eff.is_rerank() {
+        return Ok(());
+    }
+    Err(refuse(
+        "rerank",
+        Some("model"),
+        format!(
+            "The model `{}` is a rerank model; send it to `/v1/rerank`.",
             eff.model_id
         ),
     ))
@@ -759,6 +800,7 @@ fn check_generation(
     eff: &Effective,
 ) -> Result<(), Unsupported> {
     let name = eff.model_id.as_str();
+    refuse_reranker(eff)?;
     if eff.is_embeddings() {
         return Err(refuse(
             "generation",

@@ -8,6 +8,7 @@ use crate::dialect::Origin;
 use crate::extras::Extras;
 use crate::image::ImageResponse;
 use crate::request::RequestKind;
+use crate::rerank::RerankResponse;
 use crate::video::VideoJob;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -22,6 +23,7 @@ pub enum Reply {
     Transcription(TranscriptionResponse),
     Video(VideoJob),
     Decide(DecideResponse),
+    Rerank(RerankResponse),
 }
 
 impl Reply {
@@ -35,6 +37,7 @@ impl Reply {
             Reply::Transcription(_) => RequestKind::Transcription,
             Reply::Video(_) => RequestKind::Video,
             Reply::Decide(_) => RequestKind::Decide,
+            Reply::Rerank(_) => RequestKind::Rerank,
         }
     }
 }

@@ -237,9 +237,13 @@ fn public_key(ids: Ids, key: String) -> String {
     }
 }
 
+// Embeddings and rerank requests have no prompt cache, so their routes have no hit rate.
 fn embedding_route(group: GroupBy, key: &str) -> bool {
-    let embeddings =
-        [DialectId::OpenAiEmbeddings, DialectId::GeminiEmbeddings].map(DialectId::as_str);
+    let embeddings = [DialectId::OpenAiEmbeddings, DialectId::GeminiEmbeddings]
+        .into_iter()
+        .chain(kaeso_core::catalogue::RERANK)
+        .map(DialectId::as_str)
+        .collect::<Vec<_>>();
     group == GroupBy::Route
         && key
             .split(':')

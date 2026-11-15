@@ -31,6 +31,7 @@ mod web_search;
 mod wire;
 
 pub mod anthropic_messages;
+pub mod cohere_rerank;
 pub mod dashscope;
 pub mod elevenlabs;
 pub mod gemini;

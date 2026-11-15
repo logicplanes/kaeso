@@ -4,7 +4,7 @@ import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
 import { DataTable } from "@logicplanes/kaeso-ui";
 import { logRow } from "~/test/fixtures/project-logs";
 import { apply, load } from "~/i18n";
-import { COLUMNS, logColumns, logsLayout, providerInModel, type LogsLayout } from "./columns";
+import { COLUMNS, isEmbedding, isRerank, logColumns, logsLayout, providerInModel, type LogsLayout } from "./columns";
 
 const shown = COLUMNS.filter((c) => c !== "request" && c !== "agent");
 
@@ -222,5 +222,13 @@ describe("logColumns", () => {
     expect(within(cachedWithoutMarks as HTMLElement).getByText("· 90%")).toHaveClass("text-fg-tertiary");
     expect(writtenWithoutMarks).toHaveTextContent("100 / 10· 0%");
     expect(within(writtenWithoutMarks as HTMLElement).getByText("· 0%")).toHaveClass("text-fg-tertiary");
+  });
+});
+
+describe("isRerank", () => {
+  it("knows rerank requests by either format, which no provider caches, apart from embeddings", () => {
+    expect(isRerank({ ingress_dialect: "cohere_rerank", egress_dialect: "cohere_rerank" })).toBe(true);
+    expect(isRerank({ ingress_dialect: "openai_chat", egress_dialect: "openai_chat" })).toBe(false);
+    expect(isEmbedding({ ingress_dialect: "cohere_rerank", egress_dialect: "cohere_rerank" })).toBe(false);
   });
 });

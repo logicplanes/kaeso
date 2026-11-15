@@ -547,12 +547,26 @@ pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
         Request::Generate(r) | Request::CountTokens(r) => check_generate(r, target),
         Request::Embed(r) => check_extras(&r.extras, target.dialect, "", "request"),
         Request::Decide(r) => check_decide(r, target),
+        Request::Rerank(r) => check_rerank(r, target),
         other => Err(KppError::unsupported_by(
             format!("{:?} request", other.kind()),
             target.dialect,
             "",
         )),
     }
+}
+
+fn check_rerank(r: &kaeso_kpp::RerankRequest, target: &Origin) -> Result<(), KppError> {
+    check_extras(&r.extras, target.dialect, "", "request")?;
+    for (i, d) in r.documents.iter().enumerate() {
+        check_extras(
+            &d.extras,
+            target.dialect,
+            &format!("documents[{i}]"),
+            "document",
+        )?;
+    }
+    Ok(())
 }
 
 fn check_decide(r: &DecideRequest, target: &Origin) -> Result<(), KppError> {

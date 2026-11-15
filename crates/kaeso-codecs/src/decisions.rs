@@ -14,12 +14,20 @@ fn not_decisions(dialect: DialectId) -> KppError {
     KppError::unsupported_by("decision request", dialect, DECISIONS_HINT)
 }
 
-/// Refuses a decision request in a codec of another kind.
+/// The hint every codec that isn't a rerank codec gives a rerank request.
+pub(crate) const RERANK_HINT: &str = "Send rerank requests to `/v1/rerank`.";
+
+/// Refuses a decision or rerank request in a codec of another kind.
 pub(crate) fn refuse_kind(kind: RequestKind, dialect: DialectId) -> Result<(), KppError> {
-    if kind == RequestKind::Decide {
-        return Err(not_decisions(dialect));
+    match kind {
+        RequestKind::Decide => Err(not_decisions(dialect)),
+        RequestKind::Rerank => Err(KppError::unsupported_by(
+            "rerank request",
+            dialect,
+            RERANK_HINT,
+        )),
+        _ => Ok(()),
     }
-    Ok(())
 }
 
 pub(crate) fn refuse_request(req: &Request, dialect: DialectId) -> Result<(), KppError> {

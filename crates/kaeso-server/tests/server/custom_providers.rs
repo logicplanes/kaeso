@@ -225,6 +225,7 @@ async fn admins_add_change_and_delete_custom_providers_with_their_own_rights_and
             "dialects": ["openai_chat", "openai_embeddings"],
             "count_tokens": null,
             "embeddings": "openai_embeddings",
+            "rerank": null,
             "account": null,
             "service_account": null,
             "account_scope": null,

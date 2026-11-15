@@ -217,6 +217,31 @@ impl AuthMethod {
 // `dashscope-result-sgp.oss-ap-southeast-1.aliyuncs.com` in its image, speech and video references.
 const DASHSCOPE_RESULTS: &[&str] = &["dashscope-*.aliyuncs.com"];
 
+/// Where and how Kaeso sends rerank requests to a provider.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RerankEgress {
+    pub dialect: DialectId,
+    /// The dialect's path starts at the root of the host, not under the base URL's path, as
+    /// Cohere serves its Rerank API beside the OpenAI-compatible path Kaeso uses.
+    pub from_root: bool,
+}
+
+impl RerankEgress {
+    pub const fn of(dialect: DialectId) -> RerankEgress {
+        RerankEgress {
+            dialect,
+            from_root: false,
+        }
+    }
+
+    const fn at_root(self) -> RerankEgress {
+        RerankEgress {
+            from_root: true,
+            ..self
+        }
+    }
+}
+
 /// Where and how Kaeso sends image requests to a provider, for the models `models` matches.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ImagesEgress {
@@ -818,6 +843,9 @@ pub struct Provider {
     /// How the provider takes OpenAI embeddings requests, for a provider whose `embeddings` is
     /// `openai_embeddings`.
     pub embeddings_profile: EmbeddingsProfile,
+    /// Where Kaeso sends rerank requests; `None` for a provider whose rerank API Kaeso doesn't
+    /// call.
+    pub rerank: Option<RerankEgress>,
     /// Where Kaeso sends image requests, by model, the first match winning; empty for a
     /// provider that offers no image API.
     pub images: &'static [ImagesEgress],
@@ -932,6 +960,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: Some(DialectId::OpenAiResponses),
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress::openai(ImagesProfile::OPENAI)],
         speech: &[SpeechEgress::openai(SpeechProfile::OPENAI)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::OPENAI)],
@@ -979,6 +1008,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1016,6 +1046,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1058,6 +1089,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress::openai(ImagesProfile::XAI)],
         speech: &[SpeechEgress::openai(SpeechProfile::XAI)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::XAI)],
@@ -1108,6 +1140,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress::openai(ImagesProfile::TOGETHER)],
         speech: &[SpeechEgress::openai(SpeechProfile::TOGETHER)],
         transcriptions: &[TranscriptionsEgress::openai(
@@ -1151,6 +1184,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[SpeechEgress::openai(SpeechProfile::GROQ)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::GROQ)],
@@ -1194,6 +1228,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress::openai(ImagesProfile::OPENROUTER)],
         speech: &[SpeechEgress::openai(SpeechProfile::OPENROUTER)],
         transcriptions: &[TranscriptionsEgress::openai(
@@ -1239,6 +1274,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[SpeechEgress::openai(SpeechProfile::MISTRAL)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::MISTRAL)],
@@ -1297,6 +1333,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress::openai(ImagesProfile::VERCEL)],
         speech: &[SpeechEgress::openai(SpeechProfile::VERCEL)],
         transcriptions: &[TranscriptionsEgress::openai(TranscriptionsProfile::VERCEL)],
@@ -1339,6 +1376,9 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        // Cohere's Rerank API is `POST /v2/rerank` at the root of its host, beside the
+        // compatibility API (https://docs.cohere.com/reference/rerank).
+        rerank: Some(RerankEgress::of(DialectId::CohereRerank).at_root()),
         images: &[],
         speech: &[],
         transcriptions: &[TranscriptionsEgress {
@@ -1399,6 +1439,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1439,6 +1480,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1492,6 +1534,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         // QwenCloud's OpenAI-compatible image mode serves Qwen-Image 3.0 and 2.1 Pro only
         // (https://docs.qwencloud.com/api-reference/image-generation/qwen-text-to-image-openai);
         // its other image models answer on DashScope's own API.
@@ -1569,6 +1612,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1614,6 +1658,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress {
             dialect: DialectId::OpenAiImages,
             profile: ImagesProfile::ZAI,
@@ -1663,6 +1708,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress {
             dialect: DialectId::MinimaxImages,
             profile: ImagesProfile::OPENAI,
@@ -1735,6 +1781,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[
             ImagesEgress::elevenlabs().for_models("gpt-image-*"),
             ImagesEgress::elevenlabs().for_models("gemini-*-image"),
@@ -1789,6 +1836,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: Some(DialectId::Gemini),
         embeddings: Some(DialectId::GeminiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress::gemini()],
         speech: &[SpeechEgress::gemini()],
         transcriptions: &[TranscriptionsEgress::gemini()],
@@ -1827,6 +1875,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: Some(DialectId::Gemini),
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[ImagesEgress::gemini()],
         speech: &[SpeechEgress::gemini()],
         transcriptions: &[TranscriptionsEgress::gemini()],
@@ -1912,6 +1961,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -1958,6 +2008,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2001,6 +2052,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: Some(DialectId::AnthropicMessages),
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2046,6 +2098,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[TranscriptionsEgress::openai(
@@ -2091,6 +2144,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2136,6 +2190,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2180,6 +2235,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2224,6 +2280,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[SpeechEgress::openai(SpeechProfile::SILICONFLOW)],
         transcriptions: &[TranscriptionsEgress::openai(
@@ -2274,6 +2331,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2331,6 +2389,7 @@ pub const PROVIDERS: &[Provider] = &[
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::compatible("Cloudflare AI Gateway")
             .without_dimensions(),
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2394,6 +2453,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2470,6 +2530,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2518,6 +2579,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2589,6 +2651,7 @@ pub const PROVIDERS: &[Provider] = &[
         // The embeddings reference documents only `model` and `input`; every vector has 1,024
         // dimensions (https://console.upstage.ai/api/embeddings).
         embeddings_profile: EmbeddingsProfile::compatible("Upstage").without_dimensions(),
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2661,6 +2724,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2731,6 +2795,7 @@ pub const PROVIDERS: &[Provider] = &[
         // The embeddings reference has `input`, `model` and `encoding_format`, and no `dimensions`
         // (https://docs.novita.ai/api-reference/model-apis-llm-create-embeddings.md).
         embeddings_profile: EmbeddingsProfile::compatible("Novita AI").without_dimensions(),
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2811,6 +2876,7 @@ pub const PROVIDERS: &[Provider] = &[
         // (https://docs.volcengine.com/docs/zh/ark/multimodal-vectorization-api.md).
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2902,6 +2968,7 @@ pub const PROVIDERS: &[Provider] = &[
         // `Qwen3-Embedding-8B` takes `dimensions`, and `bge-m3`, whose size is fixed, answers it
         // with a 400, so nothing is dropped without a word.
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -2970,6 +3037,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -3051,6 +3119,7 @@ pub const PROVIDERS: &[Provider] = &[
         // Its embedding models answer vectors of a fixed size and take no `dimensions`
         // ("不支持自定义", https://cloud.tencent.com/document/product/1823/133515).
         embeddings_profile: EmbeddingsProfile::compatible("Tencent TokenHub").without_dimensions(),
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -3114,6 +3183,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -3177,6 +3247,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: None,
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],
@@ -3256,6 +3327,7 @@ pub const PROVIDERS: &[Provider] = &[
         count_tokens: None,
         embeddings: Some(DialectId::OpenAiEmbeddings),
         embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],

@@ -62,3 +62,11 @@ Die Dokumentation der Anbieter wurde am 2026-11-09 gelesen. Die Quelle einer Zei
 | Z.ai `zai` | Ja: GLM-Modelle | Nicht angeboten | Ja: `glm-image` | Nicht angeboten | Ja: `glm-asr-2512` | Nicht angeboten | Ja: `cogvideox-3` | Nicht angeboten | Nicht angeboten | [API reference](https://docs.z.ai/llms.txt) |
 
 Eigene Anbieter erreichen die Images-, Audio- und Videos-APIs von OpenAI und treffen Entscheidungen nur, wo Sie die jeweilige API für den Anbieter einschalten ([Eigene Anbieter](../console/custom-providers.md)).
+
+## Rerank
+
+Die [Rerank-API](../api/rerank.md) erreicht die Rerank-Modelle dieser Anbieter. Jeder andere Anbieter hat in Kaeso keine Rerank-API; KPMR listet Rerank-Modelle mancher von ihnen, etwa die von NVIDIA, die Kaeso vor dem Senden ablehnt. Eigene Anbieter bedienen keine Rerank-Modelle.
+
+| Anbieter | Rerank | Quelle |
+| --- | --- | --- |
+| Cohere `cohere` | Ja: Rerank 5, `rerank-v5.0-pro` und `rerank-v5.0-fast`, unter `/v2/rerank` | [Rerank](https://docs.cohere.com/docs/rerank), gelesen am 14.11.2026 |

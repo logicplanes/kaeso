@@ -481,3 +481,42 @@ mod decisions {
         assert!(Block::json(raw("{}")).extras().is_some());
     }
 }
+
+mod rerank {
+    use kaeso_kpp::{
+        DialectId, Reply, Request, RequestKind, RerankDocument, RerankRequest, RerankResponse,
+        RerankResult, StreamMode,
+    };
+
+    #[test]
+    fn the_cohere_rerank_dialect_has_a_stable_id_and_name() {
+        assert_eq!(DialectId::CohereRerank.as_str(), "cohere_rerank");
+        assert_eq!(DialectId::CohereRerank.display_name(), "Cohere Rerank");
+        assert_eq!(
+            "cohere_rerank".parse::<DialectId>().unwrap(),
+            DialectId::CohereRerank
+        );
+        assert!(DialectId::ALL.contains(&DialectId::CohereRerank));
+    }
+
+    #[test]
+    fn a_rerank_request_is_its_own_kind_and_never_streams() {
+        let req = Request::Rerank(
+            RerankRequest::new("rerank-v5.0-fast", "q", vec![RerankDocument::new("a")])
+                .with_top_n(1)
+                .with_return_documents(true)
+                .with_max_tokens_per_doc(512),
+        );
+        assert_eq!(req.kind(), RequestKind::Rerank);
+        assert_eq!(req.model(), "rerank-v5.0-fast");
+        assert_eq!(req.stream_mode(), StreamMode::Off);
+        req.validate().unwrap();
+        let reply = Reply::Rerank(RerankResponse::new(
+            "rerank-v5.0-fast",
+            vec![RerankResult::new(0, 0.9)],
+        ));
+        assert_eq!(reply.kind(), RequestKind::Rerank);
+        let json = serde_json::to_value(&req).unwrap();
+        assert_eq!(json["rerank"]["documents"][0]["text"], "a");
+    }
+}

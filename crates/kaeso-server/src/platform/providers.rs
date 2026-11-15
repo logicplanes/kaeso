@@ -50,6 +50,10 @@ pub struct ProviderView {
         `/v1/embeddings`; `null` when it has none."]
     #[schema(example = json!(null))]
     pub embeddings: Option<&'static str>,
+    #[doc = "The format Kaeso sends the provider's rerank models in, which serve\n\
+        `/v1/rerank`; `null` when Kaeso calls no rerank API of the provider."]
+    #[schema(example = json!(null))]
+    pub rerank: Option<&'static str>,
     #[doc = "An account people can sign in to instead of adding an API key, with\n\
         `POST /orgs/{org}/credentials/oauth`; `null` when the provider takes API\n\
         keys only."]
@@ -180,6 +184,7 @@ impl ProviderView {
             dialects: p.dialects.iter().map(|d| d.as_str()).collect(),
             count_tokens: p.count_tokens.map(|d| d.as_str()),
             embeddings: p.embeddings.map(|d| d.as_str()),
+            rerank: p.rerank.map(|r| r.dialect.as_str()),
             account: p.account.map(|a| AccountSignInView {
                 method: a.method.into(),
                 product: a.product,
@@ -240,6 +245,7 @@ impl ProviderView {
             dialects: p.dialects().iter().map(|d| d.as_str()).collect(),
             count_tokens: p.count_tokens().map(|d| d.as_str()),
             embeddings: p.embeddings().map(|d| d.as_str()),
+            rerank: None,
             account: None,
             service_account: None,
             account_scope: None,

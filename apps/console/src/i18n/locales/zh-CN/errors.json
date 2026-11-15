@@ -763,5 +763,10 @@
   "errors.keyEndpoint.notHttps": "端点必须是 https URL，且不含用户名、查询参数或片段。",
   "errors.keyEndpoint.host": "端点必须是资源的地址，例如 `{example}`。",
   "errors.keyEndpoint.path": "端点包含 Kaeso 不会调用的路径；请只提供资源的地址。",
-  "errors.upstreamModel": "服务商模型 ID 为 1 到 256 个字符，不含空格。"
+  "errors.upstreamModel": "服务商模型 ID 为 1 到 256 个字符，不含空格。",
+  "errors.noRerankAtProvider": "Kaeso 不调用 {provider} 的重排序模型，因此 `{name}` 无法对文档重排序。",
+  "errors.rerankDocumentText": "Cohere 的重排序 API 只接受文本形式的文档；请从 `{param}` 中删除 `{field}`。",
+  "errors.model.rerankOnly": "模型 `{model}` 是重排序模型；请将其发送到 `/v1/rerank`。",
+  "errors.model.generationNoRerank": "模型 `{model}` 是生成模型，无法对文档重排序。",
+  "errors.model.embeddingsNoRerank": "模型 `{model}` 是嵌入模型，无法对文档重排序。"
 }

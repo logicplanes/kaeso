@@ -337,6 +337,10 @@ Einen Fehler, den ElevenLabs selbst sendet, erhält die App so, wie ElevenLabs i
 
 Eine App an `/v1/systemone` erhält Fehler in der Form von TypeSafe, wie das SDK von TypeSafe sie liest: `{"detail": "…"}` mit der Meldung oder eine Liste von Problemen mit ihrem `loc` für ein Feld, das die Anfrage falsch gesetzt hat. Ein überlasteter Anbieter antwortet mit 529. Fehler an `/v1/decisions` kommen im [OpenAI-Format](#openai-formate), Fehler an `/v1beta/decisions`, oder an `/v1/decisions` mit dem Schlüssel von Gemini, im [Gemini-Format](#gemini-format); eine Sicherheitssperre von Gemini behält ihren `code`, etwa `safety`. Die [Decisions-API](decisions.md#was-abgelehnt-wird) listet, was Kaeso ablehnt.
 
+## Rerank-Format von Cohere
+
+Eine App an `/v1/rerank` oder `/v2/rerank` erhält Fehler in der Gestalt von Cohere, wie das SDK von Cohere sie liest: `{"id": "…", "message": "…"}`, mit der Anfrage-ID von Kaeso als `id`. Ein gesperrtes Token beantwortet Kaeso wie Cohere mit 498, einen überlasteten Anbieter mit 503. Ein Fehler, den Cohere selbst sendete, erreicht die App so, wie Cohere ihn sandte, mit seinem Status. Die [Rerank-API](rerank.md#was-abgelehnt-wird) nennt, was Kaeso ablehnt.
+
 ## Ursachen
 
 Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter jedem Status:

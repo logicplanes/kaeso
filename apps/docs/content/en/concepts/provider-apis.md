@@ -62,3 +62,11 @@ The provider documentation was read on 2026-11-09. A row's source covers its cel
 | Z.ai `zai` | Yes: GLM models | Not offered | Yes: `glm-image` | Not offered | Yes: `glm-asr-2512` | Not offered | Yes: `cogvideox-3` | Not offered | Not offered | [API reference](https://docs.z.ai/llms.txt) |
 
 Custom providers reach OpenAI's Images, audio and Videos APIs, and make decisions, only where you turn each API on for the provider ([custom providers](../console/custom-providers.md)).
+
+## Rerank
+
+The [Rerank API](../api/rerank.md) reaches the rerank models of these providers. Every other provider has no rerank API in Kaeso; KPMR lists rerankers of some of them, such as NVIDIA's, which Kaeso refuses before sending. Custom providers serve no rerank models.
+
+| Provider | Rerank | Source |
+| --- | --- | --- |
+| Cohere `cohere` | Yes: Rerank 5, `rerank-v5.0-pro` and `rerank-v5.0-fast`, at `/v2/rerank` | [Rerank](https://docs.cohere.com/docs/rerank), read 2026-11-14 |

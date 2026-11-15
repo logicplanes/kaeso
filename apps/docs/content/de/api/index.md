@@ -13,6 +13,7 @@ Jede Installation stellt auf ihrer Domain zwei APIs bereit. Apps rufen Modelle �
 - [Audio-API](audio.md): Sprache erzeugen und Audio transkribieren oder übersetzen, mit der Audio-API von OpenAI bei jedem Anbieter, der sie anbietet.
 - [Videos-API](videos.md): Videos mit der Videos API von OpenAI bei jedem Anbieter machen, der Videos macht.
 - [Decisions-API](decisions.md): Entscheidungsmodellen typisierte Fragen im Entscheidungsformat von OpenAI, TypeSafe oder Gemini stellen.
+- [Rerank-API](rerank.md): Dokumente im Rerank-Format von Cohere danach ordnen, wie gut sie eine Anfrage beantworten.
 - [ElevenLabs-API](elevenlabs.md): Sprache, Klänge, Musik und Transkription von ElevenLabs mit den offiziellen SDKs von ElevenLabs aufrufen.
 - [Fehler](errors.md): Nachlesen, was eine fehlgeschlagene Modellanfrage in jedem Format zurückgibt und warum sie fehlschlug.
 - [Platform API](platform-api.md): Authentifizierung, Konventionen, Fehler und Routen zum Verwalten einer Installation nachschlagen.

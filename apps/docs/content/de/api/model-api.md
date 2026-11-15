@@ -162,6 +162,7 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 | `POST /v1/responses` | OpenAI Responses |
 | `POST /v1/responses/input_tokens` | OpenAI Responses, Eingabe-Token zählen |
 | `POST /v1/embeddings` | OpenAI Embeddings |
+| `POST /v1/rerank`, `POST /v2/rerank` | Cohere Rerank ([Rerank-API](rerank.md)) |
 | `POST /v1/images/generations`, `POST /v1/images/edits`, `POST /v1/images/variations` | OpenAI Images ([Bilder-API](images.md)) |
 | `POST /v1/audio/speech` | OpenAI Speech ([Audio-API](audio.md)) |
 | `POST /v1/audio/transcriptions`, `POST /v1/audio/translations` | OpenAI Transcriptions ([Audio-API](audio.md)) |
@@ -184,7 +185,7 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 
 Kaeso bedient die Pfade von Gemini auch unter `/v1`, wie Google: `google-genai` ruft ab Version 3 standardmäßig `/v1` auf, frühere Versionen `/v1beta`. `POST /v1/models/{model}:{method}` ist immer Gemini. `GET /v1/models`, `GET /v1/models/{model}` und `POST /v1/decisions` antworten im Gemini-Format, wenn die Anfrage den Schlüssel von Gemini trägt, `x-goog-api-key` oder `?key=`, und keinen Header `Authorization`. In einem Gemini-Pfad ist `{model}` ein beliebiger [Modellname](#modellnamen), etwa `claude-haiku-4-5`.
 
-`/v1/embeddings`, `:embedContent` und `:batchEmbedContents` bedienen nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/provider-apis.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt. Ebenso bedienen `/v1/decisions`, `/v1/systemone` und `/v1beta/decisions` nur Entscheidungsmodelle, und ein reines Entscheidungsmodell bedient keinen anderen Endpunkt ([Decisions-API](decisions.md)).
+`/v1/embeddings`, `:embedContent` und `:batchEmbedContents` bedienen nur Embeddings-Modelle, die nur manche [Anbieter](../concepts/provider-apis.md) anbieten, und Embeddings-Modelle bedienen keinen anderen Endpunkt. Kaeso antwortet mit 400 auf eine Anfrage, die beides mischt. Ebenso bedienen `/v1/decisions`, `/v1/systemone` und `/v1beta/decisions` nur Entscheidungsmodelle, und ein reines Entscheidungsmodell bedient keinen anderen Endpunkt ([Decisions-API](decisions.md)). `/v1/rerank` bedient nur Rerank-Modelle, und diese bedienen keinen anderen Endpunkt ([Rerank-API](rerank.md)).
 
 Jeder andere Pfad unter `/v1` erhält 404, ein bekannter Pfad mit der falschen Methode 405. Beide Fehler kommen im Anthropic-Format, wenn die Anfrage einen `anthropic-version`-Header hat, im Format von ElevenLabs, wenn sie einen `xi-api-key`-Header hat, im Gemini-Format, wenn sie den Schlüssel von Gemini trägt, und sonst im OpenAI-Format.
 

@@ -531,6 +531,7 @@ pub fn endpoint(o: &Outcome) -> &'static str {
         (DialectId::OpenAiSpeech, _) => "audio/speech",
         (DialectId::OpenAiDecisions | DialectId::GeminiDecisions, _) => "decisions",
         (DialectId::SystemOne, _) => "systemone",
+        (DialectId::CohereRerank, _) => "rerank",
         _ => "chat/completions",
     }
 }
@@ -1232,11 +1233,13 @@ mod tests {
         ));
         let transcript = Reply::Transcription(TranscriptionResponse::new("whisper-1", "Hello."));
         let decide = Reply::Decide(decide_reply());
+        let rerank = Reply::Rerank(rerank_reply());
         for (name, reply) in [
             ("image", image),
             ("speech", speech),
             ("transcription", transcript),
             ("decide", decide),
+            ("rerank", rerank),
         ] {
             for (keep, kept) in [(Keep::media(), "kept"), (Keep::nothing(), "left_out")] {
                 let stored = media_reply_json(&reply, &mut keep.clone()).unwrap();
@@ -1249,6 +1252,20 @@ mod tests {
                 );
             }
         }
+    }
+
+    fn rerank_reply() -> kaeso_kpp::RerankResponse {
+        use kaeso_kpp::{RerankDocument, RerankResponse, RerankResult};
+        let mut reply = RerankResponse::new(
+            "rerank-v5.0-fast",
+            vec![
+                RerankResult::new(1, 0.93).with_document(RerankDocument::new("Paris")),
+                RerankResult::new(0, 0.12),
+            ],
+        );
+        reply.id = Some("rr_1".into());
+        reply.usage = kaeso_kpp::Usage::new(61, 0);
+        reply
     }
 
     fn decide_reply() -> kaeso_kpp::DecideResponse {
@@ -1276,6 +1293,14 @@ mod tests {
         reply.usage = kaeso_kpp::Usage::new(1200, 0);
         reply.usage.cache_read_tokens = 1024;
         reply
+    }
+
+    #[test]
+    fn rerankings_are_logged_at_their_endpoint() {
+        let mut o = crate::model_api::pipeline::blank_outcome(kaeso_core::id::RequestId::new());
+        o.kind = RequestKind::Rerank;
+        o.ingress = DialectId::CohereRerank;
+        assert_eq!(endpoint(&o), "rerank");
     }
 
     #[test]

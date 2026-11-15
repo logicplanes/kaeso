@@ -26264,7 +26264,7 @@
               "string",
               "null"
             ],
-            "description": "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n`openai_chat` or `openai_embeddings`.",
+            "description": "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n`openai_chat`, `openai_embeddings` or a rerank format such as `cohere_rerank`.",
             "example": "openai_responses"
           },
           "forced_tool_choice": {
@@ -26522,7 +26522,7 @@
               "string",
               "null"
             ],
-            "description": "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n`openai_chat` or `openai_embeddings`.",
+            "description": "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n`openai_chat`, `openai_embeddings` or a rerank format such as `cohere_rerank`.",
             "example": "openai_responses"
           },
           "forced_tool_choice": {
@@ -31327,6 +31327,14 @@
                       "type": "null"
                     }
                   ]
+                },
+                "rerank": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The format Kaeso sends the provider's rerank models in, which serve\n`/v1/rerank`; `null` when Kaeso calls no rerank API of the provider.",
+                  "example": null
                 },
                 "server": {
                   "oneOf": [
@@ -36728,6 +36736,14 @@
               }
             ]
           },
+          "rerank": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The format Kaeso sends the provider's rerank models in, which serve\n`/v1/rerank`; `null` when Kaeso calls no rerank API of the provider.",
+            "example": null
+          },
           "server": {
             "oneOf": [
               {
@@ -37374,7 +37390,8 @@
           "gemini_embeddings",
           "openai_decisions",
           "system_one",
-          "gemini_decisions"
+          "gemini_decisions",
+          "cohere_rerank"
         ]
       },
       "RouteFormatRule": {

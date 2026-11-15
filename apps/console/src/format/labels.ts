@@ -51,6 +51,7 @@ export const DIALECTS: Record<string, string> = {
   openai_decisions: "OpenAI Decisions",
   system_one: "System One",
   gemini_decisions: "Gemini Decisions",
+  cohere_rerank: "Cohere Rerank",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

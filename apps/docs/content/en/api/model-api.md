@@ -162,6 +162,7 @@ Any format reaches any generation model in the project's catalogue, so a Gemini 
 | `POST /v1/responses` | OpenAI Responses |
 | `POST /v1/responses/input_tokens` | OpenAI Responses, counting input tokens |
 | `POST /v1/embeddings` | OpenAI Embeddings |
+| `POST /v1/rerank`, `POST /v2/rerank` | Cohere Rerank ([Rerank API](rerank.md)) |
 | `POST /v1/images/generations`, `POST /v1/images/edits`, `POST /v1/images/variations` | OpenAI Images ([Images API](images.md)) |
 | `POST /v1/audio/speech` | OpenAI Speech ([Audio API](audio.md)) |
 | `POST /v1/audio/transcriptions`, `POST /v1/audio/translations` | OpenAI Transcriptions ([Audio API](audio.md)) |
@@ -184,7 +185,7 @@ Any format reaches any generation model in the project's catalogue, so a Gemini 
 
 Kaeso serves Gemini's paths under `/v1` too, as Google does: `google-genai` 3 and later call `/v1` by default, earlier releases `/v1beta`. `POST /v1/models/{model}:{method}` is always Gemini. `GET /v1/models`, `GET /v1/models/{model}` and `POST /v1/decisions` answer in the Gemini format when the request carries Gemini's key, `x-goog-api-key` or `?key=`, and no `Authorization` header. In a Gemini path, `{model}` is any [model name](#model-names), such as `claude-haiku-4-5`.
 
-`/v1/embeddings`, `:embedContent` and `:batchEmbedContents` serve only embeddings models, which only some [providers](../concepts/provider-apis.md) offer, and embeddings models serve no other endpoint. Kaeso answers 400 to a request that mixes them. Likewise, `/v1/decisions`, `/v1/systemone` and `/v1beta/decisions` serve only decision models, and a model that only makes decisions serves no other endpoint ([Decisions API](decisions.md)).
+`/v1/embeddings`, `:embedContent` and `:batchEmbedContents` serve only embeddings models, which only some [providers](../concepts/provider-apis.md) offer, and embeddings models serve no other endpoint. Kaeso answers 400 to a request that mixes them. Likewise, `/v1/decisions`, `/v1/systemone` and `/v1beta/decisions` serve only decision models, and a model that only makes decisions serves no other endpoint ([Decisions API](decisions.md)). `/v1/rerank` serves only rerank models, and they serve no other endpoint ([Rerank API](rerank.md)).
 
 Any other path under `/v1` gets 404, and a known path called with the wrong method gets 405. Both errors are in the Anthropic format when the request has an `anthropic-version` header, in ElevenLabs' format when it has an `xi-api-key` header, in the Gemini format when it has Gemini's key, and in the OpenAI format otherwise.
 

@@ -131,6 +131,7 @@ export function dialectPill(d: string, decisionsOnly = false): string {
       openai_decisions: "decisions",
       system_one: "decisions",
       gemini_decisions: "decisions",
+      cohere_rerank: "rerank",
     }[d] ?? d
   );
 }

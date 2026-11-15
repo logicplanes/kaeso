@@ -161,6 +161,10 @@ pub(super) fn egress_of(
             from_root: e.from_root,
             auth: e.auth,
         }),
+        RequestKind::Rerank => provider.rerank().map(|e| MediaEgress {
+            from_root: e.from_root,
+            auth: None,
+        }),
         _ => None,
     }
 }
@@ -370,6 +374,20 @@ mod tests {
             })
         );
         assert_eq!(egress_of(&anthropic, RequestKind::Decide, "m"), None);
+    }
+
+    #[test]
+    fn cohere_reranks_from_the_root_of_its_host() {
+        let cohere: ProviderRef = kaeso_core::provider::provider("cohere").unwrap().into();
+        let openai: ProviderRef = kaeso_core::provider::provider("openai").unwrap().into();
+        assert_eq!(
+            egress_of(&cohere, RequestKind::Rerank, "rerank-v5.0-fast"),
+            Some(MediaEgress {
+                from_root: true,
+                auth: None
+            })
+        );
+        assert_eq!(egress_of(&openai, RequestKind::Rerank, "m"), None);
     }
 
     #[test]

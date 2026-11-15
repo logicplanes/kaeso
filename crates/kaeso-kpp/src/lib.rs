@@ -54,6 +54,7 @@ mod image;
 mod models;
 mod raw;
 mod request;
+mod rerank;
 mod response;
 mod stream;
 mod validate;
@@ -91,6 +92,7 @@ pub use request::{
     ReasoningConfig, ReasoningEffort, ReasoningMode, ReasoningSummary, Request, RequestKind, Role,
     Sampling, StreamMode, ToolChoice, ToolDef,
 };
+pub use rerank::{RerankDocument, RerankRequest, RerankResponse, RerankResult};
 pub use response::{
     CacheWriteBreakdown, CountTokensResponse, EmbedResponse, Embedding, EmbeddingVector, RawUsage,
     Reply, Response, StopReason, Usage,

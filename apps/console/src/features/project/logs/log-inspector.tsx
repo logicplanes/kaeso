@@ -36,7 +36,7 @@ import { orgProjectsQuery } from "~/api/queries/projects";
 import { catalogueQuery } from "~/api/queries/models";
 import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
-import { cachedShare, isEmbedding, sentWithoutBreakpoint } from "./columns";
+import { cachedShare, isEmbedding, isRerank, sentWithoutBreakpoint } from "./columns";
 import { mediaCount, mediaLabel } from "./media";
 import { decisionAnswers, decisionView, embeddingsView, isKnownReplyForm, replyView, requestView, type DecisionView } from "./render";
 import { collectMedia, forReading } from "./logged-media";
@@ -258,7 +258,7 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
   const sp = e.stream ? e.stream_progress : undefined;
   const message = logMessage(useGatewayErrors(), e.error_message, e.provider, providers.name);
   const embeddings = isEmbedding(e);
-  const share = embeddings ? null : cachedShare(u);
+  const share = embeddings || isRerank(e) ? null : cachedShare(u);
   const unmarked = sentWithoutBreakpoint(e);
   const caching = [
     ...(share !== null ? [{ label: t("logs.inspector.cachedShare", "Read from the cache"), value: formatPercent(share) }] : []),

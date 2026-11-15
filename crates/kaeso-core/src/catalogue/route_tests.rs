@@ -334,6 +334,10 @@ fn conditions_branch_on_headers_formats_features_tokens_and_callers() {
         w.format = AppFormat::of(d).unwrap();
         assert_eq!(took(&decisions, &w), id(1), "{d}");
     }
+    let rerank = with(json!({ "field": "format", "op": "in", "value": ["cohere_rerank"] }));
+    assert_eq!(took(&rerank, &w), id(2));
+    w.format = AppFormat::of(kaeso_kpp::DialectId::CohereRerank).unwrap();
+    assert_eq!(took(&rerank, &w), id(1));
     w.format = AppFormat::AnthropicMessages;
 
     let images = with(json!({ "field": "feature", "op": "used", "value": "images" }));

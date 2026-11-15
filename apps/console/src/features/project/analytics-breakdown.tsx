@@ -227,6 +227,7 @@ const SHORT_DIALECTS: Record<string, string> = {
   openai_decisions: "Decisions",
   system_one: "System One",
   gemini_decisions: "Gemini Decisions",
+  cohere_rerank: "Rerank",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
 

@@ -558,7 +558,7 @@ function kppBlock(b: Json, unknown: Json[]): LogBlock | null {
 
 // Format 2 is a reply that isn't a chat reply, under its kind: `{"format": 2, "image": {…}}`.
 const MEDIA_REPLY_FORMAT = 2;
-const MEDIA_REPLY_KINDS = ["image", "speech", "transcription", "decide"];
+const MEDIA_REPLY_KINDS = ["image", "speech", "transcription", "decide", "rerank"];
 export const isKnownReplyForm = (reply: Json): boolean =>
   !isObj(reply) || !("format" in reply) || (reply.format === MEDIA_REPLY_FORMAT && MEDIA_REPLY_KINDS.some((kind) => isObj(reply[kind])));
 

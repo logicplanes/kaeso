@@ -244,6 +244,7 @@ pub enum AppFormat {
     OpenaiDecisions,
     SystemOne,
     GeminiDecisions,
+    CohereRerank,
 }
 
 impl AppFormat {
@@ -258,6 +259,7 @@ impl AppFormat {
             DialectId::OpenAiDecisions => Some(AppFormat::OpenaiDecisions),
             DialectId::SystemOne => Some(AppFormat::SystemOne),
             DialectId::GeminiDecisions => Some(AppFormat::GeminiDecisions),
+            DialectId::CohereRerank => Some(AppFormat::CohereRerank),
             _ => None,
         }
     }

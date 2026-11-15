@@ -62,3 +62,11 @@ order: 2
 | Z.ai `zai` | 支持：GLM 模型 | 不提供 | 支持：`glm-image` | 不提供 | 支持：`glm-asr-2512` | 不提供 | 支持：`cogvideox-3` | 不提供 | 不提供 | [API reference](https://docs.z.ai/llms.txt) |
 
 自定义服务商只有在您为其开启相应 API 后，才能使用 OpenAI 的 Images、音频和 Videos API 以及做决策（[自定义服务商](../console/custom-providers.md)）。
+
+## 重排序
+
+[重排序 API](../api/rerank.md) 可以调用以下服务商的重排序模型。其他服务商在 Kaeso 中没有重排序 API；KPMR 列出了其中一些服务商的重排序模型，例如 NVIDIA 的，Kaeso 会在发送之前拒绝它们。自定义服务商不提供重排序模型。
+
+| 服务商 | 重排序 | 来源 |
+| --- | --- | --- |
+| Cohere `cohere` | 支持：Rerank 5，即 `rerank-v5.0-pro` 和 `rerank-v5.0-fast`，位于 `/v2/rerank` | [Rerank](https://docs.cohere.com/docs/rerank)，查阅于 2026-11-14 |

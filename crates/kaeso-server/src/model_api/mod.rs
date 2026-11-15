@@ -221,6 +221,7 @@ endpoint!(
     RequestKind::CountTokens
 );
 endpoint!(embeddings, DialectId::OpenAiEmbeddings, RequestKind::Embed);
+endpoint!(rerank, DialectId::CohereRerank, RequestKind::Rerank);
 endpoint!(audio_speech, DialectId::OpenAiSpeech, RequestKind::Speech);
 endpoint!(
     messages,
@@ -331,6 +332,8 @@ pub fn router() -> Router<AppState> {
         .route("/v1/responses", post(responses))
         .route("/v1/responses/input_tokens", post(responses_input_tokens))
         .route("/v1/embeddings", post(embeddings))
+        .route("/v1/rerank", post(rerank))
+        .route("/v2/rerank", post(rerank))
         .route("/v1/decisions", post(decisions))
         .route("/v1/systemone", post(systemone))
         .route("/v1/images/generations", post(image_generations))

@@ -507,6 +507,8 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "openai_responses"
     } else if path.starts_with("/v1/embeddings") {
         "openai_embeddings"
+    } else if path == "/v2/rerank" {
+        "cohere_rerank"
     } else if path == "/v1/image_generation" {
         "minimax_images"
     } else if path.starts_with("/v1/images") || path.starts_with("/api/paas/v4/images") {
@@ -642,6 +644,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     let tag = marker(&text, "tag").map(str::to_owned);
     if !counting
         && dialect != "openai_embeddings"
+        && dialect != "cohere_rerank"
         && decision.is_none()
         && let Some(shape) = synth::Shape::of(&text, body.len())
         && let Ok(id) = dialect.parse::<kaeso_kpp::DialectId>()
@@ -720,6 +723,13 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
                 "json",
             )
         }
+        // Cohere's Rerank API: `[mock:fixture=NAME]` picks another reply.
+        ("cohere_rerank", _) => fixture_file(
+            &dir,
+            "responses",
+            fixture.as_deref().unwrap_or("max-tokens-per-doc"),
+            "json",
+        ),
         ("openai_embeddings", _) => {
             let default = if text.contains("\"encoding_format\":\"base64\"") {
                 "base64-encoding"

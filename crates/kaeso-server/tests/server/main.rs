@@ -104,6 +104,7 @@ mod realtime;
 mod reasoning;
 mod request_encoding;
 mod request_size;
+mod rerank;
 mod response_cache;
 mod roles;
 mod route_access;

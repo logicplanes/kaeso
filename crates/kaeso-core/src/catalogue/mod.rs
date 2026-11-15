@@ -143,7 +143,7 @@ pub struct Fields {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unit_prices: Option<Vec<UnitPrice>>,
     #[doc = "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n\
-        `openai_chat` or `openai_embeddings`."]
+        `openai_chat`, `openai_embeddings` or a rerank format such as `cohere_rerank`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "openai_responses"))]
     pub egress_dialect: Option<DialectId>,
@@ -585,10 +585,13 @@ impl Fields {
             output_audio_price: pricing.output_audio,
             unit_prices: (!pricing.per_unit.is_empty())
                 .then(|| pricing.per_unit.iter().map(UnitPrice::from_kpmr).collect()),
-            egress_dialect:
-                m.egress_dialect()
-                    .or((m.kind.as_deref() == Some("embedding"))
-                        .then_some(DialectId::OpenAiEmbeddings)),
+            egress_dialect: m.egress_dialect().or(match m.kind.as_deref() {
+                Some("embedding") => Some(DialectId::OpenAiEmbeddings),
+                // KPMR names no format for rerank models; Cohere's is Kaeso's default, and a
+                // provider with its own gets it in `effective`.
+                Some("reranking") => Some(DialectId::CohereRerank),
+                _ => None,
+            }),
             adaptive_thinking: reasoning.adaptive_thinking,
             thinking_binding: reasoning.thinking_binding,
             forced_tool_choice: capabilities.forced_tool_choice,
@@ -730,8 +733,11 @@ impl Fields {
                 "`unit_prices` takes up to 32 prices of 0 to 1,000,000 USD per known unit.",
             ));
         }
+        // A rerank model goes to the provider's rerank API, whose format is a dialect too.
+        let rerank = provider.rerank().map(|r| r.dialect);
         if let Some(d) = self.egress_dialect
             && !provider.dialects().contains(&d)
+            && rerank != Some(d)
         {
             return Err(FieldError::new(
                 "egress_dialect",
@@ -741,7 +747,9 @@ impl Fields {
                     provider
                         .dialects()
                         .iter()
-                        .map(|d| d.as_str())
+                        .copied()
+                        .chain(rerank)
+                        .map(DialectId::as_str)
                         .collect::<Vec<_>>()
                         .join(", ")
                 ),
@@ -1024,6 +1032,12 @@ impl Effective {
         EMBEDDINGS.contains(&self.dialect)
     }
 
+    /// Whether the model orders documents by how well they answer a query, and does nothing
+    /// else.
+    pub fn is_rerank(&self) -> bool {
+        RERANK.contains(&self.dialect)
+    }
+
     /// Whether the model answers decision questions, alone or as well as generating.
     pub fn decides(&self) -> bool {
         self.fields.decisions.is_some()
@@ -1051,6 +1065,9 @@ impl Effective {
 
 const EMBEDDINGS: [DialectId; 2] = [DialectId::OpenAiEmbeddings, DialectId::GeminiEmbeddings];
 
+/// The rerank formats Kaeso speaks.
+pub const RERANK: [DialectId; 1] = [DialectId::CohereRerank];
+
 pub fn effective(
     entry: &Entry,
     snapshot: &kpmr::Catalogue,
@@ -1074,6 +1091,10 @@ pub fn effective(
                 Some(d)
             } else if EMBEDDINGS.contains(&d) {
                 provider.embeddings().or(Some(d))
+            } else if RERANK.contains(&d) {
+                // A rerank model stays one on a provider Kaeso calls no rerank API of, and is
+                // refused instead of being sent as a generation model.
+                Some(provider.rerank().map_or(d, |r| r.dialect))
             } else {
                 None
             }

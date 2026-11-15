@@ -4,6 +4,7 @@ use kaeso_kpp::{
 };
 
 use crate::anthropic_messages::AnthropicMessages;
+use crate::cohere_rerank::CohereRerank;
 use crate::dashscope::DashScope;
 use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
 use crate::gemini::{Gemini, GeminiAction};
@@ -58,6 +59,7 @@ macro_rules! dispatch {
             DialectId::SystemOne => Ok(SystemOne::$f($($arg),*)),
             DialectId::OpenAiDecisions => Ok(OpenAiDecisions::$f($($arg),*)),
             DialectId::GeminiDecisions => Ok(GeminiDecisions::$f($($arg),*)),
+            DialectId::CohereRerank => Ok(CohereRerank::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -90,7 +92,10 @@ pub fn decode_checked_request<B: RequestBody>(
 ) -> Result<Request, KppError> {
     if !matches!(
         checked.dialect(),
-        DialectId::SystemOne | DialectId::OpenAiDecisions | DialectId::GeminiDecisions
+        DialectId::SystemOne
+            | DialectId::OpenAiDecisions
+            | DialectId::GeminiDecisions
+            | DialectId::CohereRerank
     ) {
         crate::decisions::refuse_kind(kind, checked.dialect())?;
     }
@@ -126,6 +131,7 @@ pub fn decode_checked_request<B: RequestBody>(
         DialectId::SystemOne => SystemOne::decode_checked(kind, upload, headers),
         DialectId::OpenAiDecisions => OpenAiDecisions::decode_checked(kind, body, headers),
         DialectId::GeminiDecisions => GeminiDecisions::decode_checked(kind, body, headers),
+        DialectId::CohereRerank => CohereRerank::decode_checked(kind, body, headers),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }

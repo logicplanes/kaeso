@@ -69,7 +69,7 @@ sequenceDiagram
 
 | Crate | 内容 |
 | --- | --- |
-| `kaeso-kpp` | 只包含 KPP 类型：请求、回复、流事件、错误、Token 计数、嵌入、决策和模型列表，以及 `validate()` 和 `required_capabilities()`。没有编解码逻辑，也没有 I/O。 |
+| `kaeso-kpp` | 只包含 KPP 类型：请求、回复、流事件、错误、Token 计数、嵌入、重排序、决策和模型列表，以及 `validate()` 和 `required_capabilities()`。没有编解码逻辑，也没有 I/O。 |
 | `kaeso-codecs` | 每种 API 格式一个 sans-IO 编解码器（代码中称为方言，即 `DialectId`），以及它们共用的构件。编解码器把字节转换为 KPP 值，把 KPP 值转换为字节；流按 chunk 逐块送入并产生事件。 |
 
 两个 crate 都发布在 crates.io 上。它们的库代码只能依赖 `serde`、`serde_json`、`bytes`、`thiserror`、`indexmap`、`base64` 和 `mime`，`cargo deny` 禁止它们使用 `tokio`、`reqwest`、`hyper` 和 `axum`（[添加依赖](../contributing.md#添加依赖)）。
@@ -100,6 +100,7 @@ sequenceDiagram
 | `system_one` | TypeSafe 的 System One API（`/v1/systemone`）以及使用其某种形式的服务商（[System One](system-one.md)） |
 | `openai_decisions` | OpenAI 的 Decisions API（`/v1/decisions`）（[OpenAI Decisions](openai-decisions.md)） |
 | `gemini_decisions` | Gemini 的 Decisions API（`/v1beta/decisions`）（[Gemini Decisions](gemini-decisions.md)） |
+| `cohere_rerank` | Cohere 的重排序格式（`/v1/rerank`、`/v2/rerank`）（[Cohere Rerank](cohere-rerank.md)） |
 | `multipart` | 图片、音频和视频上传以及 System One 图片部分使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |
@@ -108,12 +109,12 @@ sequenceDiagram
 | `dispatch` | 在运行时按 `DialectId` 选择的编解码器函数 |
 | `wire` | 用于无损线路结构体的 serde 构件（[线路结构体](codec-design.md#线路结构体)） |
 | `sse` | 事件流的解析器和写入器（[服务器发送事件](codec-design.md#服务器发送事件)） |
-| `limits` | 请求最多可包含的消息、内容块、工具和 embedding 输入数量（[请求上限](codec-design.md#请求上限)） |
+| `limits` | 请求最多可包含的消息、内容块、工具、embedding 输入和重排序文档数量（[请求上限](codec-design.md#请求上限)） |
 | `cross` | 跨方言数据的规则，以及 extras 允许列表 |
 | `continuity` | 随对话传递的推理（[推理的延续](reasoning.md#推理的延续)） |
 | `keepalive` | 让进行中的流不至于沉默的帧（[保活消息](cross-format.md#保活消息)） |
 | `models` | 模型列表的辅助函数（[模型列表](codec-design.md#模型列表)） |
-| `decisions` | 决策编解码器共用的部分：其他编解码器对决策请求给出的拒绝、键控格式的问题键，以及文档记载的 `confidence` 公式 |
+| `decisions` | 决策编解码器共用的部分：其他编解码器对决策或重排序请求给出的拒绝、键控格式的问题键，以及文档记载的 `confidence` 公式 |
 | `image_size` | 从图片头部读取其格式和尺寸，不进行解码（[图片尺寸](codec-design.md#类型)） |
 | `testing` | JSON 和 SSE 的比较工具，也供使用这些编解码器的 crate 使用 |
 
@@ -224,6 +225,13 @@ KPP 的值和错误都按值返回。`KppError` 和部分枚举变体较大，�
 | `model`、`input`、`dimensions`、`encoding` | 语义 | |
 | `user` | 提示 | |
 | `extras` | 与 `GenerateRequest` 相同 | |
+
+### `RerankRequest`
+
+| 字段 | 类别 | 说明 |
+| --- | --- | --- |
+| `model`、`query`、`documents`、`top_n`、`max_tokens_per_doc`、`return_documents` | 语义 | 没有其对应位置的格式会拒绝它，或按其映射页面所述进行映射（[Cohere Rerank](cohere-rerank.md)）。 |
+| `extras`，以及每个文档的 `extras` | 与 `GenerateRequest` 相同 | |
 
 ### 回复与流事件
 
