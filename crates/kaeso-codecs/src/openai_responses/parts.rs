@@ -128,7 +128,11 @@ fn image_part(b: &ImageBlock, media: &mut Media) -> Option<Node> {
         Source::FileId(f) => node.with("file_id", Node::str(&f.id)),
         _ => return None,
     };
-    Some(node.with_opt("prompt_cache_breakpoint", breakpoint_node(b.cache.as_ref())))
+    let detail = crate::cross::openai_image_detail(&b.extras, DIALECT);
+    Some(
+        node.with_opt("detail", detail.as_ref().map(Node::raw))
+            .with_opt("prompt_cache_breakpoint", breakpoint_node(b.cache.as_ref())),
+    )
 }
 
 fn file_part(b: &DocumentBlock, media: &mut Media) -> Option<Node> {

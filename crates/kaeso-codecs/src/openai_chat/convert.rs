@@ -480,9 +480,13 @@ pub(crate) fn encode_image_part(
             return Err(source_unsupported("image", other));
         }
     };
+    let mut image_url = ext_nested(ImageUrl { url }, &block.extras, "image_url");
+    if let Some(detail) = crate::cross::openai_image_detail(&block.extras, DIALECT) {
+        image_url.extra.entry("detail".to_owned()).or_insert(detail);
+    }
     let part = ImagePart {
         ty: "image_url".to_owned(),
-        image_url: ext_nested(ImageUrl { url }, &block.extras, "image_url"),
+        image_url,
         prompt_cache_breakpoint: encode_breakpoint(block.cache.as_ref()),
     };
     to_raw(&ext_with(part, &block.extras))

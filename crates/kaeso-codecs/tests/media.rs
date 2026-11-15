@@ -385,3 +385,61 @@ fn base64_as_the_app_spelled_it_round_trips_in_responses_and_is_padded_elsewhere
         );
     }
 }
+
+#[test]
+fn an_images_detail_crosses_between_chat_and_responses_unchanged() {
+    for detail in ["low", "high", "auto"] {
+        let chat = decode(
+            C,
+            &json!({"model": "m", "messages": [{"role": "user", "content": [
+                {"type": "text", "text": "x"},
+                {"type": "image_url", "image_url": {"url": "https://example.com/a.png", "detail": detail}}
+            ]}]}),
+        );
+        let sent = encode(R, &chat).unwrap();
+        assert_eq!(
+            sent["input"][0]["content"][1],
+            json!({"type": "input_image", "image_url": "https://example.com/a.png", "detail": detail}),
+            "{detail}"
+        );
+        let responses = decode(
+            R,
+            &json!({"model": "m", "input": [{"role": "user", "content": [
+                {"type": "input_text", "text": "x"},
+                {"type": "input_image", "image_url": "https://example.com/a.png", "detail": detail}
+            ]}]}),
+        );
+        let sent = encode(C, &responses).unwrap();
+        // Responses keeps `auto`, its default, as a form marker; no `detail` means `auto` in Chat
+        // Completions too.
+        let expected = if detail == "auto" {
+            json!({"url": "https://example.com/a.png"})
+        } else {
+            json!({"url": "https://example.com/a.png", "detail": detail})
+        };
+        assert_eq!(
+            sent["messages"][0]["content"][1]["image_url"], expected,
+            "{detail}"
+        );
+    }
+    let original = decode(
+        R,
+        &json!({"model": "m", "input": [{"role": "user", "content": [
+            {"type": "input_image", "image_url": "https://example.com/a.png", "detail": "original"}
+        ]}]}),
+    );
+    let sent = encode(C, &original).unwrap();
+    assert_eq!(
+        sent["messages"][0]["content"][0]["image_url"],
+        json!({"url": "https://example.com/a.png"}),
+        "Chat Completions takes no `original`"
+    );
+    let anthropic = encode(A, &decode(
+        C,
+        &json!({"model": "m", "max_tokens": 8, "messages": [{"role": "user", "content": [
+            {"type": "image_url", "image_url": {"url": "https://example.com/a.png", "detail": "low"}}
+        ]}]}),
+    ))
+    .unwrap();
+    assert!(!anthropic.to_string().contains("detail"), "{anthropic}");
+}
