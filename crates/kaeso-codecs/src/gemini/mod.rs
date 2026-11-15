@@ -28,6 +28,10 @@ use kaeso_kpp::{
     DialectId, KppError, ModelInfo, ModelList, ModelsQuery, Reply, Request, RequestKind,
 };
 
+/// Prefix of the extras a `countTokens` body's own top-level keys are kept under, so they are
+/// written back for Gemini; the app sent the key without it.
+pub(crate) const COUNT_EXTRA: &str = "count:";
+
 use crate::codec::{
     Codec, EgressCtx, EncodeCtx, EncodedError, EncodedRequest, HeaderList, StreamDecoder,
     StreamEncoder,

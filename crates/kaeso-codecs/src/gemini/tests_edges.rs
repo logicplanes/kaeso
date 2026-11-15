@@ -503,3 +503,27 @@ fn shapes_over_the_limits_name_gemini_fields() {
     .unwrap();
     assert_eq!((one.items, one.blocks), (1, 2));
 }
+
+#[test]
+fn a_count_tokens_field_without_an_equivalent_is_refused_under_the_name_the_app_sent() {
+    let body = json!({
+        "contents": [{"role": "user", "parts": [{"text": "Hi"}]}],
+        "systemInstruction": {"parts": [{"text": "S"}]}
+    });
+    let req = round_trip_request(GeminiAction::CountTokens, body);
+    for target in [DialectId::AnthropicMessages, DialectId::OpenAiResponses] {
+        let err = crate::cross::check_foreign(&req, &kaeso_kpp::Origin::new(target)).unwrap_err();
+        assert_eq!(
+            err.unsupported_feature(),
+            Some("systemInstruction"),
+            "{target:?}"
+        );
+        assert!(
+            err.message
+                .starts_with("`systemInstruction` comes from a Gemini API request"),
+            "{}",
+            err.message
+        );
+        assert!(!err.message.contains("count:"), "{}", err.message);
+    }
+}

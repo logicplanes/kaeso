@@ -137,7 +137,9 @@ fn decode_action(
                 }
             };
             for (k, v) in extra {
-                req.extras.fields.insert(format!("count:{k}"), v);
+                req.extras
+                    .fields
+                    .insert(format!("{}{k}", super::COUNT_EXTRA), v);
             }
             verbatim_into_form(&mut req.extras, "count", verbatim);
             Ok(Request::CountTokens(req))
@@ -686,7 +688,9 @@ pub(crate) fn encode(req: &Request, ctx: &mut EgressCtx) -> Result<EncodedReques
         let extra = if own {
             r.extras
                 .body_fields()
-                .filter_map(|(k, v)| Some((k.strip_prefix("count:")?.to_owned(), v.clone())))
+                .filter_map(|(k, v)| {
+                    Some((k.strip_prefix(super::COUNT_EXTRA)?.to_owned(), v.clone()))
+                })
                 .collect()
         } else {
             Default::default()
@@ -733,7 +737,7 @@ fn model_id(model: &str) -> &str {
 fn top_extras(r: &GenerateRequest) -> indexmap::IndexMap<String, RawJson> {
     extra_for(&r.extras, D)
         .into_iter()
-        .filter(|(k, _)| !k.starts_with("count:"))
+        .filter(|(k, _)| !k.starts_with(super::COUNT_EXTRA))
         .collect()
 }
 
