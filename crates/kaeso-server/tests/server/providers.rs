@@ -325,6 +325,24 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         upstage["key_page"],
         json!({ "url": "https://console.upstage.ai/api-keys", "label": "API keys" })
     );
+    let ionos = listed.iter().find(|p| p["id"] == "ionos").unwrap();
+    assert_eq!(ionos["name"], "IONOS AI Model Hub");
+    assert_eq!(
+        ionos["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        (
+            &ionos["count_tokens"],
+            &ionos["embeddings"],
+            &ionos["key_prefix"]
+        ),
+        (&Value::Null, &json!("openai_embeddings"), &Value::Null)
+    );
+    assert_eq!(
+        ionos["key_page"],
+        json!({ "url": "https://dcd.ionos.com", "label": "Management → Token Manager" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

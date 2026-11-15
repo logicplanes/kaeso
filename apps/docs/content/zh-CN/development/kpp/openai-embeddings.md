@@ -129,3 +129,7 @@ order: 8
 ### Upstage
 
 来源：Upstage 的 [embeddings 参考](https://console.upstage.ai/api/embeddings) 和 [embeddings 指南](https://console.upstage.ai/docs/capabilities/embed)（2026-11-14 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/upstage/`，其中的错误是在没有有效密钥的情况下实时返回的。它的模型是 `solar-embedding-2-query` 和 `solar-embedding-2-passage`，以及 Solar Embedding 1 的别名 `embedding-query` 和 `embedding-passage`（于 2026-12-31 停用）。查询和段落是不同的模型，向量为 1,024 维且已归一化。一个请求最多包含 100 个字符串。参考没有记录 `dimensions`、`encoding_format` 或 `user`；由于每个向量都是模型的完整维度，Kaeso 拒绝 `dimensions`（`without_dimensions()`）。
+
+### IONOS AI Model Hub
+
+来源：IONOS 的 [create embeddings](https://docs.ionos.com/cloud/api-reference/ai/ai-model-hub/embeddings/create-embeddings) 参考和 [BGE M3](https://docs.ionos.com/cloud/ai/ai-model-hub/models/embedding-models/bge-m3) 模型页面（2026-11-14 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/ionos/`，其中的错误是在没有有效令牌的情况下实时返回的。IONOS 的嵌入模型（例如 `BAAI/bge-m3` 和 `Qwen/Qwen3-VL-Embedding-8B`）接受 `encoding_format`、取决于模型的 `dimensions`（模型不支持时 IONOS 自己返回 400）和 `user`。错误采用 IONOS 自己的 `messages` 格式，应用会以 OpenAI 的格式收到 IONOS 的消息。

@@ -150,10 +150,12 @@ fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_with
 #[test]
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
-        // NVIDIA answers with RFC 9457 problem documents, SiliconFlow with `{"code", "message", "data"}`
-        // and Cloudflare with its `errors` envelope; apps get them in OpenAI's shape.
+        // NVIDIA answers with RFC 9457 problem documents, SiliconFlow with `{"code", "message", "data"}`,
+        // Cloudflare with its `errors` envelope and IONOS with its `messages`; apps get them in
+        // OpenAI's shape.
         if FOREIGN_ERROR_BODIES.contains(&name.as_str())
             || name.starts_with("providers/cloudflare-ai-gateway/")
+            || name.starts_with("providers/ionos/")
             || name.starts_with("providers/cohere/")
             || name.starts_with("providers/nvidia/")
             || name.starts_with("providers/siliconflow/")
@@ -542,4 +544,22 @@ fn cloudflare_envelopes_reach_embeddings_apps_with_cloudflares_message_and_kind(
             serde_json::from_slice(&OpenAiEmbeddings::encode_error(&err).body).unwrap();
         assert_eq!(sent["error"]["message"], message, "{name}");
     }
+}
+
+#[test]
+fn an_ionos_error_reaches_embeddings_apps_with_ionos_message() {
+    let name = "providers/ionos/recorded-invalid-api-key";
+    let err = OpenAiEmbeddings::decode_error(401, &HeaderList::new(), &fixture("errors", name));
+    assert_eq!(
+        (&err.kind, err.message.as_str()),
+        (
+            &ErrorKind::Authentication,
+            "Unauthorized, invalid or no token provided for exchange"
+        )
+    );
+    let sent: Value = serde_json::from_slice(&OpenAiEmbeddings::encode_error(&err).body).unwrap();
+    assert_eq!(
+        sent["error"]["message"],
+        "Unauthorized, invalid or no token provided for exchange"
+    );
 }

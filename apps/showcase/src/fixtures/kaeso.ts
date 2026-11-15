@@ -55,6 +55,7 @@ export const providers = [
   { id: "typesafe", name: "TypeSafe" },
   { id: "deepinfra", name: "DeepInfra" },
   { id: "upstage", name: "Upstage" },
+  { id: "ionos", name: "IONOS AI Model Hub" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

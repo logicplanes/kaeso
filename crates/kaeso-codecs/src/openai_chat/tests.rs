@@ -196,6 +196,18 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         "providers/deepinfra/missing-scope-doc",
         ErrorKind::PermissionDenied,
     ),
+    (
+        "providers/ionos/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
+        "providers/ionos/recorded-missing-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
+        "providers/ionos/validation-error-doc",
+        ErrorKind::InvalidRequest,
+    ),
 ];
 
 const COHERE: &str = "providers/cohere/";

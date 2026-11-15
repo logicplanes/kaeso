@@ -2474,6 +2474,72 @@ expression: outcomes
       "output_tokens": 41
     }
   },
+  "providers/ionos/gpt-oss-reasoning-doc": {
+    "content": [
+      {
+        "text": "Based on the Q1 data, there is a consistent monthly growth of roughly 20-25%. If this trend continues, Q2 sales are projected to reach approximately $18k in April, $21.6k in May, and $26k in June.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-890",
+    "model": "openai/gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 45,
+      "output_tokens": 48
+    }
+  },
+  "providers/ionos/mistral-image-doc": {
+    "content": [
+      {
+        "text": "The image displays a single, thin, vertical white line against a solid dark blue background. The line appears to be positioned towards the left side of the image. The overall design is minimalistic and abstract, with a focus on the contrast between the white line and the dark background.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-20dce5f1-5556-4c1e-ae47-7a497a376746",
+    "model": "mistralai/Mistral-Small-24B-Instruct",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 29,
+      "output_tokens": 57
+    }
+  },
+  "providers/ionos/qwen-reasoning-doc": {
+    "content": [
+      {
+        "text": "Stay refreshed all day with our double-walled stainless steel water bottle, engineered to keep your drinks ice-cold for a full 24 hours.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-890",
+    "model": "Qwen/Qwen3.8-27B",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 41,
+      "output_tokens": 33
+    }
+  },
   "providers/mistral/recorded-assistant-prefix": {
     "content": [
       {

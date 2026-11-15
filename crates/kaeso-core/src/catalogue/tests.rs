@@ -2549,6 +2549,40 @@ fn nebius_models_speak_chat_completions_with_kpmrs_prices_and_its_embeddings_emb
 }
 
 #[test]
+fn ionos_models_speak_chat_completions_with_their_own_efforts_and_its_embedding_models_embed() {
+    let qwen = eff(&entry("ionos", "Qwen/Qwen3.8-27B"));
+    assert_eq!(qwen.dialect, DialectId::OpenAiChat);
+    assert_eq!(qwen.provider.chat().provider, "IONOS AI Model Hub");
+    assert_eq!(
+        (qwen.fields.input_price, qwen.fields.output_price),
+        (Some(dec!(0.45)), Some(dec!(2.7)))
+    );
+    assert_eq!(
+        effort_levels(&qwen, DialectId::OpenAiChat),
+        ["none", "low", "medium", "xhigh"]
+    );
+    let oss = eff(&entry("ionos", "openai/gpt-oss-120b"));
+    assert_eq!(
+        effort_levels(&oss, DialectId::OpenAiChat),
+        ["low", "medium", "high"]
+    );
+    let embed = eff(&entry("ionos", "BAAI/bge-m3"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.02)))
+    );
+    let models = &snapshot().providers["ionos"].models;
+    assert_eq!(models.len(), 11);
+    assert_eq!(
+        models["sentence-transformers/paraphrase-multilingual-mpnet-base-v2"]
+            .status
+            .as_deref(),
+        Some("deprecated")
+    );
+}
+
+#[test]
 fn deepinfra_models_speak_chat_completions_and_its_embedding_models_embed_with_their_prices() {
     let flash = eff(&entry("deepinfra", "deepseek-ai/DeepSeek-V4-Flash-0731"));
     assert_eq!(flash.dialect, DialectId::OpenAiChat);

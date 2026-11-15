@@ -117,14 +117,16 @@ struct OtherShape {
 
 // Error bodies without OpenAI's `error` object: `{"object": "error", "message", "type", "param",
 // "code"}` (Mistral, vLLM), the same fields without `object` (Cerebras), FastAPI's `detail`
-// (Mistral's `HTTPValidationError`), a bare `message`, Cloudflare's envelope (its own `code`s are
-// not HTTP statuses, so the status alone gives the kind).
+// (Mistral's `HTTPValidationError`), a bare `message`, Cloudflare's envelope and IONOS's
+// `messages` (their own codes are not HTTP statuses, so the status alone gives the kind).
 fn other_shape(raw: &Value, status: Option<u16>) -> Option<OtherShape> {
     let text = |key: &str| raw.get(key).and_then(Value::as_str).map(str::to_owned);
     if raw.get("error").is_some_and(|e| !e.is_null()) {
         return None;
     }
-    if let Some(message) = crate::cloudflare::envelope_message(raw) {
+    if let Some(message) =
+        crate::cloudflare::envelope_message(raw).or_else(|| crate::ionos::envelope_message(raw))
+    {
         return Some(OtherShape {
             message,
             ty: None,

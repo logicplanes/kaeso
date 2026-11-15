@@ -479,6 +479,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds an IONOS token, which has no fixed prefix, with the Data Center Designer's Token Manager as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "ionos", name: "IONOS prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "IONOS AI Model Hub");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your IONOS AI Model Hub API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "dcd.ionos.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://dcd.ionos.com");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at dcd.ionos.com under Management → Token Manager.",
+    );
+    const secret = within(dialog).getByLabelText("IONOS AI Model Hub API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "ionos-token-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "IONOS prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("IONOS prod is the IONOS AI Model Hub default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "ionos", name: "IONOS prod", secret: "ionos-token-0123", make_default: false },
+    ]);
+  });
+
   it("adds a Standard Compute key, which has no fixed prefix, with its dashboard's API Keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "standardcompute", name: "Standard Compute plan", is_default: true }));
     const { user, dialog } = await open();

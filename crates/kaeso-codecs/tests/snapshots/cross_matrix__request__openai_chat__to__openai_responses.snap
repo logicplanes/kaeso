@@ -2752,6 +2752,106 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/ionos/gpt-oss-reasoning-doc": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Our Q1 sales were 10k in January, 12k in February and 15k in March. Predict Q2.",
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-120b",
+      "reasoning": {
+        "effort": "medium"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ionos/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-120b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ionos/missing-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-120b",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ionos/mistral-image-doc": {
+    "body": {
+      "input": [
+        {
+          "content": [
+            {
+              "text": "What is in this image?",
+              "type": "input_text"
+            },
+            {
+              "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+              "type": "input_image"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "mistralai/Mistral-Small-24B-Instruct",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ionos/qwen-reasoning-doc": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Write a one-sentence product description for an insulated stainless steel water bottle that keeps drinks cold for 24 hours.",
+          "role": "user"
+        }
+      ],
+      "model": "Qwen/Qwen3.8-27B",
+      "reasoning": {
+        "effort": "low"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/ionos/usage-stream-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Say hello in three words.",
+          "role": "user"
+        }
+      ],
+      "model": "openai/gpt-oss-120b",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
   "providers/mistral/assistant-prefill": {
     "body": {
       "input": [

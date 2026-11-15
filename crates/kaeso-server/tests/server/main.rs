@@ -72,6 +72,7 @@ mod provider_google;
 mod provider_grok;
 mod provider_groq;
 mod provider_huggingface;
+mod provider_ionos;
 mod provider_minimax;
 mod provider_mistral;
 mod provider_moonshotai;
