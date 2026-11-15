@@ -809,10 +809,14 @@ fn check_extras_with(
         {
             continue;
         }
-        let feature = match key.strip_prefix(HEADER_PREFIX) {
+        let sent = match origin.dialect {
+            DialectId::Gemini => key.strip_prefix(crate::gemini::COUNT_EXTRA).unwrap_or(key),
+            _ => key,
+        };
+        let feature = match sent.strip_prefix(HEADER_PREFIX) {
             Some(header) => format!("{header} header"),
-            None if path.is_empty() => key.clone(),
-            None => format!("{path}.{key}"),
+            None if path.is_empty() => sent.to_owned(),
+            None => format!("{path}.{sent}"),
         };
         return Err(foreign(
             feature,
