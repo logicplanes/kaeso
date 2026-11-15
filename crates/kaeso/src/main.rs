@@ -127,7 +127,12 @@ fn main() -> Result<()> {
             say!("{}", kaeso_crypto::generate_master_key().expose_secret());
             Ok(())
         }
-        Command::Healthcheck { ready } => runtime()?.block_on(healthcheck(&ProcessSource, ready)),
+        // Docker runs it every few seconds: one thread is all one request needs.
+        Command::Healthcheck { ready } => tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .context("cannot start the async runtime")?
+            .block_on(healthcheck(&ProcessSource, ready)),
         Command::Openapi => {
             let doc = kaeso_server::platform::openapi();
             say!(
