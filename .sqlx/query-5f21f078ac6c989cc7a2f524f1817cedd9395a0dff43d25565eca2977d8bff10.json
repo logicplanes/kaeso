@@ -1,0 +1,77 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE organizations o SET metadata_retention_days = LEAST(old.metadata_retention_days, $1), content_retention_days = LEAST(old.content_retention_days, $2, old.metadata_retention_days, $1), updated_at = now() FROM organizations old WHERE old.id = o.id AND (old.metadata_retention_days > $1 OR old.content_retention_days > $2) RETURNING o.id, old.metadata_retention_days AS metadata_before, o.metadata_retention_days, old.content_retention_days AS content_before, o.content_retention_days",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "metadata_before",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "metadata_retention_days"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "metadata_retention_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "metadata_retention_days"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "content_before",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "content_retention_days"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "content_retention_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "content_retention_days"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "5f21f078ac6c989cc7a2f524f1817cedd9395a0dff43d25565eca2977d8bff10"
+}

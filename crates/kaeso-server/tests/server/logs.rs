@@ -1606,6 +1606,95 @@ async fn retention_shrinks_and_deletions_remove_rows() {
 }
 
 #[tokio::test]
+async fn lowering_the_install_maximum_lowers_organizations_above_it() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    seed(&env, 3, now - time::Duration::days(50)).await;
+    seed(&env, 1, now - time::Duration::days(10)).await;
+    let settings = format!("/orgs/{}/logs/settings", env.owner.org_id);
+    let before = env.app.get(&settings, &env.owner.cookie).await.body;
+    assert_eq!(before["metadata_retention_days"], 90);
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            "/instance/settings",
+            Some(json!({ "metadata_retention_days": 30, "content_retention_days": 7, "max_metadata_retention_days": 30, "max_content_retention_days": 14 })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let after = env.app.get(&settings, &env.owner.cookie).await.body;
+    assert_eq!(
+        (
+            &after["metadata_retention_days"],
+            &after["max_metadata_retention_days"]
+        ),
+        (&json!(30), &json!(30))
+    );
+    assert!(
+        after["content_retention_days"].as_i64().unwrap() <= 14,
+        "{after}"
+    );
+
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &settings,
+            Some(json!({ "content_logging": false })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+
+    // An organization left above the maximum by an earlier version still saves other settings.
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    sqlx::query("UPDATE organizations SET metadata_retention_days = 90 WHERE id = $1")
+        .bind(org.uuid())
+        .execute(&env.app.state.pg)
+        .await
+        .unwrap();
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &settings,
+            Some(json!({ "keep_media": true })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &settings,
+            Some(json!({ "metadata_retention_days": 60 })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "metadata_retention_days");
+
+    kaeso_server::services::logs::run_jobs(&env.app.state)
+        .await
+        .unwrap();
+    let mut left = 0;
+    for _ in 0..100 {
+        left = logs(&env, "?limit=100").await["data"]
+            .as_array()
+            .unwrap()
+            .len();
+        if left == 1 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    assert_eq!(left, 1, "entries older than the new maximum are gone");
+}
+
+#[tokio::test]
 async fn shortening_both_retentions_at_once_drops_content_past_the_new_content_retention() {
     let env = env(&[]).await;
     let now = env.app.clock.now().replace_nanosecond(0).unwrap();

@@ -316,6 +316,29 @@ pub async fn update(
         ));
     }
     instance::update(&mut *tx, &after).await?;
+    // Organizations above a lowered maximum come down to it, with the deletions a shorter
+    // retention starts.
+    let capped = if after.max_metadata_retention_days < before.max_metadata_retention_days
+        || after.max_content_retention_days < before.max_content_retention_days
+    {
+        kaeso_store::pg::orgs::cap_retentions(
+            &mut *tx,
+            after.max_metadata_retention_days,
+            after.max_content_retention_days,
+        )
+        .await?
+    } else {
+        Vec::new()
+    };
+    let by = crate::platform::keys::creator_of(&ctx);
+    for c in &capped {
+        let shrunk = crate::platform::logs::Shrunk {
+            org: c.id,
+            metadata: (c.metadata_before, c.metadata_days),
+            content: (c.content_before, c.content_days),
+        };
+        crate::platform::logs::shrink(&mut tx, &shrunk, ctx.now, by).await?;
+    }
     let admin_sso = instance::admin_sso(&mut *tx).await?;
     ctx.audit(None, Action::InstanceSettingsUpdate)
         .before(view(&state, &before, admin_sso.as_ref()))
@@ -323,6 +346,9 @@ pub async fn update(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    for c in &capped {
+        crate::platform::logs::forget_org(&state, c.id).await?;
+    }
     if after.timezone != before.timezone {
         state.caches.time_zone.invalidate_all();
     }

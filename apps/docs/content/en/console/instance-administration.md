@@ -45,7 +45,7 @@ Under **General**:
 | Time zone | The install's time zone. Every time in the console shows in it, for everyone, the request log and audit log filter by its days, and automatic updates follow it. **Use this zone** switches to your browser's |
 | Deleting organizations | Whether organizations can be deleted at all, and the grace period, 1 to 90 days |
 
-Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose.
+Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose. Lowering the longest brings every organization above it down to it, and their older entries are deleted at once, as when an organization shortens its retention.
 
 Changing account creation, organization creation or the allowed domains needs a recent sign-in. Changing single sign-on for instance admins needs one with a password or a sign-in link; without one, an operator changes it on the server with `kaeso instance admin-sso` ([run Kaeso's commands](../self-hosting/installation.md#run-kaesos-commands)). The setup page starts the time zone at the first user's, and usage charts keep counting by UTC day.
 

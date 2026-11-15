@@ -45,7 +45,7 @@ Unter **Allgemein**:
 | Zeitzone | Die Zeitzone der Installation. Die Konsole zeigt jede Zeit darin, für alle, Anfrageprotokoll und Audit-Log filtern nach ihren Tagen, und automatische Updates richten sich nach ihr. **Diese Zone verwenden** wechselt zu der Ihres Browsers |
 | Löschen von Organisationen | Ob sich Organisationen überhaupt löschen lassen, und die Schonfrist, 1 bis 90 Tage |
 
-Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf.
+Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf. Wird die längste gesenkt, sinkt jede Organisation darüber auf sie, und ihre älteren Einträge werden sofort gelöscht, wie wenn eine Organisation ihre Aufbewahrung verkürzt.
 
 Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern erfordert eine kürzliche Anmeldung. Single Sign-on für Instanz-Admins zu ändern erfordert eine mit Passwort oder Anmeldelink; ohne sie ändert ein Operator es auf dem Server mit `kaeso instance admin-sso` ([Kaeso-Befehle ausführen](../self-hosting/installation.md#kaeso-befehle-ausführen)). Die Einrichtungsseite setzt die Zeitzone anfangs auf die des ersten Benutzers, und Nutzungsdiagramme zählen weiter nach UTC-Tagen.
 
