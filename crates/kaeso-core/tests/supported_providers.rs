@@ -70,6 +70,9 @@ fn expected_row(p: &Provider, language: &Language) -> Row {
     {
         formats.push(format_name(d));
     }
+    if let Some(r) = p.rerank {
+        formats.push(format_name(r.dialect));
+    }
     if p.count_tokens.is_some() {
         formats.push(language.token_counts);
     }

@@ -517,6 +517,12 @@ const messages = (): Rule[] => [
   rule("errors.noEmbeddingsAtProvider", (v) =>
     t("errors.noEmbeddingsAtProvider", "Kaeso calls no embeddings models on {provider}, so `{name}` can't create embeddings.", v),
   ),
+  rule("errors.noRerankAtProvider", (v) =>
+    t("errors.noRerankAtProvider", "Kaeso calls no rerank models on {provider}, so `{name}` can't rerank documents.", v),
+  ),
+  rule("errors.rerankDocumentText", (v) =>
+    t("errors.rerankDocumentText", "Cohere's Rerank API takes each document as text only; remove `{field}` from `{param}`.", v),
+  ),
   rule("errors.noImagesAtProvider", (v) => t("errors.noImagesAtProvider", "{provider} offers no image API Kaeso can call, so `{name}` can't make images.", v)),
   rule("errors.noDecisionsAtProvider", (v) =>
     t("errors.noDecisionsAtProvider", "{provider} offers no decisions API Kaeso can call, so `{name}` can't make decisions.", v),
@@ -858,6 +864,13 @@ const messages = (): Rule[] => [
   ),
   rule("errors.model.decisionOnly", (v) =>
     t("errors.model.decisionOnly", "The model `{model}` is a decision model; send it to `/v1/decisions` or `/v1/systemone`.", v),
+  ),
+  rule("errors.model.rerankOnly", (v) => t("errors.model.rerankOnly", "The model `{model}` is a rerank model; send it to `/v1/rerank`.", v)),
+  rule("errors.model.generationNoRerank", (v) =>
+    t("errors.model.generationNoRerank", "The model `{model}` is a generation model; it cannot rerank documents.", v),
+  ),
+  rule("errors.model.embeddingsNoRerank", (v) =>
+    t("errors.model.embeddingsNoRerank", "The model `{model}` is an embeddings model; it cannot rerank documents.", v),
   ),
   rule("errors.model.questionType", (v) => t("errors.model.questionType", "The model `{model}` does not answer {type} questions.", v)),
   rule("errors.model.maxQuestions", (v) => t("errors.model.maxQuestions", "The model `{model}` answers at most {max} questions per request.", v)),

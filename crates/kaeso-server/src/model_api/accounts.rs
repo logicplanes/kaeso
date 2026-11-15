@@ -19,6 +19,7 @@ pub(super) fn prepare(
         Request::Speech(_) => ("speech", "create speech"),
         Request::Transcription(_) => ("transcription", "transcribe audio"),
         Request::Decide(_) => ("decisions", "make decisions"),
+        Request::Rerank(_) => ("rerank", "rerank documents"),
         _ => ("endpoint", "serve this endpoint"),
     };
     let product = account.product;

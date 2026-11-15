@@ -6,6 +6,7 @@ use crate::decision::DecideRequest;
 use crate::extras::Extras;
 use crate::image::ImageRequest;
 use crate::raw::RawJson;
+use crate::rerank::RerankRequest;
 use crate::video::VideoRequest;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -21,6 +22,8 @@ pub enum Request {
     Video(VideoRequest),
     /// Typed questions answered with probabilities.
     Decide(DecideRequest),
+    /// Documents ordered by how well each answers a query.
+    Rerank(RerankRequest),
 }
 
 impl Request {
@@ -34,6 +37,7 @@ impl Request {
             Request::Transcription(_) => RequestKind::Transcription,
             Request::Video(_) => RequestKind::Video,
             Request::Decide(_) => RequestKind::Decide,
+            Request::Rerank(_) => RequestKind::Rerank,
         }
     }
 
@@ -46,6 +50,7 @@ impl Request {
             Request::Transcription(r) => &r.model,
             Request::Video(r) => &r.model,
             Request::Decide(r) => &r.model,
+            Request::Rerank(r) => &r.model,
         }
     }
 
@@ -58,7 +63,8 @@ impl Request {
             Request::CountTokens(_)
             | Request::Embed(_)
             | Request::Video(_)
-            | Request::Decide(_) => StreamMode::Off,
+            | Request::Decide(_)
+            | Request::Rerank(_) => StreamMode::Off,
         }
     }
 }
@@ -75,6 +81,7 @@ pub enum RequestKind {
     Transcription,
     Video,
     Decide,
+    Rerank,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]

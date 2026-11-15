@@ -1,0 +1,12 @@
+{
+  "model": "rerank-v5.0-fast",
+  "query": "Which plan includes priority support?",
+  "documents": [
+    "The Starter plan includes email support with a two-day response time.",
+    "The Business plan includes priority support by phone and chat, answered within an hour.",
+    "All plans include access to the community forum."
+  ],
+  "top_n": 2,
+  "max_tokens_per_doc": 512,
+  "priority": 1
+}

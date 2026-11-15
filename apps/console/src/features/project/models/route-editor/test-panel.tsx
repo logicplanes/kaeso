@@ -36,6 +36,7 @@ const FORMATS: readonly RouteFormat[] = [
   "openai_decisions",
   "system_one",
   "gemini_decisions",
+  "cohere_rerank",
 ];
 const FEATURES: readonly RouteFeature[] = ["images", "pdfs", "tools", "reasoning", "structured_output", "streaming"];
 const NO_KEY = "none";

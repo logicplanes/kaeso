@@ -241,7 +241,8 @@ pub(super) fn mode_of(eff: &Effective, kind: Option<&str>) -> Option<PlaygroundM
         return media;
     }
     let chats = |l: Option<&Vec<String>>| l.is_none_or(|l| l.iter().any(|m| m == "text"));
-    (!eff.is_embeddings() && chats(input) && chats(output)).then_some(PlaygroundMode::Text)
+    (!eff.is_embeddings() && !eff.is_rerank() && chats(input) && chats(output))
+        .then_some(PlaygroundMode::Text)
 }
 
 /// What the Playground offers a model of each mode.

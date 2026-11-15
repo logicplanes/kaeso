@@ -171,7 +171,7 @@ pub fn cacheable(kind: RequestKind, stream: bool) -> bool {
     !stream
         && matches!(
             kind,
-            RequestKind::Generate | RequestKind::Embed | RequestKind::Decide
+            RequestKind::Generate | RequestKind::Embed | RequestKind::Decide | RequestKind::Rerank
         )
 }
 
@@ -181,6 +181,7 @@ fn kind_name(kind: RequestKind) -> &'static str {
         RequestKind::Embed => "embed",
         RequestKind::CountTokens => "count_tokens",
         RequestKind::Decide => "decide",
+        RequestKind::Rerank => "rerank",
         _ => "other",
     }
 }
@@ -530,10 +531,12 @@ mod tests {
     }
 
     #[test]
-    fn only_non_streamed_generations_embeddings_and_decisions_are_cacheable() {
+    fn only_non_streamed_generations_embeddings_decisions_and_rerankings_are_cacheable() {
         assert!(cacheable(RequestKind::Generate, false));
         assert!(cacheable(RequestKind::Embed, false));
         assert!(cacheable(RequestKind::Decide, false));
+        assert!(cacheable(RequestKind::Rerank, false));
+        assert_eq!(kind_name(RequestKind::Rerank), "rerank");
         assert_eq!(kind_name(RequestKind::Decide), "decide");
         assert_ne!(
             kind_name(RequestKind::Decide),

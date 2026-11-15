@@ -69,7 +69,7 @@ Streams follow the same path with `dispatch::stream_decoder` and `dispatch::stre
 
 | Crate | Holds |
 | --- | --- |
-| `kaeso-kpp` | The KPP types only: requests, responses, stream events, errors, token counts, embeddings, decisions and model listings, with `validate()` and `required_capabilities()`. No codec logic, no I/O. |
+| `kaeso-kpp` | The KPP types only: requests, responses, stream events, errors, token counts, embeddings, rerankings, decisions and model listings, with `validate()` and `required_capabilities()`. No codec logic, no I/O. |
 | `kaeso-codecs` | One sans-IO codec per API format, called a dialect in the code (`DialectId`), and the building blocks they share. A codec turns bytes into KPP values and KPP values into bytes; streams are fed in chunk by chunk and produce events. |
 
 Both crates are published to crates.io. Their library code may depend only on `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` and `mime`, and `cargo deny` bans `tokio`, `reqwest`, `hyper` and `axum` from them ([add a dependency](../contributing.md#add-a-dependency)).
@@ -100,6 +100,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `system_one` | TypeSafe's System One API (`/v1/systemone`) and the providers that speak a form of it ([System One](system-one.md)) |
 | `openai_decisions` | OpenAI's Decisions API (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
 | `gemini_decisions` | Gemini's Decisions API (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
+| `cohere_rerank` | Cohere's rerank format (`/v1/rerank`, `/v2/rerank`) ([Cohere Rerank](cohere-rerank.md)) |
 | `multipart` | The bounded `multipart/form-data` reader and writer of image, audio and video uploads, and of System One's image parts |
 
 | Shared module | Job |
@@ -108,12 +109,12 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `dispatch` | The codec functions, chosen by `DialectId` at run time |
 | `wire` | serde building blocks for lossless wire structs ([wire structs](codec-design.md#wire-structs)) |
 | `sse` | The event-stream parser and writer ([server-sent events](codec-design.md#server-sent-events)) |
-| `limits` | The most messages, blocks, tools and embedding inputs a request may hold ([request limits](codec-design.md#request-limits)) |
+| `limits` | The most messages, blocks, tools, embedding inputs and rerank documents a request may hold ([request limits](codec-design.md#request-limits)) |
 | `cross` | The rules for data that crosses dialects, and the extras allowlist |
 | `continuity` | Reasoning that travels with the conversation ([reasoning continuity](reasoning.md#reasoning-continuity)) |
 | `keepalive` | Frames that keep live streams from going silent ([keepalives](cross-format.md#keepalives)) |
 | `models` | Model-listing helpers ([model listings](codec-design.md#model-listings)) |
-| `decisions` | What the decision codecs share: the refusal every other codec gives a decision request, the question keys of keyed formats and the documented `confidence` formulas |
+| `decisions` | What the decision codecs share: the refusal every other codec gives a decision or rerank request, the question keys of keyed formats and the documented `confidence` formulas |
 | `image_size` | An image's format and size, read from its header without decoding it ([image sizes](codec-design.md#types)) |
 | `testing` | JSON and SSE comparison, also for crates that use the codecs |
 
@@ -224,6 +225,13 @@ Every KPP field is either semantic or a hint:
 | `model`, `input`, `dimensions`, `encoding` | semantic | |
 | `user` | hint | |
 | `extras` | as for `GenerateRequest` | |
+
+### `RerankRequest`
+
+| Field | Class | Notes |
+| --- | --- | --- |
+| `model`, `query`, `documents`, `top_n`, `max_tokens_per_doc`, `return_documents` | semantic | A format without a place for one of them refuses it or maps it as its mapping page says ([Cohere Rerank](cohere-rerank.md)). |
+| `extras`, and the `extras` of each document | as for `GenerateRequest` | |
 
 ### Replies and stream events
 

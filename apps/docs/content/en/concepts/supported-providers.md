@@ -9,7 +9,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 ## Columns
 
 - **Provider.** The name the console shows, then the id. The id names the provider in model names, such as `groq/llama-3.3-70b-versatile`, and in [settings](../self-hosting/configuration.md#provider-settings).
-- **Formats.** The API formats Kaeso calls the provider with. A model uses the first one unless its **Sends as** value names another ([a model's values](../console/models-and-aliases.md#change-a-models-values)). **Embeddings** and **Gemini Embeddings** mean the provider has embeddings models, which serve `/v1/embeddings`. **Token counts** means it counts tokens for `/v1/messages/count_tokens` and `/v1/responses/input_tokens`. Decisions go through each provider's own decisions API, which [APIs by provider](provider-apis.md) lists.
+- **Formats.** The API formats Kaeso calls the provider with. A model uses the first one unless its **Sends as** value names another ([a model's values](../console/models-and-aliases.md#change-a-models-values)). **Embeddings** and **Gemini Embeddings** mean the provider has embeddings models, which serve `/v1/embeddings`. **Cohere Rerank** means it has rerank models, which serve `/v1/rerank`. **Token counts** means it counts tokens for `/v1/messages/count_tokens` and `/v1/responses/input_tokens`. Decisions go through each provider's own decisions API, which [APIs by provider](provider-apis.md) lists.
 - **Host.** The host of the provider's default base URL, which the install must reach. A [base URL you set](../self-hosting/configuration.md#provider-settings) replaces it.
 - **Key.** Where you create a key, and how the key starts ([provider keys](../console/provider-keys.md)).
 
@@ -23,7 +23,7 @@ Kaeso has the providers below built in, listed by name. [Providers](providers.md
 | Baseten `baseten` | Chat Completions | `inference.baseten.co` | [app.baseten.co](https://app.baseten.co/settings/api_keys), no fixed prefix |
 | Cerebras `cerebras` | Chat Completions | `api.cerebras.ai` | [cloud.cerebras.ai](https://cloud.cerebras.ai), `csk-` |
 | Cloudflare AI Gateway `cloudflare-ai-gateway` | Chat Completions, Responses, Messages, Embeddings | `api.cloudflare.com` | [dash.cloudflare.com](https://dash.cloudflare.com/profile/api-tokens), no fixed prefix |
-| Cohere `cohere` | Chat Completions, Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys), no fixed prefix |
+| Cohere `cohere` | Chat Completions, Embeddings, Cohere Rerank | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys), no fixed prefix |
 | DeepInfra `deepinfra` | Chat Completions, Embeddings | `api.deepinfra.com` | [deepinfra.com](https://deepinfra.com/dash/keys), no fixed prefix |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
 | ElevenLabs `elevenlabs` | ElevenLabs | `api.elevenlabs.io` | [elevenlabs.io](https://elevenlabs.io/app/settings/api-keys), `sk_` |

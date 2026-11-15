@@ -614,6 +614,14 @@ impl ProviderRef {
         }
     }
 
+    /// Where Kaeso sends rerank requests; custom providers serve none.
+    pub fn rerank(&self) -> Option<crate::provider::RerankEgress> {
+        match self {
+            ProviderRef::BuiltIn(p) => p.rerank,
+            ProviderRef::Custom(_) => None,
+        }
+    }
+
     /// Where Kaeso sends image requests for `model`; a custom provider, where it serves them.
     pub fn images(&self, model: &str) -> Option<crate::provider::ImagesEgress> {
         match self {

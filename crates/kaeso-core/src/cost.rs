@@ -77,7 +77,7 @@ pub fn unpriced_model(
         RequestKind::Transcription => {
             by_unit || input || prices.input_audio_price.is_some_and(|p| p > Decimal::ZERO)
         }
-        RequestKind::Decide => input,
+        RequestKind::Decide | RequestKind::Rerank => input,
         _ => true,
     };
     (!known).then(|| Unpriced {
@@ -565,6 +565,12 @@ mod tests {
             None
         );
         assert!(unpriced_model(&none, &none, RequestKind::Decide, "m").is_some());
+        // Rerank models bill the tokens they read, like embeddings.
+        assert_eq!(
+            unpriced_model(&decide, &none, RequestKind::Rerank, "m"),
+            None
+        );
+        assert!(unpriced_model(&none, &none, RequestKind::Rerank, "m").is_some());
     }
 
     #[test]

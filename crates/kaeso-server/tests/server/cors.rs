@@ -28,6 +28,8 @@ const ROUTES: &[(&str, &str)] = &[
     ("/v1/responses", "POST"),
     ("/v1/responses/input_tokens", "POST"),
     ("/v1/embeddings", "POST"),
+    ("/v1/rerank", "POST"),
+    ("/v2/rerank", "POST"),
     ("/v1/messages", "POST"),
     ("/v1/messages/count_tokens", "POST"),
     ("/v1/models", "GET"),

@@ -19,6 +19,7 @@ impl Request {
             Request::Transcription(r) => r.validate(),
             Request::Video(r) => r.validate(),
             Request::Decide(r) => r.validate(),
+            Request::Rerank(r) => r.validate(),
         }
     }
 }

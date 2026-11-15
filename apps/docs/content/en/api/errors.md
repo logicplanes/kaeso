@@ -337,6 +337,10 @@ An error ElevenLabs itself sent reaches the app as ElevenLabs sent it, with its 
 
 An app on `/v1/systemone` gets errors in TypeSafe's shape, as TypeSafe's SDK reads them: `{"detail": "…"}` with the message, or a list of problems with their `loc` for a field the request got wrong. An overloaded provider answers 529. Errors on `/v1/decisions` are in the [OpenAI format](#openai-formats), and errors on `/v1beta/decisions`, or on `/v1/decisions` with Gemini's key, in the [Gemini format](#gemini-format); a Gemini safety block keeps its `code`, such as `safety`. The [Decisions API](decisions.md#what-is-refused) lists what Kaeso refuses.
 
+## Cohere rerank format
+
+An app on `/v1/rerank` or `/v2/rerank` gets errors in Cohere's shape, as Cohere's SDK reads them: `{"id": "…", "message": "…"}`, with Kaeso's request id as `id`. A blocked token answers 498, as at Cohere, and an overloaded provider 503. An error Cohere itself sent reaches the app as Cohere sent it, with its status. The [Rerank API](rerank.md#what-is-refused) lists what Kaeso refuses.
+
 ## Causes
 
 The message names the cause and what to do. These are the causes behind each status:

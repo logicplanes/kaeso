@@ -1356,6 +1356,76 @@ fn vercel_models_speak_chat_completions_and_the_ones_kpmr_marks_as_embeddings_em
 }
 
 #[test]
+fn rerank_models_rerank_in_their_providers_format_and_nothing_else() {
+    let ids = crate::provider::known_ids();
+    let feed = catalogue(
+        r#"{"cohere":{"id":"cohere","models":{"rerank-v5.0-fast":{"id":"rerank-v5.0-fast","kind":"reranking",
+            "modalities":{"input":["text"],"output":["text"]},
+            "pricing":{"unit":"usd_per_million_tokens","input":"0.02","output":"0"}}}},
+        "nvidia":{"id":"nvidia","models":{"nvidia/rerank-qa-mistral-4b":{"id":"nvidia/rerank-qa-mistral-4b","kind":"reranking",
+            "modalities":{"input":["text"],"output":["text"]}}}}}"#,
+    );
+    let parsed = kpmr::parse(&feed, &ids).unwrap();
+    let eff = |provider: &str, model: &str| {
+        effective(
+            &entry(provider, model),
+            &parsed.catalogue,
+            &OrgProviders::default(),
+        )
+        .unwrap()
+    };
+    let fast = eff("cohere", "rerank-v5.0-fast");
+    assert_eq!(fast.dialect, DialectId::CohereRerank);
+    assert!(fast.is_rerank() && !fast.is_embeddings());
+    assert_eq!(fast.fields.input_price, Some(dec!(0.02)));
+    let docs = vec![kaeso_kpp::RerankDocument::new("a")];
+    let mut rerank = Request::Rerank(kaeso_kpp::RerankRequest::new("m", "q", docs.clone()));
+    let plan = prepare(&mut rerank, DialectId::CohereRerank, &fast).unwrap();
+    assert_eq!(plan.dialect, DialectId::CohereRerank);
+    assert_eq!(
+        fast.provider.rerank().map(|r| r.from_root),
+        Some(true),
+        "Cohere's Rerank API sits at the root of its host"
+    );
+    for ingress in [DialectId::OpenAiChat, DialectId::AnthropicMessages] {
+        let mut chat = Request::Generate(user(vec![Block::text("hi")]));
+        let u = prepare(&mut chat, ingress, &fast).unwrap_err();
+        assert_eq!(
+            u.message,
+            "The model `rerank-v5.0-fast` is a rerank model; send it to `/v1/rerank`."
+        );
+    }
+    let mut embed = Request::Embed(EmbedRequest::new("m", vec![EmbedInput::Text("x".into())]));
+    let u = prepare(&mut embed, DialectId::OpenAiEmbeddings, &fast).unwrap_err();
+    assert_eq!(u.capability, "rerank");
+
+    // NVIDIA's rerankers have an API of their own that Kaeso doesn't call yet.
+    let nvidia = eff("nvidia", "nvidia/rerank-qa-mistral-4b");
+    assert!(nvidia.is_rerank());
+    let u = prepare(&mut rerank, DialectId::CohereRerank, &nvidia).unwrap_err();
+    assert_eq!(
+        u.message,
+        "Kaeso calls no rerank models on NVIDIA, so `nvidia/rerank-qa-mistral-4b` can't rerank documents."
+    );
+    let command = eff_of("cohere", "command-a-03-2025");
+    let u = prepare(&mut rerank, DialectId::CohereRerank, &command).unwrap_err();
+    assert_eq!(
+        u.message,
+        "The model `command-a-03-2025` is a generation model; it cannot rerank documents."
+    );
+    let embedder = eff_of("mistral", "mistral-embed");
+    let u = prepare(&mut rerank, DialectId::CohereRerank, &embedder).unwrap_err();
+    assert_eq!(
+        u.message,
+        "The model `mistral-embed` is an embeddings model; it cannot rerank documents."
+    );
+}
+
+fn eff_of(provider: &str, model: &str) -> Effective {
+    eff(&entry(provider, model))
+}
+
+#[test]
 fn cohere_models_speak_chat_completions_and_think_at_none_or_high() {
     let command = eff(&entry("cohere", "command-a-03-2025"));
     assert_eq!(command.dialect, DialectId::OpenAiChat);

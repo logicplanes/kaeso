@@ -27,6 +27,7 @@ Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer
 | `system_one/` | Die System-One-API von TypeSafe (`/v1/systemone`); eine Anfrage, die einen Header braucht, hat `<name>.headers.json`, jede Antwort eine Anfrage gleichen Namens, und `requests/multipart/` enthält den JSON-Teil eines Uploads |
 | `openai_decisions/` | Die Decisions-API von OpenAI (`/v1/decisions`); jede Antwort hat eine Anfrage gleichen Namens |
 | `gemini_decisions/` | Die Decisions-API von Gemini (`/v1beta/decisions`); jede Antwort hat eine Anfrage gleichen Namens |
+| `cohere_rerank/` | Das Rerank-Format von Cohere (`/v1/rerank`, `/v2/rerank`); `requests/object-documents.json` ist die einzige Anfrage, die Kaeso an Cohere in anderer Form schreibt |
 | `xai_videos/`, `minimax_videos/`, `zai_videos/`, `openrouter_videos/`, `veo/`, `gemini_interactions/`, `dashscope/` | Die Video-APIs der Anbieter; `responses/` hält die Antworten, die einen Job starten, `polls/` die Antworten der Anbieter auf die Frage nach einem Job, `minimax_videos/files/` eine Datei-ID, die zum Link wird; `dashscope/` hält außerdem Bilder, Sprachausgaben und Transkriptionen in eigenen Ordnern unter `requests/`, `responses/` und `streams/` |
 
 Jeder Dialektordner hat `requests/`, `responses/`, `streams/`, sofern der Endpunkt streamt, und `errors/`.

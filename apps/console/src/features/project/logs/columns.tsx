@@ -287,6 +287,12 @@ export const isEmbedding = (row: Pick<LogView, "ingress_dialect" | "egress_diale
 
 export const isDecision = (row: Pick<LogView, "ingress_dialect">) => isDecisionDialect(row.ingress_dialect);
 
+const RERANK_DIALECTS: readonly string[] = ["cohere_rerank"];
+
+/** Whether the request was a rerank request, which no provider caches. */
+export const isRerank = (row: Pick<LogView, "ingress_dialect" | "egress_dialect">) =>
+  RERANK_DIALECTS.includes(row.ingress_dialect) || (row.egress_dialect !== null && RERANK_DIALECTS.includes(row.egress_dialect));
+
 export const cachedShare = (u: LogView["usage"]): number | null => {
   const input = inputTokens(u);
   return input > 0 ? u.cache_read_tokens / input : null;
@@ -306,7 +312,7 @@ function TokensCell({ row }: { row: LogView }) {
       </Tooltip>
     );
   }
-  const share = isEmbedding(row) ? null : cachedShare(u);
+  const share = isEmbedding(row) || isRerank(row) ? null : cachedShare(u);
   const unmarked = sentWithoutBreakpoint(row);
   const detail = [
     unmarked && t("logs.tokens.noBreakpoint", "Sent without a cache breakpoint, and nothing was cached"),

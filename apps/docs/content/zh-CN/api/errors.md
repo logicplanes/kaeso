@@ -337,6 +337,10 @@ ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry
 
 `/v1/systemone` 上的应用得到 TypeSafe 形式的错误，与 TypeSafe 的 SDK 读取的方式一致：带消息的 `{"detail": "…"}`，或在请求某个字段有误时，列出带 `loc` 的问题列表。过载的服务商返回 529。`/v1/decisions` 上的错误采用 [OpenAI 格式](#openai-格式)，`/v1beta/decisions` 上的错误以及带 Gemini 密钥的 `/v1/decisions` 上的错误采用 [Gemini 格式](#gemini-格式)；Gemini 的安全拦截保留其 `code`，例如 `safety`。[决策 API](decisions.md#拒绝的内容)列出了 Kaeso 拒绝的内容。
 
+## Cohere 重排序格式
+
+`/v1/rerank` 或 `/v2/rerank` 上的应用得到 Cohere 形式的错误，与 Cohere 的 SDK 读取的方式一致：`{"id": "…", "message": "…"}`，`id` 为 Kaeso 的请求 ID。与 Cohere 一样，被屏蔽的 token 返回 498，过载的服务商返回 503。Cohere 自己发送的错误按 Cohere 发送时的样子和状态码到达应用。[重排序 API](rerank.md#拒绝的内容)列出了 Kaeso 拒绝的内容。
+
 ## 原因
 
 消息会说明原因以及该怎么做。各状态码背后的原因如下：

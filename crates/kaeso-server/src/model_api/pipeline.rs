@@ -1304,6 +1304,7 @@ async fn attempt(
         Request::Transcription(r) => r.model.clone_from(&sent_model),
         Request::Video(r) => r.model.clone_from(&sent_model),
         Request::Decide(d) => d.model.clone_from(&sent_model),
+        Request::Rerank(r) => r.model.clone_from(&sent_model),
         _ => {}
     }
     let playground = rec.outcome().source == super::hooks::Source::Playground;
@@ -1990,6 +1991,7 @@ async fn attempt(
                     Reply::Speech(r) if r.model.is_empty() => r.model = model_id,
                     Reply::Transcription(r) if r.model.is_empty() => r.model = model_id,
                     Reply::Decide(r) if r.model.is_empty() => r.model = model_id,
+                    Reply::Rerank(r) if r.model.is_empty() => r.model = model_id,
                     _ => {}
                 }
                 Ok::<_, KppError>(reply)
@@ -2402,7 +2404,11 @@ async fn answer_with(
     let media_type = rec.outcome().content_type.take();
     match reply {
         Reply::Generate(r) => rec.outcome().reply = Some(r),
-        Reply::Image(_) | Reply::Speech(_) | Reply::Transcription(_) | Reply::Decide(_)
+        Reply::Image(_)
+        | Reply::Speech(_)
+        | Reply::Transcription(_)
+        | Reply::Decide(_)
+        | Reply::Rerank(_)
             if rec.outcome().content_kept =>
         {
             rec.outcome().media_reply = Some(reply);
@@ -2501,6 +2507,7 @@ async fn replay(
         Reply::Generate(r) => Some(r.model.clone()),
         Reply::Embed(e) => Some(e.model.clone()),
         Reply::Decide(d) => Some(d.model.clone()),
+        Reply::Rerank(r) => Some(r.model.clone()),
         _ => None,
     };
     let mut done = answer_with(state, rec, stored.reply, out, carry, served).await?;
@@ -2561,6 +2568,7 @@ async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter)
         Reply::Generate(r) => (&r.usage, &r.model),
         Reply::Embed(e) => (&e.usage, &e.model),
         Reply::Decide(d) => (&d.usage, &d.model),
+        Reply::Rerank(r) => (&r.usage, &r.model),
         // Speech and transcripts are billed by characters, duration or the tokens reported.
         Reply::Speech(r) => {
             let o = rec.outcome();

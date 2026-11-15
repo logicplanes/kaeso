@@ -54,6 +54,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             "dialects": ["openai_chat"],
             "count_tokens": null,
             "embeddings": null,
+            "rerank": null,
             "account": null,
             "service_account": null,
             "account_scope": null,
@@ -66,6 +67,8 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     let mistral = listed.iter().find(|p| p["id"] == "mistral").unwrap();
     assert_eq!(mistral["key_prefix"], Value::Null);
     assert_eq!(mistral["embeddings"], "openai_embeddings");
+    let cohere = listed.iter().find(|p| p["id"] == "cohere").unwrap();
+    assert_eq!(cohere["rerank"], "cohere_rerank");
     let openai = listed.iter().find(|p| p["id"] == "openai").unwrap();
     assert_eq!(
         openai["dialects"],

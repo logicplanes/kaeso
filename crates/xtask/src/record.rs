@@ -724,6 +724,7 @@ mod tests {
         count_tokens: None,
         embeddings: None,
         embeddings_profile: kaeso_codecs::openai_embeddings::EmbeddingsProfile::OPENAI,
+        rerank: None,
         images: &[],
         speech: &[],
         transcriptions: &[],

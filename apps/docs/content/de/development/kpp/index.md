@@ -69,7 +69,7 @@ Streams nehmen denselben Weg mit `dispatch::stream_decoder` und `dispatch::strea
 
 | Crate | Inhalt |
 | --- | --- |
-| `kaeso-kpp` | Nur die KPP-Typen: Anfragen, Antworten, Stream-Events, Fehler, Token-Zählungen, Embeddings, Entscheidungen und Modelllisten, mit `validate()` und `required_capabilities()`. Keine Codec-Logik, kein I/O. |
+| `kaeso-kpp` | Nur die KPP-Typen: Anfragen, Antworten, Stream-Events, Fehler, Token-Zählungen, Embeddings, Rerankings, Entscheidungen und Modelllisten, mit `validate()` und `required_capabilities()`. Keine Codec-Logik, kein I/O. |
 | `kaeso-codecs` | Ein Sans-IO-Codec pro API-Format, im Code Dialekt genannt (`DialectId`), und die Bausteine, die sie teilen. Ein Codec macht aus Bytes KPP-Werte und aus KPP-Werten Bytes; Streams werden Chunk für Chunk eingespeist und erzeugen Events. |
 
 Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur von `serde`, `serde_json`, `bytes`, `thiserror`, `indexmap`, `base64` und `mime` abhängen, und `cargo deny` verbietet ihnen `tokio`, `reqwest`, `hyper` und `axum` ([Abhängigkeit hinzufügen](../contributing.md#abhängigkeit-hinzufügen)).
@@ -100,6 +100,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `system_one` | Die System-One-API von TypeSafe (`/v1/systemone`) und die Anbieter, die eine Form davon sprechen ([System One](system-one.md)) |
 | `openai_decisions` | Die Decisions-API von OpenAI (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
 | `gemini_decisions` | Die Decisions-API von Gemini (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
+| `cohere_rerank` | Das Rerank-Format von Cohere (`/v1/rerank`, `/v2/rerank`) ([Cohere Rerank](cohere-rerank.md)) |
 | `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-, Audio- und Video-Uploads und der Bildteile von System One |
 
 | Gemeinsames Modul | Aufgabe |
@@ -108,12 +109,12 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `dispatch` | Die Codec-Funktionen, zur Laufzeit nach `DialectId` gewählt |
 | `wire` | serde-Bausteine für verlustfreie Wire-Structs ([Wire-Structs](codec-design.md#wire-structs)) |
 | `sse` | Parser und Writer für Event-Streams ([Server-sent Events](codec-design.md#server-sent-events)) |
-| `limits` | Wie viele Nachrichten, Blöcke, Werkzeuge und Embedding-Eingaben eine Anfrage höchstens enthält ([Grenzen einer Anfrage](codec-design.md#grenzen-einer-anfrage)) |
+| `limits` | Wie viele Nachrichten, Blöcke, Werkzeuge, Embedding-Eingaben und Rerank-Dokumente eine Anfrage höchstens enthält ([Grenzen einer Anfrage](codec-design.md#grenzen-einer-anfrage)) |
 | `cross` | Die Regeln für Daten, die den Dialekt wechseln, und die Extras-Allowlist |
 | `continuity` | Reasoning, das mit der Unterhaltung mitreist ([Reasoning über Runden hinweg](reasoning.md#reasoning-über-runden-hinweg)) |
 | `keepalive` | Frames, die laufende Streams nicht verstummen lassen ([Keepalives](cross-format.md#keepalives)) |
 | `models` | Hilfsfunktionen für Modelllisten ([Modelllisten](codec-design.md#modelllisten)) |
-| `decisions` | Was die Entscheidungs-Codecs teilen: die Ablehnung, die jeder andere Codec einer Entscheidungsanfrage gibt, die Schlüssel der Fragen in Formaten, die Fragen nach Namen ablegen, und die dokumentierten Formeln für `confidence` |
+| `decisions` | Was die Entscheidungs-Codecs teilen: die Ablehnung, die jeder andere Codec einer Entscheidungs- oder Rerank-Anfrage gibt, die Schlüssel der Fragen in Formaten, die Fragen nach Namen ablegen, und die dokumentierten Formeln für `confidence` |
 | `image_size` | Format und Größe eines Bildes, aus seinem Header gelesen, ohne es zu dekodieren ([Bildgrößen](codec-design.md#typen)) |
 | `testing` | Vergleich von JSON und SSE, auch für Crates, die die Codecs nutzen |
 
@@ -224,6 +225,13 @@ Jedes KPP-Feld ist entweder semantisch oder ein Hinweis:
 | `model`, `input`, `dimensions`, `encoding` | semantisch | |
 | `user` | Hinweis | |
 | `extras` | wie bei `GenerateRequest` | |
+
+### `RerankRequest`
+
+| Feld | Klasse | Anmerkungen |
+| --- | --- | --- |
+| `model`, `query`, `documents`, `top_n`, `max_tokens_per_doc`, `return_documents` | semantisch | Ein Format ohne Platz für eines davon lehnt es ab oder bildet es ab, wie seine Abbildungsseite sagt ([Cohere Rerank](cohere-rerank.md)). |
+| `extras` und die `extras` jedes Dokuments | wie bei `GenerateRequest` | |
 
 ### Antworten und Stream-Events
 

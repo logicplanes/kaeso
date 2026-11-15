@@ -9,7 +9,7 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 ## Spalten
 
 - **Anbieter.** Der Name, den die Konsole zeigt, dann die ID. Die ID bezeichnet den Anbieter in Modellnamen wie `groq/llama-3.3-70b-versatile` und in [Einstellungen](../self-hosting/configuration.md#anbietereinstellungen).
-- **Formate.** Die API-Formate, in denen Kaeso den Anbieter aufruft. Ein Modell nutzt das erste, außer sein Wert **Sendet als** nennt ein anderes ([Werte eines Modells](../console/models-and-aliases.md#werte-eines-modells-ändern)). **Embeddings** und **Gemini Embeddings** heißen, dass der Anbieter Embeddings-Modelle hat, die `/v1/embeddings` bedienen. **Token-Zählung** heißt, dass er Token für `/v1/messages/count_tokens` und `/v1/responses/input_tokens` zählt. Entscheidungen laufen über die eigene Decisions-API jedes Anbieters, die [APIs nach Anbieter](provider-apis.md) auflistet.
+- **Formate.** Die API-Formate, in denen Kaeso den Anbieter aufruft. Ein Modell nutzt das erste, außer sein Wert **Sendet als** nennt ein anderes ([Werte eines Modells](../console/models-and-aliases.md#werte-eines-modells-ändern)). **Embeddings** und **Gemini Embeddings** heißen, dass der Anbieter Embeddings-Modelle hat, die `/v1/embeddings` bedienen. **Cohere Rerank** heißt, dass er Rerank-Modelle hat, die `/v1/rerank` bedienen. **Token-Zählung** heißt, dass er Token für `/v1/messages/count_tokens` und `/v1/responses/input_tokens` zählt. Entscheidungen laufen über die eigene Decisions-API jedes Anbieters, die [APIs nach Anbieter](provider-apis.md) auflistet.
 - **Host.** Der Host der Standard-Basis-URL des Anbieters, den die Installation erreichen muss. Eine [Basis-URL, die Sie setzen](../self-hosting/configuration.md#anbietereinstellungen), ersetzt ihn.
 - **Schlüssel.** Wo Sie einen Schlüssel erstellen und womit er beginnt ([Anbieter-Schlüssel](../console/provider-keys.md)).
 
@@ -23,7 +23,7 @@ Diese Anbieter sind in Kaeso eingebaut, nach Namen sortiert. Unter [Anbieter](pr
 | Baseten `baseten` | Chat Completions | `inference.baseten.co` | [app.baseten.co](https://app.baseten.co/settings/api_keys), kein festes Präfix |
 | Cerebras `cerebras` | Chat Completions | `api.cerebras.ai` | [cloud.cerebras.ai](https://cloud.cerebras.ai), `csk-` |
 | Cloudflare AI Gateway `cloudflare-ai-gateway` | Chat Completions, Responses, Messages, Embeddings | `api.cloudflare.com` | [dash.cloudflare.com](https://dash.cloudflare.com/profile/api-tokens), kein festes Präfix |
-| Cohere `cohere` | Chat Completions, Embeddings | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys), kein festes Präfix |
+| Cohere `cohere` | Chat Completions, Embeddings, Cohere Rerank | `api.cohere.ai` | [dashboard.cohere.com](https://dashboard.cohere.com/api-keys), kein festes Präfix |
 | DeepInfra `deepinfra` | Chat Completions, Embeddings | `api.deepinfra.com` | [deepinfra.com](https://deepinfra.com/dash/keys), kein festes Präfix |
 | DeepSeek `deepseek` | Chat Completions | `api.deepseek.com` | [platform.deepseek.com](https://platform.deepseek.com/api_keys), `sk-` |
 | ElevenLabs `elevenlabs` | ElevenLabs | `api.elevenlabs.io` | [elevenlabs.io](https://elevenlabs.io/app/settings/api-keys), `sk_` |

@@ -310,6 +310,9 @@ describe("replyView", () => {
     const blocks = [{ text: { text: "Hi" } }];
     expect(isKnownReplyForm({ blocks, stop: "end_turn", model: "m", id: "r" })).toBe(true);
     expect(isKnownReplyForm(null)).toBe(true);
+    const rerank = { format: 2, rerank: { model: "rerank-v5.0-fast", results: [{ index: 1, relevance_score: 0.93 }], usage: { input_tokens: 61 } } };
+    expect(isKnownReplyForm(rerank)).toBe(true);
+    expect(replyView(rerank)).toBeNull();
     for (const format of [2, 1, "2", null]) {
       const reply = { format, blocks, stop: "end_turn", model: "m", id: "r" };
       expect(isKnownReplyForm(reply)).toBe(false);

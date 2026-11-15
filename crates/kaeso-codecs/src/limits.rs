@@ -22,6 +22,10 @@ pub const MAX_TOOLS: usize = 10_000;
 /// The most inputs one OpenAI Embeddings request may hold: OpenAI's documented limit.
 pub const MAX_EMBEDDING_INPUTS: usize = 2_048;
 
+/// The most documents one rerank request may hold: ten times the 1,000 Cohere and Voyage AI
+/// recommend or take, so that the provider, not Kaeso, says where its own limit is.
+pub const MAX_RERANK_DOCUMENTS: usize = 10_000;
+
 /// The most questions one decision request may ask: Gemini's documented limit, the largest of
 /// the decision formats.
 pub const MAX_DECISION_QUESTIONS: usize = 1_000;
@@ -44,7 +48,7 @@ pub const MAX_DEPTH: usize = 127;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct RequestShape {
-    /// Messages, input items or embedding inputs.
+    /// Messages, input items, embedding inputs or rerank documents.
     pub items: usize,
     /// Content blocks in all of them and in the system prompt.
     pub blocks: usize,
@@ -90,6 +94,7 @@ enum Node {
     ToolSet,
     Inputs,
     Input,
+    Documents,
     EmbedRequests,
     EmbedRequest,
     Token,
@@ -138,6 +143,7 @@ enum Over {
     Blocks,
     Tools,
     Inputs,
+    Documents,
     Questions,
     Options,
     Assets,
@@ -162,6 +168,10 @@ impl Tally {
             Over::Inputs => {
                 s.items += 1;
                 s.items > MAX_EMBEDDING_INPUTS
+            }
+            Over::Documents => {
+                s.items += 1;
+                s.items > MAX_RERANK_DOCUMENTS
             }
             Over::Tools => {
                 s.tools += 1;
@@ -216,8 +226,8 @@ impl<'de> serde::Deserialize<'de> for Key<'de> {
 
 fn child(node: Node, key: &str) -> Option<Node> {
     use DialectId::{
-        AnthropicMessages, Gemini, GeminiDecisions, GeminiEmbeddings, OpenAiChat, OpenAiDecisions,
-        OpenAiEmbeddings, OpenAiResponses, SystemOne,
+        AnthropicMessages, CohereRerank, Gemini, GeminiDecisions, GeminiEmbeddings, OpenAiChat,
+        OpenAiDecisions, OpenAiEmbeddings, OpenAiResponses, SystemOne,
     };
     Some(match (node, key) {
         (Node::Top(SystemOne), "questions") => Node::DecideQuestions,
@@ -240,6 +250,7 @@ fn child(node: Node, key: &str) -> Option<Node> {
         }
         (Node::Top(d @ OpenAiResponses), "input") => Node::Items(d),
         (Node::Top(OpenAiEmbeddings), "input") => Node::Inputs,
+        (Node::Top(CohereRerank), "documents") => Node::Documents,
         (Node::Top(d @ (AnthropicMessages | OpenAiChat)), "messages") => Node::Items(d),
         (Node::Top(AnthropicMessages), "system") => Node::Content(Some(Scope::Anthropic(0))),
         (Node::Top(OpenAiChat), "functions") => Node::Tools,
@@ -343,6 +354,7 @@ impl<'de> Visitor<'de> for Walk<'_> {
             Node::Content(scope) => (Some(Over::Blocks), Some(Node::Block(scope))),
             Node::Tools => (Some(Over::Tools), None),
             Node::Inputs => (None, Some(Node::Input)),
+            Node::Documents => (Some(Over::Documents), None),
             Node::ToolSets => (None, Some(Node::ToolSet)),
             Node::EmbedRequests => (Some(Over::Inputs), Some(Node::EmbedRequest)),
             Node::Input => {
@@ -611,6 +623,12 @@ fn refusal(dialect: DialectId, over: Over) -> KppError {
             ),
             "input",
         ),
+        Over::Documents => (
+            format!(
+                "`documents` holds more than {MAX_RERANK_DOCUMENTS} documents; Kaeso takes at most {MAX_RERANK_DOCUMENTS}."
+            ),
+            "documents",
+        ),
         Over::Questions => (
             format!(
                 "`questions` holds more than {MAX_DECISION_QUESTIONS} questions; Kaeso takes at most {MAX_DECISION_QUESTIONS}."
@@ -720,8 +738,8 @@ impl<B: AsRef<[u8]>> Checked<B> {
 
 /// Counts the messages, content blocks and tools of a request body without decoding it,
 /// and refuses one over [`MAX_MESSAGES`], [`MAX_BLOCKS_PER_MESSAGE`], [`MAX_TOOLS`],
-/// [`MAX_EMBEDDING_INPUTS`], [`MAX_DECISION_QUESTIONS`], [`MAX_DECISION_OPTIONS`] or
-/// [`MAX_DECISION_ASSETS`] with an `InvalidRequest` error that names the field, and one
+/// [`MAX_EMBEDDING_INPUTS`], [`MAX_RERANK_DOCUMENTS`], [`MAX_DECISION_QUESTIONS`],
+/// [`MAX_DECISION_OPTIONS`] or [`MAX_DECISION_ASSETS`] with an `InvalidRequest` error that names the field, and one
 /// that nests deeper than [`MAX_DEPTH`] with an `InvalidRequest` error.
 ///
 /// Every codec's `decode_request` runs this first. A body that is not JSON, or not shaped

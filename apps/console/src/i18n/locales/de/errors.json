@@ -763,5 +763,10 @@
   "errors.keyEndpoint.notHttps": "Der Endpunkt muss eine https-URL ohne Benutzernamen, Abfrage oder Fragment sein.",
   "errors.keyEndpoint.host": "Der Endpunkt muss die Adresse einer Ressource sein, etwa `{example}`.",
   "errors.keyEndpoint.path": "Der Endpunkt hat einen Pfad, den Kaeso nicht aufruft; nur die Adresse der Ressource angeben.",
-  "errors.upstreamModel": "Die Modell-ID beim Anbieter hat 1 bis 256 Zeichen, ohne Leerzeichen."
+  "errors.upstreamModel": "Die Modell-ID beim Anbieter hat 1 bis 256 Zeichen, ohne Leerzeichen.",
+  "errors.noRerankAtProvider": "Kaeso ruft bei {provider} keine Rerank-Modelle auf, daher kann `{name}` keine Dokumente neu ordnen.",
+  "errors.rerankDocumentText": "Die Rerank-API von Cohere nimmt jedes Dokument nur als Text an; entfernen Sie `{field}` aus `{param}`.",
+  "errors.model.rerankOnly": "Das Modell `{model}` ist ein Rerank-Modell; senden Sie es an `/v1/rerank`.",
+  "errors.model.generationNoRerank": "Das Modell `{model}` ist ein Generierungsmodell und kann keine Dokumente neu ordnen.",
+  "errors.model.embeddingsNoRerank": "Das Modell `{model}` ist ein Embedding-Modell und kann keine Dokumente neu ordnen."
 }
