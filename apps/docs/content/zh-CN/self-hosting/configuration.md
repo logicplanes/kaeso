@@ -379,7 +379,7 @@ Webhook 的地址由组织管理员选择，因此网关会像对待 MCP 服务�
 
 ## 服务商设置
 
-每个服务商都有以其 ID 命名的设置：TOML 键 `providers.<id>.<field>` 和变量 `KAESO_PROVIDERS_<ID>_<FIELD>`，其中 ID 为大写，每个 `-` 换成 `_`。Kaeso 调用的每个服务商都只有一个字段 `base_url`（[服务商调用](#服务商调用)）。对于 Gemini Enterprise Agent Platform，默认值会在各服务账号密钥所选位置自己的主机上调用；其他任何基础 URL（例如 Private Service Connect 端点）都会原样用于所有位置。对于 Amazon Bedrock，默认值会在各密钥所选区域自己的运行时主机上调用；其他任何基础 URL（例如 VPC 端点）都会原样用于所有区域。
+每个服务商都有以其 ID 命名的设置：TOML 键 `providers.<id>.<field>` 和变量 `KAESO_PROVIDERS_<ID>_<FIELD>`，其中 ID 为大写，每个 `-` 换成 `_`。Kaeso 调用的每个服务商都只有一个字段 `base_url`（[服务商调用](#服务商调用)）。基础 URL 只改变请求的去向，不改变目录：模型和价格仍是 KPMR 中该服务商默认地域的。因此，指向其他地域的服务商（例如 QwenCloud 的中国地域，KPMR 中为 `alibaba-cn`，或贵 10% 的 xAI 美国端点）的费用和预算仍按默认地域的价格计算。请将该地域的价格设为所用模型的[覆盖值](../console/models-and-aliases.md#更改模型的参数)。对于 Gemini Enterprise Agent Platform，默认值会在各服务账号密钥所选位置自己的主机上调用；其他任何基础 URL（例如 Private Service Connect 端点）都会原样用于所有位置。对于 Amazon Bedrock，默认值会在各密钥所选区域自己的运行时主机上调用；其他任何基础 URL（例如 VPC 端点）都会原样用于所有区域。
 
 服务商 ID 由小写字母和数字组成，中间用单个连字符分隔。ID 不符合此规则、或指向 Kaeso 不调用的服务商的变量或表，会让网关在启动时停止。错误消息会指明它，并列出所有服务商。
 
