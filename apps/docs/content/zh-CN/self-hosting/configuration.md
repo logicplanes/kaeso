@@ -128,7 +128,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_SMTP_HOST`<br>`smtp.host` | 文本 | — | SMTP 服务器。除非 `mail.transport` 为 `log`，否则必填。 |
 | `KAESO_SMTP_PORT`<br>`smtp.port` | 整数 | `587` | SMTP 端口。 |
 | `KAESO_SMTP_TLS`<br>`smtp.tls` | 文本 | `starttls` | `starttls`，隐式 TLS 用 `tls`（通常是端口 465），`none` 仅用于本地邮件捕获工具。 |
-| `KAESO_SMTP_USER`<br>`smtp.user` | 文本 | — | SMTP 用户名，服务器需要时填写。设置密码时必填。 |
+| `KAESO_SMTP_USER`<br>`smtp.user` | 文本 | — | SMTP 用户名，服务器需要时填写。设置密码时必填，设置用户名时也必须设置密码。 |
 | `KAESO_SMTP_PASSWORD`<br>`smtp.password` | 文本，机密 | — | SMTP 密码。 |
 | `KAESO_SMTP_FROM`<br>`smtp.from` | 文本 | `Kaeso <kaeso@localhost>` | 每封邮件的发件人。`compose.yaml` 设为 `Kaeso <kaeso@` 加您的域名。 |
 | `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | 文本 | `smtp` | `smtp`，或 `log`：只记录每封邮件的类型，从不记录收件人或内容。 |

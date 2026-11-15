@@ -529,6 +529,14 @@ impl Config {
         if self.smtp.password.is_some() && self.smtp.user.is_none() {
             return invalid("smtp.user", "is required when smtp.password is set".into());
         }
+        // The mailer authenticates only with both; a user alone would send without
+        // authentication, and the first email would fail much later.
+        if self.smtp.user.is_some() && self.smtp.password.is_none() {
+            return invalid(
+                "smtp.password",
+                "is required when smtp.user is set; unset smtp.user for a server without authentication".into(),
+            );
+        }
         if self.valkey.ca().is_some() && !self.valkey.url.expose_secret().starts_with("rediss://") {
             return invalid(
                 "valkey.ca",
