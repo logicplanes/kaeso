@@ -61,7 +61,7 @@ Scheitert ein Modellschritt, wechselt Kaeso zu seinem Fallback, wenn `fall_back_
 | `unavailable` | Der Anbieter ist nicht erreichbar, antwortet nicht rechtzeitig, ist überlastet oder antwortet mit 5xx; er lehnt den Anbieter-Schlüssel des Projekts ab oder bedient das Modell nicht; das Projekt hat keinen Anbieter-Schlüssel dafür |
 | `limited` | Das Ratenlimit oder Kontingent des Anbieters (429), oder ein Kaeso-[Limit oder -Budget](../console/limits-and-budgets.md) für das Modell des Schritts: 429, oder 403 für ein Ausgabenbudget, das die Anfrage nicht bepreisen kann. Kann Kaeso die Limits gar nicht prüfen (503), weicht kein Schritt aus |
 | `unsupported` | Das Modell kann etwas nicht annehmen, das die Anfrage nutzt, etwa Bilder, PDFs, Werkzeuge oder ein JSON-Schema. Kaeso weiß das aus dem Katalog, bevor es etwas sendet |
-| `rejected` | Der Anbieter lehnt die Anfrage selbst ab: 400 oder 413, etwa ein zu langer Kontext oder Inhalt, den er filtert |
+| `rejected` | Der Anbieter lehnt die Anfrage selbst ab: 400 oder 413, etwa ein zu langer Kontext oder Inhalt, den er filtert, oder 404 für etwas, das die Anfrage nennt, etwa eine Datei, während er das Modell anbietet |
 
 Ein Schritt weicht bei `unavailable`, `limited` und `unsupported` aus, wenn er keine anderen nennt. Nehmen Sie `rejected` nur für einen Fallback auf, der annehmen kann, was das erste Modell ablehnte, etwa ein Modell mit längerem Kontext.
 

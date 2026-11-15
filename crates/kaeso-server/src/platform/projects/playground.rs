@@ -761,6 +761,7 @@ mod tests {
             stage,
             provider_said: None,
             dropped: false,
+            not_found_in_request: false,
         }
     }
 

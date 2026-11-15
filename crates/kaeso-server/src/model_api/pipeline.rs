@@ -379,6 +379,9 @@ pub struct Failure {
     /// The provider couldn't be reached or broke the connection: a second try may get
     /// through, unlike an address the install refuses or a reply too large to take.
     pub dropped: bool,
+    // The provider's 404 is about something the request names, such as a file, while the
+    // model is served: a refusal of this request, which holds no route step.
+    pub not_found_in_request: bool,
 }
 
 impl Failure {
@@ -389,6 +392,7 @@ impl Failure {
             stage,
             provider_said: None,
             dropped: false,
+            not_found_in_request: false,
         }
     }
 
@@ -1884,6 +1888,7 @@ async fn attempt(
             stage,
             provider_said: None,
             dropped: false,
+            not_found_in_request: false,
         }
     };
     {
@@ -2212,6 +2217,7 @@ async fn attempt(
             stage,
             provider_said: None,
             dropped: false,
+            not_found_in_request: false,
         }
     };
     // A retry or a stored response goes to its provider, which an answer from the cache would
@@ -2404,6 +2410,7 @@ async fn attempt(
         }
         Failure {
             dropped: dropped(&e),
+            not_found_in_request: false,
             ..fail(Stage::Upstream)(upstream_error_from(&e, &eff.provider))
         }
     })?;
@@ -2431,6 +2438,7 @@ async fn attempt(
             stage,
             provider_said: None,
             dropped: false,
+            not_found_in_request: false,
         }
     };
     if plan.dialect == DialectId::ElevenLabs
@@ -2493,6 +2501,7 @@ async fn attempt(
                     count_upstream_error(transport_kind(&e), provider);
                     Failure {
                         dropped: dropped(&e),
+                        not_found_in_request: false,
                         ..fail(Stage::Upstream)(upstream_error(&e))
                     }
                 }
@@ -2653,6 +2662,7 @@ async fn attempt(
                             count_upstream_error(transport_kind(&e), provider);
                             Failure {
                                 dropped: dropped(&e),
+                                not_found_in_request: false,
                                 ..fail(Stage::Upstream)(upstream_error(&e))
                             }
                         })?;
@@ -2680,18 +2690,26 @@ async fn attempt(
                 );
                 count_upstream_error(err.kind.as_str(), provider);
                 let err = super::accounts::account_error(account, err);
-                if err.kind == ErrorKind::NotFound
-                    && !credential.is_keyless()
-                    && let Probe::Unserved =
-                        Box::pin(state.availability.probe(state, &credential, &eff)).await
-                {
-                    tracing::info!(provider, model = %eff.model_id, upstream = %err.message, "the provider does not serve a catalogue model to the project's key");
-                    Box::pin(availability::record(
-                        state,
-                        &learnt(Availability::Unavailable),
-                    ))
-                    .await;
-                    return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(&eff)));
+                if err.kind == ErrorKind::NotFound && !credential.is_keyless() {
+                    match Box::pin(state.availability.probe(state, &credential, &eff)).await {
+                        Probe::Unserved => {
+                            tracing::info!(provider, model = %eff.model_id, upstream = %err.message, "the provider does not serve a catalogue model to the project's key");
+                            Box::pin(availability::record(
+                                state,
+                                &learnt(Availability::Unavailable),
+                            ))
+                            .await;
+                            return Err(fail(Stage::Unserved(eff.model_id.clone()))(unserved(
+                                &eff,
+                            )));
+                        }
+                        Probe::Served => {
+                            let mut failure = fail(Stage::Provider)(err);
+                            failure.not_found_in_request = true;
+                            return Err(failure);
+                        }
+                        Probe::Inconclusive(_) | Probe::Failed(_) => {}
+                    }
                 }
                 if let Some(refused) =
                     refused_custom_key(&err, &eff.provider, credential.is_keyless())
@@ -2879,6 +2897,7 @@ async fn hold(
     let cause = match failure.stage {
         Stage::Upstream => cooldowns::Cause::Unreachable,
         Stage::KeyRefused => cooldowns::Cause::KeyRefused,
+        Stage::Provider if failure.not_found_in_request => return None,
         Stage::Provider => cooldowns::Cause::Provider(&failure.err),
         _ => return None,
     };
@@ -2923,6 +2942,7 @@ fn classify(f: &Failure) -> Next {
         // Kaeso can't read the counters: every other step would be refused the same way.
         Stage::Limits if f.err.status == Some(503) => Next::Stop,
         Stage::Limits => Next::Fall(RouteFailure::Limited),
+        Stage::Provider if f.not_found_in_request => Next::Fall(RouteFailure::Rejected),
         Stage::Provider => Next::Fall(provider_failure(&f.err)),
         Stage::Caller
         | Stage::Request
