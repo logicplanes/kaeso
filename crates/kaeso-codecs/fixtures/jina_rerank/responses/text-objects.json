@@ -1,0 +1,21 @@
+{
+  "model": "jina-reranker-v3.5",
+  "object": "list",
+  "usage": {
+    "total_tokens": 38
+  },
+  "results": [
+    {
+      "index": 1,
+      "relevance_score": 0.84375,
+      "document": "The Business plan includes priority support by phone and chat."
+    },
+    {
+      "index": 0,
+      "relevance_score": 0.21875,
+      "document": {
+        "text": "The Starter plan includes email support."
+      }
+    }
+  ]
+}

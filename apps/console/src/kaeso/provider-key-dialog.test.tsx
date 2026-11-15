@@ -557,6 +557,24 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Jina AI key with Jina's key manager and its jina_ prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "jina", name: "Jina search", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Jina AI");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Jina AI API key" })).toBeVisible();
+    expectKeyHint(dialog, "jina.ai", "https://jina.ai/api-dashboard/key-manager", "API key manager", "jina_");
+    const secret = within(dialog).getByLabelText("Jina AI API key");
+    expect(secret).toHaveAttribute("placeholder", "jina_…");
+    await user.type(secret, "jina_0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Jina search");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Jina search is the Jina AI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([{ provider: "jina", name: "Jina search", secret: "jina_0123", make_default: false }]);
+  });
+
   it("adds a StepFun key, which has no fixed prefix, with StepFun's Interface Keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "stepfun-ai", name: "StepFun prod", is_default: true }));
     const { user, dialog } = await open();

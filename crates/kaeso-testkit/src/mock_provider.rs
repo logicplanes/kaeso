@@ -509,6 +509,14 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "openai_embeddings"
     } else if path == "/v2/rerank" {
         "cohere_rerank"
+    } else if path == "/v1/rerank"
+        && headers
+            .get("authorization")
+            .and_then(|v| v.to_str().ok())
+            .is_some_and(|v| v.starts_with("Bearer jina_"))
+    {
+        // Jina AI and Voyage AI both rerank at `/v1/rerank`; Jina's keys start with `jina_`.
+        "jina_rerank"
     } else if path == "/v1/rerank" {
         "voyage_rerank"
     } else if path == "/v1/image_generation" {
@@ -648,6 +656,7 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         && dialect != "openai_embeddings"
         && dialect != "cohere_rerank"
         && dialect != "voyage_rerank"
+        && dialect != "jina_rerank"
         && decision.is_none()
         && let Some(shape) = synth::Shape::of(&text, body.len())
         && let Ok(id) = dialect.parse::<kaeso_kpp::DialectId>()
@@ -738,6 +747,13 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             &dir,
             "responses",
             fixture.as_deref().unwrap_or("basic-live"),
+            "json",
+        ),
+        // Jina AI's rerank API: `[mock:fixture=NAME]` picks another reply.
+        ("jina_rerank", _) => fixture_file(
+            &dir,
+            "responses",
+            fixture.as_deref().unwrap_or("v3-scores"),
             "json",
         ),
         ("openai_embeddings", _) => {

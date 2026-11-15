@@ -205,8 +205,8 @@ pub struct CredentialCreate {
         `sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n\
         `standardcompute`, `cloudflare-ai-gateway`, `perplexity`, `typesafe`,\n\
         `deepinfra`, `upstage`, `ionos`, `novita-ai`, `volcengine`, `ovhcloud`, `stepfun-ai`,\n\
-        `tencent-tokenhub`, `venice`, `amazon-bedrock`, `azure`, `voyage`, or one of the\n\
-        organization's custom providers that takes a key."]
+        `tencent-tokenhub`, `venice`, `amazon-bedrock`, `azure`, `voyage`, `jina`, or one of\n\
+        the organization's custom providers that takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]

@@ -1,0 +1,15 @@
+{
+  "documents": [
+    "Climate Change and Renewable Energy: A Global Perspective. Rising temperatures and extreme weather events are accelerating the transition to solar and wind power worldwide.",
+    "Le changement climatique et l'énergie renouvelable : une perspective européenne. L'Union européenne investit massivement dans les technologies vertes pour atteindre la neutralité carbone d'ici 2050.",
+    "Klimawandel und erneuerbare Energien: Deutsche Energiewende. Deutschland führt die Transformation des Energiesektors durch innovative Technologien und politische Maßnahmen an.",
+    "气候变化对可再生能源的影响：中国的绿色发展战略。中国正在大力推进太阳能和风能项目，以实现碳中和目标。",
+    "Artificial Intelligence in Healthcare: Revolutionizing Medical Diagnosis. AI-powered systems are improving accuracy in disease detection and treatment recommendations.",
+    "Blockchain Technology: Transforming Financial Services. Decentralized finance applications are reshaping traditional banking and payment systems."
+  ],
+  "model": "jina-reranker-v3",
+  "query": "Climate change impact on renewable energy adoption",
+  "return_documents": false,
+  "return_embeddings": false,
+  "top_n": 4
+}

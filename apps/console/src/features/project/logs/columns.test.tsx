@@ -229,6 +229,7 @@ describe("isRerank", () => {
   it("knows rerank requests by either format, which no provider caches, apart from embeddings", () => {
     expect(isRerank({ ingress_dialect: "cohere_rerank", egress_dialect: "cohere_rerank" })).toBe(true);
     expect(isRerank({ ingress_dialect: "cohere_rerank", egress_dialect: "voyage_rerank" })).toBe(true);
+    expect(isRerank({ ingress_dialect: "cohere_rerank", egress_dialect: "jina_rerank" })).toBe(true);
     expect(isRerank({ ingress_dialect: "openai_chat", egress_dialect: "openai_chat" })).toBe(false);
     expect(isEmbedding({ ingress_dialect: "cohere_rerank", egress_dialect: "cohere_rerank" })).toBe(false);
   });

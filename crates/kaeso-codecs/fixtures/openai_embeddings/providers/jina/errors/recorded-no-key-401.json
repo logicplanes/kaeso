@@ -1,0 +1,5 @@
+{
+  "detail": "Authentication required. Provide your API key via the Authorization header: 'Authorization: Bearer <api-key>'. Get your API key at https://jina.ai/api-dashboard/key-manager.",
+  "request_id": "00000000000000000000000000000000",
+  "code": "AUTH_MISSING_API_KEY"
+}

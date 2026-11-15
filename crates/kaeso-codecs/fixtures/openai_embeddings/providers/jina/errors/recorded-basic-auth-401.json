@@ -1,0 +1,5 @@
+{
+  "detail": "Invalid authorization format. Use 'Authorization: Bearer <api-key>' with a valid Jina API key (65 characters, starts with 'jina_').",
+  "request_id": "00000000000000000000000000000000",
+  "code": "AUTH_INVALID_FORMAT"
+}

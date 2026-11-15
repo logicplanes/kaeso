@@ -231,6 +231,7 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | `KAESO_PROVIDERS_AMAZON_BEDROCK_BASE_URL`<br>`providers.amazon-bedrock.base_url` | text | `https://bedrock-runtime.us-east-1.amazonaws.com` | Base URL of the Amazon Bedrock API. |
 | `KAESO_PROVIDERS_AZURE_BASE_URL`<br>`providers.azure.base_url` | text | `https://openai.azure.com` | Where Kaeso sends every Azure request instead of each key's resource endpoint, such as an API gateway in front of Azure; unused while it is the default. |
 | `KAESO_PROVIDERS_VOYAGE_BASE_URL`<br>`providers.voyage.base_url` | text | `https://ai.mongodb.com` | Base URL of the Voyage AI API. |
+| `KAESO_PROVIDERS_JINA_BASE_URL`<br>`providers.jina.base_url` | text | `https://api.jina.ai` | Base URL of the Jina AI API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

@@ -86,9 +86,10 @@ Cohere 自己的字段，例如 `relevant_spans`（Context Focus）和 `priority
 | 服务商 | 发送的格式 | 路径 | 模型 |
 | --- | --- | --- | --- |
 | Cohere | Cohere Rerank v2 | `/v2/rerank`，位于 Cohere 主机的根路径，与其兼容 API 并列 | Rerank 5，即 `rerank-v5.0-pro` 和 `rerank-v5.0-fast` |
+| Jina AI | Jina Rerank（[映射](../development/kpp/jina-rerank.md)） | `/v1/rerank` | `jina-reranker-v3.5`、`jina-reranker-v3`、`jina-reranker-m0`（仅文本）、`jina-reranker-v2-base-multilingual`、v1 重排序模型和 ColBERT 模型 |
 | Voyage AI | Voyage Rerank（[映射](../development/kpp/voyage-rerank.md)） | `/v1/rerank` | `rerank-3`、`rerank-3-lite`，以及较早的 `rerank-2.5`、`rerank-2.5-lite`、`rerank-2` 和 `rerank-2-lite` |
 
-Voyage AI 收到的 `top_n` 为 `top_k`，每个文档为其文本；其回复中的文档以 `{"text": "…"}` 返回，其 `usage.total_tokens` 以 `billed_units.input_tokens` 返回。
+Jina AI 总会收到 `return_documents`，因为除非明确关闭，它会返回文档；对 `jina-reranker-v3` 和 `jina-reranker-v3.5`，`max_tokens_per_doc` 以 `max_doc_length` 发送；其 `usage.total_tokens` 以 `billed_units.input_tokens` 返回。Voyage AI 收到的 `top_n` 为 `top_k`，每个文档为其文本；其回复中的文档以 `{"text": "…"}` 返回，其 `usage.total_tokens` 以 `billed_units.input_tokens` 返回。
 
 [KPMR](../concepts/kpmr.md) 将其类型标为 `reranking` 的模型就是重排序模型。Kaeso 尚未调用其重排序 API 的服务商（例如 NVIDIA）的重排序模型，会在发送任何内容之前被拒绝：“Kaeso calls no rerank models on NVIDIA, so `nvidia/rerank-qa-mistral-4b` can't rerank documents.”
 
@@ -98,8 +99,8 @@ Kaeso 在发送之前拒绝以下请求，并以 Cohere 的格式返回 400：
 
 - 生成模型或嵌入模型：“The model `command-a-03-2025` is a generation model; it cannot rerank documents.”；
 - 空的 `documents` 列表、为 0 的 `top_n` 或 `max_tokens_per_doc`，或者既不是字符串也不是带 `text` 的对象的文档；
-- 发给只接受文本的服务商（例如 Cohere 和 Voyage AI）且除 `text` 外还有其他字段的文档；
-- 发给 Voyage AI 的 `max_tokens_per_doc`，Voyage AI 会自行在模型的上限处截断每个文档；
+- 发给只接受文本的服务商（例如 Cohere、Jina AI 和 Voyage AI）且除 `text` 外还有其他字段的文档；
+- 发给 Voyage AI 的 `max_tokens_per_doc`（Voyage AI 会自行在模型的上限处截断每个文档），以及发给 `jina-reranker-v3` 和 `jina-reranker-v3.5` 以外的 Jina AI 重排序模型的 `max_tokens_per_doc`；
 - 发给 Cohere 以外服务商的 Cohere 自有字段，例如 `relevant_spans`。
 
 重排序模型拒绝聊天、token 计数和嵌入：“The model `rerank-v5.0-fast` is a rerank model; send it to `/v1/rerank`.”
@@ -107,7 +108,7 @@ Kaeso 在发送之前拒绝以下请求，并以 Cohere 的格式返回 400：
 ## 分数、费用、缓存和日志
 
 - **分数**由服务商给出，原样传递。Cohere 的分数介于 0 和 1 之间；其他服务商没有记载范围，因此不要跨服务商比较分数。
-- **费用。** 重排序请求按服务商计费的 token 数和模型的输入价格计费。Cohere 的 Rerank 5 以 `billed_units.input_tokens` 报告这些 token；Voyage AI 按查询的 token 数乘以文档数、再加上每个文档的 token 数计费，并以 `usage.total_tokens` 报告。更早的 Cohere 模型按搜索单位计费，Kaeso 会记录它们，但无法为其定价。没有输入价格的模型费用为**未知**，[预算](../console/limits-and-budgets.md)会拒绝它。预算按服务商的计费方式，为每个文档预留一次查询。
+- **费用。** 重排序请求按服务商计费的 token 数和模型的输入价格计费。Cohere 的 Rerank 5 以 `billed_units.input_tokens` 报告这些 token；Voyage AI 按查询的 token 数乘以文档数、再加上每个文档的 token 数计费，并以 `usage.total_tokens` 报告，Jina AI 也以同样方式报告其计费的 token。更早的 Cohere 模型按搜索单位计费，Kaeso 会记录它们，但无法为其定价。没有输入价格的模型费用为**未知**，[预算](../console/limits-and-budgets.md)会拒绝它。预算按服务商的计费方式，为每个文档预留一次查询。
 - **响应缓存。** [响应缓存](../console/response-cache.md)像回答重复的聊天请求一样回答重复的重排序请求。
 - **日志。** [请求日志](../console/request-logs.md)显示端点 `rerank`、请求和打分后的结果。
 

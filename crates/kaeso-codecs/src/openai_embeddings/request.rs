@@ -198,6 +198,17 @@ fn body(r: &EmbedRequest, profile: &EmbeddingsProfile) -> Result<Vec<u8>, KppErr
         // An app's `"user": null` says nothing; a provider without `user` refuses the key.
         verbatim.shift_remove("user");
     }
+    if profile.encoding_field != ENCODING {
+        if let Some(v) = verbatim.shift_remove(ENCODING) {
+            verbatim.insert(profile.encoding_field.to_owned(), v);
+        }
+        if let Some(format) = w.encoding_format.take() {
+            let value = RawJson::from_serialize(&format).map_err(|e| {
+                KppError::provider(format!("Kaeso could not serialize `{ENCODING}` ({e})."))
+            })?;
+            extra.insert(profile.encoding_field.to_owned(), value);
+        }
+    }
     to_body(&Ext::with(w, extra, verbatim))
 }
 
@@ -232,6 +243,15 @@ fn check_profile(r: &EmbedRequest, profile: &EmbeddingsProfile) -> Result<(), Kp
             format!("`user` is not supported by {provider}; remove it from the request."),
         )
         .with_param("user"));
+    }
+    let field = profile.encoding_field;
+    let encoding_set =
+        r.encoding == EmbedEncoding::Base64 || r.extras.form_str(DIALECT, ENCODING).is_some();
+    if field != ENCODING && encoding_set && r.extras.fields.contains_key(field) {
+        return Err(KppError::invalid_request(format!(
+            "`encoding_format` reaches {provider} as `{field}`, which the request sets too; send one of them."
+        ))
+        .with_param(field));
     }
     if !profile.token_inputs && r.input.iter().any(|i| matches!(i, EmbedInput::Tokens(_))) {
         return Err(KppError::unsupported(

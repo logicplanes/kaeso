@@ -1,0 +1,19 @@
+{
+  "model": "jina-embeddings-v5-text-small",
+  "object": "list",
+  "usage": {
+    "total_tokens": 8,
+    "prompt_tokens": 8
+  },
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [
+        0.0215,
+        -0.0431,
+        0.0122
+      ]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "data": [
+    {
+      "id": "jina-ai/jina-reranker-v3.5",
+      "hugging_face_id": "jinaai/jina-reranker-v3.5",
+      "name": "Jina AI: Jina Reranker v3.5",
+      "created": 1785110400,
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "quantization": "",
+      "context_length": 131072,
+      "max_output_length": 512,
+      "pricing": {
+        "prompt": "0.00000005",
+        "completion": "0",
+        "image": "0",
+        "request": "0",
+        "input_cache_read": "0",
+        "input_cache_write": "0"
+      },
+      "supported_sampling_parameters": [],
+      "supported_features": [],
+      "description": "jina-reranker-v3.5 is a 0.6B parameter multilingual listwise document reranker and a drop-in upgrade to jina-reranker-v3. It keeps the same last-but-not-late (LBNL) listwise interface — ranking a query against many candidates in a single forward pass — while improving domain robustness, structured-data ranking, multilingual retrieval, and inference efficiency. Built on Qwen3-0.6B with 28 layers using hybrid 3L2G attention (sliding-window layers, window 1024, interleaved with global-attention layers and a pinned terminal global layer required by LBNL) and a lightweight MLP projector (1024→512→512), it supports up to 131K tokens of context and ranks documents jointly via causal self-attention and cosine scoring. It reaches 63.20 nDCG@10 on BEIR — above the 4B Qwen3-Reranker at roughly 7× fewer parameters — while running 1.22×–1.56× faster than v3 across short-to-long contexts.",
+      "datacenters": [
+        {
+          "country_code": "US"
+        }
+      ]
+    },
+    {
+      "id": "jina-ai/jina-embeddings-v3",
+      "hugging_face_id": "jinaai/jina-embeddings-v3",
+      "name": "Jina AI: Jina Embeddings v3",
+      "created": 1726617600,
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "embeddings"
+      ],
+      "quantization": "",
+      "context_length": 8192,
+      "max_output_length": 1024,
+      "pricing": {
+        "prompt": "0.00000005",
+        "completion": "0",
+        "image": "0",
+        "request": "0",
+        "input_cache_read": "0",
+        "input_cache_write": "0"
+      },
+      "supported_sampling_parameters": [],
+      "supported_features": [],
+      "description": "Jina Embeddings v3 is a groundbreaking multilingual text embedding model that transforms how organizations handle text understanding and retrieval across languages. At its core, it solves the critical challenge of maintaining high performance across multiple languages and tasks while keeping computational requirements manageable. The model particularly shines in production environments where efficiency matters - it achieves state-of-the-art performance with just 570M parameters, making it accessible for teams that can't afford the computational overhead of larger models. Organizations needing to build scalable, multilingual search systems or analyze content across language barriers will find this model especially valuable.",
+      "datacenters": [
+        {
+          "country_code": "US"
+        }
+      ]
+    },
+    {
+      "id": "jina-ai/jina-embeddings-v5-text-small",
+      "hugging_face_id": "jinaai/jina-embeddings-v5-text-small",
+      "name": "Jina AI: Jina Embeddings v5 Text Small",
+      "created": 1739923200,
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "embeddings"
+      ],
+      "quantization": "",
+      "context_length": 32768,
+      "max_output_length": 1024,
+      "pricing": {
+        "prompt": "0.00000005",
+        "completion": "0",
+        "image": "0",
+        "request": "0",
+        "input_cache_read": "0",
+        "input_cache_write": "0"
+      },
+      "supported_sampling_parameters": [],
+      "supported_features": [],
+      "description": "Jina Embeddings v5 Text Small is a multilingual text embedding model with 677M parameters built on the Qwen3-0.6B-Base backbone. It supports 32K context length and produces 1024-dimensional embeddings with Matryoshka representation learning (down to 32 dimensions). It uses last-token pooling and supports retrieval, text-matching, clustering, and classification tasks.",
+      "datacenters": [
+        {
+          "country_code": "US"
+        }
+      ]
+    }
+  ]
+}

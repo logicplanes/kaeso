@@ -42,6 +42,7 @@ const providers: ProviderPickerOption[] = [
   { id: "togetherai", name: "Together AI" },
   { id: "venice", name: "Venice" },
   { id: "voyage", name: "Voyage AI" },
+  { id: "jina", name: "Jina AI" },
   { id: "vercel", name: "Vercel" },
   { id: "xai", name: "SpaceX" },
   { id: "zai", name: "Z.ai" },

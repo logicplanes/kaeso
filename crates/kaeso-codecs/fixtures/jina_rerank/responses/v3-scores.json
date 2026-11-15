@@ -1,0 +1,25 @@
+{
+  "model": "jina-reranker-v3",
+  "object": "list",
+  "usage": {
+    "total_tokens": 512
+  },
+  "results": [
+    {
+      "index": 0,
+      "relevance_score": 0.6875
+    },
+    {
+      "index": 3,
+      "relevance_score": 0.62109375
+    },
+    {
+      "index": 1,
+      "relevance_score": 0.5859375
+    },
+    {
+      "index": 2,
+      "relevance_score": 0.578125
+    }
+  ]
+}

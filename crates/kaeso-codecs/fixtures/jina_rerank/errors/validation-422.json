@@ -1,0 +1,12 @@
+{
+  "detail": "Invalid request: body -> top_n: Input should be greater than or equal to 1.",
+  "request_id": "00000000000000000000000000000000",
+  "errors": [
+    {
+      "field": "body -> top_n",
+      "message": "Input should be greater than or equal to 1",
+      "type": "greater_than_equal",
+      "input": 0
+    }
+  ]
+}
