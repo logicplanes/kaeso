@@ -978,6 +978,88 @@ expression: outcomes
     },
     "path": "/v1beta/models/openai.gpt-oss-120b:streamGenerateContent?alt=sse"
   },
+  "providers/azure/filter-blocked-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Tell me the lyrics of Hey Jude."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-35-turbo:streamGenerateContent?alt=sse"
+  },
+  "providers/azure/filter-pass-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is color?"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-35-turbo:streamGenerateContent?alt=sse"
+  },
+  "providers/azure/filtered-blocklist-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Tell me about my pizza."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-35-turbo:generateContent"
+  },
+  "providers/azure/greeting-published": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-35-turbo:generateContent"
+  },
+  "providers/azure/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-4o:generateContent"
+  },
   "providers/baseten/invalid-api-key": {
     "body": {
       "contents": [

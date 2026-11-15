@@ -758,5 +758,10 @@
   "errors.model.maxImages": "模型 `{model}` 每个请求最多接受 {max} 张图片。",
   "errors.modelApi.accountNoDecisions": "{product} 账户无法做出决策。请改为在此项目中使用 {provider} 的 API 密钥。",
   "errors.decisionTooLarge": "决策请求超过了 Kaeso 对此模型接受的大小。",
-  "errors.notSystemOneRequest": "该请求不是 Kaeso 可读取的 System One 请求。"
+  "errors.notSystemOneRequest": "该请求不是 Kaeso 可读取的 System One 请求。",
+  "errors.keyEndpoint.missing": "{provider} 的密钥属于某个资源；请提供其 `endpoint`。",
+  "errors.keyEndpoint.notHttps": "端点必须是 https URL，且不含用户名、查询参数或片段。",
+  "errors.keyEndpoint.host": "端点必须是资源的地址，例如 `{example}`。",
+  "errors.keyEndpoint.path": "端点包含 Kaeso 不会调用的路径；请只提供资源的地址。",
+  "errors.upstreamModel": "服务商模型 ID 为 1 到 256 个字符，不含空格。"
 }

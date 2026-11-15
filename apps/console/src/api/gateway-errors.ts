@@ -509,6 +509,11 @@ const messages = (): Rule[] => [
   rule("errors.accountScope.accountId", () => t("errors.accountScope.accountId", "The account id is 32 hexadecimal characters, as the dashboard shows it.")),
   rule("errors.accountScope.accountMissing", (v) => t("errors.accountScope.accountMissing", "{provider} calls an account; give its `account_id`.", v)),
   rule("errors.accountScope.gatewayId", () => t("errors.accountScope.gatewayId", "The gateway id is 1 to 64 letters, digits, hyphens and underscores.")),
+  rule("errors.keyEndpoint.missing", (v) => t("errors.keyEndpoint.missing", "{provider} keys belong to a resource; give its `endpoint`.", v)),
+  rule("errors.keyEndpoint.notHttps", () => t("errors.keyEndpoint.notHttps", "The endpoint must be an https URL without a user name, query or fragment.")),
+  rule("errors.keyEndpoint.host", (v) => t("errors.keyEndpoint.host", "The endpoint must be a resource's address, such as `{example}`.", v)),
+  rule("errors.keyEndpoint.path", () => t("errors.keyEndpoint.path", "The endpoint has a path Kaeso doesn't call; give the resource's address only.")),
+  rule("errors.upstreamModel", () => t("errors.upstreamModel", "The provider model id is 1 to 256 characters, without spaces.")),
   rule("errors.noEmbeddingsAtProvider", (v) =>
     t("errors.noEmbeddingsAtProvider", "Kaeso calls no embeddings models on {provider}, so `{name}` can't create embeddings.", v),
   ),

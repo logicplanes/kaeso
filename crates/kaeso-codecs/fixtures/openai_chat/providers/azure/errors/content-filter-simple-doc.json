@@ -1,0 +1,9 @@
+{
+  "error": {
+    "message": "The response was filtered",
+    "type": null,
+    "param": "prompt",
+    "code": "content_filter",
+    "status": 400
+  }
+}

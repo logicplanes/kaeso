@@ -587,6 +587,11 @@ impl ChatStreamDecoder {
         for (key, value) in extra {
             fields.insert(format!("choice.{key}"), value);
         }
+        // Azure's annotation-only chunks carry a choice without `delta`, also the one that ends
+        // a filtered stream with `finish_reason: "content_filter"`.
+        if !raw_has_key(raw.get(), "delta") {
+            form.insert(FORM_NO_DELTA.to_owned(), Value::Bool(true));
+        }
         let Ext {
             known: delta,
             extra: mut d_extra,
@@ -1149,6 +1154,13 @@ fn without_content_parts(mut event: SseEvent) -> SseEvent {
     };
     event.data = chunk.to_string();
     event
+}
+
+const FORM_NO_DELTA: &str = "nd";
+
+fn raw_has_key(raw: &str, key: &str) -> bool {
+    serde_json::from_str::<IndexMap<String, &serde_json::value::RawValue>>(raw)
+        .is_ok_and(|m| m.contains_key(key))
 }
 
 fn is_error_frame(raw: &serde_json::value::RawValue) -> bool {

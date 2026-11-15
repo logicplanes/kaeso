@@ -1,0 +1,9 @@
+{
+  "model": "gpt-35-turbo",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Tell me about my pizza."
+    }
+  ]
+}

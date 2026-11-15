@@ -98,6 +98,10 @@ order: 8
 
 来源：阿里云百炼（现为 QwenCloud）的 [Embedding](https://www.alibabacloud.com/help/en/model-studio/embedding) 页面（2026-10-30 查阅），以及 `fixtures/openai_embeddings/providers/alibaba/` 中在国际站（新加坡）地域使用 `text-embedding-v4` 和 `text-embedding-v3` 的实时录制。QwenCloud 接受 `encoding_format` 为 `float` 和 `base64`，并按要求的格式回答；`dimensions` 可取每个模型列出的尺寸（`responses/recorded-embed-dimensions`，256 个浮点数），其他尺寸返回 400 并列出可用尺寸。一个批次最多 10 条输入；11 条返回 400（`errors/recorded-embed-batch-eleven`）。以 token ID 作为输入返回 400，生成模型返回 404。回答带有顶层 `id`，保留在扩展字段中。KPMR 未列出 QwenCloud 的嵌入模型，因此需要将它们添加为以 Embeddings 发送的自定义模型。
 
+### Azure
+
+来源：Azure 的[嵌入指南](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/embeddings)及其 v1 OpenAPI 文档（`CreateEmbeddingRequest`），2026-11-14 读取，以及 `fixtures/openai_embeddings/providers/azure/`，其中有指南中的请求，错误使用编造的密钥实时获得。嵌入请求发往每个密钥的 `{endpoint}/openai/v1/embeddings`，使用 OpenAI 的请求体（`input`、`model`、`dimensions`、`encoding_format`、`user`）；`model` 是部署名称，模型有 `upstream_model` 时使用它。指南中的回复经过删节，因此没有据此构建回复 fixture。
+
 ### DeepInfra
 
 来源：DeepInfra 的 [OpenAPI document](https://api.deepinfra.com/openapi.json)（`OpenAIEmbeddingsIn`）及其[嵌入指南](https://docs.deepinfra.com/apis/embeddings.md)（2026-11-14 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/deepinfra/`，其中的错误是在没有有效密钥的情况下实时返回的。DeepInfra 的嵌入模型（例如 `BAAI/bge-m3` 和 `Qwen/Qwen3-Embedding-8B`）接受 `encoding_format` 和不小于 32 的 `dimensions`，超出模型维度的部分以零填充。DeepInfra 自己的 `input_type` 和 `task` 保留在 extras 中，其多模态模型的内容部分列表会按 OpenAI Embeddings 应用写入的原样发送。

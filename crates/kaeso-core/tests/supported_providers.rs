@@ -80,7 +80,11 @@ fn expected_row(p: &Provider, language: &Language) -> Row {
     (
         format!("{} `{}`", p.name, p.id),
         formats.join(language.separator),
-        format!("`{}`", host(p.default_base_url)),
+        // A provider whose keys each carry their resource's endpoint calls that, not its base URL.
+        p.key_endpoint.and_then(|e| e.hosts.first()).map_or_else(
+            || format!("`{}`", host(p.default_base_url)),
+            |suffix| format!("`{{resource}}{suffix}`"),
+        ),
         format!(
             "[{}]({}){}{prefix}",
             host(p.key_page.url),

@@ -164,6 +164,11 @@ pub struct Fields {
     #[doc = "A per-model request timeout in seconds, instead of the instance's."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timeout_seconds: Option<u32>,
+    #[doc = "The id Kaeso sends to the provider instead of the model's id, such as an\n\
+        Azure deployment's name; the model's id when absent."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "openapi", schema(example = "gpt-5-production"))]
+    pub upstream_model: Option<String>,
     #[doc = "Release date, `YYYY-MM-DD`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub release_date: Option<String>,
@@ -395,6 +400,12 @@ impl PriceTier {
 
 const MAX_PRICE_TIERS: usize = 16;
 
+// An id a provider can take in a body or a URL path: printable, without whitespace.
+fn is_upstream_model(id: &str) -> bool {
+    (1..=256).contains(&id.chars().count())
+        && id.chars().all(|c| !c.is_whitespace() && !c.is_control())
+}
+
 fn is_valid_field(name: &str, value: &serde_json::Value) -> bool {
     let single = serde_json::Map::from_iter([(name.to_owned(), value.clone())]);
     serde_json::from_value::<Fields>(serde_json::Value::Object(single)).is_ok()
@@ -430,6 +441,7 @@ macro_rules! each_field {
             forced_tool_choice,
             efforts,
             timeout_seconds,
+            upstream_model,
             release_date,
             decisions
         )
@@ -464,6 +476,7 @@ pub const FIELD_NAMES: &[&str] = &[
     "forced_tool_choice",
     "efforts",
     "timeout_seconds",
+    "upstream_model",
     "release_date",
     "decisions",
 ];
@@ -584,6 +597,7 @@ impl Fields {
                     .collect()
             }),
             timeout_seconds: None,
+            upstream_model: None,
             release_date: m.release_date.clone(),
             decisions: DecisionFields::from_kpmr(m),
         }
@@ -755,6 +769,14 @@ impl Fields {
             return Err(FieldError::new(
                 "timeout_seconds",
                 "The timeout must be 1 to 3600 seconds.",
+            ));
+        }
+        if let Some(m) = &self.upstream_model
+            && !is_upstream_model(m)
+        {
+            return Err(FieldError::new(
+                "upstream_model",
+                "The provider model id is 1 to 256 characters, without spaces.",
             ));
         }
         if let Some(d) = &self.decisions {
@@ -988,6 +1010,15 @@ pub struct Effective {
 }
 
 impl Effective {
+    /// The id the provider gets for the model: its `upstream_model`, such as an Azure
+    /// deployment's name, or else the model's id.
+    pub fn sent_model(&self) -> &str {
+        self.fields
+            .upstream_model
+            .as_deref()
+            .unwrap_or(&self.model_id)
+    }
+
     pub fn is_embeddings(&self) -> bool {
         EMBEDDINGS.contains(&self.dialect)
     }

@@ -375,6 +375,43 @@ describe("organization providers", () => {
     ]);
   });
 
+  it("shows an Azure key's endpoint and moves the key to another resource", async () => {
+    signedIn();
+    const azure = credential({
+      id: "cred_azure",
+      provider: "azure",
+      name: "Azure prod",
+      endpoint: "https://example.openai.azure.com",
+      last4: "beef",
+    });
+    keys([production, azure]);
+    on("PATCH", "orgs/:org/credentials/:credential", ({ body }: { body: { name: string; endpoint?: string } }) => ({
+      ...azure,
+      name: body.name,
+      endpoint: body.endpoint ?? azure.endpoint,
+    }));
+    const { user } = await renderApp(PATH);
+
+    const key = await row("Azure prod");
+    expect(key).toHaveTextContent("example.openai.azure.com");
+    await user.click(await screen.findByRole("button", { name: "Actions for Azure · Azure prod" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Azure · Azure prod" });
+    await user.hover(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await screen.findByText("Change the name or the endpoint first")).toBeInTheDocument();
+    const endpoint = within(dialog).getByRole("textbox", { name: "Endpoint" });
+    await user.clear(endpoint);
+    await user.type(endpoint, "https://other.example.com");
+    expect(within(dialog).getByText("Use the resource's address, such as https://example.openai.azure.com.")).toBeVisible();
+    await user.clear(endpoint);
+    await user.type(endpoint, "https://other.services.ai.azure.com");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await notifications().findByText("Azure prod now calls other.services.ai.azure.com")).toBeInTheDocument();
+    expect(requests("PATCH", "orgs/:org/credentials/:credential").map((r) => [r.params.credential, r.body])).toEqual([
+      ["cred_azure", { name: "Azure prod", endpoint: "https://other.services.ai.azure.com" }],
+    ]);
+  });
+
   it("renames a key with the trimmed name", async () => {
     signedIn();
     keys([production, staging]);

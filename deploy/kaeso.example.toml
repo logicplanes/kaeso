@@ -188,6 +188,11 @@ base_url = "https://api.venice.ai/api"
 [providers.amazon-bedrock]
 base_url = "https://bedrock-runtime.us-east-1.amazonaws.com"
 
+# Azure calls each key's resource endpoint; a base URL other than this one sends every Azure
+# request there instead, such as to an API gateway in front of Azure.
+[providers.azure]
+base_url = "https://openai.azure.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

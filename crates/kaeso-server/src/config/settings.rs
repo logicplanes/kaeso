@@ -65,9 +65,22 @@ use Kind::{Bool, Integer, Text};
 
 pub const PROVIDER_ENV_PREFIX: &str = "KAESO_PROVIDERS_";
 
+// A provider whose keys each carry their resource's endpoint is called there; its base URL only
+// sends every request elsewhere once an install sets it.
+fn base_url_description(p: &kaeso_core::provider::Provider) -> String {
+    if p.key_endpoint.is_some() {
+        format!(
+            "Where Kaeso sends every {name} request instead of each key's resource endpoint, such as an API gateway in front of {name}; unused while it is the default.",
+            name = p.name
+        )
+    } else {
+        format!("Base URL of the {} API.", p.name)
+    }
+}
+
 #[rustfmt::skip]
 pub const PROVIDER_FIELDS: &[ProviderField] = &[
-    ProviderField { name: "base_url", kind: Text, default: |p| Some(p.default_base_url), description: |p| format!("Base URL of the {} API.", p.name) },
+    ProviderField { name: "base_url", kind: Text, default: |p| Some(p.default_base_url), description: base_url_description },
 ];
 
 #[rustfmt::skip]

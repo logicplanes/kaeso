@@ -24,6 +24,7 @@ export interface FieldDraft {
   forced_tool_choice: boolean;
   efforts: string[];
   timeout_seconds: string;
+  upstream_model: string;
   decision_limits: DecisionFields | null;
 }
 
@@ -57,6 +58,7 @@ export function draftFrom(f: Fields): FieldDraft {
     forced_tool_choice: f.forced_tool_choice !== false,
     efforts: f.efforts ?? [],
     timeout_seconds: num(f.timeout_seconds),
+    upstream_model: f.upstream_model ?? "",
     decision_limits: f.decisions ?? null,
   };
 }
@@ -101,6 +103,7 @@ function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
     forced_tool_choice: d.forced_tool_choice,
     efforts: d.efforts,
     timeout_seconds: int(d.timeout_seconds),
+    upstream_model: text(d.upstream_model),
     decisions: decides(d) ? decisionsOf({ ...d.decision_limits, only: decidesOnly(d) }) : null,
   };
 }
@@ -144,6 +147,7 @@ export function draftProblem(d: FieldDraft, custom: boolean): string | null {
   if (![d.input_price, d.output_price, d.cache_read_price, d.cache_write_price, d.cache_write_1h_price].every(price))
     return t("models.problem.price", "Prices are decimal amounts in USD, like 3.00.");
   if (![d.context_limit, d.output_limit, d.timeout_seconds].every(whole)) return t("models.problem.whole", "Limits and the timeout are whole numbers.");
+  if (/\s/.test(d.upstream_model.trim())) return t("models.problem.upstreamModel", "The provider model ID can't contain spaces.");
   if (custom && decidesOnly(d)) {
     if (!d.input_modalities.length) return t("models.problem.modalities", "A custom model needs its inputs and outputs.");
     if (!d.input_price) return t("models.problem.decisionPrice", "A custom decision model needs its input price.");
@@ -236,6 +240,18 @@ export function ModelForm({
         value={value.egress_dialect || null}
         onValueChange={(v) => set({ egress_dialect: v })}
         options={dialects.map((d) => ({ value: d, label: dialectLabel(d) }))}
+      />
+      <Input
+        label={t("models.field.upstreamModel", "Provider model ID")}
+        description={t(
+          "models.upstreamModelHint",
+          "The ID the provider gets instead of the model's, such as an Azure deployment name. Empty sends the model's ID.",
+        )}
+        value={value.upstream_model}
+        onChange={(e) => set({ upstream_model: e.target.value })}
+        maxLength={256}
+        autoComplete="off"
+        spellCheck={false}
       />
       <div className="flex flex-col gap-12">
         <Switch label={t("models.cap.tools", "Tool calling")} checked={value.tool_call} onCheckedChange={(tool_call) => set({ tool_call })} />

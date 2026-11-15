@@ -914,6 +914,47 @@ expression: outcomes
       "totalTokenCount": 53
     }
   },
+  "providers/azure/filtered-blocklist-doc": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model"
+        },
+        "finishReason": "SAFETY",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-35-turbo",
+    "responseId": "chatcmpl-85NkyY0AkeBMunOjyxivQSiTaxGAl",
+    "usageMetadata": {
+      "candidatesTokenCount": 75,
+      "promptTokenCount": 27,
+      "totalTokenCount": 102
+    }
+  },
+  "providers/azure/greeting-published": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hi there! How can I assist you today?"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "gpt-35-turbo",
+    "responseId": "chatcmpl-sdkopsdvomsdvpomi156sdv",
+    "usageMetadata": {
+      "candidatesTokenCount": 11,
+      "promptTokenCount": 127,
+      "totalTokenCount": 138
+    }
+  },
   "providers/baseten/reasoning-doc": {
     "candidates": [
       {

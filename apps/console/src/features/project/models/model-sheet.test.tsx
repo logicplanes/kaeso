@@ -266,6 +266,24 @@ describe("ModelSheet", () => {
     expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { thinking_binding: false } }]);
   });
 
+  it("sends a deployment's name as the provider model ID, without spaces", async () => {
+    setUp();
+    on("PATCH", ONE_MODEL, sonnet());
+    const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Sonnet");
+    await user.click(await within(s).findByRole("button", { name: "Edit overrides" }));
+    const id = within(s).getByRole("textbox", { name: "Provider model ID" });
+    await user.type(id, "sonnet prod");
+    await hoverReason(user, within(s).getByRole("button", { name: "Save overrides" }), "The provider model ID can't contain spaces.");
+    await user.clear(id);
+    await user.type(id, "sonnet-prod");
+    await user.click(within(s).getByRole("button", { name: "Save overrides" }));
+
+    expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
+    expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { upstream_model: "sonnet-prod" } }]);
+  });
+
   it("explains values that can't be saved and cancels the edit", async () => {
     setUp();
     const { user } = await renderApp(projectPath("models?model=cm_sonnet"));

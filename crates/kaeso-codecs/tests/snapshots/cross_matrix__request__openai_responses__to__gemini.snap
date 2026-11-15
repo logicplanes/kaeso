@@ -1865,6 +1865,21 @@ expression: outcomes
     },
     "path": "/v1beta/models/gpt-5.5:generateContent"
   },
+  "providers/azure/bitter-lesson-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Explain what the bitter lesson is?"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-v3-0324:generateContent"
+  },
   "providers/vercel/gpt-reasoning-encrypted": {
     "body": {
       "contents": [

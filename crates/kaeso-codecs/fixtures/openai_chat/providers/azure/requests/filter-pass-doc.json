@@ -1,0 +1,10 @@
+{
+  "model": "gpt-35-turbo",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is color?"
+    }
+  ],
+  "stream": true
+}

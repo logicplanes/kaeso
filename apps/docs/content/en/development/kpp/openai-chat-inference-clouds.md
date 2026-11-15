@@ -63,6 +63,24 @@ Sources: Cerebras's [Chat Completions reference](https://inference-docs.cerebras
 
 Cerebras has no Responses, Messages, embeddings or token-count endpoint (all answer 404), so `embeddings` and `count_tokens` are `None`.
 
+## Azure
+
+Sources: Azure's v1 OpenAPI document (`azure-v1-v1-generated.json` in [azure-rest-api-specs](https://github.com/Azure/azure-rest-api-specs/tree/main/specification/ai/data-plane/OpenAI.v1)) and the [API lifecycle](https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle), [endpoints](https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/endpoints), [content streaming](https://learn.microsoft.com/en-us/azure/foundry/openai/concepts/content-streaming) and [content filter](https://learn.microsoft.com/en-us/azure/foundry-classic/openai/concepts/content-filter-annotations) pages, read 2026-11-14. No key was available: one reply in `fixtures/openai_chat/providers/azure/` is a reply Azure sent, published in a Stack Overflow answer, and the others and the streams are the documentation's samples; the key errors were answered live, with a made-up key. Each key carries its resource's endpoint, such as `https://example.openai.azure.com`, and Kaeso calls `{endpoint}/openai/v1/…` with the key in `api-key`, without an `api-version`.
+
+| Azure field | KPP | Notes |
+|---|---|---|
+| `model` | the deployment's name | The model's `upstream_model` when it has one, its id otherwise. |
+| `prompt_filter_results` (or `prompt_annotations`), `choices[].content_filter_results` | extras | Round-trip for Chat apps, left out towards other dialects (`responses/greeting-published`). |
+| a first chunk with empty `id`, `object` and `model` and `choices: []` | start | The reply's id and model come from the next chunk (`streams/filter-pass-doc`). |
+| chunks with only `content_filter_results` and `content_filter_offsets` in a choice | extras | Also after `finish_reason: "stop"`; they carry no text. |
+| `finish_reason: "content_filter"` | `StopReason::ContentFilter` | Also on a chunk without `delta` (`streams/filter-blocked-doc`), and on a reply without `content` (`responses/filtered-blocklist-doc`). |
+| a 400 with `code: "content_filter"` and `innererror` | `KppError` | `ContentFiltered`, with Azure's message (`errors/content-filter-prompt-doc`). |
+| `error.code` as a numeric string, such as `"401"` | `KppError` | The kind follows the status (`errors/recorded-invalid-api-key`). |
+| `{"statusCode": 401, "message": …}` | `KppError` | Azure's answer to a bearer that looks like an Entra ID token (`errors/recorded-entra-token`); Kaeso sends `api-key`, so apps only see it from another client. |
+| `GET /openai/v1/models` | `ModelList` | The models a resource may deploy, not its deployments, so a model check only shows whether the key and its endpoint work (`ModelListing::Catalogue`). |
+
+The v1 API serves Responses with OpenAI's request body, plus `content_filters` in replies, which stay in extras; Kaeso sends a model as Responses when its **Sends as** value says so (`fixtures/openai_responses/providers/azure/`). Claude deployments answer only Anthropic's Messages API under `{endpoint}/anthropic`, and images, speech, transcriptions and videos are in the v1 API's preview only, so Kaeso calls none of them yet. Token counts are refused.
+
 ## DeepInfra
 
 Sources: DeepInfra's [OpenAPI document](https://api.deepinfra.com/openapi.json) and its [Chat Completions](https://docs.deepinfra.com/chat/overview.md), [streaming](https://docs.deepinfra.com/chat/streaming.md), [tool calling](https://docs.deepinfra.com/chat/tool-calling.md), [prompt caching](https://docs.deepinfra.com/chat/prompt-caching.md) and [authentication](https://docs.deepinfra.com/account/authentication.md) guides, read 2026-11-14. No key was available: one reply in `fixtures/openai_chat/providers/deepinfra/` is a reply DeepInfra sent, published in another project's issue, and the others and the stream are built from the guides; the listing and the key errors were answered live, without a valid key. DeepInfra's guides write the base URL as `https://api.deepinfra.com/v1/openai`; its OpenAPI document serves the same API at `/v1/…`, so Kaeso's base URL is `https://api.deepinfra.com`, which takes `Authorization: Bearer`.

@@ -758,5 +758,10 @@
   "errors.model.maxImages": "Das Modell `{model}` nimmt höchstens {max} Bilder pro Anfrage an.",
   "errors.modelApi.accountNoDecisions": "Ein {product}-Konto kann keine Entscheidungen treffen. Stattdessen in diesem Projekt einen API-Schlüssel für {provider} verwenden.",
   "errors.decisionTooLarge": "Die Entscheidungsanfrage ist größer, als Kaeso für dieses Modell annimmt.",
-  "errors.notSystemOneRequest": "Die Anfrage ist keine System-One-Anfrage, die Kaeso lesen kann."
+  "errors.notSystemOneRequest": "Die Anfrage ist keine System-One-Anfrage, die Kaeso lesen kann.",
+  "errors.keyEndpoint.missing": "Schlüssel von {provider} gehören zu einer Ressource; `endpoint` angeben.",
+  "errors.keyEndpoint.notHttps": "Der Endpunkt muss eine https-URL ohne Benutzernamen, Abfrage oder Fragment sein.",
+  "errors.keyEndpoint.host": "Der Endpunkt muss die Adresse einer Ressource sein, etwa `{example}`.",
+  "errors.keyEndpoint.path": "Der Endpunkt hat einen Pfad, den Kaeso nicht aufruft; nur die Adresse der Ressource angeben.",
+  "errors.upstreamModel": "Die Modell-ID beim Anbieter hat 1 bis 256 Zeichen, ohne Leerzeichen."
 }

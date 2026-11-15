@@ -25,6 +25,7 @@ import { openBlankTab } from "./blank-tab";
 import { DeviceCode, type DeviceState } from "./device-sign-in";
 import { AccountScopeFields, isAccountId, isGatewayId } from "./account-scope-fields";
 import { RegionField } from "./region-field";
+import { EndpointField, endpointProblem } from "./endpoint-field";
 import { ServiceAccountFields, serviceAccountBlocked } from "./service-account-fields";
 import { keyTitle, providerOptions, useProviders } from "./providers";
 
@@ -98,6 +99,7 @@ export function ProviderKeyDialog({
   const [location, setLocation] = useState<string | null>(replace?.location ?? null);
   const [accountId, setAccountId] = useState("");
   const [gatewayId, setGatewayId] = useState("");
+  const [endpoint, setEndpoint] = useState("");
   const [attempt, setAttempt] = useState<AccountAttempt | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [callback, setCallback] = useState("");
@@ -119,6 +121,12 @@ export function ProviderKeyDialog({
   const serviceAccount: ServiceAccountSignInView | null = known?.service_account ?? null;
   const accountScope = !replace && known?.account_scope ? known.account_scope : null;
   const regions = !replace && known?.regions ? known.regions : null;
+  const keyEndpoint = !replace && known?.key_endpoint ? known.key_endpoint : null;
+  const endpointBlocked = keyEndpoint
+    ? endpoint.trim()
+      ? endpointProblem(endpoint, keyEndpoint)
+      : t("kaeso.providerKey.endpointBlocked", "Paste the endpoint of the key's resource")
+    : null;
   const signingIn = method === "account" && account !== null;
   const withServiceAccount = method === "service_account" && serviceAccount !== null;
   const chosenLocation = location ?? serviceAccount?.default_location ?? "";
@@ -256,6 +264,7 @@ export function ProviderKeyDialog({
                 make_default: makeDefault,
                 ...(accountScope ? { account_id: accountId.trim().toLowerCase(), ...(gatewayId.trim() ? { gateway_id: gatewayId.trim() } : {}) } : {}),
                 ...(regions && location ? { location } : {}),
+                ...(keyEndpoint ? { endpoint: endpoint.trim() } : {}),
               },
         }),
       );
@@ -285,15 +294,17 @@ export function ProviderKeyDialog({
       ? t("kaeso.providerKey.pasteBlocked", "Paste the {provider} API key", { provider: label })
       : /\s/.test(secret.trim())
         ? t("kaeso.providerKey.noSpaces", "The key can't contain spaces or line breaks")
-        : accountScope && !isAccountId(accountId)
-          ? t("kaeso.providerKey.accountIdBlocked", "Give the 32-character account ID")
-          : accountScope && gatewayId.trim() && !isGatewayId(gatewayId)
-            ? t("kaeso.providerKey.gatewayIdBlocked", "A gateway ID has only letters, digits, hyphens and underscores")
-            : regions && !location
-              ? t("kaeso.providerKey.regionBlocked", "Choose the key's region")
-              : !replace && !name.trim()
-                ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
-                : undefined,
+        : endpointBlocked
+          ? endpointBlocked
+          : accountScope && !isAccountId(accountId)
+            ? t("kaeso.providerKey.accountIdBlocked", "Give the 32-character account ID")
+            : accountScope && gatewayId.trim() && !isGatewayId(gatewayId)
+              ? t("kaeso.providerKey.gatewayIdBlocked", "A gateway ID has only letters, digits, hyphens and underscores")
+              : regions && !location
+                ? t("kaeso.providerKey.regionBlocked", "Choose the key's region")
+                : !replace && !name.trim()
+                  ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
+                  : undefined,
     content: (
       <div className="flex flex-col gap-12">
         <Input
@@ -306,6 +317,7 @@ export function ProviderKeyDialog({
           autoFocus
         />
         {regions && <RegionField provider={label} regions={regions} region={location} onRegion={setLocation} />}
+        {keyEndpoint && <EndpointField rule={keyEndpoint} value={endpoint} onValue={setEndpoint} />}
         {accountScope && (
           <AccountScopeFields
             page={accountScope.account_page}
@@ -575,7 +587,7 @@ export function ProviderKeyDialog({
       : waiting && (replace || name.trim())
     : withServiceAccount
       ? !serviceAccountBlocked(secret) && (replace || name.trim())
-      : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && (replace || name.trim());
+      : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && !endpointBlocked && (replace || name.trim());
 
   return (
     <StepDialog

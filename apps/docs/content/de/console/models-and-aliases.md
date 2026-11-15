@@ -63,6 +63,7 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 | Adaptives Denken, Aufwandsstufen | Wie das Reasoning des Modells eingeschaltet wird und welche Stufen es annimmt |
 | Thinking-Bindung | Ob ein Anthropic-Modell prüft, dass zurückgespieltes Denken aus derselben Unterhaltung stammt. Bei einem solchen Modell bittet Kaeso Anthropic, Denken zu verwerfen, das Apps in anderen Formaten verändert zurückschicken, statt die Anfrage scheitern zu lassen |
 | Zeitlimit | Wie viele Sekunden eine Anfrage an dieses Modell dauern darf. Ohne Angabe gilt das Anfrage-Zeitlimit der Installation |
+| Modell-ID beim Anbieter | Die ID, die Kaeso dem Anbieter statt der ID des Modells sendet, etwa den Namen eines Azure-Deployments, wenn er nicht die ID des Modells ist. Logs und Nutzung behalten die ID des Modells. Ohne Angabe wird die ID des Modells gesendet |
 | Veröffentlicht | Das Veröffentlichungsdatum des Modells |
 
 ## Entscheidungsmodelle

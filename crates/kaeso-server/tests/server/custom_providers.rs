@@ -229,6 +229,7 @@ async fn admins_add_change_and_delete_custom_providers_with_their_own_rights_and
             "service_account": null,
             "account_scope": null,
             "regions": null,
+            "key_endpoint": null,
             "model_routes": [],
         })
     );

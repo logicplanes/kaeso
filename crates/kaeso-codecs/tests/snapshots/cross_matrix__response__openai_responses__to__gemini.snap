@@ -170,6 +170,29 @@ expression: outcomes
       "totalTokenCount": 251
     }
   },
+  "providers/azure/bitter-lesson-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The bitter lesson refers to a key insight in AI research that emphasizes the importance of general-purpose learning methods that leverage computation, rather than human-designed domain-specific approaches. It suggests that methods which scale with increased computation tend to be more effective in the long run."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-v3-0324",
+    "responseId": "resp_...",
+    "usageMetadata": {
+      "candidatesTokenCount": 52,
+      "promptTokenCount": 28,
+      "totalTokenCount": 80
+    }
+  },
   "providers/cloudflare-ai-gateway/recorded-text-input-string": {
     "candidates": [
       {

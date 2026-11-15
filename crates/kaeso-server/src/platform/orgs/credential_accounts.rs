@@ -969,6 +969,7 @@ async fn save_new(
                 project: None,
                 location: None,
                 scope: None,
+                endpoint: None,
             },
         },
     )
@@ -1106,6 +1107,7 @@ async fn save_again(
             project: None,
             location: None,
             scope: None,
+            endpoint: None,
         },
     )
     .await?;

@@ -583,7 +583,10 @@ fn choice<'a>(chunk: &'a Chunk, role_pending: bool) -> Result<J<'a>, KppError> {
                 delta.or_insert(Cow::Borrowed(key.as_str()), J::Value(value));
             }
         }
-        choice.insert(Cow::Borrowed("delta"), J::Map(delta));
+        let no_delta = chunk.form.get("nd") == Some(&Value::Bool(true));
+        if !(no_delta && delta.0.is_empty()) {
+            choice.insert(Cow::Borrowed("delta"), J::Map(delta));
+        }
         if let Some(finish) = &chunk.finish {
             choice.insert(Cow::Borrowed("finish_reason"), J::Str(finish));
         }

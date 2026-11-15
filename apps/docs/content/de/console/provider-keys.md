@@ -62,6 +62,18 @@ Die Identität des Schlüssels braucht `bedrock:InvokeModel` für die Modelle, d
 
 Die Liste zeigt die Region neben dem Schlüssel. Um den Schlüssel auf eine andere Region umzustellen, wählen Sie **Bearbeiten** in seinem Menü.
 
+## Schlüssel für Azure
+
+Für Azure ist ein Anbieter-Schlüssel ein Schlüssel einer Azure-OpenAI- oder Foundry-Ressource, und er nennt den Endpunkt dieser Ressource.
+
+1. Öffnen Sie im [Azure-Portal](https://portal.azure.com/) die Ressource und ihre Seite **Resource Management → Keys and Endpoint** ([Schlüssel und Endpunkt finden](https://learn.microsoft.com/en-us/azure/ai-services/authentication)).
+2. Kopieren Sie **KEY 1** oder **KEY 2** und den **Endpoint**, etwa `https://example.openai.azure.com`. Ein Endpunkt, der auf `.services.ai.azure.com` oder `.cognitiveservices.azure.com` endet, funktioniert ebenfalls, und ein mit eingefügtes `/openai/v1` wird weggelassen.
+3. Wählen Sie in Kaeso unter **Anbieter** **Anbieter-Schlüssel hinzufügen**, dann **Azure**, und fügen Sie den Schlüssel und den Endpunkt ein.
+
+Kaeso ruft die OpenAI-v1-API der Ressource auf, `{endpoint}/openai/v1`, mit dem Schlüssel in `api-key`. Eine Anfrage nennt ein Deployment der Ressource: Kaeso sendet die ID des Modells oder seine **Modell-ID beim Anbieter**, wenn das Deployment anders heißt ([Werte eines Modells ändern](models-and-aliases.md#werte-eines-modells-ändern)). Die Anmeldung mit Microsoft Entra ID wird noch nicht unterstützt.
+
+Die Liste zeigt den Host des Endpunkts neben dem Schlüssel. Um den Schlüssel auf eine andere Ressource umzustellen, wählen Sie **Bearbeiten** in seinem Menü und geben den Endpunkt der anderen Ressource an; ein neuer Schlüssel derselben Ressource behält den Endpunkt.
+
 ## Mit einem ChatGPT-Konto anmelden
 
 Für OpenAI kann ein Anbieter-Schlüssel auch ein ChatGPT-Konto sein. Seine Anfragen nutzen dann das ChatGPT-Abo des Kontos statt eines OpenAI-API-Kontos, im Rahmen der Limits des Abos.

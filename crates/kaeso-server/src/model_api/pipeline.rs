@@ -1281,14 +1281,17 @@ async fn attempt(
             &eff,
         )));
     }
+    // The provider gets the model's `upstream_model`, such as an Azure deployment's name, when
+    // it has one.
+    let sent_model = eff.sent_model().to_owned();
     match &mut req {
-        Request::Generate(g) | Request::CountTokens(g) => g.model.clone_from(&eff.model_id),
-        Request::Embed(e) => e.model.clone_from(&eff.model_id),
-        Request::Image(i) => i.model.clone_from(&eff.model_id),
-        Request::Speech(r) => r.model.clone_from(&eff.model_id),
-        Request::Transcription(r) => r.model.clone_from(&eff.model_id),
-        Request::Video(r) => r.model.clone_from(&eff.model_id),
-        Request::Decide(d) => d.model.clone_from(&eff.model_id),
+        Request::Generate(g) | Request::CountTokens(g) => g.model.clone_from(&sent_model),
+        Request::Embed(e) => e.model.clone_from(&sent_model),
+        Request::Image(i) => i.model.clone_from(&sent_model),
+        Request::Speech(r) => r.model.clone_from(&sent_model),
+        Request::Transcription(r) => r.model.clone_from(&sent_model),
+        Request::Video(r) => r.model.clone_from(&sent_model),
+        Request::Decide(d) => d.model.clone_from(&sent_model),
         _ => {}
     }
     let playground = rec.outcome().source == super::hooks::Source::Playground;
@@ -1554,6 +1557,8 @@ async fn attempt(
     if let Some(held) = &mut rec.held {
         held.keep(kept.saturating_add(sent));
     }
+    let keyed = crate::services::key_endpoint::base(state, &eff.provider, &credential)
+        .map_err(fail(Stage::Credential))?;
     let account_base = match account {
         Some(a) => Some(
             state
@@ -1575,13 +1580,16 @@ async fn attempt(
         (Some(base), _, _)
         | (None, Some(crate::services::agent_platform::Egress { base, .. }), _)
         | (None, None, Some(crate::services::regional::Egress { base, .. })) => base,
-        (None, None, None) => base_url(state, &eff.provider).ok_or_else(|| {
-            fail(Stage::Setup)(error(
-                ErrorKind::ProviderError,
-                500,
-                "No base URL is configured for this provider.",
-            ))
-        })?,
+        (None, None, None) => match &keyed {
+            Some(base) => base,
+            None => base_url(state, &eff.provider).ok_or_else(|| {
+                fail(Stage::Setup)(error(
+                    ErrorKind::ProviderError,
+                    500,
+                    "No base URL is configured for this provider.",
+                ))
+            })?,
+        },
     };
     let rooted;
     let base = match media {

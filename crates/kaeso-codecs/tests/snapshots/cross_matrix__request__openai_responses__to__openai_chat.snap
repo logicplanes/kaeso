@@ -1691,6 +1691,18 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "providers/azure/bitter-lesson-doc": {
+    "body": {
+      "messages": [
+        {
+          "content": "Explain what the bitter lesson is?",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3-0324"
+    },
+    "path": "/v1/chat/completions"
+  },
   "providers/vercel/gpt-reasoning-encrypted": {
     "body": {
       "max_completion_tokens": 1024,

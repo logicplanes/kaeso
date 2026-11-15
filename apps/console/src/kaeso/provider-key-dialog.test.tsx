@@ -785,6 +785,53 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds an Azure key with its resource's endpoint, checked as the gateway checks it", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "azure", name: "Azure prod", is_default: true, endpoint: "https://example.openai.azure.com" }));
+    const { user, dialog } = await open();
+    const add = () => within(dialog).getByRole("button", { name: "Add key" });
+
+    await choose(user, dialog, "Azure");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Azure API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "portal.azure.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://portal.azure.com/");
+    expect(within(dialog).getByRole("link", { name: "Where to find it (opens in a new tab)" })).toHaveAttribute(
+      "href",
+      "https://learn.microsoft.com/en-us/azure/ai-services/authentication",
+    );
+    await user.type(within(dialog).getByLabelText("Azure API key"), "0123456789abcdef0123456789abcdef");
+    await hoverReason(user, add(), "Paste the endpoint of the key's resource");
+    const endpoint = within(dialog).getByRole("textbox", { name: "Endpoint" });
+    expect(endpoint).toHaveAttribute("placeholder", "https://example.openai.azure.com");
+    for (const [typed, problem] of [
+      ["example.openai.azure.com", "Paste the endpoint as a URL, starting with https://."],
+      ["http://example.openai.azure.com", "Use an https address without a user name, query or fragment."],
+      ["https://example.com", "Use the resource's address, such as https://example.openai.azure.com."],
+      ["https://example.openai.azure.com/anthropic", "Leave out the path; Kaeso adds the API's own."],
+    ] as const) {
+      await user.clear(endpoint);
+      await user.type(endpoint, typed);
+      // The field shows the problem, and the button gives it as its reason.
+      expect(endpoint).toHaveAccessibleDescription(expect.stringContaining(problem));
+      expect(add()).toHaveAttribute("aria-description", problem);
+    }
+    await user.clear(endpoint);
+    await user.type(endpoint, "https://example.openai.azure.com/openai/v1/");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Azure prod");
+    await user.click(add());
+
+    expect(await notifications().findByText("Azure prod is the Azure default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      {
+        provider: "azure",
+        name: "Azure prod",
+        secret: "0123456789abcdef0123456789abcdef",
+        make_default: false,
+        endpoint: "https://example.openai.azure.com/openai/v1/",
+      },
+    ]);
+  });
+
   it("adds a Scaleway secret key, which has no fixed prefix, with Scaleway's IAM API keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "scaleway", name: "Scaleway prod", is_default: true }));
     const { user, dialog } = await open();
