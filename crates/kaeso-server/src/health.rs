@@ -47,7 +47,8 @@ pub async fn check(state: &AppState) -> Readiness {
     );
     let up = |r: Result<Result<(), kaeso_store::StoreError>, _>| matches!(r, Ok(Ok(())));
     let (pg, valkey) = (up(pg), up(valkey));
-    let clickhouse = clickhouse.map(|r| up(r) && state.clickhouse_migrated());
+    let clickhouse =
+        clickhouse.map(|r| up(r) && state.clickhouse_migrated() && !state.logs.failing());
     let word = |ok: bool| if ok { "ok" } else { "down" };
     Readiness {
         status: match (pg && valkey, clickhouse) {
