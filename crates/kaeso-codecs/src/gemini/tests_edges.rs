@@ -379,6 +379,51 @@ fn rare_stream_shapes_replay_exactly() {
 }
 
 #[test]
+fn a_stream_whose_prompt_google_blocks_ends_with_a_content_filter_stop() {
+    let sse = "data: {\"promptFeedback\": {\"blockReason\": \"SAFETY\"}, \"usageMetadata\": {\"promptTokenCount\": 12, \"totalTokenCount\": 12}, \"modelVersion\": \"gemini-3.5-flash\", \"responseId\": \"r1\"}\n\n";
+    let events = stream(sse.as_bytes());
+    assert!(
+        !events.iter().any(|e| matches!(e, StreamEvent::Error(_))),
+        "{events:?}"
+    );
+    let delta = events
+        .iter()
+        .find_map(|e| match e {
+            StreamEvent::ResponseDelta(d) => Some(d),
+            _ => None,
+        })
+        .unwrap();
+    assert_eq!(delta.stop, Some(kaeso_kpp::StopReason::ContentFilter));
+    assert_eq!(delta.usage.as_ref().map(|u| u.input_tokens), Some(12));
+    assert!(matches!(events.last(), Some(StreamEvent::ResponseStop(_))));
+    assert_sse_eq("blocked prompt", sse.as_bytes(), &replay(&events));
+    for (dialect, stop) in [
+        (
+            DialectId::OpenAiChat,
+            "\"finish_reason\":\"content_filter\"",
+        ),
+        (DialectId::AnthropicMessages, "\"stop_reason\":\"refusal\""),
+        (DialectId::OpenAiResponses, "\"incomplete\""),
+    ] {
+        let mut enc = crate::dispatch::stream_encoder(
+            dialect,
+            &EncodeCtx::new(RequestKind::Generate, StreamMode::on(true)),
+        )
+        .unwrap();
+        let mut out = Vec::new();
+        for e in &events {
+            out.extend(enc.encode(e).unwrap());
+        }
+        out.extend(enc.finish().unwrap());
+        let text = String::from_utf8(out).unwrap();
+        assert!(text.contains(stop), "{dialect:?}: {text}");
+        for failure in ["server_error", "api_error", "event: error"] {
+            assert!(!text.contains(failure), "{dialect:?}: {text}");
+        }
+    }
+}
+
+#[test]
 fn broken_streams_end_with_an_error() {
     let last_error = |bytes: &[u8]| match stream(bytes).last() {
         Some(StreamEvent::Error(e)) => e.clone(),
