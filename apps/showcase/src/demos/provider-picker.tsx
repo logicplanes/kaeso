@@ -33,6 +33,7 @@ const providers: ProviderPickerOption[] = [
   { id: "ovhcloud", name: "OVHcloud AI Endpoints" },
   { id: "amazon-bedrock", name: "Amazon Bedrock" },
   { id: "azure", name: "Azure" },
+  { id: "replicate", name: "Replicate" },
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
   { id: "siliconflow", name: "SiliconFlow" },

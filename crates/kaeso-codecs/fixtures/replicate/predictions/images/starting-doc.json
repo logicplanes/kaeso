@@ -1,0 +1,18 @@
+{
+  "id": "gm3qorzdhgbfurvjtvhg6dckhu",
+  "model": "replicate/hello-world",
+  "version": "5c7d5dc6dd8bf75c1acaa8565735e7986bc5b66206b55cca93cb72c9bf15ccaa",
+  "input": {
+    "text": "Alice"
+  },
+  "output": null,
+  "logs": "",
+  "error": null,
+  "status": "starting",
+  "created_at": "2023-09-08T16:19:34.765994657Z",
+  "urls": {
+    "web": "https://replicate.com/p/gm3qorzdhgbfurvjtvhg6dckhu",
+    "cancel": "https://api.replicate.com/v1/predictions/gm3qorzdhgbfurvjtvhg6dckhu/cancel",
+    "get": "https://api.replicate.com/v1/predictions/gm3qorzdhgbfurvjtvhg6dckhu"
+  }
+}

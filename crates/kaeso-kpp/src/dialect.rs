@@ -62,10 +62,12 @@ pub enum DialectId {
     BedrockConverse,
     #[serde(rename = "fal")]
     Fal,
+    #[serde(rename = "replicate")]
+    Replicate,
 }
 
 impl DialectId {
-    pub const ALL: [DialectId; 28] = [
+    pub const ALL: [DialectId; 29] = [
         DialectId::AnthropicMessages,
         DialectId::OpenAiChat,
         DialectId::OpenAiResponses,
@@ -94,6 +96,7 @@ impl DialectId {
         DialectId::JinaRerank,
         DialectId::BedrockConverse,
         DialectId::Fal,
+        DialectId::Replicate,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -126,6 +129,7 @@ impl DialectId {
             DialectId::JinaRerank => "jina_rerank",
             DialectId::BedrockConverse => "bedrock_converse",
             DialectId::Fal => "fal",
+            DialectId::Replicate => "replicate",
         }
     }
 
@@ -159,6 +163,7 @@ impl DialectId {
             DialectId::JinaRerank => "Jina Rerank",
             DialectId::BedrockConverse => "Amazon Bedrock Converse",
             DialectId::Fal => "fal",
+            DialectId::Replicate => "Replicate",
         }
     }
 }

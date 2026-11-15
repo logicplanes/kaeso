@@ -243,6 +243,7 @@ Das Gateway holt die Referenzkurse der Europäischen Zentralbank für [Währunge
 | `KAESO_PROVIDERS_VOYAGE_BASE_URL`<br>`providers.voyage.base_url` | Text | `https://ai.mongodb.com` | Basis-URL der Voyage-AI-API. |
 | `KAESO_PROVIDERS_JINA_BASE_URL`<br>`providers.jina.base_url` | Text | `https://api.jina.ai` | Basis-URL der Jina-AI-API. |
 | `KAESO_PROVIDERS_FAL_BASE_URL`<br>`providers.fal.base_url` | Text | `https://queue.fal.run` | Basis-URL der fal-API. |
+| `KAESO_PROVIDERS_REPLICATE_BASE_URL`<br>`providers.replicate.base_url` | Text | `https://api.replicate.com` | Basis-URL der Replicate-API. |
 | `KAESO_AWS_AMBIENT_CREDENTIALS`<br>`aws.ambient_credentials` | Bool | `false` | Instanz-Admins erlauben, Amazon-Bedrock-Schlüssel hinzuzufügen, die sich mit der eigenen AWS-Identität des Gateways anmelden: seiner `AWS_*`-Umgebung, einem Web-Identity-Token, der Container-Rolle auf ECS oder EKS oder der Instanzrolle auf EC2, optional mit einer weiteren angenommenen Rolle. Standardmäßig aus, da ein solcher Schlüssel einer Organisation die Rolle des Gateways überlässt. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |

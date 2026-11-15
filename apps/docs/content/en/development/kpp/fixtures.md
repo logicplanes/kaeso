@@ -30,6 +30,7 @@ Every codec change starts with a fixture: a real request body, reply, stream or 
 | `cohere_rerank/` | Cohere's rerank format (`/v1/rerank`, `/v2/rerank`); `requests/object-documents.json` is the one request Kaeso writes to Cohere in another form |
 | `jina_rerank/` | Jina AI's rerank format (`/v1/rerank` at Jina AI) |
 | `voyage_rerank/` | Voyage AI's rerank format (`/v1/rerank` at Voyage AI) |
+| `replicate/` | Replicate's predictions; `requests/images/` and `requests/videos/` with the model in `<name>.meta.json`, `predictions/` the predictions Replicate answers with, `models/` the official models collection |
 | `xai_videos/`, `minimax_videos/`, `zai_videos/`, `openrouter_videos/`, `veo/`, `gemini_interactions/`, `dashscope/` | The providers' video APIs; `responses/` holds the replies that start a job, `polls/` the providers' answers when a job is asked about, `minimax_videos/files/` a file id turned into a link; `dashscope/` also holds images, speech and transcriptions under `requests/`, `responses/` and `streams/` in folders of their own |
 | `fal/` | fal's queue; `requests/images/` and `requests/videos/` with the model in `<name>.meta.json`, `queue/` the submit and status answers, `results/` the models' outputs, `moderated/` FLUX's black safety image |
 

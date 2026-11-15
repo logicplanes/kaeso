@@ -105,6 +105,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `cohere_rerank` | Das Rerank-Format von Cohere (`/v1/rerank`, `/v2/rerank`) ([Cohere Rerank](cohere-rerank.md)) |
 | `jina_rerank` | Das Rerank-Format von Jina AI, als das eines Anbieters ([Jina Rerank](jina-rerank.md)) |
 | `voyage_rerank` | Das Rerank-Format von Voyage AI, als das eines Anbieters ([Voyage Rerank](voyage-rerank.md)) |
+| `replicate` | Die Predictions von Replicate: Bilder und Videojobs der Modelle, die Kaeso abbildet ([Replicate](replicate.md)) |
 | `multipart` | Der begrenzte Leser und Schreiber für `multipart/form-data` von Bild-, Audio- und Video-Uploads und der Bildteile von System One |
 
 | Gemeinsames Modul | Aufgabe |
@@ -312,6 +313,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Gemini Interactions](gemini-interactions.md): Sehen Sie, wie Videojobs von Gemini Omni auf die Interactions API abgebildet werden.
 - [DashScope](dashscope.md): Sehen Sie, wie Bilder, Sprache, Transkriptionen und Videojobs auf die DashScope-API von QwenCloud abgebildet werden.
 - [fal](fal.md): Sehen Sie, wie Bildanfragen und Videojobs Modell für Modell auf die Queue von fal abgebildet werden.
+- [Replicate](replicate.md): Sehen Sie, wie Bildanfragen und Videojobs Modell für Modell auf die Predictions von Replicate abgebildet werden.
 - [System One](system-one.md): Finden Sie, wohin jedes Feld des Entscheidungsformats von TypeSafe in KPP gehört und wie jeder Anbieter es annimmt.
 - [OpenAI Decisions](openai-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von OpenAI in KPP gehört.
 - [Gemini Decisions](gemini-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von Gemini in KPP gehört.

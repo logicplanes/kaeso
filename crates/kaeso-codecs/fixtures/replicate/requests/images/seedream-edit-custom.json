@@ -1,0 +1,11 @@
+{
+  "input": {
+    "prompt": "make the sky stormy",
+    "image_input": [
+      "https://example.com/garden.png"
+    ],
+    "size": "custom",
+    "width": 2048,
+    "height": 1536
+  }
+}

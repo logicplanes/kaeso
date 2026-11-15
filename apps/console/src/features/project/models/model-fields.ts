@@ -136,6 +136,7 @@ export function dialectPill(d: string, decisionsOnly = false): string {
       jina_rerank: "rerank",
       bedrock_converse: "converse",
       fal: "fal",
+      replicate: "replicate",
     }[d] ?? d
   );
 }

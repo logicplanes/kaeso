@@ -66,6 +66,7 @@ export const providers = [
   { id: "tencent-tokenhub", name: "Tencent TokenHub" },
   { id: "amazon-bedrock", name: "Amazon Bedrock" },
   { id: "azure", name: "Azure" },
+  { id: "replicate", name: "Replicate" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

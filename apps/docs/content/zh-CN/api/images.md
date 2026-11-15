@@ -112,6 +112,7 @@ for event in stream:
 | Mistral | 不支持：图片只作为其智能体的工具提供 | 不支持 | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
 | ElevenLabs | 支持，每个请求一张图片；Kaeso 等待生成完成（`/v1/flows/image`） | 按模型最多 5、10 或 14 张图片，以上传或素材形式；GPT Image 支持蒙版 | `gpt-image-2.5-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2`、`gpt-image-1.5`、`gpt-image-1`、`gemini-3.1-flash-image`、`gemini-3.1-flash-lite-image`、`gemini-3-pro-image`、`gemini-2.5-flash-image`、`bytedance-seedream-5-pro`、`bytedance-seedream-5-lite` | [图片和视频指南](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video) |
 | fal | 支持，FLUX 每次 1 到 4 张，Seedream 1 到 6 张；Kaeso 等待队列完成 | `bytedance/seedream/v5.5/edit` 最多 10 张图片，上传或链接；不支持蒙版 | `fal-ai/flux/dev`、`fal-ai/flux/schnell`、`fal-ai/flux-pro/v1.1`、`bytedance/seedream/v5.5/text-to-image`、`bytedance/seedream/v5.5/edit` | [Queue API](https://fal.ai/docs/documentation/model-apis/inference/queue)、每个模型的 OpenAPI 文档 |
+| Replicate | 支持，FLUX.1 上 1 到 4 张，Seedream 4.5 上最多 15 张，其他模型一张；Kaeso 等待 prediction 完成 | Seedream 4.5 和 Nano Banana Pro 上最多 14 张图片，上传或链接；不支持蒙版 | `black-forest-labs/flux-schnell`、`black-forest-labs/flux-dev`、`black-forest-labs/flux-1.1-pro`、`bytedance/seedream-4.5`、`google/nano-banana-pro` | [HTTP API](https://replicate.com/docs/reference/http)，各模型的 schema |
 | Anthropic、DeepSeek、Groq、Cohere、Ollama Cloud、Moonshot、Cerebras | 服务商不提供 | — | — | 各服务商的 API 参考 |
 | Fireworks AI、Nebius Token Factory、SambaNova、Scaleway、Hugging Face、NVIDIA、Baseten、SiliconFlow | 不通过 Kaeso 提供 | — | — | [支持的服务商](../concepts/supported-providers.md) |
 
@@ -122,6 +123,8 @@ fal 以其存储上的链接回答，链接至少保留 7 天；对于 `response
 SpaceX 用 `aspect_ratio` 和 `resolution` 代替 `size`。Z.ai 只返回链接，30 天后过期，因此在那里 `response_format: "b64_json"` 会得到 400。QwenCloud 也返回链接，有效期 24 小时。对于 `b64_json`，Kaeso 只通过 https 从 QwenCloud 的结果主机（`dashscope-*.aliyuncs.com`）下载这些链接，不带服务商密钥，不跟随重定向，并受服务商回复上限和请求超时的限制。Gemini 和 OpenRouter 只返回 base64，因此在它们那里 `response_format: "url"` 会得到 400。
 
 QwenCloud 的 OpenAI 兼容模式只提供 Qwen-Image 3.0 和 2.1 Pro，因此它的其他图片模型发往它自己的 DashScope API，该 API 在 Wan 上接收 `resolution`（`1K`、`2K`、`4K`）。它的 2.6 之前的 Wan 文生图模型只以任务方式生成图片：Kaeso 启动任务，并在请求的超时内等待图片，因此应用在同一个请求中拿到图片。Qwen-Image 3.0 按 QwenCloud 报告的档位 `1K` 或 `2K` 计费；应用发送 `prompt_extend: true` 时，Z-Image 按每张图片两倍的价格计费，与 QwenCloud 的计费一致。除非应用发送 `watermark: true`，它的模型都不加水印。
+
+Replicate 以 `replicate.delivery` 上的链接回复，并在 prediction 结束一小时后删除，与 OpenAI 自己的图片链接一小时后过期相同。对于 `b64_json`，Kaeso 只通过 https 从 `replicate.delivery` 及其子域下载，与 QwenCloud 相同。FLUX.1 用 `aspect_ratio` 代替 `size`，Nano Banana Pro 用 `aspect_ratio` 和 `resolution`（`1K`、`2K` 或价格更高的 `4K`）；FLUX1.1 [pro] 和 Seedream 4.5 也接受 `size`。
 
 OpenAI 的 Images API 只接受 API 密钥。如果项目的 OpenAI 密钥是 [ChatGPT 账户](../console/provider-keys.md#使用-chatgpt-账户登录)，Kaeso 会在发送任何内容之前返回 400：“A ChatGPT account can't make images. Use an API key for OpenAI in this project instead.”。
 

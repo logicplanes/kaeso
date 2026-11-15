@@ -105,6 +105,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `cohere_rerank` | Cohere's rerank format (`/v1/rerank`, `/v2/rerank`) ([Cohere Rerank](cohere-rerank.md)) |
 | `jina_rerank` | Jina AI's rerank format, as a provider's ([Jina Rerank](jina-rerank.md)) |
 | `voyage_rerank` | Voyage AI's rerank format, as a provider's ([Voyage Rerank](voyage-rerank.md)) |
+| `replicate` | Replicate's predictions: images and video jobs of the models Kaeso maps ([Replicate](replicate.md)) |
 | `multipart` | The bounded `multipart/form-data` reader and writer of image, audio and video uploads, and of System One's image parts |
 
 | Shared module | Job |
@@ -312,6 +313,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Gemini Interactions](gemini-interactions.md): See how Gemini Omni video jobs map to the Interactions API.
 - [DashScope](dashscope.md): See how images, speech, transcriptions and video jobs map to QwenCloud's DashScope API.
 - [fal](fal.md): See how image requests and video jobs map to fal's queue, model by model.
+- [Replicate](replicate.md): See how image requests and video jobs map to Replicate's predictions, model by model.
 - [System One](system-one.md): Find where every field of TypeSafe's decision format goes in KPP, and how each provider takes it.
 - [OpenAI Decisions](openai-decisions.md): Find where every field of OpenAI's Decisions API goes in KPP.
 - [Gemini Decisions](gemini-decisions.md): Find where every field of Gemini's Decisions API goes in KPP.

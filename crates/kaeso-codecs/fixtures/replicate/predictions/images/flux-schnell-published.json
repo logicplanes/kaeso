@@ -1,0 +1,31 @@
+{
+  "completed_at": "2024-09-19T23:45:01.446202Z",
+  "created_at": "2024-09-19T23:45:00.606000Z",
+  "data_removed": false,
+  "error": null,
+  "id": "jd96x0dyqsrm00cj1jp90zeye0",
+  "input": {
+    "prompt": "black forest gateau cake spelling out the words \"FLUX SCHNELL\", tasty, food photography, dynamic shot",
+    "go_fast": true,
+    "num_outputs": 1,
+    "aspect_ratio": "1:1",
+    "output_format": "webp",
+    "output_quality": 80
+  },
+  "logs": "running quantized prediction\ngenerating\nUsing seed: 68235\n  0%|          | 0/4 [00:00<?, ?it/s]\n 50%|█████     | 2/4 [00:00<00:00, 18.61it/s]\n100%|██████████| 4/4 [00:00<00:00, 13.49it/s]\n100%|██████████| 4/4 [00:00<00:00, 14.07it/s]\nTotal safe images: 1 out of 1",
+  "metrics": {
+    "image_count": 1,
+    "predict_time": 0.829263399,
+    "total_time": 0.840202
+  },
+  "output": [
+    "https://replicate.delivery/yhqm/hcDDSNf633zeDUz9sWkKfaftcfJLWIvuhn9vfCFWmufxelmemA/out-0.webp"
+  ],
+  "started_at": "2024-09-19T23:45:00.616939Z",
+  "status": "succeeded",
+  "urls": {
+    "get": "https://api.replicate.com/v1/predictions/jd96x0dyqsrm00cj1jp90zeye0",
+    "cancel": "https://api.replicate.com/v1/predictions/jd96x0dyqsrm00cj1jp90zeye0/cancel"
+  },
+  "version": "hidden"
+}

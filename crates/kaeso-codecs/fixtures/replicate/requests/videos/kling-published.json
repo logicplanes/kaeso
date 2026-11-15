@@ -1,0 +1,8 @@
+{
+  "input": {
+    "prompt": "a woman is dancing",
+    "duration": 5,
+    "aspect_ratio": "16:9",
+    "guidance_scale": 0.5
+  }
+}

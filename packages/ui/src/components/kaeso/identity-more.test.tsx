@@ -222,6 +222,7 @@ const MARKED_PROVIDERS = {
   azure: "Azure",
   voyage: "Voyage AI",
   jina: "Jina AI",
+  replicate: "Replicate",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

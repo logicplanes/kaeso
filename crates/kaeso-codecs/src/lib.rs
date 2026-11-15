@@ -54,6 +54,7 @@ pub mod openai_speech;
 pub mod openai_transcriptions;
 pub mod openai_videos;
 pub mod openrouter_videos;
+pub mod replicate;
 pub mod system_one;
 pub mod veo;
 pub mod voyage_rerank;

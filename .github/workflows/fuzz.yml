@@ -65,6 +65,7 @@ jobs:
             decode_openai_transcriptions,
             decode_openai_videos,
             decode_openrouter_videos,
+            decode_replicate,
             decode_system_one,
             decode_veo,
             decode_voyage_rerank,

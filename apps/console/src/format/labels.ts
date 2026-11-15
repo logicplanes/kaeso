@@ -56,6 +56,7 @@ export const DIALECTS: Record<string, string> = {
   jina_rerank: "Jina Rerank",
   bedrock_converse: "Amazon Bedrock Converse",
   fal: "fal",
+  replicate: "Replicate",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

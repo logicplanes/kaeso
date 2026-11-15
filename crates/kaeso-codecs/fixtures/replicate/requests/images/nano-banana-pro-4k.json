@@ -1,0 +1,9 @@
+{
+  "input": {
+    "prompt": "a lighthouse at dusk",
+    "resolution": "4K",
+    "aspect_ratio": "16:9",
+    "output_format": "png",
+    "safety_filter_level": "block_only_high"
+  }
+}

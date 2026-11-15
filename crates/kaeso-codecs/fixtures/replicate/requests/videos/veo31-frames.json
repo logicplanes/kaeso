@@ -1,0 +1,13 @@
+{
+  "input": {
+    "prompt": "a paper boat drifts across a pond",
+    "duration": 6,
+    "resolution": "720p",
+    "aspect_ratio": "16:9",
+    "generate_audio": false,
+    "seed": 7,
+    "negative_prompt": "people",
+    "image": "https://example.com/first.png",
+    "last_frame": "https://example.com/last.png"
+  }
+}

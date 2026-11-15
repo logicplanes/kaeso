@@ -1,0 +1,29 @@
+{
+  "id": "ab12cd34ef56gh78ij90kl12mn",
+  "model": "google/nano-banana-pro",
+  "version": "hidden",
+  "input": {
+    "prompt": "a lighthouse at dusk",
+    "resolution": "4K",
+    "aspect_ratio": "16:9",
+    "output_format": "png"
+  },
+  "logs": "",
+  "output": "https://replicate.delivery/xezq/abc123/output.png",
+  "data_removed": false,
+  "error": null,
+  "source": "api",
+  "status": "succeeded",
+  "created_at": "2026-11-14T10:00:00.000Z",
+  "started_at": "2026-11-14T10:00:00.100Z",
+  "completed_at": "2026-11-14T10:00:30.000Z",
+  "metrics": {
+    "predict_time": 29.9,
+    "total_time": 30.0
+  },
+  "urls": {
+    "web": "https://replicate.com/p/ab12cd34ef56gh78ij90kl12mn",
+    "get": "https://api.replicate.com/v1/predictions/ab12cd34ef56gh78ij90kl12mn",
+    "cancel": "https://api.replicate.com/v1/predictions/ab12cd34ef56gh78ij90kl12mn/cancel"
+  }
+}

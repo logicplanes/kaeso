@@ -1289,6 +1289,32 @@
       "linked_billing": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "replicate",
+      "name": "Replicate",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://replicate.com/account/api-tokens",
+        "label": "API tokens"
+      },
+      "key_prefix": "r8_",
+      "dialects": ["replicate"],
+      "count_tokens": null,
+      "embeddings": null,
+      "rerank": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "regions": null,
+      "key_endpoint": null,
+      "aws": null,
+      "entra_id": null,
+      "linked_billing": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

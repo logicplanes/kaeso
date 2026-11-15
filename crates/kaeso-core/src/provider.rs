@@ -261,6 +261,7 @@ impl AuthMethod {
 // The hosts QwenCloud's result links point at: DashScope's OSS buckets, such as
 // `dashscope-result-sgp.oss-ap-southeast-1.aliyuncs.com` in its image, speech and video references.
 const DASHSCOPE_RESULTS: &[&str] = &["dashscope-*.aliyuncs.com"];
+const REPLICATE_OUTPUTS: &[&str] = &["replicate.delivery", "*.replicate.delivery"];
 
 /// Where and how Kaeso sends rerank requests to a provider.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -3572,6 +3573,57 @@ pub const PROVIDERS: &[Provider] = &[
         regional: None,
         key_endpoint: None,
     },
+    Provider {
+        id: "replicate",
+        name: "Replicate",
+        // API tokens are 40 characters starting with `r8_`
+        // (https://replicate.com/docs/topics/security/api-tokens).
+        key_page: KeyPage {
+            url: "https://replicate.com/account/api-tokens",
+            label: "API tokens",
+        },
+        key_prefix: Some("r8_"),
+        default_base_url: "https://api.replicate.com",
+        auth: AuthStyle::Bearer,
+        // Replicate runs image and video models here; Kaeso maps no text model of it, so a
+        // generation request never reaches it past the catalogue's checks.
+        generation: DialectId::Replicate,
+        count_tokens: None,
+        embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
+        // Replicate answers with links on `replicate.delivery` and its subdomains, which it
+        // deletes after an hour (https://replicate.com/docs/topics/predictions/output-files);
+        // `b64_json` fetches them (`kaeso_codecs::replicate::OUTPUT_HOSTS`).
+        images: &[ImagesEgress {
+            dialect: DialectId::Replicate,
+            ..ImagesEgress::ANY
+        }
+        .fetching(REPLICATE_OUTPUTS)],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[VideosEgress::of(DialectId::Replicate)],
+        decisions: &[],
+        dialects: &[DialectId::Replicate],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // The model check reads the official models collection, the models Kaeso maps; a model
+        // it leaves out may still run.
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Replicate"),
+        responses: ResponsesProfile::compatible("Replicate"),
+        messages: MessagesProfile::compatible("Replicate"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+        regional: None,
+        key_endpoint: None,
+    },
 ];
 
 const _: () = {
@@ -3874,7 +3926,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate"
         );
     }
 
@@ -3965,7 +4017,8 @@ mod tests {
                 "venice",
                 "amazon-bedrock",
                 "voyage",
-                "jina"
+                "jina",
+                "replicate"
             ]
         );
     }
@@ -4608,6 +4661,47 @@ mod tests {
         for model in kaeso_codecs::fal::VIDEO_MODELS {
             let videos = p.videos.iter().find(|e| e.serves(model)).unwrap();
             assert_eq!(videos.dialect, DialectId::Fal, "{model}");
+        }
+        assert!(p.speech.is_empty() && p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn replicate_makes_images_and_videos_as_predictions_and_fetches_its_hour_long_links() {
+        let p = provider("replicate").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Replicate",
+                AuthStyle::Bearer,
+                DialectId::Replicate,
+                &[DialectId::Replicate][..]
+            )
+        );
+        assert_eq!(
+            (p.default_base_url, p.key_prefix, p.listing),
+            (
+                "https://api.replicate.com",
+                Some("r8_"),
+                ModelListing::Partial
+            )
+        );
+        assert_eq!(p.key_page.url, "https://replicate.com/account/api-tokens");
+        assert_eq!((p.count_tokens, p.embeddings), (None, None));
+        for model in kaeso_codecs::replicate::IMAGE_MODELS {
+            let images = p.images.iter().find(|e| e.serves(model)).unwrap();
+            assert_eq!(images.dialect, DialectId::Replicate, "{model}");
+            assert_eq!(images.fetch_hosts, kaeso_codecs::replicate::OUTPUT_HOSTS);
+            for host in ["replicate.delivery", "pbxt.replicate.delivery"] {
+                assert!(fetchable(images.fetch_hosts, host), "{host}");
+            }
+            assert!(!fetchable(
+                images.fetch_hosts,
+                "replicate.delivery.example.com"
+            ));
+        }
+        for model in kaeso_codecs::replicate::VIDEO_MODELS {
+            let videos = p.videos.iter().find(|e| e.serves(model)).unwrap();
+            assert_eq!(videos.dialect, DialectId::Replicate, "{model}");
         }
         assert!(p.speech.is_empty() && p.transcriptions.is_empty() && p.decisions.is_empty());
     }
@@ -5691,7 +5785,8 @@ mod tests {
                 "azure",
                 "voyage",
                 "jina",
-                "fal"
+                "fal",
+                "replicate"
             ]
         );
         assert_eq!(

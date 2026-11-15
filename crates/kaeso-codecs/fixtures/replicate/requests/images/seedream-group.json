@@ -1,0 +1,9 @@
+{
+  "input": {
+    "prompt": "four seasons of one garden",
+    "size": "4K",
+    "aspect_ratio": "16:9",
+    "sequential_image_generation": "auto",
+    "max_images": 4
+  }
+}

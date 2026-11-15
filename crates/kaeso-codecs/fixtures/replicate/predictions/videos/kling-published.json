@@ -1,0 +1,27 @@
+{
+  "completed_at": "2025-09-25T18:04:11.904664Z",
+  "created_at": "2025-09-25T18:01:35.869000Z",
+  "data_removed": false,
+  "error": null,
+  "id": "75wknmxbfnrme0csg84vagt5qr",
+  "input": {
+    "prompt": "a woman is dancing",
+    "duration": 5,
+    "aspect_ratio": "16:9",
+    "guidance_scale": 0.5
+  },
+  "logs": "Using seed: 1907287380\nGenerating...\nGenerated content in 154.6sec\nDownloading 6542959 bytes\nDownloaded 6.24MB in 0.98sec",
+  "metrics": {
+    "predict_time": 156.016782477,
+    "total_time": 156.035664
+  },
+  "output": "https://replicate.delivery/xezq/17c3JG1SzH6NCduMiKp1Cxyqvpad0GXRf507Pqq5GOqNsZsKA/tmpg4w3kyjz.mp4",
+  "started_at": "2025-09-25T18:01:35.887882Z",
+  "status": "succeeded",
+  "urls": {
+    "stream": "https://stream.replicate.com/v1/files/bcwr-47m6xbxw2yjji2wqdg3x2pte4znw7sxyju32gaqoiiaa6x3kb3ca",
+    "get": "https://api.replicate.com/v1/predictions/75wknmxbfnrme0csg84vagt5qr",
+    "cancel": "https://api.replicate.com/v1/predictions/75wknmxbfnrme0csg84vagt5qr/cancel"
+  },
+  "version": "hidden"
+}

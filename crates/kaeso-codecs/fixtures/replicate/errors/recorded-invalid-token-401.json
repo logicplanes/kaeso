@@ -1,0 +1,5 @@
+{
+  "title": "Unauthenticated",
+  "detail": "You did not pass a valid authentication token",
+  "status": 401
+}
