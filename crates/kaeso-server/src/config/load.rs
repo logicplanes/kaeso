@@ -658,6 +658,42 @@ mod tests {
     }
 
     #[test]
+    fn smtp_takes_a_user_and_a_password_together_or_neither() {
+        let smtp = || {
+            Map::minimal()
+                .set("KAESO_MAIL_TRANSPORT", "smtp")
+                .set("KAESO_SMTP_HOST", "mail.example.com")
+        };
+        assert!(load(&smtp()).is_ok());
+        assert!(
+            load(
+                &smtp()
+                    .set("KAESO_SMTP_USER", "kaeso")
+                    .set("KAESO_SMTP_PASSWORD", "pw")
+            )
+            .is_ok()
+        );
+        let err = load(&smtp().set("KAESO_SMTP_PASSWORD", "pw"))
+            .unwrap_err()
+            .to_string();
+        assert!(err.starts_with("KAESO_SMTP_USER (smtp.user)"), "{err}");
+        for user_alone in [
+            smtp().set("KAESO_SMTP_USER", "kaeso"),
+            smtp()
+                .set("KAESO_SMTP_USER", "kaeso")
+                .set("KAESO_SMTP_PASSWORD", ""),
+        ] {
+            let err = load(&user_alone).unwrap_err().to_string();
+            assert!(
+                err.starts_with(
+                    "KAESO_SMTP_PASSWORD (smtp.password) is required when smtp.user is set"
+                ),
+                "{err}"
+            );
+        }
+    }
+
+    #[test]
     fn every_unreadable_value_names_its_own_setting() {
         for (env, value, named) in [
             (

@@ -267,7 +267,8 @@ fn the_example_file_is_a_valid_configuration() {
             "KAESO_CLICKHOUSE_URL",
             "http://kaeso:secret@clickhouse:8123",
         )
-        .set("KAESO_VALKEY_URL", "redis://valkey:6379");
+        .set("KAESO_VALKEY_URL", "redis://valkey:6379")
+        .set("KAESO_SMTP_PASSWORD", "secret");
     let config = load(&source).unwrap();
     assert_eq!(config.public_url.as_str(), "https://kaeso.example.com/");
 }

@@ -128,7 +128,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | `KAESO_SMTP_HOST`<br>`smtp.host` | text | — | SMTP server. Required unless `mail.transport` is `log`. |
 | `KAESO_SMTP_PORT`<br>`smtp.port` | integer | `587` | SMTP port. |
 | `KAESO_SMTP_TLS`<br>`smtp.tls` | text | `starttls` | `starttls`, `tls` for implicit TLS (usually port 465), or `none` for a local mail catcher only. |
-| `KAESO_SMTP_USER`<br>`smtp.user` | text | — | SMTP user name, if the server needs one. Required with a password. |
+| `KAESO_SMTP_USER`<br>`smtp.user` | text | — | SMTP user name, if the server needs one. Required with a password, and needs one. |
 | `KAESO_SMTP_PASSWORD`<br>`smtp.password` | text, secret | — | SMTP password. |
 | `KAESO_SMTP_FROM`<br>`smtp.from` | text | `Kaeso <kaeso@localhost>` | Sender of every email. `compose.yaml` sets `Kaeso <kaeso@` and your domain. |
 | `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | text | `smtp` | `smtp`, or `log` to only log the kind of each email, never its recipient or content. |
