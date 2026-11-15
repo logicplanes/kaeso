@@ -460,6 +460,8 @@
   "models.status": "Status",
   "models.anyStatus": "Jeder Status",
   "models.showThem": "Anzeigen",
+  "models.alias.duplicate": "Duplizieren",
+  "models.route.copyGone": "Diesen Alias gibt es nicht mehr; beginnen Sie einen neuen",
   "models.route.seeRequests": "Anfragen ansehen",
   "models.tryInPlayground": "Im Playground ausprobieren",
   "models.route.retries": "Erneut versuchen",
