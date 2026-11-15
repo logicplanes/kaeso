@@ -34,6 +34,7 @@ export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: 
     { label: t("logs.filter.key", "Key"), value: f.key && (names.key ?? f.key) },
     { label: t("logs.filter.member", "Member"), value: f.member && (names.member ?? f.member.replace(/^(user|sa):/, "")) },
     { label: common.model(), value: f.model && (names.model ?? f.model) },
+    { label: t("logs.filter.requestedModel", "Requested model"), value: f.requested_model },
     { label: common.provider(), value: f.provider && (names.provider ?? f.provider) },
     { label: t("logs.filter.appFormat", "App format"), value: f.ingress && dialectLabel(f.ingress) },
     { label: t("logs.filter.providerFormat", "Provider format"), value: f.egress && dialectLabel(f.egress) },

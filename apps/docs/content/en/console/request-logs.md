@@ -13,7 +13,7 @@ Kaeso logs every model request: the model, the provider, the status, tokens, cos
 
 Open a project's **Request logs** page. It lists requests newest first, from the last hour, 24 hours, 7 days or 30 days, or a range you choose.
 
-- **Add filter** narrows the list by key, member, model, provider, alias, app and provider format, endpoint, status, error kind, streaming, source (the API or the Playground) and a cost of at least an amount. **Failed only** keeps the errors, and **Fell back** the requests whose alias route fell back to a later step.
+- **Add filter** narrows the list by key, member, model, the model or alias name the app sent (also one that no longer exists), provider, alias, app and provider format, endpoint, status, error kind, streaming, source (the API or the Playground) and a cost of at least an amount. **Failed only** keeps the errors, and **Fell back** the requests whose alias route fell back to a later step.
 - **App format** and **Provider format** narrow it to one route, such as OpenAI Responses to Anthropic Messages. Caching, overhead and errors often differ between routes.
 - **Live** adds new requests as they arrive. Once you have scrolled down, a button says how many are new.
 - The display options choose the columns and the density.

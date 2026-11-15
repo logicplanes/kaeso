@@ -2564,3 +2564,63 @@ async fn the_request_log_filters_by_alias_fallback_endpoint_and_cost() {
         "the export takes the same filters"
     );
 }
+
+#[tokio::test]
+async fn the_request_log_finds_requests_by_the_name_the_app_sent() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let base_row = || {
+        row(
+            org.uuid(),
+            project.uuid(),
+            now - time::Duration::minutes(1),
+            1,
+        )
+        .0
+    };
+    let rows = [
+        LogRow {
+            requested_model: "old-name".into(),
+            resolved_model: String::new(),
+            provider: String::new(),
+            status: 404,
+            error_kind: "not_found".into(),
+            ..base_row()
+        },
+        LogRow {
+            requested_model: "openai/gpt-5".into(),
+            resolved_model: "gpt-5".into(),
+            ..base_row()
+        },
+        LogRow {
+            requested_model: "gpt-5".into(),
+            resolved_model: "gpt-5".into(),
+            ..base_row()
+        },
+    ];
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
+        .await
+        .unwrap();
+    let found = |query: &'static str| {
+        let env = &env;
+        async move {
+            logs(env, query).await["data"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|l| l["requested_model"].as_str().unwrap().to_owned())
+                .collect::<Vec<_>>()
+        }
+    };
+    assert_eq!(found("?requested_model=old-name").await, ["old-name"]);
+    assert_eq!(
+        found("?requested_model=openai/gpt-5").await,
+        ["openai/gpt-5"],
+        "exactly as sent"
+    );
+    assert_eq!(found("?requested_model=gpt-5").await, ["gpt-5"]);
+    assert_eq!(found("?model=gpt-5").await.len(), 2, "the resolved model");
+    assert!(found("?requested_model=GPT-5").await.is_empty());
+}

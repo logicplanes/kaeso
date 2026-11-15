@@ -284,5 +284,6 @@
   "logs.filter.alias": "别名",
   "logs.filter.fellBack": "已回退",
   "logs.filter.endpoint": "端点",
-  "logs.filter.minCost": "费用至少"
+  "logs.filter.minCost": "费用至少",
+  "logs.filter.requestedModel": "请求的模型"
 }

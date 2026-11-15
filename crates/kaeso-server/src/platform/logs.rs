@@ -667,6 +667,10 @@ pub struct LogFilter {
     #[doc = "Only requests that cost at least this much, in USD, as a decimal string\n\
         such as `0.5`."]
     pub min_cost: Option<String>,
+    #[doc = "Only requests that named this model or alias, exactly as the app sent it,\n\
+        `provider/model` included. Unlike `alias`, it also finds requests whose name\n\
+        didn't resolve, such as an alias that was deleted."]
+    pub requested_model: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -777,6 +781,7 @@ impl LogFilter {
             fell_back: self.fell_back,
             endpoint: self.endpoint.as_deref().map(endpoint_filter).transpose()?,
             min_cost: self.min_cost.as_deref().map(cost_filter).transpose()?,
+            requested_model: self.requested_model.clone(),
         })
     }
 }

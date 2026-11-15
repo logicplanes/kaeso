@@ -110,7 +110,7 @@ describe("logColumns", () => {
     expect(parts).toEqual(["gpt-5.4-mini", "Client disconnected", "Playground", "The app closed the connection."]);
   });
 
-  it("starts with the outcome when a request was refused before a model was chosen", () => {
+  it("names the model the app asked for, then the outcome, when a request was refused before a model was chosen", () => {
     const all = logColumns({ spansDays: true, keyName: (id) => id, partyName: (p) => p.id ?? "", providerName: (id) => ({ openai: "OpenAI" })[id] ?? id });
     render(
       <DataTable
@@ -121,7 +121,7 @@ describe("logColumns", () => {
       />,
     );
     const parts = [...screen.getByRole("cell").querySelectorAll(".\\@container > *")].map((e) => e.textContent);
-    expect(parts).toEqual(["Invalid request"]);
+    expect(parts).toEqual(["gpt-5.4-mini", "Invalid request"]);
   });
 
   it("names the provider under a visible header wherever its column is shown on a phone", () => {

@@ -54,13 +54,28 @@ const STATUSES = [200, 400, 401, 403, 404, 408, 413, 422, 429, 499, 500, 502, 50
 const MIN_COSTS = ["0.01", "0.1", "1", "10"];
 type FlagFilterId = "failed" | "fell_back";
 type FilterId =
-  "key" | "member" | "model" | "provider" | "alias" | "ingress" | "egress" | "endpoint" | "status" | "error" | "stream" | "source" | "min_cost" | FlagFilterId;
+  | "key"
+  | "member"
+  | "model"
+  | "requested_model"
+  | "provider"
+  | "alias"
+  | "ingress"
+  | "egress"
+  | "endpoint"
+  | "status"
+  | "error"
+  | "stream"
+  | "source"
+  | "min_cost"
+  | FlagFilterId;
 type ChoiceFilterId = Exclude<FilterId, FlagFilterId>;
 const isChoice = (id: string): id is ChoiceFilterId => id !== "failed" && id !== "fell_back";
 const FILTER_IDS: FilterId[] = [
   "key",
   "member",
   "model",
+  "requested_model",
   "provider",
   "alias",
   "fell_back",
@@ -78,6 +93,7 @@ const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPa
   key: (key) => ({ key }),
   member: (member) => ({ member }),
   model: (model) => ({ model }),
+  requested_model: (requested_model) => ({ requested_model }),
   provider: (provider) => ({ provider }),
   ingress: (ingress) => ({ ingress }),
   egress: (egress) => ({ egress }),
@@ -94,6 +110,7 @@ const filterLabel = (id: FilterId): string =>
     key: t("logs.filter.key", "Key"),
     member: t("logs.filter.member", "Member"),
     model: common.model(),
+    requested_model: t("logs.filter.requestedModel", "Requested model"),
     provider: common.provider(),
     ingress: t("logs.filter.appFormat", "App format"),
     egress: t("logs.filter.providerFormat", "Provider format"),
@@ -107,6 +124,13 @@ const filterLabel = (id: FilterId): string =>
     endpoint: t("logs.filter.endpoint", "Endpoint"),
     min_cost: t("logs.filter.minCost", "Cost at least"),
   })[id];
+
+// The names an app may send: each alias, and each model's id with and without its provider. A
+// name from the URL that none of them is, such as a deleted alias, stays as the chip's value.
+function requestedNames(models: { provider: string; model_id: string }[], aliases: { name: string }[]): FilterChipChoice[] {
+  const names = [...new Set([...aliases.map((a) => a.name), ...models.flatMap((m) => [m.model_id, `${m.provider}/${m.model_id}`])])];
+  return names.map((n) => ({ value: n, label: n }));
+}
 
 export function LogsPage({ org, project, search }: { org: string; project: string; search: LogsSearch }) {
   const navigate = useNavigate();
@@ -182,19 +206,21 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
               ? Object.keys(DIALECTS).map((d) => ({ value: d, label: dialectLabel(d) }))
               : id === "alias"
                 ? (aliases.data ?? []).map((a) => ({ value: a.name, label: a.name }))
-                : id === "endpoint"
-                  ? ENDPOINTS.map((e) => ({ value: e, label: e }))
-                  : id === "min_cost"
-                    ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
-                    : id === "stream"
-                      ? [
-                          { value: "true", label: t("logs.filter.streamed", "Streamed") },
-                          { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
-                        ]
-                      : [
-                          { value: "api", label: "API" },
-                          { value: "playground", label: t("logs.source.playground", "Playground") },
-                        ];
+                : id === "requested_model"
+                  ? requestedNames(catalogue.data ?? [], aliases.data ?? [])
+                  : id === "endpoint"
+                    ? ENDPOINTS.map((e) => ({ value: e, label: e }))
+                    : id === "min_cost"
+                      ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
+                      : id === "stream"
+                        ? [
+                            { value: "true", label: t("logs.filter.streamed", "Streamed") },
+                            { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                          ]
+                        : [
+                            { value: "api", label: "API" },
+                            { value: "playground", label: t("logs.source.playground", "Playground") },
+                          ];
   const current = (id: ChoiceFilterId): string | undefined =>
     id === "status"
       ? filters.status
@@ -219,7 +245,10 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
             ? { groups: modelGroups, width: "lg" as const }
             : id === "provider"
               ? { groups: providerGroups, width: "sm" as const }
-              : { values: choice(id), searchable: id === "key" || id === "member" || id === "alias" || id === "endpoint" }),
+              : {
+                  values: choice(id),
+                  searchable: id === "key" || id === "member" || id === "alias" || id === "endpoint" || id === "requested_model",
+                }),
         },
   );
   const setFilter = (id: string, v: string | undefined) =>
