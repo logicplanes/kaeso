@@ -603,8 +603,14 @@ impl Config {
                 return invalid(key, "must be longer than zero".into());
             }
         }
-        if self.kpmr.interval == KpmrInterval::Every(Duration::ZERO) {
-            return invalid("kpmr.interval", "must be `auto` or longer than zero".into());
+        // The kpmr_sync job runs every 5 minutes, and mcp_sync asks no server more often than
+        // once a minute, so a shorter interval would be raised without a word.
+        if matches!(self.kpmr.interval, KpmrInterval::Every(every) if every < Duration::from_secs(300))
+        {
+            return invalid("kpmr.interval", "must be `auto` or at least 5m".into());
+        }
+        if self.mcp_servers.sync_interval < Duration::from_secs(60) {
+            return invalid("mcp_servers.sync_interval", "must be at least 1m".into());
         }
         for (key, value) in [
             ("upstream.connect_timeout", self.upstream.connect_timeout),

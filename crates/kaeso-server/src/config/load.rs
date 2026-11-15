@@ -117,7 +117,7 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
             insert(&mut table, &s.key, typed(s, default)?);
         }
     }
-    if let Some(path) = source.var("KAESO_CONFIG") {
+    if let Some(path) = source.var("KAESO_CONFIG").filter(|p| !p.is_empty()) {
         let path = PathBuf::from(path);
         let text = source.read_file(&path).map_err(|e| ConfigError::File {
             what: "the configuration file (KAESO_CONFIG)".into(),
@@ -854,13 +854,39 @@ mod tests {
             every.kpmr.interval,
             crate::config::KpmrInterval::Every(std::time::Duration::from_secs(6 * 3600))
         );
-        let err = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", "0s"))
+        let shortest = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", "5m")).unwrap();
+        assert_eq!(
+            shortest.kpmr.interval,
+            crate::config::KpmrInterval::Every(std::time::Duration::from_secs(300))
+        );
+        for short in ["0s", "1m", "299s"] {
+            let err = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", short))
+                .unwrap_err()
+                .to_string();
+            assert_eq!(
+                err, "KAESO_KPMR_INTERVAL (kpmr.interval) must be `auto` or at least 5m",
+                "{short}"
+            );
+        }
+    }
+
+    #[test]
+    fn mcp_servers_are_asked_for_their_tools_at_most_once_a_minute() {
+        let c = load(&Map::minimal().set("KAESO_MCP_SERVERS_SYNC_INTERVAL", "1m")).unwrap();
+        assert_eq!(c.mcp_servers.sync_interval.as_secs(), 60);
+        let err = load(&Map::minimal().set("KAESO_MCP_SERVERS_SYNC_INTERVAL", "1s"))
             .unwrap_err()
             .to_string();
         assert_eq!(
             err,
-            "KAESO_KPMR_INTERVAL (kpmr.interval) must be `auto` or longer than zero"
+            "KAESO_MCP_SERVERS_SYNC_INTERVAL (mcp_servers.sync_interval) must be at least 1m"
         );
+    }
+
+    #[test]
+    fn an_empty_kaeso_config_counts_as_unset() {
+        let c = load(&Map::minimal().set("KAESO_CONFIG", "")).unwrap();
+        assert_eq!(c.kpmr.interval, crate::config::KpmrInterval::Auto);
     }
 
     #[test]

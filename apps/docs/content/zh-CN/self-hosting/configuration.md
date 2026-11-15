@@ -168,7 +168,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | --- | --- | --- | --- |
 | `KAESO_KPMR_SYNC`<br>`kpmr.sync` | 布尔 | `true` | 从 KPMR（Kaeso Provider & Model Registry）获取模型数据。没有互联网的实例请关闭，此时使用内置快照。 |
 | `KAESO_KPMR_URL`<br>`kpmr.url` | 文本 | `https://kpmr.kaeso.app/v1/catalogue` | 从哪里获取 KPMR 目录：KPMR 或其镜像。必须使用 `https`，localhost 上可用 `http`；重定向必须留在同一主机并使用 `https`，最多 3 次。 |
-| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | 文本 | `auto` | 多久向 KPMR 询问一次变更：`auto` 跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；也可设为时长，例如 `6h`。 |
+| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | 文本 | `auto` | 多久向 KPMR 询问一次变更：`auto` 跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；也可设为至少 5 分钟的时长，例如 `6h`。 |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | 文本 | — | 除 KPMR 内置密钥外还要信任的密钥，以逗号分隔，每个为 `<key id>:<base64 Ed25519 public key>`，用于您自己的注册表；签名无法由任何受信任密钥验证的目录会被拒绝。 |
 
 ### 更新
