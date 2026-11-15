@@ -77,6 +77,8 @@ services:
 | `kaeso_build_info{version}` | The running version |
 | `kaeso_connections_open`, `kaeso_connections_max` | Connections the gateway serves now, and the most it serves at once (`server.max_connections`); at the limit, new ones wait. Alert on `kaeso_connections_open / kaeso_connections_max` and add gateways before it reaches 1 |
 | `kaeso_model_requests_in_flight` | Model requests being served now, streams and realtime sessions included, until each ends |
+| `kaeso_tool_calls_total{source, status, error_type}` | Tool calls through the [MCP portal](../api/mcp.md) (`source="portal"`) and the Playground, by `status` (`ok`, `refused`, `error`) and `error_type`, empty for a call that worked. `upstream_auth`, `upstream_unreachable` and `timeout` point at the MCP server; `denied` and `limited` at the caller |
+| `kaeso_tool_call_duration_seconds{source, status}` | How long tool calls took |
 | `kaeso_update_available{version}` | 1 with the newest release offered on the install's channel as `version` while it is newer than the running one, 0 with the running version while it isn't; absent while update checks are off ([new releases](upgrades.md#new-releases)) |
 
 ## Logs

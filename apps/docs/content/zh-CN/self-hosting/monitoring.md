@@ -77,6 +77,8 @@ services:
 | `kaeso_build_info{version}` | 正在运行的版本 |
 | `kaeso_connections_open`、`kaeso_connections_max` | 网关当前服务的连接数，以及其同时服务的最大连接数（`server.max_connections`）；达到上限后，新连接需要等待。可对 `kaeso_connections_open / kaeso_connections_max` 设置告警，并在其达到 1 之前增加网关 |
 | `kaeso_model_requests_in_flight` | 当前正在服务的模型请求数，包括流和实时会话，直到各自结束 |
+| `kaeso_tool_calls_total{source, status, error_type}` | 通过 [MCP 门户](../api/mcp.md)（`source="portal"`）和 Playground 的工具调用，按 `status`（`ok`、`refused`、`error`）和 `error_type` 统计，调用成功时 `error_type` 为空。`upstream_auth`、`upstream_unreachable` 和 `timeout` 指向 MCP 服务器；`denied` 和 `limited` 指向调用方 |
+| `kaeso_tool_call_duration_seconds{source, status}` | 工具调用的耗时 |
 | `kaeso_update_available{version}` | 实例渠道上提供的最新版本比正在运行的版本新时为 1，`version` 为该最新版本；否则为 0，`version` 为正在运行的版本；关闭更新检查时没有此指标（[新版本](upgrades.md#新版本)） |
 
 ## 日志

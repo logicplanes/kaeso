@@ -98,6 +98,26 @@ fn log(
     response: Option<&[u8]>,
 ) {
     let ms = |d: Duration| u32::try_from(d.as_millis()).unwrap_or(u32::MAX);
+    let status = match failure {
+        None => "ok",
+        Some((f, _)) if f.refused() => "refused",
+        Some(_) => "error",
+    };
+    let error_type = failure.map(|(f, _)| f.as_str()).unwrap_or_default();
+    // Bounded labels only: MCP servers and tools are named by each organization.
+    metrics::counter!(
+        crate::metrics::TOOL_CALLS,
+        "source" => l.source.to_owned(),
+        "status" => status,
+        "error_type" => error_type,
+    )
+    .increment(1);
+    metrics::histogram!(
+        crate::metrics::TOOL_CALL_DURATION,
+        "source" => l.source.to_owned(),
+        "status" => status,
+    )
+    .record(l.started.elapsed().as_secs_f64());
     let row = ToolCallRow {
         id: kaeso_core::id::new_v7(),
         org_id: l.caller.org,
@@ -122,16 +142,8 @@ fn log(
         client_name: l.client.clone(),
         protocol_version: l.version.as_str().to_owned(),
         source: l.source.to_owned(),
-        status: match failure {
-            None => "ok",
-            Some((f, _)) if f.refused() => "refused",
-            Some(_) => "error",
-        }
-        .to_owned(),
-        error_type: failure
-            .map(|(f, _)| f.as_str())
-            .unwrap_or_default()
-            .to_owned(),
+        status: status.to_owned(),
+        error_type: error_type.to_owned(),
         error_message: failure.map(|(_, m)| m).unwrap_or_default().to_owned(),
         duration_ms: ms(l.started.elapsed()),
         upstream_ms,

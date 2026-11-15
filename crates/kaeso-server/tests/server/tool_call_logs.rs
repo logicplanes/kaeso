@@ -466,3 +466,42 @@ async fn tool_calls_export_as_csv_or_json_lines_with_their_arguments_and_results
     let (status, _, _) = export(&e, "?format=xml").await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn tool_calls_are_counted_by_source_status_and_error_type() {
+    let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
+    let handle = recorder.handle();
+    let _local = metrics::set_default_local_recorder(&recorder);
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let e = env(&s, &mock).await;
+    assert_eq!(
+        call(&e, "x__create_post").await.body["result"]["isError"],
+        false
+    );
+    assert_eq!(call(&e, "x__get_me").await.body["error"]["code"], -32602);
+    mock.set_tools(Vec::new());
+    call(&e, "x__create_post").await;
+    let text = handle.render();
+    let count = |labels: &str| -> u64 {
+        text.lines()
+            .find_map(|l| l.strip_prefix(&format!("kaeso_tool_calls_total{{{labels}}} ")))
+            .unwrap_or_else(|| panic!("no {labels} in {text}"))
+            .parse()
+            .unwrap()
+    };
+    assert_eq!(count("source=\"portal\",status=\"ok\",error_type=\"\""), 1);
+    assert_eq!(
+        count("source=\"portal\",status=\"refused\",error_type=\"tool_off\""),
+        1
+    );
+    let failed: Vec<&str> = text
+        .lines()
+        .filter(|l| l.starts_with("kaeso_tool_calls_total{source=\"portal\",status=\"error\""))
+        .collect();
+    assert_eq!(failed.len(), 1, "{text}");
+    assert!(
+        text.contains("kaeso_tool_call_duration_seconds_count{source=\"portal\",status=\"ok\"} 1"),
+        "{text}"
+    );
+}
