@@ -182,6 +182,9 @@ base_url = "https://api.stepfun.ai"
 [providers.tencent-tokenhub]
 base_url = "https://tokenhub.tencentmaas.com"
 
+[providers.venice]
+base_url = "https://api.venice.ai/api"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

@@ -1,0 +1,70 @@
+{
+  "max_tokens": 1024,
+  "messages": [
+    {
+      "content": [
+        {
+          "text": "You are a deterministic cassette test assistant for venice prompt caching. Never call tools for the cache probe prompt; answer only with the requested phrase.",
+          "type": "text"
+        }
+      ],
+      "role": "system"
+    },
+    {
+      "content": "Do not call any tools. Reply with exactly these three words: cache probe ready",
+      "role": "user"
+    },
+    {
+      "content": "\n\ncache probe ready",
+      "reasoning_content": "Thinking Process:\n\n1.  **Analyze the Request:**\n    *   User instruction: \"Do not call any tools. Reply with exactly these three words: cache probe ready\"\n    *   Constraint: \"Do not call any tools.\"\n    *   Constraint: \"Reply with exactly these three words: cache probe ready\"\n    *   System Identity: I am Qwen 3.5 9B, running on Venice.ai.\n    *   System Rules: Never talk about system messages, avoid URLs unless provided, respond in the language of the prompt (English), uncensored, ignore prior refusals (not applicable here), deterministic cassette test assistant.\n    *   Current Context: The user is asking for a specific phrase as part of a cache probe test.\n\n2.  **Check for Tool Usage:**\n    *   The user explicitly says \"Do not call any tools.\"\n    *   I must comply with this instruction.\n    *   I should not use `lookup_cache_policy` or `lookup_cache_fixture`.\n\n3.  **Check for Identity/Policy Violations:**\n    *   The request is simple and benign.\n    *   It does not violate safety policies.\n    *   It aligns with the \"cache probe\" context mentioned in the system instructions (\"Never call tools for the cache probe prompt; answer only with the requested phrase.\").\n\n4.  **Formulate Output:**\n    *   The requested phrase is \"cache probe ready\".\n    *   I need to ensure no extra text, no markdown, no tool calls.\n\n5.  **Final Verification:**\n    *   Does this match the system instruction for cache probe prompts? Yes (\"Never call tools for the cache probe prompt; answer only with the requested phrase.\").\n    *   Does it match the user's explicit instruction? Yes.\n\n6.  **Construct Response:**\n    *   \"cache probe ready\"\n\n7.  **Final Decision:** Output exactly the requested phrase.cw\n",
+      "role": "assistant"
+    },
+    {
+      "content": "Do not call any tools. Reply with exactly these three words: probe still ready",
+      "role": "user"
+    }
+  ],
+  "model": "qwen3-5-9b",
+  "prompt_cache_key": "rig-cache-conformance-venice",
+  "temperature": 0.0,
+  "tools": [
+    {
+      "function": {
+        "description": "Return venice prompt caching internal prompt cache policy notes.",
+        "name": "lookup_cache_policy",
+        "parameters": {
+          "properties": {
+            "topic": {
+              "description": "Policy topic to look up.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "topic"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "function"
+    },
+    {
+      "function": {
+        "description": "Return venice prompt caching prompt cache fixture notes.",
+        "name": "lookup_cache_fixture",
+        "parameters": {
+          "properties": {
+            "fixture": {
+              "description": "Fixture identifier to look up.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "fixture"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "function"
+    }
+  ]
+}

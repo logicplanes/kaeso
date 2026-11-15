@@ -5169,6 +5169,105 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/venice/cached-published": {
+    "body": {
+      "input": [
+        {
+          "content": "Do not call any tools. Reply with exactly these three words: cache probe ready",
+          "role": "user"
+        },
+        {
+          "content": "\n\ncache probe ready",
+          "role": "assistant"
+        },
+        {
+          "content": "Do not call any tools. Reply with exactly these three words: probe still ready",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a deterministic cassette test assistant for venice prompt caching. Never call tools for the cache probe prompt; answer only with the requested phrase.",
+      "max_output_tokens": 1024,
+      "model": "qwen3-5-9b",
+      "prompt_cache_key": "rig-cache-conformance-venice",
+      "store": false,
+      "temperature": 0.0,
+      "tools": [
+        {
+          "description": "Return venice prompt caching internal prompt cache policy notes.",
+          "name": "lookup_cache_policy",
+          "parameters": {
+            "properties": {
+              "topic": {
+                "description": "Policy topic to look up.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "topic"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        },
+        {
+          "description": "Return venice prompt caching prompt cache fixture notes.",
+          "name": "lookup_cache_fixture",
+          "parameters": {
+            "properties": {
+              "fixture": {
+                "description": "Fixture identifier to look up.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "fixture"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/venice/disable-thinking-published": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
+  "providers/venice/disable-thinking-stream-published": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
+  "providers/venice/greeting-doc": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
+  "providers/venice/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "venice-uncensored-1-2",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/venice/reasoning-stream-published": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
+  "providers/venice/tool-call-reasoning-published": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
   "providers/vercel/basic": {
     "body": {
       "input": [

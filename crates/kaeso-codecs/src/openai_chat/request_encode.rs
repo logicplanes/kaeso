@@ -5,6 +5,7 @@ use kaeso_kpp::{
     TextBlock, ToolChoice, ToolDef, ToolResultBlock,
 };
 use serde_json::Value;
+use serde_json::value::RawValue;
 
 use super::DIALECT;
 use super::convert::{
@@ -12,7 +13,9 @@ use super::convert::{
     encode_text_part, encode_tool_call, encode_video_part, ext_nested, ext_with, is_tool_call_item,
     nested_keys, safe_tool_name, to_raw,
 };
-use super::profile::{ChatProfile, EndUserField, OutputLimit, ReplyReasoning, SeedField};
+use super::profile::{
+    ChatProfile, EndUserField, OptionDefault, OutputLimit, ReplyReasoning, SeedField,
+};
 use super::request::{
     CONFLICT_KEYS, FORM_CONTENT, FORM_MAX_TOKENS, FORM_MESSAGE, FORM_MODALITIES_EMPTY, FORM_N,
     FORM_REPLAYED, FORM_RESPONSE_FORMAT_TEXT, FORM_ROLE, FORM_SCHEMA_ABSENT, FORM_STOP,
@@ -189,7 +192,36 @@ pub(crate) fn encode_generate(
     if profile.request.thinking_type {
         switch_thinking_type(req, &mut out)?;
     }
+    for default in profile.request.option_defaults {
+        default_option(default, &mut out)?;
+    }
     Ok(out)
+}
+
+fn default_option(default: &OptionDefault, out: &mut Ext<ChatRequest>) -> Result<(), KppError> {
+    if out.verbatim.contains_key(default.object) {
+        return Ok(());
+    }
+    let mut object: IndexMap<&str, &RawValue> = match out.extra.get(default.object) {
+        None => IndexMap::new(),
+        Some(sent) if sent.is_object() => sent.parse().map_err(|e| bug(default, e))?,
+        Some(_) => return Ok(()),
+    };
+    if object.contains_key(default.key) {
+        return Ok(());
+    }
+    let value: &RawValue = serde_json::from_str(default.value).map_err(|e| bug(default, e))?;
+    object.insert(default.key, value);
+    let written = to_raw(&object)?;
+    out.extra.insert(default.object.to_owned(), written);
+    Ok(())
+}
+
+fn bug(default: &OptionDefault, e: serde_json::Error) -> KppError {
+    KppError::provider(format!(
+        "Kaeso could not write `{}.{}` ({e}). This is a bug in Kaeso; please report it.",
+        default.object, default.key
+    ))
 }
 
 // Volcengine Ark turns thinking off only with `thinking: {"type": "disabled"}`: its models think

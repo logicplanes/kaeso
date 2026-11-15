@@ -38,6 +38,7 @@ const providers: ProviderPickerOption[] = [
   { id: "standardcompute", name: "Standard Compute" },
   { id: "stepfun-ai", name: "StepFun" },
   { id: "togetherai", name: "Together AI" },
+  { id: "venice", name: "Venice" },
   { id: "vercel", name: "Vercel" },
   { id: "xai", name: "SpaceX" },
   { id: "zai", name: "Z.ai" },

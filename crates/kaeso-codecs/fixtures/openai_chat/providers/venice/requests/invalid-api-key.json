@@ -1,0 +1,9 @@
+{
+  "model": "venice-uncensored-1-2",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ]
+}

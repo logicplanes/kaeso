@@ -1,0 +1,55 @@
+{
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "",
+        "name": null,
+        "reasoning_content": "The user wants me to add 17 and 25 using the `add` tool and then reply with just the resulting number.\n\n1.  **Identify the tool**: `add`\n2.  **Identify the arguments**: `x = 17`, `y = 25`\n3.  **Execute the tool**: Call `add(x=17, y=25)`.\n4.  **Process the result**: The tool should return 42.\n5.  **Format the output**: The user requested \"just the number\".\n\nPlan:\n1. Call `add(17, 25)`.\n2. Return the result.\n\nLet's do it.\n",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": "{\"x\": 17, \"y\": 25}",
+              "name": "add"
+            },
+            "id": "chatcmpl-tool-b54856bec05e7563",
+            "type": "function"
+          }
+        ]
+      }
+    }
+  ],
+  "cost": {
+    "diem": 0,
+    "usd": 0.0012641
+  },
+  "created": 0,
+  "id": "chatcmpl-RX7qvReuXMefIzL6PlxqNbSG",
+  "model": "qwen3-235b-a22b-thinking-2507",
+  "object": "chat.completion",
+  "service_tier": "default",
+  "usage": {
+    "completion_tokens": 193,
+    "prompt_tokens": 1308,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 1501
+  },
+  "venice_parameters": {
+    "disable_thinking": false,
+    "enable_e2ee": true,
+    "enable_web_citations": false,
+    "enable_web_scraping": false,
+    "enable_web_search": "off",
+    "enable_x_search": false,
+    "include_search_results_in_stream": false,
+    "include_venice_system_prompt": true,
+    "return_search_results_as_documents": false,
+    "strip_thinking_response": false,
+    "web_search_citations": []
+  }
+}

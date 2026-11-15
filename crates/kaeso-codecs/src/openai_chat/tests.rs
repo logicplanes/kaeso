@@ -237,6 +237,23 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         "providers/ovhcloud/recorded-developer-role-mistral",
         ErrorKind::InvalidRequest,
     ),
+    (
+        "providers/venice/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
+        "providers/venice/unknown-model-published",
+        ErrorKind::NotFound,
+    ),
+    ("providers/venice/validation-doc", ErrorKind::InvalidRequest),
+    (
+        "providers/venice/insufficient-balance-doc",
+        ErrorKind::Billing,
+    ),
+    (
+        "providers/venice/payload-too-large-doc",
+        ErrorKind::RequestTooLarge,
+    ),
 ];
 
 const COHERE: &str = "providers/cohere/";

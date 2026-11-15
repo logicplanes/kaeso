@@ -1,0 +1,12 @@
+{
+  "error": "Invalid request parameters",
+  "details": {
+    "_errors": [],
+    "field": {
+      "_errors": [
+        "Field is required"
+      ]
+    }
+  },
+  "issues": []
+}

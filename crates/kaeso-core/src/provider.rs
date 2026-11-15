@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 
 use kaeso_codecs::anthropic_messages::{FixedValue, MINIMAX_VIDEO_MEDIA_TYPES, MessagesProfile};
 use kaeso_codecs::gemini::GeminiProfile;
-use kaeso_codecs::openai_chat::ChatProfile;
+use kaeso_codecs::openai_chat::{ChatProfile, OptionDefault};
 use kaeso_codecs::openai_decisions::DecisionsProfile;
 use kaeso_codecs::openai_embeddings::EmbeddingsProfile;
 use kaeso_codecs::openai_images::ImagesProfile;
@@ -2849,6 +2849,63 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: None,
     },
+    Provider {
+        id: "venice",
+        name: "Venice",
+        // Inference keys reach chat and embeddings; admin keys only the account routes
+        // (https://docs.venice.ai/guides/getting-started/generating-api-key).
+        key_page: KeyPage {
+            url: "https://venice.ai/settings/api",
+            label: "API settings",
+        },
+        key_prefix: None,
+        // Venice's base URL is `https://api.venice.ai/api/v1`, so the API root sits one level
+        // below the host (https://docs.venice.ai/api-reference/api-spec).
+        default_base_url: "https://api.venice.ai/api",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /models` lists text models only unless asked for `?type=embedding`
+        // (https://docs.venice.ai/api-reference/endpoint/models/list).
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        // Venice's `ChatCompletionRequest` refuses undeclared top-level fields with 400
+        // (https://docs.venice.ai/guides/getting-started/openai-migration), but discards `user`,
+        // has no `safety_identifier`, and takes `metadata` and `store` without acting on them
+        // (https://docs.venice.ai/swagger.yaml). It prepends a system prompt of its own unless
+        // `venice_parameters.include_venice_system_prompt` is false
+        // (https://docs.venice.ai/api-reference/api-spec#system-prompts).
+        chat: ChatProfile::compatible("Venice")
+            .without_end_user()
+            .with_video_url()
+            .any_audio_format()
+            .reasoning_fields(&["reasoning_content"])
+            .with_option_defaults(&[OptionDefault::new(
+                "venice_parameters",
+                "include_venice_system_prompt",
+                "false",
+            )])
+            .refusing(&["metadata", "store"]),
+        responses: ResponsesProfile::compatible("Venice"),
+        messages: MessagesProfile::compatible("Venice"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+    },
 ];
 
 const _: () = {
@@ -3146,7 +3203,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice"
         );
     }
 
@@ -3233,7 +3290,8 @@ mod tests {
                 "typesafe",
                 "upstage",
                 "novita-ai",
-                "volcengine"
+                "volcengine",
+                "venice"
             ]
         );
     }
@@ -3621,6 +3679,45 @@ mod tests {
         for field in ["parallel_tool_calls", "top_logprobs", "web_search_options"] {
             assert!(!p.chat.request.refused_fields.contains(&field), "{field}");
         }
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn venice_serves_chat_and_embeddings_under_its_api_root_without_its_own_system_prompt() {
+        let p = provider("venice").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Venice",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://api.venice.ai/api");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), None)
+        );
+        assert_eq!(p.embeddings_profile, EmbeddingsProfile::OPENAI);
+        assert_eq!(p.key_page.url, "https://venice.ai/settings/api");
+        assert_eq!(p.listing, ModelListing::Partial);
+        assert_eq!(p.chat.provider, "Venice");
+        assert_eq!(p.chat.request.path, "/v1/chat/completions");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::AsWritten);
+        assert!(p.chat.request.developer_role && p.chat.request.video_url);
+        assert!(!p.chat.request.end_user && p.chat.request.input_audio_formats.is_none());
+        assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
+        assert_eq!(p.chat.request.refused_fields, ["metadata", "store"]);
+        assert_eq!(
+            p.chat.request.option_defaults,
+            [OptionDefault::new(
+                "venice_parameters",
+                "include_venice_system_prompt",
+                "false"
+            )]
+        );
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
     }
@@ -4624,7 +4721,8 @@ mod tests {
                 "volcengine",
                 "ovhcloud",
                 "stepfun-ai",
-                "tencent-tokenhub"
+                "tencent-tokenhub",
+                "venice"
             ]
         );
         assert_eq!(

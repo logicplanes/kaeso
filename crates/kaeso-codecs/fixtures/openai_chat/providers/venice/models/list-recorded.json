@@ -1,0 +1,170 @@
+{
+  "object": "list",
+  "type": "text",
+  "data": [
+    {
+      "context_length": 200000,
+      "created": 1775520000,
+      "id": "zai-org-glm-5-1",
+      "model_spec": {
+        "pricing": {
+          "input": {
+            "usd": 1.54,
+            "diem": 1.54
+          },
+          "cache_input": {
+            "usd": 0.286,
+            "diem": 0.286
+          },
+          "output": {
+            "usd": 4.84,
+            "diem": 4.84
+          }
+        },
+        "availableContextTokens": 200000,
+        "maxCompletionTokens": 80000,
+        "capabilities": {
+          "optimizedForCode": false,
+          "quantization": "fp8",
+          "supportsAudioInput": false,
+          "supportsFunctionCalling": true,
+          "supportsLogProbs": false,
+          "supportsMultipleImages": false,
+          "supportsReasoning": true,
+          "supportsReasoningEffort": true,
+          "reasoningEffortOptions": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ],
+          "defaultReasoningEffort": "low",
+          "supportsResponseSchema": true,
+          "supportsTeeAttestation": false,
+          "supportsE2EE": false,
+          "supportsVideoInput": false,
+          "supportsVision": false,
+          "supportsWebSearch": true,
+          "supportsXSearch": false
+        },
+        "description": "GLM-5.1, the successor to GLM-5, is a large language model developed by Z.ai, featuring significantly enhanced reasoning capabilities, improved instruction following, and support for multiple languages. Supports large context windows for processing extensive text and detailed analysis with fast inference speed.",
+        "name": "GLM 5.1",
+        "modelSource": "https://huggingface.co/zai-org/GLM-5.1",
+        "offline": false,
+        "privacy": "private",
+        "traits": []
+      },
+      "object": "model",
+      "owned_by": "venice.ai",
+      "type": "text"
+    },
+    {
+      "context_length": 128000,
+      "created": 1775001600,
+      "id": "venice-uncensored-1-2",
+      "model_spec": {
+        "pricing": {
+          "input": {
+            "usd": 0.2,
+            "diem": 0.2
+          },
+          "output": {
+            "usd": 0.9,
+            "diem": 0.9
+          }
+        },
+        "model_sets": [
+          "venice_recommendations"
+        ],
+        "availableContextTokens": 128000,
+        "maxCompletionTokens": 8192,
+        "capabilities": {
+          "optimizedForCode": false,
+          "quantization": "fp16",
+          "supportsAudioInput": false,
+          "supportsFunctionCalling": true,
+          "supportsLogProbs": false,
+          "supportsMultipleImages": true,
+          "maxImages": 10,
+          "supportsReasoning": false,
+          "supportsReasoningEffort": false,
+          "supportsResponseSchema": true,
+          "supportsTeeAttestation": false,
+          "supportsE2EE": false,
+          "supportsVideoInput": false,
+          "supportsVision": true,
+          "supportsWebSearch": true,
+          "supportsXSearch": false
+        },
+        "description": "Venice Uncensored 1.2 is designed for maximum creative freedom and authentic interaction. Built for open-ended exploration, roleplay, and unfiltered dialogue with improved capabilities over 1.1.",
+        "name": "Venice Uncensored 1.2",
+        "modelSource": "https://huggingface.co/cognitivecomputations/Dolphin-Mistral-24B-Venice-Edition",
+        "offline": false,
+        "privacy": "private",
+        "traits": [
+          "most_uncensored"
+        ],
+        "uncensored": true
+      },
+      "object": "model",
+      "owned_by": "venice.ai",
+      "type": "text"
+    },
+    {
+      "context_length": 1000000,
+      "created": 1788652800,
+      "id": "e2ee-glm-5-3-p",
+      "model_spec": {
+        "pricing": {
+          "input": {
+            "usd": 1.75,
+            "diem": 1.75
+          },
+          "cache_input": {
+            "usd": 0.325,
+            "diem": 0.325
+          },
+          "output": {
+            "usd": 5.5,
+            "diem": 5.5
+          }
+        },
+        "availableContextTokens": 1000000,
+        "maxCompletionTokens": 32768,
+        "capabilities": {
+          "optimizedForCode": true,
+          "quantization": "not-available",
+          "supportsAudioInput": false,
+          "supportsFunctionCalling": true,
+          "supportsLogProbs": false,
+          "supportsMultipleImages": false,
+          "supportsReasoning": true,
+          "supportsReasoningEffort": true,
+          "reasoningEffortOptions": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ],
+          "defaultReasoningEffort": "low",
+          "supportsResponseSchema": false,
+          "supportsTeeAttestation": true,
+          "supportsE2EE": true,
+          "supportsVideoInput": false,
+          "supportsVision": false,
+          "supportsWebSearch": true,
+          "supportsXSearch": false
+        },
+        "description": "GLM 5.3 running in a Trusted Execution Environment (TEE). Z.ai's flagship model with 1M context. Hardware attestation evidence is available for independent verification of enclave identity and configuration.",
+        "name": "GLM 5.3",
+        "modelSource": "https://huggingface.co/zai-org/GLM-5.3",
+        "offline": false,
+        "privacy": "private",
+        "traits": []
+      },
+      "object": "model",
+      "owned_by": "venice.ai",
+      "type": "text"
+    }
+  ]
+}

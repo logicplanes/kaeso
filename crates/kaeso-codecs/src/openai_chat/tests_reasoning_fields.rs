@@ -119,6 +119,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         "xai",
         ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
     ),
+    (
+        "venice",
+        ChatProfile::compatible("Venice").reasoning_fields(&["reasoning_content"]),
+    ),
 ];
 
 fn profile(provider: &str) -> ChatProfile {
@@ -265,6 +269,7 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ("cerebras", "recorded-reasoning-sent-back", "reasoning"),
         ("cerebras", "recorded-system-mid-conversation", "reasoning"),
         ("deepinfra", "greeting-published", "reasoning_content"),
+        ("venice", "cached-published", "reasoning_content"),
         (
             "deepseek",
             "recorded-thinking-reasoning-content",

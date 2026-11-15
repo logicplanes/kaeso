@@ -438,6 +438,24 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         })
     );
 
+    let venice = listed.iter().find(|p| p["id"] == "venice").unwrap();
+    assert_eq!(venice["name"], "Venice");
+    assert_eq!(
+        venice["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        (
+            &venice["count_tokens"],
+            &venice["embeddings"],
+            &venice["key_prefix"]
+        ),
+        (&Value::Null, &json!("openai_embeddings"), &Value::Null)
+    );
+    assert_eq!(
+        venice["key_page"],
+        json!({ "url": "https://venice.ai/settings/api", "label": "API settings" })
+    );
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)
         .await;

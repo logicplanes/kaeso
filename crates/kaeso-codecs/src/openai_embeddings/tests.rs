@@ -177,8 +177,8 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
         // NVIDIA answers with RFC 9457 problem documents, SiliconFlow with `{"code", "message", "data"}`,
         // Cloudflare with its `errors` envelope, IONOS with its `messages`, Novita AI with
-        // `{"code", "reason", "message", "metadata"}` and OVHcloud with a bare `message`; apps get
-        // them in OpenAI's shape.
+        // `{"code", "reason", "message", "metadata"}`, OVHcloud with a bare `message` and Venice with
+        // `{"error": "<text>"}`; apps get them in OpenAI's shape.
         if FOREIGN_ERROR_BODIES.contains(&name.as_str())
             || name.starts_with("providers/cloudflare-ai-gateway/")
             || name.starts_with("providers/ionos/")
@@ -187,6 +187,7 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
             || name.starts_with("providers/nvidia/")
             || name.starts_with("providers/ovhcloud/")
             || name.starts_with("providers/siliconflow/")
+            || name.starts_with("providers/venice/")
         {
             continue;
         }
@@ -219,6 +220,36 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
     assert_eq!(kind("overloaded-503", 503), ErrorKind::Overloaded);
     assert_eq!(kind("invalid-api-key-401", 401), ErrorKind::Authentication);
     assert_eq!(kind("invalid-input-400", 400), ErrorKind::InvalidRequest);
+}
+
+#[test]
+fn venices_string_errors_keep_their_text_and_get_the_kind_of_their_status() {
+    for (name, status, kind, message) in [
+        (
+            "providers/venice/recorded-invalid-api-key",
+            401,
+            ErrorKind::Authentication,
+            "Authentication failed",
+        ),
+        (
+            "providers/venice/unknown-model-published",
+            404,
+            ErrorKind::NotFound,
+            "Specified model not found: no-such-embedding-model. Did you mean: text-embedding-bge-m3, text-embedding-bge-en-icl, text-embedding-qwen3-8b?",
+        ),
+    ] {
+        let err =
+            OpenAiEmbeddings::decode_error(status, &HeaderList::new(), &fixture("errors", name));
+        assert_eq!((&err.kind, err.status), (&kind, Some(status)), "{name}");
+        assert_eq!(err.message, message, "{name}");
+        let out = OpenAiEmbeddings::encode_error(&err);
+        let sent: Value = serde_json::from_slice(&out.body).unwrap();
+        assert_eq!(
+            (out.status, &sent["error"]["message"]),
+            (status, &json!(message)),
+            "{name}"
+        );
+    }
 }
 
 #[test]

@@ -6408,6 +6408,126 @@ expression: outcomes
     "param": "parallel_tool_calls",
     "unsupported": "`parallel_tool_calls: false`"
   },
+  "providers/venice/cached-published": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Do not call any tools. Reply with exactly these three words: cache probe ready"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "\n\ncache probe ready"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "text": "Do not call any tools. Reply with exactly these three words: probe still ready"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 1024,
+        "temperature": 0.0
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a deterministic cassette test assistant for venice prompt caching. Never call tools for the cache probe prompt; answer only with the requested phrase."
+          }
+        ]
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Return venice prompt caching internal prompt cache policy notes.",
+              "name": "lookup_cache_policy",
+              "parametersJsonSchema": {
+                "properties": {
+                  "topic": {
+                    "description": "Policy topic to look up.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "topic"
+                ],
+                "type": "object"
+              }
+            },
+            {
+              "description": "Return venice prompt caching prompt cache fixture notes.",
+              "name": "lookup_cache_fixture",
+              "parametersJsonSchema": {
+                "properties": {
+                  "fixture": {
+                    "description": "Fixture identifier to look up.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "fixture"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/qwen3-5-9b:generateContent"
+  },
+  "providers/venice/disable-thinking-published": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
+  "providers/venice/disable-thinking-stream-published": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
+  "providers/venice/greeting-doc": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
+  "providers/venice/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/venice-uncensored-1-2:generateContent"
+  },
+  "providers/venice/reasoning-stream-published": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
+  "providers/venice/tool-call-reasoning-published": {
+    "message": "`venice_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "venice_parameters"
+  },
   "providers/vercel/basic": {
     "body": {
       "contents": [

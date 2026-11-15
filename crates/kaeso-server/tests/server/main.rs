@@ -91,6 +91,7 @@ mod provider_stepfun_ai;
 mod provider_tencent_tokenhub;
 mod provider_typesafe;
 mod provider_upstage;
+mod provider_venice;
 mod provider_vercel;
 mod provider_volcengine;
 mod provider_xai;

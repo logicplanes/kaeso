@@ -175,6 +175,7 @@ export const providerMark = {
   "tencent-tokenhub-blue": mode("#006eff", "#187cff"),
   "tencent-tokenhub-sky": mode("#009bf2", "#00a3ff"),
   "tencent-tokenhub-teal": mode("#00a4b4", "#00c8dc"),
+  venice: mode("#0e2942", "#f7f5ed"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),

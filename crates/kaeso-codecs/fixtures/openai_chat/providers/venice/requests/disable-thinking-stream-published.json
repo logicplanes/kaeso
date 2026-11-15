@@ -1,0 +1,17 @@
+{
+  "max_tokens": 16,
+  "messages": [
+    {
+      "content": "Reply with the single word: pong",
+      "role": "user"
+    }
+  ],
+  "model": "qwen3-5-9b",
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "venice_parameters": {
+    "disable_thinking": true
+  }
+}

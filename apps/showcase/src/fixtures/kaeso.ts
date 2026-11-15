@@ -32,6 +32,7 @@ export const providers = [
   { id: "groq", name: "Groq" },
   { id: "openrouter", name: "OpenRouter" },
   { id: "mistral", name: "Mistral" },
+  { id: "venice", name: "Venice" },
   { id: "vercel", name: "Vercel" },
   { id: "ollama-cloud", name: "Ollama Cloud" },
   { id: "moonshotai", name: "Moonshot" },

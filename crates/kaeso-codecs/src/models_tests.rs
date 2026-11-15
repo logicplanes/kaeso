@@ -1518,6 +1518,42 @@ fn a_tencent_tokenhub_listing_decodes_with_its_names_and_statuses_and_a_missing_
 }
 
 #[test]
+fn a_venice_listing_decodes_with_its_model_spec_and_its_string_errors_have_their_kinds() {
+    let body = fixture("openai_chat", "providers/venice/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        ["zai-org-glm-5-1", "venice-uncensored-1-2", "e2ee-glm-5-3-p"]
+    );
+    assert_json_eq(
+        "providers/venice/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        401,
+        &h(),
+        &error("providers/venice/recorded-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (ErrorKind::Authentication, "Authentication failed")
+    );
+}
+
+#[test]
 fn a_sambanova_listing_decodes_with_its_prices_and_its_wrong_keys_and_unknown_models_are_errors() {
     let body = fixture("openai_chat", "providers/sambanova/list-recorded");
     let l = list(DialectId::OpenAiChat, &body);

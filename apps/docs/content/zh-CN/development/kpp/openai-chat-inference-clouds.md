@@ -356,3 +356,22 @@ StepFun 的 Anthropic Messages 端点、Responses API 和 Token 计数（`/v1/to
 | 带 `name` 和 `status`（`online`、`pre-offline`）的 `GET /v1/models` | `ModelList` | 需要密钥（`models/list-doc`）；没有 `GET /v1/models/{model}`。 |
 
 TokenHub 的 Responses 和 Anthropic Messages 端点只支持部分模型，不被使用：Responses 和 Messages 应用通过 Chat Completions 访问 TokenHub，Kaeso 拒绝 Token 计数，因为 TokenHub 不提供。它的图像、视频、语音和多模态嵌入使用它自己的格式。
+
+## Venice
+
+来源：Venice 的 [OpenAPI document](https://docs.venice.ai/swagger.yaml)（版本 `20261113.174621`），以及它的 [API spec](https://docs.venice.ai/api-reference/api-spec)、[OpenAI 迁移指南](https://docs.venice.ai/guides/getting-started/openai-migration)、[错误码](https://docs.venice.ai/api-reference/error-codes)和[推理模型](https://docs.venice.ai/guides/features/reasoning-models)页面，2026-11-14 阅读。由于没有可用的密钥：`fixtures/openai_chat/providers/venice/` 中的回复和流是 OpenAPI document 的示例，以及另一个项目录制的测试所公开的回复；密钥错误是在没有有效密钥的情况下实时返回的。
+
+| Venice 字段 | KPP | 说明 |
+|---|---|---|
+| `venice_parameters`（请求） | extras | 除非 `include_venice_system_prompt` 为 `false`，Venice 会加上自己的系统提示词，因此当请求未设置该键时，配置的 `with_option_defaults` 会写入它，也会写入 Chat 应用自己的 `venice_parameters`，其中的其他键按原样发送。请求发往其他方言时被拒绝。 |
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。 |
+| `user` | 省略 | Venice 会丢弃它（`without_end_user()`）；它自己的 `anon_user_id` 保留在 extras 中。 |
+| `metadata`、`store` | 拒绝 | Venice 接受但不处理。 |
+| Venice 不认识的其他字段 | 发送 | Venice 自己以 400 拒绝（`additionalProperties: false`），因此配置不再拒绝其他字段。 |
+| `video_url` 部分、`wav` 和 `mp3` 以外格式的 `input_audio` | `Block::Video`、`Block::Audio` | `with_video_url()`、`any_audio_format()`。 |
+| `cost`、回复中的 `venice_parameters`、`choices[].stop_reason`、`prompt_logprobs` | extras | 发往其他方言时省略。 |
+| 带有 `choices: []`、`usage` 和 `cost` 的最后一个流块 | usage | Venice 在每个流中都会发送，即使没有 `stream_options.include_usage`。 |
+| 错误 `{"error": "<文本>"}` 和 `{"error", "details", "issues"}` | `KppError` | 类型取决于状态码，文本即消息（`errors/recorded-invalid-api-key`、`errors/unknown-model-published`）。 |
+| `GET /v1/models` | `ModelList` | 只列出文本模型（`models/list-recorded`），因此列表不完整。 |
+
+Venice 的 Responses API 处于测试阶段，未被使用：Responses 和 Messages 应用通过 Chat Completions 访问 Venice，Kaeso 拒绝 Token 计数，因为 Venice 不提供。

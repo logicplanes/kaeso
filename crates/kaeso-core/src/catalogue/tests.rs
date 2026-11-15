@@ -3330,3 +3330,37 @@ fn decisions_are_set_by_hand_only_where_the_provider_has_a_decisions_api() {
     .unwrap_err();
     assert_eq!(e.message, "A custom model needs input_price.");
 }
+
+#[test]
+fn venice_models_speak_chat_completions_with_venices_prices_and_efforts_and_its_embedders_embed() {
+    let glm = eff(&entry("venice", "zai-org-glm-5-1"));
+    assert_eq!(glm.dialect, DialectId::OpenAiChat);
+    assert_eq!(glm.provider.chat().provider, "Venice");
+    assert_eq!(
+        (
+            glm.fields.input_price,
+            glm.fields.output_price,
+            glm.fields.cache_read_price
+        ),
+        (Some(dec!(1.54)), Some(dec!(4.84)), Some(dec!(0.286)))
+    );
+    assert_eq!(
+        effort_levels(&glm, DialectId::OpenAiChat),
+        ["none", "low", "medium", "high"]
+    );
+    assert_eq!(glm.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    let embed = eff(&entry("venice", "text-embedding-qwen3-0-6b"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.0125)))
+    );
+    let models = &snapshot().providers["venice"].models;
+    assert_eq!(
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some("embedding"))
+            .count(),
+        9
+    );
+}
