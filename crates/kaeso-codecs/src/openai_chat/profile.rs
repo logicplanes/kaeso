@@ -63,6 +63,28 @@ pub struct RequestProfile {
     /// the request sets `separate_reasoning: true`, as Novita AI does; Kaeso then sets it, so
     /// the reasoning comes back in its own field.
     pub separate_reasoning: bool,
+    /// Keys the encoder writes into a provider's own option objects when the request doesn't
+    /// set them, such as Venice's `venice_parameters.include_venice_system_prompt: false`.
+    pub option_defaults: &'static [OptionDefault],
+}
+
+/// A key of a provider's option object that the encoder writes when the request leaves it
+/// out ([`ChatProfile::with_option_defaults`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub struct OptionDefault {
+    /// The top-level object, such as `venice_parameters`.
+    pub object: &'static str,
+    /// The key inside it.
+    pub key: &'static str,
+    /// The value as JSON text, such as `false`.
+    pub value: &'static str,
+}
+
+impl OptionDefault {
+    pub const fn new(object: &'static str, key: &'static str, value: &'static str) -> Self {
+        OptionDefault { object, key, value }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -135,6 +157,7 @@ impl RequestProfile {
         path: super::CHAT_COMPLETIONS_PATH,
         stream_options: true,
         separate_reasoning: false,
+        option_defaults: &[],
     };
 }
 
@@ -354,6 +377,15 @@ impl ChatProfile {
     #[must_use]
     pub const fn separate_reasoning(mut self) -> Self {
         self.request.separate_reasoning = true;
+        self
+    }
+
+    /// The encoder writes each of these keys into its option object when the request doesn't
+    /// set it: it adds the object when the request has none, and leaves an object the app
+    /// wrote as something else than a JSON object as written.
+    #[must_use]
+    pub const fn with_option_defaults(mut self, defaults: &'static [OptionDefault]) -> Self {
+        self.request.option_defaults = defaults;
         self
     }
 

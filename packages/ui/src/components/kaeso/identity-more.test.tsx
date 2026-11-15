@@ -210,6 +210,7 @@ const MARKED_PROVIDERS = {
   ovhcloud: "OVHcloud AI Endpoints",
   "stepfun-ai": "StepFun",
   "tencent-tokenhub": "Tencent TokenHub",
+  venice: "Venice",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

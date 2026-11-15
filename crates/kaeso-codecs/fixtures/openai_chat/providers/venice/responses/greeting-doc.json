@@ -1,0 +1,45 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "The sky appears blue because of the way Earth's atmosphere scatters sunlight. When sunlight reaches Earth's atmosphere, it is made up of various colors of the spectrum, but blue light waves are shorter and scatter more easily when they hit the gases and particles in the atmosphere. This scattering occurs in all directions, but from our perspective on the ground, it appears as a blue hue that dominates the sky's color. This phenomenon is known as Rayleigh scattering. During sunrise and sunset, the sunlight has to travel further through the atmosphere, which allows more time for the blue light to scatter away from our direct line of sight, leaving the longer wavelengths, such as red, yellow, and orange, to dominate the sky's color.",
+        "reasoning_content": null,
+        "role": "assistant",
+        "tool_calls": []
+      },
+      "stop_reason": null
+    }
+  ],
+  "created": 1739928524,
+  "cost": {
+    "diem": 0,
+    "usd": 0.00042
+  },
+  "id": "chatcmpl-a81fbc2d81a7a083bb83ccf9f44c6e5e",
+  "model": "zai-org-glm-5-1",
+  "object": "chat.completion",
+  "prompt_logprobs": null,
+  "usage": {
+    "completion_tokens": 146,
+    "completion_tokens_details": null,
+    "prompt_tokens": 612,
+    "prompt_tokens_details": null,
+    "total_tokens": 758
+  },
+  "venice_parameters": {
+    "enable_e2ee": true,
+    "include_venice_system_prompt": true,
+    "include_search_results_in_stream": false,
+    "return_search_results_as_documents": false,
+    "web_search_citations": [],
+    "enable_web_search": "auto",
+    "enable_web_scraping": false,
+    "enable_web_citations": true,
+    "strip_thinking_response": true,
+    "disable_thinking": true,
+    "character_slug": "venice"
+  }
+}

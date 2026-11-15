@@ -1,0 +1,49 @@
+{
+  "max_tokens": 4096,
+  "messages": [
+    {
+      "content": [
+        {
+          "text": "You are a calculator here to help the user perform arithmetic operations. Use the tools provided to answer the user's question.",
+          "type": "text"
+        }
+      ],
+      "role": "system"
+    },
+    {
+      "content": "Use the add tool to add 17 and 25, then reply with just the number.",
+      "role": "user"
+    }
+  ],
+  "model": "qwen3-235b-a22b-thinking-2507",
+  "temperature": 0.0,
+  "tools": [
+    {
+      "function": {
+        "description": "Add x and y together",
+        "name": "add",
+        "parameters": {
+          "properties": {
+            "x": {
+              "description": "The first number to add",
+              "type": "number"
+            },
+            "y": {
+              "description": "The second number to add",
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "type": "object"
+        }
+      },
+      "type": "function"
+    }
+  ],
+  "venice_parameters": {
+    "strip_thinking_response": false
+  }
+}

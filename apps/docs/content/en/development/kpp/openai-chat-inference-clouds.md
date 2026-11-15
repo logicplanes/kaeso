@@ -356,3 +356,22 @@ Sources: TokenHub's [API usage](https://cloud.tencent.com/document/product/1823/
 | `GET /v1/models` with `name` and `status` (`online`, `pre-offline`) | `ModelList` | Needs the key (`models/list-doc`); there is no `GET /v1/models/{model}`. |
 
 TokenHub's Responses and Anthropic Messages endpoints serve only some models and aren't used: Responses and Messages apps reach TokenHub through Chat Completions, and Kaeso refuses token counts, which TokenHub doesn't serve. Its images, videos, speech and the multimodal embeddings use formats of its own.
+
+## Venice
+
+Sources: Venice's [OpenAPI document](https://docs.venice.ai/swagger.yaml) (version `20261113.174621`), [API spec](https://docs.venice.ai/api-reference/api-spec), [OpenAI migration guide](https://docs.venice.ai/guides/getting-started/openai-migration), [error codes](https://docs.venice.ai/api-reference/error-codes) and [reasoning models](https://docs.venice.ai/guides/features/reasoning-models) pages, read 2026-11-14. No key was available: the replies and streams in `fixtures/openai_chat/providers/venice/` are the OpenAPI document's example and replies another project's recorded tests publish, and the key error was answered live without a valid key.
+
+| Venice field | KPP | Notes |
+|---|---|---|
+| `venice_parameters` (request) | extras | Venice prepends a system prompt of its own unless `include_venice_system_prompt` is `false`, so the profile's `with_option_defaults` writes that key when the request doesn't set it, also into a Chat app's own `venice_parameters`, whose other keys go as written. Refused when the request goes to another dialect. |
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`. |
+| `user` | left out | Venice discards it (`without_end_user()`); its own `anon_user_id` stays in extras. |
+| `metadata`, `store` | refused | Venice takes them without acting on them. |
+| other fields Venice doesn't know | sent | Venice refuses them with 400 itself (`additionalProperties: false`), so the profile refuses nothing else. |
+| `video_url` parts, `input_audio` in other formats than `wav` and `mp3` | `Block::Video`, `Block::Audio` | `with_video_url()`, `any_audio_format()`. |
+| `cost`, the reply's `venice_parameters`, `choices[].stop_reason`, `prompt_logprobs` | extras | Left out towards other dialects. |
+| a last stream chunk with `choices: []`, `usage` and `cost` | usage | Venice sends it on every stream, also without `stream_options.include_usage`. |
+| errors `{"error": "<text>"}` and `{"error", "details", "issues"}` | `KppError` | The kind follows the status, and the text is the message (`errors/recorded-invalid-api-key`, `errors/unknown-model-published`). |
+| `GET /v1/models` | `ModelList` | Lists text models only (`models/list-recorded`), so the listing is partial. |
+
+Venice's Responses API is in beta and isn't used: Responses and Messages apps reach Venice through Chat Completions, and Kaeso refuses token counts, which Venice doesn't serve.

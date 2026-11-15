@@ -1,0 +1,27 @@
+{
+  "max_tokens": 4096,
+  "messages": [
+    {
+      "content": [
+        {
+          "text": "You are a concise assistant. Answer directly.",
+          "type": "text"
+        }
+      ],
+      "role": "system"
+    },
+    {
+      "content": "In one or two sentences, explain what Rust programming language is and why memory safety matters.",
+      "role": "user"
+    }
+  ],
+  "model": "qwen3-235b-a22b-thinking-2507",
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  },
+  "temperature": 0.0,
+  "venice_parameters": {
+    "strip_thinking_response": false
+  }
+}

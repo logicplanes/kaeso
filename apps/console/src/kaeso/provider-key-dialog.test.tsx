@@ -481,6 +481,28 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Venice inference key, which has no fixed prefix, with Venice's API settings as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "venice", name: "Venice inference", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Venice");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Venice API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "venice.ai (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://venice.ai/settings/api");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe("Create one at venice.ai under API settings.");
+    const secret = within(dialog).getByLabelText("Venice API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "venice-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Venice inference");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Venice inference is the Venice default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "venice", name: "Venice inference", secret: "venice-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a StepFun key, which has no fixed prefix, with StepFun's Interface Keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "stepfun-ai", name: "StepFun prod", is_default: true }));
     const { user, dialog } = await open();

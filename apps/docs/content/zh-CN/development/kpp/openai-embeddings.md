@@ -145,3 +145,7 @@ order: 8
 ### Tencent TokenHub
 
 来源：TokenHub 的[向量模型](https://cloud.tencent.com/document/product/1823/133515)页面（2026-11-14 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/tencent-tokenhub/`，其中的错误是在没有有效密钥的情况下实时返回的。它的文本模型 `kinfra-text-embedding-0.6b`（1024 维）和 `kinfra-text-embedding-4b`（2560 维）通过 `/v1/embeddings` 提供，每条文本最多 2000 个字符；维度固定，因此该服务商的嵌入配置拒绝 `dimensions`（`without_dimensions()`），页面只记录了 `float` 向量。回复额外带有包含文本、图片和视频 Token 的 `usage.prompt_tokens_details`，保留在原始用量中。多模态的 `kinfra-vl-embedding-*` 在 `/v1/embeddings/multimodal` 为所有输入返回一个向量，不被使用。
+
+### Venice
+
+来源：Venice 的 [OpenAPI document](https://docs.venice.ai/swagger.yaml) 和[嵌入指南](https://docs.venice.ai/guides/features/embeddings)（2026-11-14 阅读），以及 `fixtures/openai_embeddings/providers/venice/`：另一个项目录制的测试所公开的回复（向量截取为前三个值），以及在没有有效密钥的情况下实时返回的密钥错误。Venice 的九个嵌入模型通过 `/v1/embeddings` 提供。`dimensions` 只对接受自定义维度的模型有效，例如 `text-embedding-qwen3-8b` 和 `text-embedding-3-large`；对其他模型，Venice 会自己拒绝它，就像拒绝它不认识的字段和作为输入的 Token 数组一样。错误以 `{"error": "<文本>"}` 返回，并以 OpenAI 的格式、按状态码对应的类型到达应用。

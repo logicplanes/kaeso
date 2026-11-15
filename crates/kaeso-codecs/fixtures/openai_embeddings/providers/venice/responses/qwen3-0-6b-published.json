@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "embedding": [
+        -0.021373018622398376,
+        -0.013955898582935333,
+        -0.015224616974592209
+      ],
+      "index": 0,
+      "object": "embedding"
+    },
+    {
+      "embedding": [
+        0.01691039651632309,
+        0.019425274804234505,
+        -0.010189597494900227
+      ],
+      "index": 1,
+      "object": "embedding"
+    },
+    {
+      "embedding": [
+        -0.037408679723739624,
+        -0.036612749099731445,
+        -0.008954204618930817
+      ],
+      "index": 2,
+      "object": "embedding"
+    }
+  ],
+  "model": "text-embedding-qwen3-0-6b",
+  "object": "list",
+  "usage": {
+    "prompt_tokens": 34,
+    "total_tokens": 34
+  }
+}

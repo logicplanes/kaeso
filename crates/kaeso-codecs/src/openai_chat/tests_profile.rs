@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use super::profile::sends_known;
 use super::tests::decode;
 use super::wire::ChatRequest;
-use super::{ChatProfile, OpenAiChat, OutputLimit, RequestProfile, SeedField};
+use super::{ChatProfile, OpenAiChat, OptionDefault, OutputLimit, RequestProfile, SeedField};
 use crate::codec::{Codec, EgressCtx, HeaderList};
 use crate::test_support::fixtures;
 use crate::{ToolPatterns, dispatch};
@@ -1522,4 +1522,84 @@ fn stepfun_refuses_the_fields_its_chat_reference_leaves_out() {
     )
     .unwrap_err();
     assert_eq!(refusal(&err).1, Some("messages[0].name"));
+}
+
+#[test]
+fn an_option_default_is_written_unless_the_app_set_the_key_or_sent_something_else_than_an_object() {
+    const DEFAULTS: &[OptionDefault] = &[OptionDefault::new(
+        "venice_parameters",
+        "include_venice_system_prompt",
+        "false",
+    )];
+    let venice = ChatProfile::compatible("Venice").with_option_defaults(DEFAULTS);
+    assert!(RequestProfile::OPENAI.option_defaults.is_empty());
+    assert_eq!(venice.request.option_defaults, DEFAULTS);
+
+    let sent = encode_with(
+        &Request::Generate(foreign(DialectId::AnthropicMessages)),
+        venice,
+    )
+    .unwrap();
+    assert_eq!(
+        sent["venice_parameters"],
+        json!({"include_venice_system_prompt": false})
+    );
+
+    let sent = encode_with(
+        &chat(json!({"model": "m", "messages": [{"role": "user", "content": "Hi"}]})),
+        venice,
+    )
+    .unwrap();
+    assert_eq!(
+        sent["venice_parameters"],
+        json!({"include_venice_system_prompt": false})
+    );
+
+    let req = decode(
+        br#"{"model":"m","messages":[{"role":"user","content":"Hi"}],"venice_parameters":{"enable_web_search":"auto","character_slug":"alan-watts"}}"#,
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req).with_chat_profile(venice);
+    let body = OpenAiChat::encode_request(&req, &mut ctx).unwrap().body;
+    assert!(
+        String::from_utf8_lossy(&body).contains(
+            r#""venice_parameters":{"enable_web_search":"auto","character_slug":"alan-watts","include_venice_system_prompt":false}"#
+        ),
+        "{}",
+        String::from_utf8_lossy(&body)
+    );
+
+    let sent = encode_with(
+        &chat(json!({
+            "model": "m",
+            "messages": [{"role": "user", "content": "Hi"}],
+            "venice_parameters": {"include_venice_system_prompt": true}
+        })),
+        venice,
+    )
+    .unwrap();
+    assert_eq!(
+        sent["venice_parameters"],
+        json!({"include_venice_system_prompt": true})
+    );
+
+    for written in [json!(null), json!("off")] {
+        let sent = encode_with(
+            &chat(json!({
+                "model": "m",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "venice_parameters": written
+            })),
+            venice,
+        )
+        .unwrap();
+        assert_eq!(sent["venice_parameters"], written);
+    }
+
+    let sent = encode_with(
+        &chat(json!({"model": "m", "messages": [{"role": "user", "content": "Hi"}]})),
+        ChatProfile::compatible("Example Cloud"),
+    )
+    .unwrap();
+    assert!(sent.get("venice_parameters").is_none(), "{sent}");
 }

@@ -1,0 +1,14 @@
+{
+  "max_tokens": 16,
+  "messages": [
+    {
+      "content": "Name one primary color. Answer with one word.",
+      "role": "user"
+    }
+  ],
+  "model": "qwen3-5-9b",
+  "venice_parameters": {
+    "disable_thinking": true,
+    "strip_thinking_response": true
+  }
+}

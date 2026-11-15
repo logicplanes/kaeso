@@ -1,0 +1,8 @@
+{
+  "input": [
+    "Rust values memory safety and predictable performance.",
+    "Streaming responses arrive incrementally instead of all at once.",
+    "Embeddings turn text into numeric vectors for similarity search."
+  ],
+  "model": "text-embedding-qwen3-0-6b"
+}

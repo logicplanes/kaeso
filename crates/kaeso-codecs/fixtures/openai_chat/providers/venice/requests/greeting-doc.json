@@ -1,0 +1,16 @@
+{
+  "model": "zai-org-glm-5-1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Why is the sky blue?"
+    }
+  ],
+  "venice_parameters": {
+    "character_slug": "venice",
+    "enable_web_search": "auto",
+    "enable_web_citations": true,
+    "strip_thinking_response": true,
+    "disable_thinking": true
+  }
+}
