@@ -352,11 +352,31 @@ jobs:
             made="Tagged prod's commit, which needed no release commit"
           else
             git commit --message "Release $VERSION"
-            made="Committed \"Release $VERSION\" on top of prod's commit and tagged it; prod gets it with the next push from dev"
+            made="Committed \"Release $VERSION\" on top of prod's commit and tagged it"
           fi
           git tag --annotate "v$VERSION" --message "Kaeso $VERSION"
           git push origin "refs/tags/v$VERSION"
           echo "$made: [v$VERSION](https://github.com/$GITHUB_REPOSITORY/tree/v$VERSION) at \`$(git rev-parse --short=12 HEAD)\`." >> "$GITHUB_STEP_SUMMARY"
+          # prod is what the Claude plugin directory reads the plugin from, so it moves on to the release commit
+          # and the listing shows the released version. A failed push leaves the release complete.
+          if [[ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]]; then
+            if out="$(git push origin "HEAD:refs/heads/prod" 2>&1)"; then
+              echo "Fast-forwarded prod to the release commit." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "$out" >&2
+              echo "::warning::The release of $VERSION is complete. prod doesn't have its release commit yet, so a repository admin pushes it."
+              {
+                echo "### Bring the release commit into prod"
+                echo
+                echo "The release of $VERSION is complete. Only the maintainer can push to \`prod\`, so the workflow's token couldn't fast-forward it to the release commit:"
+                echo
+                echo '```sh'
+                echo "git fetch origin --tags"
+                echo "git push origin v$VERSION^{commit}:refs/heads/prod"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
 
   sync:
     name: Sync dev
