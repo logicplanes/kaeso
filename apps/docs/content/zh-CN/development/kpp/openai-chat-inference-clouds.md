@@ -115,6 +115,25 @@ IONOS 的 Responses API 不保存状态，不被使用：Responses 应用通过 
 
 Nebius 不提供图像、音频、Messages 或Token 计数：它的 OpenAPI 文档中没有这样的路径，`/v1/images/generations`、`/v1/audio/transcriptions` 和 `/v1/messages` 返回 404。它的 Responses API 不被使用：Responses 应用通过 Chat Completions 访问 Nebius。
 
+## Novita AI
+
+来源：Novita AI 的 [chat completion](https://docs.novita.ai/api-reference/model-apis-llm-create-chat-completion.md)、[嵌入](https://docs.novita.ai/api-reference/model-apis-llm-create-embeddings.md)、[模型列表](https://docs.novita.ai/api-reference/model-apis-llm-list-models.md)和[错误码](https://docs.novita.ai/api-reference/basic-error-code.md)参考，及其[推理](https://docs.novita.ai/guides/llm-reasoning.md)、[交错思考](https://docs.novita.ai/guides/llm-interleaved-thinking.md)、[提示缓存](https://docs.novita.ai/guides/llm-prompt-cache.md)指南和 [FAQ](https://docs.novita.ai/guides/LLM-FAQ.md)，2026-11-14 阅读。由于没有可用的密钥：`fixtures/openai_chat/providers/novita-ai/` 中的回复是指南中的示例，流据参考构建；模型列表、单个模型和密钥错误是在没有有效密钥的情况下实时返回的。基础 URL 为 `https://api.novita.ai/openai`，参考在其下提供 `/v1/chat/completions`、`/v1/embeddings` 和 `/v1/models`，使用 `Authorization: Bearer`。
+
+| Novita AI 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 仅在 `separate_reasoning: true` 时返回，配置会发送它（`separate_reasoning()`）；否则推理内容留在 `content` 中。Chat 应用自己的 `separate_reasoning` 保持不变。 |
+| `enable_thinking` | `ReasoningConfig` | `thinking_switch()`；Anthropic 应用的预算以 `thinking_budget` 发送，参考中没有该字段。 |
+| `max_completion_tokens` | `max_tokens` | 参考只有 `max_tokens`，它也计入推理 Token。 |
+| `developer` 角色 | `Role::System` | 参考列出 `system`、`user` 和 `assistant`；其指南也发送 `tool` 消息。 |
+| `user`、`safety_identifier` | 省略 | 参考没有终端用户字段（`without_end_user()`）。 |
+| `video_url` 部分 | `Block::Video` | `with_video_url()`。 |
+| `store`、`metadata`、`prompt_cache_key`、`parallel_tool_calls`、`service_tier` 以及参考中没有的其他字段 | 拒绝 | 参考没有说明 Novita AI 是否拒绝未声明的字段，因此配置会拒绝它们；`parallel_tool_calls: true` 会被省略。参考中同样没有的 `tool_choice` 会发送，因为工具调用需要它。 |
+| 回复消息上的 `reasoning_details` 和 `name`，`prompt_tokens_details` 中的 `cache_creation_Prompt_tokens` 和 `cache_read_Prompt_tokens` | extras 和原始用量 | 发往其他方言时省略（`responses/interleaved-tool-call-doc`、`responses/cached-doc`）。 |
+| `{"code", "reason", "message", "metadata"}` 形式的错误 | `KppError` | 类型取决于状态码：401 `FAILED_TO_AUTH`，403 `INVALID_API_KEY` 或 `NOT_ENOUGH_BALANCE`，404 `MODEL_NOT_FOUND`，429，503（`errors/`）。 |
+| 带以 1/10,000 美元计的价格、`pricing`、`features` 和 `endpoints` 的 `GET /v1/models` | `ModelList` | 无需密钥即可返回，且只列出聊天模型（`models/list-recorded`）；`GET /v1/models/{model}` 对嵌入模型也会返回（`models/retrieve-embedding-recorded`），因此模型检查能找到模型，但无法发现错误的密钥（`ModelListing::Partial`）。 |
+
+Novita AI 的 Anthropic 兼容端点位于 `/anthropic` 下，在其 OpenAI 基础 URL 之外，`/v1/responses` 也没有文档，因此 Kaeso 只调用 Chat Completions 并拒绝 Token 计数。它的 `/v1/completions`、`/v1/rerank`、批处理 API、OpenAI Images API 中的图像模型，以及它自己的语音、转写和视频任务 API 不被使用。
+
 ## NVIDIA
 
 来源：NVIDIA 的 [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis) 参考及其模型页面的 OpenAPI 文档，例如 [`nvidia/nemotron-3-super-120b-a12b`](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-super-120b-a12b-infer)，2026-11-10 阅读。未经成功调用测试：`fixtures/openai_chat/providers/nvidia/` 中的回复和流据此构建，流的请求是参考自己的示例；模型列表和错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://integrate.api.nvidia.com`，使用 `Authorization: Bearer` 和 `nvapi-` 密钥。

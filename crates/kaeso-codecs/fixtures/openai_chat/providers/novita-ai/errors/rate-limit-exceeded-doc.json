@@ -1,0 +1,8 @@
+{
+  "code": 429,
+  "reason": "RATE_LIMIT_EXCEEDED",
+  "message": "rate limit exceeded, please retry later",
+  "metadata": {
+    "trace_id": "00000000000000000000000000000000"
+  }
+}

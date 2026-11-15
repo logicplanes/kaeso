@@ -1,0 +1,14 @@
+{
+  "model": "deepseek/deepseek-v4.1-flash",
+  "messages": [
+    {
+      "role": "system",
+      "content": "Answer questions about the attached contract."
+    },
+    {
+      "role": "user",
+      "content": "When does the contract end?"
+    }
+  ],
+  "max_tokens": 512
+}

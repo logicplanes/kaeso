@@ -4281,6 +4281,99 @@ expression: outcomes
     },
     "path": "/v1beta/models/nvidia%2FNemotron-3.5-Super-VL:generateContent"
   },
+  "providers/novita-ai/cached-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "When does the contract end?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 512
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer questions about the attached contract."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/deepseek%2Fdeepseek-v4.1-flash:generateContent"
+  },
+  "providers/novita-ai/greeting-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello, world!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 400
+      }
+    },
+    "path": "/v1beta/models/deepseek%2Fdeepseek-r1-0528:generateContent"
+  },
+  "providers/novita-ai/interleaved-tool-call-doc": {
+    "message": "`separate_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "separate_reasoning"
+  },
+  "providers/novita-ai/interleaved-tool-result-doc": {
+    "message": "`reasoning_split` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_split"
+  },
+  "providers/novita-ai/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/meta-llama%2Fllama-3.1-8b-instruct:generateContent"
+  },
+  "providers/novita-ai/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/meta-llama%2Fllama-3.1-8b-instruct:generateContent"
+  },
+  "providers/novita-ai/reasoning-stream-doc": {
+    "message": "`separate_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "separate_reasoning"
+  },
+  "providers/novita-ai/thinking-off-doc": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
   "providers/nvidia/invalid-api-key": {
     "body": {
       "contents": [

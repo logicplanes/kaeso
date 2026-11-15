@@ -344,6 +344,25 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         json!({ "url": "https://dcd.ionos.com", "label": "Management → Token Manager" })
     );
 
+    let novita = listed.iter().find(|p| p["id"] == "novita-ai").unwrap();
+    assert_eq!(novita["name"], "Novita AI");
+    assert_eq!(
+        novita["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        (
+            &novita["count_tokens"],
+            &novita["embeddings"],
+            &novita["key_prefix"]
+        ),
+        (&Value::Null, &json!("openai_embeddings"), &json!("sk_"))
+    );
+    assert_eq!(
+        novita["key_page"],
+        json!({ "url": "https://novita.ai/settings/key-management", "label": "Key Management" })
+    );
+
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)
         .await;

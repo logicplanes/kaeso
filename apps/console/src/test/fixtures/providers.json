@@ -744,6 +744,26 @@
       "account_scope": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "novita-ai",
+      "name": "Novita AI",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://novita.ai/settings/key-management",
+        "label": "Key Management"
+      },
+      "key_prefix": "sk_",
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

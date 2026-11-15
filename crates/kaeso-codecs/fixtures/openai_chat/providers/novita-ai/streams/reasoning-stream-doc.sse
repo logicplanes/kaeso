@@ -1,0 +1,12 @@
+data: {"id":"00000000000000000000000000000000","object":"chat.completion.chunk","created":1794657720,"model":"deepseek/deepseek-v4.1-flash","choices":[{"index":0,"delta":{"role":"assistant","content":"","reasoning_content":"Force, mass and acceleration: "},"finish_reason":null}],"usage":null}
+
+data: {"id":"00000000000000000000000000000000","object":"chat.completion.chunk","created":1794657720,"model":"deepseek/deepseek-v4.1-flash","choices":[{"index":0,"delta":{"content":"","reasoning_content":"F equals m times a."},"finish_reason":null}],"usage":null}
+
+data: {"id":"00000000000000000000000000000000","object":"chat.completion.chunk","created":1794657720,"model":"deepseek/deepseek-v4.1-flash","choices":[{"index":0,"delta":{"content":"Newton's Second Law says that force equals mass times acceleration, F = ma."},"finish_reason":null}],"usage":null}
+
+data: {"id":"00000000000000000000000000000000","object":"chat.completion.chunk","created":1794657720,"model":"deepseek/deepseek-v4.1-flash","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":null}
+
+data: {"id":"00000000000000000000000000000000","object":"chat.completion.chunk","created":1794657720,"model":"deepseek/deepseek-v4.1-flash","choices":[],"usage":{"prompt_tokens":12,"completion_tokens":48,"total_tokens":60}}
+
+data: [DONE]
+

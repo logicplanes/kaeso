@@ -677,6 +677,37 @@ fn a_thinking_switch_profile_turns_thinking_on_and_off_and_sends_a_budget_as_wri
 }
 
 #[test]
+fn a_separate_reasoning_profile_asks_for_reasoning_in_its_own_field_unless_the_app_decided() {
+    let separate = ChatProfile::compatible("Example Cloud").separate_reasoning();
+    let plain = chat(json!({"model": "m", "messages": [{"role": "user", "content": "Hi"}]}));
+    assert_eq!(
+        encode_with(&plain, separate).unwrap()["separate_reasoning"],
+        true
+    );
+    let anthropic = Request::Generate(foreign(DialectId::AnthropicMessages));
+    assert_eq!(
+        encode_with(&anthropic, separate).unwrap()["separate_reasoning"],
+        true
+    );
+    let inline = chat(json!({
+        "model": "m", "messages": [{"role": "user", "content": "Hi"}], "separate_reasoning": false
+    }));
+    assert_eq!(
+        encode_with(&inline, separate).unwrap()["separate_reasoning"],
+        false
+    );
+    let null = chat(json!({
+        "model": "m", "messages": [{"role": "user", "content": "Hi"}], "separate_reasoning": null
+    }));
+    assert_eq!(
+        encode_with(&null, separate).unwrap()["separate_reasoning"],
+        Value::Null
+    );
+    let openai = encode_with(&plain, ChatProfile::compatible("Example Cloud")).unwrap();
+    assert!(openai.get("separate_reasoning").is_none(), "{openai}");
+}
+
+#[test]
 fn a_function_without_parameters_reaches_mistral_with_an_empty_object_schema() {
     let req = chat(json!({
         "model": "m",

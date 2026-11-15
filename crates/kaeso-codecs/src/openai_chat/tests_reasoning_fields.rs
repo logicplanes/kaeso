@@ -57,6 +57,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
             .reasoning_fields(&["reasoning_content", "reasoning"]),
     ),
     (
+        "novita-ai",
+        ChatProfile::compatible("Novita AI").reasoning_fields(&["reasoning_content"]),
+    ),
+    (
         "nvidia",
         ChatProfile::compatible("NVIDIA").reasoning_fields(&["reasoning_content"]),
     ),

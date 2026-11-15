@@ -3288,6 +3288,85 @@ expression: outcomes
       "totalTokenCount": 127
     }
   },
+  "providers/novita-ai/cached-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The contract ends on 31 December 2027."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek/deepseek-v4.1-flash",
+    "responseId": "00000000000000000000000000000000",
+    "usageMetadata": {
+      "cachedContentTokenCount": 448,
+      "candidatesTokenCount": 137,
+      "promptTokenCount": 3295,
+      "totalTokenCount": 3432
+    }
+  },
+  "providers/novita-ai/greeting-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Hello! 👋 How can I assist you today? 😊"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-test",
+    "responseId": "29e1432c-edfb-44a4-b531-c23c600abfae",
+    "usageMetadata": {
+      "candidatesTokenCount": 13,
+      "promptTokenCount": 5,
+      "totalTokenCount": 18
+    }
+  },
+  "providers/novita-ai/interleaved-tool-call-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "ShangHai"
+                },
+                "id": "call_function_9w7wq1j9zmpl_1",
+                "name": "get_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "MiniMax",
+    "responseId": "07a4dedfdb1498b045498dfd42497639",
+    "usageMetadata": {
+      "candidatesTokenCount": 0,
+      "promptTokenCount": 0,
+      "totalTokenCount": 0
+    }
+  },
   "providers/nvidia/reasoning": {
     "candidates": [
       {

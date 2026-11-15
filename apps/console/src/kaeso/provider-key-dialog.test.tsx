@@ -545,6 +545,26 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Novita AI key with its Key Management page and its sk_ prefix as the key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "novita-ai", name: "Novita prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Novita AI");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Novita AI API key" })).toBeVisible();
+    expectKeyHint(dialog, "novita.ai", "https://novita.ai/settings/key-management", "Key Management", "sk_");
+    const secret = within(dialog).getByLabelText("Novita AI API key");
+    expect(secret).toHaveAttribute("placeholder", "sk_…");
+    await user.type(secret, "sk_0123abcd");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Novita prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Novita prod is the Novita AI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "novita-ai", name: "Novita prod", secret: "sk_0123abcd", make_default: false },
+    ]);
+  });
+
   it("adds a TypeSafe key, which has no fixed prefix, with TypeSafe's console keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "typesafe", name: "TypeSafe decisions", is_default: true }));
     const { user, dialog } = await open();

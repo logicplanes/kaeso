@@ -50,6 +50,10 @@ pub struct RequestProfile {
     /// without being asked gets none; an app's `include_usage` still decides whether the app
     /// sees it, and any other option is refused.
     pub stream_options: bool,
+    /// Whether the provider writes a reasoning model's chain of thought into `content` unless
+    /// the request sets `separate_reasoning: true`, as Novita AI does; Kaeso then sets it, so
+    /// the reasoning comes back in its own field.
+    pub separate_reasoning: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -114,6 +118,7 @@ impl RequestProfile {
         video_url: false,
         path: super::CHAT_COMPLETIONS_PATH,
         stream_options: true,
+        separate_reasoning: false,
     };
 }
 
@@ -299,6 +304,14 @@ impl ChatProfile {
     #[must_use]
     pub const fn without_stream_options(mut self) -> Self {
         self.request.stream_options = false;
+        self
+    }
+
+    /// The provider returns reasoning in its own field only when asked
+    /// ([`RequestProfile::separate_reasoning`]).
+    #[must_use]
+    pub const fn separate_reasoning(mut self) -> Self {
+        self.request.separate_reasoning = true;
         self
     }
 

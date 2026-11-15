@@ -3519,6 +3519,81 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "video block"
   },
+  "providers/novita-ai/cached-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "When does the contract end?",
+          "role": "user"
+        }
+      ],
+      "instructions": "Answer questions about the attached contract.",
+      "max_output_tokens": 512,
+      "model": "deepseek/deepseek-v4.1-flash",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/novita-ai/greeting-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello, world!",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "deepseek/deepseek-r1-0528",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/novita-ai/interleaved-tool-call-doc": {
+    "message": "`separate_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "separate_reasoning"
+  },
+  "providers/novita-ai/interleaved-tool-result-doc": {
+    "message": "`reasoning_split` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_split"
+  },
+  "providers/novita-ai/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/llama-3.1-8b-instruct",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/novita-ai/missing-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/llama-3.1-8b-instruct",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/novita-ai/reasoning-stream-doc": {
+    "message": "`separate_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "separate_reasoning"
+  },
+  "providers/novita-ai/thinking-off-doc": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
   "providers/nvidia/invalid-api-key": {
     "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

@@ -1,0 +1,15 @@
+{
+  "model": "deepseek/deepseek-v4.1-flash",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain Newton's Second Law."
+    }
+  ],
+  "max_tokens": 4096,
+  "separate_reasoning": true,
+  "stream": true,
+  "stream_options": {
+    "include_usage": true
+  }
+}

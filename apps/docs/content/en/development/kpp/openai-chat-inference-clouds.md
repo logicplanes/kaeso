@@ -115,6 +115,25 @@ Sources: Nebius' [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.
 
 Nebius serves no images, audio, Messages or token counts: its OpenAPI document has no such path, and `/v1/images/generations`, `/v1/audio/transcriptions` and `/v1/messages` answer 404. Its Responses API isn't used: Responses apps reach Nebius through Chat Completions.
 
+## Novita AI
+
+Sources: Novita AI's [chat completion](https://docs.novita.ai/api-reference/model-apis-llm-create-chat-completion.md), [embeddings](https://docs.novita.ai/api-reference/model-apis-llm-create-embeddings.md), [list models](https://docs.novita.ai/api-reference/model-apis-llm-list-models.md) and [error code](https://docs.novita.ai/api-reference/basic-error-code.md) references and its [reasoning](https://docs.novita.ai/guides/llm-reasoning.md), [interleaved thinking](https://docs.novita.ai/guides/llm-interleaved-thinking.md), [prompt cache](https://docs.novita.ai/guides/llm-prompt-cache.md) and [FAQ](https://docs.novita.ai/guides/LLM-FAQ.md) guides, read 2026-11-14. No key was available: the replies in `fixtures/openai_chat/providers/novita-ai/` are examples from the guides, and the stream is built from the reference; the listing, one model and the key errors were answered live, without a valid key. The base URL is `https://api.novita.ai/openai`, under which the reference serves `/v1/chat/completions`, `/v1/embeddings` and `/v1/models`, with `Authorization: Bearer`.
+
+| Novita AI field | KPP | Notes |
+|---|---|---|
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Only with `separate_reasoning: true`, which the profile sends (`separate_reasoning()`); without it the reasoning stays inside `content`. A Chat app's own `separate_reasoning` is kept. |
+| `enable_thinking` | `ReasoningConfig` | `thinking_switch()`; an Anthropic app's budget goes as `thinking_budget`, which the reference doesn't name. |
+| `max_completion_tokens` | `max_tokens` | The reference has only `max_tokens`, which counts reasoning tokens too. |
+| the `developer` role | `Role::System` | The reference lists `system`, `user` and `assistant`; its guides send `tool` messages too. |
+| `user`, `safety_identifier` | left out | The reference has no end-user field (`without_end_user()`). |
+| `video_url` parts | `Block::Video` | `with_video_url()`. |
+| `store`, `metadata`, `prompt_cache_key`, `parallel_tool_calls`, `service_tier` and the other fields the reference leaves out | refused | The reference doesn't say whether Novita AI refuses undeclared fields, so the profile refuses them; `parallel_tool_calls: true` is left out. `tool_choice`, also missing from the reference, is sent, as tool calling needs it. |
+| `reasoning_details` and `name` on the reply message, `cache_creation_Prompt_tokens` and `cache_read_Prompt_tokens` in `prompt_tokens_details` | extras and raw usage | Left out towards other dialects (`responses/interleaved-tool-call-doc`, `responses/cached-doc`). |
+| errors as `{"code", "reason", "message", "metadata"}` | `KppError` | The kind follows the status: 401 `FAILED_TO_AUTH`, 403 `INVALID_API_KEY` or `NOT_ENOUGH_BALANCE`, 404 `MODEL_NOT_FOUND`, 429, 503 (`errors/`). |
+| `GET /v1/models` with prices in 1/10,000 USD, `pricing`, `features` and `endpoints` | `ModelList` | Answered without a key and lists chat models only (`models/list-recorded`); `GET /v1/models/{model}` also answers for embeddings models (`models/retrieve-embedding-recorded`), so a model check finds a model but not a wrong key (`ModelListing::Partial`). |
+
+Novita AI's Anthropic-compatible endpoint lives under `/anthropic`, outside its OpenAI base URL, and `/v1/responses` is undocumented, so Kaeso calls only Chat Completions and refuses token counts. Its `/v1/completions`, `/v1/rerank`, batch API, its image model in OpenAI's Images API and its own task APIs for speech, transcription and video aren't used.
+
 ## NVIDIA
 
 Sources: NVIDIA's [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis) reference and the OpenAPI documents of its model pages, such as [`nvidia/nemotron-3-super-120b-a12b`](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-super-120b-a12b-infer), read 2026-11-10. Not tested with a successful call: the reply and the stream in `fixtures/openai_chat/providers/nvidia/` are built from them, the stream's request the reference's own example; the model listing and the errors were answered live, without a valid key. Kaeso's base URL is `https://integrate.api.nvidia.com`, which takes `Authorization: Bearer` with an `nvapi-` key.

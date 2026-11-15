@@ -1,0 +1,8 @@
+{
+  "code": 503,
+  "reason": "SERVICE_UNAVAILABLE",
+  "message": "service temporarily unavailable",
+  "metadata": {
+    "trace_id": "00000000000000000000000000000000"
+  }
+}

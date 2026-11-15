@@ -179,8 +179,18 @@ pub(crate) fn encode_generate(
     if profile.request.thinking_switch {
         switch_thinking(req, &mut out)?;
     }
+    if profile.request.separate_reasoning
+        && !out.verbatim.contains_key(SEPARATE_REASONING)
+        && !out.extra.contains_key(SEPARATE_REASONING)
+    {
+        out.extra
+            .insert(SEPARATE_REASONING.to_owned(), to_raw(&true)?);
+    }
     Ok(out)
 }
+
+// An app that sets `separate_reasoning` itself keeps its own value.
+const SEPARATE_REASONING: &str = "separate_reasoning";
 
 // Qwen turns thinking on and off with `enable_thinking` and caps it with `thinking_budget`;
 // `reasoning_effort` alone neither turns it on nor sets a budget for most of its models.

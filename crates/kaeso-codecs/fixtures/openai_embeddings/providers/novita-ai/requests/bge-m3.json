@@ -1,0 +1,5 @@
+{
+  "model": "baai/bge-m3",
+  "input": ["The food was delicious.", "The waiter was friendly."],
+  "encoding_format": "float"
+}
