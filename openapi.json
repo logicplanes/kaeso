@@ -20891,7 +20891,7 @@
         "tags": [
           "projects"
         ],
-        "summary": "Calls one of the project's tools from the Playground, as you.",
+        "summary": "Calls one of the project's tools, as you.",
         "description": "The call goes through the project's portal like any client's: the tool must be\non and approved, your tool access and the tool call rates apply, and the call is logged with\nthe source `playground`. Needs `playground.use` too.\n\n**Right:** `tools.use` on the project in the path.",
         "operationId": "postOrgsOrgProjectsProjectToolsToolCall",
         "parameters": [
@@ -35497,7 +35497,7 @@
       },
       "PlaygroundToolCall": {
         "type": "object",
-        "description": "A tool call from the Playground.",
+        "description": "A call of one of the project's tools.",
         "properties": {
           "arguments": {
             "type": "object",

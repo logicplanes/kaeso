@@ -243,7 +243,7 @@ An effective right lists its sources:
 
 ## Playground
 
-The console's [Playground](../console/playground.md) sends requests to the project's models as the signed-in member. Its `playground/` routes need a session and the project right `playground.use`. They answer keys with 403, since apps call models on `/v1`. Calling one of the project's tools from it needs `playground.use` and `tools.use`, and a person behind the request: a session, an agent or a member's key.
+The console's [Playground](../console/playground.md) sends requests to the project's models as the signed-in member. Its `playground/` routes need a session and the project right `playground.use`. They answer keys with 403, since apps call models on `/v1`. Calling one of the project's tools through `tools/{tool}/call` needs `playground.use` and `tools.use`, and a person behind the request: a session, an agent or a member's key.
 
 | Route | Does |
 | --- | --- |
@@ -256,7 +256,7 @@ The console's [Playground](../console/playground.md) sends requests to the proje
 | `POST orgs/{org}/projects/{project}/playground/decisions` | Takes the body of [`/v1/systemone`](decisions.md), as JSON or multipart, for any model with `decisions`. Kaeso sends it in the format the model's provider takes, and answers in System One's format: `answers` under each question's key, with `usage`. |
 | `POST orgs/{org}/projects/{project}/tools/{tool}/call` | Calls one of the project's tools with `arguments` through the project's portal, as the caller. The tool must be on and approved, the caller's tool access and the tool call rates apply, and the call is logged with the source `playground`. Answers with the tool's `result`, or `error` when the call was refused. |
 
-The request takes `model`, `input` (a string or input items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary`, `tools` and `stream`, which must be `true`. `tools` holds Responses `function` tools the model may call, and the Playground runs a call only when asked. `headers` sends up to 20 headers as an app would, for a route's conditions and splits, none that carry credentials. `route` tries a route instead of resolving `model`, which then names its alias, and `alias` names the saved alias that `route` edits. With a [session](automation.md#use-a-session-instead):
+The request takes `model`, `input` (a string or input items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary`, `tools` and `stream`, which must be `true`. `tools` holds Responses `function` tools the model may call; their calls come back in the stream, and Kaeso doesn't run them. `headers` sends up to 20 headers as an app would, for a route's conditions and splits, none that carry credentials. `route` tries a route instead of resolving `model`, which then names its alias, and `alias` names the saved alias that `route` edits. With a [session](automation.md#use-a-session-instead):
 
 ```bash
 project=https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…
