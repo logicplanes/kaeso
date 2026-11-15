@@ -122,6 +122,34 @@ describe("the command palette", () => {
     expect(router.state.location.search).toMatchObject({ account: "sa_north" });
   });
 
+  it("opens a pasted request id in the project's request log", async () => {
+    signedIn();
+    projectData();
+    const id = "req_01m7g2tr3hegy8qg6fav4nea97";
+    const { user, router } = await renderApp(LIMITS);
+    await openPalette(user);
+    await user.type(screen.getByPlaceholderText(PLACEHOLDER), "abc");
+    expect(screen.queryByRole("option", { name: /Open request/ })).not.toBeInTheDocument();
+    await user.clear(screen.getByPlaceholderText(PLACEHOLDER));
+    await user.paste(`  ${id} `);
+    const opened = await screen.findByRole("option", { name: new RegExp(`Open request ${id}`) });
+    expect(opened).toHaveTextContent(/In /);
+    await user.click(opened);
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/logs`));
+    expect(router.state.location.search).toMatchObject({ log: id });
+  });
+
+  it("offers no request to open without the right to read the request log", async () => {
+    signedIn({ projectRights: ALL_PROJECT_RIGHTS.filter((r) => r !== "logs.metadata.view") });
+    projectData();
+    const { user } = await renderApp(LIMITS);
+    await openPalette(user);
+    await user.click(screen.getByPlaceholderText(PLACEHOLDER));
+    await user.paste("req_01m7g2tr3hegy8qg6fav4nea97");
+    await screen.findByRole("listbox", { name: "Results" });
+    expect(screen.queryByRole("option", { name: /Open request/ })).not.toBeInTheDocument();
+  });
+
   it("finds the organization's projects, members and keys on its pages, and offers its pages, not a project's", async () => {
     signedIn();
     projectData();
