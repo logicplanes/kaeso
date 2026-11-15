@@ -175,6 +175,11 @@ async fn a_route_falls_back_when_its_model_is_overloaded_in_every_format() {
             assert_eq!(r.status, StatusCode::OK, "{what}: {}", r.text());
             assert_eq!(r.header("kaeso-model"), Some("gpt-4o"), "{what}");
             assert_eq!(r.header("kaeso-provider"), Some("openai"), "{what}");
+            let upstream = r.header("kaeso-upstream-request-id");
+            assert!(
+                upstream.is_some_and(|id| id.starts_with("req_mock")),
+                "the id of the step that answered, not the overloaded one: {what}: {upstream:?}"
+            );
             assert_eq!(
                 walked(&r),
                 [
