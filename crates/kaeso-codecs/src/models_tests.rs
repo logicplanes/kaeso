@@ -1393,6 +1393,43 @@ fn a_novita_ai_listing_decodes_with_its_prices_and_its_refusals_and_unknown_mode
 }
 
 #[test]
+fn a_volcengine_listing_keeps_its_own_fields_and_its_key_refusals_are_authentication_errors() {
+    let body = fixture("openai_chat", "providers/volcengine/list-doc");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(ids, ["doubao-seed-2-1-pro-260915"]);
+    assert_eq!(l.models[0].created_at, Some(1789472816));
+    assert_eq!(l.models[0].owned_by, None);
+    let extras = serde_json::to_string(&l.models[0].extras).unwrap();
+    for field in ["token_limits", "task_type", "features", "max_output_tokens"] {
+        assert!(extras.contains(field), "{field}: {extras}");
+    }
+    assert_json_eq(
+        "providers/volcengine/list-doc",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let errors = fixtures("openai_chat", "errors", "json");
+    for (name, message) in [
+        (
+            "providers/volcengine/recorded-invalid-api-key",
+            "The API key format is incorrect. Request id: 00000000000000000000000000000000000000000000000000000",
+        ),
+        (
+            "providers/volcengine/recorded-unknown-api-key",
+            "The API key doesn't exist. Request id: 00000000000000000000000000000000000000000000000000000",
+        ),
+    ] {
+        let body = &errors.iter().find(|(n, _)| n == name).unwrap().1;
+        let e = dispatch::decode_models(DialectId::OpenAiChat, 401, &h(), body).unwrap_err();
+        assert_eq!(
+            (e.kind, e.message.as_str()),
+            (ErrorKind::Authentication, message)
+        );
+    }
+}
+
+#[test]
 fn a_sambanova_listing_decodes_with_its_prices_and_its_wrong_keys_and_unknown_models_are_errors() {
     let body = fixture("openai_chat", "providers/sambanova/list-recorded");
     let l = list(DialectId::OpenAiChat, &body);

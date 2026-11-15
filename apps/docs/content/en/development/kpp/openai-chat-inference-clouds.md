@@ -25,6 +25,30 @@ Sources: Baseten's [Model APIs](https://docs.baseten.co/inference/model-apis/ove
 
 Baseten's Messages endpoint isn't used: its schema takes only text and tool blocks, without thinking or images. Its Responses API, which stores nothing, isn't used either: Messages and Responses apps reach Baseten through Chat Completions. Model APIs serve no embeddings, images, audio or token counts.
 
+## Cerebras
+
+Sources: Cerebras's [Chat Completions reference](https://inference-docs.cerebras.ai/api-reference/chat-completions) and [OpenAI compatibility](https://inference-docs.cerebras.ai/resources/openai) pages, read 2026-11-02, and the live recordings in `fixtures/openai_chat/providers/cerebras/`, made with `gpt-oss-120b` and `qwen-3.8-27b`. Kaeso's base URL is `https://api.cerebras.ai`, which takes `Authorization: Bearer`.
+
+| Cerebras field | KPP | Notes |
+|---|---|---|
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`, as for Groq. Thinking that an app in another format sends back reaches Cerebras as `reasoning`, which it takes (`responses/recorded-reasoning-sent-back`). A Chat app's `reasoning_content`, such as Grok CLI's, gets 400 from Cerebras, so it goes as `reasoning` too (`replay_reasoning_as_read()`). |
+| `time_info`, `system_fingerprint`, `choices[].reasoning_logprobs` | extras | Left out towards other dialects. |
+| `completion_tokens_details.accepted_prediction_tokens` and `rejected_prediction_tokens`, `prompt_tokens_details.image_tokens` | `raw` usage | The cached and reasoning tokens are typed as in [usage](openai-chat.md#usage-completionusage). |
+| `usage` and `time_info` on the finish chunk, also without `stream_options.include_usage` | `Usage` | Cerebras never sends a chunk with `choices: []`. |
+| `reasoning_effort` | `reasoning.effort` | `gpt-oss-120b` takes `low`, `medium` and `high`, and `qwen-3.8-27b` also `none`, as KPMR lists; Kaeso refuses other levels before sending, and Cerebras answers them with 400 (`errors/recorded-reasoning-effort-*`). `max_completion_tokens` counts the reasoning. |
+| `reasoning_format`, `clear_thinking` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| fields Cerebras doesn't declare, such as `safety_identifier`, `metadata`, `store` or `web_search_options` | sent | Cerebras answers 400 `property '…' is unsupported`, which reaches the app. The profile sends the end user's id as `user` (`end_user_as_user()`), so Claude Code's `metadata.user_id` arrives there. |
+| `logit_bias`, `logprobs`, `top_logprobs`, both penalties, `seed`, `stop`, `prompt_cache_key`, `parallel_tool_calls`, `service_tier`, `prediction` | sent | Cerebras takes them (`responses/recorded-logit-bias-honoured` shows the bias at work). A `stop` sequence also ends the reasoning, which can leave a reply without `content` (`responses/recorded-sampling`). |
+| the `developer` role, a `system` message after the first turn | `Role::System` | Qwen's chat template refuses both with 400. `system_role()` sends `system`, and `leading_system_only()` moves the text of a later system message from an app in another format, such as Claude Code or Codex, into the next user turn. |
+| a final assistant message | refused | Cerebras answers it anew and repeats it (`responses/recorded-prefill`), so `without_prefill()` refuses it before sending. |
+| `refusal` on an assistant message, also `null` | refused | Cerebras answers 400 (`errors/recorded-assistant-refusal`); the profile refuses it before sending. |
+| a function without `parameters` | `parameters` | `with_tool_parameters()` sends the empty object schema that `gpt-oss-120b`'s chat template requires (`errors/recorded-tool-without-parameters`). |
+| `tools` together with `response_format` on `gpt-oss-120b`, an image as an `https` URL or to a model without images | sent | Cerebras answers 400 (`errors/recorded-tools-with-response-format`, `errors/recorded-image-url`, `errors/recorded-image-gpt-oss`), which reaches the app. |
+| errors with OpenAI's `message`, `type`, `param` and `code` at the top level, without the `error` object | `KppError` | The message and `param` are Cerebras's, and the kind follows the status: a wrong key (401 `wrong_api_key`) is a refused key, and the account's tokens-a-minute limit (429 `too_many_tokens_error`, `retry-after: 60`) a rate limit. Chat apps get the error in OpenAI's shape. |
+| `GET /v1/models` | `ModelList` | The models the key may call, with `created: 0` and `owned_by: "Cerebras"`; a wrong key gets 401, so a model check spots it. |
+
+Cerebras has no Responses, Messages, embeddings or token-count endpoint (all answer 404), so `embeddings` and `count_tokens` are `None`.
+
 ## DeepInfra
 
 Sources: DeepInfra's [OpenAPI document](https://api.deepinfra.com/openapi.json) and its [Chat Completions](https://docs.deepinfra.com/chat/overview.md), [streaming](https://docs.deepinfra.com/chat/streaming.md), [tool calling](https://docs.deepinfra.com/chat/tool-calling.md), [prompt caching](https://docs.deepinfra.com/chat/prompt-caching.md) and [authentication](https://docs.deepinfra.com/account/authentication.md) guides, read 2026-11-14. No key was available: one reply in `fixtures/openai_chat/providers/deepinfra/` is a reply DeepInfra sent, published in another project's issue, and the others and the stream are built from the guides; the listing and the key errors were answered live, without a valid key. DeepInfra's guides write the base URL as `https://api.deepinfra.com/v1/openai`; its OpenAPI document serves the same API at `/v1/…`, so Kaeso's base URL is `https://api.deepinfra.com`, which takes `Authorization: Bearer`.
@@ -62,6 +86,22 @@ Sources: Fireworks' [Create Chat Completion](https://docs.fireworks.ai/api-refer
 | `GET /v1/models` | `ModelList` | A wrong key gets 401 (`errors/list-invalid-api-key`), so a model check spots it. Fireworks documents no listing on this path; the console takes its models from KPMR. |
 
 Fireworks documents no image, speech, transcription, video or token-count endpoint, so those stay empty and `count_tokens` is `None`. Its Responses API reports usage as `prompt_tokens` and `completion_tokens` instead of OpenAI's names, so Kaeso doesn't send Responses to it; Responses apps reach Fireworks through Chat Completions.
+
+## Groq
+
+Sources: Groq's [API reference](https://console.groq.com/docs/api-reference) and [reasoning guide](https://console.groq.com/docs/reasoning), read 2026-10-19, and the live recordings in `fixtures/openai_chat/providers/groq/`.
+
+| Groq field | KPP | Notes |
+|---|---|---|
+| `reasoning_format`, `include_reasoning` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `user`, `safety_identifier` (request) | KPP `user` | Groq takes `user` and refuses `safety_identifier`, so the profile sends the end user's id as `user` (`end_user_as_user()`). |
+| `prompt_cache_key` (request) | extras | Groq refuses it, so a Chat app's own key is refused before sending, and an OpenAI Responses app's key, which Codex sends on every request, is left out and named in `kaeso-left-out` (`without_cache_key()`). |
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`. Chat apps get them back unchanged; Anthropic Messages apps get a `thinking` block and Responses apps a reasoning item ([reasoning](reasoning.md)). |
+| `delta.channel` (`analysis` on GPT-OSS reasoning) | extras of the chunk | Chat apps get it back with the reasoning; left out towards other dialects. |
+| `x_groq`, `usage_breakdown`, `service_tier` (`on_demand`) | extras | Left out towards other dialects. |
+| `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` usage | The token counts, `reasoning_tokens` included, are typed as in [usage](openai-chat.md#usage-completionusage). |
+| `usage` on the finish chunk, also without `stream_options.include_usage` | `Usage` | Every dialect gets the usage, whether or not Groq also sends the usage chunk that `include_usage` asks for. |
+| extra model fields (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` and others) | model extras | |
 
 ## Hugging Face
 
@@ -151,6 +191,25 @@ Sources: NVIDIA's [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-apis)
 
 NVIDIA serves no Responses, Messages or token counts: `/v1/responses` and `/v1/messages/count_tokens` answer 404, and `/v1/messages` answers `model not found` for every model. Its embeddings models take `input_type` and `truncate`, which stay in extras ([OpenAI Embeddings](openai-embeddings.md#nvidia)).
 
+## Ollama Cloud
+
+Sources: Ollama's [cloud](https://docs.ollama.com/cloud), [authentication](https://docs.ollama.com/api/authentication), [OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility) and [errors](https://docs.ollama.com/api/errors) pages, read 2026-10-30, and the live recordings in `fixtures/openai_chat/providers/ollama-cloud/`, made with `gpt-oss:20b` and `gemma4:31b` on the free plan.
+
+| Ollama Cloud field | KPP | Notes |
+|---|---|---|
+| model ids with a tag, such as `gpt-oss:20b` | `model` | Sent as written, also in `GET /v1/models/{model}`. |
+| `max_completion_tokens` (ignored), `max_tokens` (honoured) | `max_output_tokens` | The profile's `max_tokens()` sends every app's output limit as `max_tokens`. |
+| `reasoning: {effort}` (request) | extras | Ollama's spelling beside `reasoning_effort`; refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`, as for Groq. Reasoning chunks carry `content: ""` beside it, which opens no text block. Thinking that an app in another format sends back reaches Ollama as `reasoning` on the assistant turn. |
+| `system_fingerprint` (`fp_ollama`) | extras | Left out towards other dialects. |
+| `usage.prompt_tokens_details.cached_tokens` | `Usage.cache_read_tokens` | Ollama reports no reasoning tokens. |
+| the finish chunk with an empty `delta`, then a usage chunk with `choices: []` | `Usage` | As OpenAI sends them. |
+| `logprobs`, `top_logprobs`, `logit_bias` | refused | Ollama accepts them and returns nothing for them; the profile refuses them before sending. |
+| `tool_choice` other than `auto`, `response_format` | sent | Ollama's cloud models ignored both in a live probe on 2026-10-30; Kaeso sends them as written. |
+| a `refusal` content part on an assistant message | sent | Ollama answers 400 `invalid message format` (`errors/recorded-content-array-all-roles`), which reaches the app in its own format. |
+| errors in OpenAI's envelope with `type` `api_error`, `not_found_error` or `invalid_request_error` | `KppError` | The kind follows the status: 401 for a wrong key, 402 for a model the plan doesn't include (`errors/recorded-model-outside-plan`), 404 for an unknown model. |
+| `GET /v1/models`: OpenAI's list, `owned_by: "ollama"`, and a top-level `models` array in Codex's model-catalogue shape | `ModelList`, extras | Ollama answers the listing and `GET /v1/models/{model}` without checking the key, so a model check can't spot a wrong key. |
+
 ## SambaNova
 
 Sources: SambaNova's [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json) (SambaNova cloud API 1.2.0), its [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility), [text generation](https://docs.sambanova.ai/docs/en/features/text-generation) and [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes) pages, read 2026-11-09. No key was available: `fixtures/openai_chat/providers/sambanova/` holds the document's own example reply and stream and replies built from it, the model listing as SambaCloud serves it without a key, and errors answered live without a valid key. Kaeso's base URL is `https://api.sambanova.ai`, which takes `Authorization: Bearer`.
@@ -200,3 +259,43 @@ Sources: SiliconFlow's [chat completions](https://docs.siliconflow.com/en/api-re
 | errors as `{"code", "message", "data"}` | `KppError` | SiliconFlow's message; the kind follows the status: 401 is a refused key (`errors/recorded-invalid-api-key`). |
 
 SiliconFlow serves no Responses or token counts: `/v1/responses` and `/v1/messages/count_tokens` answer 404. Its Messages endpoint isn't used, as its reference documents only text and tool blocks. Its embeddings, speech and transcriptions use OpenAI's forms ([OpenAI Embeddings](openai-embeddings.md#siliconflow)); its images and videos don't.
+
+## Together AI
+
+Sources: Together AI's [chat completions reference](https://docs.together.ai/reference/chat-completions-1) and [OpenAI compatibility](https://docs.together.ai/docs/inference/openai-compatibility), read 2026-10-19, the SDK types in `togethercomputer/together-py`, and the live recordings in `fixtures/openai_chat/providers/togetherai/`.
+
+| Together AI field | KPP | Notes |
+|---|---|---|
+| `top_k`, `min_p`, `repetition_penalty`, `safety_model`, `context_length_exceeded_behavior` (request) | extras | Refused when the request goes to another dialect, like other Chat-only fields. |
+| `message.reasoning_content` or `message.reasoning`, and the same in deltas, by model | `Block::Reasoning` | Through the profile's `reasoning_fields`. Chat apps get them back unchanged; Anthropic Messages apps get a `thinking` block and Responses apps a reasoning item ([reasoning](reasoning.md)). A streamed piece of reasoning comes with `content: ""`, which opens no text block. |
+| `matched_stop` and `seed` on a choice, `text` on a stream choice, `token_id` in a delta, top-level `prompt`, `metadata` and `warnings` | extras | Left out towards other dialects. |
+| `usage.reasoning_tokens` beside `completion_tokens_details.reasoning_tokens` | `raw` usage | The token counts are typed as in [usage](openai-chat.md#usage-completionusage). |
+| errors in OpenAI's envelope with Together AI's own `type` and `code` (`start_generation_failed`, `model_not_available`), sometimes with a top-level `id` | `KppError` | The kind follows the status; a wrong key is a 401 `invalid_api_key`, so `Authentication`. |
+| `GET /v1/models`: a bare array of models with `type`, `display_name`, `organization`, `context_length`, `config` and `pricing` | `ModelList`, model extras | `GET /v1/models/{model}` answers 404 for ids with `/`, so a model check relies on the listing. |
+
+## Volcengine Ark
+
+Sources: Ark's [base URL and authentication](https://docs.volcengine.com/docs/zh/ark/base-url-and-authentication.md) page, its [Chat API](https://docs.volcengine.com/docs/zh/ark/chat-api.md) reference (updated 2026-11-12), its [deep thinking](https://docs.volcengine.com/docs/zh/ark/deep-thinking.md) guide, its [model listing](https://docs.volcengine.com/docs/zh/ark/models-api.md) and [error codes](https://docs.volcengine.com/docs/zh/ark/error-codes.md), read 2026-11-14. Not tested with a successful call: the replies, the stream and the listing in `fixtures/openai_chat/providers/volcengine/` are the reference's and the guide's samples, one stream was published in another project's issue, and the key errors were answered live, without a valid key. Kaeso's base URL is `https://ark.cn-beijing.volces.com/api/v3`, with `Authorization: Bearer`.
+
+| Volcengine Ark field | KPP | Notes |
+|---|---|---|
+| `<base>/chat/completions`, `<base>/models` | the provider's API root | Ark's API sits at `/api/v3`, not `/v1`; the base URL ends there and the root is empty ([API roots](#api-roots)). |
+| `thinking: {"type": "enabled" \| "disabled"}` | `reasoning` | `thinking_type()`: the models think by default, and `minimal` turns Seed's thinking off but is `low` on DeepSeek V4.1 Flash, so thinking turned off goes as the switch alone. |
+| `reasoning_effort` (`none` to `max`) | `reasoning.effort` | Every model that grades thinking takes all seven values and maps them to its own levels. |
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`; assistant messages take it back. |
+| `message.encrypted_content`, `delta.encrypted_content` | extras, and an opaque of the reasoning block | `encrypted_reasoning_field`: a Chat app gets and sends it as written; other apps carry it in their reasoning carrier, and Kaeso writes it back on the assistant message, as Ark requires in multi-turn tool calls (`responses/tools-encrypted-content-doc`, `requests/tools-encrypted-content-replay-doc`). |
+| `max_completion_tokens`, `max_tokens` | `max_output_tokens` | `max_completion_tokens` counts thinking and answer, up to 65536; `max_tokens` only the answer on most models. Sent as the app wrote them, Kaeso's own limit as `max_completion_tokens`; the provider has `reasoning_beyond_output_limit`. |
+| an end user's id | left out | No `user` or `safety_identifier` (`without_end_user()`). |
+| `service_tier` (`auto`, `default`, `fast`, `flex`) | extras | Sent as written; OpenAI's `priority` and `scale` are refused (`refusing_values`). |
+| `web_search_options` | extras | Doubao Search only; `{}` turns it on. `search_context_size` and `user_location` have no effect and are refused. Replies carry `url_citation` annotations without offsets and `usage.tool_usage.web_search` (`responses/web-search-doc`). |
+| `seed`, `n`, `metadata`, `store`, `modalities`, `audio`, `prediction`, `prompt_cache_retention`, `functions`, `function_call` | refused | Not in the schema, and Ark doesn't document whether it refuses undeclared fields. |
+| `prompt_cache_key`, `video_url` parts, `logprobs`, `logit_bias`, `parallel_tool_calls` | sent as written | In the schema; reasoning models refuse some of them themselves. |
+| ids without `chatcmpl-`, `service_tier` on replies, `usage.prompt_tokens_details.audio_tokens` | extras and raw usage | Round-trip for Chat apps. |
+| errors in OpenAI's envelope with Ark's `code` and an HTTP-like `type`, the request id at the end of the message | `KppError` | The kind follows the status: 401 is a refused key (`errors/recorded-*-api-key`). |
+| `GET /models` with Ark's `name`, `version`, `domain`, `token_limits`, `modalities` and `features`, no `owned_by` | `ModelList` | Needs a key. It lists base model versions, not the account's endpoints (`ep-…`), so the listing is partial (`models/list-doc`). |
+
+Ark's embeddings serve only `/embeddings/multimodal`, which returns one vector for the whole input, so the provider has no embeddings dialect. Its Responses and Anthropic Messages endpoints aren't used, and there are no token counts. BytePlus ModelArk serves the same API at `https://ark.ap-southeast.bytepluses.com/api/v3`, with its own keys and model ids, through the base URL.
+
+### API roots
+
+A provider whose API isn't under `/v1` names its API root in `Provider::api_root`: what takes the place of `/v1` in every dialect's paths. The gateway passes it to the codecs with `EgressCtx::with_api_root` (`pipeline::egress_ctx`, and `availability::models_ctx` for the model listing and model checks). Chat Completions, Responses, Messages and embeddings send their `/v1/…` path under the root, and the OpenAI model listing sends `/v1/models` as `<root>/models`. `Some("")` means the base URL itself ends at the root, as Volcengine Ark's `…/api/v3`, so `/v1/chat/completions` becomes `/chat/completions`; `None`, for every other provider, keeps `/v1`. A key's account scope, as Cloudflare AI Gateway's `/client/v4/accounts/{account_id}/ai/v1`, is applied afterwards and takes the place of this root; a custom provider's base URL names its root itself. Because the default base URL ends at the root, an administrator's base URL is the documented one as it is, such as BytePlus ModelArk's.

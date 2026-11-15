@@ -31,12 +31,21 @@ pub struct RequestProfile {
     pub stop_list: bool,
     pub partial_prefill: bool,
     pub thinking_switch: bool,
+    /// Whether the provider turns thinking on and off with a `thinking` object,
+    /// `{"type": "enabled"}` or `{"type": "disabled"}`, as Volcengine Ark does, instead of
+    /// `reasoning_effort` alone.
+    pub thinking_type: bool,
     pub leading_system_only: bool,
     pub replay_reasoning_as_read: bool,
     pub tool_schema_root: ToolSchemaRoot,
     pub tool_patterns: ToolPatterns,
     pub tool_parameters: bool,
+    /// Fields the provider would drop or misread, refused before sending. `parent.child` names
+    /// a key inside an object field, such as `web_search_options.user_location`.
     pub refused_fields: &'static [&'static str],
+    /// Values of a top-level string field the provider doesn't take in OpenAI's meaning, such
+    /// as `service_tier: "priority"` for a provider with tiers of its own.
+    pub refused_values: &'static [(&'static str, &'static [&'static str])],
     pub refused_message_fields: &'static [&'static str],
     /// The `input_audio.format` values the provider takes, or `None` for any value.
     pub input_audio_formats: Option<&'static [&'static str]>,
@@ -61,6 +70,11 @@ pub struct RequestProfile {
 pub struct ReplyProfile {
     pub reasoning: ReplyReasoning,
     pub reasoning_fields: &'static [&'static str],
+    /// The message and delta field with the provider's encrypted original of the reasoning,
+    /// which must go back unchanged with the assistant message, as Volcengine Ark's
+    /// `encrypted_content`. A Chat app gets and sends it as written; for the other formats it
+    /// travels with the reasoning block and goes back in this field.
+    pub encrypted_reasoning: Option<&'static str>,
     pub error_detail: &'static [&'static str],
 }
 
@@ -107,12 +121,14 @@ impl RequestProfile {
         stop_list: false,
         partial_prefill: false,
         thinking_switch: false,
+        thinking_type: false,
         leading_system_only: false,
         replay_reasoning_as_read: false,
         tool_schema_root: ToolSchemaRoot::AsSent,
         tool_patterns: ToolPatterns::AsSent,
         tool_parameters: false,
         refused_fields: &[],
+        refused_values: &[],
         refused_message_fields: &[],
         input_audio_formats: Some(&["wav", "mp3"]),
         video_url: false,
@@ -126,6 +142,7 @@ impl ReplyProfile {
     pub const OPENAI: ReplyProfile = ReplyProfile {
         reasoning: ReplyReasoning::AsSent,
         reasoning_fields: &[],
+        encrypted_reasoning: None,
         error_detail: &[],
     };
 }
@@ -224,6 +241,13 @@ impl ChatProfile {
         self
     }
 
+    /// The provider switches thinking with a `thinking` object ([`RequestProfile::thinking_type`]).
+    #[must_use]
+    pub const fn thinking_type(mut self) -> Self {
+        self.request.thinking_type = true;
+        self
+    }
+
     #[must_use]
     pub const fn leading_system_only(mut self) -> Self {
         self.request.leading_system_only = true;
@@ -266,6 +290,14 @@ impl ChatProfile {
         self
     }
 
+    /// The provider sends and takes back encrypted reasoning in `field`
+    /// ([`ReplyProfile::encrypted_reasoning`]).
+    #[must_use]
+    pub const fn encrypted_reasoning_field(mut self, field: &'static str) -> Self {
+        self.reply.encrypted_reasoning = Some(field);
+        self
+    }
+
     #[must_use]
     pub const fn error_detail(mut self, path: &'static [&'static str]) -> Self {
         self.reply.error_detail = path;
@@ -275,6 +307,16 @@ impl ChatProfile {
     #[must_use]
     pub const fn refusing(mut self, fields: &'static [&'static str]) -> Self {
         self.request.refused_fields = fields;
+        self
+    }
+
+    /// Refuses these values of top-level string fields ([`RequestProfile::refused_values`]).
+    #[must_use]
+    pub const fn refusing_values(
+        mut self,
+        values: &'static [(&'static str, &'static [&'static str])],
+    ) -> Self {
+        self.request.refused_values = values;
         self
     }
 
@@ -367,6 +409,32 @@ impl ChatProfile {
             .find(|k| rules.refused_fields.contains(&k.as_str()))
         {
             return Err(self.refused(field, field));
+        }
+        let sent = |key: &str| wire.verbatim.get(key).or_else(|| wire.extra.get(key));
+        for field in rules.refused_fields {
+            let Some((parent, child)) = field.split_once('.') else {
+                continue;
+            };
+            let inside = sent(parent)
+                .and_then(|v| v.parse::<serde_json::Map<String, serde_json::Value>>().ok())
+                .is_some_and(|object| object.contains_key(child));
+            if inside {
+                return Err(self.refused(field, field));
+            }
+        }
+        for (field, values) in rules.refused_values {
+            if let Some(value) = sent(field).and_then(|v| v.parse::<String>().ok())
+                && values.contains(&value.as_str())
+            {
+                return Err(KppError::unsupported(
+                    format!("{field} `{value}`"),
+                    format!(
+                        "{} does not take `{field}: \"{value}\"`; send one of its own values or leave `{field}` out.",
+                        self.provider
+                    ),
+                )
+                .with_param(*field));
+            }
         }
         if rules.refused_message_fields.is_empty() {
             return Ok(());

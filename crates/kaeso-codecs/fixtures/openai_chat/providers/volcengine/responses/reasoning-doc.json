@@ -1,0 +1,30 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "\n\n推理模型与非推理模型的主要区别在于其处理任务的方式、能力侧重点以及应用场景。以下是两者的核心区别分析：\n\n---\n\n### **1. 核心定义**\n- **推理模型**  \n  具备**逻辑推理、因果推断或复杂决策**能力，***  \n\n实际应用中，两类模型常配合使用（如用非推理模型提取特征，再交给推理模型决策），以平衡效率与准确性。",
+        "reasoning_content": "嗯，用户问的是推理模型和非推理模型有什么区别。我需要先理解这两个术语的具体含义。可能用户对机器学习或深度学习有一定的了解，但需要更清晰的区分。首先，我应该明确这两个概念的定义，然后从不同角度进行比较。\n\n首先，推理模型可能指的是那些需要进行逻辑推理、处理复杂任务的模型，***，而非推理模型侧重于模式识别和直接映射，帮助用户形成清晰的概念框架。\n",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1742636537,
+  "id": "0217426364949596592a076493be583bc5e33f80ac2dcf1eeaf9b",
+  "model": "doubao-seed-2-1-pro-260915",
+  "service_tier": "default",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 1207,
+    "prompt_tokens": 11,
+    "total_tokens": 1218,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 419
+    }
+  }
+}

@@ -25,6 +25,30 @@ nav: 推理云
 
 Baseten 的 Messages 端点不被使用：它的 schema 只接受文本和工具块，不接受思考内容或图像。它不存储任何内容的 Responses API 也不被使用：Messages 和 Responses 应用通过 Chat Completions 访问 Baseten。Model APIs 不提供嵌入、图像、音频或 Token 计数。
 
+## Cerebras
+
+来源：Cerebras 的 [Chat Completions 参考](https://inference-docs.cerebras.ai/api-reference/chat-completions)和 [OpenAI 兼容](https://inference-docs.cerebras.ai/resources/openai)页面（2026-11-02 查阅），以及 `fixtures/openai_chat/providers/cerebras/` 中使用 `gpt-oss-120b` 和 `qwen-3.8-27b` 的实时录制。Kaeso 的基础 URL 为 `https://api.cerebras.ai`，接受 `Authorization: Bearer`。
+
+| Cerebras 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`，与 Groq 相同。其他格式的应用发回的思考内容以 `reasoning` 到达 Cerebras，Cerebras 接受它（`responses/recorded-reasoning-sent-back`）。Chat 应用的 `reasoning_content`（例如 Grok CLI 发送的）会被 Cerebras 以 400 拒绝，因此同样以 `reasoning` 发送（`replay_reasoning_as_read()`）。 |
+| `time_info`、`system_fingerprint`、`choices[].reasoning_logprobs` | extras | 发往其他方言时省略。 |
+| `completion_tokens_details.accepted_prediction_tokens` 和 `rejected_prediction_tokens`、`prompt_tokens_details.image_tokens` | `raw` 用量 | 缓存 token 和推理 token 按[用量](openai-chat.md#用量completionusage)类型化。 |
+| 结束数据块上的 `usage` 和 `time_info`，即使没有 `stream_options.include_usage` | `Usage` | Cerebras 从不发送 `choices: []` 的数据块。 |
+| `reasoning_effort` | `reasoning.effort` | `gpt-oss-120b` 接受 `low`、`medium` 和 `high`，`qwen-3.8-27b` 还接受 `none`，与 KPMR 所列一致；其他强度由 Kaeso 在发送前拒绝，Cerebras 也会以 400 回应（`errors/recorded-reasoning-effort-*`）。`max_completion_tokens` 包含推理。 |
+| `reasoning_format`、`clear_thinking`（请求） | extras | 请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
+| Cerebras 未声明的字段，例如 `safety_identifier`、`metadata`、`store` 或 `web_search_options` | 发送 | Cerebras 以 400 `property '…' is unsupported` 回应，该错误会到达应用。配置把终端用户的 ID 以 `user` 发送（`end_user_as_user()`），因此 Claude Code 的 `metadata.user_id` 会到达那里。 |
+| `logit_bias`、`logprobs`、`top_logprobs`、两种惩罚参数、`seed`、`stop`、`prompt_cache_key`、`parallel_tool_calls`、`service_tier`、`prediction` | 发送 | Cerebras 接受它们（`responses/recorded-logit-bias-honoured` 显示偏置生效）。`stop` 序列也会结束推理，因此回复可能没有 `content`（`responses/recorded-sampling`）。 |
+| `developer` 角色、第一轮之后的 `system` 消息 | `Role::System` | Qwen 的聊天模板以 400 拒绝两者。`system_role()` 发送 `system`；对于其他格式的应用（例如 Claude Code 或 Codex）的后续系统消息，`leading_system_only()` 把其文本移入下一个用户轮次。 |
+| 最后一条 assistant 消息 | 拒绝 | Cerebras 会重新回答并重复它（`responses/recorded-prefill`），因此 `without_prefill()` 在发送前拒绝它。 |
+| assistant 消息上的 `refusal`，包括 `null` | 拒绝 | Cerebras 以 400 回应（`errors/recorded-assistant-refusal`）；配置在发送前拒绝它。 |
+| 没有 `parameters` 的函数 | `parameters` | `with_tool_parameters()` 发送 `gpt-oss-120b` 的聊天模板要求的空对象 schema（`errors/recorded-tool-without-parameters`）。 |
+| `gpt-oss-120b` 上同时带 `tools` 和 `response_format`、以 `https` URL 提供的图像，或发给不接受图像的模型的图像 | 发送 | Cerebras 以 400 回应（`errors/recorded-tools-with-response-format`、`errors/recorded-image-url`、`errors/recorded-image-gpt-oss`），该错误会到达应用。 |
+| 顶层带 OpenAI 的 `message`、`type`、`param` 和 `code`，但没有 `error` 对象的错误 | `KppError` | 消息和 `param` 来自 Cerebras，类别取决于状态码：错误的密钥（401 `wrong_api_key`）是被拒绝的密钥，账户的每分钟 token 限制（429 `too_many_tokens_error`，`retry-after: 60`）是速率限制。Chat 应用以 OpenAI 的形式收到错误。 |
+| `GET /v1/models` | `ModelList` | 该密钥可调用的模型，带 `created: 0` 和 `owned_by: "Cerebras"`；错误的密钥得到 401，因此模型检查能发现它。 |
+
+Cerebras 没有 Responses、Messages、embeddings 或 token 计数端点（都返回 404），因此 `embeddings` 和 `count_tokens` 为 `None`。
+
 ## DeepInfra
 
 来源：DeepInfra 的 [OpenAPI document](https://api.deepinfra.com/openapi.json) 及其 [Chat Completions](https://docs.deepinfra.com/chat/overview.md)、[流式传输](https://docs.deepinfra.com/chat/streaming.md)、[工具调用](https://docs.deepinfra.com/chat/tool-calling.md)、[提示缓存](https://docs.deepinfra.com/chat/prompt-caching.md)和[认证](https://docs.deepinfra.com/account/authentication.md)指南，2026-11-14 阅读。由于没有可用的密钥：`fixtures/openai_chat/providers/deepinfra/` 中的一个回复是 DeepInfra 实际发送、发布在另一个项目 issue 中的回复，其余回复和流据指南构建；模型列表和密钥错误是在没有有效密钥的情况下实时返回的。DeepInfra 的指南将基础 URL 写为 `https://api.deepinfra.com/v1/openai`；它的 OpenAPI 文档在 `/v1/…` 下提供同一 API，因此 Kaeso 的基础 URL 为 `https://api.deepinfra.com`，使用 `Authorization: Bearer`。
@@ -62,6 +86,22 @@ DeepInfra 的 Responses API 不存储任何内容，不被使用：Responses 应
 | `GET /v1/models` | `ModelList` | 错误的密钥返回 401（`errors/list-invalid-api-key`），因此模型检查能发现它。Fireworks 没有记录此路径上的列表；控制台从 KPMR 获取其模型。 |
 
 Fireworks 没有记录图像、语音、转录、视频或Token 计数端点，因此这些保持为空，`count_tokens` 为 `None`。它的 Responses API 以 `prompt_tokens` 和 `completion_tokens` 报告用量，而不是 OpenAI 的字段名，因此 Kaeso 不向它发送 Responses；Responses 应用通过 Chat Completions 访问 Fireworks。
+
+## Groq
+
+来源：Groq 的 [API 参考](https://console.groq.com/docs/api-reference)和[推理指南](https://console.groq.com/docs/reasoning)（2026-10-19 阅读），以及 `fixtures/openai_chat/providers/groq/` 中的实时录制。
+
+| Groq 字段 | KPP | 说明 |
+|---|---|---|
+| `reasoning_format`、`include_reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `user`、`safety_identifier`（请求） | KPP `user` | Groq 接受 `user` 并拒绝 `safety_identifier`，因此该配置以 `user` 发送终端用户的 ID（`end_user_as_user()`）。 |
+| `prompt_cache_key`（请求） | extras | Groq 会拒绝它。因此网关在发送前拒绝 Chat 应用自己的键；OpenAI Responses 应用的键（Codex 在每个请求中都会发送）则被省略，并在 `kaeso-left-out` 中注明（`without_cache_key()`）。 |
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
+| `delta.channel`（GPT-OSS 推理中为 `analysis`） | 数据块的 extras | Chat 应用随推理一起收回；对其他方言省略。 |
+| `x_groq`、`usage_breakdown`、`service_tier`（`on_demand`） | extras | 发往其他方言时省略。 |
+| `usage.queue_time`、`prompt_time`、`completion_time`、`total_time` | 用量的 `raw` | Token 数（包括 `reasoning_tokens`）按[用量](openai-chat.md#用量completionusage)中的类型化字段处理。 |
+| 结束数据块中的 `usage`，即使没有 `stream_options.include_usage` | `Usage` | 无论 Groq 是否另外发送 `include_usage` 请求的用量数据块，每种方言都会收到用量。 |
+| 额外的模型字段（`active`、`context_window`、`max_completion_tokens`、`pricing`、`supported_features` 等） | 模型 extras | |
 
 ## Hugging Face
 
@@ -151,6 +191,25 @@ Novita AI 的 Anthropic 兼容端点位于 `/anthropic` 下，在其 OpenAI 基�
 
 NVIDIA 不提供 Responses、Messages 或 Token 计数：`/v1/responses` 和 `/v1/messages/count_tokens` 返回 404，`/v1/messages` 对每个模型都返回 `model not found`。它的嵌入模型接受 `input_type` 和 `truncate`，这些字段保留在 extras 中（[OpenAI Embeddings](openai-embeddings.md#nvidia)）。
 
+## Ollama Cloud
+
+来源：Ollama 的 [Cloud](https://docs.ollama.com/cloud)、[身份验证](https://docs.ollama.com/api/authentication)、[OpenAI 兼容性](https://docs.ollama.com/api/openai-compatibility)和[错误](https://docs.ollama.com/api/errors)页面（2026-10-30 阅读），以及 `fixtures/openai_chat/providers/ollama-cloud/` 中用免费套餐的 `gpt-oss:20b` 和 `gemma4:31b` 录制的实时记录。
+
+| Ollama Cloud 字段 | KPP | 说明 |
+|---|---|---|
+| 带标签的模型 ID，例如 `gpt-oss:20b` | `model` | 原样发送，在 `GET /v1/models/{model}` 中也是如此。 |
+| `max_completion_tokens`（被忽略）、`max_tokens`（生效） | `max_output_tokens` | 配置中的 `max_tokens()` 把每个应用的输出上限作为 `max_tokens` 发送。 |
+| `reasoning: {effort}`（请求） | extras | Ollama 在 `reasoning_effort` 之外的写法；请求发往其他方言时被拒绝，与其他仅限 Chat 的字段相同。 |
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置中的 `reasoning_fields`，与 Groq 相同。推理块旁边带有 `content: ""`，不会打开文本块。其他格式的应用发回的推理会以助手轮次中的 `reasoning` 送达 Ollama。 |
+| `system_fingerprint`（`fp_ollama`） | extras | 发往其他方言时省略。 |
+| `usage.prompt_tokens_details.cached_tokens` | `Usage.cache_read_tokens` | Ollama 不报告推理 token。 |
+| `delta` 为空的结束块，随后是 `choices: []` 的用量块 | `Usage` | 与 OpenAI 的发送方式相同。 |
+| `logprobs`、`top_logprobs`、`logit_bias` | 拒绝 | Ollama 接受这些字段但不返回任何结果；配置在发送前拒绝它们。 |
+| `auto` 以外的 `tool_choice`、`response_format` | 发送 | 在 2026-10-30 的实时测试中，Ollama 的云端模型忽略了这两个字段；Kaeso 原样发送。 |
+| 助手消息中的 `refusal` 内容部分 | 发送 | Ollama 返回 400 `invalid message format`（`errors/recorded-content-array-all-roles`），应用会以自己的格式收到。 |
+| OpenAI 格式的错误，`type` 为 `api_error`、`not_found_error` 或 `invalid_request_error` | `KppError` | 类型取决于状态码：401 表示密钥错误，402 表示套餐不包含该模型（`errors/recorded-model-outside-plan`），404 表示模型不存在。 |
+| `GET /v1/models`：OpenAI 的列表、`owned_by: "ollama"`，以及顶层采用 Codex 模型目录格式的 `models` 数组 | `ModelList`、extras | Ollama 返回模型列表和 `GET /v1/models/{model}` 时不检查密钥，因此模型检查无法发现错误的密钥。 |
+
 ## SambaNova
 
 来源：SambaNova 的 [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json)（SambaNova cloud API 1.2.0）及其 [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility)、[文本生成](https://docs.sambanova.ai/docs/en/features/text-generation)和 [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes) 页面，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/sambanova/` 包含该文档自己的示例回复和示例流、据此构建的回复、SambaCloud 无需密钥即提供的模型列表，以及在没有有效密钥的情况下实时返回的错误。Kaeso 的基础 URL 为 `https://api.sambanova.ai`，使用 `Authorization: Bearer`。
@@ -200,3 +259,43 @@ Scaleway 不提供 Messages、图像、语音或 Token 计数：`/v1/messages`�
 | `{"code", "message", "data"}` 形式的错误 | `KppError` | SiliconFlow 的消息；类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-invalid-api-key`）。 |
 
 SiliconFlow 不提供 Responses 或 Token 计数：`/v1/responses` 和 `/v1/messages/count_tokens` 返回 404。它的 Messages 端点不被使用，因为其参考只记录了文本和工具块。它的嵌入、语音和转录使用 OpenAI 的形式（[OpenAI Embeddings](openai-embeddings.md#siliconflow)）；图像和视频则不是。
+
+## Together AI
+
+来源：Together AI 的 [Chat Completions 参考](https://docs.together.ai/reference/chat-completions-1)和 [OpenAI 兼容性说明](https://docs.together.ai/docs/inference/openai-compatibility)（2026-10-19 阅读）、`togethercomputer/together-py` 中的 SDK 类型，以及 `fixtures/openai_chat/providers/togetherai/` 中的实时录制。
+
+| Together AI 字段 | KPP | 说明 |
+|---|---|---|
+| `top_k`、`min_p`、`repetition_penalty`、`safety_model`、`context_length_exceeded_behavior`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `message.reasoning_content` 或 `message.reasoning`（视模型而定），以及增量中的同名字段 | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。流式推理片段带有 `content: ""`，它不会打开文本块。 |
+| choice 上的 `matched_stop` 和 `seed`、流式 choice 上的 `text`、增量中的 `token_id`，以及顶层的 `prompt`、`metadata` 和 `warnings` | extras | 发往其他方言时省略。 |
+| 与 `completion_tokens_details.reasoning_tokens` 并列的 `usage.reasoning_tokens` | 用量的 `raw` | Token 数按[用量](openai-chat.md#用量completionusage)中的类型化字段处理。 |
+| 采用 OpenAI 错误结构、带 Together AI 自有 `type` 和 `code`（`start_generation_failed`、`model_not_available`）的错误，有时带顶层 `id` | `KppError` | 类别取决于状态码；密钥错误时返回 401 `invalid_api_key`，即 `Authentication`。 |
+| `GET /v1/models`：模型的裸数组，带 `type`、`display_name`、`organization`、`context_length`、`config` 和 `pricing` | `ModelList`、模型 extras | 对含 `/` 的 ID，`GET /v1/models/{model}` 返回 404，因此模型检查依赖模型列表。 |
+
+## Volcengine Ark
+
+来源：方舟的 [Base URL 及鉴权](https://docs.volcengine.com/docs/zh/ark/base-url-and-authentication.md)页面、[Chat API](https://docs.volcengine.com/docs/zh/ark/chat-api.md) 参考（更新于 2026-11-12）、[深度思考](https://docs.volcengine.com/docs/zh/ark/deep-thinking.md)指南、[模型列表](https://docs.volcengine.com/docs/zh/ark/models-api.md)和[错误码](https://docs.volcengine.com/docs/zh/ark/error-codes.md)，阅读于 2026-11-14。未经成功调用测试：`fixtures/openai_chat/providers/volcengine/` 中的回复、流和列表是参考与指南中的示例，一个流发布在另一个项目的 issue 中，密钥错误是在没有有效密钥时实时得到的。Kaeso 的基础 URL 是 `https://ark.cn-beijing.volces.com/api/v3`，使用 `Authorization: Bearer`。
+
+| Volcengine Ark 字段 | KPP | 说明 |
+|---|---|---|
+| `<base>/chat/completions`、`<base>/models` | 服务商的 API 根路径 | 方舟的 API 位于 `/api/v3`，而不是 `/v1`；基础 URL 以此结尾，根路径为空（[API 根路径](#api-根路径)）。 |
+| `thinking: {"type": "enabled" \| "disabled"}` | `reasoning` | `thinking_type()`：模型默认思考，而 `minimal` 会关闭 Seed 的思考，在 DeepSeek V4.1 Flash 上却是 `low`，因此关闭思考只以开关发送。 |
+| `reasoning_effort`（`none` 到 `max`） | `reasoning.effort` | 每个可调节思考的模型都接受全部 7 档取值，并映射到自己的档位。 |
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`；助手消息会收回它。 |
+| `message.encrypted_content`、`delta.encrypted_content` | extras 以及推理块的 opaque | `encrypted_reasoning_field`：Chat 应用原样收到并发回；其他应用在自己的推理载体中携带它，Kaeso 把它写回助手消息，这是方舟在多轮工具调用中的要求（`responses/tools-encrypted-content-doc`、`requests/tools-encrypted-content-replay-doc`）。 |
+| `max_completion_tokens`、`max_tokens` | `max_output_tokens` | `max_completion_tokens` 计入思考和回答，最大 65536；在大多数模型上 `max_tokens` 只计回答。按应用的写法发送，Kaeso 自己的上限以 `max_completion_tokens` 发送；服务商设有 `reasoning_beyond_output_limit`。 |
+| 终端用户的 ID | 省略 | 没有 `user` 或 `safety_identifier`（`without_end_user()`）。 |
+| `service_tier`（`auto`、`default`、`fast`、`flex`） | extras | 原样发送；OpenAI 的 `priority` 和 `scale` 被拒绝（`refusing_values`）。 |
+| `web_search_options` | extras | 仅限豆包搜索；`{}` 即开启。`search_context_size` 和 `user_location` 不生效，因此被拒绝。回复带有不含偏移的 `url_citation` 标注和 `usage.tool_usage.web_search`（`responses/web-search-doc`）。 |
+| `seed`、`n`、`metadata`、`store`、`modalities`、`audio`、`prediction`、`prompt_cache_retention`、`functions`、`function_call` | 拒绝 | 不在 schema 中，且方舟没有说明是否拒绝未声明的字段。 |
+| `prompt_cache_key`、`video_url` 部分、`logprobs`、`logit_bias`、`parallel_tool_calls` | 原样发送 | 在 schema 中；推理模型会自行拒绝其中一些。 |
+| 不带 `chatcmpl-` 的 ID、回复中的 `service_tier`、`usage.prompt_tokens_details.audio_tokens` | extras 和原始 usage | 对 Chat 应用往返保留。 |
+| OpenAI 信封中的错误，带方舟的 `code` 和类似 HTTP 的 `type`，消息末尾是请求 ID | `KppError` | 类别由状态码决定：401 表示密钥被拒绝（`errors/recorded-*-api-key`）。 |
+| `GET /models`，带方舟的 `name`、`version`、`domain`、`token_limits`、`modalities` 和 `features`，没有 `owned_by` | `ModelList` | 需要密钥。它列出基础模型版本，不含账户的接入点（`ep-…`），因此列表不完整（`models/list-doc`）。 |
+
+方舟的嵌入只提供 `/embeddings/multimodal`，整段输入只返回一个向量，因此该服务商没有嵌入方言。它的 Responses 和 Anthropic Messages 端点不被使用，也没有 Token 计数。BytePlus ModelArk 在 `https://ark.ap-southeast.bytepluses.com/api/v3` 提供相同的 API，有自己的密钥和模型 ID，通过基础 URL 使用。
+
+### API 根路径
+
+API 不在 `/v1` 下的服务商在 `Provider::api_root` 中指定其 API 根路径：即在每种方言的路径中取代 `/v1` 的部分。网关通过 `EgressCtx::with_api_root` 把它交给编解码器（`pipeline::egress_ctx`，以及用于模型列表和模型检查的 `availability::models_ctx`）。Chat Completions、Responses、Messages 和嵌入把各自的 `/v1/…` 路径放在根路径下，OpenAI 模型列表把 `/v1/models` 发送为 `<root>/models`。`Some("")` 表示基础 URL 本身就止于根路径，例如 Volcengine Ark 的 `…/api/v3`，因此 `/v1/chat/completions` 变为 `/chat/completions`；其他所有服务商为 `None`，保留 `/v1`。密钥的账户范围（例如 Cloudflare AI Gateway 的 `/client/v4/accounts/{account_id}/ai/v1`）在之后应用，并取代该根路径；自定义服务商的基础 URL 自行包含其根路径。由于默认基础 URL 止于根路径，管理员设置的基础 URL 就是文档中的地址本身，例如 BytePlus ModelArk 的地址。

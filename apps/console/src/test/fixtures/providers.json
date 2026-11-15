@@ -764,6 +764,26 @@
       "account_scope": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "volcengine",
+      "name": "Volcengine Ark",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://ark.volcengine.com/region:cn-beijing/apiKey",
+        "label": "API Key 管理"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat"],
+      "count_tokens": null,
+      "embeddings": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

@@ -63,7 +63,7 @@ Quellen: die Seiten [REST API](https://developers.cloudflare.com/ai-gateway/usag
 
 | Feld von Cloudflare | KPP | Hinweise |
 |---|---|---|
-| `/client/v4/accounts/{account_id}/ai/v1/…` | `EgressCtx::base_path` | Das Konto des Schlüssels tritt für Chat Completions, Responses und Messages an die Stelle von `/v1`; das Gateway eines Schlüssels steht in `cf-aig-gateway-id`. |
+| `/client/v4/accounts/{account_id}/ai/v1/…` | `EgressCtx::api_root` | Das Konto des Schlüssels tritt für Chat Completions, Responses, Messages und Embeddings an die Stelle von `/v1` ([API-Wurzeln](openai-chat-inference-clouds.md#api-wurzeln)); das Gateway eines Schlüssels steht in `cf-aig-gateway-id`. |
 | `message.reasoning` und `reasoning_content`, `delta.reasoning` und `reasoning_content` | `Block::Reasoning` | Derselbe Text in beiden Feldern; das Profil liest `reasoning`, und Chat-Apps erhalten `reasoning_content` unverändert zurück. |
 | `usage` in jedem Stream-Chunk, dann ein letzter Chunk mit der ganzen Nutzung | `Usage` | Jeder Chunk zählt nur seine eigenen Tokens; der letzte, nach `finish_reason`, enthält die Summen. |
 | `usage.neurons` | `raw`-Nutzung | Die eigene Einheit von Workers AI; Kaeso bepreist Tokens. |

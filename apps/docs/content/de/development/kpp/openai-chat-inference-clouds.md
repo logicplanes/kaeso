@@ -25,6 +25,30 @@ Quellen: die Übersicht [Model APIs](https://docs.baseten.co/inference/model-api
 
 Der Messages-Endpunkt von Baseten wird nicht genutzt: Sein Schema nimmt nur Text- und Tool-Blöcke an, ohne Thinking oder Bilder. Auch seine Responses API, die nichts speichert, wird nicht genutzt: Messages- und Responses-Apps erreichen Baseten über Chat Completions. Model APIs bieten weder Embeddings noch Bilder, Audio oder Token-Zählungen an.
 
+## Cerebras
+
+Quellen: die Seiten [Chat-Completions-Referenz](https://inference-docs.cerebras.ai/api-reference/chat-completions) und [OpenAI-Kompatibilität](https://inference-docs.cerebras.ai/resources/openai) von Cerebras, gelesen am 2026-11-02, und die Live-Aufnahmen in `fixtures/openai_chat/providers/cerebras/`, aufgenommen mit `gpt-oss-120b` und `qwen-3.8-27b`. Kaesos Basis-URL ist `https://api.cerebras.ai`, die `Authorization: Bearer` annimmt.
+
+| Cerebras-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Über `reasoning_fields` des Profils, wie bei Groq. Thinking, das eine App in einem anderen Format zurückschickt, erreicht Cerebras als `reasoning`, das es annimmt (`responses/recorded-reasoning-sent-back`). Das `reasoning_content` einer Chat-App, etwa von Grok CLI, beantwortet Cerebras mit 400, deshalb geht es ebenfalls als `reasoning` (`replay_reasoning_as_read()`). |
+| `time_info`, `system_fingerprint`, `choices[].reasoning_logprobs` | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `completion_tokens_details.accepted_prediction_tokens` und `rejected_prediction_tokens`, `prompt_tokens_details.image_tokens` | `raw`-Usage | Die gecachten und die Reasoning-Tokens sind wie unter [Nutzung](openai-chat.md#nutzung-completionusage) typisiert. |
+| `usage` und `time_info` im Abschluss-Chunk, auch ohne `stream_options.include_usage` | `Usage` | Cerebras sendet nie einen Chunk mit `choices: []`. |
+| `reasoning_effort` | `reasoning.effort` | `gpt-oss-120b` nimmt `low`, `medium` und `high`, `qwen-3.8-27b` zusätzlich `none`, wie KPMR sie führt; andere Stufen lehnt Kaeso vor dem Senden ab, und Cerebras beantwortet sie mit 400 (`errors/recorded-reasoning-effort-*`). `max_completion_tokens` zählt das Reasoning mit. |
+| `reasoning_format`, `clear_thinking` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere reine Chat-Felder. |
+| Felder, die Cerebras nicht deklariert, etwa `safety_identifier`, `metadata`, `store` oder `web_search_options` | gesendet | Cerebras antwortet mit 400 `property '…' is unsupported`, das die App erreicht. Das Profil sendet die ID des Endnutzers als `user` (`end_user_as_user()`), sodass das `metadata.user_id` von Claude Code dort ankommt. |
+| `logit_bias`, `logprobs`, `top_logprobs`, beide Penalties, `seed`, `stop`, `prompt_cache_key`, `parallel_tool_calls`, `service_tier`, `prediction` | gesendet | Cerebras nimmt sie an (`responses/recorded-logit-bias-honoured` zeigt den Bias in Aktion). Eine `stop`-Sequenz beendet auch das Reasoning, sodass eine Antwort ohne `content` bleiben kann (`responses/recorded-sampling`). |
+| die Rolle `developer`, eine `system`-Nachricht nach der ersten Runde | `Role::System` | Qwens Chat-Template lehnt beide mit 400 ab. `system_role()` sendet `system`, und `leading_system_only()` verschiebt den Text einer späteren Systemnachricht einer App in einem anderen Format, etwa Claude Code oder Codex, in die nächste Benutzerrunde. |
+| eine abschließende Assistentennachricht | abgelehnt | Cerebras beantwortet sie neu und wiederholt sie (`responses/recorded-prefill`), deshalb lehnt `without_prefill()` sie vor dem Senden ab. |
+| `refusal` in einer Assistentennachricht, auch `null` | abgelehnt | Cerebras antwortet mit 400 (`errors/recorded-assistant-refusal`); das Profil lehnt es vor dem Senden ab. |
+| eine Funktion ohne `parameters` | `parameters` | `with_tool_parameters()` sendet das leere Objekt-Schema, das das Chat-Template von `gpt-oss-120b` verlangt (`errors/recorded-tool-without-parameters`). |
+| `tools` zusammen mit `response_format` bei `gpt-oss-120b`, ein Bild als `https`-URL oder an ein Modell ohne Bilder | gesendet | Cerebras antwortet mit 400 (`errors/recorded-tools-with-response-format`, `errors/recorded-image-url`, `errors/recorded-image-gpt-oss`), das die App erreicht. |
+| Fehler mit OpenAIs `message`, `type`, `param` und `code` auf oberster Ebene, ohne das Objekt `error` | `KppError` | Meldung und `param` stammen von Cerebras, die Art folgt dem Status: Ein falscher Schlüssel (401 `wrong_api_key`) ist ein abgelehnter Schlüssel, das Token-Limit pro Minute des Kontos (429 `too_many_tokens_error`, `retry-after: 60`) ein Ratenlimit. Chat-Apps erhalten den Fehler in OpenAIs Form. |
+| `GET /v1/models` | `ModelList` | Die Modelle, die der Schlüssel aufrufen darf, mit `created: 0` und `owned_by: "Cerebras"`; ein falscher Schlüssel erhält 401, sodass eine Modellprüfung ihn erkennt. |
+
+Cerebras hat keinen Endpunkt für Responses, Messages, Embeddings oder Token-Zählung (alle antworten mit 404), deshalb sind `embeddings` und `count_tokens` `None`.
+
 ## DeepInfra
 
 Quellen: das [OpenAPI document](https://api.deepinfra.com/openapi.json) von DeepInfra und seine Anleitungen zu [Chat Completions](https://docs.deepinfra.com/chat/overview.md), [Streaming](https://docs.deepinfra.com/chat/streaming.md), [Tool-Aufrufen](https://docs.deepinfra.com/chat/tool-calling.md), [Prompt-Caching](https://docs.deepinfra.com/chat/prompt-caching.md) und [Authentifizierung](https://docs.deepinfra.com/account/authentication.md), gelesen am 2026-11-14. Es gab keinen Schlüssel: Eine Antwort in `fixtures/openai_chat/providers/deepinfra/` ist eine Antwort, die DeepInfra gesendet hat, veröffentlicht im Issue eines anderen Projekts, die übrigen und der Stream sind aus den Anleitungen gebaut; die Modellliste und die Schlüsselfehler kamen live, ohne gültigen Schlüssel. Die Anleitungen von DeepInfra schreiben die Basis-URL als `https://api.deepinfra.com/v1/openai`; sein OpenAPI-Dokument bietet dieselbe API unter `/v1/…` an, daher ist Kaesos Basis-URL `https://api.deepinfra.com`, die `Authorization: Bearer` annimmt.
@@ -62,6 +86,22 @@ Quellen: Fireworks' Referenz [Create Chat Completion](https://docs.fireworks.ai/
 | `GET /v1/models` | `ModelList` | Ein falscher Schlüssel erhält 401 (`errors/list-invalid-api-key`), sodass eine Modellprüfung ihn erkennt. Fireworks dokumentiert auf diesem Pfad keine Liste; die Konsole nimmt seine Modelle aus KPMR. |
 
 Fireworks dokumentiert keinen Endpunkt für Bilder, Sprache, Transkription, Video oder Token-Zählung, daher bleiben diese leer und `count_tokens` ist `None`. Seine Responses API meldet die Usage als `prompt_tokens` und `completion_tokens` statt unter OpenAIs Namen, daher sendet Kaeso ihm kein Responses; Responses-Apps erreichen Fireworks über Chat Completions.
+
+## Groq
+
+Quellen: die [API-Referenz](https://console.groq.com/docs/api-reference) und der [Reasoning-Leitfaden](https://console.groq.com/docs/reasoning) von Groq, gelesen am 2026-10-19, und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/groq/`.
+
+| Groq-Feld | KPP | Hinweise |
+|---|---|---|
+| `reasoning_format`, `include_reasoning` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `user`, `safety_identifier` (Anfrage) | KPP `user` | Groq nimmt `user` an und lehnt `safety_identifier` ab, daher sendet das Profil die ID des Endnutzers als `user` (`end_user_as_user()`). |
+| `prompt_cache_key` (Anfrage) | Extras | Groq lehnt ihn ab. Den eigenen Schlüssel einer Chat-App lehnt das Gateway daher vor dem Senden ab; den Schlüssel einer OpenAI-Responses-App, den Codex bei jeder Anfrage sendet, lässt es weg und nennt ihn in `kaeso-left-out` (`without_cache_key()`). |
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Über `reasoning_fields` des Profils. Chat-Apps erhalten sie unverändert zurück; Apps von Anthropic Messages erhalten einen `thinking`-Block und Apps von Responses ein Reasoning-Item ([Reasoning](reasoning.md)). |
+| `delta.channel` (`analysis` beim Reasoning von GPT-OSS) | Extras des Chunks | Chat-Apps erhalten es mit dem Reasoning zurück; gegenüber anderen Dialekten weggelassen. |
+| `x_groq`, `usage_breakdown`, `service_tier` (`on_demand`) | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.queue_time`, `prompt_time`, `completion_time`, `total_time` | `raw` der Nutzung | Die Token-Zahlen, `reasoning_tokens` eingeschlossen, sind wie unter [Nutzung](openai-chat.md#nutzung-completionusage) typisiert. |
+| `usage` im Chunk mit `finish_reason`, auch ohne `stream_options.include_usage` | `Usage` | Jeder Dialekt erhält die Nutzung, ob Groq zusätzlich den Nutzungs-Chunk sendet, den `include_usage` anfordert, oder nicht. |
+| zusätzliche Modellfelder (`active`, `context_window`, `max_completion_tokens`, `pricing`, `supported_features` und weitere) | Modell-Extras | |
 
 ## Hugging Face
 
@@ -151,6 +191,25 @@ Quellen: die Referenz [LLM APIs](https://docs.api.nvidia.com/nim/reference/llm-a
 
 NVIDIA bietet weder Responses noch Messages oder Token-Zählungen an: `/v1/responses` und `/v1/messages/count_tokens` antworten mit 404, und `/v1/messages` antwortet für jedes Modell mit `model not found`. Seine Embedding-Modelle nehmen `input_type` und `truncate` an, die in den Extras bleiben ([OpenAI Embeddings](openai-embeddings.md#nvidia)).
 
+## Ollama Cloud
+
+Quellen: Ollamas Seiten zu [Cloud](https://docs.ollama.com/cloud), [Authentifizierung](https://docs.ollama.com/api/authentication), [OpenAI-Kompatibilität](https://docs.ollama.com/api/openai-compatibility) und [Fehlern](https://docs.ollama.com/api/errors), gelesen am 2026-10-30, und die Live-Aufnahmen in `fixtures/openai_chat/providers/ollama-cloud/`, aufgenommen mit `gpt-oss:20b` und `gemma4:31b` im kostenlosen Tarif.
+
+| Ollama-Cloud-Feld | KPP | Hinweise |
+|---|---|---|
+| Modell-IDs mit Tag, etwa `gpt-oss:20b` | `model` | Unverändert gesendet, auch in `GET /v1/models/{model}`. |
+| `max_completion_tokens` (ignoriert), `max_tokens` (beachtet) | `max_output_tokens` | `max_tokens()` im Profil sendet das Ausgabelimit jeder App als `max_tokens`. |
+| `reasoning: {effort}` (Anfrage) | Extras | Ollamas Schreibweise neben `reasoning_effort`; abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere reine Chat-Felder. |
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Über `reasoning_fields` im Profil, wie bei Groq. Reasoning-Chunks tragen daneben `content: ""`, das keinen Textblock öffnet. Reasoning, das eine App in einem anderen Format zurückschickt, erreicht Ollama als `reasoning` im Assistenten-Zug. |
+| `system_fingerprint` (`fp_ollama`) | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.prompt_tokens_details.cached_tokens` | `Usage.cache_read_tokens` | Ollama meldet keine Reasoning-Token. |
+| der Abschluss-Chunk mit leerem `delta`, dann ein Usage-Chunk mit `choices: []` | `Usage` | Wie OpenAI sie sendet. |
+| `logprobs`, `top_logprobs`, `logit_bias` | abgelehnt | Ollama nimmt sie an und liefert nichts dafür; das Profil lehnt sie vor dem Senden ab. |
+| `tool_choice` außer `auto`, `response_format` | gesendet | Ollamas Cloud-Modelle ignorierten beide in einem Live-Test am 2026-10-30; Kaeso sendet sie wie geschrieben. |
+| ein `refusal`-Inhaltsteil in einer Assistentennachricht | gesendet | Ollama antwortet mit 400 `invalid message format` (`errors/recorded-content-array-all-roles`), das die App in ihrem eigenen Format erhält. |
+| Fehler in OpenAIs Hülle mit `type` `api_error`, `not_found_error` oder `invalid_request_error` | `KppError` | Die Art folgt dem Status: 401 für einen falschen Schlüssel, 402 für ein Modell, das der Tarif nicht enthält (`errors/recorded-model-outside-plan`), 404 für ein unbekanntes Modell. |
+| `GET /v1/models`: OpenAIs Liste, `owned_by: "ollama"` und ein `models`-Array auf oberster Ebene im Modellkatalog-Format von Codex | `ModelList`, Extras | Ollama beantwortet die Liste und `GET /v1/models/{model}`, ohne den Schlüssel zu prüfen, daher erkennt eine Modellprüfung keinen falschen Schlüssel. |
+
 ## SambaNova
 
 Quellen: das [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json) von SambaNova (SambaNova cloud API 1.2.0) und seine Seiten [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility), [Textgenerierung](https://docs.sambanova.ai/docs/en/features/text-generation) und [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes), gelesen am 2026-11-09. Es gab keinen Schlüssel: `fixtures/openai_chat/providers/sambanova/` enthält die Beispielantwort und den Beispiel-Stream des Dokuments und daraus gebaute Antworten, die Modellliste, wie SambaCloud sie ohne Schlüssel liefert, und Fehler, die live ohne gültigen Schlüssel kamen. Kaesos Basis-URL ist `https://api.sambanova.ai`, die `Authorization: Bearer` annimmt.
@@ -200,3 +259,43 @@ Quellen: die Referenz [chat completions](https://docs.siliconflow.com/en/api-ref
 | Fehler als `{"code", "message", "data"}` | `KppError` | Die Meldung von SiliconFlow; die Art folgt dem Status: 401 ist ein abgelehnter Schlüssel (`errors/recorded-invalid-api-key`). |
 
 SiliconFlow bietet weder Responses noch Token-Zählungen an: `/v1/responses` und `/v1/messages/count_tokens` antworten mit 404. Sein Messages-Endpunkt wird nicht genutzt, da seine Referenz nur Text- und Tool-Blöcke dokumentiert. Seine Embeddings, Sprache und Transkriptionen nutzen die Formen von OpenAI ([OpenAI Embeddings](openai-embeddings.md#siliconflow)); seine Bilder und Videos nicht.
+
+## Together AI
+
+Quellen: die [Chat-Completions-Referenz](https://docs.together.ai/reference/chat-completions-1) und die [OpenAI-Kompatibilität](https://docs.together.ai/docs/inference/openai-compatibility) von Together AI, gelesen am 2026-10-19, die SDK-Typen in `togethercomputer/together-py` und die Live-Aufzeichnungen in `fixtures/openai_chat/providers/togetherai/`.
+
+| Together-AI-Feld | KPP | Hinweise |
+|---|---|---|
+| `top_k`, `min_p`, `repetition_penalty`, `safety_model`, `context_length_exceeded_behavior` (Anfrage) | Extras | Abgelehnt, wenn die Anfrage an einen anderen Dialekt geht, wie andere Felder, die nur Chat kennt. |
+| `message.reasoning_content` oder `message.reasoning`, je nach Modell, und dasselbe in Deltas | `Block::Reasoning` | Über `reasoning_fields` des Profils. Chat-Apps erhalten sie unverändert zurück; Apps von Anthropic Messages erhalten einen `thinking`-Block und Apps von Responses ein Reasoning-Item ([Reasoning](reasoning.md)). Ein gestreamtes Stück Reasoning kommt mit `content: ""`, das keinen Textblock öffnet. |
+| `matched_stop` und `seed` an einer Choice, `text` an einer Stream-Choice, `token_id` in einem Delta, `prompt`, `metadata` und `warnings` auf oberster Ebene | Extras | Gegenüber anderen Dialekten weggelassen. |
+| `usage.reasoning_tokens` neben `completion_tokens_details.reasoning_tokens` | `raw` der Nutzung | Die Token-Zahlen sind wie unter [Nutzung](openai-chat.md#nutzung-completionusage) typisiert. |
+| Fehler in der OpenAI-Hülle mit eigenen `type`- und `code`-Werten von Together AI (`start_generation_failed`, `model_not_available`), manchmal mit einer `id` auf oberster Ebene | `KppError` | Die Art folgt dem Status; ein falscher Schlüssel ist ein 401 `invalid_api_key`, also `Authentication`. |
+| `GET /v1/models`: ein bloßes Array von Modellen mit `type`, `display_name`, `organization`, `context_length`, `config` und `pricing` | `ModelList`, Modell-Extras | `GET /v1/models/{model}` antwortet für IDs mit `/` mit 404, daher stützt sich eine Modellprüfung auf die Modellliste. |
+
+## Volcengine Ark
+
+Quellen: die Seite [base URL and authentication](https://docs.volcengine.com/docs/zh/ark/base-url-and-authentication.md) von Ark, seine Referenz [Chat API](https://docs.volcengine.com/docs/zh/ark/chat-api.md) (aktualisiert am 2026-11-12), sein Leitfaden [deep thinking](https://docs.volcengine.com/docs/zh/ark/deep-thinking.md), seine Seiten zur [Modellliste](https://docs.volcengine.com/docs/zh/ark/models-api.md) und zu den [Fehlercodes](https://docs.volcengine.com/docs/zh/ark/error-codes.md), gelesen am 2026-11-14. Nicht mit einem erfolgreichen Aufruf getestet: Die Antworten, der Stream und die Liste in `fixtures/openai_chat/providers/volcengine/` sind Beispiele der Referenz und des Leitfadens, ein Stream wurde im Issue eines anderen Projekts veröffentlicht, und die Schlüsselfehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://ark.cn-beijing.volces.com/api/v3`, mit `Authorization: Bearer`.
+
+| Volcengine-Ark-Feld | KPP | Hinweise |
+|---|---|---|
+| `<base>/chat/completions`, `<base>/models` | die API-Wurzel des Anbieters | Die API von Ark liegt unter `/api/v3`, nicht `/v1`; die Basis-URL endet dort und die Wurzel ist leer ([API-Wurzeln](#api-wurzeln)). |
+| `thinking: {"type": "enabled" \| "disabled"}` | `reasoning` | `thinking_type()`: Die Modelle denken von sich aus, und `minimal` schaltet das Thinking von Seed aus, ist bei DeepSeek V4.1 Flash aber `low`, daher geht ausgeschaltetes Thinking nur als Schalter. |
+| `reasoning_effort` (`none` bis `max`) | `reasoning.effort` | Jedes Modell mit Thinking-Stufen nimmt alle sieben Werte an und bildet sie auf seine eigenen Stufen ab. |
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | Über `reasoning_fields` des Profils; Assistant-Nachrichten nehmen es zurück. |
+| `message.encrypted_content`, `delta.encrypted_content` | Extras und ein Opaque des Reasoning-Blocks | `encrypted_reasoning_field`: Eine Chat-App erhält und sendet es unverändert; andere Apps tragen es in ihrem Reasoning-Träger, und Kaeso schreibt es wieder an die Assistant-Nachricht, wie Ark es bei Tool-Aufrufen über mehrere Züge verlangt (`responses/tools-encrypted-content-doc`, `requests/tools-encrypted-content-replay-doc`). |
+| `max_completion_tokens`, `max_tokens` | `max_output_tokens` | `max_completion_tokens` zählt Thinking und Antwort, bis 65536; `max_tokens` bei den meisten Modellen nur die Antwort. Wie von der App geschrieben gesendet, Kaesos eigene Grenze als `max_completion_tokens`; der Anbieter hat `reasoning_beyond_output_limit`. |
+| die ID eines Endnutzers | weggelassen | Kein `user` oder `safety_identifier` (`without_end_user()`). |
+| `service_tier` (`auto`, `default`, `fast`, `flex`) | Extras | Unverändert gesendet; OpenAIs `priority` und `scale` werden abgelehnt (`refusing_values`). |
+| `web_search_options` | Extras | Nur Doubao Search; `{}` schaltet es ein. `search_context_size` und `user_location` bewirken nichts und werden abgelehnt. Antworten tragen `url_citation`-Annotationen ohne Offsets und `usage.tool_usage.web_search` (`responses/web-search-doc`). |
+| `seed`, `n`, `metadata`, `store`, `modalities`, `audio`, `prediction`, `prompt_cache_retention`, `functions`, `function_call` | abgelehnt | Nicht im Schema, und Ark dokumentiert nicht, ob es nicht deklarierte Felder ablehnt. |
+| `prompt_cache_key`, `video_url`-Teile, `logprobs`, `logit_bias`, `parallel_tool_calls` | unverändert gesendet | Im Schema; Reasoning-Modelle lehnen manche davon selbst ab. |
+| IDs ohne `chatcmpl-`, `service_tier` in Antworten, `usage.prompt_tokens_details.audio_tokens` | Extras und rohe Usage | Bleiben für Chat-Apps erhalten. |
+| Fehler in OpenAIs Hülle mit dem `code` von Ark und einem HTTP-artigen `type`, die Request-ID am Ende der Meldung | `KppError` | Die Art folgt dem Status: 401 ist ein abgelehnter Schlüssel (`errors/recorded-*-api-key`). |
+| `GET /models` mit `name`, `version`, `domain`, `token_limits`, `modalities` und `features` von Ark, ohne `owned_by` | `ModelList` | Braucht einen Schlüssel. Sie listet Basismodellversionen, nicht die Endpunkte des Kontos (`ep-…`), daher ist die Liste unvollständig (`models/list-doc`). |
+
+Die Embeddings von Ark bedienen nur `/embeddings/multimodal`, das einen Vektor für die ganze Eingabe liefert, daher hat der Anbieter keinen Embeddings-Dialekt. Seine Endpunkte für Responses und Anthropic Messages werden nicht genutzt, und es gibt keine Token-Zählungen. BytePlus ModelArk bietet dieselbe API unter `https://ark.ap-southeast.bytepluses.com/api/v3` an, mit eigenen Schlüsseln und Modell-IDs, über die Basis-URL.
+
+### API-Wurzeln
+
+Ein Anbieter, dessen API nicht unter `/v1` liegt, nennt seine API-Wurzel in `Provider::api_root`: das, was in den Pfaden jedes Dialekts an die Stelle von `/v1` tritt. Das Gateway gibt sie den Codecs mit `EgressCtx::with_api_root` (`pipeline::egress_ctx`, und `availability::models_ctx` für Modellliste und Modellprüfungen). Chat Completions, Responses, Messages und Embeddings senden ihren `/v1/…`-Pfad unter der Wurzel, und die OpenAI-Modellliste sendet `/v1/models` als `<root>/models`. `Some("")` heißt, dass die Basis-URL selbst an der Wurzel endet, wie `…/api/v3` von Volcengine Ark, daher wird `/v1/chat/completions` zu `/chat/completions`; `None`, für jeden anderen Anbieter, behält `/v1`. Der Kontobereich eines Schlüssels, wie `/client/v4/accounts/{account_id}/ai/v1` von Cloudflare AI Gateway, wird danach angewandt und tritt an die Stelle dieser Wurzel; die Basis-URL eines eigenen Anbieters nennt ihre Wurzel selbst. Weil die Standard-Basis-URL an der Wurzel endet, ist die Basis-URL eines Administrators die dokumentierte, so wie sie ist, etwa die von BytePlus ModelArk.

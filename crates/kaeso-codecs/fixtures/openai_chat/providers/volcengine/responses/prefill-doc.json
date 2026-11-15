@@ -1,0 +1,29 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": " 2",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1742634165,
+  "id": "0217426341647344ee2a242cadeb3c7acc981f0bd805884bc65fc",
+  "model": "doubao-seed-2-1-pro-260915",
+  "service_tier": "default",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 2,
+    "prompt_tokens": 21,
+    "total_tokens": 23,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    }
+  }
+}

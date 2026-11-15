@@ -1,0 +1,12 @@
+{
+  "model": "doubao-seed-2-1-pro-260915",
+  "temperature": 0,
+  "max_completion_tokens": 320,
+  "messages": [
+    {
+      "role": "user",
+      "content": "请搜索今天 AI 领域的一条热点新闻。只返回一行：标题 | 来源 URL"
+    }
+  ],
+  "web_search_options": {}
+}

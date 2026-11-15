@@ -4694,6 +4694,129 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/volcengine/greeting-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello!",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "doubao-seed-2-1-pro-260915",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/volcengine/greeting-stream-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "hello",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "doubao-seed-2-1-pro-260915",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/volcengine/prefill-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "你是一个计算器，请计算： 1 + 1",
+          "role": "user"
+        },
+        {
+          "content": "=",
+          "role": "assistant"
+        }
+      ],
+      "model": "doubao-seed-2-1-pro-260915",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/volcengine/reasoning-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "我要有研究推理模型与非推理模型区别的课题，怎么体现我的专业性",
+          "role": "user"
+        }
+      ],
+      "model": "doubao-seed-2-1-pro-260915",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/volcengine/reasoning-stream-built": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/volcengine/recorded-invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "doubao-seed-2-1-pro-260915",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/volcengine/recorded-missing-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "doubao-seed-2-1-pro-260915",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/volcengine/recorded-unknown-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hello",
+          "role": "user"
+        }
+      ],
+      "model": "doubao-seed-2-1-pro-260915",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/volcengine/thinking-disabled-doc": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/volcengine/tools-encrypted-content-doc": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/volcengine/tools-encrypted-content-replay-doc": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/volcengine/web-search-doc": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
   "providers/xai/live-search-deprecated": {
     "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
     "param": null,

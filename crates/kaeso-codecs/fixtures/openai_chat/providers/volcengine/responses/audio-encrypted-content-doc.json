@@ -1,0 +1,32 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "识别到的音频内容为：绵如云朵入口即化，甜蜜尽在SEEDNS。这是一句偏向甜品相关品牌的宣传 slogan，描述对应食物口感像云朵般绵软、入口快速融化的特点，点出甜蜜的体验都来自名为SEEDNS的品牌。",
+        "reasoning_content": "待识别的音频内容为“绵如云朵入口即化，甜蜜尽在SEEDNS。”音频内容的识别核对工作已经完成，确认识别结果准确无误，该内容为甜品宣传slogan，核心信息为“绵如云朵入口即化，甜蜜尽在SEEDNS”，接下来将直接输出识别到的准确内容。\n",
+        "encrypted_content": "djF5bw7BtwH3UvkWgRPtDQkv3RnL8tQuyAj2JwFajlts/zz7bkoX0IB1joHPJFjuOq/iVdheVGrSxFVTCmpGUzpK/2rDgeg1NBSkUp6u9pObv8mG0XtojzAPT92slvJuumKP07BgFrJQAXy36WIMXAsdNI/rOLNHMjvK/5Iqzg2zyFTU0kNnzs8ZQ1MMwbToi8PL1ycDuu9viZvwNUdPZ9jMsx4BwnHiDbMPppBUFlI7N2zLK4gyg6C+6ep/vfmGlnRRZdvocMmIK4SZQlAqxsL/hVMeGX7dOWBIhB+jaynY9cDS31pePmhXjxbNNGF7nfhwfjJS+IPqOi4IK+DIJyF5wVYCaTMgkGGJbDl0CgKf8c3Lr6Mw4mCovRKBcDuSmjMgsTUG2pXibe88mlGoNn7NLf1bO50BtcDkZiLagSuJ6PAcrbO6n34V0/SKZmVZbGfdhI2AijVvdtrsk3OVHM/XTrzca5SmhBwRqEKi1YKH8uEVkqjVGOJsR1SwpUDbZ/B6abc2Fq0qAlNJqDnf03ENMnudn1nQDecYLw/97qgGjjxb2H+VO0BNVgx7P6+nbQUIdko/DyOarnMGmloPR7f5az2iwkX6+Q5r4iro79IQ3EWV9AsQZjHI2ALMbnksNXxvFPhnmzWhy9s0lhG7pNUTbgyb7zCVCu2ymsE8610er01sS0wdYaflrq+GXeJ7njDrfvdDJNZ+TjdjAoSGwKvQO6eykepmcjjrro7+VSsEIfeYx8BVyCvNsmwRJEOE+63K/FklxKz65Qco7Ye8jQbY465EpQ7JuLZ58yYeKspNasS5PWJj2OZkrkecleuYtEV8uMYjaTaL87KmIxthfPJ0A8EQtGb1A98ER17oIxJ7sV2NPcxlKWoq38Ej3aGzZDPjgd+JQ23lmglPH3vNgKR0OyMmuA==",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1778829097,
+  "id": "02177882907049470efbf1cf5c1ae3d0b3f284807454d292b2912",
+  "model": "doubao-seed-2-0-lite-260428",
+  "service_tier": "default",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 311,
+    "prompt_tokens": 80,
+    "total_tokens": 391,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 40
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 250
+    }
+  }
+}

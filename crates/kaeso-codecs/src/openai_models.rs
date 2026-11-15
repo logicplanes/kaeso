@@ -2,7 +2,7 @@ use kaeso_kpp::{DialectId, Extras, KppError, ModelInfo, ModelList, ModelsQuery, 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::codec::{EncodedRequest, HeaderList};
+use crate::codec::{EgressCtx, EncodedRequest, HeaderList, under_api_root};
 use crate::models::{
     MODELS_PATH, add_query_extra, bad_listing, decode_date, encode_date, format_date, model_path,
     none_or, parse_date, query_pairs, record_none,
@@ -268,6 +268,26 @@ fn decode_bare_list(dialect: DialectId, body: &[u8]) -> Result<ModelList, KppErr
 
 pub(crate) fn retrieve_request(model: &str) -> EncodedRequest {
     EncodedRequest::get(model_path(model), HeaderList::new())
+}
+
+/// The request for one model under the provider's API root ([`EgressCtx::api_root`]), such as
+/// Volcengine Ark's `/api/v3/models/{model}` in place of `/v1/models/{model}`.
+pub(crate) fn retrieve_request_in(model: &str, ctx: &EgressCtx) -> EncodedRequest {
+    rooted(retrieve_request(model), ctx)
+}
+
+/// The listing request under the provider's API root ([`EgressCtx::api_root`]).
+pub(crate) fn list_request_in(
+    dialect: DialectId,
+    query: &ModelsQuery,
+    ctx: &EgressCtx,
+) -> Result<EncodedRequest, KppError> {
+    list_request(dialect, query).map(|r| rooted(r, ctx))
+}
+
+fn rooted(mut request: EncodedRequest, ctx: &EgressCtx) -> EncodedRequest {
+    request.path = under_api_root(ctx, &request.path);
+    request
 }
 
 fn first_query_param(query: &ModelsQuery) -> Option<&'static str> {

@@ -1,8 +1,8 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
     AudioDelta, AudioHeader, BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, Extras,
-    KppError, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart,
-    ResponseStop, StreamEvent, ToolCallHeader, Usage,
+    KppError, Opaque, OpaqueKind, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta,
+    ResponseStart, ResponseStop, StreamEvent, ToolCallHeader, Usage,
 };
 use serde_json::{Map, Value};
 
@@ -161,6 +161,7 @@ pub(crate) struct ChatStreamDecoder {
     audio_media_type: String,
     thinking_parts: bool,
     reasoning_fields: &'static [&'static str],
+    encrypted_reasoning: Option<&'static str>,
     error_detail: &'static [&'static str],
     tools: IndexMap<u32, ToolState>,
     running_usage: Option<Usage>,
@@ -193,6 +194,7 @@ impl ChatStreamDecoder {
                 .to_owned(),
             thinking_parts: ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts,
             reasoning_fields: ctx.chat_profile.reply.reasoning_fields,
+            encrypted_reasoning: ctx.chat_profile.reply.encrypted_reasoning,
             error_detail: ctx.chat_profile.reply.error_detail,
             tools: IndexMap::new(),
             running_usage: None,
@@ -685,6 +687,7 @@ impl ChatStreamDecoder {
                 },
             );
         let audio = d_extra.shift_remove("audio");
+        let encrypted = super::response::encrypted_reasoning(self.encrypted_reasoning, &d_extra);
         for (key, value) in d_extra {
             fields.insert(format!("delta.{key}"), value);
         }
@@ -713,6 +716,20 @@ impl ChatStreamDecoder {
                     .form
                     .insert(FORM_THINKING.to_owned(), Value::Object(rest));
             }
+            events.push(StreamEvent::BlockDelta(d));
+        }
+        // Volcengine Ark sends the encrypted original of the reasoning after the thinking, in a
+        // chunk of its own; the open reasoning block carries a copy for the other formats.
+        if let (Some(data), Some(index)) = (encrypted, self.reasoning) {
+            let mut d = BlockDelta::new(
+                index,
+                Delta::Opaque(Opaque::new(
+                    self.origin.clone(),
+                    OpaqueKind::OpenAiEncryptedReasoning,
+                    data,
+                )),
+            );
+            d.extras = self.extras();
             events.push(StreamEvent::BlockDelta(d));
         }
         // OpenRouter repeats the finish chunk, `content: ""` included, to carry the usage

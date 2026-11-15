@@ -1,8 +1,8 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    AudioFormat, Block, Extras, GenerateRequest, KppError, Message, Modality, OutputSpec, RawJson,
-    ReasoningBlock, ReasoningEffort, ReasoningMode, Role, Source, StreamMode, TextBlock,
-    ToolChoice, ToolDef, ToolResultBlock,
+    AudioFormat, Block, Extras, GenerateRequest, KppError, Message, Modality, OpaqueKind,
+    OutputSpec, RawJson, ReasoningBlock, ReasoningEffort, ReasoningMode, Role, Source, StreamMode,
+    TextBlock, ToolChoice, ToolDef, ToolResultBlock,
 };
 use serde_json::Value;
 
@@ -186,7 +186,45 @@ pub(crate) fn encode_generate(
         out.extra
             .insert(SEPARATE_REASONING.to_owned(), to_raw(&true)?);
     }
+    if profile.request.thinking_type {
+        switch_thinking_type(req, &mut out)?;
+    }
     Ok(out)
+}
+
+// Volcengine Ark turns thinking off only with `thinking: {"type": "disabled"}`: its models think
+// by default, and `reasoning_effort` doesn't mean the same on every model (`minimal` turns Seed's
+// thinking off but is `low` on DeepSeek V4.1 Flash). Thinking turned off, or an effort of `none`
+// or `minimal`, goes as the switch alone; thinking turned on without an effort goes as
+// `{"type": "enabled"}` beside the effort a budget maps to; an effort alone stays
+// `reasoning_effort` (https://docs.volcengine.com/docs/zh/ark/deep-thinking.md).
+fn switch_thinking_type(req: &GenerateRequest, out: &mut Ext<ChatRequest>) -> Result<(), KppError> {
+    let Some(r) = &req.reasoning else {
+        return Ok(());
+    };
+    let off = match r.effort.as_ref() {
+        Some(e) => matches!(e, ReasoningEffort::None | ReasoningEffort::Minimal),
+        None => r.mode == Some(ReasoningMode::Disabled),
+    };
+    let on = r.effort.is_none()
+        && (r.budget_tokens.is_some()
+            || matches!(
+                r.mode,
+                Some(ReasoningMode::Enabled | ReasoningMode::Adaptive)
+            ));
+    if !off && !on {
+        return Ok(());
+    }
+    if off {
+        out.known.reasoning_effort = None;
+    }
+    if !out.verbatim.contains_key("thinking") {
+        let kind = if off { "disabled" } else { "enabled" };
+        out.extra
+            .entry("thinking".to_owned())
+            .or_insert(to_raw(&serde_json::json!({ "type": kind }))?);
+    }
+    Ok(())
 }
 
 // An app that sets `separate_reasoning` itself keeps its own value.
@@ -820,6 +858,16 @@ fn encode_assistant(message: &Message, names: &mut Names<'_>) -> Result<RawJson,
                     .extra
                     .entry((*field).to_owned())
                     .or_insert(to_raw(&r.text.concat())?);
+            }
+            if let Some(field) = profile.reply.encrypted_reasoning
+                && let Some(o) = r.opaque.iter().find(|o| {
+                    o.kind == OpaqueKind::OpenAiEncryptedReasoning && o.origin.is(DIALECT)
+                })
+            {
+                wrapped
+                    .extra
+                    .entry(field.to_owned())
+                    .or_insert(to_raw(&o.data)?);
             }
         }
     }

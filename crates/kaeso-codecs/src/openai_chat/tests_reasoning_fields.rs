@@ -98,6 +98,12 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("Upstage").reasoning_fields(&["reasoning"]),
     ),
     (
+        "volcengine",
+        ChatProfile::compatible("Volcengine Ark")
+            .reasoning_fields(&["reasoning_content"])
+            .encrypted_reasoning_field("encrypted_content"),
+    ),
+    (
         "xai",
         ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
     ),
@@ -274,6 +280,12 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         (
             "togetherai",
             "recorded-sampling-extras",
+            "reasoning_content",
+        ),
+        ("volcengine", "reasoning-doc", "reasoning_content"),
+        (
+            "volcengine",
+            "audio-encrypted-content-doc",
             "reasoning_content",
         ),
         ("upstage", "greeting-reasoning-doc", "reasoning"),
@@ -735,4 +747,103 @@ fn reasoning_an_app_in_another_format_sends_back_returns_in_the_providers_field(
             .get("reasoning_content")
             .is_none()
     );
+}
+
+#[test]
+fn volcengine_encrypted_reasoning_reaches_chat_apps_as_written_and_goes_back_from_anthropic_apps() {
+    let body = recorded(
+        "responses",
+        "json",
+        "volcengine",
+        "tools-encrypted-content-doc",
+    );
+    let encrypted = message(&body)["encrypted_content"].clone();
+    let resp = reply("volcengine", &body);
+    let Block::Reasoning(thought) = &resp.blocks[0] else {
+        panic!("{:?}", resp.blocks)
+    };
+    assert_eq!(thought.opaque.len(), 1, "{thought:?}");
+    assert_eq!(Some(thought.opaque[0].data.as_str()), encrypted.as_str());
+
+    let chat = encode_reply(DialectId::OpenAiChat, &resp);
+    assert_eq!(
+        chat["choices"][0]["message"]["encrypted_content"],
+        encrypted
+    );
+
+    let anthropic = encode_reply(DialectId::AnthropicMessages, &resp);
+    assert!(
+        !anthropic.to_string().contains(encrypted.as_str().unwrap()),
+        "only inside Kaeso's signature: {anthropic}"
+    );
+    let signature = anthropic["content"][0]["signature"].as_str().unwrap();
+    let carried = crate::continuity::unwrap_reasoning(signature).unwrap();
+    let call = resp
+        .blocks
+        .iter()
+        .find(|b| matches!(b, Block::ToolCall(_)))
+        .unwrap()
+        .clone();
+    let mut req = kaeso_kpp::GenerateRequest::new("doubao-seed-2-0-lite-260215");
+    req.extras.origin = Some(kaeso_kpp::Origin::new(DialectId::AnthropicMessages));
+    req.messages = vec![
+        kaeso_kpp::Message::user("今天北京天气怎么样"),
+        kaeso_kpp::Message::new(
+            kaeso_kpp::Role::Assistant,
+            vec![Block::Reasoning(carried), call],
+        ),
+    ];
+    let req = kaeso_kpp::Request::Generate(req);
+    let mut ctx = EgressCtx::new(&req).with_chat_profile(profile("volcengine"));
+    let sent: Value =
+        serde_json::from_slice(&OpenAiChat::encode_request(&req, &mut ctx).unwrap().body).unwrap();
+    let assistant = &sent["messages"][1];
+    assert_eq!(assistant["encrypted_content"], encrypted, "{assistant}");
+    assert_eq!(
+        assistant["reasoning_content"],
+        message(&body)["reasoning_content"]
+    );
+
+    let mut ctx = EgressCtx::new(&req).with_chat_profile(profile("deepseek"));
+    let other: Value =
+        serde_json::from_slice(&OpenAiChat::encode_request(&req, &mut ctx).unwrap().body).unwrap();
+    assert!(
+        other["messages"][1].get("encrypted_content").is_none(),
+        "{other}"
+    );
+}
+
+#[test]
+fn volcengine_streams_its_encrypted_reasoning_into_the_open_reasoning_block() {
+    let sse = concat!(
+        "data: {\"choices\":[{\"delta\":{\"content\":\"\",\"reasoning_content\":\"Think.\",\"role\":\"assistant\"},\"index\":0}],\"created\":1,\"id\":\"0217\",\"model\":\"doubao-seed-2-0-lite-260428\",\"service_tier\":\"default\",\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n",
+        "data: {\"choices\":[{\"delta\":{\"content\":\"\",\"reasoning_content\":\"\",\"encrypted_content\":\"djF+abc\",\"role\":\"assistant\"},\"index\":0}],\"created\":1,\"id\":\"0217\",\"model\":\"doubao-seed-2-0-lite-260428\",\"service_tier\":\"default\",\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n",
+        "data: {\"choices\":[{\"delta\":{\"content\":\"Hi\",\"role\":\"assistant\"},\"finish_reason\":\"stop\",\"index\":0}],\"created\":1,\"id\":\"0217\",\"model\":\"doubao-seed-2-0-lite-260428\",\"service_tier\":\"default\",\"object\":\"chat.completion.chunk\",\"usage\":null}\n\n",
+        "data: [DONE]\n\n",
+    );
+    let events = stream("volcengine", sse.as_bytes());
+    let opaque: Vec<&str> = events
+        .iter()
+        .filter_map(|e| match e {
+            StreamEvent::BlockDelta(d) => match &d.delta {
+                Delta::Opaque(o) => Some(o.data.as_str()),
+                _ => None,
+            },
+            _ => None,
+        })
+        .collect();
+    assert_eq!(opaque, ["djF+abc"]);
+    let chat = String::from_utf8(encode_stream(DialectId::OpenAiChat, &events)).unwrap();
+    assert_eq!(chat.matches("djF+abc").count(), 1, "{chat}");
+    let anthropic =
+        String::from_utf8(encode_stream(DialectId::AnthropicMessages, &events)).unwrap();
+    assert!(!anthropic.contains("djF+abc"), "{anthropic}");
+    let signature = anthropic
+        .lines()
+        .filter_map(|l| l.strip_prefix("data: "))
+        .filter_map(|d| serde_json::from_str::<Value>(d).ok())
+        .find_map(|v| v["delta"]["signature"].as_str().map(str::to_owned))
+        .unwrap();
+    let carried = crate::continuity::unwrap_reasoning(&signature).unwrap();
+    assert_eq!(carried.opaque[0].data, "djF+abc");
 }

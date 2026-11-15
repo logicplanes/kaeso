@@ -1,0 +1,9 @@
+{
+  "messages": [
+    {
+      "content": "我要有研究推理模型与非推理模型区别的课题，怎么体现我的专业性",
+      "role": "user"
+    }
+  ],
+  "model": "doubao-seed-2-1-pro-260915"
+}

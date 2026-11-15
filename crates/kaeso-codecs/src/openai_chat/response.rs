@@ -1,7 +1,7 @@
 use indexmap::IndexMap;
 use kaeso_kpp::{
-    AudioBlock, Block, Citation, Extras, KppError, Origin, RawItem, RawJson, RawUsage,
-    ReasoningBlock, Reply, RequestKind, Response, Source, StopReason, TextBlock, Usage,
+    AudioBlock, Block, Citation, Extras, KppError, Opaque, OpaqueKind, Origin, RawItem, RawJson,
+    RawUsage, ReasoningBlock, Reply, RequestKind, Response, Source, StopReason, TextBlock, Usage,
 };
 use serde_json::Value;
 
@@ -93,6 +93,7 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
         ..
     } = choice.message;
     let reasoning = take_reasoning_field(ctx.chat_profile.reply.reasoning_fields, &mut m_extra);
+    let encrypted = encrypted_reasoning(ctx.chat_profile.reply.encrypted_reasoning, &m_extra);
     let audio = take_audio(&mut m_extra, ctx, &origin);
     let thinking = ctx.chat_profile.reply.reasoning == ReplyReasoning::ThinkingParts;
     if thinking
@@ -113,6 +114,13 @@ pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, Kpp
             .extras
             .form
             .insert(FORM_REASONING_FIELD.to_owned(), Value::from(field));
+        if let Some(data) = encrypted {
+            block.opaque.push(Opaque::new(
+                origin.clone(),
+                OpaqueKind::OpenAiEncryptedReasoning,
+                data,
+            ));
+        }
         blocks.push(Block::Reasoning(block));
     }
     let citations: Vec<Citation> = message
@@ -602,6 +610,19 @@ pub(crate) fn take_reasoning_field(
         extra.shift_remove(*field);
         Some((*field, text))
     })
+}
+
+// The encrypted original of the reasoning stays in the message as well, so a Chat app gets it
+// as written; the reasoning block carries a copy for the other formats.
+pub(crate) fn encrypted_reasoning(
+    field: Option<&'static str>,
+    extra: &IndexMap<String, RawJson>,
+) -> Option<String> {
+    extra
+        .get(field?)?
+        .parse::<String>()
+        .ok()
+        .filter(|t| !t.is_empty())
 }
 
 pub(crate) fn take_empty_reasoning_field(

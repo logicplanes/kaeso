@@ -1,0 +1,41 @@
+{
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "content": "",
+        "reasoning_content": "北京天气查询将由我调用相关工具完成。\n",
+        "encrypted_content": "djF+2EICEj3ryfEfSUdR/SmS8OeEH4znOYftL4SWDXR8uxROjx11W7rRCj5ArLwzsm7rFsO4frOdLm2p3/yWz/r0TMqrjHiaTTvRMNdV6sLdETySlb3PDgY1W+zuYuETiq3bQuxga5jKx+GpfvlDJMfJfzq/G1kDp6ryurs0rKAFIziyc4mfFSh2CzDKNcAcp5Fi5R7M2QrSYmIUJjnoB48IVUCzu4xn7bT05qheVnGO9fbs15gYK3zINUvVsp51Oq72U/ksrPZFVs2BTgNRwjmxnFNn7A==",
+        "role": "assistant",
+        "tool_calls": [
+          {
+            "function": {
+              "arguments": " {\"location\": \"北京\"}",
+              "name": "get_weather"
+            },
+            "id": "call_wiezxeyae8jzxl3jx8nhfgb5",
+            "type": "function"
+          }
+        ]
+      }
+    }
+  ],
+  "created": 1766126702,
+  "id": "0217661267019147d8950efa0e2f7c9d9cc7a1cc971272cf4548c",
+  "model": "doubao-seed-2-0-lite-260215",
+  "service_tier": "default",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 52,
+    "prompt_tokens": 160,
+    "total_tokens": 212,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 31
+    }
+  }
+}

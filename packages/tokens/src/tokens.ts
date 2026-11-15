@@ -169,6 +169,8 @@ export const providerMark = {
   "upstage-lilac": mode("#738dff", "#b0bfff"),
   "upstage-violet": mode("#805cfb", "#8968fb"),
   ionos: mode("#003d8f", "#ffffff"),
+  "volcengine-blue": mode("#006eff", "#187cff"),
+  "volcengine-cyan": mode("#00a5a5", "#00e5e5"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),

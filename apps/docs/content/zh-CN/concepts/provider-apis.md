@@ -52,6 +52,7 @@ order: 2
 | TypeSafe `typesafe` | 不提供：TypeSafe 不生成文本 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 支持：Jev，即 `jev-1.14.0` 和 `jev-1.13.0`，以及别名 `jev-latest` 和 `jev-preview`，System One 位于 `/v1/systemone`，支持图片和边界框问题 | [Models](https://docs.typesafe.ai/models)，查阅于 2026-11-12 |
 | Upstage `upstage` | 支持：Solar 模型 `solar-pro4` 和 `solar-mini4` | 支持：`solar-embedding-2-query`、`solar-embedding-2-passage` | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [API reference](https://console.upstage.ai/api/chat)，查阅于 2026-11-14 |
 | Vercel `vercel` | 支持：其目录 | 支持：其嵌入模型 | 支持：其图片模型 | 支持：其语音合成模型 | 支持：其转写模型 | 不提供 | 拒绝：Vercel 只通过其 AI SDK 记录视频，没有 HTTP 接口 | 拒绝：Kaeso 只为语音合成调用 Vercel 的语音模型 | 支持：其决策模型，OpenAI Decisions | [Modalities](https://vercel.com/docs/ai-gateway/modalities) |
+| Volcengine Ark `volcengine` | 支持：豆包 Seed 和其他厂商的模型 | 拒绝：方舟只通过 `/embeddings/multimodal` 生成嵌入，整段输入只返回一个向量 | 暂不支持：方舟的 Seedream 模型提供图像 API，但 KPMR 未收录它的图像模型 | 不提供 | 不提供 | 不提供 | 拒绝：方舟的视频生成是它自己的任务 API | 不提供 | 不提供 | [Chat API](https://docs.volcengine.com/docs/zh/ark/chat-api.md) |
 | Z.ai `zai` | 支持：GLM 模型 | 不提供 | 支持：`glm-image` | 不提供 | 支持：`glm-asr-2512` | 不提供 | 支持：`cogvideox-3` | 不提供 | 不提供 | [API reference](https://docs.z.ai/llms.txt) |
 
 自定义服务商只有在您为其开启相应 API 后，才能使用 OpenAI 的 Images、音频和 Videos API 以及做决策（[自定义服务商](../console/custom-providers.md)）。

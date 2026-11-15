@@ -704,6 +704,12 @@ impl ProviderRef {
         }
     }
 
+    /// What takes the place of `/v1` in the provider's paths ([`Provider::api_root`]); a custom
+    /// provider's base URL names its API root itself.
+    pub fn api_root(&self) -> Option<&'static str> {
+        self.built_in().and_then(|p| p.api_root)
+    }
+
     pub fn embeddings_profile(&self) -> EmbeddingsProfile {
         match self {
             ProviderRef::BuiltIn(p) => p.embeddings_profile,

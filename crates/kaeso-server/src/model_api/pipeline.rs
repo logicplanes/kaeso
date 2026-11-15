@@ -2592,6 +2592,10 @@ pub(super) fn egress_ctx(
         .with_messages_profile(provider.messages())
         .with_gemini_profile(provider.gemini())
         .with_embeddings_profile(provider.embeddings_profile());
+    // A key's account scope, applied later, takes the place of this root.
+    if let Some(root) = provider.api_root() {
+        ctx = ctx.with_api_root(root);
+    }
     if let Some(images) = provider.images(model) {
         ctx = ctx.with_images_profile(images.profile);
     }

@@ -89,6 +89,7 @@ mod provider_standardcompute;
 mod provider_typesafe;
 mod provider_upstage;
 mod provider_vercel;
+mod provider_volcengine;
 mod provider_xai;
 mod provider_zai;
 mod providers;

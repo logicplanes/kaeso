@@ -1,0 +1,14 @@
+{
+  "messages": [
+    {
+      "content": "You are a helpful assistant.",
+      "role": "system"
+    },
+    {
+      "content": "hello",
+      "role": "user"
+    }
+  ],
+  "model": "doubao-seed-2-1-pro-260915",
+  "stream": true
+}

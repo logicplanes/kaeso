@@ -170,6 +170,9 @@ base_url = "https://openai.inference.de-txl.ionos.com"
 [providers.novita-ai]
 base_url = "https://api.novita.ai/openai"
 
+[providers.volcengine]
+base_url = "https://ark.cn-beijing.volces.com/api/v3"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""
