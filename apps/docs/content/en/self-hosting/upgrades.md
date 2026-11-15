@@ -65,6 +65,8 @@ The Platform API's `instance/updates/check` looks at once, even when checks are 
 
 On a new install, these settings start from `KAESO_UPDATES_CHANNEL` and `KAESO_UPDATES_MODE` ([configuration](configuration.md#updates)). After that, instance admins change them on the page, and the instance audit log records each change. Only `KAESO_UPDATES_CHECK` stops the gateway from looking, for installs without internet access.
 
+To watch installs from Prometheus, `/metrics` has `kaeso_update_available` ([metrics](monitoring.md#metrics)): 1 with the newer release as `version` while one is offered on the install's channel, 0 with the running version while the install is up to date, and no series while `KAESO_UPDATES_CHECK` is off. Alert on `kaeso_update_available == 1`. Only the gateway that runs the check refreshes it after a check, so with several gateways use `max()` across them.
+
 ### Installs without internet access
 
 Turn off the gateway's outgoing checks in `compose.override.yaml` before the first start:

@@ -65,6 +65,8 @@ Instanz-Admins sehen das Ergebnis unter **Instanz** › **Updates**. Die Seite z
 
 Auf einer neuen Installation beginnen diese Einstellungen mit `KAESO_UPDATES_CHANNEL` und `KAESO_UPDATES_MODE` ([Konfiguration](configuration.md#updates)). Danach ändern Instanz-Admins sie auf der Seite, und das Audit-Log der Instanz hält jede Änderung fest. Nur `KAESO_UPDATES_CHECK` hält das Gateway von der Suche ab, für Installationen ohne Internetzugang.
 
+Um Installationen mit Prometheus zu beobachten, hat `/metrics` die Metrik `kaeso_update_available` ([Metriken](monitoring.md#metriken)): 1 mit dem neueren Release als `version`, solange auf dem Kanal der Installation eines angeboten wird, 0 mit der laufenden Version, solange die Installation aktuell ist, und keine Reihe, solange `KAESO_UPDATES_CHECK` aus ist. Alarmieren Sie bei `kaeso_update_available == 1`. Nur das Gateway, das die Prüfung ausführt, aktualisiert sie danach; nutzen Sie bei mehreren Gateways daher `max()` über alle.
+
 ### Installationen ohne Internetzugang
 
 Schalten Sie vor dem ersten Start die ausgehenden Abfragen des Gateways in der `compose.override.yaml` ab:

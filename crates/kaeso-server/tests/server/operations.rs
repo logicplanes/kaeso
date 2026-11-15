@@ -282,6 +282,27 @@ async fn metrics_are_exposed() {
     assert!(text.contains(&build_info), "{text}");
 }
 
+#[test]
+fn the_update_metric_moves_to_the_newest_release_and_back_to_the_running_one() {
+    let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
+    let handle = recorder.handle();
+    let reported = kaeso_server::metrics::UpdateAvailable::default();
+    let running = env!("CARGO_PKG_VERSION");
+    let line = |version: &str, value: u8| {
+        format!("kaeso_update_available{{version=\"{version}\"}} {value}")
+    };
+    metrics::with_local_recorder(&recorder, || reported.report(Some("90.0.0")));
+    assert!(handle.render().contains(&line("90.0.0", 1)));
+    metrics::with_local_recorder(&recorder, || reported.report(Some("90.1.0")));
+    let text = handle.render();
+    assert!(text.contains(&line("90.0.0", 0)), "{text}");
+    assert!(text.contains(&line("90.1.0", 1)), "{text}");
+    metrics::with_local_recorder(&recorder, || reported.report(None));
+    let text = handle.render();
+    assert!(text.contains(&line("90.1.0", 0)), "{text}");
+    assert!(text.contains(&line(running, 0)), "{text}");
+}
+
 #[tokio::test]
 async fn a_database_outage_answers_503_with_a_clear_message() {
     let s = TestServices::start().await;

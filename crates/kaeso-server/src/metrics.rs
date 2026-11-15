@@ -31,6 +31,7 @@ pub const AUTH_FAILURES: &str = "kaeso_auth_failures_total";
 pub const KEY_FAILURE_BLOCKS: &str = "kaeso_key_failure_blocks_total";
 pub const EMAILS: &str = "kaeso_emails_total";
 pub const BUILD_INFO: &str = "kaeso_build_info";
+pub const UPDATE_AVAILABLE: &str = "kaeso_update_available";
 
 pub fn describe() {
     describe_counter!(
@@ -118,7 +119,40 @@ pub fn describe() {
     );
     describe_counter!(EMAILS, "Emails by kind and outcome.");
     describe_gauge!(BUILD_INFO, "Build information.");
+    describe_gauge!(
+        UPDATE_AVAILABLE,
+        "1 while a newer release is offered on the install's channel, with it as version; 0 with the running version while the install is up to date. Absent while update checks are off."
+    );
     metrics::gauge!(BUILD_INFO, "version" => env!("CARGO_PKG_VERSION")).set(1.0);
+}
+
+/// What `kaeso_update_available` last said, so a newer release sets the old one's series to 0
+/// instead of leaving two releases at 1.
+#[derive(Debug, Default)]
+pub struct UpdateAvailable(std::sync::Mutex<Option<String>>);
+
+pub static UPDATE_REPORTED: UpdateAvailable = UpdateAvailable(std::sync::Mutex::new(None));
+
+impl UpdateAvailable {
+    /// `newest` is the newest release offered on the install's channel when it is newer than
+    /// the running version.
+    pub fn report(&self, newest: Option<&str>) {
+        let (version, value) = match newest {
+            Some(v) => (v, 1.0),
+            None => (env!("CARGO_PKG_VERSION"), 0.0),
+        };
+        let mut last = self
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(old) = last.as_deref()
+            && old != version
+        {
+            metrics::gauge!(UPDATE_AVAILABLE, "version" => old.to_owned()).set(0.0);
+        }
+        metrics::gauge!(UPDATE_AVAILABLE, "version" => version.to_owned()).set(value);
+        *last = Some(version.to_owned());
+    }
 }
 
 pub fn router(handle: PrometheusHandle) -> Router {

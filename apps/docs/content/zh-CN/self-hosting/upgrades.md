@@ -65,6 +65,8 @@ Platform API 的 `instance/updates/check` 会马上检查，即使检查已关�
 
 在新实例上，这些设置的初始值来自 `KAESO_UPDATES_CHANNEL` 和 `KAESO_UPDATES_MODE`（[配置](configuration.md#更新)）。之后由实例管理员在该页面上修改，实例审计日志会记录每次修改。只有 `KAESO_UPDATES_CHECK` 能让网关停止检查，适用于无法联网的实例。
 
+如需通过 Prometheus 监控实例，`/metrics` 提供 `kaeso_update_available`（[指标](monitoring.md#指标)）：实例渠道上有更新的版本时为 1，`version` 为该版本；实例已是最新时为 0，`version` 为正在运行的版本；`KAESO_UPDATES_CHECK` 关闭时没有该序列。可在 `kaeso_update_available == 1` 时告警。检查后只有执行检查的网关会刷新它，因此有多个网关时请对它们取 `max()`。
+
 ### 无法联网的实例
 
 在首次启动前，在 `compose.override.yaml` 中关闭网关的出站检查：
