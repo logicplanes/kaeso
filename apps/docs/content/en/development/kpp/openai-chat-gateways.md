@@ -63,7 +63,7 @@ Sources: Cloudflare's [REST API](https://developers.cloudflare.com/ai-gateway/us
 
 | Cloudflare field | KPP | Notes |
 |---|---|---|
-| `/client/v4/accounts/{account_id}/ai/v1/…` | `EgressCtx::base_path` | The key's account takes the place of `/v1` for Chat Completions, Responses and Messages; a key's gateway goes in `cf-aig-gateway-id`. |
+| `/client/v4/accounts/{account_id}/ai/v1/…` | `EgressCtx::api_root` | The key's account takes the place of `/v1` for Chat Completions, Responses, Messages and embeddings ([API roots](openai-chat-inference-clouds.md#api-roots)); a key's gateway goes in `cf-aig-gateway-id`. |
 | `message.reasoning` and `reasoning_content`, `delta.reasoning` and `reasoning_content` | `Block::Reasoning` | The same text in both fields; the profile reads `reasoning` and Chat apps get `reasoning_content` back unchanged. |
 | `usage` on every stream chunk, then a last chunk with the whole usage | `Usage` | Each chunk counts only its own tokens; the last one, after `finish_reason`, holds the totals. |
 | `usage.neurons` | `raw` usage | Workers AI's own unit; Kaeso prices tokens. |

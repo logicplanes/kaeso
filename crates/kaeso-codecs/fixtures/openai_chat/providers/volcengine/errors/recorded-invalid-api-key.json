@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "AuthenticationError",
+    "message": "The API key format is incorrect. Request id: 00000000000000000000000000000000000000000000000000000",
+    "param": "",
+    "type": "Unauthorized"
+  }
+}

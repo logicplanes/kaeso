@@ -743,6 +743,7 @@ mod tests {
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     };
 
     fn known(id: &str) -> &'static Provider {

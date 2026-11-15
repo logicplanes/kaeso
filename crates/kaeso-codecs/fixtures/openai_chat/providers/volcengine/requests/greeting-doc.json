@@ -1,0 +1,13 @@
+{
+  "model": "doubao-seed-2-1-pro-260915",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ]
+}

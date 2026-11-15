@@ -708,6 +708,104 @@ fn a_separate_reasoning_profile_asks_for_reasoning_in_its_own_field_unless_the_a
 }
 
 #[test]
+fn a_thinking_type_profile_switches_thinking_with_its_object_and_keeps_an_effort_as_written() {
+    let switch = ChatProfile::compatible("Example Cloud").thinking_type();
+    let sent = |req: &Request| encode_with(req, switch).unwrap();
+    let thinking = |mode, effort, budget| {
+        let mut g = foreign(DialectId::AnthropicMessages);
+        let mut r = kaeso_kpp::ReasoningConfig::default();
+        r.mode = mode;
+        r.effort = effort;
+        r.budget_tokens = budget;
+        g.reasoning = Some(r);
+        Request::Generate(g)
+    };
+    use kaeso_kpp::{ReasoningEffort, ReasoningMode};
+
+    let off = sent(&thinking(Some(ReasoningMode::Disabled), None, None));
+    assert_eq!(off["thinking"], json!({"type": "disabled"}));
+    assert!(off.get("reasoning_effort").is_none(), "{off}");
+
+    let budget = sent(&thinking(Some(ReasoningMode::Enabled), None, Some(2048)));
+    assert_eq!(
+        (&budget["thinking"], &budget["reasoning_effort"]),
+        (&json!({"type": "enabled"}), &json!("low"))
+    );
+    assert!(budget.get("enable_thinking").is_none(), "{budget}");
+
+    let adaptive = sent(&thinking(Some(ReasoningMode::Adaptive), None, None));
+    assert_eq!(adaptive["thinking"], json!({"type": "enabled"}));
+    assert!(adaptive.get("reasoning_effort").is_none(), "{adaptive}");
+
+    let effort = sent(&thinking(None, Some(ReasoningEffort::High), None));
+    assert_eq!(effort["reasoning_effort"], "high");
+    assert!(effort.get("thinking").is_none(), "{effort}");
+
+    for none in ["none", "minimal"] {
+        let out = sent(&chat(json!({
+            "model": "m", "messages": [{"role": "user", "content": "Hi"}], "reasoning_effort": none
+        })));
+        assert_eq!(out["thinking"], json!({"type": "disabled"}), "{none}");
+        assert!(out.get("reasoning_effort").is_none(), "{out}");
+    }
+
+    let own = sent(&chat(json!({
+        "model": "m", "messages": [{"role": "user", "content": "Hi"}],
+        "reasoning_effort": "low", "thinking": {"type": "enabled"}
+    })));
+    assert_eq!(
+        (&own["thinking"], &own["reasoning_effort"]),
+        (&json!({"type": "enabled"}), &json!("low"))
+    );
+
+    let plain = sent(&chat(
+        json!({"model": "m", "messages": [{"role": "user", "content": "Hi"}]}),
+    ));
+    assert!(plain.get("thinking").is_none(), "{plain}");
+    let openai = encode_with(
+        &thinking(Some(ReasoningMode::Disabled), None, None),
+        ChatProfile::compatible("Example Cloud"),
+    )
+    .unwrap();
+    assert!(openai.get("thinking").is_none(), "{openai}");
+}
+
+#[test]
+fn a_profile_refuses_a_key_inside_an_object_field_and_values_it_names() {
+    let profile = ChatProfile::compatible("Example Cloud")
+        .refusing(&["web_search_options.user_location"])
+        .refusing_values(&[("service_tier", &["priority", "scale"])]);
+    let body = |extra: Value| {
+        let mut b = json!({"model": "m", "messages": [{"role": "user", "content": "Hi"}]});
+        b.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        chat(b)
+    };
+    let located = body(json!({"web_search_options": {
+        "user_location": {"type": "approximate", "approximate": {"country": "CN"}}
+    }}));
+    let e = encode_with(&located, profile).unwrap_err();
+    assert!(matches!(e.kind, ErrorKind::Unsupported { .. }), "{e:?}");
+    assert_eq!(e.param.as_deref(), Some("web_search_options.user_location"));
+    assert!(e.message.contains("Example Cloud"), "{}", e.message);
+    let sent = encode_with(&body(json!({"web_search_options": {}})), profile).unwrap();
+    assert_eq!(sent["web_search_options"], json!({}));
+
+    let e = encode_with(&body(json!({"service_tier": "priority"})), profile).unwrap_err();
+    assert_eq!(e.param.as_deref(), Some("service_tier"));
+    assert!(
+        e.message.contains(r#"`service_tier: "priority"`"#),
+        "{}",
+        e.message
+    );
+    for tier in ["flex", "fast", "default", "auto"] {
+        let sent = encode_with(&body(json!({"service_tier": tier})), profile).unwrap();
+        assert_eq!(sent["service_tier"], tier);
+    }
+}
+
+#[test]
 fn a_function_without_parameters_reaches_mistral_with_an_empty_object_schema() {
     let req = chat(json!({
         "model": "m",

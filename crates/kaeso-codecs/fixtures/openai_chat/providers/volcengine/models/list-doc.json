@@ -1,0 +1,51 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "doubao-seed-2-1-pro-260915",
+      "object": "model",
+      "name": "doubao-seed-2-1-pro",
+      "version": "260915",
+      "created": 1789472816,
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "token_limits": {
+        "context_window": 1048576,
+        "max_output_token_length": 262144,
+        "max_input_token_length": 1048576,
+        "max_reasoning_token_length": 262144
+      },
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "features": {
+        "tools": {
+          "function_calling": true
+        },
+        "structured_outputs": {
+          "json_object": true,
+          "json_schema": true
+        },
+        "cache": {
+          "prefix_cache": false,
+          "session_cache": false
+        },
+        "batch": {
+          "batch_job": false,
+          "batch_chat": false
+        }
+      },
+      "max_output_tokens": 262144
+    }
+  ]
+}

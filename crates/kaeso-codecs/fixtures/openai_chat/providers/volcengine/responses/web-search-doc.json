@@ -1,0 +1,41 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "annotations": [
+          {
+            "type": "url_citation",
+            "url_citation": {
+              "title": "OpenAI 正式发布新一代旗舰大模型 GPT-6 Astra",
+              "url": "https://news.sina.cn/2026-09-04/detail-iniqrpra63******.d.html"
+            }
+          }
+        ],
+        "content": "2026 年 9 月 4 日 AI 领域最受关注的热点之一是 OpenAI 正式发布新一代旗舰大模型 GPT-6 Astra。",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1788490760,
+  "id": "02178849076046900000****",
+  "model": "doubao-seed-2-1-pro-260915",
+  "service_tier": "default",
+  "object": "chat.completion",
+  "usage": {
+    "completion_tokens": 1610,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3666,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 5276,
+    "tool_usage": {
+      "web_search": 1
+    }
+  }
+}

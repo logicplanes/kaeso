@@ -362,6 +362,21 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         novita["key_page"],
         json!({ "url": "https://novita.ai/settings/key-management", "label": "Key Management" })
     );
+    let volcengine = listed.iter().find(|p| p["id"] == "volcengine").unwrap();
+    assert_eq!(volcengine["name"], "Volcengine Ark");
+    assert_eq!(volcengine["dialects"], json!(["openai_chat"]));
+    assert_eq!(
+        (
+            &volcengine["count_tokens"],
+            &volcengine["embeddings"],
+            &volcengine["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &Value::Null)
+    );
+    assert_eq!(
+        volcengine["key_page"],
+        json!({ "url": "https://ark.volcengine.com/region:cn-beijing/apiKey", "label": "API Key 管理" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)

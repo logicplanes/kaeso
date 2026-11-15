@@ -1,0 +1,57 @@
+{
+  "model": "doubao-seed-2-0-lite-260215",
+  "messages": [
+    {
+      "role": "system",
+      "content": "你是人工智能助手。"
+    },
+    {
+      "role": "user",
+      "content": "今天北京天气怎么样"
+    },
+    {
+      "reasoning_content": "北京天气查询将由我调用相关工具完成。\n",
+      "encrypted_content": "djF+2EICEj3ryfEfSUdR/SmS8OeEH4znOYftL4SWDXR8uxROjx11W7rRCj5ArLwzsm7rFsO4frOdLm2p3/yWz/r0TMqrjHiaTTvRMNdV6sLdETySlb3PDgY1W+zuYuETiq3bQuxga5jKx+GpfvlDJMfJfzq/G1kDp6ryurs0rKAFIziyc4mfFSh2CzDKNcAcp5Fi5R7M2QrSYmIUJjnoB48IVUCzu4xn7bT05qheVnGO9fbs15gYK3zINUvVsp51Oq72U/ksrPZFVs2BTgNRwjmxnFNn7A==",
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "function": {
+            "arguments": " {\"location\": \"北京\"}",
+            "name": "get_weather"
+          },
+          "id": "call_wiezxeyae8jzxl3jx8nhfgb5",
+          "type": "function"
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_wiezxeyae8jzxl3jx8nhfgb5",
+      "content": "5度"
+    }
+  ],
+  "thinking": {
+    "type": "enabled"
+  },
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "天气查询",
+        "parameters": {
+          "properties": {
+            "location": {
+              "description": "地点的位置信息，例如北京、上海。",
+              "type": "string"
+            }
+          },
+          "required": [
+            "location"
+          ],
+          "type": "object"
+        }
+      }
+    }
+  ]
+}

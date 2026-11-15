@@ -703,6 +703,12 @@ pub struct Provider {
     pub routes: &'static [ModelRoute],
     pub service_account: Option<ServiceAccountSignIn>,
     pub account_scope: Option<AccountScope>,
+    /// What takes the place of `/v1` in every dialect's paths for a provider whose API isn't
+    /// under `/v1`: Chat Completions goes to `<base URL><api_root>/chat/completions`, the model
+    /// listing to `<base URL><api_root>/models`. `Some("")` when the base URL itself ends at the
+    /// API root, as Volcengine Ark's `…/api/v3`; `None` for `/v1`. A key's account scope
+    /// ([`Provider::account_scope`]) goes first.
+    pub api_root: Option<&'static str>,
 }
 
 // The locations that serve Gemini or Claude models, from the tables of
@@ -780,6 +786,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
         account: Some(AccountSignIn {
             method: AuthMethod::ChatGpt,
             product: "ChatGPT",
@@ -820,6 +827,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "deepseek",
@@ -859,6 +867,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "xai",
@@ -900,6 +909,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
         account: Some(AccountSignIn {
             method: AuthMethod::Grok,
             product: "Grok",
@@ -946,6 +956,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "groq",
@@ -986,6 +997,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "openrouter",
@@ -1028,6 +1040,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "mistral",
@@ -1083,6 +1096,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "vercel",
@@ -1122,6 +1136,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "cohere",
@@ -1179,6 +1194,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "ollama-cloud",
@@ -1216,6 +1232,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "moonshotai",
@@ -1266,6 +1283,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "alibaba",
@@ -1340,6 +1358,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "cerebras",
@@ -1382,6 +1401,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "zai",
@@ -1428,6 +1448,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "minimax",
@@ -1495,6 +1516,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "elevenlabs",
@@ -1547,6 +1569,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "google",
@@ -1582,6 +1605,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "gemini-agent-platform",
@@ -1665,6 +1689,7 @@ pub const PROVIDERS: &[Provider] = &[
             default_location: "global",
         }),
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "fireworks-ai",
@@ -1708,6 +1733,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "nebius",
@@ -1748,6 +1774,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "sambanova",
@@ -1790,6 +1817,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "scaleway",
@@ -1832,6 +1860,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "huggingface",
@@ -1874,6 +1903,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "nvidia",
@@ -1915,6 +1945,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "baseten",
@@ -1956,6 +1987,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "siliconflow",
@@ -2003,6 +2035,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "standardcompute",
@@ -2043,6 +2076,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "cloudflare-ai-gateway",
@@ -2115,6 +2149,7 @@ pub const PROVIDERS: &[Provider] = &[
             path: "/client/v4/accounts/{account}/ai/v1",
             gateway_header: "cf-aig-gateway-id",
         }),
+        api_root: None,
     },
     Provider {
         id: "perplexity",
@@ -2185,6 +2220,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "typesafe",
@@ -2230,6 +2266,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "deepinfra",
@@ -2292,6 +2329,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "upstage",
@@ -2367,6 +2405,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "ionos",
@@ -2432,6 +2471,7 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
     },
     Provider {
         id: "novita-ai",
@@ -2507,6 +2547,95 @@ pub const PROVIDERS: &[Provider] = &[
         routes: &[],
         service_account: None,
         account_scope: None,
+        api_root: None,
+    },
+    Provider {
+        id: "volcengine",
+        name: "Volcengine Ark",
+        // Keys are made on the console's API Key 管理 page; Volcengine documents no key prefix
+        // (https://docs.volcengine.com/docs/zh/ark/api-key.md).
+        key_page: KeyPage {
+            url: "https://ark.volcengine.com/region:cn-beijing/apiKey",
+            label: "API Key 管理",
+        },
+        key_prefix: None,
+        // Ark's API sits at `/api/v3`, not `/v1`: `…/api/v3/chat/completions`, `…/api/v3/models`
+        // (https://docs.volcengine.com/docs/zh/ark/base-url-and-authentication.md). The base URL
+        // ends at that root, so BytePlus ModelArk's `https://ark.ap-southeast.bytepluses.com/api/v3`
+        // works as a base-URL override.
+        default_base_url: "https://ark.cn-beijing.volces.com/api/v3",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        // Ark embeds only through `/embeddings/multimodal`, one vector for the whole input,
+        // which isn't OpenAI's embeddings format
+        // (https://docs.volcengine.com/docs/zh/ark/multimodal-vectorization-api.md).
+        embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat],
+        refused_key_messages: &[],
+        // 400 `OutofContextError` (https://docs.volcengine.com/docs/zh/ark/error-codes.md).
+        context_window_messages: &["exceed max message tokens"],
+        // A Chat app's own `max_tokens` limits only the answer on most models
+        // (https://docs.volcengine.com/docs/zh/ark/chat-api.md).
+        reasoning_beyond_output_limit: true,
+        // `GET /models` lists the base model versions an account sees, not its inference
+        // endpoints (`ep-…`), which a request may name instead
+        // (https://docs.volcengine.com/docs/zh/ark/models-api.md).
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        // From Ark's Chat API reference (https://docs.volcengine.com/docs/zh/ark/chat-api.md,
+        // updated 2026-11-12):
+        // - `developer` messages are accepted since the 2026-09 schema upgrade
+        //   (https://docs.volcengine.com/docs/zh/ark/api-schema-upgrade-notice.md);
+        // - the output limit is sent as the app wrote it: Kaeso's own limit becomes
+        //   `max_completion_tokens`, which counts thinking and answer like Anthropic's
+        //   `max_tokens` and OpenAI's own field, while Ark's `max_tokens` leaves thinking out on
+        //   most models; Ark refuses the two together;
+        // - no end-user field (`user`, `safety_identifier`);
+        // - thinking is switched with `thinking: {"type": "enabled" | "disabled"}` and graded by
+        //   `reasoning_effort` (https://docs.volcengine.com/docs/zh/ark/deep-thinking.md);
+        // - `video_url` parts, `reasoning_content` in replies and deltas, and on newer Seed
+        //   models `encrypted_content`, which must go back unchanged in multi-turn tool calls;
+        // - `service_tier` takes `auto`, `default`, `fast` and `flex`, not OpenAI's `scale` or
+        //   `priority`; `web_search_options` works with Doubao Search only, and its
+        //   `search_context_size` and `user_location` have no effect;
+        // - none of the other refused fields; whether Ark refuses undeclared fields isn't
+        //   documented, so Kaeso refuses them rather than risk Ark dropping them.
+        chat: ChatProfile::compatible("Volcengine Ark")
+            .without_end_user()
+            .thinking_type()
+            .with_video_url()
+            .reasoning_fields(&["reasoning_content"])
+            .encrypted_reasoning_field("encrypted_content")
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "metadata",
+                "modalities",
+                "n",
+                "prediction",
+                "prompt_cache_retention",
+                "seed",
+                "store",
+                "web_search_options.search_context_size",
+                "web_search_options.user_location",
+            ])
+            .refusing_values(&[("service_tier", &["priority", "scale"])]),
+        responses: ResponsesProfile::compatible("Volcengine Ark"),
+        messages: MessagesProfile::compatible("Volcengine Ark"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: Some(""),
     },
 ];
 
@@ -2805,7 +2934,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine"
         );
     }
 
@@ -2891,7 +3020,8 @@ mod tests {
                 "perplexity",
                 "typesafe",
                 "upstage",
-                "novita-ai"
+                "novita-ai",
+                "volcengine"
             ]
         );
     }
@@ -3079,6 +3209,60 @@ mod tests {
         assert!(!p.embeddings_profile.dimensions);
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn volcengine_serves_chat_at_its_api_root_and_switches_thinking_with_its_thinking_object() {
+        let p = provider("volcengine").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Volcengine Ark",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat][..]
+            )
+        );
+        assert_eq!(
+            (p.default_base_url, p.api_root),
+            ("https://ark.cn-beijing.volces.com/api/v3", Some(""))
+        );
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, None, None)
+        );
+        assert_eq!(p.listing, ModelListing::Partial);
+        assert!(p.reasoning_beyond_output_limit);
+        assert_eq!(p.chat.provider, "Volcengine Ark");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::AsWritten);
+        assert!(p.chat.request.developer_role && !p.chat.request.end_user);
+        assert!(p.chat.request.thinking_type && !p.chat.request.thinking_switch);
+        assert!(p.chat.request.video_url && p.chat.request.cache_key);
+        assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
+        assert_eq!(p.chat.reply.encrypted_reasoning, Some("encrypted_content"));
+        for field in ["seed", "n", "store", "web_search_options.user_location"] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert_eq!(
+            p.chat.request.refused_values,
+            [("service_tier", &["priority", "scale"][..])]
+        );
+        // Every other provider sends its dialects' usual `/v1` paths.
+        assert!(
+            PROVIDERS
+                .iter()
+                .all(|o| o.id == "volcengine" || o.api_root.is_none())
+        );
+
+        let req = Request::Generate(
+            kaeso_kpp::GenerateRequest::new("doubao-seed-2-1-pro-260915")
+                .with_message(kaeso_kpp::Message::user("Hello")),
+        );
+        let mut ctx = EgressCtx::new(&req)
+            .with_chat_profile(p.chat)
+            .with_api_root(p.api_root.unwrap());
+        let sent = dispatch::encode_request(DialectId::OpenAiChat, &req, &mut ctx).unwrap();
+        assert_eq!(sent.path, "/chat/completions");
     }
 
     #[test]
@@ -4068,7 +4252,8 @@ mod tests {
                 "deepinfra",
                 "upstage",
                 "ionos",
-                "novita-ai"
+                "novita-ai",
+                "volcengine"
             ]
         );
         assert_eq!(

@@ -272,9 +272,13 @@ fn listed(model: &ModelInfo) -> bool {
 }
 
 fn models_ctx(provider: &ProviderRef) -> EgressCtx {
-    EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off)
+    let ctx = EgressCtx::for_kind(RequestKind::Generate, StreamMode::Off)
         .with_provider(provider.id())
-        .with_gemini_profile(provider.gemini())
+        .with_gemini_profile(provider.gemini());
+    match provider.api_root() {
+        Some(root) => ctx.with_api_root(root),
+        None => ctx,
+    }
 }
 
 pub async fn probe(

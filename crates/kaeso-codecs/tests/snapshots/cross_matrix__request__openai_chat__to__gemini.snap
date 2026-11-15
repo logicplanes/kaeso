@@ -5808,6 +5808,158 @@ expression: outcomes
     },
     "path": "/v1beta/models/kaeso-example%2Fno-such-model:generateContent"
   },
+  "providers/volcengine/greeting-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello!"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/doubao-seed-2-1-pro-260915:generateContent"
+  },
+  "providers/volcengine/greeting-stream-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "hello"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/doubao-seed-2-1-pro-260915:streamGenerateContent?alt=sse"
+  },
+  "providers/volcengine/prefill-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "你是一个计算器，请计算： 1 + 1"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": "="
+            }
+          ],
+          "role": "model"
+        }
+      ]
+    },
+    "path": "/v1beta/models/doubao-seed-2-1-pro-260915:generateContent"
+  },
+  "providers/volcengine/reasoning-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "我要有研究推理模型与非推理模型区别的课题，怎么体现我的专业性"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/doubao-seed-2-1-pro-260915:generateContent"
+  },
+  "providers/volcengine/reasoning-stream-built": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/volcengine/recorded-invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/doubao-seed-2-1-pro-260915:generateContent"
+  },
+  "providers/volcengine/recorded-missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/doubao-seed-2-1-pro-260915:generateContent"
+  },
+  "providers/volcengine/recorded-unknown-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hello"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/doubao-seed-2-1-pro-260915:generateContent"
+  },
+  "providers/volcengine/thinking-disabled-doc": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/volcengine/tools-encrypted-content-doc": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/volcengine/tools-encrypted-content-replay-doc": {
+    "message": "`thinking` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "thinking"
+  },
+  "providers/volcengine/web-search-doc": {
+    "message": "`web_search_options` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search_options"
+  },
   "providers/xai/live-search-deprecated": {
     "message": "`search_parameters` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,

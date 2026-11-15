@@ -4610,6 +4610,164 @@ expression: outcomes
       }
     }
   },
+  "providers/volcengine/audio-encrypted-content-doc": {
+    "content": [
+      {
+        "text": "识别到的音频内容为：绵如云朵入口即化，甜蜜尽在SEEDNS。这是一句偏向甜品相关品牌的宣传 slogan，描述对应食物口感像云朵般绵软、入口快速融化的特点，点出甜蜜的体验都来自名为SEEDNS的品牌。",
+        "type": "text"
+      }
+    ],
+    "id": "02177882907049470efbf1cf5c1ae3d0b3f284807454d292b2912",
+    "model": "doubao-seed-2-0-lite-260428",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 80,
+      "output_tokens": 311,
+      "output_tokens_details": {
+        "thinking_tokens": 250
+      }
+    }
+  },
+  "providers/volcengine/greeting-doc": {
+    "content": [
+      {
+        "text": "Hello! How can I help you today?",
+        "type": "text"
+      }
+    ],
+    "id": "0217426318107460cfa43dc3f3683b1de1c09624ff49085a456ac",
+    "model": "doubao-seed-2-1-pro-260915",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 19,
+      "output_tokens": 9,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/volcengine/prefill-doc": {
+    "content": [
+      {
+        "text": " 2",
+        "type": "text"
+      }
+    ],
+    "id": "0217426341647344ee2a242cadeb3c7acc981f0bd805884bc65fc",
+    "model": "doubao-seed-2-1-pro-260915",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 21,
+      "output_tokens": 2,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/volcengine/reasoning-doc": {
+    "content": [
+      {
+        "text": "\n\n推理模型与非推理模型的主要区别在于其处理任务的方式、能力侧重点以及应用场景。以下是两者的核心区别分析：\n\n---\n\n### **1. 核心定义**\n- **推理模型**  \n  具备**逻辑推理、因果推断或复杂决策**能力，***  \n\n实际应用中，两类模型常配合使用（如用非推理模型提取特征，再交给推理模型决策），以平衡效率与准确性。",
+        "type": "text"
+      }
+    ],
+    "id": "0217426364949596592a076493be583bc5e33f80ac2dcf1eeaf9b",
+    "model": "doubao-seed-2-1-pro-260915",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 11,
+      "output_tokens": 1207,
+      "output_tokens_details": {
+        "thinking_tokens": 419
+      }
+    }
+  },
+  "providers/volcengine/tools-encrypted-content-doc": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call_wiezxeyae8jzxl3jx8nhfgb5",
+        "input": {
+          "location": "北京"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "0217661267019147d8950efa0e2f7c9d9cc7a1cc971272cf4548c",
+    "model": "doubao-seed-2-0-lite-260215",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 160,
+      "output_tokens": 52,
+      "output_tokens_details": {
+        "thinking_tokens": 31
+      }
+    }
+  },
+  "providers/volcengine/web-search-doc": {
+    "content": [
+      {
+        "text": "2026 年 9 月 4 日 AI 领域最受关注的热点之一是 OpenAI 正式发布新一代旗舰大模型 GPT-6 Astra。",
+        "type": "text"
+      }
+    ],
+    "id": "02178849076046900000****",
+    "model": "doubao-seed-2-1-pro-260915",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 3666,
+      "output_tokens": 1610,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
   "providers/xai/recorded-json-schema": {
     "content": [
       {

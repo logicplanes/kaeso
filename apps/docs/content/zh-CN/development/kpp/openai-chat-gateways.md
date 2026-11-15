@@ -63,7 +63,7 @@ nav: 网关
 
 | Cloudflare 字段 | KPP | 说明 |
 |---|---|---|
-| `/client/v4/accounts/{account_id}/ai/v1/…` | `EgressCtx::base_path` | 对于 Chat Completions、Responses 和 Messages，密钥的账户取代 `/v1`；密钥的网关写入 `cf-aig-gateway-id`。 |
+| `/client/v4/accounts/{account_id}/ai/v1/…` | `EgressCtx::api_root` | 对于 Chat Completions、Responses、Messages 和嵌入，密钥的账户取代 `/v1`（[API 根路径](openai-chat-inference-clouds.md#api-根路径)）；密钥的网关写入 `cf-aig-gateway-id`。 |
 | `message.reasoning` 和 `reasoning_content`、`delta.reasoning` 和 `reasoning_content` | `Block::Reasoning` | 两个字段中是相同的文本；配置读取 `reasoning`，Chat 应用会原样收到 `reasoning_content`。 |
 | 每个流式分块中的 `usage`，以及最后一个包含全部用量的分块 | `Usage` | 每个分块只统计自身的 Token；`finish_reason` 之后的最后一个分块包含总数。 |
 | `usage.neurons` | `raw` 用量 | Workers AI 自己的单位；Kaeso 按 Token 计价。 |

@@ -1,0 +1,9 @@
+{
+  "model": "doubao-seed-2-1-pro-260915",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ]
+}

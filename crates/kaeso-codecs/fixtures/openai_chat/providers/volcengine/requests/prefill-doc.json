@@ -1,0 +1,13 @@
+{
+  "messages": [
+    {
+      "content": "你是一个计算器，请计算： 1 + 1",
+      "role": "user"
+    },
+    {
+      "content": "=",
+      "role": "assistant"
+    }
+  ],
+  "model": "doubao-seed-2-1-pro-260915"
+}

@@ -2690,6 +2690,41 @@ fn novita_ai_models_speak_chat_completions_with_kpmrs_prices_and_its_embedding_m
 }
 
 #[test]
+fn volcengine_models_speak_chat_completions_with_their_prices_and_ark_marks_old_versions_deprecated()
+ {
+    let pro = eff(&entry("volcengine", "doubao-seed-2-1-pro-260915"));
+    assert_eq!(pro.dialect, DialectId::OpenAiChat);
+    assert_eq!(pro.provider.chat().provider, "Volcengine Ark");
+    assert_eq!(pro.provider.api_root(), Some(""));
+    assert_eq!(
+        (
+            pro.fields.input_price,
+            pro.fields.output_price,
+            pro.fields.cache_read_price
+        ),
+        (Some(dec!(0.8906)), Some(dec!(4.45302)), Some(dec!(0.17812)))
+    );
+    assert_eq!(
+        effort_levels(&pro, DialectId::OpenAiChat),
+        ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
+    );
+    assert_eq!(pro.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    let models = &snapshot().providers["volcengine"].models;
+    for old in [
+        "deepseek-v4-pro-260425",
+        "doubao-seed-2-0-lite-260215",
+        "doubao-seed-2-0-mini-260215",
+    ] {
+        assert_eq!(models[old].status.as_deref(), Some("deprecated"), "{old}");
+    }
+    assert!(
+        models
+            .values()
+            .all(|m| m.kind.as_deref() != Some("embedding"))
+    );
+}
+
+#[test]
 fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
     let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

@@ -1,0 +1,20 @@
+{
+  "model": "doubao-seed-1-6-thinking-250715",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello"
+    },
+    {
+      "role": "system",
+      "content": "You're an intelligent assistant."
+    }
+  ],
+  "stream": true,
+  "thinking": {
+    "type": "enabled"
+  },
+  "stream_options": {
+    "include_usage": true
+  }
+}

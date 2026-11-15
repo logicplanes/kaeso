@@ -206,6 +206,7 @@ const MARKED_PROVIDERS = {
   upstage: "Upstage",
   ionos: "IONOS AI Model Hub",
   "novita-ai": "Novita AI",
+  volcengine: "Volcengine Ark",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

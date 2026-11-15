@@ -1,0 +1,16 @@
+data: {"choices":[{"delta":{"content":"","reasoning_content":" need","role":"assistant"},"index":0}],"created":1756883562,"id":"021756883562269078532ccda42bfe607645d235a4671675eb216","model":"doubao-seed-1-6-thinking-250715","service_tier":"default","object":"chat.completion.chunk","usage":null}
+
+data: {"choices":[{"delta":{"content":"","reasoning_content":".","role":"assistant"},"index":0}],"created":1756883562,"id":"021756883562269078532ccda42bfe607645d235a4671675eb216","model":"doubao-seed-1-6-thinking-250715","service_tier":"default","object":"chat.completion.chunk","usage":null}
+
+data: {"choices":[{"delta":{"content":"Hello","role":"assistant"},"index":0}],"created":1756883562,"id":"021756883562269078532ccda42bfe607645d235a4671675eb216","model":"doubao-seed-1-6-thinking-250715","service_tier":"default","object":"chat.completion.chunk","usage":null}
+
+data: {"choices":[{"delta":{"content":"!","role":"assistant"},"index":0}],"created":1756883562,"id":"021756883562269078532ccda42bfe607645d235a4671675eb216","model":"doubao-seed-1-6-thinking-250715","service_tier":"default","object":"chat.completion.chunk","usage":null}
+
+data: {"choices":[{"delta":{"content":" How","role":"assistant"},"index":0}],"created":1756883562,"id":"021756883562269078532ccda42bfe607645d235a4671675eb216","model":"doubao-seed-1-6-thinking-250715","service_tier":"default","object":"chat.completion.chunk","usage":null}
+
+data: {"choices":[{"delta":{"content":"","role":"assistant"},"finish_reason":"stop","index":0}],"created":1756883562,"id":"021756883562269078532ccda42bfe607645d235a4671675eb216","model":"doubao-seed-1-6-thinking-250715","service_tier":"default","object":"chat.completion.chunk","usage":null}
+
+data: {"choices":[],"created":1756883562,"id":"021756883562269078532ccda42bfe607645d235a4671675eb216","model":"doubao-seed-1-6-thinking-250715","object":"chat.completion.chunk","usage":{"completion_tokens":72,"prompt_tokens":20,"total_tokens":92,"prompt_tokens_details":{"cached_tokens":0},"completion_tokens_details":{"reasoning_tokens":63}}}
+
+data: [DONE]
+

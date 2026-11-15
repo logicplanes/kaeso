@@ -457,6 +457,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Volcengine Ark key, which has no fixed prefix, with Ark's API key page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "volcengine", name: "Ark prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Volcengine Ark");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Volcengine Ark API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "ark.volcengine.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://ark.volcengine.com/region:cn-beijing/apiKey");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at ark.volcengine.com under API Key 管理.",
+    );
+    const secret = within(dialog).getByLabelText("Volcengine Ark API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "00000000-0000-0000-0000-000000000000");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Ark prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Ark prod is the Volcengine Ark default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "volcengine", name: "Ark prod", secret: "00000000-0000-0000-0000-000000000000", make_default: false },
+    ]);
+  });
+
   it("adds an Upstage key, which has no fixed prefix, with Upstage's console as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "upstage", name: "Upstage prod", is_default: true }));
     const { user, dialog } = await open();
