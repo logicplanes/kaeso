@@ -14,8 +14,9 @@ export const hourLabel = utcTimeFormat({ weekday: "short", day: "numeric", month
 export const PREVIOUS = "var(--k-text-tertiary)";
 
 /** The period as the request logs and the breakdown tabs read it from their address. */
-export const logsRange = (o: Overview) => `from=${o.from}&to=${o.to}`;
-export const tabRange = (o: Overview) => (o.period ? `period=${o.period}` : logsRange(o));
+// Analytics counts by UTC day, and the request log reads days in the install's time zone unless told otherwise.
+export const logsRange = (o: Overview) => `from=${o.from}&to=${o.to}&utc=true`;
+export const tabRange = (o: Overview) => (o.period ? `period=${o.period}` : `from=${o.from}&to=${o.to}`);
 
 function series(o: Overview, id: MetricId): TimeSeries[] {
   const m = METRICS[id];

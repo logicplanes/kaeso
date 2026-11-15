@@ -331,5 +331,6 @@
   "logs.tools.status.refused": "Refused",
   "logs.tools.tool": "Tool",
   "logs.unavailable": "Request logs are unavailable for now",
-  "logs.unavailableHint": "Usage and limits still work."
+  "logs.unavailableHint": "Usage and limits still work.",
+  "logs.utcDays": "Days in UTC"
 }

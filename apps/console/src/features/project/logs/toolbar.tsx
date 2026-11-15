@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useState, type ReactNode, type RefObject } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button, DateRangePicker, FilterChip, type FilterChipChoice, type FilterChipProps, Input, Menu, Select, icons } from "@logicplanes/kaeso-ui";
+import { Button, DateRangePicker, FilterChip, type FilterChipChoice, type FilterChipProps, Input, Menu, Select, Text, icons } from "@logicplanes/kaeso-ui";
 import type { LogRange } from "~/api/queries/logs";
 import { allKeysQuery } from "~/api/queries/keys";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
@@ -22,6 +22,7 @@ export interface RangeSearch {
   range?: LogRange | undefined;
   from?: string | undefined;
   to?: string | undefined;
+  utc?: boolean | undefined;
 }
 
 export function RangeControls({ value, onChange }: { value: RangeSearch; onChange: (next: Required<RangeSearch>) => void }) {
@@ -35,8 +36,8 @@ export function RangeControls({ value, onChange }: { value: RangeSearch; onChang
           value={value.from ? "custom" : (value.range ?? "24h")}
           onValueChange={(v) =>
             v === "custom"
-              ? onChange({ from: dayKey(new Date()), to: dayKey(new Date()), range: undefined })
-              : onChange({ range: ranges().find((r) => r.value === v && v !== "24h")?.value, from: undefined, to: undefined })
+              ? onChange({ from: dayKey(new Date()), to: dayKey(new Date()), range: undefined, utc: undefined })
+              : onChange({ range: ranges().find((r) => r.value === v && v !== "24h")?.value, from: undefined, to: undefined, utc: undefined })
           }
           options={[...ranges(), { value: "custom", label: t("logs.range.custom", "Custom range") }]}
         />
@@ -47,9 +48,14 @@ export function RangeControls({ value, onChange }: { value: RangeSearch; onChang
             aria-label={t("logs.days", "Days")}
             size="sm"
             value={{ from: pickerDate(value.from), to: pickerDate(value.to) }}
-            onValueChange={(r) => r?.from && onChange({ from: pickedDay(r.from), to: pickedDay(r.to ?? r.from), range: undefined })}
+            onValueChange={(r) => r?.from && onChange({ from: pickedDay(r.from), to: pickedDay(r.to ?? r.from), range: undefined, utc: undefined })}
           />
         </div>
+      )}
+      {value.from && value.to && value.utc && (
+        <Text variant="small" tone="secondary" className="shrink-0">
+          {t("logs.utcDays", "Days in UTC")}
+        </Text>
       )}
     </>
   );
