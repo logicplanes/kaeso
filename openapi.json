@@ -24108,7 +24108,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), or for\norgs `project`; default one bucket per step.",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), `alias`\n(empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n`response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\nfor orgs `project`; default one bucket per step. The request log filters\n`status` and `response_cache` narrow a bucket down to its requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -26428,7 +26428,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), or for\norgs `project`; default one bucket per step.",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), `alias`\n(empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n`response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\nfor orgs `project`; default one bucket per step. The request log filters\n`status` and `response_cache` narrow a bucket down to its requests.",
             "required": false,
             "schema": {
               "type": "string"

@@ -727,6 +727,12 @@ pub enum TimelineGroup {
     ErrorKind,
     /// The client app the user agent names; empty without one.
     Client,
+    /// Empty for requests that named a model.
+    Alias,
+    Endpoint,
+    Status,
+    /// `hit`, `miss` or `bypass`; empty where the response cache was off.
+    ResponseCache,
 }
 
 impl TimelineGroup {
@@ -740,6 +746,10 @@ impl TimelineGroup {
             TimelineGroup::Member => "concat(principal_kind, ':', toString(principal_id))",
             TimelineGroup::Route => "concat(ingress_dialect, ':', egress_dialect, ':', provider)",
             TimelineGroup::ErrorKind => "error_kind",
+            TimelineGroup::Alias => "alias",
+            TimelineGroup::Endpoint => "endpoint",
+            TimelineGroup::Status => "toString(status)",
+            TimelineGroup::ResponseCache => "response_cache",
         }
     }
 }

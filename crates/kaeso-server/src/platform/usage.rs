@@ -599,8 +599,11 @@ pub struct TimelineQuery {
     pub step: Option<String>,
     #[doc = "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n\
         `error_kind` (the request log's, empty for requests that succeeded),\n\
-        `client` (the client app the user agent names, empty without one), or for\n\
-        orgs `project`; default one bucket per step."]
+        `client` (the client app the user agent names, empty without one), `alias`\n\
+        (empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n\
+        `response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\n\
+        for orgs `project`; default one bucket per step. The request log filters\n\
+        `status` and `response_cache` narrow a bucket down to its requests."]
     pub group_by: Option<String>,
     #[doc = "With `group_by`, only the groups with the most requests in the whole\n\
         range, 1 to 50; the others are left out."]
@@ -721,14 +724,18 @@ async fn timeline(
         Some("route") => Some(TimelineGroup::Route),
         Some("error_kind") => Some(TimelineGroup::ErrorKind),
         Some("client") => Some(TimelineGroup::Client),
+        Some("alias") => Some(TimelineGroup::Alias),
+        Some("endpoint") => Some(TimelineGroup::Endpoint),
+        Some("status") => Some(TimelineGroup::Status),
+        Some("response_cache") => Some(TimelineGroup::ResponseCache),
         Some("project") if scope.org_wide => Some(TimelineGroup::Project),
         Some(_) => {
             return Err(ApiError::invalid(
                 "group_by",
                 if scope.org_wide {
-                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."
+                    "Group by `project` or a field of the request log, such as `model` or `status`."
                 } else {
-                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."
+                    "Group by a field of the request log, such as `model`, `status` or `response_cache`."
                 },
             ));
         }

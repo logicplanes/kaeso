@@ -238,8 +238,8 @@ describe("a refusal of a usage grouping or filter", () => {
     expect((await errorFromResponse(refusal("Use `project`, `billed_to` or what a project's usage groups by, such as `day`."))).message).toBe(
       "`project`, `billed_to` oder eine Gruppierung der Projektnutzung wie `day` verwenden.",
     );
-    expect((await errorFromResponse(refusal("Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."))).message).toBe(
-      "`model`, `provider`, `key`, `member`, `route`, `error_kind` oder `client` verwenden.",
+    expect((await errorFromResponse(refusal("Group by a field of the request log, such as `model`, `status` or `response_cache`."))).message).toBe(
+      "Gruppieren Sie nach einem Feld des Anfrageprotokolls, etwa `model`, `status` oder `response_cache`.",
     );
     expect((await errorFromResponse(refusal("`member` must be a `key` that grouping by `member` returns."))).message).toBe(
       "`member` muss ein `key` sein, wie ihn die Gruppierung nach `member` liefert.",
@@ -248,8 +248,8 @@ describe("a refusal of a usage grouping or filter", () => {
     expect((await errorFromResponse(refusal("Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."))).message).toBe(
       "请使用 `day`、`week`、`month`、`model`、`provider`、`key`、`member`、`route` 或 `billed_to`。",
     );
-    expect((await errorFromResponse(refusal("Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."))).message).toBe(
-      "请使用 `model`、`provider`、`key`、`member`、`route`、`error_kind`、`client` 或 `project`。",
+    expect((await errorFromResponse(refusal("Group by `project` or a field of the request log, such as `model` or `status`."))).message).toBe(
+      "请按 `project` 或请求日志的字段分组，例如 `model` 或 `status`。",
     );
     expect((await errorFromResponse(refusal("`route` must be a `key` that grouping by `route` returns."))).message).toBe(
       "`route` 必须是按 `route` 分组时返回的 `key`。",
