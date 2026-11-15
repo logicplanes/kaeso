@@ -65,7 +65,7 @@ Scheitert ein Modellschritt, wechselt Kaeso zu seinem Fallback, wenn `fall_back_
 
 Ein Schritt weicht bei `unavailable`, `limited` und `unsupported` aus, wenn er keine anderen nennt. Nehmen Sie `rejected` nur für einen Fallback auf, der annehmen kann, was das erste Modell ablehnte, etwa ein Modell mit längerem Kontext.
 
-`timeout_seconds` eines Schritts, 1 bis 3600, ist die Zeit, die Kaeso auf das erste Byte des Modells wartet, und auf eine nicht gestreamte Antwort, bevor der Schritt als `unavailable` scheitert. Ohne den Wert gilt das Zeitlimit des Modells.
+`timeout_seconds` eines Schritts, 1 bis 3600, ist die Zeit, die Kaeso auf das erste Byte des Modells wartet, und auf eine nicht gestreamte Antwort, bevor der Schritt als `unavailable` scheitert. Ohne den Wert gilt das Zeitlimit des Modells. Eine Anfrage kann es mit dem Header `kaeso-timeout` in Sekunden für jeden Schritt verkürzen, den sie erreicht, etwa eine interaktive App, die höchstens 20 Sekunden wartet; ein längerer Wert ändert nichts ([Zeitlimits](../api/model-api.md#zeitlimits)).
 
 Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der später abbricht, endet mit einem Fehlerereignis, wie ohne Route.
 

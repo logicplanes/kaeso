@@ -1039,3 +1039,87 @@ async fn a_trace_refuses_what_saving_would_and_headers_routes_cannot_read() {
         assert_eq!(r.body["error"]["param"], param, "{:?}", r.body);
     }
 }
+
+async fn ask_within(env: &Env, model: &str, text: &str, timeout: &str) -> Answer {
+    let req = axum::http::Request::builder()
+        .uri("/v1/chat/completions")
+        .method("POST")
+        .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("kaeso-timeout", timeout)
+        .body(axum::body::Body::from(
+            serde_json::to_vec(&chat(model, text)).unwrap(),
+        ))
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let body = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes()
+        .to_vec();
+    Answer {
+        status,
+        headers,
+        body,
+    }
+}
+
+#[tokio::test]
+async fn a_request_shortens_each_steps_wait_with_kaeso_timeout_but_never_lengthens_it() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    let started = std::time::Instant::now();
+    let r = tokio::time::timeout(
+        Duration::from_secs(20),
+        ask_within(&env, "sturdy", "Hi [mock:fail=claude-haiku-4-5 stall]", "1"),
+    )
+    .await
+    .expect("the stalled step gives up after the requested second");
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-model"), Some("gpt-4o"));
+    assert_eq!(
+        walked(&r),
+        [
+            "\"route\";model=\"anthropic/claude-haiku-4-5\";status=504",
+            "\"route.fallback\";model=\"openai/gpt-4o\";status=200"
+        ]
+    );
+    assert!(started.elapsed() < Duration::from_secs(10));
+
+    alias(
+        &env,
+        "quick",
+        json!({ "type": "model", "model": claude, "timeout_seconds": 1, "fallback": model_step(&gpt) }),
+    )
+    .await;
+    let started = std::time::Instant::now();
+    let r = ask_within(
+        &env,
+        "quick",
+        "Hi [mock:fail=claude-haiku-4-5 stall]",
+        "3600",
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert!(
+        started.elapsed() < Duration::from_secs(10),
+        "the step's own second still holds"
+    );
+
+    for bad in ["0", "3601", "soon", "1.5"] {
+        let r = ask_within(&env, "gpt-4o", "Hi", bad).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{bad}: {}", r.text());
+        assert_eq!(r.json()["error"]["param"], "kaeso-timeout", "{bad}");
+        assert_eq!(
+            r.json()["error"]["message"],
+            "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600.",
+            "{bad}"
+        );
+    }
+}

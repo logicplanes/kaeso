@@ -65,7 +65,7 @@ When a model step fails, Kaeso moves on to its fallback if the step's `fall_back
 
 A step falls back on `unavailable`, `limited` and `unsupported` unless it lists others. Add `rejected` only for a fallback that can take what the first model refused, such as a model with a longer context.
 
-A step's `timeout_seconds`, 1 to 3600, is how long Kaeso waits for the model's first byte, and for a reply that isn't streamed, before the step fails as `unavailable`. Without it, the model's own timeout applies.
+A step's `timeout_seconds`, 1 to 3600, is how long Kaeso waits for the model's first byte, and for a reply that isn't streamed, before the step fails as `unavailable`. Without it, the model's own timeout applies. A request can shorten it for every step it reaches with the header `kaeso-timeout`, in seconds, such as an interactive app that waits 20 seconds at most; a longer value changes nothing ([timeouts](../api/model-api.md#timeouts)).
 
 Nothing falls back once the provider has answered: a stream that breaks off later ends with an error event, as without a route.
 
