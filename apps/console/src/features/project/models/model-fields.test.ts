@@ -76,6 +76,7 @@ describe("unitPriceLabels", () => {
         { per: "second", of: "output", usd: "0.05", resolution: "720p", audio: true },
         { per: "second", of: "output", usd: "0.025", audio: false },
         { per: "frame", of: "output", usd: "1" },
+        { per: "search", of: "input", usd: "0.01" },
       ],
     };
     expect(unitPriceLabels(f)).toEqual([
@@ -85,6 +86,7 @@ describe("unitPriceLabels", () => {
       "$0.05 per second of output (720p, with sound)",
       "$0.03 per second of output (without sound)",
       "$1.00 per frame of output",
+      "$0.01 per web search",
     ]);
     expect(dialectPill("openai_speech")).toBe("speech");
     expect(dialectPill("openai_transcriptions")).toBe("transcriptions");

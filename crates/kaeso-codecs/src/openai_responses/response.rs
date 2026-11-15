@@ -354,10 +354,12 @@ pub(super) fn decode_object(raw: &RawValue, origin: &Origin) -> Result<Response,
             .insert(MESSAGES.to_owned(), Value::Array(ranges));
         extras.form.insert(BLOCKS.to_owned(), blocks.len().into());
     }
-    let usage = match w.usage {
+    let mut usage = match w.usage {
         Some(u) => decode_usage(u, origin).map_err(Decoded::Failed)?,
         None => Usage::default(),
     };
+    let searches = crate::web_search::completed_searches(&blocks);
+    usage.web_searches = (searches > 0).then_some(searches);
     let mut resp = Response::new(w.id.clone(), w.model.clone(), blocks);
     resp.stop = stop;
     resp.usage = usage;

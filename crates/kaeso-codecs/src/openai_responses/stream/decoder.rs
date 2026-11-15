@@ -679,10 +679,17 @@ impl Decoder {
                         .and_then(|d| d.reason.as_deref()),
                     has_calls,
                 );
-                let usage = match w.usage.map(|u| decode_usage(u, &self.origin)) {
+                let mut usage = match w.usage.map(|u| decode_usage(u, &self.origin)) {
                     Some(Err(e)) => return Action::Broken(e.message),
                     usage => usage.and_then(Result::ok),
                 };
+                let searches = crate::web_search::billed_searches(
+                    w.output.iter().flatten().copied(),
+                    &self.origin,
+                );
+                if let (Some(u), true) = (usage.as_mut(), searches > 0) {
+                    u.web_searches = Some(searches);
+                }
                 let mut d = ResponseDelta::new(Some(stop), usage);
                 d.extras = Extras::new(self.origin.clone());
                 let mut s = ResponseStop::new();

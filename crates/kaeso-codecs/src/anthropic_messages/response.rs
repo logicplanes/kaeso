@@ -158,6 +158,12 @@ pub(crate) fn decode_usage_with(
         .map(|c| CacheWriteBreakdown::new(c.ephemeral_5m_input_tokens, c.ephemeral_1h_input_tokens))
         .or_else(|| base.and_then(|b| b.cache_write_breakdown));
     u.reasoning_tokens = w.output_tokens_details.and_then(|d| d.thinking_tokens);
+    // A stream's last usage counts every search of the reply, as the first one did up to then.
+    u.web_searches = w
+        .server_tool_use
+        .and_then(|s| s.web_search_requests)
+        .or_else(|| base.and_then(|b| b.web_searches))
+        .filter(|n| *n > 0);
     u.raw = Some(RawUsage::new(origin.clone(), value));
     Ok(u)
 }

@@ -422,6 +422,7 @@
   "models.unit.input": "Eingabe",
   "models.unit.output": "Ausgabe",
   "models.unitPrice": "{price} pro {unit} der {side}",
+  "models.unitPriceSearch": "{price} pro Websuche",
   "models.unitPriceEstimate": "{price}, geschätzt",
   "models.field.inputImagePrice": "Preis für Bildeingabe",
   "models.field.outputImagePrice": "Preis für Bildausgabe",

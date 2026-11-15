@@ -386,7 +386,8 @@ pub fn is_priced(usage: &Usage, prices: Option<&Fields>, media: Option<&MediaUni
     let measured_tokens = usage.input_tokens > 0
         || usage.output_tokens > 0
         || usage.cache_read_tokens > 0
-        || usage.cache_write_tokens > 0;
+        || usage.cache_write_tokens > 0
+        || usage.web_searches.is_some_and(|n| n > 0);
     let measured_media = media.is_some_and(MediaUnits::measured);
     if !measured_tokens && !measured_media {
         return true;
@@ -401,7 +402,9 @@ pub fn is_priced(usage: &Usage, prices: Option<&Fields>, media: Option<&MediaUni
         Some(units) => units_priced(units, prices) || (measured_tokens && tokens),
         None => true,
     };
-    tokens && media
+    // Searches without a price leave part of what the provider bills unknown.
+    let searches = usage.web_searches.is_none_or(|n| n == 0) || search_price(prices).is_some();
+    tokens && media && searches
 }
 
 // Every kind of token the request used has the price `cost` bills it at, with the same
@@ -449,14 +452,34 @@ fn units_priced(units: &MediaUnits, prices: &Fields) -> bool {
 }
 
 /// The cost of a request: its tokens, and its media units when it has any.
+// Web searches a provider bills per call, such as Anthropic's and OpenAI's, at the catalogue's
+// price per search.
+fn search_price(prices: &Fields) -> Option<Decimal> {
+    prices
+        .unit_prices
+        .iter()
+        .flatten()
+        .find(|p| p.per == "search")
+        .map(|p| p.usd)
+}
+
+fn search_cost(usage: &Usage, prices: &Fields) -> Decimal {
+    match (usage.web_searches, search_price(prices)) {
+        (Some(n), Some(usd)) => Decimal::from(n).checked_mul(usd).unwrap_or(Decimal::MAX),
+        _ => Decimal::ZERO,
+    }
+}
+
 pub fn cost_with_media(usage: &Usage, prices: &Fields, media: Option<&MediaUnits>) -> Decimal {
-    let tokens = cost(usage, prices);
+    let tokens = cost(usage, prices)
+        .checked_add(search_cost(usage, prices))
+        .unwrap_or(Decimal::MAX);
     match media {
         Some(units) => tokens
             .checked_add(media_cost(units, prices))
             .unwrap_or(Decimal::MAX)
             .normalize(),
-        None => tokens,
+        None => tokens.normalize(),
     }
 }
 
@@ -542,6 +565,39 @@ mod tests {
             None
         );
         assert!(unpriced_model(&none, &none, RequestKind::Decide, "m").is_some());
+    }
+
+    #[test]
+    fn web_searches_cost_the_price_per_search_and_leave_the_cost_partial_without_one() {
+        let mut prices = Fields {
+            input_price: Some(dec!(3)),
+            output_price: Some(dec!(15)),
+            ..Fields::default()
+        };
+        let mut usage = Usage::new(1_000_000, 0);
+        usage.web_searches = Some(3);
+        assert_eq!(cost_with_media(&usage, &prices, None), dec!(3));
+        assert!(
+            !is_priced(&usage, Some(&prices), None),
+            "the searches are unpriced"
+        );
+        prices.unit_prices = Some(vec![crate::catalogue::UnitPrice {
+            per: "search".into(),
+            of: "input".into(),
+            usd: dec!(0.01),
+            ..crate::catalogue::UnitPrice::default()
+        }]);
+        assert_eq!(cost_with_media(&usage, &prices, None), dec!(3.03));
+        assert!(is_priced(&usage, Some(&prices), None));
+        usage.web_searches = None;
+        assert_eq!(cost_with_media(&usage, &prices, None), dec!(3));
+        let anthropic: crate::providers::ProviderRef =
+            crate::provider::provider("anthropic").unwrap().into();
+        assert_eq!(
+            prices.validate(&anthropic),
+            Ok(()),
+            "`search` is a unit an override may set"
+        );
     }
 
     #[test]

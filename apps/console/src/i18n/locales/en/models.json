@@ -452,6 +452,7 @@
   "models.unit.withoutSound": "without sound",
   "models.unitPrice": "{price} per {unit} of {side}",
   "models.unitPriceEstimate": "{price}, estimated",
+  "models.unitPriceSearch": "{price} per web search",
   "models.upstreamModelHint": "The ID the provider gets instead of the model's, such as an Azure deployment name. Empty sends the model's ID.",
   "models.valuesInUse": "Values in use",
   "models.wantAll": "Want them all? {all}"

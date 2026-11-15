@@ -723,6 +723,19 @@ pub(crate) fn search_result(search: &ResponsesSearch) -> Option<RawItem> {
     }))
 }
 
+/// The completed `web_search_call` items with a `search` action among a Responses reply's
+/// output, which OpenAI bills per call; opening or finding in a page isn't billed.
+pub(crate) fn billed_searches<'a>(
+    items: impl IntoIterator<Item = &'a serde_json::value::RawValue>,
+    origin: &kaeso_kpp::Origin,
+) -> u64 {
+    items
+        .into_iter()
+        .map(|item| RawItem::new(origin.clone(), kaeso_kpp::RawJson::from(item)))
+        .filter(|item| responses_search(item).is_some_and(|s| s.completed))
+        .count() as u64
+}
+
 pub(crate) fn completed_searches(blocks: &[Block]) -> u64 {
     let completed = |b: &Block| match b {
         Block::Unknown(item) => responses_search(item).is_some_and(|s| s.completed),

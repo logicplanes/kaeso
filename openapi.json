@@ -40081,7 +40081,7 @@
           },
           "per": {
             "type": "string",
-            "description": "The unit: `image`, `megapixel`, `second`, `minute`, `hour`,\n`million_characters` or `video`.",
+            "description": "The unit: `image`, `megapixel`, `second`, `minute`, `hour`,\n`million_characters`, `video` or `search`, a web search the provider ran.",
             "example": "image"
           },
           "quality": {

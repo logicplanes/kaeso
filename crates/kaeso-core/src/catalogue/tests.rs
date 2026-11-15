@@ -3472,3 +3472,17 @@ fn a_provider_model_id_is_sent_in_place_of_the_model_id_and_has_no_spaces() {
     };
     assert!(fields.validate(&azure).is_ok());
 }
+
+#[test]
+fn anthropic_and_openai_models_price_their_web_searches() {
+    for (provider, model) in [("anthropic", "claude-sonnet-5-5"), ("openai", "gpt-5.5")] {
+        let fields = eff(&entry(provider, model)).fields;
+        let search = fields
+            .unit_prices
+            .iter()
+            .flatten()
+            .find(|u| u.per == "search")
+            .unwrap_or_else(|| panic!("{provider}/{model} has no price per search"));
+        assert_eq!((search.usd, search.of.as_str()), (dec!(0.01), "input"));
+    }
+}

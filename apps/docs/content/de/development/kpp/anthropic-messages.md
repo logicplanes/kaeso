@@ -175,6 +175,7 @@ Schema `Message`.
 | `usage.cache_creation.ephemeral_5m_input_tokens` / `ephemeral_1h_input_tokens` | `usage.cache_write_breakdown` | |
 | `usage.output_tokens` | `usage.output_tokens` | Enthält das Thinking. |
 | `usage.output_tokens_details.thinking_tokens` | `usage.reasoning_tokens` | |
+| `usage.server_tool_use.web_search_requests` | `usage.web_searches` | Die Suchen, die Anthropic pro Suche abrechnet; die letzte Nutzung eines Streams zählt jede Suche der Antwort. |
 | das ganze `usage` (mit `server_tool_use`, `service_tier`, `inference_geo`, `iterations` und unbekannten Schlüsseln) | `usage.raw` (an seinen Ursprung gebunden) | Wird für Anthropic-Antworten mit denselben Schlüsseln und Werten wieder geschrieben. |
 
 Antworten aus anderen Dialekten (`encode_response`) erhalten `type: "message"`, `role: "assistant"`, `stop_sequence: null` (oder die Sequenz) und `stop_details: null`. Die Nutzung wird aus den typisierten Feldern gebildet: `cache_creation` aus der Aufschlüsselung oder `null`, und `output_tokens_details`, wenn `reasoning_tokens` bekannt ist.
