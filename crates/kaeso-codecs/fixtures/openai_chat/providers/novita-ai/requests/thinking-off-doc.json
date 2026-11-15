@@ -1,0 +1,7 @@
+{
+  "model": "moonshotai/kimi-k2.5",
+  "messages": [
+    { "role": "user", "content": "What is the capital of France?" }
+  ],
+  "enable_thinking": false
+}

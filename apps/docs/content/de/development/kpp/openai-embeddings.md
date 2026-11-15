@@ -110,6 +110,10 @@ Quellen: Fireworks' Referenz [create embeddings](https://docs.fireworks.ai/api-r
 
 Quellen: die Referenz [create embeddings](https://docs.tokenfactory.nebius.com/api-reference/inference/create-embeddings) von Nebius, gelesen am 2026-11-09, und `fixtures/openai_embeddings/providers/nebius/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Das Embedding-Modell von Nebius ist `Qwen/Qwen3-Embedding-8B`. Es nimmt `encoding_format` und `dimensions` an, und jede Antwort trägt `service_tier`, das in den Extras bleibt.
 
+### Novita AI
+
+Quellen: die Referenz [create embeddings](https://docs.novita.ai/api-reference/model-apis-llm-create-embeddings.md) von Novita AI, gelesen am 2026-11-14, und `fixtures/openai_embeddings/providers/novita-ai/`, daraus gebaut, mit dem live erhaltenen Fehler ohne Schlüssel. Seine Embedding-Modelle `baai/bge-m3` und `qwen/qwen3-embedding-8b` nehmen `input`, `model` und `encoding_format` (`float` oder `base64`) an; die Referenz nennt kein `dimensions`, daher lehnt Kaeso es ab (`without_dimensions()`), statt Vektoren in der vollen Größe des Modells zurückzugeben. Fehler von Novita AI kommen in seiner eigenen Form `{"code", "reason", "message", "metadata"}` und erreichen Apps in der Form von OpenAI mit der Meldung von Novita AI.
+
 ### Scaleway
 
 Quellen: die [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/) von Scaleway (`CreateEmbeddingResponse`), gelesen am 2026-11-09, und `fixtures/openai_embeddings/providers/scaleway/`, daraus gebaut, mit dem live erhaltenen Fehler ohne gültigen Schlüssel. Die serverlosen Modelle sind `bge-multilingual-gemma2` und `qwen3-embedding-8b`. Antworten ergänzen `id`, `created` und `usage.completion_tokens: 0`, die in den Extras bleiben. `dimensions` nimmt nur die größte Größe eines Modells an, daher beantwortet Scaleway andere Werte selbst.

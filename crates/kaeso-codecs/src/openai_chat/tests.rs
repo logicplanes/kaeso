@@ -208,6 +208,26 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         "providers/ionos/validation-error-doc",
         ErrorKind::InvalidRequest,
     ),
+    (
+        "providers/novita-ai/recorded-invalid-api-key",
+        ErrorKind::Authentication,
+    ),
+    (
+        "providers/novita-ai/recorded-missing-api-key",
+        ErrorKind::PermissionDenied,
+    ),
+    (
+        "providers/novita-ai/recorded-model-not-found",
+        ErrorKind::NotFound,
+    ),
+    (
+        "providers/novita-ai/rate-limit-exceeded-doc",
+        ErrorKind::RateLimited,
+    ),
+    (
+        "providers/novita-ai/service-unavailable-doc",
+        ErrorKind::Overloaded,
+    ),
 ];
 
 const COHERE: &str = "providers/cohere/";

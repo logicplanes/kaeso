@@ -3326,6 +3326,80 @@ expression: outcomes
       }
     }
   },
+  "providers/novita-ai/cached-doc": {
+    "content": [
+      {
+        "text": "The contract ends on 31 December 2027.",
+        "type": "text"
+      }
+    ],
+    "id": "00000000000000000000000000000000",
+    "model": "deepseek/deepseek-v4.1-flash",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 448,
+      "input_tokens": 2847,
+      "output_tokens": 137
+    }
+  },
+  "providers/novita-ai/greeting-doc": {
+    "content": [
+      {
+        "text": "Hello! 👋 How can I assist you today? 😊",
+        "type": "text"
+      }
+    ],
+    "id": "29e1432c-edfb-44a4-b531-c23c600abfae",
+    "model": "deepseek-test",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 5,
+      "output_tokens": 13
+    }
+  },
+  "providers/novita-ai/interleaved-tool-call-doc": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "call_function_9w7wq1j9zmpl_1",
+        "input": {
+          "location": "ShangHai"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "07a4dedfdb1498b045498dfd42497639",
+    "model": "MiniMax",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 0,
+      "output_tokens": 0
+    }
+  },
   "providers/nvidia/reasoning": {
     "content": [
       {

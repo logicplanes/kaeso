@@ -2433,6 +2433,81 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
     },
+    Provider {
+        id: "novita-ai",
+        name: "Novita AI",
+        // "Every key begins with the `sk_` prefix"; keys are made under Key Management
+        // (https://docs.novita.ai/guides/llm-api-keys.md).
+        key_page: KeyPage {
+            url: "https://novita.ai/settings/key-management",
+            label: "Key Management",
+        },
+        key_prefix: Some("sk_"),
+        // Novita AI's OpenAI-compatible base URL is `https://api.novita.ai/openai`, and its API
+        // reference serves chat, embeddings and models at `/openai/v1/…`
+        // (https://docs.novita.ai/guides/llm-api.md).
+        default_base_url: "https://api.novita.ai/openai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        // The embeddings reference has `input`, `model` and `encoding_format`, and no `dimensions`
+        // (https://docs.novita.ai/api-reference/model-apis-llm-create-embeddings.md).
+        embeddings_profile: EmbeddingsProfile::compatible("Novita AI").without_dimensions(),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        // A refused key is a 401 `FAILED_TO_AUTH`, a missing one a 403 `INVALID_API_KEY`
+        // (https://docs.novita.ai/api-reference/basic-error-code.md).
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        // `max_tokens` counts reasoning tokens too (https://docs.novita.ai/guides/LLM-FAQ.md).
+        reasoning_beyond_output_limit: false,
+        // `GET /v1/models` lists only chat models; embedding models need an undocumented
+        // `?model_type=embedding` (https://docs.novita.ai/api-reference/model-apis-llm-list-models.md),
+        // so a model it leaves out is inconclusive, never unavailable.
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        // Novita AI's chat reference has only `max_tokens`, the roles `system`, `user` and
+        // `assistant` (its guides send `tool` too), no end-user field, `video_url` parts,
+        // `enable_thinking`, and `separate_reasoning`, without which reasoning stays inside
+        // `content`; it doesn't say whether it refuses undeclared fields, so the OpenAI fields it
+        // leaves out are refused here instead of being dropped without a word
+        // (https://docs.novita.ai/api-reference/model-apis-llm-create-chat-completion.md).
+        chat: ChatProfile::compatible("Novita AI")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .without_cache_key()
+            .with_video_url()
+            .thinking_switch()
+            .separate_reasoning()
+            .reasoning_fields(&["reasoning_content"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "metadata",
+                "parallel_tool_calls",
+                "prediction",
+                "prompt_cache_key",
+                "prompt_cache_retention",
+                "service_tier",
+                "store",
+                "verbosity",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("Novita AI"),
+        messages: MessagesProfile::compatible("Novita AI"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+    },
 ];
 
 const _: () = {
@@ -2730,7 +2805,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai"
         );
     }
 
@@ -2811,7 +2886,13 @@ mod tests {
             .collect();
         assert_eq!(
             partial,
-            ["standardcompute", "perplexity", "typesafe", "upstage"]
+            [
+                "standardcompute",
+                "perplexity",
+                "typesafe",
+                "upstage",
+                "novita-ai"
+            ]
         );
     }
 
@@ -2873,6 +2954,45 @@ mod tests {
         assert!(p.chat.request.cache_key && p.chat.request.stream_options);
         assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
         for field in ["parallel_tool_calls", "top_logprobs", "logit_bias", "store"] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn novita_ai_serves_chat_and_embeddings_under_openai_and_asks_for_reasoning_in_its_own_field() {
+        let p = provider("novita-ai").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Novita AI",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://api.novita.ai/openai");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), Some("sk_"))
+        );
+        assert_eq!(p.key_page.url, "https://novita.ai/settings/key-management");
+        assert_eq!(p.listing, ModelListing::Partial);
+        assert_eq!(p.chat.provider, "Novita AI");
+        assert_eq!(p.chat.request.path, "/v1/chat/completions");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::MaxTokens);
+        assert!(!p.chat.request.end_user && !p.chat.request.developer_role);
+        assert!(p.chat.request.video_url && p.chat.request.thinking_switch);
+        assert!(p.chat.request.separate_reasoning && !p.chat.request.cache_key);
+        assert!(!p.embeddings_profile.dimensions);
+        assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
+        for field in [
+            "parallel_tool_calls",
+            "prompt_cache_key",
+            "store",
+            "metadata",
+        ] {
             assert!(p.chat.request.refused_fields.contains(&field), "{field}");
         }
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
@@ -3035,7 +3155,7 @@ mod tests {
             .filter(|p| p.embeddings_profile != EmbeddingsProfile::OPENAI)
             .map(|p| p.id)
             .collect();
-        assert_eq!(others, ["cloudflare-ai-gateway", "upstage"]);
+        assert_eq!(others, ["cloudflare-ai-gateway", "upstage", "novita-ai"]);
     }
 
     #[test]
@@ -3947,7 +4067,8 @@ mod tests {
                 "typesafe",
                 "deepinfra",
                 "upstage",
-                "ionos"
+                "ionos",
+                "novita-ai"
             ]
         );
         assert_eq!(

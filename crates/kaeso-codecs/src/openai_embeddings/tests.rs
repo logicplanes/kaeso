@@ -151,12 +151,13 @@ fn a_rejected_key_in_another_error_format_is_an_authentication_error_quoted_with
 fn every_error_fixture_round_trips_with_status_and_retry_after() {
     for (name, body) in fixtures(DIR, "errors", "json") {
         // NVIDIA answers with RFC 9457 problem documents, SiliconFlow with `{"code", "message", "data"}`,
-        // Cloudflare with its `errors` envelope and IONOS with its `messages`; apps get them in
-        // OpenAI's shape.
+        // Cloudflare with its `errors` envelope, IONOS with its `messages` and Novita AI with
+        // `{"code", "reason", "message", "metadata"}`; apps get them in OpenAI's shape.
         if FOREIGN_ERROR_BODIES.contains(&name.as_str())
             || name.starts_with("providers/cloudflare-ai-gateway/")
             || name.starts_with("providers/ionos/")
             || name.starts_with("providers/cohere/")
+            || name.starts_with("providers/novita-ai/")
             || name.starts_with("providers/nvidia/")
             || name.starts_with("providers/siliconflow/")
         {
@@ -562,4 +563,18 @@ fn an_ionos_error_reaches_embeddings_apps_with_ionos_message() {
         sent["error"]["message"],
         "Unauthorized, invalid or no token provided for exchange"
     );
+}
+
+#[test]
+fn a_novita_ai_error_reaches_embeddings_apps_as_an_openai_error_with_its_message() {
+    let body = fixture("errors", "providers/novita-ai/recorded-missing-api-key");
+    let err = OpenAiEmbeddings::decode_error(403, &HeaderList::new(), &body);
+    assert_eq!(
+        (&err.kind, err.status, err.message.as_str()),
+        (&ErrorKind::PermissionDenied, Some(403), "invalid API key")
+    );
+    let out = OpenAiEmbeddings::encode_error(&err);
+    assert_eq!(out.status, 403);
+    let sent: Value = serde_json::from_slice(&out.body).unwrap();
+    assert_eq!(sent["error"]["message"], err.message.as_str());
 }

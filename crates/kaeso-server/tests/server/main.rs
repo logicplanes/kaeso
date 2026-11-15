@@ -77,6 +77,7 @@ mod provider_minimax;
 mod provider_mistral;
 mod provider_moonshotai;
 mod provider_nebius;
+mod provider_novita_ai;
 mod provider_nvidia;
 mod provider_ollama_cloud;
 mod provider_openrouter;

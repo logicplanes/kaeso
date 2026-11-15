@@ -1,0 +1,28 @@
+{
+  "model": "minimax/minimax-m3",
+  "messages": [
+    {
+      "role": "user",
+      "content": "How's the weather in ShangHai?"
+    }
+  ],
+  "max_tokens": 1024,
+  "temperature": 0.7,
+  "separate_reasoning": true,
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get weather for a specific location",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": { "type": "string" }
+          },
+          "required": ["location"]
+        }
+      }
+    }
+  ]
+}

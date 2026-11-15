@@ -110,6 +110,10 @@ order: 8
 
 来源：Nebius 的 [create embeddings](https://docs.tokenfactory.nebius.com/api-reference/inference/create-embeddings) 参考（2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/nebius/`，其中的错误是在没有有效密钥的情况下实时返回的。Nebius 的嵌入模型是 `Qwen/Qwen3-Embedding-8B`。它接受 `encoding_format` 和 `dimensions`，每个回复都带有 `service_tier`，保留在 extras 中。
 
+### Novita AI
+
+来源：Novita AI 的[创建嵌入](https://docs.novita.ai/api-reference/model-apis-llm-create-embeddings.md)参考（2026-11-14 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/novita-ai/`，其中的错误是在没有密钥的情况下实时返回的。它的嵌入模型 `baai/bge-m3` 和 `qwen/qwen3-embedding-8b` 接受 `input`、`model` 和 `encoding_format`（`float` 或 `base64`）；参考中没有 `dimensions`，因此 Kaeso 会拒绝它（`without_dimensions()`），而不是返回模型完整维度的向量。Novita AI 的错误使用它自己的 `{"code", "reason", "message", "metadata"}` 形式，并以 OpenAI 的形式、带 Novita AI 的消息到达应用。
+
 ### Scaleway
 
 来源：Scaleway 的 [Generative APIs reference](https://www.scaleway.com/en/developers/api/generative-apis/)（`CreateEmbeddingResponse`，2026-11-09 阅读），以及据此构建的 `fixtures/openai_embeddings/providers/scaleway/`，其中的错误是在没有有效密钥的情况下实时返回的。无服务器模型为 `bge-multilingual-gemma2` 和 `qwen3-embedding-8b`。回复中额外的 `id`、`created` 和 `usage.completion_tokens: 0` 保留在 extras 中。`dimensions` 只接受模型的最大尺寸，其他值由 Scaleway 自行响应。

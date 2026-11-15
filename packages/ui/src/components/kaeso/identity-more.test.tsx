@@ -205,6 +205,7 @@ const MARKED_PROVIDERS = {
   deepinfra: "DeepInfra",
   upstage: "Upstage",
   ionos: "IONOS AI Model Hub",
+  "novita-ai": "Novita AI",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

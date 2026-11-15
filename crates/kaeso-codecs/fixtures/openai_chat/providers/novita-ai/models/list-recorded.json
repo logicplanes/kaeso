@@ -1,0 +1,168 @@
+{
+  "data": [
+    {
+      "created": 1793757877,
+      "id": "tencent/hy4",
+      "object": "model",
+      "owned_by": "novita",
+      "permission": null,
+      "root": "",
+      "parent": "",
+      "input_token_price_per_m": 4170,
+      "output_token_price_per_m": 12505,
+      "pricing": {
+        "prompt": {
+          "origin_price_per_m": 8340,
+          "price_per_m": 4170,
+          "origin_price_per_m_decimal": "0.834",
+          "price_per_m_decimal": "0.417"
+        },
+        "completion": {
+          "origin_price_per_m": 25010,
+          "price_per_m": 12505,
+          "origin_price_per_m_decimal": "2.501",
+          "price_per_m_decimal": "1.2505"
+        },
+        "input_cache_read": {
+          "origin_price_per_m": 420,
+          "price_per_m": 210,
+          "origin_price_per_m_decimal": "0.042",
+          "price_per_m_decimal": "0.021"
+        }
+      },
+      "is_tiered_billing": false,
+      "title": "tencent/hy4",
+      "description": "Tencent: The official release of Hy4 delivers comprehensive and substantial improvements over Hy4 Preview, with particularly strong gains in agentic capabilities and performance across a wide range of long-horizon, real-world productivity tasks. It also introduces visual understanding for the first time.",
+      "tags": [],
+      "context_size": 1000000,
+      "status": 1,
+      "display_name": "Hy4",
+      "model_type": "chat",
+      "max_output_tokens": 64000,
+      "features": [
+        "serverless",
+        "function-calling",
+        "structured-outputs",
+        "reasoning"
+      ],
+      "endpoints": [
+        "chat/completions",
+        "anthropic",
+        "responses"
+      ],
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ]
+    },
+    {
+      "created": 1789024319,
+      "id": "deepseek/deepseek-v4.1-flash",
+      "object": "model",
+      "owned_by": "novita",
+      "permission": null,
+      "root": "",
+      "parent": "",
+      "input_token_price_per_m": 3000,
+      "output_token_price_per_m": 12000,
+      "pricing": {
+        "prompt": {
+          "origin_price_per_m": 3000,
+          "price_per_m": 3000,
+          "origin_price_per_m_decimal": "0.3",
+          "price_per_m_decimal": "0.3"
+        },
+        "completion": {
+          "origin_price_per_m": 12000,
+          "price_per_m": 12000,
+          "origin_price_per_m_decimal": "1.2",
+          "price_per_m_decimal": "1.2"
+        },
+        "input_cache_read": {
+          "origin_price_per_m": 60,
+          "price_per_m": 60,
+          "origin_price_per_m_decimal": "0.006",
+          "price_per_m_decimal": "0.006"
+        }
+      },
+      "is_tiered_billing": false,
+      "title": "deepseek/deepseek-v4.1-flash",
+      "description": "",
+      "tags": [],
+      "context_size": 1048576,
+      "status": 1,
+      "display_name": "DeepSeek V4.1 Flash",
+      "model_type": "chat",
+      "max_output_tokens": 393216,
+      "features": [
+        "serverless",
+        "function-calling",
+        "structured-outputs",
+        "reasoning"
+      ],
+      "endpoints": [
+        "chat/completions",
+        "anthropic",
+        "responses"
+      ],
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "output_modalities": [
+        "text"
+      ]
+    },
+    {
+      "created": 1721801867,
+      "id": "meta-llama/llama-3.1-8b-instruct",
+      "object": "model",
+      "owned_by": "novita",
+      "permission": null,
+      "root": "",
+      "parent": "",
+      "input_token_price_per_m": 200,
+      "output_token_price_per_m": 500,
+      "pricing": {
+        "prompt": {
+          "origin_price_per_m": 200,
+          "price_per_m": 200,
+          "origin_price_per_m_decimal": "0.02",
+          "price_per_m_decimal": "0.02"
+        },
+        "completion": {
+          "origin_price_per_m": 500,
+          "price_per_m": 500,
+          "origin_price_per_m_decimal": "0.05",
+          "price_per_m_decimal": "0.05"
+        }
+      },
+      "is_tiered_billing": false,
+      "title": "meta-llama/llama-3.1-8b-instruct",
+      "description": "Meta's latest class of models, Llama 3.1, launched with a variety of sizes and configurations. The 8B instruct-tuned version is particularly fast and efficient. It has demonstrated strong performance in human evaluations, outperforming several leading closed-source models.",
+      "tags": [],
+      "context_size": 16384,
+      "status": 1,
+      "display_name": "Llama 3.1 8B Instruct",
+      "model_type": "chat",
+      "max_output_tokens": 16384,
+      "features": [
+        "structured-outputs",
+        "serverless"
+      ],
+      "endpoints": [
+        "chat/completions",
+        "completions"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ]
+    }
+  ]
+}

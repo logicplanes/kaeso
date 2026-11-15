@@ -1,0 +1,27 @@
+{
+  "id": "00000000000000000000000000000000",
+  "object": "chat.completion",
+  "created": 1794657720,
+  "model": "deepseek/deepseek-v4.1-flash",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The contract ends on 31 December 2027."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 3295,
+    "completion_tokens": 137,
+    "total_tokens": 3432,
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cached_tokens": 448,
+      "cache_creation_Prompt_tokens": 0,
+      "cache_read_Prompt_tokens": 0
+    }
+  }
+}

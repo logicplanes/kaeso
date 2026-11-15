@@ -4907,6 +4907,119 @@ expression: outcomes
     "param": "messages[0].blocks[1]",
     "unsupported": "video block"
   },
+  "providers/novita-ai/cached-doc": {
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "When does the contract end?",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek/deepseek-v4.1-flash",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "Answer questions about the attached contract.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/novita-ai/greeting-doc": {
+    "body": {
+      "max_tokens": 400,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hello, world!",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek/deepseek-r1-0528"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/novita-ai/interleaved-tool-call-doc": {
+    "message": "`separate_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "separate_reasoning"
+  },
+  "providers/novita-ai/interleaved-tool-result-doc": {
+    "message": "`reasoning_split` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "reasoning_split"
+  },
+  "providers/novita-ai/invalid-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/llama-3.1-8b-instruct"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/novita-ai/missing-api-key": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Hi",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "meta-llama/llama-3.1-8b-instruct"
+    },
+    "path": "/v1/messages"
+  },
+  "providers/novita-ai/reasoning-stream-doc": {
+    "message": "`separate_reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "separate_reasoning"
+  },
+  "providers/novita-ai/thinking-off-doc": {
+    "message": "`enable_thinking` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "enable_thinking"
+  },
   "providers/nvidia/invalid-api-key": {
     "body": {
       "max_tokens": 1,

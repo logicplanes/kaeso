@@ -2656,6 +2656,40 @@ fn upstage_models_speak_chat_completions_and_its_embedding_models_embed_with_the
 }
 
 #[test]
+fn novita_ai_models_speak_chat_completions_with_kpmrs_prices_and_its_embedding_models_embed() {
+    let flash = eff(&entry("novita-ai", "deepseek/deepseek-v4.1-flash"));
+    assert_eq!(flash.dialect, DialectId::OpenAiChat);
+    assert_eq!(flash.provider.chat().provider, "Novita AI");
+    assert_eq!(
+        (
+            flash.fields.input_price,
+            flash.fields.output_price,
+            flash.fields.cache_read_price
+        ),
+        (Some(dec!(0.3)), Some(dec!(1.2)), Some(dec!(0.006)))
+    );
+    assert_eq!(
+        effort_levels(&flash, DialectId::OpenAiChat),
+        ["low", "high", "max"]
+    );
+    assert_eq!(flash.provider.count_tokens_for(DialectId::OpenAiChat), None);
+    let embed = eff(&entry("novita-ai", "qwen/qwen3-embedding-8b"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.07)))
+    );
+    let models = &snapshot().providers["novita-ai"].models;
+    assert_eq!(
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some("embedding"))
+            .count(),
+        2
+    );
+}
+
+#[test]
 fn sambanova_models_speak_chat_completions_and_count_tokens_in_messages() {
     let gpt_oss = eff(&entry("sambanova", "gpt-oss-120b"));
     assert_eq!(gpt_oss.dialect, DialectId::OpenAiChat);

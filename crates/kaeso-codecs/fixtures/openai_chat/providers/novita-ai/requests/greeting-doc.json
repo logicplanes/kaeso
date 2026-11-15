@@ -1,0 +1,10 @@
+{
+  "model": "deepseek/deepseek-r1-0528",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, world!"
+    }
+  ],
+  "max_tokens": 400
+}

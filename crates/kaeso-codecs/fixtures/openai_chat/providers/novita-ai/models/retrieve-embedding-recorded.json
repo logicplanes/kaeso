@@ -1,0 +1,46 @@
+{
+  "created": 1741855788,
+  "id": "baai/bge-m3",
+  "object": "model",
+  "owned_by": "novita",
+  "permission": null,
+  "root": "",
+  "parent": "",
+  "input_token_price_per_m": 100,
+  "output_token_price_per_m": 100,
+  "pricing": {
+    "prompt": {
+      "origin_price_per_m": 100,
+      "price_per_m": 100,
+      "origin_price_per_m_decimal": "0.01",
+      "price_per_m_decimal": "0.01"
+    },
+    "completion": {
+      "origin_price_per_m": 100,
+      "price_per_m": 100,
+      "origin_price_per_m_decimal": "0.01",
+      "price_per_m_decimal": "0.01"
+    }
+  },
+  "is_tiered_billing": false,
+  "title": "baai/bge-m3",
+  "description": "The BGE-M3 model is a multi-functional, multi-lingual, and multi-granularity text embedding framework that integrates three retrieval methods: dense retrieval, multi-vector retrieval, and sparse retrieval. Capable of processing over 100 languages and inputs ranging from short sentences to lengthy documents (up to 8,192 tokens), it delivers state-of-the-art performance in multilingual and cross-lingual tasks, topping benchmarks like MIRACL and MKQA. Additionally, BGE-M3 excels in long-document retrieval, achieving strong results on datasets such as MLDR and NarrativeQA, solidifying its versatility across diverse text granularities and applications.",
+  "tags": [],
+  "context_size": 8192,
+  "status": 1,
+  "display_name": "BAAI:BGE-M3",
+  "model_type": "embedding",
+  "max_output_tokens": 96000,
+  "features": [
+    "serverless"
+  ],
+  "endpoints": [
+    "embeddings"
+  ],
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "text"
+  ]
+}

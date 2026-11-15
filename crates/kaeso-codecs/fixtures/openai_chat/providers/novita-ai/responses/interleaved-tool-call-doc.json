@@ -1,0 +1,38 @@
+{
+  "id": "07a4dedfdb1498b045498dfd42497639",
+  "object": "chat.completion",
+  "created": 1764303147,
+  "model": "MiniMax",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "name": "MiniMax",
+        "tool_calls": [
+          {
+            "index": 0,
+            "id": "call_function_9w7wq1j9zmpl_1",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"location\": \"ShangHai\"}"
+            }
+          }
+        ],
+        "reasoning_content": "The user asked for Shanghai weather...",
+        "reasoning_details": [
+          {
+            "type": "reasoning.text",
+            "text": "The user is asking about the weather in Shanghai...",
+            "id": "reasoning-text-1",
+            "format": "openai-responses-v1",
+            "index": 0
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ]
+}

@@ -1330,6 +1330,69 @@ fn a_deepinfra_listing_decodes_with_its_metadata_and_its_refusals_have_their_kin
 }
 
 #[test]
+fn a_novita_ai_listing_decodes_with_its_prices_and_its_refusals_and_unknown_models_have_their_kinds()
+ {
+    let body = fixture("openai_chat", "providers/novita-ai/list-recorded");
+    let l = list(DialectId::OpenAiChat, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "tencent/hy4",
+            "deepseek/deepseek-v4.1-flash",
+            "meta-llama/llama-3.1-8b-instruct"
+        ]
+    );
+    assert_json_eq(
+        "providers/novita-ai/list-recorded",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    let one = fixture(
+        "openai_chat",
+        "providers/novita-ai/retrieve-embedding-recorded",
+    );
+    let embedding = model(DialectId::OpenAiChat, &one);
+    assert_eq!(embedding.id, "baai/bge-m3");
+    assert_json_eq(
+        "providers/novita-ai/retrieve-embedding-recorded",
+        &one,
+        &dispatch::encode_model(DialectId::OpenAiChat, &embedding).unwrap(),
+    );
+    let errors = fixtures("openai_chat", "errors", "json");
+    let error = |name: &str| {
+        errors
+            .iter()
+            .find(|(n, _)| n == name)
+            .unwrap_or_else(|| panic!("no error fixture {name}"))
+            .1
+            .clone()
+    };
+    let e = dispatch::decode_models(
+        DialectId::OpenAiChat,
+        401,
+        &h(),
+        &error("providers/novita-ai/recorded-invalid-api-key"),
+    )
+    .unwrap_err();
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (
+            ErrorKind::Authentication,
+            "The provider returned an error (HTTP 401): failed to authenticate API key."
+        )
+    );
+    let e = dispatch::decode_model(
+        DialectId::OpenAiChat,
+        404,
+        &h(),
+        &error("providers/novita-ai/recorded-model-not-found"),
+    )
+    .unwrap_err();
+    assert_eq!(e.kind, ErrorKind::NotFound);
+}
+
+#[test]
 fn a_sambanova_listing_decodes_with_its_prices_and_its_wrong_keys_and_unknown_models_are_errors() {
     let body = fixture("openai_chat", "providers/sambanova/list-recorded");
     let l = list(DialectId::OpenAiChat, &body);
