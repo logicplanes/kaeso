@@ -1,0 +1,40 @@
+{
+  "id": "as-32tdstad6t",
+  "object": "chat.completion",
+  "created": 1755938222,
+  "model": "deepseek-v3.1-250821",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "04fed17840d34b1e99bf3cd6dc94150d",
+            "type": "function",
+            "function": {
+              "name": "get_current_weather",
+              "arguments": "{\"location\": \"上海市\", \"time\": \"2025-08-21\"}"
+            }
+          },
+          {
+            "id": "a37ee51b99a64723bcb7f2f4d8081770",
+            "type": "function",
+            "function": {
+              "name": "get_current_weather",
+              "arguments": "{\"location\": \"北京市\", \"time\": \"2025-08-21\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls",
+      "flag": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 356,
+    "completion_tokens": 87,
+    "total_tokens": 443
+  }
+}

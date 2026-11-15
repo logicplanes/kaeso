@@ -99,6 +99,7 @@ mod provider_ollama_cloud;
 mod provider_openrouter;
 mod provider_ovhcloud;
 mod provider_perplexity;
+mod provider_qianfan;
 mod provider_replicate;
 mod provider_sambanova;
 mod provider_scaleway;

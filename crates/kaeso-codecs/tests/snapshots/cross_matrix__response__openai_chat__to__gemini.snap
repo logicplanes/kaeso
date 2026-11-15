@@ -4041,6 +4041,184 @@ expression: outcomes
       "totalTokenCount": 32
     }
   },
+  "providers/qianfan/after-tool-results-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "根据查询结果，上海和北京2025年8月21日的天气情况如下：\n\n**上海市**：\n- 温度：25摄氏度\n- 天气描述：上海\n\n**北京市**：\n- 温度：20摄氏度  \n- 天气描述：北京\n\n看起来北京的天气相对凉爽一些，比上海低5摄氏度。如果您需要更详细的天气信息（如湿度、风向等），请告诉我。"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-v3.1-250821",
+    "responseId": "as-pkzw67m1ti",
+    "usageMetadata": {
+      "candidatesTokenCount": 83,
+      "promptTokenCount": 495,
+      "totalTokenCount": 578
+    }
+  },
+  "providers/qianfan/greeting-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "你好！很高兴和你交流。请问有什么我可以帮助你的吗？"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-v3.1-250821",
+    "responseId": "as-qsp8w7ppnv",
+    "usageMetadata": {
+      "candidatesTokenCount": 15,
+      "promptTokenCount": 11,
+      "totalTokenCount": 26
+    }
+  },
+  "providers/qianfan/greeting-published": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "您好！有什么需要我帮助的吗？"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "ernie-speed-128k",
+    "responseId": "as-9y0uz0ckfk",
+    "usageMetadata": {
+      "candidatesTokenCount": 7,
+      "promptTokenCount": 1,
+      "totalTokenCount": 8
+    }
+  },
+  "providers/qianfan/reasoning-tool-calls-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "杭州市"
+                },
+                "id": "68e892c388e44c83a06867f44ecee6f3",
+                "name": "get_current_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "timezone": "Asia/Shanghai"
+                },
+                "id": "8de2c4c50bf0440995e7a496767d13d2",
+                "name": "get_current_time"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-r1",
+    "responseId": "as-unkecbb1ap",
+    "usageMetadata": {
+      "cachedContentTokenCount": 1,
+      "candidatesTokenCount": 79,
+      "promptTokenCount": 664,
+      "thoughtsTokenCount": 179,
+      "totalTokenCount": 922
+    }
+  },
+  "providers/qianfan/tool-calls-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "上海市",
+                  "time": "2025-08-21"
+                },
+                "id": "04fed17840d34b1e99bf3cd6dc94150d",
+                "name": "get_current_weather"
+              }
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "location": "北京市",
+                  "time": "2025-08-21"
+                },
+                "id": "a37ee51b99a64723bcb7f2f4d8081770",
+                "name": "get_current_weather"
+              }
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-v3.1-250821",
+    "responseId": "as-32tdstad6t",
+    "usageMetadata": {
+      "candidatesTokenCount": 87,
+      "promptTokenCount": 356,
+      "totalTokenCount": 443
+    }
+  },
+  "providers/qianfan/vision-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "第一张图片：一个蓝色圆形，中间有一个黑色的比特币符号。\n第二张图片：一个蓝色圆形，中间有一个黑色的比特币符号。\n第三张图片：一个蓝色圆形，中间有一个黑色的比特币符号。"
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "deepseek-vl2",
+    "responseId": "as-7u9f6065tq",
+    "usageMetadata": {
+      "candidatesTokenCount": 41,
+      "promptTokenCount": 10,
+      "totalTokenCount": 51
+    }
+  },
   "providers/sambanova/palindrome-poem-doc": {
     "candidates": [
       {

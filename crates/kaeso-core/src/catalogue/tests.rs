@@ -3770,3 +3770,28 @@ fn cartesia_models_are_priced_per_character_and_per_minute_of_audio() {
     };
     assert_eq!(media_cost(&heard, &ink.fields), dec!(0.0039));
 }
+
+#[test]
+fn qianfan_models_speak_chat_completions_at_qianfans_prices_and_its_embedders_embed() {
+    let ernie = eff(&entry("qianfan", "ernie-5.1"));
+    assert_eq!(ernie.dialect, DialectId::OpenAiChat);
+    assert_eq!(ernie.provider.chat().provider, "Baidu Qianfan");
+    assert_eq!(
+        (ernie.fields.input_price, ernie.fields.output_price),
+        (Some(dec!(0.59374)), Some(dec!(2.67181)))
+    );
+    let embed = eff(&entry("qianfan", "embedding-v1"));
+    assert!(embed.is_embeddings());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.07422)))
+    );
+    let models = &snapshot().providers["qianfan"].models;
+    assert_eq!(
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some("embedding"))
+            .count(),
+        7
+    );
+}

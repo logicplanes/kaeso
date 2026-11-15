@@ -668,6 +668,27 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Baidu Qianfan API key, which has no fixed prefix, with Baidu AI Cloud's API key page as its hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "qianfan", name: "Qianfan prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Baidu Qianfan");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Baidu Qianfan API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "console.bce.baidu.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://console.bce.baidu.com/iam/#/iam/apikey/list");
+    const secret = within(dialog).getByLabelText("Baidu Qianfan API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "bce-v3/ALTAK-0123/4567");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Qianfan prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Qianfan prod is the Baidu Qianfan default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "qianfan", name: "Qianfan prod", secret: "bce-v3/ALTAK-0123/4567", make_default: false },
+    ]);
+  });
+
   it("adds a Venice inference key, which has no fixed prefix, with Venice's API settings as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "venice", name: "Venice inference", is_default: true }));
     const { user, dialog } = await open();

@@ -1,0 +1,13 @@
+{
+  "model": "deepseek-v3.1-250821",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "你好"
+    }
+  ]
+}

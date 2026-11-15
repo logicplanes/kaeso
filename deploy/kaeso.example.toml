@@ -217,6 +217,9 @@ base_url = "https://api.deepgram.com"
 [providers.cartesia]
 base_url = "https://api.cartesia.ai"
 
+[providers.qianfan]
+base_url = "https://qianfan.baidubce.com/v2"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

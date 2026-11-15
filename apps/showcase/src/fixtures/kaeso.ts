@@ -65,6 +65,7 @@ export const providers = [
   { id: "stepfun-ai", name: "StepFun" },
   { id: "tencent-tokenhub", name: "Tencent TokenHub" },
   { id: "amazon-bedrock", name: "Amazon Bedrock" },
+  { id: "qianfan", name: "Baidu Qianfan" },
   { id: "azure", name: "Azure" },
   { id: "replicate", name: "Replicate" },
   { id: "deepgram", name: "Deepgram" },

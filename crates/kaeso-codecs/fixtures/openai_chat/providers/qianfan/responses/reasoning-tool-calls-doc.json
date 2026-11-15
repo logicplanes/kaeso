@@ -1,0 +1,47 @@
+{
+  "id": "as-unkecbb1ap",
+  "object": "chat.completion",
+  "created": 1755174023,
+  "model": "deepseek-r1",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "好的，用户问杭州的天气和现在的时间。首先我需要确认需要调用哪些工具。用户提到了天气，所以应该用get_current_weather，参数是location设为杭州市。然后用户问现在几点，需要用get_current_time，可能需要指定时区，因为杭州在中国，应该用Asia/Shanghai时区。接下来要检查这两个工具的参数是否齐全。天气工具需要location，用户已经提供了。时间工具的参数是可选的，但最好指定时区，确保时间准确。然后生成两个函数调用的JSON参数，分别对应这两个工具。确保参数格式正确，没有语法错误。最后按照指定的输出格式排列，用tool_calls_begin和tool_call_end包裹每个调用。检查是否遗漏了任何必填参数，比如日期或时间格式，但时间工具的必填参数是空的，可以不用填。确认无误后输出结果。\n",
+        "tool_calls": [
+          {
+            "id": "68e892c388e44c83a06867f44ecee6f3",
+            "type": "function",
+            "function": {
+              "name": "get_current_weather",
+              "arguments": "{\"location\": \"杭州市\"}"
+            }
+          },
+          {
+            "id": "8de2c4c50bf0440995e7a496767d13d2",
+            "type": "function",
+            "function": {
+              "name": "get_current_time",
+              "arguments": "{\"timezone\": \"Asia/Shanghai\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls",
+      "flag": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 664,
+    "completion_tokens": 258,
+    "total_tokens": 922,
+    "prompt_tokens_details": {
+      "cached_tokens": 1
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 179
+    }
+  }
+}

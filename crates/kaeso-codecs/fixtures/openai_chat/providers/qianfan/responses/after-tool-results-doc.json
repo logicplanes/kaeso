@@ -1,0 +1,22 @@
+{
+  "id": "as-pkzw67m1ti",
+  "object": "chat.completion",
+  "created": 1755938381,
+  "model": "deepseek-v3.1-250821",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "根据查询结果，上海和北京2025年8月21日的天气情况如下：\n\n**上海市**：\n- 温度：25摄氏度\n- 天气描述：上海\n\n**北京市**：\n- 温度：20摄氏度  \n- 天气描述：北京\n\n看起来北京的天气相对凉爽一些，比上海低5摄氏度。如果您需要更详细的天气信息（如湿度、风向等），请告诉我。"
+      },
+      "finish_reason": "stop",
+      "flag": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 495,
+    "completion_tokens": 83,
+    "total_tokens": 578
+  }
+}

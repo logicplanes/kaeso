@@ -4382,6 +4382,64 @@ expression: outcomes
     "param": null,
     "unsupported": "search_mode"
   },
+  "providers/qianfan/after-tool-results-doc": {
+    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0]",
+    "unsupported": "messages[2].blocks[0].name"
+  },
+  "providers/qianfan/greeting-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "你好",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant.",
+      "model": "deepseek-v3.1-250821",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/qianfan/tool-calls-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "查一下上海和北京2025-8-21的天气",
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3.1-250821",
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "天气查询工具",
+          "name": "get_current_weather",
+          "parameters": {
+            "properties": {
+              "location": {
+                "description": "地理位置，精确到区县级别",
+                "type": "string"
+              },
+              "time": {
+                "description": "时间，格式为YYYY-MM-DD",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
+  "providers/qianfan/web-search-stream-built": {
+    "message": "`web_search` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search"
+  },
   "providers/sambanova/invalid-api-key": {
     "message": "`max_tokens 1` is not supported by OpenAI Responses. OpenAI Responses needs an output limit of at least 16 tokens; raise it or route the request to another model.",
     "param": "max_tokens",

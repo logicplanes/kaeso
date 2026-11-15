@@ -66,6 +66,10 @@ const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
         ErrorKind::NotFound,
     ),
     (
+        "providers/qianfan/recorded-over-rate-limit",
+        ErrorKind::RateLimited,
+    ),
+    (
         "providers/siliconflow/recorded-invalid-api-key",
         ErrorKind::Authentication,
     ),

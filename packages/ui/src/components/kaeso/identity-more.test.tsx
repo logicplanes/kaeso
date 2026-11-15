@@ -23,6 +23,7 @@ describe("identity parts", () => {
         <ProviderBadge provider="302ai" name=" 302.AI " />
         <ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" />
         <ProviderBadge provider="fal" name="fal" />
+        <ProviderBadge provider="qianfan" name="Baidu Qianfan" />
       </>,
     );
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
@@ -34,6 +35,9 @@ describe("identity parts", () => {
     // fal's terms forbid using its logos without its written permission.
     expect(PROVIDER_MARKS.fal).toBeUndefined();
     expect(screen.getByRole("img", { name: "fal" })).toHaveTextContent(/^f$/i);
+    // Baidu's terms forbid copying its logos without its permission.
+    expect(PROVIDER_MARKS.qianfan).toBeUndefined();
+    expect(screen.getByRole("img", { name: "Baidu Qianfan" })).toHaveTextContent(/^B$/);
   });
 
   it("draws an icon instead of a letter for a choice that isn't one provider, and a mark over the icon", () => {

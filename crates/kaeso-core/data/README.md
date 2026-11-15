@@ -11,8 +11,8 @@ A snapshot of the catalogue of [KPMR](https://kpmr.kaeso.app), the Kaeso Provide
 | Source | `https://kpmr.kaeso.app/v1/catalogue` |
 | Revision | `2026-11-19T05:40:21Z-89f750d585e7` |
 | Generated | 2026-11-19T05:40:21Z |
-| Content | the providers Kaeso calls (`alibaba`, `amazon-bedrock`, `anthropic`, `azure`, `baseten`, `cartesia`, `cerebras`, `cloudflare-ai-gateway`, `cohere`, `deepgram`, `deepinfra`, `deepseek`, `elevenlabs`, `fal`, `fireworks-ai`, `gemini-agent-platform`, `google`, `groq`, `huggingface`, `ionos`, `jina`, `minimax`, `mistral`, `moonshotai`, `nebius`, `novita-ai`, `nvidia`, `ollama-cloud`, `openai`, `openrouter`, `ovhcloud`, `perplexity`, `replicate`, `sambanova`, `scaleway`, `siliconflow`, `standardcompute`, `stepfun-ai`, `tencent-tokenhub`, `togetherai`, `typesafe`, `upstage`, `venice`, `vercel`, `volcengine`, `voyage`, `xai`, `zai`); 2906 models |
-| SHA-256 | `33e1b6b05dd34ebc8aeeb15ecad5d91dc529e199736baa91ba96b822d42446b6` |
+| Content | the providers Kaeso calls (`alibaba`, `amazon-bedrock`, `anthropic`, `azure`, `baseten`, `cartesia`, `cerebras`, `cloudflare-ai-gateway`, `cohere`, `deepgram`, `deepinfra`, `deepseek`, `elevenlabs`, `fal`, `fireworks-ai`, `gemini-agent-platform`, `google`, `groq`, `huggingface`, `ionos`, `jina`, `minimax`, `mistral`, `moonshotai`, `nebius`, `novita-ai`, `nvidia`, `ollama-cloud`, `openai`, `openrouter`, `ovhcloud`, `perplexity`, `qianfan`, `replicate`, `sambanova`, `scaleway`, `siliconflow`, `standardcompute`, `stepfun-ai`, `tencent-tokenhub`, `togetherai`, `typesafe`, `upstage`, `venice`, `vercel`, `volcengine`, `voyage`, `xai`, `zai`); 2931 models |
+| SHA-256 | `13fadc72210fb3ddf1441d61f315c80529168308353aaa8112eb5e8a01de05c4` |
 | License | MIT, © models.dev contributors (see [NOTICE.md](https://github.com/logicplanes/kaeso/blob/dev/NOTICE.md)) |
 
 To refresh it for a release, download the catalogue and check its signature against the built-in key:

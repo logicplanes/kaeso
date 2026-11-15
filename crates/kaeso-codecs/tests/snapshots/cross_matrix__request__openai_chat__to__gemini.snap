@@ -5415,6 +5415,81 @@ expression: outcomes
     "param": null,
     "unsupported": "search_mode"
   },
+  "providers/qianfan/after-tool-results-doc": {
+    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0]",
+    "unsupported": "messages[2].blocks[0].name"
+  },
+  "providers/qianfan/greeting-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "你好"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You are a helpful assistant."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/deepseek-v3.1-250821:generateContent"
+  },
+  "providers/qianfan/tool-calls-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "查一下上海和北京2025-8-21的天气"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "天气查询工具",
+              "name": "get_current_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "location": {
+                    "description": "地理位置，精确到区县级别",
+                    "type": "string"
+                  },
+                  "time": {
+                    "description": "时间，格式为YYYY-MM-DD",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/deepseek-v3.1-250821:generateContent"
+  },
+  "providers/qianfan/web-search-stream-built": {
+    "message": "`web_search` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search"
+  },
   "providers/sambanova/invalid-api-key": {
     "body": {
       "contents": [

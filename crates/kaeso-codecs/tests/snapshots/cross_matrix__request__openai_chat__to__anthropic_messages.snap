@@ -6268,6 +6268,92 @@ expression: outcomes
     "param": null,
     "unsupported": "search_mode"
   },
+  "providers/qianfan/after-tool-results-doc": {
+    "message": "`messages[2].blocks[0].name` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": "messages[2].blocks[0]",
+    "unsupported": "messages[2].blocks[0].name"
+  },
+  "providers/qianfan/greeting-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "你好",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3.1-250821",
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful assistant.",
+          "type": "text"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/qianfan/tool-calls-doc": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "查一下上海和北京2025-8-21的天气",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "deepseek-v3.1-250821",
+      "tool_choice": {
+        "type": "auto"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "天气查询工具",
+          "input_schema": {
+            "properties": {
+              "location": {
+                "description": "地理位置，精确到区县级别",
+                "type": "string"
+              },
+              "time": {
+                "description": "时间，格式为YYYY-MM-DD",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "name": "get_current_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
+  "providers/qianfan/web-search-stream-built": {
+    "message": "`web_search` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "web_search"
+  },
   "providers/sambanova/invalid-api-key": {
     "body": {
       "max_tokens": 1,

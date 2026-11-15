@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "invalid_iam_token",
+    "message": "invalid_iam_token",
+    "type": "invalid_request_error"
+  },
+  "id": "as-0000000000"
+}

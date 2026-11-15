@@ -1,0 +1,22 @@
+{
+  "id": "as-qsp8w7ppnv",
+  "object": "chat.completion",
+  "created": 1755938117,
+  "model": "deepseek-v3.1-250821",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "你好！很高兴和你交流。请问有什么我可以帮助你的吗？"
+      },
+      "finish_reason": "stop",
+      "flag": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 11,
+    "completion_tokens": 15,
+    "total_tokens": 26
+  }
+}
