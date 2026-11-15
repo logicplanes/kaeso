@@ -73,6 +73,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "invite.accept": () => t("format.audit.action.inviteAccept", "Invitation accepted"),
   "key.create": () => t("format.audit.action.keyCreate", "Key created"),
   "key.disable": () => t("format.audit.action.keyDisable", "Key disabled"),
+  "key.rename": () => t("format.audit.action.keyRename", "Key renamed"),
   "key.enable": () => t("format.audit.action.keyEnable", "Key enabled"),
   "key.archive": () => t("format.audit.action.keyArchive", "Key archived"),
   "key.rotate": () => t("format.audit.action.keyRotate", "Key rotated"),

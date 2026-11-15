@@ -69,7 +69,7 @@ Neben **Rotieren** hat das Menü im Sheet eines Schlüssels drei Aktionen:
 | Aktivieren   | Ein deaktivierter Schlüssel funktioniert wieder. Hat eine Person ihn deaktiviert, aktiviert ihn nur eine Person, und unter **API-Schlüssel** im Konto lässt sich nur das eigene Deaktivieren rückgängig machen |
 | Archivieren  | Der Schlüssel hört endgültig auf zu funktionieren. Sein Verlauf bleibt erhalten                                                                                                                                |
 
-Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller Personen zu ändern erfordert **Alle Schlüssel verwalten**.
+**Umbenennen** im selben Menü ändert den Namen des Schlüssels, etwa wenn er zu einer anderen App wechselt; sein Secret funktioniert weiter, und das Audit-Protokoll hält den alten und den neuen Namen fest. Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller Personen zu ändern erfordert **Alle Schlüssel verwalten**.
 
 Ein Schlüssel hört auch auf zu funktionieren, wenn er abläuft, wenn sein Projekt archiviert wird und wenn sein Mitglied das Projekt oder die Organisation verlässt. Kaeso schickt 7 Tage und 1 Tag vor dem Ablauf eine E-Mail. Sie geht an den Inhaber des Schlüssels, beim Schlüssel eines Dienstkontos an die Admins des Projekts. Jede Person kann diese E-Mails unter **Ihr Schlüssel läuft ab** in den **Benachrichtigungen** ihres Kontos abschalten.
 

@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertDialog, Button, DialogScope, Empty, KeyDisplay, KeyValue, Link, Menu, Sheet, Skeleton, StepDialog, icons } from "@logicplanes/kaeso-ui";
+import {
+  AlertDialog,
+  Button,
+  Dialog,
+  DialogScope,
+  Empty,
+  Input,
+  KeyDisplay,
+  KeyValue,
+  Link,
+  Menu,
+  Sheet,
+  Skeleton,
+  StepDialog,
+  icons,
+} from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -61,6 +76,7 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
   useRememberRecent(key.data ? { kind: "key", id: keyId, label: key.data.name, href: `/orgs/${org}/projects/${project}/keys?key=${keyId}` } : null);
   const [archiving, setArchiving] = useState(false);
   const [rotating, setRotating] = useState(false);
+  const [renaming, setRenaming] = useState(false);
 
   const own = key.data?.principal.kind === "user" && key.data.principal.id === session.user.id;
   const canManage = rights.has("keys.all.manage") || (own && rights.has("keys.own.manage"));
@@ -83,6 +99,13 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
       viaMe ? await api.POST("/platform/v1/me/keys/{key}/archive", own) : await api.POST("/platform/v1/orgs/{org}/projects/{project}/keys/{key}/archive", any),
     );
   };
+
+  const rename = async (name: string): Promise<KeyView> =>
+    data(
+      viaMe
+        ? await api.PATCH("/platform/v1/me/keys/{key}", { params: { path: { key: keyId } }, body: { name } })
+        : await api.PATCH("/platform/v1/orgs/{org}/projects/{project}/keys/{key}", { params: { path: { org, project, key: keyId } }, body: { name } }),
+    );
 
   const toggle = useApiMutation({
     mutationFn: (action: "disable" | "enable") => act(action),
@@ -154,6 +177,9 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
                   </Menu.Item>
                 )
               )}
+              <Menu.Item icon={icons.edit} onClick={() => setRenaming(true)}>
+                {t("common.rename", "Rename")}
+              </Menu.Item>
               {rotatable && (
                 <Menu.Item
                   icon={icons.key}
@@ -221,6 +247,9 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
       <DialogScope open={archiving}>
         <ArchiveKeyDialog org={org} project={project} k={k} archive={() => act("archive")} onArchived={onClose} open={archiving} onOpenChange={setArchiving} />
       </DialogScope>
+      <DialogScope open={renaming}>
+        <RenameKeyDialog org={org} project={project} k={k} rename={rename} open={renaming} onOpenChange={setRenaming} />
+      </DialogScope>
       <DialogScope open={rotating}>
         <RotateKeyFlow org={org} project={project} k={k} open={rotating} onClose={() => setRotating(false)} />
       </DialogScope>
@@ -267,6 +296,67 @@ function ArchiveKeyDialog({
       loading={archive.isPending}
       onConfirm={() => archive.mutateAsync()}
     />
+  );
+}
+
+function RenameKeyDialog({
+  org,
+  project,
+  k,
+  rename: run,
+  open,
+  onOpenChange,
+}: {
+  org: string;
+  project: string;
+  k: KeyView;
+  rename: (name: string) => Promise<KeyView>;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [name, setName] = useState(k.name);
+  const trimmed = name.trim();
+  const rename = useApiMutation({
+    mutationFn: () => run(trimmed),
+    invalidates: [
+      ["orgs", org, "projects", project, "keys"],
+      ["me", "keys"],
+    ],
+    onSuccess: (renamed) => {
+      onOpenChange(false);
+      toast(t("keys.renamed", "Renamed to {name}", { name: renamed.name }));
+    },
+  });
+  // The field takes at most 100 characters, the gateway's limit.
+  const reason = !trimmed ? t("keys.nameNeeded", "Give the key a name") : trimmed === k.name ? t("keys.newNameNeeded", "Enter a new name") : undefined;
+  return (
+    <Dialog
+      busy={rename.isPending}
+      open={open}
+      onOpenChange={onOpenChange}
+      size="sm"
+      title={t("keys.renameTitle", "Rename {name}", { name: k.name })}
+      description={t("keys.renameHint", "Its secret keeps working; only the name changes.")}
+      onSubmit={() => !reason && rename.mutate()}
+      footer={
+        <>
+          <Dialog.Close>
+            <Button>{t("common.cancel", "Cancel")}</Button>
+          </Dialog.Close>
+          <Button
+            variant="primary"
+            disabled={!!reason}
+            {...(reason ? { disabledReason: reason } : {})}
+            loading={rename.isPending}
+            onClick={() => rename.mutate()}
+          >
+            {t("common.rename", "Rename")}
+          </Button>
+        </>
+      }
+    >
+      <Input label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" maxLength={100} autoFocus />
+    </Dialog>
   );
 }
 

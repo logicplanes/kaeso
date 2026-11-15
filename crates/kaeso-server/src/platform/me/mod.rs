@@ -58,6 +58,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Session, routes!(sessions::list)))
         .routes(s.route(Access::Session, routes!(sessions::revoke)))
         .routes(s.route(Access::Session, routes!(sessions::revoke_all)))
+        .routes(s.route(Access::Me(AccountKeysManage), routes!(keys::rename)))
         .routes(s.route(Access::Me(AccountKeysManage), routes!(keys::disable)))
         .routes(s.route(Access::Me(AccountKeysManage), routes!(keys::enable)))
         .routes(s.route(Access::Me(AccountKeysManage), routes!(keys::archive)))

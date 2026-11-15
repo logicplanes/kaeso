@@ -5422,6 +5422,81 @@
           }
         ],
         "x-kaeso-access": "right:account.keys.view"
+      },
+      "patch": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Renames one of the user's keys; its secret keeps working.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.keys.manage`.",
+        "operationId": "patchMeKeysKey",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:account.keys.manage"
       }
     },
     "/platform/v1/me/keys/{key}/archive": {
@@ -14819,6 +14894,100 @@
           }
         ],
         "x-kaeso-access": "right:keys.all.view"
+      },
+      "patch": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Renames a key; its secret keeps working.",
+        "description": "**Right:** `keys.all.manage` on the project in the path.",
+        "operationId": "patchOrgsOrgProjectsProjectKeysKey",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:keys.all.manage"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/keys/{key}/archive": {
@@ -31594,6 +31763,21 @@
             "format": "int32",
             "description": "The longest lifetime of new keys in days (1 to 3650); `null` for no\nlimit. Existing keys keep their expiry.",
             "example": 90
+          }
+        },
+        "additionalProperties": false
+      },
+      "KeyRename": {
+        "type": "object",
+        "description": "A key's new name.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A name to recognise it by.",
+            "example": "support-bot"
           }
         },
         "additionalProperties": false

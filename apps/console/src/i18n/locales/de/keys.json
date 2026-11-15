@@ -57,5 +57,10 @@
   "keys.undo": "Rückgängig",
   "keys.used": "Verwendet {when}",
   "keys.whose": "Inhaber der Schlüssel",
-  "keys.accessWithTools": "{access} und Tools"
+  "keys.accessWithTools": "{access} und Tools",
+  "keys.renamed": "Umbenannt in {name}",
+  "keys.nameNeeded": "Geben Sie dem Schlüssel einen Namen",
+  "keys.newNameNeeded": "Geben Sie einen neuen Namen ein",
+  "keys.renameTitle": "{name} umbenennen",
+  "keys.renameHint": "Sein Secret funktioniert weiter; nur der Name ändert sich."
 }

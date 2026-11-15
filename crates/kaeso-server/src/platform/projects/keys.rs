@@ -425,11 +425,12 @@ pub async fn get(
     )))
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(crate) enum Change {
     Disable,
     Enable,
     Archive,
+    Rename(String),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -485,6 +486,10 @@ pub(crate) async fn change(
     }
     let (kind, by) = creator_of(ctx);
     let actor = keys::Actor { kind, id: by };
+    let renamed_from = match &change {
+        Change::Rename(_) => Some(KeyView::from_row(row, ctx.now)),
+        _ => None,
+    };
     let mut tx = state.pg.begin().await?;
     let (action, done) = match change {
         Change::Disable => (
@@ -503,23 +508,81 @@ pub(crate) async fn change(
             Action::KeyArchive,
             keys::archive(&mut *tx, row.project_id, row.id, ctx.now).await?,
         ),
+        Change::Rename(name) => (
+            Action::KeyRename,
+            keys::rename(&mut *tx, row.project_id, row.id, &name).await?,
+        ),
     };
     if !done {
         return Err(ApiError::Conflict(
             "The key changed meanwhile; reload and try again.".into(),
         ));
     }
-    ctx.audit(Some(org), action)
+    let mut event = ctx
+        .audit(Some(org), action)
         .project(ProjectId::from_uuid(row.project_id))
-        .target("key", ApiKeyId::from_uuid(row.id))
-        .write(&mut tx)
-        .await?;
+        .target("key", ApiKeyId::from_uuid(row.id));
+    let after = match renamed_from {
+        Some(before) => {
+            let after = keys::get(&mut *tx, row.project_id, row.id)
+                .await?
+                .ok_or_else(|| ApiError::not_found("key"))?;
+            event = event
+                .before(before)
+                .after(KeyView::from_row(&after, ctx.now));
+            Some(after)
+        }
+        None => None,
+    };
+    event.write(&mut tx).await?;
     tx.commit().await?;
     crate::services::keys::forget(state, &[row.id]).await;
-    let after = keys::get(&state.pg, row.project_id, row.id)
-        .await?
-        .ok_or_else(|| ApiError::not_found("key"))?;
+    let after = match after {
+        Some(after) => after,
+        None => keys::get(&state.pg, row.project_id, row.id)
+            .await?
+            .ok_or_else(|| ApiError::not_found("key"))?,
+    };
     Ok(KeyView::from_row(&after, ctx.now))
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "A key's new name.")]
+pub struct KeyRename {
+    #[doc = "A name to recognise it by."]
+    #[schema(example = "support-bot")]
+    pub name: String,
+}
+
+#[utoipa::path(
+    patch,
+    path = "/orgs/{org}/projects/{project}/keys/{key}",
+    summary = "Renames a key; its secret keeps working.",
+    tag = "projects",
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("key" = ApiKeyId, Path)),
+    request_body = KeyRename,
+    responses((status = 200, body = KeyView))
+)]
+pub async fn rename(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path((_o, _p, id)): Path<(String, String, String)>,
+    Body(req): Body<KeyRename>,
+) -> ApiResult<Json<KeyView>> {
+    let row = key(&state, &ctx, &id).await?;
+    let name = validate_name(&req.name)?;
+    Ok(Json(
+        change(
+            &state,
+            &ctx,
+            ctx.org()?.id(),
+            &row,
+            Change::Rename(name),
+            Holder::Manager,
+        )
+        .await?,
+    ))
 }
 
 #[utoipa::path(

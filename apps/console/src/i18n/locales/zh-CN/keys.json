@@ -57,5 +57,10 @@
   "keys.undo": "撤销",
   "keys.used": "{when}使用",
   "keys.whose": "密钥所有者",
-  "keys.accessWithTools": "{access}和工具"
+  "keys.accessWithTools": "{access}和工具",
+  "keys.renamed": "已重命名为 {name}",
+  "keys.nameNeeded": "请为密钥命名",
+  "keys.newNameNeeded": "请输入新名称",
+  "keys.renameTitle": "重命名 {name}",
+  "keys.renameHint": "其密钥值仍然有效，只有名称会改变。"
 }

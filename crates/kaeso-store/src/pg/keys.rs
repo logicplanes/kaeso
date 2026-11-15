@@ -320,6 +320,26 @@ pub async fn disabled_by(
     .await?)
 }
 
+/// Renames a key that isn't archived; its secret and everything else stay.
+pub async fn rename(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    id: Uuid,
+    name: &str,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE api_keys SET name = $3, updated_at = now() \
+         WHERE project_id = $1 AND id = $2 AND archived_at IS NULL",
+        project_id,
+        id,
+        name
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
+}
+
 pub async fn archive(
     db: impl PgExecutor<'_>,
     project_id: Uuid,

@@ -170,6 +170,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::InviteRevoke
         | A::KeyCreate
         | A::KeyEnable
+        | A::KeyRename
         | A::KpmrPriceChange
         | A::LimitCreate
         | A::LimitDelete
