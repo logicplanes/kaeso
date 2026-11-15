@@ -1089,6 +1089,29 @@
       "key_endpoint": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "jina",
+      "name": "Jina AI",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://jina.ai/api-dashboard/key-manager",
+        "label": "API key manager"
+      },
+      "key_prefix": "jina_",
+      "dialects": ["openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "rerank": "jina_rerank",
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "regions": null,
+      "key_endpoint": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

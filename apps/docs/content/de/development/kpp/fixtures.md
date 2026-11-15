@@ -28,6 +28,7 @@ Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer
 | `openai_decisions/` | Die Decisions-API von OpenAI (`/v1/decisions`); jede Antwort hat eine Anfrage gleichen Namens |
 | `gemini_decisions/` | Die Decisions-API von Gemini (`/v1beta/decisions`); jede Antwort hat eine Anfrage gleichen Namens |
 | `cohere_rerank/` | Das Rerank-Format von Cohere (`/v1/rerank`, `/v2/rerank`); `requests/object-documents.json` ist die einzige Anfrage, die Kaeso an Cohere in anderer Form schreibt |
+| `jina_rerank/` | Das Rerank-Format von Jina AI (`/v1/rerank` bei Jina AI) |
 | `voyage_rerank/` | Das Rerank-Format von Voyage AI (`/v1/rerank` bei Voyage AI) |
 | `xai_videos/`, `minimax_videos/`, `zai_videos/`, `openrouter_videos/`, `veo/`, `gemini_interactions/`, `dashscope/` | Die Video-APIs der Anbieter; `responses/` hält die Antworten, die einen Job starten, `polls/` die Antworten der Anbieter auf die Frage nach einem Job, `minimax_videos/files/` eine Datei-ID, die zum Link wird; `dashscope/` hält außerdem Bilder, Sprachausgaben und Transkriptionen in eigenen Ordnern unter `requests/`, `responses/` und `streams/` |
 

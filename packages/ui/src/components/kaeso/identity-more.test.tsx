@@ -217,6 +217,7 @@ const MARKED_PROVIDERS = {
   venice: "Venice",
   azure: "Azure",
   voyage: "Voyage AI",
+  jina: "Jina AI",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

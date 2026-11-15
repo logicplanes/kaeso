@@ -1796,3 +1796,40 @@ fn a_stepfun_listing_mixes_chat_and_speech_models_and_a_wrong_key_is_an_authenti
         (ErrorKind::Authentication, "Incorrect API key provided")
     );
 }
+
+#[test]
+fn a_jina_listing_and_model_decode_from_openrouters_shape_with_prefixed_ids() {
+    let jina = |name: &str| {
+        let dir = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/fixtures/openai_embeddings/providers/jina/models"
+        );
+        std::fs::read(format!("{dir}/{name}.json")).unwrap()
+    };
+    let body = jina("list-recorded");
+    let l = list(DialectId::OpenAiEmbeddings, &body);
+    let ids: Vec<&str> = l.models.iter().map(|m| m.id.as_str()).collect();
+    assert_eq!(
+        ids,
+        [
+            "jina-ai/jina-reranker-v3.5",
+            "jina-ai/jina-embeddings-v3",
+            "jina-ai/jina-embeddings-v5-text-small"
+        ]
+    );
+    round_trip(
+        DialectId::OpenAiEmbeddings,
+        "providers/jina/list-recorded",
+        &body,
+    );
+    let body = jina("retrieve-recorded");
+    assert_eq!(
+        model(DialectId::OpenAiEmbeddings, &body).id,
+        "jina-ai/jina-embeddings-v5-text-small"
+    );
+    round_trip(
+        DialectId::OpenAiEmbeddings,
+        "providers/jina/retrieve-recorded",
+        &body,
+    );
+}

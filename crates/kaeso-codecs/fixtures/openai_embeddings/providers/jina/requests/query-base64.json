@@ -1,0 +1,9 @@
+{
+  "model": "jina-embeddings-v5-text-nano",
+  "input": [
+    "When is the conference call scheduled?"
+  ],
+  "embedding_type": "base64",
+  "dimensions": 256,
+  "task": "retrieval.query"
+}

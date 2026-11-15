@@ -3587,3 +3587,34 @@ fn voyage_embedders_embed_and_its_rerankers_rerank_at_voyages_prices() {
     };
     assert_eq!((count("embedding"), count("reranking")), (11, 6));
 }
+
+#[test]
+fn jina_embedders_embed_and_its_rerankers_rerank_at_jinas_prices() {
+    let embed = eff(&entry("jina", "jina-embeddings-v5-text-nano"));
+    assert!(embed.is_embeddings() && !embed.is_rerank());
+    assert_eq!(
+        (embed.dialect, embed.fields.input_price),
+        (DialectId::OpenAiEmbeddings, Some(dec!(0.02)))
+    );
+    assert_eq!(embed.provider.embeddings_profile().provider, "Jina AI");
+    let rerank = eff(&entry("jina", "jina-reranker-v3.5"));
+    assert!(rerank.is_rerank());
+    assert_eq!(
+        (rerank.dialect, rerank.fields.input_price),
+        (DialectId::JinaRerank, Some(dec!(0.05)))
+    );
+    // ColBERT models embed one vector per token, so KPMR lists them as rerankers.
+    assert!(eff(&entry("jina", "jina-colbert-v2")).is_rerank());
+    let docs = vec![kaeso_kpp::RerankDocument::new("a")];
+    let mut req = Request::Rerank(kaeso_kpp::RerankRequest::new("m", "q", docs));
+    let plan = prepare(&mut req, DialectId::CohereRerank, &rerank).unwrap();
+    assert_eq!(plan.dialect, DialectId::JinaRerank);
+    let models = &snapshot().providers["jina"].models;
+    let count = |kind: &str| {
+        models
+            .values()
+            .filter(|m| m.kind.as_deref() == Some(kind))
+            .count()
+    };
+    assert_eq!((count("embedding"), count("reranking")), (15, 9));
+}

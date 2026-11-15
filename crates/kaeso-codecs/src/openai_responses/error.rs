@@ -66,6 +66,11 @@ pub(crate) fn kind_for_code(code: &str) -> Option<ErrorKind> {
         "400003" => ErrorKind::ContextTooLong,
         "400004" => ErrorKind::NotFound,
         "451001" => ErrorKind::ContentFiltered,
+        // Jina AI's codes, where its status alone says less: an empty balance answers 403 and a
+        // token limit or an unknown model 400 (https://docs.jina.ai/api.md, Errors).
+        "AUTHZ_INSUFFICIENT_BALANCE" => ErrorKind::Billing,
+        "INPUT_TOKEN_LIMIT_EXCEEDED" => ErrorKind::ContextTooLong,
+        "INPUT_MODEL_NOT_FOUND" => ErrorKind::NotFound,
         _ => return None,
     })
 }
@@ -141,7 +146,12 @@ pub(crate) fn decode(
         ) {
             (Some(message), _) => KppError::new(kind_for(Some(status), None, None), message),
             (None, Some(Value::String(message))) if !message.trim().is_empty() => {
-                KppError::new(kind_for(Some(status), None, None), message.clone())
+                // A bare `code` beside the text, as Jina AI sends it.
+                let code = value
+                    .as_ref()
+                    .and_then(|v| v.get("code"))
+                    .and_then(Value::as_str);
+                KppError::new(kind_for(Some(status), None, code), message.clone())
             }
             _ => {
                 let text = String::from_utf8_lossy(body);

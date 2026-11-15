@@ -34,6 +34,7 @@ order: 2
 | Groq `groq` | 支持：Groq 的模型 | 不提供 | 不提供 | 支持：Orpheus | 支持：`whisper-large-v3`、`whisper-large-v3-turbo` | 支持：`whisper-large-v3` | 不提供 | 不提供 | 不提供 | [Models](https://console.groq.com/docs/models) |
 | Hugging Face `huggingface` | 支持：路由器背后各服务商的开放模型 | 不提供：路由器的 OpenAI 兼容 API 只用于聊天（[chat completion](https://huggingface.co/docs/inference-providers/tasks/chat-completion)） | 不提供：同嵌入 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [Inference Providers](https://huggingface.co/docs/inference-providers/index) |
 | IONOS AI Model Hub `ionos` | 支持：IONOS 托管的模型 | 支持：`BAAI/bge-m3`、`Qwen/Qwen3-VL-Embedding-8B` | 暂不支持：IONOS 为 FLUX 提供 OpenAI 的 Images API，但 KPMR 未收录它的图像模型 | 不提供 | 暂不支持：IONOS 为 Whisper 提供 OpenAI 的转写 API，但 KPMR 未收录它的转写模型 | 不提供 | 不提供 | 不提供 | 不提供 | [API reference](https://docs.ionos.com/cloud/api-reference/ai/ai-model-hub) |
+| Jina AI `jina` | 不提供：不使用 Jina AI 的文本模型 | 支持：它的嵌入模型，例如 `jina-embeddings-v5-text-small` 和 `jina-embeddings-v3` | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [API 参考](https://docs.jina.ai/api.md)，查阅于 2026-11-15 |
 | MiniMax `minimax` | 支持：`MiniMax-M3`、`MiniMax-M3.1-Flash` | 不提供 | 支持：`image-01` | 支持：`speech-2.8-*`、`speech-2.6-*`、`speech-02-*` | 支持：`asr-1.0` | 不提供 | 支持：`MiniMax-Hailuo-*`、`MiniMax-H3*` | 拒绝：Kaeso 没有映射 MiniMax 的音乐生成（[Music generation](https://platform.minimax.io/docs/api-reference/music-generation)） | 不提供 | [API overview](https://platform.minimax.io/docs/api-reference/api-overview) |
 | Mistral `mistral` | 支持：Mistral 模型 | 支持：`mistral-embed`、`codestral-embed` | 拒绝：Mistral 只把图片生成作为其智能体的工具提供（[Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation)） | 支持：`voxtral-mini-tts-3-0` | 支持：Voxtral Transcribe 3 | 不提供 | 不提供 | 不提供 | 不提供 | [Models](https://docs.mistral.ai/getting-started/models) |
 | Moonshot `moonshotai` | 支持：Kimi 模型 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | 不提供 | [Kimi API](https://platform.kimi.ai/docs) |
@@ -71,4 +72,5 @@ order: 2
 | 服务商 | 重排序 | 来源 |
 | --- | --- | --- |
 | Cohere `cohere` | 支持：Rerank 5，即 `rerank-v5.0-pro` 和 `rerank-v5.0-fast`，位于 `/v2/rerank` | [Rerank](https://docs.cohere.com/docs/rerank)，查阅于 2026-11-14 |
+| Jina AI `jina` | 支持：`jina-reranker-v3.5`、`jina-reranker-v3`、用于文本的 `jina-reranker-m0`、`jina-reranker-v2-base-multilingual`、v1 重排序模型和 ColBERT 模型，位于 `/v1/rerank` | [API 参考](https://docs.jina.ai/api.md)，查阅于 2026-11-15 |
 | Voyage AI `voyage` | 支持：`rerank-3`、`rerank-3-lite` 以及较早的 `rerank-2.5` 和 `rerank-2` 模型，位于 `/v1/rerank` | [Rerankers](https://www.mongodb.com/docs/voyageai/models/)，查阅于 2026-11-15 |

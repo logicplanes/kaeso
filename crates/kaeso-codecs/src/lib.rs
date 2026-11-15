@@ -38,6 +38,7 @@ pub mod gemini;
 pub mod gemini_decisions;
 pub mod gemini_embeddings;
 pub mod gemini_interactions;
+pub mod jina_rerank;
 pub mod minimax_images;
 pub mod minimax_speech;
 pub mod minimax_videos;

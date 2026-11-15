@@ -1,0 +1,13 @@
+{
+  "model": "jina-reranker-v3.5",
+  "query": "Which plan includes priority support?",
+  "documents": [
+    {
+      "text": "The Starter plan includes email support."
+    },
+    "The Business plan includes priority support by phone and chat."
+  ],
+  "top_n": 2,
+  "return_documents": true,
+  "max_doc_length": 1024
+}

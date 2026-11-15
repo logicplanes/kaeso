@@ -182,7 +182,7 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
         // NVIDIA answers with RFC 9457 problem documents, SiliconFlow with `{"code", "message", "data"}`,
         // Cloudflare with its `errors` envelope, IONOS with its `messages`, Novita AI with
         // `{"code", "reason", "message", "metadata"}`, OVHcloud with a bare `message`, Venice with
-        // `{"error": "<text>"}` and Voyage AI with `{"detail": "<text>"}`; apps get them in OpenAI's
+        // `{"error": "<text>"}` and Voyage AI and Jina AI with `{"detail": "<text>"}`; apps get them in OpenAI's
         // shape.
         if FOREIGN_ERROR_BODIES.contains(&name.as_str())
             || name.starts_with("providers/cloudflare-ai-gateway/")
@@ -194,6 +194,7 @@ fn every_error_fixture_round_trips_with_status_and_retry_after() {
             || name.starts_with("providers/siliconflow/")
             || name.starts_with("providers/venice/")
             || name.starts_with("providers/voyage/")
+            || name.starts_with("providers/jina/")
         {
             continue;
         }
@@ -682,4 +683,89 @@ fn voyage_errors_reach_apps_in_openais_shape_with_voyages_text() {
         let sent: Value = serde_json::from_slice(&out.body).unwrap();
         assert_eq!(sent["error"]["message"], detail["detail"], "{name}");
     }
+}
+
+#[test]
+fn jina_gets_embedding_type_in_place_of_encoding_format_and_its_errors_reach_apps_with_their_text()
+{
+    let jina = EmbeddingsProfile::JINA;
+    let send = |body: &[u8]| -> Result<Value, KppError> {
+        let req = Request::Embed(decode(body));
+        let mut ctx = EgressCtx::new(&req);
+        ctx.embeddings_profile = jina;
+        let enc = OpenAiEmbeddings::encode_request(&req, &mut ctx)?;
+        Ok(serde_json::from_slice(&enc.body).unwrap())
+    };
+    let sent = send(
+        br#"{"model":"jina-embeddings-v5-text-nano","input":["When is the conference call scheduled?"],"encoding_format":"base64","dimensions":256,"task":"retrieval.query"}"#,
+    )
+    .unwrap();
+    assert_json_eq(
+        "providers/jina/query-base64",
+        &fixture("requests", "providers/jina/query-base64"),
+        &serde_json::to_vec(&sent).unwrap(),
+    );
+    let floats = send(br#"{"model":"m","input":"a","encoding_format":"float"}"#).unwrap();
+    assert_eq!(
+        floats,
+        json!({"model": "m", "input": "a", "embedding_type": "float"})
+    );
+    let null = send(br#"{"model":"m","input":"a","encoding_format":null}"#).unwrap();
+    assert_eq!(
+        null,
+        json!({"model": "m", "input": "a", "embedding_type": null})
+    );
+    let plain = send(br#"{"model":"m","input":"a","embedding_type":"binary"}"#).unwrap();
+    assert_eq!(plain["embedding_type"], "binary");
+    let both =
+        send(br#"{"model":"m","input":"a","encoding_format":"base64","embedding_type":"binary"}"#)
+            .unwrap_err();
+    assert_eq!(
+        (both.param.as_deref(), both.message.as_str()),
+        (
+            Some("embedding_type"),
+            "`encoding_format` reaches Jina AI as `embedding_type`, which the request sets too; send one of them."
+        )
+    );
+    let user = send(br#"{"model":"m","input":"a","user":"u-1"}"#).unwrap_err();
+    assert_eq!(
+        user.message,
+        "`user` is not supported by Jina AI; remove it from the request."
+    );
+    let tokens = send(br#"{"model":"m","input":[1,2]}"#).unwrap_err();
+    assert_eq!(tokens.param.as_deref(), Some("input"));
+
+    for (name, code) in [
+        ("providers/jina/recorded-no-key-401", "AUTH_MISSING_API_KEY"),
+        (
+            "providers/jina/recorded-invalid-key-401",
+            "AUTH_INVALID_API_KEY",
+        ),
+        (
+            "providers/jina/recorded-basic-auth-401",
+            "AUTH_INVALID_FORMAT",
+        ),
+    ] {
+        let body = fixture("errors", name);
+        let detail: Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(detail["code"], code, "{name}");
+        let err = OpenAiEmbeddings::decode_error(401, &HeaderList::new(), &body);
+        assert_eq!(
+            (&err.kind, err.message.as_str()),
+            (
+                &ErrorKind::Authentication,
+                detail["detail"].as_str().unwrap()
+            ),
+            "{name}"
+        );
+        let sent: Value =
+            serde_json::from_slice(&OpenAiEmbeddings::encode_error(&err).body).unwrap();
+        assert_eq!(sent["error"]["message"], detail["detail"], "{name}");
+    }
+    let balance = OpenAiEmbeddings::decode_error(
+        403,
+        &HeaderList::new(),
+        br#"{"detail":"Insufficient account balance.","code":"AUTHZ_INSUFFICIENT_BALANCE","request_id":"0"}"#,
+    );
+    assert_eq!(balance.kind, ErrorKind::Billing);
 }

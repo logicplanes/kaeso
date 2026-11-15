@@ -3426,6 +3426,52 @@ pub const PROVIDERS: &[Provider] = &[
         regional: None,
         key_endpoint: None,
     },
+    Provider {
+        id: "jina",
+        name: "Jina AI",
+        // Jina AI's Search Foundation API, which Elastic runs since it bought Jina AI; keys
+        // start with `jina_` and are made in Jina's API dashboard (https://docs.jina.ai/api.md).
+        key_page: KeyPage {
+            url: "https://jina.ai/api-dashboard/key-manager",
+            label: "API key manager",
+        },
+        key_prefix: Some("jina_"),
+        default_base_url: "https://api.jina.ai",
+        auth: AuthStyle::Bearer,
+        // Jina AI's models embed and rerank, so a model without a kind of its own is an
+        // embeddings model and a chat request never reaches it.
+        generation: DialectId::OpenAiEmbeddings,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::JINA,
+        // `POST /v1/rerank`, Cohere's v1 shape with `return_documents` true by default
+        // (https://api.jina.ai/openapi.json, `RerankerV3Request`).
+        rerank: Some(RerankEgress::of(DialectId::JinaRerank)),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /v1/models` lists every model as `jina-ai/<id>`, while requests name it without
+        // the prefix; `GET /v1/models/{id}` finds it by the short id (recorded 2026-11-14).
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Jina AI"),
+        responses: ResponsesProfile::compatible("Jina AI"),
+        messages: MessagesProfile::compatible("Jina AI"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        regional: None,
+        key_endpoint: None,
+        api_root: None,
+    },
 ];
 
 const _: () = {
@@ -3723,7 +3769,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina"
         );
     }
 
@@ -3813,7 +3859,8 @@ mod tests {
                 "volcengine",
                 "venice",
                 "amazon-bedrock",
-                "voyage"
+                "voyage",
+                "jina"
             ]
         );
     }
@@ -4463,6 +4510,38 @@ mod tests {
     }
 
     #[test]
+    fn jina_embeds_with_embedding_type_and_reranks_with_its_own_format_and_writes_no_text() {
+        let p = provider("jina").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Jina AI",
+                AuthStyle::Bearer,
+                DialectId::OpenAiEmbeddings,
+                &[DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(
+            (p.default_base_url, p.key_prefix),
+            ("https://api.jina.ai", Some("jina_"))
+        );
+        assert_eq!(
+            (p.count_tokens, p.embeddings),
+            (None, Some(DialectId::OpenAiEmbeddings))
+        );
+        let e = p.embeddings_profile;
+        assert_eq!(
+            (e.provider, e.encoding_field, e.dimensions_field),
+            ("Jina AI", "embedding_type", "dimensions")
+        );
+        assert!(e.dimensions && e.float_encoding && !e.user && !e.token_inputs);
+        assert_eq!(p.rerank, Some(RerankEgress::of(DialectId::JinaRerank)));
+        assert_eq!(p.listing, ModelListing::Partial);
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
     fn a_partial_listing_matches_ids_without_case_or_dots_and_says_nothing_of_a_model_it_leaves_out()
      {
         let ids = ["StandardCompute".to_owned(), "z-ai/glm-5.3".to_owned()];
@@ -4543,7 +4622,8 @@ mod tests {
                 "upstage",
                 "novita-ai",
                 "tencent-tokenhub",
-                "voyage"
+                "voyage",
+                "jina"
             ]
         );
     }
@@ -5470,7 +5550,8 @@ mod tests {
                 "venice",
                 "amazon-bedrock",
                 "azure",
-                "voyage"
+                "voyage",
+                "jina"
             ]
         );
         assert_eq!(

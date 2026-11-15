@@ -1,0 +1,11 @@
+{
+  "dimensions": 512,
+  "embedding_type": "float",
+  "input": [
+    "A beautiful sunset over the beach"
+  ],
+  "late_chunking": false,
+  "model": "jina-embeddings-v3",
+  "normalized": true,
+  "task": "retrieval.query"
+}

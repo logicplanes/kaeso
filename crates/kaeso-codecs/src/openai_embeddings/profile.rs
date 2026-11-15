@@ -19,6 +19,8 @@ pub struct EmbeddingsProfile {
     pub float_encoding: bool,
     /// Whether the provider takes inputs as token ids.
     pub token_inputs: bool,
+    /// The name the provider gives `encoding_format`, such as Jina AI's `embedding_type`.
+    pub encoding_field: &'static str,
 }
 
 impl EmbeddingsProfile {
@@ -30,6 +32,7 @@ impl EmbeddingsProfile {
         user: true,
         float_encoding: true,
         token_inputs: true,
+        encoding_field: "encoding_format",
     };
 
     /// Voyage AI's `/v1/embeddings` (<https://www.mongodb.com/docs/voyageai/api-reference/overview/>):
@@ -40,6 +43,15 @@ impl EmbeddingsProfile {
         .with_dimensions_as("output_dimension", &[256, 512, 1024, 2048])
         .without_user()
         .without_float_encoding()
+        .without_token_inputs();
+
+    /// Jina AI's `/v1/embeddings` (<https://api.jina.ai/openapi.json>, `EmbeddingsV5Request` and
+    /// the other request schemas): `embedding_type` in place of `encoding_format`, and no `user`
+    /// or token ids in any schema. Whether Jina refuses or ignores a field it doesn't know can't
+    /// be seen without a key, as it checks the key first, so these are mapped or refused.
+    pub const JINA: EmbeddingsProfile = EmbeddingsProfile::compatible("Jina AI")
+        .with_encoding_as("embedding_type")
+        .without_user()
         .without_token_inputs();
 
     /// OpenAI's embeddings API as another provider serves it.
@@ -63,6 +75,13 @@ impl EmbeddingsProfile {
     pub const fn with_dimensions_as(mut self, field: &'static str, sizes: &'static [u32]) -> Self {
         self.dimensions_field = field;
         self.dimension_sizes = sizes;
+        self
+    }
+
+    /// The provider takes `encoding_format` under `field` ([`EmbeddingsProfile::encoding_field`]).
+    #[must_use]
+    pub const fn with_encoding_as(mut self, field: &'static str) -> Self {
+        self.encoding_field = field;
         self
     }
 

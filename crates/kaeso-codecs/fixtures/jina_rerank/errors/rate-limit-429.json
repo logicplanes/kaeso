@@ -1,0 +1,5 @@
+{
+  "detail": "Too many requests; try again in a minute.",
+  "request_id": "00000000000000000000000000000000",
+  "code": "RATE_REQUEST_LIMIT_EXCEEDED"
+}

@@ -1,0 +1,15 @@
+{
+  "model": "jina-embeddings-v5-text-nano",
+  "object": "list",
+  "usage": {
+    "total_tokens": 9,
+    "prompt_tokens": 9
+  },
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": "AACAPwAAAMAAAEBA"
+    }
+  ]
+}

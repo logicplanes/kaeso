@@ -11,7 +11,7 @@ pub fn hashes_equal(a: &[u8], b: &[u8]) -> bool {
 
 const TOKEN_PREFIXES: &[&str] = &[
     "sk-", "sk_", "org-", "proj_", "proj-", "key-", "xai-", "gsk_", "nvapi-", "AIza", "tgp_v1_",
-    "vck_", "cohere_", "ak-", "csk-", "AQ.", "ya29.", "fw_", "hf_",
+    "vck_", "cohere_", "ak-", "csk-", "AQ.", "ya29.", "fw_", "hf_", "jina_",
 ];
 
 const ACCOUNT_LABELS: &[&str] = &[
@@ -205,6 +205,11 @@ mod tests {
         assert_eq!(
             redact_tokens("Invalid credentials in Authorization header: hf_AbCdEf0123456789."),
             "Invalid credentials in Authorization header: hf_[redacted]."
+        );
+        // Jina AI's model ids use hyphens, so only its keys start with `jina_`.
+        assert_eq!(
+            redact_tokens("Invalid API key jina_0AbCdEf123456 for jina-embeddings-v3."),
+            "Invalid API key jina_[redacted] for jina-embeddings-v3."
         );
     }
 

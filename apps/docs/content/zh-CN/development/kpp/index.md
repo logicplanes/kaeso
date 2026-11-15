@@ -101,6 +101,7 @@ sequenceDiagram
 | `openai_decisions` | OpenAI 的 Decisions API（`/v1/decisions`）（[OpenAI Decisions](openai-decisions.md)） |
 | `gemini_decisions` | Gemini 的 Decisions API（`/v1beta/decisions`）（[Gemini Decisions](gemini-decisions.md)） |
 | `cohere_rerank` | Cohere 的重排序格式（`/v1/rerank`、`/v2/rerank`）（[Cohere Rerank](cohere-rerank.md)） |
+| `jina_rerank` | Jina AI 的重排序格式，作为服务商的格式（[Jina Rerank](jina-rerank.md)） |
 | `voyage_rerank` | Voyage AI 的重排序格式，作为服务商的格式（[Voyage Rerank](voyage-rerank.md)） |
 | `multipart` | 图片、音频和视频上传以及 System One 图片部分使用的有上限的 `multipart/form-data` 读取器和写入器 |
 

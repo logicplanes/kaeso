@@ -1,0 +1,31 @@
+{
+  "id": "jina-ai/jina-embeddings-v5-text-small",
+  "hugging_face_id": "jinaai/jina-embeddings-v5-text-small",
+  "name": "Jina AI: Jina Embeddings v5 Text Small",
+  "created": 1739923200,
+  "input_modalities": [
+    "text"
+  ],
+  "output_modalities": [
+    "embeddings"
+  ],
+  "quantization": "",
+  "context_length": 32768,
+  "max_output_length": 1024,
+  "pricing": {
+    "prompt": "0.00000005",
+    "completion": "0",
+    "image": "0",
+    "request": "0",
+    "input_cache_read": "0",
+    "input_cache_write": "0"
+  },
+  "supported_sampling_parameters": [],
+  "supported_features": [],
+  "description": "Jina Embeddings v5 Text Small is a multilingual text embedding model with 677M parameters built on the Qwen3-0.6B-Base backbone. It supports 32K context length and produces 1024-dimensional embeddings with Matryoshka representation learning (down to 32 dimensions). It uses last-token pooling and supports retrieval, text-matching, clustering, and classification tasks.",
+  "datacenters": [
+    {
+      "country_code": "US"
+    }
+  ]
+}

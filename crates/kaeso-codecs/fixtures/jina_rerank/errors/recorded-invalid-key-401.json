@@ -1,0 +1,5 @@
+{
+  "detail": "Invalid API key. Verify your API key at https://jina.ai/api-dashboard/key-manager or generate a new one.",
+  "request_id": "00000000000000000000000000000000",
+  "code": "AUTH_INVALID_API_KEY"
+}

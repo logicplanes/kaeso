@@ -11,6 +11,7 @@ use crate::gemini::{Gemini, GeminiAction};
 use crate::gemini_decisions::GeminiDecisions;
 use crate::gemini_embeddings::GeminiEmbeddings;
 use crate::gemini_interactions::GeminiInteractions;
+use crate::jina_rerank::JinaRerank;
 use crate::limits::{Checked, RequestBody, upload_of};
 use crate::minimax_images::MinimaxImages;
 use crate::minimax_speech::MinimaxSpeech;
@@ -62,6 +63,7 @@ macro_rules! dispatch {
             DialectId::GeminiDecisions => Ok(GeminiDecisions::$f($($arg),*)),
             DialectId::CohereRerank => Ok(CohereRerank::$f($($arg),*)),
             DialectId::VoyageRerank => Ok(VoyageRerank::$f($($arg),*)),
+            DialectId::JinaRerank => Ok(JinaRerank::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -99,6 +101,7 @@ pub fn decode_checked_request<B: RequestBody>(
             | DialectId::GeminiDecisions
             | DialectId::CohereRerank
             | DialectId::VoyageRerank
+            | DialectId::JinaRerank
     ) {
         crate::decisions::refuse_kind(kind, checked.dialect())?;
     }
@@ -136,6 +139,7 @@ pub fn decode_checked_request<B: RequestBody>(
         DialectId::GeminiDecisions => GeminiDecisions::decode_checked(kind, body, headers),
         DialectId::CohereRerank => CohereRerank::decode_checked(kind, body, headers),
         DialectId::VoyageRerank => VoyageRerank::decode_checked(kind, body, headers),
+        DialectId::JinaRerank => JinaRerank::decode_checked(kind, body, headers),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }

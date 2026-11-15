@@ -69,6 +69,27 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(mistral["embeddings"], "openai_embeddings");
     let cohere = listed.iter().find(|p| p["id"] == "cohere").unwrap();
     assert_eq!(cohere["rerank"], "cohere_rerank");
+    let jina = listed.iter().find(|p| p["id"] == "jina").unwrap();
+    assert_eq!(
+        (
+            &jina["name"],
+            &jina["dialects"],
+            &jina["embeddings"],
+            &jina["rerank"],
+            &jina["key_prefix"]
+        ),
+        (
+            &json!("Jina AI"),
+            &json!(["openai_embeddings"]),
+            &json!("openai_embeddings"),
+            &json!("jina_rerank"),
+            &json!("jina_")
+        )
+    );
+    assert_eq!(
+        jina["key_page"],
+        json!({ "url": "https://jina.ai/api-dashboard/key-manager", "label": "API key manager" })
+    );
     let voyage = listed.iter().find(|p| p["id"] == "voyage").unwrap();
     assert_eq!(voyage["name"], "Voyage AI");
     assert_eq!(

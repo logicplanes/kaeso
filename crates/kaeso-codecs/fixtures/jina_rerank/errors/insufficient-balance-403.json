@@ -1,0 +1,5 @@
+{
+  "detail": "Insufficient account balance.",
+  "request_id": "00000000000000000000000000000000",
+  "code": "AUTHZ_INSUFFICIENT_BALANCE"
+}
