@@ -238,7 +238,8 @@ const TASK_WAITS: [Duration; 4] = [
 ];
 
 /// Asks the provider how the task an image reply named stands until its answer names no
-/// pending task, within the request's deadline, and hands back that answer.
+/// pending task, within the request's deadline, and hands back that answer. An answer that
+/// names another task, as fal's finished status names its result, is followed there.
 pub(super) async fn wait_for_task(
     state: &AppState,
     asked: &Asked<'_>,
@@ -247,6 +248,7 @@ pub(super) async fn wait_for_task(
     task: &str,
     deadline: tokio::time::Instant,
 ) -> Result<(u16, HeaderList, Bytes), KppError> {
+    let mut task = task.to_owned();
     for round in 0usize.. {
         let wait = TASK_WAITS
             .get(round)
@@ -261,7 +263,7 @@ pub(super) async fn wait_for_task(
             ));
         }
         tokio::time::sleep_until(at).await;
-        let req = dispatch::encode_task_poll(dialect, task, ctx)?;
+        let req = dispatch::encode_task_poll(dialect, &task, ctx)?;
         let resp = tokio::time::timeout_at(
             deadline,
             state.upstream.send(Call {
@@ -299,8 +301,9 @@ pub(super) async fn wait_for_task(
                 &body,
             ));
         }
-        if dispatch::pending_task(dialect, ctx.kind, &body).is_none() {
-            return Ok((resp.status, resp.headers, body));
+        match dispatch::pending_task(dialect, ctx.kind, &body) {
+            None => return Ok((resp.status, resp.headers, body)),
+            Some(next) => task = next,
         }
     }
     Err(KppError::provider(

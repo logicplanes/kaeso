@@ -135,6 +135,7 @@ export function dialectPill(d: string, decisionsOnly = false): string {
       voyage_rerank: "rerank",
       jina_rerank: "rerank",
       bedrock_converse: "converse",
+      fal: "fal",
     }[d] ?? d
   );
 }

@@ -98,6 +98,7 @@ sequenceDiagram
 | `veo` | Gemini Enterprise Agent Platform 上 Veo 的长时间运行操作（[Veo](veo.md)） |
 | `gemini_interactions` | Google AI Studio 和 Gemini Enterprise Agent Platform 的 Interactions API 上 Gemini Omni 的视频任务（[Gemini Interactions](gemini-interactions.md)） |
 | `dashscope` | QwenCloud 的 DashScope API：图片、语音合成、转写和 Wan 模型视频合成（[DashScope](dashscope.md)） |
+| `fal` | fal 的队列：Kaeso 映射的模型的图片和视频任务（[fal](fal.md)） |
 | `system_one` | TypeSafe 的 System One API（`/v1/systemone`）以及使用其某种形式的服务商（[System One](system-one.md)） |
 | `openai_decisions` | OpenAI 的 Decisions API（`/v1/decisions`）（[OpenAI Decisions](openai-decisions.md)） |
 | `gemini_decisions` | Gemini 的 Decisions API（`/v1beta/decisions`）（[Gemini Decisions](gemini-decisions.md)） |
@@ -310,6 +311,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [Veo](veo.md)：了解视频任务如何映射到 Gemini Enterprise Agent Platform 上的 Veo。
 - [Gemini Interactions](gemini-interactions.md)：了解 Gemini Omni 视频任务如何映射到 Interactions API。
 - [DashScope](dashscope.md)：了解图片、语音、转写和视频任务如何映射到 QwenCloud 的 DashScope API。
+- [fal](fal.md)：了解图片请求和视频任务如何逐个模型映射到 fal 的队列。
 - [System One](system-one.md)：查找 TypeSafe 决策格式的每个字段在 KPP 中的位置，以及各服务商如何接收它。
 - [OpenAI Decisions](openai-decisions.md)：查找 OpenAI Decisions API 的每个字段在 KPP 中的位置。
 - [Gemini Decisions](gemini-decisions.md)：查找 Gemini Decisions API 的每个字段在 KPP 中的位置。

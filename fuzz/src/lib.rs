@@ -174,6 +174,15 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
             assert_eq!(again.status, g.status);
         }
     }
+    if dialect == DialectId::Fal {
+        let ctx = EgressCtx::for_kind(RequestKind::Image, StreamMode::Off);
+        if let Some(task) = dispatch::pending_task(dialect, RequestKind::Image, data) {
+            let poll = dispatch::encode_task_poll(dialect, &task, &ctx)
+                .unwrap_or_else(|e| panic!("a path fal returned is asked: {e:?}"));
+            assert!(poll.path.starts_with('/') && !poll.path.contains(".."));
+        }
+        let _ = dispatch::decode_video_file(dialect, 200, &headers, data);
+    }
     for kind in KINDS {
         if let Ok(req) = dispatch::decode_request(dialect, kind, data, &headers) {
             request(dialect, &req);

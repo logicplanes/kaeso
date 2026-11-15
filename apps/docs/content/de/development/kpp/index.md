@@ -98,6 +98,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `veo` | Die lang laufenden Vorgänge von Veo auf Gemini Enterprise Agent Platform ([Veo](veo.md)) |
 | `gemini_interactions` | Die Videojobs von Gemini Omni in der Interactions API von Google AI Studio und Gemini Enterprise Agent Platform ([Gemini Interactions](gemini-interactions.md)) |
 | `dashscope` | Die DashScope-API von QwenCloud: Bilder, Sprachausgabe, Transkription und Videosynthese der Wan-Modelle ([DashScope](dashscope.md)) |
+| `fal` | Die Queue von fal: Bilder und Videojobs der Modelle, die Kaeso abbildet ([fal](fal.md)) |
 | `system_one` | Die System-One-API von TypeSafe (`/v1/systemone`) und die Anbieter, die eine Form davon sprechen ([System One](system-one.md)) |
 | `openai_decisions` | Die Decisions-API von OpenAI (`/v1/decisions`) ([OpenAI Decisions](openai-decisions.md)) |
 | `gemini_decisions` | Die Decisions-API von Gemini (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
@@ -310,6 +311,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Veo](veo.md): Sehen Sie, wie Videojobs auf Veo in Gemini Enterprise Agent Platform abgebildet werden.
 - [Gemini Interactions](gemini-interactions.md): Sehen Sie, wie Videojobs von Gemini Omni auf die Interactions API abgebildet werden.
 - [DashScope](dashscope.md): Sehen Sie, wie Bilder, Sprache, Transkriptionen und Videojobs auf die DashScope-API von QwenCloud abgebildet werden.
+- [fal](fal.md): Sehen Sie, wie Bildanfragen und Videojobs Modell für Modell auf die Queue von fal abgebildet werden.
 - [System One](system-one.md): Finden Sie, wohin jedes Feld des Entscheidungsformats von TypeSafe in KPP gehört und wie jeder Anbieter es annimmt.
 - [OpenAI Decisions](openai-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von OpenAI in KPP gehört.
 - [Gemini Decisions](gemini-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von Gemini in KPP gehört.

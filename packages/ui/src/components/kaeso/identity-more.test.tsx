@@ -22,6 +22,7 @@ describe("identity parts", () => {
         <ProviderBadge provider="acme" name="Zenith Labs" size="xl" />
         <ProviderBadge provider="302ai" name=" 302.AI " />
         <ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" />
+        <ProviderBadge provider="fal" name="fal" />
       </>,
     );
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
@@ -30,6 +31,9 @@ describe("identity parts", () => {
     // AWS's trademark guidelines allow its marks in plain text only, so Amazon Bedrock has no mark.
     expect(PROVIDER_MARKS["amazon-bedrock"]).toBeUndefined();
     expect(screen.getByRole("img", { name: "Amazon Bedrock" })).toHaveTextContent(/^A$/);
+    // fal's terms forbid using its logos without its written permission.
+    expect(PROVIDER_MARKS.fal).toBeUndefined();
+    expect(screen.getByRole("img", { name: "fal" })).toHaveTextContent(/^f$/i);
   });
 
   it("draws an icon instead of a letter for a choice that isn't one provider, and a mark over the icon", () => {

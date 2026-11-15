@@ -1,0 +1,9 @@
+{
+  "prompt": "A red panda walking through a bamboo forest at sunrise",
+  "duration": 5,
+  "resolution": "480p",
+  "aspect_ratio": "4:3",
+  "audio": false,
+  "seed": 11,
+  "enable_prompt_expansion": false
+}

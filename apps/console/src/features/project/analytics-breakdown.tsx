@@ -325,6 +325,7 @@ const SHORT_DIALECTS: Record<string, string> = {
   cohere_rerank: "Rerank",
   voyage_rerank: "Voyage Rerank",
   jina_rerank: "Jina Rerank",
+  fal: "fal",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
 

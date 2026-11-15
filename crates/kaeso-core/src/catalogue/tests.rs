@@ -3657,3 +3657,66 @@ fn jina_embedders_embed_and_its_rerankers_rerank_at_jinas_prices() {
     };
     assert_eq!((count("embedding"), count("reranking")), (15, 9));
 }
+
+#[test]
+fn fal_models_are_priced_per_megapixel_image_and_second_at_their_defaults() {
+    use crate::cost::{MediaUnits, media_cost};
+    assert_eq!(snapshot().providers["fal"].models.len(), 10);
+    let flux = eff(&entry("fal", "fal-ai/flux/dev"));
+    assert_eq!(flux.dialect, DialectId::Fal);
+    let one_megapixel = MediaUnits {
+        output_images: 2,
+        output_pixels: Some(1_000_000),
+        ..MediaUnits::default()
+    };
+    assert_eq!(media_cost(&one_megapixel, &flux.fields), dec!(0.05));
+    let seedream = eff(&entry("fal", "bytedance/seedream/v5.5/text-to-image"));
+    let images = |size: Option<&str>| MediaUnits {
+        output_images: 2,
+        size: size.map(str::to_owned),
+        ..MediaUnits::default()
+    };
+    assert_eq!(
+        media_cost(&images(Some("1024x1024")), &seedream.fields),
+        dec!(0.06)
+    );
+    assert_eq!(
+        media_cost(&images(Some("2048x2048")), &seedream.fields),
+        dec!(0.081)
+    );
+    assert_eq!(media_cost(&images(None), &seedream.fields), dec!(0.081));
+    let clip = |resolution: Option<&str>, audio: Option<bool>| MediaUnits {
+        output_videos: 1,
+        output_ms: 8000,
+        resolution: resolution.map(str::to_owned),
+        audio,
+        ..MediaUnits::default()
+    };
+    let veo = eff(&entry("fal", "fal-ai/veo3.1"));
+    assert_eq!(veo.dialect, DialectId::Fal);
+    assert_eq!(media_cost(&clip(None, None), &veo.fields), dec!(3.2));
+    assert_eq!(
+        media_cost(&clip(Some("1080p"), Some(true)), &veo.fields),
+        dec!(3.2)
+    );
+    assert_eq!(
+        media_cost(&clip(Some("720p"), Some(false)), &veo.fields),
+        dec!(1.6)
+    );
+    assert_eq!(
+        media_cost(&clip(Some("2160p"), None), &veo.fields),
+        dec!(4.8)
+    );
+    let kling = eff(&entry("fal", "kling/v4/text-to-video"));
+    assert_eq!(media_cost(&clip(None, None), &kling.fields), dec!(1.88));
+    assert_eq!(
+        media_cost(&clip(Some("720p"), None), &kling.fields),
+        dec!(1.256)
+    );
+    let wan = eff(&entry("fal", "alibaba/wan-3.0/image-to-video"));
+    assert_eq!(media_cost(&clip(None, Some(true)), &wan.fields), dec!(1.6));
+    assert_eq!(
+        media_cost(&clip(Some("480p"), None), &wan.fields),
+        dec!(0.4)
+    );
+}

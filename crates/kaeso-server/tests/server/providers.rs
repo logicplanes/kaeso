@@ -441,6 +441,17 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         json!({ "url": "https://console.aws.amazon.com/bedrock/", "label": "API keys" })
     );
     assert_eq!(bedrock["regions"]["regions"][0], "us-east-1");
+    let fal = listed.iter().find(|p| p["id"] == "fal").unwrap();
+    assert_eq!(fal["name"], "fal");
+    assert_eq!(fal["dialects"], json!(["fal"]));
+    assert_eq!(
+        (&fal["count_tokens"], &fal["embeddings"], &fal["key_prefix"]),
+        (&Value::Null, &Value::Null, &Value::Null)
+    );
+    assert_eq!(
+        fal["key_page"],
+        json!({ "url": "https://fal.ai/dashboard/keys", "label": "API keys" })
+    );
 
     let novita = listed.iter().find(|p| p["id"] == "novita-ai").unwrap();
     assert_eq!(novita["name"], "Novita AI");

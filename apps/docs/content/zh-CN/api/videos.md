@@ -111,6 +111,7 @@ SpaceX 通过其编辑 API 进行 remix，Gemini Omni 延续先前的交互。�
 | OpenRouter | 其视频模型，例如 `google/veo-3.1` 和 `alibaba/wan-3.0` | 第一帧，上传或链接 | 否 | [视频生成](https://openrouter.ai/docs/api/api-reference/video-generation/submit-a-video-generation-request) |
 | Together AI | 其视频模型，例如 `ByteDance/Seedance-2.0` 和 `Wan-AI/wan2.7-t2v` | 第一帧，仅限链接 | 否 | [创建视频](https://docs.together.ai/reference/create-videos) |
 | ElevenLabs | `veo-3.1-generate-001`、`veo-3.1-fast-generate-001`、`bytedance-seedance-v2` 及其变体 | 第一帧，上传 | 否 | [OpenAPI 文档](https://api.elevenlabs.io/openapi.json) |
+| fal | `fal-ai/veo3.1`、`kling/v4/text-to-video`、`kling/v4/image-to-video`、`alibaba/wan-3.0/text-to-video`、`alibaba/wan-3.0/image-to-video`；每个都需要 `seconds` | 图生视频模型接收首帧和尾帧，上传或链接 | 否 | [Queue API](https://fal.ai/docs/documentation/model-apis/inference/queue)、每个模型的 OpenAPI 文档 |
 | OpenAI | 否：OpenAI 于 2026 年 9 月 24 日关闭了 Sora，因此 `sora-*` 模型返回 400 | — | — | [弃用](https://platform.openai.com/docs/deprecations) |
 | Vercel | 否：Vercel 只通过其 AI SDK 记录视频功能，而不是通过 HTTP | — | — | [视频生成](https://vercel.com/docs/ai-gateway/modalities/video-generation) |
 | QwenCloud | Wan 文生视频和图生视频，例如 `wan3.0-video`、`wan2.7-t2v` 和 `wan2.6-i2v-flash` | 第一帧，上传或链接，适用于图生视频模型和 Wan 3.0 | 否 | [视频生成](https://docs.qwencloud.com/api-reference/video-generation/wan-text-to-video/create-task) |

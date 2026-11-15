@@ -156,6 +156,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decode_fal"
+path = "fuzz_targets/decode_fal.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "decode_zai_videos"
 path = "fuzz_targets/decode_zai_videos.rs"
 test = false

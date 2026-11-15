@@ -36,6 +36,7 @@ pub mod bedrock_converse;
 pub mod cohere_rerank;
 pub mod dashscope;
 pub mod elevenlabs;
+pub mod fal;
 pub mod gemini;
 pub mod gemini_decisions;
 pub mod gemini_embeddings;

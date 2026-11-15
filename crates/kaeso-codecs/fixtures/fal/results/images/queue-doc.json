@@ -1,0 +1,15 @@
+{
+  "images": [
+    {
+      "url": "https://v3.fal.media/files/rabbit/abc123.png",
+      "width": 1024,
+      "height": 1024,
+      "content_type": "image/png"
+    }
+  ],
+  "prompt": "a sunset over mountains",
+  "seed": 42,
+  "has_nsfw_concepts": [
+    false
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "prompt": "Put the cat in a red hat",
+  "image_urls": [
+    "https://example.com/cat.png",
+    "data:image/png;base64,iVBORw0KGgo="
+  ]
+}
