@@ -42,6 +42,11 @@ describe("parseModels", () => {
     expect(parseModels("openai/gpt-5,,bad model,anthropic/claude-opus-5-5,openai/gpt-6")).toEqual(["openai/gpt-5", "", "", "anthropic/claude-opus-5-5"]);
     expect(parseModels(undefined)).toEqual([]);
     expect(parseModels("openai/ft:gpt-4o-mini:org:custom:abc")).toEqual(["openai/ft:gpt-4o-mini:org:custom:abc"]);
+    expect(parseModels("openrouter/~anthropic/claude-sonnet-latest,cloudflare-ai-gateway/@cf/meta/llama-3.1-8b-instruct")).toEqual([
+      "openrouter/~anthropic/claude-sonnet-latest",
+      "cloudflare-ai-gateway/@cf/meta/llama-3.1-8b-instruct",
+    ]);
+    expect(parseModels(`openai/${"a".repeat(194)},openai/`)).toEqual(["", ""]);
   });
 });
 
