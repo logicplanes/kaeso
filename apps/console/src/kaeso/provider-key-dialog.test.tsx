@@ -457,6 +457,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds an OVHcloud AI Endpoints key, which has no fixed prefix, with the Public Cloud console as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "ovhcloud", name: "OVHcloud prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "OVHcloud AI Endpoints");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your OVHcloud AI Endpoints API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "www.ovh.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://www.ovh.com/manager/#/public-cloud/");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at www.ovh.com under Public Cloud → AI Endpoints → API keys.",
+    );
+    const secret = within(dialog).getByLabelText("OVHcloud AI Endpoints API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "ovhcloud-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "OVHcloud prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("OVHcloud prod is the OVHcloud AI Endpoints default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "ovhcloud", name: "OVHcloud prod", secret: "ovhcloud-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a Volcengine Ark key, which has no fixed prefix, with Ark's API key page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "volcengine", name: "Ark prod", is_default: true }));
     const { user, dialog } = await open();

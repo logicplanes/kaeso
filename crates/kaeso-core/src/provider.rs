@@ -2637,6 +2637,79 @@ pub const PROVIDERS: &[Provider] = &[
         account_scope: None,
         api_root: Some(""),
     },
+    Provider {
+        id: "ovhcloud",
+        name: "OVHcloud AI Endpoints",
+        // Keys belong to a Public Cloud project: Public Cloud → AI → AI Endpoints → API keys, with
+        // no documented prefix; the catalogue page links the console's Public Cloud section
+        // (https://www.ovhcloud.com/en/public-cloud/ai-endpoints/catalog/). Without a key AI Endpoints
+        // still answers, at 2 requests a minute per IP and model
+        // (https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-getting-started.md).
+        key_page: KeyPage {
+            url: "https://www.ovh.com/manager/#/public-cloud/",
+            label: "Public Cloud → AI Endpoints → API keys",
+        },
+        key_prefix: None,
+        // The documented base is `https://oai.endpoints.kepler.ai.cloud.ovh.net/v1`, and every
+        // path is `/v1/…` under the host
+        // (https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-catalog-api.md).
+        default_base_url: "https://oai.endpoints.kepler.ai.cloud.ovh.net",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        // `Qwen3-Embedding-8B` takes `dimensions`, and `bge-m3`, whose size is fixed, answers it
+        // with a 400, so nothing is dropped without a word.
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        // A wrong key is a 403 with only a `message`, "Forbidden: authentication failed.", on chat,
+        // embeddings and the model listing alike; the Chat Completions codec quotes it.
+        refused_key_messages: &[
+            "Forbidden: authentication failed.",
+            "The provider returned an error (HTTP 403): Forbidden: authentication failed.",
+        ],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
+        end_user_limit: None,
+        // `ChatCompletionParameters` in AI Endpoints' OpenAPI document
+        // (https://oai.endpoints.kepler.ai.cloud.ovh.net/doc/gpt-oss-120b/openapi.json): the
+        // `developer` role works on some models only (Mistral answers "Unknown message role"),
+        // `user` is refused and no other end-user or cache-key field is declared, and replies
+        // carry `reasoning`, which assistant messages take back. Undeclared fields such as
+        // `service_tier` are refused by AI Endpoints itself with a 400, but its parser lets
+        // through the fields refused here, which the schema doesn't declare; a Responses app's
+        // cache key is left out.
+        chat: ChatProfile::compatible("OVHcloud AI Endpoints")
+            .system_role()
+            .without_end_user()
+            .without_cache_key()
+            .reasoning_fields(&["reasoning"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "metadata",
+                "modalities",
+                "prediction",
+                "prompt_cache_key",
+                "store",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("OVHcloud AI Endpoints"),
+        messages: MessagesProfile::compatible("OVHcloud AI Endpoints"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+    },
 ];
 
 const _: () = {
@@ -2934,7 +3007,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud"
         );
     }
 
@@ -3085,6 +3158,56 @@ mod tests {
         assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
         for field in ["parallel_tool_calls", "top_logprobs", "logit_bias", "store"] {
             assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn ovhcloud_serves_chat_and_embeddings_under_its_host_and_refuses_what_its_schema_leaves_out() {
+        let p = provider("ovhcloud").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "OVHcloud AI Endpoints",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(
+            p.default_base_url,
+            "https://oai.endpoints.kepler.ai.cloud.ovh.net"
+        );
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), None)
+        );
+        assert_eq!(p.listing, ModelListing::Complete);
+        let refusal = kaeso_codecs::dispatch::decode_error(
+            DialectId::OpenAiChat,
+            403,
+            &HeaderList::new(),
+            br#"{"message":"Forbidden: authentication failed.  Please generate a new one at https://example.com"}"#,
+        );
+        assert!(p.refuses_key(&refusal.message), "{}", refusal.message);
+        assert_eq!(p.chat.provider, "OVHcloud AI Endpoints");
+        assert_eq!(p.chat.request.path, "/v1/chat/completions");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::AsWritten);
+        assert!(!p.chat.request.developer_role && !p.chat.request.end_user);
+        assert!(!p.chat.request.cache_key && !p.chat.request.video_url);
+        assert!(p.chat.request.stream_options && !p.chat.request.verbosity);
+        assert_eq!(p.chat.reply.reasoning_fields, ["reasoning"]);
+        for field in ["metadata", "store", "prediction", "prompt_cache_key"] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        for field in [
+            "service_tier",
+            "logit_bias",
+            "top_logprobs",
+            "parallel_tool_calls",
+        ] {
+            assert!(!p.chat.request.refused_fields.contains(&field), "{field}");
         }
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
@@ -4253,7 +4376,8 @@ mod tests {
                 "upstage",
                 "ionos",
                 "novita-ai",
-                "volcengine"
+                "volcengine",
+                "ovhcloud"
             ]
         );
         assert_eq!(

@@ -1,0 +1,14 @@
+{
+  "model": "gpt-oss-20b",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You answer in one short sentence."
+    },
+    {
+      "role": "user",
+      "content": "Hi"
+    }
+  ],
+  "max_completion_tokens": 256
+}

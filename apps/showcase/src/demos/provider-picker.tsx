@@ -30,6 +30,7 @@ const providers: ProviderPickerOption[] = [
   { id: "ionos", name: "IONOS AI Model Hub" },
   { id: "novita-ai", name: "Novita AI" },
   { id: "volcengine", name: "Volcengine Ark" },
+  { id: "ovhcloud", name: "OVHcloud AI Endpoints" },
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
   { id: "siliconflow", name: "SiliconFlow" },

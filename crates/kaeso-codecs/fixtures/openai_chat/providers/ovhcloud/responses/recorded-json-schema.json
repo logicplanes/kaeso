@@ -1,0 +1,21 @@
+{
+  "id": "chatcmpl-a6e5b652a0dc4f32",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{ \"city\": \"Lyon\", \"country\": \"France\" }"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "created": 1794676331,
+  "model": "Mistral-Small-3.2-24B-Instruct-2506",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 16,
+    "total_tokens": 36
+  }
+}

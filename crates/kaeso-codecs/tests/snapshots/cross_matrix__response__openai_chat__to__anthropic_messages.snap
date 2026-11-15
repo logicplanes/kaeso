@@ -3844,6 +3844,125 @@ expression: outcomes
       }
     }
   },
+  "providers/ovhcloud/recorded-greeting": {
+    "content": [
+      {
+        "text": "Hello!",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-860bdfe6ef235b6e",
+    "model": "gpt-oss-20b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 79,
+      "output_tokens": 51
+    }
+  },
+  "providers/ovhcloud/recorded-json-schema": {
+    "content": [
+      {
+        "text": "{ \"city\": \"Lyon\", \"country\": \"France\" }",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-a6e5b652a0dc4f32",
+    "model": "Mistral-Small-3.2-24B-Instruct-2506",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 20,
+      "output_tokens": 16
+    }
+  },
+  "providers/ovhcloud/recorded-thinking-length": {
+    "content": [],
+    "id": "chatcmpl-b829a0b0e04dceb1",
+    "model": "Qwen3.5-9B",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "max_tokens",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 20,
+      "output_tokens": 16
+    }
+  },
+  "providers/ovhcloud/recorded-tool-result": {
+    "content": [
+      {
+        "text": "In Paris today it's cloudy with a temperature of about **14 °C**.",
+        "type": "text"
+      }
+    ],
+    "id": "chatcmpl-83352ca11c1c8373",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 185,
+      "output_tokens": 20,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      }
+    }
+  },
+  "providers/ovhcloud/recorded-tools": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "chatcmpl-tool-955a8bc324c15bff",
+        "input": {
+          "city": "Paris"
+        },
+        "name": "get_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "chatcmpl-b444baf2cad75069",
+    "model": "gpt-oss-120b",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 128,
+      "output_tokens": 34,
+      "output_tokens_details": {
+        "thinking_tokens": 15
+      }
+    }
+  },
   "providers/perplexity/citations-doc": {
     "content": [
       {

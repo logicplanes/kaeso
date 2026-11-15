@@ -224,6 +224,7 @@ Die ersten drei Einstellungen legen nur die Anfangswerte einer neuen Installatio
 | `KAESO_PROVIDERS_IONOS_BASE_URL`<br>`providers.ionos.base_url` | Text | `https://openai.inference.de-txl.ionos.com` | Basis-URL der IONOS-AI-Model-Hub-API. |
 | `KAESO_PROVIDERS_NOVITA_AI_BASE_URL`<br>`providers.novita-ai.base_url` | Text | `https://api.novita.ai/openai` | Basis-URL der Novita-AI-API. |
 | `KAESO_PROVIDERS_VOLCENGINE_BASE_URL`<br>`providers.volcengine.base_url` | Text | `https://ark.cn-beijing.volces.com/api/v3` | Basis-URL der Volcengine-Ark-API. |
+| `KAESO_PROVIDERS_OVHCLOUD_BASE_URL`<br>`providers.ovhcloud.base_url` | Text | `https://oai.endpoints.kepler.ai.cloud.ovh.net` | Basis-URL der OVHcloud-AI-Endpoints-API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | Text | `10s` | Zeit für den Verbindungsaufbau zu einem Anbieter, TCP und TLS; höchstens 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | Text | `600s` | Gesamtzeit einer Anbieter-Anfrage ohne Streaming; höchstens 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | Text | `60s` | Streaming: Zeit bis zum ersten Byte des Anbieters; höchstens 24h. |

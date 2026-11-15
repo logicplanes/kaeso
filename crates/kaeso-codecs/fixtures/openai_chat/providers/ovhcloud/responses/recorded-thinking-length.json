@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-b829a0b0e04dceb1",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "reasoning": "Thinking Process:\n\n1.  **Analyze the Request:** The user is",
+        "tool_calls": []
+      },
+      "finish_reason": "length"
+    }
+  ],
+  "created": 1794676330,
+  "model": "Qwen3.5-9B",
+  "object": "chat.completion",
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 16,
+    "total_tokens": 36
+  }
+}

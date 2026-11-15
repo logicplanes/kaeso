@@ -144,7 +144,10 @@ fn other_shape(raw: &Value, status: Option<u16>) -> Option<OtherShape> {
         (true, Some(Value::String(m)), _) => (m.trim().to_owned(), text("param")),
         (true, Some(nested), _) => validation(nested.get("detail")?, status)?,
         (_, _, Some(detail)) => validation(detail, status)?,
-        (false, Some(Value::String(m)), None) => (quoted(m, status), None),
+        (false, Some(Value::String(m)), None) => (
+            quoted(&nested_message(m).unwrap_or_else(|| m.clone()), status),
+            None,
+        ),
         _ => return None,
     };
     if message.is_empty() {
@@ -160,6 +163,14 @@ fn other_shape(raw: &Value, status: Option<u16>) -> Option<OtherShape> {
             .and_then(Value::as_u64)
             .and_then(|s| u16::try_from(s).ok()),
     })
+}
+
+// OVHcloud AI Endpoints passes a vLLM refusal on as text in a bare `message`:
+// `{"message": "{\"error\":{\"message\":\"Unknown message role: developer\",…}}"}`.
+fn nested_message(message: &str) -> Option<String> {
+    let inner: Value = serde_json::from_str(message.trim()).ok()?;
+    let text = inner.get("error")?.get("message")?.as_str()?.trim();
+    (!text.is_empty()).then(|| text.to_owned())
 }
 
 fn quoted(message: &str, status: Option<u16>) -> String {

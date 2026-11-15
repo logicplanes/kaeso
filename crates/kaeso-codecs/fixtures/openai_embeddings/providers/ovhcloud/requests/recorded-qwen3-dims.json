@@ -1,0 +1,9 @@
+{
+  "model": "Qwen3-Embedding-8B",
+  "input": [
+    "Hello",
+    "Bonjour"
+  ],
+  "dimensions": 32,
+  "encoding_format": "float"
+}

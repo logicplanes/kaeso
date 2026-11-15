@@ -210,6 +210,23 @@ Sources: Ollama's [cloud](https://docs.ollama.com/cloud), [authentication](https
 | errors in OpenAI's envelope with `type` `api_error`, `not_found_error` or `invalid_request_error` | `KppError` | The kind follows the status: 401 for a wrong key, 402 for a model the plan doesn't include (`errors/recorded-model-outside-plan`), 404 for an unknown model. |
 | `GET /v1/models`: OpenAI's list, `owned_by: "ollama"`, and a top-level `models` array in Codex's model-catalogue shape | `ModelList`, extras | Ollama answers the listing and `GET /v1/models/{model}` without checking the key, so a model check can't spot a wrong key. |
 
+## OVHcloud AI Endpoints
+
+Sources: AI Endpoints' [OpenAPI document](https://oai.endpoints.kepler.ai.cloud.ovh.net/doc/gpt-oss-120b/openapi.json) and its [getting started](https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-getting-started.md), [capabilities](https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-capabilities.md), [function calling](https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-function-calling.md) and [structured output](https://docs.ovhcloud.com/en/guides/public-cloud/ai-machine-learning/ai-endpoints-structured-output.md) guides, read 2026-11-14. AI Endpoints answers without a key, at 2 requests a minute per IP and model, so the replies, the stream, the listing and the errors in `fixtures/openai_chat/providers/ovhcloud/` were recorded live on 2026-11-14 without a key, the key error with a made-up key. Kaeso's base URL is `https://oai.endpoints.kepler.ai.cloud.ovh.net`, the documented base without its `/v1`, which takes `Authorization: Bearer`. OVHcloud hosts the models in France.
+
+| AI Endpoints field | KPP | Notes |
+|---|---|---|
+| `message.reasoning`, `delta.reasoning` | `Block::Reasoning` | Through the profile's `reasoning_fields`; assistant messages take it back (`requests/recorded-tool-result`). A reply cut while thinking has no `content` (`responses/recorded-thinking-length`). |
+| the `developer` role | `Role::System` | Mistral Small 3.2 answers it with 400 (`errors/recorded-developer-role-mistral`), so `system_role()` sends `system`. |
+| `user`, `safety_identifier` | left out | `user` gets 400, and the schema declares no other end-user field (`without_end_user()`). |
+| `metadata`, `store`, `modalities`, `audio`, `prediction`, `prompt_cache_key`, `web_search_options`, `functions`, `function_call` | refused | Not declared, and the parser lets at least `metadata`, `store`, `prediction`, `prompt_cache_key` and `web_search_options` through without a word; a Responses app's cache key is left out (`without_cache_key()`). |
+| other undeclared fields, such as `service_tier`, `verbosity` and `top_k` | sent as written | AI Endpoints answers 400 naming each of them (`errors/recorded-service-tier`). |
+| `tool_calls: []`, `"name": "assistant"` on deltas, `system_fingerprint` on the usage chunk | extras | Left out towards other dialects. |
+| a bare `{"message": …}`, or vLLM's error as JSON text inside it | `KppError` | The message is quoted with the status, the nested `error.message` read out of the text. A 403 "Forbidden: authentication failed." is a refused key (`refused_key_messages`, `errors/recorded-invalid-api-key`). |
+| `GET /v1/models` with `pricing` in USD per token, `context_length` and `max_completion_tokens` | `ModelList` | Lists every model kind and refuses a wrong key with 403 (`models/list-recorded`). |
+
+AI Endpoints' Responses API needs `store: false` and isn't used: Responses apps reach it through Chat Completions. It serves no Messages or token counts. Model ids are case-sensitive; a lowercase alias is answered with the listed id in `model`, so KPMR lists the ids `GET /v1/models` names. Its transcriptions aren't used until KPMR lists the models with their prices.
+
 ## SambaNova
 
 Sources: SambaNova's [OpenAPI document](https://raw.githubusercontent.com/sambanova/sambanova-inference-api-spec/refs/heads/main/openapi.documented.json) (SambaNova cloud API 1.2.0), its [OpenAI compatibility](https://docs.sambanova.ai/docs/en/features/openai-compatibility), [text generation](https://docs.sambanova.ai/docs/en/features/text-generation) and [API error codes](https://docs.sambanova.ai/docs/en/api-reference/using-the-api/api-error-codes) pages, read 2026-11-09. No key was available: `fixtures/openai_chat/providers/sambanova/` holds the document's own example reply and stream and replies built from it, the model listing as SambaCloud serves it without a key, and errors answered live without a valid key. Kaeso's base URL is `https://api.sambanova.ai`, which takes `Authorization: Bearer`.

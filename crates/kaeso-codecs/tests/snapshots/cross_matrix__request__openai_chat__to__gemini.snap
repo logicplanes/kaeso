@@ -4912,6 +4912,295 @@ expression: outcomes
     },
     "path": "/v1beta/models/kaeso-example%2Fno-such-model%3Afree:generateContent"
   },
+  "providers/ovhcloud/recorded-developer-role-mistral": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Capital of France?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 8
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Answer in one word."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/Mistral-Small-3.2-24B-Instruct-2506:generateContent"
+  },
+  "providers/ovhcloud/recorded-greeting": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 256
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "You answer in one short sentence."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-20b:generateContent"
+  },
+  "providers/ovhcloud/recorded-invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss-20b:generateContent"
+  },
+  "providers/ovhcloud/recorded-json-schema": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "I live in Lyon, in France."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "city": {
+              "type": "string"
+            },
+            "country": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city",
+            "country"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json",
+        "temperature": 0.0
+      },
+      "systemInstruction": {
+        "parts": [
+          {
+            "text": "Extract the city and the country."
+          }
+        ]
+      }
+    },
+    "path": "/v1beta/models/Mistral-Small-3.2-24B-Instruct-2506:generateContent"
+  },
+  "providers/ovhcloud/recorded-reasoning-stream": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello in three words."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/gpt-oss-20b:streamGenerateContent?alt=sse"
+  },
+  "providers/ovhcloud/recorded-service-tier": {
+    "message": "`service_tier` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "service_tier"
+  },
+  "providers/ovhcloud/recorded-thinking-length": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is 17 times 23?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "maxOutputTokens": 16
+      }
+    },
+    "path": "/v1beta/models/Qwen3.5-9B:generateContent"
+  },
+  "providers/ovhcloud/recorded-tool-result": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "parts": [
+            {
+              "text": ""
+            },
+            {
+              "functionCall": {
+                "args": {
+                  "city": "Paris"
+                },
+                "id": "chatcmpl-tool-955a8bc324c15bff",
+                "name": "get_weather"
+              },
+              "thoughtSignature": "skip_thought_signature_validator"
+            }
+          ],
+          "role": "model"
+        },
+        {
+          "parts": [
+            {
+              "functionResponse": {
+                "id": "chatcmpl-tool-955a8bc324c15bff",
+                "name": "get_weather",
+                "response": {
+                  "output": "{\"temperature_c\": 14, \"sky\": \"cloudy\"}"
+                }
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "AUTO"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/ovhcloud/recorded-tools": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is the weather in Paris?"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      },
+      "toolConfig": {
+        "functionCallingConfig": {
+          "mode": "ANY"
+        }
+      },
+      "tools": [
+        {
+          "functionDeclarations": [
+            {
+              "description": "Get the current weather in a city",
+              "name": "get_weather",
+              "parametersJsonSchema": {
+                "properties": {
+                  "city": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "city"
+                ],
+                "type": "object"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-oss-120b:generateContent"
+  },
+  "providers/ovhcloud/recorded-unknown-model": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/kaeso-no-such-model:generateContent"
+  },
   "providers/perplexity/json-schema": {
     "message": "`disable_search` comes from an OpenAI Chat Completions request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
     "param": null,
