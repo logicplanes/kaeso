@@ -99,6 +99,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `KAESO_CORS_ALLOWED_ORIGINS`<br>`cors.allowed_origins` | 文本 | — | 以逗号分隔的 Web 应用的源，这些应用可以从浏览器调用模型 API，例如 `https://app.example.com,http://localhost:5173`。只有它们获得 CORS 响应头，且仅限 `/v1`、`/v1beta` 和 `/v2`；设为 `*` 时网关不会启动。 |
+| `KAESO_CORS_ALLOWED_HEADERS`<br>`cors.allowed_headers` | 文本 | 未设置 | 以逗号分隔的请求头名称，这些源上的浏览器应用除 SDK 的请求头外还可发送，例如供按其路由的[别名路由](../concepts/alias-routes.md)使用的 `x-plan`。名称会转为小写；`*`、不是请求头名称的值、`cookie`、`forwarded` 和 `x-forwarded-…` 会使网关在启动时停止。 |
 
 没有这项设置时，Kaeso 不发送任何 CORS 响应头。[模型 API](../api/model-api.md) 介绍了浏览器应用如何调用 Kaeso。
 

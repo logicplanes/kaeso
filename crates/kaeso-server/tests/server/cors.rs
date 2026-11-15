@@ -21,7 +21,7 @@ const OTHER: &str = "https://other.example.com";
 const ORIGINS: &str = "https://APP.example.com/, http://localhost:5173";
 const SDK_HEADERS: &str = "authorization, cache-control, content-type, x-api-key, anthropic-version, anthropic-beta, anthropic-dangerous-direct-browser-access, openai-organization, openai-project, idempotency-key, xi-api-key, x-stainless-os, x-stainless-retry-count, cookie, x-forwarded-for";
 const REFLECTED: &str = "anthropic-beta, anthropic-dangerous-direct-browser-access, anthropic-version, authorization, cache-control, content-type, idempotency-key, openai-organization, openai-project, x-api-key, x-stainless-os, x-stainless-retry-count, xi-api-key";
-const EXPOSED: &str = "kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms";
+const EXPOSED: &str = "kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, server-timing, age, retry-after, retry-after-ms";
 
 const ROUTES: &[(&str, &str)] = &[
     ("/v1/chat/completions", "POST"),
@@ -406,4 +406,33 @@ async fn preflights_need_no_key_and_are_neither_logged_nor_limited() {
     })
     .await;
     assert_eq!(limits.0.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn a_header_the_install_lists_may_be_sent_by_browser_apps_too() {
+    let env = common::v1::env(
+        None,
+        Some(&[
+            ("KAESO_CORS_ALLOWED_ORIGINS", ORIGINS),
+            ("KAESO_CORS_ALLOWED_HEADERS", "x-plan"),
+        ]),
+    )
+    .await;
+    let req = Request::builder()
+        .method(Method::OPTIONS)
+        .uri("/v1/chat/completions")
+        .header("origin", APP)
+        .header("access-control-request-method", "POST")
+        .header(
+            "access-control-request-headers",
+            "authorization, content-type, x-plan, x-user-id",
+        )
+        .body(Body::empty())
+        .unwrap();
+    let r = send(&env, req).await;
+    assert_eq!(
+        r.header("access-control-allow-headers"),
+        Some("authorization, content-type, x-plan"),
+        "the listed header and the SDKs', not an unlisted one"
+    );
 }

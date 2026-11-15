@@ -42,7 +42,7 @@ A condition has 1 to 10 rules. Each rule reads one fact about the request:
 | `input_tokens` | The input is `at_least` or `below` a number of tokens, estimated from the request's size at 4 bytes a token |
 | `key`, `member`, `service_account` | The API key, the member or the service account that sent the request is `in` or `not_in` a list of up to 100 |
 
-Routes can't read `authorization`, `proxy-authorization`, `cookie`, `x-api-key`, `x-goog-api-key` or `api-key`, since they carry credentials. To route by your own users, send a header such as `x-plan` from your app.
+Routes can't read `authorization`, `proxy-authorization`, `cookie`, `x-api-key`, `x-goog-api-key` or `api-key`, since they carry credentials. To route by your own users, send a header such as `x-plan` from your app. A browser app can send it only once the install lists it in `KAESO_CORS_ALLOWED_HEADERS` ([browser apps](../self-hosting/configuration.md#browser-apps)).
 
 ## Splits
 
