@@ -23,12 +23,14 @@ ClickHouse, das die Anfrageprotokolle speichert, braucht mehr Arbeitsspeicher al
 
 | Dienst | Arbeitsspeicher im Leerlauf | Arbeitsspeicher nach dem Benchmark | Image |
 | --- | --- | --- | --- |
-| ClickHouse | 647 MiB | 1,81 GiB | 981 MB |
+| ClickHouse | 193 MiB | 256 MiB | 981 MB |
 | PostgreSQL | 75 MiB | 75 MiB | 672 MB |
 | Valkey | 15 MiB | 15 MiB | — |
 | Gateway | — | — | 117 bis 141 MB |
 
-Mit [ausgeschalteten Anfrageprotokollen](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden) betreibt die Installation kein ClickHouse. Das spart im Leerlauf etwa 0,65 GB Arbeitsspeicher, unter Last 1,8 GB, und das Image mit 981 MB. Nutzung, Limits und Budgets funktionieren in beiden Fällen gleich.
+ClickHouse wurde am 16.11.2026 erneut gemessen, im Leerlauf und 5 Minuten nach Baseline, Agenten-Sitzung und 1.000 Streams des Benchmarks. Von seinen eigenen Diagnosetabellen schreibt es nur das Abfrageprotokoll, das es eine Woche aufbewahrt, und das Fehlerprotokoll, das es einen Monat aufbewahrt; Kaeso liest keine davon. Vorher ergab derselbe Lauf 461 MiB und 697 MiB. Eine Installation aus einem früheren Release behält die Diagnosetabellen, die sie schon geschrieben hat; sie wachsen nicht mehr.
+
+Mit [ausgeschalteten Anfrageprotokollen](installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden) betreibt die Installation kein ClickHouse. Das spart im Leerlauf etwa 0,2 GB Arbeitsspeicher, nach Last 0,25 GB, und das Image mit 981 MB. Nutzung, Limits und Budgets funktionieren in beiden Fällen gleich.
 
 ## Netzwerk
 
@@ -65,5 +67,7 @@ Anfrageprotokolle liegen in ClickHouse und belegen keinen Speicherplatz, wenn si
 | Metadaten und Inhalte, bei etwa 2,5 KB Text je Anfrage | Etwa 0,65 GB |
 
 Die Inhalte wachsen mit der Länge Ihrer Prompts und Antworten. Die Aufbewahrung begrenzt die Gesamtmenge. Bei einer Million Anfragen am Tag belegen die Standardfristen etwa 9 GB Metadaten (90 Tage) und 16 GB Inhalte (30 Tage).
+
+Ein Coding-Agent sendet mit jeder Runde sein ganzes Gespräch erneut, sodass die Anfragen einer Sitzung fast gleich sind. ClickHouse komprimiert eine Folge davon gemeinsam, und eine Stichprobe von Agenten-Sitzungen belegte etwa ein Fünfzigstel ihrer Größe auf der Festplatte.
 
 Jede Organisation wählt ihre Aufbewahrung auf ihrer Seite **Protokollierung**, innerhalb der Höchstwerte der Instanz ([Anfrageprotokolle](../console/request-logs.md)). Die Seite **System** der Instanz zeigt, wie viel Platz die Protokolle belegen.

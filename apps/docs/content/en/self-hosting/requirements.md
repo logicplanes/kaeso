@@ -23,12 +23,14 @@ ClickHouse, which keeps the request logs, takes more memory than all other datab
 
 | Service | Memory at idle | Memory after the benchmark | Image |
 | --- | --- | --- | --- |
-| ClickHouse | 647 MiB | 1.81 GiB | 981 MB |
+| ClickHouse | 193 MiB | 256 MiB | 981 MB |
 | PostgreSQL | 75 MiB | 75 MiB | 672 MB |
 | Valkey | 15 MiB | 15 MiB | — |
 | Gateway | — | — | 117 to 141 MB |
 
-With [request logs off](installation.md#choose-how-to-keep-request-logs), the install doesn't run ClickHouse. That saves about 0.65 GB of memory at idle and 1.8 GB under load, and the 981 MB image. Usage, limits and budgets work the same either way.
+ClickHouse was measured again on 2026-11-16, at idle and 5 minutes after the benchmark's baseline, agent session and 1,000 streams. Of its own diagnostics tables it writes only the query log, kept for a week, and the error log, kept for a month; Kaeso reads none of them. Before that, the same run left it at 461 MiB and 697 MiB. An install from an earlier release keeps the diagnostics tables it already wrote, which stop growing.
+
+With [request logs off](installation.md#choose-how-to-keep-request-logs), the install doesn't run ClickHouse. That saves about 0.2 GB of memory at idle and 0.25 GB after load, and the 981 MB image. Usage, limits and budgets work the same either way.
 
 ## Network
 
@@ -65,5 +67,7 @@ Request logs live in ClickHouse, and take no disk when they are off. Plan for th
 | Metadata and content, at about 2.5 KB of text per request | About 0.65 GB |
 
 Content grows with the size of your prompts and replies. Retention caps the total. At a million requests a day, the default retention keeps about 9 GB of metadata (90 days) and 16 GB of content (30 days).
+
+A coding agent sends its whole conversation again with every turn, so one session's request bodies are nearly the same. ClickHouse compresses a run of them together, and a sample of agent sessions took about a fiftieth of their size on disk.
 
 Each organization chooses its retention on its **Logging** page, within the instance's maximums ([request logs](../console/request-logs.md)). The instance's **System** page shows how much the logs take.
