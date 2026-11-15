@@ -398,6 +398,7 @@ fn gcd(a: u32, b: u32) -> u32 {
 }
 
 /// Unix seconds of an RFC 3339 time such as `2026-05-29T02:17:56Z`, in UTC or with an offset.
+/// A field outside its range, such as a year past 9999 or an hour of 25, reads as no time.
 pub(crate) fn unix_of_rfc3339(s: &str) -> Option<i64> {
     let (date, rest) = s.split_once('T')?;
     let mut d = date.split('-');
@@ -420,10 +421,21 @@ pub(crate) fn unix_of_rfc3339(s: &str) -> Option<i64> {
         o => {
             let sign = if o.starts_with('-') { -1 } else { 1 };
             let (oh, om) = o.get(1..)?.split_once(':')?;
-            sign * (oh.parse::<i64>().ok()? * 3600 + om.parse::<i64>().ok()? * 60)
+            let (oh, om) = (oh.parse::<i64>().ok()?, om.parse::<i64>().ok()?);
+            if !(0..=23).contains(&oh) || !(0..=59).contains(&om) {
+                return None;
+            }
+            sign * (oh * 3600 + om * 60)
         }
     };
-    Some(days_from_civil(y, m, day) * 86_400 + hh * 3600 + mm * 60 + ss - offset_s)
+    // RFC 3339's ranges (section 5.6, a leap second included); within them nothing overflows.
+    let in_range = (0..=9999).contains(&y)
+        && (1..=12).contains(&m)
+        && (1..=31).contains(&day)
+        && (0..=23).contains(&hh)
+        && (0..=59).contains(&mm)
+        && (0..=60).contains(&ss);
+    in_range.then(|| days_from_civil(y, m, day) * 86_400 + hh * 3600 + mm * 60 + ss - offset_s)
 }
 
 // Howard Hinnant's days_from_civil (http://howardhinnant.github.io/date_algorithms.html).
@@ -673,6 +685,30 @@ mod tests {
             Some(1_780_021_076)
         );
         assert_eq!(unix_of_rfc3339("yesterday"), None);
+        for out_of_range in [
+            "10000-01-01T00:00:00Z",
+            "2026-13-01T00:00:00Z",
+            "2026-05-29T24:00:00Z",
+            "2026-05-29T9999999999999999:00:00Z",
+            "2026-05-29T02:17:56+99:00",
+        ] {
+            assert_eq!(unix_of_rfc3339(out_of_range), None, "{out_of_range}");
+        }
+    }
+
+    #[test]
+    fn a_time_out_of_any_range_reads_as_none_instead_of_overflowing() {
+        // The nightly fuzz run's crash input (#1073) and an hour as long.
+        for s in [
+            "0000000000000000000001150435295022517809-09-29 14:18:52.331",
+            "2025-09-29 9999999999999999:00:00",
+        ] {
+            assert_eq!(crate::dashscope::unix_of_beijing(s), None, "{s}");
+        }
+        assert_eq!(
+            crate::dashscope::unix_of_beijing("2025-09-29 14:18:52.331"),
+            Some(1_759_126_732)
+        );
     }
 
     #[test]
