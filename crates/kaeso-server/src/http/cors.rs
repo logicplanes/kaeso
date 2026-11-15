@@ -20,6 +20,7 @@ pub const ALLOWED_HEADERS: &[&str] = &[
     "anthropic-dangerous-direct-browser-access",
     "anthropic-version",
     "authorization",
+    "cache-control",
     "content-type",
     "idempotency-key",
     "openai-beta",
@@ -383,6 +384,7 @@ mod tests {
             "idempotency-key",
             "x-goog-api-key",
             "x-goog-api-client",
+            "cache-control",
             "x-stainless-arch",
             "x-stainless-retry-count",
             "x-stainless-helper-method",
@@ -425,11 +427,11 @@ mod tests {
     fn requested_headers_are_reflected_only_when_allowed() {
         let h = requested(&[
             "Authorization, Content-Type,x-stainless-os , X-Stainless-Lang",
-            "cookie, x-api-key, authorization",
+            "cookie, x-api-key, authorization, Cache-Control",
         ]);
         assert_eq!(
             allow_headers(&h).unwrap(),
-            "authorization, content-type, x-api-key, x-stainless-lang, x-stainless-os"
+            "authorization, cache-control, content-type, x-api-key, x-stainless-lang, x-stainless-os"
         );
         assert_eq!(
             allow_headers(&requested(&["cookie, x-forwarded-for"])),
