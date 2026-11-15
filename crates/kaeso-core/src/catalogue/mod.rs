@@ -138,6 +138,15 @@ pub struct Fields {
     )]
     #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "12.00"))]
     pub output_audio_price: Option<Decimal>,
+    #[doc = "USD per million reasoning tokens, the share of output the provider reports as\n\
+        reasoning; absent means the output price."]
+    #[serde(
+        default,
+        deserialize_with = "price",
+        skip_serializing_if = "Option::is_none"
+    )]
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, example = "4.00"))]
+    pub reasoning_price: Option<Decimal>,
     #[doc = "Prices per image, megapixel, second, minute, hour or million characters, for\n\
         models a provider bills by unit; they add to the token prices."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -435,6 +444,7 @@ macro_rules! each_field {
             cache_read_image_price,
             input_audio_price,
             output_audio_price,
+            reasoning_price,
             unit_prices,
             egress_dialect,
             adaptive_thinking,
@@ -470,6 +480,7 @@ pub const FIELD_NAMES: &[&str] = &[
     "cache_read_image_price",
     "input_audio_price",
     "output_audio_price",
+    "reasoning_price",
     "unit_prices",
     "egress_dialect",
     "adaptive_thinking",
@@ -525,6 +536,9 @@ impl Fields {
             if self.input_audio_price.is_none() && self.output_audio_price.is_none() {
                 kpmr.input_audio_price = None;
                 kpmr.output_audio_price = None;
+            }
+            if self.reasoning_price.is_none() {
+                kpmr.reasoning_price = None;
             }
             if self.unit_prices.is_none() {
                 kpmr.unit_prices = None;
@@ -583,6 +597,7 @@ impl Fields {
             cache_read_image_price: pricing.cache_read_image,
             input_audio_price: pricing.input_audio,
             output_audio_price: pricing.output_audio,
+            reasoning_price: pricing.reasoning,
             unit_prices: (!pricing.per_unit.is_empty())
                 .then(|| pricing.per_unit.iter().map(UnitPrice::from_kpmr).collect()),
             egress_dialect: m.egress_dialect().or(match m.kind.as_deref() {
@@ -693,6 +708,7 @@ impl Fields {
             ("cache_read_image_price", self.cache_read_image_price),
             ("input_audio_price", self.input_audio_price),
             ("output_audio_price", self.output_audio_price),
+            ("reasoning_price", self.reasoning_price),
         ]
         .into_iter()
         .chain(tier_prices)

@@ -112,6 +112,7 @@
   "models.field.outputPrice": "Output price",
   "models.field.outputs": "Outputs",
   "models.field.priceTiers": "Long-context prices",
+  "models.field.reasoningPrice": "Reasoning price",
   "models.field.released": "Released",
   "models.field.sendsAs": "Sends as",
   "models.field.temperature": "Temperature",

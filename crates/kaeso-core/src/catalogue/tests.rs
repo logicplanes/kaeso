@@ -130,6 +130,30 @@ fn from_kpmr_keeps_the_effort_levels_this_gateway_knows_and_derives_the_dialect_
 }
 
 #[test]
+fn kpmrs_reasoning_price_holds_until_a_price_is_set_by_hand() {
+    let qwen = eff(&entry("alibaba", "qwen-plus"));
+    assert_eq!(qwen.fields.reasoning_price, Some(dec!(4)));
+    assert_eq!(qwen.fields.output_price, Some(dec!(1.2)));
+    let kpmr = qwen.fields.clone();
+    let negotiated = Fields {
+        output_price: Some(dec!(1)),
+        ..Fields::default()
+    }
+    .over_kpmr(kpmr.clone());
+    assert_eq!(
+        negotiated.reasoning_price, None,
+        "the negotiated output price holds for reasoning"
+    );
+    let both = Fields {
+        output_price: Some(dec!(1)),
+        reasoning_price: Some(dec!(3)),
+        ..Fields::default()
+    }
+    .over_kpmr(kpmr);
+    assert_eq!(both.reasoning_price, Some(dec!(3)));
+}
+
+#[test]
 fn overrides_win_over_kpmrs_values() {
     let mut e = entry("anthropic", "claude-haiku-4-5");
     let base = eff(&e);
