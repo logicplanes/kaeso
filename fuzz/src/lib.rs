@@ -10,7 +10,7 @@ use kaeso_kpp::{
 };
 use kaeso_mcp::{Message, RequestHeaders, headers, names};
 
-const KINDS: [RequestKind; 8] = [
+const KINDS: [RequestKind; 9] = [
     RequestKind::Generate,
     RequestKind::CountTokens,
     RequestKind::Embed,
@@ -19,6 +19,7 @@ const KINDS: [RequestKind; 8] = [
     RequestKind::Transcription,
     RequestKind::Video,
     RequestKind::Decide,
+    RequestKind::Rerank,
 ];
 
 const SYSTEM_ONE_PROFILES: [SystemOneProfile; 7] = [
