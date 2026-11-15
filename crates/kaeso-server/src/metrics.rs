@@ -32,6 +32,9 @@ pub const KEY_FAILURE_BLOCKS: &str = "kaeso_key_failure_blocks_total";
 pub const EMAILS: &str = "kaeso_emails_total";
 pub const BUILD_INFO: &str = "kaeso_build_info";
 pub const UPDATE_AVAILABLE: &str = "kaeso_update_available";
+pub const KPMR_FETCHED: &str = "kaeso_kpmr_fetched_timestamp_seconds";
+pub const KPMR_LAST_ATTEMPT: &str = "kaeso_kpmr_last_attempt_timestamp_seconds";
+pub const KPMR_LAST_ATTEMPT_FAILED: &str = "kaeso_kpmr_last_attempt_failed";
 
 pub fn describe() {
     describe_counter!(
@@ -120,10 +123,35 @@ pub fn describe() {
     describe_counter!(EMAILS, "Emails by kind and outcome.");
     describe_gauge!(BUILD_INFO, "Build information.");
     describe_gauge!(
+        KPMR_FETCHED,
+        Unit::Seconds,
+        "When KPMR published the model data in use, or generated the built-in snapshot; it moves only when KPMR publishes new data."
+    );
+    describe_gauge!(
+        KPMR_LAST_ATTEMPT,
+        Unit::Seconds,
+        "When the gateway last tried to fetch KPMR's data."
+    );
+    describe_gauge!(
+        KPMR_LAST_ATTEMPT_FAILED,
+        "1 while the last attempt to fetch KPMR's data failed, 0 after one succeeded."
+    );
+    describe_gauge!(
         UPDATE_AVAILABLE,
         "1 while a newer release is offered on the install's channel, with it as version; 0 with the running version while the install is up to date. Absent while update checks are off."
     );
     metrics::gauge!(BUILD_INFO, "version" => env!("CARGO_PKG_VERSION")).set(1.0);
+}
+
+/// The time of the model data in use.
+pub fn kpmr_fetched(at: time::OffsetDateTime) {
+    metrics::gauge!(KPMR_FETCHED).set(at.unix_timestamp() as f64);
+}
+
+/// The last attempt to fetch KPMR's data, and whether it failed.
+pub fn kpmr_attempt(at: time::OffsetDateTime, failed: bool) {
+    metrics::gauge!(KPMR_LAST_ATTEMPT).set(at.unix_timestamp() as f64);
+    metrics::gauge!(KPMR_LAST_ATTEMPT_FAILED).set(if failed { 1.0 } else { 0.0 });
 }
 
 /// What `kaeso_update_available` last said, so a newer release sets the old one's series to 0

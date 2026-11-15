@@ -103,6 +103,7 @@ impl Kpmr {
     }
 
     fn replace(&self, loaded: Loaded) {
+        crate::metrics::kpmr_fetched(loaded.fetched_at);
         *self.current.write().unwrap_or_else(PoisonError::into_inner) = Arc::new(loaded);
     }
 }
@@ -113,6 +114,13 @@ pub fn embedded_fetched_at(embedded: &Catalogue) -> OffsetDateTime {
 
 pub async fn init(state: &AppState) -> Result<(), StoreError> {
     let stored = catalogue::snapshot(&state.pg).await?;
+    if let Some(at) = stored.as_ref().and_then(|row| row.last_attempt_at) {
+        crate::metrics::kpmr_attempt(
+            at,
+            stored.as_ref().is_some_and(|row| row.last_error.is_some()),
+        );
+    }
+    crate::metrics::kpmr_fetched(state.kpmr.current().fetched_at);
     // AppState starts from the built-in snapshot; parse it again only once something replaced it.
     let current = state.kpmr.current();
     let embedded = if current.source == EMBEDDED_SOURCE {
@@ -418,6 +426,7 @@ pub async fn sync(state: &AppState) -> Result<Synced, SyncError> {
     let now = state.clock.now();
     let result = fetch_and_apply(state, now).await;
     let error = result.as_ref().err().map(ToString::to_string);
+    crate::metrics::kpmr_attempt(now, error.is_some());
     if let Err(e) = catalogue::record_attempt(&state.pg, now, error.as_deref()).await {
         tracing::warn!(error = %e, "cannot record the KPMR sync attempt");
     }

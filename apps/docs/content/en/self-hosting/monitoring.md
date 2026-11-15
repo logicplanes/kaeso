@@ -69,6 +69,8 @@ services:
 | `kaeso_usage_rows_dropped_total` | Any increase: PostgreSQL refused usage for good, and the log line `a usage row cannot be recorded` says why |
 | `kaeso_valkey_failures_total{operation}`, `kaeso_limits_fail_open_total{reason}` | Valkey trouble. Meanwhile, hard budgets refuse requests with 503, and other limits let them through unchecked |
 | `kaeso_job_runs_total{job, outcome}` | `outcome="failed"` for background jobs. `job="kpmr_sync"` is the [KPMR](../concepts/kpmr.md) sync |
+| `kaeso_kpmr_fetched_timestamp_seconds` | When KPMR published the model data in use, or generated the built-in snapshot, as **Instance** › **System** shows it. It moves only when KPMR publishes new data, so its age matters mainly where `kpmr.sync` is off |
+| `kaeso_kpmr_last_attempt_timestamp_seconds`, `kaeso_kpmr_last_attempt_failed` | When the gateway last tried to fetch KPMR's data, and 1 while that attempt failed, 0 after one succeeded. A run that found the sync not due isn't an attempt. To hear about a failing sync, alert on `kaeso_kpmr_last_attempt_failed == 1` held for a few hours; with several gateways, use `max()` across them |
 | `kaeso_auth_failures_total{method, reason}` | Bursts of failed sign-ins or keys. `reason="throttled"` counts requests refused by [API key throttling](configuration.md#api-key-throttling) |
 | `kaeso_key_failure_blocks_total` | Any increase: an address is guessing API keys |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` or `dropped`: check the [email](email.md) settings |

@@ -1158,3 +1158,59 @@ async fn an_older_builds_copy_of_the_built_in_snapshot_is_replaced() {
     assert_eq!(usize::try_from(count).unwrap(), embedded_model_count());
     assert!(formatted);
 }
+
+#[tokio::test]
+async fn metrics_say_how_old_the_model_data_is_and_whether_the_last_sync_failed() {
+    let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
+    let handle = recorder.handle();
+    let _local = metrics::set_default_local_recorder(&recorder);
+    let s = TestServices::start().await;
+    let mut data = common::kpmr::built_in();
+    let served = common::kpmr::Served::new(data.to_string());
+    let url = common::kpmr::serve(served.clone()).await;
+    let app = App::start_with(&s, &[("KAESO_KPMR_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+    let gauge = |name: &str| -> f64 {
+        let text = handle.render();
+        text.lines()
+            .find_map(|l| l.strip_prefix(&format!("{name} ")))
+            .unwrap_or_else(|| panic!("no {name} in {text}"))
+            .parse()
+            .unwrap()
+    };
+    let unix = |v: &Value| {
+        time::OffsetDateTime::parse(
+            v.as_str().unwrap(),
+            &time::format_description::well_known::Rfc3339,
+        )
+        .unwrap()
+        .unix_timestamp() as f64
+    };
+    let card = app.get("/instance/system", &owner.cookie).await.body["model_data"].clone();
+    assert_eq!(
+        gauge("kaeso_kpmr_fetched_timestamp_seconds"),
+        unix(&card["fetched_at"])
+    );
+
+    served.lock().unwrap().status = 503;
+    assert!(sync(&app).await.is_err());
+    let card = app.get("/instance/system", &owner.cookie).await.body["model_data"].clone();
+    assert_eq!(gauge("kaeso_kpmr_last_attempt_failed"), 1.0);
+    assert_eq!(
+        gauge("kaeso_kpmr_last_attempt_timestamp_seconds"),
+        unix(&card["last_attempt_at"])
+    );
+
+    served.lock().unwrap().status = 200;
+    data["revision"] = json!("2099-01-01T00:00:00Z-metrics");
+    data["generated_at"] = json!("2099-01-01T00:00:00Z");
+    served.lock().unwrap().body = data.to_string();
+    assert!(sync(&app).await.is_ok());
+    let card = app.get("/instance/system", &owner.cookie).await.body["model_data"].clone();
+    assert_eq!(gauge("kaeso_kpmr_last_attempt_failed"), 0.0);
+    assert_eq!(
+        gauge("kaeso_kpmr_fetched_timestamp_seconds"),
+        unix(&card["fetched_at"]),
+        "new data moves it"
+    );
+}
