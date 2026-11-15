@@ -18,8 +18,15 @@ PostgreSQL 或 Valkey 无法访问时，`/readyz` 返回 503 和 `not_ready`。C
 两个端点都在网关的端口 8080 上。Caddy 只把 `/v1/`、`/v1beta/`、`/v2/`、`/platform/`、`/mcp`、`/mcp/`、`/oauth/` 和 `/.well-known/oauth-` 转发到这里，所以在您的域名上，这两个路径会到达控制台。网关容器的健康检查调用 `/healthz`，`docker compose ps` 会显示结果。在服务器上读取 `/readyz`：
 
 ```bash
-docker compose exec console wget -qO- http://gateway:8080/readyz
+docker compose exec gateway kaeso healthcheck --ready
 ```
+
+网关镜像中没有 shell，也没有 `curl`，因此通过在容器内运行命令来探测的平台使用 `kaeso healthcheck`：
+
+| 命令 | 请求 | 退出码为 0 的情况 | 适用于 |
+| --- | --- | --- | --- |
+| `kaeso healthcheck` | `/healthz` | 进程有响应时 | 存活检查（会重启容器）：数据库故障不应导致所有网关重启 |
+| `kaeso healthcheck --ready` | `/readyz`，并打印其响应 | `ready` 和 `degraded` 时，`not_ready` 时不是 | 就绪检查：让流量避开无法连接 PostgreSQL 或 Valkey 的网关 |
 
 ## 指标
 

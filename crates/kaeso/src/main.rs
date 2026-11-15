@@ -36,9 +36,14 @@ enum Command {
     Instance(InstanceCommand),
     #[command(
         hide = true,
-        about = "Exit 0 when the local gateway answers `GET /healthz` (for container health checks)"
+        about = "Exit 0 when the local gateway answers `GET /healthz`, or with --ready `GET /readyz` (for container health checks)"
     )]
-    Healthcheck,
+    Healthcheck {
+        /// Ask `/readyz` instead, print its answer, and exit 0 only while PostgreSQL and Valkey
+        /// answer: for a readiness check, not a liveness check.
+        #[arg(long)]
+        ready: bool,
+    },
     #[command(
         hide = true,
         about = "Print the Platform API's OpenAPI document (`kaeso openapi > openapi.json`)"
@@ -115,7 +120,7 @@ fn main() -> Result<()> {
             say!("{}", kaeso_crypto::generate_master_key().expose_secret());
             Ok(())
         }
-        Command::Healthcheck => runtime()?.block_on(healthcheck(&ProcessSource)),
+        Command::Healthcheck { ready } => runtime()?.block_on(healthcheck(&ProcessSource, ready)),
         Command::Openapi => {
             let doc = kaeso_server::platform::openapi();
             say!(
@@ -333,7 +338,7 @@ async fn run(command: Command) -> Result<()> {
             }
         }
         Command::MasterKey(MasterKeyCommand::Generate)
-        | Command::Healthcheck
+        | Command::Healthcheck { .. }
         | Command::Openapi => {}
     }
     Ok(())
@@ -348,22 +353,41 @@ fn probe_address(config: &Config) -> SocketAddr {
     SocketAddr::new(ip, config.listen.port())
 }
 
-async fn healthcheck(source: &dyn Source) -> Result<()> {
+// `/healthz` answers while the process runs, for a liveness check: a database outage must not
+// make an orchestrator restart every gateway. `/readyz` answers 503 while PostgreSQL or Valkey
+// can't be reached, for a readiness check; `degraded` (ClickHouse only) still passes.
+async fn healthcheck(source: &dyn Source, ready: bool) -> Result<()> {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
     let probe = probe_address(&load_config(source)?);
+    let path = if ready { "/readyz" } else { "/healthz" };
     let check = async {
         let mut stream = tokio::net::TcpStream::connect(probe).await?;
         stream
-            .write_all(b"GET /healthz HTTP/1.0\r\nHost: localhost\r\n\r\n")
+            .write_all(format!("GET {path} HTTP/1.0\r\nHost: localhost\r\n\r\n").as_bytes())
             .await?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response).await?;
-        anyhow::Ok(response.starts_with(b"HTTP/1.0 200") || response.starts_with(b"HTTP/1.1 200"))
+        anyhow::Ok(response)
     };
-    match tokio::time::timeout(std::time::Duration::from_secs(3), check).await {
-        Ok(Ok(true)) => Ok(()),
+    let response = match tokio::time::timeout(std::time::Duration::from_secs(3), check).await {
+        Ok(Ok(response)) => response,
+        _ if ready => anyhow::bail!("the gateway is not ready"),
         _ => anyhow::bail!("the gateway is not healthy"),
+    };
+    let ok = response.starts_with(b"HTTP/1.0 200") || response.starts_with(b"HTTP/1.1 200");
+    if ready {
+        let body = response
+            .windows(4)
+            .position(|w| w == b"\r\n\r\n")
+            .and_then(|at| response.get(at + 4..));
+        if let Some(body) = body {
+            say!("{}", String::from_utf8_lossy(body).trim_end());
+        }
+        anyhow::ensure!(ok, "the gateway is not ready");
+        return Ok(());
     }
+    anyhow::ensure!(ok, "the gateway is not healthy");
+    Ok(())
 }
 
 async fn shutdown_signal() {
@@ -446,10 +470,51 @@ mod tests {
             stream.write_all(b"HTTP/1.1 200 OK\r\n\r\n").await.unwrap();
             String::from_utf8_lossy(&request[..n]).into_owned()
         });
-        healthcheck(&source(&format!("0.0.0.0:{port}")))
+        healthcheck(&source(&format!("0.0.0.0:{port}")), false)
             .await
             .unwrap();
         assert!(gateway.await.unwrap().starts_with("GET /healthz "));
+    }
+
+    async fn answering(status: &'static str) -> (u16, tokio::task::JoinHandle<String>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let gateway = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = [0u8; 64];
+            let n = stream.read(&mut request).await.unwrap();
+            stream
+                .write_all(
+                    format!("HTTP/1.1 {status}\r\ncontent-type: application/json\r\n\r\n{{\"status\":\"x\"}}")
+                        .as_bytes(),
+                )
+                .await
+                .unwrap();
+            String::from_utf8_lossy(&request[..n]).into_owned()
+        });
+        (port, gateway)
+    }
+
+    #[tokio::test]
+    async fn the_ready_check_asks_readyz_and_passes_only_on_a_200() {
+        let (port, gateway) = answering("200 OK").await;
+        healthcheck(&source(&format!("0.0.0.0:{port}")), true)
+            .await
+            .unwrap();
+        assert!(gateway.await.unwrap().starts_with("GET /readyz "));
+
+        let (port, gateway) = answering("503 Service Unavailable").await;
+        let err = healthcheck(&source(&format!("0.0.0.0:{port}")), true)
+            .await
+            .unwrap_err();
+        assert_eq!(err.to_string(), "the gateway is not ready");
+        assert!(gateway.await.unwrap().starts_with("GET /readyz "));
+
+        let (port, _) = answering("503 Service Unavailable").await;
+        let err = healthcheck(&source(&format!("0.0.0.0:{port}")), false)
+            .await
+            .unwrap_err();
+        assert_eq!(err.to_string(), "the gateway is not healthy");
     }
 
     #[tokio::test]
@@ -457,9 +522,13 @@ mod tests {
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
         drop(listener);
-        let err = healthcheck(&source(&format!("0.0.0.0:{port}")))
+        let err = healthcheck(&source(&format!("0.0.0.0:{port}")), false)
             .await
             .unwrap_err();
         assert_eq!(err.to_string(), "the gateway is not healthy");
+        let err = healthcheck(&source(&format!("0.0.0.0:{port}")), true)
+            .await
+            .unwrap_err();
+        assert_eq!(err.to_string(), "the gateway is not ready");
     }
 }

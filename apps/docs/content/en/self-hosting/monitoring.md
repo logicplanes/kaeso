@@ -18,8 +18,15 @@ The gateway reports its health on two endpoints, serves Prometheus metrics on a 
 Both endpoints are on the gateway's port 8080. Caddy routes only `/v1/`, `/v1beta/`, `/v2/`, `/platform/`, `/mcp`, `/mcp/`, `/oauth/` and `/.well-known/oauth-` there, so on your domain these paths reach the console. The gateway's container health check calls `/healthz`, and `docker compose ps` shows the result. To read `/readyz` on the server:
 
 ```bash
-docker compose exec console wget -qO- http://gateway:8080/readyz
+docker compose exec gateway kaeso healthcheck --ready
 ```
+
+The gateway's image has no shell or `curl`, so a platform that probes by running a command inside the container uses `kaeso healthcheck`:
+
+| Command | Asks | Exits 0 | Suits |
+| --- | --- | --- | --- |
+| `kaeso healthcheck` | `/healthz` | while the process answers | a liveness check, which restarts the container: a database outage must not restart every gateway |
+| `kaeso healthcheck --ready` | `/readyz`, and prints its answer | on `ready` and `degraded`, not on `not_ready` | a readiness check, which keeps traffic away from a gateway that can't reach PostgreSQL or Valkey |
 
 ## Metrics
 
