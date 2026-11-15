@@ -405,7 +405,7 @@ const messages = (): Rule[] => [
   rule("errors.mcp.clientId", () => t("errors.mcp.clientId", "`client_id` must be 1 to 2048 characters.")),
   rule("errors.mcp.perPerson", () => t("errors.mcp.perPerson", "Each person connects their own account to this server, under Account › Connections.")),
   rule("errors.mcp.personSignsIn", () => t("errors.mcp.personSignsIn", "A person signs in to an MCP server; start it from a console session.")),
-  rule("errors.tools.personCalls", () => t("errors.tools.personCalls", "A person calls tools from the Playground; use a console session.")),
+  rule("errors.tools.personCalls", () => t("errors.tools.personCalls", "Only a person calls tools; use a session, an agent or a member's key.")),
   rule("errors.tools.unavailable", () => t("errors.tools.unavailable", "Kaeso can't load this project's tools right now; try again shortly.")),
   rule("errors.notifications.invalidLink", () =>
     t("errors.notifications.invalidLink", "This unsubscribe link is invalid; choose your emails under Account › Notifications."),

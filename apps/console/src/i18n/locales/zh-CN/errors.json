@@ -676,7 +676,7 @@
   "errors.toolCalls.status": "`status` 必须是 `ok`、`error` 或 `refused`。",
   "errors.limits.toolCallRateModel": "工具调用速率统计所有工具；请省略 `model`。",
   "errors.notFound.toolCall": "工具调用不存在，或您无权查看。",
-  "errors.tools.personCalls": "工具由人在 Playground 中调用；请使用控制台会话。",
+  "errors.tools.personCalls": "只有人才能调用工具；请使用会话、智能体或成员的密钥。",
   "errors.tools.unavailable": "Kaeso 暂时无法加载此项目的工具；请稍后重试。",
   "errors.notifications.invalidLink": "此退订链接无效；请在“账户 › 通知”中选择您的邮件。",
   "errors.notifications.unknownKind": "`{kind}` 不是一种邮件。",

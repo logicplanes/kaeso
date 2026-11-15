@@ -243,7 +243,7 @@ Ein wirksames Recht nennt seine Quellen:
 
 ## Playground
 
-Der [Playground](../console/playground.md) der Konsole sendet Anfragen an die Modelle des Projekts als das angemeldete Mitglied. Seine Routen unter `playground/` brauchen eine Sitzung und das Projektrecht `playground.use`. Schlüssel beantworten sie mit 403, denn Apps rufen Modelle auf `/v1` auf. Ein Tool des Projekts aus ihm aufzurufen braucht `playground.use` und `tools.use` und eine Person hinter der Anfrage: eine Sitzung, einen Agenten oder den Schlüssel eines Mitglieds.
+Der [Playground](../console/playground.md) der Konsole sendet Anfragen an die Modelle des Projekts als das angemeldete Mitglied. Seine Routen unter `playground/` brauchen eine Sitzung und das Projektrecht `playground.use`. Schlüssel beantworten sie mit 403, denn Apps rufen Modelle auf `/v1` auf. Ein Tool des Projekts über `tools/{tool}/call` aufzurufen braucht `playground.use` und `tools.use` und eine Person hinter der Anfrage: eine Sitzung, einen Agenten oder den Schlüssel eines Mitglieds.
 
 | Route | Tut |
 | --- | --- |
@@ -256,7 +256,7 @@ Der [Playground](../console/playground.md) der Konsole sendet Anfragen an die Mo
 | `POST orgs/{org}/projects/{project}/playground/decisions` | Nimmt den Body von [`/v1/systemone`](decisions.md), als JSON oder Multipart, für jedes Modell mit `decisions`. Kaeso sendet ihn in dem Format, das der Anbieter des Modells annimmt, und antwortet im Format von System One: `answers` unter dem Schlüssel jeder Frage, mit `usage`. |
 | `POST orgs/{org}/projects/{project}/tools/{tool}/call` | Ruft ein Tool des Projekts mit `arguments` über das Portal des Projekts auf, als der Aufrufer. Das Tool muss eingeschaltet und freigegeben sein, der Tool-Zugriff des Aufrufers und die Raten für Tool-Aufrufe gelten, und der Aufruf wird mit der Quelle `playground` protokolliert. Antwortet mit dem `result` des Tools oder mit `error`, wenn der Aufruf abgelehnt wurde. |
 
-Die Anfrage nimmt `model`, `input` (ein String oder Input-Items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary`, `tools` und `stream`, das `true` sein muss. `tools` enthält Responses-`function`-Tools, die das Modell aufrufen darf, und der Playground führt einen Aufruf nur auf Wunsch aus. `headers` sendet bis zu 20 Header wie eine App, für die Bedingungen und Aufteilungen einer Route, keine mit Zugangsdaten. `route` probiert eine Route aus, statt `model` aufzulösen, das dann ihren Alias nennt, und `alias` nennt den gespeicherten Alias, den `route` bearbeitet. Mit einer [Sitzung](automation.md#stattdessen-eine-sitzung-verwenden):
+Die Anfrage nimmt `model`, `input` (ein String oder Input-Items), `instructions`, `temperature`, `top_p`, `max_output_tokens`, `reasoning.effort`, `reasoning.summary`, `tools` und `stream`, das `true` sein muss. `tools` enthält Responses-`function`-Tools, die das Modell aufrufen darf; ihre Aufrufe kommen im Stream zurück, und Kaeso führt sie nicht aus. `headers` sendet bis zu 20 Header wie eine App, für die Bedingungen und Aufteilungen einer Route, keine mit Zugangsdaten. `route` probiert eine Route aus, statt `model` aufzulösen, das dann ihren Alias nennt, und `alias` nennt den gespeicherten Alias, den `route` bearbeitet. Mit einer [Sitzung](automation.md#stattdessen-eine-sitzung-verwenden):
 
 ```bash
 project=https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…

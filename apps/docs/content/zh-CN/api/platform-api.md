@@ -243,7 +243,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 ## 试验场
 
-控制台的[试验场](../console/playground.md)以已登录成员的身份向项目的模型发送请求。它在 `playground/` 下的路由都需要会话和项目权限 `playground.use`。它们对密钥返回 403，因为应用在 `/v1` 上调用模型。从试验场调用项目的工具需要 `playground.use` 和 `tools.use`，并且请求背后必须是一个人：会话、智能体或成员的密钥。
+控制台的[试验场](../console/playground.md)以已登录成员的身份向项目的模型发送请求。它在 `playground/` 下的路由都需要会话和项目权限 `playground.use`。它们对密钥返回 403，因为应用在 `/v1` 上调用模型。通过 `tools/{tool}/call` 调用项目的工具需要 `playground.use` 和 `tools.use`，并且请求背后必须是一个人：会话、智能体或成员的密钥。
 
 | 路由 | 作用 |
 | --- | --- |
@@ -256,7 +256,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | `POST orgs/{org}/projects/{project}/playground/decisions` | 接受 [`/v1/systemone`](decisions.md) 的请求体（JSON 或 multipart），适用于任何带 `decisions` 的模型。Kaeso 以模型服务商接受的格式发送它，并以 System One 的格式响应：每个问题的键下是其 `answers`，另附 `usage`。 |
 | `POST orgs/{org}/projects/{project}/tools/{tool}/call` | 以调用者的身份，通过项目的门户用 `arguments` 调用项目的一个工具。该工具必须已开启并已批准，调用者的工具访问范围和工具调用速率都适用，调用会以来源 `playground` 记录。响应中包含工具的 `result`，调用被拒绝时则包含 `error`。 |
 
-请求接受 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary`、`tools` 和必须为 `true` 的 `stream`。`tools` 包含模型可以调用的 Responses `function` 工具，试验场只在被要求时才执行调用。`headers` 像应用一样发送最多 20 个请求头，供路由的条件和分流读取，不能包含凭据。`route` 用于试用一条路由而不解析 `model`，此时 `model` 指明其别名；`alias` 指明 `route` 编辑的已保存别名。使用[会话](automation.md#改用会话)：
+请求接受 `model`、`input`（字符串或输入项）、`instructions`、`temperature`、`top_p`、`max_output_tokens`、`reasoning.effort`、`reasoning.summary`、`tools` 和必须为 `true` 的 `stream`。`tools` 包含模型可以调用的 Responses `function` 工具；它们的调用会在流中返回，Kaeso 不会执行。`headers` 像应用一样发送最多 20 个请求头，供路由的条件和分流读取，不能包含凭据。`route` 用于试用一条路由而不解析 `model`，此时 `model` 指明其别名；`alias` 指明 `route` 编辑的已保存别名。使用[会话](automation.md#改用会话)：
 
 ```bash
 project=https://kaeso.example.com/platform/v1/orgs/org_…/projects/proj_…

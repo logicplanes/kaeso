@@ -751,7 +751,7 @@ pub async fn revoke_grant(
 
 #[derive(Deserialize, ToSchema)]
 #[serde(deny_unknown_fields)]
-#[schema(description = "A tool call from the Playground.")]
+#[schema(description = "A call of one of the project's tools.")]
 pub struct PlaygroundToolCall {
     #[doc = "The arguments, as the model wrote them."]
     #[serde(default)]
@@ -773,7 +773,7 @@ pub struct PlaygroundToolAnswer {
 #[utoipa::path(
     post,
     path = "/orgs/{org}/projects/{project}/tools/{tool}/call",
-    summary = "Calls one of the project's tools from the Playground, as you.",
+    summary = "Calls one of the project's tools, as you.",
     description = "The call goes through the project's portal like any client's: the tool must be\n\
     on and approved, your tool access and the tool call rates apply, and the call is logged with\n\
     the source `playground`. Needs `playground.use` too.",
@@ -797,7 +797,7 @@ pub async fn call_tool(
     }
     let user = ctx.acting_user().ok_or_else(|| {
         ApiError::Conflict(
-            "A person calls tools from the Playground; use a console session.".into(),
+            "Only a person calls tools; use a session, an agent or a member's key.".into(),
         )
     })?;
     let id: ToolId = tool.parse().map_err(|_| ApiError::not_found("tool"))?;
