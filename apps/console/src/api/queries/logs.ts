@@ -29,6 +29,8 @@ export interface LogFilters {
   min_cost?: string;
   /** The model or alias name exactly as the app sent it. */
   requested_model?: string;
+  response_cache?: "hit" | "miss" | "bypass";
+  min_duration_ms?: number;
 }
 
 /** Every endpoint the request log names, as the gateway's `endpoint` filter takes them. */
@@ -84,7 +86,7 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.model ? { model: f.model } : {}),
     ...(f.provider ? { provider: f.provider } : {}),
     ...(f.status ? { status: f.status } : {}),
-    ...(f.failed ? { failed: true } : {}),
+    ...(f.failed !== undefined ? { failed: f.failed } : {}),
     ...(f.error ? { error_kind: f.error } : {}),
     ...(f.stream !== undefined ? { stream: f.stream } : {}),
     ...(f.source ? { source: f.source } : {}),
@@ -96,6 +98,8 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.endpoint ? { endpoint: f.endpoint as LoggedEndpoint } : {}),
     ...(f.min_cost ? { min_cost: f.min_cost } : {}),
     ...(f.requested_model ? { requested_model: f.requested_model } : {}),
+    ...(f.response_cache ? { response_cache: f.response_cache } : {}),
+    ...(f.min_duration_ms ? { min_duration_ms: f.min_duration_ms } : {}),
   };
 }
 

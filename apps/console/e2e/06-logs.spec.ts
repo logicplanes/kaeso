@@ -46,10 +46,11 @@ test("requests through the gateway appear in the log, filter, and open in the in
   }).toPass({ timeout: 30_000 });
 
   await page.getByRole("button", { name: "Add filter" }).click();
-  await page.getByRole("menuitem", { name: "Failed only" }).click();
+  await page.getByRole("menuitem", { name: "Outcome" }).click();
+  await page.getByRole("menuitemradio", { name: "Failed" }).click();
   await expect(rows(page)).toHaveCount(1);
   await expect(rows(page).first().getByText(String(failed), { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Remove the Failed only filter" }).click();
+  await page.getByRole("button", { name: "Remove the Outcome filter" }).click();
   await expect(rows(page)).toHaveCount(2);
 
   await rows(page).filter({ hasText: "200" }).click();

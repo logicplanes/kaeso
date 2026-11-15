@@ -50,7 +50,6 @@
   "logs.filter.any": "beliebig",
   "logs.filter.appFormat": "Format der App",
   "logs.filter.error": "Fehlerart",
-  "logs.filter.failed": "Nur fehlgeschlagene",
   "logs.filter.is": "ist",
   "logs.filter.key": "Schlüssel",
   "logs.filter.member": "Mitglied",
@@ -285,5 +284,13 @@
   "logs.filter.fellBack": "Zurückgefallen",
   "logs.filter.endpoint": "Endpunkt",
   "logs.filter.minCost": "Kosten ab",
-  "logs.filter.requestedModel": "Angefragtes Modell"
+  "logs.filter.requestedModel": "Angefragtes Modell",
+  "logs.filter.outcome": "Ergebnis",
+  "logs.filter.outcomeFailed": "Fehlgeschlagen",
+  "logs.filter.outcomeSucceeded": "Erfolgreich",
+  "logs.filter.responseCache": "Antwort-Cache",
+  "logs.filter.cacheHit": "Aus dem Cache beantwortet",
+  "logs.filter.cacheMiss": "An den Anbieter gesendet",
+  "logs.filter.cacheBypass": "Am Cache vorbei",
+  "logs.filter.slowerThan": "Langsamer als"
 }

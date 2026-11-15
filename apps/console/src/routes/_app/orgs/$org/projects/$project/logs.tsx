@@ -22,6 +22,8 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
   const to = parseDay(s.to);
   const status = Number(s.status);
   const stream = bool(s.stream);
+  const failed = bool(s.failed);
+  const slower = Number(s.min_duration_ms);
   const cost = minCost(s.min_cost);
   const out: LogsSearch = {
     ...(typeof s.range === "string" && RANGES.has(s.range) ? { range: s.range as LogRange } : {}),
@@ -31,7 +33,7 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...text("model", s.model),
     ...text("provider", s.provider),
     ...(Number.isInteger(status) && status >= 100 && status < 600 ? { status } : {}),
-    ...(bool(s.failed) ? { failed: true } : {}),
+    ...(failed !== undefined ? { failed } : {}),
     ...text("error", s.error),
     ...(stream !== undefined ? { stream } : {}),
     ...(s.source === "api" || s.source === "playground" ? { source: s.source } : {}),
@@ -41,6 +43,8 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...(bool(s.fell_back) ? { fell_back: true } : {}),
     ...text("endpoint", s.endpoint),
     ...text("requested_model", s.requested_model),
+    ...(s.response_cache === "hit" || s.response_cache === "miss" || s.response_cache === "bypass" ? { response_cache: s.response_cache } : {}),
+    ...(Number.isInteger(slower) && slower > 0 ? { min_duration_ms: slower } : {}),
     ...(cost ? { min_cost: cost } : {}),
     ...text("log", s.log),
     ...(s.kind === "tools" ? { kind: "tools" as const } : {}),

@@ -2,7 +2,7 @@ import type { ExportFile } from "~/api/download";
 import { logsParams, toolCallParams, type LogFilters, type ToolCallFilters } from "~/api/queries/logs";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { fullDayLabel } from "~/format/period";
-import { formatPrice } from "@logicplanes/kaeso-ui/format";
+import { formatDuration, formatPrice } from "@logicplanes/kaeso-ui/format";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -29,6 +29,15 @@ export function exportSummary(f: LogFilters): string {
 
 export type ExportNames = { key?: string | undefined; member?: string | undefined; model?: string | undefined; provider?: string | undefined };
 
+export const outcomeLabel = (failed: boolean): string => (failed ? t("logs.filter.outcomeFailed", "Failed") : t("logs.filter.outcomeSucceeded", "Succeeded"));
+
+export const cacheLabel = (verdict: "hit" | "miss" | "bypass"): string =>
+  ({
+    hit: t("logs.filter.cacheHit", "Answered from the cache"),
+    miss: t("logs.filter.cacheMiss", "Sent to the provider"),
+    bypass: t("logs.filter.cacheBypass", "Passed the cache by"),
+  })[verdict];
+
 export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: string; value: string }[] {
   const filters: { label: string; value: string | false | undefined }[] = [
     { label: t("logs.filter.key", "Key"), value: f.key && (names.key ?? f.key) },
@@ -39,7 +48,9 @@ export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: 
     { label: t("logs.filter.appFormat", "App format"), value: f.ingress && dialectLabel(f.ingress) },
     { label: t("logs.filter.providerFormat", "Provider format"), value: f.egress && dialectLabel(f.egress) },
     { label: common.status(), value: f.status !== undefined && String(f.status) },
-    { label: t("logs.filter.failed", "Failed only"), value: !!f.failed && common.yes() },
+    { label: t("logs.filter.outcome", "Outcome"), value: f.failed !== undefined && outcomeLabel(f.failed) },
+    { label: t("logs.filter.responseCache", "Response cache"), value: f.response_cache && cacheLabel(f.response_cache) },
+    { label: t("logs.filter.slowerThan", "Slower than"), value: !!f.min_duration_ms && formatDuration(f.min_duration_ms) },
     { label: t("logs.filter.error", "Error kind"), value: f.error && errorKindLabel(f.error) },
     {
       label: t("logs.filter.streaming", "Streaming"),

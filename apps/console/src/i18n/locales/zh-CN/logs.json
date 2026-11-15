@@ -50,7 +50,6 @@
   "logs.filter.any": "任意",
   "logs.filter.appFormat": "应用格式",
   "logs.filter.error": "错误类型",
-  "logs.filter.failed": "仅失败",
   "logs.filter.is": "为",
   "logs.filter.key": "密钥",
   "logs.filter.member": "成员",
@@ -285,5 +284,13 @@
   "logs.filter.fellBack": "已回退",
   "logs.filter.endpoint": "端点",
   "logs.filter.minCost": "费用至少",
-  "logs.filter.requestedModel": "请求的模型"
+  "logs.filter.requestedModel": "请求的模型",
+  "logs.filter.outcome": "结果",
+  "logs.filter.outcomeFailed": "失败",
+  "logs.filter.outcomeSucceeded": "成功",
+  "logs.filter.responseCache": "响应缓存",
+  "logs.filter.cacheHit": "由缓存应答",
+  "logs.filter.cacheMiss": "已发送给服务商",
+  "logs.filter.cacheBypass": "未经过缓存",
+  "logs.filter.slowerThan": "慢于"
 }

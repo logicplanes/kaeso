@@ -6,7 +6,7 @@ import { useModelGroups } from "@logicplanes/kaeso-ui/playground";
 import { isApiError } from "~/api/errors";
 import { ENDPOINTS, logsInfiniteQuery, type LogFilters } from "~/api/queries/logs";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
-import { formatPrice } from "@logicplanes/kaeso-ui/format";
+import { formatDuration, formatPrice } from "@logicplanes/kaeso-ui/format";
 import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviderFilterOptions, useProviders } from "~/kaeso/providers";
@@ -16,6 +16,7 @@ import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
 import { COLUMNS, columnLabel, logColumns, logsLayout, providerInModel, storeColumns, storedColumns, type ColumnId } from "./columns";
 import { ExportDialog } from "./export-dialog";
+import { cacheLabel, outcomeLabel } from "./export";
 import { useLiveLogs } from "./live";
 import { LogInspector } from "./log-inspector";
 import { KindSwitch } from "./tool-calls";
@@ -52,7 +53,7 @@ export type LogsSearch = LogFilters & {
 const STATUSES = [200, 400, 401, 403, 404, 408, 413, 422, 429, 499, 500, 502, 503, 504, 529];
 // Amounts a request may cost at least, in USD, from a cent upwards.
 const MIN_COSTS = ["0.01", "0.1", "1", "10"];
-type FlagFilterId = "failed" | "fell_back";
+type FlagFilterId = "fell_back";
 type FilterId =
   | "key"
   | "member"
@@ -68,9 +69,12 @@ type FilterId =
   | "stream"
   | "source"
   | "min_cost"
+  | "failed"
+  | "response_cache"
+  | "min_duration_ms"
   | FlagFilterId;
 type ChoiceFilterId = Exclude<FilterId, FlagFilterId>;
-const isChoice = (id: string): id is ChoiceFilterId => id !== "failed" && id !== "fell_back";
+const isChoice = (id: string): id is ChoiceFilterId => id !== "fell_back";
 const FILTER_IDS: FilterId[] = [
   "key",
   "member",
@@ -87,8 +91,13 @@ const FILTER_IDS: FilterId[] = [
   "error",
   "stream",
   "source",
+  "response_cache",
+  "min_duration_ms",
   "min_cost",
 ];
+// Durations a request may take at least, in milliseconds.
+const SLOWER_THAN = [1_000, 5_000, 10_000, 30_000, 60_000];
+const VERDICTS = ["hit", "miss", "bypass"] as const;
 const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPatch<LogsSearch> } = {
   key: (key) => ({ key }),
   member: (member) => ({ member }),
@@ -100,6 +109,9 @@ const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPa
   alias: (alias) => ({ alias }),
   endpoint: (endpoint) => ({ endpoint }),
   min_cost: (min_cost) => ({ min_cost }),
+  failed: (v) => ({ failed: v === undefined ? undefined : v === "true" }),
+  response_cache: (v) => ({ response_cache: VERDICTS.find((c) => c === v) }),
+  min_duration_ms: (v) => ({ min_duration_ms: v ? Number(v) : undefined }),
   error: (error) => ({ error }),
   status: (v) => ({ status: v ? Number(v) : undefined }),
   stream: (v) => ({ stream: v === undefined ? undefined : v === "true" }),
@@ -115,7 +127,9 @@ const filterLabel = (id: FilterId): string =>
     ingress: t("logs.filter.appFormat", "App format"),
     egress: t("logs.filter.providerFormat", "Provider format"),
     status: common.status(),
-    failed: t("logs.filter.failed", "Failed only"),
+    failed: t("logs.filter.outcome", "Outcome"),
+    response_cache: t("logs.filter.responseCache", "Response cache"),
+    min_duration_ms: t("logs.filter.slowerThan", "Slower than"),
     error: t("logs.filter.error", "Error kind"),
     stream: t("logs.filter.streaming", "Streaming"),
     source: t("logs.filter.source", "Source"),
@@ -212,27 +226,37 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
                     ? ENDPOINTS.map((e) => ({ value: e, label: e }))
                     : id === "min_cost"
                       ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
-                      : id === "stream"
+                      : id === "failed"
                         ? [
-                            { value: "true", label: t("logs.filter.streamed", "Streamed") },
-                            { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                            { value: "true", label: outcomeLabel(true) },
+                            { value: "false", label: outcomeLabel(false) },
                           ]
-                        : [
-                            { value: "api", label: "API" },
-                            { value: "playground", label: t("logs.source.playground", "Playground") },
-                          ];
-  const current = (id: ChoiceFilterId): string | undefined =>
-    id === "status"
-      ? filters.status
-        ? String(filters.status)
-        : undefined
-      : id === "stream"
-        ? filters.stream === undefined
-          ? undefined
-          : String(filters.stream)
-        : filters[id];
+                        : id === "response_cache"
+                          ? VERDICTS.map((v) => ({ value: v, label: cacheLabel(v) }))
+                          : id === "min_duration_ms"
+                            ? SLOWER_THAN.map((ms) => ({ value: String(ms), label: formatDuration(ms) }))
+                            : id === "stream"
+                              ? [
+                                  { value: "true", label: t("logs.filter.streamed", "Streamed") },
+                                  { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                                ]
+                              : [
+                                  { value: "api", label: "API" },
+                                  { value: "playground", label: t("logs.source.playground", "Playground") },
+                                ];
+  const current = (id: ChoiceFilterId): string | undefined => {
+    const v = filters[id];
+    return v === undefined ? undefined : String(v);
+  };
+  // A duration from the URL that isn't one of the presets, such as an hour's 95th percentile.
   const valueLabel = (id: ChoiceFilterId, value: string): ReactNode =>
-    id === "model" ? modelLabel(value) : id === "provider" ? catalog.name(value) : (choice(id).find((c) => c.value === value)?.label ?? value);
+    id === "model"
+      ? modelLabel(value)
+      : id === "provider"
+        ? catalog.name(value)
+        : id === "min_duration_ms"
+          ? formatDuration(Number(value))
+          : (choice(id).find((c) => c.value === value)?.label ?? value);
   const filterDefs: FilterDef[] = FILTER_IDS.map((id) =>
     !isChoice(id)
       ? { id, label: filterLabel(id), flag: true, value: filters[id] ? "true" : undefined }

@@ -229,7 +229,7 @@ describe("LogsPage", () => {
     expect(within(toolbar).getByRole("group", { name: "Filter: App format" })).toHaveTextContent("OpenAI Responses");
     expect(within(toolbar).getByRole("group", { name: "Filter: Provider format" })).toHaveTextContent("Anthropic Messages");
     expect(within(toolbar).getByRole("group", { name: "Filter: Status" })).toHaveTextContent("429");
-    expect(within(toolbar).getByRole("group", { name: "Filter: Failed only" })).toHaveTextContent("yes");
+    expect(within(toolbar).getByRole("group", { name: "Filter: Outcome" })).toHaveTextContent("Failed");
     expect(within(toolbar).getByRole("group", { name: "Filter: Error kind" })).toHaveTextContent("Rate limited");
     expect(within(toolbar).getByRole("group", { name: "Filter: Streaming" })).toHaveTextContent("Not streamed");
     expect(within(toolbar).getByRole("group", { name: "Filter: Source" })).toHaveTextContent("Playground");
@@ -246,7 +246,7 @@ describe("LogsPage", () => {
     expect(lastQuery()).toMatchObject({ user: "usr_grace", failed: "true" });
     await user.click(screen.getByRole("button", { name: "Remove the Member filter" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ failed: true }));
-    await user.click(screen.getByRole("button", { name: "Remove the Failed only filter" }));
+    await user.click(screen.getByRole("button", { name: "Remove the Outcome filter" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
     expect(await screen.findByText("No requests in this range")).toBeInTheDocument();
     expect(lastQuery().user).toBeUndefined();
@@ -300,12 +300,13 @@ describe("LogsPage", () => {
 
     await screen.findByRole("row", { name: /key_web/ });
     await user.click(screen.getByRole("button", { name: "Add filter" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Failed only" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Outcome" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Failed" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ failed: true }));
 
     await user.click(screen.getByRole("button", { name: "Add filter" }));
     const menu = await screen.findByRole("menu", { name: "Add filter" });
-    expect(within(menu).queryByRole("menuitem", { name: "Failed only" })).not.toBeInTheDocument();
+    expect(within(menu).queryByRole("menuitem", { name: "Outcome" })).not.toBeInTheDocument();
     await user.click(within(menu).getByRole("menuitem", { name: "Provider" }));
     await user.click(await screen.findByRole("option", { name: "OpenAI" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ failed: true, provider: "openai" }));
@@ -373,6 +374,37 @@ describe("LogsPage", () => {
     expect(screen.getByRole("menuitemradio", { name: "claude-sonnet-4-5" })).toBeInTheDocument();
     await user.click(screen.getByRole("menuitemradio", { name: "anthropic/claude-sonnet-4-5" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ requested_model: "anthropic/claude-sonnet-4-5" }));
+  });
+
+  it("narrows to the requests that worked, the response cache's answers and slow requests", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs?failed=false&response_cache=hit&min_duration_ms=2345"));
+
+    await waitFor(() => expect(lastQuery()).toMatchObject({ failed: "false", response_cache: "hit", min_duration_ms: "2345" }));
+    const toolbar = screen.getByRole("toolbar", { name: "Filter requests" });
+    expect(within(toolbar).getByRole("group", { name: "Filter: Outcome" })).toHaveTextContent("Succeeded");
+    expect(within(toolbar).getByRole("group", { name: "Filter: Response cache" })).toHaveTextContent("Answered from the cache");
+    expect(within(toolbar).getByRole("group", { name: "Filter: Slower than" })).toHaveTextContent("2.3 s");
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Slower than filter" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Slower than" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "10 s" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ failed: false, response_cache: "hit", min_duration_ms: 10000 }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ min_duration_ms: "10000" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Fell back" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ fell_back: true }));
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Response cache filter" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Response cache" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Sent to the provider" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ response_cache: "miss" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Cost at least" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "$1.00" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ min_cost: "1" }));
   });
 
   it("ignores a cost in the URL that isn't an amount", async () => {
@@ -1046,7 +1078,7 @@ describe("Export dialog", () => {
     const dialog = await screen.findByRole("dialog", { name: "Export requests" });
     expect(dialog).toHaveTextContent("Every request from the last 24 hours that matches these filters, newest first.");
     expect([...dialog.querySelectorAll("dt")].map((dt) => [dt.textContent, dt.nextElementSibling?.textContent])).toEqual([
-      ["Failed only", "Yes"],
+      ["Outcome", "Failed"],
       ["Streaming", "Streamed"],
       ["Source", "API"],
     ]);
