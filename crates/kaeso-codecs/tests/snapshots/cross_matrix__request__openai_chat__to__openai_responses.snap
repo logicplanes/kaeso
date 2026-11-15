@@ -4174,6 +4174,168 @@ expression: outcomes
     },
     "path": "/v1/responses"
   },
+  "providers/upstage/greeting-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi, how are you?",
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/upstage/greeting-reasoning-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi, how are you?",
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/upstage/invalid-api-key": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi",
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/upstage/reasoning-medium-doc": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "An $80 item gets a 20% discount, then 10% tax is added. What is the final price? Answer with only the dollar amount.",
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "reasoning": {
+        "effort": "medium"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
+  },
+  "providers/upstage/reasoning-stream-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Hi, how are you?",
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
+  },
+  "providers/upstage/structured-output-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "Classify this urgent support ticket and draft a short reply: I was charged twice for my subscription.",
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "store": false,
+      "text": {
+        "format": {
+          "name": "support_ticket",
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "description": "The topic the ticket belongs to.",
+                "enum": [
+                  "billing",
+                  "technical",
+                  "account"
+                ],
+                "type": "string"
+              },
+              "reply": {
+                "description": "A short reply to send to the customer.",
+                "type": "string"
+              },
+              "urgent": {
+                "description": "Whether the ticket needs an immediate response.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "category",
+              "urgent",
+              "reply"
+            ],
+            "type": "object"
+          },
+          "strict": true,
+          "type": "json_schema"
+        }
+      }
+    },
+    "path": "/v1/responses"
+  },
+  "providers/upstage/tools-doc": {
+    "body": {
+      "input": [
+        {
+          "content": "What's the weather like in Seoul?",
+          "role": "user"
+        }
+      ],
+      "model": "solar-pro4",
+      "parallel_tool_calls": false,
+      "store": false,
+      "tool_choice": "auto",
+      "tools": [
+        {
+          "description": "Get the current weather in a given location",
+          "name": "get_current_weather",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "description": "The city and state, e.g. San Francisco, CA",
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "location"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "providers/vercel/basic": {
     "body": {
       "input": [

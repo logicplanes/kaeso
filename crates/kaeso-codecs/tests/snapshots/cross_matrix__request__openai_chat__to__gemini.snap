@@ -5238,6 +5238,137 @@ expression: outcomes
     },
     "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4-Flash-0731:generateContent"
   },
+  "providers/upstage/greeting-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi, how are you?"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/solar-pro4:generateContent"
+  },
+  "providers/upstage/greeting-reasoning-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi, how are you?"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/solar-pro4:generateContent"
+  },
+  "providers/upstage/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/solar-pro4:generateContent"
+  },
+  "providers/upstage/reasoning-medium-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "An $80 item gets a 20% discount, then 10% tax is added. What is the final price? Answer with only the dollar amount."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      }
+    },
+    "path": "/v1beta/models/solar-pro4:generateContent"
+  },
+  "providers/upstage/reasoning-stream-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi, how are you?"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/solar-pro4:streamGenerateContent?alt=sse"
+  },
+  "providers/upstage/structured-output-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Classify this urgent support ticket and draft a short reply: I was charged twice for my subscription."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "responseJsonSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "category": {
+              "description": "The topic the ticket belongs to.",
+              "enum": [
+                "billing",
+                "technical",
+                "account"
+              ],
+              "type": "string"
+            },
+            "reply": {
+              "description": "A short reply to send to the customer.",
+              "type": "string"
+            },
+            "urgent": {
+              "description": "Whether the ticket needs an immediate response.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "category",
+            "urgent",
+            "reply"
+          ],
+          "type": "object"
+        },
+        "responseMimeType": "application/json"
+      }
+    },
+    "path": "/v1beta/models/solar-pro4:generateContent"
+  },
+  "providers/upstage/tools-doc": {
+    "message": "`parallel_tool_calls: false` is not supported by Gemini API. Gemini can't be told to call one function at a time; remove `parallel_tool_calls`.",
+    "param": "parallel_tool_calls",
+    "unsupported": "`parallel_tool_calls: false`"
+  },
   "providers/vercel/basic": {
     "body": {
       "contents": [

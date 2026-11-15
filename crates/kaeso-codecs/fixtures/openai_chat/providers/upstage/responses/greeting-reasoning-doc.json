@@ -1,0 +1,34 @@
+{
+  "id": "75c4def7-5cc8-43eb-9558-545009063a3b",
+  "object": "chat.completion",
+  "created": 1785952894,
+  "model": "solar-pro4-260806",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello! I'm doing well, thank you for asking. I'm an AI assistant, so I'm always ready to help you with whatever you need. How are you doing today? Is there anything specific I can assist you with?",
+        "reasoning": "The user is asking a simple greeting question. I should respond warmly and briefly.\n"
+      },
+      "logprobs": null,
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 57,
+    "completion_tokens": 66,
+    "total_tokens": 123,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 17,
+      "audio_tokens": 0,
+      "accepted_prediction_tokens": 0,
+      "rejected_prediction_tokens": 0
+    }
+  },
+  "system_fingerprint": null
+}

@@ -1,0 +1,20 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "index": 0,
+      "embedding": [
+        0.01850688,
+        -0.0066606696,
+        0.009938696,
+        0.006452979
+      ]
+    }
+  ],
+  "model": "solar-embedding-2-query",
+  "usage": {
+    "prompt_tokens": 21,
+    "total_tokens": 21
+  }
+}

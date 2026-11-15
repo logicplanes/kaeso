@@ -80,6 +80,7 @@ Kaeso 读取回复时的设置（`ChatProfile::reply`，即一个 `ReplyProfile`
 | SpaceX（`xai`） | `reasoning_fields(["reasoning_content"])`、`with_message_bookkeeping()`、`tool_schema_root(ToolSchemaRoot::ObjectUnions)` | xAI 的 Chat Completions 参考（`reasoning_content`）；xAI 的函数调用指南（对象根部或对象组成的联合）；Grok CLI（xAI 自己的客户端）在每个助手轮次都向它发送 `model_id`（`requests/grok-cli-model-id.json`）；`responses/recorded-reasoning-content` 和 `streams/recorded-reasoning-content-stream` |
 | Standard Compute（`standardcompute`） | `reasoning_fields(["reasoning"])` | Standard Compute 的 [Chat Completions](https://docs.standardcompute.com/api/chat-completions) 和[推理](https://docs.standardcompute.com/reasoning)页面，阅读于 2026-11-12；`streams/recorded-routed-reasoning-stream`（`delta.reasoning` 及 `reasoning_details`） |
 | Together AI（`togetherai`） | `reasoning_fields(["reasoning_content", "reasoning"])` | Together AI 的 chat completions 参考；键名取决于模型：`responses/recorded-sampling-extras`（`reasoning_content`），`responses/recorded-reasoning-reply` 和 `streams/recorded-reasoning-stream`（`reasoning`） |
+| Upstage（`upstage`） | `max_tokens()`、`system_role()`、`without_end_user()`、`reasoning_fields(["reasoning"])`；拒绝 `audio`、`function_call`、`functions`、`logit_bias`、`logprobs`、`metadata`、`modalities`、`prediction`、`prompt_cache_retention`、`seed`、`service_tier`、`stop`、`store`、`top_logprobs`、`verbosity` 和 `web_search_options` | Upstage 的 [API reference](https://console.upstage.ai/api/chat)（只有 `max_tokens`，角色为 `system`、`user`、`assistant` 和 `tool`，没有 `user` 或 `safety_identifier`，没有被拒绝的字段，消息和增量中带有 `reasoning`），2026-11-14 阅读；据此构建于 `fixtures/openai_chat/providers/upstage/` |
 | Vercel（`vercel`） | `reasoning_fields(["reasoning"])` | Vercel 的 Chat Completions 推理页面（`message.reasoning` 和 `delta.reasoning`，旁边还有 `reasoning_details`）；`responses/recorded-reasoning` 和 `streams/recorded-reasoning-stream` |
 
 ## 使用此格式的服务商
@@ -260,3 +261,20 @@ Cohere 自身 Chat API 的字段（`documents`、`citation_options`、`connector
 | `GET /v1/models` | `ModelList` | 该密钥可调用的模型，带 `created: 0` 和 `owned_by: "Cerebras"`；错误的密钥得到 401，因此模型检查能发现它。 |
 
 Cerebras 没有 Responses、Messages、embeddings 或 token 计数端点（都返回 404），因此 `embeddings` 和 `count_tokens` 为 `None`。
+
+### Upstage
+
+来源：Upstage 的 [API reference](https://console.upstage.ai/api/chat) 及其 [reasoning](https://console.upstage.ai/docs/capabilities/generate/reasoning)、[structured outputs](https://console.upstage.ai/docs/capabilities/generate/structured-outputs)、[tool calling](https://console.upstage.ai/docs/capabilities/generate/tool-calling) 和 [error codes](https://console.upstage.ai/docs/resources/error-codes) 页面，2026-11-14 阅读。未经成功调用测试：`fixtures/openai_chat/providers/upstage/` 中的回复和流是参考和指南中的示例，错误是在没有有效密钥的情况下实时返回的。Upstage 的指南把基础 URL 写作 `https://api.upstage.ai/v1`，因此 Kaeso 的基础 URL 为 `https://api.upstage.ai`，使用 `Authorization: Bearer`；较旧的 `/v1/solar/…` 路径仍然可用。韩国区域是主机 `kr.api.upstage.ai`，路径相同。
+
+| Upstage 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。除非 `reasoning_effort` 为 `low` 到 `max`，否则思考关闭；`none` 和 `minimal` 会关闭思考。 |
+| `max_completion_tokens` | `max_tokens` | 参考只有 `max_tokens`（`max_tokens()`）。 |
+| `developer` 角色 | `Role::System` | 参考列出 `system`、`user`、`assistant` 和 `tool`，因此 `system_role()` 发送 `system`。 |
+| 终端用户的 ID | 省略 | 参考没有 `user` 或 `safety_identifier`（`without_end_user()`）。 |
+| `stop`、`seed`、`logprobs`、`logit_bias`、`metadata`、`store` 以及参考未列出的其他字段 | 拒绝 | 文档没有说明 Upstage 会拒绝还是丢弃未声明的字段，因此配置拒绝它们。 |
+| 纯 UUID 形式的 `id`、`system_fingerprint: null`、`logprobs: null`、带日期快照的 `model` | 原样往返 | `responses/greeting-doc`。 |
+| 带 `param: ""` 的 401 `invalid_api_key` | `KppError` | 密钥被拒绝；缺少密钥时返回相同的正文（`errors/recorded-invalid-api-key`）。 |
+| `GET /v1/models` | `ModelList` | 需要密钥且不在参考中，因此列表不完整；没有 `GET /v1/models/{model}`（404 `text/plain`）。 |
+
+Upstage 还提供无状态的 Responses API 和 Anthropic Messages 端点，Kaeso 不使用它们：Responses 和 Anthropic 应用通过 Chat Completions 访问 Upstage。它没有 Token 计数，因此 Kaeso 拒绝 Token 计数。它的嵌入使用 OpenAI 的形式（[OpenAI Embeddings](openai-embeddings.md#upstage)）；它的文档解析和 OCR API 不是 OpenAI 格式。

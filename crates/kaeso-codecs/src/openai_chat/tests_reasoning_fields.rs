@@ -85,6 +85,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
             .reasoning_fields(&["reasoning_content", "reasoning"]),
     ),
     (
+        "upstage",
+        ChatProfile::compatible("Upstage").reasoning_fields(&["reasoning"]),
+    ),
+    (
         "xai",
         ChatProfile::compatible("SpaceX").reasoning_fields(&["reasoning_content"]),
     ),
@@ -261,6 +265,9 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
             "recorded-sampling-extras",
             "reasoning_content",
         ),
+        ("upstage", "greeting-reasoning-doc", "reasoning"),
+        ("upstage", "reasoning-medium-doc", "reasoning"),
+        ("upstage", "structured-output-doc", "reasoning"),
         ("xai", "recorded-reasoning-content", "reasoning_content"),
     ];
     for (provider, name, field) in cases {
@@ -620,6 +627,7 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
             "reasoning",
             &["reasoning 0", "stop 0"],
         ),
+        ("upstage", "reasoning-stream-doc", "reasoning", answered),
         (
             "xai",
             "recorded-reasoning-content-stream",

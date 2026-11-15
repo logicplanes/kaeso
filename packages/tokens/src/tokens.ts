@@ -166,6 +166,8 @@ export const providerMark = {
   perplexity: mode("#1ba2b4", "#1fb8cd"),
   "deepinfra-navy": mode("#2a3275", "#ffffff"),
   "deepinfra-blue": mode("#5699db", "#5699db"),
+  "upstage-lilac": mode("#738dff", "#b0bfff"),
+  "upstage-violet": mode("#805cfb", "#8968fb"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),

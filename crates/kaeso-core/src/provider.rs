@@ -2293,6 +2293,81 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
     },
+    Provider {
+        id: "upstage",
+        name: "Upstage",
+        // Keys are made on the console's API keys page; the getting-started guide shows one
+        // starting with `up_` only as an example (https://console.upstage.ai/docs/getting-started).
+        key_page: KeyPage {
+            url: "https://console.upstage.ai/api-keys",
+            label: "API keys",
+        },
+        key_prefix: None,
+        // Upstage's guides write the base URL as `https://api.upstage.ai/v1` and serve chat at
+        // `/v1/chat/completions` and embeddings at `/v1/embeddings` under the host
+        // (https://console.upstage.ai/api/chat). The Korea region, in closed beta, is another
+        // host with the same paths, `https://kr.api.upstage.ai`
+        // (https://console.upstage.ai/docs/guides/region-usage).
+        default_base_url: "https://api.upstage.ai",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        // Upstage counts tokens with a tokenizer it publishes, not an API
+        // (https://console.upstage.ai/docs/guides/counting-tokens).
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        // The embeddings reference documents only `model` and `input`; every vector has 1,024
+        // dimensions (https://console.upstage.ai/api/embeddings).
+        embeddings_profile: EmbeddingsProfile::compatible("Upstage").without_dimensions(),
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /v1/models` needs a key and isn't in the API reference; Upstage's own Claude Code
+        // script reads ids from it (https://console.upstage.ai/claude-solar.sh). Neither its
+        // shape nor whether it names every model is documented, so a model it leaves out is
+        // inconclusive, never unavailable.
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        // The chat request schema has only `max_tokens`, the roles `system`, `user`, `assistant`
+        // and `tool`, no end-user field, and none of the fields refused here; whether Upstage
+        // refuses an undeclared field isn't documented, so Kaeso refuses them rather than risk
+        // them being dropped. Thinking comes as `reasoning` (https://console.upstage.ai/api/chat).
+        chat: ChatProfile::compatible("Upstage")
+            .max_tokens()
+            .system_role()
+            .without_end_user()
+            .reasoning_fields(&["reasoning"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "logit_bias",
+                "logprobs",
+                "metadata",
+                "modalities",
+                "prediction",
+                "prompt_cache_retention",
+                "seed",
+                "service_tier",
+                "stop",
+                "store",
+                "top_logprobs",
+                "verbosity",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("Upstage"),
+        messages: MessagesProfile::compatible("Upstage"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+    },
 ];
 
 const _: () = {
@@ -2590,7 +2665,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage"
         );
     }
 
@@ -2669,7 +2744,10 @@ mod tests {
             .filter(|p| p.listing == ModelListing::Partial)
             .map(|p| p.id)
             .collect();
-        assert_eq!(partial, ["standardcompute", "perplexity", "typesafe"]);
+        assert_eq!(
+            partial,
+            ["standardcompute", "perplexity", "typesafe", "upstage"]
+        );
     }
 
     #[test]
@@ -2732,6 +2810,47 @@ mod tests {
         for field in ["parallel_tool_calls", "top_logprobs", "logit_bias", "store"] {
             assert!(p.chat.request.refused_fields.contains(&field), "{field}");
         }
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+        assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn upstage_serves_chat_and_embeddings_under_its_host_and_refuses_what_its_schema_leaves_out() {
+        let p = provider("upstage").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Upstage",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://api.upstage.ai");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), None)
+        );
+        assert_eq!(p.key_page.url, "https://console.upstage.ai/api-keys");
+        assert_eq!(p.listing, ModelListing::Partial);
+        assert_eq!(p.chat.provider, "Upstage");
+        assert_eq!(p.chat.request.path, "/v1/chat/completions");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::MaxTokens);
+        assert!(!p.chat.request.developer_role && !p.chat.request.end_user);
+        assert!(!p.chat.request.video_url);
+        assert!(p.chat.request.cache_key && p.chat.request.stream_options);
+        assert_eq!(p.chat.reply.reasoning_fields, ["reasoning"]);
+        for field in ["stop", "seed", "logprobs", "logit_bias", "store"] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert!(
+            !p.chat
+                .request
+                .refused_fields
+                .contains(&"parallel_tool_calls")
+        );
+        assert_eq!(p.embeddings_profile.provider, "Upstage");
+        assert!(!p.embeddings_profile.dimensions);
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
     }
@@ -2810,7 +2929,7 @@ mod tests {
             .filter(|p| p.embeddings_profile != EmbeddingsProfile::OPENAI)
             .map(|p| p.id)
             .collect();
-        assert_eq!(others, ["cloudflare-ai-gateway"]);
+        assert_eq!(others, ["cloudflare-ai-gateway", "upstage"]);
     }
 
     #[test]
@@ -3720,7 +3839,8 @@ mod tests {
                 "cloudflare-ai-gateway",
                 "perplexity",
                 "typesafe",
-                "deepinfra"
+                "deepinfra",
+                "upstage"
             ]
         );
         assert_eq!(

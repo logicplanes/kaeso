@@ -54,6 +54,7 @@ export const providers = [
   { id: "perplexity", name: "Perplexity" },
   { id: "typesafe", name: "TypeSafe" },
   { id: "deepinfra", name: "DeepInfra" },
+  { id: "upstage", name: "Upstage" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

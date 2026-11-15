@@ -1,0 +1,8 @@
+{
+  "error": {
+    "message": "Your API key is invalid. Please verify your API key or generate a new one from our API keys management page (https://console.upstage.ai/api-keys). Remember to keep your API keys secure and never share them publicly",
+    "type": "invalid_request_error",
+    "param": "",
+    "code": "invalid_api_key"
+  }
+}

@@ -457,6 +457,28 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds an Upstage key, which has no fixed prefix, with Upstage's console as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "upstage", name: "Upstage prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Upstage");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Upstage API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "console.upstage.ai (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://console.upstage.ai/api-keys");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe("Create one at console.upstage.ai under API keys.");
+    const secret = within(dialog).getByLabelText("Upstage API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "upstage-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Upstage prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Upstage prod is the Upstage default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "upstage", name: "Upstage prod", secret: "upstage-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds a Standard Compute key, which has no fixed prefix, with its dashboard's API Keys page as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "standardcompute", name: "Standard Compute plan", is_default: true }));
     const { user, dialog } = await open();

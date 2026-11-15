@@ -220,6 +220,7 @@ The first three settings only seed a new install. After that, instance admins ch
 | `KAESO_PROVIDERS_PERPLEXITY_BASE_URL`<br>`providers.perplexity.base_url` | text | `https://api.perplexity.ai` | Base URL of the Perplexity API. |
 | `KAESO_PROVIDERS_TYPESAFE_BASE_URL`<br>`providers.typesafe.base_url` | text | `https://api.typesafe.ai` | Base URL of the TypeSafe API. |
 | `KAESO_PROVIDERS_DEEPINFRA_BASE_URL`<br>`providers.deepinfra.base_url` | text | `https://api.deepinfra.com` | Base URL of the DeepInfra API. |
+| `KAESO_PROVIDERS_UPSTAGE_BASE_URL`<br>`providers.upstage.base_url` | text | `https://api.upstage.ai` | Base URL of the Upstage API. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |
 | `KAESO_UPSTREAM_FIRST_BYTE_TIMEOUT`<br>`upstream.first_byte_timeout` | text | `60s` | Streaming: time to the provider's first byte; at most 24h. |

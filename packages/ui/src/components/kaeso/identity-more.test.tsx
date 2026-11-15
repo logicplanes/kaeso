@@ -203,6 +203,7 @@ const MARKED_PROVIDERS = {
   perplexity: "Perplexity",
   typesafe: "TypeSafe",
   deepinfra: "DeepInfra",
+  upstage: "Upstage",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

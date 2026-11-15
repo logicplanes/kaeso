@@ -307,6 +307,24 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         deepinfra["key_page"],
         json!({ "url": "https://deepinfra.com/dash/keys", "label": "API keys" })
     );
+    let upstage = listed.iter().find(|p| p["id"] == "upstage").unwrap();
+    assert_eq!(upstage["name"], "Upstage");
+    assert_eq!(
+        upstage["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        (
+            &upstage["count_tokens"],
+            &upstage["embeddings"],
+            &upstage["key_prefix"]
+        ),
+        (&Value::Null, &json!("openai_embeddings"), &Value::Null)
+    );
+    assert_eq!(
+        upstage["key_page"],
+        json!({ "url": "https://console.upstage.ai/api-keys", "label": "API keys" })
+    );
 
     let anonymous = app
         .call(Method::GET, &format!("/orgs/{org}/providers"), None, None)
