@@ -40,9 +40,11 @@ pub struct UsageFilter {
     #[doc = "Only this model, as `provider/model` like the `key` of a row grouped\n\
         by `model`, such as `openai/gpt-5`; a model id without `/` matches it at\n\
         every provider."]
+    #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub model: Option<String>,
     #[doc = "Only this provider, such as `openai`."]
     #[param(value_type = Option<kaeso_core::provider::ProviderId>)]
+    #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub provider: Option<String>,
     #[doc = "Only this key: a key id, or `playground` for the requests members made\n\
         in the console's Playground."]
@@ -53,6 +55,7 @@ pub struct UsageFilter {
     #[doc = "Only this route, `<app format>:<provider format>:<provider>` as\n\
         grouping by `route` names it, such as\n\
         `openai_responses:anthropic_messages:anthropic`."]
+    #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub route: Option<String>,
 }
 

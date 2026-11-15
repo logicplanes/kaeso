@@ -97,8 +97,10 @@ pub(crate) async fn domains(state: &AppState, org: uuid::Uuid) -> ApiResult<Doma
 pub struct MemberFilter {
     #[doc = "Only members with this org role: a built-in role's name or a custom\n\
         role's id (`role_…`)."]
+    #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub role: Option<String>,
     #[doc = "Deprecated: only members with this built-in org role; use `role`."]
+    #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub preset: Option<String>,
 }
 

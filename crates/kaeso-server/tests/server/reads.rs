@@ -111,3 +111,42 @@ async fn resources_are_readable_by_id() {
     let r = app.get("/instance/system", &owner.cookie).await;
     assert_eq!(r.body["log_buffer"]["rows"], 0);
 }
+
+#[tokio::test]
+async fn a_filter_with_a_nul_character_is_refused_naming_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    s.clickhouse.migrate(&s.pg).await.unwrap();
+    let owner = app.setup().await;
+    let org = &owner.org_id;
+    let project = common::first_project(&app, &owner).await;
+    for (path, param) in [
+        ("/instance/audit-log?action=%00".to_owned(), "action"),
+        ("/instance/audit-log?target=%00".to_owned(), "target"),
+        ("/instance/users?state=%00".to_owned(), "state"),
+        (format!("/orgs/{org}/audit-log?action=%00"), "action"),
+        (format!("/orgs/{org}/audit-log?target=%00"), "target"),
+        (format!("/orgs/{org}/audit-log/export?action=%00"), "action"),
+        (format!("/orgs/{org}/members?role=%00"), "role"),
+        (format!("/orgs/{org}/members?preset=%00"), "preset"),
+        (
+            format!("/orgs/{org}/projects/{project}/audit-log?action=%00"),
+            "action",
+        ),
+        (format!("/orgs/{org}/usage?model=%00"), "model"),
+        (
+            format!("/orgs/{org}/projects/{project}/usage?model=%00"),
+            "model",
+        ),
+    ] {
+        let r = app.get(&path, &owner.cookie).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{path}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], param, "{path}");
+        assert_eq!(
+            r.body["error"]["message"],
+            format!("`{param}` must be text without a NUL character."),
+            "{path}"
+        );
+    }
+    s.cleanup().await;
+}

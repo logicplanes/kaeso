@@ -59,6 +59,7 @@ pub struct UserFilter {
     #[doc = "Part of the email address or name."]
     pub search: Option<String>,
     #[doc = "`active`, `deactivated` or `deleted`."]
+    #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub state: Option<String>,
 }
 
