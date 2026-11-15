@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { defaultExpiry, expiryRequest } from "./expiry-picker";
+import { expiryDayDisabled } from "./expiry-picker";
 
-describe("key expiry", () => {
-  it("asks for the chosen number of days, a day, or nothing", () => {
-    expect(expiryRequest("30", null)).toEqual({ expires_in_days: 30 });
-    expect(expiryRequest("date", new Date(2026, 10, 3))).toEqual({ expires_on: "2026-11-03" });
-    expect(expiryRequest("date", null)).toEqual({});
-    expect(expiryRequest("never", null)).toEqual({});
+describe("the expiry picker's days", () => {
+  const now = Date.parse("2026-11-15T04:00:00Z");
+
+  it("offers no day whose start in UTC has passed, wherever the browser is", () => {
+    expect(expiryDayDisabled("2026-11-14", now, null)).toBe(true);
+    expect(expiryDayDisabled("2026-11-15", now, null)).toBe(true);
+    expect(expiryDayDisabled("2026-11-16", now, null)).toBe(false);
   });
 
-  it("picks the longest default the limit allows", () => {
-    expect(defaultExpiry(null)).toBe("90");
-    expect(defaultExpiry(120)).toBe("90");
-    expect(defaultExpiry(45)).toBe("30");
-    expect(defaultExpiry(3)).toBe("1");
+  it("measures the policy's maximum to the day's start in UTC", () => {
+    const latest = now + 10 * 86_400_000;
+    expect(expiryDayDisabled("2026-11-25", now, latest)).toBe(false);
+    expect(expiryDayDisabled("2026-11-26", now, latest)).toBe(true);
   });
 });

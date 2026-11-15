@@ -233,7 +233,7 @@ describe("CreateKeyDialog", () => {
     const body = requests("POST", KEYS)[0]?.body as { expires_on: string };
     expect(body).toEqual({ name: "short", access: "inference", expires_on: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) });
     const days = (Date.parse(`${body.expires_on}T00:00:00Z`) - Date.now()) / 86_400_000;
-    expect(days).toBeGreaterThan(-1);
+    expect(days).toBeGreaterThan(0);
     expect(days).toBeLessThanOrEqual(10);
   });
 
