@@ -122,3 +122,23 @@ fn the_supported_providers_page_lists_every_provider_by_name_with_its_formats_ho
         );
     }
 }
+
+#[test]
+fn the_readme_names_every_built_in_provider_in_alphabetical_order() {
+    let path = format!("{}/../../README.md", env!("CARGO_MANIFEST_DIR"));
+    let readme = std::fs::read_to_string(path).unwrap();
+    let line = readme
+        .lines()
+        .find_map(|l| l.strip_prefix("Built in are "))
+        .expect("README.md names the built-in providers in a line starting with `Built in are `");
+    let list = line.split(" ([supported providers]").next().unwrap();
+    let (head, last) = list.rsplit_once(" and ").unwrap();
+    let named: Vec<&str> = head
+        .split(", ")
+        .chain([last])
+        .map(|n| n.split(" (").next().unwrap())
+        .collect();
+    let mut expected: Vec<&str> = PROVIDERS.iter().map(|p| p.name).collect();
+    expected.sort_by_key(|n| n.to_lowercase());
+    assert_eq!(named, expected);
+}
