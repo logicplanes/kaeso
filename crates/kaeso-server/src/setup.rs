@@ -24,7 +24,7 @@ async fn email_link(state: &AppState) {
     let Some(to) = state.config.setup.email() else {
         return;
     };
-    let url = match issue_link(state).await {
+    let url = match issue(state, Earlier::Keep).await {
         Ok(Some(url)) => url,
         Ok(None) => return,
         Err(e) => {
@@ -44,7 +44,20 @@ async fn email_link(state: &AppState) {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Earlier {
+    Retire,
+    Keep,
+}
+
+/// A new setup link, as `kaeso setup-link` prints it: every earlier link stops working.
 pub async fn issue_link(state: &AppState) -> Result<Option<String>, StoreError> {
+    issue(state, Earlier::Retire).await
+}
+
+// Every gateway that starts emails a link, and gateways often start together, so an emailed
+// link keeps the earlier ones working: each email the operator gets works until set-up is done.
+async fn issue(state: &AppState, earlier: Earlier) -> Result<Option<String>, StoreError> {
     with_advisory_lock(&state.pg, locks::SETUP, || async {
         if users::any_exist(&state.pg).await? {
             return Ok(None);
@@ -53,7 +66,9 @@ pub async fn issue_link(state: &AppState) -> Result<Option<String>, StoreError> 
         let token = random_token();
         let hash = secret::hash(&token);
         let mut tx = state.pg.begin().await?;
-        tokens::retire_all(&mut *tx, TokenKind::Setup, None, now).await?;
+        if earlier == Earlier::Retire {
+            tokens::retire_all(&mut *tx, TokenKind::Setup, None, now).await?;
+        }
         tokens::insert(
             &mut *tx,
             NewToken {
