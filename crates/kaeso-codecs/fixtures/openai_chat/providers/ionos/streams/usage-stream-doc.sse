@@ -1,0 +1,10 @@
+data: {"choices":[{"delta":{"role":"assistant","content":""},"finish_reason":null,"index":0,"logprobs":null}],"created":1769419547,"id":"chatcmpl-3d0323bb-67f8-41c5-b757-8fc5a48230f4","model":"openai/gpt-oss-120b","object":"chat.completion.chunk"}
+
+data: {"choices":[{"delta":{"content":"Hello there, friend!"},"finish_reason":null,"index":0,"logprobs":null}],"created":1769419547,"id":"chatcmpl-3d0323bb-67f8-41c5-b757-8fc5a48230f4","model":"openai/gpt-oss-120b","object":"chat.completion.chunk"}
+
+data: {"choices":[{"delta":{},"finish_reason":"stop","index":0,"logprobs":null}],"created":1769419547,"id":"chatcmpl-3d0323bb-67f8-41c5-b757-8fc5a48230f4","model":"openai/gpt-oss-120b","object":"chat.completion.chunk"}
+
+data: {"choices":[],"created":1769419547,"id":"chatcmpl-3d0323bb-67f8-41c5-b757-8fc5a48230f4","model":"openai/gpt-oss-120b","object":"chat.completion.chunk","usage":{"completion_tokens":26,"prompt_tokens":78,"total_tokens":104}}
+
+data: [DONE]
+

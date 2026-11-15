@@ -1,0 +1,10 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Our Q1 sales were 10k in January, 12k in February and 15k in March. Predict Q2."
+    }
+  ],
+  "reasoning_effort": "medium"
+}

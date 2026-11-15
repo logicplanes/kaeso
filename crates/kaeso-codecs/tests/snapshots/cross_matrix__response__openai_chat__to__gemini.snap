@@ -2458,6 +2458,75 @@ expression: outcomes
       "totalTokenCount": 123
     }
   },
+  "providers/ionos/gpt-oss-reasoning-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Based on the Q1 data, there is a consistent monthly growth of roughly 20-25%. If this trend continues, Q2 sales are projected to reach approximately $18k in April, $21.6k in May, and $26k in June."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "openai/gpt-oss-120b",
+    "responseId": "chatcmpl-890",
+    "usageMetadata": {
+      "candidatesTokenCount": 48,
+      "promptTokenCount": 45,
+      "totalTokenCount": 93
+    }
+  },
+  "providers/ionos/mistral-image-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "The image displays a single, thin, vertical white line against a solid dark blue background. The line appears to be positioned towards the left side of the image. The overall design is minimalistic and abstract, with a focus on the contrast between the white line and the dark background."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "mistralai/Mistral-Small-24B-Instruct",
+    "responseId": "chatcmpl-20dce5f1-5556-4c1e-ae47-7a497a376746",
+    "usageMetadata": {
+      "candidatesTokenCount": 57,
+      "promptTokenCount": 29,
+      "totalTokenCount": 86
+    }
+  },
+  "providers/ionos/qwen-reasoning-doc": {
+    "candidates": [
+      {
+        "content": {
+          "parts": [
+            {
+              "text": "Stay refreshed all day with our double-walled stainless steel water bottle, engineered to keep your drinks ice-cold for a full 24 hours."
+            }
+          ],
+          "role": "model"
+        },
+        "finishReason": "STOP",
+        "index": 0
+      }
+    ],
+    "modelVersion": "Qwen/Qwen3.8-27B",
+    "responseId": "chatcmpl-890",
+    "usageMetadata": {
+      "candidatesTokenCount": 33,
+      "promptTokenCount": 41,
+      "totalTokenCount": 74
+    }
+  },
   "providers/mistral/recorded-assistant-prefix": {
     "candidates": [
       {

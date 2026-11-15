@@ -3232,6 +3232,112 @@ expression: outcomes
     },
     "path": "/v1beta/models/deepseek-ai%2FDeepSeek-V4.1-Flash-1017%3Anovita:streamGenerateContent?alt=sse"
   },
+  "providers/ionos/gpt-oss-reasoning-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Our Q1 sales were 10k in January, 12k in February and 15k in March. Predict Q2."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "MEDIUM"
+        }
+      }
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b:generateContent"
+  },
+  "providers/ionos/invalid-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b:generateContent"
+  },
+  "providers/ionos/missing-api-key": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Hi"
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b:generateContent"
+  },
+  "providers/ionos/mistral-image-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "What is in this image?"
+            },
+            {
+              "inlineData": {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+                "mimeType": "image/png"
+              }
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/mistralai%2FMistral-Small-24B-Instruct:generateContent"
+  },
+  "providers/ionos/qwen-reasoning-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Write a one-sentence product description for an insulated stainless steel water bottle that keeps drinks cold for 24 hours."
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "generationConfig": {
+        "thinkingConfig": {
+          "thinkingLevel": "LOW"
+        }
+      }
+    },
+    "path": "/v1beta/models/Qwen%2FQwen3.8-27B:generateContent"
+  },
+  "providers/ionos/usage-stream-doc": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Say hello in three words."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/openai%2Fgpt-oss-120b:streamGenerateContent?alt=sse"
+  },
   "providers/mistral/assistant-prefill": {
     "body": {
       "contents": [

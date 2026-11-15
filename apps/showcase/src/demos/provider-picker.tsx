@@ -27,6 +27,7 @@ const providers: ProviderPickerOption[] = [
   { id: "typesafe", name: "TypeSafe" },
   { id: "deepinfra", name: "DeepInfra" },
   { id: "upstage", name: "Upstage" },
+  { id: "ionos", name: "IONOS AI Model Hub" },
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
   { id: "siliconflow", name: "SiliconFlow" },

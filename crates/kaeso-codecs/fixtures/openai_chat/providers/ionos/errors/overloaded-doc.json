@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "The service is temporarily overloaded. Please try again shortly.",
+    "type": "overloaded_error",
+    "code": "server_overloaded"
+  }
+}

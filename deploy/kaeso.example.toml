@@ -164,6 +164,9 @@ base_url = "https://api.deepinfra.com"
 [providers.upstage]
 base_url = "https://api.upstage.ai"
 
+[providers.ionos]
+base_url = "https://openai.inference.de-txl.ionos.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

@@ -1,0 +1,22 @@
+{
+  "id": "chatcmpl-890",
+  "object": "chat.completion",
+  "created": 1677652289,
+  "model": "Qwen/Qwen3.8-27B",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Stay refreshed all day with our double-walled stainless steel water bottle, engineered to keep your drinks ice-cold for a full 24 hours.",
+        "reasoning": "The user wants a single-sentence product description for an insulated stainless steel water bottle highlighting 24-hour cold retention. I will keep it to one sentence and emphasize the key benefit."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 41,
+    "completion_tokens": 33,
+    "total_tokens": 74
+  }
+}

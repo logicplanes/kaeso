@@ -118,7 +118,9 @@ pub(crate) fn decode(
             err
         }
         None => match (
-            value.as_ref().and_then(crate::cloudflare::envelope_message),
+            value.as_ref().and_then(|v| {
+                crate::cloudflare::envelope_message(v).or_else(|| crate::ionos::envelope_message(v))
+            }),
             value
                 .as_ref()
                 .and_then(|v| v.get("error").or_else(|| v.get("message"))),

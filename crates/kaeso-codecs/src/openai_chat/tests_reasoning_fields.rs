@@ -43,6 +43,11 @@ const PROFILES: &[(&str, ChatProfile)] = &[
             .reasoning_fields(&["reasoning_content", "reasoning"]),
     ),
     (
+        "ionos",
+        ChatProfile::compatible("IONOS AI Model Hub")
+            .reasoning_fields(&["reasoning", "reasoning_content"]),
+    ),
+    (
         "moonshotai",
         ChatProfile::compatible("Moonshot").reasoning_fields(&["reasoning_content"]),
     ),
@@ -246,6 +251,8 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ("groq", "recorded-plain-developer-string", "reasoning"),
         ("groq", "recorded-reasoning-format-parsed", "reasoning"),
         ("huggingface", "provider-suffix", "reasoning"),
+        ("ionos", "gpt-oss-reasoning-doc", "reasoning"),
+        ("ionos", "qwen-reasoning-doc", "reasoning"),
         ("moonshotai", "recorded-reasoning", "reasoning_content"),
         (
             "moonshotai",

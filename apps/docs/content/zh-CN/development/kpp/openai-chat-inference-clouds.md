@@ -80,6 +80,23 @@ Fireworks 没有记录图像、语音、转录、视频或Token 计数端点，�
 
 路由器的 OpenAI 兼容 API 只用于聊天：`/v1/embeddings`、`/v1/images/generations` 和 `/v1/audio/*` 返回 404。它的 Responses API 不被使用，因为它对被拒绝的令牌返回 200 和 `status: "failed"`。它的 Messages 端点也不被使用：它对被拒绝的令牌返回 `api_error`，应用会将其视为服务商失败，而不是密钥被拒绝。`/v1/messages/count_tokens` 不检查令牌就返回结果，且没有文档，因此 Kaeso 拒绝 Token 计数。
 
+## IONOS AI Model Hub
+
+来源：IONOS 的 [create chat completion](https://docs.ionos.com/cloud/api-reference/ai/ai-model-hub/chat-completions/create-chat-completion) 参考（OpenAPI 3.0.3）、其[错误码](https://docs.ionos.com/cloud/ai/ai-model-hub/error-codes)和模型页面，2026-11-14 阅读。由于没有可用的令牌，`fixtures/openai_chat/providers/ionos/` 中的回复是模型页面的示例，流围绕文档展示的最后一个分块构建；密钥错误是在没有有效令牌的情况下实时返回的。Kaeso 的基础 URL 为位于柏林的 `https://openai.inference.de-txl.ionos.com`，使用带 IONOS Cloud API 令牌的 `Authorization: Bearer`。
+
+| IONOS 字段 | KPP | 说明 |
+|---|---|---|
+| `message.reasoning`、`message.reasoning_content` | `Block::Reasoning` | 通过配置的 `reasoning_fields`；GPT OSS 在两个字段中发送相同的思考内容，Qwen3.8 只在 `reasoning` 中发送（`responses/gpt-oss-reasoning-doc`、`responses/qwen-reasoning-doc`）。 |
+| `developer` 角色 | `Role::System` | 只有部分模型接受 `developer`；IONOS 建议使用 `system`（`system_role()`）。 |
+| `user` | `user` | schema 没有 `safety_identifier`（`end_user_as_user()`）。 |
+| `prompt_cache_key` | 省略 | IONOS 自行缓存前缀，没有该字段（`without_cache_key()`）。 |
+| `store`、`metadata`、`service_tier` 以及 schema 未声明的其他字段 | 拒绝 | 文档未说明 IONOS 会拒绝还是丢弃它们。 |
+| `stop_reason`、`token_ids`、`prompt_logprobs`、`prompt_token_ids`、`kv_transfer_params` 以及消息中为 `null` 的字段 | extras | 发往其他方言时省略（`responses/mistral-image-doc`）。 |
+| `{"httpStatus", "messages": [{"errorCode", "message"}]}` | `KppError` | IONOS 自己的错误格式，各条消息合并；类别由状态码决定（`errors/recorded-invalid-api-key`、`errors/validation-error-doc`）。只有 529 采用 OpenAI 的格式。 |
+| `GET /v1/models` | `ModelList` | 需要令牌，只返回 ID；没有 `GET /v1/models/{model}`。 |
+
+IONOS 的 Responses API 不保存状态，不被使用：Responses 应用通过 Chat Completions 访问 IONOS。在 KPMR 收录相应模型之前，它的图像（FLUX）、转写（Whisper）和重排序不被使用；它不提供语音合成、视频、Messages 或 Token 计数。
+
 ## Nebius Token Factory
 
 来源：Nebius 的 [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json)（版本 `20261105-4c58718c5`）、其[文本生成](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation)示例和[概览](https://docs.tokenfactory.nebius.com/ai-models-inference/overview)，2026-11-09 阅读。由于没有可用的密钥，`fixtures/openai_chat/providers/nebius/` 中的回复和流都据此构建，其中一个是文档自己的示例；错误是在没有有效密钥的情况下实时返回的。Kaeso 的基础 URL 为 `https://api.tokenfactory.nebius.com`，使用 `Authorization: Bearer`。

@@ -168,6 +168,7 @@ export const providerMark = {
   "deepinfra-blue": mode("#5699db", "#5699db"),
   "upstage-lilac": mode("#738dff", "#b0bfff"),
   "upstage-violet": mode("#805cfb", "#8968fb"),
+  ionos: mode("#003d8f", "#ffffff"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),

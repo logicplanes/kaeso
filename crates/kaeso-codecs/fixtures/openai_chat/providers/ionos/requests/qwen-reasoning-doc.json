@@ -1,0 +1,10 @@
+{
+  "model": "Qwen/Qwen3.8-27B",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Write a one-sentence product description for an insulated stainless steel water bottle that keeps drinks cold for 24 hours."
+    }
+  ],
+  "reasoning_effort": "low"
+}

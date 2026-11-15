@@ -12,6 +12,7 @@ pub mod dispatch;
 pub mod image_size;
 mod inline_media;
 mod inline_tools;
+mod ionos;
 mod keepalive;
 pub mod limits;
 mod media;

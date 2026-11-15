@@ -1,0 +1,23 @@
+{
+  "id": "chatcmpl-890",
+  "object": "chat.completion",
+  "created": 1677652289,
+  "model": "openai/gpt-oss-120b",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Based on the Q1 data, there is a consistent monthly growth of roughly 20-25%. If this trend continues, Q2 sales are projected to reach approximately $18k in April, $21.6k in May, and $26k in June.",
+        "reasoning": "The user provided Q1 sales data (Jan: 10k, Feb: 12k, Mar: 15k). Calculating growth: Jan to Feb is +20%, Feb to Mar is +25%. I will assume a continued growth trend of roughly 20-25% for Q2 (April, May, June) to make the prediction.",
+        "reasoning_content": "The user provided Q1 sales data (Jan: 10k, Feb: 12k, Mar: 15k). Calculating growth: Jan to Feb is +20%, Feb to Mar is +25%. I will assume a continued growth trend of roughly 20-25% for Q2 (April, May, June) to make the prediction."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 45,
+    "completion_tokens": 48,
+    "total_tokens": 93
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "id": "chatcmpl-20dce5f1-5556-4c1e-ae47-7a497a376746",
+  "object": "chat.completion",
+  "created": 1769429443,
+  "model": "mistralai/Mistral-Small-24B-Instruct",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The image displays a single, thin, vertical white line against a solid dark blue background. The line appears to be positioned towards the left side of the image. The overall design is minimalistic and abstract, with a focus on the contrast between the white line and the dark background.",
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [],
+        "reasoning": null,
+        "reasoning_content": null
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": null,
+      "token_ids": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": null,
+  "usage": {
+    "prompt_tokens": 29,
+    "total_tokens": 86,
+    "completion_tokens": 57,
+    "prompt_tokens_details": null
+  },
+  "prompt_logprobs": null,
+  "prompt_token_ids": null,
+  "kv_transfer_params": null
+}

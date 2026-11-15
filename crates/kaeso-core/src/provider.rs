@@ -2368,6 +2368,71 @@ pub const PROVIDERS: &[Provider] = &[
         service_account: None,
         account_scope: None,
     },
+    Provider {
+        id: "ionos",
+        name: "IONOS AI Model Hub",
+        // An IONOS Cloud API token, a JWT made in the Data Center Designer's Token Manager, for a
+        // user whose group may access the AI Model Hub; tokens expire after the time chosen at
+        // creation (https://docs.ionos.com/cloud/ai/ai-model-hub/how-tos/access-management).
+        key_page: KeyPage {
+            url: "https://dcd.ionos.com",
+            label: "Management → Token Manager",
+        },
+        key_prefix: None,
+        // Every inference runs in Berlin (`de-txl`), the only region
+        // (https://docs.ionos.com/cloud/ai/ai-model-hub/governance-and-compliance/data-handling).
+        default_base_url: "https://openai.inference.de-txl.ionos.com",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /v1/models` needs a token and lists every model the hub serves; there is no
+        // `GET /v1/models/{model}` (the API reference's OpenAPI document).
+        listing: ModelListing::Complete,
+        end_user_limit: None,
+        // `ChatCompletionRequest` in IONOS's API reference: `developer` works only on some
+        // models ("Use `system` for the widest compatibility"), the end user is `user`, no
+        // `prompt_cache_key` (caching is automatic), `video_url` parts, and
+        // replies carry `reasoning` or, on some models, `reasoning_content` too; the fields
+        // refused here aren't in the schema, which doesn't say whether it refuses them. No model
+        // takes audio, which the catalogue's input types already refuse
+        // (https://docs.ionos.com/cloud/api-reference/ai/ai-model-hub/chat-completions/create-chat-completion).
+        chat: ChatProfile::compatible("IONOS AI Model Hub")
+            .system_role()
+            .end_user_as_user()
+            .without_cache_key()
+            .with_video_url()
+            .reasoning_fields(&["reasoning", "reasoning_content"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "metadata",
+                "modalities",
+                "prediction",
+                "prompt_cache_retention",
+                "service_tier",
+                "store",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("IONOS AI Model Hub"),
+        messages: MessagesProfile::compatible("IONOS AI Model Hub"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+    },
 ];
 
 const _: () = {
@@ -2665,7 +2730,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos"
         );
     }
 
@@ -2812,6 +2877,47 @@ mod tests {
         }
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         assert!(p.transcriptions.is_empty() && p.decisions.is_empty());
+    }
+
+    #[test]
+    fn ionos_serves_chat_and_embeddings_from_berlin_with_system_messages_and_its_reasoning_fields()
+    {
+        let p = provider("ionos").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "IONOS AI Model Hub",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(
+            p.default_base_url,
+            "https://openai.inference.de-txl.ionos.com"
+        );
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, Some(DialectId::OpenAiEmbeddings), None)
+        );
+        assert_eq!(
+            (p.key_page.url, p.key_page.label),
+            ("https://dcd.ionos.com", "Management → Token Manager")
+        );
+        assert_eq!(p.chat.provider, "IONOS AI Model Hub");
+        assert_eq!(p.chat.request.output_limit, OutputLimit::AsWritten);
+        assert_eq!(p.chat.request.end_user_field, EndUserField::User);
+        assert!(!p.chat.request.developer_role && p.chat.request.video_url);
+        assert!(!p.chat.request.cache_key && p.chat.request.stream_options);
+        assert_eq!(
+            p.chat.reply.reasoning_fields,
+            ["reasoning", "reasoning_content"]
+        );
+        for field in ["service_tier", "store", "metadata", "web_search_options"] {
+            assert!(p.chat.request.refused_fields.contains(&field), "{field}");
+        }
+        assert!(!p.chat.request.refused_fields.contains(&"logit_bias"));
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.transcriptions.is_empty());
     }
 
     #[test]
@@ -3840,7 +3946,8 @@ mod tests {
                 "perplexity",
                 "typesafe",
                 "deepinfra",
-                "upstage"
+                "upstage",
+                "ionos"
             ]
         );
         assert_eq!(

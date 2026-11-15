@@ -80,6 +80,23 @@ Quellen: die Übersicht [Inference Providers](https://huggingface.co/docs/infere
 
 Die OpenAI-kompatible API des Routers ist nur für Chat: `/v1/embeddings`, `/v1/images/generations` und `/v1/audio/*` antworten mit 404. Seine Responses API wird nicht genutzt, da sie ein abgelehntes Token mit 200 und `status: "failed"` beantwortet. Auch sein Messages-Endpunkt wird nicht genutzt: Er beantwortet ein abgelehntes Token mit `api_error`, das Apps als fehlgeschlagenen Anbieter statt als abgelehnten Schlüssel erreichen würde. `/v1/messages/count_tokens` antwortet, ohne das Token zu prüfen, und ist nicht dokumentiert, daher lehnt Kaeso Token-Zählungen ab.
 
+## IONOS AI Model Hub
+
+Quellen: die Referenz [create chat completion](https://docs.ionos.com/cloud/api-reference/ai/ai-model-hub/chat-completions/create-chat-completion) von IONOS (OpenAPI 3.0.3), seine [Fehlercodes](https://docs.ionos.com/cloud/ai/ai-model-hub/error-codes) und seine Modellseiten, gelesen am 2026-11-14. Es gab kein Token, daher sind die Antworten in `fixtures/openai_chat/providers/ionos/` die Beispiele der Modellseiten und der Stream ist um den letzten Chunk gebaut, den die Dokumentation zeigt; die Schlüsselfehler kamen live, ohne gültiges Token. Kaesos Basis-URL ist `https://openai.inference.de-txl.ionos.com` in Berlin, die `Authorization: Bearer` mit einem IONOS-Cloud-API-Token annimmt.
+
+| IONOS-Feld | KPP | Hinweise |
+|---|---|---|
+| `message.reasoning`, `message.reasoning_content` | `Block::Reasoning` | Über `reasoning_fields` des Profils; GPT OSS sendet dasselbe Thinking in beiden, Qwen3.8 nur in `reasoning` (`responses/gpt-oss-reasoning-doc`, `responses/qwen-reasoning-doc`). |
+| die Rolle `developer` | `Role::System` | Nur manche Modelle nehmen `developer` an; IONOS empfiehlt `system` (`system_role()`). |
+| `user` | `user` | Das Schema hat kein `safety_identifier` (`end_user_as_user()`). |
+| `prompt_cache_key` | weggelassen | IONOS speichert Präfixe selbst im Cache und hat kein solches Feld (`without_cache_key()`). |
+| `store`, `metadata`, `service_tier` und die anderen Felder, die das Schema nicht deklariert | abgelehnt | Die Dokumentation sagt nicht, ob IONOS sie ablehnt oder verwirft. |
+| `stop_reason`, `token_ids`, `prompt_logprobs`, `prompt_token_ids`, `kv_transfer_params` und die `null`-Felder der Nachricht | Extras | Gegenüber anderen Dialekten weggelassen (`responses/mistral-image-doc`). |
+| `{"httpStatus", "messages": [{"errorCode", "message"}]}` | `KppError` | Die eigene Fehlerform von IONOS, die Meldungen verbunden; die Art folgt dem Status (`errors/recorded-invalid-api-key`, `errors/validation-error-doc`). Nur 529 kommt in OpenAIs Form. |
+| `GET /v1/models` | `ModelList` | Braucht ein Token und liefert nur IDs; es gibt kein `GET /v1/models/{model}`. |
+
+Die Responses API von IONOS speichert keinen Zustand und wird nicht genutzt: Responses-Apps erreichen IONOS über Chat Completions. Seine Bilder (FLUX), Transkriptionen (Whisper) und sein Rerank werden nicht genutzt, bis KPMR diese Modelle listet; Sprache, Video, Messages und Token-Zählungen bietet es nicht an.
+
 ## Nebius Token Factory
 
 Quellen: das [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json) von Nebius (Version `20261105-4c58718c5`), sein Beispiel zur [Textgenerierung](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation) und seine [Übersicht](https://docs.tokenfactory.nebius.com/ai-models-inference/overview), gelesen am 2026-11-09. Es gab keinen Schlüssel, daher sind die Antworten und der Stream in `fixtures/openai_chat/providers/nebius/` daraus gebaut, eine davon ist das Beispiel der Dokumentation selbst; die Fehler kamen live, ohne gültigen Schlüssel. Kaesos Basis-URL ist `https://api.tokenfactory.nebius.com`, die `Authorization: Bearer` annimmt.

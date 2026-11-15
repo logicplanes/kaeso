@@ -1,0 +1,9 @@
+{
+  "httpStatus": 401,
+  "messages": [
+    {
+      "errorCode": "paas-token-1",
+      "message": "Unauthorized, invalid or no token provided for exchange"
+    }
+  ]
+}

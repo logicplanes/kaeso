@@ -196,8 +196,8 @@ pub struct CredentialCreate {
         `elevenlabs`, `google`, `gemini-agent-platform`, `fireworks-ai`, `nebius`,\n\
         `sambanova`, `scaleway`, `huggingface`, `nvidia`, `baseten`, `siliconflow`,\n\
         `standardcompute`, `cloudflare-ai-gateway`, `perplexity`, `typesafe`,\n\
-        `deepinfra`, `upstage`, or one of the organization's custom providers that takes\n\
-        a key."]
+        `deepinfra`, `upstage`, `ionos`, or one of the organization's custom providers that\n\
+        takes a key."]
     #[schema(value_type = ProviderId, example = "openai")]
     pub provider: String,
     #[doc = "A name to recognise it by."]

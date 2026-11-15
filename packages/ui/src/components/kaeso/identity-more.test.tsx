@@ -204,6 +204,7 @@ const MARKED_PROVIDERS = {
   typesafe: "TypeSafe",
   deepinfra: "DeepInfra",
   upstage: "Upstage",
+  ionos: "IONOS AI Model Hub",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

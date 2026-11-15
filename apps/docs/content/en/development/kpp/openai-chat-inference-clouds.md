@@ -80,6 +80,23 @@ Sources: Hugging Face's [Inference Providers](https://huggingface.co/docs/infere
 
 The router's OpenAI-compatible API is for chat only: `/v1/embeddings`, `/v1/images/generations` and `/v1/audio/*` answer 404. Its Responses API isn't used, as it answers a refused token with 200 and `status: "failed"`. Its Messages endpoint isn't used either: it answers a refused token with `api_error`, which would reach apps as a failed provider instead of a refused key. `/v1/messages/count_tokens` answers without checking the token and isn't documented, so Kaeso refuses token counts.
 
+## IONOS AI Model Hub
+
+Sources: IONOS's [create chat completion](https://docs.ionos.com/cloud/api-reference/ai/ai-model-hub/chat-completions/create-chat-completion) reference (OpenAPI 3.0.3), its [error codes](https://docs.ionos.com/cloud/ai/ai-model-hub/error-codes) and its model pages, read 2026-11-14. No token was available, so the replies in `fixtures/openai_chat/providers/ionos/` are the model pages' examples and the stream is built around the final chunk the docs show; the key errors were answered live, without a valid token. Kaeso's base URL is `https://openai.inference.de-txl.ionos.com`, in Berlin, which takes `Authorization: Bearer` with an IONOS Cloud API token.
+
+| IONOS field | KPP | Notes |
+|---|---|---|
+| `message.reasoning`, `message.reasoning_content` | `Block::Reasoning` | Through the profile's `reasoning_fields`; GPT OSS sends the same thinking in both, Qwen3.8 only in `reasoning` (`responses/gpt-oss-reasoning-doc`, `responses/qwen-reasoning-doc`). |
+| the `developer` role | `Role::System` | Only some models take `developer`; IONOS advises `system` (`system_role()`). |
+| `user` | `user` | The schema has no `safety_identifier` (`end_user_as_user()`). |
+| `prompt_cache_key` | left out | IONOS caches prefixes by itself and has no such field (`without_cache_key()`). |
+| `store`, `metadata`, `service_tier` and the other fields the schema doesn't declare | refused | The docs don't say whether IONOS refuses or drops them. |
+| `stop_reason`, `token_ids`, `prompt_logprobs`, `prompt_token_ids`, `kv_transfer_params` and the `null` message fields | extras | Left out towards other dialects (`responses/mistral-image-doc`). |
+| `{"httpStatus", "messages": [{"errorCode", "message"}]}` | `KppError` | IONOS's own error shape, the messages joined; the kind follows the status (`errors/recorded-invalid-api-key`, `errors/validation-error-doc`). Only 529 comes in OpenAI's shape. |
+| `GET /v1/models` | `ModelList` | It needs a token and gives only ids; there is no `GET /v1/models/{model}`. |
+
+IONOS's Responses API keeps no state and isn't used: Responses apps reach IONOS through Chat Completions. Its images (FLUX), transcriptions (Whisper) and rerank aren't used until KPMR lists those models; it serves no speech, video, Messages or token counts.
+
 ## Nebius Token Factory
 
 Sources: Nebius' [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json) (version `20261105-4c58718c5`), its [text generation](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation) example and its [overview](https://docs.tokenfactory.nebius.com/ai-models-inference/overview), read 2026-11-09. No key was available, so the replies and the stream in `fixtures/openai_chat/providers/nebius/` are built from them, and one is the documentation's own example; the errors were answered live, without a valid key. Kaeso's base URL is `https://api.tokenfactory.nebius.com`, which takes `Authorization: Bearer`.

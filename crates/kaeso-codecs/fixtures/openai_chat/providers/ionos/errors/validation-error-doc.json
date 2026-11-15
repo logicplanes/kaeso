@@ -1,0 +1,9 @@
+{
+  "httpStatus": 400,
+  "messages": [
+    {
+      "errorCode": "VALIDATION_ERROR",
+      "message": "field 'messages' must not be empty"
+    }
+  ]
+}
