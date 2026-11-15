@@ -87,7 +87,7 @@ Für OpenAI kann ein Anbieter-Schlüssel auch ein ChatGPT-Konto sein. Seine Anfr
 4. Der Tab wechselt dann zu einer Adresse, die mit `http://127.0.0.1` beginnt und nicht laden kann. Das ist so gewollt. Kopieren Sie diese Adresse aus der Adressleiste.
 5. Fügen Sie sie in **Adresse der Seite** ein und wählen Sie **Konto hinzufügen**.
 
-Schließen Sie innerhalb von zehn Minuten ab, als die Person, die begonnen hat. Kaeso prüft die Adresse, meldet das Konto bei OpenAI an und speichert seine Tokens verschlüsselt wie jeden anderen Schlüssel. Es erneuert sie selbst, bevor sie ablaufen.
+Schließen Sie innerhalb von zehn Minuten ab, als die Person, die begonnen hat. Kaeso prüft die Adresse, meldet das Konto bei OpenAI an und speichert seine Tokens verschlüsselt wie jeden anderen Schlüssel. Es erneuert sie selbst, bevor sie ablaufen, vorab im Hintergrund, wenn das Konto in der letzten Woche genutzt wurde, sodass Anfragen nicht auf OpenAI warten.
 
 Ein ChatGPT-Konto bedient Anfragen nach den Regeln von OpenAI für die Nutzung von Abos:
 
@@ -110,7 +110,7 @@ Für SpaceX kann ein Anbieter-Schlüssel auch ein Grok-Konto sein. Seine Anfrage
 4. Öffnen Sie die Seite auf einem beliebigen Gerät, melden Sie sich bei Grok an und geben Sie den Code ein.
 5. Kaeso fügt den Schlüssel selbst hinzu, sobald Sie zustimmen. Lehnen Sie ab oder läuft der Code ab, wählen Sie **Neuen Code holen**.
 
-Schließen Sie innerhalb von zehn Minuten ab, als die Person, die begonnen hat. Kaeso speichert die Tokens des Kontos verschlüsselt wie jeden anderen Schlüssel und erneuert sie selbst in den letzten zwei Minuten, bevor sie ablaufen.
+Schließen Sie innerhalb von zehn Minuten ab, als die Person, die begonnen hat. Kaeso speichert die Tokens des Kontos verschlüsselt wie jeden anderen Schlüssel und erneuert sie selbst, bevor sie ablaufen: vorab im Hintergrund, wenn das Konto in der letzten Woche genutzt wurde, sonst in den letzten zwei Minuten.
 
 Ein Grok-Konto bedient Anfragen wie ein xAI-API-Schlüssel, unter `https://api.x.ai/v1` mit dem Token des Kontos, unabhängig von der Basis-URL, die die Installation für SpaceX festlegt. Lehnt xAI das Konto ab, weil sein Abo keinen API-Zugang hat, zeigt der Schlüssel **Kein API-Zugang** und seine Anfragen schlagen fehl.
 

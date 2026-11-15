@@ -87,7 +87,7 @@ For OpenAI, a provider key can also be a ChatGPT account. Its requests then use 
 4. The tab then goes to an address that starts with `http://127.0.0.1` and can't load. That's expected. Copy that address from the address bar.
 5. Paste it into **Address of the page** and choose **Add account**.
 
-Finish within ten minutes, as the person who began. Kaeso checks the address, signs the account in with OpenAI and keeps its tokens encrypted like any other key. It renews them by itself before they expire.
+Finish within ten minutes, as the person who began. Kaeso checks the address, signs the account in with OpenAI and keeps its tokens encrypted like any other key. It renews them by itself before they expire, ahead of time in the background when the account was used in the last week, so requests don't wait for OpenAI.
 
 A ChatGPT account serves requests under OpenAI's rules for plan usage:
 
@@ -110,7 +110,7 @@ For SpaceX, a provider key can also be a Grok account. Its requests then use the
 4. Open the page on any device, sign in to Grok and enter the code.
 5. Kaeso adds the key by itself once you approve. If you decline or the code expires, choose **Get a new code**.
 
-Finish within ten minutes, as the person who began. Kaeso keeps the account's tokens encrypted like any other key and renews them by itself in the last two minutes before they expire.
+Finish within ten minutes, as the person who began. Kaeso keeps the account's tokens encrypted like any other key and renews them by itself before they expire: ahead of time in the background when the account was used in the last week, otherwise in the last two minutes.
 
 A Grok account serves requests like an xAI API key, at `https://api.x.ai/v1` with the account's token, whatever base URL the install sets for SpaceX. If xAI refuses the account because its plan has no API access, the key shows **No API access** and its requests fail.
 

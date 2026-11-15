@@ -31,6 +31,8 @@ sequenceDiagram
   Gateway->>Stores: 计费、记录日志
 ```
 
+请求需要的密钥、项目的目录、限额和日志设置以及服务商密钥都来自内存。每个条目从 PostgreSQL 加载，通过 Valkey 与其他实例共享（Valkey 也会通知它们条目何时变化），并至少每 30 秒重新加载一次。过去 15 分钟内被请求读取过的条目会在过期前于后台重新加载，因此停顿之后的请求不必等待 PostgreSQL（`crates/kaeso-server/src/cache.rs`）。`account_renewal` 任务会在过去一周内用过的 ChatGPT 和 Grok 账户的访问令牌到期之前为其续期，因此请求不必等待服务商的登录服务（`crates/kaeso-server/src/services/credentials.rs`）。
+
 在开启了[响应缓存](../../console/response-cache.md)的项目中，网关在发送编码后的请求之前，会先在 Valkey 中查找它。命中时，网关从其密封的条目中解码，再为应用编码，无需经过服务商（`crates/kaeso-server/src/services/response_cache.rs`）。
 
 Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥、平台密钥或智能体的访问令牌进行认证。随后每个端点恰好检查一项权限，由服务修改 PostgreSQL 并写入审计事件。

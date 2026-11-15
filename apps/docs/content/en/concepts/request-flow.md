@@ -87,7 +87,7 @@ Apps in the OpenAI formats get these 503 answers as 500, which their SDKs retry.
 
 ## The provider key
 
-Kaeso uses the provider key assigned to the project for the model's provider, or else the organization's default for that provider. Without either, the request gets 400. Kaeso decrypts the key with the master key and keeps it in memory for at most 30 seconds.
+Kaeso uses the provider key assigned to the project for the model's provider, or else the organization's default for that provider. Without either, the request gets 400. Kaeso decrypts the key with the master key and keeps it in memory, reading it again at least every 30 seconds. Until 15 minutes after the project's last request, it reads it again in the background before the 30 seconds are up, so requests don't wait for it.
 
 ## Sending to the provider
 
