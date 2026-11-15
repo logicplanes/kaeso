@@ -73,6 +73,7 @@ services:
 | `kaeso_key_failure_blocks_total` | 任何增长：有地址在猜测 API 密钥 |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` 或 `dropped`：检查[邮件](email.md)设置 |
 | `kaeso_build_info{version}` | 正在运行的版本 |
+| `kaeso_update_available{version}` | 实例渠道上提供的最新版本比正在运行的版本新时为 1，`version` 为该最新版本；否则为 0，`version` 为正在运行的版本；关闭更新检查时没有此指标（[新版本](upgrades.md#新版本)） |
 
 ## 日志
 

@@ -2038,3 +2038,45 @@ async fn with_manual_updates_a_new_release_is_installed_from_the_console() {
     );
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn the_update_metric_names_the_newer_release_and_is_absent_while_checks_are_off() {
+    let s = TestServices::start().await;
+    let (_gh, url) = github(stable()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATES_CHECK", "true"),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    assert_eq!(
+        kaeso_server::services::updates::offered(&app.state)
+            .await
+            .unwrap(),
+        Some(None),
+        "up to date before the first check"
+    );
+    app.post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        kaeso_server::services::updates::offered(&app.state)
+            .await
+            .unwrap(),
+        Some(Some(next_patch()))
+    );
+
+    let off = app
+        .second_instance_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())])
+        .await;
+    assert_eq!(
+        kaeso_server::services::updates::offered(&off.state)
+            .await
+            .unwrap(),
+        None,
+        "a list nothing keeps current says nothing"
+    );
+}

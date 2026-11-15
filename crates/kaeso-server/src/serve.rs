@@ -236,6 +236,8 @@ pub async fn run(
     crate::services::response_cache::spawn_memory_watch(state.clone(), shutdown.clone());
 
     crate::setup::announce(&state).await;
+    // A restarted gateway says whether it is outdated before the update check's next run.
+    crate::services::updates::report_available(&state).await;
 
     let config = &state.config;
     let public = bind(config.listen).await?;

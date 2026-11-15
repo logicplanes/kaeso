@@ -26,6 +26,7 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
     } else {
         "check not due"
     };
+    updates::report_available(&state).await;
     Ok(match updates::auto_update(&state).await? {
         Auto::Off => format!("{job}{checked}"),
         auto => format!("{job}{checked}; {}", auto.summary()),

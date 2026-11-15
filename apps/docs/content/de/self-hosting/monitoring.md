@@ -73,6 +73,7 @@ services:
 | `kaeso_key_failure_blocks_total` | Jeder Anstieg: Eine Adresse rät API-Schlüssel |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` oder `dropped`: Prüfen Sie die Einstellungen für [E-Mail](email.md) |
 | `kaeso_build_info{version}` | Die laufende Version |
+| `kaeso_update_available{version}` | 1 mit dem neuesten Release des Kanals der Installation als `version`, solange es neuer als die laufende Version ist, sonst 0 mit der laufenden Version; fehlt, solange Update-Prüfungen aus sind ([Neue Releases](upgrades.md#neue-releases)) |
 
 ## Protokolle
 

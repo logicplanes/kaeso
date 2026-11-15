@@ -702,6 +702,31 @@ async fn check_locked(state: &AppState, trigger: Trigger) -> Result<Checked, Sto
     }
 }
 
+/// The newest release offered on the install's channel while it is newer than the running
+/// version, as the Updates page says; `None` while update checks are off, when the stored list
+/// isn't kept current.
+pub async fn offered(state: &AppState) -> Result<Option<Option<String>>, StoreError> {
+    if !state.config.updates.check {
+        return Ok(None);
+    }
+    let settings = updates::settings(&state.pg).await?;
+    let releases = known(updates::releases(&state.pg).await?);
+    Ok(Some(
+        plan(&settings, &releases).map(|p| p.target.version.to_string()),
+    ))
+}
+
+/// Sets `kaeso_update_available` from the stored release list.
+pub async fn report_available(state: &AppState) {
+    match offered(state).await {
+        Ok(Some(newest)) => crate::metrics::UPDATE_REPORTED.report(newest.as_deref()),
+        Ok(None) => {}
+        Err(e) => {
+            tracing::warn!(error = %e, "cannot read the release list for kaeso_update_available")
+        }
+    }
+}
+
 pub async fn due(state: &AppState) -> Result<bool, StoreError> {
     let settings = updates::settings(&state.pg).await?;
     Ok(
