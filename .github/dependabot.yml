@@ -131,6 +131,24 @@ updates:
           - version-update:semver-major
           - version-update:semver-minor
 
+  - package-ecosystem: opentofu
+    directories:
+      - /deploy/gcp/managed
+      - /deploy/gcp/quick-server
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    labels:
+      - dependencies
+    commit-message:
+      prefix: tofu
+    groups:
+      tofu-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
   - package-ecosystem: github-actions
     directories:
       - /
