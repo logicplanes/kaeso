@@ -85,7 +85,7 @@ docker compose exec gateway kaeso master-key rewrap
 
 The command reports how many secrets each key id still encrypts, and which old ids nothing uses any more.
 
-4. Remove the unused old key from `master-keys`, and recreate the gateway with the command from step 2. With several gateway instances, wait until every instance runs with the new list first.
+4. Remove the unused old key from `master-keys`, and recreate the gateway with the command from step 2. With several gateway instances, wait until every instance runs with the new list first. The unsubscribe links in emails sent before the rotation are signed with the old key and stop working once it is removed, so you can keep it a while longer for them.
 
 > [!WARNING]
 > The gateway doesn't start while stored secrets use a key id that isn't configured. Never remove a key before `rewrap` reports it unused.

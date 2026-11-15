@@ -414,3 +414,32 @@ async fn an_unsubscribe_link_turns_one_kind_off_without_a_session() {
         );
     }
 }
+
+#[tokio::test]
+async fn an_unsubscribe_link_sent_before_a_master_key_rotation_still_works() {
+    let s = TestServices::start().await;
+    let before = App::start(&s).await;
+    let owner = before.setup().await;
+    let user: UserId = owner.user_id.parse().unwrap();
+    let token = unsubscribe_token(&before.state, user, Kind::OrgMembers);
+    let link = format!("/notifications/unsubscribe?token={token}");
+    drop(before);
+
+    let rotated = App::start_with(
+        &s,
+        &[(
+            "KAESO_MASTER_KEYS",
+            "k2:AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI=,k1:AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=",
+        )],
+    )
+    .await;
+    assert_ne!(
+        unsubscribe_token(&rotated.state, user, Kind::OrgMembers),
+        token,
+        "new links are signed with the new key"
+    );
+    rotated
+        .call_with(Method::GET, &link, None, None, None)
+        .await
+        .expect_status(StatusCode::OK);
+}

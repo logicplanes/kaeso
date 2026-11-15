@@ -348,7 +348,7 @@ async fn run(command: Command) -> Result<()> {
                 say!("No older master key can be removed yet.");
             } else {
                 say!(
-                    "Nothing uses {}; remove {} from KAESO_MASTER_KEYS once every instance runs with the new list.",
+                    "No stored secret uses {}; remove {} from KAESO_MASTER_KEYS once every instance runs with the new list. Unsubscribe links in emails sent before the rotation stop working then.",
                     unused
                         .iter()
                         .map(|i| format!("`{i}`"))

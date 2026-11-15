@@ -85,7 +85,7 @@ docker compose exec gateway kaeso master-key rewrap
 
 Der Befehl meldet, wie viele Secrets jede Schlüssel-ID noch verschlüsselt und welche alten IDs nichts mehr verwendet.
 
-4. Entfernen Sie den unbenutzten alten Schlüssel aus `master-keys` und erstellen Sie das Gateway mit dem Befehl aus Schritt 2 neu. Bei mehreren Gateway-Instanzen warten Sie damit, bis jede Instanz mit der neuen Liste läuft.
+4. Entfernen Sie den unbenutzten alten Schlüssel aus `master-keys` und erstellen Sie das Gateway mit dem Befehl aus Schritt 2 neu. Bei mehreren Gateway-Instanzen warten Sie damit, bis jede Instanz mit der neuen Liste läuft. Die Abmeldelinks in E-Mails, die vor dem Wechsel versandt wurden, sind mit dem alten Schlüssel signiert und funktionieren nicht mehr, sobald er entfernt ist; Sie können ihn dafür noch eine Weile behalten.
 
 > [!WARNING]
 > Das Gateway startet nicht, solange gespeicherte Secrets eine Schlüssel-ID verwenden, die nicht konfiguriert ist. Entfernen Sie einen Schlüssel nie, bevor `rewrap` ihn als unbenutzt meldet.
