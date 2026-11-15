@@ -376,18 +376,13 @@ fn a_checked_body_of_every_json_dialect_decodes_as_the_dialect_decodes_it() {
         ) {
             continue;
         }
-        let kinds: &[RequestKind] = if dialect == DialectId::OpenAiVideos {
-            &[RequestKind::Video, RequestKind::Decide]
-        } else {
-            &[
-                RequestKind::Generate,
-                RequestKind::Image,
-                RequestKind::Speech,
-                RequestKind::Video,
-                RequestKind::Decide,
-            ]
-        };
-        for &kind in kinds {
+        for kind in [
+            RequestKind::Generate,
+            RequestKind::Image,
+            RequestKind::Speech,
+            RequestKind::Video,
+            RequestKind::Decide,
+        ] {
             let body = br#"{"model":"m","prompt":"A fox","text":"Hi","model_id":"m"}"#;
             let direct = dispatch::decode_request(dialect, kind, body, &json);
             let checked = Checked::new(dialect, &body[..])
