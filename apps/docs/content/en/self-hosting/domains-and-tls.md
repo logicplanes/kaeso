@@ -64,6 +64,8 @@ Set up the proxy for Kaeso:
 - If people reach Kaeso at another address than `https://` and `KAESO_DOMAIN`, set `KAESO_PUBLIC_URL` in `.env` to that address.
 - Never route the metrics port, 9100.
 
+To keep Caddy and let it serve plain HTTP to your proxy instead, give the installer a port as the domain and your proxy's address: `sh -s -- --domain :80 --public-url https://kaeso.example.com`. Caddy then answers on port 80 without a certificate, and the installer writes `KAESO_PUBLIC_URL` and a sender at that address to `.env`. Without `--public-url`, the address is `http://localhost` and the port.
+
 ### Connect a proxy that runs in Docker
 
 When your proxy runs in Docker on the same server, connect it to Kaeso over a Docker network instead of published ports. Create a network for the proxy and Kaeso alone:
