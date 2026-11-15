@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import de from "./locales/de.json";
 import zhCN from "./locales/zh-CN.json";
-import { localeOf, setLocale, t } from "./i18n";
+import { isOne, localeOf, setLocale, t } from "./i18n";
 
 function used(): Map<string, string> {
   const out = new Map<string, string>();
@@ -40,5 +40,15 @@ describe("translations", () => {
     setLocale("en-US");
     expect(t("stats.ofRequests", "{requests} requests", { requests: 3 })).toBe("3 requests");
     expect(t("stats.ofRequests", "{requests} requests")).toBe("{requests} requests");
+  });
+
+  it("knows when a count takes the singular form", () => {
+    setLocale("en-US");
+    expect([0, 1, 2].map(isOne)).toEqual([false, true, false]);
+    setLocale("de-DE");
+    expect([0, 1, 2].map(isOne)).toEqual([false, true, false]);
+    setLocale("zh-CN");
+    expect([0, 1, 2].map(isOne)).toEqual([false, false, false]);
+    setLocale("en-US");
   });
 });

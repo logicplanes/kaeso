@@ -23,6 +23,7 @@
   "stats.metric.requests": "Anfragen",
   "stats.metric.tokens": "Token",
   "stats.metricLabel": "Kennzahl",
+  "stats.ofRequest": "{requests} Anfrage",
   "stats.ofRequests": "{requests} Anfragen",
   "stats.open": "In Kaeso öffnen",
   "stats.period.day": "Letzte 24 Stunden",
