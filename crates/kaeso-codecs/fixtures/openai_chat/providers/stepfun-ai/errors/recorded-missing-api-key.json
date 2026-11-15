@@ -1,0 +1,6 @@
+{
+  "error": {
+    "message": "Incorrect API key provided",
+    "type": "invalid_api_key"
+  }
+}

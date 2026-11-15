@@ -1,0 +1,22 @@
+{
+  "id": "22ebae159c8f10c8657253671c8f7f17.6de8d4f65f5ba3dddeb693a1aa83de1e",
+  "object": "chat.completion",
+  "created": 1730963954,
+  "model": "step-5-preview",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "xxx"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "cached_tokens": 512,
+    "prompt_tokens": 591,
+    "completion_tokens": 120,
+    "total_tokens": 711
+  }
+}

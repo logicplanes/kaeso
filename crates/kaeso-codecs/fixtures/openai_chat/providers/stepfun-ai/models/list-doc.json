@@ -1,0 +1,17 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "step-5-preview",
+      "object": "model",
+      "created": 1789747200,
+      "owned_by": "stepai"
+    },
+    {
+      "id": "stepaudio-2.5-tts",
+      "object": "model",
+      "created": 1776089669,
+      "owned_by": "stepai"
+    }
+  ]
+}

@@ -11341,6 +11341,404 @@ expression: outcomes
     },
     "user": null
   },
+  "providers/stepfun-ai/both-reasoning-fields-schema": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "00000000000000000000000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "step-3.7-flash",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "There are three 'r's in strawberry.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_00000000000000000000000000000000_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 20,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 30,
+      "output_tokens_details": {
+        "reasoning_tokens": 19
+      },
+      "total_tokens": 50
+    },
+    "user": null
+  },
+  "providers/stepfun-ai/cached-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "22ebae159c8f10c8657253671c8f7f17.6de8d4f65f5ba3dddeb693a1aa83de1e",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "step-5-preview",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "xxx",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_22ebae159c8f10c8657253671c8f7f176de8d4f65f5ba3dddeb693a1aa83de1e_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 591,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 512
+      },
+      "output_tokens": 120,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 711
+    },
+    "user": null
+  },
+  "providers/stepfun-ai/image-url-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "298ad5e6-033a-41f8-9801-43be6e106f22",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "step-5-preview",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "In the soft light of dusk, a modern building comes into view with a striking red exterior that contrasts with its surroundings. The ground floor features spacious glass windows that fill the interior with natural light. A prominent sign stands on one side of the building, and the neatly arranged windows along the top showcase a modern design.\n\nIn the open area in front of the building, a bare tree sways gently in the breeze. The ground beneath is covered with gravel, adding a touch of nature to the space. On one side of the plaza, small lights cast a warm glow that feels especially cozy at twilight.\n\nThe area around the building is tidy, and the road is free of vehicles, giving a very peaceful feeling. In the distance, you can see the outlines of other buildings and the sun about to set, adding depth to the scene. The whole setting conveys a calm and orderly sense of urban life.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_298ad5e6033a41f8980143be6e106f22_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 497,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 169,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 666
+    },
+    "user": null
+  },
+  "providers/stepfun-ai/reasoning-effort-schema": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "00000000-0000-0000-0000-000000000000",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "step-5-preview",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Reinforcement learning trains an agent by trial and error. The agent acts in an environment and receives rewards or penalties. Over time it learns a policy that maximizes its total reward.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_00000000000000000000000000000000_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 18,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 61,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 79
+    },
+    "user": null
+  },
+  "providers/stepfun-ai/text-chat-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "b7b56af0-52a6-483f-a589-948182676a1b",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "step-5-preview",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "Hello! StepFun is a company focused on artificial intelligence technology and is dedicated to developing and providing various AI solutions. Our AI capabilities cover natural language processing, computer vision, and machine learning to help users in many industries improve efficiency and create value.\n\nWe provide a variety of AI products and services, including intelligent customer service, virtual assistants, smart recommendations, and intelligent moderation. These products and services can be applied across industries such as finance, retail, education, and healthcare. By using our AI, users can better understand and analyze data, deliver personalized services and experiences, and improve the efficiency and accuracy of their decisions.\n\nWe value the security and privacy of user data and strictly follow relevant laws, regulations, and industry standards. We believe AI technology should create more benefits for people rather than negative impacts. We will continue to work hard to provide smarter, more efficient, and safer AI solutions.",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_b7b56af052a6483fa589948182676a1b_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 83,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 0
+      },
+      "output_tokens": 176,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 259
+    },
+    "user": null
+  },
+  "providers/stepfun-ai/tools-doc": {
+    "background": false,
+    "completed_at": 1760000000,
+    "created_at": 1760000000,
+    "error": null,
+    "id": "291c59ebf4017a937a2a42a8ed52581f.c2669ebc05a491c70f821b4e568b6433",
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "max_tool_calls": null,
+    "metadata": {},
+    "model": "step-5-preview",
+    "object": "response",
+    "output": [
+      {
+        "content": [
+          {
+            "annotations": [],
+            "logprobs": [],
+            "text": "",
+            "type": "output_text"
+          }
+        ],
+        "id": "msg_kaeso_291c59ebf4017a937a2a42a8ed52581fc2669ebc05a491c70f821b4e568b6433_0",
+        "role": "assistant",
+        "status": "completed",
+        "type": "message"
+      },
+      {
+        "arguments": "{\"city\": \" Shanghai \"}",
+        "call_id": "call_brg23SRcTgmpm_V0jfP-iA",
+        "id": "fc_kaeso_291c59ebf4017a937a2a42a8ed52581fc2669ebc05a491c70f821b4e568b6433_1",
+        "name": "get_weather",
+        "status": "completed",
+        "type": "function_call"
+      }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "prompt_cache_key": null,
+    "reasoning": {
+      "effort": null,
+      "summary": null
+    },
+    "safety_identifier": null,
+    "service_tier": "default",
+    "status": "completed",
+    "store": false,
+    "temperature": 1.0,
+    "text": {
+      "format": {
+        "type": "text"
+      }
+    },
+    "tool_choice": "auto",
+    "tools": [],
+    "top_logprobs": 0,
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+      "input_tokens": 94,
+      "input_tokens_details": {
+        "cache_write_tokens": 0,
+        "cached_tokens": 48
+      },
+      "output_tokens": 16,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 110
+    },
+    "user": null
+  },
   "providers/togetherai/recorded-json-schema": {
     "background": false,
     "completed_at": 1760000000,

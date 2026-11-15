@@ -208,6 +208,7 @@ const MARKED_PROVIDERS = {
   "novita-ai": "Novita AI",
   volcengine: "Volcengine Ark",
   ovhcloud: "OVHcloud AI Endpoints",
+  "stepfun-ai": "StepFun",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

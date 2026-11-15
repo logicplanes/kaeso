@@ -1,0 +1,20 @@
+{
+  "model": "step-5-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "https://static-openapi.stepfun.com/static/platform-web/vipcase/case1.mp4"
+          }
+        },
+        {
+          "type": "text",
+          "text": "Summarize the main points of this video and extract the key information."
+        }
+      ]
+    }
+  ]
+}

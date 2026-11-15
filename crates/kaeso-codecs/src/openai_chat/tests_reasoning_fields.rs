@@ -93,6 +93,10 @@ const PROFILES: &[(&str, ChatProfile)] = &[
         ChatProfile::compatible("SiliconFlow").reasoning_fields(&["reasoning_content"]),
     ),
     (
+        "stepfun-ai",
+        ChatProfile::compatible("StepFun").reasoning_fields(&["reasoning", "reasoning_content"]),
+    ),
+    (
         "togetherai",
         ChatProfile::compatible("Together AI")
             .reasoning_fields(&["reasoning_content", "reasoning"]),
@@ -281,6 +285,8 @@ fn a_reasoning_field_is_a_reasoning_block_before_the_answer() {
         ("openrouter", "recorded-free-reasoning", "reasoning"),
         ("ovhcloud", "recorded-greeting", "reasoning"),
         ("siliconflow", "reasoning-doc", "reasoning_content"),
+        ("stepfun-ai", "reasoning-effort-schema", "reasoning"),
+        ("stepfun-ai", "both-reasoning-fields-schema", "reasoning"),
         ("togetherai", "recorded-reasoning-reply", "reasoning"),
         (
             "togetherai",
@@ -686,6 +692,12 @@ fn streamed_reasoning_fields_are_one_reasoning_block_that_ends_before_the_answer
             "siliconflow",
             "reasoning-stream-doc",
             "reasoning_content",
+            answered,
+        ),
+        (
+            "stepfun-ai",
+            "reasoning-stream-schema",
+            "reasoning",
             answered,
         ),
         (

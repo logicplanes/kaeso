@@ -1,0 +1,12 @@
+data: {"id":"00000000-0000-0000-0000-000000000000","object":"chat.completion.chunk","created":0,"model":"step-3.7-flash","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":""}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}
+
+data: {"id":"00000000-0000-0000-0000-000000000000","object":"chat.completion.chunk","created":1794672120,"model":"step-3.7-flash","choices":[{"index":0,"delta":{"role":"","reasoning":"s-t-r-a-w-b-e-r-r-y: "},"finish_reason":""}],"usage":{"prompt_tokens":18,"completion_tokens":6,"total_tokens":24}}
+
+data: {"id":"00000000-0000-0000-0000-000000000000","object":"chat.completion.chunk","created":1794672120,"model":"step-3.7-flash","choices":[{"index":0,"delta":{"role":"","reasoning":"one r after t, two before y."},"finish_reason":""}],"usage":{"prompt_tokens":18,"completion_tokens":14,"total_tokens":32}}
+
+data: {"id":"00000000-0000-0000-0000-000000000000","object":"chat.completion.chunk","created":1794672120,"model":"step-3.7-flash","choices":[{"index":0,"delta":{"role":"","content":"There are three 'r's in strawberry."},"finish_reason":""}],"usage":{"prompt_tokens":18,"completion_tokens":23,"total_tokens":41}}
+
+data: {"id":"00000000-0000-0000-0000-000000000000","object":"chat.completion.chunk","created":1794672120,"model":"step-3.7-flash","choices":[{"index":0,"delta":{"role":"","content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":18,"completion_tokens":23,"total_tokens":41}}
+
+data: [DONE]
+

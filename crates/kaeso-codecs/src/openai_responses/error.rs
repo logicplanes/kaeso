@@ -34,6 +34,10 @@ const BILLING: &[&str] = &[
     // Moonshot's 429 for an empty balance or a disabled account:
     // https://platform.kimi.ai/docs/api/errors
     "exceeded_current_quota_error",
+    // StepFun's 429s for a project or member that used up its share of an organization's
+    // credit: https://platform.stepfun.com/docs/zh/api-reference/error-codes
+    "project_credit_limit_exceeded",
+    "member_project_credit_limit_exceeded",
 ];
 
 pub(crate) fn kind_for_code(code: &str) -> Option<ErrorKind> {

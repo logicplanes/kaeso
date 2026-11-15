@@ -457,6 +457,30 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a StepFun key, which has no fixed prefix, with StepFun's Interface Keys page as its key hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "stepfun-ai", name: "StepFun prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "StepFun");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your StepFun API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "platform.stepfun.ai (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://platform.stepfun.ai/interface-key");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/⁠? \(opens in a new tab\)/, "")).toBe(
+      "Create one at platform.stepfun.ai under Interface Keys.",
+    );
+    const secret = within(dialog).getByLabelText("StepFun API key");
+    expect(secret).not.toHaveAttribute("placeholder");
+    await user.type(secret, "stepfun-key-0123");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "StepFun prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("StepFun prod is the StepFun default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "stepfun-ai", name: "StepFun prod", secret: "stepfun-key-0123", make_default: false },
+    ]);
+  });
+
   it("adds an OVHcloud AI Endpoints key, which has no fixed prefix, with the Public Cloud console as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "ovhcloud", name: "OVHcloud prod", is_default: true }));
     const { user, dialog } = await open();
