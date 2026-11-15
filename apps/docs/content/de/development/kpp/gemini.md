@@ -213,7 +213,7 @@ Der Fehler-Body von Google `{"error": {"code", "message", "status", "details"}}`
 | `INVALID_ARGUMENT` | `InvalidRequest` | `Authentication`, wenn `details[].reason` `API_KEY_INVALID` ist (`errors/recorded-error-invalid-key.json`), `ContextTooLong`, wenn die Meldung sagt, dass die Eingabe die Höchstzahl an Token überschreitet. |
 | `FAILED_PRECONDITION`, `OUT_OF_RANGE` | `InvalidRequest` | Etwa Bildgenerierung, die im Land des Schlüssels nicht verfügbar ist. |
 | `UNAUTHENTICATED` | `Authentication` | |
-| `PERMISSION_DENIED` | `PermissionDenied` | |
+| `PERMISSION_DENIED` | `PermissionDenied` | `InvalidRequest`, wenn die Meldung sagt, dass der Schlüssel eine Datei nicht lesen darf, die die Anfrage nennt, etwa eine gelöschte, abgelaufene oder fremde `fileData.fileUri` (`errors/file-permission-denied-published.json`): Der Fehler liegt bei der Anfrage, nicht beim Schlüssel. |
 | `NOT_FOUND` | `NotFound` | |
 | `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, etwa `"23s"`, → `retry_after`. |
 | `UNAVAILABLE` | `Overloaded` | |

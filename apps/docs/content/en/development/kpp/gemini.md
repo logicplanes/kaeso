@@ -213,7 +213,7 @@ Google's error body `{"error": {"code", "message", "status", "details"}}` ([trou
 | `INVALID_ARGUMENT` | `InvalidRequest` | `Authentication` when `details[].reason` is `API_KEY_INVALID` (`errors/recorded-error-invalid-key.json`), `ContextTooLong` when the message says the input exceeds the maximum number of tokens. |
 | `FAILED_PRECONDITION`, `OUT_OF_RANGE` | `InvalidRequest` | Such as image generation not available in the key's country. |
 | `UNAUTHENTICATED` | `Authentication` | |
-| `PERMISSION_DENIED` | `PermissionDenied` | |
+| `PERMISSION_DENIED` | `PermissionDenied` | `InvalidRequest` when the message says the key can't access a file the request names, such as a deleted, expired or another project's `fileData.fileUri` (`errors/file-permission-denied-published.json`): the request is at fault, not the key. |
 | `NOT_FOUND` | `NotFound` | |
 | `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, such as `"23s"`, → `retry_after`. |
 | `UNAVAILABLE` | `Overloaded` | |

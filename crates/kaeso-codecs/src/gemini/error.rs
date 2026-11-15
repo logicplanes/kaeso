@@ -25,6 +25,13 @@ fn kind_of(status: Option<&str>, http: u16, details: &[Value], message: &str) ->
             ErrorKind::InvalidRequest
         }
         Some("UNAUTHENTICATED") => ErrorKind::Authentication,
+        // Google refuses a file the request names but the key can't read (deleted, expired or
+        // another project's) with 403 too; that is about the request, not the key.
+        Some("PERMISSION_DENIED")
+            if message.starts_with("You do not have permission to access the File") =>
+        {
+            ErrorKind::InvalidRequest
+        }
         Some("PERMISSION_DENIED") => ErrorKind::PermissionDenied,
         Some("NOT_FOUND") => ErrorKind::NotFound,
         Some("RESOURCE_EXHAUSTED") => ErrorKind::RateLimited,
