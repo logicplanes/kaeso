@@ -275,5 +275,7 @@
   "account.emailMeAboutOrg": "向我发送关于此组织的邮件",
   "account.emailMeAboutOrgHint": "安全邮件始终会送达。",
   "account.orgEmailsOff": "已停止发送关于 {org} 的邮件",
-  "account.orgEmailsOn": "已恢复发送关于 {org} 的邮件"
+  "account.orgEmailsOn": "已恢复发送关于 {org} 的邮件",
+  "account.notify.webhooks": "Webhook 需要处理",
+  "account.notify.webhooksHint": "当某个 Webhook 连续失败 20 次并被关闭时。"
 }

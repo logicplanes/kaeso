@@ -48,6 +48,28 @@
             "cloud_only": false,
             "owner_only": true,
             "needs": ["org.view", "members.view"]
+          },
+          {
+            "id": "webhooks.view",
+            "scope": "org",
+            "name": "View webhooks",
+            "description": "See the organization's webhooks, what they receive and their last deliveries (never secrets).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "webhooks.manage",
+            "scope": "org",
+            "name": "Manage webhooks",
+            "description": "Add, change, test and delete webhooks, and rotate their signing secrets.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view", "webhooks.view"]
           }
         ]
       },

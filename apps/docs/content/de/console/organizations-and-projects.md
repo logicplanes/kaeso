@@ -38,6 +38,7 @@ Eine Route ist das Format der App, das Format, in dem Kaeso den Anbieter aufrief
 | Mitglieder | Mitglieder, Einladungen und Rollen ([Mitglieder und Rollen](members-and-roles.md)) |
 | Sicherheit | Single Sign-on, die Anforderungen an die Anmeldung, die maximale Schlüssellaufzeit und die Agenten der Mitglieder |
 | Plattform-Schlüssel | Schlüssel für Skripte, die die Organisation verwalten ([Plattform-Schlüssel](api-keys.md#plattform-schlüssel)) |
+| Webhooks | Wohin die Benachrichtigungen der Organisation signiert gehen, etwa an Bereitschaftstools und Chat ([Webhooks](webhooks.md)) |
 | Protokollierung | Inhaltsprotokollierung, Aufbewahrung, Speicher und das Löschen von Protokollen ([Anfrageprotokolle](request-logs.md#aufbewahrung)) |
 | Audit-Log | Jede Änderung in der Organisation ([Audit-Log](#audit-log-lesen)) |
 

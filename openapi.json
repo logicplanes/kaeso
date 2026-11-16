@@ -23667,6 +23667,602 @@
         ],
         "x-kaeso-access": "right:usage.org.view"
       }
+    },
+    "/platform/v1/orgs/{org}/webhooks": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The organization's webhooks, oldest first.",
+        "description": "**Right:** `webhooks.view` on the organization in the path.",
+        "operationId": "getOrgsOrgWebhooks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_WebhookView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:webhooks.view"
+      },
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Adds a webhook. Its signing secret is in the answer, and only there.",
+        "description": "An organization has at most 10 webhooks. The URL must reach a public\n`https` address, or a network the instance allows (`KAESO_WEBHOOKS_ALLOWED_NETWORKS`).\n\n**Right:** `webhooks.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgWebhooks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedWebhook"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:webhooks.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/webhooks/{webhook}": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "One webhook.",
+        "description": "**Right:** `webhooks.view` on the organization in the path.",
+        "operationId": "getOrgsOrgWebhooksWebhook",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "webhook",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:webhooks.view"
+      },
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Deletes a webhook with its deliveries; events no longer go to it.",
+        "description": "**Right:** `webhooks.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "deleteOrgsOrgWebhooksWebhook",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "webhook",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:webhooks.manage"
+      },
+      "patch": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Changes a webhook, or turns it on or off.",
+        "description": "**Right:** `webhooks.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "patchOrgsOrgWebhooksWebhook",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "webhook",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:webhooks.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/webhooks/{webhook}/deliveries": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "A webhook's last 50 deliveries, newest first; deliveries are kept 7 days.",
+        "description": "**Right:** `webhooks.view` on the organization in the path.",
+        "operationId": "getOrgsOrgWebhooksWebhookDeliveries",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "webhook",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_WebhookDeliveryView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:webhooks.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/webhooks/{webhook}/secret": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Replaces a webhook's signing secret; the answer holds the new one, shown once.",
+        "description": "Deliveries are signed with the new secret from now on, tries of earlier\nevents included.\n\n**Right:** `webhooks.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgWebhooksWebhookSecret",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "webhook",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:webhooks.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/webhooks/{webhook}/test": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Sends the webhook a `webhook.test` event now, once, and says how it went.",
+        "description": "**Right:** `webhooks.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgWebhooksWebhookTest",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "webhook",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:webhooks.manage"
+      }
     }
   },
   "components": {
@@ -25351,6 +25947,27 @@
           }
         ],
         "description": "A key with its secret, shown once."
+      },
+      "CreatedWebhook": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/WebhookView"
+          },
+          {
+            "type": "object",
+            "required": [
+              "secret"
+            ],
+            "properties": {
+              "secret": {
+                "type": "string",
+                "description": "The secret that signs every delivery, as Standard Webhooks writes it. Shown only now.",
+                "example": "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw"
+              }
+            }
+          }
+        ],
+        "description": "A webhook with its signing secret, shown once."
       },
       "CredentialAssign": {
         "type": "object",
@@ -32803,6 +33420,230 @@
                   "format": "int64",
                   "description": "Requests whose cost is unknown: their model has no price for what they\nmade or heard, such as a video model without a price per clip. `cost` leaves\nthem out.",
                   "minimum": 0
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_WebhookDeliveryView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One event sent, or to be sent, to a webhook.",
+              "required": [
+                "id",
+                "type",
+                "status",
+                "attempts",
+                "created_at"
+              ],
+              "properties": {
+                "attempts": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "How many times it was sent."
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the event happened."
+                },
+                "finished_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it was delivered or failed for good; `null` while pending."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/WebhookMessageId",
+                  "description": "The event's id, the `webhook-id` header the receiver gets in every try."
+                },
+                "last_error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why the last try failed."
+                },
+                "last_status": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The receiver's status at the last try."
+                },
+                "next_attempt_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it is sent again; `null` unless it is pending."
+                },
+                "status": {
+                  "type": "string",
+                  "description": "`pending` while tries are left, `delivered`, or `failed` after the last try.",
+                  "example": "delivered"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "The event's type, such as `budget.alert`.",
+                  "example": "budget.alert"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_WebhookView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A webhook, without its secret.",
+              "required": [
+                "id",
+                "name",
+                "url",
+                "format",
+                "kinds",
+                "enabled",
+                "consecutive_failures",
+                "created_at",
+                "updated_at"
+              ],
+              "properties": {
+                "consecutive_failures": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "Failed tries since the last delivery."
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When it was added."
+                },
+                "disabled_reason": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "`failures` when Kaeso turned it off after 20 failed tries in a row; `null` otherwise."
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Whether events are sent to it."
+                },
+                "format": {
+                  "$ref": "#/components/schemas/WebhookFormat",
+                  "description": "What it is sent: `json` or `slack`."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/WebhookId",
+                  "description": "Its id."
+                },
+                "kinds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The notices it receives, by the ids of the notification catalogue.",
+                  "example": [
+                    "budget_alerts",
+                    "provider_keys"
+                  ]
+                },
+                "last_attempt_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it was last sent an event; `null` before the first."
+                },
+                "last_error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why the last try failed; `null` when it worked."
+                },
+                "last_status": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The receiver's status at the last try; `null` before any or when it couldn't be reached."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "A name to recognise it by.",
+                  "example": "On-call"
+                },
+                "project": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectId",
+                      "description": "The one project whose events it receives; `null` for the whole organization."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When it last changed."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Where events are sent.",
+                  "example": "https://hooks.example.com/kaeso"
                 }
               }
             },
@@ -41691,6 +42532,331 @@
           }
         },
         "additionalProperties": false
+      },
+      "WebhookCreate": {
+        "type": "object",
+        "description": "A new webhook.",
+        "required": [
+          "name",
+          "url",
+          "kinds"
+        ],
+        "properties": {
+          "format": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WebhookFormat",
+                "description": "`json` (the default) or `slack`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The notices to receive: `budget_alerts`, `limit_reached`, `key_expiry`,\n`content_logging`, `mcp_servers`, `org_security`, `org_members`, `provider_keys`,\n`model_changes`.",
+            "example": [
+              "budget_alerts",
+              "provider_keys"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "A name to recognise it by, 1 to 100 characters.",
+            "example": "On-call"
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "Only this project's events; absent or `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "Where to send events: `https`, or `http` for a network the instance allows.",
+            "example": "https://hooks.example.com/kaeso"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookDeliveryView": {
+        "type": "object",
+        "description": "One event sent, or to be sent, to a webhook.",
+        "required": [
+          "id",
+          "type",
+          "status",
+          "attempts",
+          "created_at"
+        ],
+        "properties": {
+          "attempts": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many times it was sent."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the event happened."
+          },
+          "finished_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was delivered or failed for good; `null` while pending."
+          },
+          "id": {
+            "$ref": "#/components/schemas/WebhookMessageId",
+            "description": "The event's id, the `webhook-id` header the receiver gets in every try."
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last try failed."
+          },
+          "last_status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The receiver's status at the last try."
+          },
+          "next_attempt_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it is sent again; `null` unless it is pending."
+          },
+          "status": {
+            "type": "string",
+            "description": "`pending` while tries are left, `delivered`, or `failed` after the last try.",
+            "example": "delivered"
+          },
+          "type": {
+            "type": "string",
+            "description": "The event's type, such as `budget.alert`.",
+            "example": "budget.alert"
+          }
+        }
+      },
+      "WebhookFormat": {
+        "type": "string",
+        "description": "What a webhook is sent: `json`, Kaeso's event, or `slack`, `{\"text\": …}` as Slack's incoming webhooks and compatible receivers take it.",
+        "enum": [
+          "json",
+          "slack"
+        ]
+      },
+      "WebhookId": {
+        "type": "string",
+        "examples": [
+          "whk_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^whk_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "WebhookMessageId": {
+        "type": "string",
+        "examples": [
+          "msg_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^msg_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "WebhookSecret": {
+        "type": "object",
+        "description": "A webhook's new signing secret, shown once.",
+        "required": [
+          "secret"
+        ],
+        "properties": {
+          "secret": {
+            "type": "string",
+            "description": "The new secret, as Standard Webhooks writes it. Shown only now.",
+            "example": "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw"
+          }
+        }
+      },
+      "WebhookUpdate": {
+        "type": "object",
+        "description": "Changes to a webhook; absent fields stay as they are.",
+        "properties": {
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Turns it on or off; turning it on clears its failures."
+          },
+          "format": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WebhookFormat",
+                "description": "A new format."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kinds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "The notices to receive, replacing the list."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new name."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "Only this project's events; `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new address; checked as when it was added."
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookView": {
+        "type": "object",
+        "description": "A webhook, without its secret.",
+        "required": [
+          "id",
+          "name",
+          "url",
+          "format",
+          "kinds",
+          "enabled",
+          "consecutive_failures",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "consecutive_failures": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Failed tries since the last delivery."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it was added."
+          },
+          "disabled_reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`failures` when Kaeso turned it off after 20 failed tries in a row; `null` otherwise."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether events are sent to it."
+          },
+          "format": {
+            "$ref": "#/components/schemas/WebhookFormat",
+            "description": "What it is sent: `json` or `slack`."
+          },
+          "id": {
+            "$ref": "#/components/schemas/WebhookId",
+            "description": "Its id."
+          },
+          "kinds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The notices it receives, by the ids of the notification catalogue.",
+            "example": [
+              "budget_alerts",
+              "provider_keys"
+            ]
+          },
+          "last_attempt_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was last sent an event; `null` before the first."
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last try failed; `null` when it worked."
+          },
+          "last_status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The receiver's status at the last try; `null` before any or when it couldn't be reached."
+          },
+          "name": {
+            "type": "string",
+            "description": "A name to recognise it by.",
+            "example": "On-call"
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "The one project whose events it receives; `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When it last changed."
+          },
+          "url": {
+            "type": "string",
+            "description": "Where events are sent.",
+            "example": "https://hooks.example.com/kaeso"
+          }
+        }
       },
       "WhatsNewRelease": {
         "type": "object",

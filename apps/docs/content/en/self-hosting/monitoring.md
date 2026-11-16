@@ -76,6 +76,7 @@ services:
 | `kaeso_auth_failures_total{method, reason}` | Bursts of failed sign-ins or keys. `reason="throttled"` counts requests refused by [API key throttling](configuration.md#api-key-throttling) |
 | `kaeso_key_failure_blocks_total` | Any increase: an address is guessing API keys |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` or `dropped`: check the [email](email.md) settings |
+| `kaeso_webhook_deliveries_total{outcome}` | Tries to deliver [webhook](../console/webhooks.md) events: `delivered`, `retried` for a failed try that is tried again, `failed` after the last try, and `dropped` for events of a webhook that was turned off. A rise in `failed`: check the receivers |
 | `kaeso_build_info{version}` | The running version |
 | `kaeso_connections_open`, `kaeso_connections_max` | Connections the gateway serves now, and the most it serves at once (`server.max_connections`); at the limit, new ones wait. Alert on `kaeso_connections_open / kaeso_connections_max` and add gateways before it reaches 1 |
 | `kaeso_model_requests_in_flight` | Model requests being served now, streams and realtime sessions included, until each ends |

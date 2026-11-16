@@ -15,6 +15,14 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.orgOwnershipTransfer.name", "Transfer ownership"),
     t("rights.orgOwnershipTransfer.description", "Make another member an owner in your place; only owners hold it."),
   ],
+  "webhooks.view": () => [
+    t("rights.webhooksView.name", "View webhooks"),
+    t("rights.webhooksView.description", "See the organization's webhooks, what they receive and their last deliveries (never secrets)."),
+  ],
+  "webhooks.manage": () => [
+    t("rights.webhooksManage.name", "Manage webhooks"),
+    t("rights.webhooksManage.description", "Add, change, test and delete webhooks, and rotate their signing secrets."),
+  ],
   "members.view": () => [t("rights.membersView.name", "View members"), t("rights.membersView.description", "See members, their roles and their rights.")],
   "members.invite": () => [
     t("rights.membersInvite.name", "Invite members"),

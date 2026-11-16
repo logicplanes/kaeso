@@ -16,7 +16,8 @@ use time::{OffsetDateTime, PrimitiveDateTime};
 use uuid::Uuid;
 
 use super::dispatch::{
-    Recipients, Send, about, deliver, org_holders, project_holders, project_path, settings_path,
+    Recipients, Send, about, deliver, deliver_with, org_holders, project_holders, project_path,
+    settings_path,
 };
 use super::triggers::{org_name, person, project_name, provider_name};
 use crate::platform::error::ApiResult;
@@ -117,17 +118,22 @@ async fn signed_out(
                 actor: None,
             };
             let to = org_holders(state, server.org_id, &[OrgRight::McpServersManage]).await?;
-            deliver(
+            deliver_with(
                 state,
                 &send,
                 &Fact::ServerSignedOut {
                     server: &server.name,
                 },
                 to,
+                Some(server_ids(server)),
             )
             .await
         }
     }
+}
+
+fn server_ids(server: &ServerRow) -> serde_json::Value {
+    serde_json::json!({ "server_id": kaeso_core::id::McpServerId::from_uuid(server.id).to_string() })
 }
 
 pub async fn tools_held(state: &AppState, server: &ServerRow, tools: &[String]) {
@@ -148,7 +154,7 @@ pub async fn tools_held(state: &AppState, server: &ServerRow, tools: &[String]) 
                 open: format!("orgs/{}/mcp-servers", OrgId::from_uuid(server.org_id)),
                 actor: None,
             };
-            sent += deliver(
+            sent += deliver_with(
                 state,
                 &send,
                 &Fact::ToolHeld {
@@ -156,6 +162,7 @@ pub async fn tools_held(state: &AppState, server: &ServerRow, tools: &[String]) 
                     tool,
                 },
                 to.clone(),
+                Some(server_ids(server)),
             )
             .await?;
         }
@@ -271,7 +278,16 @@ async fn provider_key(
         actor: None,
     };
     let to = org_holders(state, org, &[OrgRight::ProviderCredentialsReplace]).await?;
-    deliver(state, &send, &Fact::ProviderKey { key: &key, change }, to).await
+    let ids =
+        serde_json::json!({ "provider_key_id": CredentialId::from_uuid(credential).to_string() });
+    deliver_with(
+        state,
+        &send,
+        &Fact::ProviderKey { key: &key, change },
+        to,
+        Some(ids),
+    )
+    .await
 }
 
 pub fn when_done<S: futures::Stream>(
@@ -394,7 +410,8 @@ pub async fn limit_reached(
             scope: scope(limit.subject, name.as_deref()),
             resets: resets(limit, at),
         };
-        deliver(state, &send, &fact, to).await
+        let ids = serde_json::json!({ "limit_id": LimitId::from_uuid(limit.id).to_string() });
+        deliver_with(state, &send, &fact, to, Some(ids)).await
     }
     .await;
     warn(result, "limit_reached");

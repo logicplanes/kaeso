@@ -47,6 +47,26 @@ impl MacKey {
     }
 }
 
+/// HMAC-SHA256 of `message` under a key of any length, as Standard Webhooks signs deliveries.
+pub fn hmac_sha256(key: &[u8], message: &[u8]) -> [u8; 32] {
+    // HMAC pads a key up to the block size with zeros and hashes a longer one first.
+    let mut block = [0_u8; 64];
+    if key.len() > block.len() {
+        let digest: [u8; 32] = <Sha256 as sha2::Digest>::digest(key).into();
+        for (b, k) in block.iter_mut().zip(digest) {
+            *b = k;
+        }
+    } else {
+        for (b, k) in block.iter_mut().zip(key) {
+            *b = *k;
+        }
+    }
+    let mut mac = HmacSha256::new(&block.into());
+    block.zeroize();
+    mac.update(message);
+    mac.finalize().into_bytes().into()
+}
+
 fn keyed(key: &[u8; 32]) -> HmacSha256 {
     let mut block = [0_u8; 64];
     for (b, k) in block.iter_mut().zip(key) {
@@ -78,5 +98,27 @@ mod tests {
         let b = ring();
         assert!(!MacKey::derive(&b, "cache").verify(&[b"key", b"value"], &tag));
         assert_eq!(format!("{mac:?}"), "MacKey([redacted])");
+    }
+
+    #[test]
+    fn hmac_sha256_matches_rfc_4231() {
+        // Test case 2: a key shorter than the block; test case 6: a key longer than it.
+        let short = super::hmac_sha256(b"Jefe", b"what do ya want for nothing?");
+        assert_eq!(
+            hex(&short),
+            "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843"
+        );
+        let long = super::hmac_sha256(
+            &[0xaa; 131],
+            b"Test Using Larger Than Block-Size Key - Hash Key First",
+        );
+        assert_eq!(
+            hex(&long),
+            "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
+        );
+    }
+
+    fn hex(bytes: &[u8]) -> String {
+        bytes.iter().map(|b| format!("{b:02x}")).collect()
     }
 }

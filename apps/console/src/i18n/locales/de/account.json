@@ -275,5 +275,7 @@
   "account.emailMeAboutOrg": "Mir E-Mails zu dieser Organisation senden",
   "account.emailMeAboutOrgHint": "Sicherheits-E-Mails kommen in jedem Fall an.",
   "account.orgEmailsOff": "E-Mails zu {org} gestoppt",
-  "account.orgEmailsOn": "E-Mails zu {org} wieder an"
+  "account.orgEmailsOn": "E-Mails zu {org} wieder an",
+  "account.notify.webhooks": "Webhooks brauchen Aufmerksamkeit",
+  "account.notify.webhooksHint": "Wenn ein Webhook 20-mal in Folge scheitert und ausgeschaltet wird."
 }

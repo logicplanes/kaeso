@@ -48,7 +48,7 @@ Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur e
 | Admin | Alle außer `org.delete`, `org.ownership.transfer` und `billing.manage` | Alle |
 | Abrechnung | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | Keine |
 | Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine |
-| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters ohne `tools.use` und `project.audit_log.view` |
+| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `platform_keys.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters ohne `tools.use` und `project.audit_log.view` |
 | Mitglied | `org.view`, `members.view` | Keine |
 
 | Projektrolle | Rechte |
@@ -96,6 +96,8 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `org.update` | Organisation bearbeiten | Die Organisation umbenennen und Bild und allgemeine Einstellungen ändern. |  |
 | `org.delete` | Organisation löschen | Die Organisation zur Löschung vormerken oder sie in der Wartezeit wiederherstellen. | sensibel; kürzliche Anmeldung |
 | `org.ownership.transfer` | Inhaberschaft übertragen | Ein anderes Mitglied an Ihrer Stelle zum Inhaber machen; nur Inhaber haben dieses Recht. | sensibel; kürzliche Anmeldung; erfordert `members.view` |
+| `webhooks.view` | Webhooks ansehen | Die Webhooks der Organisation sehen, was sie empfangen und ihre letzten Zustellungen (nie Geheimnisse). |  |
+| `webhooks.manage` | Webhooks verwalten | Webhooks hinzufügen, ändern, testen und löschen und ihre Signaturgeheimnisse rotieren. | sensibel; kürzliche Anmeldung; erfordert `webhooks.view` |
 
 ### Mitglieder & Zugriff
 
@@ -300,7 +302,7 @@ Die Konsole bietet vier Vorlagen für einen Agenten. Jede ist ein Ausgangspunkt,
 
 | Vorlage | Organisationsrechte | Projektrechte | Kontorechte | Instanz-Vorlage |
 | --- | --- | --- | --- | --- |
-| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Lesen |
+| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Lesen |
 | Builder | Die der Rolle Entwickler | Die der Rolle Entwickler ohne `logs.content.view` und `tools.use`, und `models.manage` | `account.view`, `account.keys.view` | Keine |
 | Operator | Die der Rolle Admin, ohne die Rechte, die Agenten nie erhalten | Alle außer `tools.use` | Alle außer `account.keys.manage` und `account.memberships.leave` | Konfigurieren |
 | Vollzugriff | Alle außer den Rechten, die Agenten nie erhalten | Alle außer `tools.use` | Alle | Admin |
@@ -327,7 +329,7 @@ Eine Organisation, die keine Agenten zulässt, ist jedem Agenten verschlossen. E
 
 ### Nie für Agenten
 
-Kein Agent erhält `org.ownership.transfer`, `security.sso.manage`, `security.sso.require` oder `tools.use`: Ein MCP-Client erreicht die Tools eines Projekts nur über dessen Portal, angemeldet von einer Person. Agenten können auch ihren eigenen Zugriff nicht erweitern, keine anderen Agenten autorisieren und niemandes Agenten verwalten. Die Kontosicherheit berühren sie nie: die E-Mail-Adresse, das Passwort, die Zwei-Faktor-Authentifizierung, Wiederherstellungscodes, Sitzungen, Verknüpfungen mit Single Sign-on und das Löschen des Kontos. [Tools](../api/mcp.md#tools) listet jede Aktion, die eine Konsolensitzung braucht.
+Kein Agent erhält `org.ownership.transfer`, `security.sso.manage`, `security.sso.require`, `webhooks.manage` oder `tools.use`: Ein MCP-Client erreicht die Tools eines Projekts nur über dessen Portal, angemeldet von einer Person, und nur eine Person wählt, wohin die Benachrichtigungen der Organisation gehen. Agenten können auch ihren eigenen Zugriff nicht erweitern, keine anderen Agenten autorisieren und niemandes Agenten verwalten. Die Kontosicherheit berühren sie nie: die E-Mail-Adresse, das Passwort, die Zwei-Faktor-Authentifizierung, Wiederherstellungscodes, Sitzungen, Verknüpfungen mit Single Sign-on und das Löschen des Kontos. [Tools](../api/mcp.md#tools) listet jede Aktion, die eine Konsolensitzung braucht.
 
 ### Sensible Rechte
 

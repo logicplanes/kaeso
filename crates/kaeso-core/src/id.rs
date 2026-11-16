@@ -170,6 +170,9 @@ public_id!(AgentId, "agt_");
 public_id!(AgentClientId, "cli_");
 public_id!(AgentActivityId, "act_");
 public_id!(McpServerId, "mcp_");
+public_id!(WebhookId, "whk_");
+// The id of one event a webhook receives, the same in every try: Standard Webhooks' `webhook-id`.
+public_id!(WebhookMessageId, "msg_");
 public_id!(McpConnectionId, "conn_");
 public_id!(ToolId, "tool_");
 public_id!(PortalGrantId, "grant_");

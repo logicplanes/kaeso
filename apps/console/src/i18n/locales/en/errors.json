@@ -778,5 +778,10 @@
   "errors.wait.hours": "{count, plural, one {# hour} other {# hours}}",
   "errors.wait.minutes": "{count, plural, one {# minute} other {# minutes}}",
   "errors.wait.seconds": "{count, plural, one {# second} other {# seconds}}",
+  "errors.webhook.kindUnknown": "`{kind}` is no notice a webhook can receive.",
+  "errors.webhook.noKinds": "Choose at least one notice for the webhook to receive.",
+  "errors.webhook.offForTest": "The webhook is off; turn it on to send it a test event.",
+  "errors.webhook.tooMany": "An organization has at most 10 webhooks; delete one first.",
+  "errors.webhook.urlShape": "`url` must be a full URL with a host, without a user or a fragment.",
   "errors.wrongCredentials": "The email or password is wrong."
 }

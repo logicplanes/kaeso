@@ -548,6 +548,10 @@ pub enum Fact<'a> {
         key: &'a Credential<'a>,
         change: ProviderKey<'a>,
     },
+    /// A webhook failed 20 times in a row and was turned off.
+    WebhookDisabled {
+        webhook: &'a str,
+    },
     Model {
         provider: &'a str,
         project: &'a str,
@@ -596,6 +600,7 @@ impl Fact<'_> {
             Fact::Member { .. } => EmailKind::MemberChanges,
             Fact::InviteAccepted { .. } => EmailKind::InviteAccepted,
             Fact::ProviderKey { .. } => EmailKind::ProviderKeys,
+            Fact::WebhookDisabled { .. } => EmailKind::Webhooks,
             Fact::Model { .. } => EmailKind::ModelChanges,
             Fact::CostReport { .. } => EmailKind::CostReport,
             Fact::InstanceUpdate { .. } => EmailKind::InstanceUpdates,
@@ -873,6 +878,12 @@ impl Fact<'_> {
                 };
                 w(heading.to_owned(), sentence, "Open request logs")
             }
+            Fact::WebhookDisabled { webhook } => w(
+                format!("The webhook {webhook} was turned off"),
+                "Its receiver failed 20 times in a row; it gets nothing until someone turns it on again."
+                    .to_owned(),
+                "Open webhooks",
+            ),
             Fact::ServerSignedOut { server } => w(
                 format!("{server} signed Kaeso out"),
                 "Its tools stop working until someone signs in again.".to_owned(),
@@ -1207,6 +1218,12 @@ impl Fact<'_> {
                 };
                 w(heading.to_owned(), sentence, "Anfrageprotokolle öffnen")
             }
+            Fact::WebhookDisabled { webhook } => w(
+                format!("Der Webhook {webhook} wurde ausgeschaltet"),
+                "Sein Empfänger scheiterte 20-mal in Folge; er bekommt nichts, bis jemand ihn wieder einschaltet."
+                    .to_owned(),
+                "Webhooks öffnen",
+            ),
             Fact::ServerSignedOut { server } => w(
                 format!("{server} hat Kaeso abgemeldet"),
                 "Seine Tools funktionieren erst wieder, wenn sich jemand erneut anmeldet."
@@ -1552,6 +1569,11 @@ impl Fact<'_> {
                 };
                 w(heading.to_owned(), sentence, "打开请求日志")
             }
+            Fact::WebhookDisabled { webhook } => w(
+                zh(&["Webhook ", webhook, " 已关闭"]),
+                "其接收方连续失败 20 次；在有人重新开启之前，它不会收到任何内容。".to_owned(),
+                "打开 Webhook",
+            ),
             Fact::ServerSignedOut { server } => w(
                 zh(&[server, "已让 Kaeso 退出登录"]),
                 "在有人重新登录之前，它的工具无法使用。".to_owned(),

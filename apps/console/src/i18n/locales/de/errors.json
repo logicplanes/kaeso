@@ -778,5 +778,10 @@
   "errors.logErrorMessage": "`error_message` muss 1 bis 200 Zeichen lang sein.",
   "errors.limitOneToFifty": "`limit` muss zwischen 1 und 50 liegen.",
   "errors.logClient": "`client` muss eine Client-App sein, etwa `codex` oder `other`.",
-  "errors.retriesRange": "`retries` muss zwischen 0 und 3 liegen."
+  "errors.retriesRange": "`retries` muss zwischen 0 und 3 liegen.",
+  "errors.webhook.urlShape": "`url` muss eine vollständige URL mit Host sein, ohne Benutzer und ohne Fragment.",
+  "errors.webhook.kindUnknown": "`{kind}` ist keine Benachrichtigung, die ein Webhook empfangen kann.",
+  "errors.webhook.noKinds": "Wählen Sie mindestens eine Benachrichtigung, die der Webhook empfangen soll.",
+  "errors.webhook.tooMany": "Eine Organisation hat höchstens 10 Webhooks; löschen Sie zuerst einen.",
+  "errors.webhook.offForTest": "Der Webhook ist aus; schalten Sie ihn ein, um ihm ein Testereignis zu senden."
 }

@@ -133,11 +133,14 @@ The weekly summary and the monthly cost report go out on their own schedule, so 
 | Organization | Ownership and deletion | Owners | Always |
 | Organization | Member changes | `members.invite` | Daily |
 | Organization | Your invitation was accepted | Whoever sent it | Now |
+| Organization | Webhooks need attention | `webhooks.manage` | Now |
 | Organization | Provider keys need attention | `provider_credentials.replace` | Now |
 | Organization | Model changes | `models.manage` in a project that uses the model | Daily |
 | Organization | Monthly cost report | `costs.org.view` | On |
 | Instance | Updates, Instance settings changed | Instance admins | Now |
 | Instance | New organizations and people | Instance admins | Daily |
+
+An organization's [webhooks](webhooks.md) get its notices too, whatever anyone chooses here.
 
 **Send a test email** sends one to your address, at most once a minute. When the install only writes emails to its log, the page says so and offers no choices.
 

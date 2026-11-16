@@ -242,5 +242,11 @@
   "format.audit.action.mcpServerDisconnect": "已退出 MCP 服务器",
   "format.audit.action.logsProjectKeepMedia": "项目的媒体保留设置已更改",
   "format.client.none": "无 User-Agent",
-  "format.client.other": "其他客户端"
+  "format.client.other": "其他客户端",
+  "format.audit.kind.webhook": "网络钩子",
+  "format.audit.action.webhookCreate": "已添加 Webhook",
+  "format.audit.action.webhookUpdate": "已更改 Webhook",
+  "format.audit.action.webhookSecretRotate": "已轮换 Webhook 密钥",
+  "format.audit.action.webhookDelete": "已删除 Webhook",
+  "format.targetKind.webhook": "网络钩子"
 }

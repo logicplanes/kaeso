@@ -21,6 +21,7 @@ expression: reference()
 | `org_ownership` | Organization | Ownership and deletion | now |  | ✓ | `org.ownership.transfer` | An organization changes owners, is scheduled for deletion or is restored. |
 | `org_members` | Organization | Member changes | daily | now, daily, off |  | `members.invite` | People join or leave an organization. |
 | `invite_accepted` | Organization | Your invitation was accepted | now | now, daily, off |  | `members.invite` | Someone you invited joined. |
+| `webhooks` | Organization | Webhooks need attention | now | now, daily, off |  | `webhooks.manage` | A webhook failed 20 times in a row and was turned off. |
 | `provider_keys` | Organization | Provider keys need attention | now | now, daily, off |  | `provider_credentials.replace` | A provider rejects a key again and again, or an account signed out. |
 | `model_changes` | Organization | Model changes | daily | now, daily, off |  | `models.manage` | A model a project uses is delisted or changes its price. |
 | `cost_report` | Organization | Monthly cost report | now | now, off |  | `costs.org.view` | On the 1st: last month's cost by project and model. |

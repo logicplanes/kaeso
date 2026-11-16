@@ -1116,6 +1116,7 @@ async fn the_catalogue_names_instance_and_account_rights_presets_and_models() {
         c.body["never_grantable"],
         json!([
             "org.ownership.transfer",
+            "webhooks.manage",
             "security.sso.manage",
             "security.sso.require"
         ])

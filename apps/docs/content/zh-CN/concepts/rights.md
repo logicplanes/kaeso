@@ -48,7 +48,7 @@ order: 4
 | 管理员 | 除 `org.delete`、`org.ownership.transfer` 和 `billing.manage` 之外的全部 | 全部 |
 | 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`billing.manage` | 无 |
 | 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 |
-| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`platform_keys.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限去掉 `tools.use`，以及 `project.audit_log.view` |
+| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`platform_keys.view`、`webhooks.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限去掉 `tools.use`，以及 `project.audit_log.view` |
 | 成员 | `org.view`、`members.view` | 无 |
 
 | 项目角色 | 权限 |
@@ -96,6 +96,8 @@ order: 4
 | `org.update` | 编辑组织 | 重命名组织，并更改其图片和常规设置。 |  |
 | `org.delete` | 删除组织 | 计划删除组织，或在等待期间将其恢复。 | 敏感；需近期登录 |
 | `org.ownership.transfer` | 转让所有权 | 让另一位成员代替您成为所有者；仅所有者拥有此权限。 | 敏感；需近期登录；需要 `members.view` |
+| `webhooks.view` | 查看 Webhook | 查看组织的 Webhook、它们接收的内容以及最近的投递（从不显示机密）。 |  |
+| `webhooks.manage` | 管理 Webhook | 添加、更改、测试和删除 Webhook，并轮换其签名密钥。 | 敏感；需近期登录；需要 `webhooks.view` |
 
 ### 成员与访问
 
@@ -300,7 +302,7 @@ order: 4
 
 | 预设 | 组织权限 | 项目权限 | 账户权限 | 实例预设 |
 | --- | --- | --- | --- | --- |
-| 观察者 | `org.view`、`members.view`、`projects.view.all`、`mcp_servers.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`audit_log.view` | `project.view`、`models.view`、`tools.view`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view`、`project.audit_log.view` | `account.view` | 只读 |
+| 观察者 | `org.view`、`members.view`、`projects.view.all`、`mcp_servers.view`、`webhooks.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`audit_log.view` | `project.view`、`models.view`、`tools.view`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view`、`project.audit_log.view` | `account.view` | 只读 |
 | 构建者 | 开发者角色的权限 | 开发者角色的权限去掉 `logs.content.view` 和 `tools.use`，再加上 `models.manage` | `account.view`、`account.keys.view` | 无 |
 | 运维者 | 管理员角色的权限，去掉不会授予智能体的权限 | 除 `tools.use` 外的全部 | 除 `account.keys.manage` 和 `account.memberships.leave` 外的全部 | 配置 |
 | 完全访问 | 除不会授予智能体的权限外的全部 | 除 `tools.use` 外的全部 | 全部 | 管理员 |
@@ -327,7 +329,7 @@ Kaeso 在每次请求时重新计算智能体的权限，因此对用户、角�
 
 ### 不会授予智能体的权限
 
-任何智能体都不会获得 `org.ownership.transfer`、`security.sso.manage`、`security.sso.require` 或 `tools.use`：MCP 客户端只能通过项目的门户、由某个人登录后才能使用项目的工具。智能体也不能扩大自己的访问权限、授权其他智能体或管理任何人的智能体。它们从不触及账户安全：邮箱地址、密码、双重验证、恢复码、会话、单点登录关联以及删除账户。[工具](../api/mcp.md#工具)列出需要控制台会话的每项操作。
+任何智能体都不会获得 `org.ownership.transfer`、`security.sso.manage`、`security.sso.require`、`webhooks.manage` 或 `tools.use`：MCP 客户端只能通过项目的门户、由某个人登录后才能使用项目的工具，而组织的通知发往何处也只能由人来决定。智能体也不能扩大自己的访问权限、授权其他智能体或管理任何人的智能体。它们从不触及账户安全：邮箱地址、密码、双重验证、恢复码、会话、单点登录关联以及删除账户。[工具](../api/mcp.md#工具)列出需要控制台会话的每项操作。
 
 ### 敏感权限
 

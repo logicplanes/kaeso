@@ -104,7 +104,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 以下操作要求近期登录：
 
-- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`providers.custom.manage`、`mcp_servers.manage`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.settings.manage`、`logs.delete` 和 `keys.platform_access.grant`。
+- **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`providers.custom.manage`、`mcp_servers.manage`、`webhooks.manage`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`platform_keys.create`、`logs.settings.manage`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码和删除账户。设置或关闭双重验证、生成新的恢复码，以及关联或取消关联单点登录，同样需要近期登录。
 - **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。将某人设为实例管理员或取消其身份、删除用户、重置用户的双重验证和指定组织的所有者同样需要。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
 
@@ -187,7 +187,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员身份、管理该账户的组织（`managed_by`），以及能否创建组织（`can_create_orgs`）。 |
 | `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥、通知和智能体，以及创建组织和删除账户。 |
 | `notifications/unsubscribe` | 邮件末尾的链接：`GET` 说明它会停止哪封邮件，`POST` 关闭该邮件。它不需要会话，并且为了邮件应用的一键退订（RFC 8058）也不需要 `Origin`；链接中的签名令牌即为凭证。 |
-| `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、自定义服务商（`custom-providers`）、MCP 服务器及其工具（`mcp-servers`）、项目能否使用响应缓存（`response-cache`）、安全设置、平台密钥、日志设置和存储、用量及其时间线（`usage/timeline`）和首末日期（`usage/span`）、审计日志、所有权转让、删除和恢复。 |
+| `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、自定义服务商（`custom-providers`）、MCP 服务器及其工具（`mcp-servers`）、项目能否使用响应缓存（`response-cache`）、安全设置、平台密钥、Webhook 及其投递（`webhooks`）、日志设置和存储、用量及其时间线（`usage/timeline`）和首末日期（`usage/span`）、审计日志、所有权转让、删除和恢复。 |
 | `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、响应缓存、项目使用的 MCP 服务器及其工具（`tools`）和谁可以调用哪个工具（`tool-access`）、连接到其门户的客户端（`portal-grants`）、内容日志、请求日志、工具调用（`logs/tool-calls`）和导出、带 `usage/timeline` 和 `usage/span` 的用量、审计日志和[试验场](#试验场)。 |
 | `instance/*` | 供实例管理员使用：用户、组织、实例设置和可通过其单点登录管理实例的组织（`instance/settings/admin-sso`）、智能体策略、系统健康状况、存储和模型数据、更新，以及实例审计日志。 |
 | `orgs/{org}/agents`、`orgs/{org}/security/agents`、`me/agents/*`、`me/agent-requests/*` | 智能体、其权限和智能体策略，带有 `agents` 标签（[路由](mcp.md#platform-api-路由)）。 |

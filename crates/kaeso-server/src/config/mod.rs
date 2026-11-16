@@ -58,6 +58,8 @@ pub struct Config {
     pub mcp_servers: McpServersConfig,
     #[serde(default)]
     pub mcp_portal: McpPortalConfig,
+    #[serde(default)]
+    pub webhooks: WebhooksConfig,
     pub upstream: UpstreamConfig,
     pub streams: StreamsConfig,
     pub continuity: ContinuityConfig,
@@ -293,6 +295,13 @@ pub struct UpdaterConfig {
 #[serde(deny_unknown_fields)]
 pub struct CustomProvidersConfig {
     pub enabled: bool,
+    #[serde(default, deserialize_with = "networks")]
+    pub allowed_networks: Vec<ipnet::IpNet>,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WebhooksConfig {
     #[serde(default, deserialize_with = "networks")]
     pub allowed_networks: Vec<ipnet::IpNet>,
 }
