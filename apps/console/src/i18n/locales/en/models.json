@@ -430,6 +430,7 @@
   "models.thinkingBindingHint": "Replayed thinking must come from the same conversation.",
   "models.timeoutHint": "Empty uses the instance's request timeout.",
   "models.tokens": "{tokens} tokens",
+  "models.tryInPlayground": "Try in Playground",
   "models.typeModelId": "Type a model id",
   "models.unavailable": "Unavailable",
   "models.unavailableHint": "{provider} doesn't serve it to this project's provider key; check the key's access or remove the model.",

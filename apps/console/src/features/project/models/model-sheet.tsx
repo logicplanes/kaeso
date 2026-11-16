@@ -7,6 +7,7 @@ import { api, data, ifMatch } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { CatalogueModelView, Fields } from "~/api/generated/types";
 import { catalogueModelQuery } from "~/api/queries/models";
+import { playgroundModelsQuery } from "~/api/queries/playground";
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { dialectLabel } from "~/format/labels";
@@ -49,6 +50,8 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
   const needs = useNeedsRight(org, project);
   const rights = useProjectRights(org, project);
   const canManage = rights.has("models.manage");
+  // Only a model the Playground can call gets a way there.
+  const playground = useQuery({ ...playgroundModelsQuery(org, project), enabled: rights.has("playground.use") });
   const model = useQuery(catalogueModelQuery(org, project, modelId));
   const partyName = usePartyName(org, project);
   const providers = useProviders(org);
@@ -132,23 +135,35 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           capabilities={capabilities(m.effective)}
           {...(m.effective.display_name ? { name: m.effective.display_name } : {})}
         />
-        <Menu>
-          <Menu.Trigger>
+        <span className="flex items-center gap-4">
+          {playground.data?.some((p) => p.id === m.id) && (
             <Button
-              variant="ghost"
               size="sm"
-              icon={icons.more}
-              aria-label={t("models.actions", "Model actions")}
-              disabled={!canManage}
-              {...(reason ? { disabledReason: reason } : {})}
-            />
-          </Menu.Trigger>
-          <Menu.Content align="end">
-            <Menu.Item icon={icons.delete} variant="danger" onClick={() => setRemoving(true)}>
-              {t("models.removeFromCatalogue", "Remove from catalogue")}
-            </Menu.Item>
-          </Menu.Content>
-        </Menu>
+              variant="ghost"
+              leadingIcon={icons.playground}
+              href={`/orgs/${org}/projects/${project}/playground?models=${encodeURIComponent(`${m.provider}/${m.model_id}`)}`}
+            >
+              {t("models.tryInPlayground", "Try in Playground")}
+            </Button>
+          )}
+          <Menu>
+            <Menu.Trigger>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={icons.more}
+                aria-label={t("models.actions", "Model actions")}
+                disabled={!canManage}
+                {...(reason ? { disabledReason: reason } : {})}
+              />
+            </Menu.Trigger>
+            <Menu.Content align="end">
+              <Menu.Item icon={icons.delete} variant="danger" onClick={() => setRemoving(true)}>
+                {t("models.removeFromCatalogue", "Remove from catalogue")}
+              </Menu.Item>
+            </Menu.Content>
+          </Menu>
+        </span>
       </div>
       <Flags m={m} provider={provider} />
       <KeyValue

@@ -2,8 +2,9 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
 import { alias, apiKey, catalogueModel, me, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
-import { logContent, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
-import { apiError, on } from "~/test/network";
+import { logContent, logEntry, logRow, logsData, playgroundModel } from "~/test/fixtures/project-logs";
+import { notifications } from "~/test/fixtures/org";
+import { apiError, on, page } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 const sheet = () => screen.findByRole("dialog", { name: /^\d{3}/ });
@@ -550,6 +551,61 @@ describe("LogInspector", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "Request" });
     expect(await within(dialog).findByText("Couldn't load this request.")).toBeInTheDocument();
+  });
+
+  it("opens the request in the Playground with its model and settings, its last message in the composer", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/projects/:project/playground/models", page([playgroundModel()]));
+    logsData({ rows: [logRow()], entries: [logEntry({ content: logContent(chatRequest, kppReply) })] });
+    const { user, router } = await renderApp(projectPath("logs?log=req_0001"));
+    await user.click(await within(await sheet()).findByRole("button", { name: "Open in Playground" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/playground`));
+    expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-mini", system: "Be brief.", temperature: 0.2, max_tokens: 300 });
+    expect(await screen.findByRole("textbox", { name: "Prompt" })).toHaveValue("Where is order 7?");
+  });
+
+  it("asks before replacing an unsent Playground prompt, and keeps it on Cancel", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/projects/:project/playground/models", page([playgroundModel()]));
+    window.localStorage.setItem(`kaeso:playground-draft:${PROJECT}`, "Half a question");
+    logsData({ rows: [logRow()], entries: [logEntry({ content: logContent(chatRequest, kppReply) })] });
+    const { user, router } = await renderApp(projectPath("logs?log=req_0001"));
+    const open = await within(await sheet()).findByRole("button", { name: "Open in Playground" });
+    await user.click(open);
+    const ask = await screen.findByRole("alertdialog", { name: "Replace your unsent prompt?" });
+    await user.click(within(ask).getByRole("button", { name: "Cancel" }));
+    expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/logs`);
+    expect(window.localStorage.getItem(`kaeso:playground-draft:${PROJECT}`)).toBe("Half a question");
+
+    await user.click(open);
+    await user.click(within(await screen.findByRole("alertdialog", { name: "Replace your unsent prompt?" })).getByRole("button", { name: "Replace" }));
+    expect(await screen.findByRole("textbox", { name: "Prompt" })).toHaveValue("Where is order 7?");
+  });
+
+  it("says when the system prompt was too long to take along, and keeps an unsent prompt when the request had no text", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/projects/:project/playground/models", page([playgroundModel()]));
+    window.localStorage.setItem(`kaeso:playground-draft:${PROJECT}`, "Half a question");
+    const long = { model: "gpt-5.4-mini", messages: [{ role: "system", content: "x".repeat(8001) }] };
+    logsData({ rows: [logRow()], entries: [logEntry({ content: logContent(long, kppReply) })] });
+    const { user, router } = await renderApp(projectPath("logs?log=req_0001"));
+    await user.click(await within(await sheet()).findByRole("button", { name: "Open in Playground" }));
+    expect(await notifications().findByText("System prompt left out; it's over 8,000 characters")).toBeInTheDocument();
+    expect(router.state.location.search).toEqual({ models: "openai/gpt-5.4-mini" });
+    expect(await screen.findByRole("textbox", { name: "Prompt" })).toHaveValue("Half a question");
+  });
+
+  it("offers the Playground only to someone who may use it, for a request it can read", async () => {
+    signedIn({ projectRights: without("playground.use") });
+    projectData();
+    logsData({ rows: [logRow()], entries: [logEntry({ content: logContent(chatRequest, kppReply) })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const dialog = await sheet();
+    await within(dialog).findByRole("tab", { name: "Request" });
+    expect(within(dialog).queryByRole("button", { name: "Open in Playground" })).not.toBeInTheDocument();
   });
 
   it("draws the request as a conversation with its tools and parameters", async () => {

@@ -17,8 +17,8 @@ import { isLive } from "./responses";
 import { useThreads, type Thread as ThreadState } from "./use-threads";
 import { locale, t } from "~/i18n";
 import { common } from "~/i18n/common";
-import { readStored, writeStored } from "~/storage";
-import { PLAYGROUND_CONVERSATION, playgroundDraftKey } from "~/auth/user-data";
+import { PLAYGROUND_CONVERSATION } from "~/auth/user-data";
+import { readDraft, writeDraft } from "./draft";
 import { forget, recall, remember } from "~/shell/session-memory";
 import { toast } from "~/shell/toast";
 import { patchSearch, type SearchPatch } from "~/search";
@@ -28,13 +28,6 @@ import { canRecord, useRecorder } from "./use-recorder";
 import { asks, editorLimits, problemOf } from "./decisions";
 
 const fullReason = () => t("playground.full", "Compare up to {count} models at once", { count: MAX_COLUMNS });
-
-function readDraft(project: string): string {
-  return readStored(playgroundDraftKey(project)) ?? "";
-}
-function writeDraft(project: string, text: string) {
-  writeStored(playgroundDraftKey(project), text || null);
-}
 
 const same = (a: object, b: object) => JSON.stringify(a) === JSON.stringify(b);
 

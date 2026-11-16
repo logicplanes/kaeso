@@ -456,5 +456,6 @@
   "models.field.upstreamModel": "Modell-ID beim Anbieter",
   "models.problem.upstreamModel": "Die Modell-ID beim Anbieter darf keine Leerzeichen enthalten.",
   "models.upstreamModelHint": "Die ID, die der Anbieter statt der des Modells erhält, etwa der Name eines Azure-Deployments. Leer sendet die ID des Modells.",
-  "models.route.seeRequests": "Anfragen ansehen"
+  "models.route.seeRequests": "Anfragen ansehen",
+  "models.tryInPlayground": "Im Playground ausprobieren"
 }

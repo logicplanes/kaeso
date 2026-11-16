@@ -16,7 +16,7 @@ It lists every kind of model the project can call, and each column takes the for
 
 **Clear** empties every column's conversation; **Undo** in the notice brings it back.
 
-The page's address holds the models and parameters, so a link opens the same comparison. A prompt you haven't sent yet stays in your browser. The conversation stays while the console is open in this tab, also when you visit other pages and come back. The console never stores it, so reloading or closing the tab ends it, and the browser asks first.
+The page's address holds the models and parameters, so a link opens the same comparison. A prompt you haven't sent yet stays in your browser. The conversation stays while the console is open in this tab, also when you visit other pages and come back. The console never stores it, so reloading or closing the tab ends it, and the browser asks first. **Try in Playground** in a model's sheet and **Open in Playground** on a logged request open such a link, the latter with the request's last message in the prompt box ([request logs](request-logs.md)).
 
 ## Try media models
 
