@@ -56,6 +56,10 @@ Editing a limit changes its amount and, for a budget, its alerts and whether it'
 
 If someone else changed the limit after the page loaded, saving says so and loads the current limit. Make your change again on top of it.
 
+**Copy to…** in the menu of a member's or key's limit makes the same limit for another member, service account or key: you only choose whom, and the kind, amount, period, model and alerts come from the limit you copy. Those that already have a limit of that kind, period and model aren't offered, because each may have only one.
+
+**Sort** orders each level by **Level**, the default, or by **Most used**, the fullest limit first and those whose use isn't known last. The page's address keeps the order.
+
 ## What an app sees
 
 Kaeso answers a refused request with status 429, in the app's own API format, with a message that names the limit:
