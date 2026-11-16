@@ -2375,6 +2375,11 @@ async fn mcp_speaks_the_stateless_protocol_and_the_older_ones() {
     assert!(d["capabilities"]["tools"].is_object());
     assert!(d["capabilities"]["resources"].is_object());
     assert_eq!(
+        d["capabilities"]["extensions"]["io.modelcontextprotocol/ui"],
+        json!({}),
+        "MCP Apps is negotiated as an extension"
+    );
+    assert_eq!(
         d["_meta"]["io.modelcontextprotocol/serverInfo"]["name"],
         "kaeso"
     );
@@ -2419,10 +2424,22 @@ async fn mcp_speaks_the_stateless_protocol_and_the_older_ones() {
     .await
     .expect_status(StatusCode::OK);
     assert_eq!(read.body["result"]["resultType"], "complete");
+    assert_eq!(read.body["result"]["ttlMs"], 300_000);
+    assert_eq!(read.body["result"]["cacheScope"], "private");
     assert_eq!(
         read.body["result"]["contents"][0]["mimeType"],
         "text/html;profile=mcp-app"
     );
+    let missing = stateless(
+        &app,
+        &a.access,
+        "resources/read",
+        Some("ui://kaeso/other"),
+        json!({ "uri": "ui://kaeso/other" }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(missing.body["error"]["code"], -32602);
 
     let called = stateless(
         &app,
@@ -2485,9 +2502,22 @@ async fn mcp_speaks_the_stateless_protocol_and_the_older_ones() {
     .expect_status(StatusCode::OK);
     assert_eq!(init.body["result"]["protocolVersion"], "2025-11-25");
     assert!(init.body["result"].get("resultType").is_none());
+    assert_eq!(
+        init.body["result"]["capabilities"]["extensions"]["io.modelcontextprotocol/ui"],
+        json!({})
+    );
     let legacy = mcp(&app, &a.access, "tools/list", json!({}))
         .await
         .expect_status(StatusCode::OK);
     assert!(legacy.body["result"].get("resultType").is_none());
     assert!(legacy.body["result"].get("ttlMs").is_none());
+    let legacy_read = mcp(
+        &app,
+        &a.access,
+        "resources/read",
+        json!({ "uri": "ui://kaeso/stats" }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert!(legacy_read.body["result"].get("ttlMs").is_none());
 }

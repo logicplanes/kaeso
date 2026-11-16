@@ -253,7 +253,7 @@ The tool behind it is `show_usage_stats`. Every argument is optional:
 - **Controls.** Choosing a metric, a period or a breakdown in the view calls the tool again through the client, with the agent's rights. The view is written in English, German or Simplified Chinese, following the client's language, and follows its light or dark theme.
 - **Without MCP Apps.** A client that doesn't draw views, such as Claude Code, gets a short summary as text and the same data as `structuredContent`.
 
-The tool links its view with `_meta.ui.resourceUri`, and the view is the resource `ui://kaeso/stats` of type `text/html;profile=mcp-app`, from `resources/read`. It is one HTML document that the gateway ships in its binary: it loads nothing from elsewhere, holds no token and asks for the strictest policy the extension allows, with no outside connections, scripts, styles, fonts, images or frames. Its own `Content-Security-Policy` allows only its one inline script, so nothing can run `eval`. The view renders every value from Kaeso as text.
+The tool links its view with `_meta.ui.resourceUri`, and the view is the resource `ui://kaeso/stats` of type `text/html;profile=mcp-app`, from `resources/read`. The capabilities of `initialize` and `server/discover` declare MCP Apps as the extension `io.modelcontextprotocol/ui`. The view is one HTML document that the gateway ships in its binary: it loads nothing from elsewhere, holds no token and asks for the strictest policy the extension allows, with no outside connections, scripts, styles, fonts, images or frames. Its own `Content-Security-Policy` allows only its one inline script, so nothing can run `eval`. The view renders every value from Kaeso as text.
 
 ## Protocol
 
@@ -280,7 +280,7 @@ The tool links its view with `_meta.ui.resourceUri`, and the view is the resourc
 | 429 | Too many unknown tokens came from your address ([API key throttling](../self-hosting/configuration.md#api-key-throttling)). `Retry-After` says when to try again. |
 | 503 | Kaeso can't reach its database. |
 
-In older versions an unknown method gets the JSON-RPC error `-32601` with status 200, and an unknown tool `-32602`. A tool call that fails answers 200 with `isError: true` and the text `<type>: <message>`. The type is the Platform API's [error type](platform-api.md#errors), or `insufficient_rights` for a [missing right](#missing-rights).
+In older versions an unknown method gets the JSON-RPC error `-32601` with status 200, and an unknown tool `-32602`. An unknown resource gets `-32002`, or `-32602` in version `2026-07-28`. A tool call that fails answers 200 with `isError: true` and the text `<type>: <message>`. The type is the Platform API's [error type](platform-api.md#errors), or `insufficient_rights` for a [missing right](#missing-rights).
 
 ## Tokens
 

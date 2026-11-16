@@ -9,7 +9,7 @@ use axum::http::{HeaderMap, HeaderValue, Method, Request, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use kaeso_core::id::{OrgId, ProjectId};
 use kaeso_mcp::headers as mcp_headers;
-use kaeso_mcp::{Kind, Message, RpcError, Version, meta};
+use kaeso_mcp::{Kind, Message, RpcError, Version, apps, meta};
 use kaeso_store::pg::agents;
 use serde_json::{Map, Value, json};
 use tower::ServiceExt;
@@ -230,12 +230,8 @@ pub async fn post(
         ),
         "resources/templates/list" => rpc(id, listing(json!({ "resourceTemplates": [] }), version)),
         "resources/read" => match params.get("uri").and_then(Value::as_str) {
-            Some(stats::VIEW) => rpc(id, stats::contents()),
-            _ => rpc_error(
-                id,
-                kaeso_mcp::code::RESOURCE_NOT_FOUND,
-                "Resource not found.",
-            ),
+            Some(stats::VIEW) => rpc(id, listing(stats::contents(), version)),
+            _ => rpc_error(id, resource_not_found(version), "Resource not found."),
         },
         _ if version.is_stateless() => {
             return failed(
@@ -269,7 +265,18 @@ fn capabilities() -> Value {
     json!({
         "tools": { "listChanged": false },
         "resources": { "listChanged": false },
+        "extensions": { apps::EXTENSION: {} },
     })
+}
+
+// 2026-07-28 moved "resource not found" from a code of its own to invalid params
+// (https://modelcontextprotocol.io/specification/2026-07-28/changelog).
+fn resource_not_found(version: Version) -> i64 {
+    if version.is_stateless() {
+        kaeso_mcp::code::INVALID_PARAMS
+    } else {
+        kaeso_mcp::code::RESOURCE_NOT_FOUND
+    }
 }
 
 fn server_info() -> Value {
