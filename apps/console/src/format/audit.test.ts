@@ -72,6 +72,7 @@ describe("audit actions", () => {
   it("name agents as targets and as a kind of action", () => {
     expect(targetKindLabel("agent")).toBe("Agent");
     expect(targetKindLabel("custom_provider")).toBe("Custom provider");
+    expect(targetKindLabel("webhook")).toBe("Webhook");
     expect(["mcp_server", "tool", "portal_grant"].map(targetKindLabel)).toEqual(["MCP server", "Tool", "Portal client"]);
     expect(auditActionOptions().find((o) => o.value === "agent.")?.label).toBe("Agents: every action");
   });
@@ -82,7 +83,7 @@ describe("audit actions", () => {
   });
 
   it("keep an action they don't know as it was written", () => {
-    expect(auditActionLabel("webhook.create")).toBe("webhook.create");
+    expect(auditActionLabel("teleport.create")).toBe("teleport.create");
   });
 
   it("offer every action by its name, each kind first with a choice for all its actions", () => {
@@ -153,7 +154,7 @@ describe("target kinds", () => {
       "Platform key",
       "Key",
     ]);
-    expect(targetKindLabel("webhook")).toBe("webhook");
+    expect(targetKindLabel("teleport")).toBe("teleport");
     apply(await load("de"));
     expect(kinds.map(targetKindLabel)).toEqual([
       "Benutzer",

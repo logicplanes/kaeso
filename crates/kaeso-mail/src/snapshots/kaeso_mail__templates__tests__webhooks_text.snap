@@ -1,0 +1,20 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Acme] The webhook On-call was turned off
+
+The webhook On-call was turned off
+
+Acme
+
+Its receiver failed 20 times in a row; it gets nothing until someone turns it on again.
+
+Open webhooks:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you hold the right “Manage webhooks”.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

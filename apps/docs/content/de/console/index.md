@@ -27,6 +27,7 @@ Eine Liste, etwa der API-Schlüssel oder Mitglieder, ist ein einziger Tab-Stopp.
 - [Limits und Budgets](limits-and-budgets.md): Begrenzen Sie Anfragen, Token und Ausgaben eines Projekts, eines Mitglieds oder eines Schlüssels.
 - [Anfrageprotokolle](request-logs.md): Finden Sie jede Anfrage, exportieren Sie Protokolle und wählen Sie, was bleibt.
 - [Antwort-Cache](response-cache.md): Beantworten Sie wiederholte, gleiche Anfragen aus einer gespeicherten Antwort.
+- [Webhooks](webhooks.md): Senden Sie die Benachrichtigungen der Organisation signiert an Bereitschaftstools, Chat und Skripte.
 - [Playground](playground.md): Vergleichen Sie bis zu vier Modelle nebeneinander.
 - [Konto und Sprache](account.md): Schützen Sie Ihr Konto und wählen Sie Design und Sprache.
 - [Instanzverwaltung](instance-administration.md): Verwalten Sie Benutzer, Organisationen, Einstellungen und Updates der Installation.

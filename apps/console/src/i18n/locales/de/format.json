@@ -242,5 +242,11 @@
   "format.audit.action.mcpServerDisconnect": "Von einem MCP-Server abgemeldet",
   "format.audit.action.logsProjectKeepMedia": "Aufbewahrte Medien eines Projekts geändert",
   "format.client.none": "Kein User-Agent",
-  "format.client.other": "Anderer Client"
+  "format.client.other": "Anderer Client",
+  "format.audit.kind.webhook": "Webhooks",
+  "format.audit.action.webhookCreate": "Webhook hinzugefügt",
+  "format.audit.action.webhookUpdate": "Webhook geändert",
+  "format.audit.action.webhookSecretRotate": "Webhook-Geheimnis rotiert",
+  "format.audit.action.webhookDelete": "Webhook gelöscht",
+  "format.targetKind.webhook": "Webhook"
 }

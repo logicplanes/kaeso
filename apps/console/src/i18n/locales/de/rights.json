@@ -222,5 +222,9 @@
   "rights.instanceUsersManage.description": "Konten einladen, deaktivieren und reaktivieren, ihre Sitzungen beenden und ihre Zwei-Faktor-Authentifizierung zurücksetzen.",
   "rights.instanceUsersManage.name": "Benutzer verwalten",
   "rights.instanceUsersView.description": "Jedes Konto der Instanz und seine Organisationen sehen.",
-  "rights.instanceUsersView.name": "Benutzer ansehen"
+  "rights.instanceUsersView.name": "Benutzer ansehen",
+  "rights.webhooksView.name": "Webhooks ansehen",
+  "rights.webhooksView.description": "Die Webhooks der Organisation sehen, was sie empfangen und ihre letzten Zustellungen (nie Geheimnisse).",
+  "rights.webhooksManage.name": "Webhooks verwalten",
+  "rights.webhooksManage.description": "Webhooks hinzufügen, ändern, testen und löschen und ihre Signaturgeheimnisse rotieren."
 }

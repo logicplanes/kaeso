@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE webhook_deliveries SET attempts = attempts + 1, status = $2, last_status = $3, last_error = $4, next_attempt_at = COALESCE($5, next_attempt_at), finished_at = CASE WHEN $2 = 'pending' THEN NULL ELSE $6::timestamptz END WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "815dc2f3be195cf0805abf7b0fadba11ab3c4dc6d6f91e09e3b0a381ceaa2523"
+}

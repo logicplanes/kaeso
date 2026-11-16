@@ -41,6 +41,7 @@ pub mod updates;
 pub mod usage;
 pub mod users;
 pub mod videos;
+pub mod webhooks;
 
 pub static MIGRATOR: Migrator = sqlx::migrate!("migrations/postgres");
 

@@ -11,3 +11,4 @@ pub mod oauth;
 pub mod oidc;
 pub mod otel;
 pub mod services;
+pub mod webhooks;

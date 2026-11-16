@@ -72,6 +72,10 @@ const kinds: Readonly<Record<string, Words>> = {
     name: t("account.notify.inviteAccepted", "Your invitation was accepted"),
     description: t("account.notify.inviteAcceptedHint", "When someone you invited joins."),
   }),
+  webhooks: () => ({
+    name: t("account.notify.webhooks", "Webhooks need attention"),
+    description: t("account.notify.webhooksHint", "When a webhook fails 20 times in a row and is turned off."),
+  }),
   provider_keys: () => ({
     name: t("account.notify.providerKeys", "Provider keys need attention"),
     description: t("account.notify.providerKeysHint", "When a provider keeps refusing a key or an account."),

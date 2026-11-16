@@ -84,6 +84,30 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
                 OrgId::from_uuid(key.org_id),
                 ProjectId::from_uuid(key.project_id)
             );
+            let event = crate::services::webhooks::Event {
+                kind: Kind::KeyExpiry,
+                org: key.org_id,
+                project: Some(key.project_id),
+                event_type: "key.expiring",
+                data: serde_json::json!({
+                    "key_id": kaeso_core::id::ApiKeyId::from_uuid(key.id).to_string(),
+                    "key": key.name,
+                    "owner": key.user_id.map(|u| kaeso_core::id::UserId::from_uuid(u).to_string()),
+                    "expires_at": key.expires_at.format(&time::format_description::well_known::Rfc3339).ok(),
+                    "days": days,
+                }),
+                summary: format!(
+                    "The API key {} expires in {days} {}",
+                    key.name,
+                    if days == 1 { "day" } else { "days" }
+                ),
+                open: format!(
+                    "orgs/{}/projects/{}/keys",
+                    OrgId::from_uuid(key.org_id),
+                    ProjectId::from_uuid(key.project_id)
+                ),
+            };
+            crate::services::webhooks::queue_or_warn(&state, &event).await;
             for person in to.iter().filter_map(|id| people.get(id)) {
                 if person.state != "active"
                     || off.contains(&person.id)

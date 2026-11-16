@@ -201,6 +201,7 @@ kinds! {
     OrgOwnership = "org_ownership", Organization, "Ownership and deletion", Now, true, false, [Right::Org(OrgRight::OrgOwnershipTransfer)], "An organization changes owners, is scheduled for deletion or is restored.";
     OrgMembers = "org_members", Organization, "Member changes", Daily, false, false, [Right::Org(OrgRight::MembersInvite)], "People join or leave an organization.";
     InviteAccepted = "invite_accepted", Organization, "Your invitation was accepted", Now, false, false, [Right::Org(OrgRight::MembersInvite)], "Someone you invited joined.";
+    Webhooks = "webhooks", Organization, "Webhooks need attention", Now, false, false, [Right::Org(OrgRight::WebhooksManage)], "A webhook failed 20 times in a row and was turned off.";
     ProviderKeys = "provider_keys", Organization, "Provider keys need attention", Now, false, false, [Right::Org(OrgRight::ProviderCredentialsReplace)], "A provider rejects a key again and again, or an account signed out.";
     ModelChanges = "model_changes", Organization, "Model changes", Daily, false, false, [Right::Project(ProjectRight::ModelsManage)], "A model a project uses is delisted or changes its price.";
     CostReport = "cost_report", Organization, "Monthly cost report", Now, false, true, [Right::Org(OrgRight::CostsOrgView)], "On the 1st: last month's cost by project and model.";

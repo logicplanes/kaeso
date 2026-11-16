@@ -653,6 +653,38 @@ async fn alert(
             OrgId::from_uuid(org),
             kaeso_core::id::ProjectId::from_uuid(project)
         );
+        let resets_at = alert.resets.map_or(serde_json::Value::Null, |r| {
+            r.assume_utc()
+                .format(&time::format_description::well_known::Rfc3339)
+                .map_or(serde_json::Value::Null, serde_json::Value::from)
+        });
+        let data = crate::services::webhooks::with(
+            crate::services::webhooks::budget_data(&budget),
+            serde_json::json!({
+                "limit_id": kaeso_core::id::LimitId::from_uuid(limit.id).to_string(),
+                "used": used_amount.clone(),
+                "percent": u32::from(*t),
+                "applies_to": crate::services::webhooks::applies_to(alert.scope),
+                "resets_at": resets_at,
+            }),
+        );
+        let event = crate::services::webhooks::Event {
+            kind: Kind::BudgetAlerts,
+            org,
+            project: Some(project),
+            event_type: "budget.alert",
+            data,
+            summary: crate::services::webhooks::without_place(
+                &kaeso_mail::templates::budget_alert(kaeso_mail::Locale::En, "", &alert, &url)
+                    .subject,
+            ),
+            open: format!(
+                "orgs/{}/projects/{}/limits",
+                OrgId::from_uuid(org),
+                kaeso_core::id::ProjectId::from_uuid(project)
+            ),
+        };
+        crate::services::webhooks::queue_or_warn(state, &event).await;
         for (user, email) in &to {
             let lang = crate::services::mail_lang::of_user(&state.pg, *user, None).await;
             state.mailer.send(kaeso_mail::templates::budget_alert(

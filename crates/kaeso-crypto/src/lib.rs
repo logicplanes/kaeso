@@ -10,7 +10,7 @@ pub mod totp;
 
 pub use envelope::{Sealed, open, rewrap, seal};
 pub use keyring::{KeyRing, KeyRingError, MasterKey, generate_master_key};
-pub use mac::MacKey;
+pub use mac::{MacKey, hmac_sha256};
 pub use random::{random_bytes, random_token};
 pub use rs256::RsaSigner;
 pub use secrecy::{ExposeSecret, SecretBox, SecretString};

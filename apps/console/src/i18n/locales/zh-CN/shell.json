@@ -146,5 +146,6 @@
   "shell.palette.copyPortal": "复制门户地址",
   "shell.keyword.mcp": "MCP",
   "shell.palette.portalCopied": "已复制门户地址",
-  "shell.settings.connections": "连接"
+  "shell.settings.connections": "连接",
+  "shell.settings.webhooks": "Webhook"
 }

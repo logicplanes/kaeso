@@ -4,8 +4,8 @@ use super::*;
 use crate::rights::Right;
 
 #[test]
-fn there_are_23_kinds_grouped_by_area_in_page_order() {
-    assert_eq!(Kind::ALL.len(), 23);
+fn there_are_24_kinds_grouped_by_area_in_page_order() {
+    assert_eq!(Kind::ALL.len(), 24);
     let areas: Vec<Area> = Kind::ALL.iter().map(|k| k.area()).collect();
     let mut sorted = areas.clone();
     sorted.sort();

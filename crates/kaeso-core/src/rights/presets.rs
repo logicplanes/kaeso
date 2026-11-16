@@ -106,6 +106,7 @@ impl OrgPreset {
                 R::ProvidersCustomView,
                 R::McpServersView,
                 R::PlatformKeysView,
+                R::WebhooksView,
                 R::LogsStorageView,
                 R::UsageOrgView,
                 R::CostsOrgView,

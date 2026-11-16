@@ -483,6 +483,7 @@ fn sensitive_rights_need_a_recent_sign_in() {
         [
             "org.delete",
             "org.ownership.transfer",
+            "webhooks.manage",
             "provider_credentials.create",
             "provider_credentials.replace",
             "providers.custom.manage",

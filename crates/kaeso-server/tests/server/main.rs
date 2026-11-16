@@ -124,6 +124,7 @@ mod updates;
 mod usage;
 mod usage_estimates;
 mod videos;
+mod webhooks;
 mod whats_new;
 
 #[test]

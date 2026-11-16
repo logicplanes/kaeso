@@ -133,11 +133,14 @@ Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Z
 | Organisation | Inhaberschaft und Löschung | Inhaber | Immer |
 | Organisation | Mitgliederänderungen | `members.invite` | Täglich |
 | Organisation | Ihre Einladung wurde angenommen | Wer sie gesendet hat | Sofort |
+| Organisation | Webhooks brauchen Aufmerksamkeit | `webhooks.manage` | Sofort |
 | Organisation | Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_credentials.replace` | Sofort |
 | Organisation | Modelländerungen | `models.manage` in einem Projekt, das das Modell nutzt | Täglich |
 | Organisation | Monatlicher Kostenbericht | `costs.org.view` | Ein |
 | Instanz | Updates, Instanzeinstellungen geändert | Instanz-Admins | Sofort |
 | Instanz | Neue Organisationen und Personen | Instanz-Admins | Täglich |
+
+Die [Webhooks](webhooks.md) einer Organisation bekommen ihre Benachrichtigungen ebenfalls, was immer hier jemand wählt.
 
 **Test-E-Mail senden** schickt eine an Ihre Adresse, höchstens einmal pro Minute. Schreibt die Installation E-Mails nur in ihr Protokoll, sagt die Seite das und bietet keine Auswahl.
 

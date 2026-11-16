@@ -176,6 +176,8 @@
   "account.notify.portalClientsHint": "When someone connects a new client to a portal.",
   "account.notify.providerKeys": "Provider keys need attention",
   "account.notify.providerKeysHint": "When a provider keeps refusing a key or an account.",
+  "account.notify.webhooks": "Webhooks need attention",
+  "account.notify.webhooksHint": "When a webhook fails 20 times in a row and is turned off.",
   "account.notify.weeklySummary": "Weekly summary",
   "account.notify.weeklySummaryHint": "Mondays: requests, cost, tool calls and top models.",
   "account.notifyArea.instance": "Instance",

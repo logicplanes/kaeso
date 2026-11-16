@@ -199,7 +199,11 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::UserSignInLink
         | A::UserSsoLink
         | A::UserSsoUnlink
-        | A::UserUpdate => &[],
+        | A::UserUpdate
+        | A::WebhookCreate
+        | A::WebhookDelete
+        | A::WebhookSecretRotate
+        | A::WebhookUpdate => &[],
     }
 }
 
@@ -273,6 +277,21 @@ pub async fn deliver(
     fact: &Fact<'_>,
     to: Recipients,
 ) -> ApiResult<usize> {
+    deliver_with(state, send, fact, to, None).await
+}
+
+/// Sends a notice, and queues it for the organization's webhooks first with `ids` in its data:
+/// webhooks get it whatever anyone chose for their emails.
+pub async fn deliver_with(
+    state: &AppState,
+    send: &Send<'_>,
+    fact: &Fact<'_>,
+    to: Recipients,
+    ids: Option<Value>,
+) -> ApiResult<usize> {
+    if let Some(event) = crate::services::webhooks::of_notice(send, fact, ids) {
+        crate::services::webhooks::queue_or_warn(state, &event).await;
+    }
     let kind = send.kind;
     let to: Recipients = to
         .into_iter()

@@ -27,6 +27,8 @@ pub fn grantable_org_rights() -> OrgRights {
             OrgRight::OrgOwnershipTransfer,
             OrgRight::SecuritySsoManage,
             OrgRight::SecuritySsoRequire,
+            // A webhook sends the organization's notices to an address its manager chooses.
+            OrgRight::WebhooksManage,
         ]
         .into_iter()
         .collect(),
@@ -92,6 +94,7 @@ impl AgentPreset {
                 R::MembersView,
                 R::ProjectsViewAll,
                 R::McpServersView,
+                R::WebhooksView,
                 R::LogsStorageView,
                 R::UsageOrgView,
                 R::CostsOrgView,

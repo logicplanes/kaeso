@@ -33,6 +33,7 @@ pub enum EmailKind {
     KeyChanged,
     ContentLogging,
     McpServers,
+    Webhooks,
     ConnectionExpired,
     PortalClient,
     OrgSecurity,
@@ -79,6 +80,7 @@ impl EmailKind {
             EmailKind::KeyChanged => "key_changed",
             EmailKind::ContentLogging => "content_logging",
             EmailKind::McpServers => "mcp_servers",
+            EmailKind::Webhooks => "webhooks",
             EmailKind::ConnectionExpired => "connection_expired",
             EmailKind::PortalClient => "portal_client",
             EmailKind::OrgSecurity => "org_security",
@@ -1533,6 +1535,11 @@ mod tests {
             ),
             one(
                 Some("Acme"),
+                Fact::WebhookDisabled { webhook: "On-call" },
+                Because::Right("webhooks.manage"),
+            ),
+            one(
+                Some("Acme"),
                 Fact::ConnectionExpired { server: "GitHub" },
                 Because::Right("tools.use"),
             ),
@@ -1773,6 +1780,7 @@ mod tests {
             EmailKind::KeyChanged,
             EmailKind::ContentLogging,
             EmailKind::McpServers,
+            EmailKind::Webhooks,
             EmailKind::ConnectionExpired,
             EmailKind::PortalClient,
             EmailKind::OrgSecurity,
@@ -2367,7 +2375,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 41] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 42] = [
             (
                 EmailKind::Invitation,
                 [
@@ -2590,6 +2598,14 @@ mod tests {
                     "create_post hat sich geändert",
                 ],
                 ["[Acme] create_post 已变更", "create_post 已变更"],
+            ),
+            (
+                EmailKind::Webhooks,
+                [
+                    "[Acme] Der Webhook On-call wurde ausgeschaltet",
+                    "Der Webhook On-call wurde ausgeschaltet",
+                ],
+                ["[Acme] Webhook On-call 已关闭", "Webhook On-call 已关闭"],
             ),
             (
                 EmailKind::ConnectionExpired,

@@ -265,6 +265,14 @@ An organization admin chooses an MCP server's address, so the gateway guards it 
 
 The gateway also follows no redirects from a custom provider, and calls it without the proxy in `HTTPS_PROXY`, because a proxy would resolve the name past these checks. Allow a network only where every organization admin may reach the servers in it through the gateway. For a vLLM on the same host as the gateway's containers, list the Docker network, such as `172.16.0.0/12`.
 
+### Webhooks
+
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_WEBHOOKS_ALLOWED_NETWORKS`<br>`webhooks.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks [webhooks](../console/webhooks.md) may deliver to, such as `10.20.0.0/16`, over `http` or `https`. Other webhooks need a public `https` address. |
+
+An organization admin chooses a webhook's address, so the gateway guards it like an MCP server's: every connection is checked after DNS resolution, private, loopback, link-local and cloud metadata addresses are refused unless a listed network covers them, and link-local and cloud metadata addresses stay refused even then. Deliveries go without the proxy in `HTTPS_PROXY` and follow no redirects.
+
 ### Streams to apps
 
 | Variable<br>TOML key | Type | Default | What it does |
