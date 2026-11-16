@@ -454,7 +454,7 @@ fn default_names_follow_the_media_type() {
         "audio.bin"
     );
     assert_eq!(
-        request::provider_format(&TranscriptFormat::DiarizedJson, |f| f == "json"),
+        request::provider_format(&TranscriptFormat::DiarizedJson, |f| f == "json", &[]),
         None
     );
 }
@@ -520,6 +520,27 @@ fn groq_and_together_take_openais_form_with_their_limits() {
     link.audio = AudioInput::new(Source::Url("https://example.com/a.mp3".into()));
     let (_, _, parts) = sent_parts(TranscriptionsProfile::GROQ, &link);
     assert!(has(&parts, "url", "https://example.com/a.mp3"));
+    // Only Groq's verbose_json says how long the audio was, which Groq bills by: json and text
+    // are asked as verbose_json and written from it.
+    for app in [
+        None,
+        Some(TranscriptFormat::Json),
+        Some(TranscriptFormat::Text),
+    ] {
+        let (_, _, parts) = sent_parts(TranscriptionsProfile::GROQ, &transcribe(app.clone()));
+        assert!(has(&parts, "response_format", "verbose_json"), "{app:?}");
+        let t = decoded(
+            TranscriptionsProfile::GROQ,
+            &transcribe(app),
+            &provider_reply("groq", "responses", "verbose", "json"),
+        );
+        assert!(t.audio_seconds().is_some());
+    }
+    let (_, _, parts) = sent_parts(TranscriptionsProfile::TOGETHER, &transcribe(None));
+    assert!(
+        !has(&parts, "response_format", "verbose_json"),
+        "only a profile that says so is asked another form"
+    );
     let (_, _, parts) = sent_parts(TranscriptionsProfile::TOGETHER, &link);
     assert!(has(&parts, "file", "https://example.com/a.mp3"));
 
