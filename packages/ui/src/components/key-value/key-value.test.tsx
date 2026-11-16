@@ -15,6 +15,16 @@ describe("KeyValue", () => {
     expect(screen.getByText("Format").tagName).toBe("DT");
   });
 
+  it("divides pairs by one unbroken hairline per row and sets labels in the medium label style", () => {
+    const { container } = render(<KeyValue items={items} />);
+    const label = screen.getByText("Format");
+    expect(label).toHaveClass("font-medium", "text-fg-secondary", "hairline-b", "pe-24");
+    expect(label.nextElementSibling).toHaveClass("hairline-b");
+    expect(container.querySelector("dl")?.className).not.toMatch(/gap-x/);
+    render(<KeyValue layout="stacked" items={items.slice(0, 1)} />);
+    expect(screen.getAllByText("Format")[1]?.parentElement).toHaveClass("hairline-b");
+  });
+
   it("puts pairs in columns that follow its own width in the grid layout", () => {
     const { container } = render(<KeyValue layout="grid" columns={4} items={items} />);
     expect(container.firstElementChild).toHaveClass("@container");

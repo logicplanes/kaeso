@@ -11,4 +11,14 @@ describe("Empty", () => {
     rerender(<Empty size="compact" title="No rows" />);
     expect(screen.getByRole("heading", { level: 2, name: "No rows" })).toBeInTheDocument();
   });
+
+  it("hangs a page's and a section's empty state from the edge, and centers a row's", () => {
+    const { container, rerender } = render(<Empty title="No keys yet" />);
+    expect(container.firstElementChild).toHaveClass("items-start", "text-start");
+    expect(screen.getByRole("heading")).toHaveClass("text-title-lg");
+    rerender(<Empty size="md" title="No members" />);
+    expect(container.firstElementChild).toHaveClass("items-start", "text-start");
+    rerender(<Empty size="compact" title="No rows" />);
+    expect(container.firstElementChild).toHaveClass("items-center", "text-center");
+  });
 });

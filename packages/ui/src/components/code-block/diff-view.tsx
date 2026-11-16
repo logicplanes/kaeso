@@ -14,8 +14,8 @@ import { diffLines, diffStats, foldUnchanged, largestLineNumber, unifiedDiff, ty
 
 export const KAESO_DIFF_VIEW_VARIANTS = {
   surface: {
-    well: { classes: "rounded-well bg-fill-1", description: "A well: radius 14, fill, no ring (default)" },
-    plain: { classes: "bg-transparent", description: "No surface, inside another well" },
+    well: { classes: "rounded-well bg-fill-1", description: "A flat plate: cut corners (radius 6), fill, no ring (default)" },
+    plain: { classes: "bg-transparent", description: "No surface, inside another plate" },
   },
 } as const;
 export const KAESO_DIFF_VIEW_DEFAULT_VARIANTS = { surface: "well" } as const;
@@ -137,13 +137,13 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
 
   return (
     <div ref={ref} className={cn("relative min-w-0", KAESO_DIFF_VIEW_VARIANTS.surface[surface].classes, className)}>
-      <div className="flex h-44 items-center gap-4 px-8 hairline-b">
+      <div className="flex h-44 items-center gap-4 px-6 hairline-b">
         {title && (
-          <Text as="span" variant="small" tone="secondary" mono truncate className="px-8">
+          <Text as="span" variant="small" tone="secondary" mono truncate className="px-10">
             {title}
           </Text>
         )}
-        <span className="ml-auto flex shrink-0 items-center gap-8 px-8 mono text-small tabular">
+        <span className="ml-auto flex shrink-0 items-center gap-8 px-10 mono text-small tabular">
           {unchanged ? (
             <span className="text-fg-secondary">{t("diffView.noChanges", "No changes")}</span>
           ) : (

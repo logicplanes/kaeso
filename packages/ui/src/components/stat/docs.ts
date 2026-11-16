@@ -3,13 +3,13 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   Stat: {
     description:
-      'A number. Plain, it is a big number followed by its word, no box, as on a usage page. As a `tile` (`variant="tile"`), it is one metric of a dashboard row in a `StatGroup`: its label, the number, the change against the previous period and the trend.',
+      'A number, set medium, tight and tabular. Plain, it is a big number followed by its word, no box, as on a usage page. As a `tile` (`variant="tile"`), it is one metric of a dashboard row in a `StatGroup`, set as kaeso.app sets its key figures: a flat plate with the number large at its head (40px where it fits), the change against the previous period and the trend under it, and its label at the foot over a rule. Screen readers still hear the label first.',
     props: {
       change:
         'The change against the previous period, as a fraction (0.12 is +12%). `better` says which direction is good: errors are better down, and `none` keeps a number such as cost neutral. It is written as text by `Delta`: green or red, and "better" or "worse" for screen readers.',
       delta: 'A delta badge: "+12%".',
       detail: 'A quiet line under the number: "vs. the previous 30 days", "0.4% of requests".',
-      label: 'What the number is: "Requests", "Cost".',
+      label: 'What the number counts: "Requests", "Cost". A tile sets it at its foot.',
       loading: "While the numbers load: the value, the change and the trend show their shape at the tile's final height.",
       size: "The size of the number.",
       trend:
@@ -22,7 +22,7 @@ export const docs = {
   },
   StatGroup: {
     description:
-      "Stats side by side. As a `grid` (the default), tiles sit in one raised group divided by hairlines: two to a row, then as many as there are tiles (up to four) from 1024px. The last tile of a short row widens to fill it, so the group never shows an empty cell. Where a number doesn't fit its tile, every tile's number steps down a size, and the tiles take a row each when even the smallest doesn't fit; live numbers only step down at the same width, so a digit that comes and goes doesn't make the tiles jump. As a `row`, three to five plain numbers sit side by side with generous space between them.",
+      "Stats side by side. As a `grid` (the default), tiles are flat plates 8px apart: two to a row, then as many as there are tiles (up to four) from 1024px. The last tile of a short row widens to fill it, so the group never shows an empty cell. Where a number doesn't fit its tile, every tile's number steps down a size (40, 28, 20, then 17px), and the tiles take a row each when even the smallest doesn't fit; live numbers only step down at the same width, so a digit that comes and goes doesn't make the tiles jump. As a `row`, three to five plain numbers sit side by side with generous space between them.",
     props: {
       "aria-label": "The grid's accessible name.",
       children: "The stats.",

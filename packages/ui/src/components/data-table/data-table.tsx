@@ -344,7 +344,7 @@ function DataTableInner<T>(
             ? "bg-raised group-hover/tr:bg-raised-hover group-active/tr:bg-raised-pressed"
             : "bg-panel group-hover/tr:bg-fill-1 group-active/tr:bg-fill-2",
       i === 0 ? "left-0" : "right-0",
-      !inset && !header && (i === 0 ? "rounded-l-item" : "rounded-r-item"),
+      !inset && !header && (i === 0 ? "rounded-l-item row-rule" : "rounded-r-item row-rule"),
     );
 
   const focusable = !!onRowClick || !!selectable;
@@ -540,7 +540,7 @@ function DataTableInner<T>(
         style={{ ...gridStyle, ...style }}
         className={cn(
           "group/tr grid w-full text-body text-fg transition-control focus-ring-inset",
-          !inset && "rounded-item",
+          !inset && "rounded-item row-rule",
           KAESO_DATA_TABLE_VARIANTS.density[density].classes,
           onRowClick && "cursor-pointer",
           rowTone(onRaised, on),
@@ -651,7 +651,7 @@ function DataTableInner<T>(
         role="columnheader"
         data-col={h.column.id}
         aria-sort={dir === "asc" ? "ascending" : dir === "desc" ? "descending" : sortable ? "none" : undefined}
-        className={cn("group/th relative", cellPad(i), meta?.align === "end" && "justify-end", stickyCol(i, true), stickyCol(i, true) && "hairline-b-strong")}
+        className={cn("group/th relative", cellPad(i), meta?.align === "end" && "justify-end", stickyCol(i, true), stickyCol(i, true) && "rule-b")}
       >
         {resizable ? (
           <ContextMenu>
@@ -707,7 +707,7 @@ function DataTableInner<T>(
           }}
         >
           {table.getHeaderGroups().map((hg) => (
-            <div key={hg.id} role="row" aria-rowindex={1} className="grid h-36 hairline-b-strong" style={gridStyle}>
+            <div key={hg.id} role="row" aria-rowindex={1} className="grid h-36 rule-b" style={gridStyle}>
               {hg.headers.filter((h) => !hidden.has(h.column.id)).map(header)}
             </div>
           ))}

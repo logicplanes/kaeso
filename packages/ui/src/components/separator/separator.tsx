@@ -9,6 +9,11 @@ export const KAESO_SEPARATOR_VARIANTS = {
   tone: {
     subtle: { classes: "bg-line-subtle", description: "Inside groups and tables (default)" },
     default: { classes: "bg-line", description: "Between regions that tone and space cannot separate" },
+    strong: { classes: "bg-line-strong", description: "A section head's rule and a list's hairline marker, as kaeso.app draws them" },
+    ink: {
+      classes: "bg-fg",
+      description: "A quotation's rule: kaeso.app's blockquote stands behind a line in the text colour, 2px wide when vertical",
+    },
   },
 } as const;
 export const KAESO_SEPARATOR_DEFAULT_VARIANTS = { orientation: "horizontal", tone: "subtle" } as const;
@@ -37,7 +42,13 @@ export const Separator = forwardRef<HTMLDivElement, SeparatorProps>(function Sep
       ref={ref}
       role="separator"
       aria-orientation={orientation}
-      className={cn("shrink-0 forced-line", KAESO_SEPARATOR_VARIANTS.orientation[orientation].classes, KAESO_SEPARATOR_VARIANTS.tone[tone].classes, className)}
+      className={cn(
+        "shrink-0 forced-line",
+        KAESO_SEPARATOR_VARIANTS.orientation[orientation].classes,
+        tone === "ink" && orientation === "vertical" && "w-2",
+        KAESO_SEPARATOR_VARIANTS.tone[tone].classes,
+        className,
+      )}
       {...props}
     />
   );

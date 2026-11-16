@@ -8,7 +8,7 @@ import { GroupSurface } from "../settings/settings.js";
 
 export const KAESO_CHECKBOX_VARIANTS = {
   size: {
-    md: { classes: "size-18 rounded-checkbox", description: "18px, radius 5 (default)" },
+    md: { classes: "size-18 rounded-checkbox", description: "18px, radius 4 (default)" },
   },
   variant: {
     default: { classes: "", description: "The box with its label beside it (default)" },

@@ -15,7 +15,8 @@ export const docs = {
     },
   },
   Fieldset: {
-    description: "A group of fields under one legend, which names the group for screen readers.",
+    description:
+      "A group of fields under one legend, which names the group for screen readers. The legend and its description are set as a section head, with a hairline under them.",
     props: {
       description: "One sentence of help under the heading; it also describes the group.",
       legend: "The heading of the group of fields, read out as the group's name.",

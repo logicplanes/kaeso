@@ -179,4 +179,19 @@ describe("a field CopyButton", () => {
     render(<CopyButton display="field" size="md" value="$KAESO_API_KEY" label="Copy variable name" />);
     expect(screen.getByText("$KAESO_API_KEY")).not.toHaveAttribute("tabindex");
   });
+
+  it("draws the field like a read-only input, its copy circle inset concentrically at every size", () => {
+    render(
+      <>
+        <CopyButton display="field" size="sm" value="https://kaeso.example.com/v1" label="Copy small URL" />
+        <CopyButton display="field" size="md" value="https://kaeso.example.com/v1" label="Copy base URL" />
+      </>,
+    );
+    const small = screen.getByRole("button", { name: "Copy small URL" });
+    const base = screen.getByRole("button", { name: "Copy base URL" });
+    expect(small.parentElement).toHaveClass("bg-fill-1", "shadow-ring", "h-32", "pr-4");
+    expect(small).toHaveClass("size-24");
+    expect(base.parentElement).toHaveClass("h-36", "pr-2");
+    expect(base).toHaveClass("size-32");
+  });
 });

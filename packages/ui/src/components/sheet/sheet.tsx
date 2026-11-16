@@ -10,6 +10,7 @@ import { icons } from "../../icons/vocabulary.js";
 import { Button } from "../button/button.js";
 import { useUiText } from "../../i18n/context.js";
 import { useResizeMotion } from "../../utils/resize-motion.js";
+import { useScrolledUnder } from "../../hooks/use-scrolled-under.js";
 
 export const KAESO_SHEET_VARIANTS = {
   size: {
@@ -53,7 +54,8 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
   const [box, setBox] = useState<HTMLElement | null>(null);
   const grows = side === "bottom";
   const headRef = useCallback((el: HTMLElement | null) => setBox(grows ? (el?.parentElement ?? null) : null), [grows]);
-  useResizeMotion(box);
+  const { ref, under, scrolled, check } = useScrolledUnder<HTMLDivElement>();
+  useResizeMotion(box, check);
   const close = (
     <Button
       variant="ghost"
@@ -66,18 +68,29 @@ function Frame({ title, subtitle, actions, children, footer, inline, onOpenChang
   );
   return (
     <>
-      <div ref={headRef} className="flex min-h-60 shrink-0 items-center gap-12 px-24 py-12 hairline-b">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <Title className="text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
+      <div
+        ref={headRef}
+        data-sheet-header=""
+        className={cn("flex shrink-0 items-start gap-8 px-24 pt-20 pb-16 transition-control", scrolled && "hairline-b-strong")}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-4 pt-3 pe-4">
+          <Title className="text-title font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
           {subtitle && <span className="mono text-small text-fg-secondary wrap-anywhere">{subtitle}</span>}
         </div>
-        {actions}
-        {inline ? close : <BaseDialog.Close render={close} />}
+        {actions && <div className="flex h-32 shrink-0 items-center gap-8">{actions}</div>}
+        <span className="-me-8 flex h-32 shrink-0 items-center">{inline ? close : <BaseDialog.Close render={close} />}</span>
       </div>
-      <div data-dialog-body="" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-24 py-20 scrollbar-quiet">
+      <div ref={ref} data-dialog-body="" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-24 pt-4 pb-24 scrollbar-quiet">
         <GutterContent>{children}</GutterContent>
       </div>
-      {footer && <div className="flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 py-16 hairline-t">{footer}</div>}
+      {footer && (
+        <div
+          data-sheet-footer=""
+          className={cn("flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-24 transition-control", under && "hairline-t-strong")}
+        >
+          {footer}
+        </div>
+      )}
     </>
   );
 }

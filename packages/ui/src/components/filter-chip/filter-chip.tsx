@@ -158,11 +158,13 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
         {property}
       </span>
       {!operators?.length ? (
-        <span className={cn(SEG, "shrink-0 cursor-default text-fg-secondary divider-l hover:bg-transparent active:bg-transparent")}>{operator}</span>
+        <span className={cn(SEG, "shrink-0 cursor-default font-regular text-fg-secondary divider-l hover:bg-transparent active:bg-transparent")}>
+          {operator}
+        </span>
       ) : (
         <Menu>
           <Menu.Trigger>
-            <button type="button" className={cn(SEG, "shrink-0 text-fg-secondary divider-l")}>
+            <button type="button" className={cn(SEG, "shrink-0 font-regular text-fg-secondary divider-l hover:text-fg open:text-fg")}>
               {operator}
             </button>
           </Menu.Trigger>

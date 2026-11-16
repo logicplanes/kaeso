@@ -8,7 +8,7 @@ import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_JSON_VIEW_VARIANTS = {
   surface: {
-    well: { classes: "rounded-well bg-fill-1 p-16", description: "On a well (default)" },
+    well: { classes: "rounded-well bg-fill-1 p-16", description: "On a flat plate: cut corners, fill, no ring (default)" },
     plain: { classes: "", description: "No surface" },
   },
 } as const;

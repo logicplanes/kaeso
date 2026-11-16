@@ -98,7 +98,7 @@ function framed(header: ReactNode, footer: ReactNode) {
     return (
       <div {...rest} className={cn(className, "overflow-hidden p-0")}>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain rounded-menu p-6 scrollbar-quiet">
-          {header && <div className="mb-6 px-10 pt-6 pb-10 hairline-b">{header}</div>}
+          {header && <div className="-mx-6 mb-6 px-16 pt-6 pb-10 hairline-b-strong">{header}</div>}
           <div role={role} id={id} aria-labelledby={labelledBy} aria-orientation={orientation} className="flex flex-col">
             {children}
           </div>

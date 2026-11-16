@@ -34,13 +34,13 @@ export const KAESO_COMMAND_LIST_VARIANTS = {
   },
   size: {
     md: { classes: "", description: "A 44px search over 34px rows (default)" },
-    lg: { classes: "", description: "A 56px search over 40px rows: the command palette" },
+    lg: { classes: "", description: "A 56px search over 40px rows, its icon on the rows' icon line: the command palette" },
   },
 } as const;
 
 const SIZES = {
   md: { search: "h-44 gap-10 px-16", input: "text-body", row: 34, item: "", caption: "px-16" },
-  lg: { search: "h-56 gap-12 px-20", input: "text-body-lg font-regular", row: 40, item: "rounded-palette-item gap-12 px-12", caption: "px-18" },
+  lg: { search: "h-56 gap-12 px-18", input: "text-body-lg font-regular", row: 40, item: "rounded-palette-item gap-12 px-12", caption: "px-18" },
 } as const;
 
 export type CommandListHeight = keyof typeof KAESO_COMMAND_LIST_VARIANTS.height;
@@ -457,7 +457,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
           e.preventDefault();
           e.currentTarget.querySelector("input")?.focus();
         }}
-        className={cn("flex shrink-0 cursor-text items-center hairline-b", look.search)}
+        className={cn("flex shrink-0 cursor-text items-center hairline-b-strong", look.search)}
       >
         <Icon icon={icons.search} size={size === "lg" ? "md" : "sm"} className="text-fg-tertiary" />
         {searchPrefix}
@@ -481,7 +481,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
           className={cn("min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-tertiary", look.input)}
         />
       </div>
-      {toolbar && <div className="flex shrink-0 flex-wrap items-center gap-8 px-12 py-8 hairline-b">{toolbar}</div>}
+      {toolbar && <div className="flex shrink-0 flex-wrap items-center gap-8 px-12 py-8 hairline-b-strong">{toolbar}</div>}
       <div
         ref={scroller}
         id={listId}

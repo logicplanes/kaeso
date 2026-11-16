@@ -96,6 +96,18 @@ describe("Markdown", () => {
     expect(screen.getByRole("cell", { name: "12" })).toBeInTheDocument();
   });
 
+  it("gives a heading more room above than below and hangs bullets from a short rule centred on the first line", () => {
+    const c = md("# Routes\n\nText.\n\n## Limits\n\n- one\n- two", { size: "lg" });
+    expect(screen.getByRole("heading", { name: "Routes" })).toHaveClass("hairline-b-strong", "first:mt-0");
+    expect(screen.getByRole("heading", { name: "Limits" })).toHaveClass("mt-16");
+    expect(screen.getByRole("heading", { name: "Limits" })).not.toHaveClass("hairline-b-strong");
+    const markers = c.querySelectorAll("li > [data-marker]");
+    expect(markers).toHaveLength(2);
+    expect(markers[0]).toHaveClass("h-22");
+    expect(c.querySelector("ul")).toHaveClass("gap-8");
+    expect(c.textContent).not.toContain("•");
+  });
+
   it("shows the start of a long text until Show all", async () => {
     const para = "A paragraph of the system prompt that goes on.\n\n";
     const text = `# Start\n\n${para.repeat(60)}# End`;

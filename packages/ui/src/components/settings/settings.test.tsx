@@ -81,7 +81,7 @@ describe("Settings rows", () => {
     expect(screen.getByRole("link", { name: /Email/ })).toHaveClass("min-h-64", "py-12");
   });
 
-  it("insets the divider 20px at both ends, keeps it in forced colours, and hovers in the raised tone", () => {
+  it("divides rows by a hairline across the whole plate, as checkbox and radio cards in a group are, and hovers in the raised tone", () => {
     render(
       <SettingsGroup aria-label="Account">
         <SettingsRow title="Email" href="/settings/email" />
@@ -89,7 +89,8 @@ describe("Settings rows", () => {
       </SettingsGroup>,
     );
     const second = screen.getByRole("link", { name: /Password/ });
-    expect(second).toHaveClass("not-first:before:left-20", "not-first:before:right-20", "not-first:before:forced-line");
+    expect(second).toHaveClass("not-first:hairline-t");
+    expect(second.className).not.toMatch(/before:/);
     expect(second).toHaveClass("hover:bg-raised-hover", "active:bg-raised-pressed");
     expect(second).toHaveClass("focus-ring-inset", "first:rounded-t-group", "last:rounded-b-group");
   });
@@ -101,7 +102,7 @@ describe("Settings rows", () => {
       </Section>,
     );
     const header = screen.getByRole("heading", { name: "Members" }).closest("header")!;
-    expect(header).toHaveClass("mb-16", "flex-wrap");
+    expect(header).toHaveClass("mb-16", "flex-wrap", "pb-12", "rule-b");
     expect(screen.getByRole("button", { name: "Invite" }).parentElement).toHaveClass("shrink-0");
   });
 

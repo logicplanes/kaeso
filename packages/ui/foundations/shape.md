@@ -1,6 +1,6 @@
 # Shape
 
-Pills for everything on one line, concentric corners for everything that holds something. Values: `../ai/tokens.md`.
+Kaeso Vanguard: pills for everything on one line, cut plates for everything that holds something. A container's corners are barely rounded (4 to 16px), so a pill reads as a control and a plate as a surface at a glance. Values: `../ai/tokens.md`.
 
 ## Radii
 
@@ -32,10 +32,11 @@ Pills for everything on one line, concentric corners for everything that holds s
 
 ## Concentric corners
 
-An inner corner is the outer corner minus the inset, so curves stay parallel. A 16px menu with a 6px inset holds 10px items; a 24px frame with an 8px inset holds 16px pills.
+An inner corner is the outer corner minus the inset, so curves stay parallel. A 10px menu with a 6px inset holds 4px items; a 16px frame with an 8px inset holds an 8px panel.
 
 ## Rules
 
 - A pill is a perfect stadium: its radius is at least half its height.
 - Nothing mixes shapes: a square button never sits next to a pill.
-- No decorative cards. Content sits on the panel; only the surfaces above it have corners of their own.
+- No decorative cards. Content sits on the panel, divided by hairlines; only the surfaces above it, and the flat plates that hold a figure, code or a picture, have corners of their own.
+- Plates are cut, not soft: never a container corner above 16px.

@@ -3,10 +3,10 @@ import { cn } from "../../utils/cn.js";
 
 export const KAESO_HEADING_VARIANTS = {
   size: {
-    "title-sm": { classes: "text-title-sm font-semibold", description: "17/24: section, dialog and sheet titles" },
-    title: { classes: "text-title font-semibold", description: "20/28: empty states, compact page titles" },
-    "title-lg": { classes: "text-title-lg font-semibold", description: "28/34: settings page titles, auth screens" },
-    display: { classes: "text-display font-semibold", description: "40/44: showcase headings, the setup screen" },
+    "title-sm": { classes: "text-title-sm font-semibold", description: "17/24, -0.014em: section, dialog and sheet titles" },
+    title: { classes: "text-title font-semibold", description: "20/26, -0.022em: empty states, compact page titles" },
+    "title-lg": { classes: "text-title-lg font-semibold", description: "28/32, -0.032em: settings page titles, auth screens" },
+    display: { classes: "text-display font-semibold", description: "40/42, -0.042em: showcase headings, the setup screen" },
   },
 } as const;
 export const KAESO_HEADING_DEFAULT_VARIANTS = { size: "title-sm" } as const;

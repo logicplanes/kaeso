@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   Markdown: {
     description:
-      'Markdown, safely: headings, paragraphs, lists, tasks, code fences (CodeBlock), inline code, emphasis, links, quotes, rules and tables. Raw HTML stays text, links open only for http, https and mailto in a new tab, images are links. Long texts show their start until "Show all". A table wider than its column scrolls sideways with a fade and takes focus.',
+      'Markdown, safely: headings, paragraphs, lists, tasks, code fences (CodeBlock), inline code, emphasis, links, quotes, rules and tables. Raw HTML stays text, links open only for http, https and mailto in a new tab, images are links. Headings take twice the room above them as below, a top-level heading stands on a strong hairline, bullets are short rules and quotes stand behind a 2px rule. Long texts show their start until "Show all". A table wider than its column scrolls sideways with a fade and takes focus.',
     props: {
       collapseAfter: 'Texts longer than this many characters show their start and "Show all" (24,000 by default; 0 never collapses).',
       headingLevel: "The heading level `#` becomes (3 by default: below a page's and a section's own headings).",

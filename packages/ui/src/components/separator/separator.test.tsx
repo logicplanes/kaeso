@@ -13,4 +13,14 @@ describe("Separator", () => {
     render(<Separator orientation="vertical" />);
     expect(screen.getByRole("separator")).toHaveClass("forced-line", "w-1");
   });
+  it("draws a strong rule, and a quotation's ink rule 2px wide when vertical", () => {
+    const { rerender } = render(<Separator tone="strong" />);
+    expect(screen.getByRole("separator")).toHaveClass("bg-line-strong", "h-1");
+    rerender(<Separator tone="ink" orientation="vertical" />);
+    const rule = screen.getByRole("separator");
+    expect(rule).toHaveClass("bg-fg", "w-2");
+    expect(rule).not.toHaveClass("w-1");
+    rerender(<Separator tone="ink" />);
+    expect(screen.getByRole("separator")).toHaveClass("bg-fg", "h-1", "w-full");
+  });
 });

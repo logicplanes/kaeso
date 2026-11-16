@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   Dashboard: {
     description:
-      "An overview page's numbers, charts and lists on one raised surface split by hairlines, the way a `StatGroup` splits its tiles. As many columns from 1024px as `columns` says (twelve by default), one below it; each `DashboardCell` takes its span through `className` (`lg:col-span-2`). Put `MetricTabs` first, so the totals lead and pick what the chart beneath them shows.",
+      "An overview page's numbers, charts and lists on one raised surface split by hairlines, its numbers set medium, tight and tabular. As many columns from 1024px as `columns` says (twelve by default), one below it; each `DashboardCell` takes its span through `className` (`lg:col-span-2`). Put `MetricTabs` first, so the totals lead and pick what the chart beneath them shows.",
     props: {
       "aria-label": 'The surface\'s accessible name, such as "Usage in the period".',
       busy: "Keeps the numbers on screen, a step back, while the next ones load.",
@@ -88,12 +88,12 @@ export const docs = {
   },
   Announcement: {
     description:
-      "One piece of news across the top of a home page: an eyebrow, a title, a line and an action beside its artwork, such as a new release with a flush `ReleaseArt`. The artwork leaves on narrow screens.",
+      "One piece of news across the top of a home page: a title set large and tight, what kind of news it is under it (never above it: no eyebrows), a line and an action beside its artwork, such as a new release with a flush `ReleaseArt`. The artwork leaves on narrow screens.",
     props: {
       actions: "One or two buttons.",
       art: "The artwork on the right, 16:9 at 320px: a `ReleaseArt` with `flush`, so the whole cover shows.",
       description: "One line, two at most.",
-      eyebrow: 'What kind of news: "New release".',
+      eyebrow: 'What kind of news: "New release". It stands under the title as a small label, never above it.',
       title: "The news itself.",
     },
   },

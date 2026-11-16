@@ -22,6 +22,7 @@ import { PortalContainer } from "../../utils/portal-context.js";
 import { lazyModule, useLazyModule } from "../../utils/lazy-module.js";
 import { whenIdle } from "../../utils/when-idle.js";
 import { useUiText } from "../../i18n/context.js";
+import { mergeRefs } from "../../utils/merge-refs.js";
 
 export const KAESO_APP_FRAME_VARIANTS = {
   fill: {
@@ -70,7 +71,7 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
         ref={ref}
         data-app-frame={fill}
         className={cn(
-          "relative isolate flex w-full flex-col overflow-hidden bg-chrome text-fg lg:flex-row",
+          "relative isolate flex w-full flex-col overflow-hidden bg-panel text-fg lg:flex-row",
           KAESO_APP_FRAME_VARIANTS.fill[fill].classes,
           className,
         )}
@@ -86,10 +87,7 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
           onToggle={() => setNavOpen((o) => !o)}
           toggleRef={toggle}
         />
-        <Main
-          id={mainId}
-          className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel outline-none safe-area-panel lg:my-8 lg:mr-8 lg:rounded-panel lg:shadow-panel"
-        >
+        <Main id={mainId} className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel outline-none safe-area-panel lg:pt-8">
           {children}
         </Main>
         {corner && <div className={cn(fill === "parent" ? "absolute" : "fixed", "right-16 bottom-16 z-10 flex items-center gap-8")}>{corner}</div>}
@@ -287,9 +285,29 @@ export interface AppFrameBodyProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const Body = forwardRef<HTMLDivElement, AppFrameBodyProps>(function AppFrameBody({ className, padding = "none", children, ...props }, ref) {
+  const own = useRef<HTMLDivElement | null>(null);
+  const refs = useMemo(() => mergeRefs(own, ref), [ref]);
+  useEffect(() => {
+    const el = own.current;
+    if (!el) return;
+    let band: Element | null = null;
+    const mark = () => {
+      const next = el.scrollTop > 0 ? el.previousElementSibling : null;
+      if (next === band) return;
+      band?.removeAttribute("data-k-content-under");
+      next?.setAttribute("data-k-content-under", "");
+      band = next;
+    };
+    mark();
+    el.addEventListener("scroll", mark, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", mark);
+      band?.removeAttribute("data-k-content-under");
+    };
+  }, []);
   return (
     <div
-      ref={ref}
+      ref={refs}
       className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-quiet", KAESO_APP_FRAME_BODY_VARIANTS.padding[padding].classes, className)}
       {...props}
     >
@@ -310,7 +328,7 @@ const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrame
     <Body ref={ref} className="relative">
       <MenuButton className="absolute top-10 left-24 z-10" />
       <div className={cn("w-full px-24 pt-16 pb-96 lg:mx-auto lg:max-w-settings lg:pt-64", className)} {...props}>
-        <header className="flex flex-wrap items-start justify-between gap-x-16 gap-y-8">
+        <header className="flex flex-wrap items-start justify-between gap-x-16 gap-y-8 pb-24 rule-b">
           <h1 className="min-w-0 text-title-lg font-semibold text-fg text-balance">{title}</h1>
           {actions && <div className="order-last flex h-34 shrink-0 items-center gap-8 sm:order-none sm:ml-auto">{actions}</div>}
           {description && <p className="basis-full text-body-lg font-regular text-fg-secondary">{description}</p>}

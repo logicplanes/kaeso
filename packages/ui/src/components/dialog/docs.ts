@@ -22,7 +22,7 @@ export const docs = {
   },
   Dialog: {
     description:
-      'A modal dialog: 440 / 560 / 720, radius 20, title, description, body, actions. Enter in a single-line field and ⌘/Ctrl+Enter anywhere submit; Enter in a text area adds a line. It stays centered (or, with `anchor="top"`, keeps its top edge) while its content changes, growing or shrinking 200ms from the size it has; the body scrolls between the header and the footer when the content is taller than the screen. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.',
+      'A modal dialog: 440 / 560 / 720, radius 14, its title alone at the top, one sentence under it, the body, and the actions at the end edge. Enter in a single-line field and ⌘/Ctrl+Enter anywhere submit; Enter in a text area adds a line. It stays centered (or, with `anchor="top"`, keeps its top edge) while its content changes, growing or shrinking 200ms from the size it has; the body scrolls between the header and the footer when the content is taller than the screen, with a hairline under the header once it scrolls and over the footer while content is below. Its content unmounts once it has closed; state kept beside it, like a field, a step or a secret, goes in a component inside a DialogScope.',
     props: {
       anchor: "Where it sits: centered, or with a fixed top edge for content that changes height, so the title never moves.",
       busy: "Keeps the dialog open while work it started is underway: Escape, a press outside, the close circle, Dialog.Close, Enter and ⌘Enter do nothing, so a request is never abandoned or sent twice.",

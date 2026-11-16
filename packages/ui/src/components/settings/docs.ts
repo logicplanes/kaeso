@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   SettingsGroup: {
-    description: "A group of settings rows: radius 14, raised, ring and a whisper of shadow; hairlines inset to the text.",
+    description:
+      "A group of settings rows on one cut plate: raised, 6px corners and a hairline ring, no shadow. Rows are divided by hairlines across the whole plate, as the checkbox and radio cards it holds are.",
     props: {
       "aria-label": "The group's accessible name.",
       children: 'The rows of the group: `SettingsRow`s, a `RadioGroup` with `variant="cards"`, or `Checkbox`es with `variant="card"`, which share its surface.',

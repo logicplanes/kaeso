@@ -86,7 +86,7 @@ describe("the look", () => {
       edgeLabelBackground: neutral["fill-1"].light,
     });
     expect(vars(dark)).toMatchObject({ primaryColor: neutral["bg-raised"].dark, primaryTextColor: neutral.text.dark, darkMode: true });
-    expect(DIAGRAM_RADIUS).toBe(10);
+    expect(DIAGRAM_RADIUS).toBe(4);
   });
 
   it("draws an accent node in ink and an outside node dashed, in each theme", () => {

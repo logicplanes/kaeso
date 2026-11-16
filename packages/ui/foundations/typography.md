@@ -4,7 +4,7 @@ Inter for the interface, Geist Mono for ids, keys and code. Fourteen pixels is t
 
 ## Scale
 
-Ten steps, each with its own line height and tracking. Larger sizes tighten; small sizes open up slightly.
+Ten steps, each with its own line height and tracking. Larger sizes tighten, as Inter's display cut does on kaeso.app: a page title tracks at -0.032em, the display size at -0.042em, and their line height falls with them. Small sizes open up slightly.
 
 | Utility         | Use                                                          |
 | --------------- | ------------------------------------------------------------ |
@@ -32,4 +32,5 @@ Numbers that align in columns use tabular figures (`tabular`). Money keeps its e
 - Three weights: 400, 500 and 600. No faux bold, no light weights.
 - Dark mode renders 500 and 600 twenty units lighter, so both themes look equally heavy.
 - Sentence case everywhere, including buttons and titles.
+- No eyebrows: a title stands alone, never under a small label that repeats its section.
 - Never a serif. Every control and portal inherits the interface family.

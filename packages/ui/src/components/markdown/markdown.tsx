@@ -186,12 +186,12 @@ function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
   const last = list.items.length - 1;
   const digits = String(start + last).length;
   return (
-    <Tag className="flex flex-col gap-4">
+    <Tag className={cn("flex flex-col", LIST_GAP[ctx.size])}>
       {list.items.map((item, i) => (
         <li key={i} className="flex gap-8">
           {item.task ? (
             <Task done={!!item.checked} />
-          ) : (
+          ) : list.ordered ? (
             <Text
               as="span"
               aria-hidden
@@ -199,11 +199,15 @@ function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
               weight="regular"
               tone="tertiary"
               tabular
-              className={list.ordered ? "shrink-0 text-right" : "w-8 shrink-0 text-center"}
-              {...(list.ordered ? { style: { minWidth: `${digits + 0.5}ch` } } : {})}
+              className="shrink-0 text-right"
+              style={{ minWidth: `${digits + 0.5}ch` }}
             >
-              {list.ordered ? `${start + i}.` : "•"}
+              {`${start + i}.`}
             </Text>
+          ) : (
+            <span aria-hidden data-marker className={cn("flex w-8 shrink-0 items-center", LINE[ctx.size])}>
+              <span className="h-1 w-8 bg-fg-tertiary forced-line" />
+            </span>
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-4">
             {blocks(
@@ -221,6 +225,9 @@ function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
 const PROSE = "max-w-prose wrap-break-word";
 
 const TEXT = { lg: "body-lg", body: "body", small: "small" } as const;
+const LINE = { lg: "h-22", body: "h-20", small: "h-18" } as const;
+const LIST_GAP = { lg: "gap-8", body: "gap-6", small: "gap-4" } as const;
+const HEADING_ROOM = { lg: "mt-16", body: "mt-12", small: "mt-8" } as const;
 const HEADING = {
   lg: ["title", "title-sm", "body-lg", "body-lg"],
   body: ["title-sm", "body-lg", "body", "body"],
@@ -238,7 +245,13 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
       const variant = HEADING[ctx.size][step]!;
       const level = Math.min(6, h.depth + ctx.level - 1) as 1 | 2 | 3 | 4 | 5 | 6;
       return (
-        <Text as={`h${level}`} variant={variant} weight={step === 3 ? "medium" : "semibold"} tone="inherit" className="mt-4 first:mt-0 wrap-break-word">
+        <Text
+          as={`h${level}`}
+          variant={variant}
+          weight={step === 3 ? "medium" : "semibold"}
+          tone="inherit"
+          className={cn(HEADING_ROOM[ctx.size], "first:mt-0 wrap-break-word", step === 0 && "pb-8 hairline-b-strong")}
+        >
           {inline(h.tokens)}
           {tail}
         </Text>
@@ -271,14 +284,14 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
     case "blockquote":
       return (
         <blockquote className="flex gap-12">
-          <Separator orientation="vertical" tone="default" />
+          <span aria-hidden className="w-2 shrink-0 self-stretch bg-fg-tertiary forced-line" />
           <div className="flex min-w-0 flex-1 flex-col gap-8 text-fg-secondary">{blocks((t as Tokens.Blockquote).tokens, ctx)}</div>
         </blockquote>
       );
     case "hr":
       return (
         <>
-          <Separator className="my-4" />
+          <Separator tone="default" className="my-8" />
         </>
       );
     case "table": {

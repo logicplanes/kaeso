@@ -12,7 +12,8 @@ export const docs = {
     },
   },
   Section: {
-    description: "A section of a page: a title-sm heading with optional description and actions, no frame.",
+    description:
+      "A section of a page, as kaeso.app heads one: a title-sm heading with an optional sentence under it and actions at the end of its row, standing on a 1px rule in the strong line colour. No frame: the content follows 16px under the rule.",
     props: {
       actions: "Actions at the end of the heading row.",
       children: "The section's content.",

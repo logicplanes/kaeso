@@ -49,17 +49,17 @@ export const MeterGauge = forwardRef<
     >
       <div className="relative">
         <svg width={W} height={104} role="presentation" className="block data-mark">
-          <path d={path(0, 1)} fill="none" stroke="var(--k-fill-3)" strokeWidth={12} strokeLinecap="round" />
-          {(drawn ?? 0) > 0 && <path d={path(0, Math.max(0.005, drawn ?? 0))} fill="none" stroke={tone} strokeWidth={12} strokeLinecap="round" />}
+          <path d={path(0, 1)} fill="none" stroke="var(--k-fill-3)" strokeWidth={12} />
+          {(drawn ?? 0) > 0 && <path d={path(0, Math.max(0.005, drawn ?? 0))} fill="none" stroke={tone} strokeWidth={12} />}
           {thresholds.map((th) => {
             const [x1, y1] = pt(th, R - 6);
             const [x2, y2] = pt(th, R + 10);
-            return <line key={th} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--k-text-tertiary)" strokeWidth={2} strokeLinecap="round" />;
+            return <line key={th} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--k-text-tertiary)" strokeWidth={2} />;
           })}
         </svg>
         <div className="absolute inset-x-0 bottom-0 mx-auto flex max-w-140 flex-col items-center text-center">
-          {status && <span className={cn("text-caption font-medium", over ? "text-danger-text" : "text-warning-text")}>{status}</span>}
-          <span className="max-w-full text-title font-semibold text-fg tabular wrap-anywhere">{shown}</span>
+          {status && <span className="text-caption font-medium text-fg">{status}</span>}
+          <span className="max-w-full text-metric font-semibold text-fg tabular wrap-anywhere">{shown}</span>
         </div>
       </div>
       {label && <span className="mt-4 max-w-full text-center text-caption font-medium text-pretty text-fg-tertiary">{label}</span>}

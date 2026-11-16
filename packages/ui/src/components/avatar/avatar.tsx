@@ -16,7 +16,7 @@ export const KAESO_AVATAR_VARIANTS = {
   },
   kind: {
     person: { classes: "rounded-pill", description: "People are round" },
-    org: { classes: "rounded-org", description: "Organizations and projects: radius 8" },
+    org: { classes: "rounded-org", description: "Organizations and projects: a cut square, radius 6 (4 at 24px and under)" },
     agent: { classes: "bg-fill-3", description: "An agent acting for a person: one bot face on a square, the same for every agent" },
   },
 } as const;

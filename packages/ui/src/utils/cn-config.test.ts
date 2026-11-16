@@ -26,7 +26,6 @@ const colors = [
   "fill-1",
   "fill-2",
   "fill-3",
-  "switch-thumb",
   "item-hover",
   "item-pressed",
   "line-subtle",

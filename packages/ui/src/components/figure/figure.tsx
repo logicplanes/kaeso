@@ -5,7 +5,10 @@ import { ScrollArea } from "../scroll-area/scroll-area.js";
 
 export const KAESO_FIGURE_VARIANTS = {
   surface: {
-    well: { classes: "rounded-well bg-fill-1", description: "A well like a code block's: radius 14, fill, no ring (default)" },
+    well: {
+      classes: "overflow-hidden rounded-well bg-fill-1",
+      description: "A flat plate like a code block's: cut corners, fill, no ring, the caption at its foot (default)",
+    },
     plain: { classes: "", description: "No surface, for a figure that brings its own" },
   },
 } as const;
@@ -50,13 +53,17 @@ function useFocused(focus: number) {
 export const Figure = forwardRef<HTMLElement, FigureProps>(function Figure({ children, label, caption, surface = "well", focus = 0.5, className }, ref) {
   const content = useFocused(focus);
   return (
-    <figure ref={ref} className={cn("flex min-w-0 flex-col gap-12", className)}>
-      <ScrollArea orientation="horizontal" aria-label={label} className={KAESO_FIGURE_VARIANTS.surface[surface].classes}>
+    <figure ref={ref} className={cn("flex min-w-0 flex-col", KAESO_FIGURE_VARIANTS.surface[surface].classes, className)}>
+      <ScrollArea orientation="horizontal" aria-label={label}>
         <div ref={content} className="mx-auto flex w-fit min-w-full justify-center p-16 sm:p-24">
           {children}
         </div>
       </ScrollArea>
-      {caption && <figcaption className="text-center text-small text-pretty text-fg-secondary">{caption}</figcaption>}
+      {caption && (
+        <figcaption className={cn("text-small text-pretty text-fg-secondary hairline-t", surface === "well" ? "px-16 py-12 sm:px-24" : "pt-12")}>
+          {caption}
+        </figcaption>
+      )}
     </figure>
   );
 });

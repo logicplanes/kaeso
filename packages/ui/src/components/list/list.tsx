@@ -525,7 +525,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
         {...(force ? { "data-force": force } : {})}
         className={cn(
           "group/row relative flex cursor-pointer items-center gap-12 text-body transition-control focus-ring-inset",
-          card ? "rounded-none px-20" : "rounded-item px-12",
+          card ? "rounded-none px-20" : "rounded-item px-12 row-rule",
           stacked || lines || wraps ? "min-h-56 py-8" : card && density === "default" ? "h-48" : KAESO_LIST_VARIANTS.density[density].classes,
           rowTone(card, !!selected),
           off && "pointer-events-none text-fg-disabled",

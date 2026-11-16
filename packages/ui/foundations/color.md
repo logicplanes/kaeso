@@ -6,32 +6,31 @@ A monochrome interface on pure white and pure black. Color appears only in data,
 
 Two tint-free ramps. Components use the role names, never a step, so both themes are designed rather than inverted.
 
-| Role             | Use                                                                |
-| ---------------- | ------------------------------------------------------------------ |
-| `bg-panel`       | The brightest surface: pure white, pure black. Content lives here. |
-| `bg-chrome`      | The window behind the panel. The sidebar sits on it.               |
-| `bg-raised`      | Controls, menus, popovers: a surface above the panel.              |
-| `raised-hover`   | A raised control under the pointer: secondary buttons, list items. |
-| `raised-pressed` | A raised control while it is pressed.                              |
-| `fill-1`         | Quiet fills: inputs at rest, code wells, group headers.            |
-| `fill-2`         | Hover on ghost controls and rows.                                  |
-| `fill-3`         | Pressed and current: the active sidebar pill.                      |
-| `line-subtle`    | Separators inside groups.                                          |
-| `line`           | Rings around controls and groups.                                  |
-| `line-strong`    | Hovered rings, table header rules.                                 |
-| `switch-thumb`   | An off switch's thumb: white in light, light grey in dark.         |
-| `text`           | Titles, labels, values.                                            |
-| `text-secondary` | Descriptions, metadata, icons at rest.                             |
-| `text-tertiary`  | Placeholders, counts, axis labels.                                 |
-| `text-disabled`  | Disabled labels.                                                   |
-| `ink`            | The primary button and selected marks.                             |
-| `ink-hover`      | The primary button under the pointer.                              |
-| `ink-pressed`    | The primary button while pressed, or while its menu is open.       |
-| `focus`          | Keyboard focus rings.                                              |
+| Role             | Use                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------- |
+| `bg-panel`       | The brightest surface: pure white, pure black. Content lives here.                    |
+| `bg-chrome`      | A quiet band beside the panel where a page needs one; the frame itself is one ground. |
+| `bg-raised`      | Controls, menus, popovers: a surface above the panel.                                 |
+| `raised-hover`   | A raised control under the pointer: secondary buttons, list items.                    |
+| `raised-pressed` | A raised control while it is pressed.                                                 |
+| `fill-1`         | Quiet fills: inputs at rest, code wells, group headers.                               |
+| `fill-2`         | Hover on ghost controls and rows.                                                     |
+| `fill-3`         | Pressed and current: the active sidebar pill.                                         |
+| `line-subtle`    | Separators inside groups.                                                             |
+| `line`           | Rings around controls and groups.                                                     |
+| `line-strong`    | Hovered rings, table header rules.                                                    |
+| `text`           | Titles, labels, values.                                                               |
+| `text-secondary` | Descriptions, metadata, icons at rest.                                                |
+| `text-tertiary`  | Placeholders, counts, axis labels.                                                    |
+| `text-disabled`  | Disabled labels.                                                                      |
+| `ink`            | The primary button and selected marks.                                                |
+| `ink-hover`      | The primary button under the pointer.                                                 |
+| `ink-pressed`    | The primary button while pressed, or while its menu is open.                          |
+| `focus`          | Keyboard focus rings.                                                                 |
 
 ## Status
 
-Success, warning, danger and info are marks, never surfaces: a colored word, an icon, the tint behind a banner, the destructive button. Each has a solid, a `-text` and a `-tint` variable. A status is always readable without its color. The danger fill is `#dc2626` in both themes, so white text on it passes AA.
+Success, warning, danger and info are marks, never surfaces: a colored word, a badge's tint, the icon before a banner's words, the destructive button. A banner itself is a flat plate in every tone. Each has a solid, a `-text` and a `-tint` variable. A status is always readable without its color. The danger fill is `#dc2626` in both themes, so white text on it passes AA.
 
 ## Code
 
@@ -63,5 +62,5 @@ Eight series in a fixed order, balanced in lightness so none shouts. Token kinds
 
 - The interface is monochrome. A color that is not data, status or highlighted code is a bug.
 - A status mark sits next to a word or an icon; color alone never carries meaning.
-- Dark mode is designed on its own: the panel is the darkest surface, controls are lifted with a ring and a faint top light, and weights render twenty units lighter.
+- Dark mode is designed on its own: the panel is the darkest surface, controls are lifted with a ring, and weights render twenty units lighter.
 - Lines are rings drawn with box-shadow, one device pixel, and rarer than space or tone.

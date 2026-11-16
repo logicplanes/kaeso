@@ -87,7 +87,7 @@ export const ChartTooltip = forwardRef<HTMLDivElement, ChartTooltipProps>(functi
         top,
       }}
     >
-      <div className="mb-6 text-caption font-medium text-fg tabular">{heading}</div>
+      <div className="mb-8 pb-6 text-caption font-medium text-fg tabular hairline-b">{heading}</div>
       <div className="flex flex-col gap-4">
         {rows.map((r) => (
           <div key={r.id} className="flex items-center gap-8">

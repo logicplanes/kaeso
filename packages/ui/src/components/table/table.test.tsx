@@ -25,7 +25,7 @@ describe("Table", () => {
       </Table>,
     );
     for (const name of ["Model", "Notes"]) expect(screen.getByRole("columnheader", { name })).toHaveClass("first:pl-0", "last:pr-2");
-    expect(screen.getByRole("columnheader", { name: "Requests" })).toHaveClass("last:pr-0", "text-right");
+    expect(screen.getByRole("columnheader", { name: "Requests" })).toHaveClass("last:pr-0", "text-right", "rule-b");
     expect(screen.getByRole("cell", { name: "Aliases" })).toHaveClass("last:pr-2");
     expect(screen.getByRole("cell", { name: "1,200" })).toHaveClass("last:pr-0", "tabular");
   });

@@ -208,7 +208,7 @@ function Palette({
         }}
         footer={
           keyHints && (
-            <div className="flex h-40 shrink-0 items-center gap-16 px-16 text-caption font-medium text-fg-tertiary hairline-t">
+            <div className="flex h-40 shrink-0 items-center gap-16 px-18 text-caption font-medium text-fg-tertiary hairline-t-strong">
               <span className="inline-flex items-center gap-6">
                 <Kbd>up</Kbd>
                 <Kbd>down</Kbd> {t("commandPalette.toNavigate", "to navigate")}

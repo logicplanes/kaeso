@@ -23,11 +23,14 @@ import { useUiText } from "../../i18n/context.js";
 export const KAESO_STAT_VARIANTS = {
   variant: {
     plain: { classes: "", description: "A number with its unit and change, in a row of numbers (default)" },
-    tile: { classes: "bg-raised", description: "A tile in a StatGroup: label, number, change, detail and an optional trend" },
+    tile: {
+      classes: "rounded-group figure-plate",
+      description: "A flat plate in a StatGroup: the number large at its head, its change, detail and optional trend, and what it counts at its foot",
+    },
   },
   size: {
-    md: { classes: "text-metric", description: "28/32 metric (default)" },
-    sm: { classes: "text-title", description: "20/28 for dense rows" },
+    md: { classes: "text-metric", description: "28/32 metric, medium and tight (default)" },
+    sm: { classes: "text-title", description: "20/26 for dense rows" },
   },
 } as const;
 export const KAESO_STAT_DEFAULT_VARIANTS = { variant: "plain", size: "md" } as const;
@@ -55,7 +58,7 @@ Stat.displayName = "Stat";
 const PlainStat = forwardRef<HTMLDivElement, StatProps>(function PlainStat({ value, unit, delta, size = "md", className }, ref) {
   return (
     <div ref={ref} className={cn("flex min-w-0 flex-wrap items-baseline gap-x-8 gap-y-4", className)}>
-      <span className={cn("font-semibold text-fg tabular", KAESO_STAT_VARIANTS.size[size].classes)}>{value}</span>
+      <span className={cn("font-medium text-fg tabular", KAESO_STAT_VARIANTS.size[size].classes)}>{value}</span>
       {unit && <span className="text-body-lg font-regular text-fg-secondary">{unit}</span>}
       {delta && (
         <Badge tone={delta.tone ?? "neutral"} className="self-center">
@@ -68,6 +71,7 @@ const PlainStat = forwardRef<HTMLDivElement, StatProps>(function PlainStat({ val
 PlainStat.displayName = "Stat";
 
 const STAT_VALUE_STEPS = [
+  { classes: "text-display", px: 40 },
   { classes: "text-metric", px: 28 },
   { classes: "text-title", px: 20 },
   { classes: "text-title-sm", px: 17 },
@@ -83,39 +87,39 @@ const StatTile = forwardRef<HTMLDivElement, StatProps>(function StatTile({ label
       ref={ref}
       role="listitem"
       aria-busy={loading || undefined}
-      className={cn("flex min-w-0 flex-col bg-raised px-20 pt-16", trend ? "pb-12" : "pb-16", className)}
+      className={cn("flex min-w-0 flex-col px-20 pt-16 pb-16", KAESO_STAT_VARIANTS.variant.tile.classes, className)}
     >
-      <span className="text-small font-medium text-fg-secondary">{label}</span>
-      <span className="mt-6 flex h-34 min-w-0 items-center">
+      {label && <span className="order-last mt-auto flex min-w-0 pt-12 text-small font-medium text-pretty text-fg-secondary rule-t">{label}</span>}
+      <span className="flex h-44 min-w-0 items-center">
         {loading ? (
-          <span data-stat-value={step.px} className={cn("flex max-w-full font-semibold text-fg tabular", step.classes)}>
-            <Skeleton shape="line" className="h-20 w-96" />
+          <span data-stat-value={step.px} className={cn("flex max-w-full font-medium text-fg tabular", step.classes)}>
+            <Skeleton shape="line" className="h-24 w-112" />
           </span>
         ) : (
-          <TruncatedText data-stat-value={step.px} className={cn("max-w-full font-semibold text-fg tabular", step.classes)}>
+          <TruncatedText data-stat-value={step.px} className={cn("max-w-full font-medium text-fg tabular", step.classes)}>
             {value}
           </TruncatedText>
         )}
       </span>
       {loading ? (
         <>
-          <span className="mt-2 flex h-20 items-center">
+          <span className={cn("mt-4 flex h-20 items-center", !trend && "mb-16")}>
             <Skeleton shape="line" className="w-120" />
           </span>
           {trend && (
-            <span className="mt-auto h-40 shrink-0 pt-8">
+            <span className="mb-16 h-56 shrink-0 pt-16">
               <Skeleton className="h-full w-full" />
             </span>
           )}
         </>
       ) : (
-        <span className="mt-2 flex min-h-20 min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-small text-fg-tertiary">
+        <span className={cn("mt-4 flex min-h-20 min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-small text-fg-tertiary", !trend && "mb-16")}>
           {change && Number.isFinite(change.value) && <Delta value={change.value} better={change.better ?? "up"} />}
           {detail && <span className="min-w-0">{detail}</span>}
         </span>
       )}
       {trend && !loading && (
-        <span className="mt-auto h-40 shrink-0 pt-8">
+        <span className="mb-16 h-56 shrink-0 pt-16">
           {trend.length > 1 && (
             <Sparkline
               values={trend}
@@ -137,7 +141,7 @@ const COL_SPAN: Record<number, string> = { 2: "col-span-2" };
 const LG_COL_SPAN: Record<number, string> = { 1: "lg:col-span-1", 2: "lg:col-span-2", 3: "lg:col-span-3", 4: "lg:col-span-4" };
 
 const TILE_PADDING = 40;
-const GAP = 1;
+const GAP = 8;
 const SLACK = 1.03;
 
 export function statGridLayout(n: number, wide: boolean): { cols: number; spans: number[] } {
@@ -171,8 +175,8 @@ export function statGridFit(needs: number[], width: number, wide: boolean): { st
 export const KAESO_STAT_GROUP_VARIANTS = {
   variant: {
     grid: {
-      classes: "grid gap-1 overflow-hidden rounded-group bg-line shadow-xs forced-line",
-      description: "Tiles in one group that fits its columns and the size of every number to the room (default)",
+      classes: "grid gap-8",
+      description: "Tiles as flat plates 8px apart, fitting the columns and the size of every number to the room (default)",
     },
     row: { classes: "flex flex-wrap items-baseline gap-x-48 gap-y-16", description: "Plain numbers in a row that wraps" },
   },

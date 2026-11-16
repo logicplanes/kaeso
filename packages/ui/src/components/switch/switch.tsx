@@ -7,17 +7,17 @@ import { labelled } from "../radio/labelled.js";
 
 export const KAESO_SWITCH_VARIANTS = {
   size: {
-    sm: { classes: "h-16 w-28 p-2", description: "28×16, 12px thumb" },
-    md: { classes: "h-20 w-36 p-2", description: "36×20, 16px thumb (default)" },
-    lg: { classes: "h-24 w-44 p-2", description: "44×24, 20px thumb" },
+    sm: { classes: "h-16 w-28 p-3", description: "28×16, 10px thumb" },
+    md: { classes: "h-20 w-36 p-3", description: "36×20, 14px thumb (default)" },
+    lg: { classes: "h-24 w-44 p-3", description: "44×24, 18px thumb" },
   },
 } as const;
 export const KAESO_SWITCH_DEFAULT_VARIANTS = { size: "md" } as const;
 
 const THUMB = {
-  sm: "size-12 data-checked:translate-x-12 rtl:data-checked:-translate-x-12",
-  md: "size-16 data-checked:translate-x-16 rtl:data-checked:-translate-x-16",
-  lg: "size-20 data-checked:translate-x-20 rtl:data-checked:-translate-x-20",
+  sm: "size-10 data-checked:translate-x-12 rtl:data-checked:-translate-x-12",
+  md: "size-14 data-checked:translate-x-16 rtl:data-checked:-translate-x-16",
+  lg: "size-18 data-checked:translate-x-20 rtl:data-checked:-translate-x-20",
 } as const;
 
 const BUSY = {

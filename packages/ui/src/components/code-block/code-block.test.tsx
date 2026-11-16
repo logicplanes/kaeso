@@ -203,9 +203,9 @@ describe("CodeBlock", () => {
         ]}
       />,
     );
-    expect(screen.getByRole("tab", { name: "Python" })).toHaveClass("bg-fill-3", "tap-target");
-    expect(screen.getByRole("tab", { name: "curl" })).toHaveClass("hover:bg-fill-2");
-    expect(screen.getByRole("tab", { name: "curl" })).not.toHaveClass("bg-fill-3");
+    expect(screen.getByRole("tab", { name: "Python" })).toHaveClass("bg-fill-2", "text-fg", "tap-target");
+    expect(screen.getByRole("tab", { name: "curl" })).toHaveClass("text-fg-secondary", "hover:text-fg");
+    expect(screen.getByRole("tab", { name: "curl" })).not.toHaveClass("bg-fill-2");
     const copy = screen.getByRole("button", { name: "Copy code" });
     expect(copy.closest(".hairline-b")).not.toBeNull();
     expect(copy.closest(".opacity-0")).toBeNull();
@@ -221,6 +221,18 @@ describe("CodeBlock", () => {
     expect(container.querySelector("code > span:nth-child(2) .text-code-comment")).toHaveTextContent("// line 2");
     expect(container.querySelector("pre")).toHaveClass("scroll-fade-y");
     expect(screen.getByRole("button", { name: "Show all 1002 lines" })).toHaveClass("tap-target");
+  });
+
+  it("hangs the collapse toggle from the code's edge and says whether the block is open", () => {
+    const code = Array.from({ length: 30 }, (_, i) => `line ${i + 1}`).join("\n");
+    render(<CodeBlock code={code} lang="text" collapseAfter={4} />);
+    const toggle = screen.getByRole("button", { name: "Show all 30 lines" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle.parentElement).toHaveClass("px-6");
+    expect(toggle.parentElement).not.toHaveClass("justify-center");
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Show less" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Show less" }).querySelector(".rotate-180")).not.toBeNull();
   });
 
   it("highlights every language it is given, and shows an unknown one plain", async () => {

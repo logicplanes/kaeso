@@ -77,8 +77,7 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
   const classes = cn(
     "@container relative flex w-full flex-wrap items-center gap-x-16 gap-y-8 px-20 text-left",
     description ? KAESO_SETTINGS_VARIANTS.row.default.classes : KAESO_SETTINGS_VARIANTS.row.single.classes,
-    "not-first:before:absolute not-first:before:top-0 not-first:before:right-20 not-first:before:h-1 not-first:before:bg-line-subtle not-first:before:forced-line",
-    icon ? "not-first:before:left-56" : "not-first:before:left-20",
+    "not-first:hairline-t",
     navigates && "cursor-pointer transition-control hover:bg-raised-hover active:bg-raised-pressed focus-ring-inset first:rounded-t-group last:rounded-b-group",
     className,
   );

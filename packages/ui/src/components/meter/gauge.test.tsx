@@ -17,7 +17,7 @@ describe("a gauge Meter", () => {
   it("turns to warning from the lowest threshold and to danger when full", () => {
     const { container, rerender } = render(<Meter shape="gauge" aria-label="Budget" value={0.6} thresholds={[0.9, 0.5]} label="of $500.00 budget" />);
     expect(arc(container)).toBe("var(--k-warning)");
-    expect(screen.getByText("Near the limit")).toHaveClass("text-warning-text");
+    expect(screen.getByText("Near the limit")).toHaveClass("text-fg");
     expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "60%, of $500.00 budget, Near the limit");
     rerender(<Meter shape="gauge" aria-label="Budget" value={1.3} valueLabel="$650.00" />);
     expect(arc(container)).toBe("var(--k-danger)");

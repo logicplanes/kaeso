@@ -4,8 +4,8 @@ import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_LABEL_VARIANTS = {
   size: {
-    md: { classes: "text-body font-medium", description: "14/500: field labels" },
-    sm: { classes: "text-small font-medium", description: "13/500: compact forms" },
+    md: { classes: "text-small font-medium", description: "13/500, no added tracking: field labels, a step under the 14px value they name" },
+    sm: { classes: "text-caption font-medium", description: "12/500: compact forms" },
   },
 } as const;
 

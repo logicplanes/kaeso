@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   List: {
     description:
-      "The console list: 44px rows on the panel (48px in a card, 56px with a second line), no lines, metadata on the right, keyboard-first. An ARIA grid of one-cell rows with one tab stop: arrows move between rows, Space selects, Enter opens, the right arrow reaches a row's actions and Escape comes back. A row's text can be selected and copied; a click that selects text doesn't open the row.",
+      "The console list: 44px rows on the panel (48px in a card, 56px with a second line), each with a hairline at its foot from gutter to gutter as kaeso.app lists its rows, metadata on the right, keyboard-first. An ARIA grid of one-cell rows with one tab stop: arrows move between rows, Space selects, Enter opens, the right arrow reaches a row's actions and Escape comes back. A row's text can be selected and copied; a click that selects text doesn't open the row.",
     props: {
       "aria-label": "The list's accessible name.",
       "data-force-row": "Force a state on the first row for state matrices: hover, pressed, focus.",

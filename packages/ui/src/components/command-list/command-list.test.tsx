@@ -390,3 +390,11 @@ describe("CommandList announcements", () => {
     }
   });
 });
+
+describe("CommandList's lines", () => {
+  it("rules the search off from the rows with a full hairline, its icon on the rows' 18px line in the palette size", () => {
+    render(<CommandList groups={groups} aria-label="Models" size="lg" height="fill" />);
+    const search = screen.getByRole("combobox").parentElement!;
+    expect(search).toHaveClass("hairline-b-strong", "px-18");
+  });
+});

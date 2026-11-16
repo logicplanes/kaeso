@@ -5,9 +5,15 @@ import { TruncatedText } from "../text/truncated.js";
 
 export const KAESO_KEY_VALUE_VARIANTS = {
   layout: {
-    columns: { classes: "grid grid-cols-kv content-start self-start gap-x-24", description: "Label and value side by side (default)" },
-    stacked: { classes: "flex flex-col", description: "Label above value, for narrow sheets" },
-    grid: { classes: "grid content-start self-start gap-x-32", description: "Label above value, in columns: a wide sheet's details, two or more to a row" },
+    columns: {
+      classes: "grid grid-cols-kv content-start self-start",
+      description: "Label and value side by side, each pair a row with a hairline at its foot (default)",
+    },
+    stacked: { classes: "flex flex-col", description: "Label above value, each pair over a hairline, for narrow sheets" },
+    grid: {
+      classes: "grid content-start self-start gap-x-32",
+      description: "Label above value, in columns, each pair over its own hairline: a wide sheet's details, two or more to a row",
+    },
   },
   columns: {
     2: { classes: "grid-cols-1 @kv:grid-cols-2", description: "Two to a row from 480px; one below (default)" },
@@ -38,11 +44,14 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
   const list = (
     <dl ref={ref} className={cn(KAESO_KEY_VALUE_VARIANTS.layout[layout].classes, grid && KAESO_KEY_VALUE_VARIANTS.columns[columns].classes, className)}>
       {items.map((it, i) => (
-        <div key={i} className={cn(layout === "columns" ? "contents" : "flex min-w-0 flex-col gap-2 py-8", grid && it.span === "row" && "col-span-full")}>
+        <div
+          key={i}
+          className={cn(layout === "columns" ? "contents" : "flex min-w-0 flex-col gap-2 py-8 hairline-b", grid && it.span === "row" && "col-span-full")}
+        >
           <dt
             className={cn(
-              "text-small text-fg-secondary",
-              layout === "columns" && "flex min-h-36 min-w-120 items-center py-8",
+              "text-small font-medium text-fg-secondary",
+              layout === "columns" && "flex min-h-36 min-w-120 items-center py-8 pe-24 hairline-b",
               layout === "columns" && it.wrap && "items-start",
               grid && "flex min-w-0",
             )}
@@ -53,6 +62,7 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
             className={cn(
               "group/kv flex min-w-0 items-center gap-4 text-body text-fg",
               grid ? "min-h-24" : "min-h-36",
+              layout === "columns" && "hairline-b",
               it.mono && "mono text-small",
               it.wrap && (grid ? "items-start" : "items-start py-8"),
             )}

@@ -9,12 +9,12 @@ export const KAESO_METER_VARIANTS = {
     auto: {
       classes: "",
       description:
-        "Series 1 until the first alert threshold, amber (series 2) after, danger at 100%; the value and the caption take the warning or danger color too (default)",
+        "Series 1 until the first alert threshold, amber (series 2) after, danger at 100%; the bar alone carries the color, and the value and the caption step up to the text color (default)",
     },
     neutral: { classes: "bg-fg-secondary", description: "A plain share" },
   },
   shape: {
-    bar: { classes: "", description: "A 6px pill bar under its label and value (default)" },
+    bar: { classes: "", description: "A 6px bar under its label and value, cut square like a plate (default)" },
     gauge: { classes: "w-180", description: "A 180px half circle with the value in its middle, for one number a page is about" },
   },
 } as const;
@@ -45,7 +45,7 @@ function meterState(value: number, thresholds: number[]): "over" | "near" | "und
   return value >= first ? "near" : "under";
 }
 
-const STATE_TEXT = { over: "text-danger-text", near: "text-warning-text", under: "" } as const;
+const STATE_TEXT = { over: "text-fg", near: "text-fg", under: "" } as const;
 
 // Each threshold is a 2px gap cut out of the bar, so the tick shows whatever surface the meter sits on.
 function thresholdMask(thresholds: number[]): CSSProperties | undefined {
@@ -101,13 +101,10 @@ export const Meter = forwardRef<HTMLDivElement, MeterProps>(function Meter(
         aria-label={ariaLabel ?? (typeof label === "string" ? label : undefined)}
         {...(typeof valueLabel === "string" || stateWord ? { "aria-valuetext": stateWord ? `${valueText}, ${stateWord}` : valueText } : {})}
         style={thresholdMask(thresholds)}
-        className="relative h-6 overflow-hidden rounded-pill bg-fill-2 forced-colors:outline forced-colors:-outline-offset-1"
+        className="relative h-6 overflow-hidden rounded-bar bg-fill-2 forced-colors:outline forced-colors:-outline-offset-1"
       >
         <div
-          className={cn(
-            "h-full rounded-pill width-motion data-mark",
-            tone === "auto" ? meterColor(value, thresholds) : KAESO_METER_VARIANTS.tone.neutral.classes,
-          )}
+          className={cn("h-full width-motion data-mark", tone === "auto" ? meterColor(value, thresholds) : KAESO_METER_VARIANTS.tone.neutral.classes)}
           style={{ width: `${pct * 100}%` }}
         />
       </div>
@@ -119,7 +116,10 @@ Meter.displayName = "Meter";
 
 export const KAESO_PROGRESS_VARIANTS = {
   kind: {
-    determinate: { classes: "h-6 rounded-pill bg-fill-2 forced-colors:outline forced-colors:-outline-offset-1", description: "A pill bar with a known amount" },
+    determinate: {
+      classes: "h-6 rounded-bar bg-fill-2 forced-colors:outline forced-colors:-outline-offset-1",
+      description: "A 6px bar with a known amount, cut square like a plate",
+    },
     indeterminate: { classes: "h-2 bg-transparent", description: "A 2px line at the top of a container" },
   },
 } as const;
@@ -144,9 +144,9 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(function Progr
       className={cn("relative w-full overflow-hidden", KAESO_PROGRESS_VARIANTS.kind[indeterminate ? "indeterminate" : "determinate"].classes, className)}
     >
       {indeterminate ? (
-        <span className="absolute inset-y-0 left-0 w-1/3 animate-indeterminate rounded-pill bg-fg-tertiary data-mark" />
+        <span className="absolute inset-y-0 left-0 w-1/3 animate-indeterminate bg-fg-tertiary data-mark" />
       ) : (
-        <span className="block h-full rounded-pill bg-ink width-motion forced-line" style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
+        <span className="block h-full bg-ink width-motion forced-line" style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
       )}
     </div>
   );

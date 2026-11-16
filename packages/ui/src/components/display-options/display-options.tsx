@@ -94,7 +94,7 @@ function Panel({ view, rows, toggles, properties, footer, inline }: DisplayOptio
         )}
         {properties && (
           <div className="flex flex-col gap-8 p-12 not-first:hairline-t">
-            <span className="text-caption font-medium text-fg-secondary">{t("displayOptions.properties", "Display properties")}</span>
+            <span className="text-small font-medium text-fg-secondary">{t("displayOptions.properties", "Display properties")}</span>
             <div className="flex flex-wrap gap-6">
               {properties.options.map((o) => {
                 const on = properties.value.includes(o.value);

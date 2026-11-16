@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   Switch: {
-    description: "A pill track and a round thumb that travels in 180ms.",
+    description:
+      "A pill track and a round thumb that travels in 180ms. Off, it is ringed like a field with a grey thumb; on, it fills with ink and the thumb turns light, as a checked box does.",
     props: {
       "aria-label": "The accessible name, for when there is no visible label.",
       "aria-labelledby": "The id of the element that names it, when its label is elsewhere on the page.",

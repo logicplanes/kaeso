@@ -28,7 +28,7 @@ const Bar = ({ orientation }: { orientation: "vertical" | "horizontal" }) => (
       orientation === "vertical" ? "w-10" : "h-10 flex-col",
     )}
   >
-    <BaseScrollArea.Thumb className="flex-1 rounded-pill bg-line-strong transition-control group-data-hovering/bar:bg-fg-tertiary group-data-scrolling/bar:bg-fg-tertiary forced-line" />
+    <BaseScrollArea.Thumb className="flex-1 rounded-bar bg-line-strong transition-control group-data-hovering/bar:bg-fg-tertiary group-data-scrolling/bar:bg-fg-tertiary forced-line" />
   </BaseScrollArea.Scrollbar>
 );
 

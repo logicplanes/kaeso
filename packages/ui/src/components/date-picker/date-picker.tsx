@@ -164,7 +164,7 @@ const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function
         {...(invalid ? { "aria-invalid": true } : {})}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "group/date inline-flex min-w-0 cursor-pointer items-center rounded-pill font-medium whitespace-nowrap material-selector transition-control disabled:cursor-not-allowed",
+          "group/date inline-flex min-w-0 cursor-pointer items-center rounded-pill whitespace-nowrap material-selector transition-control disabled:cursor-not-allowed",
           KAESO_DATE_PICKER_VARIANTS.size[size].classes,
           className,
         )}
@@ -172,9 +172,9 @@ const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function
         {spinning ? (
           <Spinner className="text-fg-secondary" />
         ) : (
-          <Icon icon={icons.calendar} size="sm" className="text-fg-secondary group-disabled/date:text-fg-disabled" />
+          <Icon icon={icons.calendar} size="sm" className="text-fg-tertiary group-disabled/date:text-fg-disabled" />
         )}
-        <span id={valueId} className={cn("truncate tabular", placeholder && "font-regular text-fg-tertiary group-disabled/date:text-fg-disabled")}>
+        <span id={valueId} className={cn("truncate tabular", placeholder && "text-fg-tertiary group-disabled/date:text-fg-disabled")}>
           {children}
         </span>
       </button>

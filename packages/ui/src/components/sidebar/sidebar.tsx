@@ -52,8 +52,8 @@ export const KAESO_SIDEBAR_VARIANTS = {
     rail: { classes: "w-60", description: "60px: icons only, labels in tooltips" },
   },
   item: {
-    default: { classes: "text-fg hover:bg-fill-2 active:bg-fill-3", description: "A navigation item" },
-    active: { classes: "bg-fill-3 text-fg", description: "The current page" },
+    default: { classes: "text-fg hover:bg-fill-1 active:bg-fill-2", description: "A navigation item: a pill that fills under the pointer" },
+    active: { classes: "bg-fill-2 text-fg", description: "The current page, a filled pill" },
   },
   caption: {
     secondary: { classes: "text-fg-secondary", description: "A quiet second line under the switcher's label (default)" },
@@ -218,7 +218,8 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
       data-rail={rail || undefined}
       data-sidebar-root=""
       className={cn(
-        "group/sidebar relative flex h-full shrink-0 flex-col bg-chrome text-fg",
+        "group/sidebar relative flex h-full shrink-0 flex-col bg-panel text-fg",
+        !floating && "divider-r",
         rail ? KAESO_SIDEBAR_VARIANTS.mode.rail.classes : KAESO_SIDEBAR_VARIANTS.mode.expanded.classes,
         className,
       )}
@@ -233,7 +234,7 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
     <div className="relative flex h-full shrink-0">
       <div
         className="sidebar-motion relative h-full shrink-0"
-        style={{ width: hidden ? 8 : rail ? 60 : width }}
+        style={{ width: hidden ? 0 : rail ? 60 : width }}
         {...(hidden ? { "data-collapsed": "", inert: true, "aria-hidden": true } : {})}
       >
         <div className="sidebar-content-motion h-full" style={{ width: rail ? 60 : width }}>
@@ -274,7 +275,7 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
           }}
           className="group/edge absolute top-0 right-0 z-10 h-full w-8 cursor-col-resize rounded-pill focus-ring-inset"
         >
-          <span aria-hidden className="absolute inset-y-0 right-0 w-1 bg-line-strong opacity-0 transition-control group-hover/edge:opacity-100 forced-line" />
+          <span aria-hidden className="absolute inset-y-0 right-0 w-1 bg-fg-tertiary opacity-0 transition-control group-hover/edge:opacity-100 forced-line" />
           {hint !== null && !dragging && (
             <span
               aria-hidden
@@ -462,7 +463,7 @@ const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function Si
             {...(named ? { "aria-describedby": purpose.id } : { "aria-label": hint })}
             {...(force ? { "data-force": force } : {})}
             className={cn(
-              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-2 active:bg-fill-3 open:bg-fill-3 focus-ring-inset coarse:h-44",
+              "group/sw flex h-36 w-full min-w-0 cursor-pointer items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg transition-control hover:bg-fill-1 active:bg-fill-2 open:bg-fill-2 focus-ring-inset coarse:h-44",
               rail && "justify-center px-0",
               className,
             )}
@@ -470,7 +471,7 @@ const Switcher = forwardRef<HTMLButtonElement, SidebarSwitcherProps>(function Si
             <span className="relative flex size-18 shrink-0 items-center justify-center">
               {avatar}
               {rail && hasCaption && captionTone === "danger" && (
-                <Icon icon={icons.warning} size="xs" className="absolute -right-6 -bottom-6 rounded-pill bg-chrome text-danger-text" />
+                <Icon icon={icons.warning} size="xs" className="absolute -right-6 -bottom-6 rounded-pill bg-panel text-danger-text" />
               )}
             </span>
             {!rail &&
@@ -522,7 +523,7 @@ const Place = forwardRef<HTMLElement, SidebarPlaceProps>(function SidebarPlace(
   const naming = named ? (purpose.id ? { "aria-describedby": purpose.id } : {}) : hint ? { "aria-label": hint } : {};
   const classes = cn(
     "group/place flex h-36 w-full min-w-0 items-center gap-8 rounded-pill px-12 text-left text-body font-medium text-fg",
-    (children || href) && "cursor-pointer transition-control hover:bg-fill-2 active:bg-fill-3 open:bg-fill-3 focus-ring-inset coarse:h-44",
+    (children || href) && "cursor-pointer transition-control hover:bg-fill-1 active:bg-fill-2 open:bg-fill-2 focus-ring-inset coarse:h-44",
     rail && "justify-center px-0",
     className,
   );
@@ -681,7 +682,7 @@ const Group = forwardRef<HTMLDivElement, SidebarGroupProps>(function SidebarGrou
   return (
     <Collapsible.Root ref={ref} open={open} onOpenChange={(o: boolean) => setOpen(o)} className={cn("flex flex-col", className)}>
       <Collapsible.Trigger
-        className={cn(DISCLOSURE_TRIGGER, "h-32 text-caption font-medium text-fg-secondary hover:bg-fill-2 hover:text-fg active:bg-fill-3 coarse:h-44")}
+        className={cn(DISCLOSURE_TRIGGER, "h-32 text-caption font-medium text-fg-secondary hover:bg-fill-1 hover:text-fg active:bg-fill-2 coarse:h-44")}
       >
         <span className="min-w-0 flex-1 truncate">{label}</span>
         <DisclosureChevron />
@@ -784,7 +785,7 @@ const BackLink = forwardRef<HTMLAnchorElement, { href: string; children?: ReactN
       ref={ref}
       href={href}
       className={cn(
-        "flex h-32 items-center gap-8 rounded-pill px-12 text-body font-medium text-fg-secondary transition-control hover:bg-fill-2 hover:text-fg active:bg-fill-3 focus-ring-inset coarse:h-44",
+        "flex h-32 items-center gap-8 rounded-pill px-12 text-body font-medium text-fg-secondary transition-control hover:bg-fill-1 hover:text-fg active:bg-fill-2 focus-ring-inset coarse:h-44",
         className,
       )}
     >
@@ -836,7 +837,7 @@ const CollapseToggle = forwardRef<HTMLButtonElement, { className?: string | unde
         {...(sheet ? {} : { "aria-expanded": !collapsed })}
         onClick={onClick}
         className={cn(
-          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-2 hover:text-fg active:bg-fill-3 focus-ring",
+          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-1 hover:text-fg active:bg-fill-2 focus-ring",
           className,
         )}
       >
@@ -860,7 +861,7 @@ const RailToggle = forwardRef<HTMLButtonElement, { className?: string | undefine
         aria-pressed={rail}
         onClick={() => setRail(!rail)}
         className={cn(
-          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-2 hover:text-fg active:bg-fill-3 aria-pressed:bg-fill-3 aria-pressed:text-fg focus-ring",
+          "relative inline-flex size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary transition-control tap-target hover:bg-fill-1 hover:text-fg active:bg-fill-2 aria-pressed:bg-fill-2 aria-pressed:text-fg focus-ring",
           className,
         )}
       >

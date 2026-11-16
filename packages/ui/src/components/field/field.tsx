@@ -77,12 +77,12 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
         <div className="flex min-w-0 flex-col gap-6">
           {children}
           {description && (
-            <p id={descriptionId} className="text-small text-fg-secondary">
+            <p id={descriptionId} className="text-small text-pretty text-fg-secondary">
               {description}
             </p>
           )}
           {error && (
-            <p id={errorId} className="text-small text-danger-text">
+            <p id={errorId} className="text-small text-pretty text-danger-text">
               {error}
             </p>
           )}
@@ -107,9 +107,9 @@ export const Fieldset = forwardRef<HTMLFieldSetElement, FieldsetProps>(function 
       {...props}
       {...(description ? { "aria-describedby": [props["aria-describedby"], descriptionId].filter(Boolean).join(" ") } : {})}
     >
-      <legend className={cn("float-none w-full p-0 text-body-lg font-semibold text-fg", description ? "mb-4" : "mb-16")}>{legend}</legend>
+      <legend className={cn("float-none w-full p-0 text-title-sm text-fg", description ? "mb-4" : "mb-16 pb-12 hairline-b-strong")}>{legend}</legend>
       {description && (
-        <p id={descriptionId} className="text-small text-fg-secondary">
+        <p id={descriptionId} className="pb-12 text-small text-pretty text-fg-secondary hairline-b-strong">
           {description}
         </p>
       )}

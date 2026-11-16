@@ -3,9 +3,9 @@ import { cn } from "../../utils/cn.js";
 
 export const KAESO_CODE_VARIANTS = {
   shape: {
-    auto: { classes: "rounded-code", description: "Radius 6, like every inline code in running text (default)" },
+    auto: { classes: "rounded-code", description: "A cut plate, radius 4, like every inline code in running text (default)" },
     pill: { classes: "rounded-pill", description: "Always a pill" },
-    rounded: { classes: "rounded-code", description: "Always radius 6" },
+    rounded: { classes: "rounded-code", description: "Always a cut plate, radius 4" },
   },
   flow: {
     box: { classes: "inline-block max-w-full wrap-anywhere", description: "One box: it moves to the next line whole and wraps inside itself (default)" },

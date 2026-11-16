@@ -213,7 +213,7 @@ describe("List on the gutter", () => {
     expect(header).toHaveClass("px-12");
     const row = screen.getByRole("gridcell", { name: /checkout-web/ });
     expect(row.parentElement).toHaveClass("px-24");
-    expect(row).toHaveClass("px-12", "rounded-item");
+    expect(row).toHaveClass("px-12", "rounded-item", "row-rule");
     expect(row.className).not.toMatch(/(^| )-m[lrx]-/);
   });
   it("uses a dialog's own 24px padding as its gutter instead of adding a second one", () => {

@@ -13,7 +13,10 @@ export const KAESO_COPY_BUTTON_VARIANTS = {
   display: {
     icon: { classes: "", description: "A circle that copies a value (default)" },
     inline: { classes: "", description: "Mono text in a sentence or a row that copies itself on click" },
-    field: { classes: "rounded-pill bg-fill-1", description: "A read-only pill field: the value in mono and a copy circle inside" },
+    field: {
+      classes: "rounded-pill bg-fill-1 shadow-ring",
+      description: "A read-only pill field, filled and ringed like a read-only input: the value in mono and a copy circle inside",
+    },
   },
   variant: {
     ghost: { classes: "material-ghost", description: "Inside fields and wells (default)" },
@@ -79,12 +82,14 @@ const CopyCircle = forwardRef<HTMLButtonElement, Omit<CopyButtonProps, "display"
 CopyCircle.displayName = "CopyButton";
 
 const FIELD_SIZE: Record<ButtonSize, string> = {
-  xs: "h-32 pl-12 pr-0 text-small",
-  sm: "h-32 pl-12 pr-0 text-small",
+  xs: "h-32 pl-12 pr-4 text-small",
+  sm: "h-32 pl-12 pr-4 text-small",
   md: "h-36 pl-16 pr-2 text-small",
   lg: "h-40 pl-18 pr-4 text-small",
   xl: "h-40 pl-18 pr-4 text-small",
 };
+
+const FIELD_CIRCLE: Record<ButtonSize, ButtonSize> = { xs: "xs", sm: "xs", md: "sm", lg: "sm", xl: "sm" };
 
 const CopyField = forwardRef<HTMLDivElement, Omit<CopyButtonProps, "display">>(function CopyField(
   { value, children: display, label, size = "sm", variant: _variant, onCopy, className, ...props },
@@ -110,7 +115,7 @@ const CopyField = forwardRef<HTMLDivElement, Omit<CopyButtonProps, "display">>(f
       ) : (
         shown
       )}
-      <CopyCircle value={value} label={label} size="sm" {...(onCopy ? { onCopy } : {})} />
+      <CopyCircle value={value} label={label} size={FIELD_CIRCLE[size]} {...(onCopy ? { onCopy } : {})} />
     </div>
   );
 });

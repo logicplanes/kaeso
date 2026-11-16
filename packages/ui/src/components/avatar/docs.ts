@@ -8,7 +8,7 @@ export const docs = {
       agent:
         "The agent that acted for this person, with its name and model family id from the API: a badge of about 40% of the avatar on its corner, and the family in the accessible name, such as `Ada Okafor via Release helper (Claude)`.",
       decorative: "Hides it from assistive technology when the same information is already written next to it.",
-      kind: "A person (round), an organization (rounded square), or an agent (a bot face on a square).",
+      kind: "A person (round), an organization (a cut square), or an agent (a bot face on a cut square).",
       name: "The person's, organization's or agent's name; its first letters show without a picture, and it is the accessible name.",
       size: "The diameter in pixels.",
       src: "The picture's address; without one, or when it fails to load, the letters show.",

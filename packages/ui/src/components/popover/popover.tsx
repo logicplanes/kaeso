@@ -11,7 +11,7 @@ export type { PopoverProps } from "./popover-root.js";
 export const KAESO_POPOVER_VARIANTS = {
   padding: {
     form: { classes: "p-12", description: "12px: forms and free content (default)" },
-    list: { classes: "p-6", description: "6px: lists of rows, concentric with 10px items" },
+    list: { classes: "p-6", description: "6px: lists of rows, concentric with 4px items" },
     none: { classes: "p-0", description: "No padding: calendars and custom layouts" },
   },
 } as const;

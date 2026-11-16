@@ -23,7 +23,7 @@ export const ModelCard = forwardRef<HTMLElement, ModelCardProps>(function ModelC
       <p className="mt-2 truncate mono text-small text-fg-tertiary">{model}</p>
       {detail && <p className="mt-8 line-clamp-2 text-small text-fg-secondary">{detail}</p>}
       {facts && facts.length > 0 && (
-        <dl className="mt-16 grid grid-cols-2 gap-x-16 gap-y-8">
+        <dl className="mt-16 grid grid-cols-2 gap-x-16 gap-y-8 pt-12 hairline-t">
           {facts.map((f, i) => (
             <div key={i} className="flex min-w-0 flex-col gap-2">
               <dt className="truncate text-caption text-fg-tertiary">{f.label}</dt>
@@ -52,9 +52,9 @@ export const Announcement = forwardRef<
   return (
     <section ref={ref} className={cn("relative flex min-w-0 flex-col overflow-hidden bg-raised md:flex-row", className)}>
       <div className="flex min-w-0 flex-1 flex-col justify-center px-20 py-24">
-        {eyebrow && <span className="text-small font-medium text-fg-tertiary">{eyebrow}</span>}
-        <h2 className="mt-4 text-title font-semibold text-pretty text-fg">{title}</h2>
-        {description && <p className="mt-6 line-clamp-2 max-w-640 text-body text-fg-secondary">{description}</p>}
+        <h2 className="text-title-lg font-semibold text-pretty text-fg">{title}</h2>
+        {eyebrow && <p className="mt-6 text-small font-medium text-fg-secondary">{eyebrow}</p>}
+        {description && <p className="mt-12 line-clamp-2 max-w-640 text-body text-fg-secondary">{description}</p>}
         {actions && <div className="mt-16 flex flex-wrap items-center gap-8">{actions}</div>}
       </div>
       {art && <div className="hidden aspect-video w-320 shrink-0 md:block">{art}</div>}

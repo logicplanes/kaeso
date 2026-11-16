@@ -72,9 +72,9 @@ const stateSteps: readonly (readonly [keyof typeof neutral, keyof typeof neutral
   ["fill-1", "fill-2"],
   ["fill-2", "fill-3"],
 ];
-const darkSwitchThumbRules: readonly (readonly [keyof typeof neutral, keyof typeof neutral, number])[] = (
-  ["fill-3", "line-strong", "bg-panel", "bg-raised"] as const
-).map((bg) => ["switch-thumb", bg, 3] as const);
+const offThumbRules: readonly (readonly [keyof typeof neutral, keyof typeof neutral, number])[] = (["bg-panel", "bg-raised"] as const).map(
+  (bg) => ["line-field", bg, 3] as const,
+);
 
 describe.each(MODES)("contrast in %s mode", (mode) => {
   it.each(neutralRules)("%s on %s reaches %d:1", (fg, bg, min) => {
@@ -163,8 +163,10 @@ it.each(mistral)("Mistral's colour %s stands out from the raised background in d
   expect(ratio(colour.dark, neutral["bg-raised"].dark)).toBeGreaterThanOrEqual(3);
 });
 
-it.each(darkSwitchThumbRules)("in dark mode the off switch's %s stands out from %s by %d:1", (fg, bg, min) => {
-  expect(ratio(neutral[fg].dark, neutral[bg].dark)).toBeGreaterThanOrEqual(min);
+describe.each(MODES)("the off switch in %s mode", (mode) => {
+  it.each(offThumbRules)("draws its thumb in %s, which stands out from %s by %d:1", (fg, bg, min) => {
+    expect(ratio(neutral[fg][mode], neutral[bg][mode])).toBeGreaterThanOrEqual(min);
+  });
 });
 
 it("draws select and date triggers with the same ring as text inputs", () => {

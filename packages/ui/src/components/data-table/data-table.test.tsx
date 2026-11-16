@@ -177,8 +177,9 @@ describe("DataTable", () => {
       render(<DataTable aria-label="Costs" data={rows} columns={columns.map((c) => ({ ...c, meta: { ...c.meta, priority: 1 } }))} getRowId={(r) => r.id} />);
       const cell = within(screen.getByText("staging").closest<HTMLElement>("[role=row]")!).getAllByRole("cell").at(-1)!;
       const header = screen.getAllByRole("columnheader").at(-1)!;
-      expect(cell).toHaveClass("sticky", "rounded-r-item");
-      expect(header).toHaveClass("sticky", "right-0", "bg-panel", "hairline-b-strong");
+      expect(cell).toHaveClass("sticky", "rounded-r-item", "row-rule");
+      expect(cell.closest("[role=row]")).toHaveClass("row-rule");
+      expect(header).toHaveClass("sticky", "right-0", "bg-panel", "rule-b");
       expect(header.className).not.toMatch(/rounded/);
     });
   });

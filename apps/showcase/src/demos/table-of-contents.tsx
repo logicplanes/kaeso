@@ -3,13 +3,13 @@ import { StateSection, forceIn } from "~/lib/states";
 
 export const meta = {
   title: "TableOfContents",
-  description: "“On this page”: the heading in view in text color with a 2px ink bar on the rail.",
+  description: "“On this page”: one row per heading between hairlines; the heading in view in text color with an ink line above it, the others faded.",
   group: "Components",
   entry: "toc",
   import: "TableOfContents",
   a11y: [
     "A navigation landmark named by its title; the heading in view has aria-current=location.",
-    "Links are 32px tall, 44px with a coarse pointer; the rail and the bar sit on the start side, so they move to the right in right-to-left pages.",
+    "Links are 32px tall, 44px with a coarse pointer; subheadings start 12px in on the start side, so they move to the right in right-to-left pages.",
   ],
 };
 const items = [

@@ -10,7 +10,7 @@ export const KAESO_TABS_VARIANTS = {
     underline: {
       classes: "",
       description:
-        "Underline tabs for detail pages: 40px, the first label on the content edge like the heading above, 24px apart, a 2px ink indicator under the label that slides; hover previews the line",
+        "Underline tabs for detail pages: 40px, the first label on the content edge like the heading above, 24px apart, a square 2px ink rule under the label that slides along the hairline; hover previews it",
     },
     pill: { classes: "", description: "Header tabs: separate 32px pills, the active one filled; the first pill's edge on the gutter" },
   },
@@ -88,7 +88,7 @@ const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ class
       {children}
       {variant === "underline" && (
         <BaseTabs.Indicator className="absolute bottom-0 left-0 flex h-2 w-(--active-tab-width) translate-x-(--active-tab-left) indicator-motion">
-          <span className="h-2 flex-1 rounded-pill bg-ink forced-line" />
+          <span className="h-2 flex-1 bg-ink forced-line" />
         </BaseTabs.Indicator>
       )}
     </BaseTabs.List>

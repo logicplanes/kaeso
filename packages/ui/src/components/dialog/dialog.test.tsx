@@ -1104,6 +1104,26 @@ describe("dialog toolbar and footer start", () => {
     expect([...footer.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Add a custom model", "Add models"]);
   });
 
+  it("draws a hairline under the header once the body scrolls, and over the footer while content is below", () => {
+    render(
+      <Dialog open title="Add models" footer={<Button variant="primary">Add models</Button>}>
+        <p>gpt-5</p>
+      </Dialog>,
+    );
+    const dialog = screen.getByRole("dialog");
+    const header = dialog.querySelector<HTMLElement>("[data-dialog-header]")!;
+    const body = dialog.querySelector<HTMLElement>("[data-dialog-body]")!;
+    const footer = dialog.querySelector<HTMLElement>("[data-dialog-footer]")!;
+    expect(header).not.toHaveClass("hairline-b-strong");
+    expect(footer).not.toHaveClass("hairline-t-strong");
+    Object.defineProperty(body, "scrollHeight", { configurable: true, value: 800 });
+    Object.defineProperty(body, "clientHeight", { configurable: true, value: 400 });
+    body.scrollTop = 120;
+    fireEvent.scroll(body);
+    expect(header).toHaveClass("hairline-b-strong");
+    expect(footer).toHaveClass("hairline-t-strong");
+  });
+
   it("shows a footer start on its own, without other actions", () => {
     render(<Dialog open title="Add models" footerStart={<Button>Add a custom model</Button>} />);
     expect(screen.getByRole("button", { name: "Add a custom model" }).closest("[data-dialog-footer]")).not.toBeNull();

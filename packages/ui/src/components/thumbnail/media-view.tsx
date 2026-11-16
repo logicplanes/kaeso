@@ -7,7 +7,7 @@ export const KAESO_MEDIA_VIEW_VARIANTS = {
   kind: {
     image: { classes: "", description: "A thumbnail that opens to the whole image in place, and closes again (default)" },
     audio: { classes: "w-full max-w-400", description: "The browser's audio player" },
-    video: { classes: "w-full max-w-560 rounded-well bg-fill-1", description: "The browser's video player on a well" },
+    video: { classes: "w-full max-w-560 rounded-well bg-fill-1", description: "The browser's video player on a cut plate" },
     file: { classes: "", description: "Nothing to play: the name, the detail and the download alone" },
   },
 } as const;
@@ -34,7 +34,7 @@ export const MediaView = forwardRef<HTMLElement, MediaViewProps>(function MediaV
     <a
       href={download ?? src}
       download={filename ?? ""}
-      className="relative -mx-2 tap-target rounded-code px-2 font-medium text-fg no-underline outline-offset-0 transition-control focus-ring hover:underline hover:decoration-fg-tertiary hover:underline-offset-3"
+      className="relative -mx-2 tap-target rounded-code px-2 font-medium text-fg no-underline outline-offset-0 transition-control focus-ring hover:opacity-60"
     >
       {t("mediaView.download", "Download")}
     </a>
