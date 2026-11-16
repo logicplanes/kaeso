@@ -80,6 +80,19 @@ Once connected, the organization manages the accounts at its verified domains: a
 
 Under **Security** › **Provisioning**, **Create token** lets your identity provider add and remove members through SCIM: Okta, Microsoft Entra ID and other providers that speak SCIM 2.0. A member the provider deactivates leaves the organization and its projects, and their keys in it are archived, as with **Remove from organization**. The section shows the base URL, when the provider last called, how many members it keeps active and the last error ([SCIM provisioning](../api/scim.md)).
 
+### Roles and projects from your provider's groups
+
+Under **Security** › **Single sign-on** › **Groups**, rules give the people who sign in through your provider an organization role and project memberships from their groups. This needs the **Manage SSO** right and a console session with a recent sign-in.
+
+- **Groups claim** names the ID token claim that lists the person's groups, `groups` by default. **Extra scopes** are scopes Kaeso asks for besides `openid email profile`, such as `groups` for providers that send the claim only on request.
+- Each rule names a group's value, compared exactly, with an optional organization role and projects with a role each. Up to 200 rules. The first matching rule sets the organization role; without a match the role people join with applies. Every matching rule adds its projects.
+- A rule can't make anyone an owner, and an owner is never changed by one. A rule gives only roles whose rights you hold.
+- **Add only** never takes anything away. **Keep in sync** also takes away what a rule gave once no rule gives it: the role goes back to the one people join with, and a project membership ends, with the person's keys in that project archived. What an admin gave by hand always stays.
+
+The rules apply at each sign-in through your provider, so a change in a group applies at the person's next sign-in. A token without the claim changes nothing, and **Security** shows when that last happened, so a claim broken at the provider can't take access away. **Groups in your last sign-in** lists the values your own token carried, to copy the exact strings into rules.
+
+Okta sends groups once the app has a groups claim with a filter, such as **Matches regex** `.*`. Microsoft Entra ID sends group object ids, not names; for a person in more than 200 groups it sends a reference instead of the list, which Kaeso doesn't follow, so emit only the groups assigned to the app.
+
 ## Require single sign-on or two-factor authentication
 
 Under **Security**, you can tighten how members get into the organization:

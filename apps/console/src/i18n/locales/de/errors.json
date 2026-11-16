@@ -842,5 +842,14 @@
   "errors.batches.window": "`completion_window` muss `24h` sein.",
   "errors.batches.after": "`after` ist keine Batch-ID.",
   "errors.batches.limit": "`limit` muss zwischen 1 und 100 liegen.",
-  "errors.scimNeedsSso": "Verbinden Sie zuerst Single Sign-on; SCIM verwaltet die Konten, die darüber angemeldet werden."
+  "errors.scimNeedsSso": "Verbinden Sie zuerst Single Sign-on; SCIM verwaltet die Konten, die darüber angemeldet werden.",
+  "errors.ssoGroups.noSso": "Verbinden Sie zuerst einen Identitätsanbieter; Gruppenregeln gelten für seine Anmeldungen.",
+  "errors.ssoGroups.noOwners": "Eine Regel kann keine Owner machen; wählen Sie eine andere Rolle.",
+  "errors.ssoGroups.claim": "Benennen Sie den Claim mit Buchstaben, Ziffern und `_-.:/`, höchstens 100.",
+  "errors.ssoGroups.scopes": "Geben Sie höchstens 10 Scopes aus Buchstaben, Ziffern und `_-.:/` an.",
+  "errors.ssoGroups.mode": "`mode` ist `add` oder `sync`.",
+  "errors.ssoGroups.tooMany": "Höchstens 200 Regeln.",
+  "errors.ssoGroups.group": "Nennen Sie die Gruppe jeder Regel, höchstens 256 Zeichen.",
+  "errors.ssoGroups.duplicate": "Die Gruppe `{group}` hat zwei Regeln.",
+  "errors.ssoGroups.project": "`{project}` ist kein offenes Projekt der Organisation oder wird zweimal genannt."
 }

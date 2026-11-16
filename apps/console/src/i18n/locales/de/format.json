@@ -281,5 +281,6 @@
   "format.audit.action.memberProvision": "Mitglied vom Identitätsanbieter hinzugefügt",
   "format.audit.action.memberDeprovision": "Mitglied vom Identitätsanbieter entfernt",
   "format.audit.action.securityScimRotate": "SCIM-Token erstellt oder ersetzt",
-  "format.audit.action.securityScimDelete": "SCIM-Token gelöscht"
+  "format.audit.action.securityScimDelete": "SCIM-Token gelöscht",
+  "format.audit.action.securitySsoGroupsUpdate": "Gruppenregeln von Single Sign-on geändert"
 }

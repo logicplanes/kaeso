@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT from_sso_group FROM org_memberships WHERE org_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "from_sso_group",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "org_memberships",
+            "name": "from_sso_group"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a694244228a96cd77427302b83a1b9f8e2ff01f279dc8df099460b156c530d8e"
+}

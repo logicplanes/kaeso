@@ -65,6 +65,8 @@ Kaeso 会以 `cannot_confirm` 拒绝没有新登录的确认，并在连接上�
 
 组织的身份提供方还可以通过 SCIM 添加和移除它管理的账户，因此当身份提供方停用某人时，其成员身份和密钥随之结束。SCIM 从不涉及访客（见 [SCIM 预配](../api/scim.md)）。
 
+组织还可以在每次通过其身份提供方登录时，根据身份提供方的组设置其管理的账户的角色和项目成员身份（见[根据身份提供方的组授予角色和项目](../console/organizations-and-projects.md#根据身份提供方的组授予角色和项目)）。访客从不通过它登录，因此规则从不更改访客。
+
 ### 要求单点登录
 
 开启**要求单点登录**后，组织管理的账户在整个实例上都只能通过其身份提供商登录。登录页只向这些账户提供该身份提供商。Kaeso 会拒绝密码、登录链接、注册或没有账户的邀请，并显示 `Your organization requires single sign-on; continue with its identity provider.`

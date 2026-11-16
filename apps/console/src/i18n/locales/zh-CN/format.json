@@ -281,5 +281,6 @@
   "format.audit.action.memberProvision": "身份提供方添加了成员",
   "format.audit.action.memberDeprovision": "身份提供方移除了成员",
   "format.audit.action.securityScimRotate": "已创建或替换 SCIM 令牌",
-  "format.audit.action.securityScimDelete": "已删除 SCIM 令牌"
+  "format.audit.action.securityScimDelete": "已删除 SCIM 令牌",
+  "format.audit.action.securitySsoGroupsUpdate": "单点登录组规则已更改"
 }

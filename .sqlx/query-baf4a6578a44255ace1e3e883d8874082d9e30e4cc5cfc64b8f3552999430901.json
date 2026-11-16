@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_memberships (id, project_id, user_id, preset, role_id, from_sso_group) VALUES ($1, $2, $3, $4, $5, true) ON CONFLICT (project_id, user_id) DO UPDATE SET preset = EXCLUDED.preset, role_id = EXCLUDED.role_id, rights_added = '{}', rights_removed = '{}', from_sso_group = true, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "baf4a6578a44255ace1e3e883d8874082d9e30e4cc5cfc64b8f3552999430901"
+}

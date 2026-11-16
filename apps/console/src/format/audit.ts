@@ -137,6 +137,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "role.update": () => t("format.audit.action.roleUpdate", "Role changed"),
   "role.delete": () => t("format.audit.action.roleDelete", "Role deleted"),
   "security.sso_update": () => t("format.audit.action.securitySsoUpdate", "Single sign-on set up or changed"),
+  "security.sso_groups_update": () => t("format.audit.action.securitySsoGroupsUpdate", "Single sign-on group rules changed"),
   "security.sso_delete": () => t("format.audit.action.securitySsoDelete", "Single sign-on disconnected"),
   "security.sso_domain_verify": () => t("format.audit.action.securitySsoDomainVerify", "Email domain verified"),
   "security.require_sso": () => t("format.audit.action.securityRequireSso", "Single sign-on requirement changed"),

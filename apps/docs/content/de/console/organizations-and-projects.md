@@ -80,6 +80,19 @@ Sobald die Verbindung steht, verwaltet die Organisation die Konten an ihren best
 
 Unter **Sicherheit** › **Bereitstellung** lässt **Token erstellen** Ihren Identitätsanbieter Mitglieder über SCIM hinzufügen und entfernen: Okta, Microsoft Entra ID und andere Anbieter, die SCIM 2.0 sprechen. Ein Mitglied, das der Anbieter deaktiviert, verlässt die Organisation und ihre Projekte, und seine Schlüssel dort werden archiviert, wie bei **Aus Organisation entfernen**. Der Abschnitt zeigt die Basis-URL, wann der Anbieter zuletzt anfragte, wie viele Mitglieder er aktiv hält und den letzten Fehler ([SCIM-Bereitstellung](../api/scim.md)).
 
+### Rollen und Projekte aus den Gruppen Ihres Anbieters
+
+Unter **Sicherheit** › **Single Sign-on** › **Gruppen** geben Regeln den Personen, die sich über Ihren Anbieter anmelden, eine Organisationsrolle und Projektmitgliedschaften nach ihren Gruppen. Dafür braucht es das Recht **SSO verwalten** und eine Konsolensitzung mit kürzlicher Anmeldung.
+
+- **Gruppen-Claim** nennt den Claim des ID-Tokens, der die Gruppen der Person auflistet, standardmäßig `groups`. **Zusätzliche Scopes** sind Scopes, die Kaeso neben `openid email profile` anfragt, etwa `groups` bei Anbietern, die den Claim nur auf Anfrage senden.
+- Jede Regel nennt den Wert einer Gruppe, exakt verglichen, mit einer optionalen Organisationsrolle und Projekten mit je einer Rolle. Bis zu 200 Regeln. Die erste passende Regel setzt die Organisationsrolle; ohne Treffer gilt die Rolle, mit der Personen beitreten. Jede passende Regel fügt ihre Projekte hinzu.
+- Eine Regel kann niemanden zum Owner machen, und einen Owner ändert keine. Eine Regel vergibt nur Rollen, deren Rechte Sie haben.
+- **Nur hinzufügen** nimmt nie etwas weg. **Abgleichen** nimmt außerdem weg, was eine Regel gab, sobald keine Regel es mehr gibt: Die Rolle fällt auf die zurück, mit der Personen beitreten, und eine Projektmitgliedschaft endet, mit archivierten Schlüsseln der Person in diesem Projekt. Was ein Admin von Hand gab, bleibt immer.
+
+Die Regeln gelten bei jeder Anmeldung über Ihren Anbieter, eine Änderung an einer Gruppe also bei der nächsten Anmeldung der Person. Ein Token ohne den Claim ändert nichts, und **Sicherheit** zeigt, wann das zuletzt geschah, damit ein beim Anbieter kaputter Claim keinen Zugriff wegnimmt. **Gruppen Ihrer letzten Anmeldung** listet die Werte, die Ihr eigenes Token trug, um die genauen Zeichenketten in Regeln zu kopieren.
+
+Okta sendet Gruppen, sobald die App einen Gruppen-Claim mit Filter hat, etwa **Matches regex** `.*`. Microsoft Entra ID sendet Objekt-IDs der Gruppen, keine Namen; bei mehr als 200 Gruppen sendet es statt der Liste einen Verweis, dem Kaeso nicht folgt, also geben Sie nur die der App zugewiesenen Gruppen aus.
+
 ## Single Sign-on oder Zwei-Faktor-Authentifizierung verlangen
 
 Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen:

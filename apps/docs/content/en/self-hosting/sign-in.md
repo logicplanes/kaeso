@@ -65,6 +65,8 @@ When a sign-in through the provider brings another address at one of the organiz
 
 The organization's identity provider can also add and remove the accounts it manages through SCIM, so a leaver's membership and keys end when the provider deactivates them. SCIM never touches a guest ([SCIM provisioning](../api/scim.md)).
 
+An organization can also set the role and project memberships of the accounts it manages from its provider's groups, at each sign-in through it ([roles and projects from your provider's groups](../console/organizations-and-projects.md#roles-and-projects-from-your-providers-groups)). Guests never sign in through it, so rules never change them.
+
 ### Require single sign-on
 
 With **Require single sign-on** on, the accounts an organization manages sign in only through its provider, anywhere on the install. The sign-in page offers them the provider alone. Kaeso refuses a password, a sign-in link, a sign-up or an invitation without an account with `Your organization requires single sign-on; continue with its identity provider.`

@@ -44,6 +44,8 @@ Choose a member on **Members** to open their sheet:
 - **Transfer ownership**, for owners, makes the member an owner and you an admin.
 - **Remove from organization** takes them out of every project and archives their keys in the organization. On your own sheet, this is **Leave organization**.
 
+With group rules, a sign-in through your identity provider may set the role and project memberships too. A change by hand stays: **Keep in sync** takes away only what a rule gave ([roles and projects from your provider's groups](organizations-and-projects.md#roles-and-projects-from-your-providers-groups)).
+
 ## Create a custom role
 
 Open **Organization settings** › **Members** › **Roles** and choose **Create role**. A role is for the organization or for projects, and it starts from a built-in role or from no rights. An organization role can also give rights in every project. To start from a built-in role, open it and choose **Duplicate**.

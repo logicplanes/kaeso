@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT claim, scopes, mode, claim_missing_at FROM sso_group_settings WHERE org_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "claim",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sso_group_settings",
+            "name": "claim"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "scopes",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "sso_group_settings",
+            "name": "scopes"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "mode",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "sso_group_settings",
+            "name": "mode"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "claim_missing_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "sso_group_settings",
+            "name": "claim_missing_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "f9347ed5abd1025274645ae54a48775178a55ddb97d2b3ad002d12bfcdbf213a"
+}

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sso_group_settings SET claim_missing_at = $2 WHERE org_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8cc9e5e995dac950f5a7d42faf644cca8cb757d075f7c2ab08b9f97f454cd6a9"
+}

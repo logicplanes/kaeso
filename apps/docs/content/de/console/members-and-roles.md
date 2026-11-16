@@ -44,6 +44,8 @@ Wählen Sie unter **Mitglieder** ein Mitglied, um sein Sheet zu öffnen:
 - **Inhaberschaft übertragen**, für Inhaber, macht das Mitglied zum Inhaber und Sie zum Admin.
 - **Aus der Organisation entfernen** nimmt es aus jedem Projekt und archiviert seine Schlüssel in der Organisation. In Ihrem eigenen Sheet heißt das **Organisation verlassen**.
 
+Mit Gruppenregeln kann auch eine Anmeldung über Ihren Identitätsanbieter Rolle und Projektmitgliedschaften setzen. Eine Änderung von Hand bleibt: **Abgleichen** nimmt nur weg, was eine Regel gab ([Rollen und Projekte aus den Gruppen Ihres Anbieters](organizations-and-projects.md#rollen-und-projekte-aus-den-gruppen-ihres-anbieters)).
+
 ## Eigene Rolle erstellen
 
 Öffnen Sie **Organisationseinstellungen** › **Mitglieder** › **Rollen** und wählen Sie **Rolle erstellen**. Eine Rolle gilt für die Organisation oder für Projekte und beginnt bei einer integrierten Rolle oder ohne Rechte. Eine Organisationsrolle kann zusätzlich Rechte in jedem Projekt geben. Um bei einer integrierten Rolle zu beginnen, öffnen Sie diese und wählen Sie **Duplizieren**.
