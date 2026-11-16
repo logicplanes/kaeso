@@ -5,7 +5,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "AppFrame",
-  description: "The console frame: the sidebar on the grey chrome, content in an inset rounded panel that scrolls by itself.",
+  description: "The console frame: one square ground, the sidebar beside the content behind a hairline, the content scrolling by itself.",
   group: "Layout",
   entry: "app-frame",
   import: "AppFrame, NavSheet",

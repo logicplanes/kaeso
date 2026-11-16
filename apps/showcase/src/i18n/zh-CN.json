@@ -574,7 +574,6 @@
   "The composer's height.": "输入区的高度。",
   "The confirm label, the verb and object: \"Delete key\".": "确认按钮的文字，由动词和对象组成：“删除密钥”。",
   "The confirm of a destructive flow. Its trigger is usually danger-secondary.": "破坏性流程中的确认按钮。其触发按钮通常为 danger-secondary。",
-  "The console frame: the sidebar on the grey chrome, content in an inset rounded panel that scrolls by itself.": "控制台的框架：侧边栏位于灰色外框上，内容放在内缩的圆角面板中并独立滚动。",
   "The console navigation: the place it is in, 32px items with pill fills, groups that remember, a quiet resize edge, collapse and rail.": "控制台导航：当前所在位置、带胶囊底色的 32px 项目、会记住状态的分组、低调的调整宽度边缘、收起与图标栏模式。",
   "The console's table: a 36px header, 40px rows without lines, numbers right, sorting, resizing, selection, virtualization.": "控制台的表格：36px 表头，40px 无分隔线的行，数字右对齐，支持排序、调整列宽、选择和虚拟化。",
   "The content that scrolls.": "滚动的内容。",
@@ -1264,5 +1263,6 @@
   "The page, in the content panel.": "页面，位于内容面板中。",
   "The page's title (17/600), alone: no label above it.": "页面标题（17/600），单独显示：上方没有标签。",
   "Underlined in text (`inline`), secondary until hovered in footers and lists (`quiet`), on its own line in full text that steps back on hover (`standalone`), inside a heading that links to itself (`heading`), or as a page to read next on a cut plate, its name strong and a sentence under it (`card`).": "文本中带下划线（`inline`）；在页脚和列表中为次要颜色，悬停时变深（`quiet`）；单独成行、使用完整文字颜色，悬停时淡出（`standalone`）；在链接到自身的标题中（`heading`）；或作为下一篇阅读的页面，放在小圆角底板上，名称醒目，下方一句说明（`card`）。",
-  "What the number counts: \"Requests\", \"Cost\". A tile sets it at its foot.": "数字统计的内容：“请求”“费用”。磁贴将它放在底部。"
+  "What the number counts: \"Requests\", \"Cost\". A tile sets it at its foot.": "数字统计的内容：“请求”“费用”。磁贴将它放在底部。",
+  "The console frame: one square ground, the sidebar beside the content behind a hairline, the content scrolling by itself.": "控制台框架：一整块方正的底面，侧边栏与内容之间以一条细线分隔，内容独立滚动。"
 }
