@@ -5,6 +5,7 @@ import { AppFrame, Button, Empty, Sheet, Text, icons } from "@logicplanes/kaeso-
 import { CompareGrid, Composer, ModelPicker, ParameterPanel, QuestionEditor, type DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
 import { useProjectRights } from "~/auth/rights";
+import { useRequestLogs } from "~/auth/session";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
@@ -43,6 +44,11 @@ const CLEARED = "playground:cleared";
 export function PlaygroundPage({ org, project, search }: { org: string; project: string; search: PlaygroundSearch }) {
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
+  const requestLogs = useRequestLogs();
+  const logHref = useMemo(
+    () => (requestLogs && rights.has("logs.metadata.view") ? (id: string) => `/orgs/${org}/projects/${project}/logs?log=${id}` : null),
+    [requestLogs, rights, org, project],
+  );
   const catalogue = useQuery(playgroundModelsQuery(org, project));
   const providers = useProviders(org);
   const chat = useMemo(
@@ -362,6 +368,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           expected={imagesExpected(m, parameters)}
                           onRetry={m && !isLive(lastTurn.response) ? retryThread : null}
                           onCancel={cancel}
+                          logHref={logHref}
                         />
                       ) : empty ? (
                         i === 0 && (

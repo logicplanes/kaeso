@@ -108,8 +108,13 @@ export function useThreads(
       controllers.current.set(turn.id, controller);
       let state = turn.response;
       let settled = false;
+      // The gateway logs the reply under the id it answers with, whatever the reply turns out to be.
+      const answered = (answer: Response) => {
+        const id = answer.headers.get("kaeso-request-id");
+        if (id) state = { ...state, requestId: id };
+      };
       try {
-        for await (const event of streamPlayground(org, project, request, controller.signal)) {
+        for await (const event of streamPlayground(org, project, request, controller.signal, answered)) {
           let data: Record<string, unknown>;
           try {
             data = JSON.parse(event.data) as Record<string, unknown>;
@@ -141,7 +146,7 @@ export function useThreads(
             "failed",
             performance.now(),
             isApiError(e) ? e.message : t("playground.connectionClosed", "The connection closed before the reply finished. Try again."),
-            isApiError(e) && e.status >= 500 ? e.requestId : null,
+            isApiError(e) ? e.requestId : null,
           );
       } finally {
         controllers.current.delete(turn.id);
@@ -172,7 +177,7 @@ export function useThreads(
               "failed",
               now,
               isApiError(e) ? e.message : t("playground.connectionClosed", "The connection closed before the reply finished. Try again."),
-              isApiError(e) && e.status >= 500 ? e.requestId : null,
+              isApiError(e) ? e.requestId : null,
             );
       } finally {
         controllers.current.delete(turn.id);

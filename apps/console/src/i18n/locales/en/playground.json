@@ -62,5 +62,6 @@
   "playground.streamEnded": "The stream ended before the model finished. Try again.",
   "playground.title": "Playground",
   "playground.undoClear": "Undo",
-  "playground.videoFailed": "The provider couldn't make the video. Try again."
+  "playground.videoFailed": "The provider couldn't make the video. Try again.",
+  "playground.viewInLog": "View in request log"
 }

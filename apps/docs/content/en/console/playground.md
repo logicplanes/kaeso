@@ -78,7 +78,7 @@ For media models, **Parameters** shows only what the chosen models take:
 
 ## What a Playground request costs
 
-Playground requests are real requests, charged to the project. They use the project's provider keys, your model access, and your limits and the project's. Key limits don't apply, because no key is used. The [request logs](request-logs.md) list them with the source **Playground**.
+Playground requests are real requests, charged to the project. They use the project's provider keys, your model access, and your limits and the project's. Key limits don't apply, because no key is used. The [request logs](request-logs.md) list them with the source **Playground**. Once a reply has finished, worked or failed, **View in request log** under it opens its entry, with the route, the timing and the exact bodies; without the right to read the log, a failed reply names its request id instead.
 
 ## Next steps
 

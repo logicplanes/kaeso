@@ -78,7 +78,7 @@ Für Medienmodelle zeigt **Parameter** nur, was die gewählten Modelle annehmen:
 
 ## Was eine Anfrage im Playground kostet
 
-Anfragen im Playground sind echte Anfragen und werden dem Projekt berechnet. Sie nutzen die Anbieter-Schlüssel des Projekts, Ihren Modellzugriff sowie Ihre Limits und die des Projekts. Schlüssel-Limits gelten nicht, weil kein Schlüssel verwendet wird. Die [Anfrageprotokolle](request-logs.md) listen sie mit der Quelle **Playground**.
+Anfragen im Playground sind echte Anfragen und werden dem Projekt berechnet. Sie nutzen die Anbieter-Schlüssel des Projekts, Ihren Modellzugriff sowie Ihre Limits und die des Projekts. Schlüssel-Limits gelten nicht, weil kein Schlüssel verwendet wird. Die [Anfrageprotokolle](request-logs.md) listen sie mit der Quelle **Playground**. Ist eine Antwort fertig, ob erfolgreich oder gescheitert, öffnet **Im Anfrageprotokoll ansehen** darunter ihren Eintrag mit Route, Zeiten und den genauen Inhalten; ohne das Recht, das Protokoll zu lesen, nennt eine gescheiterte Antwort stattdessen ihre Anfrage-ID.
 
 ## Nächste Schritte
 

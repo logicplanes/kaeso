@@ -419,7 +419,48 @@ describe("PlaygroundPage", () => {
     await screen.findByText("gpt-5.4-mini");
     await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
     await user.click(screen.getByRole("button", { name: "Send" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("The gateway failed. Request req_01abc");
+    expect(await screen.findByRole("alert")).toHaveTextContent("The gateway failed.");
+    expect(screen.getByRole("alert")).not.toHaveTextContent("req_01abc");
+    expect(screen.getByRole("link", { name: "View in request log" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}/logs?log=req_01abc`);
+  });
+
+  it("links every finished reply to its entry in the request log", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () =>
+      eventStream(
+        sse([
+          { type: "response.created" },
+          { type: "response.output_text.delta", item_id: "m", delta: "Hello" },
+          { type: "response.completed", response: { usage: { input_tokens: 3, output_tokens: 2 } } },
+        ]),
+        { "kaeso-request-id": "req_01done" },
+      ),
+    );
+    const { user, router } = await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    const link = await screen.findByRole("link", { name: "View in request log" });
+    expect(link).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}/logs?log=req_01done`);
+    await user.click(link);
+    await waitFor(() => expect(router.state.location.search).toEqual({ log: "req_01done" }));
+  });
+
+  it("names the request as text for someone who can't read the request log", async () => {
+    signedIn({ projectRights: without("logs.metadata.view") });
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () => {
+      const refused = apiError(429, "rate_limit", "Rate limit reached.");
+      refused.headers.set("kaeso-request-id", "req_01rate");
+      return refused;
+    });
+    const { user } = await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Rate limit reached. Request req_01rate");
+    expect(screen.queryByRole("link", { name: "View in request log" })).not.toBeInTheDocument();
   });
 
   it("says when the model cut a reply off at the output limit", async () => {
