@@ -111,7 +111,7 @@ Ein Projekt kann die Inhaltsprotokollierung für sich in seinen **Einstellungen*
 
 ## Protokolle löschen
 
-Der Tab **Speicher** unter **Protokollierung** zeigt, wie viele Einträge die Organisation aufbewahrt und wie viel Platz sie je Projekt belegen. Er und der Tab **Löschungen** erfordern das Recht **Protokollspeicher ansehen**.
+Der Tab **Speicher** unter **Protokollierung** zeigt, wie viele Einträge die Organisation aufbewahrt und wie viel Platz sie je Projekt belegen. **Logische Größe** zählt den Inhalt jeder Anfrage so, wie er ankam; **Auf Datenträger** zählt eine lange Nachricht, die ein Gespräch in späteren Anfragen wiederholt, einmal, so wie Kaeso sie speichert, und jede Anfrage liest sich weiterhin genau so, wie sie gesendet wurde. Er und der Tab **Löschungen** erfordern das Recht **Protokollspeicher ansehen**.
 
 1. Wählen Sie auf dem Tab **Löschungen** **Protokolle löschen**.
 2. Wählen Sie ganze UTC-Tage und alle Projekte oder eines.

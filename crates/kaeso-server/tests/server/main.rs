@@ -37,6 +37,7 @@ mod key_rotation;
 mod key_safeguards;
 mod keys;
 mod limits;
+mod log_parts;
 mod logged_secrets;
 mod logs;
 mod logs_off;

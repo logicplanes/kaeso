@@ -43870,7 +43870,7 @@
           "estimated_disk_bytes": {
             "type": "integer",
             "format": "int64",
-            "description": "Estimated size on disk: metadata rows at the table's average row size,\nplus content at its current compression ratio.",
+            "description": "Estimated size on disk: metadata rows at the table's average row size,\nplus content at the ratio of what the content tables hold on disk, messages a\nconversation repeats stored once, to the content as received.",
             "minimum": 0
           },
           "logical_bytes": {

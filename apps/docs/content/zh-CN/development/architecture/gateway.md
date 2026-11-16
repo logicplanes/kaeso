@@ -137,7 +137,7 @@ cargo xtask kpmr
 
 模型 API 把每个结束的请求交给一个接收器。它把请求的用量加到内存中的一个批次里，按天、项目、密钥、成员、模型和路由归类，并每 10 秒把该批次写入 PostgreSQL 的 `usage_daily`。同一个接收器还会在 Valkey 中计入限额计数器，这些计数器从 `usage_daily` 重建。用量页面、Platform API 的 `usage` 端点以及实例中各组织的合计只读取 `usage_daily`。
 
-请求日志通过各自的缓冲区写入 ClickHouse 的 `request_log` 和 `request_content`。没有 `clickhouse.url` 时，`AppState::clickhouse` 为 `None`：网关不运行 ClickHouse 迁移，不启动日志写入器，不为日志保留请求体，日志端点返回 `404`。用量迁移到 PostgreSQL 后，ClickHouse 迁移 0007 删除了 ClickHouse 自己的 `usage_daily`。
+请求日志通过各自的缓冲区写入 ClickHouse 的 `request_log` 和 `request_content`。没有 `clickhouse.url` 时，`AppState::clickhouse` 为 `None`：网关不运行 ClickHouse 迁移，不启动日志写入器，不为日志保留请求体，日志端点返回 `404`。Anthropic Messages、Chat Completions、Responses 或 Gemini 格式的请求体，会把历史中每个不小于 512 字节的元素（`system`/`instructions`/`systemInstruction`、每条消息或输入 item、每个工具）在每个项目中只存一次到 `request_content_part`，以其 SHA-256 的前 16 字节为键，并在原位置保留 `{"$kaeso_part":"<hash>"}`；`request_parts` 记录其数量，读取时按字节原样拼回。按项目缓存已写入的哈希，同一部分每小时最多重写一次；按时间范围删除时，`last_at` 距范围结束不足一小时的部分会被保留。用量迁移到 PostgreSQL 后，ClickHouse 迁移 0007 删除了 ClickHouse 自己的 `usage_daily`。
 
 视频任务比启动它的请求存在得更久，因此 PostgreSQL 的 `videos` 表保存每个任务：其项目、服务商的任务 ID、启动时使用的服务商密钥和价格，以及最后看到的状态。启动任务时记录日志，不产生费用。第一个看到任务结束的获取或下载请求会在一条条件 `UPDATE` 中设置 `accounted_at`，只有设置成功的请求才把完成的任务交给接收器，因此并发请求对一个视频只计费一次（[视频 API](../../api/videos.md#费用和日志)）。
 

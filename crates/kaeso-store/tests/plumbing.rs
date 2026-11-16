@@ -118,6 +118,7 @@ async fn clickhouse_migrations_create_the_log_tables_once() {
         [
             "kaeso_migrations",
             "request_content",
+            "request_content_part",
             "request_log",
             "tool_call_content",
             "tool_calls"
