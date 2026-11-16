@@ -179,6 +179,8 @@ ResponseView.displayName = "ResponseView";
 export interface UserMessageProps {
   children: ReactNode;
   attachments?: readonly Attachment[] | undefined;
+  /** Actions on the prompt, such as Edit, under its bubble at the end of the line. */
+  actions?: ReactNode | undefined;
   maxLines?: 0 | 2 | 3 | 4 | 6 | undefined;
   "aria-label"?: string | undefined;
   className?: string | undefined;
@@ -187,7 +189,7 @@ export interface UserMessageProps {
 const CLAMP = { 2: "line-clamp-2", 3: "line-clamp-3", 4: "line-clamp-4", 6: "line-clamp-6" } as const;
 
 export const UserMessage = forwardRef<HTMLDivElement, UserMessageProps>(function UserMessage(
-  { children, attachments = [], maxLines = 4, "aria-label": ariaLabelProp, className },
+  { children, attachments = [], actions, maxLines = 4, "aria-label": ariaLabelProp, className },
   ref,
 ) {
   const t = useUiText();
@@ -214,10 +216,15 @@ export const UserMessage = forwardRef<HTMLDivElement, UserMessageProps>(function
           {children}
         </p>
       )}
-      {(clamped || all) && (
-        <Button size="sm" variant="quiet" aria-expanded={all} aria-controls={body} reserveLabels={[showAll, showLess]} onClick={() => setAll((a) => !a)}>
-          {all ? showLess : showAll}
-        </Button>
+      {(clamped || all || actions) && (
+        <div className="flex items-center gap-4">
+          {(clamped || all) && (
+            <Button size="sm" variant="quiet" aria-expanded={all} aria-controls={body} reserveLabels={[showAll, showLess]} onClick={() => setAll((a) => !a)}>
+              {all ? showLess : showAll}
+            </Button>
+          )}
+          {actions}
+        </div>
       )}
     </div>
   );

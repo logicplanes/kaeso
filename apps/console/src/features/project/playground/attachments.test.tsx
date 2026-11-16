@@ -123,4 +123,42 @@ describe("Playground attachments", () => {
     const none = fileRules([]);
     expect([none.types, none.takes("image/png"), none.maxBytes("image/png")]).toEqual([[], false, 0]);
   });
+
+  it("puts the last prompt and its image back into the composer to edit, for every column, and Undo brings the turn back", async () => {
+    signedIn();
+    on("GET", MODELS, page([vision]));
+    on("POST", RESPONSES, () => reply("A loading dock."));
+    const { user } = await renderApp(`${PLAYGROUND}?models=openai/gpt-5.4-mini,openai/gpt-5.4-mini`);
+    const prompt = await screen.findByRole("textbox", { name: "Prompt" });
+    await user.type(prompt, "What is this?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(screen.getAllByText("A loading dock.")).toHaveLength(2));
+    await user.type(prompt, "Where is it?");
+    await user.click(await screen.findByRole("button", { name: "Attach images or PDFs" }));
+    await user.upload(picker(), png());
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(screen.getAllByText("A loading dock.")).toHaveLength(4));
+
+    const edits = screen.getAllByRole("button", { name: "Edit" });
+    expect(edits).toHaveLength(2);
+    await user.click(edits[0] as HTMLElement);
+    expect(prompt).toHaveValue("Where is it?");
+    expect(within(await screen.findByRole("list", { name: "Attachments" })).getByRole("img", { name: "dock.png" })).toBeInTheDocument();
+    expect(screen.getAllByText("A loading dock.")).toHaveLength(2);
+    expect(screen.queryAllByRole("button", { name: "Edit" })).toHaveLength(0);
+    await user.click(notifications().getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(screen.getAllByText("A loading dock.")).toHaveLength(4));
+    expect(prompt).toHaveValue("");
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(2);
+
+    await user.click(screen.getAllByRole("button", { name: "Edit" })[1] as HTMLElement);
+    await user.clear(prompt);
+    await user.type(prompt, "Which city?");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(sentBodies()).toHaveLength(6));
+    const again = JSON.stringify(sentBodies().at(-1)?.input);
+    expect(again).toContain("What is this?");
+    expect(again).toContain("Which city?");
+    expect(again).not.toContain("Where is it?");
+  });
 });

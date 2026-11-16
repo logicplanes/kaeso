@@ -20,6 +20,8 @@
   "playground.decisions.subtitle": "Models that make decisions answer these about what you send.",
   "playground.decisions.title": "Questions",
   "playground.decisions.unreadable": "The model's answers couldn't be read. Try again.",
+  "playground.edit": "Edit",
+  "playground.edited": "The last prompt is back in the composer",
   "playground.empty": "No models to try yet",
   "playground.emptyColumn": "Answers appear here from the next prompt you send.",
   "playground.emptyHint": "Models in this project's catalogue that you may call appear here.",

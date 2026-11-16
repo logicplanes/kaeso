@@ -15,7 +15,7 @@ import { modelRef } from "./request";
 import { parametersOf, searchOf } from "./search";
 import { MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSearch } from "~/format/playground-search";
 import Thread from "./thread";
-import { isLive } from "./responses";
+import { isLive, type Turn } from "./responses";
 import { columnsOf, conversationJson, conversationMarkdown, exportName, saveText, type Conversation as Exported } from "./export";
 import { useThreads, type Thread as ThreadState } from "./use-threads";
 import { locale, t } from "~/i18n";
@@ -42,6 +42,7 @@ const conversationKey = (project: string) => [...PLAYGROUND_CONVERSATION, projec
 const questionsKey = (project: string) => [...PLAYGROUND_CONVERSATION, project, "questions"];
 const warnOnLeave = (e: BeforeUnloadEvent) => e.preventDefault();
 const CLEARED = "playground:cleared";
+const EDITED = "playground:edited";
 
 export function PlaygroundPage({ org, project, search }: { org: string; project: string; search: PlaygroundSearch }) {
   const navigate = useNavigate();
@@ -116,7 +117,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   useEffect(() => {
     shownRefs.current = refs;
   });
-  const { threads, busy, send, retry, stop, cancel, add, remove, clear, restore } = useThreads(org, project, refs.length, {
+  const { threads, busy, editable, send, retry, stop, cancel, add, remove, clear, restore, takeLast, putBack } = useThreads(org, project, refs.length, {
     initial: saved && same(saved.refs, refs) ? saved.threads : undefined,
     onLeave: (left) => {
       if (left.some((x) => x.turns.length)) remember<Conversation>(conversationKey(project), { refs: shownRefs.current, threads: left });
@@ -210,6 +211,25 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
     const c = conversation();
     if (format === "md") saveText(exportName(c, "md"), conversationMarkdown(c), "text/markdown");
     else saveText(exportName(c, "json"), conversationJson(c), "application/json");
+  };
+  // The last prompt goes back into the composer, its turns out of every column; sending it
+  // again answers with the earlier turns as context, like any prompt.
+  const editLast = (turn: Turn) => {
+    const before = takeLast();
+    changePrompt(turn.prompt);
+    setFiles(turn.files ?? []);
+    toast(t("playground.edited", "The last prompt is back in the composer"), {
+      id: EDITED,
+      action: {
+        label: t("playground.undoClear", "Undo"),
+        onClick: () => {
+          putBack(before);
+          changePrompt("");
+          setFiles([]);
+          toast.dismiss(EDITED);
+        },
+      },
+    });
   };
   const clearAll = () => {
     const before = clear();
@@ -396,6 +416,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           expected={imagesExpected(m, parameters)}
                           onRetry={m && !isLive(lastTurn.response) ? retryThread : null}
                           onCancel={cancel}
+                          onEdit={editable.has(lastTurn.id) ? () => editLast(lastTurn) : null}
                           logHref={logHref}
                         />
                       ) : empty ? (

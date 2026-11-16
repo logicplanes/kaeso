@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Link } from "@logicplanes/kaeso-ui";
+import { Button, Link, icons } from "@logicplanes/kaeso-ui";
 import type { PlaygroundModel } from "~/api/queries/playground";
 import {
   DecisionResponse,
@@ -67,6 +67,7 @@ const TurnView = memo(function TurnView({
   expected,
   onRetry,
   onCancel,
+  onEdit,
   logHref,
 }: {
   turn: Turn;
@@ -76,6 +77,7 @@ const TurnView = memo(function TurnView({
   expected: number;
   onRetry: ((thread: string) => void) | null;
   onCancel: ((turn: string) => void) | null;
+  onEdit: (() => void) | null;
   logHref: ((id: string) => string) | null;
 }) {
   const r = turn.response;
@@ -99,7 +101,20 @@ const TurnView = memo(function TurnView({
   const error = errorOf(r, !!logHref);
   return (
     <div className="flex min-w-0 flex-col gap-12">
-      <UserMessage attachments={shown(turn.files)}>{turn.prompt}</UserMessage>
+      <UserMessage
+        attachments={shown(turn.files)}
+        {...(onEdit
+          ? {
+              actions: (
+                <Button size="sm" variant="quiet" leadingIcon={icons.edit} onClick={onEdit}>
+                  {t("playground.edit", "Edit")}
+                </Button>
+              ),
+            }
+          : {})}
+      >
+        {turn.prompt}
+      </UserMessage>
       {mode === "decision" ? (
         <DecisionResponse
           aria-label={name}
@@ -144,6 +159,7 @@ export default function Thread({
   expected = 1,
   onRetry,
   onCancel = null,
+  onEdit = null,
   logHref = null,
   className,
 }: {
@@ -154,6 +170,8 @@ export default function Thread({
   expected?: number | undefined;
   onRetry: ((thread: string) => void) | null;
   onCancel?: ((turn: string) => void) | null | undefined;
+  /** Takes the last prompt back into the composer, from every column. */
+  onEdit?: (() => void) | null | undefined;
   /** Where a reply's entry in the request log opens, for someone who may read the log. */
   logHref?: ((id: string) => string) | null | undefined;
   className?: string | undefined;
@@ -171,6 +189,7 @@ export default function Thread({
           expected={expected}
           onRetry={turn === last ? onRetry : null}
           onCancel={turn === last ? onCancel : null}
+          onEdit={turn === last ? onEdit : null}
           logHref={logHref}
         />
       ))}
