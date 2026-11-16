@@ -134,7 +134,7 @@ fn list(snapshot: &PortalSnapshot, caller: &Caller, version: Version) -> String 
     out
 }
 
-fn request_headers(headers: &HeaderMap) -> RequestHeaders<'_> {
+pub(crate) fn request_headers(headers: &HeaderMap) -> RequestHeaders<'_> {
     let get = |name: &str| headers.get(name).map(HeaderValue::as_bytes);
     RequestHeaders {
         protocol_version: get(mcp_headers::PROTOCOL_VERSION),

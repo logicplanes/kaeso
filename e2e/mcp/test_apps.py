@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 import httpx2
+import pytest
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
@@ -65,24 +66,37 @@ def agent_token(install: Install) -> str:
     return tokens.json()["access_token"]
 
 
-def run(install: Install, steps):
-    http = httpx2.AsyncClient(headers={"Authorization": f"Bearer {agent_token(install)}"})
+MODES = [("auto", "2026-07-28"), ("legacy", "2025-11-25")]
+
+
+def run(install: Install, mode: str, version: str, steps):
+    statuses: list[int] = []
+
+    async def seen(response: httpx2.Response) -> None:
+        statuses.append(response.status_code)
+
+    http = httpx2.AsyncClient(headers={"Authorization": f"Bearer {agent_token(install)}"}, event_hooks={"response": [seen]})
 
     async def session():
-        async with Client(streamable_http_client(f"{install.url}/mcp", http_client=http), mode="legacy") as c:
-            return await steps(c)
+        async with Client(streamable_http_client(f"{install.url}/mcp", http_client=http), mode=mode) as c:
+            out = await steps(c)
+            assert c.protocol_version == version
+            return out
 
-    return asyncio.run(session())
+    out = asyncio.run(session())
+    assert statuses and all(s < 400 for s in statuses), statuses
+    return out
 
 
-def test_the_sdk_finds_the_usage_view_through_the_tool_and_reads_it(install: Install) -> None:
+@pytest.mark.parametrize(("mode", "version"), MODES)
+def test_the_sdk_finds_the_usage_view_through_the_tool_and_reads_it(install: Install, mode: str, version: str) -> None:
     async def steps(c: Client):
         tools = await c.list_tools()
         resources = await c.list_resources()
         read = await c.read_resource(VIEW)
         return tools, resources, read
 
-    tools, resources, read = run(install, steps)
+    tools, resources, read = run(install, mode, version, steps)
     stats = next(t for t in tools.tools if t.name == "show_usage_stats")
     assert stats.meta == {"ui": {"resourceUri": VIEW}, "ui/resourceUri": VIEW}
     assert [(r.uri, r.mime_type) for r in resources.resources] == [(VIEW, "text/html;profile=mcp-app")]
@@ -92,11 +106,12 @@ def test_the_sdk_finds_the_usage_view_through_the_tool_and_reads_it(install: Ins
     assert item.meta["ui"]["csp"] == {"connectDomains": [], "resourceDomains": [], "frameDomains": [], "baseUriDomains": []}
 
 
-def test_the_usage_tool_answers_with_text_and_the_data_the_view_draws(install: Install) -> None:
+@pytest.mark.parametrize(("mode", "version"), MODES)
+def test_the_usage_tool_answers_with_text_and_the_data_the_view_draws(install: Install, mode: str, version: str) -> None:
     async def steps(c: Client):
         return await c.call_tool("show_usage_stats", {"metric": "requests", "range": "7d", "group_by": "provider", "agent_model": "claude"})
 
-    result = run(install, steps)
+    result = run(install, mode, version, steps)
     assert result.is_error is False
     assert result.content[0].text.startswith("Requests of E2E in the last 7 days: 0.")
     data = result.structured_content
