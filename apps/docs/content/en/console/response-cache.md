@@ -85,7 +85,7 @@ Apps decide per request with the standard `Cache-Control` request header:
 | `no-cache` | Asks the provider again and stores the new reply in place of the old one |
 | `no-store` | Skips the cache: no lookup, nothing stored |
 
-Every answer of a project with the cache on carries `kaeso-cache`: `hit`, `miss` or `bypass` (not cacheable, or skipped with `no-store`). A hit also carries `age`, the seconds since the reply was stored.
+Every answer of a project with the cache on carries `kaeso-cache`: `hit`, `miss` or `bypass` (not cacheable, or skipped with `no-store`). A hit also carries `age`, the seconds since the reply was stored. The [request log](request-logs.md)'s **Response cache** filter lists the hits, the misses or the requests that passed the cache by.
 
 ## Costs, limits and logs
 

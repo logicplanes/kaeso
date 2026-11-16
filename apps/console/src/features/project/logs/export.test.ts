@@ -58,7 +58,7 @@ describe("exportFilters", () => {
       { label: "Model", value: "gpt-5.4-mini" },
       { label: "Provider", value: "OpenAI" },
       { label: "Status", value: "429" },
-      { label: "Failed only", value: "Yes" },
+      { label: "Outcome", value: "Failed" },
       { label: "Error kind", value: "Rate limited" },
       { label: "Streaming", value: "Streamed" },
       { label: "Source", value: "API" },

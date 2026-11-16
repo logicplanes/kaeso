@@ -141,6 +141,8 @@ function SlowestCell({ o, hours }: { o: Overview; hours: NonNullable<Overview["h
       value: formatDuration(b.duration_p95_ms),
     }));
   const logs = o.project && o.showErrors ? `${projectPath(o.org, o.project)}/logs` : undefined;
+  // Every listed hour is one of these.
+  const p95 = new Map(all.map((b) => [b.start, b.duration_p95_ms]));
   return (
     <DashboardCell className="lg:col-span-1" title={title}>
       <RankList
@@ -151,9 +153,10 @@ function SlowestCell({ o, hours }: { o: Overview; hours: NonNullable<Overview["h
         empty={t("kaeso.overview.nothing", "Nothing in this period")}
         {...(logs
           ? {
+              // That day's requests at least as slow as the hour's 95th percentile.
               onOpen: (start: string) => {
                 const day = utcDay(new Date(start));
-                void navigate({ href: `${logs}?from=${day}&to=${day}` });
+                void navigate({ href: `${logs}?from=${day}&to=${day}&min_duration_ms=${String(p95.get(start))}` });
               },
             }
           : {})}

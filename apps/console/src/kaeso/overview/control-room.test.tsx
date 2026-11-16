@@ -199,7 +199,7 @@ describe("the analytics control room", () => {
     await waitFor(() => expect(router.state.location.searchStr).toBe("?failed=true&from=2026-10-01&to=2026-10-14"));
     await router.navigate({ href: projectPath(`analytics?${PERIOD}`) });
     await user.click(await within(await screen.findByRole("list", { name: "Slowest hours, 95th percentile" })).findByRole("button", { name: /Oct 12/ }));
-    await waitFor(() => expect(router.state.location.searchStr).toBe("?from=2026-10-12&to=2026-10-12"));
+    await waitFor(() => expect(router.state.location.searchStr).toBe("?from=2026-10-12&to=2026-10-12&min_duration_ms=8100"));
   });
 
   it("keeps the slowest hour of a quiet period, and says how the cache and the tokens of a request did", async () => {

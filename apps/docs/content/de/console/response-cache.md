@@ -85,7 +85,7 @@ Apps entscheiden je Anfrage mit dem Standard-Header `Cache-Control` der Anfrage:
 | `no-cache` | Fragt den Anbieter erneut und speichert die neue Antwort anstelle der alten |
 | `no-store` | Umgeht den Cache: kein Nachschlagen, nichts gespeichert |
 
-Jede Antwort eines Projekts mit eingeschaltetem Cache trägt `kaeso-cache`: `hit`, `miss` oder `bypass` (nicht cachebar oder mit `no-store` übersprungen). Ein Treffer trägt außerdem `age`, die Sekunden seit dem Speichern der Antwort.
+Jede Antwort eines Projekts mit eingeschaltetem Cache trägt `kaeso-cache`: `hit`, `miss` oder `bypass` (nicht cachebar oder mit `no-store` übersprungen). Ein Treffer trägt außerdem `age`, die Sekunden seit dem Speichern der Antwort. Der Filter **Antwort-Cache** im [Anfrageprotokoll](request-logs.md) zeigt die Treffer, die Fehlschläge oder die Anfragen, die am Cache vorbeigingen.
 
 ## Kosten, Limits und Protokolle
 
