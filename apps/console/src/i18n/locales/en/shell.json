@@ -97,6 +97,7 @@
   "shell.settings.appearance": "Appearance",
   "shell.settings.connections": "Connections",
   "shell.settings.general": "General",
+  "shell.settings.guardrails": "Guardrails",
   "shell.settings.logging": "Logging",
   "shell.settings.memberships": "Memberships",
   "shell.settings.notifications": "Notifications",

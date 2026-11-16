@@ -47,8 +47,8 @@ Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur e
 | Inhaber | Alle, auch die künftiger Versionen | Alle |
 | Admin | Alle außer `org.delete`, `org.ownership.transfer` und `billing.manage` | Alle |
 | Abrechnung | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | Keine |
-| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine |
-| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `platform_keys.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters ohne `tools.use` und `project.audit_log.view` |
+| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine |
+| Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `platform_keys.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters ohne `tools.use` und `project.audit_log.view` |
 | Mitglied | `org.view`, `members.view` | Keine |
 
 | Projektrolle | Rechte |
@@ -144,6 +144,8 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | `security.sso.require` | SSO verlangen | Von den Konten, die diese Organisation verwaltet, die Anmeldung nur über ihre SSO verlangen. | sensibel; kürzliche Anmeldung |
 | `security.2fa.require` | Zwei-Faktor verlangen | Zwei-Faktor-Authentifizierung für Mitglieder verlangen. | kürzliche Anmeldung |
 | `security.key_policy.manage` | Schlüssellaufzeit festlegen | Die maximale Schlüssellaufzeit der Organisation festlegen. |  |
+| `guardrails.view` | Guardrails ansehen | Die Guardrails der Organisation und die Projekte, die sie nutzen, sehen (nie ihre Secrets). |  |
+| `guardrails.manage` | Guardrails verwalten | Guardrails hinzufügen, ändern, testen und löschen und die Projekte wählen, die sie nutzen. | sensibel; kürzliche Anmeldung; erfordert `guardrails.view` |
 
 ### Schlüssel
 
@@ -302,7 +304,7 @@ Die Konsole bietet vier Vorlagen für einen Agenten. Jede ist ein Ausgangspunkt,
 
 | Vorlage | Organisationsrechte | Projektrechte | Kontorechte | Instanz-Vorlage |
 | --- | --- | --- | --- | --- |
-| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Lesen |
+| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `guardrails.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Lesen |
 | Builder | Die der Rolle Entwickler | Die der Rolle Entwickler ohne `logs.content.view` und `tools.use`, und `models.manage` | `account.view`, `account.keys.view` | Keine |
 | Operator | Die der Rolle Admin, ohne die Rechte, die Agenten nie erhalten | Alle außer `tools.use` | Alle außer `account.keys.manage` und `account.memberships.leave` | Konfigurieren |
 | Vollzugriff | Alle außer den Rechten, die Agenten nie erhalten | Alle außer `tools.use` | Alle | Admin |

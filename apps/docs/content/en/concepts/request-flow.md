@@ -9,7 +9,7 @@ Every model request passes the same checks in the same order. Knowing them tells
 ```mermaid
 sequenceDiagram
   accTitle: Request flow
-  accDescr: The app sends a request to the gateway. The gateway checks the key, reads the request, resolves the model, checks the limits and picks the provider key, and each check can refuse the request with the statuses shown. It sends the translated request to the provider, returns the translated reply to the app, and then charges usage and logs the request.
+  accDescr: The app sends a request to the gateway. The gateway checks the key, reads the request, resolves the model, asks the project's guardrails, checks the limits and picks the provider key, and each check can refuse the request with the statuses shown. It sends the translated request to the provider, asks the guardrails that check replies, returns the translated reply to the app, and then charges usage and logs the request.
   participant App as Your app
   participant Gateway
   participant Provider
@@ -17,11 +17,13 @@ sequenceDiagram
   Note over Gateway: Check the key<br>401 or 403
   Note over Gateway: Read the request<br>400, 413, 503 or 529
   Note over Gateway: Resolve the model<br>400 or 404
+  Note over Gateway: Ask the guardrails<br>400, 429 or 503
   Note over Gateway: Check the limits<br>403, 429 or 503
   Note over Gateway: Pick the provider key<br>400
   Gateway->>Provider: Translated request
   Note over Gateway,Provider: Timeout 504<br>Unreachable 502
   Provider-->>Gateway: Reply
+  Note over Gateway: Ask the reply guardrails<br>400 or 503
   Gateway-->>App: Translated reply
   Note over Gateway: Charge usage and log
 ```
@@ -69,6 +71,10 @@ The catalogue entry says what the model can do. Kaeso answers 400 when a request
 A model without effort levels gets no effort instead, a model that doesn't reason no adaptive thinking, and a model that takes only the default temperature no temperature. The reply's `kaeso-left-out` header names what Kaeso left out. An effort the model doesn't list becomes the nearest level it lists, and adaptive thinking for a Claude model without it becomes `enabled` thinking with a budget; the reply's `kaeso-adapted` header names those ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)).
 
 A request in an OpenAI format for a Claude model needs no output limit: Kaeso sends the model's own maximum. A Messages request without `max_tokens` gets 400, as it would from Anthropic. A request from another format that asks for more output than the model can write gets the model's maximum instead, and the reply's `kaeso-adapted` header names the field, such as `max_tokens`. Claude Code, for one, asks every model it doesn't know for 32,000 tokens.
+
+## Guardrails
+
+When the project uses [guardrails](../console/guardrails.md), Kaeso asks them about a chat request once, in their order, before the response cache and the first step of an alias route. A caller already over one of its request rates gets 429 first, without the guardrails being asked. A guardrail that blocks gets the app 400, and one that fails while it refuses requests on failure gets it 503; neither request reaches a provider, falls back or costs anything. A replacement goes on to the next guardrail and then to the provider. Guardrails that check replies see the reply before Kaeso writes it for the app, and a streamed one only when they hold streams.
 
 ## Limits
 

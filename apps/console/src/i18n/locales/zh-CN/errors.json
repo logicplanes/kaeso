@@ -783,5 +783,21 @@
   "errors.webhook.kindUnknown": "`{kind}` 不是 Webhook 可以接收的通知。",
   "errors.webhook.noKinds": "请至少选择一种让 Webhook 接收的通知。",
   "errors.webhook.tooMany": "一个组织最多有 10 个 Webhook；请先删除一个。",
-  "errors.webhook.offForTest": "该 Webhook 已关闭；请先开启再发送测试事件。"
+  "errors.webhook.offForTest": "该 Webhook 已关闭；请先开启再发送测试事件。",
+  "errors.guardrails.blocked": "防护规则 `{name}` 拦截了此请求。",
+  "errors.guardrails.blockedBecause": "防护规则 `{name}` 拦截了此请求：{reason}",
+  "errors.guardrails.notOrgGuardrail": "`{id}` 不是此组织的防护规则。",
+  "errors.guardrails.phases": "`phases` 必须包含 `request`、`reply` 或两者。",
+  "errors.guardrails.playgroundBlocked": "此项目的一条防护规则拦截了该请求。",
+  "errors.guardrails.playgroundUnchecked": "此项目的一条防护规则无法检查该请求；请稍后重试。",
+  "errors.guardrails.replyBlocked": "防护规则 `{name}` 拦截了模型的回复。",
+  "errors.guardrails.replyBlockedBecause": "防护规则 `{name}` 拦截了模型的回复：{reason}",
+  "errors.guardrails.testNeedsReply": "测试 `reply` 阶段需要提供 `reply`。",
+  "errors.guardrails.timeout": "`timeout_ms` 必须在 100 到 10000 毫秒之间。",
+  "errors.guardrails.twice": "`{id}` 在列表中出现了两次。",
+  "errors.guardrails.unchecked": "防护规则 `{name}` 无法检查此请求，因此 Kaeso 拒绝了它；请稍后重试。",
+  "errors.guardrails.unloaded": "Kaeso 暂时无法加载此项目的防护规则。请稍后重试。",
+  "errors.guardrails.urlCredentials": "`url` 不能包含用户名或密码。",
+  "errors.guardrails.urlHost": "`url` 必须是带主机的完整 URL，例如 `https://guardrail.example.com`。",
+  "errors.notFound.guardrail": "没有这条防护规则，或者您无法查看它。"
 }

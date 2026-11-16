@@ -179,6 +179,7 @@ public_id!(PortalGrantId, "grant_");
 public_id!(ToolCallId, "call_");
 public_id!(VideoId, "video_");
 public_id!(ImageGenerationId, "imggen_");
+public_id!(GuardrailId, "grd_");
 
 #[cfg(test)]
 mod tests {

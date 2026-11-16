@@ -47,8 +47,8 @@ An organization role also holds rights in every project, on top of the member's 
 | Owner | All, including those of future releases | All |
 | Admin | All except `org.delete`, `org.ownership.transfer` and `billing.manage` | All |
 | Billing | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | None |
-| Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | None |
-| Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `platform_keys.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's without `tools.use`, and `project.audit_log.view` |
+| Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | None |
+| Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `platform_keys.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's without `tools.use`, and `project.audit_log.view` |
 | Member | `org.view`, `members.view` | None |
 
 | Project role | Rights |
@@ -144,6 +144,8 @@ Every change of roles and rights follows these rules:
 | `security.sso.require` | Require SSO | Require the accounts this organization manages to sign in only through its SSO. | sensitive; recent sign-in |
 | `security.2fa.require` | Require two-factor | Require two-factor authentication for members. | recent sign-in |
 | `security.key_policy.manage` | Set key lifetime | Set the organization's maximum key lifetime. |  |
+| `guardrails.view` | View guardrails | See the organization's guardrails and the projects that use them (never their secrets). |  |
+| `guardrails.manage` | Manage guardrails | Add, change, test and delete guardrails, and choose the projects that use them. | sensitive; recent sign-in; needs `guardrails.view` |
 
 ### Keys
 
@@ -302,7 +304,7 @@ The console offers four presets for an agent. Each is a starting point, and you 
 
 | Preset | Organization rights | Project rights | Account rights | Instance preset |
 | --- | --- | --- | --- | --- |
-| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Read |
+| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `guardrails.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Read |
 | Builder | The Developer role's | The Developer role's without `logs.content.view` and `tools.use`, and `models.manage` | `account.view`, `account.keys.view` | None |
 | Operator | The Admin role's, without the rights never given to agents | All but `tools.use` | All but `account.keys.manage` and `account.memberships.leave` | Configure |
 | Full access | All but the rights never given to agents | All but `tools.use` | All | Admin |

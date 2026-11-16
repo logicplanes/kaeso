@@ -261,6 +261,27 @@ impl McpUpstream {
         self.plain(builder, limits).await
     }
 
+    /// Posts JSON with headers of the caller's own, such as a signature, under the same guard;
+    /// `limits.first_byte` bounds the whole call.
+    pub async fn post_json_with(
+        &self,
+        url: &Url,
+        body: Bytes,
+        headers: &[(&'static str, String)],
+        limits: Limits,
+    ) -> Result<(u16, Bytes), UpstreamError> {
+        let mut builder = self
+            .client_for(url)?
+            .post(url.clone())
+            .header(reqwest::header::ACCEPT, "application/json")
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .body(body);
+        for (name, value) in headers {
+            builder = builder.header(*name, value.as_str());
+        }
+        self.plain(builder, limits).await
+    }
+
     pub async fn post(&self, call: McpCall<'_>) -> Result<McpAnswer, UpstreamError> {
         let client = self.client_for(call.url)?;
         let mut builder = client

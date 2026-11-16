@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_guardrails (project_id, org_id, guardrail_id, position) SELECT $2, g.org_id, g.id, w.position FROM unnest($3::uuid[], $4::int[]) AS w(id, position) JOIN guardrails g ON g.id = w.id AND g.org_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "UuidArray",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3ddc37dadbcac7eba81e460912bdb5b1e426ec22cf08cb7987ad771e5d95efd0"
+}

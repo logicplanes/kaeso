@@ -60,6 +60,8 @@ pub struct Config {
     pub mcp_portal: McpPortalConfig,
     #[serde(default)]
     pub webhooks: WebhooksConfig,
+    #[serde(default)]
+    pub guardrails: GuardrailsConfig,
     pub upstream: UpstreamConfig,
     pub streams: StreamsConfig,
     pub continuity: ContinuityConfig,
@@ -313,6 +315,13 @@ pub struct McpServersConfig {
     pub allowed_networks: Vec<ipnet::IpNet>,
     #[serde(with = "humantime_serde", default = "fifteen_minutes")]
     pub sync_interval: Duration,
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct GuardrailsConfig {
+    #[serde(default, deserialize_with = "networks")]
+    pub allowed_networks: Vec<ipnet::IpNet>,
 }
 
 const fn fifteen_minutes() -> Duration {

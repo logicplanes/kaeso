@@ -456,6 +456,14 @@ fn refusal(f: &Failure, ask: &Ask) -> ApiError {
             ),
             e,
         ),
+        Stage::Guardrail if e.status == Some(503) => ApiError::Unavailable(own(
+            &e.message,
+            "A guardrail of this project could not check the request; try again shortly.",
+        )),
+        Stage::Guardrail => ApiError::bad_request(own(
+            &e.message,
+            "A guardrail of this project blocked the request.",
+        )),
         Stage::Shutdown => ApiError::Unavailable(
             "Kaeso is restarting and ended this request; send it again.".into(),
         ),

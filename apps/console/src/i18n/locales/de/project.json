@@ -284,5 +284,18 @@
   "project.retries.saved": "Erneut versuchen: {times}",
   "project.retries.title": "Wiederholungen",
   "project.retries.tryAgain": "Erneut versuchen",
-  "project.retries.tryAgainHint": "Nach abgebrochener Verbindung, einem 5xx oder einer Überlastung."
+  "project.retries.tryAgainHint": "Nach abgebrochener Verbindung, einem 5xx oder einer Überlastung.",
+  "project.guardrails.addFirst": "Fügen Sie zuerst eine unter Organisationseinstellungen › Guardrails hinzu.",
+  "project.guardrails.allowsOnError": "Lässt Anfragen bei einem Fehler durch",
+  "project.guardrails.blocksOnError": "Lehnt Anfragen bei einem Fehler ab",
+  "project.guardrails.choose": "Guardrails wählen",
+  "project.guardrails.chooseHint": "Anfragen durchlaufen die gewählten Guardrails von oben nach unten.",
+  "project.guardrails.down": "{name} nach unten",
+  "project.guardrails.hint": "Die Prüfungen der Organisation für Chat-Anfragen des Projekts, der Reihe nach.",
+  "project.guardrails.none": "Keine Guardrails",
+  "project.guardrails.noneHint": "Anfragen gehen ungeprüft an die Modelle.",
+  "project.guardrails.position": "{n} von {count}",
+  "project.guardrails.saved": "Guardrails gespeichert",
+  "project.guardrails.title": "Guardrails",
+  "project.guardrails.up": "{name} nach oben"
 }

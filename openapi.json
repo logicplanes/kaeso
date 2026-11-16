@@ -9394,6 +9394,682 @@
         "x-kaeso-access": "right:providers.custom.manage"
       }
     },
+    "/platform/v1/orgs/{org}/guardrails": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The organization's guardrails, by name.",
+        "description": "**Right:** `guardrails.view` on the organization in the path.",
+        "operationId": "getOrgsOrgGuardrails",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_GuardrailView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.view"
+      },
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Adds a guardrail to the organization, with a new signing secret.",
+        "description": "Kaeso checks the address now and on every connection: private, loopback,\nlink-local and cloud metadata addresses are refused unless the instance allows the network\n(`guardrails.allowed_networks`). The answer holds the signing secret; it is never shown\nagain. Projects use it once it is set for them (`PUT …/guardrails/projects`).\n\n**Right:** `guardrails.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgGuardrails",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardrailCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The guardrail's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardrailWithSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/guardrails/projects": {
+      "put": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Sets the guardrails a project uses and their order.",
+        "description": "Only organization admins with Manage guardrails choose them: a guardrail is\nthe organization's policy, so a project's own admins can't take one off. The project's\nlist is `GET …/projects/{project}/guardrails`.\n\n**Right:** `guardrails.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "putOrgsOrgGuardrailsProjects",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectGuardrailsSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ProjectGuardrailView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/guardrails/{guardrail}": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "One guardrail.",
+        "description": "**Right:** `guardrails.view` on the organization in the path.",
+        "operationId": "getOrgsOrgGuardrailsGuardrail",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "guardrail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GuardrailId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The guardrail's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardrailView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.view"
+      },
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Deletes a guardrail; the projects that used it stop asking it at once.",
+        "description": "With `If-Match`, only while the guardrail is still at that revision; a newer\none answers 412. The audit log keeps what was removed.\n\n**Right:** `guardrails.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "deleteOrgsOrgGuardrailsGuardrail",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "guardrail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GuardrailId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The `ETag` the change is meant for, such as `\"3\"`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/Stale"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.manage"
+      },
+      "patch": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Changes a guardrail; every project that uses it gets the change at once.",
+        "description": "With `If-Match`, only while the guardrail is still at that revision; a newer\none answers 412.\n\n**Right:** `guardrails.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "patchOrgsOrgGuardrailsGuardrail",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "guardrail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GuardrailId"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "The `ETag` the change is meant for, such as `\"3\"`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardrailUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The guardrail's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardrailView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "412": {
+            "$ref": "#/components/responses/Stale"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/guardrails/{guardrail}/secret": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Gives a guardrail a new signing secret; the old one stops at once.",
+        "description": "The answer holds the new secret; it is never shown again.\n\n**Right:** `guardrails.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgGuardrailsGuardrailSecret",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "guardrail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GuardrailId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "The guardrail's revision as an entity tag."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardrailWithSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/guardrails/{guardrail}/test": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Asks a guardrail about a sample conversation, as a request would.",
+        "description": "The question is signed like a real one; its `source` is `test` and it names\nno project. Nothing of the sample or the answer is stored.\n\n**Right:** `guardrails.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgGuardrailsGuardrailTest",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "guardrail",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GuardrailId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardrailTest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardrailTestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/invites": {
       "get": {
         "tags": [
@@ -13435,6 +14111,81 @@
         "x-kaeso-access": "right:project.update"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/guardrails": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "The guardrails the project's requests pass, in the order they run.",
+        "description": "**Right:** `project.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectGuardrails",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ProjectGuardrailView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:project.view"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/key-policy": {
       "put": {
         "tags": [
@@ -15105,6 +15856,15 @@
             "schema": {
               "$ref": "#/components/schemas/ClientApp"
             }
+          },
+          {
+            "name": "guardrail_action",
+            "in": "query",
+            "description": "Only requests a guardrail allowed, blocked or rewrote.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/GuardrailAction"
+            }
           }
         ],
         "responses": {
@@ -15410,6 +16170,15 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ClientApp"
+            }
+          },
+          {
+            "name": "guardrail_action",
+            "in": "query",
+            "description": "Only requests a guardrail allowed, blocked or rewrote.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/GuardrailAction"
             }
           }
         ],
@@ -15723,6 +16492,15 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/ClientApp"
+            }
+          },
+          {
+            "name": "guardrail_action",
+            "in": "query",
+            "description": "Only requests a guardrail allowed, blocked or rewrote.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/GuardrailAction"
             }
           }
         ],
@@ -28180,6 +28958,766 @@
           }
         }
       },
+      "GuardrailAction": {
+        "type": "string",
+        "description": "What a guardrail did with a request or its reply.",
+        "enum": [
+          "allow",
+          "block",
+          "replace"
+        ]
+      },
+      "GuardrailCreate": {
+        "type": "object",
+        "description": "A new guardrail.",
+        "required": [
+          "name",
+          "url"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name people and apps see, 1 to 100 characters.",
+            "example": "PII check"
+          },
+          "on_error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailOnError",
+                "description": "What Kaeso does when the guardrail times out or fails; `block` when absent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phases": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GuardrailPhase"
+            },
+            "description": "When it checks; `[\"request\"]` when absent."
+          },
+          "streams": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailStreams",
+                "description": "What it does with streamed replies; `skip` when absent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timeout_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "How long Kaeso waits for an answer, from 100 to 10000 milliseconds; 2000 when\nabsent.",
+            "minimum": 0
+          },
+          "url": {
+            "type": "string",
+            "description": "The address Kaeso posts to.",
+            "example": "https://guardrail.example.com/check"
+          }
+        },
+        "additionalProperties": false
+      },
+      "GuardrailFailure": {
+        "type": "string",
+        "description": "Why a guardrail gave no usable answer; its On error setting then\ndecided.",
+        "enum": [
+          "timeout",
+          "unreachable",
+          "refused",
+          "status",
+          "invalid"
+        ]
+      },
+      "GuardrailId": {
+        "type": "string",
+        "examples": [
+          "grd_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^grd_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "GuardrailMessage": {
+        "type": "object",
+        "description": "A message of a conversation, or a reply, with its parts.",
+        "required": [
+          "role",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardrailPart"
+            },
+            "description": "Its parts, in order."
+          },
+          "role": {
+            "type": "string",
+            "description": "`system`, `user` or `assistant`.",
+            "example": "user"
+          }
+        }
+      },
+      "GuardrailOnError": {
+        "type": "string",
+        "description": "What Kaeso does when a guardrail times out or gives no usable answer.",
+        "enum": [
+          "block",
+          "allow"
+        ]
+      },
+      "GuardrailPart": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Text.",
+            "required": [
+              "text",
+              "type"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "The text."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "text"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A model's refusal.",
+            "required": [
+              "text",
+              "type"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "The refusal's text."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "refusal"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A call of a tool.",
+            "required": [
+              "id",
+              "name",
+              "arguments",
+              "type"
+            ],
+            "properties": {
+              "arguments": {
+                "type": "string",
+                "description": "The arguments as JSON text."
+              },
+              "id": {
+                "type": "string",
+                "description": "The call's id."
+              },
+              "name": {
+                "type": "string",
+                "description": "The tool's name."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "tool_call"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "The result of a tool call.",
+            "required": [
+              "call_id",
+              "content",
+              "type"
+            ],
+            "properties": {
+              "call_id": {
+                "type": "string",
+                "description": "The id of the call it answers."
+              },
+              "content": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GuardrailPart"
+                },
+                "description": "The result's parts."
+              },
+              "is_error": {
+                "type": "boolean",
+                "description": "Whether the tool failed."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "tool_result"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "An image, as its type and size.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "media_type": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Its media type, when known."
+              },
+              "size": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64",
+                "description": "Its size in bytes, when it was sent inline.",
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "image"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Audio, as its type and size.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "media_type": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Its media type, when known."
+              },
+              "size": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64",
+                "description": "Its size in bytes, when it was sent inline.",
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "audio"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A video, as its type and size.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "media_type": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Its media type, when known."
+              },
+              "size": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64",
+                "description": "Its size in bytes, when it was sent inline.",
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "video"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A document, as its type and size.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "media_type": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Its media type, when known."
+              },
+              "size": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int64",
+                "description": "Its size in bytes, when it was sent inline.",
+                "minimum": 0
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "document"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Structured data as a part of its own.",
+            "required": [
+              "text",
+              "type"
+            ],
+            "properties": {
+              "text": {
+                "type": "string",
+                "description": "The data as JSON text."
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "json"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A model's reasoning, which a guardrail sees only as present.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "reasoning"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "A part Kaeso has no form for here.",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "other"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "A part of a message: text, a tool call or result, or media as its type and\nsize."
+      },
+      "GuardrailPhase": {
+        "type": "string",
+        "description": "When a guardrail checks: before a request goes to a model, or before a\nreply goes back.",
+        "enum": [
+          "request",
+          "reply"
+        ]
+      },
+      "GuardrailRunView": {
+        "type": "object",
+        "description": "One guardrail's check of a request or its reply.",
+        "required": [
+          "guardrail",
+          "name",
+          "phase",
+          "action",
+          "duration_ms"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/GuardrailAction",
+            "description": "What it did; for a guardrail without a usable answer, what its On error setting\nchose."
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The category the guardrail named, such as `pii`.",
+            "example": "pii"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How long the guardrail took, in milliseconds.",
+            "minimum": 0
+          },
+          "failure": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailFailure",
+                "description": "Why the guardrail gave no usable answer; `action` then follows its On error\nsetting."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "guardrail": {
+            "$ref": "#/components/schemas/GuardrailId",
+            "description": "The guardrail."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name when it ran.",
+            "example": "PII check"
+          },
+          "phase": {
+            "$ref": "#/components/schemas/GuardrailPhase",
+            "description": "When it checked."
+          },
+          "status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The HTTP status of a guardrail that answered with an error or no verdict.",
+            "minimum": 0
+          }
+        }
+      },
+      "GuardrailStreams": {
+        "type": "string",
+        "description": "What a guardrail that checks replies does with streamed ones.",
+        "enum": [
+          "skip",
+          "hold"
+        ]
+      },
+      "GuardrailTest": {
+        "type": "object",
+        "description": "A sample for a guardrail to check; Kaeso stores nothing of it.",
+        "required": [
+          "messages"
+        ],
+        "properties": {
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardrailMessage"
+            },
+            "description": "The conversation, as Kaeso sends it."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model to name; empty when absent."
+          },
+          "phase": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailPhase",
+                "description": "The phase to ask about; `request` when absent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reply": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailMessage",
+                "description": "For the `reply` phase: the reply to check."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "GuardrailTestResult": {
+        "type": "object",
+        "description": "What a guardrail answered to a sample.",
+        "required": [
+          "duration_ms"
+        ],
+        "properties": {
+          "action": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailAction",
+                "description": "Its verdict; `null` when it gave no usable answer."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The category it named."
+          },
+          "duration_ms": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How long it took, in milliseconds.",
+            "minimum": 0
+          },
+          "failure": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailFailure",
+                "description": "Why it gave no usable answer."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reason it gave for a block."
+          },
+          "messages": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GuardrailMessage"
+            },
+            "description": "For `replace`: the messages it sent back."
+          },
+          "status": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The HTTP status it answered with, when it answered.",
+            "minimum": 0
+          }
+        }
+      },
+      "GuardrailUpdate": {
+        "type": "object",
+        "description": "Changes to a guardrail; absent fields stay as they are.",
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new name."
+          },
+          "on_error": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailOnError",
+                "description": "What Kaeso does when the guardrail times out or fails."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "phases": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/GuardrailPhase"
+            },
+            "description": "When it checks."
+          },
+          "streams": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailStreams",
+                "description": "What it does with streamed replies."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timeout_ms": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "A new timeout, from 100 to 10000 milliseconds.",
+            "minimum": 0
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new address."
+          }
+        },
+        "additionalProperties": false
+      },
+      "GuardrailView": {
+        "type": "object",
+        "description": "An HTTP service of the organization that Kaeso asks before a request goes\nto a model and, optionally, before a reply goes back.",
+        "required": [
+          "id",
+          "name",
+          "url",
+          "timeout_ms",
+          "on_error",
+          "phases",
+          "streams",
+          "projects",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "revision"
+        ],
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Added."
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/Party",
+            "description": "Who added it."
+          },
+          "id": {
+            "$ref": "#/components/schemas/GuardrailId",
+            "description": "Id."
+          },
+          "name": {
+            "type": "string",
+            "description": "The name people and apps see, such as in an error.",
+            "example": "PII check"
+          },
+          "on_error": {
+            "$ref": "#/components/schemas/GuardrailOnError",
+            "description": "What Kaeso does when the guardrail times out or fails."
+          },
+          "phases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardrailPhase"
+            },
+            "description": "When it checks."
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectId"
+            },
+            "description": "Projects that use it."
+          },
+          "revision": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change or delete\nthe guardrail only if nothing changed it since.",
+            "example": 1
+          },
+          "streams": {
+            "$ref": "#/components/schemas/GuardrailStreams",
+            "description": "What it does with streamed replies."
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How long Kaeso waits for an answer, in milliseconds.",
+            "example": 2000,
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last changed."
+          },
+          "url": {
+            "type": "string",
+            "description": "The address Kaeso posts to.",
+            "example": "https://guardrail.example.com/check"
+          }
+        }
+      },
+      "GuardrailWithSecret": {
+        "type": "object",
+        "description": "A guardrail with its signing secret, shown only in this answer.",
+        "required": [
+          "guardrail",
+          "secret"
+        ],
+        "properties": {
+          "guardrail": {
+            "$ref": "#/components/schemas/GuardrailView",
+            "description": "The guardrail."
+          },
+          "secret": {
+            "type": "string",
+            "description": "The secret Kaeso signs its requests with (Standard Webhooks), shown once.",
+            "example": "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw"
+          }
+        }
+      },
       "HeldRight": {
         "type": "object",
         "description": "A held right and why.",
@@ -30299,6 +31837,114 @@
           }
         }
       },
+      "List_GuardrailView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "An HTTP service of the organization that Kaeso asks before a request goes\nto a model and, optionally, before a reply goes back.",
+              "required": [
+                "id",
+                "name",
+                "url",
+                "timeout_ms",
+                "on_error",
+                "phases",
+                "streams",
+                "projects",
+                "created_by",
+                "created_at",
+                "updated_at",
+                "revision"
+              ],
+              "properties": {
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Added."
+                },
+                "created_by": {
+                  "$ref": "#/components/schemas/Party",
+                  "description": "Who added it."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/GuardrailId",
+                  "description": "Id."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name people and apps see, such as in an error.",
+                  "example": "PII check"
+                },
+                "on_error": {
+                  "$ref": "#/components/schemas/GuardrailOnError",
+                  "description": "What Kaeso does when the guardrail times out or fails."
+                },
+                "phases": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuardrailPhase"
+                  },
+                  "description": "When it checks."
+                },
+                "projects": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectId"
+                  },
+                  "description": "Projects that use it."
+                },
+                "revision": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change or delete\nthe guardrail only if nothing changed it since.",
+                  "example": 1
+                },
+                "streams": {
+                  "$ref": "#/components/schemas/GuardrailStreams",
+                  "description": "What it does with streamed replies."
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "How long Kaeso waits for an answer, in milliseconds.",
+                  "example": 2000,
+                  "minimum": 0
+                },
+                "updated_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Last changed."
+                },
+                "url": {
+                  "type": "string",
+                  "description": "The address Kaeso posts to.",
+                  "example": "https://guardrail.example.com/check"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_InstanceOrgView": {
         "type": "object",
         "description": "A page of results.",
@@ -30954,7 +32600,8 @@
                 "upstream_request_id",
                 "has_content",
                 "fallbacks",
-                "tags"
+                "tags",
+                "guardrails"
               ],
               "properties": {
                 "alias": {
@@ -31043,6 +32690,13 @@
                     "$ref": "#/components/schemas/FallbackView"
                   },
                   "description": "The tries that failed before the one that answered, or before the last\none, in the order they were made: the steps of the alias's route that fell\nback, and the tries a step made again after a short-lived failure\n(`retried`)."
+                },
+                "guardrails": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuardrailRunView"
+                  },
+                  "description": "The guardrails that checked the request and its reply, in the order they ran."
                 },
                 "has_content": {
                   "type": "boolean",
@@ -32068,6 +33722,75 @@
                 "user": {
                   "$ref": "#/components/schemas/UserId",
                   "description": "The person who connected it."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_ProjectGuardrailView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A guardrail a project uses, as the project sees it.",
+              "required": [
+                "id",
+                "name",
+                "phases",
+                "on_error",
+                "streams",
+                "timeout_ms"
+              ],
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/GuardrailId",
+                  "description": "Id."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Its name.",
+                  "example": "PII check"
+                },
+                "on_error": {
+                  "$ref": "#/components/schemas/GuardrailOnError",
+                  "description": "What Kaeso does when it times out or fails."
+                },
+                "phases": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GuardrailPhase"
+                  },
+                  "description": "When it checks."
+                },
+                "streams": {
+                  "$ref": "#/components/schemas/GuardrailStreams",
+                  "description": "What it does with streamed replies."
+                },
+                "timeout_ms": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "How long Kaeso waits for it, in milliseconds.",
+                  "minimum": 0
                 }
               }
             },
@@ -33802,7 +35525,8 @@
           "upstream_request_id",
           "has_content",
           "fallbacks",
-          "tags"
+          "tags",
+          "guardrails"
         ],
         "properties": {
           "alias": {
@@ -33891,6 +35615,13 @@
               "$ref": "#/components/schemas/FallbackView"
             },
             "description": "The tries that failed before the one that answered, or before the last\none, in the order they were made: the steps of the alias's route that fell\nback, and the tries a step made again after a short-lived failure\n(`retried`)."
+          },
+          "guardrails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardrailRunView"
+            },
+            "description": "The guardrails that checked the request and its reply, in the order they ran."
           },
           "has_content": {
             "type": "boolean",
@@ -37516,6 +39247,72 @@
               "type": "string"
             },
             "description": "Project rights from the rights catalogue."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProjectGuardrailView": {
+        "type": "object",
+        "description": "A guardrail a project uses, as the project sees it.",
+        "required": [
+          "id",
+          "name",
+          "phases",
+          "on_error",
+          "streams",
+          "timeout_ms"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/GuardrailId",
+            "description": "Id."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "PII check"
+          },
+          "on_error": {
+            "$ref": "#/components/schemas/GuardrailOnError",
+            "description": "What Kaeso does when it times out or fails."
+          },
+          "phases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardrailPhase"
+            },
+            "description": "When it checks."
+          },
+          "streams": {
+            "$ref": "#/components/schemas/GuardrailStreams",
+            "description": "What it does with streamed replies."
+          },
+          "timeout_ms": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How long Kaeso waits for it, in milliseconds.",
+            "minimum": 0
+          }
+        }
+      },
+      "ProjectGuardrailsSet": {
+        "type": "object",
+        "description": "The guardrails a project uses.",
+        "required": [
+          "project",
+          "guardrails"
+        ],
+        "properties": {
+          "guardrails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardrailId"
+            },
+            "description": "Every guardrail the project's requests pass from now on, in the order they run;\nguardrails left out stop checking its requests."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
           }
         },
         "additionalProperties": false

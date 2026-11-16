@@ -43,6 +43,8 @@ pub const CONNECTIONS_MAX: &str = "kaeso_connections_max";
 pub const MODEL_REQUESTS_IN_FLIGHT: &str = "kaeso_model_requests_in_flight";
 pub const KPMR_LAST_ATTEMPT: &str = "kaeso_kpmr_last_attempt_timestamp_seconds";
 pub const KPMR_LAST_ATTEMPT_FAILED: &str = "kaeso_kpmr_last_attempt_failed";
+pub const GUARDRAIL_RUNS: &str = "kaeso_guardrail_runs_total";
+pub const GUARDRAIL_DURATION: &str = "kaeso_guardrail_duration_seconds";
 
 pub fn describe() {
     describe_counter!(
@@ -150,6 +152,15 @@ pub fn describe() {
         TOOL_CALL_DURATION,
         Unit::Seconds,
         "Tool call duration by source and status."
+    );
+    describe_counter!(
+        GUARDRAIL_RUNS,
+        "Guardrail checks by phase (request, reply) and action (allow, block, replace)."
+    );
+    describe_histogram!(
+        GUARDRAIL_DURATION,
+        Unit::Seconds,
+        "How long guardrails took to answer, by phase."
     );
     describe_gauge!(
         CONNECTIONS_OPEN,

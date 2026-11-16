@@ -46,6 +46,7 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...text("tag", s.tag),
     ...text("error_message", s.error_message),
     ...text("client", s.client),
+    ...(s.guardrail_action === "allow" || s.guardrail_action === "block" || s.guardrail_action === "replace" ? { guardrail_action: s.guardrail_action } : {}),
     ...(s.response_cache === "hit" || s.response_cache === "miss" || s.response_cache === "bypass" ? { response_cache: s.response_cache } : {}),
     ...(Number.isInteger(slower) && slower > 0 ? { min_duration_ms: slower } : {}),
     ...(cost ? { min_cost: cost } : {}),

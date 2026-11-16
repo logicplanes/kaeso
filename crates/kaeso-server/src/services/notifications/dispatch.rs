@@ -137,6 +137,11 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::CustomProviderCreate
         | A::CustomProviderDelete
         | A::CustomProviderUpdate
+        | A::GuardrailCreate
+        | A::GuardrailDelete
+        | A::GuardrailSecretRotate
+        | A::GuardrailUpdate
+        | A::ProjectGuardrailsUpdate
         | A::InstanceInvite
         | A::InstanceSetup
         | A::InstanceUpdateCheck

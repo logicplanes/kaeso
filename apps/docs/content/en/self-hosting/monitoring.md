@@ -82,6 +82,8 @@ services:
 | `kaeso_model_requests_in_flight` | Model requests being served now, streams and realtime sessions included, until each ends |
 | `kaeso_tool_calls_total{source, status, error_type}` | Tool calls through the [MCP portal](../api/mcp.md) (`source="portal"`) and the Playground, by `status` (`ok`, `refused`, `error`) and `error_type`, empty for a call that worked. `upstream_auth`, `upstream_unreachable` and `timeout` point at the MCP server; `denied` and `limited` at the caller |
 | `kaeso_tool_call_duration_seconds{source, status}` | How long tool calls took |
+| `kaeso_guardrail_runs_total{phase, action}` | [Guardrail](../console/guardrails.md) checks by `phase` (`request`, `reply`) and `action` (`allow`, `block`, `replace`). A guardrail that failed counts under the action its On error setting chose |
+| `kaeso_guardrail_duration_seconds{phase}` | How long guardrails took to answer |
 | `kaeso_update_available{version}` | 1 with the newest release offered on the install's channel as `version` while it is newer than the running one, 0 with the running version while it isn't; absent while update checks are off ([new releases](upgrades.md#new-releases)) |
 
 ## Traces

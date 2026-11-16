@@ -37,6 +37,8 @@ export interface LogFilters {
   error_message?: string;
   /** The client app, as the log names it from the user agent. */
   client?: string;
+  /** An action a guardrail took on the request. */
+  guardrail_action?: "allow" | "block" | "replace";
 }
 
 /** Every endpoint the request log names, as the gateway's `endpoint` filter takes them. */
@@ -110,6 +112,7 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.error_message ? { error_message: f.error_message } : {}),
     // The URL may hold any text; the gateway refuses a client it doesn't know.
     ...(f.client ? { client: f.client as ClientApp } : {}),
+    ...(f.guardrail_action ? { guardrail_action: f.guardrail_action } : {}),
   };
 }
 

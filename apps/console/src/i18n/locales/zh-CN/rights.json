@@ -226,5 +226,9 @@
   "rights.webhooksView.name": "查看 Webhook",
   "rights.webhooksView.description": "查看组织的 Webhook、它们接收的内容以及最近的投递（从不显示机密）。",
   "rights.webhooksManage.name": "管理 Webhook",
-  "rights.webhooksManage.description": "添加、更改、测试和删除 Webhook，并轮换其签名密钥。"
+  "rights.webhooksManage.description": "添加、更改、测试和删除 Webhook，并轮换其签名密钥。",
+  "rights.guardrailsView.name": "查看防护规则",
+  "rights.guardrailsView.description": "查看组织的防护规则以及使用它们的项目（不含其机密）。",
+  "rights.guardrailsManage.name": "管理防护规则",
+  "rights.guardrailsManage.description": "添加、更改、测试和删除防护规则，并选择使用它们的项目。"
 }

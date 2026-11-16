@@ -403,6 +403,66 @@ pub async fn admit_follow_up(
     count_one(state, &applicable, at).await
 }
 
+// Asked before a request's guardrails run, so a caller over its request rate can't make Kaeso
+// call them; counts nothing, as the request is counted when it is admitted or blocked.
+pub async fn within_request_rates(
+    state: &AppState,
+    caller: &Caller,
+    at: OffsetDateTime,
+) -> Result<(), Refusal> {
+    let all = match project_limits(state, caller.project_id).await {
+        Ok(l) => l,
+        Err(e) => {
+            tracing::warn!(error = %e, "limits unavailable; the request passes unchecked");
+            metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "limits").increment(1);
+            return Ok(());
+        }
+    };
+    let applicable: Vec<&Limit> = kaeso_core::limits::applicable_to_follow_ups(
+        &all,
+        caller.project_id,
+        member_of(caller),
+        caller.key_id,
+        None,
+    )
+    .into_iter()
+    .filter(|l| l.enforced())
+    .collect();
+    if applicable.is_empty() {
+        return Ok(());
+    }
+    let now = at.unix_timestamp();
+    let mut pipe = redis::pipe();
+    for l in &applicable {
+        pipe.cmd("HGETALL").arg(state.valkey.key(&l.counter(at)));
+    }
+    let mut conn = state.valkey.conn();
+    let windows: Vec<HashMap<String, i64>> =
+        match tokio::time::timeout(VALKEY_DEADLINE, pipe.query_async(&mut conn)).await {
+            Ok(Ok(w)) => w,
+            Ok(Err(_)) | Err(_) => {
+                tracing::warn!("rate counters unavailable; the request passes unchecked");
+                metrics::counter!(crate::metrics::FAIL_OPEN, "reason" => "valkey").increment(1);
+                return Ok(());
+            }
+        };
+    let cutoff = now - 60;
+    for (l, window) in applicable.iter().zip(&windows) {
+        let live: Vec<(i64, i64)> = window
+            .iter()
+            .filter_map(|(s, n)| s.parse::<i64>().ok().map(|s| (s, *n)))
+            .filter(|(s, _)| *s > cutoff)
+            .collect();
+        let used: i64 = live.iter().map(|(_, n)| n).sum();
+        if used >= l.units() {
+            let oldest = live.iter().map(|(s, _)| *s).min().unwrap_or(now);
+            metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
+            return Err(refusal(l, at, Why::Over(oldest + 60 - now)));
+        }
+    }
+    Ok(())
+}
+
 async fn count_one(
     state: &AppState,
     applicable: &[&Limit],

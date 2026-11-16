@@ -1284,6 +1284,8 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             cost_known: true,
             cost_basis: String::new(),
             tags: Vec::new(),
+            guardrails: String::new(),
+            guardrail_actions: Vec::new(),
         },
         ContentRow {
             request_id: id,
@@ -1382,14 +1384,14 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(text.starts_with("id,started_at,"));
     assert!(
         text.lines().next().unwrap().ends_with(
-            ",source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version"
+            ",source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version,guardrails"
         ),
         "{text}"
     );
     assert_eq!(text.lines().count(), 2501);
     assert!(
         text.lines().skip(1).all(|l| l.ends_with(
-            ",\"api\",180,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\",\"\",\"other\",\"\""
+            ",\"api\",180,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\",\"\",\"other\",\"\",\"\""
         )),
         "the overhead, the breakpoints, the upload and the response cache are exported, and a stream's processing time is empty for other requests"
     );
@@ -2790,7 +2792,7 @@ async fn kaeso_tags_label_a_request_in_the_log_its_filter_and_its_export() {
         text.lines()
             .nth(1)
             .unwrap()
-            .ends_with(",\"eval:run_7.b search\",\"\",\"\""),
+            .ends_with(",\"eval:run_7.b search\",\"\",\"\",\"\""),
         "{text}"
     );
 }

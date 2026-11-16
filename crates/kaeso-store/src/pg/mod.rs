@@ -13,6 +13,7 @@ pub mod avatars;
 pub mod catalogue;
 pub mod credentials;
 pub mod custom_providers;
+pub mod guardrails;
 pub mod image_generations;
 pub mod instance;
 pub mod invites;

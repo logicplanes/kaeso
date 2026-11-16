@@ -319,6 +319,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         video: None,
         generation: None,
         content_type: None,
+        guardrails: Vec::new(),
     }
 }
 
@@ -348,6 +349,7 @@ pub enum Stage {
     KeyRefused,
     Unserved(String),
     Reply,
+    Guardrail,
     Shutdown,
 }
 
@@ -442,6 +444,7 @@ pub async fn serve_with(
     match done {
         Ok(Done::Complete(mut resp, status)) => {
             rec.time(&mut resp);
+            stamp_guardrails(&mut resp, &rec.outcome().guardrails);
             let outcome = rec.outcome();
             // The start of a video job or an image generation is billed when the job ends.
             if (outcome.source == super::hooks::Source::Playground || outcome.sees_cost)
@@ -468,6 +471,7 @@ pub async fn serve_with(
                     .insert(response_cache::HEADER, v.header());
             }
             rec.time(&mut resp);
+            stamp_guardrails(&mut resp, &rec.outcome().guardrails);
             Box::pin(rec.fail(failure.logged(), resp.status().as_u16())).await;
             resp
         }
@@ -1134,21 +1138,6 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     )
     .await
     .map_err(|e| Failure::new(e, Stage::Catalogue))?;
-    let sh = Shared {
-        ingress,
-        kind,
-        video: video.as_ref(),
-        generation: generation.is_some(),
-        headers: &headers,
-        caller: &caller,
-        models: &models,
-        stream,
-        keep_content,
-        request_bytes,
-        decoded,
-        logged,
-        timeout,
-    };
     let target = match &alias {
         Some(a) => Resolved::Alias(a),
         None => models
@@ -1164,17 +1153,38 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 ),
             })?,
     };
+    if let Resolved::Model(entry, _) = &target
+        && !models
+            .access(caller.key_id, caller.user_id, caller.service_account_id)
+            .allows(entry.id)
+    {
+        return Err(Failure::new(
+            no_such_model(req.model()),
+            Stage::ModelAccess(req.model().to_owned()),
+        ));
+    }
+    let guards = Box::pin(guard_request(
+        state, rec, &caller, source, ingress, &mut req,
+    ))
+    .await?;
+    let sh = Shared {
+        ingress,
+        kind,
+        video: video.as_ref(),
+        generation: generation.is_some(),
+        headers: &headers,
+        caller: &caller,
+        models: &models,
+        stream,
+        keep_content,
+        request_bytes,
+        decoded,
+        logged,
+        timeout,
+        guards: guards.as_ref(),
+    };
     match target {
         Resolved::Model(entry, _) => {
-            if !models
-                .access(caller.key_id, caller.user_id, caller.service_account_id)
-                .allows(entry.id)
-            {
-                return Err(Failure::new(
-                    no_such_model(req.model()),
-                    Stage::ModelAccess(req.model().to_owned()),
-                ));
-            }
             let app_req = Arc::new(req.clone());
             // Boxed so every future around a request holds a pointer, not the attempt's own
             // state: the request's futures are moved whole each time one is wrapped.
@@ -1221,6 +1231,98 @@ async fn preload(state: &AppState, project: Uuid) {
     .await;
 }
 
+// The request phase: the project's guardrails see the decoded request once, before the response
+// cache and the first step, so a blocked prompt is never answered and every step of an alias
+// gets the checked request. Only chat requests are checked.
+async fn guard_request(
+    state: &AppState,
+    rec: &mut Recording,
+    caller: &Caller,
+    source: Source,
+    ingress: DialectId,
+    req: &mut Request,
+) -> Result<Option<Guards>, Failure> {
+    let Request::Generate(g) = req else {
+        return Ok(None);
+    };
+    let armed = crate::services::guardrails::of_project(state, caller.project_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(error = %e, "cannot load a project's guardrails");
+            Failure::new(crate::services::guardrails::unloaded(), Stage::Guardrail)
+        })?;
+    if armed.is_empty() {
+        return Ok(None);
+    }
+    let now = state.clock.now();
+    crate::services::limits::within_request_rates(state, caller, now)
+        .await
+        .map_err(|r| Failure::new(limited(r), Stage::Limits))?;
+    let ctx = crate::services::guardrails::Context {
+        request_id: rec.outcome().request_id.to_string(),
+        organization: OrgId::from_uuid(caller.org_id).to_string(),
+        project: ProjectId::from_uuid(caller.project_id).to_string(),
+        key: caller.key_id.map(|k| ApiKeyId::from_uuid(k).to_string()),
+        member: caller.user_id.map(|u| UserId::from_uuid(u).to_string()),
+        service_account: caller
+            .service_account_id
+            .map(|s| ServiceAccountId::from_uuid(s).to_string()),
+        model: g.model.clone(),
+        format: ingress.as_str(),
+        source: source.as_str(),
+    };
+    let mut runs = Vec::new();
+    let checked = Box::pin(crate::services::guardrails::check_request(
+        state, &armed, &ctx, g, &mut runs,
+    ))
+    .await;
+    rec.outcome().guardrails = runs;
+    if let Err(e) = checked {
+        // A blocked request reached no provider; it still counts against the request rates.
+        let _ = crate::services::limits::admit_follow_up(state, caller, None, now).await;
+        return Err(Failure::new(e, Stage::Guardrail));
+    }
+    Ok(Some(Guards { armed, ctx }))
+}
+
+// The reply phase, on a whole reply: the guardrails that check replies see it before it is
+// encoded for the app.
+async fn guard_reply(
+    state: &AppState,
+    rec: &mut Recording,
+    sh: &Shared<'_>,
+    asked: &Request,
+    reply: &mut Reply,
+    stream: bool,
+) -> Result<(), KppError> {
+    let (Some(guards), Request::Generate(g), Reply::Generate(r)) = (sh.guards, asked, reply) else {
+        return Ok(());
+    };
+    if !guards.armed.checks_replies(stream) {
+        return Ok(());
+    }
+    let mut runs = std::mem::take(&mut rec.outcome().guardrails);
+    let checked = Box::pin(crate::services::guardrails::check_reply(
+        state,
+        &guards.armed,
+        &guards.ctx,
+        g,
+        r,
+        stream,
+        &mut runs,
+    ))
+    .await;
+    rec.outcome().guardrails = runs;
+    checked
+}
+
+fn stamp_guardrails(resp: &mut Response, runs: &[crate::services::guardrails::Run]) {
+    if let Some(v) = crate::services::guardrails::header_value(runs) {
+        resp.headers_mut()
+            .insert(crate::services::guardrails::HEADER, v);
+    }
+}
+
 #[derive(Clone, Copy)]
 struct Shared<'a> {
     ingress: DialectId,
@@ -1236,6 +1338,13 @@ struct Shared<'a> {
     decoded: u64,
     logged: u64,
     timeout: Option<u32>,
+    guards: Option<&'a Guards>,
+}
+
+// A project's guardrails and what they are told about the request, for the reply phase.
+struct Guards {
+    armed: Arc<crate::services::guardrails::Armed>,
+    ctx: crate::services::guardrails::Context,
 }
 
 impl Shared<'_> {
@@ -1856,10 +1965,21 @@ async fn attempt(
     };
     rec.keep_in_cache = match cached {
         Consulted::Hit(stored) => {
+            let mut stored = *stored;
+            Box::pin(guard_reply(
+                state,
+                rec,
+                sh,
+                &app_req,
+                &mut stored.reply,
+                false,
+            ))
+            .await
+            .map_err(fail(Stage::Guardrail))?;
             let encode_ctx = EncodeCtx::for_request(Arc::clone(&app_req)).with_created_at(
                 u64::try_from(rec.outcome().started_at.unix_timestamp()).unwrap_or(0),
             );
-            return replay(state, rec, *stored, &encode_ctx, carry, &served)
+            return replay(state, rec, stored, &encode_ctx, carry, &served)
                 .await
                 .map_err(fail(Stage::Reply));
         }
@@ -2064,12 +2184,51 @@ async fn attempt(
                 }
                 stream::Gathered::Broken(err) => fail(Stage::Reply)(err),
             })?;
+            let mut reply = reply;
+            if let Err(e) =
+                Box::pin(guard_reply(state, rec, sh, &started_req, &mut reply, false)).await
+            {
+                record_usage(rec, &reply, counter).await;
+                return Err(fail(Stage::Guardrail)(e));
+            }
             let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
             reply_with(state, rec, reply, out, counter, carry, &served)
                 .await
                 .map_err(fail(Stage::Reply))
         }
         ResponseBody::Stream(chunks) if success => {
+            let chunks = if kind == RequestKind::Generate
+                && sh.guards.is_some_and(|g| g.armed.checks_replies(true))
+            {
+                let max = state.config.body_limits.provider_response.as_usize();
+                let held = stream::hold(chunks, max).await.map_err(|e| {
+                    count_upstream_error(transport_kind(&e), provider);
+                    fail(Stage::Upstream)(upstream_error(&e))
+                })?;
+                let decoder =
+                    dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
+                let gathered = stream::gather(
+                    kaeso_upstream::ByteStream::replay(held.clone()),
+                    decoder,
+                    plan.dialect,
+                    max,
+                )
+                .await;
+                // A stream that ends in an error or breaks off goes to the app as it came, and
+                // the app sees its end as without guardrails.
+                if let Ok(mut reply) = gathered
+                    && let Err(e) =
+                        Box::pin(guard_reply(state, rec, sh, &started_req, &mut reply, true)).await
+                {
+                    if let Reply::Generate(r) = &reply {
+                        rec.outcome().usage = Some(r.usage.clone());
+                    }
+                    return Err(fail(Stage::Guardrail)(e));
+                }
+                kaeso_upstream::ByteStream::replay(held)
+            } else {
+                chunks
+            };
             let decoder =
                 dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
             let encoder =
@@ -2078,6 +2237,7 @@ async fn attempt(
             let taken = stream::Taken::default();
             let timing = rec.timing();
             let verdict = rec.outcome().response_cache;
+            let checked = crate::services::guardrails::header_value(&rec.outcome().guardrails);
             let task_rec = Recording {
                 state: rec.state.clone(),
                 sink: rec.sink.clone(),
@@ -2149,6 +2309,9 @@ async fn attempt(
             h.insert(TIMING_HEADER, timing);
             if let Some(v) = verdict {
                 h.insert(response_cache::HEADER, v.header());
+            }
+            if let Some(v) = checked {
+                h.insert(crate::services::guardrails::HEADER, v);
             }
             stamp(&mut resp, &served);
             Ok(Done::Streaming(resp))
@@ -2323,6 +2486,12 @@ async fn attempt(
                     .await
                     .map_err(fail(Stage::Upstream))?;
             }
+            if let Err(e) =
+                Box::pin(guard_reply(state, rec, sh, &started_req, &mut reply, false)).await
+            {
+                record_usage(rec, &reply, counter).await;
+                return Err(fail(Stage::Guardrail)(e));
+            }
             let (reply, out, media_type) = off_thread(size, move || {
                 let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
                 let media_type = dispatch::response_media_type(ingress, &reply, &encode_ctx);
@@ -2420,6 +2589,7 @@ fn classify(f: &Failure) -> Next {
         | Stage::AmbiguousModel(_)
         | Stage::ModelAccess(_)
         | Stage::Reply
+        | Stage::Guardrail
         | Stage::Shutdown => Next::Stop,
     }
 }

@@ -1,0 +1,232 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT g.id, g.org_id, g.name, g.url, g.timeout_ms, g.on_error, g.request_phase, g.reply_phase, g.streams, g.created_by_kind, g.created_by_id, g.created_at, g.updated_at, g.revision, g.secret_ciphertext, g.secret_nonce, g.secret_wrapped_key, g.secret_key_id FROM project_guardrails p JOIN guardrails g ON g.id = p.guardrail_id AND g.org_id = p.org_id WHERE p.project_id = $1 ORDER BY p.position",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "url",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "url"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "timeout_ms",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "timeout_ms"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "on_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "on_error"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "request_phase",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "request_phase"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "reply_phase",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "reply_phase"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "streams",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "streams"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "created_by_kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "created_by_kind"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "created_by_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "created_by_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "updated_at"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "revision",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "revision"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "secret_ciphertext",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "secret_ciphertext"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "secret_nonce",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "secret_nonce"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "secret_wrapped_key",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "secret_wrapped_key"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "secret_key_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "secret_key_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c32906fffe755d770a812a2a0a58e22600c1a58c989ba57e5b268a9a00011261"
+}

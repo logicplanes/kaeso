@@ -273,6 +273,14 @@ Das Gateway folgt außerdem keinen Weiterleitungen eines eigenen Anbieters und r
 
 Die Adresse eines Webhooks wählt ein Admin der Organisation, daher schützt das Gateway sie wie die eines MCP-Servers: Jede Verbindung wird nach der DNS-Auflösung geprüft, private, Loopback-, Link-local- und Cloud-Metadaten-Adressen werden abgelehnt, außer ein aufgeführtes Netz deckt sie ab, und Link-local- und Cloud-Metadaten-Adressen bleiben auch dann abgelehnt. Zustellungen gehen ohne den Proxy in `HTTPS_PROXY` und folgen keinen Weiterleitungen.
 
+### Guardrails
+
+| Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- |
+| `KAESO_GUARDRAILS_ALLOWED_NETWORKS`<br>`guardrails.allowed_networks` | text | — | Kommagetrennte private, Loopback- oder andere nicht öffentliche Netze, in denen [Guardrails](../console/guardrails.md) erreichbar sein dürfen, etwa `10.0.0.0/8`. Einfaches `http` erreicht nur diese. |
+
+Die Adresse einer Guardrail wählt ein Organisations-Admin, deshalb schützt das Gateway sie wie die eines MCP-Servers: Jede Verbindung wird nach der DNS-Auflösung geprüft, private, Loopback-, Link-Local- und Cloud-Metadaten-Adressen werden abgelehnt, sofern `KAESO_GUARDRAILS_ALLOWED_NETWORKS` ihr Netz nicht nennt, und Weiterleitungen werden nie befolgt.
+
 ### Streams an Apps
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |

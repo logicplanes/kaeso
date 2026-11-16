@@ -248,5 +248,22 @@
   "format.audit.action.webhookUpdate": "已更改 Webhook",
   "format.audit.action.webhookSecretRotate": "已轮换 Webhook 密钥",
   "format.audit.action.webhookDelete": "已删除 Webhook",
-  "format.targetKind.webhook": "网络钩子"
+  "format.targetKind.webhook": "网络钩子",
+  "format.audit.action.guardrailCreate": "已添加防护规则",
+  "format.audit.action.guardrailDelete": "已删除防护规则",
+  "format.audit.action.guardrailSecretRotate": "已替换防护规则的签名密钥",
+  "format.audit.action.guardrailUpdate": "已更改防护规则",
+  "format.audit.action.projectGuardrailsUpdate": "已更改项目的防护规则",
+  "format.audit.kind.guardrail": "防护规则",
+  "format.guardrail.allow": "已放行",
+  "format.guardrail.block": "已拦截",
+  "format.guardrail.invalid": "回答中没有判定",
+  "format.guardrail.refused": "地址不被允许",
+  "format.guardrail.replace": "已改写",
+  "format.guardrail.reply": "回复",
+  "format.guardrail.request": "请求",
+  "format.guardrail.status": "返回了错误",
+  "format.guardrail.timeout": "未及时回答",
+  "format.guardrail.unreachable": "无法连接",
+  "format.targetKind.guardrail": "防护规则"
 }

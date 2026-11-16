@@ -248,5 +248,22 @@
   "format.audit.action.webhookUpdate": "Webhook geändert",
   "format.audit.action.webhookSecretRotate": "Webhook-Geheimnis rotiert",
   "format.audit.action.webhookDelete": "Webhook gelöscht",
-  "format.targetKind.webhook": "Webhook"
+  "format.targetKind.webhook": "Webhook",
+  "format.audit.action.guardrailCreate": "Guardrail hinzugefügt",
+  "format.audit.action.guardrailDelete": "Guardrail gelöscht",
+  "format.audit.action.guardrailSecretRotate": "Signatur-Secret einer Guardrail ersetzt",
+  "format.audit.action.guardrailUpdate": "Guardrail geändert",
+  "format.audit.action.projectGuardrailsUpdate": "Guardrails des Projekts geändert",
+  "format.audit.kind.guardrail": "Guardrails",
+  "format.guardrail.allow": "Durchgelassen",
+  "format.guardrail.block": "Blockiert",
+  "format.guardrail.invalid": "Kein Urteil in der Antwort",
+  "format.guardrail.refused": "Adresse nicht erlaubt",
+  "format.guardrail.replace": "Umgeschrieben",
+  "format.guardrail.reply": "Antwort",
+  "format.guardrail.request": "Anfrage",
+  "format.guardrail.status": "Mit einem Fehler geantwortet",
+  "format.guardrail.timeout": "Keine Antwort in der Zeit",
+  "format.guardrail.unreachable": "Nicht erreichbar",
+  "format.targetKind.guardrail": "Guardrail"
 }

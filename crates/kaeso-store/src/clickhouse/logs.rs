@@ -70,6 +70,10 @@ pub struct LogRow {
     pub cost_basis: String,
     /// The app's own tags from `kaeso-tags`, in the order it sent them.
     pub tags: Vec<String>,
+    /// The guardrails that checked the request and its reply, as JSON; empty without any.
+    pub guardrails: String,
+    /// The actions of those guardrails, so the log can filter by them.
+    pub guardrail_actions: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]
@@ -152,6 +156,8 @@ pub struct Filter {
     pub error_message: Option<String>,
     /// The client app, as [`client_of`] names it from the user agent.
     pub client: Option<String>,
+    /// An action a guardrail took on the request: `allow`, `block` or `replace`.
+    pub guardrail_action: Option<String>,
 }
 
 /// User-agent prefixes and the client app each names, compared without case. An entry's
@@ -363,6 +369,10 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(t) = &f.tag {
         sql.push_str(" AND has(tags, ?)");
         binds.push(Bind::Str(t.clone()));
+    }
+    if let Some(a) = &f.guardrail_action {
+        sql.push_str(" AND has(guardrail_actions, ?)");
+        binds.push(Bind::Str(a.clone()));
     }
     if let Some(m) = &f.error_message {
         sql.push_str(" AND positionCaseInsensitiveUTF8(error_message, ?) > 0");

@@ -273,6 +273,14 @@ The gateway also follows no redirects from a custom provider, and calls it witho
 
 An organization admin chooses a webhook's address, so the gateway guards it like an MCP server's: every connection is checked after DNS resolution, private, loopback, link-local and cloud metadata addresses are refused unless a listed network covers them, and link-local and cloud metadata addresses stay refused even then. Deliveries go without the proxy in `HTTPS_PROXY` and follow no redirects.
 
+### Guardrails
+
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_GUARDRAILS_ALLOWED_NETWORKS`<br>`guardrails.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks [guardrails](../console/guardrails.md) may be reached on, such as `10.0.0.0/8`. Plain `http` reaches only these. |
+
+An organization admin chooses a guardrail's address, so the gateway guards it like an MCP server's: every connection is checked after DNS resolution, private, loopback, link-local and cloud metadata addresses are refused unless `KAESO_GUARDRAILS_ALLOWED_NETWORKS` lists their network, and redirects are never followed.
+
 ### Streams to apps
 
 | Variable<br>TOML key | Type | Default | What it does |

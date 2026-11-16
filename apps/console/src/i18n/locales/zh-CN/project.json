@@ -284,5 +284,18 @@
   "project.retries.saved": "重试：{times}",
   "project.retries.title": "重试",
   "project.retries.tryAgain": "重试",
-  "project.retries.tryAgainHint": "在连接中断、返回 5xx 或过载之后。"
+  "project.retries.tryAgainHint": "在连接中断、返回 5xx 或过载之后。",
+  "project.guardrails.addFirst": "请先在“组织设置 › 防护规则”中添加一条。",
+  "project.guardrails.allowsOnError": "出错时放行请求",
+  "project.guardrails.blocksOnError": "出错时拒绝请求",
+  "project.guardrails.choose": "选择防护规则",
+  "project.guardrails.chooseHint": "请求会从上到下依次经过所选的防护规则。",
+  "project.guardrails.down": "下移 {name}",
+  "project.guardrails.hint": "组织对此项目聊天请求的检查，按顺序执行。",
+  "project.guardrails.none": "没有防护规则",
+  "project.guardrails.noneHint": "请求不经检查直接发送给模型。",
+  "project.guardrails.position": "第 {n} 条，共 {count} 条",
+  "project.guardrails.saved": "防护规则已保存",
+  "project.guardrails.title": "防护规则",
+  "project.guardrails.up": "上移 {name}"
 }

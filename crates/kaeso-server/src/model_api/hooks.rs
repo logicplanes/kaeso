@@ -200,6 +200,8 @@ pub struct Outcome {
     pub generation: Option<GenerationCall>,
     /// The media type of a whole reply that isn't JSON, such as speech's audio.
     pub content_type: Option<String>,
+    /// The guardrails that checked the request and its reply, in the order they ran.
+    pub guardrails: Vec<crate::services::guardrails::Run>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

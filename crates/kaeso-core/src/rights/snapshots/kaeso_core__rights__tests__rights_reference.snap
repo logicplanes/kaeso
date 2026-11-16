@@ -34,6 +34,8 @@ expression: rights_reference()
 | `security.sso.require` ⚠ | Security | Require SSO | Require the accounts this organization manages to sign in only through its SSO. |  | ✓ |  |
 | `security.2fa.require` | Security | Require two-factor | Require two-factor authentication for members. |  | ✓ |  |
 | `security.key_policy.manage` | Security | Set key lifetime | Set the organization's maximum key lifetime. |  |  |  |
+| `guardrails.view` | Security | View guardrails | See the organization's guardrails and the projects that use them (never their secrets). |  |  |  |
+| `guardrails.manage` ⚠ | Security | Manage guardrails | Add, change, test and delete guardrails, and choose the projects that use them. | `guardrails.view` | ✓ |  |
 | `platform_keys.view` | Keys | View platform keys | See the organization's platform keys (metadata). |  |  |  |
 | `platform_keys.create` ⚠ | Keys | Create platform keys | Create and rotate organization platform keys, which manage everything at org level. | `platform_keys.view` | ✓ |  |
 | `platform_keys.revoke` | Keys | Disable platform keys | Disable, enable or archive organization platform keys. | `platform_keys.view` |  |  |
@@ -136,6 +138,8 @@ expression: rights_reference()
 | `security.sso.require` | ✓ | ✓ |  |  |  |  |
 | `security.2fa.require` | ✓ | ✓ |  |  |  |  |
 | `security.key_policy.manage` | ✓ | ✓ |  |  |  |  |
+| `guardrails.view` | ✓ | ✓ |  | ✓ | ✓ |  |
+| `guardrails.manage` | ✓ | ✓ |  |  |  |  |
 | `platform_keys.view` | ✓ | ✓ |  |  | ✓ |  |
 | `platform_keys.create` | ✓ | ✓ |  |  |  |  |
 | `platform_keys.revoke` | ✓ | ✓ |  |  |  |  |
@@ -292,6 +296,8 @@ expression: rights_reference()
 | `security.sso.require` |  |  |  |  |
 | `security.2fa.require` |  |  | ✓ | ✓ |
 | `security.key_policy.manage` |  |  | ✓ | ✓ |
+| `guardrails.view` | ✓ | ✓ | ✓ | ✓ |
+| `guardrails.manage` |  |  | ✓ | ✓ |
 | `platform_keys.view` |  |  | ✓ | ✓ |
 | `platform_keys.create` |  |  | ✓ | ✓ |
 | `platform_keys.revoke` |  |  | ✓ | ✓ |

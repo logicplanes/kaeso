@@ -491,6 +491,7 @@ fn sensitive_rights_need_a_recent_sign_in() {
             "security.sso.manage",
             "security.sso.require",
             "security.2fa.require",
+            "guardrails.manage",
             "platform_keys.create",
             "logs.settings.manage",
             "logs.delete"

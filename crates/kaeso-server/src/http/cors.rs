@@ -12,7 +12,7 @@ pub const ALLOW_METHODS: &str = "GET, POST, DELETE";
 
 pub const MAX_AGE_SECONDS: &str = "7200";
 
-pub const EXPOSE_HEADERS: &str = "kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, server-timing, age, retry-after, retry-after-ms";
+pub const EXPOSE_HEADERS: &str = "kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, kaeso-guardrails, server-timing, age, retry-after, retry-after-ms";
 
 pub const ALLOWED_HEADERS: &[&str] = &[
     "accept",
