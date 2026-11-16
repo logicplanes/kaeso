@@ -175,6 +175,7 @@
   "account.agentCall": "{result} · {when} · {address}",
   "account.agentCallNoRight": "Ein Recht fehlt",
   "account.agentCallOk": "Erledigt",
+  "account.agentCallPlace": "{org} › {project}",
   "account.agentDetails": "Details",
   "account.agentFailed": "Dieser Agent konnte nicht geladen werden",
   "account.agentGone": "Dieser Agent wurde widerrufen oder existiert nicht.",
