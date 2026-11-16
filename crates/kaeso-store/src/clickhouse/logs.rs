@@ -142,6 +142,8 @@ pub struct Filter {
     pub endpoint: Option<String>,
     /// A decimal amount in USD, compared as a decimal, never as a float.
     pub min_cost: Option<String>,
+    /// The model or alias name exactly as the app sent it.
+    pub requested_model: Option<String>,
 }
 
 pub async fn search(
@@ -276,6 +278,10 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(c) = &f.min_cost {
         sql.push_str(" AND cost >= toDecimal128(?, 12)");
         binds.push(Bind::Str(c.clone()));
+    }
+    if let Some(m) = &f.requested_model {
+        sql.push_str(" AND requested_model = ?");
+        binds.push(Bind::Str(m.clone()));
     }
 }
 

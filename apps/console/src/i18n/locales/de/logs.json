@@ -284,5 +284,6 @@
   "logs.filter.alias": "Alias",
   "logs.filter.fellBack": "Zurückgefallen",
   "logs.filter.endpoint": "Endpunkt",
-  "logs.filter.minCost": "Kosten ab"
+  "logs.filter.minCost": "Kosten ab",
+  "logs.filter.requestedModel": "Angefragtes Modell"
 }

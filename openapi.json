@@ -15069,6 +15069,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "requested_model",
+            "in": "query",
+            "description": "Only requests that named this model or alias, exactly as the app sent it,\n`provider/model` included. Unlike `alias`, it also finds requests whose name\ndidn't resolve, such as an alias that was deleted.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -15342,6 +15351,15 @@
             "name": "min_cost",
             "in": "query",
             "description": "Only requests that cost at least this much, in USD, as a decimal string\nsuch as `0.5`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requested_model",
+            "in": "query",
+            "description": "Only requests that named this model or alias, exactly as the app sent it,\n`provider/model` included. Unlike `alias`, it also finds requests whose name\ndidn't resolve, such as an alias that was deleted.",
             "required": false,
             "schema": {
               "type": "string"

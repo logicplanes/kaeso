@@ -40,6 +40,7 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...text("alias", s.alias),
     ...(bool(s.fell_back) ? { fell_back: true } : {}),
     ...text("endpoint", s.endpoint),
+    ...text("requested_model", s.requested_model),
     ...(cost ? { min_cost: cost } : {}),
     ...text("log", s.log),
     ...(s.kind === "tools" ? { kind: "tools" as const } : {}),

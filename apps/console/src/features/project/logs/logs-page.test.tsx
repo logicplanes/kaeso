@@ -355,6 +355,26 @@ describe("LogsPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ alias: "fast", endpoint: "responses", min_cost: "0.1" }));
   });
 
+  it("finds the requests for a name the app sent, a deleted alias's too, and shows the name where no model answered", async () => {
+    signedIn();
+    projectData({ aliases: [alias()], models: [catalogueModel()] });
+    logsData({ rows: [logRow({ id: "req_gone", model: "", provider: "", requested_model: "old-name", status: 404, error_kind: "not_found" })] });
+    const { user, router } = await renderApp(projectPath("logs?requested_model=old-name"));
+
+    await waitFor(() => expect(lastQuery()).toMatchObject({ requested_model: "old-name" }));
+    const toolbar = screen.getByRole("toolbar", { name: "Filter requests" });
+    expect(within(toolbar).getByRole("group", { name: "Filter: Requested model" })).toHaveTextContent("old-name");
+    expect(await within(requestsTable()).findByText("old-name")).toBeInTheDocument();
+
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Requested model filter" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Requested model" }));
+    expect(await screen.findByRole("menuitemradio", { name: "fast" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitemradio", { name: "claude-sonnet-4-5" })).toBeInTheDocument();
+    await user.click(screen.getByRole("menuitemradio", { name: "anthropic/claude-sonnet-4-5" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ requested_model: "anthropic/claude-sonnet-4-5" }));
+  });
+
   it("ignores a cost in the URL that isn't an amount", async () => {
     signedIn();
     projectData();

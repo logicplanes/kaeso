@@ -64,6 +64,7 @@
   "logs.filter.minCost": "Cost at least",
   "logs.filter.notStreamed": "Not streamed",
   "logs.filter.providerFormat": "Provider format",
+  "logs.filter.requestedModel": "Requested model",
   "logs.filter.serviceAccount": "{name} (service account)",
   "logs.filter.source": "Source",
   "logs.filter.streamed": "Streamed",

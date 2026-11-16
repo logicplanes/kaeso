@@ -27,6 +27,8 @@ export interface LogFilters {
   endpoint?: string;
   /** USD, as a decimal string such as `0.5`. */
   min_cost?: string;
+  /** The model or alias name exactly as the app sent it. */
+  requested_model?: string;
 }
 
 /** Every endpoint the request log names, as the gateway's `endpoint` filter takes them. */
@@ -93,6 +95,7 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.fell_back ? { fell_back: true } : {}),
     ...(f.endpoint ? { endpoint: f.endpoint as LoggedEndpoint } : {}),
     ...(f.min_cost ? { min_cost: f.min_cost } : {}),
+    ...(f.requested_model ? { requested_model: f.requested_model } : {}),
   };
 }
 

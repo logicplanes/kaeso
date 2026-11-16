@@ -249,9 +249,10 @@ function ModelCell({ row, message, provider }: { row: LogView; message: LogMessa
   return (
     <span className="@container flex w-full min-w-0 items-center gap-8">
       {provider}
-      {row.model && (
-        <Text mono variant="small" truncate>
-          {row.model}
+      {/* A request that never reached a model shows the name the app sent. */}
+      {(row.model || row.requested_model) && (
+        <Text mono variant="small" truncate tone={row.model ? undefined : "secondary"}>
+          {row.model || row.requested_model}
         </Text>
       )}
       {row.error_kind && (
