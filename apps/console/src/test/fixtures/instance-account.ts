@@ -86,6 +86,7 @@ export function instanceUser(overrides: Partial<InstanceUserView> = {}): Instanc
     created_at: NOW,
     totp_enabled: false,
     managed_by: null,
+    last_signed_in_at: null,
     ...overrides,
   };
 }

@@ -132,6 +132,7 @@
   "instance.keptWithContent": "Metadaten {metadata} Tage, Inhalte {content} Tage aufbewahrt.",
   "instance.last30Days": "Letzte 30 Tage",
   "instance.last30DaysHint": "Anfragen, Token und Kosten über alle Projekte und die gespeicherten Protokolle",
+  "instance.lastSignIn": "Letzte Anmeldung",
   "instance.lastSync": "Letzter Sync",
   "instance.logBuffer": "Puffer für Anfrageprotokolle",
   "instance.logEntries": "Einträge im Anfrageprotokoll",

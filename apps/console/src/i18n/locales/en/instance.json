@@ -140,6 +140,7 @@
   "instance.keptWithContent": "Metadata kept {metadata} days, content {content} days.",
   "instance.last30Days": "Last 30 days",
   "instance.last30DaysHint": "Requests, tokens and cost across its projects, and the logs it stores",
+  "instance.lastSignIn": "Last sign-in",
   "instance.lastSync": "Last sync",
   "instance.latestRates": "Latest rates",
   "instance.linkedApp": "The install's OAuth app",

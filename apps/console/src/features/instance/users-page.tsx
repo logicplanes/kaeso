@@ -26,7 +26,7 @@ import {
   col,
   icons,
 } from "@logicplanes/kaeso-ui";
-import { formatDate } from "@logicplanes/kaeso-ui/format";
+import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { InstanceUserView } from "~/api/generated/types";
@@ -86,6 +86,11 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
         ),
         col.text({ id: "twoFactor", header: t("instance.twoFactor", "Two-factor"), size: 104, priority: 4 }, (u: InstanceUserView) =>
           u.totp_enabled ? t("common.on", "On") : t("common.off", "Off"),
+        ),
+        col.custom(
+          { id: "signedIn", header: t("instance.lastSignIn", "Last sign-in"), size: 128, priority: 2 },
+          (u: InstanceUserView) => u.last_signed_in_at ?? "",
+          (v: string) => (v ? <time dateTime={v}>{formatRelative(v)}</time> : <Text tone="tertiary">{t("common.never", "Never")}</Text>),
         ),
         col.custom(
           { id: "created", header: t("common.created", "Created"), size: CREATED_WIDTH[lang], priority: 3 },
@@ -275,6 +280,7 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
           { label: t("instance.state", "State"), value: userStateLabel(u.state) },
           { label: t("instance.twoFactor", "Two-factor"), value: u.totp_enabled ? t("common.on", "On") : t("common.off", "Off") },
           { label: t("common.created", "Created"), value: formatDate(u.created_at) },
+          { label: t("instance.lastSignIn", "Last sign-in"), value: u.last_signed_in_at ? formatRelative(u.last_signed_in_at) : t("common.never", "Never") },
           { label: t("instance.userId", "User id"), value: u.id, copy: u.id, mono: true },
         ]}
       />

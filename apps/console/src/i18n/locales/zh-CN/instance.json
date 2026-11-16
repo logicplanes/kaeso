@@ -132,6 +132,7 @@
   "instance.keptWithContent": "元数据保留 {metadata} 天，内容保留 {content} 天。",
   "instance.last30Days": "最近 30 天",
   "instance.last30DaysHint": "所有项目的请求、Token 和费用，以及存储的日志",
+  "instance.lastSignIn": "上次登录",
   "instance.lastSync": "上次同步",
   "instance.logBuffer": "请求日志缓冲区",
   "instance.logEntries": "请求日志条目",
