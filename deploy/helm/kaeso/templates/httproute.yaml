@@ -1,0 +1,46 @@
+{{- if .Values.httpRoute.enabled }}
+{{- if not .Values.httpRoute.parentRefs }}
+{{- fail "set httpRoute.parentRefs to the Gateway that serves Kaeso" }}
+{{- end }}
+{{- $fullname := include "kaeso.fullname" . }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $fullname }}
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+  {{- with .Values.httpRoute.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    {{- toYaml .Values.httpRoute.parentRefs | nindent 4 }}
+  hostnames:
+    {{- if .Values.httpRoute.hostnames }}
+    {{- toYaml .Values.httpRoute.hostnames | nindent 4 }}
+    {{- else }}
+    - {{ include "kaeso.host" . | quote }}
+    {{- end }}
+  rules:
+    - matches:
+        {{- range include "kaeso.gatewayPaths" . | fromJsonArray }}
+        - path:
+            type: PathPrefix
+            value: {{ . }}
+        {{- end }}
+      backendRefs:
+        - name: {{ $fullname }}-gateway
+          port: 8080
+      {{- with .Values.httpRoute.timeouts }}
+      timeouts:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ $fullname }}-console
+          port: 3000
+{{- end }}

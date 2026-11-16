@@ -440,5 +440,10 @@
   "instance.whatIsDeletedHint": "Projekte, Schlüssel, Anbieter-Schlüssel, Einstellungen, Nutzung und Protokolle, endgültig.",
   "instance.wholeDays": "Ganze Tage eingeben, mindestens 1",
   "instance.withContent": "Mit Inhalten",
-  "instance.youreOwner": "Sie sind jetzt Inhaber"
+  "instance.youreOwner": "Sie sind jetzt Inhaber",
+  "instance.updates.helmInstall": "Diese Installation läuft auf Kubernetes; aktualisieren Sie sie mit Helm.",
+  "instance.updates.helmMajor": "Kaeso {version} ist eine neue Hauptversion: Lesen Sie die Upgrade-Anleitung und aktualisieren Sie dann mit Helm.",
+  "instance.updates.helmSteps": "Ein kommendes Release verlangt eigene Schritte: Folgen Sie der Upgrade-Anleitung und aktualisieren Sie dann mit Helm.",
+  "instance.updates.helmTitle": "Mit Helm aktualisieren, mit Name und Namespace Ihres Releases",
+  "instance.updates.withHelm": "Mit Helm aktualisieren"
 }

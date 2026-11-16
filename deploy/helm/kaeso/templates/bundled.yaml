@@ -1,0 +1,253 @@
+{{- if .Values.bundled.enabled }}
+{{- $fullname := include "kaeso.fullname" . }}
+{{- $b := .Values.bundled }}
+# For trying Kaeso out: one copy of each store, as the Compose install runs them. Not for
+# production: no replicas, no backups. They run as root with the capabilities Compose gives them,
+# so a namespace that enforces the restricted Pod Security Standard refuses them.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullname }}-bundled
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+data:
+  postgres-init.sh: |
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" -v password="$KAESO_POSTGRES_PASSWORD" <<'SQL'
+    CREATE ROLE kaeso LOGIN PASSWORD :'password';
+    CREATE DATABASE kaeso OWNER kaeso;
+    SQL
+  clickhouse.xml: |
+    <clickhouse>
+        <!-- Kaeso reads none of ClickHouse's own diagnostics tables. -->
+        <asynchronous_metric_log remove="1"/>
+        <metric_log remove="1"/>
+        <part_log remove="1"/>
+        <processors_profile_log remove="1"/>
+        <query_metric_log remove="1"/>
+        <query_thread_log remove="1"/>
+        <query_views_log remove="1"/>
+        <trace_log remove="1"/>
+        <text_log remove="1"/>
+        <latency_log remove="1"/>
+        <session_log remove="1"/>
+        <opentelemetry_span_log remove="1"/>
+        <asynchronous_insert_log remove="1"/>
+        <background_schedule_pool_log remove="1"/>
+        <blob_storage_log remove="1"/>
+        <query_log>
+            <ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
+        </query_log>
+        <error_log>
+            <ttl>event_date + INTERVAL 30 DAY DELETE</ttl>
+        </error_log>
+    </clickhouse>
+{{- range $store := list "postgres" "clickhouse" "valkey" }}
+{{- $port := get (dict "postgres" 5432 "clickhouse" 8123 "valkey" 6379) $store }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-{{ $store }}
+  labels:
+    {{- include "kaeso.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $store }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "kaeso.selector" (dict "root" $ "component" $store) | nindent 4 }}
+  ports:
+    - name: {{ $store }}
+      port: {{ $port }}
+      targetPort: {{ $port }}
+      protocol: TCP
+{{- end }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fullname }}-postgres
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  serviceName: {{ $fullname }}-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "kaeso.selector" (dict "root" . "component" "postgres") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaeso.selector" (dict "root" . "component" "postgres") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: {{ $b.postgres.image }}
+          # A quarter of the memory limit for shared buffers, three quarters as the planner's
+          # cache estimate, as PostgreSQL advises.
+          command:
+            - sh
+            - -c
+            - |
+              limit=$(cat /sys/fs/cgroup/memory.max 2>/dev/null || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null)
+              case "$limit" in ''|*[!0-9]*) limit=2147483648 ;; esac
+              [ "$limit" -le 1099511627776 ] || limit=2147483648
+              mb=$((limit / 1048576))
+              exec docker-entrypoint.sh postgres -c shared_buffers=$((mb / 4))MB -c effective_cache_size=$((mb * 3 / 4))MB
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                {{- include "kaeso.generatedRef" (dict "root" . "key" "postgres-superuser-password") | nindent 16 }}
+            - name: KAESO_POSTGRES_PASSWORD
+              valueFrom:
+                {{- include "kaeso.generatedRef" (dict "root" . "key" "postgres-password") | nindent 16 }}
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-h", "127.0.0.1", "-U", "kaeso", "-d", "kaeso"]
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml $b.postgres.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d/kaeso.sh
+              subPath: postgres-init.sh
+      volumes:
+        - name: init
+          configMap:
+            name: {{ $fullname }}-bundled
+  {{- include "kaeso.bundledClaim" (dict "root" . "size" $b.postgres.storage) | nindent 2 }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fullname }}-clickhouse
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: clickhouse
+spec:
+  serviceName: {{ $fullname }}-clickhouse
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "kaeso.selector" (dict "root" . "component" "clickhouse") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaeso.selector" (dict "root" . "component" "clickhouse") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: clickhouse
+          image: {{ $b.clickhouse.image }}
+          env:
+            - name: CLICKHOUSE_USER
+              value: kaeso
+            - name: CLICKHOUSE_DB
+              value: kaeso
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                {{- include "kaeso.generatedRef" (dict "root" . "key" "clickhouse-password") | nindent 16 }}
+          ports:
+            - containerPort: 8123
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml $b.clickhouse.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN, DAC_OVERRIDE, FOWNER, KILL, SETGID, SETUID]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/clickhouse
+            - name: config
+              mountPath: /etc/clickhouse-server/config.d/kaeso.xml
+              subPath: clickhouse.xml
+      volumes:
+        - name: config
+          configMap:
+            name: {{ $fullname }}-bundled
+  {{- include "kaeso.bundledClaim" (dict "root" . "size" $b.clickhouse.storage) | nindent 2 }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fullname }}-valkey
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: valkey
+spec:
+  serviceName: {{ $fullname }}-valkey
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "kaeso.selector" (dict "root" . "component" "valkey") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaeso.selector" (dict "root" . "component" "valkey") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      # The image's own valkey user.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: valkey
+          image: {{ $b.valkey.image }}
+          args:
+            - valkey-server
+            - --appendonly
+            - "yes"
+            - --requirepass
+            - $(VALKEYCLI_AUTH)
+            - --maxmemory
+            - {{ $b.valkey.maxmemory | quote }}
+            - --maxmemory-policy
+            - noeviction
+          env:
+            - name: VALKEYCLI_AUTH
+              valueFrom:
+                {{- include "kaeso.generatedRef" (dict "root" . "key" "valkey-password") | nindent 16 }}
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "valkey-cli ping | grep -qx PONG"]
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml $b.valkey.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  {{- include "kaeso.bundledClaim" (dict "root" . "size" $b.valkey.storage) | nindent 2 }}
+{{- end }}

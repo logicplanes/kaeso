@@ -638,6 +638,73 @@ jobs:
           done
           exit "$failed"
 
+  chart:
+    name: Helm chart
+    needs: [validate, tag, manifest]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      CHART: ghcr.io/logicplanes/charts/kaeso
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: v${{ needs.validate.outputs.version }}
+          persist-credentials: false
+      - name: Install Helm
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 8 --retry-delay 15 --retry-all-errors -o "$RUNNER_TEMP/helm.tar.gz" https://get.helm.sh/helm-v4.3.2-linux-amd64.tar.gz
+          echo "d1c0278d46beab79582d7e50f5b3dc206944ba8e577cde618513fd07daa53983  $RUNNER_TEMP/helm.tar.gz" | sha256sum --check --quiet
+          tar -xzf "$RUNNER_TEMP/helm.tar.gz" -C "$RUNNER_TEMP" linux-amd64/helm
+          echo "$RUNNER_TEMP/linux-amd64" >> "$GITHUB_PATH"
+      # The images it names are out: this job runs after their manifests.
+      - id: push
+        name: Package and push the chart next to the images
+        env:
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          helm lint deploy/helm/kaeso --strict --set publicUrl=https://kaeso.example.com --set bundled.enabled=true
+          helm package deploy/helm/kaeso --destination "$RUNNER_TEMP/chart"
+          echo "$TOKEN" | helm registry login ghcr.io --username "$ACTOR" --password-stdin
+          out="$(helm push "$RUNNER_TEMP/chart/kaeso-$VERSION.tgz" oci://ghcr.io/logicplanes/charts 2>&1)"
+          echo "$out"
+          digest="$(grep -oE 'sha256:[0-9a-f]{64}' <<< "$out" | tail -1)"
+          if [[ -z "$digest" ]]; then
+            echo "::error::helm push printed no digest for the chart, so it can't be attested."
+            exit 1
+          fi
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Published \`oci://$CHART\` $VERSION ($digest)." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-name: ${{ env.CHART }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+      - name: Pull the chart without signing in
+        run: |
+          set -euo pipefail
+          helm registry logout ghcr.io || true
+          if ! out="$(helm pull "oci://$CHART" --version "$VERSION" --destination "$RUNNER_TEMP/pulled" 2>&1)"; then
+            echo "::error::ghcr.io refused an anonymous pull of oci://$CHART $VERSION, so clusters can't install it: ${out//$'\n'/ }. Make the package public under https://github.com/orgs/logicplanes/packages/container/charts%2Fkaeso/settings, Danger Zone, Change visibility, then re-run this job."
+            exit 1
+          fi
+          echo "Anyone can pull \`oci://$CHART\` $VERSION." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: helm-chart
+          path: ${{ runner.temp }}/chart/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
   pack:
     name: Pack npm packages
     needs: [validate, tag]
@@ -913,7 +980,7 @@ jobs:
 
   github-release:
     name: GitHub release
-    needs: [validate, manifest, public-images, npm, crates, attest-manifest]
+    needs: [validate, manifest, public-images, chart, npm, crates, attest-manifest]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: release
@@ -940,6 +1007,10 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           name: release-compose
+          path: ${{ runner.temp }}/assets
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: helm-chart
           path: ${{ runner.temp }}/assets
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:

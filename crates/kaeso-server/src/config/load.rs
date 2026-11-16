@@ -724,6 +724,11 @@ mod tests {
             ("KAESO_OTEL_SAMPLE_RATIO", "half", "otel.sample_ratio"),
             ("KAESO_OTEL_ENDPOINT", "not a url", "otel.endpoint"),
             (
+                "KAESO_UPDATES_INSTALLED_WITH",
+                "kubernetes",
+                "updates.installed_with",
+            ),
+            (
                 "KAESO_PROVIDERS_OPENAI_BASE_URL",
                 "not a url",
                 "providers.openai.base_url",

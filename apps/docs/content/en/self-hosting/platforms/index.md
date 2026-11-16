@@ -1,6 +1,6 @@
 ---
 title: Managed platforms
-description: Run Kaeso on Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy or CapRover from the repository's templates.
+description: Templates for Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy, CapRover and Kubernetes.
 order: 12
 ---
 
@@ -27,7 +27,7 @@ flowchart LR
   gateway -- HTTPS --> providers
 ```
 
-## Four kinds of path
+## Five kinds of path
 
 | Path | What it is | Where |
 | --- | --- | --- |
@@ -35,12 +35,13 @@ flowchart LR
 | Quick server | One virtual machine with the Compose package, Caddy, bundled ClickHouse and the updater, as on your own server | [AWS](aws.md), [Azure](azure.md), [Google Cloud](gcp.md) |
 | Managed production | The platform's containers, load balancer, PostgreSQL and Valkey, with secrets in its secret store | [AWS](aws.md), [Google Cloud](gcp.md) |
 | Self-hosted platform | A Compose file or one-click app for a platform on your own server, with a public edge behind its proxy and the Compose package's PostgreSQL, ClickHouse and Valkey | [Coolify](coolify.md), [Dokploy](dokploy.md), [CapRover](caprover.md) |
+| Kubernetes | A Helm chart with the gateway and console behind your Ingress or Gateway, and PostgreSQL, ClickHouse and Valkey you bring or bundled for trying it out | [Kubernetes](kubernetes.md) |
 
 The managed stacks on AWS and Google Cloud are not one click: you choose a region, a domain and its certificate, the sizes of the data stores, where request logs go, an SMTP server and where the master key lives. Fly.io takes a few commands, since it has no button for a project of several apps.
 
 ## What every path keeps
 
-- **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render, Railway, Fly.io, Coolify, Dokploy and CapRover, `kaeso-edge`, a second command in the console image, does this; on DigitalOcean, the app's ingress rules; on the managed stacks of AWS and Google Cloud, the load balancer's path rules; on a quick server, Caddy.
+- **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render, Railway, Fly.io, Coolify, Dokploy and CapRover, `kaeso-edge`, a second command in the console image, does this; on DigitalOcean, the app's ingress rules; on the managed stacks of AWS and Google Cloud, the load balancer's path rules; on Kubernetes, the chart's Ingress or HTTPRoute; on a quick server, Caddy.
 - **Streams stay unbuffered.** The edge flushes every chunk, and a load balancer's idle timeout is longer than the gateway's keepalive interval ([long streams](../domains-and-tls.md#long-streams)).
 - **The client address is believed only from the platform's proxy.** The edge takes the client's address only from the platform's proxy, from a header the proxy sets, and sends the gateway one address; the gateway trusts the edge alone ([`KAESO_TRUSTED_PROXIES`](../configuration.md#settings)).
 - **Health checks** use `/healthz` for the process and `/readyz` for PostgreSQL, Valkey and ClickHouse ([health and metrics](../monitoring.md)). The metrics port is never public.
@@ -77,6 +78,7 @@ The Render Blueprint was created from an empty Render project in Frankfurt on th
 | Azure quick server | Not deployed; the template passes the ARM template test toolkit |
 | Coolify, Dokploy | Not deployed on the platforms; both files ran locally with Docker on 2026-11-09, with healthy services, path routing and the setup link |
 | CapRover | Not deployed; the template parses and uses only fields CapRover reads |
+| Kubernetes | Installed with the bundled stores, served a request and upgraded without a failed request on a kind cluster in CI; not installed on a managed cluster |
 
 ## Next steps
 
@@ -88,5 +90,6 @@ The Render Blueprint was created from an empty Render project in Frankfurt on th
 - [Azure](azure.md): Launch one virtual machine from the Deploy to Azure button or the Azure CLI.
 - [Google Cloud](gcp.md): Launch one Compute Engine server, or Cloud Run with a load balancer, Cloud SQL and Memorystore.
 - [Coolify](coolify.md): Deploy the Compose file with Coolify's proxy and generated passwords.
+- [Kubernetes](kubernetes.md): Install the Helm chart with stores you bring, or bundled ones for trying Kaeso out.
 - [Dokploy](dokploy.md): Import the template with Traefik and generated passwords.
 - [CapRover](caprover.md): Deploy the one-click app from the template.

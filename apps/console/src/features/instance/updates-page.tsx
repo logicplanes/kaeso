@@ -142,6 +142,10 @@ function UpdateState({ u, onUpdate, onProgress }: { u: UpdatesView; onUpdate: (r
 }
 
 function manualReason(u: UpdatesView, version: string): string {
+  if (u.installed_with === "helm")
+    return u.manual === "major"
+      ? t("instance.updates.helmMajor", "Kaeso {version} is a new major version: read the upgrade guide, then update with Helm.", { version })
+      : t("instance.updates.helmSteps", "A release on the way asks for steps of its own: follow the upgrade guide, then update with Helm.");
   switch (u.manual) {
     case "major":
       return t("instance.updates.manualMajor", "Kaeso {version} is a new major version: read the upgrade guide, then update with the installer.", { version });
@@ -153,6 +157,7 @@ function manualReason(u: UpdatesView, version: string): string {
 }
 
 function blocked(u: UpdatesView): string | null {
+  if (u.installed_with === "helm") return t("instance.updates.helmInstall", "This install runs on Kubernetes; update it with Helm.");
   switch (u.updater.state) {
     case "not_installed":
       return t("instance.updates.noUpdater", "The updater is off; turn it on to update from here.");
@@ -168,9 +173,15 @@ function blocked(u: UpdatesView): string | null {
 const INSTALLER = "curl -fsSL https://kaeso.app/install.sh | sh";
 const TURN_ON_UPDATER = INSTALLER;
 const START_UPDATER = "docker compose up -d --wait";
+const HELM_CHART = "oci://ghcr.io/logicplanes/charts/kaeso";
 
 function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
-  const update = `${INSTALLER} -s -- --update --version ${latest.version}`;
+  const helm = u.installed_with === "helm";
+  // The release's name and namespace are the operator's; the docs install it as `kaeso` in `kaeso`.
+  const update = helm
+    ? `helm upgrade kaeso ${HELM_CHART} --namespace kaeso --version ${latest.version} --reset-then-reuse-values`
+    : `${INSTALLER} -s -- --update --version ${latest.version}`;
+  const helmTitle = t("instance.updates.helmTitle", "Update with Helm, with your release's name and namespace");
   const guide = httpsHref(u.upgrade_guide);
   return (
     <Section
@@ -183,7 +194,7 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
           <>
             <Banner
               tone="warning"
-              title={t("instance.updates.withInstaller", "Update with the installer")}
+              title={helm ? t("instance.updates.withHelm", "Update with Helm") : t("instance.updates.withInstaller", "Update with the installer")}
               actions={
                 guide && (
                   <Button size="sm" href={guide} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
@@ -194,8 +205,15 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
             >
               {manualReason(u, latest.version)}
             </Banner>
-            <CodeBlock title={t("instance.updates.thenUpdateTitle", "Then update, in the install's folder")} lang="bash" code={update} collapseAfter={0} />
+            <CodeBlock
+              title={helm ? helmTitle : t("instance.updates.thenUpdateTitle", "Then update, in the install's folder")}
+              lang="bash"
+              code={update}
+              collapseAfter={0}
+            />
           </>
+        ) : helm ? (
+          <CodeBlock title={helmTitle} lang="bash" code={update} collapseAfter={0} />
         ) : u.updater.state === "not_installed" ? (
           <div className="flex flex-col gap-12">
             <CodeBlock

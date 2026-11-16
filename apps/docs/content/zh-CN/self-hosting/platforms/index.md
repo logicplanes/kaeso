@@ -1,6 +1,6 @@
 ---
 title: 托管平台
-description: 用仓库中的模板在 Render、Railway、DigitalOcean、Fly.io、AWS、Azure、Google Cloud、Coolify、Dokploy 或 CapRover 上运行 Kaeso。
+description: 用仓库中的模板在 Render、Railway、DigitalOcean、Fly.io、AWS、Azure、Google Cloud、Coolify、Dokploy、CapRover 或 Kubernetes 上运行 Kaeso。
 order: 12
 ---
 
@@ -27,7 +27,7 @@ flowchart LR
   gateway -- HTTPS --> providers
 ```
 
-## 四类路径
+## 五类路径
 
 | 路径 | 是什么 | 在哪里 |
 | --- | --- | --- |
@@ -35,12 +35,13 @@ flowchart LR
 | 快速服务器 | 一台虚拟机，运行 Compose 软件包、Caddy、内置 ClickHouse 和更新器，与您自己的服务器相同 | [AWS](aws.md)、[Azure](azure.md)、[Google Cloud](gcp.md) |
 | 托管生产环境 | 平台的容器、负载均衡器、PostgreSQL 和 Valkey，机密保存在平台的密钥存储中 | [AWS](aws.md)、[Google Cloud](gcp.md) |
 | 自托管平台 | 用于您自己服务器上某个平台的 Compose 文件或一键应用：平台代理后的公开边缘，以及 Compose 包中的 PostgreSQL、ClickHouse 和 Valkey | [Coolify](coolify.md)、[Dokploy](dokploy.md)、[CapRover](caprover.md) |
+| Kubernetes | 一个 Helm chart：网关和控制台位于您的 Ingress 或 Gateway 之后，PostgreSQL、ClickHouse 和 Valkey 由您自备，或在试用时内置 | [Kubernetes](kubernetes.md) |
 
 AWS 和 Google Cloud 上的托管堆栈不是一键部署：您需要选择区域、域名及其证书、数据存储的规格、请求日志的去向、SMTP 服务器，以及主密钥的存放位置。Fly.io 需要几条命令，因为它没有适用于多应用项目的按钮。
 
 ## 每条路径都保持的内容
 
-- **同一来源。** 控制台和 API 在同一个域名上应答。`/v1/*`、`/v1beta/*`、`/v2/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 到达网关，其他所有路径到达控制台。在 Render、Railway、Fly.io、Coolify、Dokploy 和 CapRover 上由控制台镜像的第二个命令 `kaeso-edge` 负责，在 DigitalOcean 上由应用的 ingress 规则负责，在 AWS 和 Google Cloud 的托管堆栈上由负载均衡器的路径规则负责，在快速服务器上由 Caddy 负责。
+- **同一来源。** 控制台和 API 在同一个域名上应答。`/v1/*`、`/v1beta/*`、`/v2/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*` 和 `/.well-known/oauth-*` 到达网关，其他所有路径到达控制台。在 Render、Railway、Fly.io、Coolify、Dokploy 和 CapRover 上由控制台镜像的第二个命令 `kaeso-edge` 负责，在 DigitalOcean 上由应用的 ingress 规则负责，在 AWS 和 Google Cloud 的托管堆栈上由负载均衡器的路径规则负责，在 Kubernetes 上由 chart 的 Ingress 或 HTTPRoute 负责，在快速服务器上由 Caddy 负责。
 - **流不被缓冲。** 边缘服务立即转发每个数据块，负载均衡器的空闲超时长于网关的保活间隔（[长时间的流](../domains-and-tls.md#长时间的流)）。
 - **只相信平台代理给出的客户端地址。** 边缘服务只从平台代理设置的请求头中获取客户端地址，并只向网关传递一个地址；网关只信任边缘服务（[`KAESO_TRUSTED_PROXIES`](../configuration.md#设置)）。
 - **健康检查**用 `/healthz` 检查进程，用 `/readyz` 检查 PostgreSQL、Valkey 和 ClickHouse（[健康状态和指标](../monitoring.md)）。指标端口永不公开。
@@ -77,6 +78,7 @@ AWS 和 Google Cloud 上的托管堆栈不是一键部署：您需要选择区�
 | Azure 快速服务器 | 未部署；模板通过了 ARM 模板测试工具包 |
 | Coolify、Dokploy | 未在平台上部署；两个文件于 2026 年 11 月 9 日在本地 Docker 中运行，服务健康，路径路由和设置链接正常 |
 | CapRover | 未部署；模板可以解析，只使用 CapRover 会读取的字段 |
+| Kubernetes | 在 CI 的 kind 集群上使用内置数据存储完成安装、处理了一个请求，并在没有任何失败请求的情况下完成升级；尚未在托管集群上安装 |
 
 ## 下一步
 
@@ -88,5 +90,6 @@ AWS 和 Google Cloud 上的托管堆栈不是一键部署：您需要选择区�
 - [Azure](azure.md)：用 Deploy to Azure 按钮或 Azure CLI 启动一台虚拟机。
 - [Google Cloud](gcp.md)：启动一台 Compute Engine 服务器，或使用带负载均衡器、Cloud SQL 和 Memorystore 的 Cloud Run。
 - [Coolify](coolify.md)：用 Coolify 的代理和自动生成的密码部署 Compose 文件。
+- [Kubernetes](kubernetes.md)：使用自备的数据存储，或用于试用的内置数据存储安装 Helm chart。
 - [Dokploy](dokploy.md)：导入模板，使用 Traefik 和自动生成的密码。
 - [CapRover](caprover.md)：从模板部署一键应用。

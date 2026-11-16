@@ -128,6 +128,7 @@ jobs:
             deploy:
               - deploy/**
               - e2e/install/**
+              - e2e/kubernetes/**
             repository:
               - "*.md"
               - LICENSE
@@ -804,6 +805,57 @@ jobs:
         env:
           TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/tofu-plugins
 
+  kubernetes:
+    name: Kubernetes test
+    needs: [changes, image-gateway, image-mock, image-console]
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.console == 'true' || needs.changes.outputs.deploy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      KAESO_TEST_GATEWAY_IMAGE: kaeso-gateway:ci
+      KAESO_TEST_MOCK_IMAGE: kaeso-mock:ci
+      KAESO_TEST_CONSOLE_IMAGE: kaeso-console:ci
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: image-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/images
+      - run: for image in "$RUNNER_TEMP"/images/*.tar; do docker load --input "$image"; done
+      - name: Install Helm, kubeconform, kind and kubectl
+        run: |
+          set -euo pipefail
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          fetch() {
+            curl -fsSL --retry 8 --retry-delay 15 --retry-all-errors -o "$1" "$2"
+            echo "$3  $1" | sha256sum --check --quiet
+          }
+          fetch "$RUNNER_TEMP/helm.tar.gz" https://get.helm.sh/helm-v4.3.2-linux-amd64.tar.gz d1c0278d46beab79582d7e50f5b3dc206944ba8e577cde618513fd07daa53983
+          tar -xzf "$RUNNER_TEMP/helm.tar.gz" -C "$RUNNER_TEMP" linux-amd64/helm
+          mv "$RUNNER_TEMP/linux-amd64/helm" "$bin/helm"
+          fetch "$RUNNER_TEMP/kubeconform.tar.gz" https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
+          tar -xzf "$RUNNER_TEMP/kubeconform.tar.gz" -C "$bin" kubeconform
+          fetch "$bin/kind" https://github.com/kubernetes-sigs/kind/releases/download/v0.33.0/kind-linux-amd64 aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d
+          fetch "$bin/kubectl" https://dl.k8s.io/release/v1.37.2/bin/linux/amd64/kubectl c04487523e7aa7d1493f7808174c899db93d7a9cf57531420cd76b9bd415f8f4
+          chmod +x "$bin/kind" "$bin/kubectl"
+          echo "$bin" >> "$GITHUB_PATH"
+      - uses: ./.github/actions/python
+      - name: The chart lints and renders as the tests expect
+        run: pytest -q e2e/kubernetes/test_chart.py
+      - name: A kind cluster with the images of this change
+        run: |
+          set -euo pipefail
+          kind create cluster --image kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5 --wait 180s
+          for image in "$KAESO_TEST_GATEWAY_IMAGE" "$KAESO_TEST_CONSOLE_IMAGE" "$KAESO_TEST_MOCK_IMAGE"; do kind load docker-image "$image"; done
+      - name: An install with the bundled stores serves a request, and an upgrade keeps serving
+        run: pytest -q --durations=10 e2e/kubernetes/test_kind.py
+        env:
+          KAESO_TEST_KIND: "1"
+
   node-checks:
     name: TypeScript checks
     needs: changes
@@ -1210,6 +1262,7 @@ jobs:
       - image-console
       - image-pull-request-cache
       - install
+      - kubernetes
       - node-checks
       - node-test
       - node-test-ui

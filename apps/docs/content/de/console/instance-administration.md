@@ -75,7 +75,7 @@ Nur die Konsolensitzung eines Instanz-Admins ändert die Richtlinie; kein Agent 
 - **Releases** bietet nur stabile Releases an oder auch Vorabversionen. Nur die [Konfiguration](../self-hosting/configuration.md) des Gateways schaltet die Suche ab, für Installationen ohne Internetzugang.
 - Mit dem [Updater](../self-hosting/upgrades.md#der-updater) wählt **Wie Updates installiert werden** zwischen **Von Hand** und **Automatisch**. Automatisch installiert Kaeso neue Releases in einem Update-Fenster: täglich oder wöchentlich, zu einer Stunde in der Zeitzone der Installation. Eine neue Hauptversion oder ein Release mit Schritten von Hand wartet auf Sie.
 - **Auf … aktualisieren** aktualisiert die Installation, nachdem Sie bestätigt haben, in beiden Modi, und verfolgt jeden Schritt, bis Kaeso wieder da ist.
-- Ohne Updater, oder für ein Release, das Schritte von Hand verlangt, zeigt die Seite die Befehle und die Upgrade-Anleitung.
+- Ohne Updater, oder für ein Release, das Schritte von Hand verlangt, zeigt die Seite die Befehle und die Upgrade-Anleitung: die des Installers oder, bei einer Installation aus dem [Helm-Chart](../self-hosting/platforms/kubernetes.md), `helm upgrade`.
 
 Der Verlauf listet jedes Update mit der Person, die es gestartet hat, oder **Automatisch**, und seinem Ausgang.
 

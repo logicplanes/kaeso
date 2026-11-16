@@ -30,7 +30,7 @@ docker compose exec gateway kaeso healthcheck --ready
 
 ## 指标
 
-网关在端口 9100 的 `/metrics` 上提供 Prometheus 指标（`KAESO_METRICS_LISTEN`）。切勿公开转发该端口。
+网关在端口 9100 的 `/metrics` 上提供 Prometheus 指标（`KAESO_METRICS_LISTEN`）。切勿公开转发该端口。在 Kubernetes 上，[Helm chart](platforms/kubernetes.md#指标) 会为该端口提供单独的 Service，并可选创建 `ServiceMonitor`。
 
 您自行运行的网关在未设置时监听 `127.0.0.1:9100`。网关镜像在其容器内监听 `0.0.0.0:9100`，而 Compose 不会在任何地方发布该端口。要从服务器上抓取，请在 `compose.override.yaml` 中把它发布到回环地址：
 

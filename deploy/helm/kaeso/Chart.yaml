@@ -1,0 +1,21 @@
+apiVersion: v2
+name: kaeso
+description: Kaeso, the self-hosted AI gateway, with its console, on Kubernetes.
+type: application
+# Both follow the release; scripts/version.mjs sets them.
+version: 0.6.0
+appVersion: "0.6.0"
+kubeVersion: ">=1.30.0-0"
+home: https://kaeso.app
+sources:
+  - https://github.com/logicplanes/kaeso
+keywords:
+  - ai-gateway
+  - llm
+  - openai
+  - anthropic
+maintainers:
+  - name: Logicplanes
+    url: https://kaeso.app
+annotations:
+  artifacthub.io/license: MIT

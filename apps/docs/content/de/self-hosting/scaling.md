@@ -49,6 +49,8 @@ Ein Gateway, das neu startet, für ein Update oder nach einem Absturz, kostet ni
 
 Die [Plattformvorlagen](platforms/index.md) nehmen die Zahl der Gateways als `GatewayCount` auf AWS und `gateway_min_instances` auf Google Cloud und `instance_count` auf DigitalOcean entgegen; Render und Railway skalieren einen Dienst aus ihren Dashboards. Der Load Balancer davor braucht nichts Klebriges, denn nichts, wovon eine Anfrage abhängt, liegt auf einem einzelnen Gateway.
 
+Auf Kubernetes nimmt das [Helm-Chart](platforms/kubernetes.md#skalieren) `gateway.replicaCount` oder skaliert die Gateways mit einem HorizontalPodAutoscaler nach CPU, und hält eines durch Rollouts und das Leeren von Knoten am Laufen.
+
 ## Nächste Schritte
 
 - [Konfiguration](configuration.md): `GATEWAY_REPLICAS` und die Grenzen, die jedes Gateway bekommt.

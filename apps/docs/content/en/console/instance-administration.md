@@ -75,7 +75,7 @@ Only an instance admin's console session changes the policy; no agent can. An ag
 - **Releases** offers stable releases only, or pre-releases too. Only the gateway's [configuration](../self-hosting/configuration.md) turns the check off, for installs without internet access.
 - With the [updater](../self-hosting/upgrades.md#the-updater), **How updates install** chooses **Manually** or **Automatically**. Automatically, Kaeso installs new releases in an update window: daily or weekly, at an hour in the install's time zone. A new major version, or a release with steps by hand, waits for you.
 - **Update to …** updates the install after you confirm, in either mode, and follows each step until Kaeso is back.
-- Without the updater, or for a release that needs steps by hand, the page shows the commands and the upgrade guide.
+- Without the updater, or for a release that needs steps by hand, the page shows the commands and the upgrade guide: the installer's, or on an install from the [Helm chart](../self-hosting/platforms/kubernetes.md), `helm upgrade`.
 
 The history lists every update, with who started it, or **Automatically**, and how it ended.
 

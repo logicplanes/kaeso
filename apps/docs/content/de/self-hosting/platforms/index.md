@@ -1,6 +1,6 @@
 ---
 title: Verwaltete Plattformen
-description: Betreiben Sie Kaeso mit Vorlagen auf Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy oder CapRover.
+description: Kaeso mit Vorlagen auf Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy, CapRover oder Kubernetes.
 order: 12
 ---
 
@@ -27,7 +27,7 @@ flowchart LR
   gateway -- HTTPS --> providers
 ```
 
-## Vier Arten von Wegen
+## Fünf Arten von Wegen
 
 | Weg | Was es ist | Wo |
 | --- | --- | --- |
@@ -35,12 +35,13 @@ flowchart LR
 | Schneller Server | Eine virtuelle Maschine mit dem Compose-Paket, Caddy, gebündeltem ClickHouse und dem Updater, wie auf Ihrem eigenen Server | [AWS](aws.md), [Azure](azure.md), [Google Cloud](gcp.md) |
 | Verwalteter Betrieb | Die Container, der Load Balancer, PostgreSQL und Valkey der Plattform, mit Geheimnissen in ihrem Secret Store | [AWS](aws.md), [Google Cloud](gcp.md) |
 | Selbst betriebene Plattform | Eine Compose-Datei oder One-Click-App für eine Plattform auf Ihrem eigenen Server, mit öffentlichem Edge hinter ihrem Proxy sowie PostgreSQL, ClickHouse und Valkey des Compose-Pakets | [Coolify](coolify.md), [Dokploy](dokploy.md), [CapRover](caprover.md) |
+| Kubernetes | Ein Helm-Chart mit Gateway und Konsole hinter Ihrem Ingress oder Gateway und PostgreSQL, ClickHouse und Valkey, die Sie mitbringen oder zum Ausprobieren mitgeliefert bekommen | [Kubernetes](kubernetes.md) |
 
 Die verwalteten Stacks auf AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wählen Region, Domain und ihr Zertifikat, die Größen der Datenspeicher, wohin Anfrageprotokolle gehen, einen SMTP-Server und wo der Hauptschlüssel liegt. Fly.io braucht einige Befehle, da es keinen Button für ein Projekt aus mehreren Apps hat.
 
 ## Was jeder Weg beibehält
 
-- **Ein Ursprung.** Konsole und APIs antworten auf einer Domain. `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` erreichen das Gateway; jeder andere Pfad erreicht die Konsole. Auf Render, Railway, Fly.io, Coolify, Dokploy und CapRover übernimmt das `kaeso-edge`, ein zweiter Befehl im Konsolen-Image; auf DigitalOcean die Ingress-Regeln der App; bei den verwalteten Stacks auf AWS und Google Cloud die Pfadregeln des Load Balancers; auf einem schnellen Server Caddy.
+- **Ein Ursprung.** Konsole und APIs antworten auf einer Domain. `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*` und `/.well-known/oauth-*` erreichen das Gateway; jeder andere Pfad erreicht die Konsole. Auf Render, Railway, Fly.io, Coolify, Dokploy und CapRover übernimmt das `kaeso-edge`, ein zweiter Befehl im Konsolen-Image; auf DigitalOcean die Ingress-Regeln der App; bei den verwalteten Stacks auf AWS und Google Cloud die Pfadregeln des Load Balancers; auf Kubernetes das Ingress oder die HTTPRoute des Charts; auf einem schnellen Server Caddy.
 - **Streams bleiben ungepuffert.** Der Edge leitet jeden Chunk sofort weiter, und das Leerlauf-Timeout eines Load Balancers ist länger als das Keepalive-Intervall des Gateways ([lange Streams](../domains-and-tls.md#lange-streams)).
 - **Die Client-Adresse wird nur dem Proxy der Plattform geglaubt.** Der Edge nimmt die Adresse des Clients nur vom Proxy der Plattform an, aus einem Header, den der Proxy setzt, und sendet dem Gateway eine Adresse; das Gateway vertraut allein dem Edge ([`KAESO_TRUSTED_PROXIES`](../configuration.md#einstellungen)).
 - **Health-Checks** nutzen `/healthz` für den Prozess und `/readyz` für PostgreSQL, Valkey und ClickHouse ([Zustand und Metriken](../monitoring.md)). Der Metrik-Port ist nie öffentlich.
@@ -77,6 +78,7 @@ Der Render-Blueprint wurde am selben Tag aus einem leeren Render-Projekt in Fran
 | Azure, schneller Server | Nicht ausgerollt; die Vorlage besteht das ARM Template Test Toolkit |
 | Coolify, Dokploy | Nicht auf den Plattformen ausgerollt; beide Dateien liefen am 9. November 2026 lokal mit Docker, mit gesunden Diensten, Pfadweiterleitung und Einrichtungslink |
 | CapRover | Nicht ausgerollt; die Vorlage lässt sich lesen und nutzt nur Felder, die CapRover liest |
+| Kubernetes | Auf einem kind-Cluster in CI mit den mitgelieferten Datenspeichern installiert, eine Anfrage bedient und ohne gescheiterte Anfrage upgegradet; auf keinem verwalteten Cluster installiert |
 
 ## Nächste Schritte
 
@@ -88,5 +90,6 @@ Der Render-Blueprint wurde am selben Tag aus einem leeren Render-Projekt in Fran
 - [Azure](azure.md): Starten Sie eine virtuelle Maschine per Button Deploy to Azure oder mit der Azure CLI.
 - [Google Cloud](gcp.md): Starten Sie einen Compute-Engine-Server oder Cloud Run mit Load Balancer, Cloud SQL und Memorystore.
 - [Coolify](coolify.md): Rollen Sie die Compose-Datei mit dem Proxy von Coolify und erzeugten Passwörtern aus.
+- [Kubernetes](kubernetes.md): Installieren Sie das Helm-Chart mit eigenen Datenspeichern oder mitgelieferten zum Ausprobieren.
 - [Dokploy](dokploy.md): Importieren Sie die Vorlage mit Traefik und erzeugten Passwörtern.
 - [CapRover](caprover.md): Rollen Sie die One-Click-App aus der Vorlage aus.

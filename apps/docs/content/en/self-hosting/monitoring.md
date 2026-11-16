@@ -30,7 +30,7 @@ The gateway's image has no shell or `curl`, so a platform that probes by running
 
 ## Metrics
 
-The gateway serves Prometheus metrics at `/metrics` on port 9100 (`KAESO_METRICS_LISTEN`). Never route that port publicly.
+The gateway serves Prometheus metrics at `/metrics` on port 9100 (`KAESO_METRICS_LISTEN`). Never route that port publicly. On Kubernetes, the [Helm chart](platforms/kubernetes.md#metrics) gives the port a Service of its own and, as an option, a `ServiceMonitor`.
 
 A gateway you run yourself listens on `127.0.0.1:9100` unless you set it. The gateway image listens on `0.0.0.0:9100` inside its container, and Compose publishes the port nowhere. To scrape it from the server, publish it on the loopback address in `compose.override.yaml`:
 

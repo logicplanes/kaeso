@@ -266,6 +266,20 @@ pub struct UpdatesConfig {
     pub channel: kaeso_update::policy::Channel,
     pub mode: kaeso_update::schedule::Mode,
     pub releases_url: Url,
+    pub installed_with: InstalledWith,
+}
+
+/// How Kaeso was installed, which decides the commands that update it.
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, Deserialize, serde::Serialize, utoipa::ToSchema,
+)]
+#[serde(rename_all = "lowercase")]
+pub enum InstalledWith {
+    /// The installer or Docker Compose.
+    #[default]
+    Compose,
+    /// The Helm chart.
+    Helm,
 }
 
 #[derive(Debug, Deserialize)]

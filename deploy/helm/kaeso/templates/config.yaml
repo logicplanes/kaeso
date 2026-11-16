@@ -1,0 +1,11 @@
+{{- if .Values.gateway.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kaeso.fullname" . }}-config
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+data:
+  kaeso.toml: |
+    {{- include "kaeso.toml" (dict "values" .Values.gateway.config "prefix" "") | nindent 4 }}
+{{- end }}

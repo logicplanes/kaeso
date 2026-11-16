@@ -182,6 +182,7 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | `KAESO_UPDATES_CHANNEL`<br>`updates.channel` | text | `stable` | The releases offered: `stable`, or `prerelease` for pre-releases too. |
 | `KAESO_UPDATES_MODE`<br>`updates.mode` | text | `manual` | How a new install takes updates through the updater: `manual`, where an instance admin starts each one, or `automatic`, in the update window. |
 | `KAESO_UPDATES_RELEASES_URL`<br>`updates.releases_url` | text | `https://update.kaeso.app/v1/releases.json` | Where the list of releases comes from: update.kaeso.app, or a mirror that answers like GitHub's releases API. |
+| `KAESO_UPDATES_INSTALLED_WITH`<br>`updates.installed_with` | text | `compose` | How Kaeso was installed: `compose`, with the installer or Docker Compose, or `helm`, which the [Helm chart](platforms/kubernetes.md) sets. The console's **Updates** page shows the commands for it. |
 | `KAESO_UPDATER_URL`<br>`updater.url` | text | `http://updater:8081` | Address of the updater. |
 | `KAESO_UPDATER_TOKEN`<br>`updater.token` | text, secret | — | The token the gateway and the updater share, at least 32 characters. Without it, the gateway never calls the updater. |
 

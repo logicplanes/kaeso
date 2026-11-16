@@ -440,5 +440,10 @@
   "instance.whatIsDeletedHint": "项目、密钥、服务商密钥、设置、用量和日志，将被永久删除。",
   "instance.wholeDays": "请输入整数天数，至少为 1",
   "instance.withContent": "含内容",
-  "instance.youreOwner": "您现在是所有者"
+  "instance.youreOwner": "您现在是所有者",
+  "instance.updates.helmInstall": "此实例运行在 Kubernetes 上，请使用 Helm 更新。",
+  "instance.updates.helmMajor": "Kaeso {version} 是新的主版本：请先阅读升级指南，再使用 Helm 更新。",
+  "instance.updates.helmSteps": "即将发布的版本需要单独的步骤：请按升级指南操作，再使用 Helm 更新。",
+  "instance.updates.helmTitle": "使用 Helm 更新，填入您的 release 名称和命名空间",
+  "instance.updates.withHelm": "使用 Helm 更新"
 }
