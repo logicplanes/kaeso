@@ -4,6 +4,7 @@ import {
   Badge,
   Button,
   CodeBlock,
+  Link,
   Collapsible,
   Empty,
   CopyButton,
@@ -23,17 +24,19 @@ import {
   Text,
   Tooltip,
   UsageBreakdown,
+  icons,
 } from "@logicplanes/kaeso-ui";
 import { formatBytes, formatDate, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { LogEntryView } from "~/api/generated/types";
-import { logEntryQuery } from "~/api/queries/logs";
+import { logEntryQuery, type LogFilters } from "~/api/queries/logs";
+import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
 import { costUSD } from "~/format/money";
 import { describeUserAgent } from "~/format/user-agent";
 import { orgProjectsQuery } from "~/api/queries/projects";
-import { catalogueQuery } from "~/api/queries/models";
+import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { usePartyName } from "../keys/party";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
 import { cachedShare, isEmbedding, isRerank, sentWithoutBreakpoint } from "./columns";
@@ -80,18 +83,24 @@ function ConversationPending({ messages }: { messages: number }) {
   );
 }
 
+/** One filter of the request log, set from a value the inspector shows. */
+export type InspectorFilter = Pick<LogFilters, "status" | "model" | "provider" | "alias" | "key" | "member">;
+
 export function LogInspector({
   org,
   project,
   logId,
   keyName,
   onClose,
+  onFilter,
 }: {
   org: string;
   project: string;
   logId: string | undefined;
   keyName: (id: string) => string;
   onClose: () => void;
+  /** Narrows the list to the requests that share a value; the inspector stays open. */
+  onFilter: (filter: InspectorFilter) => void;
 }) {
   const entry = useQuery({ ...logEntryQuery(org, project, logId ?? ""), enabled: !!logId });
   const modelName = useModelName(org, project);
@@ -115,7 +124,7 @@ export function LogInspector({
       subtitle={e?.model ? `${e.endpoint} · ${logId}` : logId}
       actions={e?.stream ? <Badge>{t("logs.inspector.streamed", "Streamed")}</Badge> : undefined}
     >
-      {logId && <Body key={logId} org={org} project={project} logId={logId} keyName={keyName} onClose={onClose} />}
+      {logId && <Body key={logId} org={org} project={project} logId={logId} keyName={keyName} onClose={onClose} onFilter={onFilter} />}
     </Sheet>
   );
 }
@@ -126,12 +135,14 @@ function Body({
   logId,
   keyName,
   onClose,
+  onFilter,
 }: {
   org: string;
   project: string;
   logId: string;
   keyName: (id: string) => string;
   onClose: () => void;
+  onFilter: (filter: InspectorFilter) => void;
 }) {
   const rights = useProjectRights(org, project);
   const entry = useQuery(logEntryQuery(org, project, logId));
@@ -176,7 +187,7 @@ function Body({
         <Tabs.Tab value="raw">{t("logs.inspector.raw", "Raw")}</Tabs.Tab>
       </Tabs.List>
       <Tabs.Panel value="overview">
-        <Overview org={org} project={project} e={e} keyName={keyName} />
+        <Overview org={org} project={project} e={e} keyName={keyName} onFilter={onFilter} />
       </Tabs.Panel>
       <Tabs.Panel value="request">
         {canContent ? <RequestTab e={e} Conversation={conversation} Decision={loaded} /> : <NoRight org={org} project={project} />}
@@ -246,9 +257,66 @@ function Named({ name, id }: { name: string; id: string }) {
   );
 }
 
-function Overview({ org, project, e, keyName }: { org: string; project: string; e: LogEntryView; keyName: (id: string) => string }) {
+// A value with a button that narrows the list to the requests that share it.
+function Filtered({ children, label, onFilter }: { children: ReactNode; label: string; onFilter: () => void }) {
+  return (
+    <span className="flex min-w-0 items-center gap-4">
+      <span className="flex min-w-0">{children}</span>
+      <Button size="xs" variant="ghost" icon={icons.filter} aria-label={label} onClick={onFilter} />
+    </span>
+  );
+}
+
+// Where the inspector's values open: a model's sheet, an alias's route editor, a key's or a
+// sender's sheet. Nothing for a target that is gone or that the person may not open.
+function useTargets(org: string, project: string, e: LogEntryView, keyName: (id: string) => string) {
+  const rights = useProjectRights(org, project);
+  const catalogue = useQuery({ ...catalogueQuery(org, project), enabled: rights.has("models.view") });
+  const aliases = useQuery({ ...aliasesQuery(org, project), enabled: !!e.alias && rights.has("models.view") });
+  const user = e.principal_kind !== "service_account";
+  const members = useQuery({ ...projectMembersQuery(org, project), enabled: user && rights.has("project.members.view") });
+  const accounts = useQuery({ ...serviceAccountsQuery(org, project, true), enabled: !user && rights.has("service_accounts.view") });
+  const base = `/orgs/${org}/projects/${project}`;
+  const model = catalogue.data?.find((m) => m.provider === e.provider && m.model_id === e.model);
+  const alias = aliases.data?.find((a) => a.name === e.alias);
+  const sender = user ? members.data?.some((m) => m.user.id === e.principal_id) : accounts.data?.some((a) => a.id === e.principal_id);
+  return {
+    model: model && `${base}/models?model=${model.id}`,
+    alias: alias && `${base}/models/aliases/${alias.id}`,
+    // The keys the log page lists, archived ones included, are the ones the person may open.
+    key: e.key_id && keyName(e.key_id) !== e.key_id ? `${base}/keys?key=${e.key_id}` : undefined,
+    sender: sender ? (user ? `${base}/members?member=${e.principal_id}` : `${base}/service-accounts?account=${e.principal_id}`) : undefined,
+  };
+}
+
+function Opens({ href, children, mono }: { href: string | undefined; children: string; mono?: boolean }) {
+  const text = <Long {...(mono ? { mono } : {})}>{children}</Long>;
+  return href ? (
+    <Link href={href} className="flex min-w-0">
+      {text}
+    </Link>
+  ) : (
+    text
+  );
+}
+
+function Overview({
+  org,
+  project,
+  e,
+  keyName,
+  onFilter,
+}: {
+  org: string;
+  project: string;
+  e: LogEntryView;
+  keyName: (id: string) => string;
+  onFilter: (filter: InspectorFilter) => void;
+}) {
   const partyName = usePartyName(org, project);
   const modelName = useModelName(org, project);
+  const targets = useTargets(org, project, e, keyName);
+  const only = (filter: InspectorFilter) => () => onFilter(filter);
   const providers = useProviders(org);
   const u = e.usage;
   const tokensIn = inputTokens(u);
@@ -288,7 +356,14 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
               layout="stacked"
               className="grid grid-cols-2 gap-x-32"
               items={[
-                { label: common.status(), value: <StatusCode code={e.status} showText /> },
+                {
+                  label: common.status(),
+                  value: (
+                    <Filtered label={t("logs.inspector.onlyStatus", "Show only requests with this status")} onFilter={only({ status: e.status })}>
+                      <StatusCode code={e.status} showText />
+                    </Filtered>
+                  ),
+                },
                 ...(restatesStatus(e.error_kind, e.status) ? [] : [{ label: t("logs.inspector.error", "Error"), value: errorKindLabel(e.error_kind) }]),
               ]}
             />
@@ -384,7 +459,19 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
                 e.requested_model === e.model
                   ? common.model()
                   : t("logs.inspector.modelRequestedAs", "Model, requested as {model}", { model: e.requested_model }),
-              value: e.model ? <Named name={name} id={e.model} /> : "—",
+              value: e.model ? (
+                <Filtered label={t("logs.inspector.onlyModel", "Show only requests to this model")} onFilter={only({ model: e.model, provider: e.provider })}>
+                  {targets.model ? (
+                    <Link href={targets.model} className="min-w-0">
+                      <Named name={name} id={e.model} />
+                    </Link>
+                  ) : (
+                    <Named name={name} id={e.model} />
+                  )}
+                </Filtered>
+              ) : (
+                "—"
+              ),
             },
             {
               label: common.provider(),
@@ -407,7 +494,20 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
                   },
                 ]
               : []),
-            ...(e.alias ? [{ label: t("logs.inspector.alias", "Alias"), value: <Long mono>{e.alias}</Long> }] : []),
+            ...(e.alias
+              ? [
+                  {
+                    label: t("logs.inspector.alias", "Alias"),
+                    value: (
+                      <Filtered label={t("logs.inspector.onlyAlias", "Show only requests to this alias")} onFilter={only({ alias: e.alias })}>
+                        <Opens href={targets.alias} mono>
+                          {e.alias}
+                        </Opens>
+                      </Filtered>
+                    ),
+                  },
+                ]
+              : []),
             ...(e.fallbacks.length > 0
               ? [
                   {
@@ -447,10 +547,24 @@ function Overview({ org, project, e, keyName }: { org: string; project: string; 
           items={[
             {
               label: e.principal_kind === "service_account" ? t("logs.inspector.serviceAccount", "Service account") : t("logs.filter.member", "Member"),
-              value: <Long>{principal}</Long>,
+              value: (
+                <Filtered
+                  label={t("logs.inspector.onlySender", "Show only requests from this sender")}
+                  onFilter={only({ member: `${e.principal_kind === "service_account" ? "sa" : "user"}:${e.principal_id}` })}
+                >
+                  <Opens href={targets.sender}>{principal}</Opens>
+                </Filtered>
+              ),
             },
             e.key_id
-              ? { label: t("logs.column.key", "Key"), value: <Long>{keyName(e.key_id)}</Long> }
+              ? {
+                  label: t("logs.column.key", "Key"),
+                  value: (
+                    <Filtered label={t("logs.inspector.onlyKey", "Show only requests with this key")} onFilter={only({ key: e.key_id })}>
+                      <Opens href={targets.key}>{keyName(e.key_id)}</Opens>
+                    </Filtered>
+                  ),
+                }
               : { label: t("logs.filter.source", "Source"), value: t("logs.source.playground", "Playground") },
             { label: t("logs.inspector.clientIp", "Client IP"), value: <Long mono>{e.client_ip}</Long> },
             {

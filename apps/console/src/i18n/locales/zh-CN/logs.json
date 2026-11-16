@@ -302,5 +302,10 @@
   "logs.cache.hit": "命中",
   "logs.cache.miss": "未命中",
   "logs.cache.bypass": "绕过",
-  "logs.copyUpstreamRequestId": "复制服务商的请求 ID"
+  "logs.copyUpstreamRequestId": "复制服务商的请求 ID",
+  "logs.inspector.onlyStatus": "只显示此状态的请求",
+  "logs.inspector.onlyModel": "只显示发往此模型的请求",
+  "logs.inspector.onlyAlias": "只显示发往此别名的请求",
+  "logs.inspector.onlySender": "只显示此发送者的请求",
+  "logs.inspector.onlyKey": "只显示使用此密钥的请求"
 }
