@@ -83,6 +83,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `openai_models` | The OpenAI Models API, shared by the three OpenAI codecs |
 | `gemini` | The Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens`, and the model listing) |
 | `gemini_embeddings` | Gemini embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
+| `bedrock_converse` | Amazon Bedrock's Converse API (`/model/{modelId}/converse`, `/converse-stream`), egress only ([Amazon Bedrock Converse](bedrock-converse.md)) |
 | `openai_images` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`) and the providers that speak a form of it ([OpenAI Images](openai-images.md)) |
 | `minimax_images` | MiniMax image generation (`/v1/image_generation`) ([MiniMax Images](minimax-images.md)) |
 | `openai_speech` | OpenAI speech (`/v1/audio/speech`) and the providers that speak a form of it ([OpenAI Speech](openai-speech.md)) |
@@ -294,6 +295,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [OpenAI Responses](openai-responses.md): Find where every field of the Responses format goes in KPP.
 - [OpenAI Embeddings](openai-embeddings.md): Find where every field of the Embeddings format goes in KPP.
 - [Gemini API](gemini.md): Find where every field of the Gemini API goes in KPP, embeddings included.
+- [Amazon Bedrock Converse](bedrock-converse.md): See how generation requests map to Bedrock's Converse API and its binary stream.
 - [OpenAI Images](openai-images.md): Find where every field of OpenAI's Images API goes in KPP, and how each provider takes it.
 - [MiniMax Images](minimax-images.md): See how image requests map to MiniMax's text-to-image API.
 - [OpenAI Speech](openai-speech.md): Find where every field of OpenAI's speech API goes in KPP, and how each provider takes it.

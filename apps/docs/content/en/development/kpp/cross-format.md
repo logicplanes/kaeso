@@ -358,6 +358,7 @@ Structured output going to Anthropic uses Anthropic's native structured outputs,
 - Anthropic's output format is a schema alone: a schema's `name` is dropped, while a `description` or `strict: false` is `Unsupported`.
 - Schemas going to OpenAI from Anthropic get the name `response`, because OpenAI requires one.
 - Gemini gets a schema as `responseJsonSchema` and `json_object` as `responseMimeType: "application/json"` alone; as for Anthropic, a schema's `name` is dropped, and a `description` or `strict: false` is `Unsupported`.
+- Amazon Bedrock Converse gets no output format yet: `json_object` and schemas are `Unsupported`.
 
 ## Sampling
 
@@ -369,6 +370,7 @@ Sampling settings a target can't honour are `Unsupported`, never dropped or resc
 | OpenAI Chat Completions | `top_k`, and more than four stop sequences |
 | OpenAI Responses | `top_k`, `seed`, the penalties and stop sequences, which Responses doesn't have, and an output limit below 16 tokens, the `CreateResponse` minimum |
 | Gemini API | More than five stop sequences (`GenerationConfig.stopSequences`) |
+| Amazon Bedrock Converse | `top_k`, `seed` and the penalties, which go in a model family's own fields |
 
 Numbers keep their spelling within a dialect: `temperature: 1` comes back as `1` and `1.0` as `1.0` while the value is unchanged. Across dialects the target's own spelling is used, so `temperature: 1` from Chat reaches Anthropic as `1.0`.
 
@@ -402,6 +404,7 @@ Cache hints are hints, but a target that caches only when asked still gets asked
   - one on the last content block of the conversation, which moves forward from turn to turn.
 
   All three sit on blocks rather than using top-level automatic caching, so Anthropic-compatible providers that only know block breakpoints, as Claude Code sends them, take them too.
+- **Amazon Bedrock Converse** caches only up to a `cachePoint` block. Each hint becomes one after its block or tool, with its lifetime; a request without hints gets none.
 - **The app's own hints win.** A request that carries cache hints keeps only those. Anthropic takes at most 4 breakpoints, so when an app sends more, the earliest are left out. OpenAI's `prompt_cache_options` with `mode: explicit` and no breakpoint caches nothing, as on OpenAI. Token counts get no breakpoints.
 - **Lifetime.** Anthropic keeps a cache for 5 minutes or for 1 hour. When the app asks OpenAI to keep it for longer than 5 minutes, with `prompt_cache_retention: "24h"` or a `prompt_cache_options.ttl` such as `30m`, every breakpoint sent to Anthropic asks for `1h`.
 - **Each turn repeats the one before.** Turn *n+1* of a conversation encodes to the same tools, system prompt, thinking setting and messages as turn *n*, followed by the new messages; only the conversation breakpoint moves, and Anthropic doesn't count breakpoints as part of the prefix, so every turn reads what the turn before wrote (`crates/kaeso-codecs/tests/prompt_cache.rs`).

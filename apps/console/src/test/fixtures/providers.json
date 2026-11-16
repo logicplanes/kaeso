@@ -1036,7 +1036,7 @@
         "label": "API keys"
       },
       "key_prefix": null,
-      "dialects": ["openai_chat", "anthropic_messages"],
+      "dialects": ["openai_chat", "anthropic_messages", "bedrock_converse"],
       "count_tokens": null,
       "embeddings": null,
       "rerank": null,

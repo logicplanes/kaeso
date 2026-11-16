@@ -83,6 +83,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `openai_models` | Die OpenAI Models API, die sich die drei OpenAI-Codecs teilen |
 | `gemini` | Die Gemini API (`{models}/{model}:generateContent`, `:streamGenerateContent`, `:countTokens` und die Modellliste) |
 | `gemini_embeddings` | Gemini-Embeddings (`{models}/{model}:embedContent`, `:batchEmbedContents`) |
+| `bedrock_converse` | Die Converse-API von Amazon Bedrock (`/model/{modelId}/converse`, `/converse-stream`), nur ausgehend ([Amazon Bedrock Converse](bedrock-converse.md)) |
 | `openai_images` | OpenAI Images (`/v1/images/generations`, `/v1/images/edits`, `/v1/images/variations`) und die Anbieter, die eine Form davon sprechen ([OpenAI Images](openai-images.md)) |
 | `minimax_images` | Bildgenerierung von MiniMax (`/v1/image_generation`) ([MiniMax Images](minimax-images.md)) |
 | `openai_speech` | Speech von OpenAI (`/v1/audio/speech`) und die Anbieter, die eine Form davon sprechen ([OpenAI Speech](openai-speech.md)) |
@@ -294,6 +295,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [OpenAI Responses](openai-responses.md): Finden Sie, wohin jedes Feld des Formats Responses in KPP gehört.
 - [OpenAI Embeddings](openai-embeddings.md): Finden Sie, wohin jedes Feld des Formats Embeddings in KPP gehört.
 - [Gemini API](gemini.md): Finden Sie, wohin jedes Feld der Gemini API in KPP gehört, Embeddings eingeschlossen.
+- [Amazon Bedrock Converse](bedrock-converse.md): Sehen Sie, wie Generierungsanfragen auf die Converse-API von Bedrock und ihren binären Stream abgebildet werden.
 - [OpenAI Images](openai-images.md): Finden Sie, wohin jedes Feld der Images API von OpenAI in KPP gehört und wie jeder Anbieter es nimmt.
 - [MiniMax Images](minimax-images.md): Sehen Sie, wie Bildanfragen auf die Text-zu-Bild-API von MiniMax abgebildet werden.
 - [OpenAI Speech](openai-speech.md): Finden Sie, wohin jedes Feld der Speech API von OpenAI in KPP gehört und wie jeder Anbieter es nimmt.

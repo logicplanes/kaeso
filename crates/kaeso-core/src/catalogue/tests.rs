@@ -2924,8 +2924,7 @@ fn tencent_tokenhub_models_speak_chat_completions_with_tokenhubs_prices_and_effo
 }
 
 #[test]
-fn amazon_bedrock_sends_claude_as_messages_and_names_no_format_for_models_it_serves_only_natively()
-{
+fn amazon_bedrock_sends_claude_as_messages_and_the_models_answering_neither_through_converse() {
     let claude = eff(&entry("amazon-bedrock", "us.anthropic.claude-sonnet-5"));
     assert_eq!(claude.dialect, DialectId::AnthropicMessages);
     assert_eq!(
@@ -2964,16 +2963,22 @@ fn amazon_bedrock_sends_claude_as_messages_and_names_no_format_for_models_it_ser
     );
     let gpt = eff(&entry("amazon-bedrock", "global.openai.gpt-6-sol"));
     assert_eq!(gpt.fields.egress_dialect, Some(DialectId::OpenAiChat));
-    for native in [
+    for converse in [
         "amazon.nova-pro-v1:0",
         "us.meta.llama4-scout-17b-instruct-v1:0",
         "anthropic.claude-sonnet-4-6",
-        "openai.gpt-6-sol",
     ] {
-        let e = eff(&entry("amazon-bedrock", native));
-        assert_eq!(e.fields.egress_dialect, None, "{native}");
-        assert!(e.fields.input_price.is_some(), "{native}");
+        let e = eff(&entry("amazon-bedrock", converse));
+        assert_eq!(
+            (e.dialect, e.fields.egress_dialect),
+            (DialectId::BedrockConverse, Some(DialectId::BedrockConverse)),
+            "{converse}"
+        );
+        assert!(e.fields.input_price.is_some(), "{converse}");
     }
+    // Closed-weight GPT models are taken only by an inference profile id.
+    let gpt = eff(&entry("amazon-bedrock", "openai.gpt-6-sol"));
+    assert_eq!(gpt.fields.egress_dialect, None);
 }
 
 #[test]

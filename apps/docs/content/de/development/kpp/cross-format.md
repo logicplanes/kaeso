@@ -358,6 +358,7 @@ Strukturierte Ausgabe an Anthropic nutzt die nativen Structured Outputs von Anth
 - Das Ausgabeformat von Anthropic ist nur ein Schema: Der `name` eines Schemas wird weggelassen, während eine `description` oder `strict: false` `Unsupported` ist.
 - Schemas, die von Anthropic an OpenAI gehen, bekommen den Namen `response`, weil OpenAI einen verlangt.
 - Gemini bekommt ein Schema als `responseJsonSchema` und `json_object` als `responseMimeType: "application/json"` allein; wie bei Anthropic entfällt der `name` eines Schemas, und eine `description` oder `strict: false` ist `Unsupported`.
+- Amazon Bedrock Converse bekommt noch kein Ausgabeformat: `json_object` und Schemas sind `Unsupported`.
 
 ## Sampling
 
@@ -369,6 +370,7 @@ Sampling-Einstellungen, die ein Ziel nicht einhalten kann, sind `Unsupported` un
 | OpenAI Chat Completions | `top_k` und mehr als vier Stoppsequenzen |
 | OpenAI Responses | `top_k`, `seed`, die Penalties und Stoppsequenzen, die es bei Responses nicht gibt, und ein Ausgabelimit unter 16 Token, dem Minimum von `CreateResponse` |
 | Gemini API | Mehr als fünf Stoppsequenzen (`GenerationConfig.stopSequences`) |
+| Amazon Bedrock Converse | `top_k`, `seed` und die Penalties, die in die eigenen Felder einer Modellfamilie gehören |
 
 Zahlen behalten ihre Schreibweise innerhalb eines Dialekts: `temperature: 1` kommt als `1` zurück und `1.0` als `1.0`, solange der Wert unverändert ist. Über Dialekte hinweg gilt die eigene Schreibweise des Ziels, daher erreicht `temperature: 1` aus Chat Anthropic als `1.0`.
 
@@ -402,6 +404,7 @@ Cache-Hinweise sind Hinweise, aber ein Ziel, das nur auf Anfrage cacht, wird tro
   - einen am letzten Inhaltsblock der Unterhaltung, der von Zug zu Zug nach vorn wandert.
 
   Alle drei sitzen an Blöcken statt automatisches Caching auf oberster Ebene zu nutzen, sodass auch Anthropic-kompatible Anbieter sie annehmen, die nur Block-Breakpoints kennen, wie Claude Code sie sendet.
+- **Amazon Bedrock Converse** cacht nur bis zu einem `cachePoint`-Block. Jeder Hinweis wird zu einem solchen nach seinem Block oder Tool, mit seiner Lebensdauer; eine Anfrage ohne Hinweise bekommt keinen.
 - **Die eigenen Hinweise der App gehen vor.** Eine Anfrage mit Cache-Hinweisen behält nur diese. Anthropic nimmt höchstens 4 Breakpoints an; schickt eine App mehr, werden die frühesten weggelassen. OpenAIs `prompt_cache_options` mit `mode: explicit` und ohne Breakpoint cacht nichts, wie bei OpenAI. Token-Zählungen bekommen keine Breakpoints.
 - **Lebensdauer.** Anthropic hält einen Cache 5 Minuten oder 1 Stunde. Bittet die App OpenAI, ihn länger als 5 Minuten zu halten, mit `prompt_cache_retention: "24h"` oder einer `prompt_cache_options.ttl` wie `30m`, fragt jeder an Anthropic gesendete Breakpoint nach `1h`.
 - **Jeder Zug wiederholt den vorigen.** Zug *n+1* einer Unterhaltung wird zu denselben Tools, demselben System-Prompt, derselben Denk-Einstellung und denselben Nachrichten kodiert wie Zug *n*, gefolgt von den neuen Nachrichten; nur der Breakpoint der Unterhaltung wandert, und Anthropic zählt Breakpoints nicht zum Präfix, sodass jeder Zug liest, was der vorige geschrieben hat (`crates/kaeso-codecs/tests/prompt_cache.rs`).

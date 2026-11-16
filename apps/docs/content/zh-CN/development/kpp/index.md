@@ -83,6 +83,7 @@ sequenceDiagram
 | `openai_models` | OpenAI Models API，由三个 OpenAI 编解码器共用 |
 | `gemini` | Gemini API（`{models}/{model}:generateContent`、`:streamGenerateContent`、`:countTokens` 以及模型列表） |
 | `gemini_embeddings` | Gemini 嵌入（`{models}/{model}:embedContent`、`:batchEmbedContents`） |
+| `bedrock_converse` | Amazon Bedrock 的 Converse API（`/model/{modelId}/converse`、`/converse-stream`），仅用于出站（见 [Amazon Bedrock Converse](bedrock-converse.md)） |
 | `openai_images` | OpenAI Images（`/v1/images/generations`、`/v1/images/edits`、`/v1/images/variations`）以及使用其某种形式的服务商（[OpenAI Images](openai-images.md)） |
 | `minimax_images` | MiniMax 图片生成（`/v1/image_generation`）（[MiniMax Images](minimax-images.md)） |
 | `openai_speech` | OpenAI 语音（`/v1/audio/speech`）以及使用其某种形式的服务商（[OpenAI Speech](openai-speech.md)） |
@@ -294,6 +295,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [OpenAI Responses](openai-responses.md)：查找 Responses 格式的每个字段在 KPP 中的位置。
 - [OpenAI Embeddings](openai-embeddings.md)：查找 Embeddings 格式的每个字段在 KPP 中的位置。
 - [Gemini API](gemini.md)：查找 Gemini API 的每个字段在 KPP 中的位置，包括嵌入。
+- [Amazon Bedrock Converse](bedrock-converse.md)：了解生成请求如何映射到 Bedrock 的 Converse API 及其二进制流。
 - [OpenAI Images](openai-images.md)：查找 OpenAI Images API 的每个字段在 KPP 中的位置，以及各服务商如何接收它。
 - [MiniMax Images](minimax-images.md)：了解图片请求如何映射到 MiniMax 的文生图 API。
 - [OpenAI Speech](openai-speech.md)：查找 OpenAI 语音 API 的每个字段在 KPP 中的位置，以及各服务商如何接收它。

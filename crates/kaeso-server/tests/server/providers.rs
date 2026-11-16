@@ -424,7 +424,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
     assert_eq!(bedrock["name"], "Amazon Bedrock");
     assert_eq!(
         bedrock["dialects"],
-        json!(["openai_chat", "anthropic_messages"])
+        json!(["openai_chat", "anthropic_messages", "bedrock_converse"])
     );
     assert_eq!(
         (

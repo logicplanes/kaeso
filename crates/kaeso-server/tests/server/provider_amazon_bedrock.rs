@@ -109,7 +109,7 @@ async fn chat_models_go_to_the_openai_route_with_a_bearer_key_and_claude_to_mess
 #[tokio::test]
 async fn a_model_bedrock_serves_only_through_its_own_api_is_refused_before_sending() {
     let env = env().await;
-    for model in [NOVA, GPT] {
+    for model in [GPT] {
         let before = env.mock.received().len();
         let r = call(
             &env,
@@ -293,7 +293,7 @@ async fn a_key_calls_one_of_bedrocks_regions_which_may_change_and_other_keys_cal
     assert_eq!(bedrock["key_prefix"], Value::Null);
     assert_eq!(
         bedrock["dialects"],
-        json!(["openai_chat", "anthropic_messages"])
+        json!(["openai_chat", "anthropic_messages", "bedrock_converse"])
     );
     assert_eq!(bedrock["count_tokens"], Value::Null);
     let regions = bedrock["regions"]["regions"].as_array().unwrap();
@@ -354,7 +354,9 @@ async fn a_model_check_is_inconclusive_and_sends_nothing() {
         .received()
         .into_iter()
         .map(|r| r.path)
-        .filter(|p| p.starts_with("/openai/") || p.starts_with("/anthropic/"))
+        .filter(|p| {
+            p.starts_with("/openai/") || p.starts_with("/anthropic/") || p.starts_with("/model/")
+        })
         .collect();
     assert!(
         bedrock.is_empty(),
@@ -716,4 +718,253 @@ async fn gateway_identity(env: &Env) -> bool {
         .find(|p| p["id"] == "amazon-bedrock")
         .unwrap();
     bedrock["aws"]["gateway_identity"].as_bool().unwrap()
+}
+
+const NOVA_PATH: &str = "/model/amazon.nova-pro-v1%3A0";
+
+fn top_song() -> Value {
+    json!([{ "type": "function", "function": {
+        "name": "top_song",
+        "description": "Get the most popular song played on a radio station.",
+        "parameters": { "type": "object", "properties": { "sign": { "type": "string" } }, "required": ["sign"] }
+    } }])
+}
+
+fn sse(text: &str) -> Vec<Value> {
+    text.lines()
+        .filter_map(|l| l.strip_prefix("data: "))
+        .filter(|d| *d != "[DONE]")
+        .map(|d| serde_json::from_str(d).unwrap())
+        .collect()
+}
+
+#[tokio::test]
+async fn an_openai_app_gets_a_streamed_tool_call_from_nova_through_converse() {
+    let env = env().await;
+    let mut body = chat(
+        NOVA,
+        "What is the most popular song on WZPZ? [mock:fixture=built-nova-tool-use]",
+    );
+    body["stream"] = json!(true);
+    body["stream_options"] = json!({ "include_usage": true });
+    body["tools"] = top_song();
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, format!("{NOVA_PATH}/converse-stream"));
+    assert_eq!(
+        sent.header("authorization"),
+        Some(format!("Bearer {SECRET}").as_str())
+    );
+    let converse = sent.json();
+    assert_eq!(
+        converse["toolConfig"]["tools"][0]["toolSpec"]["name"],
+        "top_song"
+    );
+    assert_eq!(converse["messages"][0]["role"], "user");
+
+    let chunks = sse(&r.text());
+    let calls: Vec<&Value> = chunks
+        .iter()
+        .filter_map(|c| {
+            c["choices"][0]["delta"]["tool_calls"][0]
+                .as_object()
+                .map(|_| &c["choices"][0]["delta"]["tool_calls"][0])
+        })
+        .collect();
+    assert_eq!(
+        calls[0]["id"],
+        "tooluse_20Z9zl0BQWSXjFuLKdTJcA",
+        "{}",
+        r.text()
+    );
+    assert_eq!(calls[0]["function"]["name"], "top_song");
+    let arguments: String = calls
+        .iter()
+        .filter_map(|c| c["function"]["arguments"].as_str())
+        .collect();
+    assert_eq!(arguments, r#"{"sign":"WZPZ"}"#);
+    let text: String = chunks
+        .iter()
+        .filter_map(|c| c["choices"][0]["delta"]["content"].as_str())
+        .collect();
+    assert!(text.starts_with("<thinking>"), "{text}");
+    assert!(
+        chunks
+            .iter()
+            .any(|c| c["choices"][0]["finish_reason"] == "tool_calls"),
+        "{}",
+        r.text()
+    );
+    let usage = chunks.iter().find(|c| c["usage"].is_object()).unwrap();
+    assert_eq!(usage["usage"]["prompt_tokens"], 372);
+    assert_eq!(usage["usage"]["completion_tokens"], 41);
+}
+
+#[tokio::test]
+async fn an_anthropic_app_gets_a_streamed_tool_call_from_nova_through_converse() {
+    let env = env().await;
+    let mut body = messages(NOVA, "Top song on WZPZ? [mock:fixture=built-nova-tool-use]");
+    body["stream"] = json!(true);
+    body["tools"] = json!([{ "name": "top_song", "input_schema": { "type": "object", "properties": { "sign": { "type": "string" } } } }]);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        env.mock.last().unwrap().path,
+        format!("{NOVA_PATH}/converse-stream")
+    );
+    let events = sse(&r.text());
+    let start = events
+        .iter()
+        .find(|e| e["type"] == "content_block_start" && e["content_block"]["type"] == "tool_use")
+        .unwrap();
+    assert_eq!(start["content_block"]["name"], "top_song");
+    assert_eq!(
+        start["content_block"]["id"],
+        "tooluse_20Z9zl0BQWSXjFuLKdTJcA"
+    );
+    let input: String = events
+        .iter()
+        .filter_map(|e| e["delta"]["partial_json"].as_str())
+        .collect();
+    assert_eq!(input, r#"{"sign":"WZPZ"}"#);
+    let delta = events
+        .iter()
+        .find(|e| e["type"] == "message_delta")
+        .unwrap();
+    assert_eq!(delta["delta"]["stop_reason"], "tool_use");
+    assert_eq!(delta["usage"]["output_tokens"], 41);
+    assert_eq!(events.last().unwrap()["type"], "message_stop");
+}
+
+#[tokio::test]
+async fn openai_anthropic_and_gemini_apps_get_whole_answers_from_nova() {
+    let env = env().await;
+    let mut body = chat(NOVA, "Top song on WZPZ? [mock:fixture=built-nova-tool-use]");
+    body["tools"] = top_song();
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        env.mock.last().unwrap().path,
+        format!("{NOVA_PATH}/converse")
+    );
+    let choice = &r.json()["choices"][0];
+    assert_eq!(choice["finish_reason"], "tool_calls");
+    assert_eq!(
+        choice["message"]["tool_calls"][0]["function"]["name"],
+        "top_song"
+    );
+    assert_eq!(
+        choice["message"]["tool_calls"][0]["function"]["arguments"],
+        r#"{"sign":"WZPZ"}"#
+    );
+
+    let r = call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages(NOVA, "Hello [mock:fixture=built-nova-text]")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.json()["content"][0]["text"],
+        "Hello! How can I help you today?"
+    );
+    assert_eq!(r.json()["stop_reason"], "end_turn");
+    assert_eq!(r.json()["usage"]["input_tokens"], 4);
+
+    let req = axum::http::Request::builder()
+        .uri(format!("/v1beta/models/{NOVA}:generateContent"))
+        .method("POST")
+        .header("x-goog-api-key", &env.key)
+        .header("content-type", "application/json")
+        .body(axum::body::Body::from(
+            json!({ "contents": [{ "role": "user", "parts": [{ "text": "Hello [mock:fixture=built-nova-text]" }] }] }).to_string(),
+        ))
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let status = resp.status();
+    let bytes = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    let answer: Value = serde_json::from_slice(&bytes).unwrap();
+    assert_eq!(status, StatusCode::OK, "{answer}");
+    assert_eq!(
+        answer["candidates"][0]["content"]["parts"][0]["text"],
+        "Hello! How can I help you today?"
+    );
+    assert_eq!(
+        env.mock.last().unwrap().path,
+        format!("{NOVA_PATH}/converse")
+    );
+}
+
+#[tokio::test]
+async fn converse_errors_reach_the_app_in_its_own_format() {
+    let env = env().await;
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(NOVA, "Hello [mock:error=built-validation-too-long]")),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["code"],
+        "context_length_exceeded",
+        "{}",
+        r.text()
+    );
+
+    let mut body = chat(NOVA, "Hello [mock:fixture=built-throttling-exception]");
+    body["stream"] = json!(true);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    let text = r.text();
+    assert!(
+        text.contains("Too many tokens, please wait before trying again."),
+        "{text}"
+    );
+
+    let mut body = chat(NOVA, "Hello");
+    body["seed"] = json!(7);
+    let before = env.mock.received().len();
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "seed");
+    assert_eq!(env.mock.received().len(), before, "refused before sending");
 }

@@ -1,0 +1,6 @@
+{
+  "status": 400,
+  "headers": {
+    "x-amzn-errortype": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/"
+  }
+}

@@ -142,6 +142,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decode_bedrock_converse"
+path = "fuzz_targets/decode_bedrock_converse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "decode_dashscope"
 path = "fuzz_targets/decode_dashscope.rs"
 test = false

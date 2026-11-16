@@ -1,0 +1,6 @@
+{
+  "status": 403,
+  "headers": {
+    "x-amzn-errortype": "AccessDeniedException:http://internal.amazon.com/coral/com.amazon.bedrock/"
+  }
+}

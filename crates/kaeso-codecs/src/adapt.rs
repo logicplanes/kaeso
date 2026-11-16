@@ -147,6 +147,12 @@ pub(crate) fn for_target<'a>(
             object_arguments(&mut draft, target)?;
             fold_later_system(&mut draft, target)?;
         }
+        DialectId::BedrockConverse => {
+            history::agent_messages(&mut draft, "Amazon Bedrock")?;
+            history::as_function_calls(&mut draft)?;
+            object_arguments(&mut draft, target)?;
+            fold_later_system(&mut draft, target)?;
+        }
         DialectId::OpenAiResponses => {
             web_search::for_responses(&mut draft, profile)?;
             if profile.reasoning_replay == ReasoningReplay::WithoutNullContent {
