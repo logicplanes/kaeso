@@ -20,6 +20,23 @@ pub async fn user_of(
     .await?)
 }
 
+/// Marks an account the organization's identity provider made, so its first single sign-on binds
+/// the identity that signs in.
+pub async fn add_pending(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    user_id: Uuid,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "INSERT INTO sso_identities (org_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        org_id,
+        user_id
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 pub async fn bind_pending(
     db: impl PgExecutor<'_>,
     org_id: Uuid,

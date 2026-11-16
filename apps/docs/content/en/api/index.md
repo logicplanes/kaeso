@@ -21,3 +21,4 @@ Every install serves two APIs on its domain. Apps call models through the model 
 - [Automate with the Platform API](automation.md): Set up a project, a model and an app's key from a script.
 - [MCP server](mcp.md): Connect coding agents, choose what they may do, and look up their tools and sign-in.
 - [MCP portal API](mcp-portal.md): Call a project's tools over MCP, and look up the portal's sign-in, versions and errors.
+- [SCIM provisioning](scim.md): Let your identity provider add and remove members through SCIM 2.0.

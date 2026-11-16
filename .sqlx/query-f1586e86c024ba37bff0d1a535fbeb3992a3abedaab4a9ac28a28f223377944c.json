@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE scim_tokens SET last_used_at = $2, last_error = COALESCE($3, last_error), last_error_at = CASE WHEN $3::text IS NULL THEN last_error_at ELSE $2 END WHERE org_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f1586e86c024ba37bff0d1a535fbeb3992a3abedaab4a9ac28a28f223377944c"
+}

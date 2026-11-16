@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO scim_tokens (org_id, hash, last4, created_at) VALUES ($1, $2, $3, $5) ON CONFLICT (org_id) DO UPDATE SET previous_hash = scim_tokens.hash, previous_until = $4, hash = EXCLUDED.hash, last4 = EXCLUDED.last4, created_at = EXCLUDED.created_at",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fd6faef6bda89f21f4cdd0d3b8ea5c81ff458fdee9c610d75f0701dc7b21e1b9"
+}

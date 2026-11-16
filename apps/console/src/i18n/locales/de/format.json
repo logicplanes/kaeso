@@ -277,5 +277,9 @@
   "format.guardrail.found.token": "{count, plural, one {# JSON Web Token} other {# JSON Web Tokens}}",
   "format.audit.action.storedResponsesOrgUpdate": "Gespeicherte Antworten erlaubt oder verboten",
   "format.audit.action.storedResponsesProjectUpdate": "Gespeicherte Antworten eines Projekts geändert",
-  "format.audit.kind.storedResponses": "Gespeicherte Antworten"
+  "format.audit.kind.storedResponses": "Gespeicherte Antworten",
+  "format.audit.action.memberProvision": "Mitglied vom Identitätsanbieter hinzugefügt",
+  "format.audit.action.memberDeprovision": "Mitglied vom Identitätsanbieter entfernt",
+  "format.audit.action.securityScimRotate": "SCIM-Token erstellt oder ersetzt",
+  "format.audit.action.securityScimDelete": "SCIM-Token gelöscht"
 }

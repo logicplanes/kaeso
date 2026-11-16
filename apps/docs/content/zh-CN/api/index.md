@@ -21,3 +21,4 @@ order: 4
 - [用 Platform API 实现自动化](automation.md)：通过脚本设置项目、模型和应用的密钥。
 - [MCP 服务器](mcp.md)：连接编程智能体，决定它们能做什么，并查阅其工具和登录方式。
 - [MCP 门户 API](mcp-portal.md)：通过 MCP 调用项目的工具，并查阅门户的登录方式、版本和错误。
+- [SCIM 预配](scim.md)：让身份提供方通过 SCIM 2.0 添加和移除成员。

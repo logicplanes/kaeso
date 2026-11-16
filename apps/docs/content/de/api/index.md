@@ -21,3 +21,4 @@ Jede Installation stellt auf ihrer Domain zwei APIs bereit. Apps rufen Modelle �
 - [Mit der Platform API automatisieren](automation.md): Ein Projekt, ein Modell und den Schl체ssel einer App per Skript einrichten.
 - [MCP-Server](mcp.md): Coding-Agenten verbinden, festlegen, was sie d체rfen, und ihre Tools und Anmeldung nachschlagen.
 - [MCP-Portal-API](mcp-portal.md): Rufen Sie die Tools eines Projekts 체ber MCP auf, und schlagen Sie Anmeldung, Versionen und Fehler des Portals nach.
+- [SCIM-Bereitstellung](scim.md): Lassen Sie Ihren Identit채tsanbieter Mitglieder 체ber SCIM 2.0 hinzuf체gen und entfernen.

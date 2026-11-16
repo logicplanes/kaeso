@@ -841,5 +841,6 @@
   "errors.batches.endpoint": "文件中的请求使用 `{endpoint}`；请提供该 `endpoint`。",
   "errors.batches.window": "`completion_window` 必须是 `24h`。",
   "errors.batches.after": "`after` 不是批处理 ID。",
-  "errors.batches.limit": "`limit` 必须在 1 到 100 之间。"
+  "errors.batches.limit": "`limit` 必须在 1 到 100 之间。",
+  "errors.scimNeedsSso": "请先连接单点登录；SCIM 管理通过它登录的账户。"
 }

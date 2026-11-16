@@ -695,6 +695,7 @@
   "errors.roleNotRoleId": "`role` is not a role id.",
   "errors.rolePresetOldName": "Send `role` only; `preset` is its old name.",
   "errors.routeModel": "This model is not in the project's catalogue.",
+  "errors.scimNeedsSso": "Connect single sign-on first; SCIM manages the accounts it signs in.",
   "errors.scopeOrgOrProject": "`scope` must be org or project.",
   "errors.secretCharacters": "The secret must not contain spaces or control characters.",
   "errors.secretLength": "The secret must be {min} to {max} characters.",
