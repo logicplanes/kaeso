@@ -31,6 +31,9 @@ services:
       CLICKHOUSE_PASSWORD: kaeso
       CLICKHOUSE_DB: kaeso
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    configs:
+      - source: clickhouse
+        target: /etc/clickhouse-server/config.d/kaeso.xml
     ports:
       - 127.0.0.1:${KAESO_CLICKHOUSE_PORT:-58123}:8123
     volumes:
@@ -243,6 +246,37 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+configs:
+  # The same ClickHouse settings as deploy/compose.yaml.
+  clickhouse:
+    content: |
+      <clickhouse>
+          <!-- Kaeso reads none of ClickHouse's own diagnostics tables. Writing and merging them took most
+          of an idle install's CPU and half its memory, and they were kept forever. -->
+          <asynchronous_metric_log remove="1"/>
+          <metric_log remove="1"/>
+          <part_log remove="1"/>
+          <processors_profile_log remove="1"/>
+          <query_metric_log remove="1"/>
+          <query_thread_log remove="1"/>
+          <query_views_log remove="1"/>
+          <trace_log remove="1"/>
+          <text_log remove="1"/>
+          <latency_log remove="1"/>
+          <session_log remove="1"/>
+          <opentelemetry_span_log remove="1"/>
+          <asynchronous_insert_log remove="1"/>
+          <background_schedule_pool_log remove="1"/>
+          <blob_storage_log remove="1"/>
+          <!-- Kept for an operator's questions: queries for a week, errors for a month. -->
+          <query_log>
+              <ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
+          </query_log>
+          <error_log>
+              <ttl>event_date + INTERVAL 30 DAY DELETE</ttl>
+          </error_log>
+      </clickhouse>
 
 volumes:
   master-key:

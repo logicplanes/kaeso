@@ -81,6 +81,16 @@ const MIGRATIONS: &[Migration] = &[
         name: "microsecond_timings",
         sql: include_str!("../../migrations/clickhouse/0013_microsecond_timings.sql"),
     },
+    // An agent sends its whole conversation again with every turn, so a project's consecutive request
+    // bodies are nearly the same. ClickHouse compresses each block on its own, and at its default of
+    // at most 1 MiB a block held about one body. Blocks of 16 to 32 MiB hold a run of turns, which
+    // stores agent sessions several times smaller, read as fast. Parts written before compress this
+    // way when ClickHouse next merges them.
+    Migration {
+        version: 14,
+        name: "content_blocks",
+        sql: include_str!("../../migrations/clickhouse/0014_content_blocks.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -233,7 +243,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 29);
+        assert_eq!(all.len(), 30);
         assert!(all.iter().all(|s| s.starts_with("CREATE ")
             || s.starts_with("ALTER TABLE ")
             || s.starts_with("DROP ")));
@@ -241,7 +251,8 @@ mod tests {
         assert!(
             all.iter().all(|s| s.contains(" IF NOT EXISTS ")
                 || s.contains(" IF EXISTS ")
-                || s.contains(" MODIFY QUERY")),
+                || s.contains(" MODIFY QUERY")
+                || s.contains(" MODIFY SETTING ")),
             "every statement can run again after a migration stopped halfway"
         );
     }

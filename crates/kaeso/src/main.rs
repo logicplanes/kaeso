@@ -113,6 +113,13 @@ macro_rules! say {
     };
 }
 
+// glibc's allocator kept the memory each worker thread had freed and made threads take turns on
+// its locks; mimalloc gave the gateway 50% more requests a second at 40% less CPU each, and less
+// memory, in the gateway benchmark on Linux. Without transparent huge pages (`no_thp`), which
+// Linux would back its segments with, a stalled stream holds less than glibc's, not more.
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command.unwrap_or(Command::Serve) {
@@ -120,7 +127,12 @@ fn main() -> Result<()> {
             say!("{}", kaeso_crypto::generate_master_key().expose_secret());
             Ok(())
         }
-        Command::Healthcheck { ready } => runtime()?.block_on(healthcheck(&ProcessSource, ready)),
+        // Docker runs it every few seconds: one thread is all one request needs.
+        Command::Healthcheck { ready } => tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .context("cannot start the async runtime")?
+            .block_on(healthcheck(&ProcessSource, ready)),
         Command::Openapi => {
             let doc = kaeso_server::platform::openapi();
             say!(

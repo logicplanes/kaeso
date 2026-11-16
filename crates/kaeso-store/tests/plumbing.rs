@@ -135,6 +135,33 @@ async fn clickhouse_migrations_create_the_log_tables_once() {
 }
 
 #[tokio::test]
+async fn request_content_compresses_runs_of_bodies_in_large_blocks() {
+    let s = TestServices::start().await;
+    s.clickhouse.migrate(&s.pg).await.unwrap();
+    #[derive(clickhouse::Row, serde::Deserialize)]
+    struct Create {
+        create_table_query: String,
+    }
+    let create = s
+        .clickhouse
+        .client()
+        .query(
+            "SELECT create_table_query FROM system.tables \
+             WHERE database = currentDatabase() AND name = 'request_content'",
+        )
+        .fetch_one::<Create>()
+        .await
+        .unwrap()
+        .create_table_query;
+    assert!(
+        create.contains("min_compress_block_size = 16777216")
+            && create.contains("max_compress_block_size = 33554432"),
+        "{create}"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn timings_logged_in_whole_milliseconds_read_as_microseconds_without_rewriting_them() {
     let s = TestServices::start().await;
     let ch = &s.clickhouse;

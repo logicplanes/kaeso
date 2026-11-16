@@ -121,6 +121,40 @@ services:
     cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, KILL, SETGID, SETUID]
     mem_limit: 4g
     pids_limit: 4096
+    # ClickHouse's own diagnostics tables, which Kaeso never reads, as in deploy/compose.yaml.
+    command:
+      - sh
+      - -c
+      - |
+        cat >/etc/clickhouse-server/config.d/kaeso.xml <<'EOF'
+        <clickhouse>
+            <!-- Kaeso reads none of ClickHouse's own diagnostics tables. Writing and merging them took most
+            of an idle install's CPU and half its memory, and they were kept forever. -->
+            <asynchronous_metric_log remove="1"/>
+            <metric_log remove="1"/>
+            <part_log remove="1"/>
+            <processors_profile_log remove="1"/>
+            <query_metric_log remove="1"/>
+            <query_thread_log remove="1"/>
+            <query_views_log remove="1"/>
+            <trace_log remove="1"/>
+            <text_log remove="1"/>
+            <latency_log remove="1"/>
+            <session_log remove="1"/>
+            <opentelemetry_span_log remove="1"/>
+            <asynchronous_insert_log remove="1"/>
+            <background_schedule_pool_log remove="1"/>
+            <blob_storage_log remove="1"/>
+            <!-- Kept for an operator's questions: queries for a week, errors for a month. -->
+            <query_log>
+                <ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
+            </query_log>
+            <error_log>
+                <ttl>event_date + INTERVAL 30 DAY DELETE</ttl>
+            </error_log>
+        </clickhouse>
+        EOF
+        exec /entrypoint.sh
     environment:
       CLICKHOUSE_USER: kaeso
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}

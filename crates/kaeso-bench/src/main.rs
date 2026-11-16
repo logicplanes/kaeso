@@ -222,6 +222,10 @@ async fn bench(plan: Plan, out: PathBuf) -> Result<bool> {
     Ok(report.passed())
 }
 
+// The gateway's own allocator, so the numbers are the ones `kaeso serve` gets.
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 fn main() -> ExitCode {
     let cli = Cli::parse();
     let runtime = match tokio::runtime::Builder::new_multi_thread()
