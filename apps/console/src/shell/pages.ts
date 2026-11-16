@@ -27,8 +27,8 @@ export interface ProjectPage {
   icon: IconData;
   path: string;
   right: string;
-  key?: string;
-  shortcut?: string[][];
+  /** The letter that opens the page after `g`; the shortcuts, the palette, the sidebar and the shortcut sheet all read it. */
+  key: string;
 }
 
 export const PROJECT_PAGES: ProjectPage[] = [
@@ -39,7 +39,6 @@ export const PROJECT_PAGES: ProjectPage[] = [
     path: "",
     right: "usage.view",
     key: "o",
-    shortcut: [["g"], ["o"]],
   },
   {
     id: "analytics",
@@ -48,10 +47,9 @@ export const PROJECT_PAGES: ProjectPage[] = [
     path: "analytics",
     right: "usage.view",
     key: "u",
-    shortcut: [["g"], ["u"]],
   },
-  { id: "playground", label: () => t("shell.page.playground", "Playground"), icon: icons.code, path: "playground", right: "playground.use" },
-  { id: "keys", label: () => t("shell.page.apiKeys", "API keys"), icon: icons.key, path: "keys", right: "keys.all.view", key: "k", shortcut: [["g"], ["k"]] },
+  { id: "playground", label: () => t("shell.page.playground", "Playground"), icon: icons.code, path: "playground", right: "playground.use", key: "y" },
+  { id: "keys", label: () => t("shell.page.apiKeys", "API keys"), icon: icons.key, path: "keys", right: "keys.all.view", key: "k" },
   {
     id: "logs",
     label: () => t("shell.page.requestLogs", "Request logs"),
@@ -59,20 +57,20 @@ export const PROJECT_PAGES: ProjectPage[] = [
     path: "logs",
     right: "logs.metadata.view",
     key: "l",
-    shortcut: [["g"], ["l"]],
   },
-  { id: "models", label: () => t("common.models", "Models"), icon: icons.model, path: "models", right: "models.view", key: "m", shortcut: [["g"], ["m"]] },
-  { id: "tools", label: () => t("shell.page.tools", "Tools"), icon: icons.tools, path: "tools", right: "tools.view", key: "t", shortcut: [["g"], ["t"]] },
-  { id: "limits", label: () => t("shell.page.limits", "Limits"), icon: icons.limit, path: "limits", right: "limits.view" },
-  { id: "members", label: () => t("common.members", "Members"), icon: icons.members, path: "members", right: "project.members.view" },
+  { id: "models", label: () => t("common.models", "Models"), icon: icons.model, path: "models", right: "models.view", key: "m" },
+  { id: "tools", label: () => t("shell.page.tools", "Tools"), icon: icons.tools, path: "tools", right: "tools.view", key: "t" },
+  { id: "limits", label: () => t("shell.page.limits", "Limits"), icon: icons.limit, path: "limits", right: "limits.view", key: "i" },
+  { id: "members", label: () => t("common.members", "Members"), icon: icons.members, path: "members", right: "project.members.view", key: "e" },
   {
     id: "service-accounts",
     label: () => t("shell.page.serviceAccounts", "Service accounts"),
     icon: icons.serviceAccount,
     path: "service-accounts",
     right: "service_accounts.view",
+    key: "v",
   },
-  { id: "audit-log", label: () => t("shell.page.auditLog", "Audit log"), icon: icons.audit, path: "audit-log", right: "project.audit_log.view" },
+  { id: "audit-log", label: () => t("shell.page.auditLog", "Audit log"), icon: icons.audit, path: "audit-log", right: "project.audit_log.view", key: "a" },
   {
     id: "settings",
     label: () => t("common.settings", "Settings"),
@@ -80,7 +78,6 @@ export const PROJECT_PAGES: ProjectPage[] = [
     path: "settings",
     right: "project.view",
     key: "p",
-    shortcut: [["g"], ["p"]],
   },
 ];
 
