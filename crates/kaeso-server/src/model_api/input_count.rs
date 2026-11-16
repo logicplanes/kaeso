@@ -100,6 +100,7 @@ impl InputCounter {
                     .platform
                     .as_ref()
                     .map_or(&self.credential.secret, |p| &p.secret),
+                sigv4: None,
                 request: encoded.into(),
                 stream: false,
                 timeouts: Timeouts {

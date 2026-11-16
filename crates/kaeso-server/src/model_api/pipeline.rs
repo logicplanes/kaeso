@@ -2292,11 +2292,23 @@ async fn attempt(
         (None, None, None) => eff.provider.auth(),
     };
     let secret = platform.as_ref().map_or(&credential.secret, |p| &p.secret);
+    // A key that signs with AWS credentials signs the request in place of an auth header, in
+    // its own region whatever host the base URL names.
+    let sigv4 = match (credential.method.is_aws(), credential.region.as_deref()) {
+        (true, Some(region)) => Some(
+            crate::services::aws_auth::signer(state, &credential, region)
+                .await
+                .map_err(fail(Stage::Credential))?,
+        ),
+        _ => None,
+    };
+    let auth = if sigv4.is_some() { None } else { auth };
     let sending = state.upstream.send(Call {
         base_url: base,
         auth,
         guard: guard_for(&eff.provider),
         credential: secret,
+        sigv4,
         request: Outgoing::from(encoded),
         stream: match kind {
             RequestKind::Generate => stream || chatgpt.is_some(),
@@ -2615,6 +2627,11 @@ async fn attempt(
                     refused_custom_key(&err, &eff.provider, credential.is_keyless())
                         .or_else(|| refused_key(&err))
                 {
+                    // Temporary AWS credentials AWS refused, expired ones included, are fetched
+                    // again for the next request.
+                    if credential.method == kaeso_core::provider::AuthMethod::AwsRole {
+                        crate::services::aws_auth::forget(&credential);
+                    }
                     let said = redacted(err);
                     tracing::warn!(provider, status, kind = said.kind.as_str(), upstream = %said.message, "the provider refused the project's provider key");
                     if !credential.is_keyless() {

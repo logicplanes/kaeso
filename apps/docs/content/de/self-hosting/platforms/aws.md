@@ -54,6 +54,9 @@ aws cloudformation deploy --stack-name kaeso --template-file deploy/aws/managed.
 | `Smtp…` | Ihr SMTP-Server ([E-Mail](../email.md)) |
 | `GatewayCpu`, `GatewayMemory`, `GatewayCount` | Größe des Gateways und wie viele Tasks laufen; sie teilen Limits, Caches und Routen-Abklingzeiten über Valkey |
 | `DatabaseInstanceClass`, `DatabaseStorageGb`, `CacheNodeType` | Die Größen der Datenspeicher |
+| `BedrockAccess` | `true` gibt den Tasks des Gateways eine Rolle, die Amazon Bedrock aufrufen darf, und setzt `aws.ambient_credentials`, sodass Instanz-Admins Bedrock-Schlüssel hinzufügen können, die sich mit der AWS-Identität des Gateways anmelden, ohne gespeicherten Schlüssel |
+
+Mit `BedrockAccess` erlaubt die Task-Rolle `bedrock:InvokeModel` und `bedrock:InvokeModelWithResponseStream` für jedes Foundation Model und die Inferenzprofile des Kontos. Um sie einzuschränken, oder für einen Schlüssel, der eine Rolle in einem anderen Konto annimmt, bearbeiten Sie die Richtlinie der Rolle; die angenommene Rolle braucht dieselben zwei Aktionen und eine Vertrauensrichtlinie, die die Task-Rolle nennt ([Schlüssel für Amazon Bedrock](../../console/provider-keys.md#schlüssel-für-amazon-bedrock)).
 
 Das Gateway vertraut `X-Forwarded-For` aus der VPC, in der die Knoten des Load Balancers sitzen, und hält seine Metriken auf seiner Loopback-Adresse. Der Load Balancer prüft `/readyz` am Gateway und `/healthz` an der Konsole; ein Gateway-Task bekommt beim Stoppen 75 Sekunden zum Abarbeiten.
 

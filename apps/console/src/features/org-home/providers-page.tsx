@@ -98,6 +98,13 @@ const ACCOUNT_KEY_WIDTH = 456;
 
 const signsIn = (k: CredentialView) => k.auth_method === "chatgpt" || k.auth_method === "grok";
 
+const signedAs = (k: CredentialView): string =>
+  k.auth_method === "aws_access_key"
+    ? t("orgHome.awsAccessKey", "Access key")
+    : k.auth_method === "aws_role"
+      ? t("orgHome.awsRole", "AWS role")
+      : t("orgHome.serviceAccount", "Service account");
+
 const lastUsed = (k: CredentialView) => (k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never"));
 
 export function OrgProvidersPage({ org, search = {} }: { org: string; search?: ProvidersSearch }) {
@@ -259,12 +266,12 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
               ? { id: "stage", label: t("orgHome.stage", "Stage"), value: t("orgHome.experimental", "Experimental") }
               : null,
             r.key.account && signsIn(r.key) ? { id: "account", label: t("orgHome.account", "Account"), value: r.key.account } : null,
-            r.key.account && !signsIn(r.key) ? { id: "service-account", label: t("orgHome.serviceAccount", "Service account"), value: r.key.account } : null,
+            r.key.account && !signsIn(r.key) ? { id: "service-account", label: signedAs(r.key), value: r.key.account } : null,
             r.key.project ? { id: "project", label: t("orgHome.project", "Project"), value: r.key.project } : null,
             r.key.location
               ? {
                   id: "location",
-                  label: r.key.auth_method === "api_key" ? t("orgHome.region", "Region") : t("orgHome.location", "Location"),
+                  label: r.key.auth_method === "google_service_account" ? t("orgHome.location", "Location") : t("orgHome.region", "Region"),
                   value: r.key.location,
                 }
               : null,
@@ -535,7 +542,7 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
   const [accountId, setAccountId] = useState(credential.account_id ?? "");
   const [gatewayId, setGatewayId] = useState(credential.gateway_id ?? "");
   const known = providers.get(credential.provider);
-  const regional = credential.auth_method === "api_key" && known?.regions ? { provider: known.name, regions: known.regions } : null;
+  const regional = credential.auth_method !== "google_service_account" && known?.regions ? { provider: known.name, regions: known.regions } : null;
   const locations = known?.service_account?.locations ?? [];
   const [endpoint, setEndpoint] = useState(credential.endpoint ?? "");
   const endpointRule = credential.endpoint ? providers.get(credential.provider)?.key_endpoint : undefined;

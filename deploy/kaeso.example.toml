@@ -220,6 +220,9 @@ call_timeout = "60s"
 [guardrails]
 allowed_networks = ""
 
+[aws]
+ambient_credentials = false
+
 [upstream]
 connect_timeout = "10s"
 request_timeout = "600s"

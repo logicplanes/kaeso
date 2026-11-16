@@ -210,6 +210,7 @@ async fn exchange(
             auth: None,
             guard: kaeso_upstream::Guard::Install,
             credential: &none,
+            sigv4: None,
             request,
             stream: false,
             timeouts: Timeouts {

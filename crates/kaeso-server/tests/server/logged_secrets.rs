@@ -622,3 +622,55 @@ async fn mcp_sign_in_secrets_and_tokens_never_reach_the_log() {
     }
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn aws_secret_keys_and_session_tokens_never_reach_the_log() {
+    let logs = Captured::default();
+    let subscriber = tracing_subscriber::fmt()
+        .json()
+        .with_max_level(tracing::Level::TRACE)
+        .with_writer(logs.clone())
+        .finish();
+    let _logging = tracing::subscriber::set_default(subscriber);
+    let env = common::v1::env(None, None).await;
+    let secret = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYLOGGEDKEY";
+    let token = "IQoJb3JpZ2luX2VjLOGGEDSESSIONTOKEN";
+    let key = json!({ "access_key_id": "AKIAIOSFODNN7LOGGED", "secret_access_key": secret, "session_token": token });
+    env.app
+        .post(
+            &format!("/orgs/{}/credentials", env.owner.org_id),
+            json!({ "provider": "amazon-bedrock", "name": "Bedrock", "auth_method": "aws_access_key", "secret": key.to_string(), "location": "eu-central-1" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    env.app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({ "provider": "amazon-bedrock", "model_id": "deepseek.v3.2" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    for prompt in [
+        "Hello [mock:fixture=recorded-response-format-text]",
+        "Hello [mock:error=../providers/amazon-bedrock/errors/built-unrecognized-client]",
+    ] {
+        common::v1::call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(common::v1::chat("deepseek.v3.2", prompt)),
+        )
+        .await;
+    }
+    let text = logs.text();
+    assert!(
+        text.contains("refused the project's provider key"),
+        "the refusal is logged"
+    );
+    for s in [secret, token] {
+        assert!(!text.contains(s), "{s} reached the log");
+    }
+}

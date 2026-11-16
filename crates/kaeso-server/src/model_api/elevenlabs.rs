@@ -162,6 +162,7 @@ async fn relay_voices(
             auth: elevenlabs.auth(),
             guard: kaeso_upstream::Guard::Off,
             credential: &credential.secret,
+            sigv4: None,
             request: Outgoing::from(encoded),
             stream: false,
             timeouts: kaeso_upstream::Timeouts {

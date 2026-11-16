@@ -193,6 +193,7 @@ impl Asked<'_> {
                 auth: self.provider.auth(),
                 guard: crate::model_api::pipeline::guard_for(self.provider),
                 credential: &self.credential.secret,
+                sigv4: None,
                 request: Outgoing::from(request),
                 stream: false,
                 timeouts: Timeouts {

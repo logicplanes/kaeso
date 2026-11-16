@@ -249,6 +249,20 @@ def test_aws_routes_api_paths_to_the_gateway_and_keeps_the_data_stores_private(m
     assert managed_aws["Parameters"]["MasterKeys"]["NoEcho"] is True
 
 
+def test_aws_gives_the_gateway_a_bedrock_task_role_only_when_asked(managed_aws):
+    resources = managed_aws["Resources"]
+    assert managed_aws["Parameters"]["BedrockAccess"]["Default"] == "false"
+    role = resources["GatewayTaskRole"]
+    assert role["Condition"] == "HasBedrock"
+    [statement] = role["Properties"]["Policies"][0]["PolicyDocument"]["Statement"]
+    assert statement["Action"] == ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+    task = resources["GatewayTask"]["Properties"]
+    assert task["TaskRoleArn"] == {"If": ["HasBedrock", {"GetAtt": "GatewayTaskRole.Arn"}, {"Ref": "AWS::NoValue"}]}
+    [gateway] = task["ContainerDefinitions"]
+    env = {e["Name"]: e["Value"] for e in gateway["Environment"]}
+    assert env["KAESO_AWS_AMBIENT_CREDENTIALS"] == {"Ref": "BedrockAccess"}, "keys may use the role only where it exists"
+
+
 @pytest.mark.parametrize("folder", ["quick-server", "managed"])
 def test_the_terraform_for_gcp_is_formatted_and_valid(folder):
     assert shutil.which("tofu"), "OpenTofu is on PATH in CI and for this suite"

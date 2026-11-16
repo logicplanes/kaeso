@@ -27,10 +27,20 @@ import { AccountScopeFields, isAccountId, isGatewayId } from "./account-scope-fi
 import { RegionField } from "./region-field";
 import { EndpointField, endpointProblem } from "./endpoint-field";
 import { ServiceAccountFields, serviceAccountBlocked } from "./service-account-fields";
+import { AwsKeyFields, awsKeyBlocked, awsSecret, emptyAwsKey, type AwsKey, type AwsMethod } from "./aws-key-fields";
 import { keyTitle, providerOptions, useProviders } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
-type Method = "api_key" | "account" | "service_account";
+type Method = "api_key" | "account" | "service_account" | AwsMethod;
+
+const isAws = (m: string | undefined): m is AwsMethod => m === "aws_access_key" || m === "aws_role";
+
+function methodOf(replace: CredentialView | undefined): Method {
+  if (!replace || replace.auth_method === "api_key") return "api_key";
+  if (replace.auth_method === "google_service_account") return "service_account";
+  if (isAws(replace.auth_method)) return replace.auth_method;
+  return "account";
+}
 type Begin = { tab: Window | null; inputs: number };
 
 function keyHelp(provider: ProviderView | undefined): ReactNode {
@@ -93,9 +103,8 @@ export function ProviderKeyDialog({
   const [name, setName] = useState("");
   const [secret, setSecret] = useState("");
   const [makeDefault, setMakeDefault] = useState(false);
-  const [method, setMethod] = useState<Method>(
-    replace?.auth_method === "google_service_account" ? "service_account" : replace && replace.auth_method !== "api_key" ? "account" : "api_key",
-  );
+  const [method, setMethod] = useState<Method>(methodOf(replace));
+  const [aws, setAws] = useState<AwsKey>(emptyAwsKey);
   const [location, setLocation] = useState<string | null>(replace?.location ?? null);
   const [accountId, setAccountId] = useState("");
   const [gatewayId, setGatewayId] = useState("");
@@ -129,6 +138,9 @@ export function ProviderKeyDialog({
     : null;
   const signingIn = method === "account" && account !== null;
   const withServiceAccount = method === "service_account" && serviceAccount !== null;
+  const awsSignIn = known?.aws ?? null;
+  const withAws = isAws(method) && (awsSignIn !== null || !!replace);
+  const awsRegions = known?.regions ?? null;
   const chosenLocation = location ?? serviceAccount?.default_location ?? "";
   const device = attempt?.device ?? null;
   const left = attempt ? deadline - now : 0;
@@ -242,30 +254,43 @@ export function ProviderKeyDialog({
         return data(
           await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/replace", {
             params: { path: { org, credential: replace.id } },
-            body: withServiceAccount ? { secret: secret.trim(), location: chosenLocation } : { secret: secret.trim() },
+            body: withServiceAccount
+              ? { secret: secret.trim(), location: chosenLocation }
+              : isAws(method)
+                ? { secret: awsSecret(method, aws) }
+                : { secret: secret.trim() },
           }),
         );
       return data(
         await api.POST("/platform/v1/orgs/{org}/credentials", {
           params: { path: { org } },
-          body: withServiceAccount
+          body: isAws(method)
             ? {
                 provider: chosen,
                 name: name.trim(),
-                secret: secret.trim(),
+                secret: awsSecret(method, aws),
                 make_default: makeDefault,
-                auth_method: "google_service_account",
-                location: chosenLocation,
+                auth_method: method,
+                location: String(location),
               }
-            : {
-                provider: chosen,
-                name: name.trim(),
-                secret: secret.trim(),
-                make_default: makeDefault,
-                ...(accountScope ? { account_id: accountId.trim().toLowerCase(), ...(gatewayId.trim() ? { gateway_id: gatewayId.trim() } : {}) } : {}),
-                ...(regions && location ? { location } : {}),
-                ...(keyEndpoint ? { endpoint: endpoint.trim() } : {}),
-              },
+            : withServiceAccount
+              ? {
+                  provider: chosen,
+                  name: name.trim(),
+                  secret: secret.trim(),
+                  make_default: makeDefault,
+                  auth_method: "google_service_account",
+                  location: chosenLocation,
+                }
+              : {
+                  provider: chosen,
+                  name: name.trim(),
+                  secret: secret.trim(),
+                  make_default: makeDefault,
+                  ...(accountScope ? { account_id: accountId.trim().toLowerCase(), ...(gatewayId.trim() ? { gateway_id: gatewayId.trim() } : {}) } : {}),
+                  ...(regions && location ? { location } : {}),
+                  ...(keyEndpoint ? { endpoint: endpoint.trim() } : {}),
+                },
         }),
       );
     },
@@ -376,6 +401,94 @@ export function ProviderKeyDialog({
           forgetAttempt();
         }}
       />
+    ),
+  };
+  const awsBlocked =
+    isAws(method) &&
+    (awsKeyBlocked(method, aws) ??
+      (!replace && !location
+        ? t("kaeso.providerKey.regionBlocked", "Choose the key's region")
+        : !replace && !name.trim()
+          ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
+          : undefined));
+  const awsStep: DialogStep = {
+    id: "aws",
+    title: (
+      <span className="flex items-center gap-10">
+        {provider && (
+          <span aria-hidden className="flex">
+            <ProviderBadge provider={provider} name={label} size="lg" />
+          </span>
+        )}
+        {method === "aws_role"
+          ? t("kaeso.providerKey.awsRoleTitle", "Sign in as the gateway's AWS identity")
+          : replace
+            ? t("kaeso.providerKey.awsNewAccessKey", "Add the new access key")
+            : t("kaeso.providerKey.awsAccessKeyTitle", "Add an AWS access key")}
+      </span>
+    ),
+    description:
+      method === "aws_role"
+        ? t("kaeso.providerKey.awsRoleWhere", "Kaeso signs each request with the gateway's role, or the role it assumes.")
+        : awsSignIn
+          ? tRich("kaeso.providerKey.awsAccessKeyWhere", "Create an access key at {site} under {page}.", {
+              site: (
+                <Link href={awsSignIn.access_key_page.url} external>
+                  {new URL(awsSignIn.access_key_page.url).host}
+                </Link>
+              ),
+              page: awsSignIn.access_key_page.label,
+            })
+          : undefined,
+    blockedReason: awsBlocked || undefined,
+    content: (
+      <div className="flex flex-col gap-12">
+        {isAws(method) && <AwsKeyFields method={method} value={aws} onValue={setAws} />}
+        {!replace && awsRegions && <RegionField provider={label} regions={awsRegions} region={location} onRegion={setLocation} />}
+        {!replace && (
+          <Input
+            label={t("common.name", "Name")}
+            placeholder={t("kaeso.providerKey.namePlaceholder", "Production")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+          />
+        )}
+      </div>
+    ),
+  };
+  const awsMethodStep: DialogStep = {
+    id: "method",
+    title: t("kaeso.providerKey.awsMethodTitle", "How does Kaeso sign in to {provider}?", { provider: label }),
+    content: (
+      <RadioGroup
+        variant="cards"
+        aria-label={t("kaeso.providerKey.method", "Sign-in method")}
+        value={method}
+        onValueChange={(v) => {
+          setMethod(v === "aws_access_key" || v === "aws_role" ? v : "api_key");
+          setSecret("");
+          setAws(emptyAwsKey);
+        }}
+      >
+        <Radio
+          value="api_key"
+          label={t("kaeso.providerKey.bedrockApiKey", "Bedrock API key")}
+          description={t("kaeso.providerKey.bedrockApiKeyHint", "A key made in the Bedrock console; short-term ones expire.")}
+        />
+        <Radio
+          value="aws_access_key"
+          label={t("kaeso.providerKey.awsAccessKey", "Access key")}
+          description={t("kaeso.providerKey.awsAccessKeyHint", "An IAM user's access key; Kaeso signs each request with it.")}
+        />
+        {awsSignIn?.gateway_identity && (
+          <Radio
+            value="aws_role"
+            label={t("kaeso.providerKey.awsRole", "The gateway's AWS identity")}
+            description={t("kaeso.providerKey.awsRoleHint", "The task, pod or instance role Kaeso runs with, or a role it assumes.")}
+          />
+        )}
+      </RadioGroup>
     ),
   };
   const product = account?.product ?? "";
@@ -573,12 +686,12 @@ export function ProviderKeyDialog({
     content: <ProviderChoice choices={choices} value={provider} onChoose={choose} />,
   };
   const signInStep = pastes ? accountStep : deviceStep;
-  const secretStep = serviceAccountStep && withServiceAccount ? serviceAccountStep : keyStep;
+  const secretStep = withAws ? awsStep : serviceAccountStep && withServiceAccount ? serviceAccountStep : keyStep;
   const steps: DialogStep[] = replace
     ? [signingIn ? signInStep : secretStep]
     : [
         providerStep,
-        ...(account ? [methodStep] : serviceAccount ? [serviceAccountMethodStep] : []),
+        ...(account ? [methodStep] : serviceAccount ? [serviceAccountMethodStep] : awsSignIn ? [awsMethodStep] : []),
         ...(signingIn ? [...defaultStep, signInStep] : [secretStep, ...defaultStep]),
       ];
   const ready = signingIn
@@ -587,7 +700,9 @@ export function ProviderKeyDialog({
       : waiting && (replace || name.trim())
     : withServiceAccount
       ? !serviceAccountBlocked(secret) && (replace || name.trim())
-      : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && !endpointBlocked && (replace || name.trim());
+      : isAws(method)
+        ? !awsBlocked
+        : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && !endpointBlocked && (replace || name.trim());
 
   return (
     <StepDialog

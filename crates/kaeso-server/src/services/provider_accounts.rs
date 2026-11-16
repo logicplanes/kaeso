@@ -88,7 +88,10 @@ impl Endpoints {
         match method {
             AuthMethod::ChatGpt => Some(&self.chatgpt),
             AuthMethod::Grok => Some(&self.grok),
-            AuthMethod::ApiKey | AuthMethod::GoogleServiceAccount => None,
+            AuthMethod::ApiKey
+            | AuthMethod::GoogleServiceAccount
+            | AuthMethod::AwsAccessKey
+            | AuthMethod::AwsRole => None,
         }
     }
 }

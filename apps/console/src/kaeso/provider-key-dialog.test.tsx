@@ -74,9 +74,9 @@ async function choose(user: Awaited<ReturnType<typeof renderUi>>["user"], dialog
   await user.click(within(dialog).getByRole("radio", { name: (name) => name.startsWith(provider) }));
 }
 
-async function open(props: Partial<Parameters<typeof ProviderKeyDialog>[0]> = {}) {
+async function open(props: Partial<Parameters<typeof ProviderKeyDialog>[0]> = {}, list = providers) {
   const onClose = vi.fn();
-  on("GET", "orgs/:org/providers", page(providers));
+  on("GET", "orgs/:org/providers", page(list));
   const view = await renderUi(<ProviderKeyDialog org={ORG} keys={[]} onClose={onClose} {...props} />);
   const dialog = await screen.findByRole("dialog", { name: /provider key|Replace/ });
   return { ...view, dialog, onClose };
@@ -443,6 +443,10 @@ describe("ProviderKeyDialog", () => {
     const add = () => within(dialog).getByRole("button", { name: "Add key" });
 
     await choose(user, dialog, "Amazon Bedrock");
+    expect(await within(dialog).findByRole("heading", { name: "How does Kaeso sign in to Amazon Bedrock?" })).toBeVisible();
+    expect(within(dialog).getByRole("radio", { name: /^Bedrock API key/ })).toBeChecked();
+    expect(within(dialog).queryByRole("radio", { name: /^The gateway's AWS identity/ })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your Amazon Bedrock API key" })).toBeVisible();
     const link = within(dialog).getByRole("link", { name: "console.aws.amazon.com (opens in a new tab)" });
@@ -463,6 +467,134 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
       { provider: "amazon-bedrock", name: "Bedrock", secret: "ABSKexample0123", make_default: false, location: "eu-central-1" },
     ]);
+  });
+
+  it("adds an Amazon Bedrock key that signs with an AWS access key in its region", async () => {
+    on(
+      "POST",
+      CREDENTIALS,
+      credential({
+        provider: "amazon-bedrock",
+        name: "Signed",
+        auth_method: "aws_access_key",
+        account: "AKIAIOSFODNN7EXAMPLE",
+        location: "eu-central-1",
+      }),
+    );
+    const { user, dialog } = await open();
+    const add = () => within(dialog).getByRole("button", { name: "Add key" });
+
+    await choose(user, dialog, "Amazon Bedrock");
+    await user.click(await within(dialog).findByRole("radio", { name: /^Access key/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Add an AWS access key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "console.aws.amazon.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://console.aws.amazon.com/iam/home#/security_credentials");
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(
+      "Create an access key at console.aws.amazon.com under Security credentials.",
+    );
+    await hoverReason(user, add(), "Give the access key ID");
+    await user.type(within(dialog).getByRole("textbox", { name: "Access key ID" }), "AKIAIOSFODNN7EXAMPLE");
+    await hoverReason(user, add(), "Paste the secret access key");
+    await user.type(within(dialog).getByLabelText("Secret access key"), "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
+    await user.type(within(dialog).getByLabelText("Session token"), "a b");
+    await hoverReason(user, add(), "The session token can't contain spaces");
+    await user.clear(within(dialog).getByLabelText("Session token"));
+    await user.type(within(dialog).getByLabelText("Session token"), "IQoJb3JpZ2luX2VjEXAMPLE");
+    await hoverReason(user, add(), "Choose the key's region");
+    await user.click(within(dialog).getByRole("combobox", { name: "Region" }));
+    await user.click(await screen.findByRole("option", { name: "eu-central-1" }));
+    await hoverReason(user, add(), "Give the key a name");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Signed");
+    await user.click(add());
+
+    expect(await notifications().findByText("Signed is the Amazon Bedrock default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      {
+        provider: "amazon-bedrock",
+        name: "Signed",
+        secret: JSON.stringify({
+          access_key_id: "AKIAIOSFODNN7EXAMPLE",
+          secret_access_key: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+          session_token: "IQoJb3JpZ2luX2VjEXAMPLE",
+        }),
+        make_default: false,
+        auth_method: "aws_access_key",
+        location: "eu-central-1",
+      },
+    ]);
+  });
+
+  it("adds an Amazon Bedrock key that signs in as the gateway's AWS identity when the install lets the admin", async () => {
+    const list = providers.map((p) => (p.id === "amazon-bedrock" && p.aws ? { ...p, aws: { ...p.aws, gateway_identity: true } } : p));
+    on("POST", CREDENTIALS, credential({ provider: "amazon-bedrock", name: "Role", auth_method: "aws_role", account: "kaeso-bedrock", location: "us-east-1" }));
+    const { user, dialog } = await open({}, list);
+    const add = () => within(dialog).getByRole("button", { name: "Add key" });
+
+    await choose(user, dialog, "Amazon Bedrock");
+    await user.click(await within(dialog).findByRole("radio", { name: /^Access key/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^Bedrock API key/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^The gateway's AWS identity/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Sign in as the gateway's AWS identity" })).toBeVisible();
+    expect(within(dialog).getByText("Kaeso signs each request with the gateway's role, or the role it assumes.")).toBeVisible();
+    await user.type(within(dialog).getByRole("textbox", { name: "Role to assume" }), "kaeso-bedrock");
+    await hoverReason(user, add(), "Give a role ARN such as arn:aws:iam::…:role/…");
+    await user.clear(within(dialog).getByRole("textbox", { name: "Role to assume" }));
+    await user.type(within(dialog).getByRole("textbox", { name: "Role to assume" }), "arn:aws:iam::123456789012:role/kaeso-bedrock");
+    await user.type(within(dialog).getByRole("textbox", { name: "External ID" }), "a b");
+    await hoverReason(user, add(), "An external ID has no spaces");
+    await user.clear(within(dialog).getByRole("textbox", { name: "External ID" }));
+    await user.type(within(dialog).getByRole("textbox", { name: "External ID" }), "tenant-1");
+    await user.click(within(dialog).getByRole("combobox", { name: "Region" }));
+    await user.click(await screen.findByRole("option", { name: "us-east-1" }));
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Role");
+    await user.click(add());
+
+    await notifications().findByText("Role is the Amazon Bedrock default");
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      {
+        provider: "amazon-bedrock",
+        name: "Role",
+        secret: JSON.stringify({ role_arn: "arn:aws:iam::123456789012:role/kaeso-bedrock", external_id: "tenant-1" }),
+        make_default: false,
+        auth_method: "aws_role",
+        location: "us-east-1",
+      },
+    ]);
+  });
+
+  it("replaces an AWS access key and a gateway identity key with new credentials", async () => {
+    const signed = credential({
+      id: "cred_aws",
+      provider: "amazon-bedrock",
+      name: "Signed",
+      auth_method: "aws_access_key",
+      account: "AKIAIOSFODNN7EXAMPLE",
+      location: "eu-central-1",
+    });
+    on("POST", `${CREDENTIALS}/:credential/replace`, signed);
+    const { user, dialog, unmount } = await open({ keys: [signed], replace: signed });
+
+    expect(within(dialog).getByRole("heading", { name: "Add the new access key" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("combobox", { name: "Region" })).not.toBeInTheDocument();
+    await user.type(within(dialog).getByRole("textbox", { name: "Access key ID" }), "AKIAI44QH8DHBEXAMPLE");
+    await user.type(within(dialog).getByLabelText("Secret access key"), "je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY");
+    await user.click(within(dialog).getByRole("button", { name: "Replace key" }));
+    await notifications().findByText("Amazon Bedrock · Signed replaced");
+    expect(requests("POST", `${CREDENTIALS}/:credential/replace`).map((r) => r.body)).toEqual([
+      { secret: JSON.stringify({ access_key_id: "AKIAI44QH8DHBEXAMPLE", secret_access_key: "je7MtGbClwBF/2Zp9Utk/h3yCo8nvbEXAMPLEKEY" }) },
+    ]);
+    unmount();
+
+    const role = credential({ id: "cred_role", provider: "amazon-bedrock", name: "Role", auth_method: "aws_role", account: "gateway", location: "us-east-1" });
+    const again = await open({ keys: [role], replace: role });
+    expect(within(again.dialog).getByRole("heading", { name: "Sign in as the gateway's AWS identity" })).toBeInTheDocument();
+    await again.user.click(within(again.dialog).getByRole("button", { name: "Replace key" }));
+    await waitFor(() => expect(requests("POST", `${CREDENTIALS}/:credential/replace`).at(-1)?.body).toEqual({ secret: "{}" }));
   });
 
   it("adds a DeepInfra key, which has no fixed prefix, with DeepInfra's dashboard as its key hint", async () => {

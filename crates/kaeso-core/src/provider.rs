@@ -181,14 +181,22 @@ pub enum AuthMethod {
     ChatGpt,
     Grok,
     GoogleServiceAccount,
+    /// An AWS access key (id, secret and optional session token) that signs requests with
+    /// Signature Version 4.
+    AwsAccessKey,
+    /// The gateway's own AWS identity, optionally assuming a role, that signs requests with
+    /// Signature Version 4.
+    AwsRole,
 }
 
 impl AuthMethod {
-    pub const ALL: [AuthMethod; 4] = [
+    pub const ALL: [AuthMethod; 6] = [
         AuthMethod::ApiKey,
         AuthMethod::ChatGpt,
         AuthMethod::Grok,
         AuthMethod::GoogleServiceAccount,
+        AuthMethod::AwsAccessKey,
+        AuthMethod::AwsRole,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -197,6 +205,8 @@ impl AuthMethod {
             AuthMethod::ChatGpt => "chatgpt",
             AuthMethod::Grok => "grok",
             AuthMethod::GoogleServiceAccount => "google_service_account",
+            AuthMethod::AwsAccessKey => "aws_access_key",
+            AuthMethod::AwsRole => "aws_role",
         }
     }
 
@@ -209,7 +219,15 @@ impl AuthMethod {
     }
 
     pub const fn is_secret_key(self) -> bool {
-        matches!(self, AuthMethod::ApiKey | AuthMethod::GoogleServiceAccount)
+        matches!(
+            self,
+            AuthMethod::ApiKey | AuthMethod::GoogleServiceAccount | AuthMethod::AwsAccessKey
+        )
+    }
+
+    /// Whether requests are signed with AWS Signature Version 4.
+    pub const fn is_aws(self) -> bool {
+        matches!(self, AuthMethod::AwsAccessKey | AuthMethod::AwsRole)
     }
 }
 

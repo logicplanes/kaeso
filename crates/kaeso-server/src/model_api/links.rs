@@ -201,6 +201,7 @@ impl Fetch {
                 auth: None,
                 guard: kaeso_upstream::Guard::PublicOnly,
                 credential: &empty,
+                sigv4: None,
                 request: Outgoing {
                     method: "GET",
                     path,

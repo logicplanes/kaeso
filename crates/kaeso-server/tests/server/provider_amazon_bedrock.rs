@@ -361,3 +361,359 @@ async fn a_model_check_is_inconclusive_and_sends_nothing() {
         "no request reaches Bedrock: {bedrock:?}"
     );
 }
+
+const ACCESS_KEY_ID: &str = "AKIAIOSFODNN7EXAMPLE";
+const SECRET_ACCESS_KEY: &str = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+
+fn access_key(token: Option<&str>) -> String {
+    let mut key = json!({ "access_key_id": ACCESS_KEY_ID, "secret_access_key": SECRET_ACCESS_KEY });
+    if let Some(t) = token {
+        key["session_token"] = json!(t);
+    }
+    key.to_string()
+}
+
+async fn aws_env(method: &str, secret: &str, extra: Option<&[(&str, &str)]>) -> Env {
+    let env = common::v1::env(Some(Arc::new(Capture::default())), extra).await;
+    let r = add_key(
+        &env,
+        json!({ "provider": "amazon-bedrock", "name": "Bedrock", "auth_method": method, "secret": secret, "location": REGION }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    assert_eq!(r.body["auth_method"], method);
+    assert_eq!(r.body["location"], REGION);
+    for model in [DEEPSEEK, CLAUDE] {
+        env.app
+            .post(
+                &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+                json!({ "provider": "amazon-bedrock", "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+    }
+    env
+}
+
+/// Checks a request the mock received carries a SigV4 signature of `secret` over its method,
+/// path, host, `content-type`, `x-amz-*` headers and body, in the key's region.
+fn assert_signed(
+    sent: &kaeso_testkit::mock_provider::Received,
+    id: &str,
+    secret: &str,
+    token: Option<&str>,
+) {
+    let date = sent.header("x-amz-date").unwrap();
+    let at = time::PrimitiveDateTime::parse(
+        date,
+        time::macros::format_description!("[year][month][day]T[hour][minute][second]Z"),
+    )
+    .unwrap()
+    .assume_utc();
+    assert_eq!(sent.header("x-amz-security-token"), token);
+    let signer = kaeso_upstream::sigv4::SigV4 {
+        credentials: kaeso_upstream::sigv4::AwsCredentials {
+            access_key_id: id.to_owned(),
+            secret_access_key: secrecy::SecretString::from(secret.to_owned()),
+            session_token: token.map(|t| secrecy::SecretString::from(t.to_owned())),
+        },
+        region: REGION.to_owned(),
+        service: "bedrock".to_owned(),
+        at,
+    };
+    let content_type = sent.header("content-type").unwrap();
+    let expected = signer.sign(&kaeso_upstream::sigv4::Request {
+        method: &sent.method,
+        host: sent.header("host").unwrap(),
+        path: &sent.path,
+        query: sent.query.as_deref().unwrap_or_default(),
+        headers: &[("content-type", content_type)],
+        body: &sent.body,
+    });
+    let authorization = &expected
+        .headers
+        .iter()
+        .find(|(n, _)| *n == "authorization")
+        .unwrap()
+        .1;
+    assert_eq!(sent.header("authorization"), Some(authorization.as_str()));
+    assert!(
+        authorization.contains(&format!("/{REGION}/bedrock/aws4_request")),
+        "{authorization}"
+    );
+}
+
+#[tokio::test]
+async fn an_access_key_signs_both_routes_with_sigv4_in_the_keys_region() {
+    let token = "IQoJb3JpZ2luX2VjEXAMPLESESSIONTOKEN";
+    let env = aws_env("aws_access_key", &access_key(Some(token)), None).await;
+    let listed = env.app.get(&credentials(&env), &env.owner.cookie).await;
+    let key = &listed.body["data"][0];
+    assert_eq!(
+        (&key["account"], &key["last4"]),
+        (&json!(ACCESS_KEY_ID), &json!("MPLE"))
+    );
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            DEEPSEEK,
+            "Hello [mock:fixture=recorded-response-format-text]",
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/openai/v1/chat/completions");
+    assert_signed(&sent, ACCESS_KEY_ID, SECRET_ACCESS_KEY, Some(token));
+
+    let mut body = messages(
+        CLAUDE,
+        "Hello [mock:fixture=recorded-thinking-enabled-budget]",
+    );
+    body["max_tokens"] = json!(2048);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(body)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let sent = env.mock.last().unwrap();
+    assert_eq!(sent.path, "/anthropic/v1/messages");
+    assert_eq!(sent.header("x-api-key"), None);
+    assert_signed(&sent, ACCESS_KEY_ID, SECRET_ACCESS_KEY, Some(token));
+    assert!(!r.text().contains(SECRET_ACCESS_KEY));
+}
+
+#[tokio::test]
+async fn a_malformed_access_key_and_a_role_without_the_operators_leave_are_refused() {
+    let env = common::v1::env(None, None).await;
+    assert!(!gateway_identity(&env).await);
+    for (method, secret, message) in [
+        (
+            "aws_access_key",
+            "not json".to_owned(),
+            "Give the AWS key as a JSON object.",
+        ),
+        (
+            "aws_access_key",
+            json!({ "access_key_id": ACCESS_KEY_ID }).to_string(),
+            "The AWS key has no `secret_access_key`.",
+        ),
+        (
+            "aws_role",
+            "{}".to_owned(),
+            "This install doesn't let keys sign in as the gateway's AWS identity.",
+        ),
+    ] {
+        let r = add_key(
+            &env,
+            json!({ "provider": "amazon-bedrock", "name": "Bedrock", "auth_method": method, "secret": secret, "location": REGION }),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{method}: {:?}", r.body);
+        assert_eq!(r.body["error"]["message"], message);
+    }
+    let r = add_key(
+        &env,
+        json!({ "provider": "openai", "name": "OpenAI", "auth_method": "aws_access_key", "secret": access_key(None) }),
+    )
+    .await;
+    assert_eq!(
+        r.body["error"]["message"],
+        "OpenAI takes no AWS key; add an API key."
+    );
+}
+
+/// The gateway's own AWS identity: a container credentials endpoint and STS, answered by a
+/// stub that counts what it was asked.
+/// What the stub was asked: the body or `container`, and the `authorization` header.
+type Asked = Arc<std::sync::Mutex<Vec<(String, Option<String>)>>>;
+
+struct Aws {
+    url: String,
+    asked: Asked,
+}
+
+async fn stub_aws(expires: time::OffsetDateTime) -> Aws {
+    use axum::routing::{get, post};
+    let asked: Asked = Arc::default();
+    let expiration = expires
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap();
+    let (log, log2) = (asked.clone(), asked.clone());
+    let exp = expiration.clone();
+    let app = axum::Router::new()
+        .route(
+            "/creds",
+            get(move |headers: axum::http::HeaderMap| {
+                let log = log.clone();
+                let exp = exp.clone();
+                async move {
+                    log.lock().unwrap().push((
+                        "container".into(),
+                        headers
+                            .get("authorization")
+                            .and_then(|v| v.to_str().ok())
+                            .map(str::to_owned),
+                    ));
+                    axum::Json(json!({
+                        "AccessKeyId": "ASIACONTAINEREXAMPLE",
+                        "SecretAccessKey": "containerSecret",
+                        "Token": "containerToken",
+                        "Expiration": exp,
+                    }))
+                }
+            }),
+        )
+        .route(
+            "/sts",
+            post(move |headers: axum::http::HeaderMap, body: String| {
+                let log = log2.clone();
+                let exp = expiration.clone();
+                async move {
+                    let auth = headers
+                        .get("authorization")
+                        .and_then(|v| v.to_str().ok())
+                        .map(str::to_owned);
+                    log.lock().unwrap().push((body, auth));
+                    format!(
+                        "<AssumeRoleResponse><AssumeRoleResult><Credentials><AccessKeyId>ASIAROLEEXAMPLE0001</AccessKeyId><SecretAccessKey>roleSecret</SecretAccessKey><SessionToken>roleToken</SessionToken><Expiration>{exp}</Expiration></Credentials></AssumeRoleResult></AssumeRoleResponse>"
+                    )
+                }
+            }),
+        );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    Aws { url, asked }
+}
+
+struct Vars(std::collections::HashMap<String, String>);
+
+impl kaeso_server::services::aws_auth::Environment for Vars {
+    fn var(&self, name: &str) -> Option<String> {
+        self.0.get(name).cloned()
+    }
+}
+
+#[tokio::test]
+async fn the_gateways_role_signs_with_assumed_credentials_renewed_before_they_expire() {
+    let now = time::OffsetDateTime::now_utc();
+    let aws = stub_aws(now + time::Duration::hours(1)).await;
+    let env = common::v1::env(
+        Some(Arc::new(Capture::default())),
+        Some(&[("KAESO_AWS_AMBIENT_CREDENTIALS", "true")]),
+    )
+    .await;
+    kaeso_server::services::aws_auth::use_environment(Arc::new(Vars(
+        [
+            (
+                "AWS_CONTAINER_CREDENTIALS_FULL_URI",
+                format!("{}/creds", aws.url),
+            ),
+            ("AWS_CONTAINER_AUTHORIZATION_TOKEN", "Bearer pod".to_owned()),
+            ("AWS_ENDPOINT_URL_STS", format!("{}/sts", aws.url)),
+        ]
+        .into_iter()
+        .map(|(k, v)| (k.to_owned(), v))
+        .collect(),
+    )));
+    let role = json!({ "role_arn": "arn:aws:iam::123456789012:role/kaeso-bedrock", "external_id": "tenant-1" });
+    let r = add_key(
+        &env,
+        json!({ "provider": "amazon-bedrock", "name": "Bedrock", "auth_method": "aws_role", "secret": role.to_string(), "location": REGION }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    assert_eq!(r.body["account"], "kaeso-bedrock");
+    assert!(gateway_identity(&env).await);
+    env.app
+        .post(
+            &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+            json!({ "provider": "amazon-bedrock", "model_id": DEEPSEEK }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    env.app.clock.set(now);
+    let ask = || async {
+        let r = call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(chat(
+                DEEPSEEK,
+                "Hello [mock:fixture=recorded-response-format-text]",
+            )),
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        env.mock.last().unwrap()
+    };
+    let sent = ask().await;
+    assert_signed(
+        &sent,
+        "ASIAROLEEXAMPLE0001",
+        "roleSecret",
+        Some("roleToken"),
+    );
+    {
+        let asked = aws.asked.lock().unwrap();
+        assert_eq!(asked.len(), 2, "{asked:?}");
+        assert_eq!(asked[0], ("container".into(), Some("Bearer pod".into())));
+        assert!(asked[1].0.contains("Action=AssumeRole"), "{}", asked[1].0);
+        assert!(asked[1].0.contains("ExternalId=tenant-1"), "{}", asked[1].0);
+        let auth = asked[1].1.as_deref().unwrap();
+        assert!(
+            auth.starts_with("AWS4-HMAC-SHA256 Credential=ASIACONTAINEREXAMPLE/")
+                && auth.contains(&format!("/{REGION}/sts/aws4_request")),
+            "{auth}"
+        );
+    }
+    // Cached until five minutes before they expire, then renewed.
+    ask().await;
+    assert_eq!(aws.asked.lock().unwrap().len(), 2);
+    env.app.clock.advance(time::Duration::minutes(56));
+    ask().await;
+    assert_eq!(aws.asked.lock().unwrap().len(), 4);
+}
+
+#[tokio::test]
+async fn aws_refusing_a_signed_request_is_a_refused_provider_key() {
+    let env = aws_env("aws_access_key", &access_key(None), None).await;
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            DEEPSEEK,
+            &format!("Hello {}", error("built-unrecognized-client")),
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers."
+    );
+}
+
+async fn gateway_identity(env: &Env) -> bool {
+    let r = env
+        .app
+        .get(
+            &format!("/orgs/{}/providers", env.owner.org_id),
+            &env.owner.cookie,
+        )
+        .await;
+    let bedrock = r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["id"] == "amazon-bedrock")
+        .unwrap();
+    bedrock["aws"]["gateway_identity"].as_bool().unwrap()
+}

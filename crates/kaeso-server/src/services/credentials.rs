@@ -495,7 +495,7 @@ fn open(
         region: row
             .location
             .clone()
-            .filter(|_| method == AuthMethod::ApiKey),
+            .filter(|_| method == AuthMethod::ApiKey || method.is_aws()),
         endpoint: row.endpoint.clone(),
         pool: Vec::new(),
         keyless: false,

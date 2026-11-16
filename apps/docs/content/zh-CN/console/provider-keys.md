@@ -53,10 +53,11 @@ Kaeso 会检查该文件是否为 `token_uri` 为 `https://oauth2.googleapis.com
 
 ## Amazon Bedrock 密钥
 
-对于 Amazon Bedrock，服务商密钥是 Bedrock API 密钥，并注明其请求运行所在的区域。
+对于 Amazon Bedrock，服务商密钥注明其请求运行所在的区域，并以三种方式之一登录。在**服务商**页面选择**添加服务商密钥**，然后选择 **Amazon Bedrock**，并回答 **Kaeso 如何登录 Amazon Bedrock？**：
 
-1. 在 [Amazon Bedrock 控制台](https://console.aws.amazon.com/bedrock/)中选择 **API keys**，然后在 **Long-term API keys** 或 **Short-term API keys** 下生成密钥（见 [Bedrock API 密钥](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html)）。长期密钥以 `ABSK` 开头，有效期至你设置的到期时间。短期密钥以 `bedrock-api-key-` 开头，最多有效 12 小时，且只能在生成它的区域使用，因此请在它过期前在 Kaeso 中替换它。
-2. 在 Kaeso 的**服务商**页面选择**添加服务商密钥**，然后选择 **Amazon Bedrock**，粘贴密钥并选择其**区域**：密钥调用其模型的区域；对于短期密钥，即生成它的区域。
+- **Bedrock API 密钥。** 在 [Amazon Bedrock 控制台](https://console.aws.amazon.com/bedrock/)中选择 **API keys**，然后在 **Long-term API keys** 或 **Short-term API keys** 下生成密钥（见 [Bedrock API 密钥](https://docs.aws.amazon.com/bedrock/latest/userguide/api-keys.html)）。长期密钥以 `ABSK` 开头，有效期至你设置的到期时间。短期密钥以 `bedrock-api-key-` 开头，最多有效 12 小时，且只能在生成它的区域使用，因此请在它过期前在 Kaeso 中替换它。粘贴密钥并选择其**区域**：密钥调用其模型的区域；对于短期密钥，即生成它的区域。
+- **访问密钥。** IAM 用户的访问密钥，在 AWS 控制台的 **Security credentials** 下创建（见[管理访问密钥](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)）。填写**访问密钥 ID** 和**秘密访问密钥**；对于临时凭证，还要填写**会话令牌**，临时凭证过期后即失效。Kaeso 用它们以 [Signature Version 4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv4.html) 为每个请求签名；列表显示访问密钥 ID。
+- **网关的 AWS 身份。** 仅对实例管理员显示，且仅在实例通过 `aws.ambient_credentials` 允许时可用（见[配置](../self-hosting/configuration.md#服务商调用)）。Kaeso 使用其运行时的 AWS 身份为每个请求签名：按 AWS SDK 的顺序依次为 `AWS_*` 环境变量、Web 身份令牌（EKS 上服务账户的 IAM 角色）、ECS 或 EKS 的容器角色，以及 EC2 实例角色。填写**要代入的角色**后，Kaeso 改为通过 STS `AssumeRole` 登录；角色的信任策略要求时，还要填写**外部 ID**。Kaeso 会在临时凭证过期前五分钟续期。列表显示角色名称，没有角色时显示 `gateway`。
 
 密钥的身份需要对其调用的模型拥有 `bedrock:InvokeModel` 权限，流式回复还需要 `bedrock:InvokeModelWithResponseStream`（见[端点](https://docs.aws.amazon.com/bedrock/latest/userguide/endpoints.html)）。密钥能调用哪些推理配置文件（例如 `us.anthropic.claude-sonnet-5` 或 `global.openai.gpt-6-sol`）取决于其区域：`us.` 配置文件可从美国的区域调用，`eu.` 配置文件可从欧洲的区域调用（见[跨区域推理](https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html)）。
 

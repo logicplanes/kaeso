@@ -508,6 +508,12 @@ const messages = (): Rule[] => [
   rule("errors.serviceAccount.notJson", () => t("errors.serviceAccount.notJson", "Paste the service account's whole JSON key file.")),
   rule("errors.keyWeight", () => t("errors.keyWeight", "A weight is 1 to 100.")),
   rule("errors.scimNeedsSso", () => t("errors.scimNeedsSso", "Connect single sign-on first; SCIM manages the accounts it signs in.")),
+  rule("errors.awsKey.notTaken", (v) => t("errors.awsKey.notTaken", "{provider} takes no AWS key; add an API key.", v)),
+  rule("errors.awsKey.notJson", () => t("errors.awsKey.notJson", "Give the AWS key as a JSON object.")),
+  rule("errors.awsKey.missingField", (v) => t("errors.awsKey.missingField", "The AWS key has no `{field}`.", v)),
+  rule("errors.awsKey.badField", (v) => t("errors.awsKey.badField", "The AWS key's `{field}` isn't valid.", v)),
+  rule("errors.awsKey.ambientOff", () => t("errors.awsKey.ambientOff", "This install doesn't let keys sign in as the gateway's AWS identity.")),
+  rule("errors.awsKey.ambientAdmin", () => t("errors.awsKey.ambientAdmin", "Only instance admins can add a key that signs in as the gateway's AWS identity.")),
   rule("errors.serviceAccount.tooLong", () => t("errors.serviceAccount.tooLong", "The JSON key is longer than 16 KiB; paste the file Google Cloud made.")),
   rule("errors.serviceAccount.wrongType", () =>
     t("errors.serviceAccount.wrongType", "The JSON key isn't a service account key; its `type` must be `service_account`."),

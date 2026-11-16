@@ -62,6 +62,8 @@ pub struct Config {
     pub webhooks: WebhooksConfig,
     #[serde(default)]
     pub guardrails: GuardrailsConfig,
+    #[serde(default)]
+    pub aws: AwsConfig,
     pub upstream: UpstreamConfig,
     pub streams: StreamsConfig,
     pub continuity: ContinuityConfig,
@@ -335,6 +337,16 @@ impl Default for McpServersConfig {
             sync_interval: fifteen_minutes(),
         }
     }
+}
+
+/// What Amazon Bedrock keys that sign in as the gateway's own AWS identity may do.
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AwsConfig {
+    /// Let instance admins add Bedrock keys that use the gateway's own AWS credentials (its
+    /// environment, web identity, container or instance role).
+    #[serde(default)]
+    pub ambient_credentials: bool,
 }
 
 #[derive(Debug, Deserialize)]

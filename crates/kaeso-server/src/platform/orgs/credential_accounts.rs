@@ -308,9 +308,11 @@ async fn begin(
 ) -> ApiResult<Json<AccountAttempt>> {
     match sign_in.method {
         AuthMethod::Grok => begin_device(state, ctx, user, sign_in, wanted).await,
-        AuthMethod::ChatGpt | AuthMethod::ApiKey | AuthMethod::GoogleServiceAccount => {
-            begin_callback(state, ctx, user, sign_in, wanted).await
-        }
+        AuthMethod::ChatGpt
+        | AuthMethod::ApiKey
+        | AuthMethod::GoogleServiceAccount
+        | AuthMethod::AwsAccessKey
+        | AuthMethod::AwsRole => begin_callback(state, ctx, user, sign_in, wanted).await,
     }
 }
 

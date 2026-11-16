@@ -3,6 +3,7 @@
 pub mod guard;
 pub mod mcp;
 pub mod memory;
+pub mod sigv4;
 pub mod ws;
 
 use std::collections::HashMap;
@@ -177,6 +178,9 @@ pub struct Call<'a> {
     pub auth: Option<AuthStyle>,
     pub guard: Guard,
     pub credential: &'a SecretString,
+    /// Signs the request with AWS Signature Version 4 after its URL and headers are final, in
+    /// place of `auth`.
+    pub sigv4: Option<sigv4::SigV4>,
     pub request: Outgoing,
     pub stream: bool,
     pub timeouts: Timeouts,
@@ -508,9 +512,16 @@ impl Upstream {
         let url = join(call.base_url, &call.request.path);
         let method = reqwest::Method::from_bytes(call.request.method.as_bytes())
             .map_err(|_| UpstreamError::Method(call.request.method))?;
+        let signed = call
+            .sigv4
+            .as_ref()
+            .map(|s| sign(s, call.request.method, &url, &call.request));
         let mut builder = lease.client.request(method, url);
         for (name, value) in call.request.headers.iter() {
             builder = builder.header(name, value);
+        }
+        for (name, value) in signed.into_iter().flatten() {
+            builder = secret_header(builder, name, value);
         }
         if let Some(style) = call.auth {
             builder = secret_header(
@@ -611,6 +622,34 @@ fn path_stays_put(path: &str) -> bool {
             lower != "." && lower != ".."
         })
         && !query.contains('#')
+}
+
+// The headers that sign a call, over the URL it goes to, its `content-type` and its body.
+fn sign(s: &sigv4::SigV4, method: &str, url: &str, req: &Outgoing) -> Vec<(&'static str, String)> {
+    let parsed = Url::parse(url).ok();
+    let host = parsed.as_ref().map_or(String::new(), |u| {
+        let h = u.host_str().unwrap_or_default();
+        match u.port() {
+            Some(p) => format!("{h}:{p}"),
+            None => h.to_owned(),
+        }
+    });
+    let path = parsed.as_ref().map_or("/", Url::path);
+    let query = parsed.as_ref().and_then(Url::query).unwrap_or_default();
+    let content_type = req.headers.get("content-type");
+    let headers: Vec<(&str, &str)> = content_type
+        .map(|v| ("content-type", v))
+        .into_iter()
+        .collect();
+    s.sign(&sigv4::Request {
+        method,
+        host: &host,
+        path,
+        query,
+        headers: &headers,
+        body: &req.body,
+    })
+    .headers
 }
 
 fn join(base: &Url, path: &str) -> String {
@@ -839,6 +878,7 @@ mod tests {
                 auth: Some(AuthStyle::Bearer),
                 guard: Guard::Off,
                 credential: &credential,
+                sigv4: None,
                 request: request.into(),
                 stream: false,
                 timeouts: Timeouts {
@@ -888,6 +928,7 @@ mod tests {
                         auth: None,
                         guard: Guard::Off,
                         credential: &credential,
+                        sigv4: None,
                         request: EncodedRequest::post_json("/v1", HeaderList::new(), Vec::new())
                             .into(),
                         stream: false,
@@ -975,6 +1016,7 @@ mod tests {
                 auth: Some(AuthStyle::XApiKey),
                 guard: Guard::Off,
                 credential: &credential,
+                sigv4: None,
                 request: Outgoing {
                     method: "NOT A METHOD",
                     path: "/v1/messages".into(),
@@ -1160,6 +1202,7 @@ mod tests {
                 auth: Some(AuthStyle::Bearer),
                 guard: Guard::Off,
                 credential: &credential,
+                sigv4: None,
                 request: EncodedRequest::post_json("/v1/messages", HeaderList::new(), Vec::new())
                     .into(),
                 stream: true,
@@ -1238,6 +1281,7 @@ mod tests {
                 auth: None,
                 guard,
                 credential: &credential,
+                sigv4: None,
                 request: EncodedRequest::post_json(path, HeaderList::new(), Vec::new()).into(),
                 stream: false,
                 timeouts: Timeouts {

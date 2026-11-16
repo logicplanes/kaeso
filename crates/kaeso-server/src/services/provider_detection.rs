@@ -187,6 +187,7 @@ impl Prober<'_> {
                 auth: auth.style(),
                 guard: kaeso_upstream::Guard::Install,
                 credential: self.key,
+                sigv4: None,
                 request,
                 stream: false,
                 timeouts: Timeouts {
