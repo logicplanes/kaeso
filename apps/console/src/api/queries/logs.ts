@@ -1,7 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { dayEnd, dayStart } from "~/format/zone";
 import { api, data } from "../client";
-import type { LogEntryView, LogView, LoggedEndpoint, RequestFormat, ToolCallEntryView, ToolCallView } from "../generated/types";
+import type { ClientApp, LogEntryView, LogView, LoggedEndpoint, RequestFormat, ToolCallEntryView, ToolCallView } from "../generated/types";
 import { nextPageParam, refetchOnFocusWhileOnePage, type Page } from "../paging";
 
 export type LogRange = "1h" | "24h" | "7d" | "30d";
@@ -35,6 +35,8 @@ export interface LogFilters {
   tag?: string;
   /** Text the error message contains, in any case. */
   error_message?: string;
+  /** The client app, as the log names it from the user agent. */
+  client?: string;
 }
 
 /** Every endpoint the request log names, as the gateway's `endpoint` filter takes them. */
@@ -106,6 +108,8 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.min_duration_ms ? { min_duration_ms: f.min_duration_ms } : {}),
     ...(f.tag ? { tag: f.tag } : {}),
     ...(f.error_message ? { error_message: f.error_message } : {}),
+    // The URL may hold any text; the gateway refuses a client it doesn't know.
+    ...(f.client ? { client: f.client as ClientApp } : {}),
   };
 }
 

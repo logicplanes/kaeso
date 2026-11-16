@@ -202,6 +202,67 @@ describe("AnalyticsPage", () => {
     );
   });
 
+  it("breaks a period of up to 62 days down by client, from the hourly timeline", async () => {
+    signedIn();
+    projectData();
+    usage({ day: [usageRow()] });
+    const bucket = (key: string, requests: number) => ({
+      start: "2026-10-03T10:00:00Z",
+      key,
+      requests,
+      errors: 0,
+      input_tokens: 10,
+      output_tokens: 5,
+      cache_read_tokens: 0,
+      cache_write_tokens: 0,
+      reasoning_tokens: 0,
+      cost: "0.1",
+      duration_p50_ms: 100,
+      duration_p95_ms: 200,
+      duration_max_ms: 300,
+    });
+    on("GET", `${USAGE}/timeline`, ({ query }: { query: URLSearchParams }) => ({
+      data: query.get("group_by") === "client" ? [bucket("codex", 3), bucket("codex", 4), bucket("", 2)] : [],
+    }));
+    const { user, router } = await renderApp(projectPath(`analytics?${PERIOD}`));
+    await breakdown();
+    await user.click(screen.getByRole("radio", { name: "By client" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ by: "client" }));
+    const table = await breakdown();
+    await waitFor(() =>
+      expect(bodyRows(table).map((r) => r.textContent)).toEqual([expect.stringContaining("Codex"), expect.stringContaining("No user agent")]),
+    );
+    expect(bodyRows(table)[0]).toHaveTextContent("7");
+    expect(within(table).getByRole("columnheader", { name: "Client" })).toBeInTheDocument();
+    const asked = requests("GET", `${USAGE}/timeline`).find((r) => r.query.get("group_by") === "client");
+    expect(Object.fromEntries(asked?.query ?? [])).toMatchObject({ from: "2026-10-01T00:00:00Z", to: "2026-10-15T00:00:00Z", step: "hour" });
+
+    const files: Blob[] = [];
+    const created = vi.spyOn(URL, "createObjectURL").mockImplementation((b) => (files.push(b as Blob), "blob:csv"));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    await user.click(screen.getByRole("button", { name: "Download CSV" }));
+    const lines = (await (files[0] as Blob).text()).trimEnd().split("\r\n");
+    expect(lines.slice(1).map((l) => l.split(",").slice(0, 2).join(","))).toEqual(["Codex,codex", "No user agent,"]);
+    created.mockRestore();
+    click.mockRestore();
+    // Requests without a user agent name no client the log can filter by.
+    await user.click(bodyRows(table)[1] as HTMLElement);
+    expect(router.state.location.pathname).toBe(projectPath("analytics"));
+    await user.click(bodyRows(table)[0] as HTMLElement);
+    await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
+    expect(router.state.location.search).toEqual({ from: "2026-10-01", to: "2026-10-14", client: "codex" });
+  });
+
+  it("offers no client breakdown beyond 62 days, and shows the days instead", async () => {
+    signedIn();
+    projectData();
+    usage({ week: [usageRow({ key: "2026-06-01" })] });
+    await renderApp(projectPath("analytics?from=2026-06-03&to=2026-09-30&by=client"));
+    await breakdown();
+    expect(screen.queryByRole("radio", { name: "By client" })).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "By week" })).toBeChecked();
+  });
+
   it("groups by key, member and day from the segmented control", async () => {
     signedIn();
     projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()] });

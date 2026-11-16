@@ -37,6 +37,7 @@ import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
 import { costUSD } from "~/format/money";
 import { describeUserAgent } from "~/format/user-agent";
+import { clientLabel } from "~/format/clients";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { usePartyName } from "../keys/party";
@@ -616,6 +617,14 @@ function Overview({
                 }
               : { label: t("logs.filter.source", "Source"), value: t("logs.source.playground", "Playground") },
             { label: t("logs.inspector.clientIp", "Client IP"), value: <Long mono>{e.client_ip}</Long> },
+            ...(e.client
+              ? [
+                  {
+                    label: t("logs.inspector.client", "Client"),
+                    value: e.client_version ? `${clientLabel(e.client)} ${e.client_version}` : clientLabel(e.client),
+                  },
+                ]
+              : []),
             {
               label: t("logs.column.userAgent", "User agent"),
               value: e.user_agent ? <Named name={describeUserAgent(e.user_agent)} id={e.user_agent} /> : "—",

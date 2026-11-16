@@ -448,6 +448,19 @@ describe("LogInspector", () => {
     expect(router.state.location.search).toEqual({ key: "key_web" });
   });
 
+  it("names the client app the user agent names, with its version", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow(), logRow({ id: "req_0002" })],
+      entries: [logEntry({ client: "codex", client_version: "0.59.0" }), logEntry({ id: "req_0002", client: "other", client_version: null })],
+    });
+    const { router } = await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Sent by")).toHaveTextContent("ClientCodex 0.59.0");
+    await router.navigate({ to: projectPath("logs"), search: { log: "req_0002" } } as never);
+    await waitFor(async () => expect(section(await sheet(), "Sent by")).toHaveTextContent("ClientOther client"));
+  });
+
   it("shows the request's tags, and narrows the list to the requests with one", async () => {
     signedIn();
     projectData();

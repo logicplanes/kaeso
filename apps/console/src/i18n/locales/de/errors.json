@@ -398,8 +398,8 @@
   "errors.timelineHourRange": "Pro Stunde liegen `from` und `to` höchstens 62 Tage auseinander; die tägliche Nutzung verwenden.",
   "errors.usageGroupValues": "`day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` oder `project` verwenden.",
   "errors.usageGroupValuesProject": "`day`, `week`, `month`, `model`, `provider`, `key`, `member` oder `route` verwenden.",
-  "errors.timelineGroupValues": "`model`, `provider`, `key`, `member`, `route`, `error_kind` oder `project` verwenden.",
-  "errors.timelineGroupValuesProject": "`model`, `provider`, `key`, `member`, `route` oder `error_kind` verwenden.",
+  "errors.timelineGroupValues": "`model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` oder `project` verwenden.",
+  "errors.timelineGroupValuesProject": "`model`, `provider`, `key`, `member`, `route`, `error_kind` oder `client` verwenden.",
   "errors.usageFilterKey": "`{name}` muss ein `key` sein, wie ihn die Gruppierung nach `{name}` liefert.",
   "errors.usageUnavailable": "Die Nutzung ist gerade nicht verfügbar; gleich erneut versuchen.",
   "errors.valueListedTwice": "`{value}` ist doppelt aufgeführt.",
@@ -776,5 +776,6 @@
   "errors.logTag": "`tag` muss aus 1 bis 64 Kleinbuchstaben, Ziffern, `.`, `_`, `:` oder `-` bestehen.",
   "errors.modelApi.tagsHeader": "Der Header `kaeso-tags` nimmt bis zu 10 kommagetrennte Tags aus je 1 bis 64 Kleinbuchstaben, Ziffern, `.`, `_`, `:` oder `-`.",
   "errors.logErrorMessage": "`error_message` muss 1 bis 200 Zeichen lang sein.",
-  "errors.limitOneToFifty": "`limit` muss zwischen 1 und 50 liegen."
+  "errors.limitOneToFifty": "`limit` muss zwischen 1 und 50 liegen.",
+  "errors.logClient": "`client` muss eine Client-App sein, etwa `codex` oder `other`."
 }

@@ -542,8 +542,9 @@ pub struct TimelineQuery {
         for up to 2 days, `hour` beyond."]
     pub step: Option<String>,
     #[doc = "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n\
-        `error_kind` (the request log's, empty for requests that succeeded), or\n\
-        for orgs `project`; default one bucket per step."]
+        `error_kind` (the request log's, empty for requests that succeeded),\n\
+        `client` (the client app the user agent names, empty without one), or for\n\
+        orgs `project`; default one bucket per step."]
     pub group_by: Option<String>,
     #[doc = "With `group_by`, only the groups with the most requests in the whole\n\
         range, 1 to 50; the others are left out."]
@@ -663,14 +664,15 @@ async fn timeline(
         Some("member") => Some(TimelineGroup::Member),
         Some("route") => Some(TimelineGroup::Route),
         Some("error_kind") => Some(TimelineGroup::ErrorKind),
+        Some("client") => Some(TimelineGroup::Client),
         Some("project") if scope.org_wide => Some(TimelineGroup::Project),
         Some(_) => {
             return Err(ApiError::invalid(
                 "group_by",
                 if scope.org_wide {
-                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`."
+                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."
                 } else {
-                    "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`."
+                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."
                 },
             ));
         }

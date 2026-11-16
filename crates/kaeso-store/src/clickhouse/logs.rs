@@ -150,7 +150,77 @@ pub struct Filter {
     pub tag: Option<String>,
     /// Text the error message contains, in any case.
     pub error_message: Option<String>,
+    /// The client app, as [`client_of`] names it from the user agent.
+    pub client: Option<String>,
 }
+
+/// User-agent prefixes and the client app each names, compared without case. An entry's
+/// version follows its prefix after a `/` or a space, such as `codex_cli_rs/0.59.0` or
+/// `OpenAI/Python 2.9.0`. Matched in SQL as in Rust, so entries logged before a client was
+/// added get it too.
+pub const CLIENTS: &[(&str, &str)] = &[
+    ("codex_cli_rs/", "codex"),
+    ("claude-cli/", "claude-code"),
+    ("openai/python", "openai-python"),
+    ("openai-python/", "openai-python"),
+    ("openai/js", "openai-js"),
+    ("anthropic/python", "anthropic-python"),
+    ("anthropic/js", "anthropic-js"),
+    ("ai-sdk/", "ai-sdk"),
+    ("curl/", "curl"),
+];
+
+/// The client a request without a known user agent prefix counts as.
+pub const OTHER_CLIENT: &str = "other";
+
+/// Every client name the filter takes, in the order of [`CLIENTS`], then `other`.
+pub fn client_names() -> Vec<&'static str> {
+    let mut names: Vec<&'static str> = Vec::new();
+    for (_, name) in CLIENTS {
+        if !names.contains(name) {
+            names.push(name);
+        }
+    }
+    names.push(OTHER_CLIENT);
+    names
+}
+
+fn client_prefix(ua: &str) -> Option<(&'static str, &'static str)> {
+    let lower = ua.to_ascii_lowercase();
+    CLIENTS
+        .iter()
+        .find(|(prefix, _)| lower.starts_with(prefix))
+        .copied()
+}
+
+/// The client app a user agent names: empty without one, `other` for one not in [`CLIENTS`].
+pub fn client_of(ua: &str) -> &'static str {
+    if ua.is_empty() {
+        return "";
+    }
+    client_prefix(ua).map_or(OTHER_CLIENT, |(_, name)| name)
+}
+
+/// The version after a known client's prefix, such as `0.59.0`.
+pub fn client_version(ua: &str) -> Option<&str> {
+    let (prefix, _) = client_prefix(ua)?;
+    let rest = ua.get(prefix.len()..)?.trim_start_matches(['/', ' ']);
+    let version = rest.split([' ', ';', '(']).next().unwrap_or_default();
+    (!version.is_empty()).then_some(version)
+}
+
+// The prefixes are this file's own text, so they are written into the SQL; a `'` could never
+// come from a request.
+static CLIENT_SQL: std::sync::LazyLock<String> = std::sync::LazyLock::new(|| {
+    let arms: Vec<String> = CLIENTS
+        .iter()
+        .map(|(prefix, name)| format!("startsWith(lower(user_agent), '{prefix}'), '{name}'"))
+        .collect();
+    format!(
+        "multiIf(user_agent = '', '', {}, '{OTHER_CLIENT}')",
+        arms.join(", ")
+    )
+});
 
 pub async fn search(
     ch: &ClickHouse,
@@ -296,6 +366,10 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(m) = &f.error_message {
         sql.push_str(" AND positionCaseInsensitiveUTF8(error_message, ?) > 0");
         binds.push(Bind::Str(m.clone()));
+    }
+    if let Some(c) = &f.client {
+        sql.push_str(&format!(" AND {} = ?", CLIENT_SQL.as_str()));
+        binds.push(Bind::Str(c.clone()));
     }
 }
 
@@ -528,11 +602,14 @@ pub enum TimelineGroup {
     Member,
     Route,
     ErrorKind,
+    /// The client app the user agent names; empty without one.
+    Client,
 }
 
 impl TimelineGroup {
     fn key(self) -> &'static str {
         match self {
+            TimelineGroup::Client => CLIENT_SQL.as_str(),
             TimelineGroup::Project => "toString(project_id)",
             TimelineGroup::Model => "concat(provider, '/', resolved_model)",
             TimelineGroup::Provider => "provider",
@@ -664,4 +741,73 @@ pub async fn timeline(
         q = b.bind(q);
     }
     Ok(q.fetch_all::<TimelineRow>().await?)
+}
+
+#[cfg(test)]
+mod client_tests {
+    use super::*;
+
+    #[test]
+    fn a_user_agent_names_its_client_and_version() {
+        let cases = [
+            (
+                "codex_cli_rs/0.59.0 (Mac OS 26.1.0; arm64) Ghostty/1.2.3",
+                "codex",
+                Some("0.59.0"),
+            ),
+            (
+                "claude-cli/2.1.31 (external, cli)",
+                "claude-code",
+                Some("2.1.31"),
+            ),
+            ("OpenAI/Python 2.9.0", "openai-python", Some("2.9.0")),
+            ("openai-python/1.40.0", "openai-python", Some("1.40.0")),
+            ("OpenAI/JS 5.1.0", "openai-js", Some("5.1.0")),
+            (
+                "Anthropic/Python 0.70.0",
+                "anthropic-python",
+                Some("0.70.0"),
+            ),
+            ("Anthropic/JS 0.60.0", "anthropic-js", Some("0.60.0")),
+            ("ai-sdk/5.0.1 runtime/node", "ai-sdk", Some("5.0.1")),
+            ("curl/8.7.1", "curl", Some("8.7.1")),
+            ("curl/", "curl", None),
+            ("Mozilla/5.0 (Macintosh)", "other", None),
+            ("", "", None),
+        ];
+        for (ua, client, version) in cases {
+            assert_eq!(
+                (client_of(ua), client_version(ua)),
+                (client, version),
+                "{ua}"
+            );
+        }
+        assert_eq!(
+            client_names(),
+            [
+                "codex",
+                "claude-code",
+                "openai-python",
+                "openai-js",
+                "anthropic-python",
+                "anthropic-js",
+                "ai-sdk",
+                "curl",
+                "other"
+            ]
+        );
+    }
+
+    #[test]
+    fn the_sql_names_clients_from_the_same_table() {
+        let sql = CLIENT_SQL.as_str();
+        for (prefix, name) in CLIENTS {
+            assert!(sql.contains(&format!(
+                "startsWith(lower(user_agent), '{prefix}'), '{name}'"
+            )));
+            assert_eq!(prefix.to_ascii_lowercase(), *prefix, "compared lowercased");
+            assert!(!prefix.contains('\'') && !name.contains('\''));
+        }
+        assert!(sql.starts_with("multiIf(user_agent = '', '', ") && sql.ends_with(", 'other')"));
+    }
 }

@@ -26,6 +26,8 @@ Die **Übersicht** eines Projekts zeigt seine Aktivität der letzten Tage, seine
 
 Eine Route ist das Format der App, das Format, in dem Kaeso den Anbieter aufrief, und der Anbieter. Ihre Aufschlüsselung hat eine Spalte **Cache-Treffer**: den Anteil der Eingabe, der aus dem Prompt-Cache gelesen wurde. Dasselbe Modell kann über eine Route den Cache treffen und über eine andere nie, daher zeigt **Route**, wo das Caching versagt. Anfragen aus der Zeit, bevor Kaeso Routen erfasste, erscheinen als **Route nicht erfasst**.
 
+**Nach Client** teilt die Nutzung eines Projekts nach der Client-App auf, die sie gesendet hat, benannt nach dem Anfang ihres User-Agents: Codex, Claude Code, die OpenAI- und Anthropic-SDKs für Python und Node.js, das AI SDK und curl, jede andere als **Anderer Client**, und Anfragen ohne User-Agent getrennt. Es liest die Anfrageprotokolle und wird daher für Zeiträume bis 62 Tage angeboten; die Zeile eines Clients öffnet seine Anfragen.
+
 ## Organisationseinstellungen ändern
 
 Öffnen Sie **Organisationseinstellungen** im Menü am Fuß der Seitenleiste. Dort finden Sie diese Seiten:

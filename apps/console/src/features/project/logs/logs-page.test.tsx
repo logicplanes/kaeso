@@ -431,6 +431,21 @@ describe("LogsPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ error_message: "context length" }));
   });
 
+  it("filters by the client app, from the address or the menu", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs?client=claude-code"));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ client: "claude-code" }));
+    const toolbar = screen.getByRole("toolbar", { name: "Filter requests" });
+    expect(within(toolbar).getByRole("group", { name: "Filter: Client" })).toHaveTextContent("Claude Code");
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Client filter" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Client" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "Codex" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ client: "codex" }));
+  });
+
   it("filters by a tag from the address or from the tags of the requests shown", async () => {
     signedIn();
     projectData();

@@ -36,7 +36,7 @@ export const usageSpanQuery = (org: string, project?: string) =>
 export type TimelineStep = "minute" | "hour";
 
 export interface TimelineFilter {
-  group_by?: "error_kind";
+  group_by?: "error_kind" | "client";
   failed?: boolean;
 }
 

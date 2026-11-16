@@ -1126,7 +1126,7 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     let mut lines = csv.lines();
     assert!(
         lines.next().unwrap().ends_with(
-            ",usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags"
+            ",usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version"
         )
     );
     let row = lines.next().unwrap();
@@ -1146,6 +1146,8 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
         cost_known,
         cost_basis,
         tags,
+        client,
+        client_version,
     ] = rest.split(',').collect::<Vec<_>>()[..]
     else {
         panic!("{row}");
@@ -1167,6 +1169,11 @@ async fn playground_requests_are_charged_and_logged_as_the_members() {
     );
     assert_eq!(cost_basis, "\"reported\"", "{row}");
     assert_eq!(tags, "\"\"", "the Playground sends no tags: {row}");
+    assert_eq!(
+        (client, client_version),
+        ("\"other\"", "\"\""),
+        "the console's user agent is no known client: {row}"
+    );
     assert!(
         [overhead, processing, upload]
             .iter()

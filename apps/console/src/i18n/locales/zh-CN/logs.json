@@ -323,5 +323,7 @@
   "logs.filter.contains": "包含",
   "logs.filter.containsText": "包含“{text}”",
   "logs.filter.containsTyped": "包含“{text}”",
-  "logs.filter.errorMessage": "错误消息"
+  "logs.filter.errorMessage": "错误消息",
+  "logs.filter.client": "客户端",
+  "logs.inspector.client": "客户端"
 }

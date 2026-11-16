@@ -3,6 +3,7 @@ import { logsParams, toolCallParams, type LogFilters, type ToolCallFilters } fro
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { fullDayLabel } from "~/format/period";
 import { formatDuration, formatPrice } from "@logicplanes/kaeso-ui/format";
+import { clientLabel } from "~/format/clients";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -45,6 +46,7 @@ export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: 
     { label: common.model(), value: f.model && (names.model ?? f.model) },
     { label: t("logs.filter.requestedModel", "Requested model"), value: f.requested_model },
     { label: t("logs.filter.tag", "Tag"), value: f.tag },
+    { label: t("logs.filter.client", "Client"), value: f.client && clientLabel(f.client) },
     {
       label: t("logs.filter.errorMessage", "Error message"),
       value: f.error_message && t("logs.filter.containsText", "contains “{text}”", { text: f.error_message }),
