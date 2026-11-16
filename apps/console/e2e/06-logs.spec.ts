@@ -37,7 +37,8 @@ test("requests through the gateway appear in the log, filter, and open in the in
   const failed = (await call("Again [mock:error=server-error]")).status();
   expect(failed).toBeGreaterThanOrEqual(400);
 
-  await page.getByRole("link", { name: "Request logs" }).click();
+  // The overview links the request logs too once the requests arrive; take the sidebar's.
+  await page.getByRole("navigation", { name: "Console" }).getByRole("link", { name: "Request logs" }).click();
   await expect(page).toHaveTitle(/^Request logs · /);
   await page.goto(`/orgs/${org}/projects/${project}/logs?key=${keyId}`);
   await expect(async () => {

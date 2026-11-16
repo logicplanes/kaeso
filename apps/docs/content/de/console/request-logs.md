@@ -16,7 +16,7 @@ Kaeso protokolliert jede Modellanfrage: das Modell, den Anbieter, den Status, To
 - **Filter hinzufügen** grenzt die Liste nach Schlüssel, Mitglied, Modell, dem Modell- oder Aliasnamen, den die App sendete (auch einem, den es nicht mehr gibt), Anbieter, Alias, App- und Anbieterformat, Endpunkt, Status, Ergebnis (**Fehlgeschlagen** oder **Erfolgreich**), Fehlerart, Streaming, Quelle (die API oder der Playground), der Antwort des [Antwort-Caches](response-cache.md), einer Dauer ab **Langsamer als** und Kosten ab einem Betrag ein. **Zurückgefallen** behält die Anfragen, deren Alias-Route auf einen späteren Schritt zurückfiel. Eine Stunde unter **Langsamste Stunden** in der Übersicht öffnet die Anfragen dieses Tages, die mindestens so langsam waren wie das 95. Perzentil der Stunde.
 - **Format der App** und **Format des Anbieters** grenzen sie auf eine Route ein, etwa OpenAI Responses zu Anthropic Messages. Caching, Overhead und Fehler unterscheiden sich oft zwischen Routen.
 - **Live** fügt neue Anfragen hinzu, sobald sie eintreffen. Wenn Sie nach unten gescrollt haben, nennt ein Button die Zahl der neuen.
-- Die Anzeigeoptionen wählen die Spalten und die Dichte.
+- Die Anzeigeoptionen wählen die Spalten und die Dichte. Neben den anfangs gezeigten bieten sie die Anfrage-ID, den User-Agent, die Client-IP, den Alias, die Formate (das der App, und das des Anbieters nach einem Pfeil, wenn Kaeso übersetzt hat), die Antwort des Antwort-Caches, die Zahl der Ausweichschritte und die Anfrage-ID des Anbieters. Die Konsole merkt sich die Auswahl.
 - **Anfrage per ID öffnen** findet die Anfrage, deren Header `kaeso-request-id` Ihre App erhalten hat.
 
 Die Protokolle zu lesen erfordert das Recht **Anfrageprotokolle ansehen**.

@@ -292,5 +292,15 @@
   "logs.filter.cacheHit": "Aus dem Cache beantwortet",
   "logs.filter.cacheMiss": "An den Anbieter gesendet",
   "logs.filter.cacheBypass": "Am Cache vorbei",
-  "logs.filter.slowerThan": "Langsamer als"
+  "logs.filter.slowerThan": "Langsamer als",
+  "logs.column.clientIp": "Client-IP",
+  "logs.column.alias": "Alias",
+  "logs.column.formats": "Formate",
+  "logs.column.responseCache": "Antwort-Cache",
+  "logs.column.fallbacks": "Ausweichschritte",
+  "logs.column.upstreamRequest": "Upstream-Anfrage",
+  "logs.cache.hit": "Treffer",
+  "logs.cache.miss": "Fehlschlag",
+  "logs.cache.bypass": "Vorbei",
+  "logs.copyUpstreamRequestId": "Anfrage-ID des Anbieters kopieren"
 }
