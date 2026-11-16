@@ -359,5 +359,7 @@
   "orgHome.changeRegionFirst": "Zuerst den Namen oder die Region ändern",
   "orgHome.endpoint": "Endpunkt",
   "orgHome.keyReaddressed": "{name} ruft jetzt {endpoint} auf",
-  "orgHome.changeEndpointFirst": "Ändern Sie zuerst den Namen oder den Endpunkt"
+  "orgHome.changeEndpointFirst": "Ändern Sie zuerst den Namen oder den Endpunkt",
+  "orgHome.downloadCsv": "CSV herunterladen",
+  "orgHome.id": "ID"
 }

@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Avatar, Badge, DataTable, Empty, Link, ModelLabel, Section, Segmented, Text, col } from "@logicplanes/kaeso-ui";
+import { Avatar, Badge, Button, DataTable, Empty, Link, ModelLabel, Section, Segmented, Text, col, icons, type SortingState } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { ProjectView, UsageRow } from "~/api/generated/types";
 import { serviceAccountLookupQuery } from "~/api/queries/members";
@@ -11,6 +12,7 @@ import { totalTokens } from "~/kaeso/tokens";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
 import { costWidth, UsageCost } from "~/kaeso/media-usage";
+import { saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
 import { t } from "~/i18n";
 
 export type OrgBreakdown = "project" | "model" | "member";
@@ -67,7 +69,16 @@ export function OrgUsageBreakdown({
   });
   const named = accounts.data ?? [];
   const loading = usage.isPending || (by === "project" && !projects) || (by === "member" && (members.isLoading || accounts.isLoading));
-  const rows = loading ? [] : [...(usage.data ?? [])].sort((a, b) => b.requests - a.requests || a.key.localeCompare(b.key));
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const rows = sortUsage(loading ? [] : [...(usage.data ?? [])].sort((a, b) => b.requests - a.requests || a.key.localeCompare(b.key)), sorting);
+  // A row as text, for the download.
+  const labelText = (r: UsageRow): string => {
+    if (by === "project") return projects?.find((x) => x.id === r.key)?.name ?? r.key;
+    if (by === "model") return r.key.includes("/") ? r.key : t("orgHome.noModel", "No model");
+    const [kind, id = r.key] = r.key.split(":");
+    if (kind === "service_account") return named.find((n) => n.account.id === id)?.account.name ?? t("orgHome.serviceAccount", "Service account");
+    return members.data?.find((x) => x.user.id === id)?.user.name ?? t("orgHome.formerMember", "Former member");
+  };
 
   const label = (r: UsageRow) => {
     if (by === "project") {
@@ -154,7 +165,22 @@ export function OrgUsageBreakdown({
           ),
         ]
       : []),
-  ].map((c) => ({ ...c, enableSorting: false, enableResizing: false }));
+  ].map((c) => ({ ...c, enableSorting: sortsUsage(String(c.id)), enableResizing: false }));
+  const download = () =>
+    saveCsv(
+      `usage-${by}-${from}-${to}.csv`,
+      usageCsv(
+        [
+          { header: heading(by), value: labelText },
+          { header: t("orgHome.id", "Id"), value: (r) => r.key },
+          { header: t("common.requests", "Requests"), value: (r) => r.requests },
+          { header: t("orgHome.errors", "Errors"), value: (r) => r.errors },
+          { header: t("common.tokens", "Tokens"), value: (r) => totalTokens(r) },
+          ...(showCost ? [{ header: t("common.cost", "Cost"), value: (r: UsageRow) => r.cost }] : []),
+        ],
+        rows,
+      ),
+    );
 
   return (
     <Section
@@ -165,13 +191,18 @@ export function OrgUsageBreakdown({
           : t("orgHome.breakdownHint", "Requests, errors and tokens in the period")
       }
       actions={
-        <Segmented
-          aria-label={t("orgHome.groupBy", "Group by")}
-          size="sm"
-          value={by}
-          onValueChange={(v) => onByChange(v as OrgBreakdown)}
-          options={options()}
-        />
+        <span className="flex flex-wrap items-center gap-8">
+          <Segmented
+            aria-label={t("orgHome.groupBy", "Group by")}
+            size="sm"
+            value={by}
+            onValueChange={(v) => onByChange(v as OrgBreakdown)}
+            options={options()}
+          />
+          <Button size="sm" variant="ghost" leadingIcon={icons.download} disabled={rows.length === 0} onClick={download}>
+            {t("orgHome.downloadCsv", "Download CSV")}
+          </Button>
+        </span>
       }
     >
       <DataTable
@@ -179,6 +210,9 @@ export function OrgUsageBreakdown({
         data={rows}
         columns={columns}
         getRowId={(r) => r.key}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        manualSorting
         loading={loading}
         error={usage.isError}
         onRetry={() => void usage.refetch()}

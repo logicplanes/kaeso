@@ -28,6 +28,7 @@ import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
 import type { Overview } from "./data";
 import { cacheHit, change, type Dimension } from "./metrics";
+import { logsRange } from "./parts";
 
 interface Entity {
   key: string;
@@ -129,7 +130,14 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
     return <span className="min-w-0 truncate">{e.name}</span>;
   };
   const logs = o.project && o.showErrors ? `${projectPath(o.org, o.project)}/logs` : undefined;
-  const filter = (key: string) => (dim === "model" ? `model=${encodeURIComponent(key.split("/").slice(1).join("/"))}` : `${dim}=${encodeURIComponent(key)}`);
+  // The request log names a service account `sa:<id>` where usage says `service_account:<id>`,
+  // and counts the same UTC days as the period.
+  const filter = (key: string) => {
+    const [provider = "", ...model] = key.split("/");
+    const params: Record<string, string> =
+      dim === "model" ? { model: model.join("/"), provider } : dim === "member" ? { member: key.replace(/^service_account:/, "sa:") } : { [dim]: key };
+    return `${new URLSearchParams(params).toString()}&${logsRange(o)}`;
+  };
   const open =
     dim === "project"
       ? (key: string) => void navigate({ href: projectPath(o.org, key) })

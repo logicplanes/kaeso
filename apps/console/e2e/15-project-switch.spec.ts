@@ -4,9 +4,11 @@ import { expect, test, FIRST_PROJECT, signInAsOwner } from "./support";
 test.describe.configure({ mode: "serial" });
 
 const orgOf = (page: Page) => /\/orgs\/([^/]+)/.exec(new URL(page.url()).pathname)?.[1] ?? "";
+// Rows that open the request logs make the breakdown a grid; without request logs it is a table.
 const breakdownRows = (page: Page) =>
   page
-    .getByRole("table", { name: "Usage breakdown" })
+    .getByRole("grid", { name: "Usage breakdown" })
+    .or(page.getByRole("table", { name: "Usage breakdown" }))
     .getByRole("row")
     .filter({ hasNot: page.getByRole("columnheader") });
 

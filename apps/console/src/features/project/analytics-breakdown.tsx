@@ -1,12 +1,16 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { DataTable, Empty, ModelLabel, ProviderBadge, Section, Segmented, Text, col } from "@logicplanes/kaeso-ui";
+import { useNavigate } from "@tanstack/react-router";
+import { Button, DataTable, Empty, ModelLabel, ProviderBadge, Section, Segmented, Text, col, icons, type SortingState } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatPercent, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
-import { bucketLabel, type Granularity } from "~/format/buckets";
+import { bucketLabel, lastDay, type Granularity } from "~/format/buckets";
+import { saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
+import { useRequestLogs } from "~/auth/session";
 import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
 import type { AnalyticsSearch } from "~/kaeso/overview/views";
 import { useProjectRights } from "~/auth/rights";
@@ -33,6 +37,8 @@ const NOTABLE_ERROR_RATE = 0.05;
 export function Breakdown({
   org,
   project,
+  from,
+  to,
   rows,
   by,
   granularity = "day",
@@ -46,6 +52,9 @@ export function Breakdown({
 }: {
   org: string;
   project: string;
+  /** The period's first and last UTC day, which the rows count and their requests are found in. */
+  from: string;
+  to: string;
   rows: UsageRow[];
   by: NonNullable<AnalyticsSearch["by"]>;
   granularity?: Granularity | undefined;
@@ -58,6 +67,9 @@ export function Breakdown({
   onByChange: (by: NonNullable<AnalyticsSearch["by"]>) => void;
 }) {
   const rights = useProjectRights(org, project);
+  const navigate = useNavigate();
+  const logs = useRequestLogs() && rights.has("logs.metadata.view");
+  const [sorting, setSorting] = useState<SortingState>([]);
   const providers = useProviders(org);
   const phone = usePhone();
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: by === "key" && rights.has("keys.all.view") });
@@ -70,6 +82,40 @@ export function Breakdown({
   };
   const waiting = !failed && (loading || (by === "key" && keys.isLoading) || (by === "member" && partiesLoading));
   const sorted = waiting ? [] : by === "day" ? [...rows].sort((a, b) => b.key.localeCompare(a.key)) : [...rows].sort((a, b) => b.requests - a.requests);
+  const shown = sortUsage(sorted, sorting);
+  const memberOf = (key: string) => {
+    const [kind, id = ""] = key.split(":");
+    return { sa: kind === "service_account", id };
+  };
+  const labelText = (r: UsageRow): string => {
+    if (by === "day") return bucketLabel(r.key, granularity, withYear);
+    if (by === "model") return modelName(r.key);
+    if (by === "key") return keyName(r.key);
+    if (by === "route") return routeText(r.key, providers.name);
+    const m = memberOf(r.key);
+    const name = partyName({ kind: m.sa ? "service_account" : "user", id: m.id });
+    return m.sa ? serviceAccountName(name) : name;
+  };
+  // The request log for what a row counts, in the period's UTC days; none for what the log
+  // can't filter by, such as a route that wasn't recorded.
+  const logHref = (r: UsageRow): string | undefined => {
+    const period = { from, to };
+    const filter = ((): Record<string, string> | undefined => {
+      if (by === "day") return { from: r.key < from ? from : r.key, to: lastDay(r.key, granularity) > to ? to : lastDay(r.key, granularity) };
+      if (by === "model") {
+        const [provider = "", ...rest] = r.key.split("/");
+        return rest.length ? { ...period, model: rest.join("/"), provider } : undefined;
+      }
+      if (by === "key") return r.key === "playground" ? { ...period, source: "playground" } : { ...period, key: r.key };
+      if (by === "route") {
+        const [ingress = "", egress = "", provider = ""] = r.key.split(":");
+        return ingress ? { ...period, ingress, egress, provider } : undefined;
+      }
+      const m = memberOf(r.key);
+      return { ...period, member: `${m.sa ? "sa" : "user"}:${m.id}` };
+    })();
+    return filter && `/orgs/${org}/projects/${project}/logs?${new URLSearchParams(filter).toString()}`;
+  };
   const label = (r: UsageRow) => {
     if (by === "day") return <Text tabular>{bucketLabel(r.key, granularity, withYear)}</Text>;
     if (by === "model") {
@@ -168,7 +214,24 @@ export function Breakdown({
           ),
         ]
       : []),
-  ].map((c) => ({ ...c, enableSorting: false, enableResizing: false }));
+  ].map((c) => ({ ...c, enableSorting: sortsUsage(String(c.id)), enableResizing: false }));
+  const download = () =>
+    saveCsv(
+      `usage-${by}-${from}-${to}.csv`,
+      usageCsv(
+        [
+          { header, value: labelText },
+          { header: t("project.overview.id", "Id"), value: (r) => r.key },
+          { header: common.requests(), value: (r) => r.requests },
+          { header: t("project.overview.errors", "Errors"), value: (r) => r.errors },
+          { header: common.tokens(), value: (r) => totalTokens(r) },
+          { header: t("project.overview.cacheHit", "Cache hit"), value: (r) => r.cache_hit_rate },
+          ...(showCost ? [{ header: common.cost(), value: (r: UsageRow) => r.cost }] : []),
+          ...(hasMedia(shown) ? [{ header: t("kaeso.usage.media.header", "Media"), value: (r: UsageRow) => mediaSummary(r.media) }] : []),
+        ],
+        shown,
+      ),
+    );
   return (
     <Section
       title={t("project.overview.breakdown", "Breakdown")}
@@ -178,20 +241,36 @@ export function Breakdown({
           : t("project.overview.breakdownHint", "Requests, errors, tokens and cache hits in the period")
       }
       actions={
-        <Segmented
-          aria-label={t("project.overview.groupBy", "Group by")}
-          size="sm"
-          value={by}
-          onValueChange={(v) => onByChange(v as NonNullable<AnalyticsSearch["by"]>)}
-          options={byOptions(granularity)}
-        />
+        <span className="flex flex-wrap items-center gap-8">
+          <Segmented
+            aria-label={t("project.overview.groupBy", "Group by")}
+            size="sm"
+            value={by}
+            onValueChange={(v) => onByChange(v as NonNullable<AnalyticsSearch["by"]>)}
+            options={byOptions(granularity)}
+          />
+          <Button size="sm" variant="ghost" leadingIcon={icons.download} disabled={shown.length === 0} onClick={download}>
+            {t("project.overview.downloadCsv", "Download CSV")}
+          </Button>
+        </span>
       }
     >
       <DataTable
         aria-label={t("project.overview.usageBreakdown", "Usage breakdown")}
-        data={sorted}
+        data={shown}
         columns={columns}
         getRowId={(r) => r.key}
+        sorting={sorting}
+        onSortingChange={setSorting}
+        manualSorting
+        {...(logs
+          ? {
+              onRowClick: (r: UsageRow) => {
+                const href = logHref(r);
+                if (href) void navigate({ href });
+              },
+            }
+          : {})}
         loading={waiting}
         error={failed}
         onRetry={onRetry}
@@ -232,6 +311,14 @@ const SHORT_DIALECTS: Record<string, string> = {
   jina_rerank: "Jina Rerank",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
+
+// A route as text, for the download: its formats and provider, or that it wasn't recorded.
+function routeText(route: string, providerName: (id: string) => string): string {
+  const [ingress = "", egress = "", provider = ""] = route.split(":");
+  if (!ingress) return t("project.overview.routeNotRecorded", "Route not recorded");
+  const formats = egress ? `${shortDialectLabel(ingress)} → ${shortDialectLabel(egress)}` : shortDialectLabel(ingress);
+  return provider ? `${formats} (${providerName(provider)})` : formats;
+}
 
 function RouteLabel({ route, providerName }: { route: string; providerName: (id: string) => string }) {
   const [ingress = "", egress = "", provider = ""] = route.split(":");

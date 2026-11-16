@@ -359,5 +359,7 @@
   "orgHome.changeRegionFirst": "请先更改名称或区域",
   "orgHome.endpoint": "端点",
   "orgHome.keyReaddressed": "{name} 现在调用 {endpoint}",
-  "orgHome.changeEndpointFirst": "请先更改名称或端点"
+  "orgHome.changeEndpointFirst": "请先更改名称或端点",
+  "orgHome.downloadCsv": "下载 CSV",
+  "orgHome.id": "ID"
 }
