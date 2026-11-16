@@ -126,6 +126,13 @@ pub enum AuthMethodView {
     #[doc = "A Google Cloud service account's JSON key, for Gemini Enterprise Agent\n\
         Platform; Kaeso signs in with it and renews the access token by itself."]
     GoogleServiceAccount,
+    #[doc = "An AWS access key, for Amazon Bedrock: Kaeso signs each request with it\n\
+        (Signature Version 4). `account` is the access key id."]
+    AwsAccessKey,
+    #[doc = "The gateway's own AWS identity, optionally assuming a role, for Amazon\n\
+        Bedrock: Kaeso signs each request with its temporary credentials. `account` is\n\
+        the role's name, or `gateway`."]
+    AwsRole,
 }
 
 impl From<AuthMethod> for AuthMethodView {
@@ -135,6 +142,8 @@ impl From<AuthMethod> for AuthMethodView {
             AuthMethod::ChatGpt => AuthMethodView::ChatGpt,
             AuthMethod::Grok => AuthMethodView::Grok,
             AuthMethod::GoogleServiceAccount => AuthMethodView::GoogleServiceAccount,
+            AuthMethod::AwsAccessKey => AuthMethodView::AwsAccessKey,
+            AuthMethod::AwsRole => AuthMethodView::AwsRole,
         }
     }
 }
@@ -157,6 +166,8 @@ impl CredentialView {
             AuthMethodView::ChatGpt => AuthMethod::ChatGpt,
             AuthMethodView::Grok => AuthMethod::Grok,
             AuthMethodView::GoogleServiceAccount => AuthMethod::GoogleServiceAccount,
+            AuthMethodView::AwsAccessKey => AuthMethod::AwsAccessKey,
+            AuthMethodView::AwsRole => AuthMethod::AwsRole,
         }
     }
 
@@ -217,17 +228,22 @@ pub struct CredentialCreate {
     #[doc = "A name to recognise it by."]
     #[schema(example = "Production OpenAI key")]
     pub name: String,
-    #[doc = "The provider's API key, or with `auth_method` `google_service_account`\n\
-        the service account's whole JSON key file. Stored encrypted and never\n\
-        shown again."]
+    #[doc = "The provider's API key; with `auth_method` `google_service_account` the\n\
+        service account's whole JSON key file; with `aws_access_key` a JSON object with\n\
+        `access_key_id`, `secret_access_key` and an optional `session_token`; with\n\
+        `aws_role` a JSON object with an optional `role_arn` to assume and its\n\
+        `external_id`, or `{}` for the gateway's own identity. Stored encrypted and\n\
+        never shown again."]
     #[schema(example = "sk-proj-…")]
     pub secret: String,
     #[doc = "Make it the default for its provider. The first key of a provider\n\
         becomes the default either way."]
     #[serde(default)]
     pub make_default: bool,
-    #[doc = "What `secret` is: `api_key` (the default) or `google_service_account`\n\
-        for a provider whose `service_account` isn't `null`."]
+    #[doc = "What `secret` is: `api_key` (the default), `google_service_account` for\n\
+        a provider whose `service_account` isn't `null`, or for `amazon-bedrock`\n\
+        `aws_access_key` or `aws_role`. `aws_role` needs an instance admin and an install\n\
+        that allows it (`aws.ambient_credentials`)."]
     #[serde(default)]
     pub auth_method: KeyMethod,
     #[doc = "The location a service account key calls, one of the provider's\n\
@@ -264,6 +280,10 @@ pub enum KeyMethod {
     ApiKey,
     #[doc = "A Google Cloud service account's JSON key."]
     GoogleServiceAccount,
+    #[doc = "An AWS access key, as JSON."]
+    AwsAccessKey,
+    #[doc = "The gateway's own AWS identity, with the role to assume as JSON."]
+    AwsRole,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -521,8 +541,113 @@ pub async fn create(
             )
             .await?
         }
+        KeyMethod::AwsAccessKey | KeyMethod::AwsRole => {
+            if req.account_id.is_some() || req.gateway_id.is_some() {
+                return Err(ApiError::invalid(
+                    "account_id",
+                    format!("An AWS key {NO_SCOPE}"),
+                ));
+            }
+            if req.endpoint.is_some() {
+                return Err(ApiError::invalid(
+                    "endpoint",
+                    format!("An AWS key {NO_ENDPOINT}"),
+                ));
+            }
+            let region = aws_region(&provider, req.location.as_deref())?;
+            let (method, secret, label, last4) =
+                aws_secret(&state, &ctx, req.auth_method, &req.secret)?;
+            add(
+                &state,
+                &ctx,
+                org,
+                Added {
+                    id: CredentialId::new(),
+                    provider: provider.id(),
+                    name: &name,
+                    make_default: req.make_default,
+                    secret: &secret,
+                    auth: Auth::aws(method, &last4, &label, region),
+                },
+            )
+            .await?
+        }
     };
     Ok((StatusCode::CREATED, Json(view)))
+}
+
+// The region an AWS key calls: Amazon Bedrock's alone take AWS keys.
+fn aws_region(provider: &ProviderRef, wanted: Option<&str>) -> ApiResult<&'static str> {
+    if provider
+        .built_in()
+        .is_none_or(|p| p.id != crate::platform::providers::AWS_SIGNED)
+    {
+        return Err(ApiError::invalid(
+            "auth_method",
+            format!("{} takes no AWS key; add an API key.", provider.name()),
+        ));
+    }
+    region(provider, wanted, None)?.ok_or_else(|| {
+        ApiError::invalid(
+            "location",
+            "Amazon Bedrock keys call one region; give it as `location`.",
+        )
+    })
+}
+
+// The sealed form of an AWS key's secret, with what it signs in as and the last four characters
+// it shows.
+fn aws_secret(
+    state: &AppState,
+    ctx: &Ctx,
+    method: KeyMethod,
+    secret: &str,
+) -> ApiResult<(AuthMethod, String, String, String)> {
+    use crate::services::aws_auth::{AccessKey, Problem, Role};
+    let problem = |p: Problem| {
+        let message = match p {
+            Problem::NotJson => "Give the AWS key as a JSON object.".to_owned(),
+            Problem::Missing(field) => format!("The AWS key has no `{field}`."),
+            Problem::Malformed(field) => format!("The AWS key's `{field}` isn't valid."),
+        };
+        ApiError::invalid("secret", message)
+    };
+    if method == KeyMethod::AwsAccessKey {
+        let key = AccessKey::parse(secret.trim()).map_err(problem)?;
+        let last4 = key.last4();
+        let label = key.access_key_id.clone();
+        return Ok((
+            AuthMethod::AwsAccessKey,
+            secret.trim().to_owned(),
+            label,
+            last4,
+        ));
+    }
+    if !state.config.aws.ambient_credentials {
+        return Err(ApiError::invalid(
+            "auth_method",
+            "This install doesn't let keys sign in as the gateway's AWS identity.",
+        ));
+    }
+    if !ctx.session().is_ok_and(|s| s.is_instance_admin) {
+        return Err(ApiError::PermissionDenied(
+            "Only instance admins can add a key that signs in as the gateway's AWS identity."
+                .into(),
+        ));
+    }
+    let role = Role::parse(secret).map_err(problem)?;
+    let label = role.label();
+    let sealed = serde_json::json!({ "role_arn": role.role_arn, "external_id": role.external_id })
+        .to_string();
+    let last4 = label
+        .chars()
+        .rev()
+        .take(4)
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect();
+    Ok((AuthMethod::AwsRole, sealed, label, last4))
 }
 
 fn service_account_sign_in(provider: &ProviderRef) -> ApiResult<ServiceAccountSignIn> {
@@ -673,6 +798,19 @@ impl<'a> Auth<'a> {
     fn in_region(mut self, region: Option<&'a str>) -> Auth<'a> {
         self.location = region;
         self
+    }
+
+    fn aws(method: AuthMethod, last4: &'a str, label: &'a str, region: &'a str) -> Auth<'a> {
+        Auth {
+            method,
+            last4,
+            expires_at: None,
+            account: Some(label),
+            project: None,
+            location: Some(region),
+            scope: None,
+            endpoint: None,
+        }
     }
 
     fn service_account(key: &'a ServiceAccountKey, last4: &'a str, location: &'a str) -> Auth<'a> {
@@ -952,6 +1090,36 @@ pub async fn replace(
         Some(n) => validate_name(n)?,
         None => before.name.clone(),
     };
+    if before.method().is_aws() {
+        if req.account_id.is_some() || req.gateway_id.is_some() {
+            return Err(ApiError::invalid(
+                "account_id",
+                format!("An AWS key {NO_SCOPE}"),
+            ));
+        }
+        if req.endpoint.is_some() {
+            return Err(ApiError::invalid(
+                "endpoint",
+                format!("An AWS key {NO_ENDPOINT}"),
+            ));
+        }
+        let provider = provider_in_org(&state, org, &before.provider).await?;
+        let region = region(
+            &provider,
+            req.location.as_deref(),
+            before.location.as_deref(),
+        )?
+        .unwrap_or_default();
+        let kind = if before.method() == AuthMethod::AwsAccessKey {
+            KeyMethod::AwsAccessKey
+        } else {
+            KeyMethod::AwsRole
+        };
+        let (method, secret, label, last4) = aws_secret(&state, &ctx, kind, &req.secret)?;
+        let auth = Auth::aws(method, &last4, &label, region);
+        let after = rewrite(&state, &ctx, tx, &before, &name, &secret, auth).await?;
+        return Ok(Json(after));
+    }
     if before.method() == AuthMethod::GoogleServiceAccount {
         if req.endpoint.is_some() {
             return Err(ApiError::invalid(
@@ -1087,7 +1255,7 @@ pub async fn rename(
             let location = location(service_account_sign_in(&provider)?, Some(wanted))?;
             Some(location).filter(|l| before.location.as_deref() != Some(*l))
         }
-        Some(wanted) if before.method() == AuthMethod::ApiKey => {
+        Some(wanted) if before.method() == AuthMethod::ApiKey || before.method().is_aws() => {
             let provider = provider_in_org(&state, org, &before.provider).await?;
             region(&provider, Some(wanted), None)?
                 .filter(|r| before.location.as_deref() != Some(*r))

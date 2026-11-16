@@ -851,5 +851,11 @@
   "errors.ssoGroups.tooMany": "Höchstens 200 Regeln.",
   "errors.ssoGroups.group": "Nennen Sie die Gruppe jeder Regel, höchstens 256 Zeichen.",
   "errors.ssoGroups.duplicate": "Die Gruppe `{group}` hat zwei Regeln.",
-  "errors.ssoGroups.project": "`{project}` ist kein offenes Projekt der Organisation oder wird zweimal genannt."
+  "errors.ssoGroups.project": "`{project}` ist kein offenes Projekt der Organisation oder wird zweimal genannt.",
+  "errors.awsKey.ambientAdmin": "Nur Instanz-Admins können einen Schlüssel hinzufügen, der sich mit der AWS-Identität des Gateways anmeldet.",
+  "errors.awsKey.ambientOff": "Diese Installation erlaubt keine Schlüssel, die sich mit der AWS-Identität des Gateways anmelden.",
+  "errors.awsKey.badField": "`{field}` des AWS-Schlüssels ist ungültig.",
+  "errors.awsKey.missingField": "Dem AWS-Schlüssel fehlt `{field}`.",
+  "errors.awsKey.notJson": "Geben Sie den AWS-Schlüssel als JSON-Objekt an.",
+  "errors.awsKey.notTaken": "{provider} nimmt keinen AWS-Schlüssel; fügen Sie einen API-Schlüssel hinzu."
 }

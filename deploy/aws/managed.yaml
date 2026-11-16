@@ -5,7 +5,7 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label: { default: Kaeso }
-        Parameters: [Domain, CertificateArn, HostedZoneId, MasterKeys, SetupEmail, ClickHouseUrl]
+        Parameters: [Domain, CertificateArn, HostedZoneId, MasterKeys, SetupEmail, ClickHouseUrl, BedrockAccess]
       - Label: { default: Email }
         Parameters: [SmtpHost, SmtpPort, SmtpUser, SmtpPassword, SmtpFrom]
       - Label: { default: Sizes }
@@ -72,6 +72,11 @@ Parameters:
     MinValue: 1
     MaxValue: 20
     Description: Gateway tasks; they share limits, caches and route cooldowns through Valkey.
+  BedrockAccess:
+    Type: String
+    Default: "false"
+    AllowedValues: ["false", "true"]
+    Description: Give the gateway's task role access to Amazon Bedrock, so instance admins can add Bedrock keys that sign in as the gateway's AWS identity.
   ConsoleCount:
     Type: Number
     Default: 1
@@ -93,6 +98,7 @@ Conditions:
   HasSmtpUser: !Not [!Equals [!Ref SmtpUser, ""]]
   HasSmtpPassword: !Not [!Equals [!Ref SmtpPassword, ""]]
   HasClickHouse: !Not [!Equals [!Ref ClickHouseUrl, ""]]
+  HasBedrock: !Equals [!Ref BedrockAccess, "true"]
 
 Mappings:
   Network:
@@ -420,6 +426,26 @@ Resources:
                   - !Ref MasterKeysSecret
                   - !If [HasClickHouse, !Ref ClickHouseSecret, !Ref "AWS::NoValue"]
                   - !If [HasSmtpPassword, !Ref SmtpPasswordSecret, !Ref "AWS::NoValue"]
+  GatewayTaskRole:
+    Type: AWS::IAM::Role
+    Condition: HasBedrock
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ecs-tasks.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: invoke-bedrock
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: [bedrock:InvokeModel, bedrock:InvokeModelWithResponseStream]
+                Resource:
+                  - arn:aws:bedrock:*::foundation-model/*
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
   GatewayLogs:
     Type: AWS::Logs::LogGroup
     Properties: { RetentionInDays: 30 }
@@ -436,6 +462,7 @@ Resources:
       Memory: !Ref GatewayMemory
       RuntimePlatform: { CpuArchitecture: ARM64, OperatingSystemFamily: LINUX }
       ExecutionRoleArn: !GetAtt ExecutionRole.Arn
+      TaskRoleArn: !If [HasBedrock, !GetAtt GatewayTaskRole.Arn, !Ref "AWS::NoValue"]
       ContainerDefinitions:
         - Name: gateway
           Image: ghcr.io/logicplanes/kaeso-gateway:0.6.0
@@ -459,6 +486,7 @@ Resources:
             - { Name: KAESO_SMTP_USER, Value: !If [HasSmtpUser, !Ref SmtpUser, ""] }
             - { Name: KAESO_SMTP_FROM, Value: !Ref SmtpFrom }
             - { Name: KAESO_LOG_FORMAT, Value: json }
+            - { Name: KAESO_AWS_AMBIENT_CREDENTIALS, Value: !Ref BedrockAccess }
             - Name: KAESO_POSTGRES_URL
               Value: !Sub
                 - "postgres://kaeso:${Password}@${Host}:${Port}/kaeso?sslmode=require"

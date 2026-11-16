@@ -267,6 +267,7 @@ pub(super) async fn wait_for_task(
                 auth: asked.auth,
                 guard: asked.guard,
                 credential: asked.credential,
+                sigv4: None,
                 request: Outgoing::from(req),
                 stream: false,
                 timeouts: asked.timeouts,

@@ -30,6 +30,10 @@ const REJECTED_RESPONSES: &[(&str, &str)] = &[("n-2", "n")];
 
 const FOREIGN_ERROR_BODIES: &[(&str, ErrorKind)] = &[
     (
+        "providers/amazon-bedrock/built-unrecognized-client",
+        ErrorKind::PermissionDenied,
+    ),
+    (
         "providers/amazon-bedrock/recorded-native-invalid-api-key",
         ErrorKind::PermissionDenied,
     ),

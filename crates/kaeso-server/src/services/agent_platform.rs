@@ -253,6 +253,7 @@ pub async fn probe(
             auth: Some(egress.auth),
             guard: kaeso_upstream::Guard::Off,
             credential: &egress.secret,
+            sigv4: None,
             request: kaeso_upstream::Outgoing::from(encoded),
             stream: false,
             timeouts: kaeso_upstream::Timeouts {

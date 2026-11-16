@@ -11,6 +11,9 @@ publish.workspace = true
 
 [dependencies]
 base64.workspace = true
+hmac.workspace = true
+sha2.workspace = true
+time.workspace = true
 kaeso-core.workspace = true
 kaeso-codecs.workspace = true
 kaeso-mcp.workspace = true

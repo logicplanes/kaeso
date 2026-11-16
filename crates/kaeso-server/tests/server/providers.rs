@@ -60,6 +60,7 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
             "account_scope": null,
             "regions": null,
             "key_endpoint": null,
+            "aws": null,
             "model_routes": [],
             "server": null,
         })

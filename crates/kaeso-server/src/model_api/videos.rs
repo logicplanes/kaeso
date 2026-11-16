@@ -878,6 +878,7 @@ async fn send(
             auth: up.auth,
             guard: pipeline::guard_for(&up.provider),
             credential: up.secret(),
+            sigv4: None,
             request: Outgoing::from(req),
             stream: false,
             timeouts: timeouts(state),
@@ -1303,6 +1304,7 @@ async fn stream_link(
                 auth: if own_host { up.auth } else { None },
                 guard: link_guard(own_host, &up.provider),
                 credential: if own_host { up.secret() } else { &empty },
+                sigv4: None,
                 request: Outgoing {
                     method: "GET",
                     path,

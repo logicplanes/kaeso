@@ -143,6 +143,7 @@ async fn send(
             auth: found.provider.auth(),
             guard: pipeline::guard_for(&found.provider),
             credential: &found.credential.secret,
+            sigv4: None,
             request: Outgoing {
                 method,
                 path: format!("/v1/responses/{id}"),

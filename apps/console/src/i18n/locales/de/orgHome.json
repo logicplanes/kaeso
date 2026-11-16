@@ -364,5 +364,7 @@
   "orgHome.keyWeightBlocked": "Geben Sie jede Gewichtung von 1 bis 100 an",
   "orgHome.usesKeysNow": "Nutzt auch {names}",
   "orgHome.keyWeightsHint": "Jeder Aufrufer zieht einen Schlüssel eines Projekts nach Gewichtung; ein abgelehnter oder begrenzter Schlüssel weicht aus.",
-  "orgHome.keyWeight": "Gewichtung in {project}"
+  "orgHome.keyWeight": "Gewichtung in {project}",
+  "orgHome.awsAccessKey": "Zugriffsschlüssel",
+  "orgHome.awsRole": "AWS-Rolle"
 }

@@ -26,6 +26,7 @@ No key was available. AWS publishes no reply of this route, so there are request
 | `requests/refused-api-key.json`, `errors/recorded-refused-api-key.json` | 401, "Authentication failed: Please make sure your API Key is valid.", for a well-formed `ABSK` key Bedrock doesn't know | live, with a made-up key |
 | `requests/missing-api-key.json`, `errors/recorded-missing-api-key.json` | 401, "Authorization header is missing" | live |
 | `errors/recorded-native-invalid-api-key.json` | 403 `{"Message": …}` with `x-amzn-ErrorType: AccessDeniedException`, the shape bedrock-runtime answers its own operations with (recorded on `POST /model/{modelId}/converse`), without OpenAI's `error` object | live, with a made-up key |
+| `errors/built-unrecognized-client.json` | 403 `{"Message": …}`, "The security token included in the request is invalid.", what AWS answers a SigV4 request whose access key it doesn't know (`UnrecognizedClientException`) | built from the native shape above and AWS's common errors (https://docs.aws.amazon.com/bedrock/latest/APIReference/CommonErrors.html) |
 
 ## Where Amazon Bedrock differs from OpenAI Chat Completions
 

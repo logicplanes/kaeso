@@ -54,6 +54,9 @@ aws cloudformation deploy --stack-name kaeso --template-file deploy/aws/managed.
 | `Smtp…` | 您的 SMTP 服务器（[电子邮件](../email.md)） |
 | `GatewayCpu`、`GatewayMemory`、`GatewayCount` | 网关的规格和运行的任务数；它们通过 Valkey 共享限额、缓存和路由冷却 |
 | `DatabaseInstanceClass`、`DatabaseStorageGb`、`CacheNodeType` | 数据存储的规格 |
+| `BedrockAccess` | `true` 会为网关任务提供可调用 Amazon Bedrock 的角色，并设置 `aws.ambient_credentials`，这样实例管理员可以添加以网关的 AWS 身份登录的 Bedrock 密钥，无需存储密钥 |
+
+启用 `BedrockAccess` 后，任务角色对所有基础模型和账户的推理配置文件允许 `bedrock:InvokeModel` 和 `bedrock:InvokeModelWithResponseStream`。要收窄权限，或让密钥代入另一个账户中的角色，请编辑该角色的策略；被代入的角色需要相同的两个操作，以及在信任策略中指定任务角色（见 [Amazon Bedrock 密钥](../../console/provider-keys.md#amazon-bedrock-密钥)）。
 
 网关只信任来自 VPC（负载均衡器节点所在）的 `X-Forwarded-For`，并把指标保留在回环地址上。负载均衡器对网关检查 `/readyz`，对控制台检查 `/healthz`；网关任务停止时有 75 秒时间处理完请求。
 

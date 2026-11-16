@@ -26825,7 +26825,9 @@
           "api_key",
           "chatgpt",
           "grok",
-          "google_service_account"
+          "google_service_account",
+          "aws_access_key",
+          "aws_role"
         ]
       },
       "AvailabilityState": {
@@ -26856,6 +26858,24 @@
           }
         },
         "additionalProperties": false
+      },
+      "AwsSignInView": {
+        "type": "object",
+        "description": "How a provider takes AWS credentials.",
+        "required": [
+          "access_key_page",
+          "gateway_identity"
+        ],
+        "properties": {
+          "access_key_page": {
+            "$ref": "#/components/schemas/KeyPageView",
+            "description": "The AWS page for creating access keys."
+          },
+          "gateway_identity": {
+            "type": "boolean",
+            "description": "Whether the caller may add a key that signs in as the gateway's own AWS\nidentity: the install allows it (`aws.ambient_credentials`) and the caller is\nan instance admin."
+          }
+        }
       },
       "BatchResult": {
         "type": "object",
@@ -27505,7 +27525,7 @@
           },
           "auth_method": {
             "$ref": "#/components/schemas/KeyMethod",
-            "description": "What `secret` is: `api_key` (the default) or `google_service_account`\nfor a provider whose `service_account` isn't `null`."
+            "description": "What `secret` is: `api_key` (the default), `google_service_account` for\na provider whose `service_account` isn't `null`, or for `amazon-bedrock`\n`aws_access_key` or `aws_role`. `aws_role` needs an instance admin and an install\nthat allows it (`aws.ambient_credentials`)."
           },
           "endpoint": {
             "type": [
@@ -27546,7 +27566,7 @@
           },
           "secret": {
             "type": "string",
-            "description": "The provider's API key, or with `auth_method` `google_service_account`\nthe service account's whole JSON key file. Stored encrypted and never\nshown again.",
+            "description": "The provider's API key; with `auth_method` `google_service_account` the\nservice account's whole JSON key file; with `aws_access_key` a JSON object with\n`access_key_id`, `secret_access_key` and an optional `session_token`; with\n`aws_role` a JSON object with an optional `role_arn` to assume and its\n`external_id`, or `{}` for the gateway's own identity. Stored encrypted and\nnever shown again.",
             "example": "sk-proj-…"
           }
         },
@@ -31397,7 +31417,9 @@
         "description": "What a new provider key's secret is.",
         "enum": [
           "api_key",
-          "google_service_account"
+          "google_service_account",
+          "aws_access_key",
+          "aws_role"
         ]
       },
       "KeyPageView": {
@@ -35206,6 +35228,17 @@
                     {
                       "$ref": "#/components/schemas/AccountScopeView",
                       "description": "For a provider whose API names the account, such as Cloudflare AI Gateway:\neach key also gives `account_id`, and may give `gateway_id`. `null` for\nother providers."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "aws": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AwsSignInView",
+                      "description": "For Amazon Bedrock: the AWS credentials a key may sign its requests with\ninstead of a Bedrock API key, with `auth_method` `aws_access_key` or\n`aws_role`. `null` for other providers."
                     },
                     {
                       "type": "null"
@@ -41070,6 +41103,17 @@
               {
                 "$ref": "#/components/schemas/AccountScopeView",
                 "description": "For a provider whose API names the account, such as Cloudflare AI Gateway:\neach key also gives `account_id`, and may give `gateway_id`. `null` for\nother providers."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "aws": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AwsSignInView",
+                "description": "For Amazon Bedrock: the AWS credentials a key may sign its requests with\ninstead of a Bedrock API key, with `auth_method` `aws_access_key` or\n`aws_role`. `null` for other providers."
               },
               {
                 "type": "null"

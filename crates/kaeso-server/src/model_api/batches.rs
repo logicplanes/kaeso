@@ -186,6 +186,7 @@ async fn send(
             auth: provider.auth(),
             guard: pipeline::guard_for(provider),
             credential: &credential.secret,
+            sigv4: None,
             request: Outgoing {
                 method,
                 path,

@@ -851,5 +851,11 @@
   "errors.ssoGroups.tooMany": "最多 200 条规则。",
   "errors.ssoGroups.group": "请为每条规则填写组，最多 256 个字符。",
   "errors.ssoGroups.duplicate": "组 `{group}` 有两条规则。",
-  "errors.ssoGroups.project": "`{project}` 不是组织中未归档的项目，或被重复指定。"
+  "errors.ssoGroups.project": "`{project}` 不是组织中未归档的项目，或被重复指定。",
+  "errors.awsKey.ambientAdmin": "只有实例管理员才能添加以网关的 AWS 身份登录的密钥。",
+  "errors.awsKey.ambientOff": "此实例不允许密钥以网关的 AWS 身份登录。",
+  "errors.awsKey.badField": "AWS 密钥的 `{field}` 无效。",
+  "errors.awsKey.missingField": "AWS 密钥缺少 `{field}`。",
+  "errors.awsKey.notJson": "请以 JSON 对象提供 AWS 密钥。",
+  "errors.awsKey.notTaken": "{provider} 不接受 AWS 密钥；请添加 API 密钥。"
 }

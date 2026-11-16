@@ -449,6 +449,7 @@ async fn poll(
             auth: up.auth,
             guard: pipeline::guard_for(&up.provider),
             credential: &up.credential.secret,
+            sigv4: None,
             request: Outgoing::from(req),
             stream: false,
             timeouts: Timeouts {

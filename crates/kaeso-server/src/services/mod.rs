@@ -4,6 +4,7 @@ pub mod admin_sso;
 pub mod agent_platform;
 pub mod agents;
 pub mod availability;
+pub mod aws_auth;
 pub mod catalogue;
 pub mod continuity;
 pub mod cooldowns;

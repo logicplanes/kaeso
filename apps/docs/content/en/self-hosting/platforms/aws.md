@@ -54,6 +54,9 @@ aws cloudformation deploy --stack-name kaeso --template-file deploy/aws/managed.
 | `Smtp…` | Your SMTP server ([email](../email.md)) |
 | `GatewayCpu`, `GatewayMemory`, `GatewayCount` | The gateway's size and how many tasks run; they share limits, caches and route cooldowns through Valkey |
 | `DatabaseInstanceClass`, `DatabaseStorageGb`, `CacheNodeType` | The data stores' sizes |
+| `BedrockAccess` | `true` gives the gateway's tasks a role that may call Amazon Bedrock and sets `aws.ambient_credentials`, so instance admins can add Bedrock keys that sign in as the gateway's AWS identity, with no key stored |
+
+With `BedrockAccess`, the task role allows `bedrock:InvokeModel` and `bedrock:InvokeModelWithResponseStream` on every foundation model and on the account's inference profiles. To narrow it, or for a key that assumes a role in another account, edit the role's policy; the assumed role needs the same two actions and a trust policy that names the task role ([Amazon Bedrock keys](../../console/provider-keys.md#amazon-bedrock-keys)).
 
 The gateway trusts `X-Forwarded-For` from the VPC, where the load balancer's nodes sit, and keeps its metrics on its loopback address. The load balancer checks `/readyz` on the gateway and `/healthz` on the console; a gateway task gets 75 seconds to drain when it stops.
 

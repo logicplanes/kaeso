@@ -169,6 +169,7 @@ async fn one(upstream: &Upstream, base: &Url, path: &str) -> Run {
             auth: Some(AuthStyle::Bearer),
             guard: crate::Guard::Off,
             credential: &credential,
+            sigv4: None,
             request: request.into(),
             stream: true,
             timeouts: Timeouts {

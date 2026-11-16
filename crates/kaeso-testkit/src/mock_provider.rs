@@ -573,7 +573,12 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     let bearer = headers
         .get("authorization")
         .and_then(|v| v.to_str().ok())
-        .is_some_and(|v| v.starts_with("Bearer ") && v.len() > 7);
+        .is_some_and(|v| {
+            (v.starts_with("Bearer ") && v.len() > 7)
+                // AWS Signature Version 4, as Amazon Bedrock takes it; the tests check the
+                // signature itself.
+                || v.starts_with("AWS4-HMAC-SHA256 Credential=")
+        });
     // Anthropic takes `x-api-key`; Anthropic-compatible servers such as Vercel AI Gateway
     // also take a Bearer token.
     let authed = if dialect.starts_with("gemini") {

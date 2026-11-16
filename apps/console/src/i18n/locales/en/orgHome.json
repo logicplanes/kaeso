@@ -14,6 +14,8 @@
   "orgHome.assignKey": "Assign {title}",
   "orgHome.assignKeyHint": "These projects use it for {provider} instead of the default, beside their other keys.",
   "orgHome.assignToProjects": "Assign to projects",
+  "orgHome.awsAccessKey": "Access key",
+  "orgHome.awsRole": "AWS role",
   "orgHome.breakdown": "Breakdown",
   "orgHome.breakdownHint": "Requests, errors and tokens in the period",
   "orgHome.breakdownHintCost": "Requests, errors, tokens and cost in the period",

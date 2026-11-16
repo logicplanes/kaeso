@@ -340,6 +340,54 @@ describe("organization providers", () => {
     ]);
   });
 
+  it("shows what an AWS-signed Amazon Bedrock key signs in as and lets it move region", async () => {
+    signedIn();
+    const signed = credential({
+      id: "cred_signed",
+      provider: "amazon-bedrock",
+      name: "Signed",
+      auth_method: "aws_access_key",
+      account: "AKIAIOSFODNN7EXAMPLE",
+      location: "eu-central-1",
+      last4: "MPLE",
+    });
+    const role = credential({
+      id: "cred_role",
+      provider: "amazon-bedrock",
+      name: "Role",
+      auth_method: "aws_role",
+      account: "kaeso-bedrock",
+      location: "us-east-1",
+      last4: "rock",
+    });
+    keys([production, signed, role]);
+    on("PATCH", "orgs/:org/credentials/:credential", ({ body }: { body: { name: string; location?: string } }) => ({
+      ...signed,
+      name: body.name,
+      location: body.location ?? signed.location,
+    }));
+    const { user } = await renderApp(PATH);
+
+    const key = await row("Signed");
+    expect(key).toHaveTextContent("Access key");
+    expect(key).toHaveTextContent("AKIAIOSFODNN7EXAMPLE");
+    expect(key).toHaveTextContent("Region");
+    expect(key).not.toHaveTextContent("Service account");
+    const assumed = await row("Role");
+    expect(assumed).toHaveTextContent("AWS role");
+    expect(assumed).toHaveTextContent("kaeso-bedrock");
+    await user.click(await screen.findByRole("button", { name: "Actions for Amazon Bedrock · Signed" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Edit" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit Amazon Bedrock · Signed" });
+    await user.click(within(dialog).getByRole("combobox", { name: "Region" }));
+    await user.click(await screen.findByRole("option", { name: "eu-west-3" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await notifications().findByText("Signed now calls eu-west-3")).toBeInTheDocument();
+    expect(requests("PATCH", "orgs/:org/credentials/:credential").map((r) => [r.params.credential, r.body])).toEqual([
+      ["cred_signed", { name: "Signed", location: "eu-west-3" }],
+    ]);
+  });
+
   it("shows a Cloudflare key's account and gateway and moves it to the account's default gateway", async () => {
     signedIn();
     const cf = credential({

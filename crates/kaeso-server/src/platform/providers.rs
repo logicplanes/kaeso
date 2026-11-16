@@ -74,6 +74,10 @@ pub struct ProviderView {
         own, such as Azure: each key also gives the resource's `endpoint`. `null` for\n\
         other providers."]
     pub key_endpoint: Option<KeyEndpointView>,
+    #[doc = "For Amazon Bedrock: the AWS credentials a key may sign its requests with\n\
+        instead of a Bedrock API key, with `auth_method` `aws_access_key` or\n\
+        `aws_role`. `null` for other providers."]
+    pub aws: Option<AwsSignInView>,
     #[doc = "Which format a model id is sent in when its catalogue entry names\n\
         none, the first matching pattern winning; models no pattern matches go\n\
         in the first of `dialects`. Empty for most providers."]
@@ -135,6 +139,17 @@ pub struct AccountScopeView {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "How a provider takes AWS credentials.")]
+pub struct AwsSignInView {
+    #[doc = "The AWS page for creating access keys."]
+    pub access_key_page: KeyPageView,
+    #[doc = "Whether the caller may add a key that signs in as the gateway's own AWS\n\
+        identity: the install allows it (`aws.ambient_credentials`) and the caller is\n\
+        an instance admin."]
+    pub gateway_identity: bool,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
 #[schema(description = "The regions a provider's API keys may call.")]
 pub struct RegionsView {
     #[doc = "The provider's page that lists its regions."]
@@ -167,6 +182,9 @@ pub struct KeyPageView {
     #[schema(example = "API Keys")]
     pub label: &'static str,
 }
+
+/// The provider whose keys may sign with AWS credentials.
+pub(crate) const AWS_SIGNED: &str = "amazon-bedrock";
 
 impl ProviderView {
     fn of(p: &Provider) -> ProviderView {
@@ -221,6 +239,7 @@ impl ProviderView {
                 hosts: e.hosts.to_vec(),
                 example: e.example,
             }),
+            aws: None,
             model_routes: p
                 .routes
                 .iter()
@@ -251,6 +270,7 @@ impl ProviderView {
             account_scope: None,
             regions: None,
             key_endpoint: None,
+            aws: None,
             model_routes: Vec::new(),
             server: p.server(),
         }
@@ -278,11 +298,25 @@ pub async fn list(
     let org = ctx.org()?.org.id;
     let custom = crate::services::custom_providers::of_org(&state, &state.pg, org).await?;
     let hidden = |id: &str| custom.custom().iter().any(|c| c.id().as_str() == id);
+    let gateway_identity =
+        state.config.aws.ambient_credentials && ctx.session().is_ok_and(|s| s.is_instance_admin);
     Ok(Json(List::complete(
         PROVIDERS
             .iter()
             .filter(|p| !hidden(p.id))
-            .map(ProviderView::of)
+            .map(|p| {
+                let mut view = ProviderView::of(p);
+                if p.id == AWS_SIGNED {
+                    view.aws = Some(AwsSignInView {
+                        access_key_page: KeyPageView {
+                            url: "https://console.aws.amazon.com/iam/home#/security_credentials",
+                            label: "Security credentials",
+                        },
+                        gateway_identity,
+                    });
+                }
+                view
+            })
             .chain(custom.custom().iter().map(|c| ProviderView::custom(c)))
             .collect(),
     )))
