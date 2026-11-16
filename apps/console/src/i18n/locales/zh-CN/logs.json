@@ -312,5 +312,8 @@
   "logs.inspector.replace": "替换",
   "logs.inspector.replaceDraft": "替换您未发送的提示词？",
   "logs.inspector.replaceDraftHint": "试验场中有一条尚未发送的提示词；此请求的最后一条消息将取代它。",
-  "logs.inspector.systemLeftOut": "已省略系统提示词；它超过 8,000 个字符"
+  "logs.inspector.systemLeftOut": "已省略系统提示词；它超过 8,000 个字符",
+  "logs.filter.tag": "标签",
+  "logs.inspector.tags": "标签",
+  "logs.inspector.onlyTag": "只显示带有标签 {tag} 的请求"
 }

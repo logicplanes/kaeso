@@ -312,5 +312,8 @@
   "logs.inspector.replace": "Ersetzen",
   "logs.inspector.replaceDraft": "Ihren nicht gesendeten Prompt ersetzen?",
   "logs.inspector.replaceDraftHint": "Im Playground wartet ein nicht gesendeter Prompt; die letzte Nachricht dieser Anfrage ersetzt ihn.",
-  "logs.inspector.systemLeftOut": "System-Prompt weggelassen; er hat mehr als 8.000 Zeichen"
+  "logs.inspector.systemLeftOut": "System-Prompt weggelassen; er hat mehr als 8.000 Zeichen",
+  "logs.filter.tag": "Tag",
+  "logs.inspector.tags": "Tags",
+  "logs.inspector.onlyTag": "Nur Anfragen mit dem Tag {tag} zeigen"
 }

@@ -89,7 +89,7 @@ function ConversationPending({ messages }: { messages: number }) {
 }
 
 /** One filter of the request log, set from a value the inspector shows. */
-export type InspectorFilter = Pick<LogFilters, "status" | "model" | "provider" | "alias" | "key" | "member">;
+export type InspectorFilter = Pick<LogFilters, "status" | "model" | "provider" | "alias" | "key" | "member" | "tag">;
 
 export function LogInspector({
   org,
@@ -621,6 +621,23 @@ function Overview({
               value: e.user_agent ? <Named name={describeUserAgent(e.user_agent)} id={e.user_agent} /> : "—",
               ...(e.user_agent ? { copy: e.user_agent } : {}),
             },
+            ...(e.tags.length
+              ? [
+                  {
+                    label: t("logs.inspector.tags", "Tags"),
+                    span: "row" as const,
+                    value: (
+                      <span className="flex flex-wrap gap-4">
+                        {e.tags.map((tag) => (
+                          <Tag key={tag} size="sm" onClick={only({ tag })} aria-label={t("logs.inspector.onlyTag", "Show only requests tagged {tag}", { tag })}>
+                            {tag}
+                          </Tag>
+                        ))}
+                      </span>
+                    ),
+                  },
+                ]
+              : []),
           ]}
         />
       </Section>

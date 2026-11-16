@@ -1283,6 +1283,7 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             media_detail: String::new(),
             cost_known: true,
             cost_basis: String::new(),
+            tags: Vec::new(),
         },
         ContentRow {
             request_id: id,
@@ -1381,16 +1382,14 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(text.starts_with("id,started_at,"));
     assert!(
         text.lines().next().unwrap().ends_with(
-            ",source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis"
+            ",source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags"
         ),
         "{text}"
     );
     assert_eq!(text.lines().count(), 2501);
     assert!(
-        text.lines()
-            .skip(1)
-            .all(|l| l
-                .ends_with(",\"api\",180,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\"")),
+        text.lines().skip(1).all(|l| l
+            .ends_with(",\"api\",180,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\",\"\"")),
         "the overhead, the breakpoints, the upload and the response cache are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");
@@ -2623,4 +2622,134 @@ async fn the_request_log_finds_requests_by_the_name_the_app_sent() {
     assert_eq!(found("?requested_model=gpt-5").await, ["gpt-5"]);
     assert_eq!(found("?model=gpt-5").await.len(), 2, "the resolved model");
     assert!(found("?requested_model=GPT-5").await.is_empty());
+}
+
+#[tokio::test]
+async fn kaeso_tags_label_a_request_in_the_log_its_filter_and_its_export() {
+    use axum::body::Body;
+    use axum::http::Request;
+    use http_body_util::BodyExt;
+    use tower::ServiceExt;
+    let env = env(&[]).await;
+    let send = |tags: &'static [&'static str]| {
+        let env = &env;
+        async move {
+            let mut req = Request::builder()
+                .uri("/v1/chat/completions")
+                .method("POST")
+                .header("authorization", format!("Bearer {}", env.key))
+                .header("content-type", "application/json");
+            for t in tags {
+                req = req.header("kaeso-tags", *t);
+            }
+            let req = req
+                .body(Body::from(
+                    serde_json::to_vec(&json!({
+                        "model": "claude-haiku-4-5",
+                        "messages": [{ "role": "user", "content": "Hi" }],
+                    }))
+                    .unwrap(),
+                ))
+                .unwrap();
+            let resp = env.app.router.clone().oneshot(req).await.unwrap();
+            let status = resp.status();
+            let body = resp.into_body().collect().await.unwrap().to_bytes();
+            (
+                status,
+                serde_json::from_slice::<Value>(&body).unwrap_or(Value::Null),
+            )
+        }
+    };
+    assert_eq!(
+        send(&["checkout, eval-42,checkout"]).await.0,
+        StatusCode::OK
+    );
+    assert_eq!(send(&["eval:run_7.b", "search"]).await.0, StatusCode::OK);
+    assert_eq!(send(&[]).await.0, StatusCode::OK);
+    let too_many = "a,b,c,d,e,f,g,h,i,j,k";
+    let long = "x".repeat(65);
+    let long: &'static str = Box::leak(long.into_boxed_str());
+    for bad in ["Checkout", "", "a,,b", "two words", too_many, long] {
+        let (status, body) = send(Box::leak(Box::new([bad]))).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{bad}: {body}");
+        assert_eq!(body["error"]["param"], "kaeso-tags", "{bad}");
+    }
+    flush(&env).await;
+
+    let list = |query: &str| {
+        let env = &env;
+        let query = query.to_owned();
+        async move {
+            env.app
+                .get(&format!("{}/logs?{query}", base(env)), &env.owner.cookie)
+                .await
+        }
+    };
+    let all = list("status=200").await;
+    let mut tags: Vec<String> = all.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| r["tags"].to_string())
+        .collect();
+    tags.sort();
+    assert_eq!(
+        tags,
+        [
+            r#"["checkout","eval-42"]"#,
+            r#"["eval:run_7.b","search"]"#,
+            "[]"
+        ]
+    );
+    let checkout = list("tag=checkout").await;
+    assert_eq!(
+        checkout.body["data"].as_array().unwrap().len(),
+        1,
+        "{:?}",
+        checkout.body
+    );
+    assert_eq!(
+        checkout.body["data"][0]["tags"],
+        json!(["checkout", "eval-42"])
+    );
+    assert_eq!(
+        list("tag=eval").await.body["data"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0,
+        "a tag matches whole"
+    );
+    let refused = list("tag=Not%20a%20tag").await;
+    assert_eq!(
+        refused.status,
+        StatusCode::BAD_REQUEST,
+        "{:?}",
+        refused.body
+    );
+    assert_eq!(refused.body["error"]["param"], "tag");
+
+    let req = Request::builder()
+        .uri(format!(
+            "/platform/v1{}/logs/export?format=csv&tag=search",
+            base(&env)
+        ))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(Body::empty())
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = resp.into_body().collect().await.unwrap().to_bytes();
+    let text = std::str::from_utf8(&body).unwrap();
+    assert_eq!(text.lines().count(), 2, "{text}");
+    assert!(
+        text.lines()
+            .nth(1)
+            .unwrap()
+            .ends_with(",\"eval:run_7.b search\""),
+        "{text}"
+    );
 }

@@ -24,6 +24,7 @@ pub const ALLOWED_HEADERS: &[&str] = &[
     "content-type",
     "idempotency-key",
     "kaeso-log-content",
+    "kaeso-tags",
     "kaeso-timeout",
     "openai-beta",
     "openai-organization",

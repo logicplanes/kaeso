@@ -334,6 +334,7 @@ const messages = (): Rule[] => [
   rule("errors.timelineStepValues", () => t("errors.timelineStepValues", "Use `minute` or `hour`.")),
   rule("errors.logEndpoint", () => t("errors.logEndpoint", "`endpoint` must be an endpoint, such as `responses`.")),
   rule("errors.logMinCost", () => t("errors.logMinCost", "`min_cost` must be an amount in USD, such as `0.5`.")),
+  rule("errors.logTag", () => t("errors.logTag", "`tag` must be 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.")),
   rule("errors.timelineGroupValues", () => t("errors.timelineGroupValues", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`.")),
   rule("errors.timelineGroupValuesProject", () => t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`.")),
   rule("errors.timelineMinuteRange", () => t("errors.timelineMinuteRange", "By minute, `from` and `to` are at most 2 days apart; use `hour`.")),
@@ -907,6 +908,9 @@ const messages = (): Rule[] => [
   ),
   rule("errors.modelApi.logContentHeader", () =>
     t("errors.modelApi.logContentHeader", "The header `kaeso-log-content` takes only `off`, which keeps this request's content out of the request log."),
+  ),
+  rule("errors.modelApi.tagsHeader", () =>
+    t("errors.modelApi.tagsHeader", "The header `kaeso-tags` takes up to 10 comma-separated tags of 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`."),
   ),
   rule("errors.modelApi.timeoutHeader", () =>
     t("errors.modelApi.timeoutHeader", "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600."),

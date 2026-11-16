@@ -376,6 +376,23 @@ describe("LogsPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ requested_model: "anthropic/claude-sonnet-4-5" }));
   });
 
+  it("filters by a tag from the address or from the tags of the requests shown", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow({ tags: ["search", "checkout"] }), logRow({ id: "req_0002", tags: ["checkout"] })] });
+    const { user, router } = await renderApp(projectPath("logs?tag=eval-7"));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ tag: "eval-7" }));
+    const toolbar = screen.getByRole("toolbar", { name: "Filter requests" });
+    expect(within(toolbar).getByRole("group", { name: "Filter: Tag" })).toHaveTextContent("eval-7");
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Tag filter" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Tag" }));
+    expect((await screen.findAllByRole("menuitemradio")).map((o) => o.textContent)).toEqual(["checkout", "search"]);
+    await user.click(screen.getByRole("menuitemradio", { name: "search" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ tag: "search" }));
+  });
+
   it("narrows to the requests that worked, the response cache's answers and slow requests", async () => {
     signedIn();
     projectData();

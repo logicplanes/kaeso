@@ -15078,6 +15078,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Only requests the app tagged with this tag in the `kaeso-tags` header.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -15360,6 +15369,15 @@
             "name": "requested_model",
             "in": "query",
             "description": "Only requests that named this model or alias, exactly as the app sent it,\n`provider/model` included. Unlike `alias`, it also finds requests whose name\ndidn't resolve, such as an alias that was deleted.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Only requests the app tagged with this tag in the `kaeso-tags` header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -29806,7 +29824,8 @@
                 "client_ip",
                 "upstream_request_id",
                 "has_content",
-                "fallbacks"
+                "fallbacks",
+                "tags"
               ],
               "properties": {
                 "alias": {
@@ -29989,6 +30008,17 @@
                     {
                       "type": "null"
                     }
+                  ]
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The app's own tags from the `kaeso-tags` header, in the order it sent them.",
+                  "example": [
+                    "checkout",
+                    "eval-42"
                   ]
                 },
                 "ttfb_ms": {
@@ -32391,7 +32421,8 @@
           "client_ip",
           "upstream_request_id",
           "has_content",
-          "fallbacks"
+          "fallbacks",
+          "tags"
         ],
         "properties": {
           "alias": {
@@ -32574,6 +32605,17 @@
               {
                 "type": "null"
               }
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The app's own tags from the `kaeso-tags` header, in the order it sent them.",
+            "example": [
+              "checkout",
+              "eval-42"
             ]
           },
           "ttfb_ms": {

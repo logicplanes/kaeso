@@ -72,6 +72,7 @@ type FilterId =
   | "failed"
   | "response_cache"
   | "min_duration_ms"
+  | "tag"
   | FlagFilterId;
 type ChoiceFilterId = Exclude<FilterId, FlagFilterId>;
 const isChoice = (id: string): id is ChoiceFilterId => id !== "fell_back";
@@ -94,6 +95,7 @@ const FILTER_IDS: FilterId[] = [
   "response_cache",
   "min_duration_ms",
   "min_cost",
+  "tag",
 ];
 // Durations a request may take at least, in milliseconds.
 const SLOWER_THAN = [1_000, 5_000, 10_000, 30_000, 60_000];
@@ -103,6 +105,7 @@ const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPa
   member: (member) => ({ member }),
   model: (model) => ({ model }),
   requested_model: (requested_model) => ({ requested_model }),
+  tag: (tag) => ({ tag }),
   provider: (provider) => ({ provider }),
   ingress: (ingress) => ({ ingress }),
   egress: (egress) => ({ egress }),
@@ -123,6 +126,7 @@ const filterLabel = (id: FilterId): string =>
     member: t("logs.filter.member", "Member"),
     model: common.model(),
     requested_model: t("logs.filter.requestedModel", "Requested model"),
+    tag: t("logs.filter.tag", "Tag"),
     provider: common.provider(),
     ingress: t("logs.filter.appFormat", "App format"),
     egress: t("logs.filter.providerFormat", "Provider format"),
@@ -141,6 +145,14 @@ const filterLabel = (id: FilterId): string =>
 
 // The names an app may send: each alias, and each model's id with and without its provider. A
 // name from the URL that none of them is, such as a deleted alias, stays as the chip's value.
+// The log has no list of every tag, so the filter offers those of the requests loaded, and the
+// one in the address.
+function tagChoices(rows: readonly { tags: string[] }[], current: string | undefined): FilterChipChoice[] {
+  const tags = new Set(rows.flatMap((r) => r.tags));
+  if (current) tags.add(current);
+  return [...tags].sort().map((tag) => ({ value: tag, label: tag }));
+}
+
 function requestedNames(models: { provider: string; model_id: string }[], aliases: { name: string }[]): FilterChipChoice[] {
   const names = [...new Set([...aliases.map((a) => a.name), ...models.flatMap((m) => [m.model_id, `${m.provider}/${m.model_id}`])])];
   return names.map((n) => ({ value: n, label: n }));
@@ -222,28 +234,30 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
                 ? (aliases.data ?? []).map((a) => ({ value: a.name, label: a.name }))
                 : id === "requested_model"
                   ? requestedNames(catalogue.data ?? [], aliases.data ?? [])
-                  : id === "endpoint"
-                    ? ENDPOINTS.map((e) => ({ value: e, label: e }))
-                    : id === "min_cost"
-                      ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
-                      : id === "failed"
-                        ? [
-                            { value: "true", label: outcomeLabel(true) },
-                            { value: "false", label: outcomeLabel(false) },
-                          ]
-                        : id === "response_cache"
-                          ? VERDICTS.map((v) => ({ value: v, label: cacheLabel(v) }))
-                          : id === "min_duration_ms"
-                            ? SLOWER_THAN.map((ms) => ({ value: String(ms), label: formatDuration(ms) }))
-                            : id === "stream"
-                              ? [
-                                  { value: "true", label: t("logs.filter.streamed", "Streamed") },
-                                  { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
-                                ]
-                              : [
-                                  { value: "api", label: "API" },
-                                  { value: "playground", label: t("logs.source.playground", "Playground") },
-                                ];
+                  : id === "tag"
+                    ? tagChoices(rows, filters.tag)
+                    : id === "endpoint"
+                      ? ENDPOINTS.map((e) => ({ value: e, label: e }))
+                      : id === "min_cost"
+                        ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
+                        : id === "failed"
+                          ? [
+                              { value: "true", label: outcomeLabel(true) },
+                              { value: "false", label: outcomeLabel(false) },
+                            ]
+                          : id === "response_cache"
+                            ? VERDICTS.map((v) => ({ value: v, label: cacheLabel(v) }))
+                            : id === "min_duration_ms"
+                              ? SLOWER_THAN.map((ms) => ({ value: String(ms), label: formatDuration(ms) }))
+                              : id === "stream"
+                                ? [
+                                    { value: "true", label: t("logs.filter.streamed", "Streamed") },
+                                    { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                                  ]
+                                : [
+                                    { value: "api", label: "API" },
+                                    { value: "playground", label: t("logs.source.playground", "Playground") },
+                                  ];
   const current = (id: ChoiceFilterId): string | undefined => {
     const v = filters[id];
     return v === undefined ? undefined : String(v);
@@ -271,7 +285,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
               ? { groups: providerGroups, width: "sm" as const }
               : {
                   values: choice(id),
-                  searchable: id === "key" || id === "member" || id === "alias" || id === "endpoint" || id === "requested_model",
+                  searchable: id === "key" || id === "member" || id === "alias" || id === "endpoint" || id === "requested_model" || id === "tag",
                 }),
         },
   );

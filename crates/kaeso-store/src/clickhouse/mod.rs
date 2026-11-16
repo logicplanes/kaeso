@@ -91,6 +91,12 @@ const MIGRATIONS: &[Migration] = &[
         name: "content_blocks",
         sql: include_str!("../../migrations/clickhouse/0014_content_blocks.sql"),
     },
+    // What an app tags its requests with in `kaeso-tags`, with the metadata and not the content.
+    Migration {
+        version: 15,
+        name: "request_tags",
+        sql: include_str!("../../migrations/clickhouse/0015_request_tags.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -243,7 +249,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 30);
+        assert_eq!(all.len(), 31);
         assert!(all.iter().all(|s| s.starts_with("CREATE ")
             || s.starts_with("ALTER TABLE ")
             || s.starts_with("DROP ")));

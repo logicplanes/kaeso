@@ -74,6 +74,7 @@ describe("exportFilters", () => {
       { label: "Source", value: "Playground" },
     ]);
     expect(exportFilters({ range: "1h" })).toEqual([]);
+    expect(exportFilters({ tag: "checkout" })).toEqual([{ label: "Tag", value: "checkout" }]);
   });
 });
 
