@@ -90,6 +90,8 @@ After an update, everyone who opens the console sees **What's new in Kaeso** onc
 
 The instance's **Audit log** records changes to users, organizations and the install's settings, with who made each change and when. It marks changes by agents as an organization's audit log does, and the **Agents** filter shows only those ([read the audit log](organizations-and-projects.md#read-the-audit-log)). **Export JSON Lines** downloads the events the filters show, one per line, newest first, and the log records the export. The Platform API's `instance/audit-log/export` does the same with the right `instance.audit_log.export`.
 
+A user's sheet under **Users** opens it at their changes with **Their changes**, and at the changes made to them with **Changes to them**.
+
 ## Next steps
 
 - [Configuration](../self-hosting/configuration.md): Set the sign-in methods, email and other settings of the gateway.

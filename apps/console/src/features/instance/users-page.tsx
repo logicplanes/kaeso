@@ -37,6 +37,7 @@ import { userStateLabel } from "~/format/labels";
 import { usePageCreateAction } from "~/shell/create-action";
 import { usePhone } from "~/shell/use-phone";
 import { toast } from "~/shell/toast";
+import { AuditLinks } from "~/kaeso/audit-links";
 import { InstancePage } from "./instance-page";
 import { locale, t, type Locale } from "~/i18n";
 import { patchSearch, type SearchPatch } from "~/search";
@@ -342,6 +343,7 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
         </Section>
       )}
       <UserOrgs userId={u.id} />
+      <AuditLinks log="/settings/instance/audit-log" user={u.id} />
       {!deleted && (
         <Section title={t("instance.deleteUser", "Delete user")} spacing="none">
           <SettingsGroup>
