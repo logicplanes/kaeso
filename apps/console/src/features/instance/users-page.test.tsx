@@ -46,6 +46,15 @@ describe("instance users list", () => {
     expect(userQueries()[0]).toEqual({ limit: "100" });
   });
 
+  it("says whether each user has two-factor authentication", async () => {
+    signedIn();
+    users([ADA, instanceUser({ totp_enabled: true })]);
+    await renderApp(PATH);
+    const row = async (name: string) => (await within(table()).findByText(name)).closest('[role="row"]') as HTMLElement;
+    expect(within(await row("Grace Hopper")).getByText("On")).toBeInTheDocument();
+    expect(within(await row("Ada Okafor")).getByText("Off")).toBeInTheDocument();
+  });
+
   it("marks an instance admin with a short badge on a phone, so the name keeps its room", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 639px)",

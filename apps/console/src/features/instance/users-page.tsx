@@ -83,6 +83,9 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
           (u: InstanceUserView) => u.state,
           (v: string) => (STATE_DOT[v] ? <Status tone={STATE_DOT[v]}>{userStateLabel(v)}</Status> : <Text>{userStateLabel(v)}</Text>),
         ),
+        col.text({ id: "twoFactor", header: t("instance.twoFactor", "Two-factor"), size: 104, priority: 4 }, (u: InstanceUserView) =>
+          u.totp_enabled ? t("common.on", "On") : t("common.off", "Off"),
+        ),
         col.custom(
           { id: "created", header: t("common.created", "Created"), size: CREATED_WIDTH[lang], priority: 3 },
           (u: InstanceUserView) => u.created_at,

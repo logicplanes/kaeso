@@ -12,7 +12,7 @@ Die Seiten finden Sie unter **Instanz** im Menü am Fuß der Seitenleiste.
 
 **Benutzer** listet jedes Konto der Installation: aktiv, deaktiviert oder gelöscht. **Benutzer einladen** lädt jemanden ohne Organisation in die Installation ein. Einer Organisation tritt die Person bei, wenn eine Organisation sie einlädt.
 
-Instanz-Admins tragen das Abzeichen **Instanz-Admin**, und **Verwaltet von** nennt die Organisation, die ein Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)). Wählen Sie einen Benutzer, um sein Sheet zu öffnen. Es listet die Organisationen, denen er angehört, mit seiner Rolle in jeder, und hat diese Aktionen:
+**Zwei-Faktor** zeigt, wer eine Authenticator-App nutzt. Instanz-Admins tragen das Abzeichen **Instanz-Admin**, und **Verwaltet von** nennt die Organisation, die ein Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)). Wählen Sie einen Benutzer, um sein Sheet zu öffnen. Es listet die Organisationen, denen er angehört, mit seiner Rolle in jeder, und hat diese Aktionen:
 
 | Aktion | Wirkung |
 | --- | --- |
@@ -26,7 +26,7 @@ Kaeso informiert den Benutzer per E-Mail, wenn Sie seine Sitzungen beenden oder 
 
 ## Organisationen verwalten
 
-**Organisationen** listet jede Organisation mit ihren Mitgliedern, Projekten und ihrem Zustand. **Organisation erstellen** legt eine mit dem Inhaber an, den Sie wählen, oder mit Ihnen als Inhaber, wenn Sie niemanden wählen.
+**Organisationen** listet jede Organisation mit ihren Mitgliedern, Projekten und ihrem Zustand. **Organisation erstellen** legt eine mit dem Inhaber an, den Sie wählen, oder mit Ihnen als Inhaber, wenn Sie niemanden wählen. **Anmeldung** sagt, ob eine Organisation Single Sign-on, Zwei-Faktor-Authentifizierung oder beides verlangt, und **Single Sign-on** filtert die Liste nach Organisationen mit oder ohne SSO-Verbindung.
 
 Die Seite einer Organisation zeigt ihre Metadaten, Inhaber, Mitglieder und Projekte. Sie zeigt außerdem ihre Anfragen, Token, Kosten und gespeicherten Protokolle der letzten 30 Tage. Dort können Sie die Organisation umbenennen, löschen und wiederherstellen.
 
