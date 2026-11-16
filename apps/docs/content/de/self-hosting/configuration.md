@@ -310,6 +310,20 @@ Gecachte Antworten bleiben in Valkey, bis die Dauer ihres Projekts abläuft. Das
 | `KAESO_LOGS_FLUSH_INTERVAL`<br>`logs.flush_interval` | Text | `1s` | Wie oft das Gateway wartende Zeilen nach ClickHouse schreibt. |
 | `KAESO_LOGS_FLUSH_ROWS`<br>`logs.flush_rows` | Ganzzahl | `5000` | Wartende Zeilen schreiben, sobald so viele warten, mindestens 1. |
 
+### Traces
+
+Das Gateway kann von jeder Modellanfrage und jedem MCP-Tool-Aufruf einen Trace an einen OpenTelemetry-Collector senden ([Traces](monitoring.md#traces)).
+
+| Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- |
+| `KAESO_OTEL_ENDPOINT`<br>`otel.endpoint` | Text | — | Die OTLP/HTTP-Adresse eines Collectors, etwa `http://otel-collector:4318`. Das Gateway sendet JSON an ihr `/v1/traces` oder an die Adresse selbst, wenn sie auf `/v1/traces` endet, über den Proxy in `HTTPS_PROXY`, wenn einer gesetzt ist. Nicht gesetzt oder leer sendet es keine Traces. |
+| `KAESO_OTEL_HEADERS`<br>`otel.headers` | Text, geheim | — | Header für den Collector, als durch Kommas getrennte Paare `name=value`, etwa `authorization=Bearer%20<token>`. Ein Wert darf prozentkodiert sein, wie in `OTEL_EXPORTER_OTLP_HEADERS`. |
+| `KAESO_OTEL_SERVICE_NAME`<br>`otel.service_name` | Text | `kaeso-gateway` | Der `service.name` der Traces. |
+| `KAESO_OTEL_CONTENT`<br>`otel.content` | Bool | `false` | Fügt dem Trace den Prompt und die Antwort hinzu, nur bei Anfragen, deren Inhalt das Anfrageprotokoll behält. Bilder, Audio und Dateien werden nie exportiert. |
+| `KAESO_OTEL_SAMPLE_RATIO`<br>`otel.sample_ratio` | Text | `1.0` | Der Anteil der Anfragen ohne `traceparent`, die einen Trace bekommen, von `0` bis `1`. Eine Anfrage mit einem folgt der Wahl der App. |
+| `KAESO_OTEL_BUFFER_SIZE`<br>`otel.buffer_size` | Ganzzahl | `20000` | Spans, die auf den Collector warten, mindestens 1. Darüber hinaus fallen die ältesten weg. |
+| `KAESO_OTEL_FLUSH_INTERVAL`<br>`otel.flush_interval` | Text | `5s` | Wie oft das Gateway wartende Spans sendet, von `100ms` bis `5m`. Ein voller Stapel von 512 geht sofort. |
+
 ### Standards der Instanz
 
 Diese Einstellungen legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie über die Platform API oder in der Konsole: unter **Instanz** › **Allgemein**, die Aufbewahrung unter **Instanz** › **Protokollierung**. Die gespeicherten Werte haben Vorrang.

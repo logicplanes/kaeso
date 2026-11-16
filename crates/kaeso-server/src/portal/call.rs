@@ -52,6 +52,8 @@ struct Logged {
     at: OffsetDateTime,
     request_bytes: usize,
     arguments: Option<String>,
+    /// The client's span, from `traceparent` and `tracestate` in the call's `_meta`.
+    trace: Option<crate::services::otel::TraceParent>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -166,6 +168,23 @@ fn log(
         l.caller.project,
         l.server,
         failure.is_some(),
+    );
+    crate::services::otel::record_tool_call(
+        state,
+        &crate::services::otel::ToolCall {
+            parent: l.trace.as_ref(),
+            at: row.started_at,
+            duration: l.started.elapsed(),
+            tool: &row.tool,
+            org_id: row.org_id,
+            project_id: row.project_id,
+            server_id: row.server_id,
+            key_id: row.key_id,
+            client: &row.client_name,
+            status: &row.status,
+            error_type: &row.error_type,
+            error_message: &row.error_message,
+        },
     );
     let st = state.clone();
     state.in_flight.finish(async move {
@@ -428,15 +447,21 @@ pub(super) async fn call(state: &AppState, r: Request<'_>) -> Response {
             format!("No tool `{name}` in this project's portal; list the tools again."),
         );
     };
-    let client = r
+    let call_meta = r
         .message
         .params()
         .and_then(|p| p.borrowed(meta::KEY))
-        .and_then(|m| RawObject::of(m).ok())
-        .and_then(|m| meta::client_info(&m))
+        .and_then(|m| RawObject::of(m).ok());
+    let client = call_meta
+        .as_ref()
+        .and_then(meta::client_info)
         .map(|i| i.name)
         .or_else(|| r.caller.client.clone())
         .unwrap_or_default();
+    let trace = call_meta.as_ref().and_then(|m| {
+        let state = m.string(meta::TRACESTATE);
+        crate::services::otel::TraceParent::parse(&m.string(meta::TRACEPARENT)?, state.as_deref())
+    });
     let arguments = r
         .message
         .params()
@@ -455,6 +480,7 @@ pub(super) async fn call(state: &AppState, r: Request<'_>) -> Response {
         at: r.at,
         request_bytes: r.request_bytes,
         arguments: if keeps { arguments.clone() } else { None },
+        trace,
     };
     let refusal = match tool.standing {
         Standing::Off => Some((

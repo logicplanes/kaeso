@@ -26,6 +26,7 @@ pub mod mcp_servers;
 pub mod mcp_tools;
 pub mod notifications;
 pub mod orgs;
+pub mod otel;
 pub mod provider_accounts;
 pub mod provider_detection;
 pub mod regional;

@@ -227,6 +227,79 @@ async fn a_newest_version_client_calling_an_older_server_keeps_its_meta_but_not_
 }
 
 #[tokio::test]
+async fn a_tool_call_continues_the_clients_trace() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let collector = kaeso_testkit::otel::MockCollector::start().await;
+    let p = portal(&s, &mock, &[("KAESO_OTEL_ENDPOINT", &collector.base_url)]).await;
+    let called = send(
+        &p,
+        Some(MODERN),
+        rpc(
+            1,
+            "tools/call",
+            json!({
+                "name": "x__create_post",
+                "arguments": { "text": "Hello, X" },
+                "_meta": {
+                    "traceparent": "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01",
+                    "tracestate": "app=1",
+                },
+            }),
+        ),
+    )
+    .await;
+    assert_eq!(called.status, StatusCode::OK, "{:?}", called.body);
+    let refused = send(
+        &p,
+        Some(MODERN),
+        rpc(
+            2,
+            "tools/call",
+            json!({ "name": "x__delete_post", "arguments": {} }),
+        ),
+    )
+    .await;
+    assert_eq!(refused.status, StatusCode::OK, "{:?}", refused.body);
+    p.app.state.in_flight.settled().await;
+    kaeso_server::services::otel::flush_all(&p.app.state, Duration::from_secs(10)).await;
+    let spans = collector.spans();
+    let attr = |span: &Value, key: &str| {
+        span["attributes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|a| a["key"] == key)
+            .map(|a| a["value"]["stringValue"].clone())
+    };
+    let call = spans
+        .iter()
+        .find(|s| s["name"] == "execute_tool x__create_post")
+        .unwrap_or_else(|| panic!("{spans:#?}"));
+    assert_eq!(call["traceId"], "0af7651916cd43dd8448eb211c80319c");
+    assert_eq!(call["parentSpanId"], "b7ad6b7169203331");
+    assert_eq!(call["traceState"], "app=1");
+    assert_eq!(
+        attr(call, "gen_ai.operation.name"),
+        Some(json!("execute_tool"))
+    );
+    assert_eq!(
+        attr(call, "gen_ai.tool.name"),
+        Some(json!("x__create_post"))
+    );
+    assert_eq!(attr(call, "kaeso.project.id"), Some(json!(p.project)));
+    assert_eq!(attr(call, "kaeso.mcp_server.id"), Some(json!(p.server)));
+    assert_eq!(attr(call, "kaeso.tool_call.status"), Some(json!("ok")));
+    assert!(call.get("status").is_none());
+    assert!(
+        !call.to_string().contains("Hello, X"),
+        "never the arguments"
+    );
+    // A tool the portal doesn't offer was refused before it became a call.
+    assert_eq!(spans.len(), 1, "{spans:#?}");
+}
+
+#[tokio::test]
 async fn a_key_lists_and_calls_the_projects_tools_in_both_protocol_eras() {
     let s = TestServices::start().await;
     let mock = MockMcp::start(Options::default()).await;

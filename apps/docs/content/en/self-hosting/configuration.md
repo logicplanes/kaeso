@@ -310,6 +310,20 @@ Cached replies live in Valkey until their project's time runs out. The packaged 
 | `KAESO_LOGS_FLUSH_INTERVAL`<br>`logs.flush_interval` | text | `1s` | How often the gateway writes waiting rows to ClickHouse. |
 | `KAESO_LOGS_FLUSH_ROWS`<br>`logs.flush_rows` | integer | `5000` | Write waiting rows as soon as this many wait, at least 1. |
 
+### Traces
+
+The gateway can send a trace of each model request and MCP tool call to an OpenTelemetry collector ([traces](monitoring.md#traces)).
+
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_OTEL_ENDPOINT`<br>`otel.endpoint` | text | — | The OTLP/HTTP address of a collector, such as `http://otel-collector:4318`. The gateway sends JSON to its `/v1/traces`, or to the address itself when it ends in `/v1/traces`, through the proxy in `HTTPS_PROXY` when one is set. Unset or empty sends no traces. |
+| `KAESO_OTEL_HEADERS`<br>`otel.headers` | text, secret | — | Headers for the collector, as `name=value` pairs separated by commas, such as `authorization=Bearer%20<token>`. A value may be percent-encoded, as in `OTEL_EXPORTER_OTLP_HEADERS`. |
+| `KAESO_OTEL_SERVICE_NAME`<br>`otel.service_name` | text | `kaeso-gateway` | The traces' `service.name`. |
+| `KAESO_OTEL_CONTENT`<br>`otel.content` | bool | `false` | Adds the prompt and the reply to the trace, only for requests whose content the request log keeps. Images, audio and files are never exported. |
+| `KAESO_OTEL_SAMPLE_RATIO`<br>`otel.sample_ratio` | text | `1.0` | The share of requests without a `traceparent` that are traced, from `0` to `1`. A request with one follows the app's choice. |
+| `KAESO_OTEL_BUFFER_SIZE`<br>`otel.buffer_size` | integer | `20000` | Spans that wait for the collector, at least 1. Beyond it, the oldest are dropped. |
+| `KAESO_OTEL_FLUSH_INTERVAL`<br>`otel.flush_interval` | text | `5s` | How often the gateway sends waiting spans, from `100ms` to `5m`. A full batch of 512 goes at once. |
+
 ### Instance defaults
 
 These settings only seed a new install. After that, instance admins change them under **Instance** › **General**, the retention under **Instance** › **Logging**, or through the Platform API. The stored values win.

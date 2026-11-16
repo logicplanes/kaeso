@@ -64,6 +64,7 @@ pub struct Config {
     pub response_cache: ResponseCacheConfig,
     pub body_limits: BodyLimitsConfig,
     pub logs: LogsConfig,
+    pub otel: OtelConfig,
     pub instance: InstanceConfig,
     pub log: LogConfig,
 }
@@ -409,6 +410,93 @@ pub struct LogsConfig {
     pub flush_rows: u32,
 }
 
+/// The export of traces to an OpenTelemetry collector over OTLP/HTTP.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OtelConfig {
+    #[serde(default, deserialize_with = "optional_url")]
+    pub endpoint: Option<Url>,
+    pub headers: Option<SecretString>,
+    pub service_name: String,
+    pub content: bool,
+    #[serde(deserialize_with = "ratio")]
+    pub sample_ratio: f64,
+    pub buffer_size: u32,
+    #[serde(with = "humantime_serde")]
+    pub flush_interval: Duration,
+}
+
+impl OtelConfig {
+    /// Where spans are sent: the endpoint's `/v1/traces`, or the endpoint itself when it names it.
+    pub fn traces_url(&self) -> Option<Url> {
+        let endpoint = self.endpoint.as_ref()?;
+        if endpoint.path().ends_with("/v1/traces") {
+            return Some(endpoint.clone());
+        }
+        let mut url = endpoint.clone();
+        let path = format!("{}/v1/traces", endpoint.path().trim_end_matches('/'));
+        url.set_path(&path);
+        Some(url)
+    }
+
+    /// The headers of `headers`, as `name=value` pairs separated by commas; a value may be
+    /// percent-encoded, as `OTEL_EXPORTER_OTLP_HEADERS` allows.
+    pub fn header_map(&self) -> Result<reqwest::header::HeaderMap, String> {
+        let mut map = reqwest::header::HeaderMap::new();
+        let Some(headers) = &self.headers else {
+            return Ok(map);
+        };
+        for pair in headers
+            .expose_secret()
+            .split(',')
+            .map(str::trim)
+            .filter(|p| !p.is_empty())
+        {
+            let (name, value) = pair
+                .split_once('=')
+                .ok_or_else(|| "must be `name=value` pairs separated by commas".to_owned())?;
+            let name = reqwest::header::HeaderName::from_bytes(name.trim().as_bytes())
+                .map_err(|_| format!("names `{}`, which is not a header name", name.trim()))?;
+            let value = percent_encoding::percent_decode_str(value.trim()).decode_utf8_lossy();
+            let mut value = reqwest::header::HeaderValue::from_str(&value)
+                .map_err(|_| format!("has a value for `{name}` that a header can't carry"))?;
+            value.set_sensitive(true);
+            map.append(name, value);
+        }
+        Ok(map)
+    }
+}
+
+// A URL, or none for an empty value, as the example file writes an unset one.
+fn optional_url<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Url>, D::Error> {
+    let text = Option::<String>::deserialize(d)?;
+    match text.as_deref().map(str::trim) {
+        None | Some("") => Ok(None),
+        Some(url) => Url::parse(url).map(Some).map_err(serde::de::Error::custom),
+    }
+}
+
+// A ratio as text, such as "0.25", or as a TOML number.
+fn ratio<'de, D: serde::Deserializer<'de>>(d: D) -> Result<f64, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Raw {
+        Number(f64),
+        Text(String),
+    }
+    let value = match Raw::deserialize(d)? {
+        Raw::Number(n) => n,
+        Raw::Text(t) => t
+            .trim()
+            .parse::<f64>()
+            .map_err(|_| serde::de::Error::custom("must be a number from 0 to 1"))?,
+    };
+    if !(0.0..=1.0).contains(&value) {
+        return Err(serde::de::Error::custom("must be a number from 0 to 1"));
+    }
+    Ok(value)
+}
+
 pub use kaeso_core::accounts::{AccountCreation, OrgCreation};
 
 #[derive(Clone, Debug, Deserialize)]
@@ -546,6 +634,30 @@ impl Config {
                 "valkey.ca",
                 "needs a rediss:// URL in valkey.url, since it verifies a TLS connection".into(),
             );
+        }
+        if let Some(endpoint) = &self.otel.endpoint
+            && (!matches!(endpoint.scheme(), "http" | "https")
+                || endpoint.query().is_some()
+                || endpoint.fragment().is_some())
+        {
+            return invalid(
+                "otel.endpoint",
+                "must be the http or https address of an OTLP/HTTP collector, such as `http://otel-collector:4318`, without a query".into(),
+            );
+        }
+        if let Err(reason) = self.otel.header_map() {
+            return invalid("otel.headers", reason);
+        }
+        if self.otel.service_name.trim().is_empty() {
+            return invalid("otel.service_name", "must not be empty".into());
+        }
+        if self.otel.buffer_size == 0 {
+            return invalid("otel.buffer_size", "must be at least 1".into());
+        }
+        if !(Duration::from_millis(100)..=Duration::from_secs(300))
+            .contains(&self.otel.flush_interval)
+        {
+            return invalid("otel.flush_interval", "must be between 100ms and 5m".into());
         }
         if let Some(email) = self.setup.email() {
             if self.mail.transport != MailTransport::Smtp {

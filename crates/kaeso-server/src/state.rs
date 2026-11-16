@@ -37,6 +37,8 @@ pub struct Inner {
     pub distrusted: crate::services::limits::Distrusted,
     pub rebuilds: crate::services::limits::Rebuilds,
     pub logs: crate::services::logs::Buffer,
+    /// The trace exporter, when `otel.endpoint` is set.
+    pub otel: Option<Arc<crate::services::otel::Exporter>>,
     pub in_flight: crate::model_api::in_flight::InFlight,
     pub translating: crate::model_api::memory::Budget,
     pub availability: crate::services::availability::Recall,
@@ -74,6 +76,7 @@ impl AppState {
         let mcp_networks = p.config.mcp_servers.allowed_networks.clone();
         let in_flight = p.config.body_limits.in_flight.0;
         let translating = crate::model_api::memory::Budget::new(in_flight);
+        let otel = crate::services::otel::Exporter::new(&p.config.otel).map(Arc::new);
         caches.listen(&p.valkey);
         p.valkey.keep_healthy();
         AppState(Arc::new(Inner {
@@ -122,6 +125,7 @@ impl AppState {
             distrusted: crate::services::limits::Distrusted::default(),
             rebuilds: crate::services::limits::Rebuilds::default(),
             logs: crate::services::logs::Buffer::default(),
+            otel,
             in_flight: crate::model_api::in_flight::InFlight::default(),
             translating,
             availability: crate::services::availability::Recall::default(),

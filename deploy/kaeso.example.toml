@@ -245,6 +245,15 @@ buffer_size = "256MiB"
 flush_interval = "1s"
 flush_rows = 5000
 
+[otel]
+# An OTLP/HTTP collector such as "http://otel-collector:4318"; empty sends no traces.
+endpoint = ""
+service_name = "kaeso-gateway"
+content = false
+sample_ratio = "1.0"
+buffer_size = 20000
+flush_interval = "5s"
+
 [instance]
 org_creation = "instance_admins"
 account_creation = "invitation_only"

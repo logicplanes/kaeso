@@ -720,6 +720,9 @@ mod tests {
             ("KAESO_TRUSTED_PROXIES", "1.2.3", "trusted_proxies"),
             ("KAESO_LOG_FORMAT", "yaml", "log.format"),
             ("KAESO_UPDATES_CHANNEL", "beta", "updates.channel"),
+            ("KAESO_OTEL_SAMPLE_RATIO", "1.5", "otel.sample_ratio"),
+            ("KAESO_OTEL_SAMPLE_RATIO", "half", "otel.sample_ratio"),
+            ("KAESO_OTEL_ENDPOINT", "not a url", "otel.endpoint"),
             (
                 "KAESO_PROVIDERS_OPENAI_BASE_URL",
                 "not a url",
@@ -750,6 +753,29 @@ mod tests {
             err.starts_with("KAESO_INSTANCE_CONTENT_RETENTION_DAYS"),
             "{err}"
         );
+        for (env, value) in [
+            ("KAESO_OTEL_ENDPOINT", "ftp://collector.example.com"),
+            (
+                "KAESO_OTEL_ENDPOINT",
+                "http://collector.example.com:4318/?x=1",
+            ),
+            ("KAESO_OTEL_HEADERS", "authorization"),
+            ("KAESO_OTEL_HEADERS", "bad name=1"),
+            ("KAESO_OTEL_BUFFER_SIZE", "0"),
+            ("KAESO_OTEL_FLUSH_INTERVAL", "10ms"),
+            ("KAESO_OTEL_SERVICE_NAME", " "),
+        ] {
+            let err = load(&Map::minimal().set(env, value))
+                .unwrap_err()
+                .to_string();
+            assert!(err.starts_with(env), "{env}={value}: {err}");
+        }
+        let file = Map::minimal()
+            .set("KAESO_CONFIG", "/etc/kaeso.toml")
+            .file("/etc/kaeso.toml", "[otel]\nsample_ratio = 0.25\n");
+        assert!((load(&file).unwrap().otel.sample_ratio - 0.25).abs() < f64::EPSILON);
+        let c = load(&Map::minimal().set("KAESO_OTEL_CONTENT", "on")).unwrap();
+        assert!(c.otel.content && c.otel.endpoint.is_none());
     }
 
     #[test]

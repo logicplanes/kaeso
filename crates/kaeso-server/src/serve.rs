@@ -61,6 +61,7 @@ pub(crate) const SHUTDOWN_FLUSH_INTERVAL: Duration = Duration::from_secs(1);
 const METRICS_SHUTDOWN_GRACE: Duration = Duration::from_secs(1);
 const IN_FLIGHT_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
 const LOG_FLUSH_SHUTDOWN_WAIT: Duration = Duration::from_secs(10);
+const TRACE_FLUSH_SHUTDOWN_WAIT: Duration = Duration::from_secs(5);
 const OVERDUE_ANSWER_WAIT: Duration = Duration::from_secs(1);
 const METRICS_MAX_CONNECTIONS: usize = 64;
 
@@ -236,6 +237,7 @@ pub async fn run(
     let flushing = CancellationToken::new();
     spawn_usage_flusher(state.clone(), shutdown.clone(), flushing.clone());
     crate::services::logs::spawn_writer(state.clone(), shutdown.clone(), flushing.clone());
+    crate::services::otel::spawn_exporter(state.clone(), shutdown.clone(), flushing.clone());
     crate::services::response_cache::spawn_memory_watch(state.clone(), shutdown.clone());
     state.caches.spawn_keep_warm(shutdown.clone());
 
@@ -305,6 +307,10 @@ pub async fn run(
         );
     } else {
         tracing::info!(rows = written, "request logs written");
+    }
+    if state.otel.is_some() {
+        let spans = crate::services::otel::flush_all(&state, TRACE_FLUSH_SHUTDOWN_WAIT).await;
+        tracing::info!(spans, "traces exported");
     }
     if tokio::time::timeout(MAIL_FLUSH_WAIT, state.mailer.flush())
         .await

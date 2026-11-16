@@ -121,6 +121,13 @@ expression: settings_reference()
 | `KAESO_LOGS_BUFFER_SIZE` | `logs.buffer_size` | text | `256MiB` | Memory for request log rows waiting for ClickHouse; the oldest rows are dropped beyond it. |
 | `KAESO_LOGS_FLUSH_INTERVAL` | `logs.flush_interval` | text | `1s` | How often buffered log rows are written to ClickHouse. |
 | `KAESO_LOGS_FLUSH_ROWS` | `logs.flush_rows` | integer | `5000` | Write buffered log rows as soon as this many are waiting. |
+| `KAESO_OTEL_ENDPOINT` | `otel.endpoint` | text | — | The OTLP/HTTP address of a trace collector, such as `http://otel-collector:4318`: Kaeso sends a trace of each model request and tool call to its `/v1/traces`. Unset sends none. |
+| `KAESO_OTEL_HEADERS` | `otel.headers` | text, secret | — | Headers for the collector, as `name=value` pairs separated by commas, such as `authorization=Bearer <token>`. |
+| `KAESO_OTEL_SERVICE_NAME` | `otel.service_name` | text | `kaeso-gateway` | The `service.name` of the exported traces. |
+| `KAESO_OTEL_CONTENT` | `otel.content` | bool | `false` | Add the prompt and the reply to a request's trace, as the GenAI semantic conventions' content attributes, only when the request log keeps the request's content; media is never exported. |
+| `KAESO_OTEL_SAMPLE_RATIO` | `otel.sample_ratio` | text | `1.0` | The share of requests without a `traceparent` whose traces are exported, from `0` to `1`; a request with one follows the app's sampling. |
+| `KAESO_OTEL_BUFFER_SIZE` | `otel.buffer_size` | integer | `20000` | Spans waiting for the collector, at most; the oldest are dropped beyond it. |
+| `KAESO_OTEL_FLUSH_INTERVAL` | `otel.flush_interval` | text | `5s` | How often buffered spans are sent to the collector. |
 | `KAESO_INSTANCE_ORG_CREATION` | `instance.org_creation` | text | `instance_admins` | Who may create organizations on a new install: `instance_admins` or `everyone`. Instance admins change it later in the instance settings, where they can also allow users on some email domains. |
 | `KAESO_INSTANCE_ACCOUNT_CREATION` | `instance.account_creation` | text | `invitation_only` | Who may create an account without an invitation on a new install: `invitation_only` or `everyone`. Instance admins change it later in the instance settings, where they can also allow only some email domains. |
 | `KAESO_INSTANCE_METADATA_RETENTION_DAYS` | `instance.metadata_retention_days` | integer | `90` | Default log metadata retention of new organizations, in days. |
