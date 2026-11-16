@@ -165,6 +165,8 @@ pub struct Outcome {
     pub overhead: Option<Duration>,
     pub stream_processing: Option<Duration>,
     pub user_agent: Option<String>,
+    /// The app's tags from `kaeso-tags`.
+    pub tags: Vec<String>,
     pub client_ip: Option<IpAddr>,
     pub upstream_request_id: Option<String>,
     pub request_body: Option<Bytes>,

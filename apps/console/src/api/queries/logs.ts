@@ -31,6 +31,8 @@ export interface LogFilters {
   requested_model?: string;
   response_cache?: "hit" | "miss" | "bypass";
   min_duration_ms?: number;
+  /** One of the tags the app sent in `kaeso-tags`. */
+  tag?: string;
 }
 
 /** Every endpoint the request log names, as the gateway's `endpoint` filter takes them. */
@@ -100,6 +102,7 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.requested_model ? { requested_model: f.requested_model } : {}),
     ...(f.response_cache ? { response_cache: f.response_cache } : {}),
     ...(f.min_duration_ms ? { min_duration_ms: f.min_duration_ms } : {}),
+    ...(f.tag ? { tag: f.tag } : {}),
   };
 }
 

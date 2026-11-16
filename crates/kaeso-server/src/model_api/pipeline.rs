@@ -290,6 +290,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         overhead: None,
         stream_processing: None,
         user_agent: None,
+        tags: Vec::new(),
         client_ip: None,
         upstream_request_id: None,
         request_body: None,
@@ -911,6 +912,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         }
     };
     rec.outcome().caller = Some(caller.clone());
+    rec.outcome().tags = request_tags(&headers).map_err(|e| Failure::new(e, Stage::Request))?;
     let at = |stage: Stage| move |e: KppError| Failure::new(e, stage.clone());
 
     let encoding = match source {
@@ -1233,6 +1235,49 @@ fn content_off(headers: &HeaderMap) -> Result<bool, KppError> {
         )
         .with_param(LOG_CONTENT_HEADER)),
     }
+}
+
+/// The app's own labels for a request, such as a feature or an evaluation run: `kaeso-tags`.
+pub const TAGS_HEADER: &str = "kaeso-tags";
+
+/// The most tags one request carries.
+pub const MAX_TAGS: usize = 10;
+
+/// A tag is 1 to 64 lowercase letters, digits, `.`, `_`, `:` and `-`.
+pub fn valid_tag(tag: &str) -> bool {
+    (1..=64).contains(&tag.len())
+        && tag.bytes().all(|b| {
+            b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'_' | b':' | b'-')
+        })
+}
+
+// A bad tag is refused, never dropped, so an app learns its tags aren't recorded.
+fn request_tags(headers: &HeaderMap) -> Result<Vec<String>, KppError> {
+    let mut tags: Vec<String> = Vec::new();
+    for value in headers.get_all(TAGS_HEADER) {
+        let text = value.to_str().map_err(|_| tags_refused())?;
+        for tag in text.split(',').map(str::trim) {
+            if !valid_tag(tag) {
+                return Err(tags_refused());
+            }
+            if !tags.iter().any(|t| t == tag) {
+                tags.push(tag.to_owned());
+            }
+        }
+    }
+    if tags.len() > MAX_TAGS {
+        return Err(tags_refused());
+    }
+    Ok(tags)
+}
+
+fn tags_refused() -> KppError {
+    error(
+        ErrorKind::InvalidRequest,
+        400,
+        "The header `kaeso-tags` takes up to 10 comma-separated tags of 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.",
+    )
+    .with_param(TAGS_HEADER)
 }
 
 /// How long the app lets each provider take, in seconds, at most: `kaeso-timeout`.

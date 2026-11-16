@@ -43,6 +43,7 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...(bool(s.fell_back) ? { fell_back: true } : {}),
     ...text("endpoint", s.endpoint),
     ...text("requested_model", s.requested_model),
+    ...text("tag", s.tag),
     ...(s.response_cache === "hit" || s.response_cache === "miss" || s.response_cache === "bypass" ? { response_cache: s.response_cache } : {}),
     ...(Number.isInteger(slower) && slower > 0 ? { min_duration_ms: slower } : {}),
     ...(cost ? { min_cost: cost } : {}),

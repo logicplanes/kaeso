@@ -448,6 +448,17 @@ describe("LogInspector", () => {
     expect(router.state.location.search).toEqual({ key: "key_web" });
   });
 
+  it("shows the request's tags, and narrows the list to the requests with one", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()], entries: [logEntry({ tags: ["checkout", "eval-42"] })] });
+    const { user, router } = await renderApp(projectPath("logs?log=req_0001"));
+    const dialog = await sheet();
+    expect(section(dialog, "Sent by")).toHaveTextContent("Tagscheckouteval-42");
+    await user.click(within(dialog).getByRole("button", { name: "Show only requests tagged eval-42" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ log: "req_0001", tag: "eval-42" }));
+  });
+
   it("names what it can't open as plain text, and opens a service account's sheet", async () => {
     signedIn({ projectRights: without("models.view", "keys.all.view") });
     projectData({ keys: [apiKey()], accounts: [serviceAccount()], aliases: [alias({ id: "al_fast", name: "fast" })] });

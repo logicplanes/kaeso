@@ -68,6 +68,8 @@ pub struct LogRow {
     pub media_detail: String,
     pub cost_known: bool,
     pub cost_basis: String,
+    /// The app's own tags from `kaeso-tags`, in the order it sent them.
+    pub tags: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]
@@ -144,6 +146,8 @@ pub struct Filter {
     pub min_cost: Option<String>,
     /// The model or alias name exactly as the app sent it.
     pub requested_model: Option<String>,
+    /// One of the request's tags.
+    pub tag: Option<String>,
 }
 
 pub async fn search(
@@ -282,6 +286,10 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(m) = &f.requested_model {
         sql.push_str(" AND requested_model = ?");
         binds.push(Bind::Str(m.clone()));
+    }
+    if let Some(t) = &f.tag {
+        sql.push_str(" AND has(tags, ?)");
+        binds.push(Bind::Str(t.clone()));
     }
 }
 

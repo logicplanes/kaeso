@@ -253,6 +253,8 @@ Gemini 应用则像 `google-genai` 那样调用 `:streamGenerateContent?alt=sse`
 
 请求可以用请求头 `kaeso-timeout` 缩短 Kaeso 等待服务商的时间，单位为秒，取值 1 到 3600，例如最多等待 20 秒的应用可发送 `kaeso-timeout: 20`。它会把等待第一个字节的时间（以及非流式回复等待整个回复的时间）降到实例和模型的设置以下，但从不延长；流的空闲超时保持不变。在[别名路由](../concepts/alias-routes.md)后面，它适用于请求到达的每个步骤：超时的步骤以 `unavailable` 和 504 失败，因此在 `unavailable` 时回退的路由会继续并及时作答。其他值返回 400。SDK 自身的 `timeout` 则会直接关闭连接，应用因此永远收不到回退的回答。
 
+应用可以用请求头 `kaeso-tags` 为请求加标签，取值为逗号分隔的列表，例如 `kaeso-tags: checkout,eval-42`，以便在密钥之下区分流量：区分不同功能，或区分评估运行与生产流量。一个请求最多带 10 个标签，每个标签由 1 到 64 个小写字母、数字、`.`、`_`、`:` 和 `-` 组成；其他取值会以应用的格式返回状态 400 并指明该请求头，因此标签绝不会被悄悄丢弃。[请求日志](../console/request-logs.md)会把标签与请求元数据一同保存，其 `tag` 筛选可找出带某个标签的请求，导出中也包含标签。有权查看日志元数据的人都能看到标签，因此不要在其中放入个人数据。
+
 ## 跨工具调用的推理
 
 Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没有存放其他服务商推理内容的字段。Chat Completions 或 Gemini 应用调用通过其他格式提供服务的模型时，Kaeso 会保存模型在每次工具调用之前的推理内容。在应用的下一轮请求中，Kaeso 会将这些推理内容加回（[格式转换](../concepts/format-translation.md#chat-completions)）。Gemini 应用调用 Gemini 模型时，Gemini 自己的思考签名原样往返。

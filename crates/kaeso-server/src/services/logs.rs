@@ -827,6 +827,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
         reasoning_tokens: usage.reasoning_tokens.unwrap_or(0),
         cost: logged_cost(cost, o.request_id),
         user_agent: o.user_agent.clone().unwrap_or_default(),
+        tags: o.tags.clone(),
         client_ip: o.client_ip.map(|i| i.to_string()).unwrap_or_default(),
         upstream_request_id: o.upstream_request_id.clone().unwrap_or_default(),
         has_content: content,
@@ -972,7 +973,8 @@ async fn tool_call_content(
 }
 
 fn text_bytes(log: &LogRow) -> u64 {
-    [
+    let tags: u64 = log.tags.iter().map(|t| t.len() as u64).sum();
+    let fields: u64 = [
         &log.requested_model,
         &log.resolved_model,
         &log.error_kind,
@@ -984,7 +986,8 @@ fn text_bytes(log: &LogRow) -> u64 {
     ]
     .iter()
     .map(|s| s.len() as u64)
-    .sum()
+    .sum();
+    tags + fields
 }
 
 #[derive(Debug, Default)]

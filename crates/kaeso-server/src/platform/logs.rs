@@ -671,6 +671,8 @@ pub struct LogFilter {
         `provider/model` included. Unlike `alias`, it also finds requests whose name\n\
         didn't resolve, such as an alias that was deleted."]
     pub requested_model: Option<String>,
+    #[doc = "Only requests the app tagged with this tag in the `kaeso-tags` header."]
+    pub tag: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -782,7 +784,19 @@ impl LogFilter {
             endpoint: self.endpoint.as_deref().map(endpoint_filter).transpose()?,
             min_cost: self.min_cost.as_deref().map(cost_filter).transpose()?,
             requested_model: self.requested_model.clone(),
+            tag: self.tag.as_deref().map(tag_filter).transpose()?,
         })
+    }
+}
+
+fn tag_filter(t: &str) -> ApiResult<String> {
+    if crate::model_api::pipeline::valid_tag(t) {
+        Ok(t.to_owned())
+    } else {
+        Err(ApiError::invalid(
+            "tag",
+            "`tag` must be 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.",
+        ))
     }
 }
 
@@ -961,6 +975,9 @@ pub struct LogView {
     pub fallbacks: Vec<FallbackView>,
     #[doc = "What a media request took and made, such as images; `null` for other requests."]
     pub media: Option<MediaView>,
+    #[doc = "The app's own tags from the `kaeso-tags` header, in the order it sent them."]
+    #[schema(example = json!(["checkout", "eval-42"]))]
+    pub tags: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -1112,6 +1129,7 @@ fn view(r: &LogRow) -> LogView {
             output: r.media_output,
             detail: r.media_detail.clone(),
         }),
+        tags: r.tags.clone(),
     }
 }
 
@@ -1256,7 +1274,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1361,6 +1379,7 @@ fn csv_line(v: &LogView) -> String {
         ),
         Number(v.cost_known.to_string()),
         Text(v.cost_basis.as_str().to_owned()),
+        Text(v.tags.join(" ")),
     ];
     let mut line = cells
         .iter()
