@@ -4,7 +4,7 @@ description: Have services of your own check requests before a model gets them, 
 order: 4
 ---
 
-A guardrail is an HTTP service of your organization that Kaeso asks before a request goes to a model and, if you choose, before the model's reply goes back. It can let the request through, block it or rewrite its text. Kaeso knows which key, member and project sent each request, and the request log keeps every verdict.
+A guardrail is an HTTP service of your organization that Kaeso asks before a request goes to a model and, if you choose, before the model's reply goes back. It can let the request through, block it or rewrite its text. [Built-in rules](#built-in-rules) do the most common checks inside Kaeso, without a service of yours. Kaeso knows which key, member and project sent each request, and the request log keeps every verdict.
 
 You need `guardrails.view` to see **Organization settings** › **Guardrails** and `guardrails.manage` to change it.
 
@@ -26,6 +26,28 @@ The row menu has **Edit**, **Test**, **New secret** and **Delete**. **New secret
 A guardrail checks nothing until a project uses it. Open the project's **Settings** and, under **Guardrails**, choose **Choose guardrails**. Tick the guardrails and put them in order: a request passes them from top to bottom, and each one sees the text the one before it left.
 
 Only people with `guardrails.manage` in the organization choose them. A project's own admins see the list but can't take a guardrail off: it is the organization's policy.
+
+## Built-in rules
+
+Built-in rules find secrets and personal data in a request without a service of your own. Choose **Add guardrail**, then **Built-in rules**, name them and choose what each detector does: **Mask** replaces each value with a placeholder such as `[EMAIL_1]`, **Block** refuses the request with 400 and names what it found, never the value, and **Count only** lets it through and counts the values.
+
+| Detector | Finds |
+| --- | --- |
+| Secrets and API keys | Keys of the providers Kaeso supports and Kaeso's own `sk-kso-…` keys, AWS access key ids, GitHub and GitLab tokens as `[API_KEY_1]`; private key PEM blocks as `[PRIVATE_KEY_1]`; JSON Web Tokens as `[TOKEN_1]` |
+| Email addresses | Addresses such as `ada@example.com`, as `[EMAIL_1]` |
+| Phone numbers | Numbers in E.164, such as `+4930123456`, as `[PHONE_1]` |
+| IBANs | IBANs whose mod-97 check holds, as `[IBAN_1]` |
+| Payment card numbers | 13 to 19 digits, also with spaces or hyphens, whose Luhn check holds, as `[CARD_1]` |
+| IP addresses | IPv4 and IPv6 addresses, as `[IP_1]` |
+
+The same value gets the same placeholder throughout a request, so the model can still tell two people apart. The rules read the text of the system prompt and the messages, tool results and the arguments of tool calls; media and tool definitions stay as they are.
+
+Add up to 20 custom patterns: a name of lowercase letters, digits and `_`, and a regular expression of at most 500 characters in the syntax of Rust's `regex` crate, which matches in time linear in the text. A match of `order_id` becomes `[ORDER_ID_1]`.
+
+- **Mask in the request log** stores placeholders in the [request log](request-logs.md), also for values the rules only count. The request then goes out unchanged while the log keeps no value.
+- **Restore in the reply** puts the original values back where the model's reply names their placeholders, before the reply reaches the app. In a stream, Kaeso holds back at most the length of one placeholder, so one split across two pieces is still found. Streams get their text restored; whole replies also their tool call arguments.
+
+**Try rules** checks a sample text before you save the rules; Kaeso stores nothing of it. Names, postal addresses and other free-form personal data need a language model: use [a service of your own](#add-a-guardrail) for them. The inspector shows how many values each kind found, never the values, and `kaeso_masked_values_total{detector, action}` counts them.
 
 ## What Kaeso checks
 

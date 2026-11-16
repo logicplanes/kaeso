@@ -265,5 +265,14 @@
   "format.guardrail.status": "Mit einem Fehler geantwortet",
   "format.guardrail.timeout": "Keine Antwort in der Zeit",
   "format.guardrail.unreachable": "Nicht erreichbar",
-  "format.targetKind.guardrail": "Guardrail"
+  "format.targetKind.guardrail": "Guardrail",
+  "format.guardrail.found.apiKey": "{count, plural, one {# API-Schlüssel} other {# API-Schlüssel}}",
+  "format.guardrail.found.card": "{count, plural, one {# Kartennummer} other {# Kartennummern}}",
+  "format.guardrail.found.custom": "{count, plural, one {# Treffer} other {# Treffer}} von {name}",
+  "format.guardrail.found.email": "{count, plural, one {# E-Mail-Adresse} other {# E-Mail-Adressen}}",
+  "format.guardrail.found.iban": "{count, plural, one {# IBAN} other {# IBANs}}",
+  "format.guardrail.found.ip": "{count, plural, one {# IP-Adresse} other {# IP-Adressen}}",
+  "format.guardrail.found.phone": "{count, plural, one {# Telefonnummer} other {# Telefonnummern}}",
+  "format.guardrail.found.privateKey": "{count, plural, one {# privater Schlüssel} other {# private Schlüssel}}",
+  "format.guardrail.found.token": "{count, plural, one {# JSON Web Token} other {# JSON Web Tokens}}"
 }

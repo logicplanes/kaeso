@@ -28,6 +28,7 @@ idna.workspace = true
 unicode-normalization.workspace = true
 url.workspace = true
 utoipa = { workspace = true, optional = true }
+regex.workspace = true
 
 [features]
 openapi = ["dep:utoipa"]
@@ -36,7 +37,6 @@ openapi = ["dep:utoipa"]
 rust_decimal_macros.workspace = true
 insta.workspace = true
 proptest.workspace = true
-regex.workspace = true
 
 [lints]
 workspace = true

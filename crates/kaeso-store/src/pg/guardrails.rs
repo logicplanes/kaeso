@@ -5,12 +5,14 @@ use uuid::Uuid;
 use crate::StoreError;
 use crate::pg::credentials::Sealed;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct GuardrailRow {
     pub id: Uuid,
     pub org_id: Uuid,
+    pub kind: String,
     pub name: String,
-    pub url: String,
+    pub url: Option<String>,
+    pub rules: Option<serde_json::Value>,
     pub timeout_ms: i32,
     pub on_error: String,
     pub request_phase: bool,
@@ -24,10 +26,10 @@ pub struct GuardrailRow {
 }
 
 /// A guardrail with its sealed signing secret, as a request needs it.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Armed {
     pub row: GuardrailRow,
-    pub secret: SealedSecret,
+    pub secret: Option<SealedSecret>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -43,9 +45,11 @@ pub struct SealedSecret {
 pub struct NewGuardrail<'a> {
     pub id: Uuid,
     pub org_id: Uuid,
+    pub kind: &'a str,
     pub name: &'a str,
-    pub url: &'a str,
-    pub secret: Sealed<'a>,
+    pub url: Option<&'a str>,
+    pub rules: Option<&'a serde_json::Value>,
+    pub secret: Option<Sealed<'a>>,
     pub timeout_ms: i32,
     pub on_error: &'a str,
     pub request_phase: bool,
@@ -59,6 +63,7 @@ pub struct NewGuardrail<'a> {
 pub struct Changes<'a> {
     pub name: Option<&'a str>,
     pub url: Option<&'a str>,
+    pub rules: Option<&'a serde_json::Value>,
     pub timeout_ms: Option<i32>,
     pub on_error: Option<&'a str>,
     pub request_phase: Option<bool>,
@@ -70,23 +75,25 @@ pub async fn insert(db: impl PgExecutor<'_>, g: &NewGuardrail<'_>) -> Result<(),
     sqlx::query!(
         "INSERT INTO guardrails (id, org_id, name, url, secret_ciphertext, secret_nonce, \
          secret_wrapped_key, secret_key_id, timeout_ms, on_error, request_phase, reply_phase, \
-         streams, created_by_kind, created_by_id) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+         streams, created_by_kind, created_by_id, kind, rules) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)",
         g.id,
         g.org_id,
         g.name,
         g.url,
-        g.secret.ciphertext,
-        g.secret.nonce,
-        g.secret.wrapped_key,
-        g.secret.key_id,
+        g.secret.as_ref().map(|x| x.ciphertext),
+        g.secret.as_ref().map(|x| x.nonce),
+        g.secret.as_ref().map(|x| x.wrapped_key),
+        g.secret.as_ref().map(|x| x.key_id),
         g.timeout_ms,
         g.on_error,
         g.request_phase,
         g.reply_phase,
         g.streams,
         g.created_by_kind,
-        g.created_by_id
+        g.created_by_id,
+        g.kind,
+        g.rules
     )
     .execute(db)
     .await?;
@@ -96,8 +103,8 @@ pub async fn insert(db: impl PgExecutor<'_>, g: &NewGuardrail<'_>) -> Result<(),
 pub async fn list(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<GuardrailRow>, StoreError> {
     Ok(sqlx::query_as!(
         GuardrailRow,
-        "SELECT id, org_id, name, url, timeout_ms, on_error, request_phase, reply_phase, streams, \
-         created_by_kind, created_by_id, created_at, updated_at, revision \
+        "SELECT id, org_id, kind, name, url, rules, timeout_ms, on_error, request_phase, reply_phase, \
+         streams, created_by_kind, created_by_id, created_at, updated_at, revision \
          FROM guardrails WHERE org_id = $1 ORDER BY name, id",
         org_id
     )
@@ -112,8 +119,8 @@ pub async fn get(
 ) -> Result<Option<GuardrailRow>, StoreError> {
     Ok(sqlx::query_as!(
         GuardrailRow,
-        "SELECT id, org_id, name, url, timeout_ms, on_error, request_phase, reply_phase, streams, \
-         created_by_kind, created_by_id, created_at, updated_at, revision \
+        "SELECT id, org_id, kind, name, url, rules, timeout_ms, on_error, request_phase, reply_phase, \
+         streams, created_by_kind, created_by_id, created_at, updated_at, revision \
          FROM guardrails WHERE org_id = $1 AND id = $2",
         org_id,
         id
@@ -133,10 +140,11 @@ pub async fn update(
         "UPDATE guardrails SET name = COALESCE($3, name), url = COALESCE($4, url), \
          timeout_ms = COALESCE($5, timeout_ms), on_error = COALESCE($6, on_error), \
          request_phase = COALESCE($7, request_phase), reply_phase = COALESCE($8, reply_phase), \
-         streams = COALESCE($9, streams), revision = revision + 1, updated_at = now() \
+         streams = COALESCE($9, streams), rules = COALESCE($10, rules), revision = revision + 1, \
+         updated_at = now() \
          WHERE org_id = $1 AND id = $2 \
-         RETURNING id, org_id, name, url, timeout_ms, on_error, request_phase, reply_phase, streams, \
-         created_by_kind, created_by_id, created_at, updated_at, revision",
+         RETURNING id, org_id, kind, name, url, rules, timeout_ms, on_error, request_phase, \
+         reply_phase, streams, created_by_kind, created_by_id, created_at, updated_at, revision",
         org_id,
         id,
         c.name,
@@ -145,7 +153,8 @@ pub async fn update(
         c.on_error,
         c.request_phase,
         c.reply_phase,
-        c.streams
+        c.streams,
+        c.rules
     )
     .fetch_optional(db)
     .await?)
@@ -162,8 +171,8 @@ pub async fn set_secret(
         "UPDATE guardrails SET secret_ciphertext = $3, secret_nonce = $4, secret_wrapped_key = $5, \
          secret_key_id = $6, revision = revision + 1, updated_at = now() \
          WHERE org_id = $1 AND id = $2 \
-         RETURNING id, org_id, name, url, timeout_ms, on_error, request_phase, reply_phase, streams, \
-         created_by_kind, created_by_id, created_at, updated_at, revision",
+         RETURNING id, org_id, kind, name, url, rules, timeout_ms, on_error, request_phase, \
+         reply_phase, streams, created_by_kind, created_by_id, created_at, updated_at, revision",
         org_id,
         id,
         secret.ciphertext,
@@ -187,6 +196,22 @@ pub async fn delete(db: impl PgExecutor<'_>, org_id: Uuid, id: Uuid) -> Result<b
         == 1)
 }
 
+fn sealed_of(
+    guardrail_id: Uuid,
+    ciphertext: Option<Vec<u8>>,
+    nonce: Option<Vec<u8>>,
+    wrapped_key: Option<Vec<u8>>,
+    key_id: Option<String>,
+) -> Option<SealedSecret> {
+    Some(SealedSecret {
+        guardrail_id,
+        ciphertext: ciphertext?,
+        nonce: nonce?,
+        wrapped_key: wrapped_key?,
+        key_id: key_id?,
+    })
+}
+
 pub async fn sealed(
     db: impl PgExecutor<'_>,
     org_id: Uuid,
@@ -200,12 +225,14 @@ pub async fn sealed(
     )
     .fetch_optional(db)
     .await?;
-    Ok(row.map(|r| SealedSecret {
-        guardrail_id: r.id,
-        ciphertext: r.secret_ciphertext,
-        nonce: r.secret_nonce,
-        wrapped_key: r.secret_wrapped_key,
-        key_id: r.secret_key_id,
+    Ok(row.and_then(|r| {
+        sealed_of(
+            r.id,
+            r.secret_ciphertext,
+            r.secret_nonce,
+            r.secret_wrapped_key,
+            r.secret_key_id,
+        )
     }))
 }
 
@@ -234,8 +261,8 @@ pub async fn of_project(
 ) -> Result<Vec<GuardrailRow>, StoreError> {
     Ok(sqlx::query_as!(
         GuardrailRow,
-        "SELECT g.id, g.org_id, g.name, g.url, g.timeout_ms, g.on_error, g.request_phase, \
-         g.reply_phase, g.streams, g.created_by_kind, g.created_by_id, g.created_at, g.updated_at, \
+        "SELECT g.id, g.org_id, g.kind, g.name, g.url, g.rules, g.timeout_ms, g.on_error, \
+         g.request_phase, g.reply_phase, g.streams, g.created_by_kind, g.created_by_id, g.created_at, g.updated_at, \
          g.revision \
          FROM project_guardrails p JOIN guardrails g ON g.id = p.guardrail_id AND g.org_id = p.org_id \
          WHERE p.project_id = $1 ORDER BY p.position",
@@ -251,8 +278,8 @@ pub async fn armed_for_project(
     project_id: Uuid,
 ) -> Result<Vec<Armed>, StoreError> {
     let rows = sqlx::query!(
-        "SELECT g.id, g.org_id, g.name, g.url, g.timeout_ms, g.on_error, g.request_phase, \
-         g.reply_phase, g.streams, g.created_by_kind, g.created_by_id, g.created_at, g.updated_at, \
+        "SELECT g.id, g.org_id, g.kind, g.name, g.url, g.rules, g.timeout_ms, g.on_error, \
+         g.request_phase, g.reply_phase, g.streams, g.created_by_kind, g.created_by_id, g.created_at, g.updated_at, \
          g.revision, g.secret_ciphertext, g.secret_nonce, g.secret_wrapped_key, g.secret_key_id \
          FROM project_guardrails p JOIN guardrails g ON g.id = p.guardrail_id AND g.org_id = p.org_id \
          WHERE p.project_id = $1 ORDER BY p.position",
@@ -263,18 +290,20 @@ pub async fn armed_for_project(
     Ok(rows
         .into_iter()
         .map(|r| Armed {
-            secret: SealedSecret {
-                guardrail_id: r.id,
-                ciphertext: r.secret_ciphertext,
-                nonce: r.secret_nonce,
-                wrapped_key: r.secret_wrapped_key,
-                key_id: r.secret_key_id,
-            },
+            secret: sealed_of(
+                r.id,
+                r.secret_ciphertext,
+                r.secret_nonce,
+                r.secret_wrapped_key,
+                r.secret_key_id,
+            ),
             row: GuardrailRow {
                 id: r.id,
                 org_id: r.org_id,
+                kind: r.kind,
                 name: r.name,
                 url: r.url,
+                rules: r.rules,
                 timeout_ms: r.timeout_ms,
                 on_error: r.on_error,
                 request_phase: r.request_phase,
@@ -325,18 +354,21 @@ pub async fn set_project(
 
 pub async fn all_sealed(db: impl PgExecutor<'_>) -> Result<Vec<SealedSecret>, StoreError> {
     let rows = sqlx::query!(
-        "SELECT id, secret_ciphertext, secret_nonce, secret_wrapped_key, secret_key_id FROM guardrails"
+        "SELECT id, secret_ciphertext, secret_nonce, secret_wrapped_key, secret_key_id FROM guardrails \
+         WHERE secret_ciphertext IS NOT NULL"
     )
     .fetch_all(db)
     .await?;
     Ok(rows
         .into_iter()
-        .map(|r| SealedSecret {
-            guardrail_id: r.id,
-            ciphertext: r.secret_ciphertext,
-            nonce: r.secret_nonce,
-            wrapped_key: r.secret_wrapped_key,
-            key_id: r.secret_key_id,
+        .filter_map(|r| {
+            sealed_of(
+                r.id,
+                r.secret_ciphertext,
+                r.secret_nonce,
+                r.secret_wrapped_key,
+                r.secret_key_id,
+            )
         })
         .collect())
 }

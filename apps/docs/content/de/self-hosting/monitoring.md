@@ -84,6 +84,7 @@ services:
 | `kaeso_tool_call_duration_seconds{source, status}` | Wie lange Tool-Aufrufe dauerten |
 | `kaeso_guardrail_runs_total{phase, action}` | Prüfungen durch [Guardrails](../console/guardrails.md) nach `phase` (`request`, `reply`) und `action` (`allow`, `block`, `replace`). Eine gescheiterte Guardrail zählt unter der Aktion, die ihre Einstellung für Fehler wählte |
 | `kaeso_guardrail_duration_seconds{phase}` | Wie lange Guardrails für ihre Antwort brauchten |
+| `kaeso_masked_values_total{detector, action}` | Werte, die [eingebaute Regeln](../console/guardrails.md#eingebaute-regeln) fanden, nach `detector` (`secrets`, `email`, `phone`, `iban`, `card`, `ip` oder `custom`) und `action` (`mask`, `block`, `flag`) |
 | `kaeso_update_available{version}` | 1 mit dem neuesten Release des Kanals der Installation als `version`, solange es neuer als die laufende Version ist, sonst 0 mit der laufenden Version; fehlt, solange Update-Prüfungen aus sind ([Neue Releases](upgrades.md#neue-releases)) |
 
 ## Traces

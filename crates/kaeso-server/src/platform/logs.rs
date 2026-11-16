@@ -1053,6 +1053,10 @@ pub struct GuardrailRunView {
     pub status: Option<u16>,
     #[doc = "How long the guardrail took, in milliseconds."]
     pub duration_ms: u64,
+    #[doc = "For built-in rules: how many values each kind found, such as `api_key`; never the\n\
+        values."]
+    #[schema(example = json!({ "api_key": 1 }))]
+    pub found: std::collections::BTreeMap<String, u32>,
 }
 
 fn guardrail_runs(stored: &str) -> Vec<GuardrailRunView> {
@@ -1071,6 +1075,7 @@ fn guardrail_runs(stored: &str) -> Vec<GuardrailRunView> {
             failure: r.failure,
             status: r.status,
             duration_ms: r.duration_ms,
+            found: r.found,
         })
         .collect()
 }

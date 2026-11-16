@@ -125,6 +125,7 @@
   "logs.inspector.format": "Format",
   "logs.inspector.fromProvider": "From the provider",
   "logs.inspector.guardrailCategory": "Category {category}",
+  "logs.inspector.guardrailFound": "Found {what}",
   "logs.inspector.guardrailRun": "{phase}: {action} in {duration}",
   "logs.inspector.guardrails": "Guardrails",
   "logs.inspector.images": "Images",

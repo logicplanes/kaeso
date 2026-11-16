@@ -418,6 +418,8 @@ pub(super) struct Parts {
     pub(super) account: Option<AccountSignIn>,
     pub(super) taken: Taken,
     pub(super) binary: Option<Binary>,
+    // Puts back the values built-in rules masked, where the model names their placeholders.
+    pub(super) restoring: Option<crate::services::guardrails::rules::Restoring>,
 }
 
 pub(super) enum Gathered {
@@ -542,6 +544,7 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         account,
         taken,
         binary,
+        mut restoring,
     } = parts;
     let (mut first, aborted) = match binary {
         Some(b) => (Some(b.first), Some(b.aborted)),
@@ -679,6 +682,10 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
                     }
                     (events, true)
                 }
+            };
+            let events = match restoring.as_mut() {
+                Some(r) => r.apply(events),
+                None => events,
             };
             let mut out = Vec::new();
             let mut stop = false;

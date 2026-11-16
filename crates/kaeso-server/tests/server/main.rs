@@ -40,6 +40,7 @@ mod logs;
 mod logs_off;
 mod mail_language;
 mod managed_accounts;
+mod masking;
 mod mcp_connections;
 mod mcp_person_connections;
 mod mcp_portal;

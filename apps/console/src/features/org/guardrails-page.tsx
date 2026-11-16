@@ -58,7 +58,7 @@ export function GuardrailsPage({ org }: { org: string }) {
     title: g.name,
     subtitle: (
       <Text variant="small" tone="secondary" truncate>
-        {g.url}
+        {g.url ?? t("org.guardrails.kind.rules", "Built-in rules")}
       </Text>
     ),
     meta: (
@@ -83,9 +83,11 @@ export function GuardrailsPage({ org }: { org: string }) {
           <Menu.Item icon={icons.send} disabled={!canManage} {...(manageReason ? { description: manageReason } : {})} onClick={() => setTesting(g)}>
             {t("org.guardrails.test", "Test")}
           </Menu.Item>
-          <Menu.Item icon={icons.key} disabled={!canManage} {...(manageReason ? { description: manageReason } : {})} onClick={() => rotate.mutate(g)}>
-            {t("org.guardrails.newSecret", "New secret")}
-          </Menu.Item>
+          {g.kind === "http" && (
+            <Menu.Item icon={icons.key} disabled={!canManage} {...(manageReason ? { description: manageReason } : {})} onClick={() => rotate.mutate(g)}>
+              {t("org.guardrails.newSecret", "New secret")}
+            </Menu.Item>
+          )}
           <Menu.Item
             icon={icons.delete}
             variant="danger"

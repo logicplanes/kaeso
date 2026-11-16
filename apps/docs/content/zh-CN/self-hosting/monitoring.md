@@ -84,6 +84,7 @@ services:
 | `kaeso_tool_call_duration_seconds{source, status}` | 工具调用的耗时 |
 | `kaeso_guardrail_runs_total{phase, action}` | [防护规则](../console/guardrails.md)的检查次数，按 `phase`（`request`、`reply`）和 `action`（`allow`、`block`、`replace`）区分。失败的防护规则计入其出错设置所选的操作 |
 | `kaeso_guardrail_duration_seconds{phase}` | 防护规则回答所用的时间 |
+| `kaeso_masked_values_total{detector, action}` | [内置规则](../console/guardrails.md#内置规则)找到的值，按 `detector`（`secrets`、`email`、`phone`、`iban`、`card`、`ip` 或 `custom`）和 `action`（`mask`、`block`、`flag`）区分 |
 | `kaeso_update_available{version}` | 实例渠道上提供的最新版本比正在运行的版本新时为 1，`version` 为该最新版本；否则为 0，`version` 为正在运行的版本；关闭更新检查时没有此指标（[新版本](upgrades.md#新版本)） |
 
 ## 追踪

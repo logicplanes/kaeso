@@ -172,6 +172,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::delete)))
         .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::rotate_secret)))
         .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::test)))
+        .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::try_rules)))
         .routes(s.route(Access::Project(kaeso_core::rights::ProjectRight::ProjectView), routes!(guardrails::list_project)))
         .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::set_project)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::member)))

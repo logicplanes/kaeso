@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, secret_ciphertext, secret_nonce, secret_wrapped_key, secret_key_id FROM guardrails",
+  "query": "SELECT id, secret_ciphertext, secret_nonce, secret_wrapped_key, secret_key_id FROM guardrails WHERE secret_ciphertext IS NOT NULL",
   "describe": {
     "columns": [
       {
@@ -64,11 +64,11 @@
     },
     "nullable": [
       false,
-      false,
-      false,
-      false,
-      false
+      true,
+      true,
+      true,
+      true
     ]
   },
-  "hash": "ca7a609acf2a25398c22b785b061059735d9722539a199a5688bc39b88497f2b"
+  "hash": "888483c2d14c561e63572026d3b5e44f06e45ef7b484d1b0839d74699d1e54a2"
 }

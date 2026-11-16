@@ -27,6 +27,7 @@ use crate::services::guardrails::contract::{self, Asked, Said, Verdict};
 use crate::services::guardrails::{self as service, Action, Answer, Failure, Phase};
 use crate::services::mcp_servers::{UrlProblem, clean_name, parse_url};
 use crate::state::AppState;
+use kaeso_core::masking::{Rules, RulesError};
 
 type Tagged = [(axum::http::HeaderName, axum::http::HeaderValue); 1];
 
@@ -73,20 +74,34 @@ impl GuardrailStreams {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+#[schema(description = "How a guardrail checks.")]
+pub enum GuardrailKind {
+    #[doc = "An HTTP service of the organization that Kaeso asks."]
+    Http,
+    #[doc = "Built-in rules that find secrets and personal data inside Kaeso."]
+    Rules,
+}
+
 #[derive(Clone, Debug, Serialize, ToSchema)]
 #[schema(
-    description = "An HTTP service of the organization that Kaeso asks before a request goes\n\
-    to a model and, optionally, before a reply goes back."
+    description = "A check of the organization that Kaeso runs before a request goes to a model\n\
+    and, optionally, before a reply goes back: an HTTP service or built-in rules."
 )]
 pub struct GuardrailView {
     #[doc = "Id."]
     pub id: GuardrailId,
+    #[doc = "How it checks."]
+    pub kind: GuardrailKind,
     #[doc = "The name people and apps see, such as in an error."]
     #[schema(example = "PII check")]
     pub name: String,
-    #[doc = "The address Kaeso posts to."]
+    #[doc = "For `http`: the address Kaeso posts to."]
     #[schema(example = "https://guardrail.example.com/check")]
-    pub url: String,
+    pub url: Option<String>,
+    #[doc = "For `rules`: what they find and what they do."]
+    pub rules: Option<Rules>,
     #[doc = "How long Kaeso waits for an answer, in milliseconds."]
     #[schema(example = 2000)]
     pub timeout_ms: u32,
@@ -126,8 +141,17 @@ fn phases(row: &GuardrailRow) -> Vec<Phase> {
 fn view(row: &GuardrailRow, projects: &[Uuid]) -> GuardrailView {
     GuardrailView {
         id: GuardrailId::from_uuid(row.id),
+        kind: if row.kind == "rules" {
+            GuardrailKind::Rules
+        } else {
+            GuardrailKind::Http
+        },
         name: row.name.clone(),
         url: row.url.clone(),
+        rules: row
+            .rules
+            .as_ref()
+            .and_then(|r| serde_json::from_value(r.clone()).ok()),
         timeout_ms: u32::try_from(row.timeout_ms).unwrap_or(DEFAULT_TIMEOUT_MS),
         on_error: if row.on_error == "allow" {
             GuardrailOnError::Allow
@@ -277,12 +301,16 @@ pub async fn get(
 #[serde(deny_unknown_fields)]
 #[schema(description = "A new guardrail.")]
 pub struct GuardrailCreate {
+    #[doc = "How it checks; `http` when absent."]
+    pub kind: Option<GuardrailKind>,
     #[doc = "The name people and apps see, 1 to 100 characters."]
     #[schema(example = "PII check")]
     pub name: String,
-    #[doc = "The address Kaeso posts to."]
+    #[doc = "For `http`: the address Kaeso posts to."]
     #[schema(example = "https://guardrail.example.com/check")]
-    pub url: String,
+    pub url: Option<String>,
+    #[doc = "For `rules`: what they find and what they do."]
+    pub rules: Option<Rules>,
     #[doc = "How long Kaeso waits for an answer, from 100 to 10000 milliseconds; 2000 when\n\
         absent."]
     pub timeout_ms: Option<u32>,
@@ -299,9 +327,10 @@ pub struct GuardrailCreate {
 pub struct GuardrailWithSecret {
     #[doc = "The guardrail."]
     pub guardrail: GuardrailView,
-    #[doc = "The secret Kaeso signs its requests with (Standard Webhooks), shown once."]
+    #[doc = "For `http`: the secret Kaeso signs its requests with (Standard Webhooks), shown\n\
+        once."]
     #[schema(example = "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw")]
-    pub secret: String,
+    pub secret: Option<String>,
 }
 
 #[utoipa::path(
@@ -325,13 +354,47 @@ pub async fn create(
 ) -> ApiResult<(StatusCode, Tagged, Json<GuardrailWithSecret>)> {
     let org = ctx.org()?.org.id;
     let name = checked_name(&req.name)?;
-    let url = checked_url(&state, &req.url).await?;
+    let rules_kind = req.kind == Some(GuardrailKind::Rules);
     let timeout_ms = checked_timeout(req.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS))?;
     let (request_phase, reply_phase) =
         checked_phases(req.phases.as_deref().unwrap_or(&[Phase::Request]))?;
+    let (url, rules) = if rules_kind {
+        if req.url.is_some() {
+            return Err(ApiError::invalid(
+                "url",
+                "`url` is only for guardrails of kind `http`.",
+            ));
+        }
+        if reply_phase {
+            return Err(ApiError::invalid(
+                "phases",
+                "Built-in rules check requests only; leave out `phases`.",
+            ));
+        }
+        let rules = req.rules.as_ref().ok_or_else(|| {
+            ApiError::invalid("rules", "Guardrails of kind `rules` need `rules`.")
+        })?;
+        (None, Some(checked_rules(rules)?))
+    } else {
+        if req.rules.is_some() {
+            return Err(ApiError::invalid(
+                "rules",
+                "`rules` is only for guardrails of kind `rules`.",
+            ));
+        }
+        let raw = req
+            .url
+            .as_deref()
+            .ok_or_else(|| ApiError::invalid("url", "Guardrails of kind `http` need a `url`."))?;
+        (Some(checked_url(&state, raw).await?), None)
+    };
     let id = Uuid::now_v7();
-    let secret = service::new_secret();
-    let sealed = service::seal(&state, id, &secret).map_err(ApiError::internal)?;
+    let secret = (!rules_kind).then(service::new_secret);
+    let sealed = secret
+        .as_ref()
+        .map(|s| service::seal(&state, id, s))
+        .transpose()
+        .map_err(ApiError::internal)?;
     let (kind, by) = creator_of(&ctx);
     let mut tx = state.pg.begin().await?;
     store::insert(
@@ -339,14 +402,16 @@ pub async fn create(
         &NewGuardrail {
             id,
             org_id: org,
+            kind: if rules_kind { "rules" } else { "http" },
             name: &name,
-            url: url.as_str(),
-            secret: Sealed {
+            url: url.as_ref().map(url::Url::as_str),
+            rules: rules.as_ref(),
+            secret: sealed.as_ref().map(|sealed| Sealed {
                 ciphertext: &sealed.ciphertext,
                 nonce: &sealed.nonce,
                 wrapped_key: &sealed.wrapped_key,
                 key_id: &sealed.key_id,
-            },
+            }),
             timeout_ms,
             on_error: req.on_error.unwrap_or(GuardrailOnError::Block).as_str(),
             request_phase,
@@ -372,9 +437,48 @@ pub async fn create(
         etag(row.revision),
         Json(GuardrailWithSecret {
             guardrail: shown,
-            secret: secret.expose_secret().to_owned(),
+            secret: secret.map(|s| s.expose_secret().to_owned()),
         }),
     ))
+}
+
+fn rules_problem(e: RulesError) -> ApiError {
+    let n = |i: usize| i.saturating_add(1);
+    match e {
+        RulesError::Empty => {
+            ApiError::invalid("rules", "`rules` needs a detector or a custom pattern.")
+        }
+        RulesError::TooMany => {
+            ApiError::invalid("rules.custom", "`rules.custom` takes at most 20 patterns.")
+        }
+        RulesError::Name(i) => ApiError::invalid(
+            "rules.custom",
+            format!(
+                "Pattern {} needs a name of lowercase letters, digits and `_` that no detector uses.",
+                n(i)
+            ),
+        ),
+        RulesError::Repeated(i) => ApiError::invalid(
+            "rules.custom",
+            format!("Pattern {} repeats the name of an earlier one.", n(i)),
+        ),
+        RulesError::Length(i) => ApiError::invalid(
+            "rules.custom",
+            format!("Pattern {} must be 1 to 500 characters.", n(i)),
+        ),
+        RulesError::Pattern(i) => ApiError::invalid(
+            "rules.custom",
+            format!(
+                "Pattern {} isn't a regular expression Kaeso can compile.",
+                n(i)
+            ),
+        ),
+    }
+}
+
+fn checked_rules(rules: &Rules) -> ApiResult<serde_json::Value> {
+    rules.compile().map_err(rules_problem)?;
+    serde_json::to_value(rules).map_err(ApiError::internal)
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -383,8 +487,10 @@ pub async fn create(
 pub struct GuardrailUpdate {
     #[doc = "A new name."]
     pub name: Option<String>,
-    #[doc = "A new address."]
+    #[doc = "For `http`: a new address."]
     pub url: Option<String>,
+    #[doc = "For `rules`: new rules, replacing the old ones."]
+    pub rules: Option<Rules>,
     #[doc = "A new timeout, from 100 to 10000 milliseconds."]
     pub timeout_ms: Option<u32>,
     #[doc = "What Kaeso does when the guardrail times out or fails."]
@@ -417,6 +523,31 @@ pub async fn update(
     let before_row = guardrail_row(&state, org, &guardrail).await?;
     if_match.check(before_row.revision, "guardrail")?;
     let name = req.name.as_deref().map(checked_name).transpose()?;
+    let rules_kind = before_row.kind == "rules";
+    if rules_kind && req.url.is_some() {
+        return Err(ApiError::invalid(
+            "url",
+            "`url` is only for guardrails of kind `http`.",
+        ));
+    }
+    if !rules_kind && req.rules.is_some() {
+        return Err(ApiError::invalid(
+            "rules",
+            "`rules` is only for guardrails of kind `rules`.",
+        ));
+    }
+    let rules = req.rules.as_ref().map(checked_rules).transpose()?;
+    if rules_kind
+        && req
+            .phases
+            .as_ref()
+            .is_some_and(|p| p.contains(&Phase::Reply))
+    {
+        return Err(ApiError::invalid(
+            "phases",
+            "Built-in rules check requests only; leave out `phases`.",
+        ));
+    }
     let url = match &req.url {
         Some(u) => Some(checked_url(&state, u).await?),
         None => None,
@@ -432,6 +563,7 @@ pub async fn update(
         &Changes {
             name: name.as_deref(),
             url: url.as_ref().map(url::Url::as_str),
+            rules: rules.as_ref(),
             timeout_ms,
             on_error: req.on_error.map(GuardrailOnError::as_str),
             request_phase: phases.map(|p| p.0),
@@ -505,6 +637,11 @@ pub async fn rotate_secret(
 ) -> ApiResult<(Tagged, Json<GuardrailWithSecret>)> {
     let org = ctx.org()?.org.id;
     let before = guardrail_row(&state, org, &guardrail).await?;
+    if before.kind == "rules" {
+        return Err(ApiError::Conflict(
+            "Built-in rules have no signing secret.".into(),
+        ));
+    }
     let secret = service::new_secret();
     let sealed = service::seal(&state, before.id, &secret).map_err(ApiError::internal)?;
     let mut tx = state.pg.begin().await?;
@@ -533,7 +670,7 @@ pub async fn rotate_secret(
         etag(row.revision),
         Json(GuardrailWithSecret {
             guardrail: shown,
-            secret: secret.expose_secret().to_owned(),
+            secret: Some(secret.expose_secret().to_owned()),
         }),
     ))
 }
@@ -569,6 +706,9 @@ pub struct GuardrailTestResult {
     pub status: Option<u16>,
     #[doc = "How long it took, in milliseconds."]
     pub duration_ms: u64,
+    #[doc = "For `rules`: how many values each kind found, such as `api_key`."]
+    #[schema(example = json!({ "api_key": 1 }))]
+    pub found: BTreeMap<String, u32>,
 }
 
 #[utoipa::path(
@@ -597,10 +737,11 @@ pub async fn test(
             "A test of the `reply` phase needs a `reply`.",
         ));
     }
-    let sealed = store::sealed(&state.pg, org, row.id)
-        .await?
-        .ok_or_else(|| ApiError::not_found("guardrail"))?;
+    let sealed = store::sealed(&state.pg, org, row.id).await?;
     let armed = service::opened(&state, &row, sealed).map_err(ApiError::internal)?;
+    if let service::Checker::Rules(scanner) = &armed.checker {
+        return Ok(Json(rules_test(scanner, req.messages)));
+    }
     let request_id = RequestId::new().to_string();
     let id = format!("{request_id}.{}", phase.as_str());
     let organization = OrgId::from_uuid(org).to_string();
@@ -632,6 +773,7 @@ pub async fn test(
         failure: None,
         status: None,
         duration_ms,
+        found: BTreeMap::new(),
     };
     match answer {
         Answer::Verdict(Verdict::Allow { category }) => {
@@ -654,6 +796,102 @@ pub async fn test(
         }
     }
     Ok(Json(out))
+}
+
+fn mask_parts(m: &mut kaeso_core::masking::Masker<'_>, parts: &mut [contract::Part]) -> bool {
+    let mut changed = false;
+    for part in parts {
+        match part {
+            contract::Part::Text { text } => {
+                if let Some(out) = m.text(text) {
+                    *text = out;
+                    changed = true;
+                }
+            }
+            contract::Part::ToolCall { arguments, .. } => {
+                if let Some(out) = m.text(arguments) {
+                    *arguments = out;
+                    changed = true;
+                }
+            }
+            contract::Part::ToolResult { content, .. } => changed |= mask_parts(m, content),
+            _ => {}
+        }
+    }
+    changed
+}
+
+fn rules_test(
+    scanner: &kaeso_core::masking::Scanner,
+    mut messages: Vec<Said>,
+) -> GuardrailTestResult {
+    let started = Instant::now();
+    let mut m = scanner.masker();
+    let mut changed = false;
+    for said in &mut messages {
+        changed |= mask_parts(&mut m, &mut said.content);
+    }
+    let blocked = m.blocked.clone();
+    GuardrailTestResult {
+        action: Some(if blocked.is_some() {
+            Action::Block
+        } else if changed {
+            Action::Replace
+        } else {
+            Action::Allow
+        }),
+        message: blocked
+            .as_deref()
+            .and_then(|k| contract::message(Some(&service::rules::what(k)))),
+        category: blocked,
+        messages: changed.then_some(messages),
+        failure: None,
+        status: None,
+        duration_ms: u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
+        found: m.found.iter().map(|(k, f)| (k.clone(), f.count)).collect(),
+    }
+}
+
+#[derive(Deserialize, ToSchema)]
+#[serde(deny_unknown_fields)]
+#[schema(description = "Rules and a sample text to try them on; Kaeso stores neither.")]
+pub struct GuardrailRulesTry {
+    #[doc = "The rules."]
+    pub rules: Rules,
+    #[doc = "The sample, at most 100000 characters."]
+    #[schema(example = "Mail ada@example.com")]
+    pub text: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/orgs/{org}/guardrails/try",
+    summary = "Tries built-in rules on a sample text before they are saved.",
+    description = "The answer is what a request with that text would get: the text as masked, what\n\
+    each kind found and whether a rule blocks it. Nothing is stored.",
+    tag = "orgs",
+    params(("org" = OrgId, Path)),
+    request_body = GuardrailRulesTry,
+    responses((status = 200, body = GuardrailTestResult))
+)]
+pub async fn try_rules(
+    ctx: Ctx,
+    Path(_org): Path<String>,
+    Body(req): Body<GuardrailRulesTry>,
+) -> ApiResult<Json<GuardrailTestResult>> {
+    ctx.org()?;
+    if req.text.chars().count() > 100_000 {
+        return Err(ApiError::invalid(
+            "text",
+            "`text` takes at most 100000 characters.",
+        ));
+    }
+    let scanner = req.rules.compile().map_err(rules_problem)?;
+    let sample = vec![Said {
+        role: "user".to_owned(),
+        content: vec![contract::Part::Text { text: req.text }],
+    }];
+    Ok(Json(rules_test(&scanner, sample)))
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]

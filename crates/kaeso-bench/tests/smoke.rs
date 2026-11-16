@@ -44,6 +44,7 @@ fn every_scenario_runs_at_small_sizes_without_leaks_or_unbounded_memory() {
         "mixed",
         "portal",
         "agent",
+        "masking",
     ] {
         assert!(
             checks.iter().any(|c| c["scenario"] == scenario),

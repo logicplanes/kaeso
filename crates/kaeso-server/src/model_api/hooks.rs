@@ -202,6 +202,8 @@ pub struct Outcome {
     pub content_type: Option<String>,
     /// The guardrails that checked the request and its reply, in the order they ran.
     pub guardrails: Vec<crate::services::guardrails::Run>,
+    /// Values built-in rules found that the log keeps only as their placeholders.
+    pub log_masks: Vec<(String, String)>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

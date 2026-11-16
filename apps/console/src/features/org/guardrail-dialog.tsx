@@ -15,14 +15,17 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { fieldError } from "~/api/field-error";
-import type { GuardrailOnError, GuardrailPhase, GuardrailStreams, GuardrailView, GuardrailWithSecret } from "~/api/generated/types";
+import type { GuardrailKind, GuardrailOnError, GuardrailPhase, GuardrailStreams, GuardrailView, GuardrailWithSecret } from "~/api/generated/types";
 import { guardrailsKey } from "~/api/queries/guardrails";
 import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { toast } from "~/shell/toast";
+import { RulesFields, fullRules, rulesProblem, type FullRules } from "./guardrail-rules";
 
 interface Draft {
+  kind: GuardrailKind;
+  rules: FullRules;
   name: string;
   url: string;
   phases: GuardrailPhase[];
@@ -32,6 +35,8 @@ interface Draft {
 }
 
 const draftOf = (g?: GuardrailView): Draft => ({
+  kind: g?.kind ?? "http",
+  rules: fullRules(g?.rules),
   name: g?.name ?? "",
   url: g?.url ?? "",
   phases: g?.phases ?? ["request"],
@@ -127,14 +132,31 @@ function HowFields({ draft, set, error }: { draft: Draft; set: (d: Partial<Draft
   );
 }
 
-const body = (d: Draft) => ({
-  name: d.name.trim(),
-  url: d.url.trim(),
-  phases: d.phases,
-  streams: d.streams,
-  timeout_ms: Number(d.timeout),
-  on_error: d.onError,
-});
+const body = (d: Draft) =>
+  d.kind === "rules"
+    ? { name: d.name.trim(), rules: d.rules }
+    : {
+        name: d.name.trim(),
+        url: d.url.trim(),
+        phases: d.phases,
+        streams: d.streams,
+        timeout_ms: Number(d.timeout),
+        on_error: d.onError,
+      };
+
+function NameField({ draft, set, error }: { draft: Draft; set: (d: Partial<Draft>) => void; error: Parameters<typeof fieldError>[0] }) {
+  return (
+    <Input
+      label={common.name()}
+      placeholder={t("org.guardrails.namePlaceholder", "PII check")}
+      value={draft.name}
+      onChange={(e) => set({ name: e.target.value })}
+      error={fieldError(error, "name")}
+      maxLength={100}
+      autoFocus
+    />
+  );
+}
 
 export function GuardrailDialog({ org, guardrail, onClose }: { org: string; guardrail?: GuardrailView; onClose: () => void }) {
   return guardrail ? <EditGuardrailDialog org={org} guardrail={guardrail} onClose={onClose} /> : <AddGuardrailDialog org={org} onClose={onClose} />;
@@ -145,10 +167,16 @@ function AddGuardrailDialog({ org, onClose }: { org: string; onClose: () => void
   const [created, setCreated] = useState<GuardrailWithSecret | null>(null);
   const set = (d: Partial<Draft>) => setDraft((x) => ({ ...x, ...d }));
   const create = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/guardrails", { params: { path: { org } }, body: body(draft) })),
+    mutationFn: async () =>
+      data(await api.POST("/platform/v1/orgs/{org}/guardrails", { params: { path: { org } }, body: { kind: draft.kind, ...body(draft) } })),
     invalidates: [guardrailsKey(org)],
-    onSuccess: setCreated,
+    onSuccess: (g) => {
+      if (g.secret) return setCreated(g);
+      toast.success(t("org.guardrails.created", "Guardrail added"));
+      onClose();
+    },
   });
+  const rules = draft.kind === "rules";
   const reveal = useSecretReveal(created, false, onClose);
   const where = !draft.name.trim()
     ? t("org.guardrails.nameIt", "Give the guardrail a name")
@@ -156,6 +184,7 @@ function AddGuardrailDialog({ org, onClose }: { org: string; onClose: () => void
       ? t("org.guardrails.enterUrl", "Enter its address")
       : undefined;
   const how = draft.phases.length === 0 ? t("org.guardrails.choosePhase", "Choose what it checks") : timeoutProblem(draft.timeout);
+  const ruled = !draft.name.trim() ? t("org.guardrails.nameIt", "Give the guardrail a name") : rulesProblem(draft.rules);
   return (
     <>
       <StepDialog
@@ -165,22 +194,63 @@ function AddGuardrailDialog({ org, onClose }: { org: string; onClose: () => void
         title={t("org.guardrails.add", "Add guardrail")}
         submitLabel={t("org.guardrails.addButton", "Add guardrail")}
         submitting={create.isPending}
-        onSubmit={() => !where && !how && create.mutate()}
+        onSubmit={() => (rules ? !ruled : !where && !how) && create.mutate()}
         steps={[
           {
-            id: "where",
-            title: t("org.guardrails.where", "Where does Kaeso ask?"),
-            description: t("org.guardrails.whereHint", "Kaeso posts each request there and signs it like a webhook."),
-            blockedReason: where,
-            content: <WhereFields draft={draft} set={set} error={create.error} />,
+            id: "kind",
+            title: t("org.guardrails.kind", "How does it check?"),
+            description: t("org.guardrails.kindHint", "Your own service gets every request; built-in rules run in Kaeso."),
+            content: (
+              <RadioGroup
+                variant="cards"
+                aria-label={t("org.guardrails.kind", "How does it check?")}
+                value={draft.kind}
+                onValueChange={(v) => set({ kind: v as GuardrailKind })}
+              >
+                <Radio
+                  value="http"
+                  label={t("org.guardrails.kind.http", "Your service")}
+                  description={t("org.guardrails.kind.httpHint", "An HTTP service of yours allows, blocks or rewrites each request.")}
+                />
+                <Radio
+                  value="rules"
+                  label={t("org.guardrails.kind.rules", "Built-in rules")}
+                  description={t("org.guardrails.kind.rulesHint", "Kaeso finds secrets and personal data and masks, blocks or counts them.")}
+                />
+              </RadioGroup>
+            ),
           },
-          {
-            id: "how",
-            title: t("org.guardrails.how", "What does it check?"),
-            description: t("org.guardrails.howHint", "Chat requests only; embeddings, media and token counts pass unchecked."),
-            blockedReason: how,
-            content: <HowFields draft={draft} set={set} error={create.error} />,
-          },
+          ...(rules
+            ? [
+                {
+                  id: "rules",
+                  title: t("org.guardrails.rulesTitle", "What do the rules find?"),
+                  description: t("org.guardrails.rulesHint", "They read the text of chat requests, tool calls and tool results."),
+                  blockedReason: ruled,
+                  content: (
+                    <div className="flex flex-col gap-16">
+                      <NameField draft={draft} set={set} error={create.error} />
+                      <RulesFields org={org} rules={draft.rules} set={(r) => set({ rules: r })} />
+                    </div>
+                  ),
+                },
+              ]
+            : [
+                {
+                  id: "where",
+                  title: t("org.guardrails.where", "Where does Kaeso ask?"),
+                  description: t("org.guardrails.whereHint", "Kaeso posts each request there and signs it like a webhook."),
+                  blockedReason: where,
+                  content: <WhereFields draft={draft} set={set} error={create.error} />,
+                },
+                {
+                  id: "how",
+                  title: t("org.guardrails.how", "What does it check?"),
+                  description: t("org.guardrails.howHint", "Chat requests only; embeddings, media and token counts pass unchecked."),
+                  blockedReason: how,
+                  content: <HowFields draft={draft} set={set} error={create.error} />,
+                },
+              ]),
         ]}
       />
       {reveal.confirm}
@@ -205,8 +275,12 @@ function EditGuardrailDialog({ org, guardrail, onClose }: { org: string; guardra
       onClose();
     },
   });
-  const blocked =
-    !draft.name.trim() || !draft.url.trim()
+  const rules = guardrail.kind === "rules";
+  const blocked = rules
+    ? !draft.name.trim()
+      ? t("org.guardrails.nameIt", "Give the guardrail a name")
+      : rulesProblem(draft.rules)
+    : !draft.name.trim() || !draft.url.trim()
       ? t("org.guardrails.nameAndUrl", "Enter a name and an address")
       : draft.phases.length === 0
         ? t("org.guardrails.choosePhase", "Choose what it checks")
@@ -236,10 +310,17 @@ function EditGuardrailDialog({ org, guardrail, onClose }: { org: string; guardra
         </>
       }
     >
-      <div className="flex flex-col gap-24">
-        <WhereFields draft={draft} set={set} error={save.error} />
-        <HowFields draft={draft} set={set} error={save.error} />
-      </div>
+      {rules ? (
+        <div className="flex flex-col gap-16">
+          <NameField draft={draft} set={set} error={save.error} />
+          <RulesFields org={org} rules={draft.rules} set={(r) => set({ rules: r })} />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-24">
+          <WhereFields draft={draft} set={set} error={save.error} />
+          <HowFields draft={draft} set={set} error={save.error} />
+        </div>
+      )}
     </Dialog>
   );
 }
@@ -258,7 +339,7 @@ function useSecretReveal(created: GuardrailWithSecret | null, rotated: boolean, 
         footer: <Button onClick={done}>{common.finish()}</Button>,
         content: (
           <SecretReveal
-            secret={created.secret}
+            secret={String(created.secret)}
             name={created.guardrail.name}
             baseUrl={window.location.origin}
             snippets={false}

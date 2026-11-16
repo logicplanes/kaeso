@@ -4,7 +4,7 @@ description: Lassen Sie eigene Dienste Anfragen prüfen, bevor ein Modell sie er
 order: 4
 ---
 
-Eine Guardrail ist ein HTTP-Dienst Ihrer Organisation, den Kaeso fragt, bevor eine Anfrage an ein Modell geht, und auf Wunsch, bevor die Antwort des Modells zurückgeht. Sie kann die Anfrage durchlassen, blockieren oder ihren Text umschreiben. Kaeso weiß, welcher Schlüssel, welches Mitglied und welches Projekt jede Anfrage gesendet hat, und das Anfrageprotokoll behält jedes Urteil.
+Eine Guardrail ist ein HTTP-Dienst Ihrer Organisation, den Kaeso fragt, bevor eine Anfrage an ein Modell geht, und auf Wunsch, bevor die Antwort des Modells zurückgeht. Sie kann die Anfrage durchlassen, blockieren oder ihren Text umschreiben. [Eingebaute Regeln](#eingebaute-regeln) erledigen die häufigsten Prüfungen in Kaeso selbst, ohne einen Dienst von Ihnen. Kaeso weiß, welcher Schlüssel, welches Mitglied und welches Projekt jede Anfrage gesendet hat, und das Anfrageprotokoll behält jedes Urteil.
 
 Sie brauchen `guardrails.view`, um **Organisationseinstellungen** › **Guardrails** zu sehen, und `guardrails.manage`, um dort etwas zu ändern.
 
@@ -26,6 +26,28 @@ Das Menü einer Zeile bietet **Bearbeiten**, **Testen**, **Neues Secret** und **
 Eine Guardrail prüft nichts, solange kein Projekt sie nutzt. Öffnen Sie die **Einstellungen** des Projekts und wählen Sie unter **Guardrails** die Option **Guardrails wählen**. Haken Sie die Guardrails an und bringen Sie sie in eine Reihenfolge: Eine Anfrage durchläuft sie von oben nach unten, und jede sieht den Text, den die vorige übrig ließ.
 
 Nur Personen mit `guardrails.manage` in der Organisation wählen sie. Die Admins eines Projekts sehen die Liste, können aber keine Guardrail entfernen: Sie ist die Richtlinie der Organisation.
+
+## Eingebaute Regeln
+
+Eingebaute Regeln finden Secrets und personenbezogene Daten in einer Anfrage, ohne dass Sie einen eigenen Dienst betreiben. Wählen Sie **Guardrail hinzufügen** und dann **Eingebaute Regeln**, geben Sie ihnen einen Namen und wählen Sie, was jeder Detektor tut: **Maskieren** ersetzt jeden Wert durch einen Platzhalter wie `[EMAIL_1]`, **Blockieren** lehnt die Anfrage mit 400 ab und nennt, was gefunden wurde, nie den Wert, und **Nur zählen** lässt sie durch und zählt die Werte.
+
+| Detektor | Findet |
+| --- | --- |
+| Secrets und API-Schlüssel | Schlüssel der Anbieter, die Kaeso unterstützt, und Kaesos eigene `sk-kso-…`-Schlüssel, AWS-Zugriffsschlüssel-IDs, GitHub- und GitLab-Tokens als `[API_KEY_1]`; PEM-Blöcke privater Schlüssel als `[PRIVATE_KEY_1]`; JSON Web Tokens als `[TOKEN_1]` |
+| E-Mail-Adressen | Adressen wie `ada@example.com`, als `[EMAIL_1]` |
+| Telefonnummern | Nummern in E.164, etwa `+4930123456`, als `[PHONE_1]` |
+| IBANs | IBANs, deren Mod-97-Prüfung stimmt, als `[IBAN_1]` |
+| Kartennummern | 13 bis 19 Ziffern, auch mit Leerzeichen oder Bindestrichen, deren Luhn-Prüfung stimmt, als `[CARD_1]` |
+| IP-Adressen | IPv4- und IPv6-Adressen, als `[IP_1]` |
+
+Derselbe Wert erhält innerhalb einer Anfrage immer denselben Platzhalter, sodass das Modell zwei Personen weiterhin unterscheiden kann. Die Regeln lesen den Text des Systemprompts und der Nachrichten, Tool-Ergebnisse und die Argumente von Tool-Aufrufen; Medien und Tool-Definitionen bleiben, wie sie sind.
+
+Fügen Sie bis zu 20 eigene Muster hinzu: einen Namen aus Kleinbuchstaben, Ziffern und `_` und einen regulären Ausdruck von höchstens 500 Zeichen in der Syntax von Rusts `regex`-Crate, die in linearer Zeit zur Textlänge sucht. Ein Treffer von `order_id` wird zu `[ORDER_ID_1]`.
+
+- **Im Anfrageprotokoll maskieren** speichert Platzhalter im [Anfrageprotokoll](request-logs.md), auch für Werte, die die Regeln nur zählen. Die Anfrage geht dann unverändert hinaus, während das Protokoll keinen Wert behält.
+- **In der Antwort wiederherstellen** setzt die ursprünglichen Werte wieder ein, wo die Antwort des Modells ihre Platzhalter nennt, bevor die Antwort die App erreicht. In einem Stream hält Kaeso höchstens die Länge eines Platzhalters zurück, sodass auch einer gefunden wird, der auf zwei Teile verteilt ist. Streams erhalten ihren Text wiederhergestellt, ganze Antworten auch die Argumente ihrer Tool-Aufrufe.
+
+**Regeln testen** prüft einen Beispieltext, bevor Sie die Regeln speichern; Kaeso speichert davon nichts. Namen, Postanschriften und andere frei formulierte personenbezogene Daten brauchen ein Sprachmodell: Nutzen Sie dafür [einen eigenen Dienst](#eine-guardrail-hinzufügen). Der Inspektor zeigt, wie viele Werte jede Art fand, nie die Werte, und `kaeso_masked_values_total{detector, action}` zählt sie.
 
 ## Was Kaeso prüft
 

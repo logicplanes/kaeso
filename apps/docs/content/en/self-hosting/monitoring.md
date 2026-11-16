@@ -84,6 +84,7 @@ services:
 | `kaeso_tool_call_duration_seconds{source, status}` | How long tool calls took |
 | `kaeso_guardrail_runs_total{phase, action}` | [Guardrail](../console/guardrails.md) checks by `phase` (`request`, `reply`) and `action` (`allow`, `block`, `replace`). A guardrail that failed counts under the action its On error setting chose |
 | `kaeso_guardrail_duration_seconds{phase}` | How long guardrails took to answer |
+| `kaeso_masked_values_total{detector, action}` | Values [built-in rules](../console/guardrails.md#built-in-rules) found, by `detector` (`secrets`, `email`, `phone`, `iban`, `card`, `ip` or `custom`) and `action` (`mask`, `block`, `flag`) |
 | `kaeso_update_available{version}` | 1 with the newest release offered on the install's channel as `version` while it is newer than the running one, 0 with the running version while it isn't; absent while update checks are off ([new releases](upgrades.md#new-releases)) |
 
 ## Traces
