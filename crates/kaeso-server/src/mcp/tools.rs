@@ -355,6 +355,32 @@ mod tests {
     }
 
     #[test]
+    fn the_log_tools_list_every_format_a_request_is_logged_in() {
+        let formats: Vec<Value> = kaeso_kpp::DialectId::ALL
+            .iter()
+            .map(|d| json!(d.as_str()))
+            .collect();
+        for name in [
+            "get_orgs_org_projects_project_logs",
+            "get_orgs_org_projects_project_logs_export",
+        ] {
+            let schema = &tool(name).input_schema;
+            for field in ["ingress_dialect", "egress_dialect"] {
+                assert_eq!(
+                    schema["properties"][field]["$ref"], "#/$defs/RequestFormat",
+                    "{name} {field}"
+                );
+            }
+            assert_eq!(
+                schema["$defs"]["RequestFormat"]["enum"],
+                json!(formats),
+                "{name}"
+            );
+        }
+        assert!(formats.contains(&json!("openai_videos")) && formats.contains(&json!("veo")));
+    }
+
+    #[test]
     fn every_agent_route_is_a_tool_and_session_routes_are_not() {
         let tools = catalogue();
         assert!(tools.all().len() > 100, "{}", tools.all().len());

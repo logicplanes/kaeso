@@ -644,16 +644,11 @@ pub struct LogFilter {
     #[doc = "Only requests from the model API (`api`) or the console's\n\
         Playground (`playground`)."]
     pub source: Option<String>,
-    #[doc = "Only requests the app sent in this format: `anthropic_messages`,\n\
-        `openai_chat`, `openai_responses`, `openai_embeddings`, `gemini`,\n\
-        `gemini_embeddings`, `openai_images`, `openai_speech`, `openai_transcriptions`,\n\
-        `elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`."]
+    #[doc = "Only requests the app sent in this format."]
+    #[param(value_type = Option<super::RequestFormat>)]
     pub ingress_dialect: Option<String>,
-    #[doc = "Only requests Kaeso sent to the provider in this format:\n\
-        `anthropic_messages`, `openai_chat`, `openai_responses`,\n\
-        `openai_embeddings`, `gemini`, `gemini_embeddings`, `openai_images`,\n\
-        `minimax_images`, `openai_speech`, `openai_transcriptions`, `minimax_speech`,\n\
-        `elevenlabs`, `openai_decisions`, `system_one` or `gemini_decisions`."]
+    #[doc = "Only requests Kaeso sent to the provider in this format."]
+    #[param(value_type = Option<super::RequestFormat>)]
     pub egress_dialect: Option<String>,
     #[doc = "Only requests the response cache answered (`hit`), sent on (`miss`)\n\
         or passed by (`bypass`)."]
@@ -843,9 +838,9 @@ pub struct LogView {
     #[doc = "The endpoint, e.g. `chat/completions` or `decisions`, or the Gemini method on\n\
         the model, e.g. `models:generateContent`."]
     pub endpoint: String,
-    #[doc = "The app's dialect."]
+    #[doc = "The format the app sent."]
     pub ingress_dialect: String,
-    #[doc = "The provider's dialect."]
+    #[doc = "The format Kaeso sent to the provider; empty when no provider was called."]
     pub egress_dialect: String,
     #[doc = "The provider."]
     pub provider: String,
