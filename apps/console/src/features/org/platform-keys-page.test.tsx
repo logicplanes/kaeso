@@ -399,3 +399,70 @@ describe("creating a platform key", () => {
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Create platform key" })).not.toBeInTheDocument());
   });
 });
+
+describe("a platform key's details", () => {
+  it("opens a key's details from its row, with who created it and the key that replaced it", async () => {
+    signedIn();
+    const old = platformKey({ replaced_by: "opk_new", expires_at: fromNow(3 * DAY), last_used_at: fromNow(-5 * 60_000) });
+    const fresh = platformKey({
+      id: "opk_new",
+      redacted: "kso_org_…c3d4",
+      rotated_from: "opk_terraform",
+      created_by: { kind: "org_platform_key", id: "opk_terraform" },
+    });
+    on("GET", "orgs/:org/platform-keys", paged([old, fresh]));
+    on("GET", "orgs/:org/platform-keys/:key", ({ params }: { params: Record<string, string> }) => (params.key === "opk_new" ? fresh : old));
+    const { user, router } = await renderApp(PATH);
+    await user.click(await cellOf("kso_org_…a1b2"));
+    const sheet = await screen.findByRole("dialog", { name: "Terraform" });
+    await waitFor(() => expect(router.state.location.search).toEqual({ key: "opk_terraform" }));
+    expect(sheet).toHaveTextContent("Ada Okafor (you)");
+    expect(sheet).toHaveTextContent("expires in 3 days");
+    expect(sheet).toHaveTextContent("5 min ago");
+    expect(sheet).toHaveTextContent("opk_terraform");
+    expect(within(sheet).getByRole("button", { name: "Actions for Terraform" })).toBeInTheDocument();
+    const replaced = await within(sheet).findByRole("link", { name: "kso_org_…c3d4" });
+    expect(replaced).toHaveAttribute("href", `${PATH}?key=opk_new`);
+
+    await user.click(replaced);
+    await waitFor(() => expect(router.state.location.search).toEqual({ key: "opk_new" }));
+    const next = await screen.findByRole("dialog", { name: "Terraform" });
+    expect(await within(next).findByRole("link", { name: "kso_org_…a1b2" })).toHaveAttribute("href", `${PATH}?key=opk_terraform`);
+    expect(next).toHaveTextContent("Platform key Terraform");
+    expect(next).toHaveTextContent("ExpiresNeverLast usedNever");
+  });
+
+  it("disables a key from its details", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey()]));
+    on("GET", "orgs/:org/platform-keys/:key", platformKey());
+    on("POST", "orgs/:org/platform-keys/:key/disable", platformKey({ state: "disabled" }));
+    const { user, router } = await renderApp(`${PATH}?key=opk_terraform`);
+    const sheet = await screen.findByRole("dialog", { name: "Terraform" });
+    await user.click(await within(sheet).findByRole("button", { name: "Actions for Terraform" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Disable" }));
+    expect(await notifications().findByText("Terraform disabled")).toBeInTheDocument();
+    await user.click(within(sheet).getByRole("button", { name: "Close" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+  });
+
+  it("says when the key in the address is gone, and goes back to the list", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey()]));
+    on("GET", "orgs/:org/platform-keys/:key", apiError(404, "not_found", "No such platform key."));
+    const { user, router } = await renderApp(`${PATH}?key=opk_gone`);
+    const sheet = await screen.findByRole("dialog", { name: "Platform key" });
+    expect(await within(sheet).findByText("This platform key doesn't exist or was removed.")).toBeInTheDocument();
+    await user.click(within(sheet).getByRole("button", { name: "Back to platform keys" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(screen.queryByRole("dialog", { name: "Platform key" })).not.toBeInTheDocument();
+  });
+
+  it("says when a key's details couldn't load", async () => {
+    signedIn();
+    on("GET", "orgs/:org/platform-keys", paged([platformKey()]));
+    on("GET", "orgs/:org/platform-keys/:key", apiError(500, "internal", "Kaeso failed."));
+    await renderApp(`${PATH}?key=opk_terraform`);
+    expect(await screen.findByText("Couldn't load this platform key.")).toBeInTheDocument();
+  });
+});

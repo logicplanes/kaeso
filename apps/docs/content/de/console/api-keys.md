@@ -86,6 +86,8 @@ Einen Plattform-Schlüssel zu erstellen erfordert das Recht **Plattform-Schlüss
 
 **Rotieren** im Menü eines Plattform-Schlüssels funktioniert wie das [Rotieren eines API-Schlüssels](#schlüssel-rotieren) und behält den Namen des Schlüssels. Es erfordert beide Rechte, eine Konsolensitzung und eine kürzliche Anmeldung.
 
+Wählen Sie einen Plattform-Schlüssel, um seine Details zu öffnen: wer ihn wann erstellt hat, wann er abläuft, wann er zuletzt verwendet wurde, seine ID und die Aktionen seines Menüs. Nach einer Rotation verbinden **Ersetzt durch** und **Rotiert aus** den alten und den neuen Schlüssel, die denselben Namen tragen. Ein Plattform-Schlüssel, den das Audit-Log der Organisation nennt, öffnet dieselben Details.
+
 ## Nächste Schritte
 
 - [Modelle aufrufen](../get-started/calling-models.md): Senden Sie Ihre erste Anfrage mit dem neuen Schlüssel.

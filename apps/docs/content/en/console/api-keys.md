@@ -86,6 +86,8 @@ Creating a platform key needs the right **Create platform keys**, a console sess
 
 **Rotate** in a platform key's menu works like [rotating an API key](#rotate-a-key) and keeps the key's name. It needs both rights, a console session and a recent sign-in.
 
+Choose a platform key to open its details: who created it and when, when it expires, when it was last used, its id, and the actions of its menu. After a rotation, **Replaced by** and **Rotated from** link the old and the new key, which share a name. A platform key named in the organization's audit log opens the same details.
+
 ## Next steps
 
 - [Calling models](../get-started/calling-models.md): Send your first request with the new key.

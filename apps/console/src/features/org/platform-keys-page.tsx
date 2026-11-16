@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertDialog,
@@ -9,9 +9,13 @@ import {
   icons,
   Input,
   KeyDisplay,
+  KeyValue,
+  Link,
   List,
   Menu,
   SecretReveal,
+  Sheet,
+  Skeleton,
   StepDialog,
   Text,
   type CodeTab,
@@ -20,7 +24,11 @@ import {
 import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { api, data } from "~/api/client";
 import type { CreatedKey_OrgKeyView, KeyRotate, OrgKeyView } from "~/api/generated/types";
-import { orgQuery, platformKeysQuery } from "~/api/queries/orgs";
+import { orgQuery, platformKeyQuery, platformKeysQuery } from "~/api/queries/orgs";
+import { isApiError } from "~/api/errors";
+import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
+import { expiryDetail } from "~/features/project/keys/expiry";
+import { useOrgPartyName } from "./party";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights } from "~/auth/session";
 import { t } from "~/i18n";
@@ -36,7 +44,7 @@ import { OrgPage } from "./org-page";
 import { useNeedsRight } from "~/auth/needs-right";
 import { LastUsed } from "~/kaeso/last-used";
 
-export function PlatformKeysPage({ org }: { org: string }) {
+export function PlatformKeysPage({ org, open, onOpen }: { org: string; open: string | undefined; onOpen: (key: string | undefined) => void }) {
   const needs = useNeedsRight(org);
   const rights = useOrgRights(org);
   const [scope, setScope] = useState<Scope>("active");
@@ -77,6 +85,46 @@ export function PlatformKeysPage({ org }: { org: string }) {
     setArchiveOpen(true);
   };
 
+  // The row's menu, also in the key's sheet.
+  const actionsFor = (k: OrgKeyView) =>
+    k.state === "archived" || !canRevoke ? undefined : (
+      <Menu>
+        <Menu.Trigger>
+          <Button variant="ghost" icon={icons.more} aria-label={t("org.platformKeys.actions", "Actions for {name}", { name: k.name })} size="xs" />
+        </Menu.Trigger>
+        <Menu.Content align="end">
+          {k.state === "disabled" ? (
+            <Menu.Item icon={icons.show} onClick={() => act.mutate({ key: k, action: "enable" })}>
+              {t("org.platformKeys.enable", "Enable")}
+            </Menu.Item>
+          ) : (
+            k.state === "active" && (
+              <Menu.Item icon={icons.hide} onClick={() => act.mutate({ key: k, action: "disable" })}>
+                {t("org.platformKeys.disable", "Disable")}
+              </Menu.Item>
+            )
+          )}
+          {!k.replaced_by && (
+            <Menu.Item
+              icon={icons.key}
+              disabled={!canCreate || k.state === "disabled"}
+              {...(k.state === "disabled"
+                ? { description: t("org.platformKeys.rotateDisabled", "Enable the key before you rotate it.") }
+                : canCreate
+                  ? {}
+                  : { description: needs("platform_keys.create") })}
+              onClick={() => setRotating(k)}
+            >
+              {t("org.platformKeys.rotate", "Rotate")}
+            </Menu.Item>
+          )}
+          <Menu.Item icon={icons.delete} variant="danger" onClick={() => archive(k)}>
+            {common.archive()}
+          </Menu.Item>
+        </Menu.Content>
+      </Menu>
+    );
+
   const fetched = keys.data ?? [];
   const items = (scope === "all" ? fetched : fetched.filter((k) => k.state === scope)).map((k) => {
     const expiry = expiryText(k);
@@ -91,44 +139,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
         </Text>
       ),
       date: <LastUsed at={k.last_used_at} />,
-      actions:
-        k.state === "archived" || !canRevoke ? undefined : (
-          <Menu>
-            <Menu.Trigger>
-              <Button variant="ghost" icon={icons.more} aria-label={t("org.platformKeys.actions", "Actions for {name}", { name: k.name })} size="xs" />
-            </Menu.Trigger>
-            <Menu.Content align="end">
-              {k.state === "disabled" ? (
-                <Menu.Item icon={icons.show} onClick={() => act.mutate({ key: k, action: "enable" })}>
-                  {t("org.platformKeys.enable", "Enable")}
-                </Menu.Item>
-              ) : (
-                k.state === "active" && (
-                  <Menu.Item icon={icons.hide} onClick={() => act.mutate({ key: k, action: "disable" })}>
-                    {t("org.platformKeys.disable", "Disable")}
-                  </Menu.Item>
-                )
-              )}
-              {!k.replaced_by && (
-                <Menu.Item
-                  icon={icons.key}
-                  disabled={!canCreate || k.state === "disabled"}
-                  {...(k.state === "disabled"
-                    ? { description: t("org.platformKeys.rotateDisabled", "Enable the key before you rotate it.") }
-                    : canCreate
-                      ? {}
-                      : { description: needs("platform_keys.create") })}
-                  onClick={() => setRotating(k)}
-                >
-                  {t("org.platformKeys.rotate", "Rotate")}
-                </Menu.Item>
-              )}
-              <Menu.Item icon={icons.delete} variant="danger" onClick={() => archive(k)}>
-                {common.archive()}
-              </Menu.Item>
-            </Menu.Content>
-          </Menu>
-        ),
+      actions: actionsFor(k),
     };
   });
 
@@ -157,6 +168,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
         aria-label={t("org.platformKeys.title", "Platform keys")}
         items={items}
         loading={keys.isPending}
+        onOpen={(item) => onOpen(item.id)}
         empty={
           keys.isError ? (
             <LoadFailed title={t("org.platformKeys.loadFailed", "The platform keys couldn't load")} size="md" />
@@ -184,6 +196,7 @@ export function PlatformKeysPage({ org }: { org: string }) {
           )
         }
       />
+      <PlatformKeySheet org={org} keyId={open} onClose={() => onOpen(undefined)} actions={actionsFor} />
       {creating && <CreatePlatformKeyDialog org={org} onClose={() => setCreating(false)} />}
       {rotating && <RotatePlatformKeyDialog org={org} k={rotating} onClose={() => setRotating(null)} />}
       {archiving && (
@@ -343,4 +356,69 @@ function usePlatformKeyReveal(org: string, created: CreatedKey_OrgKeyView | null
       />
     ),
   };
+}
+
+// Who made a platform key and when, and the keys a rotation linked it to.
+function PlatformKeySheet({
+  org,
+  keyId,
+  onClose,
+  actions,
+}: {
+  org: string;
+  keyId: string | undefined;
+  onClose: () => void;
+  actions: (k: OrgKeyView) => ReactNode;
+}) {
+  const key = useQuery({ ...platformKeyQuery(org, keyId ?? ""), enabled: !!keyId });
+  const k = key.data;
+  return (
+    <Sheet
+      open={!!keyId}
+      onOpenChange={(o) => !o && onClose()}
+      size="md"
+      title={k?.name ?? t("org.platformKeys.key", "Platform key")}
+      {...(k ? { actions: actions(k) } : {})}
+    >
+      {key.isPending ? (
+        <Skeleton className="w-full" />
+      ) : key.isError ? (
+        <Empty
+          title={
+            isApiError(key.error) && key.error.type === "not_found"
+              ? t("org.platformKeys.notFound", "This platform key doesn't exist or was removed.")
+              : t("org.platformKeys.loadOneFailed", "Couldn't load this platform key.")
+          }
+          actions={<Button onClick={onClose}>{t("org.platformKeys.back", "Back to platform keys")}</Button>}
+        />
+      ) : (
+        <PlatformKeyDetails org={org} k={key.data} />
+      )}
+    </Sheet>
+  );
+}
+
+// Naming who made the key reads the organization's members and keys, so it waits for an open sheet.
+function PlatformKeyDetails({ org, k }: { org: string; k: OrgKeyView }) {
+  const partyName = useOrgPartyName(org);
+  return (
+    <div className="flex flex-col gap-24">
+      <KeyDisplay redacted={k.redacted} state={asKeyState(k.state)} access="platform" copy />
+      <KeyValue
+        items={[
+          { label: common.created(), value: t("keys.createdBy", "{date} by {name}", { date: formatDate(k.created_at), name: partyName(k.created_by) }) },
+          { label: common.expires(), value: k.expires_at ? expiryDetail(k.expires_at) : common.never() },
+          { label: common.lastUsed(), value: k.last_used_at ? formatRelative(k.last_used_at) : common.never() },
+          ...(k.replaced_by ? [{ label: t("keys.replacedBy", "Replaced by"), value: <PlatformKeyLink org={org} keyId={k.replaced_by} /> }] : []),
+          ...(k.rotated_from ? [{ label: t("keys.rotatedFrom", "Rotated from"), value: <PlatformKeyLink org={org} keyId={k.rotated_from} /> }] : []),
+          { label: t("keys.id", "Id"), value: k.id, copy: k.id },
+        ]}
+      />
+    </div>
+  );
+}
+
+function PlatformKeyLink({ org, keyId }: { org: string; keyId: string }) {
+  const other = useQuery(platformKeyQuery(org, keyId));
+  return <Link href={`/settings/orgs/${org}/platform-keys?key=${keyId}`}>{other.data?.redacted ?? keyId}</Link>;
 }
