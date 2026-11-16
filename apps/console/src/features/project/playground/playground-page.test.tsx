@@ -424,6 +424,38 @@ describe("PlaygroundPage", () => {
     expect(screen.getByRole("link", { name: "View in request log" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}/logs?log=req_01abc`);
   });
 
+  it("exports the conversation as Markdown or JSON in the browser, without asking the gateway", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () => reply("Hello there"));
+    const { user } = await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    expect(screen.queryByRole("button", { name: "Export" })).not.toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByText("Hello there");
+
+    const saved: { name: string; type: string }[] = [];
+    const created = vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
+      saved.push({ name: "", type: (blob as Blob).type });
+      return "blob:export";
+    });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      const last = saved.at(-1);
+      if (last) last.name = this.download;
+    });
+    for (const format of ["Markdown", "JSON"]) {
+      await user.click(screen.getByRole("button", { name: "Export" }));
+      await user.click(await screen.findByRole("menuitem", { name: format }));
+    }
+    expect(saved.map((f) => f.type)).toEqual(["text/markdown", "application/json"]);
+    expect(saved[0]?.name).toMatch(/^playground-.*\.md$/);
+    expect(saved[1]?.name).toMatch(/^playground-.*\.json$/);
+    expect(requests("POST", RESPONSES)).toHaveLength(1);
+    created.mockRestore();
+    click.mockRestore();
+  });
+
   it("links every finished reply to its entry in the request log", async () => {
     signedIn();
     on("GET", MODELS, page([playgroundModel()]));
