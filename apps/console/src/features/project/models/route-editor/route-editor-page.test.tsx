@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
-import { notifications } from "~/test/fixtures/org";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, apiKey, catalogueModel, modelRoute, modelsApi, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -94,6 +94,33 @@ describe("RouteEditorPage", () => {
     const [body] = requests("PATCH", ONE_ALIAS).map((r) => r.body as { route: { fall_back_on: string[]; fallback: { model: string } } });
     expect(body?.route.fall_back_on).toEqual(["unavailable", "limited", "unsupported", "rejected"]);
     expect(body?.route.fallback.model).toBe("cm_haiku");
+  });
+
+  it("shows the unsaved changes against the saved alias before saving", async () => {
+    setUp();
+    const { user } = await renderApp(projectPath("models/aliases/al_fast"));
+    const changes = await screen.findByRole("button", { name: "Changes" });
+    await hoverReason(user, changes, "Nothing has changed since the last save.");
+
+    await user.click(await step(/Claude Sonnet 4\.5/));
+    const panel = await screen.findByRole("complementary", { name: "Step settings" });
+    await user.click(within(panel).getByRole("checkbox", { name: /The provider refuses the request/ }));
+    await user.click(screen.getByRole("button", { name: "Changes" }));
+    const dialog = await screen.findByRole("dialog", { name: "Unsaved changes" });
+    const diff = within(dialog).getByRole("group", { name: "Saved → draft" });
+    const rows = (kind: string) => [...diff.querySelectorAll(`[data-diff=${kind}]`)].map((row) => row.textContent?.replace(/\s+/g, " ").trim());
+    // The one new condition, and the comma the line before it needs.
+    expect({ added: rows("added"), removed: rows("removed") }).toEqual({
+      added: ['+Added "unsupported",', '+Added "rejected"'],
+      removed: ['\u2212Removed "unsupported"'],
+    });
+  });
+
+  it("offers no changes for a new alias", async () => {
+    setUp();
+    await renderApp(projectPath("models/aliases/new"));
+    expect(await screen.findByRole("heading", { name: "New alias" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Changes" })).not.toBeInTheDocument();
   });
 
   it("adds a fallback on the canvas and asks for its model before saving", async () => {
