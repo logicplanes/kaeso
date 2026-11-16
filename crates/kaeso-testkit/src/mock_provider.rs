@@ -55,6 +55,8 @@ struct Shared {
     gates_made: AtomicU64,
     video_polls: crate::mock_videos::Polls,
     flaky: Mutex<HashMap<String, usize>>,
+    // The lines of the last batch input file uploaded to `/v1/files`.
+    batch_lines: Mutex<Vec<String>>,
 }
 
 impl Shared {
@@ -460,6 +462,10 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         && (method == Method::GET || method == Method::DELETE)
     {
         return stored_response(&ctx.fixtures, &method, id);
+    }
+    let batch_upload = path == "/v1/files" && text.contains("name=\"purpose\"\r\n\r\nbatch");
+    if batch_upload || path.starts_with("/v1/files/file-mock") || path.starts_with("/v1/batches") {
+        return batch_api(&ctx, &method, &path, &headers, &body);
     }
     let platform = agent_platform_path(&path);
     if let Some(p) = &platform {
@@ -1301,6 +1307,141 @@ fn stored_response(fixtures: &Path, method: &Method, id: &str) -> Response {
             .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
     }
     json_file(&fixtures.join("openai_responses/responses/text-input-string.json"))
+}
+
+fn json_answer(status: StatusCode, body: &serde_json::Value) -> Response {
+    Response::builder()
+        .status(status)
+        .header("content-type", "application/json")
+        .body(Body::from(body.to_string()))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+/// OpenAI's Files and Batch APIs for the batch flow: an upload keeps its lines, a batch is done at
+/// once (`[mock:batch-running]` in the file keeps it running), and its output answers each line
+/// with the dialect's default reply (`[mock:batch-fail]` in a line answers it with a 400).
+fn batch_api(ctx: &Ctx, method: &Method, path: &str, headers: &HeaderMap, body: &[u8]) -> Response {
+    let lines = || {
+        ctx.shared
+            .batch_lines
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    };
+    let now = 1_763_300_000;
+    match (method.as_str(), path) {
+        ("POST", "/v1/files") => {
+            let boundary = headers
+                .get("content-type")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|ct| kaeso_codecs::multipart::form_boundary(ct).ok())
+                .unwrap_or_default();
+            let parts = kaeso_codecs::multipart::read_form(
+                body,
+                &boundary,
+                kaeso_codecs::multipart::FormLimits::new(8, 64 << 20),
+            )
+            .unwrap_or_default();
+            let file = parts.iter().find(|p| p.name == "file");
+            let text = file.and_then(|f| f.text()).unwrap_or_default();
+            *ctx.shared
+                .batch_lines
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner) = text
+                .lines()
+                .filter(|l| !l.is_empty())
+                .map(str::to_owned)
+                .collect();
+            json_answer(
+                StatusCode::OK,
+                &serde_json::json!({
+                    "id": "file-mockin1", "object": "file", "bytes": text.len(), "created_at": now,
+                    "filename": file.and_then(|f| f.filename.clone()), "purpose": "batch",
+                    "status": "processed", "expires_at": now + 30 * 86_400
+                }),
+            )
+        }
+        ("GET", "/v1/files/file-mockout1/content") => {
+            let dir = &ctx.fixtures;
+            let mut out = String::new();
+            for (i, line) in lines().iter().enumerate() {
+                let v: serde_json::Value = serde_json::from_str(line).unwrap_or_default();
+                let url = v["url"].as_str().unwrap_or_default();
+                let (status, mut reply) = if line.contains("[mock:batch-fail]") {
+                    (
+                        400,
+                        serde_json::json!({ "error": { "message": "bad line", "type": "invalid_request_error", "param": null, "code": null } }),
+                    )
+                } else {
+                    let fixture = match url {
+                        "/v1/embeddings" => {
+                            "openai_embeddings/responses/recorded-string-input.json"
+                        }
+                        "/v1/responses" => "openai_responses/responses/text-input-string.json",
+                        _ => "openai_chat/responses/plain-developer-string.json",
+                    };
+                    let reply = std::fs::read(dir.join(fixture))
+                        .ok()
+                        .and_then(|b| serde_json::from_slice(&b).ok())
+                        .unwrap_or_default();
+                    (200, reply)
+                };
+                if status == 200 {
+                    reply["model"] = v["body"]["model"].clone();
+                }
+                let entry = serde_json::json!({
+                    "id": format!("batch_req_{i}"), "custom_id": v["custom_id"],
+                    "response": { "status_code": status, "request_id": format!("req_{i}"), "body": reply },
+                    "error": null
+                });
+                out.push_str(&entry.to_string());
+                out.push('\n');
+            }
+            Response::builder()
+                .status(StatusCode::OK)
+                .header("content-type", "application/octet-stream")
+                .body(Body::from(out))
+                .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+        }
+        ("GET", p) if p.ends_with("/content") => {
+            let mut text = lines().join("\n");
+            text.push('\n');
+            Response::new(Body::from(text))
+        }
+        ("DELETE", p) => json_answer(
+            StatusCode::OK,
+            &serde_json::json!({ "id": p.trim_start_matches("/v1/files/"), "object": "file", "deleted": true }),
+        ),
+        (m, p) if p.starts_with("/v1/batches") => {
+            let asked: serde_json::Value = serde_json::from_slice(body).unwrap_or_default();
+            let all = lines();
+            let total = all.len();
+            let failed = all
+                .iter()
+                .filter(|l| l.contains("[mock:batch-fail]"))
+                .count();
+            let running = all.iter().any(|l| l.contains("[mock:batch-running]"));
+            let (status, done) = match (m, p.ends_with("/cancel")) {
+                ("POST", true) => ("cancelling", false),
+                ("POST", false) => ("validating", false),
+                _ if running => ("in_progress", false),
+                _ => ("completed", true),
+            };
+            json_answer(
+                StatusCode::OK,
+                &serde_json::json!({
+                    "id": "batch_mock1", "object": "batch",
+                    "endpoint": asked.get("endpoint").cloned().unwrap_or_else(|| "/v1/chat/completions".into()),
+                    "errors": null, "input_file_id": "file-mockin1", "completion_window": "24h",
+                    "status": status, "output_file_id": done.then_some("file-mockout1"),
+                    "error_file_id": null, "created_at": now, "completed_at": done.then_some(now + 60),
+                    "request_counts": { "total": total, "completed": if done { total - failed } else { 0 }, "failed": if done { failed } else { 0 } },
+                    "metadata": asked.get("metadata").cloned()
+                }),
+            )
+        }
+        _ => StatusCode::NOT_FOUND.into_response(),
+    }
 }
 
 const MODELS: &str = "/v1/models";

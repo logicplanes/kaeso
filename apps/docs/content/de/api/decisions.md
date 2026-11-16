@@ -1,7 +1,7 @@
 ---
 title: Decisions-API
 description: Entscheidungsmodellen über Kaeso typisierte Fragen stellen, mit den Entscheidungs-APIs von OpenAI, TypeSafe oder Gemini.
-order: 11
+order: 12
 ---
 
 Apps stellen Entscheidungsmodellen über Kaeso typisierte Fragen und erhalten jede Antwort mit ihren Wahrscheinlichkeiten. Kaeso nimmt die Decisions-API von OpenAI, die System-One-API von TypeSafe und die Decisions-API von Gemini an und sendet jede Anfrage im eigenen Format des Anbieters an das Modell.

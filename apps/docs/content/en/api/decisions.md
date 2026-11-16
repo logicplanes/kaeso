@@ -1,7 +1,7 @@
 ---
 title: Decisions API
 description: Ask decision models typed questions through Kaeso with OpenAI's Decisions API, TypeSafe's System One API or Gemini's Decisions API.
-order: 11
+order: 12
 ---
 
 Apps ask decision models typed questions through Kaeso and get each answer with its probabilities. Kaeso takes OpenAI's Decisions API, TypeSafe's System One API and Gemini's Decisions API, and sends each request to the model's provider in that provider's own format.

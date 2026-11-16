@@ -10,6 +10,7 @@ use crate::StoreError;
 pub mod agents;
 pub mod audit;
 pub mod avatars;
+pub mod batches;
 pub mod catalogue;
 pub mod credentials;
 pub mod custom_providers;

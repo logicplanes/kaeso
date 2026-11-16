@@ -1,7 +1,7 @@
 ---
 title: 决策 API
 description: 通过 Kaeso 使用 OpenAI 的 Decisions API、TypeSafe 的 System One API 或 Gemini 的 Decisions API 向决策模型提出类型化问题。
-order: 11
+order: 12
 ---
 
 应用通过 Kaeso 向决策模型提出类型化问题，并得到每个回答及其概率。Kaeso 接受 OpenAI 的 Decisions API、TypeSafe 的 System One API 和 Gemini 的 Decisions API，并按模型所属服务商自己的格式发送每个请求。

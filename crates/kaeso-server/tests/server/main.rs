@@ -8,6 +8,7 @@ mod auth;
 mod authorization;
 mod availability;
 mod avatars;
+mod batches;
 mod caches;
 mod catalogue;
 mod common;

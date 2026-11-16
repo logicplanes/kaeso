@@ -12,6 +12,7 @@ Jede Installation stellt auf ihrer Domain zwei APIs bereit. Apps rufen Modelle �
 - [Bilder-API](images.md): Bilder mit der Images API von OpenAI bei jedem Anbieter erzeugen und bearbeiten, der Bilder macht.
 - [Audio-API](audio.md): Sprache erzeugen und Audio transkribieren oder übersetzen, mit der Audio-API von OpenAI bei jedem Anbieter, der sie anbietet.
 - [Videos-API](videos.md): Videos mit der Videos API von OpenAI bei jedem Anbieter machen, der Videos macht.
+- [Batches-API](batches.md): Viele Anfragen günstiger ausführen, mit OpenAIs Batch- und Files-APIs.
 - [Decisions-API](decisions.md): Entscheidungsmodellen typisierte Fragen im Entscheidungsformat von OpenAI, TypeSafe oder Gemini stellen.
 - [Rerank-API](rerank.md): Dokumente im Rerank-Format von Cohere danach ordnen, wie gut sie eine Anfrage beantworten.
 - [ElevenLabs-API](elevenlabs.md): Sprache, Klänge, Musik und Transkription von ElevenLabs mit den offiziellen SDKs von ElevenLabs aufrufen.

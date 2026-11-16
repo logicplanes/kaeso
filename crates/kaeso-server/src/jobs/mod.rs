@@ -49,6 +49,12 @@ pub struct Job {
 pub fn all() -> Vec<Job> {
     vec![
         Job {
+            name: "batches",
+            every: Duration::from_secs(300),
+            lock: 10,
+            run: |s| Box::pin(async move { Ok(crate::model_api::batches::settle_open(&s).await?) }),
+        },
+        Job {
             name: "cleanup",
             every: Duration::from_secs(3600),
             lock: 1,

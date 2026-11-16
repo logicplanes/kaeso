@@ -12,6 +12,7 @@ order: 4
 - [图片 API](images.md)：使用 OpenAI 的 Images API，在所有能生成图片的服务商上生成和编辑图片。
 - [音频 API](audio.md)：使用 OpenAI 的音频 API，在所有提供该功能的服务商上生成语音、转写或翻译音频。
 - [视频 API](videos.md)：使用 OpenAI 的 Videos API，在每个提供视频生成的服务商处生成视频。
+- [批处理 API](batches.md)：使用 OpenAI 的 Batch 和 Files API，以更低价格运行大量请求。
 - [决策 API](decisions.md)：以 OpenAI、TypeSafe 或 Gemini 的决策格式向决策模型提出类型化问题。
 - [重排序 API](rerank.md)：以 Cohere 的重排序格式，按文档回答查询的程度为其排序。
 - [ElevenLabs API](elevenlabs.md)：使用 ElevenLabs 官方 SDK 调用 ElevenLabs 的语音、音效、音乐和转写。
