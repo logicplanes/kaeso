@@ -65,6 +65,10 @@ export interface FilterDef {
   groups?: FilterChipProps["groups"];
   width?: FilterChipProps["width"];
   searchable?: boolean;
+  /** How the value compares, such as “contains”; “is” when left out. */
+  operator?: string;
+  /** Lets the typed text be the value, for a filter no list can hold. */
+  freeText?: (text: string) => ReactNode;
 }
 
 export function FilterBar({
@@ -104,9 +108,10 @@ export function FilterBar({
           <FilterChip
             key={id}
             property={f.label}
-            operator={t("logs.filter.is", "is")}
+            operator={f.operator ?? t("logs.filter.is", "is")}
             value={f.value ? (f.valueLabel?.(f.value) ?? f.values?.find((c) => c.value === f.value)?.label ?? f.value) : t("logs.filter.any", "any")}
             {...(f.groups ? { groups: f.groups, width: f.width } : { values: f.values, searchable: !!f.searchable, width: f.width })}
+            {...(f.freeText ? { freeText: f.freeText } : {})}
             selected={f.value ? [f.value] : []}
             defaultValuesOpen={adding === id}
             onValuesOpenChange={(open) => {

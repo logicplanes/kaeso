@@ -315,5 +315,13 @@
   "logs.inspector.systemLeftOut": "System-Prompt weggelassen; er hat mehr als 8.000 Zeichen",
   "logs.filter.tag": "Tag",
   "logs.inspector.tags": "Tags",
-  "logs.inspector.onlyTag": "Nur Anfragen mit dem Tag {tag} zeigen"
+  "logs.inspector.onlyTag": "Nur Anfragen mit dem Tag {tag} zeigen",
+  "logs.commonErrors": "Häufigste Fehler",
+  "logs.commonErrorsCount": "{count, plural, one {# Anfrage} other {# Anfragen}}",
+  "logs.commonErrorsFailed": "Die häufigsten Fehler konnten nicht geladen werden.",
+  "logs.commonErrorsHint": "Wählen Sie einen, um seine Anfragen zu sehen",
+  "logs.filter.contains": "enthält",
+  "logs.filter.containsText": "enthält „{text}“",
+  "logs.filter.containsTyped": "Enthält „{text}“",
+  "logs.filter.errorMessage": "Fehlermeldung"
 }

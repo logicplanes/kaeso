@@ -148,6 +148,8 @@ pub struct Filter {
     pub requested_model: Option<String>,
     /// One of the request's tags.
     pub tag: Option<String>,
+    /// Text the error message contains, in any case.
+    pub error_message: Option<String>,
 }
 
 pub async fn search(
@@ -291,6 +293,72 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
         sql.push_str(" AND has(tags, ?)");
         binds.push(Bind::Str(t.clone()));
     }
+    if let Some(m) = &f.error_message {
+        sql.push_str(" AND positionCaseInsensitiveUTF8(error_message, ?) > 0");
+        binds.push(Bind::Str(m.clone()));
+    }
+}
+
+/// One kind of failure: requests with the same error kind, status, provider and message once
+/// its numbers and ids are left out, so "retry after 12 s" and "retry after 30 s" count as one.
+#[derive(Clone, Debug, PartialEq, Row, Deserialize)]
+pub struct ErrorGroup {
+    pub error_kind: String,
+    pub status: u16,
+    pub provider: String,
+    pub count: u64,
+    #[serde(with = "clickhouse::serde::time::datetime64::millis")]
+    pub first_at: OffsetDateTime,
+    #[serde(with = "clickhouse::serde::time::datetime64::millis")]
+    pub last_at: OffsetDateTime,
+    /// The newest message of the group, as it was logged.
+    pub example: String,
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub request_id: Uuid,
+}
+
+// What a message's pattern leaves out, in order: request ids, UUIDs, then any other number.
+const MESSAGE_VARIES: [(&str, &str); 3] = [
+    ("req_[0-9A-Za-z]+", "req_"),
+    (
+        "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+        "uuid",
+    ),
+    ("[0-9]+", "0"),
+];
+
+/// The most frequent failures among the requests the filter keeps, most first.
+pub async fn common_errors(
+    ch: &ClickHouse,
+    org: Uuid,
+    project: Uuid,
+    f: &Filter,
+    limit: u32,
+) -> Result<Vec<ErrorGroup>, StoreError> {
+    // The columns come in the order of `ErrorGroup`; the message's pattern only groups.
+    let mut sql = String::from(
+        "SELECT error_kind, status, provider, count() AS count, min(started_at) AS first_at, \
+         max(started_at) AS last_at, argMax(error_message, started_at) AS example, \
+         argMax(request_id, started_at) AS request_id \
+         FROM request_log WHERE org_id = ? AND project_id = ? AND status >= 400",
+    );
+    let mut binds: Vec<Bind> = vec![Bind::Uuid(org), Bind::Uuid(project)];
+    filter_sql(f, &mut sql, &mut binds);
+    let mut pattern = String::from("error_message");
+    for (regex, with) in MESSAGE_VARIES {
+        pattern = format!("replaceRegexpAll({pattern}, ?, ?)");
+        binds.push(Bind::Str(regex.to_owned()));
+        binds.push(Bind::Str(with.to_owned()));
+    }
+    sql.push_str(&format!(
+        " GROUP BY error_kind, status, provider, {pattern} ORDER BY count DESC, last_at DESC LIMIT ?"
+    ));
+    binds.push(Bind::I64(i64::from(limit)));
+    let mut q = ch.client().query(&sql);
+    for b in binds {
+        q = b.bind(q);
+    }
+    Ok(q.fetch_all::<ErrorGroup>().await?)
 }
 
 pub async fn get(

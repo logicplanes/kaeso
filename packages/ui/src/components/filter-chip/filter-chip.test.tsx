@@ -208,4 +208,47 @@ describe("FilterChip", () => {
     expect(screen.queryByRole("menu")).toBeNull();
     expect(screen.getByRole("button", { name: "any" })).toBeDisabled();
   });
+
+  it("takes the typed text as the value, from its item or with Enter, beside the values it matches", async () => {
+    const onSelectedChange = vi.fn();
+    render(
+      <FilterChip
+        property="Message"
+        operator="contains"
+        value="any"
+        values={[{ value: "quota exceeded", label: "quota exceeded" }]}
+        freeText={(text) => `Contains “${text}”`}
+        onSelectedChange={onSelectedChange}
+        defaultValuesOpen
+      />,
+    );
+    const search = await screen.findByRole("searchbox", { name: "Search message values" });
+    fireEvent.change(search, { target: { value: " quota " } });
+    expect(screen.getByRole("menuitemradio", { name: "quota exceeded" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Contains “quota”" }));
+    expect(onSelectedChange).toHaveBeenLastCalledWith(["quota"]);
+  });
+
+  it("opens for typed text with no values to choose from, and takes it with Enter", async () => {
+    const onSelectedChange = vi.fn();
+    render(
+      <FilterChip
+        property="Message"
+        operator="contains"
+        value="any"
+        values={[]}
+        freeText={(text) => `Contains “${text}”`}
+        onSelectedChange={onSelectedChange}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: "any" });
+    expect(trigger).not.toBeDisabled();
+    fireEvent.click(trigger);
+    const search = await screen.findByRole("searchbox", { name: "Search message values" });
+    expect(screen.queryByText("No values match")).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "timeout" } });
+    expect(screen.queryByText("No values match")).not.toBeInTheDocument();
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(onSelectedChange).toHaveBeenLastCalledWith(["timeout"]);
+  });
 });

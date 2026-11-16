@@ -1261,5 +1261,6 @@
   "The list of questions, a hairline between them.": "问题列表，问题之间有一条细线。",
   "The questions as they were sent: kind, name, instructions, and what yes and no, the options or the levels mean.": "按发送时的样子显示的问题：类型、名称、说明，以及“是”和“否”、各选项或各等级的含义。",
   "Shows each question's instructions under its name, where the questions aren't on screen beside the answers, as in a request log.": "在每个问题的名称下显示其说明，用于问题不在答案旁边显示的地方，例如请求日志。",
-  "Label, bar and value on one line, the label and value above the bar, or one row of a `grid-cols-meter` grid so a list's bars line up.": "标签、进度条和数值在同一行，标签和数值在进度条上方，或作为 `grid-cols-meter` 网格中的一行，使列表中的进度条对齐。"
+  "Label, bar and value on one line, the label and value above the bar, or one row of a `grid-cols-meter` grid so a list's bars line up.": "标签、进度条和数值在同一行，标签和数值在进度条上方，或作为 `grid-cols-meter` 网格中的一行，使列表中的进度条对齐。",
+  "Lets what someone types in the search field be the value, for a filter no list can hold, such as text an error message contains: the label of the item that takes it. Enter takes it too.": "让用户在搜索框中输入的内容成为值，适用于无法用列表列出的筛选，例如错误消息中包含的文本：值为接收该文本的条目的标签。按 Enter 也会接收它。"
 }

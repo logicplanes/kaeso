@@ -315,5 +315,13 @@
   "logs.inspector.systemLeftOut": "已省略系统提示词；它超过 8,000 个字符",
   "logs.filter.tag": "标签",
   "logs.inspector.tags": "标签",
-  "logs.inspector.onlyTag": "只显示带有标签 {tag} 的请求"
+  "logs.inspector.onlyTag": "只显示带有标签 {tag} 的请求",
+  "logs.commonErrors": "最常见的错误",
+  "logs.commonErrorsCount": "{count, plural, other {# 个请求}}",
+  "logs.commonErrorsFailed": "无法加载最常见的错误。",
+  "logs.commonErrorsHint": "选择一项即可列出其请求",
+  "logs.filter.contains": "包含",
+  "logs.filter.containsText": "包含“{text}”",
+  "logs.filter.containsTyped": "包含“{text}”",
+  "logs.filter.errorMessage": "错误消息"
 }

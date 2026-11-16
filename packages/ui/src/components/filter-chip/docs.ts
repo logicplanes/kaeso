@@ -5,6 +5,8 @@ export const docs = {
     description: 'A filter as one pill: "Status is 2xx ×", each part opening a menu.',
     props: {
       defaultValuesOpen: "Open the value menu when the chip appears: a filter just added asks for its value at once.",
+      freeText:
+        "Lets what someone types in the search field be the value, for a filter no list can hold, such as text an error message contains: the label of the item that takes it. Enter takes it too.",
       groups:
         "Choices as ready-made searchable list groups, in place of `values`: rows with marks and details and headings with logos, such as `useModelGroups` or `useProviderGroups` build.",
       multiple: "Several values may be chosen.",

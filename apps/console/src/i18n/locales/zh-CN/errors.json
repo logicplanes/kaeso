@@ -774,5 +774,7 @@
   "errors.logEndpoint": "`endpoint` 必须是端点，例如 `responses`。",
   "errors.logMinCost": "`min_cost` 必须是以美元计的金额，例如 `0.5`。",
   "errors.logTag": "`tag` 必须由 1 到 64 个小写字母、数字、`.`、`_`、`:` 或 `-` 组成。",
-  "errors.modelApi.tagsHeader": "请求头 `kaeso-tags` 最多接受 10 个以逗号分隔的标签，每个标签由 1 到 64 个小写字母、数字、`.`、`_`、`:` 或 `-` 组成。"
+  "errors.modelApi.tagsHeader": "请求头 `kaeso-tags` 最多接受 10 个以逗号分隔的标签，每个标签由 1 到 64 个小写字母、数字、`.`、`_`、`:` 或 `-` 组成。",
+  "errors.logErrorMessage": "`error_message` 必须为 1 到 200 个字符。",
+  "errors.limitOneToFifty": "`limit` 必须介于 1 到 50 之间。"
 }

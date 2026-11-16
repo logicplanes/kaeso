@@ -15087,6 +15087,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "error_message",
+            "in": "query",
+            "description": "Only requests whose error message contains this text, in any case: 1 to\n200 characters, such as `quota`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -15095,6 +15104,303 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/List_LogView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:logs.metadata.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/logs/errors": {
+      "get": {
+        "tags": [
+          "logs"
+        ],
+        "summary": "The most common failures among the requests the filters keep.",
+        "description": "Failed requests (status 400 and up) grouped by `error_kind`, `status`,\n`provider` and their message with numbers, UUIDs and request ids left out, most\nfrequent first, each with its count, first and last time, the newest message and\nthe newest request's id. The filters are the request log's.\n\n**Right:** `logs.metadata.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectLogsErrors",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many kinds of failure to return, from 1 to 50; 10 when left out.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "From (inclusive), RFC 3339.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "To (exclusive), RFC 3339.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "description": "Only this key.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          },
+          {
+            "name": "user",
+            "in": "query",
+            "description": "Only this user's requests.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
+            "name": "service_account",
+            "in": "query",
+            "description": "Only this service account's requests.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ServiceAccountId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "description": "Only this provider model id, such as `gpt-5`, without its provider\n(filter that with `provider`).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "Only this provider.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Only this HTTP status.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "failed",
+            "in": "query",
+            "description": "Only failed (`true`) or successful (`false`) requests.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "error_kind",
+            "in": "query",
+            "description": "Only this error kind, e.g. `rate_limited`, `stream_interrupted` or\n`client_disconnected`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "stream",
+            "in": "query",
+            "description": "Only streamed (`true`) or complete (`false`) requests.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Only requests from the model API (`api`) or the console's\nPlayground (`playground`).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ingress_dialect",
+            "in": "query",
+            "description": "Only requests the app sent in this format.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/RequestFormat"
+            }
+          },
+          {
+            "name": "egress_dialect",
+            "in": "query",
+            "description": "Only requests Kaeso sent to the provider in this format.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/RequestFormat"
+            }
+          },
+          {
+            "name": "response_cache",
+            "in": "query",
+            "description": "Only requests the response cache answered (`hit`), sent on (`miss`)\nor passed by (`bypass`).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ResponseCacheResult"
+            }
+          },
+          {
+            "name": "min_duration_ms",
+            "in": "query",
+            "description": "Only requests that took at least this many milliseconds in total\n(`duration_ms`), such as the `duration_p95_ms` of a timeline bucket.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "alias",
+            "in": "query",
+            "description": "Only requests to this alias, by its exact name.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fell_back",
+            "in": "query",
+            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "endpoint",
+            "in": "query",
+            "description": "Only requests to this endpoint, as the log names it.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/LoggedEndpoint"
+            }
+          },
+          {
+            "name": "min_cost",
+            "in": "query",
+            "description": "Only requests that cost at least this much, in USD, as a decimal string\nsuch as `0.5`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "requested_model",
+            "in": "query",
+            "description": "Only requests that named this model or alias, exactly as the app sent it,\n`provider/model` included. Unlike `alias`, it also finds requests whose name\ndidn't resolve, such as an alias that was deleted.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Only requests the app tagged with this tag in the `kaeso-tags` header.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error_message",
+            "in": "query",
+            "description": "Only requests whose error message contains this text, in any case: 1 to\n200 characters, such as `quota`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_ErrorGroupView"
                 }
               }
             }
@@ -15378,6 +15684,15 @@
             "name": "tag",
             "in": "query",
             "description": "Only requests the app tagged with this tag in the `kaeso-tags` header.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "error_message",
+            "in": "query",
+            "description": "Only requests whose error message contains this text, in any case: 1 to\n200 characters, such as `quota`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -26210,6 +26525,63 @@
           }
         }
       },
+      "ErrorGroupView": {
+        "type": "object",
+        "description": "One kind of failure: requests with the same error kind, status, provider and message once its numbers and ids are left out.",
+        "required": [
+          "error_kind",
+          "status",
+          "provider",
+          "count",
+          "first_at",
+          "last_at",
+          "example",
+          "request_id"
+        ],
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many requests failed this way.",
+            "minimum": 0
+          },
+          "error_kind": {
+            "type": "string",
+            "description": "The error kind, such as `rate_limited`.",
+            "example": "rate_limited"
+          },
+          "example": {
+            "type": "string",
+            "description": "The newest one's error message.",
+            "example": "Rate limit reached; retry after 12 s."
+          },
+          "first_at": {
+            "type": "string",
+            "description": "When the first of them started."
+          },
+          "last_at": {
+            "type": "string",
+            "description": "When the newest of them started."
+          },
+          "provider": {
+            "type": "string",
+            "description": "The provider; empty when the request reached none.",
+            "example": "openai"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "The newest one's request id.",
+            "example": "req_01m7h88803ep3sk3rt84ynzy2c"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The HTTP status the app got.",
+            "example": 429,
+            "minimum": 0
+          }
+        }
+      },
       "ExpiryRequest": {
         "type": "object",
         "description": "When a new key expires: `expires_in_days` (1, 7, 30 or 90), or\n`expires_on` (a date, UTC), or neither for never.",
@@ -29152,6 +29524,88 @@
                   "type": "string",
                   "format": "date-time",
                   "description": "Last changed."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_ErrorGroupView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One kind of failure: requests with the same error kind, status, provider and message once its numbers and ids are left out.",
+              "required": [
+                "error_kind",
+                "status",
+                "provider",
+                "count",
+                "first_at",
+                "last_at",
+                "example",
+                "request_id"
+              ],
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "How many requests failed this way.",
+                  "minimum": 0
+                },
+                "error_kind": {
+                  "type": "string",
+                  "description": "The error kind, such as `rate_limited`.",
+                  "example": "rate_limited"
+                },
+                "example": {
+                  "type": "string",
+                  "description": "The newest one's error message.",
+                  "example": "Rate limit reached; retry after 12 s."
+                },
+                "first_at": {
+                  "type": "string",
+                  "description": "When the first of them started."
+                },
+                "last_at": {
+                  "type": "string",
+                  "description": "When the newest of them started."
+                },
+                "provider": {
+                  "type": "string",
+                  "description": "The provider; empty when the request reached none.",
+                  "example": "openai"
+                },
+                "request_id": {
+                  "type": "string",
+                  "description": "The newest one's request id.",
+                  "example": "req_01m7h88803ep3sk3rt84ynzy2c"
+                },
+                "status": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "The HTTP status the app got.",
+                  "example": 429,
+                  "minimum": 0
                 }
               }
             },

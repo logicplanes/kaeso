@@ -33,6 +33,8 @@ export interface LogFilters {
   min_duration_ms?: number;
   /** One of the tags the app sent in `kaeso-tags`. */
   tag?: string;
+  /** Text the error message contains, in any case. */
+  error_message?: string;
 }
 
 /** Every endpoint the request log names, as the gateway's `endpoint` filter takes them. */
@@ -103,8 +105,22 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     ...(f.response_cache ? { response_cache: f.response_cache } : {}),
     ...(f.min_duration_ms ? { min_duration_ms: f.min_duration_ms } : {}),
     ...(f.tag ? { tag: f.tag } : {}),
+    ...(f.error_message ? { error_message: f.error_message } : {}),
   };
 }
+
+/** The period's most common failures among the requests the filters keep. */
+export const logErrorsQuery = (org: string, project: string, filters: LogFilters) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "logs", "errors", filters],
+    queryFn: async ({ signal }) =>
+      data(
+        await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/errors", {
+          params: { path: { org, project }, query: { ...logsParams(filters), limit: 10 } },
+          signal,
+        }),
+      ).data,
+  });
 
 export const logsInfiniteQuery = (org: string, project: string, filters: LogFilters) =>
   infiniteQueryOptions({
