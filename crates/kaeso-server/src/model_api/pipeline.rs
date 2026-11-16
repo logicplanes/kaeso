@@ -104,9 +104,26 @@ pub(super) struct Recording {
     serving: Option<crate::metrics::Serving>,
     // How long the current step may take, from its first try: its retries share it.
     step_wait: Option<Duration>,
+    // `kaeso-limits` for the attempt that answered, or for the limit that refused it.
+    limits: Option<HeaderValue>,
 }
 
 impl Recording {
+    fn stamp_limits(&self, resp: &mut Response) {
+        if let Some(v) = &self.limits {
+            resp.headers_mut()
+                .insert(super::errors::LIMITS_HEADER, v.clone());
+        }
+    }
+
+    fn found_limits(&mut self, left: &[super::hooks::Left]) {
+        let o = self.outcome();
+        if o.sees_limits {
+            let with_spend = o.sees_cost;
+            self.limits = super::errors::limits_header(left, with_spend);
+        }
+    }
+
     pub(super) fn outcome(&mut self) -> &mut Outcome {
         self.outcome
             .get_or_insert_with(|| blank_outcome(RequestId::new()))
@@ -285,6 +302,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         request_id,
         caller: None,
         sees_cost: false,
+        sees_limits: false,
         source: Source::Api,
         ingress: DialectId::OpenAiChat,
         kind: RequestKind::Generate,
@@ -455,6 +473,7 @@ pub async fn serve_with(
         logging: None,
         serving: Some(crate::metrics::Serving::start()),
         step_wait: None,
+        limits: None,
     };
     let cut = state.in_flight.cut();
     let done = tokio::select! {
@@ -472,6 +491,7 @@ pub async fn serve_with(
         Ok(Done::Complete(mut resp, status)) => {
             rec.time(&mut resp);
             stamp_guardrails(&mut resp, &rec.outcome().guardrails);
+            rec.stamp_limits(&mut resp);
             let outcome = rec.outcome();
             // The start of a video job or an image generation is billed when the job ends.
             if (outcome.source == super::hooks::Source::Playground || outcome.sees_cost)
@@ -483,16 +503,20 @@ pub async fn serve_with(
             rec.finish(status).await;
             resp
         }
-        Ok(Done::Streaming(resp)) => {
+        Ok(Done::Streaming(mut resp)) => {
             rec.outcome = None;
+            rec.stamp_limits(&mut resp);
             resp
         }
         Ok(Done::Refused(failure)) => {
             rec.outcome = None;
-            answer(&failure)
+            let mut resp = answer(&failure);
+            rec.stamp_limits(&mut resp);
+            resp
         }
         Err(failure) => {
             let mut resp = answer(&failure);
+            rec.stamp_limits(&mut resp);
             if let Some(v) = rec.outcome().response_cache {
                 resp.headers_mut()
                     .insert(response_cache::HEADER, v.header());
@@ -992,8 +1016,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             let key = auth::authenticate(state, &headers, client_ip)
                 .await
                 .map_err(|e| Failure::new(e, Stage::Caller))?;
-            rec.outcome().sees_cost = crate::auth::keys::project_rights(&key)
-                .contains(kaeso_core::rights::ProjectRight::CostsView);
+            let rights = crate::auth::keys::project_rights(&key);
+            rec.outcome().sees_cost = rights.contains(kaeso_core::rights::ProjectRight::CostsView);
+            rec.outcome().sees_limits =
+                rights.contains(kaeso_core::rights::ProjectRight::LimitsView);
             Caller {
                 org_id: key.org_id,
                 project_id: key.project_id,
@@ -2093,11 +2119,15 @@ async fn attempt(
         .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect, eff.provider.responses())),
     };
     if again.is_none() {
-        rec.reservation = state
-            .limits
-            .admit(state, &admission)
-            .await
-            .map_err(|refusal| fail(Stage::Limits)(limited(refusal)))?;
+        rec.reservation = match state.limits.admit(state, &admission).await {
+            Ok(held) => held,
+            Err(refusal) => {
+                rec.found_limits(refusal.left.as_slice());
+                return Err(fail(Stage::Limits)(limited(refusal)));
+            }
+        };
+        let left = std::mem::take(&mut rec.reservation.left);
+        rec.found_limits(&left);
     }
 
     if entry.is_unavailable()
@@ -2609,6 +2639,7 @@ async fn attempt(
                 logging: rec.logging.take(),
                 serving: rec.serving.take(),
                 step_wait: None,
+                limits: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));

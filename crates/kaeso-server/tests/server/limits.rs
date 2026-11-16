@@ -2195,3 +2195,175 @@ async fn the_most_specific_spend_budget_names_itself_when_it_refuses_a_billed_to
         r.text()
     );
 }
+
+fn limits_of(r: &Answer) -> Vec<String> {
+    r.header("kaeso-limits")
+        .map(|h| h.split(", ").map(str::to_owned).collect())
+        .unwrap_or_default()
+}
+
+#[tokio::test]
+async fn replies_say_how_much_of_a_rate_is_left_and_when_it_frees_up() {
+    let env = common::v1::env(None, None).await;
+    let (secret, id) = key_of(&env, "told", json!({})).await;
+    limit(&env, json!({ "level": "key", "key": id, "kind": "request_rate", "period": "minute", "amount": 60 })).await;
+    let r = ask(&env, &secret).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        limits_of(&r),
+        ["\"key.requests.minute\";limit=60;remaining=59;reset=60"],
+        "the rate counts this request"
+    );
+    env.app.clock.advance(time::Duration::seconds(10));
+    let r = ask(&env, &secret).await;
+    assert_eq!(
+        limits_of(&r),
+        ["\"key.requests.minute\";limit=60;remaining=58;reset=50"]
+    );
+    let mut streamed = capped("Hi", MOCK_OUTPUT_TOKENS);
+    streamed["stream"] = json!(true);
+    let r = call(&env, "/v1/messages", Some(&secret), true, Some(streamed)).await;
+    assert_eq!(r.status, StatusCode::OK);
+    assert_eq!(
+        limits_of(&r),
+        ["\"key.requests.minute\";limit=60;remaining=57;reset=50"],
+        "a stream carries it too"
+    );
+    assert!(
+        limits_of(&ask(&env, &env.key).await).is_empty(),
+        "a key without limits"
+    );
+}
+
+#[tokio::test]
+async fn replies_say_what_is_left_of_hard_budgets_and_a_refusal_says_nothing_is() {
+    let env = common::v1::env(None, None).await;
+    use kaeso_core::clock::Clock;
+    let now = env.app.clock.now();
+    let month = (kaeso_core::limits::Period::Month.resets_at(now).unwrap() - now).whole_seconds();
+    let tokens = limit(
+        &env,
+        json!({ "level": "project", "kind": "token_budget", "period": "total", "amount": 1000 }),
+    )
+    .await;
+    limit(
+        &env,
+        json!({ "level": "project", "kind": "spend_budget", "period": "month", "amount": "500" }),
+    )
+    .await;
+    limit(&env, json!({ "level": "project", "kind": "token_budget", "period": "day", "amount": 5000, "hard": false })).await;
+    let r = ask(&env, &env.key).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let mut left = limits_of(&r);
+    left.sort();
+    assert_eq!(
+        left,
+        [
+            format!("\"project.spend.month\";limit=\"500\";remaining=\"500\";reset={month}"),
+            "\"project.tokens.total\";limit=1000;remaining=1000".to_owned(),
+        ],
+        "before this request; a soft budget isn't enforced, so it isn't told"
+    );
+    used(&env, tokens["id"].as_str().unwrap(), "28").await;
+    let r = ask(&env, &env.key).await;
+    let mut left = limits_of(&r);
+    left.sort();
+    assert_eq!(
+        left,
+        [
+            format!("\"project.spend.month\";limit=\"500\";remaining=\"499.9999\";reset={month}"),
+            "\"project.tokens.total\";limit=1000;remaining=972".to_owned(),
+        ]
+    );
+
+    let models = env
+        .app
+        .get(&format!("{}/models", base(&env)), &env.owner.cookie)
+        .await;
+    let gpt = models.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "gpt-4o")
+        .unwrap()["id"]
+        .clone();
+    limit(&env, json!({ "level": "project", "kind": "request_rate", "model": gpt, "period": "minute", "amount": 1 })).await;
+    let gpt_call = || {
+        call(
+            &env,
+            "/v1/messages",
+            Some(&env.key),
+            true,
+            Some(messages("gpt-4o", "Hi")),
+        )
+    };
+    let r = gpt_call().await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert!(
+        limits_of(&r)
+            .contains(&"\"project.requests.minute\";model;limit=1;remaining=0;reset=60".to_owned()),
+        "{:?}",
+        limits_of(&r)
+    );
+    let r = gpt_call().await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(
+        limits_of(&r),
+        ["\"project.requests.minute\";model;limit=1;remaining=0;reset=60"],
+        "the limit that refused it"
+    );
+}
+
+#[tokio::test]
+async fn only_someone_who_may_see_limits_is_told_and_spend_only_with_costs() {
+    let env = common::v1::env(None, None).await;
+    limit(
+        &env,
+        json!({ "level": "project", "kind": "request_rate", "period": "minute", "amount": 100 }),
+    )
+    .await;
+    limit(
+        &env,
+        json!({ "level": "project", "kind": "spend_budget", "period": "total", "amount": "10" }),
+    )
+    .await;
+    let key_without = |removed: &'static str| {
+        let env = &env;
+        async move {
+            let account = env
+                .app
+                .post(
+                    &format!("{}/service-accounts", base(env)),
+                    json!({ "name": format!("no-{removed}"), "role": "developer", "rights_removed": [removed] }),
+                    Some(&env.owner.cookie),
+                )
+                .await;
+            assert_eq!(account.status, StatusCode::CREATED, "{:?}", account.body);
+            let key = env
+                .app
+                .post(
+                    &format!(
+                        "{}/service-accounts/{}/keys",
+                        base(env),
+                        account.body["id"].as_str().unwrap()
+                    ),
+                    json!({ "name": removed }),
+                    Some(&env.owner.cookie),
+                )
+                .await;
+            assert_eq!(key.status, StatusCode::CREATED, "{:?}", key.body);
+            key.body["secret"].as_str().unwrap().to_owned()
+        }
+    };
+    let no_costs = key_without("costs.view").await;
+    let r = ask(&env, &no_costs).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        limits_of(&r),
+        ["\"project.requests.minute\";limit=100;remaining=99;reset=60"]
+    );
+    let no_limits = key_without("limits.view").await;
+    let r = ask(&env, &no_limits).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-limits"), None);
+}

@@ -71,6 +71,24 @@ pub struct Admission {
 pub struct Reservation {
     pub(crate) counters: Vec<String>,
     pub(crate) ttl: i64,
+    /// How much of each enforced limit was left when the request was admitted.
+    pub(crate) left: Vec<Left>,
+}
+
+/// How much of one enforced limit an app has left, for the `kaeso-limits` reply header.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Left {
+    /// `<level>.<kind>.<period>`, such as `key.requests.minute`.
+    pub name: String,
+    /// The limit is one model's own.
+    pub model: bool,
+    /// The amounts are nano-USD, written as USD; else whole requests or tokens.
+    pub spend: bool,
+    pub limit: i64,
+    /// Before this request, except that a request rate already counts it.
+    pub remaining: i64,
+    /// Seconds until the rate window or the budget's period frees it; none for a total.
+    pub reset: Option<i64>,
 }
 
 impl Reservation {
@@ -85,6 +103,8 @@ pub struct Refusal {
     pub message: String,
     pub retry_after: Option<Duration>,
     pub param: Option<&'static str>,
+    /// The limit that refused the request, with nothing left.
+    pub left: Option<Left>,
 }
 
 pub trait Limits: Send + Sync + std::fmt::Debug {
@@ -142,6 +162,9 @@ pub struct Outcome {
     /// Whether the key's owner may see the project's costs (`costs.view`), so a reply may say
     /// what it cost.
     pub sees_cost: bool,
+    /// Whether the key's owner may see the project's limits (`limits.view`), so a reply may say
+    /// how much of them is left.
+    pub sees_limits: bool,
     pub source: Source,
     pub ingress: DialectId,
     pub kind: RequestKind,

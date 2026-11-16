@@ -68,6 +68,8 @@ Kaeso beantwortet eine abgelehnte Anfrage mit Status 429, im API-Format der App,
 - Bei einem aufgebrauchten Budget sagt die Meldung, wann das Budget neu beginnt.
 - Über einer Tool-Aufrufrate erhält ein MCP-Client Status 429 mit `Retry-After` und einen JSON-RPC-Fehler, der sagt, wann ein neuer Versuch möglich ist.
 
+Apps müssen nicht auf eine 429 warten. Jede Antwort der Model API trägt `kaeso-limits` mit dem, was von jeder Rate und jedem harten Budget übrig ist und wann es frei wird, damit ein Batch-Job nahe einer Token-Rate langsamer werden und ein Agent vor dem Ende eines Budgets aufhören kann, etwa `"key.requests.minute";limit=60;remaining=41;reset=17`. Eine 429 von Kaeso trägt das Limit, das sie abgelehnt hat, mit `remaining=0`. Der Header kommt nur, wenn der Inhaber des Schlüssels die Limits des Projekts sehen darf, Ausgaben nur mit dem Recht, Kosten zu sehen ([Antwort-Header](../api/model-api.md)).
+
 Solange noch laufende Anfragen ein hartes Budget oder eine Token-Rate aufbrauchen könnten, lehnt Kaeso die nächste Anfrage mit `Retry-After: 1` ab, bis sie fertig sind. Jede laufende Anfrage hält, was sie höchstens kosten kann, zu den Preisen des Modells. Das sind ihre Eingabe, aus ihrer Größe geschätzt, und ihr Ausgabelimit (`max_tokens` oder `max_output_tokens`, sonst das des Modells). Ein Stream hält es, solange er läuft.
 
 Die Eingabe zählt zum höchsten der Eingabe- und Cache-Preise des Modells, zu seinen Preisen für lange Prompts, wenn die geschätzte Eingabe die Schwelle einer Stufe überschreitet. Verlangt eine Anfrage Anthropics Ein-Stunden-Cache, gehört dazu der Schreibpreis dieses Caches ([Modelle und Aliasse](models-and-aliases.md#werte-eines-modells-ändern)).

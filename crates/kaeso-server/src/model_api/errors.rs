@@ -72,6 +72,45 @@ pub fn stamp(resp: &mut Response, served: &Served) {
     stamp_route(resp, &served.route);
 }
 
+/// How much of each enforced rate limit and hard budget the app has left, as an RFC 9651 list:
+/// `"key.requests.minute";limit=60;remaining=41;reset=17`. Spend is a USD string.
+pub const LIMITS_HEADER: &str = "kaeso-limits";
+
+/// The `kaeso-limits` value for what admission found; spend only for someone who may see costs.
+pub fn limits_header(left: &[super::hooks::Left], with_spend: bool) -> Option<HeaderValue> {
+    let usd = |nano: i64| {
+        let d = rust_decimal::Decimal::new(nano, 9).normalize();
+        format!("\"{d}\"")
+    };
+    let items: Vec<String> = left
+        .iter()
+        .filter(|l| with_spend || !l.spend)
+        .map(|l| {
+            let mut item = format!("\"{}\"", l.name);
+            if l.model {
+                item.push_str(";model");
+            }
+            if l.spend {
+                item.push_str(&format!(
+                    ";limit={};remaining={}",
+                    usd(l.limit),
+                    usd(l.remaining)
+                ));
+            } else {
+                item.push_str(&format!(";limit={};remaining={}", l.limit, l.remaining));
+            }
+            if let Some(reset) = l.reset {
+                item.push_str(&format!(";reset={reset}"));
+            }
+            item
+        })
+        .collect();
+    if items.is_empty() {
+        return None;
+    }
+    HeaderValue::from_str(&items.join(", ")).ok()
+}
+
 pub fn stamp_route(resp: &mut Response, route: &[Walked]) {
     if let Some(v) = route_header(route) {
         resp.headers_mut().insert(ROUTE_HEADER, v);
