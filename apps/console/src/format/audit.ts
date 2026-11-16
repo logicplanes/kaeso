@@ -63,6 +63,8 @@ const ACTION_LABELS: Record<string, () => string> = {
   "custom_provider.delete": () => t("format.audit.action.customProviderDelete", "Custom provider deleted"),
   "instance.setup": () => t("format.audit.action.instanceSetup", "Kaeso set up"),
   "instance.invite": () => t("format.audit.action.instanceInvite", "User invited to the install"),
+  "instance.invite_resend": () => t("format.audit.action.instanceInviteResend", "Invitation to the install sent again"),
+  "instance.invite_revoke": () => t("format.audit.action.instanceInviteRevoke", "Invitation to the install revoked"),
   "instance.linked_billing_update": () => t("format.audit.action.instanceLinkedBillingUpdate", "Linked billing app set up"),
   "instance.linked_billing_delete": () => t("format.audit.action.instanceLinkedBillingDelete", "Linked billing app removed"),
   "instance.settings_update": () => t("format.audit.action.instanceSettingsUpdate", "Instance settings changed"),

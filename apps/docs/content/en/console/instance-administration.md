@@ -24,6 +24,8 @@ The pages are under **Instance**, in the menu at the foot of the sidebar.
 
 Kaeso emails the user when you end their sessions or reset their two-factor authentication.
 
+**Invitations**, next to **Users**, lists the invitations to the install that are still pending, with who sent each and when it expires, and **All** adds the accepted, revoked and expired ones. **Resend** sends an invitation again with a new link that works for 21 days, even after it expired, and the old link stops working. **Revoke** takes one back. Both need **Manage users** and show in the audit log.
+
 ## Manage organizations
 
 **Organizations** lists every organization with its members, projects and state. **Create organization** creates one with the owner you choose, or with you as its owner when you choose none. **Sign-in** says whether each requires single sign-on, two-factor authentication or both, and **Single sign-on** filters the list to the organizations with or without an SSO connection.

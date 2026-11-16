@@ -21,6 +21,8 @@
   "format.audit.action.credentialReplace": "Anbieter-Schlüssel ersetzt",
   "format.audit.action.instanceAdminSsoUpdate": "Single Sign-on für Instanz-Admins geändert",
   "format.audit.action.instanceInvite": "Benutzer zur Installation eingeladen",
+  "format.audit.action.instanceInviteResend": "Einladung zur Installation erneut gesendet",
+  "format.audit.action.instanceInviteRevoke": "Einladung zur Installation widerrufen",
   "format.audit.action.instanceSettingsUpdate": "Instanzeinstellungen geändert",
   "format.audit.action.instanceSetup": "Kaeso eingerichtet",
   "format.audit.action.instanceUpdateCheck": "Nach Updates gesucht",

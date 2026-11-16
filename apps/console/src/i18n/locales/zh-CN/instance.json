@@ -128,6 +128,7 @@
   "instance.invitationSent": "已向 {email} 发送邀请",
   "instance.inviteUser": "邀请用户",
   "instance.inviteUserHint": "对方会收到创建账户的链接，在被组织邀请前不属于任何组织。",
+  "instance.invites.noneYetHint": "使用邀请用户将他人邀请到实例；每个链接 21 天内有效。",
   "instance.keptMetadata": "元数据保留 {metadata} 天。",
   "instance.keptWithContent": "元数据保留 {metadata} 天，内容保留 {content} 天。",
   "instance.last30Days": "最近 30 天",

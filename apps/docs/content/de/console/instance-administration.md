@@ -24,6 +24,8 @@ Die Seiten finden Sie unter **Instanz** im Menü am Fuß der Seitenleiste.
 
 Kaeso informiert den Benutzer per E-Mail, wenn Sie seine Sitzungen beenden oder seine Zwei-Faktor-Authentifizierung zurücksetzen.
 
+**Einladungen** neben **Benutzer** listet die noch offenen Einladungen zur Installation, mit wer sie geschickt hat und wann sie ablaufen; **Alle** zeigt auch die angenommenen, widerrufenen und abgelaufenen. **Erneut senden** schickt eine Einladung mit einem neuen Link, der 21 Tage gilt, auch nach ihrem Ablauf, und der alte Link funktioniert nicht mehr. **Widerrufen** nimmt eine zurück. Beides braucht **Benutzer verwalten** und erscheint im Audit-Log.
+
 ## Organisationen verwalten
 
 **Organisationen** listet jede Organisation mit ihren Mitgliedern, Projekten und ihrem Zustand. **Organisation erstellen** legt eine mit dem Inhaber an, den Sie wählen, oder mit Ihnen als Inhaber, wenn Sie niemanden wählen. **Anmeldung** sagt, ob eine Organisation Single Sign-on, Zwei-Faktor-Authentifizierung oder beides verlangt, und **Single Sign-on** filtert die Liste nach Organisationen mit oder ohne SSO-Verbindung.

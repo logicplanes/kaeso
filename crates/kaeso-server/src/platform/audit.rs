@@ -61,6 +61,8 @@ actions! {
         InstanceAdminSsoUpdate = "instance.admin_sso_update",
         InstanceAgentsPolicy = "instance.agents_policy",
         InstanceInvite = "instance.invite",
+        InstanceInviteResend = "instance.invite_resend",
+        InstanceInviteRevoke = "instance.invite_revoke",
         InstanceLinkedBillingDelete = "instance.linked_billing_delete",
         InstanceLinkedBillingUpdate = "instance.linked_billing_update",
         InstanceSettingsUpdate = "instance.settings_update",

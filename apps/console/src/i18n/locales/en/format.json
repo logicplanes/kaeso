@@ -34,6 +34,8 @@
   "format.audit.action.instanceAdminSsoUpdate": "Single sign-on for instance admins changed",
   "format.audit.action.instanceAgentsPolicy": "Instance agent policy changed",
   "format.audit.action.instanceInvite": "User invited to the install",
+  "format.audit.action.instanceInviteResend": "Invitation to the install sent again",
+  "format.audit.action.instanceInviteRevoke": "Invitation to the install revoked",
   "format.audit.action.instanceLinkedBillingDelete": "Linked billing app removed",
   "format.audit.action.instanceLinkedBillingUpdate": "Linked billing app set up",
   "format.audit.action.instanceSettingsUpdate": "Instance settings changed",

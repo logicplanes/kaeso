@@ -17,7 +17,7 @@ use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::RoleRef;
 use crate::platform::json::Body;
-use crate::platform::orgs::invites::{INVITE_LIFETIME, InviteView};
+use crate::platform::orgs::invites::{INVITE_LIFETIME, InviteFilter, InviteView};
 use crate::platform::pagination::{List, PageParams};
 use crate::platform::params::{Path, Query};
 use crate::platform::validate::validate_email;
@@ -232,29 +232,7 @@ pub async fn invite(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    let (name, inviter_lang) = match ctx.acting_user() {
-        Some(u) => (
-            users::get(&state.pg, u.uuid()).await?.and_then(|u| u.name),
-            crate::services::mail_lang::chosen(&state.pg, u.uuid()).await,
-        ),
-        None => (None, None),
-    };
-    let inviter = name.as_ref().map_or(Actor::Administrator, Actor::from);
-    let lang = crate::services::mail_lang::of_address(
-        &state.pg,
-        &email,
-        inviter_lang.as_deref(),
-        ctx.accept_language.as_deref(),
-    )
-    .await;
-    state
-        .mailer
-        .send(kaeso_mail::templates::instance_invitation(
-            lang,
-            &email,
-            inviter,
-            &format!("{}invite#token={token}", state.config.public_url),
-        ));
+    send_invite(&state, &ctx, &email, &token).await?;
     let row = invites::get(&state.pg, None, id.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("invite"))?;
@@ -266,6 +244,151 @@ pub async fn invite(
             &crate::platform::grants::RoleBook::default(),
         )),
     ))
+}
+
+// Sends an invitation to the install, in the language the address or the inviter reads.
+async fn send_invite(state: &AppState, ctx: &Ctx, email: &str, token: &str) -> ApiResult<()> {
+    let (name, inviter_lang) = match ctx.acting_user() {
+        Some(u) => (
+            users::get(&state.pg, u.uuid()).await?.and_then(|u| u.name),
+            crate::services::mail_lang::chosen(&state.pg, u.uuid()).await,
+        ),
+        None => (None, None),
+    };
+    let inviter = name.as_ref().map_or(Actor::Administrator, Actor::from);
+    let lang = crate::services::mail_lang::of_address(
+        &state.pg,
+        email,
+        inviter_lang.as_deref(),
+        ctx.accept_language.as_deref(),
+    )
+    .await;
+    state
+        .mailer
+        .send(kaeso_mail::templates::instance_invitation(
+            lang,
+            email,
+            inviter,
+            &format!("{}invite#token={token}", state.config.public_url),
+        ));
+    Ok(())
+}
+
+fn invite_view(row: &invites::Invite, now: time::OffsetDateTime) -> InviteView {
+    InviteView::from_row(row, now, &crate::platform::grants::RoleBook::default())
+}
+
+fn invite_param(invite: &str) -> ApiResult<InviteId> {
+    invite.parse().map_err(|_| ApiError::not_found("invite"))
+}
+
+#[utoipa::path(
+    get,
+    path = "/instance/users/invites",
+    summary = "The invitations to the install, without an org.",
+    tag = "instance",
+    params(PageParams, InviteFilter),
+    responses((status = 200, body = List<InviteView>))
+)]
+pub async fn invites(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Query(page): Query<PageParams>,
+    Query(filter): Query<InviteFilter>,
+) -> ApiResult<Json<List<InviteView>>> {
+    let page = page.page()?;
+    let rows = invites::list(
+        &state.pg,
+        None,
+        filter.pending.unwrap_or(true),
+        ctx.now,
+        page.after,
+        page.fetch(),
+    )
+    .await?;
+    let now = ctx.now;
+    Ok(Json(List::from_rows(
+        &page,
+        rows,
+        |i| i.id,
+        |i| invite_view(&i, now),
+    )))
+}
+
+#[utoipa::path(
+    post,
+    path = "/instance/users/invites/{invite}/resend",
+    summary = "Sends an invitation to the install again, with a new link valid 21 days;\n\
+    the old link stops working.",
+    tag = "instance",
+    params(("invite" = InviteId, Path)),
+    responses((status = 200, body = InviteView))
+)]
+pub async fn resend_invite(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(invite): Path<String>,
+) -> ApiResult<Json<InviteView>> {
+    let id = invite_param(&invite)?;
+    let pending = invites::get(&state.pg, None, id.uuid())
+        .await?
+        .ok_or_else(|| ApiError::not_found("pending invite"))?;
+    if users::email_taken(&state.pg, &pending.email, None).await? {
+        return Err(ApiError::Conflict(format!(
+            "{} already has an account.",
+            pending.email
+        )));
+    }
+    crate::platform::orgs::invites::throttle_invites(&state, &pending.email).await?;
+    let token = random_token();
+    let mut tx = state.pg.begin().await?;
+    if !invites::renew(
+        &mut *tx,
+        None,
+        id.uuid(),
+        &secret::hash(&token),
+        ctx.now + INVITE_LIFETIME,
+    )
+    .await?
+    {
+        return Err(ApiError::not_found("pending invite"));
+    }
+    ctx.audit(None, Action::InstanceInviteResend)
+        .target("invite", id)
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
+    send_invite(&state, &ctx, &pending.email, &token).await?;
+    let row = invites::get(&state.pg, None, id.uuid())
+        .await?
+        .ok_or_else(|| ApiError::not_found("invite"))?;
+    Ok(Json(invite_view(&row, ctx.now)))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/instance/users/invites/{invite}",
+    summary = "Revokes a pending invitation to the install; its link stops working.",
+    tag = "instance",
+    params(("invite" = InviteId, Path)),
+    responses((status = 204, description = "Revoked."))
+)]
+pub async fn revoke_invite(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(invite): Path<String>,
+) -> ApiResult<StatusCode> {
+    let id = invite_param(&invite)?;
+    let mut tx = state.pg.begin().await?;
+    if !invites::revoke(&mut *tx, None, id.uuid(), ctx.now).await? {
+        return Err(ApiError::not_found("pending invite"));
+    }
+    ctx.audit(None, Action::InstanceInviteRevoke)
+        .target("invite", id)
+        .write(&mut tx)
+        .await?;
+    tx.commit().await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 fn not_self(ctx: &Ctx, target: &users::User, what: &str) -> ApiResult<()> {
