@@ -28,16 +28,18 @@ import { RegionField } from "./region-field";
 import { EndpointField, endpointProblem } from "./endpoint-field";
 import { ServiceAccountFields, serviceAccountBlocked } from "./service-account-fields";
 import { AwsKeyFields, awsKeyBlocked, awsSecret, emptyAwsKey, type AwsKey, type AwsMethod } from "./aws-key-fields";
+import { EntraIdFields, emptyPrincipal, principalBlocked, principalSecret, type Principal } from "./entra-id-fields";
 import { keyTitle, providerOptions, useProviders } from "./providers";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
-type Method = "api_key" | "account" | "service_account" | AwsMethod;
+type Method = "api_key" | "account" | "service_account" | "service_principal" | AwsMethod;
 
 const isAws = (m: string | undefined): m is AwsMethod => m === "aws_access_key" || m === "aws_role";
 
 function methodOf(replace: CredentialView | undefined): Method {
   if (!replace || replace.auth_method === "api_key") return "api_key";
   if (replace.auth_method === "google_service_account") return "service_account";
+  if (replace.auth_method === "azure_service_principal") return "service_principal";
   if (isAws(replace.auth_method)) return replace.auth_method;
   return "account";
 }
@@ -105,6 +107,7 @@ export function ProviderKeyDialog({
   const [makeDefault, setMakeDefault] = useState(false);
   const [method, setMethod] = useState<Method>(methodOf(replace));
   const [aws, setAws] = useState<AwsKey>(emptyAwsKey);
+  const [principal, setPrincipal] = useState<Principal>(emptyPrincipal);
   const [location, setLocation] = useState<string | null>(replace?.location ?? null);
   const [accountId, setAccountId] = useState("");
   const [gatewayId, setGatewayId] = useState("");
@@ -141,6 +144,9 @@ export function ProviderKeyDialog({
   const awsSignIn = known?.aws ?? null;
   const withAws = isAws(method) && (awsSignIn !== null || !!replace);
   const awsRegions = known?.regions ?? null;
+  const entraId = known?.entra_id ?? null;
+  const withPrincipal = method === "service_principal";
+  const scopes = entraId?.scopes ?? [];
   const chosenLocation = location ?? serviceAccount?.default_location ?? "";
   const device = attempt?.device ?? null;
   const left = attempt ? deadline - now : 0;
@@ -258,7 +264,9 @@ export function ProviderKeyDialog({
               ? { secret: secret.trim(), location: chosenLocation }
               : isAws(method)
                 ? { secret: awsSecret(method, aws) }
-                : { secret: secret.trim() },
+                : withPrincipal
+                  ? { secret: principalSecret(principal, scopes) }
+                  : { secret: secret.trim() },
           }),
         );
       return data(
@@ -273,24 +281,33 @@ export function ProviderKeyDialog({
                 auth_method: method,
                 location: String(location),
               }
-            : withServiceAccount
+            : withPrincipal
               ? {
                   provider: chosen,
                   name: name.trim(),
-                  secret: secret.trim(),
+                  secret: principalSecret(principal, scopes),
                   make_default: makeDefault,
-                  auth_method: "google_service_account",
-                  location: chosenLocation,
+                  auth_method: "azure_service_principal",
+                  endpoint: endpoint.trim(),
                 }
-              : {
-                  provider: chosen,
-                  name: name.trim(),
-                  secret: secret.trim(),
-                  make_default: makeDefault,
-                  ...(accountScope ? { account_id: accountId.trim().toLowerCase(), ...(gatewayId.trim() ? { gateway_id: gatewayId.trim() } : {}) } : {}),
-                  ...(regions && location ? { location } : {}),
-                  ...(keyEndpoint ? { endpoint: endpoint.trim() } : {}),
-                },
+              : withServiceAccount
+                ? {
+                    provider: chosen,
+                    name: name.trim(),
+                    secret: secret.trim(),
+                    make_default: makeDefault,
+                    auth_method: "google_service_account",
+                    location: chosenLocation,
+                  }
+                : {
+                    provider: chosen,
+                    name: name.trim(),
+                    secret: secret.trim(),
+                    make_default: makeDefault,
+                    ...(accountScope ? { account_id: accountId.trim().toLowerCase(), ...(gatewayId.trim() ? { gateway_id: gatewayId.trim() } : {}) } : {}),
+                    ...(regions && location ? { location } : {}),
+                    ...(keyEndpoint ? { endpoint: endpoint.trim() } : {}),
+                  },
         }),
       );
     },
@@ -457,35 +474,96 @@ export function ProviderKeyDialog({
       </div>
     ),
   };
-  const awsMethodStep: DialogStep = {
+  const blockedPrincipal =
+    principalBlocked(principal) ?? endpointBlocked ?? (!replace && !name.trim() ? t("kaeso.providerKey.nameBlocked", "Give the key a name") : undefined);
+  const principalStep: DialogStep = {
+    id: "service-principal",
+    title: (
+      <span className="flex items-center gap-10">
+        {provider && (
+          <span aria-hidden className="flex">
+            <ProviderBadge provider={provider} name={label} size="lg" />
+          </span>
+        )}
+        {replace
+          ? t("kaeso.providerKey.entraNew", "Add the new service principal")
+          : t("kaeso.providerKey.entraTitle", "Add a Microsoft Entra ID service principal")}
+      </span>
+    ),
+    description: entraId
+      ? tRich("kaeso.providerKey.entraWhere", "Register an app at {site} under {page}; give it the {role} role on the resource.", {
+          site: (
+            <Link href={entraId.app_page.url} external>
+              {new URL(entraId.app_page.url).host}
+            </Link>
+          ),
+          page: entraId.app_page.label,
+          role: entraId.role,
+        })
+      : undefined,
+    blockedReason: blockedPrincipal,
+    content: (
+      <div className="flex flex-col gap-12">
+        <EntraIdFields value={principal} onValue={setPrincipal} scopes={scopes} />
+        {keyEndpoint && <EndpointField rule={keyEndpoint} value={endpoint} onValue={setEndpoint} />}
+        {!replace && (
+          <Input
+            label={t("common.name", "Name")}
+            placeholder={t("kaeso.providerKey.namePlaceholder", "Production")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+          />
+        )}
+      </div>
+    ),
+  };
+  const providerMethodStep: DialogStep = {
     id: "method",
-    title: t("kaeso.providerKey.awsMethodTitle", "How does Kaeso sign in to {provider}?", { provider: label }),
+    title: t("kaeso.providerKey.signInMethodTitle", "How does Kaeso sign in to {provider}?", { provider: label }),
     content: (
       <RadioGroup
         variant="cards"
         aria-label={t("kaeso.providerKey.method", "Sign-in method")}
         value={method}
         onValueChange={(v) => {
-          setMethod(v === "aws_access_key" || v === "aws_role" ? v : "api_key");
+          setMethod(isAws(v) ? v : v === "service_principal" ? "service_principal" : "api_key");
           setSecret("");
           setAws(emptyAwsKey);
+          setPrincipal(emptyPrincipal);
         }}
       >
         <Radio
           value="api_key"
-          label={t("kaeso.providerKey.bedrockApiKey", "Bedrock API key")}
-          description={t("kaeso.providerKey.bedrockApiKeyHint", "A key made in the Bedrock console; short-term ones expire.")}
+          {...(entraId
+            ? {
+                label: t("kaeso.providerKey.resourceKey", "Resource key"),
+                description: t("kaeso.providerKey.resourceKeyHint", "KEY 1 or KEY 2 of the resource, where key access is on."),
+              }
+            : {
+                label: t("kaeso.providerKey.bedrockApiKey", "Bedrock API key"),
+                description: t("kaeso.providerKey.bedrockApiKeyHint", "A key made in the Bedrock console; short-term ones expire."),
+              })}
         />
-        <Radio
-          value="aws_access_key"
-          label={t("kaeso.providerKey.awsAccessKey", "Access key")}
-          description={t("kaeso.providerKey.awsAccessKeyHint", "An IAM user's access key; Kaeso signs each request with it.")}
-        />
+        {awsSignIn && (
+          <Radio
+            value="aws_access_key"
+            label={t("kaeso.providerKey.awsAccessKey", "Access key")}
+            description={t("kaeso.providerKey.awsAccessKeyHint", "An IAM user's access key; Kaeso signs each request with it.")}
+          />
+        )}
         {awsSignIn?.gateway_identity && (
           <Radio
             value="aws_role"
             label={t("kaeso.providerKey.awsRole", "The gateway's AWS identity")}
             description={t("kaeso.providerKey.awsRoleHint", "The task, pod or instance role Kaeso runs with, or a role it assumes.")}
+          />
+        )}
+        {entraId && (
+          <Radio
+            value="service_principal"
+            label={t("kaeso.providerKey.entraId", "Microsoft Entra ID")}
+            description={t("kaeso.providerKey.entraIdHint", "A service principal; works where the resource allows no keys.")}
           />
         )}
       </RadioGroup>
@@ -686,12 +764,12 @@ export function ProviderKeyDialog({
     content: <ProviderChoice choices={choices} value={provider} onChoose={choose} />,
   };
   const signInStep = pastes ? accountStep : deviceStep;
-  const secretStep = withAws ? awsStep : serviceAccountStep && withServiceAccount ? serviceAccountStep : keyStep;
+  const secretStep = withAws ? awsStep : withPrincipal ? principalStep : serviceAccountStep && withServiceAccount ? serviceAccountStep : keyStep;
   const steps: DialogStep[] = replace
     ? [signingIn ? signInStep : secretStep]
     : [
         providerStep,
-        ...(account ? [methodStep] : serviceAccount ? [serviceAccountMethodStep] : awsSignIn ? [awsMethodStep] : []),
+        ...(account ? [methodStep] : serviceAccount ? [serviceAccountMethodStep] : awsSignIn || entraId ? [providerMethodStep] : []),
         ...(signingIn ? [...defaultStep, signInStep] : [secretStep, ...defaultStep]),
       ];
   const ready = signingIn
@@ -702,7 +780,9 @@ export function ProviderKeyDialog({
       ? !serviceAccountBlocked(secret) && (replace || name.trim())
       : isAws(method)
         ? !awsBlocked
-        : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && !endpointBlocked && (replace || name.trim());
+        : withPrincipal
+          ? !blockedPrincipal
+          : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && !endpointBlocked && (replace || name.trim());
 
   return (
     <StepDialog

@@ -65,6 +65,8 @@ pub struct Endpoints {
     pub chatgpt: Hosts,
     pub grok: Hosts,
     pub google_token: String,
+    /// Microsoft Entra ID's host, whose `/{tenant}/oauth2/v2.0/token` issues Azure keys' tokens.
+    pub azure_login: String,
 }
 
 impl Default for Endpoints {
@@ -79,6 +81,7 @@ impl Default for Endpoints {
                 api: "https://api.x.ai".into(),
             },
             google_token: kaeso_core::google::TOKEN_URI.to_owned(),
+            azure_login: kaeso_core::azure::LOGIN.to_owned(),
         }
     }
 }
@@ -91,7 +94,8 @@ impl Endpoints {
             AuthMethod::ApiKey
             | AuthMethod::GoogleServiceAccount
             | AuthMethod::AwsAccessKey
-            | AuthMethod::AwsRole => None,
+            | AuthMethod::AwsRole
+            | AuthMethod::AzureServicePrincipal => None,
         }
     }
 }

@@ -50,6 +50,7 @@ pub struct Inner {
     pub dns: Arc<dyn crate::services::dns::TxtLookup>,
     pub accounts: crate::services::provider_accounts::Endpoints,
     pub google_tokens: crate::services::google_auth::GoogleTokens,
+    pub azure_tokens: crate::services::azure_auth::AzureTokens,
     pub github_stars: crate::services::updates::GitHubStars,
     clickhouse_migrated: AtomicBool,
 }
@@ -150,6 +151,7 @@ impl AppState {
                 .unwrap_or_else(|| Arc::new(crate::services::dns::SystemResolver::default())),
             accounts: p.accounts.unwrap_or_default(),
             google_tokens: crate::services::google_auth::GoogleTokens::default(),
+            azure_tokens: crate::services::azure_auth::AzureTokens::default(),
             github_stars: crate::services::updates::GitHubStars::default(),
             clickhouse_migrated: AtomicBool::new(false),
         }))

@@ -76,7 +76,7 @@ Cerebras 没有 Responses、Messages、embeddings 或 token 计数端点（都�
 | `finish_reason: "content_filter"` | `StopReason::ContentFilter` | 也可出现在没有 `delta` 的 chunk 中（`streams/filter-blocked-doc`），以及没有 `content` 的回复中（`responses/filtered-blocklist-doc`）。 |
 | 带 `code: "content_filter"` 和 `innererror` 的 400 | `KppError` | `ContentFiltered`，带 Azure 的消息（`errors/content-filter-prompt-doc`）。 |
 | 字符串形式的数字 `error.code`，例如 `"401"` | `KppError` | 类型按状态码确定（`errors/recorded-invalid-api-key`）。 |
-| `{"statusCode": 401, "message": …}` | `KppError` | Azure 对看起来像 Entra ID 令牌的 Bearer 的回复（`errors/recorded-entra-token`）；Kaeso 发送 `api-key`，因此应用只会从其他客户端看到它。 |
+| `{"statusCode": 401, "message": …}` | `KppError` | Azure 对其不接受的 Entra ID 令牌的回复（`errors/recorded-entra-token`）；对于用 Entra ID 登录的密钥，这是一个被拒绝的密钥，消息会注明服务主体需要的角色。 |
 | `GET /openai/v1/models` | `ModelList` | 资源可以部署的模型，而不是它的部署，因此模型检查只显示密钥及其端点是否可用（`ModelListing::Catalogue`）。 |
 
 v1 API 以 OpenAI 的请求体提供 Responses，回复中另有 `content_filters`，保留在 extras 中；模型的**发送格式**为 Responses 时，Kaeso 以 Responses 发送它（`fixtures/openai_responses/providers/azure/`）。Claude 部署只响应 `{endpoint}/anthropic` 下的 Anthropic Messages API，图像、语音合成、转写和视频在 v1 API 中仅为预览版，因此 Kaeso 都不调用。Token 计数会被拒绝。

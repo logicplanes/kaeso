@@ -366,5 +366,6 @@
   "orgHome.keyWeightsHint": "每个调用方按权重抽取项目的一个密钥；被拒绝或受速率限制的密钥会让给下一个。",
   "orgHome.keyWeight": "在 {project} 中的权重",
   "orgHome.awsAccessKey": "访问密钥",
-  "orgHome.awsRole": "AWS 角色"
+  "orgHome.awsRole": "AWS 角色",
+  "orgHome.tenant": "租户"
 }

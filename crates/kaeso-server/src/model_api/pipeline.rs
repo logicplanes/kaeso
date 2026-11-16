@@ -749,6 +749,52 @@ pub(super) const KEY_REFUSED: &str = "The provider refused this project's provid
 
 const PERMISSION_REFUSED: &str = "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.";
 
+const AZURE_ROLE_REFUSED: &str = "Azure refused this project's Microsoft Entra ID service principal. It needs the Cognitive Services OpenAI User role on the resource; ask an organization admin to check it under Providers.";
+
+const ENTRA_REFUSED: &str = "Microsoft Entra ID refused the service principal of this project's Azure key, so it is signed out. Ask an organization admin to replace it under Providers.";
+
+const ENTRA_UNAVAILABLE: &str =
+    "Kaeso can't get an access token from Microsoft Entra ID right now. Try again shortly.";
+
+// The access token of an Azure key that is a service principal. A secret Entra ID refuses signs
+// the key out, and the people who change provider keys are told.
+async fn entra_token(
+    state: &AppState,
+    credential: &crate::services::credentials::Resolved,
+    key: &crate::services::azure_auth::Principal,
+) -> Result<secrecy::SecretString, (Stage, KppError)> {
+    use crate::services::azure_auth::{self, TokenError};
+    let org = key.org;
+    match azure_auth::access_token(state, credential.id.uuid(), credential.revision, key).await {
+        Ok(token) => Ok(token),
+        Err(TokenError::Refused { .. }) => {
+            let id = credential.id.uuid();
+            if let Err(e) = kaeso_store::pg::credentials::sign_out(
+                &state.pg,
+                id,
+                crate::services::credentials::SIGNED_OUT,
+            )
+            .await
+            {
+                tracing::error!(error = %e, "cannot mark a refused service principal signed out");
+            }
+            crate::services::credentials::forget_org(state, org).await;
+            crate::services::notifications::system::account_signed_out(state, org, id).await;
+            Err((
+                Stage::SignedOut(crate::services::credentials::ENTRA_ID),
+                error(ErrorKind::ProviderError, 502, ENTRA_REFUSED),
+            ))
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "cannot get an access token from Microsoft Entra ID");
+            Err((
+                Stage::Credential,
+                error(ErrorKind::ProviderError, 503, ENTRA_UNAVAILABLE),
+            ))
+        }
+    }
+}
+
 const ACCOUNT_REFUSED: &str = "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.";
 
 pub(crate) fn refused_key(err: &KppError) -> Option<KppError> {
@@ -1947,6 +1993,9 @@ async fn attempt(
             tracing::error!(error = %err, "cannot load a provider credential");
             fail(Stage::Credential)(error(ErrorKind::ProviderError, 503, "Kaeso cannot load the provider credential right now. Try again shortly."))
         }
+        CredentialError::SignedOut { product } if product == crate::services::credentials::ENTRA_ID => {
+            fail(Stage::SignedOut(product))(error(ErrorKind::ProviderError, 502, ENTRA_REFUSED))
+        }
         CredentialError::SignedOut { product } => fail(Stage::SignedOut(product))(error(
             ErrorKind::ProviderError,
             502,
@@ -2231,6 +2280,18 @@ async fn attempt(
     if let Some(held) = &mut rec.held {
         held.keep(kept.saturating_add(sent));
     }
+    let entra = match credential
+        .azure
+        .as_deref()
+        .filter(|_| credential.method == AuthMethod::AzureServicePrincipal)
+    {
+        Some(principal) => Some(
+            Box::pin(entra_token(state, &credential, principal))
+                .await
+                .map_err(|(stage, e)| fail(stage)(e))?,
+        ),
+        None => None,
+    };
     let keyed = crate::services::key_endpoint::base(state, &eff.provider, &credential)
         .map_err(fail(Stage::Credential))?;
     let account_base = match account {
@@ -2291,7 +2352,16 @@ async fn attempt(
         (None, None, Some(auth)) => Some(auth),
         (None, None, None) => eff.provider.auth(),
     };
-    let secret = platform.as_ref().map_or(&credential.secret, |p| &p.secret);
+    // An Entra ID token goes as a bearer in place of the resource key's `api-key`.
+    let auth = if entra.is_some() {
+        Some(kaeso_core::provider::AuthStyle::Bearer)
+    } else {
+        auth
+    };
+    let secret = entra
+        .as_ref()
+        .or(platform.as_ref().map(|p| &p.secret))
+        .unwrap_or(&credential.secret);
     // A key that signs with AWS credentials signs the request in place of an auth header, in
     // its own region whatever host the base URL names.
     let sigv4 = match (credential.method.is_aws(), credential.region.as_deref()) {
@@ -2626,6 +2696,13 @@ async fn attempt(
                 if let Some(refused) =
                     refused_custom_key(&err, &eff.provider, credential.is_keyless())
                         .or_else(|| refused_key(&err))
+                        .map(|r| {
+                            if credential.method == AuthMethod::AzureServicePrincipal {
+                                error(ErrorKind::ProviderError, 502, AZURE_ROLE_REFUSED)
+                            } else {
+                                r
+                            }
+                        })
                 {
                     // Temporary AWS credentials AWS refused, expired ones included, are fetched
                     // again for the next request.

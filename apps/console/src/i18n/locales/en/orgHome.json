@@ -365,6 +365,7 @@
   "orgHome.signInAgain": "Sign in again",
   "orgHome.signedOut": "Signed out",
   "orgHome.stage": "Stage",
+  "orgHome.tenant": "Tenant",
   "orgHome.usageBreakdown": "Usage breakdown",
   "orgHome.usesKeysNow": "Also uses {names}"
 }

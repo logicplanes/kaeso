@@ -44,6 +44,7 @@ struct Shared {
     received: Mutex<VecDeque<Received>>,
     made_up: AtomicU64,
     google_tokens: AtomicUsize,
+    azure_tokens: AtomicUsize,
     streams_started: AtomicUsize,
     streams_finished: AtomicUsize,
     streams_dropped: AtomicUsize,
@@ -516,6 +517,9 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         && let Some(stream) = converse_call(&path)
     {
         return converse(&ctx.fixtures, stream, &headers, &text);
+    }
+    if method == Method::POST && path.ends_with(AZURE_TOKEN_PATH) {
+        return azure_token(&ctx.shared, &text);
     }
     let platform = agent_platform_path(&path);
     if let Some(p) = &platform {
@@ -1144,6 +1148,12 @@ pub const GOOGLE_TOKEN_PATH: &str = "/token";
 /// How the access tokens the mock's token endpoint grants start.
 pub const GOOGLE_TOKEN_PREFIX: &str = "ya29.mock-";
 
+/// Microsoft Entra ID's token path under a tenant, `/{tenant}/oauth2/v2.0/token`.
+pub const AZURE_TOKEN_PATH: &str = "/oauth2/v2.0/token";
+
+/// How the mock's Entra ID access tokens start; each one ends in its number.
+pub const AZURE_TOKEN_PREFIX: &str = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.mock-";
+
 struct PlatformPath {
     project: bool,
     as_ai_studio: String,
@@ -1365,6 +1375,56 @@ fn stored_response(fixtures: &Path, method: &Method, id: &str) -> Response {
 }
 
 fn json_answer(status: StatusCode, body: &serde_json::Value) -> Response {
+    Response::builder()
+        .status(status)
+        .header("content-type", "application/json")
+        .body(Body::from(body.to_string()))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+// Microsoft Entra ID's client credentials grant: a client secret containing `refused` is refused as
+// Entra ID refuses an expired or wrong secret, `unavailable` answers 503, and `short` gets a token
+// that lasts 400 seconds.
+fn azure_token(shared: &Shared, form: &str) -> Response {
+    let field = |name: &str| {
+        url::form_urlencoded::parse(form.as_bytes())
+            .find(|(k, _)| k == name)
+            .map(|(_, v)| v.into_owned())
+            .unwrap_or_default()
+    };
+    let secret = field("client_secret");
+    let (status, body) = if field("grant_type") != "client_credentials" || field("scope").is_empty()
+    {
+        (
+            StatusCode::BAD_REQUEST,
+            serde_json::json!({"error": "invalid_request", "error_codes": [900144]}),
+        )
+    } else if secret.contains("refused") {
+        (
+            StatusCode::UNAUTHORIZED,
+            serde_json::json!({
+                "error": "invalid_client",
+                "error_description": "AADSTS7000215: Invalid client secret provided. Ensure the secret being sent in the request is the client secret value, not the client secret ID.",
+                "error_codes": [7000215]
+            }),
+        )
+    } else if secret.contains("unavailable") {
+        (
+            StatusCode::SERVICE_UNAVAILABLE,
+            serde_json::json!({"error": "temporarily_unavailable"}),
+        )
+    } else {
+        let n = shared.azure_tokens.fetch_add(1, Ordering::Relaxed) + 1;
+        let lifetime = if secret.contains("short") { 400 } else { 3599 };
+        (
+            StatusCode::OK,
+            serde_json::json!({
+                "token_type": "Bearer",
+                "expires_in": lifetime,
+                "access_token": format!("{AZURE_TOKEN_PREFIX}{n}")
+            }),
+        )
+    };
     Response::builder()
         .status(status)
         .header("content-type", "application/json")
