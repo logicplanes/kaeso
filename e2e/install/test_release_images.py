@@ -115,10 +115,17 @@ def test_the_github_release_job_can_run_again_on_an_existing_release():
     assert release.index('gh release view "v$VERSION"') < release.index('gh release create "v$VERSION"')
 
 
-def test_the_tag_job_pushes_only_the_tag_so_prod_can_take_updates_from_the_maintainer_alone():
+def test_the_tag_job_pushes_the_tag_then_only_tries_to_fast_forward_prod():
     tag = job("tag")
-    assert 'git push origin "refs/tags/v$VERSION"' in tag
-    assert "refs/heads/prod" not in tag.split("git fetch --no-tags origin +refs/heads/prod:refs/remotes/origin/prod", 1)[1]
+    after_fetch = tag.split("git fetch --no-tags origin +refs/heads/prod:refs/remotes/origin/prod", 1)[1]
+    tag_push = after_fetch.index('git push origin "refs/tags/v$VERSION"')
+    prod_push = after_fetch.index('git push origin "HEAD:refs/heads/prod"')
+    assert tag_push < prod_push, "prod moves only to a commit that is already tagged"
+    # Only the one plain push names prod: no force, no other ref, and a refusal doesn't fail the job.
+    assert after_fetch.count("refs/heads/prod") == 2
+    assert "--force" not in after_fetch and "+HEAD" not in after_fetch
+    assert 'if out="$(git push origin "HEAD:refs/heads/prod" 2>&1)"; then' in after_fetch
+    assert 'if [[ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]]; then' in after_fetch
     validate = job("validate")
     assert 'git merge-base --is-ancestor "$latest" HEAD' in validate
     sync = job("sync")

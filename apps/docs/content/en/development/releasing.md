@@ -25,7 +25,7 @@ Everything else reads the version instead of stating it. A page writes `\{{versi
 | Branch | What it is | Who changes it |
 | --- | --- | --- |
 | `dev` | The default branch, where all work lands | Pull requests only ([get it merged](contributing.md#get-it-merged)) |
-| `prod` | The commit the latest release ran on, or the commit about to become a release | The maintainer, always as a fast-forward |
+| `prod` | The latest release's tagged commit, or the commit about to become a release | The maintainer, always as a fast-forward |
 | `hotfix/X.Y.Z` | A fix for the latest release, branched from its tag | The maintainer, who pushes it to `prod` |
 
 `dev` and `prod` can't be deleted or force-pushed, only the maintainer can push to `prod`, and a `v*` tag can't be moved or deleted.
@@ -110,15 +110,18 @@ The **Labels** workflow sets the area labels and `internal` from the files a pul
 
    Approve the run's jobs as they wait. Before you approve **Tag**, read the notes in the summary of **Prepare** ([review before the tag](#review-before-the-tag)).
 
-5. Bring the release into `dev`. The run's **Sync dev** job tries, but `dev` only takes pull requests, so it usually finishes with a warning and shows the command to run. Merge by hand, which your bypass of the `dev` rules allows:
+5. Bring the release into `dev` and `prod`. The run's **Tag** job tries to fast-forward `prod` to the release commit, and its **Sync dev** job tries to merge the release into `dev`. Their tokens can't push past the rules of either branch, so both usually finish with a warning and show the command to run. Push by hand, which your bypass of the rules allows:
 
    ```bash
    git fetch origin --tags
+   git push origin v0.2.0^{commit}:refs/heads/prod
    git switch dev
    git pull --ff-only
    git merge --no-ff -m "Merge release 0.2.0 into dev" v0.2.0
    git push origin dev
    ```
+
+   The plugin directory on claude.ai reads the Claude Code plugin from `prod`, so its listing shows the released version once `prod` has the release commit.
 
 6. Deploy the sites from the release's tag ([deploy the sites](#deploy-the-sites)).
 
@@ -144,7 +147,7 @@ Release jobs restore no cache that another run could have written. The images bu
 
 The run starts on `prod`'s commit. When the version changes, the Tag job commits `Release X.Y.Z` on top of it and tags that commit `vX.Y.Z`. The release commit changes only `CHANGELOG.md` and the files `node scripts/version.mjs files` lists. Before it commits, the Tag job checks that these changes, apart from `CHANGELOG.md`, equal what `node scripts/version.mjs set` writes in a job of its own.
 
-The Tag job pushes only the tag: `prod` gets the release commit with the next push from `dev`, which has it from step 5. Every image, package and asset is built from the tag.
+The Tag job pushes the tag and then fast-forwards `prod` to the release commit, or leaves that push to you in step 5. Every image, package and asset is built from the tag.
 
 `gh attestation verify` and the updater check the attestations of the images and of `release.json`. They name the commit the run started on, since GitHub signs them for the run, and `release.json` names the same commit. The build provenance inside each image, which BuildKit writes, names the tag's commit as its source. The tag's commit is therefore the attested commit, or a release commit directly on top of it that changes only the version and the changelog.
 
@@ -154,7 +157,7 @@ Run the Release workflow on `prod` with a version such as `0.2.0-rc.1`. A pre-re
 
 ## Make a hotfix
 
-A hotfix fixes the latest release without what `dev` has gathered since. It works while `prod` is still at the commit that release ran on.
+A hotfix fixes the latest release without what `dev` has gathered since. It works while `prod` hasn't moved past that release's tag.
 
 1. Branch from the release's tag:
 
