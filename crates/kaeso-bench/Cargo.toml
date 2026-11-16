@@ -12,6 +12,8 @@ publish.workspace = true
 [dependencies]
 mimalloc.workspace = true
 kaeso-server.workspace = true
+kaeso-core.workspace = true
+kaeso-kpp.workspace = true
 kaeso-testkit.workspace = true
 tokio = { workspace = true, features = ["process"] }
 hyper = { workspace = true, features = ["client"] }

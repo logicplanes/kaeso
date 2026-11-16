@@ -799,5 +799,18 @@
   "errors.guardrails.unloaded": "Kaeso 暂时无法加载此项目的防护规则。请稍后重试。",
   "errors.guardrails.urlCredentials": "`url` 不能包含用户名或密码。",
   "errors.guardrails.urlHost": "`url` 必须是带主机的完整 URL，例如 `https://guardrail.example.com`。",
-  "errors.notFound.guardrail": "没有这条防护规则，或者您无法查看它。"
+  "errors.notFound.guardrail": "没有这条防护规则，或者您无法查看它。",
+  "errors.guardrails.urlOnlyHttp": "`url` 仅适用于类型为 `http` 的防护规则。",
+  "errors.guardrails.rulesOnlyRules": "`rules` 仅适用于类型为 `rules` 的防护规则。",
+  "errors.guardrails.rulesNeeded": "类型为 `rules` 的防护规则需要 `rules`。",
+  "errors.guardrails.urlNeeded": "类型为 `http` 的防护规则需要 `url`。",
+  "errors.guardrails.rulesRequestsOnly": "内置规则只检查请求；请省略 `phases`。",
+  "errors.guardrails.rulesEmpty": "`rules` 需要一个检测器或一个自定义模式。",
+  "errors.guardrails.tooManyPatterns": "`rules.custom` 最多包含 20 个模式。",
+  "errors.guardrails.patternName": "模式 {n} 需要一个由小写字母、数字和 `_` 组成、且未被检测器使用的名称。",
+  "errors.guardrails.patternRepeated": "模式 {n} 与前面的某个模式重名。",
+  "errors.guardrails.patternLength": "模式 {n} 的长度必须为 1 到 500 个字符。",
+  "errors.guardrails.patternInvalid": "模式 {n} 不是 Kaeso 能编译的正则表达式。",
+  "errors.guardrails.noSecret": "内置规则没有签名密钥。",
+  "errors.guardrails.sampleTooLong": "`text` 最多 100000 个字符。"
 }

@@ -265,5 +265,14 @@
   "format.guardrail.status": "返回了错误",
   "format.guardrail.timeout": "未及时回答",
   "format.guardrail.unreachable": "无法连接",
-  "format.targetKind.guardrail": "防护规则"
+  "format.targetKind.guardrail": "防护规则",
+  "format.guardrail.found.apiKey": "{count, plural, other {# 个 API 密钥}}",
+  "format.guardrail.found.card": "{count, plural, other {# 个卡号}}",
+  "format.guardrail.found.custom": "{name} 的 {count, plural, other {# 处匹配}}",
+  "format.guardrail.found.email": "{count, plural, other {# 个电子邮件地址}}",
+  "format.guardrail.found.iban": "{count, plural, other {# 个 IBAN}}",
+  "format.guardrail.found.ip": "{count, plural, other {# 个 IP 地址}}",
+  "format.guardrail.found.phone": "{count, plural, other {# 个电话号码}}",
+  "format.guardrail.found.privateKey": "{count, plural, other {# 个私钥}}",
+  "format.guardrail.found.token": "{count, plural, other {# 个 JSON Web Token}}"
 }

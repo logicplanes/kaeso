@@ -509,8 +509,28 @@ describe("LogInspector", () => {
       entries: [
         logEntry({
           guardrails: [
-            { guardrail: "grd_pii", name: "PII check", phase: "request", action: "replace", category: "pii", failure: null, status: null, duration_ms: 18 },
-            { guardrail: "grd_out", name: "Output check", phase: "reply", action: "allow", category: null, failure: "status", status: 502, duration_ms: 1200 },
+            {
+              guardrail: "grd_pii",
+              name: "PII check",
+              phase: "request",
+              action: "replace",
+              category: "pii",
+              failure: null,
+              status: null,
+              duration_ms: 18,
+              found: {},
+            },
+            {
+              guardrail: "grd_out",
+              name: "Output check",
+              phase: "reply",
+              action: "allow",
+              category: null,
+              failure: "status",
+              status: 502,
+              duration_ms: 1200,
+              found: {},
+            },
             {
               guardrail: "grd_slow",
               name: "Slow check",
@@ -520,6 +540,7 @@ describe("LogInspector", () => {
               failure: "timeout",
               status: null,
               duration_ms: 2000,
+              found: { api_key: 1, order_id: 2 },
             },
           ],
         }),
@@ -529,7 +550,7 @@ describe("LogInspector", () => {
     const guardrails = section(await sheet(), "Guardrails");
     expect(guardrails).toHaveTextContent("PII checkRequest: Rewritten in 18 msCategory pii");
     expect(guardrails).toHaveTextContent("Output checkReply: Allowed in 1.2 sAnswered with an error (502)");
-    expect(guardrails).toHaveTextContent("Slow checkRequest: Blocked in 2.0 sNo answer in time");
+    expect(guardrails).toHaveTextContent("Slow checkRequest: Blocked in 2.0 sFound 1 API key, 2 matches of order_idNo answer in time");
   });
 
   it("names what it can't open as plain text, and opens a service account's sheet", async () => {

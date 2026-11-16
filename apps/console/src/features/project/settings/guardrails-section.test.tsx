@@ -24,7 +24,9 @@ const used = (over: Partial<ProjectGuardrailView> = {}): ProjectGuardrailView =>
 const org = (over: Partial<GuardrailView> = {}): GuardrailView =>
   ({
     ...used(),
+    kind: "http",
     url: "https://guardrail.example.com/check",
+    rules: null,
     projects: [],
     created_by: { kind: "user", id: "usr_ada", name: "Ada Okafor" },
     created_at: "2026-11-01T10:00:00Z",

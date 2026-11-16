@@ -2639,6 +2639,8 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
+ "kaeso-core",
+ "kaeso-kpp",
  "kaeso-server",
  "kaeso-testkit",
  "mimalloc",

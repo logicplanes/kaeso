@@ -4,6 +4,7 @@ mod client;
 mod gateway;
 mod harness;
 mod machine;
+mod masking;
 mod report;
 mod scenarios;
 mod stats;
@@ -143,6 +144,7 @@ impl Options {
                     Scenario::Mixed,
                     Scenario::Portal,
                     Scenario::Agent,
+                    Scenario::Masking,
                 ]
             } else {
                 self.scenarios

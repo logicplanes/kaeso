@@ -26,6 +26,7 @@ pub(crate) enum Scenario {
     Mixed,
     Portal,
     Agent,
+    Masking,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -151,6 +152,7 @@ pub(crate) struct Results {
     pub(crate) mixed: Option<MixedResult>,
     pub(crate) portal: Option<Baseline>,
     pub(crate) agent: Option<AgentResult>,
+    pub(crate) masking: Option<crate::masking::MaskingResult>,
     pub(crate) checks: Vec<Check>,
 }
 
@@ -219,6 +221,25 @@ pub(crate) async fn run(plan: &Plan, install: &mut Install) -> Results {
             Scenario::Agent => {
                 bench.fresh("agent").await;
                 bench.agent().await;
+            }
+            Scenario::Masking => {
+                let r = crate::masking::run(if plan.smoke { 1 } else { 16 }).await;
+                bench.check(
+                    "masking",
+                    "built-in rules found every planted value",
+                    r.found == r.planted,
+                    format!("{} of {} over {} MB", r.found, r.planted, r.megabytes),
+                );
+                // A debug build scans far slower than a release; its speed says nothing.
+                if !cfg!(debug_assertions) {
+                    bench.check(
+                        "masking",
+                        "built-in rules scan at least 1 MB a second",
+                        r.megabytes_per_second >= 1.0,
+                        format!("{:.1} MB/s over {} MB", r.megabytes_per_second, r.megabytes),
+                    );
+                }
+                bench.results.masking = Some(r);
             }
         }
     }

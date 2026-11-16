@@ -13,8 +13,10 @@ const ONE = "orgs/:org/guardrails/:guardrail";
 function guardrail(over: Partial<GuardrailView> = {}): GuardrailView {
   return {
     id: "grd_pii",
+    kind: "http",
     name: "PII check",
     url: "https://guardrail.example.com/check",
+    rules: null,
     timeout_ms: 2000,
     on_error: "block",
     phases: ["request"],
@@ -100,6 +102,7 @@ describe("guardrails", () => {
     await screen.findByText("No guardrails yet");
     await user.keyboard("c");
     const dialog = await screen.findByRole("dialog", { name: "Add guardrail" });
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await retype(user, within(dialog).getByLabelText("Name"), "PII check");
     await fill(user, within(dialog).getByLabelText("Address"), "https://guardrail.example.com/check");
     await user.click(within(dialog).getByRole("button", { name: "Continue" }));
@@ -113,6 +116,7 @@ describe("guardrails", () => {
     expect(await screen.findByRole("textbox", { name: "Key for PII check" })).toHaveTextContent("whsec_abc123");
     expect(requests("POST", LIST).map((r) => r.body)).toEqual([
       {
+        kind: "http",
         name: "PII check",
         url: "https://guardrail.example.com/check",
         phases: ["request", "reply"],
@@ -134,6 +138,7 @@ describe("guardrails", () => {
     await screen.findByText("No guardrails yet");
     await user.click(screen.getAllByRole("button", { name: "Add guardrail" })[0] as HTMLElement);
     const dialog = await screen.findByRole("dialog", { name: "Add guardrail" });
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Give the guardrail a name");
     await retype(user, within(dialog).getByLabelText("Name"), "PII check");
     await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Enter its address");
@@ -233,7 +238,7 @@ describe("guardrails", () => {
     signedIn();
     on("GET", LIST, paged([guardrail({ phases: ["request", "reply"] })]));
     const answers: GuardrailTestResult[] = [
-      { action: "block", category: "pii", message: "No emails.", messages: null, failure: null, status: null, duration_ms: 12 },
+      { action: "block", category: "pii", message: "No emails.", messages: null, failure: null, status: null, duration_ms: 12, found: {} },
       {
         action: "replace",
         category: null,
@@ -242,8 +247,9 @@ describe("guardrails", () => {
         failure: null,
         status: null,
         duration_ms: 9,
+        found: {},
       },
-      { action: null, category: null, message: null, messages: null, failure: "status", status: 500, duration_ms: 3 },
+      { action: null, category: null, message: null, messages: null, failure: "status", status: 500, duration_ms: 3, found: {} },
     ];
     let n = 0;
     on("POST", `${ONE}/test`, () => answers[n++]);
@@ -299,6 +305,7 @@ describe("guardrails", () => {
       failure: failures[n++],
       status: null,
       duration_ms: 1,
+      found: {},
     }));
     const { user } = await renderApp(PATH);
     await menuOf(user, "PII check");

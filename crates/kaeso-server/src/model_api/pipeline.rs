@@ -185,6 +185,7 @@ impl Recording {
                     }
                 }
             }
+            crate::services::guardrails::rules::mask_logged(&mut o);
             sink.finish_charged(&state, o, done).await;
         });
         charged
@@ -320,6 +321,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         generation: None,
         content_type: None,
         guardrails: Vec::new(),
+        log_masks: Vec::new(),
     }
 }
 
@@ -1164,7 +1166,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         ));
     }
     let guards = Box::pin(guard_request(
-        state, rec, &caller, source, ingress, &mut req,
+        state,
+        rec,
+        &caller,
+        (source, ingress, request_bytes),
+        &mut req,
     ))
     .await?;
     let sh = Shared {
@@ -1238,8 +1244,7 @@ async fn guard_request(
     state: &AppState,
     rec: &mut Recording,
     caller: &Caller,
-    source: Source,
-    ingress: DialectId,
+    (source, ingress, request_bytes): (Source, DialectId, usize),
     req: &mut Request,
 ) -> Result<Option<Guards>, Failure> {
     let Request::Generate(g) = req else {
@@ -1270,19 +1275,26 @@ async fn guard_request(
         model: g.model.clone(),
         format: ingress.as_str(),
         source: source.as_str(),
+        request_bytes,
     };
     let mut runs = Vec::new();
+    let mut masks = crate::services::guardrails::Masks::default();
     let checked = Box::pin(crate::services::guardrails::check_request(
-        state, &armed, &ctx, g, &mut runs,
+        state, &armed, &ctx, g, &mut runs, &mut masks,
     ))
     .await;
     rec.outcome().guardrails = runs;
+    rec.outcome().log_masks = masks.logged;
     if let Err(e) = checked {
         // A blocked request reached no provider; it still counts against the request rates.
         let _ = crate::services::limits::admit_follow_up(state, caller, None, now).await;
         return Err(Failure::new(e, Stage::Guardrail));
     }
-    Ok(Some(Guards { armed, ctx }))
+    Ok(Some(Guards {
+        armed,
+        ctx,
+        restorer: masks.restorer,
+    }))
 }
 
 // The reply phase, on a whole reply: the guardrails that check replies see it before it is
@@ -1345,6 +1357,15 @@ struct Shared<'a> {
 struct Guards {
     armed: Arc<crate::services::guardrails::Armed>,
     ctx: crate::services::guardrails::Context,
+    restorer: Option<kaeso_core::masking::Restorer>,
+}
+
+impl Guards {
+    fn restore(&self, reply: &mut Reply) {
+        if let (Some(r), Reply::Generate(g)) = (&self.restorer, reply) {
+            crate::services::guardrails::rules::restore_reply(r, g);
+        }
+    }
 }
 
 impl Shared<'_> {
@@ -1976,6 +1997,9 @@ async fn attempt(
             ))
             .await
             .map_err(fail(Stage::Guardrail))?;
+            if let Some(g) = sh.guards {
+                g.restore(&mut stored.reply);
+            }
             let encode_ctx = EncodeCtx::for_request(Arc::clone(&app_req)).with_created_at(
                 u64::try_from(rec.outcome().started_at.unix_timestamp()).unwrap_or(0),
             );
@@ -2191,6 +2215,9 @@ async fn attempt(
                 record_usage(rec, &reply, counter).await;
                 return Err(fail(Stage::Guardrail)(e));
             }
+            if let Some(g) = sh.guards {
+                g.restore(&mut reply);
+            }
             let out = dispatch::encode_response(ingress, &reply, &encode_ctx);
             reply_with(state, rec, reply, out, counter, carry, &served)
                 .await
@@ -2267,6 +2294,11 @@ async fn attempt(
                 account,
                 taken: taken.clone(),
                 binary: None,
+                restoring: sh
+                    .guards
+                    .and_then(|g| g.restorer.clone())
+                    .filter(|_| kind == RequestKind::Generate)
+                    .map(crate::services::guardrails::rules::Restoring::new),
             };
             let media_type = dispatch::stream_media_type(ingress, &encode_ctx);
             let aborted = stream::Aborted::default();
@@ -2491,6 +2523,9 @@ async fn attempt(
             {
                 record_usage(rec, &reply, counter).await;
                 return Err(fail(Stage::Guardrail)(e));
+            }
+            if let Some(g) = sh.guards {
+                g.restore(&mut reply);
             }
             let (reply, out, media_type) = off_thread(size, move || {
                 let out = dispatch::encode_response(ingress, &reply, &encode_ctx);

@@ -799,5 +799,18 @@
   "errors.guardrails.unloaded": "Kaeso kann die Guardrails dieses Projekts gerade nicht laden. Versuchen Sie es gleich noch einmal.",
   "errors.guardrails.urlCredentials": "`url` darf keinen Benutzernamen und kein Passwort enthalten.",
   "errors.guardrails.urlHost": "`url` muss eine vollständige URL mit Host sein, etwa `https://guardrail.example.com`.",
-  "errors.notFound.guardrail": "Diese Guardrail gibt es nicht, oder Sie können sie nicht sehen."
+  "errors.notFound.guardrail": "Diese Guardrail gibt es nicht, oder Sie können sie nicht sehen.",
+  "errors.guardrails.urlOnlyHttp": "`url` gibt es nur für Guardrails der Art `http`.",
+  "errors.guardrails.rulesOnlyRules": "`rules` gibt es nur für Guardrails der Art `rules`.",
+  "errors.guardrails.rulesNeeded": "Guardrails der Art `rules` brauchen `rules`.",
+  "errors.guardrails.urlNeeded": "Guardrails der Art `http` brauchen eine `url`.",
+  "errors.guardrails.rulesRequestsOnly": "Eingebaute Regeln prüfen nur Anfragen; lassen Sie `phases` weg.",
+  "errors.guardrails.rulesEmpty": "`rules` braucht einen Detektor oder ein eigenes Muster.",
+  "errors.guardrails.tooManyPatterns": "`rules.custom` nimmt höchstens 20 Muster.",
+  "errors.guardrails.patternName": "Muster {n} braucht einen Namen aus Kleinbuchstaben, Ziffern und `_`, den kein Detektor nutzt.",
+  "errors.guardrails.patternRepeated": "Muster {n} wiederholt den Namen eines früheren.",
+  "errors.guardrails.patternLength": "Muster {n} muss 1 bis 500 Zeichen lang sein.",
+  "errors.guardrails.patternInvalid": "Muster {n} ist kein regulärer Ausdruck, den Kaeso kompilieren kann.",
+  "errors.guardrails.noSecret": "Eingebaute Regeln haben kein Signatur-Secret.",
+  "errors.guardrails.sampleTooLong": "`text` nimmt höchstens 100000 Zeichen."
 }

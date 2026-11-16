@@ -56,7 +56,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { toast } from "~/shell/toast";
 import { readDraft, writeDraft } from "../playground/draft";
 import { playgroundStart } from "./playground-start";
-import { guardrailActionLabel, guardrailFailureLabel, guardrailPhaseLabel } from "~/format/guardrails";
+import { foundLabel, guardrailActionLabel, guardrailFailureLabel, guardrailPhaseLabel } from "~/format/guardrails";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -672,6 +672,15 @@ function Overview({
                   {g.category && (
                     <Text variant="small" tone="secondary">
                       {t("logs.inspector.guardrailCategory", "Category {category}", { category: g.category })}
+                    </Text>
+                  )}
+                  {Object.keys(g.found).length > 0 && (
+                    <Text variant="small" tone="secondary">
+                      {t("logs.inspector.guardrailFound", "Found {what}", {
+                        what: Object.entries(g.found)
+                          .map(([k, n]) => foundLabel(k, n))
+                          .join(t("orgHome.listSeparator", ", ")),
+                      })}
                     </Text>
                   )}
                   {g.failure && (

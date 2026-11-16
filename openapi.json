@@ -9627,6 +9627,86 @@
         "x-kaeso-access": "right:guardrails.manage"
       }
     },
+    "/platform/v1/orgs/{org}/guardrails/try": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Tries built-in rules on a sample text before they are saved.",
+        "description": "The answer is what a request with that text would get: the text as masked, what\neach kind found and whether a rule blocks it. Nothing is stored.\n\n**Right:** `guardrails.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgGuardrailsTry",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuardrailRulesTry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuardrailTestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:guardrails.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/guardrails/{guardrail}": {
       "get": {
         "tags": [
@@ -28971,10 +29051,20 @@
         "type": "object",
         "description": "A new guardrail.",
         "required": [
-          "name",
-          "url"
+          "name"
         ],
         "properties": {
+          "kind": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailKind",
+                "description": "How it checks; `http` when absent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "name": {
             "type": "string",
             "description": "The name people and apps see, 1 to 100 characters.",
@@ -29001,6 +29091,17 @@
             },
             "description": "When it checks; `[\"request\"]` when absent."
           },
+          "rules": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailRules",
+                "description": "For `rules`: what they find and what they do."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "streams": {
             "oneOf": [
               {
@@ -29022,8 +29123,11 @@
             "minimum": 0
           },
           "url": {
-            "type": "string",
-            "description": "The address Kaeso posts to.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For `http`: the address Kaeso posts to.",
             "example": "https://guardrail.example.com/check"
           }
         },
@@ -29046,6 +29150,14 @@
           "grd_01k7a3f8m2xq4v9c5r6t8w0yz1"
         ],
         "pattern": "^grd_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "GuardrailKind": {
+        "type": "string",
+        "description": "How a guardrail checks.",
+        "enum": [
+          "http",
+          "rules"
+        ]
       },
       "GuardrailMessage": {
         "type": "object",
@@ -29358,6 +29470,28 @@
         ],
         "description": "A part of a message: text, a tool call or result, or media as its type and\nsize."
       },
+      "GuardrailPattern": {
+        "type": "object",
+        "required": [
+          "name",
+          "pattern",
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/GuardrailRuleAction",
+            "description": "What a match does."
+          },
+          "name": {
+            "type": "string",
+            "description": "1 to 32 lowercase letters, digits and `_`, starting with a letter; the placeholder is\nthe name in capitals, as in `[ORDER_ID_1]`."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "A regular expression in the `regex` crate's syntax, at most 500 characters."
+          }
+        }
+      },
       "GuardrailPhase": {
         "type": "string",
         "description": "When a guardrail checks: before a request goes to a model, or before a\nreply goes back.",
@@ -29365,6 +29499,73 @@
           "request",
           "reply"
         ]
+      },
+      "GuardrailRuleAction": {
+        "type": "string",
+        "enum": [
+          "mask",
+          "block",
+          "flag"
+        ]
+      },
+      "GuardrailRules": {
+        "type": "object",
+        "description": "What built-in rules look for and what they do with it.",
+        "properties": {
+          "custom": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuardrailPattern"
+            },
+            "description": "The organization's own patterns."
+          },
+          "detectors": {
+            "type": "object",
+            "description": "The detectors that run, with their action; a detector left out is off.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/GuardrailRuleAction"
+            },
+            "propertyNames": {
+              "type": "string",
+              "enum": [
+                "secrets",
+                "email",
+                "phone",
+                "iban",
+                "card",
+                "ip"
+              ]
+            }
+          },
+          "mask_log": {
+            "type": "boolean",
+            "description": "Mask every value found in the request log, also those the request sends unchanged."
+          },
+          "restore": {
+            "type": "boolean",
+            "description": "Put the original values back where the model's reply names their placeholders."
+          }
+        }
+      },
+      "GuardrailRulesTry": {
+        "type": "object",
+        "description": "Rules and a sample text to try them on; Kaeso stores neither.",
+        "required": [
+          "rules",
+          "text"
+        ],
+        "properties": {
+          "rules": {
+            "$ref": "#/components/schemas/GuardrailRules",
+            "description": "The rules."
+          },
+          "text": {
+            "type": "string",
+            "description": "The sample, at most 100000 characters.",
+            "example": "Mail ada@example.com"
+          }
+        },
+        "additionalProperties": false
       },
       "GuardrailRunView": {
         "type": "object",
@@ -29374,7 +29575,8 @@
           "name",
           "phase",
           "action",
-          "duration_ms"
+          "duration_ms",
+          "found"
         ],
         "properties": {
           "action": {
@@ -29405,6 +29607,21 @@
                 "type": "null"
               }
             ]
+          },
+          "found": {
+            "type": "object",
+            "description": "For built-in rules: how many values each kind found, such as `api_key`; never the\nvalues.",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "type": "string"
+            },
+            "example": {
+              "api_key": 1
+            }
           },
           "guardrail": {
             "$ref": "#/components/schemas/GuardrailId",
@@ -29488,7 +29705,8 @@
         "type": "object",
         "description": "What a guardrail answered to a sample.",
         "required": [
-          "duration_ms"
+          "duration_ms",
+          "found"
         ],
         "properties": {
           "action": {
@@ -29525,6 +29743,21 @@
                 "type": "null"
               }
             ]
+          },
+          "found": {
+            "type": "object",
+            "description": "For `rules`: how many values each kind found, such as `api_key`.",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "type": "string"
+            },
+            "example": {
+              "api_key": 1
+            }
           },
           "message": {
             "type": [
@@ -29586,6 +29819,17 @@
             },
             "description": "When it checks."
           },
+          "rules": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailRules",
+                "description": "For `rules`: new rules, replacing the old ones."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "streams": {
             "oneOf": [
               {
@@ -29611,18 +29855,18 @@
               "string",
               "null"
             ],
-            "description": "A new address."
+            "description": "For `http`: a new address."
           }
         },
         "additionalProperties": false
       },
       "GuardrailView": {
         "type": "object",
-        "description": "An HTTP service of the organization that Kaeso asks before a request goes\nto a model and, optionally, before a reply goes back.",
+        "description": "A check of the organization that Kaeso runs before a request goes to a model\nand, optionally, before a reply goes back: an HTTP service or built-in rules.",
         "required": [
           "id",
+          "kind",
           "name",
-          "url",
           "timeout_ms",
           "on_error",
           "phases",
@@ -29646,6 +29890,10 @@
           "id": {
             "$ref": "#/components/schemas/GuardrailId",
             "description": "Id."
+          },
+          "kind": {
+            "$ref": "#/components/schemas/GuardrailKind",
+            "description": "How it checks."
           },
           "name": {
             "type": "string",
@@ -29676,6 +29924,17 @@
             "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change or delete\nthe guardrail only if nothing changed it since.",
             "example": 1
           },
+          "rules": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/GuardrailRules",
+                "description": "For `rules`: what they find and what they do."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "streams": {
             "$ref": "#/components/schemas/GuardrailStreams",
             "description": "What it does with streamed replies."
@@ -29693,8 +29952,11 @@
             "description": "Last changed."
           },
           "url": {
-            "type": "string",
-            "description": "The address Kaeso posts to.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For `http`: the address Kaeso posts to.",
             "example": "https://guardrail.example.com/check"
           }
         }
@@ -29703,8 +29965,7 @@
         "type": "object",
         "description": "A guardrail with its signing secret, shown only in this answer.",
         "required": [
-          "guardrail",
-          "secret"
+          "guardrail"
         ],
         "properties": {
           "guardrail": {
@@ -29712,8 +29973,11 @@
             "description": "The guardrail."
           },
           "secret": {
-            "type": "string",
-            "description": "The secret Kaeso signs its requests with (Standard Webhooks), shown once.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For `http`: the secret Kaeso signs its requests with (Standard Webhooks), shown\nonce.",
             "example": "whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw"
           }
         }
@@ -31849,11 +32113,11 @@
             "type": "array",
             "items": {
               "type": "object",
-              "description": "An HTTP service of the organization that Kaeso asks before a request goes\nto a model and, optionally, before a reply goes back.",
+              "description": "A check of the organization that Kaeso runs before a request goes to a model\nand, optionally, before a reply goes back: an HTTP service or built-in rules.",
               "required": [
                 "id",
+                "kind",
                 "name",
-                "url",
                 "timeout_ms",
                 "on_error",
                 "phases",
@@ -31877,6 +32141,10 @@
                 "id": {
                   "$ref": "#/components/schemas/GuardrailId",
                   "description": "Id."
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/GuardrailKind",
+                  "description": "How it checks."
                 },
                 "name": {
                   "type": "string",
@@ -31907,6 +32175,17 @@
                   "description": "Goes up with every change. Send it as `If-Match: \"<revision>\"` to change or delete\nthe guardrail only if nothing changed it since.",
                   "example": 1
                 },
+                "rules": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/GuardrailRules",
+                      "description": "For `rules`: what they find and what they do."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "streams": {
                   "$ref": "#/components/schemas/GuardrailStreams",
                   "description": "What it does with streamed replies."
@@ -31924,8 +32203,11 @@
                   "description": "Last changed."
                 },
                 "url": {
-                  "type": "string",
-                  "description": "The address Kaeso posts to.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "For `http`: the address Kaeso posts to.",
                   "example": "https://guardrail.example.com/check"
                 }
               }

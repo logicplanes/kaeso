@@ -1,4 +1,5 @@
 pub mod contract;
+pub mod rules;
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -117,6 +118,9 @@ pub struct Run {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub status: Option<u16>,
     pub duration_ms: u64,
+    /// For built-in rules: how many values each kind found, such as `api_key`.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub found: std::collections::BTreeMap<String, u32>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -142,12 +146,18 @@ impl OnError {
     }
 }
 
+/// How a guardrail checks: an HTTP service of the organization, or built-in rules.
+#[derive(Debug)]
+pub enum Checker {
+    Http { url: Url, key: SecretBox<Vec<u8>> },
+    Rules(Arc<kaeso_core::masking::Scanner>),
+}
+
 #[derive(Debug)]
 pub struct Guardrail {
     pub id: Uuid,
     pub name: String,
-    pub url: Url,
-    key: SecretBox<Vec<u8>>,
+    pub checker: Checker,
     pub timeout: Duration,
     pub on_error: OnError,
     pub request: bool,
@@ -175,6 +185,8 @@ pub enum LoadError {
     Store(#[from] StoreError),
     #[error(transparent)]
     Crypto(#[from] CryptoError),
+    #[error("a guardrail's rules can't be read")]
+    Rules,
 }
 
 fn aad(id: Uuid) -> Vec<u8> {
@@ -209,24 +221,36 @@ fn key_of(secret: &[u8]) -> Result<SecretBox<Vec<u8>>, CryptoError> {
 pub fn opened(
     state: &AppState,
     row: &GuardrailRow,
-    sealed: store::SealedSecret,
+    sealed: Option<store::SealedSecret>,
 ) -> Result<Guardrail, LoadError> {
-    let secret = kaeso_crypto::open(
-        &state.keyring,
-        &kaeso_crypto::Sealed {
-            ciphertext: sealed.ciphertext,
-            nonce: sealed.nonce,
-            wrapped_key: sealed.wrapped_key,
-            key_id: sealed.key_id,
-        },
-        &aad(row.id),
-    )?;
-    let url = Url::parse(&row.url).map_err(|_| CryptoError::Malformed)?;
+    let checker = match (&row.rules, &row.url, sealed) {
+        (Some(rules), _, _) => {
+            let rules: kaeso_core::masking::Rules =
+                serde_json::from_value(rules.clone()).map_err(|_| LoadError::Rules)?;
+            Checker::Rules(Arc::new(rules.compile().map_err(|_| LoadError::Rules)?))
+        }
+        (None, Some(url), Some(sealed)) => {
+            let secret = kaeso_crypto::open(
+                &state.keyring,
+                &kaeso_crypto::Sealed {
+                    ciphertext: sealed.ciphertext,
+                    nonce: sealed.nonce,
+                    wrapped_key: sealed.wrapped_key,
+                    key_id: sealed.key_id,
+                },
+                &aad(row.id),
+            )?;
+            Checker::Http {
+                url: Url::parse(url).map_err(|_| CryptoError::Malformed)?,
+                key: key_of(secret.expose_secret())?,
+            }
+        }
+        _ => return Err(LoadError::Rules),
+    };
     Ok(Guardrail {
         id: row.id,
         name: row.name.clone(),
-        url,
-        key: key_of(secret.expose_secret())?,
+        checker,
         timeout: Duration::from_millis(u64::try_from(row.timeout_ms).unwrap_or(2000)),
         on_error: OnError::of(&row.on_error),
         request: row.request_phase,
@@ -301,6 +325,16 @@ pub struct Context {
     pub model: String,
     pub format: &'static str,
     pub source: &'static str,
+    /// The request's size, so built-in rules scan a large one off the async threads.
+    pub request_bytes: usize,
+}
+
+/// What built-in rules leave for later steps of a request: the values its log masks and the
+/// placeholders its reply gets back.
+#[derive(Clone, Debug, Default)]
+pub struct Masks {
+    pub logged: Vec<(String, String)>,
+    pub restorer: Option<kaeso_core::masking::Restorer>,
 }
 
 /// A guardrail's answer, or why there is none.
@@ -314,13 +348,19 @@ pub enum Answer {
 }
 
 pub async fn ask(state: &AppState, g: &Guardrail, event_id: &str, body: Bytes) -> Answer {
+    let Checker::Http { url, key } = &g.checker else {
+        return Answer::Failed {
+            failure: Failure::Invalid,
+            status: None,
+        };
+    };
     let timestamp = state.clock.now().unix_timestamp();
     let headers = [
         ("webhook-id", event_id.to_owned()),
         ("webhook-timestamp", timestamp.to_string()),
         (
             "webhook-signature",
-            signature(g.key.expose_secret(), event_id, timestamp, &body),
+            signature(key.expose_secret(), event_id, timestamp, &body),
         ),
     ];
     let limits = Limits {
@@ -330,7 +370,7 @@ pub async fn ask(state: &AppState, g: &Guardrail, event_id: &str, body: Bytes) -
     };
     match state
         .guardrails
-        .post_json_with(&g.url, body, &headers, limits)
+        .post_json_with(url, body, &headers, limits)
         .await
     {
         Ok((status, body)) if (200..300).contains(&status) => {
@@ -442,6 +482,7 @@ async fn check_one(
         failure: None,
         status: None,
         duration_ms,
+        found: std::collections::BTreeMap::new(),
     };
     let failed = |run: &mut Run, failure: Failure, status: Option<u16>| {
         run.failure = Some(failure);
@@ -482,6 +523,73 @@ async fn check_one(
     step
 }
 
+// Built-in rules run in Kaeso: a large request is scanned on a blocking thread.
+async fn apply_rules(
+    g: &Guardrail,
+    scanner: &Arc<kaeso_core::masking::Scanner>,
+    req: &mut GenerateRequest,
+    runs: &mut Vec<Run>,
+    masks: &mut Masks,
+    bytes: usize,
+) -> Step {
+    let started = Instant::now();
+    let scanner = Arc::clone(scanner);
+    let taken = std::mem::take(req);
+    let scanned = crate::model_api::pipeline::off_thread(bytes, move || {
+        let mut taken = taken;
+        let masked = rules::mask_request(&scanner, &mut taken);
+        (taken, masked)
+    })
+    .await;
+    let (back, masked) = match scanned {
+        Ok(done) => done,
+        Err(e) => return Step::Stop(e),
+    };
+    *req = back;
+    let (elapsed, duration_ms) = took(started);
+    metrics::histogram!(crate::metrics::GUARDRAIL_DURATION, "phase" => Phase::Request.as_str())
+        .record(elapsed.as_secs_f64());
+    for (kind, (detector, action)) in &masked.actions {
+        let n = masked.found.get(kind).copied().unwrap_or(0);
+        metrics::counter!(crate::metrics::MASKED_VALUES, "detector" => detector.clone(), "action" => action.as_str())
+            .increment(u64::from(n));
+    }
+    masks.logged.extend(masked.logged.iter().cloned());
+    if let Some(r) = &masked.restorer {
+        masks
+            .restorer
+            .get_or_insert_with(kaeso_core::masking::Restorer::default)
+            .extend(r);
+    }
+    let run = Run {
+        guardrail: g.id,
+        name: g.name.clone(),
+        phase: Phase::Request,
+        action: if masked.blocked.is_some() {
+            Action::Block
+        } else if masked.changed {
+            Action::Replace
+        } else {
+            Action::Allow
+        },
+        category: masked.blocked.clone(),
+        failure: None,
+        status: None,
+        duration_ms,
+        found: masked.found.clone(),
+    };
+    record(&run);
+    runs.push(run);
+    match masked.blocked {
+        Some(kind) => Step::Stop(blocked(
+            &g.name,
+            Phase::Request,
+            contract::message(Some(&rules::what(&kind))),
+        )),
+        None => Step::Pass,
+    }
+}
+
 fn asked<'a>(ctx: &'a Context, id: &'a str, phase: Phase, messages: Vec<Said>) -> Asked<'a> {
     Asked {
         id,
@@ -508,14 +616,30 @@ pub async fn check_request(
     ctx: &Context,
     g: &mut GenerateRequest,
     runs: &mut Vec<Run>,
+    masks: &mut Masks,
 ) -> Result<(), KppError> {
     let id = format!("{}.request", ctx.request_id);
     for guardrail in armed.0.iter().filter(|x| x.request) {
-        let question = asked(ctx, &id, Phase::Request, contract::conversation(g));
-        let step = check_one(state, guardrail, Phase::Request, &question, runs, |with| {
-            contract::replace_request(g, with).is_ok()
-        })
-        .await;
+        let step = match &guardrail.checker {
+            Checker::Rules(scanner) => {
+                Box::pin(apply_rules(
+                    guardrail,
+                    scanner,
+                    g,
+                    runs,
+                    masks,
+                    ctx.request_bytes,
+                ))
+                .await
+            }
+            Checker::Http { .. } => {
+                let question = asked(ctx, &id, Phase::Request, contract::conversation(g));
+                check_one(state, guardrail, Phase::Request, &question, runs, |with| {
+                    contract::replace_request(g, with).is_ok()
+                })
+                .await
+            }
+        };
         if let Step::Stop(e) = step {
             return Err(e);
         }
@@ -628,6 +752,7 @@ mod tests {
             failure,
             status: None,
             duration_ms: 12,
+            found: std::collections::BTreeMap::new(),
         };
         let v = header_value(&[
             run(

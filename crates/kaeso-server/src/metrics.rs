@@ -45,6 +45,7 @@ pub const KPMR_LAST_ATTEMPT: &str = "kaeso_kpmr_last_attempt_timestamp_seconds";
 pub const KPMR_LAST_ATTEMPT_FAILED: &str = "kaeso_kpmr_last_attempt_failed";
 pub const GUARDRAIL_RUNS: &str = "kaeso_guardrail_runs_total";
 pub const GUARDRAIL_DURATION: &str = "kaeso_guardrail_duration_seconds";
+pub const MASKED_VALUES: &str = "kaeso_masked_values_total";
 
 pub fn describe() {
     describe_counter!(
@@ -161,6 +162,10 @@ pub fn describe() {
         GUARDRAIL_DURATION,
         Unit::Seconds,
         "How long guardrails took to answer, by phase."
+    );
+    describe_counter!(
+        MASKED_VALUES,
+        "Values built-in guardrail rules found, by detector and action (mask, block, flag)."
     );
     describe_gauge!(
         CONNECTIONS_OPEN,

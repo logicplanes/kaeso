@@ -4,7 +4,7 @@ import { api, data } from "~/api/client";
 import type { GuardrailMessage, GuardrailPhase, GuardrailTestResult, GuardrailView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
 import { t } from "~/i18n";
-import { guardrailActionLabel, guardrailFailureLabel } from "~/format/guardrails";
+import { foundLabel, guardrailActionLabel, guardrailFailureLabel } from "~/format/guardrails";
 
 const said = (role: string, text: string): GuardrailMessage => ({ role, content: [{ type: "text", text }] });
 
@@ -28,6 +28,16 @@ function Outcome({ result }: { result: GuardrailTestResult }) {
           {
             label: t("org.guardrails.failure", "Failure"),
             value: result.status ? `${guardrailFailureLabel(result.failure)} (${result.status})` : guardrailFailureLabel(result.failure),
+          },
+        ]
+      : []),
+    ...(Object.keys(result.found).length
+      ? [
+          {
+            label: t("org.guardrails.found", "Found"),
+            value: Object.entries(result.found)
+              .map(([k, n]) => foundLabel(k, n))
+              .join(t("orgHome.listSeparator", ", ")),
           },
         ]
       : []),
