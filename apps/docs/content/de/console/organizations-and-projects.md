@@ -105,6 +105,8 @@ Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen
 | Zwei-Faktor-Authentifizierung verlangen | Mitglieder brauchen eine Anmeldung mit einem Code aus ihrer Authenticator-App, per Passwort oder Anmeldelink. Eine Anmeldung über Single Sign-on reicht ebenfalls, über den eigenen Anbieter der Organisation oder den der Organisation, die das Konto des Mitglieds verwaltet |
 | Maximale Schlüssellaufzeit | Die längste Laufzeit eines neuen Schlüssels in Tagen, oder **Kein Limit**. Bestehende Schlüssel behalten ihren Ablauf, und ein Projekt kann ein kürzeres Limit setzen |
 
+Wer **Zwei-Faktor-Authentifizierung verlangen** einschaltet, wird zuerst gefragt und sieht die aktiven Mitglieder ohne Authenticator-App, die es aussperren würde; Konten, die die Organisation verwaltet, während sie Single Sign-on verlangt, zählen nicht dazu.
+
 Wenn Sie eine Anforderung einschalten, die Sie selbst nicht erfüllen, ist die Organisation auch für Sie gesperrt. Das gilt, bis Sie sich über den Anbieter anmelden oder die Zwei-Faktor-Authentifizierung einrichten. Die Konsole fragt vor dem Speichern nach. Wenn Sie Single Sign-on verlangen, bleibt Ihre eigene Sitzung bestehen; ein [Anmeldelink vom Server](../self-hosting/sign-in.md#wieder-hineinkommen) ist also nie Ihr einziger Weg zurück. Wenn Sie den Identitätsanbieter trennen, schaltet das auch **Single Sign-on verlangen** aus.
 
 ## Agenten von Mitgliedern zulassen

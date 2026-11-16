@@ -85,6 +85,10 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
             routes!(security::require_2fa),
         ))
         .routes(s.route(
+            Access::Org(R::Security2faRequire),
+            routes!(security::members_without_2fa),
+        ))
+        .routes(s.route(
             Access::Org(R::SecurityKeyPolicyManage),
             routes!(security::key_policy),
         ))

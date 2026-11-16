@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
-import type { InviteView, LogJobView, MemberView, OrgKeyView, OrgLogSettings, OrgView, SecurityView, StorageView } from "../generated/types";
+import type { InviteView, LogJobView, MemberView, MemberWithout2fa, OrgKeyView, OrgLogSettings, OrgView, SecurityView, StorageView } from "../generated/types";
 import { allPages } from "../paging";
 
 export const orgViewKey = (org: string) => ["orgs", org, "view"] as const;
@@ -64,6 +64,13 @@ export const securityQuery = (org: string) =>
   queryOptions({
     queryKey: ["orgs", org, "security"],
     queryFn: async (): Promise<SecurityView> => data(await api.GET("/platform/v1/orgs/{org}/security", { params: { path: { org } } })),
+  });
+
+export const membersWithout2faQuery = (org: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "security", "members-without-2fa"],
+    queryFn: async (): Promise<MemberWithout2fa[]> =>
+      data(await api.GET("/platform/v1/orgs/{org}/security/members-without-2fa", { params: { path: { org } } })).data,
   });
 
 export const logSettingsQuery = (org: string) =>

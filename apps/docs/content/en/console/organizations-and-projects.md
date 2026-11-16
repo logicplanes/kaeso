@@ -105,6 +105,8 @@ Under **Security**, you can tighten how members get into the organization:
 | Require two-factor authentication | Members need a sign-in with a code from their authenticator, with a password or a sign-in link. A sign-in through single sign-on is enough too, from the organization's own provider or the one that manages the member's account |
 | Maximum key lifetime | The longest a new key may live, in days, or **No limit**. Existing keys keep their expiry, and a project can set a shorter limit |
 
+Turning on **Require two-factor authentication** asks first and names the active members without an authenticator app whom it would lock out, leaving out accounts the organization manages while it requires single sign-on.
+
 Turning on a requirement you don't meet yourself closes the organization to you too, until you sign in through the provider or set up two-factor authentication. The console asks before it saves. Requiring single sign-on keeps your own session, so a [sign-in link from the server](../self-hosting/sign-in.md#get-back-in) is never your only way back. Disconnecting the identity provider turns off **Require single sign-on** as well.
 
 ## Let members' agents in

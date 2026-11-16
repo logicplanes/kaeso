@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { act, screen, waitFor, within } from "@testing-library/react";
-import type { SecurityView } from "~/api/generated/types";
-import { ORG, signedIn, whoAmI, withRights } from "~/test/fixtures";
+import type { MemberWithout2fa, SecurityView } from "~/api/generated/types";
+import { ORG, USER, signedIn, whoAmI, withRights } from "~/test/fixtures";
 import { hoverReason, notifications, security, sso, ssoDomain, fill } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
+import { queryClient } from "~/query";
 import { renderApp } from "~/test/render";
 import { showTooltipsAtOnce } from "~/test/tooltip-delay";
 
 const PATH = `/settings/orgs/${ORG}/security`;
+const WITHOUT_2FA = "orgs/:org/security/members-without-2fa";
+
+function without2fa(members: MemberWithout2fa[]) {
+  on("GET", WITHOUT_2FA, { data: members, has_more: false, next_cursor: null });
+}
 const MEMBER_ROLE = { id: "member", kind: "builtin", name: "Member" };
 
 type SsoBody = { issuer: string; client_id: string; client_secret?: string; domains: string[]; default_role: string | null };
@@ -425,13 +431,22 @@ describe("security requirements", () => {
     expect(requests("PUT", "orgs/:org/security/require-sso").map((r) => r.body)).toEqual([{ enabled: false }]);
   });
 
-  it("asks before requiring two-factor of someone who doesn't use it", async () => {
+  it("asks before requiring two-factor, naming the members it would lock out with the admin among them", async () => {
     signedIn();
     serveSecurity(security());
+    without2fa([
+      { id: USER, name: "Ada Okafor", email: "owner@example.com" },
+      { id: "usr_grace", name: "Grace Hopper", email: "grace@example.com" },
+    ]);
     on("PUT", "orgs/:org/security/require-2fa", security({ require_2fa: true }));
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("switch", { name: "Require two-factor authentication" }));
     const confirm = await screen.findByRole("alertdialog", { name: "Require two-factor authentication?" });
+    expect(
+      await within(confirm).findByText(
+        "1 member without it can't open the organization until they set it up: Grace Hopper. You don't use it yet; the organization closes to you and members without it until you set it up.",
+      ),
+    ).toBeInTheDocument();
     await user.click(within(confirm).getByRole("button", { name: "Require two-factor authentication" }));
     expect(await notifications().findByText("Two-factor authentication is required")).toBeInTheDocument();
     expect(requests("PUT", "orgs/:org/security/require-2fa").map((r) => r.body)).toEqual([{ enabled: true }]);
@@ -440,6 +455,7 @@ describe("security requirements", () => {
   it("closes the two-factor confirmation when it's dismissed or refused", async () => {
     signedIn();
     serveSecurity(security());
+    without2fa([]);
     on("PUT", "orgs/:org/security/require-2fa", apiError(409, "conflict", "Members without two-factor are signed in."));
     const { user } = await renderApp(PATH);
     await user.click(await screen.findByRole("switch", { name: "Require two-factor authentication" }));
@@ -453,7 +469,38 @@ describe("security requirements", () => {
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
   });
 
-  it("changes two-factor straight away for someone who uses it", async () => {
+  it("names the first three members it would lock out and counts the rest", async () => {
+    signedIn({ session: whoAmI({ totp_enabled: true }) });
+    serveSecurity(security());
+    without2fa(["Grace Hopper", "Lin Park", "Mia Chen", "Sam Ortiz", "Zoe Ng"].map((name, i) => ({ id: `usr_${i}`, name, email: `${i}@example.com` })));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("switch", { name: "Require two-factor authentication" }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Require two-factor authentication?" });
+    expect(
+      await within(confirm).findByText("5 members without it can't open the organization until they set it up: Grace Hopper, Lin Park, Mia Chen, and 2 more."),
+    ).toBeInTheDocument();
+  });
+
+  it("says when requiring two-factor locks nobody out, and when that couldn't be checked", async () => {
+    signedIn({ session: whoAmI({ totp_enabled: true }) });
+    serveSecurity(security());
+    without2fa([]);
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("switch", { name: "Require two-factor authentication" }));
+    let confirm = await screen.findByRole("alertdialog", { name: "Require two-factor authentication?" });
+    expect(await within(confirm).findByText("Every other active member has it or signs in through single sign-on.")).toBeInTheDocument();
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    queryClient.removeQueries({ queryKey: ["orgs", ORG, "security", "members-without-2fa"] });
+    on("GET", WITHOUT_2FA, apiError(503, "unavailable", "Kaeso cannot reach its database right now; try again shortly."));
+    await user.click(screen.getByRole("switch", { name: "Require two-factor authentication" }));
+    confirm = await screen.findByRole("alertdialog", { name: "Require two-factor authentication?" });
+    expect(
+      await within(confirm).findByText("Kaeso couldn't check who would be locked out; members without it can't open the organization."),
+    ).toBeInTheDocument();
+  });
+
+  it("stops requiring two-factor straight away", async () => {
     signedIn({ session: whoAmI({ totp_enabled: true }) });
     serveSecurity(security({ require_2fa: true }));
     on("PUT", "orgs/:org/security/require-2fa", security({ require_2fa: false }));
