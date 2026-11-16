@@ -34,6 +34,7 @@ pub mod provider_detection;
 pub mod regional;
 pub mod response_cache;
 pub mod sso;
+pub mod stored_responses;
 pub mod updater;
 pub mod updates;
 pub mod usage;

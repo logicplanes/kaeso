@@ -25,6 +25,9 @@ pub struct ResponsesProfile {
     /// Whether the provider takes `tool_choice` in a request without tools; otherwise `auto`
     /// and `none` are left out of such a request and a choice that forces a tool is refused.
     pub tool_choice_without_tools: bool,
+    /// Whether the provider keeps responses an API key asks it to store, and continues them
+    /// from `previous_response_id`; `store` is on unless the request turns it off.
+    pub stores_responses: bool,
 }
 
 /// Which input item types a Responses provider takes.
@@ -94,6 +97,7 @@ impl ResponsesProfile {
         tool_schema_root: ToolSchemaRoot::AsSent,
         input_items: InputItems::AsSent,
         tool_choice_without_tools: true,
+        stores_responses: true,
     };
 
     /// Another provider's Responses API: as OpenAI's, but without tool namespaces, Codex's
@@ -104,6 +108,7 @@ impl ResponsesProfile {
             tool_namespaces: false,
             input_items: InputItems::WithoutAgentMessages,
             tool_choice_without_tools: false,
+            stores_responses: false,
             ..ResponsesProfile::OPENAI
         }
     }

@@ -64,7 +64,7 @@ Codex sendet bei jedem Zug Teile, die nur OpenAI kennt. Kaeso übersetzt sie fü
 Modelle ohne Websuche, etwa Mistral, bekommen die Anfrage ohne sie. Claude und Grok suchen nur live, während der Standard von Codex, `web_search = "cached"`, OpenAIs Cache von Seiten verlangt. Mit diesem Standard bekommen auch sie keine Websuche. Setzen Sie `web_search = "live"`, damit sie suchen können.
 
 > [!NOTE]
-> Kaeso speichert keine Antworten zwischen Zügen. Eine Anfrage, die den Anbieter bittet, eine Antwort zu speichern oder fortzusetzen (`store: true`, `previous_response_id`), lehnt Kaeso mit einem Fehler ab, der das sagt.
+> Kaeso speichert keine Antworten zwischen Zügen. Eine Anfrage, die den Anbieter bittet, eine Antwort zu speichern oder fortzusetzen (`store: true`, `previous_response_id`), lehnt Kaeso mit einem Fehler ab, der das sagt, außer das Projekt erlaubt [beim Anbieter gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten).
 
 ## Entscheidungsmodelle in OpenCode
 

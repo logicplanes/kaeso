@@ -76,7 +76,7 @@ KPP（Kaeso Provider Protocol）为每种 API 格式都提供一个编解码器�
 无论哪种格式，即使格式不变，Kaeso 也会拒绝以下内容：
 
 - 多个候选结果（`n`）
-- 存储状态：`store: true`、`previous_response_id`、`conversation` 和 `background`
+- 存储状态：`conversation` 和 `background`，以及 `store: true` 和 `previous_response_id`（在允许它的项目中发给保留回复的服务商时除外，见[存储的回复](../console/organizations-and-projects.md#存储的回复)）
 
 ### 跨格式的请求
 

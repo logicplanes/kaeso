@@ -97,6 +97,8 @@ pub(super) struct Recording {
     sent_input: Option<u64>,
     held: Option<super::memory::Held>,
     keep_in_cache: Option<response_cache::Slot>,
+    // A response the provider keeps for the project, recorded once the request succeeded.
+    pub(super) kept: Option<crate::services::stored_responses::Kept>,
     logging: Option<tokio::task::JoinHandle<(Bytes, Keep)>>,
     // Moves into a stream's pump, so a stream counts until it ends.
     serving: Option<crate::metrics::Serving>,
@@ -159,6 +161,19 @@ impl Recording {
         let elapsed = self.started.elapsed();
         if let Some(mut o) = self.outcome.take() {
             o.status = status;
+            if let (Some(kept), Some(caller)) = (self.kept.take(), o.caller.as_ref())
+                && (200..300).contains(&status)
+            {
+                let tokens = o.usage.as_ref().map_or(0, kaeso_core::cost::total_tokens);
+                crate::services::stored_responses::record(
+                    &self.state,
+                    caller,
+                    o.request_id.uuid(),
+                    &kept,
+                    tokens,
+                )
+                .await;
+            }
             if o.duration.is_zero() {
                 o.duration = elapsed;
             }
@@ -427,6 +442,7 @@ pub async fn serve_with(
         sent_input: None,
         held: None,
         keep_in_cache: None,
+        kept: None,
         logging: None,
         serving: Some(crate::metrics::Serving::start()),
         step_wait: None,
@@ -1951,6 +1967,34 @@ async fn attempt(
         .provider
         .account()
         .filter(|a| a.method == credential.method);
+    let keeping = crate::services::stored_responses::admit(
+        state,
+        &crate::services::stored_responses::Asked {
+            caller,
+            ingress,
+            egress: plan.dialect,
+            provider: &eff.provider,
+            model: &eff.model_id,
+            credential: &credential,
+        },
+        &req,
+    )
+    .await
+    .map_err(|r| match r {
+        crate::services::stored_responses::Refusal::Unsupported(e) => fail(Stage::Capability)(e),
+        crate::services::stored_responses::Refusal::Final(e) => fail(Stage::Request)(e),
+    })?;
+    rec.kept =
+        keeping
+            .as_ref()
+            .filter(|k| k.records)
+            .map(|_| crate::services::stored_responses::Kept {
+                credential: credential.id.uuid(),
+                provider: eff.provider.id().to_owned(),
+                model: eff.model_id.clone(),
+                catalogue_model_id: entry.id,
+                response_id: None,
+            });
     let chatgpt = account.filter(|a| a.method == AuthMethod::ChatGpt);
     if let Some(a) = chatgpt {
         let stage =
@@ -1971,7 +2015,16 @@ async fn attempt(
         kind,
         at: rec.outcome().started_at,
         timeout: timeouts.request,
-        worst: WorstCase::of(&req, request_bytes, &eff.fields, &eff.provider),
+        worst: WorstCase::continuing(
+            &req,
+            request_bytes,
+            keeping.as_ref().map_or(
+                0,
+                crate::services::stored_responses::Keeping::earlier_tokens,
+            ),
+            &eff.fields,
+            &eff.provider,
+        ),
         unpriced: kaeso_core::cost::unpriced_model(
             &eff.fields,
             &entry.overrides,
@@ -2112,7 +2165,17 @@ async fn attempt(
             dropped: false,
         }
     };
-    let cached = if again.is_some() {
+    // A retry or a stored response goes to its provider, which an answer from the cache would
+    // skip; a stored one is counted as passing the cache by.
+    let cached = if again.is_some() || keeping.is_some() {
+        if keeping.is_some()
+            && response_cache::active(state, caller.project_id)
+                .await
+                .is_some()
+        {
+            rec.outcome().response_cache = Some(Verdict::Bypass);
+            response_cache::count_lookup(Verdict::Bypass);
+        }
         Consulted::Skip
     } else {
         consult_cache(
@@ -2425,6 +2488,7 @@ async fn attempt(
                 sent_input: None,
                 held: rec.held.take(),
                 keep_in_cache: None,
+                kept: rec.kept.take(),
                 logging: rec.logging.take(),
                 serving: rec.serving.take(),
                 step_wait: None,
@@ -3239,6 +3303,9 @@ pub(crate) fn declared_key_refusal(provider: &ProviderRef, mut err: KppError) ->
 }
 
 async fn record_usage(rec: &mut Recording, reply: &Reply, counter: InputCounter) {
+    if let (Reply::Generate(r), Some(kept)) = (reply, rec.kept.as_mut()) {
+        kept.response_id = Some(r.id.clone());
+    }
     let (usage, model) = match reply {
         Reply::Generate(r) => (&r.usage, &r.model),
         Reply::Embed(e) => (&e.usage, &e.model),

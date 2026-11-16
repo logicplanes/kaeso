@@ -639,5 +639,12 @@
   "org.guardrails.rulesTitle": "Was finden die Regeln?",
   "org.guardrails.sample": "Beispieltext",
   "org.guardrails.samplePlaceholder": "Fügen Sie einen Prompt ein, um zu sehen, was die Regeln finden",
-  "org.guardrails.trySample": "Regeln testen"
+  "org.guardrails.trySample": "Regeln testen",
+  "org.storedResponses.allowedToast": "Gespeicherte Antworten erlaubt",
+  "org.storedResponses.forbiddenToast": "Gespeicherte Antworten ausgeschaltet",
+  "org.storedResponses.title": "Gespeicherte Antworten",
+  "org.storedResponses.hint": "Anbieter wie OpenAI können Antworten aufbewahren, damit Apps sie fortsetzen.",
+  "org.storedResponses.allow": "Beim Anbieter gespeicherte Antworten erlauben",
+  "org.storedResponses.allowedHint": "Jedes Projekt schaltet sie in seinen Einstellungen ein.",
+  "org.storedResponses.forbiddenHint": "Apps senden jede Unterhaltung vollständig."
 }

@@ -76,7 +76,7 @@ When a request crosses formats, Kaeso refuses these with an error that names the
 Kaeso refuses these in every format, even when the format stays the same:
 
 - more than one choice (`n`)
-- stored state: `store: true`, `previous_response_id`, `conversation` and `background`
+- stored state: `conversation` and `background`, and `store: true` and `previous_response_id` except at a provider that keeps responses, in a project that allows it ([stored responses](../console/organizations-and-projects.md#stored-responses))
 
 ### Requests across formats
 

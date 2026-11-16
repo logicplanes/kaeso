@@ -297,5 +297,14 @@
   "project.guardrails.position": "第 {n} 条，共 {count} 条",
   "project.guardrails.saved": "防护规则已保存",
   "project.guardrails.title": "防护规则",
-  "project.guardrails.up": "上移 {name}"
+  "project.guardrails.up": "上移 {name}",
+  "project.storedResponses.on": "已开启存储的回复",
+  "project.storedResponses.off": "已关闭存储的回复",
+  "project.storedResponses.orgOff": "组织已关闭",
+  "project.storedResponses.title": "存储的回复",
+  "project.storedResponses.hint": "让 Responses 应用继续 OpenAI 保留 30 天的回复。",
+  "project.storedResponses.use": "允许在服务商处存储回复",
+  "project.storedResponses.orgOffHint": "组织已关闭；无法在此开启。",
+  "project.storedResponses.onHint": "应用可以使用 store 和 previous_response_id。",
+  "project.storedResponses.offHint": "应用必须每次发送完整对话。"
 }

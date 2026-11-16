@@ -297,5 +297,14 @@
   "project.guardrails.position": "{n} von {count}",
   "project.guardrails.saved": "Guardrails gespeichert",
   "project.guardrails.title": "Guardrails",
-  "project.guardrails.up": "{name} nach oben"
+  "project.guardrails.up": "{name} nach oben",
+  "project.storedResponses.on": "Gespeicherte Antworten eingeschaltet",
+  "project.storedResponses.off": "Gespeicherte Antworten ausgeschaltet",
+  "project.storedResponses.orgOff": "Für die Organisation aus",
+  "project.storedResponses.title": "Gespeicherte Antworten",
+  "project.storedResponses.hint": "Responses-Apps setzen eine Antwort fort, die OpenAI 30 Tage aufbewahrt.",
+  "project.storedResponses.use": "Beim Anbieter gespeicherte Antworten erlauben",
+  "project.storedResponses.orgOffHint": "Für die Organisation aus; hier nicht einschaltbar.",
+  "project.storedResponses.onHint": "Apps dürfen store und previous_response_id nutzen.",
+  "project.storedResponses.offHint": "Apps senden jede Unterhaltung vollständig."
 }

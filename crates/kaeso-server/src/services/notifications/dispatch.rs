@@ -188,6 +188,8 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::RoleCreate
         | A::RoleDelete
         | A::RoleUpdate
+        | A::StoredResponsesOrgUpdate
+        | A::StoredResponsesProjectUpdate
         | A::ServiceAccountArchive
         | A::ServiceAccountCreate
         | A::ServiceAccountUpdate

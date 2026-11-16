@@ -64,7 +64,7 @@ Codex sends OpenAI-only parts with every turn. Kaeso translates them for other m
 Models without web search, such as Mistral, get the request without it. Claude and Grok search only live, while Codex's default, `web_search = "cached"`, asks for OpenAI's cache of pages, so with that default they get no web search either. Set `web_search = "live"` to let them search.
 
 > [!NOTE]
-> Kaeso stores no responses between turns. It refuses a request that asks the provider to store or continue a response (`store: true`, `previous_response_id`), with an error that says so.
+> Kaeso stores no responses between turns. It refuses a request that asks the provider to store or continue a response (`store: true`, `previous_response_id`), with an error that says so, unless the project allows [responses stored at the provider](../console/organizations-and-projects.md#stored-responses).
 
 ## Add decision models to OpenCode
 

@@ -376,7 +376,9 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
 
 ## 有状态的 Responses 功能
 
-`previous_response_id`、`conversation`、`store: true` 和 `background: true` 需要在 OpenAI 端保存状态，编解码器以 `Unsupported` 拒绝它们。只有网关能在进入 KPP 之前解析它们。
+`conversation` 和 `background: true` 需要在 OpenAI 端保存状态，编解码器以 `Unsupported` 拒绝它们。
+
+`store` 和 `previous_response_id` 被解码为 Responses 方言的 extras 字段。OpenAI Responses 编码器会把它们写回；其他方言会像对待任何外来 extras 字段一样按名称拒绝它们（见 [Extras](#extras)）。请求能否保留或继续回复，由网关在编码前决定：目标的 `ResponsesProfile::stores_responses`、API 密钥、项目设置以及回复由谁存储（`services::stored_responses`）。`openai_responses::stored_state` 读取这两个字段。
 
 ## 回复 ID
 

@@ -24,6 +24,7 @@
 | `max-output-tokens-incomplete-stream.json` | same with `stream: true` | schema: CreateResponse (openapi.yaml@e95c0fe615f4) |
 | `max-output-tokens-incomplete.json` | `max_output_tokens` at its minimum (16) | schema: CreateResponse.max_output_tokens (openapi.yaml@e95c0fe615f4) |
 | `multi-turn-roles.json` | item list with roles system/developer/user/assistant; `content` as string AND as parts; messages with and without `type`; assistant output message fed back (`id`, `status`, `output_text` with `annotations: []`); non-leading developer message; `text.verbosity` | schema: InputParam, EasyInputMessage, InputMessage, OutputMessage, ResponseTextParam (openapi.yaml@e95c0fe615f4) |
+| `previous-response-id.json` | `previous_response_id`, kept as an extras field for the gateway to check | schema: ResponseProperties.previous_response_id (openapi.yaml@e95c0fe615f4) |
 | `reasoning-effort-high.json` | `reasoning.effort: high`; usage with `reasoning_tokens` | doc: https://developers.openai.com/api/reference/resources/responses/methods/create (example "Reasoning"; same text as openapi.yaml createResponse x-oaiMeta) |
 | `reasoning-encrypted.json` | stateless reasoning round trip: `store: false`, `include: ["reasoning.encrypted_content"]`, `reasoning.effort`/`summary`; reasoning item fed back with `summary` + `encrypted_content`, then function_call + function_call_output | schema: CreateResponse, ReasoningItem, IncludeEnum, Reasoning (openapi.yaml@e95c0fe615f4) |
 | `reasoning-text-stream.json` | open-weight reasoning model streaming `reasoning_text` content | schema: CreateResponse (openapi.yaml@e95c0fe615f4) |
@@ -35,7 +36,6 @@
 | `stateful-background.json` | `background: true` with `store: true` (Unsupported) | schema: ResponseProperties.background (openapi.yaml@e95c0fe615f4) |
 | `stateful-conversation-id-string.json` | `conversation` string form (Unsupported) | schema: ConversationParam (openapi.yaml@e95c0fe615f4) |
 | `stateful-conversation.json` | `conversation` object form (Unsupported) | schema: ConversationParam (openapi.yaml@e95c0fe615f4) |
-| `stateful-previous-response-id.json` | `previous_response_id` (codec must reject: Unsupported) | schema: ResponseProperties.previous_response_id (openapi.yaml@e95c0fe615f4) |
 | `structured-output-json-schema.json` | `text.format` `json_schema` with `strict: true`, `name`, `description` | schema: TextResponseFormatJsonSchema; content modelled on the structured-outputs guide (openapi.yaml@e95c0fe615f4) |
 | `text-basic-stream.json` | `instructions` + string input + `stream: true` | doc: https://developers.openai.com/api/reference/resources/responses/methods/create (example "Streaming") |
 | `text-input-string.json` | plain `input` string; minimal request; full Response object | doc: https://developers.openai.com/api/reference/resources/responses/methods/create (example "Text input"; same text as openapi.yaml createResponse x-oaiMeta) |

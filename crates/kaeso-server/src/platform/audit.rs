@@ -136,6 +136,8 @@ actions! {
         ServiceAccountArchive = "service_account.archive",
         ServiceAccountCreate = "service_account.create",
         ServiceAccountUpdate = "service_account.update",
+        StoredResponsesOrgUpdate = "stored_responses.org_update",
+        StoredResponsesProjectUpdate = "stored_responses.project_update",
         ToolApprove = "tool.approve",
         ToolReject = "tool.reject",
         ToolAccessUpdate = "tool_access.update",

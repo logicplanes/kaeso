@@ -1691,6 +1691,11 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "previous-response-id": {
+    "message": "`previous_response_id` comes from an OpenAI Responses request and has no equivalent in OpenAI Chat Completions. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "previous_response_id"
+  },
   "providers/azure/bitter-lesson-doc": {
     "body": {
       "messages": [
@@ -2662,9 +2667,6 @@ expression: outcomes
   },
   "stateful-conversation-id-string": {
     "rejected_by_source": "conversation"
-  },
-  "stateful-previous-response-id": {
-    "rejected_by_source": "previous_response_id"
   },
   "structured-output-json-schema": {
     "body": {

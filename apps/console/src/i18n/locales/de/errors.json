@@ -813,5 +813,9 @@
   "errors.guardrails.patternInvalid": "Muster {n} ist kein regulärer Ausdruck, den Kaeso kompilieren kann.",
   "errors.guardrails.noSecret": "Eingebaute Regeln haben kein Signatur-Secret.",
   "errors.guardrails.sampleTooLong": "`text` nimmt höchstens 100000 Zeichen.",
-  "errors.keyWeight": "Eine Gewichtung liegt zwischen 1 und 100."
+  "errors.keyWeight": "Eine Gewichtung liegt zwischen 1 und 100.",
+  "errors.storedResponsesOffInOrg": "Die Organisation erlaubt keine gespeicherten Antworten; ein Projekt kann sie nicht einschalten.",
+  "errors.storedResponsesArchived": "Das Projekt ist archiviert; seine Einstellung für gespeicherte Antworten kann sich nicht ändern.",
+  "errors.modelApi.storedResponseNotFound": "Keine Antwort mit der ID '{id}' gefunden.",
+  "errors.modelApi.storedResponsesUnavailable": "Kaeso kann seine gespeicherten Antworten gerade nicht lesen. Versuchen Sie es gleich noch einmal."
 }

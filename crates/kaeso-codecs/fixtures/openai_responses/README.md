@@ -14,7 +14,7 @@ The layout and the provenance marks (`doc:`, `sdk:`, `schema:`) are in [Fixtures
 
 ## Special fixture groups
 
-- `stateful-*` (`previous_response_id`, `conversation` string and object form, `background`) must be rejected by the codec with `Unsupported`.
+- `stateful-*` (`conversation` string and object form, `background`) must be rejected by the codec with `Unsupported`. `previous-response-id.json` and `store: true` decode, as extras fields that only the Responses format writes back; the gateway decides whether the provider may keep the response.
 - `explicit-nulls.json` sets every nullable field to `null`, including `previous_response_id`, `conversation` and `background`. A `null` there must not count as a stateful request, and the nulls must survive a round trip.
 - `unknown-*` carry made-up content on purpose: `x_future_field` (top-level request and response), input item type `future_item`, output item type `future_output_item`, stream event `response.future_event`, and the SSE comment line `: keepalive`.
 - Built-in tools (`web_search` tool, `web_search_call` items and `response.web_search_call.*` events) are Unknown/Extras carriers: same-dialect only.

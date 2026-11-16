@@ -143,9 +143,26 @@ A project's **Settings** page holds these settings:
 | Content logging | Whether request and reply bodies are kept with their log entries. It can't be on while the organization has it off |
 | Keep media | Whether logged content keeps its images, audio and files ([request logs](request-logs.md#media-in-requests-and-replies)). It can't be on while the organization keeps none |
 | Retries | How many times, from **Never** to 3, a request that names a model, or an alias step without its own, tries the model again after a dropped connection, a 5xx or an overloaded provider ([alias routes](../concepts/alias-routes.md#fallbacks)) |
+| Allow responses stored at the provider | Whether Responses apps may let the provider keep their responses and continue them ([stored responses](#stored-responses)). It can't be on while the organization doesn't allow it |
 | Archive project | Archives the project with its keys and service accounts, for good. Its keys stop working at once |
 
 Kaeso archives projects and never deletes them, so their usage and logs stay. Any project can be archived.
+
+## Stored responses
+
+An app that speaks OpenAI's Responses format can ask OpenAI to keep a response and continue the conversation later with `previous_response_id`, instead of sending the whole conversation each time ([conversation state](https://developers.openai.com/api/docs/guides/migrate-to-responses)). OpenAI then keeps the conversation for 30 days. That is a decision about where your data lives, so it is off until both switches are on:
+
+1. An organization admin opens **Organization settings**, then **Logging**, and turns on **Allow responses stored at the provider**. This needs the **Edit organization** right. Turning it off stops it in every project.
+2. A project admin turns on **Allow responses stored at the provider** in the project's **Settings**.
+
+Then, for requests in the Responses format to an OpenAI model with an OpenAI API key:
+
+- Kaeso records each response OpenAI keeps for the project: unless the request sends `store: false`, since OpenAI keeps responses by default. It keeps only a hash of the response's id, with the project, the provider key and the model.
+- `previous_response_id` continues a response only in the project that stored it, with the provider key that stored it. Another project gets `404` as if the response didn't exist, even when both projects share the provider key.
+- `GET /v1/responses/{response_id}` reads a stored response and `DELETE /v1/responses/{response_id}` deletes it at OpenAI, with the same checks.
+- Limits reserve the earlier conversation's tokens too, since OpenAI bills them as input, and the response cache lets these requests pass.
+
+Kaeso refuses `store: true` and `previous_response_id` with `400`, naming the field, when either switch is off, when the model is called in another format or at a provider that keeps no responses, or when the project's key is an account sign-in such as a ChatGPT plan. An alias moves on from a step that can't continue the response to its next step. `conversation` and `background: true` stay refused everywhere. Turning the switches off leaves the responses OpenAI already keeps there until they expire; delete them first if you need to.
 
 ## Next steps
 

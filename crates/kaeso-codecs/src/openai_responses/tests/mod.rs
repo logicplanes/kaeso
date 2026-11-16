@@ -14,7 +14,6 @@ const REFUSED_REQUESTS: &[(&str, &str)] = &[
     ("stateful-background", "background"),
     ("stateful-conversation", "conversation"),
     ("stateful-conversation-id-string", "conversation"),
-    ("stateful-previous-response-id", "previous_response_id"),
 ];
 
 const FAILED_RESPONSES: &[&str] = &["failed"];

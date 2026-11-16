@@ -64,7 +64,7 @@ Codex 每一轮都会发送只有 OpenAI 认识的部分。Kaeso 会为其他模
 没有网页搜索的模型（例如 Mistral）收到的请求不含网页搜索。Claude 和 Grok 只做实时搜索，而 Codex 的默认值 `web_search = "cached"` 要求使用 OpenAI 的页面缓存，因此使用该默认值时它们也没有网页搜索。设置 `web_search = "live"` 即可让它们搜索。
 
 > [!NOTE]
-> Kaeso 不会在轮次之间保存响应。如果请求要求服务商保存或延续某个响应（`store: true`、`previous_response_id`），Kaeso 会拒绝它，并在错误中说明原因。
+> Kaeso 不会在轮次之间保存响应。如果请求要求服务商保存或延续某个响应（`store: true`、`previous_response_id`），Kaeso 会拒绝它，并在错误中说明原因，除非项目允许[在服务商处存储回复](../console/organizations-and-projects.md#存储的回复)。
 
 ## 在 OpenCode 中添加决策模型
 

@@ -384,6 +384,18 @@ impl WorstCase {
         prices: &Fields,
         provider: &crate::providers::ProviderRef,
     ) -> WorstCase {
+        WorstCase::continuing(request, body_bytes, 0, prices, provider)
+    }
+
+    /// As [`WorstCase::of`] for a request that continues a conversation the provider keeps:
+    /// `earlier` tokens it doesn't carry are billed as its input too.
+    pub fn continuing(
+        request: &kaeso_kpp::Request,
+        body_bytes: usize,
+        earlier: u64,
+        prices: &Fields,
+        provider: &crate::providers::ProviderRef,
+    ) -> WorstCase {
         match request {
             kaeso_kpp::Request::Image(r) => return WorstCase::of_images(r, prices),
             kaeso_kpp::Request::Speech(r) => return WorstCase::of_speech(r, prices),
@@ -404,7 +416,7 @@ impl WorstCase {
                     .saturating_mul(documents)
                     .saturating_add(crate::estimate::tokens_of_bytes(bytes))
             }
-            _ => within(crate::estimate::tokens_of_bytes(bytes)),
+            _ => within(crate::estimate::tokens_of_bytes(bytes).saturating_add(earlier)),
         };
         let prices = &crate::cost::prices_for_prompt(prices, input);
         let limit_holds =
@@ -822,6 +834,15 @@ mod tests {
             openai(),
         );
         assert!(!unbounded.bounded);
+    }
+
+    #[test]
+    fn a_continued_conversation_reserves_its_earlier_tokens_too() {
+        let prices = priced("3", "15");
+        let fresh = WorstCase::of(&generate(Some(0)), 4000, &prices, openai());
+        let continued = WorstCase::continuing(&generate(Some(0)), 4000, 9000, &prices, openai());
+        assert_eq!(continued.tokens - fresh.tokens, 9000);
+        assert_eq!(continued.nano_usd - fresh.nano_usd, 9000 * 3000);
     }
 
     #[test]

@@ -1865,6 +1865,11 @@ expression: outcomes
     },
     "path": "/v1beta/models/gpt-5.5:generateContent"
   },
+  "previous-response-id": {
+    "message": "`previous_response_id` comes from an OpenAI Responses request and has no equivalent in Gemini API. Remove it, or send the request to a model served through its original format.",
+    "param": null,
+    "unsupported": "previous_response_id"
+  },
   "providers/azure/bitter-lesson-doc": {
     "body": {
       "contents": [
@@ -3022,9 +3027,6 @@ expression: outcomes
   },
   "stateful-conversation-id-string": {
     "rejected_by_source": "conversation"
-  },
-  "stateful-previous-response-id": {
-    "rejected_by_source": "previous_response_id"
   },
   "structured-output-json-schema": {
     "message": "`output schema description` is not supported by Gemini API. Gemini structured output takes a schema only. Move the description into the prompt or the schema's own `description`.",

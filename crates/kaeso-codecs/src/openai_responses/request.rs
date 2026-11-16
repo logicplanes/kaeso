@@ -178,23 +178,16 @@ pub(super) fn decode(
         ))
         .with_param("max_output_tokens"));
     }
-    let stateless = "Kaeso is stateless: send the whole conversation in `input` instead.";
-    if w.previous_response_id.is_some() {
-        return Err(stateful("previous_response_id", stateless));
-    }
     if w.conversation.is_some() {
-        return Err(stateful("conversation", stateless));
+        return Err(stateful(
+            "conversation",
+            "Kaeso keeps no conversations: send the whole conversation in `input`, or continue a stored response with `previous_response_id`.",
+        ));
     }
     if w.background == Some(true) {
         return Err(stateful(
             "background",
             "Kaeso does not run background responses: send the request without `background` (or with `background: false`).",
-        ));
-    }
-    if w.store == Some(true) {
-        return Err(stateful(
-            "store",
-            "Kaeso does not store responses: send `store: false` or leave `store` out.",
         ));
     }
 

@@ -316,6 +316,10 @@ const messages = (): Rule[] => [
   rule("errors.orgKeepMediaOff", () => t("errors.orgKeepMediaOff", "The org doesn't keep media; a project cannot switch it on.")),
   rule("errors.orgResponseCacheOff", () => t("errors.orgResponseCacheOff", "The organization has the response cache off; a project cannot turn it on.")),
   rule("errors.responseCacheOffOnInstall", () => t("errors.responseCacheOffOnInstall", "The response cache is off on this install.")),
+  rule("errors.storedResponsesOffInOrg", () =>
+    t("errors.storedResponsesOffInOrg", "The organization doesn't allow stored responses; a project can't turn them on."),
+  ),
+  rule("errors.storedResponsesArchived", () => t("errors.storedResponsesArchived", "The project is archived; its stored responses setting cannot change.")),
   rule("errors.projectArchivedResponseCache", () => t("errors.projectArchivedResponseCache", "The project is archived; its response cache cannot change.")),
   rule("errors.responseCacheTtlRange", () => t("errors.responseCacheTtlRange", "Must be 60 to 604800 seconds (1 minute to 7 days).")),
   rule("errors.noProjectInOrg", () => t("errors.noProjectInOrg", "No such project in this org.")),
@@ -1017,6 +1021,10 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.transfer", () => t("errors.modelApi.transfer", "The connection to the provider failed before the response was complete.")),
   rule("errors.modelApi.prepare", () => t("errors.modelApi.prepare", "Kaeso cannot prepare the call to the provider.")),
   rule("errors.modelApi.responseTooLarge", () => t("errors.modelApi.responseTooLarge", "The provider's response is larger than this install accepts.")),
+  rule("errors.modelApi.storedResponseNotFound", (v) => t("errors.modelApi.storedResponseNotFound", "No response found with id '{id}'.", v)),
+  rule("errors.modelApi.storedResponsesUnavailable", () =>
+    t("errors.modelApi.storedResponsesUnavailable", "Kaeso cannot read its stored responses right now. Try again shortly."),
+  ),
   rule("errors.modelApi.keyRefused", () =>
     t("errors.modelApi.keyRefused", "The provider refused this project's provider key. Ask an organization admin to check it under Providers."),
   ),

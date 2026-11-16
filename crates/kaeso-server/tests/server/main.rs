@@ -117,6 +117,7 @@ mod roles;
 mod route_access;
 mod route_rights;
 mod setup_email;
+mod stored_responses;
 mod streams;
 mod tenancy;
 mod time_zone;

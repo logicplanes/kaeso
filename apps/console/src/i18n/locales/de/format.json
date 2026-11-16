@@ -274,5 +274,8 @@
   "format.guardrail.found.ip": "{count, plural, one {# IP-Adresse} other {# IP-Adressen}}",
   "format.guardrail.found.phone": "{count, plural, one {# Telefonnummer} other {# Telefonnummern}}",
   "format.guardrail.found.privateKey": "{count, plural, one {# privater Schlüssel} other {# private Schlüssel}}",
-  "format.guardrail.found.token": "{count, plural, one {# JSON Web Token} other {# JSON Web Tokens}}"
+  "format.guardrail.found.token": "{count, plural, one {# JSON Web Token} other {# JSON Web Tokens}}",
+  "format.audit.action.storedResponsesOrgUpdate": "Gespeicherte Antworten erlaubt oder verboten",
+  "format.audit.action.storedResponsesProjectUpdate": "Gespeicherte Antworten eines Projekts geändert",
+  "format.audit.kind.storedResponses": "Gespeicherte Antworten"
 }
