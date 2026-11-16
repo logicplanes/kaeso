@@ -8,6 +8,8 @@ use axum::extract::{ConnectInfo, State};
 use axum::http::{HeaderMap, HeaderValue, Method, Request, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use kaeso_core::id::{OrgId, ProjectId};
+use kaeso_mcp::headers as mcp_headers;
+use kaeso_mcp::{Kind, Message, RpcError, Version, meta};
 use kaeso_store::pg::agents;
 use serde_json::{Map, Value, json};
 use tower::ServiceExt;
@@ -22,8 +24,9 @@ use crate::http::client_ip;
 use crate::services::agents::{known_model, usable};
 use crate::state::AppState;
 
-const LATEST_PROTOCOL: &str = "2025-11-25";
-pub const PROTOCOL_VERSIONS: &[&str] = &[LATEST_PROTOCOL, "2025-06-18", "2025-03-26"];
+// How long a 2026-07-28 client may keep a list before asking again; the tools an agent may use
+// change only when its user approves a right, and a refused call names the link for that.
+const LIST_TTL_MS: u64 = 300_000;
 const MAX_RESULT_BYTES: usize = 200 * 1024;
 const INSTRUCTIONS: &str = "Kaeso is a self-hosted AI gateway. These tools read and change it \
     for the user who connected you, with the rights they gave you; tools/list shows only what you \
@@ -140,16 +143,6 @@ pub async fn post(
             &json!({ "error": { "type": "permission_denied", "message": "Requests from this origin are refused." } }),
         );
     }
-    if let Some(v) = headers
-        .get("mcp-protocol-version")
-        .and_then(|v| v.to_str().ok())
-        && !PROTOCOL_VERSIONS.contains(&v)
-    {
-        return json_response(
-            StatusCode::BAD_REQUEST,
-            &rpc_error(&Value::Null, -32600, "Unsupported MCP protocol version."),
-        );
-    }
     let token = headers
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
@@ -189,32 +182,29 @@ pub async fn post(
             );
         }
     };
-    let Ok(message) = serde_json::from_slice::<Value>(&body) else {
-        return json_response(
-            StatusCode::BAD_REQUEST,
-            &rpc_error(&Value::Null, -32700, "Parse error."),
-        );
+    let message = match Message::parse(&body) {
+        Ok(m) => m,
+        Err(e) => return failed(StatusCode::BAD_REQUEST, None, &e),
     };
-    let Some(message) = message.as_object() else {
-        return json_response(
-            StatusCode::BAD_REQUEST,
-            &rpc_error(
-                &Value::Null,
-                -32600,
-                "Send one JSON-RPC message per request.",
-            ),
-        );
-    };
-    let (Some(id), Some(method)) = (
-        message.get("id"),
-        message.get("method").and_then(Value::as_str),
-    ) else {
+    if message.kind() != Kind::Request {
         return StatusCode::ACCEPTED.into_response();
+    }
+    let rh = crate::portal::request_headers(&headers);
+    let version = match mcp_headers::version_of(&rh, &message)
+        .and_then(|v| mcp_headers::check(v, &rh, &message).map(|()| v))
+    {
+        Ok(v) => v,
+        Err(e) => return failed(StatusCode::BAD_REQUEST, message.id(), &e),
     };
-    let params = message
-        .get("params")
-        .and_then(Value::as_object)
-        .cloned()
+    let id = message
+        .id()
+        .and_then(|raw| serde_json::from_str::<Value>(raw.get()).ok())
+        .unwrap_or(Value::Null);
+    let id = &id;
+    let method = message.method().unwrap_or_default();
+    let params: Map<String, Value> = message
+        .params()
+        .and_then(|p| serde_json::from_slice(&p.to_vec()).ok())
         .unwrap_or_default();
     let ctx = Call {
         state: &state,
@@ -226,15 +216,19 @@ pub async fn post(
         token,
     };
     let reply = match method {
+        "server/discover" => rpc(id, discover()),
         "initialize" => initialize(id, &params),
         "ping" => rpc(id, json!({})),
-        "tools/list" => list(&ctx, id).await,
+        "tools/list" => list(&ctx, id, version).await,
         "tools/call" if params.get("name").and_then(Value::as_str) == Some(stats::TOOL) => {
             show_stats(&ctx, id, &params).await
         }
         "tools/call" => call(&ctx, id, &params).await,
-        "resources/list" => rpc(id, json!({ "resources": [stats::resource()] })),
-        "resources/templates/list" => rpc(id, json!({ "resourceTemplates": [] })),
+        "resources/list" => rpc(
+            id,
+            listing(json!({ "resources": [stats::resource()] }), version),
+        ),
+        "resources/templates/list" => rpc(id, listing(json!({ "resourceTemplates": [] }), version)),
         "resources/read" => match params.get("uri").and_then(Value::as_str) {
             Some(stats::VIEW) => rpc(id, stats::contents()),
             _ => rpc_error(
@@ -243,33 +237,94 @@ pub async fn post(
                 "Resource not found.",
             ),
         },
+        _ if version.is_stateless() => {
+            return failed(
+                StatusCode::NOT_FOUND,
+                message.id(),
+                &RpcError::method_not_found(),
+            );
+        }
         _ => rpc_error(id, -32601, "Method not found."),
+    };
+    let reply = if method == "initialize" {
+        reply
+    } else {
+        complete(reply, version)
     };
     json_response(StatusCode::OK, &reply)
 }
 
+fn failed(status: StatusCode, id: Option<&serde_json::value::RawValue>, e: &RpcError) -> Response {
+    let mut r = (status, Body::from(e.response(id))).into_response();
+    let h = r.headers_mut();
+    h.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+    );
+    h.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    r
+}
+
+fn capabilities() -> Value {
+    json!({
+        "tools": { "listChanged": false },
+        "resources": { "listChanged": false },
+    })
+}
+
+fn server_info() -> Value {
+    json!({
+        "name": "kaeso",
+        "title": "Kaeso",
+        "version": env!("CARGO_PKG_VERSION"),
+        "websiteUrl": "https://kaeso.app",
+    })
+}
+
+fn discover() -> Value {
+    json!({
+        "resultType": "complete",
+        "supportedVersions": Version::names(),
+        "capabilities": capabilities(),
+        "instructions": INSTRUCTIONS,
+        "ttlMs": LIST_TTL_MS,
+        "cacheScope": "private",
+        "_meta": { meta::SERVER_INFO: server_info() },
+    })
+}
+
 fn initialize(id: &Value, params: &Map<String, Value>) -> Value {
     let asked = params.get("protocolVersion").and_then(Value::as_str);
-    let version = asked
-        .filter(|v| PROTOCOL_VERSIONS.contains(v))
-        .unwrap_or(LATEST_PROTOCOL);
     rpc(
         id,
         json!({
-            "protocolVersion": version,
-            "capabilities": {
-                "tools": { "listChanged": false },
-                "resources": { "listChanged": false },
-            },
-            "serverInfo": {
-                "name": "kaeso",
-                "title": "Kaeso",
-                "version": env!("CARGO_PKG_VERSION"),
-                "websiteUrl": "https://kaeso.app",
-            },
+            "protocolVersion": Version::for_initialize(asked).as_str(),
+            "capabilities": capabilities(),
+            "serverInfo": server_info(),
             "instructions": INSTRUCTIONS,
         }),
     )
+}
+
+fn listing(mut out: Value, version: Version) -> Value {
+    if version.is_stateless()
+        && let Some(o) = out.as_object_mut()
+    {
+        o.insert("ttlMs".to_owned(), json!(LIST_TTL_MS));
+        o.insert("cacheScope".to_owned(), json!("private"));
+    }
+    out
+}
+
+fn complete(mut reply: Value, version: Version) -> Value {
+    if version.is_stateless()
+        && let Some(result) = reply.get_mut("result").and_then(Value::as_object_mut)
+    {
+        result
+            .entry("resultType")
+            .or_insert_with(|| json!("complete"));
+    }
+    reply
 }
 
 struct Call<'a> {
@@ -282,7 +337,7 @@ struct Call<'a> {
     token: &'a str,
 }
 
-async fn list(c: &Call<'_>, id: &Value) -> Value {
+async fn list(c: &Call<'_>, id: &Value, version: Version) -> Value {
     let usable = match usable(c.state, c.agent).await {
         Ok(u) => u,
         Err(e) => {
@@ -303,7 +358,7 @@ async fn list(c: &Call<'_>, id: &Value) -> Value {
     if stats::usable(&usable) {
         tools.push(stats::listing());
     }
-    rpc(id, json!({ "tools": tools }))
+    rpc(id, listing(json!({ "tools": tools }), version))
 }
 
 fn text_result(text: String, structured: Option<Value>, is_error: bool) -> Value {

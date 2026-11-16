@@ -261,8 +261,8 @@ sequenceDiagram
 | --- | --- |
 | 地址 | `POST https://kaeso.example.com/mcp` |
 | 传输 | Streamable HTTP，每个请求一条 JSON-RPC 消息，以 JSON 响应。Kaeso 不打开事件流：`GET` 和 `DELETE` 返回 405 和 `Allow: POST` |
-| 协议版本 | `2025-11-25`、`2025-06-18` 和 `2025-03-26`。如果 Kaeso 支持客户端请求的版本，`initialize` 就返回该版本，否则返回最新版本 |
-| 方法 | `initialize`、`ping`、`tools/list`、`tools/call`、`resources/list`、`resources/templates/list` 和 `resources/read`。通知返回 202 |
+| 协议版本 | `2026-07-28`、`2025-11-25`、`2025-06-18` 和 `2025-03-26`。版本 `2026-07-28` 是无状态的：每个请求都要发送 `MCP-Protocol-Version`、`Mcp-Method`，`tools/call` 和 `resources/read` 还要发送 `Mcp-Name`，并在 `_meta` 中写明版本。较早的版本以 `initialize` 开始：如果 Kaeso 支持客户端请求的版本，就返回该版本，否则返回 `2025-11-25` |
+| 方法 | `server/discover`、`initialize`、`ping`、`tools/list`、`tools/call`、`resources/list`、`resources/templates/list` 和 `resources/read`。通知返回 202 |
 | 身份验证 | `Authorization: Bearer kso_at_…` |
 | `Origin` | 可选。如果发送，必须是实例的源或 `KAESO_CORS_ALLOWED_ORIGINS` 中的一个 |
 | 请求体 | 最大为 `KAESO_BODY_LIMITS_PLATFORM_API`，默认 1 MiB |
@@ -271,7 +271,8 @@ sequenceDiagram
 
 | 状态码 | 何时 |
 | --- | --- |
-| 400 | 请求体不是 JSON（`-32700`）、包含批处理（`-32600`），或 `MCP-Protocol-Version` 指定了 Kaeso 不支持的版本。 |
+| 400 | 请求体不是 JSON（`-32700`）或包含批处理（`-32600`），`MCP-Protocol-Version` 指定了 Kaeso 不支持的版本（`-32022`，`data.supported` 列出支持的版本），或请求头与请求不一致（`-32020`）。 |
+| 404 | 版本 `2026-07-28` 中的未知方法（`-32601`）。 |
 | 401 | 没有令牌，或令牌已结束。`WWW-Authenticate` 包含 `Bearer resource_metadata="https://kaeso.example.com/.well-known/oauth-protected-resource/mcp"`，令牌已结束时还带 `error="invalid_token"`。 |
 | 403 | 实例不允许智能体，或 `Origin` 指向其他站点。 |
 | 405 | 对 `/mcp` 使用 `GET` 或 `DELETE`。 |
@@ -279,7 +280,7 @@ sequenceDiagram
 | 429 | 来自您地址的未知令牌过多（[API 密钥限流](../self-hosting/configuration.md#api-密钥限流)）。`Retry-After` 说明何时可以重试。 |
 | 503 | Kaeso 无法访问其数据库。 |
 
-未知方法返回 JSON-RPC 错误 `-32601`，未知工具返回 `-32602`。失败的工具调用返回 200，带 `isError: true` 和文本 `<type>: <message>`。类型是 Platform API 的[错误类型](platform-api.md#错误)，缺少权限时为 `insufficient_rights`（[缺少权限](#缺少权限)）。
+在较早的版本中，未知方法返回状态 200 和 JSON-RPC 错误 `-32601`，未知工具返回 `-32602`。失败的工具调用返回 200，带 `isError: true` 和文本 `<type>: <message>`。类型是 Platform API 的[错误类型](platform-api.md#错误)，缺少权限时为 `insufficient_rights`（[缺少权限](#缺少权限)）。
 
 ## 令牌
 

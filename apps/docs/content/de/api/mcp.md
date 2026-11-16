@@ -261,8 +261,8 @@ Das Tool verknüpft seine Ansicht mit `_meta.ui.resourceUri`, und die Ansicht is
 | --- | --- |
 | Adresse | `POST https://kaeso.example.com/mcp` |
 | Transport | Streamable HTTP mit einer JSON-RPC-Nachricht pro Anfrage, beantwortet mit JSON. Kaeso öffnet keinen Event-Stream: `GET` und `DELETE` erhalten 405 mit `Allow: POST` |
-| Protokollversionen | `2025-11-25`, `2025-06-18` und `2025-03-26`. `initialize` erhält die Version des Clients, wenn Kaeso sie spricht, sonst die neueste |
-| Methoden | `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/templates/list` und `resources/read`. Benachrichtigungen erhalten 202 |
+| Protokollversionen | `2026-07-28`, `2025-11-25`, `2025-06-18` und `2025-03-26`. Version `2026-07-28` ist zustandslos: Senden Sie bei jeder Anfrage `MCP-Protocol-Version`, `Mcp-Method` und bei `tools/call` und `resources/read` auch `Mcp-Name`, und tragen Sie die Version in `_meta` ein. Ältere Versionen beginnen mit `initialize`, das die Version des Clients erhält, wenn Kaeso sie spricht, sonst `2025-11-25` |
+| Methoden | `server/discover`, `initialize`, `ping`, `tools/list`, `tools/call`, `resources/list`, `resources/templates/list` und `resources/read`. Benachrichtigungen erhalten 202 |
 | Authentifizierung | `Authorization: Bearer kso_at_…` |
 | `Origin` | Optional. Wenn gesendet, muss es der Origin Ihrer Installation oder einer aus `KAESO_CORS_ALLOWED_ORIGINS` sein |
 | Body | Höchstens `KAESO_BODY_LIMITS_PLATFORM_API`, standardmäßig 1 MiB |
@@ -271,7 +271,8 @@ Das Tool verknüpft seine Ansicht mit `_meta.ui.resourceUri`, und die Ansicht is
 
 | Status | Wann |
 | --- | --- |
-| 400 | Der Body ist kein JSON (`-32700`), enthält einen Batch (`-32600`), oder `MCP-Protocol-Version` nennt eine Version, die Kaeso nicht spricht. |
+| 400 | Der Body ist kein JSON (`-32700`) oder enthält einen Batch (`-32600`), `MCP-Protocol-Version` nennt eine Version, die Kaeso nicht spricht (`-32022`, mit den Versionen, die es spricht, in `data.supported`), oder ein Header passt nicht zur Anfrage (`-32020`). |
+| 404 | Eine unbekannte Methode in Version `2026-07-28` (`-32601`). |
 | 401 | Kein Token oder eines, das beendet ist. `WWW-Authenticate` enthält `Bearer resource_metadata="https://kaeso.example.com/.well-known/oauth-protected-resource/mcp"`, bei einem beendeten Token mit `error="invalid_token"`. |
 | 403 | Die Installation lässt keine Agenten zu, oder `Origin` nennt eine andere Website. |
 | 405 | `GET` oder `DELETE` auf `/mcp`. |
@@ -279,7 +280,7 @@ Das Tool verknüpft seine Ansicht mit `_meta.ui.resourceUri`, und die Ansicht is
 | 429 | Von Ihrer Adresse kamen zu viele unbekannte Tokens ([Drosselung von API-Schlüsseln](../self-hosting/configuration.md#drosselung-von-api-schlüsseln)). `Retry-After` sagt, wann Sie es erneut versuchen können. |
 | 503 | Kaeso erreicht seine Datenbank nicht. |
 
-Eine unbekannte Methode erhält den JSON-RPC-Fehler `-32601`, ein unbekanntes Tool `-32602`. Ein fehlgeschlagener Tool-Aufruf antwortet 200 mit `isError: true` und dem Text `<type>: <message>`. Der Typ ist der [Fehlertyp](platform-api.md#fehler) der Platform API oder `insufficient_rights` für ein [fehlendes Recht](#fehlende-rechte).
+In älteren Versionen erhält eine unbekannte Methode den JSON-RPC-Fehler `-32601` mit Status 200, ein unbekanntes Tool `-32602`. Ein fehlgeschlagener Tool-Aufruf antwortet 200 mit `isError: true` und dem Text `<type>: <message>`. Der Typ ist der [Fehlertyp](platform-api.md#fehler) der Platform API oder `insufficient_rights` für ein [fehlendes Recht](#fehlende-rechte).
 
 ## Tokens
 

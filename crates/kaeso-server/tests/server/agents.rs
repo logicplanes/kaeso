@@ -2328,3 +2328,166 @@ async fn usage_stats_keep_to_the_agents_rights() {
         "org usage isn't a project's: {other_project:?}"
     );
 }
+
+async fn stateless(
+    app: &App,
+    token: &str,
+    method: &str,
+    name: Option<&str>,
+    params: Value,
+) -> common::Resp {
+    let mut params = params;
+    params["_meta"] = json!({ "io.modelcontextprotocol/protocolVersion": "2026-07-28" });
+    let mut req = Request::builder()
+        .method(Method::POST)
+        .uri("/mcp")
+        .header(header::AUTHORIZATION, format!("Bearer {token}"))
+        .header(header::CONTENT_TYPE, "application/json")
+        .header("mcp-protocol-version", "2026-07-28")
+        .header("mcp-method", method);
+    if let Some(name) = name {
+        req = req.header("mcp-name", name);
+    }
+    app.raw(
+        req.body(Body::from(
+            json!({ "jsonrpc": "2.0", "id": 9, "method": method, "params": params }).to_string(),
+        ))
+        .unwrap(),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn mcp_speaks_the_stateless_protocol_and_the_older_ones() {
+    let (_s, app, owner) = setup().await;
+    let a = sign_in(&app, &owner.cookie, builder(&owner.org_id)).await;
+
+    let discovered = stateless(&app, &a.access, "server/discover", None, json!({}))
+        .await
+        .expect_status(StatusCode::OK);
+    let d = &discovered.body["result"];
+    assert_eq!(discovered.body["id"], 9);
+    assert_eq!(d["resultType"], "complete");
+    assert_eq!(
+        d["supportedVersions"],
+        json!(["2026-07-28", "2025-11-25", "2025-06-18", "2025-03-26"])
+    );
+    assert!(d["capabilities"]["tools"].is_object());
+    assert!(d["capabilities"]["resources"].is_object());
+    assert_eq!(
+        d["_meta"]["io.modelcontextprotocol/serverInfo"]["name"],
+        "kaeso"
+    );
+    assert!(
+        d["instructions"]
+            .as_str()
+            .unwrap()
+            .contains("show_usage_stats")
+    );
+
+    let listed = stateless(&app, &a.access, "tools/list", None, json!({}))
+        .await
+        .expect_status(StatusCode::OK);
+    let l = &listed.body["result"];
+    assert_eq!(l["resultType"], "complete");
+    assert_eq!(l["ttlMs"], 300_000);
+    assert_eq!(l["cacheScope"], "private");
+    assert!(
+        l["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|t| t["name"] == "show_usage_stats")
+    );
+
+    let resources = stateless(&app, &a.access, "resources/list", None, json!({}))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(resources.body["result"]["resultType"], "complete");
+    assert_eq!(
+        resources.body["result"]["resources"][0]["uri"],
+        "ui://kaeso/stats"
+    );
+
+    let read = stateless(
+        &app,
+        &a.access,
+        "resources/read",
+        Some("ui://kaeso/stats"),
+        json!({ "uri": "ui://kaeso/stats" }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(read.body["result"]["resultType"], "complete");
+    assert_eq!(
+        read.body["result"]["contents"][0]["mimeType"],
+        "text/html;profile=mcp-app"
+    );
+
+    let called = stateless(
+        &app,
+        &a.access,
+        "tools/call",
+        Some("get_orgs_org"),
+        json!({ "name": "get_orgs_org", "arguments": { "org": owner.org_id } }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(called.body["result"]["resultType"], "complete");
+    assert_eq!(called.body["result"]["isError"], false, "{:?}", called.body);
+
+    let unknown = stateless(&app, &a.access, "prompts/list", None, json!({}))
+        .await
+        .expect_status(StatusCode::NOT_FOUND);
+    assert_eq!(unknown.body["error"]["code"], -32601);
+    assert_eq!(unknown.body["id"], 9);
+
+    let renamed = stateless(
+        &app,
+        &a.access,
+        "tools/call",
+        Some("delete_orgs_org"),
+        json!({ "name": "get_orgs_org", "arguments": { "org": owner.org_id } }),
+    )
+    .await
+    .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(renamed.body["error"]["code"], -32020);
+
+    let newer = app
+        .raw(
+            Request::builder()
+                .method(Method::POST)
+                .uri("/mcp")
+                .header(header::AUTHORIZATION, format!("Bearer {}", a.access))
+                .header("mcp-protocol-version", "2099-01-01")
+                .body(Body::from(
+                    json!({ "jsonrpc": "2.0", "id": 3, "method": "initialize", "params": {} })
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(newer.body["id"], 3);
+    assert_eq!(newer.body["error"]["code"], -32022);
+    assert_eq!(
+        newer.body["error"]["data"]["supported"][0], "2026-07-28",
+        "a client picks a version from the list"
+    );
+
+    let init = mcp(
+        &app,
+        &a.access,
+        "initialize",
+        json!({ "protocolVersion": "2026-07-28", "capabilities": {}, "clientInfo": { "name": "x", "version": "1" } }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(init.body["result"]["protocolVersion"], "2025-11-25");
+    assert!(init.body["result"].get("resultType").is_none());
+    let legacy = mcp(&app, &a.access, "tools/list", json!({}))
+        .await
+        .expect_status(StatusCode::OK);
+    assert!(legacy.body["result"].get("resultType").is_none());
+    assert!(legacy.body["result"].get("ttlMs").is_none());
+}
