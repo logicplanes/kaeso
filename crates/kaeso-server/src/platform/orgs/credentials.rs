@@ -36,6 +36,10 @@ pub struct CredentialProject {
     pub name: String,
     #[doc = "Its picture; `null` without one."]
     pub avatar_url: Option<String>,
+    #[doc = "The key's weight in the project's pool for the provider, 1 to 100: a caller\n\
+        draws a key with a chance of its weight over the pool's total."]
+    #[schema(example = 1)]
+    pub weight: u8,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -169,6 +173,7 @@ impl CredentialView {
                     id: ProjectId::from_uuid(a.project_id),
                     name: a.project_name.clone(),
                     avatar_url: crate::platform::views::avatar_url(a.project_avatar.as_deref()),
+                    weight: u8::try_from(a.weight).unwrap_or(1),
                 })
                 .collect(),
             last4: r.last4.clone(),
@@ -312,10 +317,14 @@ pub struct CredentialRename {
 #[serde(deny_unknown_fields)]
 #[schema(description = "The projects a key is assigned to.")]
 pub struct CredentialAssign {
-    #[doc = "Every project that uses this key for its provider. Projects that used\n\
-        another key of the org for the provider switch to this one; projects\n\
-        left out use the default again."]
+    #[doc = "Every project that draws from this key for its provider. A project keeps\n\
+        the other keys assigned to it, so its requests draw from all of them; a\n\
+        project with none uses the provider's default."]
     pub projects: Vec<ProjectId>,
+    #[doc = "The key's weight in some of these projects' pools, 1 to 100; 1 for a project\n\
+        left out."]
+    #[serde(default)]
+    pub weights: std::collections::BTreeMap<ProjectId, u8>,
 }
 
 impl std::fmt::Debug for CredentialCreate {
@@ -1176,7 +1185,8 @@ pub async fn make_default(
 #[utoipa::path(
     put,
     path = "/orgs/{org}/credentials/{credential}/projects",
-    summary = "Sets the projects that use a key for its provider instead of the default.",
+    summary = "Sets the projects that draw from a key for its provider instead of the\n\
+    default, with the key's weight in each project's pool.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
     request_body = CredentialAssign,
@@ -1208,7 +1218,26 @@ pub async fn assign(
             ),
         ));
     }
-    let projects: Vec<Uuid> = wanted.into_iter().collect();
+    if let Some(project) = req.weights.keys().find(|p| !wanted.contains(&p.uuid())) {
+        return Err(ApiError::invalid(
+            "weights",
+            format!("`{project}` is not one of the key's `projects`."),
+        ));
+    }
+    if req.weights.values().any(|w| !(1..=100).contains(w)) {
+        return Err(ApiError::invalid("weights", "A weight is 1 to 100."));
+    }
+    let projects: Vec<(Uuid, i16)> = wanted
+        .into_iter()
+        .map(|p| {
+            let weight = req
+                .weights
+                .get(&ProjectId::from_uuid(p))
+                .copied()
+                .unwrap_or(1);
+            (p, i16::from(weight))
+        })
+        .collect();
     credentials::lock_provider(&mut tx, org, &before.provider).await?;
     credentials::set_assignments(&mut tx, org, &before.provider, id, &projects).await?;
     let after = view(&mut tx, org, id).await?;

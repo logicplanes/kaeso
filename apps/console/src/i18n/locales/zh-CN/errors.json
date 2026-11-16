@@ -812,5 +812,6 @@
   "errors.guardrails.patternLength": "模式 {n} 的长度必须为 1 到 500 个字符。",
   "errors.guardrails.patternInvalid": "模式 {n} 不是 Kaeso 能编译的正则表达式。",
   "errors.guardrails.noSecret": "内置规则没有签名密钥。",
-  "errors.guardrails.sampleTooLong": "`text` 最多 100000 个字符。"
+  "errors.guardrails.sampleTooLong": "`text` 最多 100000 个字符。",
+  "errors.keyWeight": "权重为 1 到 100。"
 }

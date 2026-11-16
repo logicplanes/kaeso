@@ -35,6 +35,9 @@ pub struct Resolved {
     /// The endpoint of the resource a key of a provider whose keys each belong to one resource
     /// calls, such as an Azure resource's `https://example.openai.azure.com`.
     pub endpoint: Option<String>,
+    /// The keys the project draws from for the provider, with their weights; set on the key a
+    /// project resolves first, empty on the others.
+    pub pool: Vec<kaeso_store::pg::credentials::PoolMember>,
     keyless: bool,
     last_touched: AtomicI64,
 }
@@ -86,6 +89,7 @@ impl Resolved {
             scope: None,
             region: None,
             endpoint: None,
+            pool: Vec::new(),
             keyless: true,
             last_touched: AtomicI64::new(0),
         }
@@ -172,9 +176,20 @@ pub async fn for_provider(
     project: ProjectId,
     provider: &ProviderRef,
 ) -> Result<std::sync::Arc<Resolved>, ResolveError> {
+    for_provider_member(state, org, project, provider, None).await
+}
+
+/// The project's key for the provider, or with `member` that key of the project's pool.
+pub async fn for_provider_member(
+    state: &AppState,
+    org: OrgId,
+    project: ProjectId,
+    provider: &ProviderRef,
+    member: Option<Uuid>,
+) -> Result<std::sync::Arc<Resolved>, ResolveError> {
     match provider.custom() {
         Some(c) if c.auth() == CustomAuth::None => Ok(std::sync::Arc::new(Resolved::keyless(c))),
-        _ => resolve(state, org, project, provider.id()).await,
+        _ => resolve_member(state, org, project, provider.id(), member).await,
     }
 }
 
@@ -184,7 +199,17 @@ pub async fn resolve(
     project: ProjectId,
     provider: &str,
 ) -> Result<std::sync::Arc<Resolved>, ResolveError> {
-    let resolved = cached(state, org, project, provider).await?;
+    resolve_member(state, org, project, provider, None).await
+}
+
+async fn resolve_member(
+    state: &AppState,
+    org: OrgId,
+    project: ProjectId,
+    provider: &str,
+    member: Option<Uuid>,
+) -> Result<std::sync::Arc<Resolved>, ResolveError> {
+    let resolved = cached(state, org, project, provider, member).await?;
     let Some(account) = resolved.account else {
         touch(state, &resolved);
         return Ok(resolved);
@@ -208,12 +233,13 @@ pub async fn resolve(
             org,
             project,
             provider: provider.to_owned(),
+            member,
             product,
             stale: resolved.clone(),
         },
     )
     .await?;
-    let renewed = cached(state, org, project, provider).await?;
+    let renewed = cached(state, org, project, provider, member).await?;
     match renewed.account {
         Some(Account {
             stopped: Some(stopped),
@@ -237,6 +263,7 @@ struct Renewal {
     org: OrgId,
     project: ProjectId,
     provider: String,
+    member: Option<Uuid>,
     product: &'static str,
     stale: std::sync::Arc<Resolved>,
 }
@@ -275,7 +302,7 @@ async fn renewed(state: &AppState, r: Renewal) -> Result<(), ResolveError> {
     let org = r.org;
     let id = r.stale.id.uuid();
     let _flight = state.caches.refreshes.board(&id.to_string()).await;
-    let cached_now = cached(state, org, r.project, &r.provider).await?;
+    let cached_now = cached(state, org, r.project, &r.provider, r.member).await?;
     if current(r.stale.method, cached_now.account, state.clock.now()) {
         return Ok(());
     }
@@ -375,19 +402,31 @@ async fn cached(
     org: OrgId,
     project: ProjectId,
     provider: &str,
+    member: Option<Uuid>,
 ) -> Result<std::sync::Arc<Resolved>, ResolveError> {
     let st = state.clone();
-    let rest = format!("{}:{provider}", project.uuid());
+    let rest = match member {
+        Some(id) => format!("{}:{provider}:{id}", project.uuid()),
+        None => format!("{}:{provider}", project.uuid()),
+    };
     let name = provider.to_owned();
     let found = state
         .caches
         .credentials
         .get_or_refresh(&org.uuid().to_string(), &rest, move || async move {
-            let Some(row) = credentials::resolve(&st.pg, org.uuid(), project.uuid(), &name).await?
-            else {
+            let (org, project) = (org.uuid(), project.uuid());
+            let row = match member {
+                Some(id) => credentials::resolve_member(&st.pg, org, project, &name, id).await?,
+                None => credentials::resolve(&st.pg, org, project, &name).await?,
+            };
+            let Some(row) = row else {
                 return Ok::<_, ResolveError>(None);
             };
-            Ok(Some(open(&st.keyring, org.uuid(), &row)?))
+            let mut resolved = open(&st.keyring, org, &row)?;
+            if member.is_none() {
+                resolved.pool = credentials::pool(&st.pg, org, project, &name).await?;
+            }
+            Ok(Some(resolved))
         })
         .await?;
     found.ok_or_else(|| ResolveError::Missing {
@@ -458,6 +497,7 @@ fn open(
             .clone()
             .filter(|_| method == AuthMethod::ApiKey),
         endpoint: row.endpoint.clone(),
+        pool: Vec::new(),
         keyless: false,
         last_touched: AtomicI64::new(0),
     })

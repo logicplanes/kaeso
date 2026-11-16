@@ -88,6 +88,14 @@ pub struct AssignmentRow {
     pub project_id: Uuid,
     pub project_name: String,
     pub project_avatar: Option<String>,
+    pub weight: i16,
+}
+
+/// One key of the pool a project draws from for a provider, with its weight.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PoolMember {
+    pub credential_id: Uuid,
+    pub weight: i16,
 }
 
 pub async fn lock_provider(
@@ -394,7 +402,8 @@ pub async fn assignments(
 ) -> Result<Vec<AssignmentRow>, StoreError> {
     Ok(sqlx::query_as!(
         AssignmentRow,
-        "SELECT a.credential_id, a.project_id, p.name AS project_name, p.avatar AS project_avatar FROM project_provider_keys a \
+        "SELECT a.credential_id, a.project_id, p.name AS project_name, p.avatar AS project_avatar, a.weight \
+         FROM project_provider_keys a \
          JOIN projects p ON p.id = a.project_id \
          WHERE a.org_id = $1 AND ($2::uuid IS NULL OR a.credential_id = $2) ORDER BY lower(p.name), p.id",
         org_id,
@@ -418,34 +427,89 @@ pub async fn active_projects(
     .await?)
 }
 
+/// Sets the projects that draw from `credential` for its provider, each with its weight; the
+/// project's other keys of the provider stay in its pool.
 pub async fn set_assignments(
     db: &mut PgConnection,
     org_id: Uuid,
     provider: &str,
     credential: Uuid,
-    projects: &[Uuid],
+    projects: &[(Uuid, i16)],
 ) -> Result<(), StoreError> {
+    let ids: Vec<Uuid> = projects.iter().map(|(p, _)| *p).collect();
+    let weights: Vec<i16> = projects.iter().map(|(_, w)| *w).collect();
     sqlx::query!(
         "DELETE FROM project_provider_keys WHERE org_id = $1 AND credential_id = $2 AND NOT (project_id = ANY($3))",
         org_id,
         credential,
-        projects
+        &ids
     )
     .execute(&mut *db)
     .await?;
     sqlx::query!(
-        "INSERT INTO project_provider_keys (project_id, provider, org_id, credential_id) \
-         SELECT unnest($4::uuid[]), $2, $1, $3 \
-         ON CONFLICT (project_id, provider) DO UPDATE SET credential_id = EXCLUDED.credential_id, created_at = now() \
-         WHERE project_provider_keys.credential_id <> EXCLUDED.credential_id",
+        "INSERT INTO project_provider_keys (project_id, provider, org_id, credential_id, weight) \
+         SELECT p, $2, $1, $3, w FROM unnest($4::uuid[], $5::smallint[]) AS t(p, w) \
+         ON CONFLICT (project_id, provider, credential_id) DO UPDATE SET weight = EXCLUDED.weight \
+         WHERE project_provider_keys.weight <> EXCLUDED.weight",
         org_id,
         provider,
         credential,
-        projects
+        &ids,
+        &weights
     )
     .execute(&mut *db)
     .await?;
     Ok(())
+}
+
+/// The keys a project draws from for a provider: the ones assigned to it, or the provider's
+/// default when none is.
+pub async fn pool(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    project_id: Uuid,
+    provider: &str,
+) -> Result<Vec<PoolMember>, StoreError> {
+    Ok(sqlx::query_as!(
+        PoolMember,
+        r#"SELECT a.credential_id AS "credential_id!", a.weight AS "weight!" FROM project_provider_keys a
+         WHERE a.org_id = $1 AND a.project_id = $2 AND a.provider = $3
+         UNION ALL
+         SELECT c.id, 1::smallint FROM provider_credentials c
+         WHERE c.org_id = $1 AND c.provider = $3 AND c.is_default AND NOT EXISTS (
+             SELECT 1 FROM project_provider_keys a WHERE a.project_id = $2 AND a.provider = $3)
+         ORDER BY 1"#,
+        org_id,
+        project_id,
+        provider
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+/// One key of a project's pool for a provider, or `None` when it isn't in the pool.
+pub async fn resolve_member(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    project_id: Uuid,
+    provider: &str,
+    credential: Uuid,
+) -> Result<Option<SealedRow>, StoreError> {
+    Ok(sqlx::query_as!(
+        SealedRow,
+        "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision, c.auth_method, c.expires_at, \
+         c.auth_error, c.location, c.account_id, c.gateway_id, c.endpoint FROM provider_credentials c \
+         WHERE c.org_id = $1 AND c.provider = $3 AND c.id = $4 AND ( \
+             EXISTS (SELECT 1 FROM project_provider_keys a WHERE a.credential_id = c.id AND a.project_id = $2) \
+             OR (c.is_default AND NOT EXISTS ( \
+                 SELECT 1 FROM project_provider_keys a WHERE a.project_id = $2 AND a.provider = $3)))",
+        org_id,
+        project_id,
+        provider,
+        credential
+    )
+    .fetch_optional(db)
+    .await?)
 }
 
 pub async fn resolve(
@@ -460,7 +524,7 @@ pub async fn resolve(
          c.auth_error, c.location, c.account_id, c.gateway_id, c.endpoint FROM provider_credentials c \
          LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 \
          WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) \
-         ORDER BY a.project_id IS NULL LIMIT 1",
+         ORDER BY a.project_id IS NULL, a.created_at, c.id LIMIT 1",
         org_id,
         project_id,
         provider
@@ -497,7 +561,7 @@ pub async fn key_in_use(
         "SELECT c.id, c.revision FROM provider_credentials c \
          LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 \
          WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) \
-         ORDER BY a.project_id IS NULL LIMIT 1",
+         ORDER BY a.project_id IS NULL, a.created_at, c.id LIMIT 1",
         org_id,
         project_id,
         provider

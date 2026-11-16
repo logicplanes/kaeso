@@ -11,7 +11,7 @@
   "orgHome.archivedOn": "归档于 {date}",
   "orgHome.assignDefaultKeyHint": "即使其他密钥成为默认密钥，这些项目仍使用它访问 {provider}。",
   "orgHome.assignKey": "分配 {title}",
-  "orgHome.assignKeyHint": "这些项目使用它访问 {provider}，而非默认密钥。",
+  "orgHome.assignKeyHint": "这些项目在 {provider} 中使用它而不是默认密钥，并与其其他密钥一起使用。",
   "orgHome.assignToProjects": "分配给项目",
   "orgHome.breakdown": "明细",
   "orgHome.breakdownHint": "该时段的请求、错误和 Token",
@@ -26,7 +26,7 @@
   "orgHome.default": "默认",
   "orgHome.deleteKey": "删除密钥",
   "orgHome.deleteKeyLast": "在组织添加其他密钥之前，发往 {provider} 的请求都会失败。",
-  "orgHome.deleteKeyProjectsSwitch": "使用它的项目将改用 {provider} 默认密钥。",
+  "orgHome.deleteKeyProjectsSwitch": "其项目中没有其他 {provider} 密钥的会改用默认密钥。",
   "orgHome.deleteKeyQuestion": "删除 {title}？",
   "orgHome.deleteKeySuccessor": "{name} 将成为 {provider} 默认密钥。",
   "orgHome.deleteKeyUnused": "没有项目使用它，请求不受影响。",
@@ -90,7 +90,6 @@
   "orgHome.serviceAccount": "服务账号",
   "orgHome.serviceAccountIn": "{project} 中的服务账号",
   "orgHome.usageBreakdown": "用量明细",
-  "orgHome.usesKeyNow": "当前使用 {name}",
   "orgHome.signInAgain": "重新登录",
   "orgHome.manageUsage": "管理用量",
   "orgHome.signedOut": "已退出登录",
@@ -361,5 +360,9 @@
   "orgHome.keyReaddressed": "{name} 现在调用 {endpoint}",
   "orgHome.changeEndpointFirst": "请先更改名称或端点",
   "orgHome.downloadCsv": "下载 CSV",
-  "orgHome.id": "ID"
+  "orgHome.id": "ID",
+  "orgHome.keyWeightBlocked": "请为每个权重填写 1 到 100",
+  "orgHome.usesKeysNow": "同时使用 {names}",
+  "orgHome.keyWeightsHint": "每个调用方按权重抽取项目的一个密钥；被拒绝或受速率限制的密钥会让给下一个。",
+  "orgHome.keyWeight": "在 {project} 中的权重"
 }

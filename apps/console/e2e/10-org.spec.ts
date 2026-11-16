@@ -215,7 +215,7 @@ test("provider keys: several per provider, one default, assigned to a project, r
   await page.getByRole("button", { name: "Actions for Anthropic · Research v2" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirm = page.getByRole("alertdialog", { name: "Delete Anthropic · Research v2?" });
-  await expect(confirm.getByText("Its projects switch to the Anthropic default.")).toBeVisible();
+  await expect(confirm.getByText("Its projects without another Anthropic key switch to the default.")).toBeVisible();
   await confirm.getByRole("button", { name: "Delete key" }).click();
   await expect(toastText(page, "Anthropic · Research v2 deleted")).toBeVisible();
   await expect(page.getByText("…0p1c")).toHaveCount(0);

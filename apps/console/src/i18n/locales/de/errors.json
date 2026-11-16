@@ -812,5 +812,6 @@
   "errors.guardrails.patternLength": "Muster {n} muss 1 bis 500 Zeichen lang sein.",
   "errors.guardrails.patternInvalid": "Muster {n} ist kein regulärer Ausdruck, den Kaeso kompilieren kann.",
   "errors.guardrails.noSecret": "Eingebaute Regeln haben kein Signatur-Secret.",
-  "errors.guardrails.sampleTooLong": "`text` nimmt höchstens 100000 Zeichen."
+  "errors.guardrails.sampleTooLong": "`text` nimmt höchstens 100000 Zeichen.",
+  "errors.keyWeight": "Eine Gewichtung liegt zwischen 1 und 100."
 }

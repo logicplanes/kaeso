@@ -31,6 +31,7 @@ mod images;
 mod instance_users;
 mod jobs;
 mod key_failures;
+mod key_pools;
 mod key_rotation;
 mod key_safeguards;
 mod keys;

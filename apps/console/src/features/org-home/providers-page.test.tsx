@@ -12,7 +12,7 @@ import { queryClient } from "~/query";
 const PATH = `/orgs/${ORG}/providers`;
 const CREDENTIALS = "orgs/:org/credentials";
 
-const production = credential({ projects: [{ id: PROJECT, name: "Checkout assistant" }] });
+const production = credential({ projects: [{ id: PROJECT, name: "Checkout assistant", weight: 1 }] });
 const staging = credential({ id: "cred_staging", name: "Staging", is_default: false, created_at: "2026-10-01T12:00:00Z" });
 
 function keys(list: CredentialView[]) {
@@ -35,9 +35,9 @@ describe("organization providers", () => {
     keys([
       credential({
         projects: [
-          { id: PROJECT, name: "Checkout assistant" },
-          { id: OTHER_PROJECT, name: "Support triage" },
-          { id: "proj_three", name: "Billing bot" },
+          { id: PROJECT, name: "Checkout assistant", weight: 1 },
+          { id: OTHER_PROJECT, name: "Support triage", weight: 1 },
+          { id: "proj_three", name: "Billing bot", weight: 1 },
         ],
       }),
       credential({
@@ -451,7 +451,7 @@ describe("organization providers", () => {
 
   it("lists the projects to assign once they have loaded", async () => {
     signedIn();
-    keys([production, { ...staging, projects: [{ id: "proj_gone", name: "Gone project" }] }]);
+    keys([production, { ...staging, projects: [{ id: "proj_gone", name: "Gone project", weight: 1 }] }]);
     const waiting: (() => void)[] = [];
     on("GET", "orgs/:org/projects", () => new Promise((resolve) => waiting.push(() => resolve(page([project()])))));
     const { user } = await renderApp(PATH);
@@ -465,30 +465,39 @@ describe("organization providers", () => {
 
   it("assigns a key to projects and says which ones use another key now", async () => {
     signedIn();
-    const assigned = { ...staging, projects: [{ id: "proj_gone", name: "Gone project" }] };
+    const assigned = { ...staging, projects: [{ id: "proj_gone", name: "Gone project", weight: 1 }] };
     keys([production, assigned]);
     on("PUT", "orgs/:org/credentials/:credential/projects", ({ body }: { body: { projects: string[] } }) => ({
       ...staging,
-      projects: body.projects.map((id) => ({ id, name: id })),
+      projects: body.projects.map((id) => ({ id, name: id, weight: 1 })),
     }));
     const { user } = await renderApp(PATH);
     const menu = await openMenu(user, "Staging");
     await user.click(within(menu).getByRole("menuitem", { name: "Assign to projects" }));
     const dialog = await screen.findByRole("dialog", { name: "Assign OpenAI · Staging" });
-    expect(within(dialog).getByText("These projects use it for OpenAI instead of the default.")).toBeInTheDocument();
+    expect(within(dialog).getByText("These projects use it for OpenAI instead of the default, beside their other keys.")).toBeInTheDocument();
     const checkout = await within(dialog).findByRole("checkbox", { name: /Checkout assistant/ });
-    expect(within(dialog).getByText("Uses OpenAI production now")).toBeInTheDocument();
+    expect(within(dialog).getByText("Also uses OpenAI production")).toBeInTheDocument();
     expect(within(dialog).getByRole("checkbox", { name: /Gone project/ })).toBeChecked();
     expect(within(dialog).getByRole("checkbox", { name: /Support triage/ })).not.toBeChecked();
+    expect(within(dialog).queryByRole("textbox", { name: /^Weight in/ })).not.toBeInTheDocument();
     await user.click(checkout);
+    expect(within(dialog).getByText("Each caller draws one key of a project by weight; a key that is refused or rate limited gives way.")).toBeInTheDocument();
+    const weight = within(dialog).getByRole("textbox", { name: "Weight in Checkout assistant" });
+    expect(weight).toHaveValue("1");
+    await user.clear(weight);
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Save" }), "Give each weight from 1 to 100");
+    await user.type(weight, "3x0");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
     expect(await notifications().findByText("OpenAI · Staging assigned to 2 projects")).toBeInTheDocument();
-    expect(requests("PUT", "orgs/:org/credentials/:credential/projects").map((r) => r.body)).toEqual([{ projects: ["proj_gone", PROJECT] }]);
+    expect(requests("PUT", "orgs/:org/credentials/:credential/projects").map((r) => r.body)).toEqual([
+      { projects: ["proj_gone", PROJECT], weights: { [PROJECT]: 30 } },
+    ]);
   });
 
   it("says when no project is assigned to a key any more", async () => {
     signedIn();
-    keys([production, { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage" }] }]);
+    keys([production, { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage", weight: 1 }] }]);
     on("PUT", "orgs/:org/credentials/:credential/projects", { ...staging, projects: [] });
     const { user } = await renderApp(PATH);
     const menu = await openMenu(user, "Staging");
@@ -497,7 +506,7 @@ describe("organization providers", () => {
     await user.click(await within(dialog).findByRole("checkbox", { name: /Support triage/ }));
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(await notifications().findByText("No project is assigned to OpenAI · Staging")).toBeInTheDocument();
-    expect(requests("PUT", "orgs/:org/credentials/:credential/projects").map((r) => r.body)).toEqual([{ projects: [] }]);
+    expect(requests("PUT", "orgs/:org/credentials/:credential/projects").map((r) => r.body)).toEqual([{ projects: [], weights: {} }]);
   });
 
   it("closes the rename and assign dialogs without saving", async () => {
@@ -532,7 +541,7 @@ describe("organization providers", () => {
         name: "Used",
         is_default: false,
         created_at: "2026-09-01T12:00:00Z",
-        projects: [{ id: OTHER_PROJECT, name: "Support triage" }],
+        projects: [{ id: OTHER_PROJECT, name: "Support triage", weight: 1 }],
       }),
     ]);
     on("DELETE", "orgs/:org/credentials/:credential", noContent());
@@ -540,7 +549,7 @@ describe("organization providers", () => {
 
     const cases: [string, string][] = [
       ["OpenAI production", "Newer becomes the OpenAI default."],
-      ["Used", "Its projects switch to the OpenAI default."],
+      ["Used", "Its projects without another OpenAI key switch to the default."],
       ["Staging", "No project uses it; requests are not affected."],
     ];
     for (const [name, text] of cases) {
@@ -576,7 +585,7 @@ describe("organization providers", () => {
   describe("with many keys", () => {
     const many = [
       ...["openai", "anthropic", "groq", "mistral", "deepseek", "openrouter", "togetherai", "xai"].map((provider, i) =>
-        credential({ id: `cred_${provider}`, provider, name: "Demo", projects: i === 0 ? [{ id: OTHER_PROJECT, name: "Support triage" }] : [] }),
+        credential({ id: `cred_${provider}`, provider, name: "Demo", projects: i === 0 ? [{ id: OTHER_PROJECT, name: "Support triage", weight: 1 }] : [] }),
       ),
       staging,
     ];
@@ -704,7 +713,7 @@ describe("organization providers", () => {
         toJSON: () => ({}),
       });
       signedIn();
-      keys([production, { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage" }] }]);
+      keys([production, { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage", weight: 1 }] }]);
       const { user } = await renderApp(PATH);
       await row("Staging");
       const headers = within(await table())
@@ -731,7 +740,7 @@ describe("organization providers", () => {
 
     it("shows a tooltip only for keys with assigned projects", async () => {
       signedIn();
-      keys([credential({ projects: [] }), { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage" }] }]);
+      keys([credential({ projects: [] }), { ...staging, projects: [{ id: OTHER_PROJECT, name: "Support triage", weight: 1 }] }]);
       const { user } = await renderApp(PATH);
       await row("Staging");
       act(() => showTooltipsAtOnce(true));

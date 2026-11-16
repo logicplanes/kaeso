@@ -12,7 +12,7 @@
   "orgHome.archivedOn": "Archived {date}",
   "orgHome.assignDefaultKeyHint": "These projects keep it for {provider} even when another key becomes the default.",
   "orgHome.assignKey": "Assign {title}",
-  "orgHome.assignKeyHint": "These projects use it for {provider} instead of the default.",
+  "orgHome.assignKeyHint": "These projects use it for {provider} instead of the default, beside their other keys.",
   "orgHome.assignToProjects": "Assign to projects",
   "orgHome.breakdown": "Breakdown",
   "orgHome.breakdownHint": "Requests, errors and tokens in the period",
@@ -126,7 +126,7 @@
   "orgHome.defaultGateway": "default",
   "orgHome.deleteKey": "Delete key",
   "orgHome.deleteKeyLast": "Requests to {provider} fail until the organization adds another key.",
-  "orgHome.deleteKeyProjectsSwitch": "Its projects switch to the {provider} default.",
+  "orgHome.deleteKeyProjectsSwitch": "Its projects without another {provider} key switch to the default.",
   "orgHome.deleteKeyQuestion": "Delete {title}?",
   "orgHome.deleteKeySuccessor": "{name} becomes the {provider} default.",
   "orgHome.deleteKeyUnused": "No project uses it; requests are not affected.",
@@ -152,6 +152,9 @@
   "orgHome.keyRenamed": "Renamed to {name}",
   "orgHome.keyRescoped": "{name} now calls {account} via {gateway}",
   "orgHome.keyUnassigned": "No project is assigned to {title}",
+  "orgHome.keyWeight": "Weight in {project}",
+  "orgHome.keyWeightBlocked": "Give each weight from 1 to 100",
+  "orgHome.keyWeightsHint": "Each caller draws one key of a project by weight; a key that is refused or rate limited gives way.",
   "orgHome.label": "This organization at a glance",
   "orgHome.listSeparator": ", ",
   "orgHome.loadingProjects": "Loading projects…",
@@ -361,5 +364,5 @@
   "orgHome.signedOut": "Signed out",
   "orgHome.stage": "Stage",
   "orgHome.usageBreakdown": "Usage breakdown",
-  "orgHome.usesKeyNow": "Uses {name} now"
+  "orgHome.usesKeysNow": "Also uses {names}"
 }

@@ -86,7 +86,7 @@ flowchart TD
 ## 应用和日志看到的内容
 
 - `kaeso-model` 和 `kaeso-provider` 给出应答的步骤，或最后失败的步骤。
-- `kaeso-route` 按顺序列出请求到达的每个步骤：它在路由中的路径（与试运行的命名相同）、模型和状态，失败时还有耗时（毫秒）：`"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。密钥无权使用的步骤带 `skipped`，不带模型；因刚刚失败而被跳过的步骤带 `skipped` 和它的模型（[响应头](../api/model-api.md#响应头)）。重试过模型的步骤带有 `tries`，即发送请求的次数，例如 `status=200;tries=2`。
+- `kaeso-route` 按顺序列出请求到达的每个步骤：它在路由中的路径（与试运行的命名相同）、模型和状态，失败时还有耗时（毫秒）：`"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。密钥无权使用的步骤带 `skipped`，不带模型；因刚刚失败而被跳过的步骤带 `skipped` 和它的模型（[响应头](../api/model-api.md#响应头)）。因重试模型或尝试了项目在该服务商下多个密钥（见[选择项目使用的密钥](../console/provider-keys.md#选择项目使用的密钥)）而多次发送请求的步骤带有 `tries`，即发送请求的次数，例如 `status=200;tries=2`。
 - [请求日志](../console/request-logs.md)把别名记为请求的模型，并列出先尝试或跳过的步骤，以及每个步骤的状态、错误和耗时。步骤重试的尝试也会列出，标为已重试，且在其筛选中不算作回退。
 - `/v1/models` 按主模型的信息列出别名：条件取 `then` 一侧，分流取权重最大的分支。密钥无权使用该模型时，别名显示它可用的第一个其他模型。
 - `kaeso_alias_fallbacks_total{provider, reason}` 统计发生回退或被跳过的步骤（[健康状态和指标](../self-hosting/monitoring.md)）。

@@ -8651,7 +8651,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Sets the projects that use a key for its provider instead of the default.",
+        "summary": "Sets the projects that draw from a key for its provider instead of the\ndefault, with the key's weight in each project's pool.",
         "description": "**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "putOrgsOrgCredentialsCredentialProjects",
         "parameters": [
@@ -26839,7 +26839,23 @@
             "items": {
               "$ref": "#/components/schemas/ProjectId"
             },
-            "description": "Every project that uses this key for its provider. Projects that used\nanother key of the org for the provider switch to this one; projects\nleft out use the default again."
+            "description": "Every project that draws from this key for its provider. A project keeps\nthe other keys assigned to it, so its requests draw from all of them; a\nproject with none uses the provider's default."
+          },
+          "weights": {
+            "type": "object",
+            "description": "The key's weight in some of these projects' pools, 1 to 100; 1 for a project\nleft out.",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            },
+            "propertyNames": {
+              "type": "string",
+              "examples": [
+                "proj_01k7a3f8m2xq4v9c5r6t8w0yz1"
+              ],
+              "pattern": "^proj_[0-9a-hjkmnp-tv-z]{26}$"
+            }
           }
         },
         "additionalProperties": false
@@ -26922,7 +26938,8 @@
         "description": "A project an org key is assigned to.",
         "required": [
           "id",
-          "name"
+          "name",
+          "weight"
         ],
         "properties": {
           "avatar_url": {
@@ -26940,6 +26957,13 @@
             "type": "string",
             "description": "Its name.",
             "example": "Support bot"
+          },
+          "weight": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The key's weight in the project's pool for the provider, 1 to 100: a caller\ndraws a key with a chance of its weight over the pool's total.",
+            "example": 1,
+            "minimum": 0
           }
         }
       },

@@ -328,6 +328,21 @@ fn marker<'a>(body: &'a str, name: &str) -> Option<&'a str> {
 // can fail on one model and succeed on the next; a body may carry several. The fixture
 // `stall` never answers. `[mock:fail=<model> <fixture> <ms>]` answers after `ms` milliseconds,
 // as a provider that is slow to fail.
+// `[mock:key-fail=<part> <fixture>]` fails only the requests whose key, in `authorization`,
+// `x-api-key` or `api-key`, contains `<part>`, so one key of a pool can fail while another answers.
+fn key_failure_for<'a>(body: &'a str, headers: &HeaderMap) -> Option<&'a str> {
+    let keys: Vec<&str> = ["authorization", "x-api-key", "api-key"]
+        .iter()
+        .filter_map(|h| headers.get(*h).and_then(|v| v.to_str().ok()))
+        .collect();
+    body.match_indices("[mock:key-fail=")
+        .find_map(|(i, start)| {
+            let rest = body.get(i + start.len()..)?;
+            let (part, fixture) = rest.get(..rest.find(']')?)?.split_once(' ')?;
+            keys.iter().any(|k| k.contains(part)).then_some(fixture)
+        })
+}
+
 fn failure_for<'a>(body: &'a str, model: &str) -> Option<(&'a str, Option<Duration>)> {
     body.match_indices("[mock:fail=").find_map(|(i, start)| {
         let rest = body.get(i + start.len()..)?;
@@ -628,6 +643,9 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
             return dropped_connection();
         }
         return error_response(&dir, fixture);
+    }
+    if let Some(name) = key_failure_for(&text, &headers) {
+        return error_response(&dir, name);
     }
     if let Some((name, after)) = asked.as_deref().and_then(|m| failure_for(&text, m)) {
         if let Some(after) = after {

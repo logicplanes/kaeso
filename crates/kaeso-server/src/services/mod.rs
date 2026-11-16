@@ -14,6 +14,7 @@ pub mod google_auth;
 pub mod guardrails;
 pub mod invites;
 pub mod key_endpoint;
+pub mod key_pool;
 pub mod keys;
 pub mod kpmr;
 pub mod limits;

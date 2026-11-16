@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT c.id, c.revision FROM provider_credentials c LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) ORDER BY a.project_id IS NULL LIMIT 1",
+  "query": "SELECT c.id, c.revision FROM provider_credentials c LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) ORDER BY a.project_id IS NULL, a.created_at, c.id LIMIT 1",
   "describe": {
     "columns": [
       {
@@ -38,5 +38,5 @@
       false
     ]
   },
-  "hash": "d3250f52b53a0859eb31bd52b3cc566d22e4180d56d69ac5e8d1c025ee4d4035"
+  "hash": "19ce02879ca2d496f66744fe049233b83092c2065ff53ecb32fb60e1bd16d951"
 }

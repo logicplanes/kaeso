@@ -49,6 +49,8 @@ pub struct Step<'a> {
 enum Scope {
     Model(Uuid),
     Provider(String),
+    /// One provider key of the project's pool.
+    Key(Uuid),
 }
 
 type Key = (Uuid, Scope);
@@ -71,6 +73,7 @@ fn valkey_key(valkey: &Valkey, (project, scope): &Key) -> String {
     match scope {
         Scope::Model(model) => valkey.key(&format!("cooldown:{project}:m:{model}")),
         Scope::Provider(provider) => valkey.key(&format!("cooldown:{project}:p:{provider}")),
+        Scope::Key(key) => valkey.key(&format!("cooldown:{project}:k:{key}")),
     }
 }
 
@@ -93,12 +96,16 @@ impl Memory {
     }
 
     pub fn hold(&self, step: &Step<'_>, reach: Reach, held: Held, now: OffsetDateTime) {
+        self.hold_at(step.key(reach), held, now);
+    }
+
+    fn hold_at(&self, key: Key, held: Held, now: OffsetDateTime) {
         let mut map = self.lock();
         if map.len() >= MOST_HELD {
             map.retain(|_, h| h.until > now);
         }
         if map.len() < MOST_HELD {
-            map.insert(step.key(reach), held);
+            map.insert(key, held);
         }
     }
 
@@ -220,6 +227,63 @@ impl Cooldowns {
             .await;
         if let Err(e) = written {
             tracing::warn!(error = %e, "cannot share a route cooldown through Valkey; only this gateway skips the step");
+        }
+    }
+
+    /// Holds one provider key of a project's pool, so its requests draw the pool's other keys.
+    pub async fn hold_key(
+        &self,
+        valkey: &Valkey,
+        project: Uuid,
+        key: Uuid,
+        held: Held,
+        now: OffsetDateTime,
+    ) {
+        let at = (project, Scope::Key(key));
+        self.memory.hold_at(at.clone(), held.clone(), now);
+        let left = (held.until - now).whole_milliseconds();
+        let (Ok(px), Ok(value)) = (u64::try_from(left), serde_json::to_string(&held)) else {
+            return;
+        };
+        let mut conn = valkey.conn();
+        let written: Result<(), redis::RedisError> = redis::cmd("SET")
+            .arg(valkey_key(valkey, &at))
+            .arg(value)
+            .arg("PX")
+            .arg(px.max(1))
+            .query_async(&mut conn)
+            .await;
+        if let Err(e) = written {
+            tracing::warn!(error = %e, "cannot share a held provider key through Valkey; only this gateway skips it");
+        }
+    }
+
+    /// Which of a pool's keys are held, in the order given.
+    pub async fn held_keys(
+        &self,
+        valkey: &Valkey,
+        project: Uuid,
+        keys: &[Uuid],
+        now: OffsetDateTime,
+    ) -> Vec<bool> {
+        let at: Vec<Key> = keys.iter().map(|k| (project, Scope::Key(*k))).collect();
+        let names: Vec<String> = at.iter().map(|k| valkey_key(valkey, k)).collect();
+        let mut conn = valkey.conn();
+        let read: Result<Vec<Option<String>>, redis::RedisError> =
+            redis::cmd("MGET").arg(&names).query_async(&mut conn).await;
+        match read {
+            Ok(values) => values
+                .into_iter()
+                .map(|v| {
+                    v.and_then(|v| serde_json::from_str::<Held>(&v).ok())
+                        .is_some_and(|h| h.until > now)
+                })
+                .collect(),
+            Err(e) => {
+                tracing::warn!(error = %e, "cannot read held provider keys from Valkey; using this gateway's own");
+                let found = self.memory.snapshot(&at, now);
+                at.iter().map(|k| found.contains_key(k)).collect()
+            }
         }
     }
 

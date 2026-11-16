@@ -118,7 +118,9 @@ A Grok account serves requests like an xAI API key, at `https://api.x.ai/v1` wit
 
 Each provider has one default key, which every project without an assigned key uses. The first key you add for a provider becomes its default. To move the default, choose **Make default** in another key's menu.
 
-To give some projects a different key, choose **Assign to projects** in that key's menu and pick the projects. They then use that key for its provider instead of the default. A project uses one key per provider.
+To give some projects a different key, choose **Assign to projects** in that key's menu and pick the projects. They then use that key for its provider instead of the default.
+
+A project can use several keys of one provider, such as accounts whose rate limits add up or Azure resources in several regions: assign each of them to it. Each caller, by its API key, service account or member, then draws one of the project's keys and keeps it, so the provider's prompt cache keeps working; a key with a higher **Weight in** the project is drawn by more callers, in proportion to the weights, from 1 to 100. When a key is refused, signed out, out of credit or rate limited, the request moves to the project's next key before an alias falls back to another model, and the key waits: until the provider's `retry-after` for a rate limit, five minutes otherwise. Every gateway of an install sees the same draw and the same waiting keys. Video jobs, which Kaeso asks about later, use the project's first assigned key.
 
 ## Replace, rename or delete a key
 
@@ -130,7 +132,7 @@ The list shows each key's name, its last four characters, the projects that use 
 | Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** or **No API access**, and ends its previous session at OpenAI or xAI |
 | Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |
 | Rename | Changes the name the console shows. For a service account key it's **Edit**, which also changes the location; for a Cloudflare AI Gateway key, **Edit** also changes the account and the gateway, and for an Amazon Bedrock key the region |
-| Delete | Removes the key. Its projects use the default again. For an account, Kaeso also ends its session at OpenAI or xAI |
+| Delete | Removes the key. Its projects without another key of the provider use the default again. For an account, Kaeso also ends its session at OpenAI or xAI |
 
 An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT. A Grok account shows **No API access** when xAI refuses its plan. In both cases, its requests fail until someone with **Change provider keys** chooses **Sign in again**.
 

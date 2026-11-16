@@ -280,6 +280,13 @@ async fn projects_use_their_assigned_key_then_the_default() {
 
     let r = assign(&app, &owner, &first_id, &[&project]).await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(
+        secret_of(&app, &owner, &project).await.unwrap(),
+        SECOND_SECRET,
+        "both keys are in the project's pool; the first assigned leads it"
+    );
+    let r = assign(&app, &owner, &second_id, &[]).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
     assert_eq!(secret_of(&app, &owner, &project).await.unwrap(), ORG_SECRET);
     let keys = listed(&app, &owner).await;
     assert_eq!(keys[1]["projects"], json!([]));

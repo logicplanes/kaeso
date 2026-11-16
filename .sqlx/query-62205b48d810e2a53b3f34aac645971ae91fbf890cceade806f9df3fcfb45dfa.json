@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_provider_keys (project_id, provider, org_id, credential_id, weight) SELECT p, $2, $1, $3, w FROM unnest($4::uuid[], $5::smallint[]) AS t(p, w) ON CONFLICT (project_id, provider, credential_id) DO UPDATE SET weight = EXCLUDED.weight WHERE project_provider_keys.weight <> EXCLUDED.weight",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Uuid",
+        "UuidArray",
+        "Int2Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "62205b48d810e2a53b3f34aac645971ae91fbf890cceade806f9df3fcfb45dfa"
+}
