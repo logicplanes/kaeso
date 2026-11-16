@@ -36,6 +36,10 @@ const kinds: Readonly<Record<string, Words>> = {
     name: t("account.notify.keyExpiry", "Your key expires"),
     description: t("account.notify.keyExpiryHint", "Before a key you own expires."),
   }),
+  platform_key_expiry: () => ({
+    name: t("account.notify.platformKeyExpiry", "A platform key expires"),
+    description: t("account.notify.platformKeyExpiryHint", "Before an organization's platform key expires."),
+  }),
   key_changed: () => ({
     name: t("account.notify.keyChanged", "Your key changed"),
     description: t("account.notify.keyChangedHint", "When someone else disables, rotates or archives it."),

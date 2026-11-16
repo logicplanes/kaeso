@@ -182,6 +182,8 @@
   "account.notify.orgOwnershipHint": "When an organization changes owners or is deleted.",
   "account.notify.orgSecurity": "Security settings changed",
   "account.notify.orgSecurityHint": "When someone changes sign-in rules, SSO or platform keys, or shares usage.",
+  "account.notify.platformKeyExpiry": "A platform key expires",
+  "account.notify.platformKeyExpiryHint": "Before an organization's platform key expires.",
   "account.notify.portalClients": "New client on a portal",
   "account.notify.portalClientsHint": "When someone connects a new client to a portal.",
   "account.notify.providerKeys": "Provider keys need attention",

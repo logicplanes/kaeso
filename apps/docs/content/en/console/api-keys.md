@@ -88,6 +88,8 @@ Creating a platform key needs the right **Create platform keys**, a console sess
 
 Choose a platform key to open its details: who created it and when, when it expires, when it was last used, its id, and the actions of its menu. After a rotation, **Replaced by** and **Rotated from** link the old and the new key, which share a name. A platform key named in the organization's audit log opens the same details.
 
+Kaeso emails 7 days and 1 day before a platform key expires, unless it is disabled, archived or rotated. The email goes to everyone in the organization with **Create platform keys**, and to the key's creator while they are still a member. Anyone can turn these emails off under **A platform key expires** in their account's **Notifications**.
+
 ## Next steps
 
 - [Calling models](../get-started/calling-models.md): Send your first request with the new key.

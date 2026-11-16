@@ -24,6 +24,7 @@ pub enum EmailKind {
     OrgScheduledForDeletion,
     OwnershipTransferred,
     KeyExpiryWarning,
+    PlatformKeyExpiryWarning,
     BudgetAlert,
     NewApp,
     ExportReady,
@@ -73,6 +74,7 @@ impl EmailKind {
             EmailKind::OrgScheduledForDeletion => "org_scheduled_for_deletion",
             EmailKind::OwnershipTransferred => "ownership_transferred",
             EmailKind::KeyExpiryWarning => "key_expiry_warning",
+            EmailKind::PlatformKeyExpiryWarning => "platform_key_expiry_warning",
             EmailKind::BudgetAlert => "budget_alert",
             EmailKind::NewApp => "new_app",
             EmailKind::ExportReady => "export_ready",
@@ -1164,6 +1166,79 @@ pub fn ownership_transferred<'a>(
     )
 }
 
+pub fn platform_key_expiry_warning(
+    lang: Locale,
+    to: &str,
+    key: &str,
+    organization: &str,
+    expires: PrimitiveDateTime,
+    zone: &str,
+    url: &str,
+) -> Email {
+    // As for an API key: the moment on the install's clock, as the console shows it.
+    let at = format!("{:02}:{:02} {zone}", expires.hour(), expires.minute());
+    let (hour, minute) = (
+        expires.hour().to_string(),
+        format!("{:02}", expires.minute()),
+    );
+    let details = vec![
+        Label::Organization.of(lang, organization),
+        Label::Key.of(lang, key),
+        Label::Expires.of(lang, lang.moment(expires, zone)),
+    ];
+    let expires = lang.date(expires.date());
+    let (subject, heading, sentence, action, note) = match lang {
+        Locale::En => (
+            format!("The platform key {key} expires on {expires}"),
+            format!("Platform key {key} expires on {expires}"),
+            format!(
+                "Scripts and tools that manage {organization} with this key stop working from {at} that day."
+            ),
+            "Open platform keys",
+            "To rotate it, create a new key, deploy it, then disable the old one.",
+        ),
+        Locale::De => (
+            format!("Der Plattform-Schlüssel {key} läuft am {expires} ab"),
+            format!("Plattform-Schlüssel {key} läuft am {expires} ab"),
+            format!(
+                "Skripte, die {organization} mit diesem Schlüssel verwalten, funktionieren an diesem Tag ab {at} nicht mehr."
+            ),
+            "Plattform-Schlüssel öffnen",
+            "Zum Rotieren erstellen Sie einen neuen Schlüssel, setzen ihn ein und deaktivieren den alten.",
+        ),
+        Locale::ZhCn => {
+            let heading = zh(&["平台密钥", key, "将于", &expires, "过期"]);
+            (
+                heading.clone(),
+                heading,
+                zh(&[
+                    "使用此密钥管理",
+                    organization,
+                    "的脚本和工具，将从当天",
+                    zone,
+                    "时间",
+                    &hour,
+                    "时",
+                    &minute,
+                    "分起停止工作。",
+                ]),
+                "打开平台密钥",
+                "如需轮换，请创建并部署新密钥，再停用旧密钥。",
+            )
+        }
+    };
+    Email::new(
+        to,
+        EmailKind::PlatformKeyExpiryWarning,
+        subject,
+        Content::new(lang, heading, Reason::Alert)
+            .sentence(sentence)
+            .details(details)
+            .action(action, url)
+            .note(note),
+    )
+}
+
 pub fn key_expiry_warning(
     lang: Locale,
     to: &str,
@@ -1434,6 +1509,15 @@ mod tests {
                     organization: "Acme",
                     project: Some("Default project"),
                 },
+                datetime!(2026 - 10 - 18 0:00),
+                "UTC",
+                URL,
+            ),
+            platform_key_expiry_warning(
+                l,
+                TO,
+                "terraform",
+                "Acme",
                 datetime!(2026 - 10 - 18 0:00),
                 "UTC",
                 URL,
@@ -1868,6 +1952,7 @@ mod tests {
             EmailKind::OrgScheduledForDeletion,
             EmailKind::OwnershipTransferred,
             EmailKind::KeyExpiryWarning,
+            EmailKind::PlatformKeyExpiryWarning,
             EmailKind::BudgetAlert,
             EmailKind::NewApp,
             EmailKind::ExportReady,
@@ -2374,6 +2459,7 @@ mod tests {
                     "UTC",
                     URL,
                 ),
+                platform_key_expiry_warning(l, TO, evil, evil, day.midnight(), "UTC", URL),
                 budget_alert(
                     l,
                     TO,
@@ -2449,7 +2535,9 @@ mod tests {
             assert_eq!(
                 matches!(
                     email.kind,
-                    EmailKind::BudgetAlert | EmailKind::KeyExpiryWarning
+                    EmailKind::BudgetAlert
+                        | EmailKind::KeyExpiryWarning
+                        | EmailKind::PlatformKeyExpiryWarning
                 ),
                 email.content.reason == Reason::Alert,
                 "{}",
@@ -2475,7 +2563,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 45] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 46] = [
             (
                 EmailKind::Invitation,
                 [
@@ -2617,6 +2705,17 @@ mod tests {
                 [
                     "API 密钥 ci-deploy 将于 2026年10月18日过期",
                     "API 密钥 ci-deploy 将于 2026年10月18日过期",
+                ],
+            ),
+            (
+                EmailKind::PlatformKeyExpiryWarning,
+                [
+                    "Der Plattform-Schlüssel terraform läuft am 18. Okt. 2026 ab",
+                    "Plattform-Schlüssel terraform läuft am 18. Okt. 2026 ab",
+                ],
+                [
+                    "平台密钥 terraform 将于 2026年10月18日过期",
+                    "平台密钥 terraform 将于 2026年10月18日过期",
                 ],
             ),
             (
