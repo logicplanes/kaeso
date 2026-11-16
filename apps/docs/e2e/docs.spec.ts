@@ -259,7 +259,11 @@ test.describe("on a phone", () => {
       const region = pre.locator("xpath=..");
       expect(await region.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
     }
-    const indent = await blocks.first().locator("code > span > span").first().evaluate((el) => getComputedStyle(el).textIndent);
+    const indent = await blocks
+      .first()
+      .locator("code > span > span")
+      .first()
+      .evaluate((el) => getComputedStyle(el).textIndent);
     expect(indent).toBe("-16px");
   });
 
@@ -335,7 +339,16 @@ test.describe("on a phone", () => {
     await expect(rows).toHaveCount(3);
     await expect(rows.first()).toContainText("Project");
     const pairs = rows.first().locator("dt, dd");
-    await expect(pairs).toHaveText(["Requests per minute", "1,200", "Tokens per day", "40,000,000", "Spend per month", "$2,500.00", "Applies to", "Every member and key of the project"]);
+    await expect(pairs).toHaveText([
+      "Requests per minute",
+      "1,200",
+      "Tokens per day",
+      "40,000,000",
+      "Spend per month",
+      "$2,500.00",
+      "Applies to",
+      "Every member and key of the project",
+    ]);
     for (const row of await rows.all()) expect(await row.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
   });
 
@@ -372,7 +385,10 @@ test.describe("on a phone", () => {
       const links = page.locator("article tbody tr td:first-child a");
       await expect(links).toHaveCount(2);
       for (const link of await links.all()) {
-        const { height, line } = await link.evaluate((el) => ({ height: el.getBoundingClientRect().height, line: parseFloat(getComputedStyle(el).lineHeight) }));
+        const { height, line } = await link.evaluate((el) => ({
+          height: el.getBoundingClientRect().height,
+          line: parseFloat(getComputedStyle(el).lineHeight),
+        }));
         expect(height).toBeLessThanOrEqual(line);
       }
       const region = page.getByRole("region", { name: /Table|Tabelle|表格/ });
@@ -385,7 +401,7 @@ test.describe("on a phone", () => {
     ["/de/guides/keys-and-limits", "Zurück: Anleitungen", "Weiter: Anbieter-Schlüssel"],
     ["/zh-CN/guides/keys-and-limits", "上一页：指南", "下一页：服务商密钥"],
   ] as const) {
-    test(`previous and next show their label above the title at ${path}`, async ({ page }) => {
+    test(`previous and next are plates on the page's edges with their label above the title at ${path}`, async ({ page }) => {
       await page.goto(path);
       for (const [name, edge] of [
         [previous, "left"],
@@ -395,8 +411,12 @@ test.describe("on a phone", () => {
         await expect(link).toBeVisible();
         const box = await link.evaluate((el, side) => {
           const [label, title] = [...el.children].map((c) => c.getBoundingClientRect());
+          const plate = el.getBoundingClientRect();
           const nav = el.closest("nav")?.getBoundingClientRect();
-          return { stacked: !!label && !!title && label.bottom <= title.top, aligned: !!nav && !!label && !!title && Math.abs(label[side] - title[side]) < 1 && Math.abs(title[side] - nav[side]) < 1 };
+          return {
+            stacked: !!label && !!title && label.bottom <= title.top,
+            aligned: !!nav && !!label && !!title && Math.abs(label[side] - title[side]) < 1 && Math.abs(plate[side] - nav[side]) < 1,
+          };
         }, edge);
         expect(box).toEqual({ stacked: true, aligned: true });
       }
