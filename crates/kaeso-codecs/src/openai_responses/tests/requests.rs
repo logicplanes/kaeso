@@ -393,13 +393,40 @@ fn invalid_bodies_are_invalid_requests() {
     assert_eq!(err.unsupported_feature(), Some("embeddings"));
     let ok = br#"{"model":"m","input":"x","store":false,"background":false,"previous_response_id":null}"#;
     OpenAiResponses::decode_request(RequestKind::Generate, ok, &HeaderList::new()).unwrap();
-    let err = OpenAiResponses::decode_request(
-        RequestKind::Generate,
-        br#"{"model":"m","input":"x","store":true}"#,
-        &HeaderList::new(),
+    let stored = generate_from_body(
+        br#"{"model":"m","input":"x","store":true,"previous_response_id":"resp_1"}"#,
+    );
+    assert_eq!(
+        crate::openai_responses::stored_state(&stored),
+        crate::openai_responses::StoredState {
+            store: Some(true),
+            previous: Some("resp_1".to_owned()),
+        }
+    );
+    let sent = body_of(stored.clone());
+    assert_eq!(
+        (&sent["store"], &sent["previous_response_id"]),
+        (&Value::Bool(true), &Value::from("resp_1"))
+    );
+    let plain = generate_from_body(br#"{"model":"m","input":"x","store":false}"#);
+    assert_eq!(
+        crate::openai_responses::stored_state(&plain).store,
+        Some(false)
+    );
+    assert_eq!(
+        crate::openai_responses::stored_state(&generate_from_body(br#"{"model":"m","input":"x"}"#)),
+        Default::default()
+    );
+    let mut to_messages = crate::EgressCtx::new(&Request::Generate(stored.clone()));
+    let err = crate::anthropic_messages::AnthropicMessages::encode_request(
+        &Request::Generate(stored),
+        &mut to_messages,
     )
     .unwrap_err();
-    assert_eq!(err.unsupported_feature(), Some("store"));
+    assert!(
+        err.message.contains("previous_response_id") || err.message.contains("store"),
+        "{err}"
+    );
 }
 
 #[test]
@@ -560,4 +587,11 @@ fn max_output_tokens_below_the_documented_minimum_is_refused() {
         br#"{"model":"m","input":"x","max_output_tokens":0}"#,
         &enc.body,
     );
+}
+
+fn generate_from_body(body: &[u8]) -> GenerateRequest {
+    match decode_req(RequestKind::Generate, body) {
+        Request::Generate(r) => r,
+        other => panic!("{other:?}"),
+    }
 }

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM stored_responses WHERE project_id = $1 AND id_hash = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "916c48cb1fc71940e93a2edbe6349eab74f27ba1c8f72a4cf56182b89e2e1fd8"
+}

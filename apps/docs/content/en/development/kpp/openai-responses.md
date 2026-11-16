@@ -75,8 +75,9 @@ Like every override, the field applies only while the canonical value at its pat
 | `user` (deprecated) | `user` typed when `safety_identifier` is absent (form `user_key`); otherwise extras `user` | |
 | `stream: true` | `StreamMode::On { include_usage: true }` | Responses streams always report usage. `false`/`null`: form. |
 | `stream_options` | `include_obfuscation`: form; other keys: extras | Obfuscation is padding, not content. |
-| `store` | `false`/`null`: form; `true`: **Unsupported** (`store`, [stateful Responses features](cross-format.md#stateful-responses-features)) | Requests from other dialects are sent with `store: false` ([Responses storage and ids](cross-format.md#responses-storage-and-ids)). Requests of this dialect keep their spelling, so an absent `store` still means OpenAI stores the response. Form `native` marks a request decoded from this dialect. |
-| `previous_response_id`, `conversation` | `null`: form; any value: **Unsupported** ([stateful Responses features](cross-format.md#stateful-responses-features)) | |
+| `store` | `false`/`null`: form; `true`: extras field, which the gateway checks ([stateful Responses features](cross-format.md#stateful-responses-features)) | Requests from other dialects are sent with `store: false` ([Responses storage and ids](cross-format.md#responses-storage-and-ids)). Requests of this dialect keep their spelling, so an absent `store` still means OpenAI stores the response. Form `native` marks a request decoded from this dialect. |
+| `previous_response_id` | `null`: form; a value: extras field, which the gateway checks ([stateful Responses features](cross-format.md#stateful-responses-features)) | |
+| `conversation` | `null`: form; any value: **Unsupported** ([stateful Responses features](cross-format.md#stateful-responses-features)) | |
 | `background` | `false`/`null`: form; `true`: **Unsupported** ([stateful Responses features](cross-format.md#stateful-responses-features)) | |
 | `metadata`, `truncation`, `service_tier`, `top_logprobs`, `max_tool_calls`, `prompt_cache_key`, `prompt_cache_retention`, `prompt_cache_options`, `prompt`, `context_management`, `moderation`, `access_programs`, `personality` (count only), unknown keys | extras | Spelled-out defaults and `null` are form ([how exact spellings survive](#how-exact-spellings-survive)). `prompt_cache_key` is sent on to Chat Completions and dropped for other formats; `prompt_cache_retention` and `prompt_cache_options` set how long Anthropic keeps the cache ([cache hints](cross-format.md#cache-hints)). |
 | header `openai-beta` | extras `header:openai-beta` | Forwarded to Responses only. |
@@ -352,7 +353,7 @@ Because the route only streams, the gateway gathers its stream into one reply wh
 
 Providers other than OpenAI that serve Responses record into `fixtures/openai_responses/providers/<id>/` ([fixtures](fixtures.md)). Their extra fields follow the rules above; this section names what each one adds.
 
-Each provider in `PROVIDERS` names a `kaeso_codecs::openai_responses::ResponsesProfile` in its `responses` field, and the gateway hands it to the encoder with `EgressCtx::with_responses_profile`. `ResponsesProfile::OPENAI`, the default, sends requests as the app wrote them. `ResponsesProfile::compatible(name)` differs only in `tool_namespaces: false` ([tool namespaces](cross-format.md#tool-namespaces)); custom providers get `compatible`, since only OpenAI documents namespaces.
+Each provider in `PROVIDERS` names a `kaeso_codecs::openai_responses::ResponsesProfile` in its `responses` field, and the gateway hands it to the encoder with `EgressCtx::with_responses_profile`. `ResponsesProfile::OPENAI`, the default, sends requests as the app wrote them. `ResponsesProfile::compatible(name)` differs in `tool_namespaces: false` ([tool namespaces](cross-format.md#tool-namespaces)) and `stores_responses: false`, as only OpenAI is known to keep responses for `previous_response_id`; custom providers get `compatible`, since only OpenAI documents namespaces.
 
 | Setting | What the encoder does |
 |---|---|

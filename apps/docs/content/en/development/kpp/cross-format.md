@@ -376,7 +376,9 @@ KPP has no `n`: a Chat request with `n` above 1 is refused when it is decoded, w
 
 ## Stateful Responses features
 
-`previous_response_id`, `conversation`, `store: true` and `background: true` need state at OpenAI, and the codec refuses them with `Unsupported`. Only the gateway, before KPP, could resolve them.
+`conversation` and `background: true` need state at OpenAI, and the codec refuses them with `Unsupported`.
+
+`store` and `previous_response_id` decode as extras fields of the Responses dialect. The OpenAI Responses encoder writes them back; every other dialect refuses them by name, as any foreign extras field ([extras](#extras)). The gateway decides before encoding whether a request may keep or continue a response: the target's `ResponsesProfile::stores_responses`, an API key, the project's settings and who stored the response (`services::stored_responses`). `openai_responses::stored_state` reads both fields.
 
 ## Reply ids
 

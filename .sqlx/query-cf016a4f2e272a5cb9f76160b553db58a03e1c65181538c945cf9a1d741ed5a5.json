@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM stored_responses WHERE project_id = $1 AND expires_at < now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cf016a4f2e272a5cb9f76160b553db58a03e1c65181538c945cf9a1d741ed5a5"
+}

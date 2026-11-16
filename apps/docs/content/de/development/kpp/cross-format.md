@@ -376,7 +376,9 @@ KPP hat kein `n`: Eine Chat-Anfrage mit `n` über 1 wird schon beim Dekodieren a
 
 ## Zustandsbehaftete Responses-Funktionen
 
-`previous_response_id`, `conversation`, `store: true` und `background: true` brauchen Zustand bei OpenAI, und der Codec lehnt sie mit `Unsupported` ab. Auflösen könnte sie nur das Gateway, vor KPP.
+`conversation` und `background: true` brauchen Zustand bei OpenAI, und der Codec lehnt sie mit `Unsupported` ab.
+
+`store` und `previous_response_id` werden als Extras-Felder des Responses-Dialekts dekodiert. Der Encoder für OpenAI Responses schreibt sie zurück; jeder andere Dialekt lehnt sie mit Namen ab, wie jedes fremde Extras-Feld ([Extras](#extras)). Ob eine Anfrage eine Antwort aufbewahren oder fortsetzen darf, entscheidet das Gateway vor dem Kodieren: `ResponsesProfile::stores_responses` des Ziels, ein API-Schlüssel, die Einstellungen des Projekts und wer die Antwort gespeichert hat (`services::stored_responses`). `openai_responses::stored_state` liest beide Felder.
 
 ## IDs von Antworten
 

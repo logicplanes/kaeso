@@ -161,6 +161,7 @@ Jedes Format erreicht jedes Generierungsmodell im Katalog des Projekts, eine Gem
 | `POST /v1/chat/completions` | OpenAI Chat Completions |
 | `POST /v1/responses` | OpenAI Responses |
 | `POST /v1/responses/input_tokens` | OpenAI Responses, Eingabe-Token zählen |
+| `GET /v1/responses/{response_id}`, `DELETE /v1/responses/{response_id}` | OpenAI Responses, eine Antwort, die der Anbieter für das Projekt aufbewahrt ([Gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten)) |
 | `POST /v1/embeddings` | OpenAI Embeddings |
 | `POST /v1/rerank`, `POST /v2/rerank` | Cohere Rerank ([Rerank-API](rerank.md)) |
 | `POST /v1/images/generations`, `POST /v1/images/edits`, `POST /v1/images/variations` | OpenAI Images ([Bilder-API](images.md)) |
@@ -297,5 +298,5 @@ Die SDKs von OpenAI und Anthropic laufen im Browser nur, wenn die App `dangerous
 ## Was Kaeso nicht tut
 
 - **Wiederholungen.** Kaeso sendet eine Anfrage nur dann erneut an ihr Modell, wenn das Projekt oder ein Alias-Schritt es verlangt, nach einer abgebrochenen Verbindung, einem 5xx oder einem überlasteten Anbieter, und nur, bevor eine Antwort die App erreicht hat ([Alias-Routen](../concepts/alias-routes.md#fallbacks)). Sonst sendet es jede Anfrage einmal; die SDKs wiederholen selbst, wo der Fehler es zulässt.
-- **Gespeicherter Zustand.** Kaeso lehnt Responses-Anfragen ab, die den Anbieter eine Antwort speichern oder fortsetzen lassen (`store: true`, `previous_response_id`, `conversation`, `background: true`). Senden Sie jedes Mal die ganze Unterhaltung.
+- **Gespeicherter Zustand.** Kaeso selbst speichert keine Unterhaltungen. `store: true` und `previous_response_id` funktionieren nur, wo ein Projekt beim Anbieter gespeicherte Antworten erlaubt, für Modelle, deren Antworten der Anbieter aufbewahrt ([Gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten)); anderswo lehnt Kaeso sie ab, und `conversation` und `background: true` lehnt es überall ab. Senden Sie sonst jedes Mal die ganze Unterhaltung.
 - **Stille Änderungen.** Kaeso lehnt ein Feld, das es nicht zum Anbieter des Modells übertragen kann, mit einem Fehler ab, der es nennt, und verwirft es nie. In Chat Completions, Messages und Embeddings erhält ein Feld, dessen Name mit `header:` beginnt oder einen `.` enthält, 400, weil Kaeso diesen Namen nicht übertragen kann; Responses behält solche Felder im Body. [Formatübersetzung](../concepts/format-translation.md) listet, was zwischen den Formaten übertragen wird.

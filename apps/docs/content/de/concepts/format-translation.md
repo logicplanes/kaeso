@@ -76,7 +76,7 @@ Wechselt eine Anfrage das Format, lehnt Kaeso Folgendes mit einem Fehler ab, der
 Diese lehnt Kaeso in jedem Format ab, auch wenn das Format gleich bleibt:
 
 - mehr als eine Auswahl (`n`)
-- gespeicherter Zustand: `store: true`, `previous_response_id`, `conversation` und `background`
+- gespeicherter Zustand: `conversation` und `background`, sowie `store: true` und `previous_response_id` außer bei einem Anbieter, der Antworten aufbewahrt, in einem Projekt, das es erlaubt ([Gespeicherte Antworten](../console/organizations-and-projects.md#gespeicherte-antworten))
 
 ### Anfragen über Formate hinweg
 

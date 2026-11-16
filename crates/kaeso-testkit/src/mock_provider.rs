@@ -454,6 +454,13 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     if method == Method::POST && path == GOOGLE_TOKEN_PATH {
         return google_token(&ctx.shared, &text);
     }
+    if let Some(id) = path
+        .strip_prefix("/v1/responses/")
+        .filter(|id| *id != "input_tokens" && !id.contains('/'))
+        && (method == Method::GET || method == Method::DELETE)
+    {
+        return stored_response(&ctx.fixtures, &method, id);
+    }
     let platform = agent_platform_path(&path);
     if let Some(p) = &platform {
         let bearer = headers
@@ -1269,6 +1276,31 @@ fn google_token(shared: &Shared, form: &str) -> Response {
         .header("content-type", "application/json")
         .body(Body::from(body.to_string()))
         .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+// OpenAI's stored responses: `GET` answers the stored reply, `DELETE` deletes it, and an id
+// containing `gone` is one OpenAI no longer keeps.
+fn stored_response(fixtures: &Path, method: &Method, id: &str) -> Response {
+    if id.contains("gone") {
+        let body = serde_json::json!({ "error": {
+            "message": format!("Response with id '{id}' not found."),
+            "type": "invalid_request_error", "param": null, "code": null
+        } });
+        return Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .header("content-type", "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+    }
+    if method == Method::DELETE {
+        let body = serde_json::json!({ "id": id, "object": "response.deleted", "deleted": true });
+        return Response::builder()
+            .status(StatusCode::OK)
+            .header("content-type", "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+    }
+    json_file(&fixtures.join("openai_responses/responses/text-input-string.json"))
 }
 
 const MODELS: &str = "/v1/models";

@@ -75,8 +75,9 @@ order: 7
 | `user`（已弃用） | 没有 `safety_identifier` 时为 `user` 类型化（形式标记 `user_key`）；否则为 extras `user` | |
 | `stream: true` | `StreamMode::On { include_usage: true }` | Responses 流总是报告用量。`false`/`null`：形式标记。 |
 | `stream_options` | `include_obfuscation`：形式标记；其他键：extras | 混淆字段只是填充，不是内容。 |
-| `store` | `false`/`null`：形式标记；`true`：**Unsupported**（`store`，参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | 来自其他方言的请求以 `store: false` 发送（参见 [Responses 的存储与 ID](cross-format.md#responses-的存储与-id)）。本方言的请求保留原有写法，因此省略 `store` 仍意味着 OpenAI 会存储该响应。形式标记 `native` 标记从本方言解码的请求。 |
-| `previous_response_id`、`conversation` | `null`：形式标记；任何值：**Unsupported**（参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | |
+| `store` | `false`/`null`：形式标记；`true`：由网关检查的 extras 字段（参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | 来自其他方言的请求以 `store: false` 发送（参见 [Responses 的存储与 ID](cross-format.md#responses-的存储与-id)）。本方言的请求保留原有写法，因此省略 `store` 仍意味着 OpenAI 会存储该响应。形式标记 `native` 标记从本方言解码的请求。 |
+| `previous_response_id` | `null`：形式标记；有值：由网关检查的 extras 字段（参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | |
+| `conversation` | `null`：形式标记；任何值：**Unsupported**（参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | |
 | `background` | `false`/`null`：形式标记；`true`：**Unsupported**（参见[有状态的 Responses 功能](cross-format.md#有状态的-responses-功能)） | |
 | `metadata`、`truncation`、`service_tier`、`top_logprobs`、`max_tool_calls`、`prompt_cache_key`、`prompt_cache_retention`、`prompt_cache_options`、`prompt`、`context_management`、`moderation`、`access_programs`、`personality`（仅计数）、未知键 | extras | 显式写出的默认值和 `null` 是形式标记（参见[原始写法如何保留](#原始写法如何保留)）。`prompt_cache_key` 会传给 Chat Completions，发往其他格式时丢弃；`prompt_cache_retention` 和 `prompt_cache_options` 用于设置 Anthropic 保留缓存的时长（[缓存提示](cross-format.md#缓存提示)）。 |
 | 请求头 `openai-beta` | extras `header:openai-beta` | 只转发给 Responses。 |
@@ -352,7 +353,7 @@ order: 7
 
 提供 Responses 的其他服务商（OpenAI 以外）会录制到 `fixtures/openai_responses/providers/<id>/`（[fixture](fixtures.md)）。它们的额外字段遵循上述规则；本节列出每个服务商增加的内容。
 
-`PROVIDERS` 中的每个服务商都在其 `responses` 字段中指定一个 `kaeso_codecs::openai_responses::ResponsesProfile`，网关通过 `EgressCtx::with_responses_profile` 把它交给编码器。默认的 `ResponsesProfile::OPENAI` 按应用写出的样子发送请求。`ResponsesProfile::compatible(name)` 只在 `tool_namespaces: false` 上不同（参见[工具命名空间](cross-format.md#工具命名空间)）；自定义服务商使用 `compatible`，因为只有 OpenAI 记载了命名空间。
+`PROVIDERS` 中的每个服务商都在其 `responses` 字段中指定一个 `kaeso_codecs::openai_responses::ResponsesProfile`，网关通过 `EgressCtx::with_responses_profile` 把它交给编码器。默认的 `ResponsesProfile::OPENAI` 按应用写出的样子发送请求。`ResponsesProfile::compatible(name)` 在 `tool_namespaces: false`（参见[工具命名空间](cross-format.md#工具命名空间)）和 `stores_responses: false` 上不同，因为目前只知道 OpenAI 会为 `previous_response_id` 保留回复；自定义服务商使用 `compatible`，因为只有 OpenAI 记载了命名空间。
 
 | 设置 | 编码器的行为 |
 |---|---|

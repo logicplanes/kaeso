@@ -803,6 +803,9 @@ pub(super) async fn pump(parts: Parts, tx: Sender<Bytes>, mut rec: Recording) {
         && (assembled.complete || gone || (broken.is_some() && assembled.response.is_some()));
     let ended = app.arrived.elapsed();
     {
+        if let (Some(r), Some(kept)) = (&assembled.response, rec.kept.as_mut()) {
+            kept.response_id = Some(r.id.clone());
+        }
         let o = rec.outcome();
         if let Some(r) = &assembled.response {
             o.usage = Some(r.usage.clone());

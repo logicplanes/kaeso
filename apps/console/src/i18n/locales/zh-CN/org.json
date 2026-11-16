@@ -639,5 +639,12 @@
   "org.guardrails.rulesTitle": "规则查找什么？",
   "org.guardrails.sample": "示例文本",
   "org.guardrails.samplePlaceholder": "粘贴一段提示词，查看规则能找到什么",
-  "org.guardrails.trySample": "试用规则"
+  "org.guardrails.trySample": "试用规则",
+  "org.storedResponses.allowedToast": "已允许存储的回复",
+  "org.storedResponses.forbiddenToast": "已关闭存储的回复",
+  "org.storedResponses.title": "存储的回复",
+  "org.storedResponses.hint": "OpenAI 等服务商可以保留回复，供应用继续对话。",
+  "org.storedResponses.allow": "允许在服务商处存储回复",
+  "org.storedResponses.allowedHint": "每个项目在其设置中开启。",
+  "org.storedResponses.forbiddenHint": "应用必须每次发送完整对话。"
 }

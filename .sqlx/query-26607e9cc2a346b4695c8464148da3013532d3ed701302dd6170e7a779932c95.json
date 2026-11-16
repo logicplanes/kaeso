@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT o.response_cache AS org_allows, p.response_cache AS enabled, p.response_cache_ttl_seconds AS ttl_seconds, p.response_cache_generation AS generation FROM projects p JOIN organizations o ON o.id = p.org_id WHERE p.id = $1",
+  "query": "SELECT o.response_cache AS org_allows, p.response_cache AS enabled, p.response_cache_ttl_seconds AS ttl_seconds, p.response_cache_generation AS generation, (o.stored_responses AND p.stored_responses) AS \"stores_responses!\" FROM projects p JOIN organizations o ON o.id = p.org_id WHERE p.id = $1",
   "describe": {
     "columns": [
       {
@@ -46,6 +46,12 @@
             "name": "response_cache_generation"
           }
         }
+      },
+      {
+        "ordinal": 4,
+        "name": "stores_responses!",
+        "type_info": "Bool",
+        "origin": "Expression"
       }
     ],
     "parameters": {
@@ -57,8 +63,9 @@
       false,
       false,
       false,
-      false
+      false,
+      null
     ]
   },
-  "hash": "cb24291a41b93261dda280c59c555402000cf039ac64ef29f5474b240bde6e17"
+  "hash": "26607e9cc2a346b4695c8464148da3013532d3ed701302dd6170e7a779932c95"
 }

@@ -21854,6 +21854,167 @@
         "x-kaeso-access": "right:limits.manage"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/stored-responses": {
+      "get": {
+        "tags": [
+          "stored-responses"
+        ],
+        "summary": "Whether the project keeps responses at providers.",
+        "description": "**Right:** `project.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectStoredResponses",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStoredResponses"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:project.view"
+      },
+      "patch": {
+        "tags": [
+          "stored-responses"
+        ],
+        "summary": "Turns responses kept at providers on or off for the project.",
+        "description": "It cannot be turned on while the organization forbids it.\n\n**Right:** `project.update` on the project in the path.",
+        "operationId": "patchOrgsOrgProjectsProjectStoredResponses",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectStoredResponsesUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStoredResponses"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:project.update"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/tool-access/{principal}": {
       "get": {
         "tags": [
@@ -24131,6 +24292,151 @@
           }
         ],
         "x-kaeso-access": "right:security.sso.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/stored-responses": {
+      "get": {
+        "tags": [
+          "stored-responses"
+        ],
+        "summary": "Whether the organization's projects may keep responses at providers.",
+        "description": "**Right:** `org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgStoredResponses",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgStoredResponses"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.view"
+      },
+      "patch": {
+        "tags": [
+          "stored-responses"
+        ],
+        "summary": "Allows or forbids the organization's projects to keep responses at providers.",
+        "description": "**Right:** `org.update` on the organization in the path.",
+        "operationId": "patchOrgsOrgStoredResponses",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgStoredResponsesUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgStoredResponses"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.update"
       }
     },
     "/platform/v1/orgs/{org}/usage": {
@@ -38437,6 +38743,33 @@
           }
         }
       },
+      "OrgStoredResponses": {
+        "type": "object",
+        "description": "Whether the organization's projects may keep responses at providers.",
+        "required": [
+          "allowed"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "description": "Whether projects may let providers keep responses for `previous_response_id`."
+          }
+        }
+      },
+      "OrgStoredResponsesUpdate": {
+        "type": "object",
+        "description": "A change to whether the organization's projects may keep responses at providers.",
+        "required": [
+          "allowed"
+        ],
+        "properties": {
+          "allowed": {
+            "type": "boolean",
+            "description": "Let projects keep responses at providers. Off stops it in every project;\nresponses already kept stay at their providers until they expire."
+          }
+        },
+        "additionalProperties": false
+      },
       "OrgUpdate": {
         "type": "object",
         "description": "General settings.",
@@ -40038,6 +40371,43 @@
             "description": "The project."
           }
         }
+      },
+      "ProjectStoredResponses": {
+        "type": "object",
+        "description": "Whether a project keeps responses at providers.",
+        "required": [
+          "enabled",
+          "org_allowed",
+          "effective"
+        ],
+        "properties": {
+          "effective": {
+            "type": "boolean",
+            "description": "Whether requests may keep and continue responses at providers: the\norganization allows it and the project's switch is on."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "The project's own switch."
+          },
+          "org_allowed": {
+            "type": "boolean",
+            "description": "Whether the organization allows it."
+          }
+        }
+      },
+      "ProjectStoredResponsesUpdate": {
+        "type": "object",
+        "description": "A change to whether a project keeps responses at providers.",
+        "required": [
+          "enabled"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Let providers keep this project's responses so apps can continue them with\n`previous_response_id`. Off refuses `store: true` and continuations; responses\nalready kept stay at their providers until they expire."
+          }
+        },
+        "additionalProperties": false
       },
       "ProjectToolSwitch": {
         "type": "object",
@@ -45285,6 +45655,10 @@
     {
       "name": "response-cache",
       "description": "The exact-match response cache: who may use it, how long replies are kept, clearing"
+    },
+    {
+      "name": "stored-responses",
+      "description": "Responses kept at providers for `previous_response_id`: who may keep them"
     }
   ]
 }

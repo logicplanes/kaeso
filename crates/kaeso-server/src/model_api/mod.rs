@@ -13,6 +13,7 @@ mod media;
 pub mod memory;
 pub mod pipeline;
 mod realtime;
+mod stored_responses;
 mod stream;
 pub mod videos;
 
@@ -331,6 +332,10 @@ pub fn router() -> Router<AppState> {
         .route("/v1/chat/completions", post(chat_completions))
         .route("/v1/responses", post(responses))
         .route("/v1/responses/input_tokens", post(responses_input_tokens))
+        .route(
+            "/v1/responses/{response_id}",
+            get(stored_responses::retrieve).delete(stored_responses::delete),
+        )
         .route("/v1/embeddings", post(embeddings))
         .route("/v1/rerank", post(rerank))
         .route("/v2/rerank", post(rerank))

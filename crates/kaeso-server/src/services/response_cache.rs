@@ -101,6 +101,8 @@ pub struct Cached {
     enabled: bool,
     ttl_seconds: i32,
     generation: i64,
+    #[serde(default)]
+    stores_responses: bool,
 }
 
 impl From<CacheSettings> for Cached {
@@ -110,6 +112,7 @@ impl From<CacheSettings> for Cached {
             enabled: s.enabled,
             ttl_seconds: s.ttl_seconds,
             generation: s.generation,
+            stores_responses: s.stores_responses,
         }
     }
 }
@@ -124,6 +127,21 @@ pub async fn active(state: &AppState, project: Uuid) -> Option<Active> {
     if !state.config.response_cache.enabled {
         return None;
     }
+    let c = settings(state, project).await?;
+    (c.org_allows && c.enabled).then(|| Active {
+        ttl: Duration::from_secs(u64::try_from(c.ttl_seconds).unwrap_or(0)),
+        generation: c.generation,
+    })
+}
+
+/// Whether the organization allows and the project turned on responses kept at providers.
+pub async fn stores_responses(state: &AppState, project: Uuid) -> bool {
+    settings(state, project)
+        .await
+        .is_some_and(|c| c.stores_responses)
+}
+
+async fn settings(state: &AppState, project: Uuid) -> Option<Cached> {
     let pg = state.pg.clone();
     let found = state
         .caches
@@ -134,18 +152,13 @@ pub async fn active(state: &AppState, project: Uuid) -> Option<Active> {
                 .map(|s| s.map(Cached::from))
         })
         .await;
-    let c = match found {
-        Ok(Some(c)) => *c,
-        Ok(None) => return None,
+    match found {
+        Ok(c) => c.map(|c| *c),
         Err(e) => {
-            tracing::warn!(error = %e, "cannot load the response cache settings; the request skips the cache");
-            return None;
+            tracing::warn!(error = %e, "cannot load the project's response settings; the request skips the cache and keeps no response");
+            None
         }
-    };
-    (c.org_allows && c.enabled).then(|| Active {
-        ttl: Duration::from_secs(u64::try_from(c.ttl_seconds).unwrap_or(0)),
-        generation: c.generation,
-    })
+    }
 }
 
 pub async fn forget(state: &AppState, project: Uuid) {

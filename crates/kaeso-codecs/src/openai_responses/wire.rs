@@ -37,10 +37,6 @@ pub(super) struct CreateResponse {
     #[serde(default)]
     pub stream: Option<bool>,
     #[serde(default)]
-    pub store: Option<bool>,
-    #[serde(default)]
-    pub previous_response_id: Option<String>,
-    #[serde(default)]
     pub conversation: Option<Box<RawValue>>,
     #[serde(default)]
     pub background: Option<bool>,

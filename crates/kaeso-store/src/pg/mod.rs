@@ -35,6 +35,7 @@ pub mod roles;
 pub mod service_accounts;
 pub mod sessions;
 pub mod sso_identities;
+pub mod stored_responses;
 pub mod tokens;
 pub mod tool_access;
 pub mod totp;

@@ -109,7 +109,7 @@ pub async fn update_org(
     }))
 }
 
-async fn projects_of(state: &AppState, org: uuid::Uuid) -> ApiResult<Vec<uuid::Uuid>> {
+pub(crate) async fn projects_of(state: &AppState, org: uuid::Uuid) -> ApiResult<Vec<uuid::Uuid>> {
     let mut all = Vec::new();
     let mut after = None;
     loop {

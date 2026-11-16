@@ -161,6 +161,7 @@ Any format reaches any generation model in the project's catalogue, so a Gemini 
 | `POST /v1/chat/completions` | OpenAI Chat Completions |
 | `POST /v1/responses` | OpenAI Responses |
 | `POST /v1/responses/input_tokens` | OpenAI Responses, counting input tokens |
+| `GET /v1/responses/{response_id}`, `DELETE /v1/responses/{response_id}` | OpenAI Responses, a response the provider keeps for the project ([stored responses](../console/organizations-and-projects.md#stored-responses)) |
 | `POST /v1/embeddings` | OpenAI Embeddings |
 | `POST /v1/rerank`, `POST /v2/rerank` | Cohere Rerank ([Rerank API](rerank.md)) |
 | `POST /v1/images/generations`, `POST /v1/images/edits`, `POST /v1/images/variations` | OpenAI Images ([Images API](images.md)) |
@@ -297,5 +298,5 @@ The OpenAI and Anthropic SDKs refuse to run in a browser unless the app passes `
 ## What Kaeso doesn't do
 
 - **Retries.** Kaeso sends a request to its model again only where the project or an alias step asks for it, after a dropped connection, a 5xx or an overloaded provider, and only before any reply has reached the app ([alias routes](../concepts/alias-routes.md#fallbacks)). Otherwise it sends each request once; the SDKs retry on their own where the error allows it.
-- **Stored state.** Kaeso refuses Responses requests that ask the provider to store or continue a response (`store: true`, `previous_response_id`, `conversation`, `background: true`). Send the whole conversation each time.
+- **Stored state.** Kaeso keeps no conversations itself. `store: true` and `previous_response_id` work only where a project allows responses stored at the provider, for models the provider keeps responses of ([stored responses](../console/organizations-and-projects.md#stored-responses)); elsewhere Kaeso refuses them, and it refuses `conversation` and `background: true` everywhere. Otherwise send the whole conversation each time.
 - **Silent changes.** Kaeso refuses a field it can't carry to the model's provider, with an error that names it, and never drops it. In Chat Completions, Messages and Embeddings, a field whose name starts with `header:` or contains a `.` gets 400, because Kaeso can't carry that name; Responses keeps such fields in the body. [Format translation](../concepts/format-translation.md) lists what crosses between formats.

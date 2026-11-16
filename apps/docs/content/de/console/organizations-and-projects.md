@@ -143,9 +143,26 @@ Die Seite **Einstellungen** eines Projekts enthält diese Einstellungen:
 | Inhaltsprotokollierung | Ob Anfragen und Antworten mit ihren Protokolleinträgen gespeichert werden. Lässt sich nicht einschalten, solange die Organisation sie ausgeschaltet hat |
 | Medien aufbewahren | Ob protokollierte Inhalte ihre Bilder, Audios und Dateien behalten ([Anfrageprotokolle](request-logs.md#medien-in-anfragen-und-antworten)). Lässt sich nicht einschalten, solange die Organisation keine aufbewahrt |
 | Wiederholungen | Wie oft, von **Nie** bis 3, eine Anfrage, die ein Modell nennt, oder ein Alias-Schritt ohne eigene Einstellung das Modell nach einer abgebrochenen Verbindung, einem 5xx oder einem überlasteten Anbieter erneut versucht ([Alias-Routen](../concepts/alias-routes.md#fallbacks)) |
+| Beim Anbieter gespeicherte Antworten erlauben | Ob Responses-Apps den Anbieter ihre Antworten aufbewahren lassen und fortsetzen dürfen ([Gespeicherte Antworten](#gespeicherte-antworten)). Lässt sich nicht einschalten, solange die Organisation es nicht erlaubt |
 | Projekt archivieren | Archiviert das Projekt mit seinen Schlüsseln und Dienstkonten endgültig. Seine Schlüssel hören sofort auf zu funktionieren |
 
 Kaeso archiviert Projekte und löscht sie nie, damit ihre Nutzung und Protokolle erhalten bleiben. Jedes Projekt lässt sich archivieren.
+
+## Gespeicherte Antworten
+
+Eine App im Responses-Format von OpenAI kann OpenAI bitten, eine Antwort aufzubewahren, und die Unterhaltung später mit `previous_response_id` fortsetzen, statt jedes Mal die ganze Unterhaltung zu senden ([Gesprächszustand](https://developers.openai.com/api/docs/guides/migrate-to-responses)). OpenAI bewahrt die Unterhaltung dann 30 Tage auf. Das entscheidet, wo Ihre Daten liegen, deshalb ist es aus, bis beide Schalter an sind:
+
+1. Ein Organisations-Admin öffnet **Organisationseinstellungen**, dann **Protokollierung**, und schaltet **Beim Anbieter gespeicherte Antworten erlauben** ein. Dafür braucht es das Recht **Organisation bearbeiten**. Ausgeschaltet, endet es in jedem Projekt.
+2. Ein Projekt-Admin schaltet **Beim Anbieter gespeicherte Antworten erlauben** in den **Einstellungen** des Projekts ein.
+
+Dann gilt für Anfragen im Responses-Format an ein Modell von OpenAI mit einem API-Schlüssel von OpenAI:
+
+- Kaeso verzeichnet jede Antwort, die OpenAI für das Projekt aufbewahrt: außer die Anfrage sendet `store: false`, da OpenAI Antworten standardmäßig aufbewahrt. Es speichert nur einen Hash der ID der Antwort, mit dem Projekt, dem Anbieter-Schlüssel und dem Modell.
+- `previous_response_id` setzt eine Antwort nur in dem Projekt fort, das sie gespeichert hat, mit dem Anbieter-Schlüssel, der sie gespeichert hat. Ein anderes Projekt bekommt `404`, als gäbe es die Antwort nicht, auch wenn sich beide Projekte den Anbieter-Schlüssel teilen.
+- `GET /v1/responses/{response_id}` liest eine gespeicherte Antwort, und `DELETE /v1/responses/{response_id}` löscht sie bei OpenAI, mit denselben Prüfungen.
+- Limits reservieren auch die Token der bisherigen Unterhaltung, da OpenAI sie als Eingabe abrechnet, und der Antwort-Cache lässt diese Anfragen durch.
+
+Kaeso lehnt `store: true` und `previous_response_id` mit `400` ab und nennt das Feld, wenn einer der Schalter aus ist, wenn das Modell in einem anderen Format oder bei einem Anbieter aufgerufen wird, der keine Antworten aufbewahrt, oder wenn der Schlüssel des Projekts eine Konto-Anmeldung wie ein ChatGPT-Abo ist. Ein Alias geht von einem Schritt, der die Antwort nicht fortsetzen kann, zu seinem nächsten Schritt. `conversation` und `background: true` bleiben überall abgelehnt. Schalten Sie die Schalter aus, bleiben die Antworten, die OpenAI schon aufbewahrt, dort, bis sie ablaufen; löschen Sie sie vorher, wenn nötig.
 
 ## Nächste Schritte
 

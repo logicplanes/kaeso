@@ -9,6 +9,9 @@ pub struct CacheSettings {
     pub enabled: bool,
     pub ttl_seconds: i32,
     pub generation: i64,
+    /// Whether the project may keep responses at its providers (`stored_responses`), read with
+    /// the cache's settings so a request reads one cached row.
+    pub stores_responses: bool,
 }
 
 impl CacheSettings {
@@ -31,7 +34,8 @@ pub async fn settings(
     Ok(sqlx::query_as!(
         CacheSettings,
         "SELECT o.response_cache AS org_allows, p.response_cache AS enabled, \
-         p.response_cache_ttl_seconds AS ttl_seconds, p.response_cache_generation AS generation \
+         p.response_cache_ttl_seconds AS ttl_seconds, p.response_cache_generation AS generation, \
+         (o.stored_responses AND p.stored_responses) AS \"stores_responses!\" \
          FROM projects p JOIN organizations o ON o.id = p.org_id WHERE p.id = $1",
         project_id
     )

@@ -813,5 +813,9 @@
   "errors.guardrails.patternInvalid": "模式 {n} 不是 Kaeso 能编译的正则表达式。",
   "errors.guardrails.noSecret": "内置规则没有签名密钥。",
   "errors.guardrails.sampleTooLong": "`text` 最多 100000 个字符。",
-  "errors.keyWeight": "权重为 1 到 100。"
+  "errors.keyWeight": "权重为 1 到 100。",
+  "errors.storedResponsesOffInOrg": "组织不允许存储的回复；项目无法开启。",
+  "errors.storedResponsesArchived": "项目已归档；无法更改其存储回复设置。",
+  "errors.modelApi.storedResponseNotFound": "未找到 ID 为 '{id}' 的回复。",
+  "errors.modelApi.storedResponsesUnavailable": "Kaeso 目前无法读取其存储的回复。请稍后再试。"
 }

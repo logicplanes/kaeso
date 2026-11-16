@@ -274,5 +274,8 @@
   "format.guardrail.found.ip": "{count, plural, other {# 个 IP 地址}}",
   "format.guardrail.found.phone": "{count, plural, other {# 个电话号码}}",
   "format.guardrail.found.privateKey": "{count, plural, other {# 个私钥}}",
-  "format.guardrail.found.token": "{count, plural, other {# 个 JSON Web Token}}"
+  "format.guardrail.found.token": "{count, plural, other {# 个 JSON Web Token}}",
+  "format.audit.action.storedResponsesOrgUpdate": "已允许或禁止存储的回复",
+  "format.audit.action.storedResponsesProjectUpdate": "项目的存储回复设置已更改",
+  "format.audit.kind.storedResponses": "存储的回复"
 }
