@@ -9036,6 +9036,81 @@
         "x-kaeso-access": "right:provider_credentials.replace"
       }
     },
+    "/platform/v1/orgs/{org}/credentials/{credential}/check": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Asks the provider whether it takes a key, without a model request.",
+        "description": "Kaeso reads the provider's model listing with the key, or what stands in\nfor one. Nothing is billed and no model's availability is recorded. A provider that\nlists no models where the key calls it answers `unknown`: only a model request can\ntell.\n\n**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgCredentialsCredentialCheck",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "credential",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CredentialId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:provider_credentials.replace"
+      }
+    },
     "/platform/v1/orgs/{org}/credentials/{credential}/default": {
       "post": {
         "tags": [
@@ -29386,6 +29461,44 @@
           }
         },
         "additionalProperties": false
+      },
+      "CredentialCheck": {
+        "type": "object",
+        "description": "A key's check against its provider.",
+        "required": [
+          "result"
+        ],
+        "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "With `refused` or `unreachable`, what the provider or the connection to it\nanswered, as it came and without any part of the key."
+          },
+          "models": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "With `ok`, how many models the provider lists for the key; `null` when its\nlisting names what it offers rather than what the key can call.",
+            "minimum": 0
+          },
+          "result": {
+            "$ref": "#/components/schemas/CredentialCheckResult",
+            "description": "What the provider said."
+          }
+        }
+      },
+      "CredentialCheckResult": {
+        "type": "string",
+        "description": "What the provider said about a key.",
+        "enum": [
+          "ok",
+          "refused",
+          "unreachable",
+          "unknown"
+        ]
       },
       "CredentialCreate": {
         "type": "object",

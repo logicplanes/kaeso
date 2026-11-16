@@ -20,7 +20,7 @@ Each action on provider keys needs its own right:
 | Action | Right |
 | --- | --- |
 | Add a key | **Add provider keys** |
-| Replace, rename or assign a key, or make it the default | **Change provider keys** |
+| Test, replace, rename or assign a key, or make it the default | **Change provider keys** |
 | Delete a key | **Delete provider keys** |
 
 Every action except deleting also needs a recent sign-in.
@@ -132,6 +132,7 @@ The list shows each key's name, its last four characters, the projects that use 
 
 | Action | What it does |
 | --- | --- |
+| Test key | Asks the provider whether it takes the key, by reading its model list with it: it says the provider takes the key, and how many models it lists for it, or shows the provider's refusal. Nothing is billed. A provider that lists no models where the key calls it, such as Amazon Bedrock, can't tell; only a model request confirms the key |
 | Replace | Takes a new secret for the same key, for example after you rotated it at the provider; for a service account key, a new JSON key file |
 | Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** or **No API access**, and ends its previous session at OpenAI or xAI |
 | Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |

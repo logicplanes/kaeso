@@ -299,6 +299,65 @@ async fn resolve_member(
     }
 }
 
+/// One of an org's keys by its id, whichever projects use it, with an account's access renewed
+/// when it is due; `None` when the org has no such key.
+pub async fn by_id(
+    state: &AppState,
+    org: OrgId,
+    id: CredentialId,
+    provider: &str,
+) -> Result<Option<Resolved>, ResolveError> {
+    let read = || async {
+        match credentials::sealed(&state.pg, org.uuid(), id.uuid()).await? {
+            Some(row) => Ok::<_, ResolveError>(Some(open(&state.keyring, org.uuid(), &row)?)),
+            None => Ok(None),
+        }
+    };
+    let Some(resolved) = read().await? else {
+        return Ok(None);
+    };
+    if let Some(stopped) = resolved.stopped {
+        return Err(stopped.error(ENTRA_ID));
+    }
+    let Some(account) = resolved.account else {
+        return Ok(Some(resolved));
+    };
+    let product = product_of(provider, resolved.method);
+    if let Some(stopped) = account.stopped {
+        return Err(stopped.error(product));
+    }
+    let now = state.clock.now();
+    if !due(
+        resolved.method,
+        account.expires_at,
+        account.earliest_refresh_at,
+        now,
+    ) {
+        return Ok(Some(resolved));
+    }
+    let hosts = state.accounts.hosts(resolved.method);
+    if hosts.is_none() && resolved.method != AuthMethod::LinkedBilling {
+        return Err(ResolveError::Unrenewed { product });
+    }
+    let locked = Locked {
+        org,
+        id,
+        method: resolved.method,
+        product,
+        cached: Some(account),
+    };
+    renew_locked(state, hosts, &locked, time::Duration::ZERO).await?;
+    let renewed = read().await?;
+    match renewed.as_ref().and_then(|r| r.account) {
+        Some(Account {
+            stopped: Some(stopped),
+            ..
+        }) => Err(stopped.error(product)),
+        Some(a) if state.clock.now() >= a.expires_at => Err(ResolveError::Unrenewed { product }),
+        _ => Ok(renewed),
+    }
+}
+
 fn product_of(provider: &str, method: AuthMethod) -> &'static str {
     if method == AuthMethod::LinkedBilling {
         return kaeso_core::linked_billing::of(provider).map_or("provider", |l| l.organization);

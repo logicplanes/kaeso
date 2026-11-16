@@ -117,6 +117,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::ProviderCredentialsView), routes!(credentials::get)))
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credentials::replace)))
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credentials::rename)))
+        .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credentials::check)))
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credentials::make_default)))
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credentials::assign)))
         .routes(s.route(Access::Org(R::ProviderCredentialsDelete), routes!(credentials::delete)))
