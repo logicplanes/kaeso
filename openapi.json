@@ -24414,6 +24414,145 @@
         "x-kaeso-access": "right:security.sso.manage"
       }
     },
+    "/platform/v1/orgs/{org}/security/sso/groups": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The organization's roles and projects from its identity provider's groups.",
+        "description": "**Right:** `org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgSecuritySsoGroups",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SsoGroups"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.view"
+      },
+      "put": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Sets the group claim, the mode and the rules. A rule gives only roles whose\nrights you hold, and never Owner.",
+        "description": "The rules apply at each sign-in through the organization's provider, to the accounts it manages. A token without the claim changes nothing.\n\n**Right:** `security.sso.manage` on the organization in the path; a console session only.",
+        "operationId": "putOrgsOrgSecuritySsoGroups",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsoGroupsUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SsoGroups"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "right:security.sso.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/security/sso/verify": {
       "post": {
         "tags": [
@@ -29546,6 +29685,54 @@
               "$ref": "#/components/schemas/MemberUser"
             },
             "description": "Up to 10 active members who hold the right and may change roles,\nowners first."
+          }
+        }
+      },
+      "GroupRule": {
+        "type": "object",
+        "description": "A rule: people in a group get an organization role and project memberships.",
+        "required": [
+          "group"
+        ],
+        "properties": {
+          "group": {
+            "type": "string",
+            "description": "The group's value in the claim, compared exactly.",
+            "example": "kaeso-admins"
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupRuleProject"
+            },
+            "description": "Projects the person joins, each with a role. Every matching rule adds its own."
+          },
+          "role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The organization role the first matching rule gives: a built-in role other than\n`owner`, or a custom role's id. `null` leaves the role to other rules or the default.",
+            "example": "admin"
+          }
+        }
+      },
+      "GroupRuleProject": {
+        "type": "object",
+        "description": "A project a rule makes a person a member of.",
+        "required": [
+          "project",
+          "role"
+        ],
+        "properties": {
+          "project": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
+          },
+          "role": {
+            "type": "string",
+            "description": "The project role: `admin`, `developer`, `viewer` or a custom project role's id.",
+            "example": "developer"
           }
         }
       },
@@ -43262,6 +43449,89 @@
             "description": "When it was verified; `null` while it isn't."
           }
         }
+      },
+      "SsoGroups": {
+        "type": "object",
+        "description": "Roles and projects from the identity provider's groups.",
+        "required": [
+          "claim",
+          "scopes",
+          "mode",
+          "rules"
+        ],
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "The ID token claim that lists the person's groups.",
+            "example": "groups"
+          },
+          "claim_missing_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When a sign-in last came without the claim, which changed nothing."
+          },
+          "mode": {
+            "type": "string",
+            "description": "`add` never takes anything away; `sync` also removes what a rule gave once\nno rule gives it.",
+            "example": "add"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupRule"
+            },
+            "description": "The rules in order; the first match sets the organization role."
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Extra scopes Kaeso asks the provider for, such as `groups`."
+          },
+          "your_last_groups": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "The groups your own last sign-in through the provider carried, when it had any."
+          }
+        }
+      },
+      "SsoGroupsUpdate": {
+        "type": "object",
+        "description": "The organization's group claim, mode and rules.",
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "The ID token claim that lists the person's groups."
+          },
+          "mode": {
+            "type": "string",
+            "description": "`add` or `sync`."
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupRule"
+            },
+            "description": "The rules in order, at most 200."
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Extra scopes to ask the provider for."
+          }
+        },
+        "additionalProperties": false
       },
       "SsoLinkView": {
         "type": "object",

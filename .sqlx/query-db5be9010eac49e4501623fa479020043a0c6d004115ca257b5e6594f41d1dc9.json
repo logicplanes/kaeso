@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE org_memberships SET preset = $3, role_id = $4, rights_added = $5, rights_removed = $6, from_sso_group = false, updated_at = now() WHERE org_id = $1 AND user_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid",
+        "TextArray",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "db5be9010eac49e4501623fa479020043a0c6d004115ca257b5e6594f41d1dc9"
+}

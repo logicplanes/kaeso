@@ -113,6 +113,7 @@
   "format.audit.action.securityScimRotate": "SCIM token created or replaced",
   "format.audit.action.securitySsoDelete": "Single sign-on disconnected",
   "format.audit.action.securitySsoDomainVerify": "Email domain verified",
+  "format.audit.action.securitySsoGroupsUpdate": "Single sign-on group rules changed",
   "format.audit.action.securitySsoUpdate": "Single sign-on set up or changed",
   "format.audit.action.serviceAccountArchive": "Service account archived",
   "format.audit.action.serviceAccountCreate": "Service account created",

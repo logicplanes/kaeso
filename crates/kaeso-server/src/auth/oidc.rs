@@ -230,7 +230,7 @@ impl Provider {
         .set_redirect_uri(self.redirect.clone())
     }
 
-    pub fn start(&self, fresh: bool) -> Started {
+    pub fn start(&self, fresh: bool, scopes: &[String]) -> Started {
         let (challenge, verifier) = PkceCodeChallenge::new_random_sha256();
         let client = self.client();
         let mut request = client
@@ -241,6 +241,7 @@ impl Provider {
             )
             .add_scope(Scope::new("email".into()))
             .add_scope(Scope::new("profile".into()))
+            .add_scopes(scopes.iter().map(|s| Scope::new(s.clone())))
             .set_pkce_challenge(challenge);
         if fresh {
             // OpenID Connect Core 1.0 §3.1.2.1: prompt=login and max_age=0 ask the
@@ -305,6 +306,7 @@ impl Provider {
             name,
             auth_time,
             issued_at,
+            claims: payload(&id_token.to_string()),
         })
     }
 }
@@ -329,6 +331,42 @@ pub struct Identity {
     pub name: Option<String>,
     pub auth_time: Option<time::OffsetDateTime>,
     pub issued_at: Option<time::OffsetDateTime>,
+    /// Every claim of the ID token, once its signature, issuer, audience and nonce are checked.
+    pub claims: serde_json::Value,
+}
+
+impl Identity {
+    /// The values of a groups claim: a list of strings, or one string. `None` when the token
+    /// carries no such claim, which is not the same as an empty list.
+    pub fn groups(&self, claim: &str) -> Option<Vec<String>> {
+        match self.claims.get(claim)? {
+            serde_json::Value::Array(values) => Some(
+                values
+                    .iter()
+                    .filter_map(serde_json::Value::as_str)
+                    .map(str::to_owned)
+                    .collect(),
+            ),
+            serde_json::Value::String(s) => Some(vec![s.clone()]),
+            _ => None,
+        }
+    }
+}
+
+// The claims of a compact JWS: its middle part, base64url without padding. The token is checked
+// before this reads it.
+fn payload(token: &str) -> serde_json::Value {
+    use base64::Engine;
+    token
+        .split('.')
+        .nth(1)
+        .and_then(|p| {
+            base64::engine::general_purpose::URL_SAFE_NO_PAD
+                .decode(p)
+                .ok()
+        })
+        .and_then(|b| serde_json::from_slice(&b).ok())
+        .unwrap_or(serde_json::Value::Null)
 }
 
 #[cfg(test)]

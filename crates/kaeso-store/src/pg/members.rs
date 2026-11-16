@@ -157,7 +157,7 @@ pub async fn update_org(
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE org_memberships SET preset = $3, role_id = $4, rights_added = $5, rights_removed = $6, \
-         updated_at = now() WHERE org_id = $1 AND user_id = $2",
+         from_sso_group = false, updated_at = now() WHERE org_id = $1 AND user_id = $2",
         org_id,
         user_id,
         g.preset,
@@ -420,7 +420,7 @@ pub async fn update_project(
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "UPDATE project_memberships SET preset = $3, role_id = $4, rights_added = $5, rights_removed = $6, \
-         updated_at = now() WHERE project_id = $1 AND user_id = $2",
+         from_sso_group = false, updated_at = now() WHERE project_id = $1 AND user_id = $2",
         project_id,
         user_id,
         g.preset,

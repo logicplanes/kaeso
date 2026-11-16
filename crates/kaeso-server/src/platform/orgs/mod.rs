@@ -11,6 +11,7 @@ pub mod platform_keys;
 pub mod roles;
 pub mod scim;
 pub mod security;
+pub mod sso_groups;
 pub mod webhooks;
 
 use axum::Json;
@@ -55,6 +56,8 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::OrgView), routes!(security::get)))
         .routes(s.route(Access::Org(R::OrgView), routes!(scim::get)))
         .routes(s.route(Access::Org(R::SecuritySsoManage), routes!(scim::rotate, scim::delete)))
+        .routes(s.route(Access::Org(R::OrgView), routes!(sso_groups::get)))
+        .routes(s.route(Access::OrgSession(R::SecuritySsoManage), routes!(sso_groups::put)))
         .routes(s.route(Access::Org(R::MembersView), routes!(agents::list)))
         .routes(s.route(Access::OrgSession(R::MembersRightsUpdate), routes!(agents::revoke)))
         .routes(s.route(Access::Org(R::OrgView), routes!(agents::policy)))

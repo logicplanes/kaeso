@@ -136,6 +136,7 @@ actions! {
         SecurityScimRotate = "security.scim_rotate",
         SecuritySsoDelete = "security.sso_delete",
         SecuritySsoDomainVerify = "security.sso_domain_verify",
+        SecuritySsoGroupsUpdate = "security.sso_groups_update",
         SecuritySsoUpdate = "security.sso_update",
         ServiceAccountArchive = "service_account.archive",
         ServiceAccountCreate = "service_account.create",

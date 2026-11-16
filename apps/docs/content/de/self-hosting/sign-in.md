@@ -65,6 +65,8 @@ Bringt eine Anmeldung über den Anbieter eine andere Adresse an einer der bestä
 
 Der Identitätsanbieter der Organisation kann die Konten, die sie verwaltet, auch über SCIM hinzufügen und entfernen, sodass Mitgliedschaft und Schlüssel einer Person enden, wenn der Anbieter sie deaktiviert. SCIM berührt nie einen Gast ([SCIM-Bereitstellung](../api/scim.md)).
 
+Eine Organisation kann Rolle und Projektmitgliedschaften der Konten, die sie verwaltet, auch nach den Gruppen ihres Anbieters setzen, bei jeder Anmeldung darüber ([Rollen und Projekte aus den Gruppen Ihres Anbieters](../console/organizations-and-projects.md#rollen-und-projekte-aus-den-gruppen-ihres-anbieters)). Gäste melden sich nie darüber an, also ändern Regeln sie nie.
+
 ### Single Sign-on verlangen
 
 Ist **Single Sign-on verlangen** eingeschaltet, melden sich die Konten, die eine Organisation verwaltet, überall auf der Installation nur über ihren Anbieter an. Die Anmeldeseite bietet ihnen allein den Anbieter an. Ein Passwort, einen Anmeldelink, eine Registrierung oder eine Einladung ohne Konto lehnt Kaeso mit `Your organization requires single sign-on; continue with its identity provider.` ab.

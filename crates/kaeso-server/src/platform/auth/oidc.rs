@@ -220,7 +220,11 @@ async fn begin(
         Purpose::Link(user) => (Some(user), None),
         Purpose::Confirm { user, session } => (None, Some((user, session))),
     };
-    let started = provider.start(confirm.is_some());
+    let scopes = kaeso_store::pg::sso_groups::settings(&state.pg, org.uuid())
+        .await?
+        .map(|s| s.scopes)
+        .unwrap_or_default();
+    let started = provider.start(confirm.is_some(), &scopes);
     let binding = random_token();
     tokens::insert(
         &state.pg,
@@ -741,6 +745,23 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
             return Err(no_access());
         }
     }
+    let default = org_row
+        .sso_default_preset
+        .clone()
+        .map(|preset| members::Grant {
+            preset,
+            role_id: org_row.sso_default_role_id,
+            ..Default::default()
+        });
+    let regrouped = crate::services::sso_groups::apply(
+        &mut tx,
+        org.uuid(),
+        user.id,
+        &identity,
+        default,
+        ctx.now,
+    )
+    .await?;
     if user
         .email
         .as_deref()
@@ -763,6 +784,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
     )
     .await?;
     tx.commit().await?;
+    regrouped.forget(state).await;
     super::end_previous(state, ctx, user_id).await?;
     let mut response = redirect(&signed_in_location(state, flow.back.next.as_deref()));
     if let Ok(v) = binding_cookie(state, "", 0) {
@@ -1047,6 +1069,7 @@ mod tests {
             name: None,
             auth_time,
             issued_at: Some(datetime!(2026-10-21 12:00 UTC)),
+            claims: serde_json::Value::Null,
         }
     }
 

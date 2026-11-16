@@ -34,6 +34,7 @@ import { LoadFailed } from "./load-failed";
 import { OrgPage } from "./org-page";
 import { OrgAgents } from "./agents-section";
 import { Provisioning } from "./provisioning-section";
+import { SsoGroups } from "./sso-groups-section";
 import { useOrgGiver } from "~/auth/givers";
 import { useNeedsRight } from "~/auth/needs-right";
 
@@ -59,6 +60,7 @@ export function OrgSecurityPage({ org }: { org: string }) {
         <>
           <SingleSignOn org={org} security={s} />
           <Provisioning org={org} connected={!!s.sso} />
+          {s.sso && <SsoGroups org={org} />}
           <Requirements org={org} security={s} />
           <KeyPolicy org={org} days={s.max_key_lifetime_days ?? null} />
           <OrgAgents org={org} />

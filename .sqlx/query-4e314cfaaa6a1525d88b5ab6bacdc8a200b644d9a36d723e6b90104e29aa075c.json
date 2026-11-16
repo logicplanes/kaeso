@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO sso_group_settings (org_id, claim, scopes, mode) VALUES ($1, $2, $3, $4) ON CONFLICT (org_id) DO UPDATE SET claim = EXCLUDED.claim, scopes = EXCLUDED.scopes, mode = EXCLUDED.mode, claim_missing_at = CASE WHEN sso_group_settings.claim = EXCLUDED.claim THEN sso_group_settings.claim_missing_at END, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "TextArray",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4e314cfaaa6a1525d88b5ab6bacdc8a200b644d9a36d723e6b90104e29aa075c"
+}

@@ -9,16 +9,27 @@ use axum::{Json, Router};
 use base64::Engine;
 use base64::engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD};
 use openidconnect::core::{
-    CoreClaimName, CoreIdToken, CoreIdTokenClaims, CoreJsonWebKeySet, CoreJwsSigningAlgorithm,
-    CoreProviderMetadata, CoreResponseType, CoreRsaPrivateSigningKey, CoreSubjectIdentifierType,
+    CoreClaimName, CoreGenderClaim, CoreJsonWebKeySet, CoreJweContentEncryptionAlgorithm,
+    CoreJwsSigningAlgorithm, CoreProviderMetadata, CoreResponseType, CoreRsaPrivateSigningKey,
+    CoreSubjectIdentifierType,
 };
 use openidconnect::{
-    AccessToken, Audience, AuthUrl, EmptyAdditionalClaims, EmptyAdditionalProviderMetadata,
-    EndUserEmail, EndUserName, IssuerUrl, JsonWebKeyId, JsonWebKeySetUrl, LocalizedClaim, Nonce,
-    PrivateSigningKey, ResponseTypes, StandardClaims, SubjectIdentifier, TokenUrl,
+    AccessToken, AdditionalClaims, Audience, AuthUrl, EmptyAdditionalProviderMetadata,
+    EndUserEmail, EndUserName, IdToken, IdTokenClaims, IssuerUrl, JsonWebKeyId, JsonWebKeySetUrl,
+    LocalizedClaim, Nonce, PrivateSigningKey, ResponseTypes, StandardClaims, SubjectIdentifier,
+    TokenUrl,
 };
 use rsa::pkcs1::EncodeRsaPrivateKey;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+/// The `groups` claim an identity provider adds when the app asks for it; left out when unset.
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+struct Groups {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    groups: Option<Vec<String>>,
+}
+
+impl AdditionalClaims for Groups {}
 use sha2::{Digest, Sha256};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -49,6 +60,8 @@ struct Inner {
     client_secret: String,
     key: CoreRsaPrivateSigningKey,
     grants: Mutex<HashMap<String, Grant>>,
+    // The `groups` claim of each address's ID tokens; none unless set.
+    groups: Mutex<HashMap<String, Vec<String>>>,
     fault: Mutex<Fault>,
     hold: Mutex<Option<Hold>>,
 }
@@ -87,6 +100,23 @@ pub struct Authorized {
 }
 
 impl MockIdp {
+    /// The `groups` claim the ID tokens for `email` carry from now on; `None` leaves it out.
+    pub fn set_groups(&self, email: &str, groups: Option<&[&str]>) {
+        if let Ok(mut all) = self.inner.groups.lock() {
+            match groups {
+                Some(g) => {
+                    all.insert(
+                        email.to_owned(),
+                        g.iter().map(|s| (*s).to_owned()).collect(),
+                    );
+                }
+                None => {
+                    all.remove(email);
+                }
+            }
+        }
+    }
+
     pub async fn start(client_id: &str, client_secret: &str) -> MockIdp {
         Self::start_on("127.0.0.1:0", client_id, client_secret).await
     }
@@ -106,6 +136,7 @@ impl MockIdp {
             client_secret: client_secret.to_owned(),
             key,
             grants: Mutex::new(HashMap::new()),
+            groups: Mutex::new(HashMap::new()),
             fault: Mutex::new(Fault::None),
             hold: Mutex::new(None),
         });
@@ -362,13 +393,18 @@ async fn token(
             _ => Some(true),
         })
         .set_name(Some(name));
-    let claims = CoreIdTokenClaims::new(
+    let groups = inner
+        .groups
+        .lock()
+        .ok()
+        .and_then(|g| g.get(&grant.email).cloned());
+    let claims = IdTokenClaims::<Groups, CoreGenderClaim>::new(
         IssuerUrl::new(issuer).expect("issuer"),
         vec![Audience::new(audience)],
         expires,
         issued,
         standard,
-        EmptyAdditionalClaims {},
+        Groups { groups },
     )
     .set_nonce(Some(Nonce::new(nonce)))
     .set_auth_time(match fault {
@@ -377,7 +413,12 @@ async fn token(
         _ => Some(now),
     });
     let access = AccessToken::new("mock-access-token".into());
-    let Ok(id_token) = CoreIdToken::new(
+    let Ok(id_token) = IdToken::<
+        Groups,
+        CoreGenderClaim,
+        CoreJweContentEncryptionAlgorithm,
+        CoreJwsSigningAlgorithm,
+    >::new(
         claims,
         &inner.key,
         CoreJwsSigningAlgorithm::RsaSsaPkcs1V15Sha256,

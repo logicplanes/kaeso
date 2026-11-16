@@ -91,6 +91,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::SecuritySsoUpdate
         | A::SecurityScimDelete
         | A::SecurityScimRotate
+        | A::SecuritySsoGroupsUpdate
         | A::PlatformKeyCreate
         | A::PlatformKeyRotate => &[Kind::OrgSecurity],
         A::InviteAccept => &[Kind::OrgMembers, Kind::InviteAccepted],

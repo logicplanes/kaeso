@@ -842,5 +842,14 @@
   "errors.batches.window": "`completion_window` 必须是 `24h`。",
   "errors.batches.after": "`after` 不是批处理 ID。",
   "errors.batches.limit": "`limit` 必须在 1 到 100 之间。",
-  "errors.scimNeedsSso": "请先连接单点登录；SCIM 管理通过它登录的账户。"
+  "errors.scimNeedsSso": "请先连接单点登录；SCIM 管理通过它登录的账户。",
+  "errors.ssoGroups.noSso": "请先连接身份提供方；组规则作用于通过它的登录。",
+  "errors.ssoGroups.noOwners": "规则不能指定所有者；请选择其他角色。",
+  "errors.ssoGroups.claim": "请用字母、数字和 `_-.:/` 命名声明，最多 100 个字符。",
+  "errors.ssoGroups.scopes": "最多提供 10 个由字母、数字和 `_-.:/` 组成的 scope。",
+  "errors.ssoGroups.mode": "`mode` 为 `add` 或 `sync`。",
+  "errors.ssoGroups.tooMany": "最多 200 条规则。",
+  "errors.ssoGroups.group": "请为每条规则填写组，最多 256 个字符。",
+  "errors.ssoGroups.duplicate": "组 `{group}` 有两条规则。",
+  "errors.ssoGroups.project": "`{project}` 不是组织中未归档的项目，或被重复指定。"
 }
