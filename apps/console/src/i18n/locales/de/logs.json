@@ -302,5 +302,10 @@
   "logs.cache.hit": "Treffer",
   "logs.cache.miss": "Fehlschlag",
   "logs.cache.bypass": "Vorbei",
-  "logs.copyUpstreamRequestId": "Anfrage-ID des Anbieters kopieren"
+  "logs.copyUpstreamRequestId": "Anfrage-ID des Anbieters kopieren",
+  "logs.inspector.onlyStatus": "Nur Anfragen mit diesem Status zeigen",
+  "logs.inspector.onlyModel": "Nur Anfragen an dieses Modell zeigen",
+  "logs.inspector.onlyAlias": "Nur Anfragen an diesen Alias zeigen",
+  "logs.inspector.onlySender": "Nur Anfragen dieses Absenders zeigen",
+  "logs.inspector.onlyKey": "Nur Anfragen mit diesem Schlüssel zeigen"
 }

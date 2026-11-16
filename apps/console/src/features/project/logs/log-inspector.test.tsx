@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { signedIn, without } from "~/test/fixtures";
-import { apiKey, catalogueModel, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
+import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
+import { alias, apiKey, catalogueModel, me, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { logContent, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -400,6 +400,71 @@ describe("LogInspector", () => {
     expect(usageSection).not.toHaveTextContent("breakpoint");
   });
 
+  it("opens the model, alias, sender and key it names, and narrows the list to each without closing", async () => {
+    signedIn();
+    projectData({
+      keys: [apiKey()],
+      members: [me()],
+      models: [catalogueModel({ id: "cm_mini", provider: "openai", model_id: "gpt-5.4-mini" })],
+      aliases: [alias({ id: "al_fast", name: "fast" })],
+    });
+    logsData({ rows: [logRow()], entries: [logEntry({ alias: "fast", status: 429, error_kind: "rate_limited" })] });
+    const { user, router } = await renderApp(projectPath("logs?log=req_0001"));
+
+    const dialog = await sheet();
+    const base = `/orgs/${ORG}/projects/${PROJECT}`;
+    await waitFor(() =>
+      expect(
+        within(dialog)
+          .getAllByRole("link")
+          .map((a) => a.getAttribute("href")),
+      ).toEqual([`${base}/models?model=cm_mini`, `${base}/models/aliases/al_fast`, `${base}/members?member=${USER}`, `${base}/keys?key=key_web`]),
+    );
+    for (const label of [
+      "Show only requests with this status",
+      "Show only requests to this model",
+      "Show only requests to this alias",
+      "Show only requests from this sender",
+      "Show only requests with this key",
+    ]) {
+      await user.click(within(dialog).getByRole("button", { name: label }));
+    }
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({
+        log: "req_0001",
+        status: 429,
+        model: "gpt-5.4-mini",
+        provider: "openai",
+        alias: "fast",
+        member: `user:${USER}`,
+        key: "key_web",
+      }),
+    );
+    expect(await sheet()).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("link", { name: /checkout-web/ }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`${base}/keys`));
+    expect(router.state.location.search).toEqual({ key: "key_web" });
+  });
+
+  it("names what it can't open as plain text, and opens a service account's sheet", async () => {
+    signedIn({ projectRights: without("models.view", "keys.all.view") });
+    projectData({ keys: [apiKey()], accounts: [serviceAccount()], aliases: [alias({ id: "al_fast", name: "fast" })] });
+    logsData({ rows: [logRow()], entries: [logEntry({ alias: "gone", principal_kind: "service_account", principal_id: "sa_deploy" })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+
+    const dialog = await sheet();
+    await waitFor(() =>
+      expect(
+        within(dialog)
+          .getAllByRole("link")
+          .map((a) => a.getAttribute("href")),
+      ).toEqual([`/orgs/${ORG}/projects/${PROJECT}/service-accounts?account=sa_deploy`]),
+    );
+    expect(section(dialog, "Route")).toHaveTextContent("gone");
+    expect(section(dialog, "Sent by")).toHaveTextContent("key_web");
+  });
+
   it("shows dashes for a request that never reached a model, and the stream's first byte", async () => {
     signedIn();
     projectData();
@@ -431,7 +496,12 @@ describe("LogInspector", () => {
     expect(route).toHaveTextContent("Model—Provider—Upstream request—");
     const sentBy = section(dialog, "Sent by");
     expect(sentBy).toHaveTextContent("User agent—");
-    expect(within(sentBy).queryAllByRole("button")).toHaveLength(0);
+    // No copy button for an empty user agent; only the filters.
+    expect(
+      within(sentBy)
+        .queryAllByRole("button")
+        .map((b) => b.getAttribute("aria-label")),
+    ).toEqual(["Show only requests from this sender", "Show only requests with this key"]);
     expect(within(route).queryAllByRole("button")).toHaveLength(0);
     expect(section(dialog, "Stream")).toHaveTextContent("320 ms");
     noSection(dialog, "Timing");

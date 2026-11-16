@@ -33,7 +33,7 @@ Wählen Sie eine Anfrage, um sie zu öffnen:
 
 | Tab | Inhalt |
 | --- | --- |
-| Übersicht | Das Ergebnis, die Route, wer sie gesendet hat, die Zeiten, der Stream und die Nutzung |
+| Übersicht | Das Ergebnis, die Route, wer sie gesendet hat, die Zeiten, der Stream und die Nutzung. Modell, Alias, Schlüssel und Absender öffnen ihr Blatt oder ihren Routen-Editor, wenn Sie ihn öffnen dürfen, und die Filtertaste daneben und neben dem Status zeigt nur die Anfragen mit diesem Wert, während die Anfrage offen bleibt |
 | Anfrage | Was die App gesendet hat |
 | Antwort | Was die App zurückbekommen hat |
 | Rohdaten | Der Protokolleintrag, wie die Platform API ihn liefert |

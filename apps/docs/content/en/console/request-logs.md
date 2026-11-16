@@ -33,7 +33,7 @@ Choose a request to open it:
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | The outcome, the route, who sent it, the timing, the stream and the usage |
+| Overview | The outcome, the route, who sent it, the timing, the stream and the usage. The model, alias, key and sender open their sheet or route editor when you may open it, and the filter button next to them and the status shows only the requests that share that value, with the request still open |
 | Request | What the app sent |
 | Reply | What the app got back |
 | Raw | The log entry as the Platform API returns it |

@@ -389,7 +389,14 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
           />
         </div>
       </AppFrame.Body>
-      <LogInspector org={org} project={project} logId={log} keyName={keyName} onClose={() => setSearch({ log: undefined })} />
+      <LogInspector
+        org={org}
+        project={project}
+        logId={log}
+        keyName={keyName}
+        onClose={() => setSearch({ log: undefined })}
+        onFilter={(filter) => setSearch(filter)}
+      />
     </>
   );
 }
