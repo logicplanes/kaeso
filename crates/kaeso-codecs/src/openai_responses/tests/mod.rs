@@ -73,6 +73,7 @@ fn feature(req: GenerateRequest) -> String {
 
 mod check;
 mod foreign;
+mod keys;
 mod malformed;
 mod plan;
 mod replies;

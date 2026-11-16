@@ -60,6 +60,7 @@ pub(crate) struct Plan {
     pub(crate) agent_every_ms: u64,
     pub(crate) agent_paused_requests: usize,
     pub(crate) agent_pause_ms: u64,
+    pub(crate) agent_large_requests: usize,
 }
 
 impl Plan {
@@ -141,6 +142,15 @@ pub(crate) struct AgentResult {
     pub(crate) back_to_back: Phase,
     pub(crate) paced: Phase,
     pub(crate) after_a_pause: Phase,
+    pub(crate) large: LargeResult,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct LargeResult {
+    pub(crate) app_format: &'static str,
+    pub(crate) provider_format: &'static str,
+    pub(crate) request_bytes: usize,
+    pub(crate) back_to_back: Phase,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -406,7 +416,16 @@ impl Bench<'_> {
         let body = agent::body(8);
         let gw = self.install.gateway.addr;
         let key = self.install.key.clone();
-        let _ = agent::run(gw, &key, &body, 20, Duration::ZERO, Duration::ZERO).await;
+        let _ = agent::run(
+            gw,
+            &key,
+            agent::MESSAGES,
+            &body,
+            20,
+            Duration::ZERO,
+            Duration::ZERO,
+        )
+        .await;
         say(&format!(
             "agent: {} streams of {} bytes back to back",
             p.agent_requests,
@@ -415,6 +434,7 @@ impl Bench<'_> {
         let back_to_back = agent::run(
             gw,
             &key,
+            agent::MESSAGES,
             &body,
             p.agent_requests,
             Duration::ZERO,
@@ -429,6 +449,7 @@ impl Bench<'_> {
         let paced = agent::run(
             gw,
             &key,
+            agent::MESSAGES,
             &body,
             p.agent_paced_requests,
             every,
@@ -443,10 +464,37 @@ impl Bench<'_> {
         let after_a_pause = agent::run(
             gw,
             &key,
+            agent::MESSAGES,
             &body,
             p.agent_paused_requests,
             Duration::ZERO,
             pause,
+        )
+        .await;
+        let large_body = agent::responses_body(600, 8);
+        let _ = agent::run(
+            gw,
+            &key,
+            agent::RESPONSES,
+            &large_body,
+            2,
+            Duration::ZERO,
+            Duration::ZERO,
+        )
+        .await;
+        say(&format!(
+            "agent: {} OpenAI Responses streams of {} bytes for Anthropic Messages, back to back",
+            p.agent_large_requests,
+            large_body.len()
+        ));
+        let large = agent::run(
+            gw,
+            &key,
+            agent::RESPONSES,
+            &large_body,
+            p.agent_large_requests,
+            Duration::ZERO,
+            Duration::ZERO,
         )
         .await;
         let left = upstream_left_open(&self.install.mock, LEAK_WAIT).await;
@@ -454,6 +502,7 @@ impl Bench<'_> {
             ("back to back", &back_to_back),
             ("paced", &paced),
             ("after a pause", &after_a_pause),
+            ("of the large conversation", &large),
         ] {
             self.check(
                 "agent",
@@ -481,6 +530,12 @@ impl Bench<'_> {
             back_to_back,
             paced,
             after_a_pause,
+            large: LargeResult {
+                app_format: "OpenAI Responses",
+                provider_format: "Anthropic Messages",
+                request_bytes: large_body.len(),
+                back_to_back: large,
+            },
         });
     }
 

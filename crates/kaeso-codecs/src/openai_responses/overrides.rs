@@ -9,6 +9,48 @@ use super::node::Node;
 use crate::limits::MAX_DEPTH;
 
 pub(super) const SET: &str = "set";
+
+#[cfg(test)]
+thread_local! {
+    pub(crate) static ONLY_DIFF: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+// How one key of an object compares with its canonical form.
+pub(crate) enum Key {
+    // The canonical form holds the same value: the decoder read it from this key.
+    Same,
+    // The canonical form has no such key.
+    Extra,
+    // The canonical form holds this other value.
+    Differs(Value),
+    Unsure,
+}
+
+// A string leaf against the string the canonical form writes there.
+pub(crate) fn string_key(actual: &str, canon: &str) -> Key {
+    match leaf_str(actual) {
+        Some(a) if a == canon => Key::Same,
+        Some(_) => Key::Differs(Value::String(canon.to_owned())),
+        None => Key::Unsure,
+    }
+}
+
+// A list of parts that are each exactly `{"type": ty, "text": …}`, as the canonical form writes
+// the parts a decoder kept only the text of.
+pub(crate) fn text_parts_key(actual: &str, ty: &str) -> Key {
+    let Some(parts) = crate::scan::elements(actual) else {
+        return Key::Unsure;
+    };
+    let canonical = parts.iter().all(|p| {
+        crate::scan::members(p).is_some_and(|m| {
+            m.len() == 2
+                && m.iter().any(|(k, _)| k == "text")
+                && m.iter()
+                    .any(|(k, v)| k == "type" && matches!(string_key(v, ty), Key::Same))
+        })
+    });
+    if canonical { Key::Same } else { Key::Unsure }
+}
 pub(super) const UNSET: &str = "unset";
 pub(super) const CANON: &str = "canon";
 
@@ -62,12 +104,19 @@ impl Overrides {
         entries: Option<Entries<'a>>,
         managed: &[&str],
     ) -> Overrides {
+        Overrides::diff_entries_with(canon, actual, entries, managed, &[])
+    }
+
+    pub(crate) fn diff_entries_with<'a>(
+        canon: &Node,
+        actual: &'a RawValue,
+        entries: Option<Entries<'a>>,
+        managed: &[&str],
+        recurse: &[&str],
+    ) -> Overrides {
         let mut out = Overrides::default();
         let mut path = Vec::new();
-        let keys = Keys {
-            managed,
-            recurse: &[],
-        };
+        let keys = Keys { managed, recurse };
         let entries = entries.map(|e| e.into_iter().map(|(k, v)| (k, v.get())).collect());
         diff_children_of(
             Some(canon),
@@ -78,6 +127,44 @@ impl Overrides {
             &mut out,
         );
         out
+    }
+
+    // What `diff` finds for an object whose canonical form `key` describes, read from its keys
+    // alone: the canonical form is never built and no value is compared or copied. `None`, where
+    // `key` can't tell or the object is not a plain one, leaves the item to `diff`.
+    pub(crate) fn by_keys<'a>(
+        actual: &'a RawValue,
+        required: &[&str],
+        mut key: impl FnMut(&str, &'a str) -> Key,
+    ) -> Option<Overrides> {
+        #[cfg(test)]
+        if ONLY_DIFF.with(std::cell::Cell::get) {
+            return None;
+        }
+        let entries = crate::scan::members(actual.get())?;
+        if !entries.iter().all(|(k, _)| plain_key(k))
+            || !required.iter().all(|r| entries.iter().any(|(k, _)| k == r))
+        {
+            return None;
+        }
+        let mut out = Overrides::default();
+        for (k, v) in &entries {
+            match key(k, v) {
+                Key::Same => {}
+                Key::Extra => out.set.push((k.as_ref().to_owned(), raw_json(v), None)),
+                Key::Differs(canon) => {
+                    out.set
+                        .push((k.as_ref().to_owned(), raw_json(v), Some(canon)))
+                }
+                Key::Unsure => return None,
+            }
+        }
+        Some(out)
+    }
+
+    pub(crate) fn unset(mut self, key: &str, canon: Value) -> Overrides {
+        self.unset.push((key.to_owned(), canon));
+        self
     }
 
     pub(crate) fn record(self, extras: &mut Extras, scope: &str) {

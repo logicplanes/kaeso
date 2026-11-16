@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc a1b44779c4f479be7a2c1b50b273a09a102cbd83a7d747772096d65eaea8e80d # shrinks to items = [Object {"arguments": String("{}"), "call_id": String("c"), "name": String("f"), "status": Null, "type": String("function_call")}]

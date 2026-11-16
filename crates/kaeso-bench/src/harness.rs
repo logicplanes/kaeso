@@ -21,6 +21,7 @@ use crate::{Result, fail};
 
 pub(crate) const MODEL: &str = "gpt-4o";
 pub(crate) const AGENT_MODEL: &str = "bench-agent";
+pub(crate) const LARGE_MODEL: &str = "claude-haiku-4-5";
 const MASTER_KEY: &str = "k1:AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=";
 const PASSWORD: &str = "correct horse battery staple";
 const START_WAIT: Duration = Duration::from_secs(180);
@@ -163,6 +164,7 @@ impl Gateway {
             .env("KAESO_KPMR_SYNC", "false")
             .env("KAESO_UPDATES_CHECK", "false")
             .env("KAESO_PROVIDERS_OPENAI_BASE_URL", mock)
+            .env("KAESO_PROVIDERS_ANTHROPIC_BASE_URL", mock)
             .env("KAESO_MCP_SERVERS_ALLOWED_NETWORKS", "127.0.0.0/8")
             .env(
                 "KAESO_SERVER_MAX_CONNECTIONS",
@@ -400,7 +402,19 @@ async fn set_up(addr: SocketAddr, token: &str, mcp: &str) -> Result<(String, Str
         Some(json!({ "provider": "openai", "name": "mock", "secret": "sk-bench-openai-credential-0001" })),
     )
     .await?;
+    p.call(
+        Method::POST,
+        &format!("orgs/{org}/credentials"),
+        Some(json!({ "provider": "anthropic", "name": "mock", "secret": "sk-ant-bench-anthropic-credential-0001" })),
+    )
+    .await?;
     let key = serving_key(&mut p, &org, &project).await?;
+    p.call(
+        Method::POST,
+        &format!("orgs/{org}/projects/{project}/models"),
+        Some(json!({ "provider": "anthropic", "model_id": LARGE_MODEL })),
+    )
+    .await?;
     agent_route(&mut p, &org, &project).await?;
     let slow = p
         .call(

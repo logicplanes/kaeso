@@ -159,12 +159,13 @@ pub(super) fn decode(
     let origin = Origin::new(DIALECT);
     let raw: &RawValue =
         serde_json::from_slice(body).map_err(|_| invalid("the body is not valid JSON"))?;
-    if entries_of(raw).is_none() {
+    let Some(entries) = entries_of(raw) else {
         return Err(invalid(
             "the body must be a JSON object without duplicate keys",
         ));
-    }
-    let w: wire::CreateResponse = serde_json::from_str(raw.get()).map_err(|e| describe(raw, &e))?;
+    };
+    let w: wire::CreateResponse<'_> =
+        serde_json::from_str(raw.get()).map_err(|e| describe(raw, &e))?;
     let count = kind == RequestKind::CountTokens;
     if w.model.is_none() && !count {
         return Err(invalid("`model` is required").with_param("model"));
@@ -277,9 +278,10 @@ pub(super) fn decode(
         Input::Encoded
     };
     let canon = canonical_body_with(&req, kind, &origin, &mut Names::none(), input);
-    let mut overrides = Overrides::diff_with(
+    let mut overrides = Overrides::diff_entries_with(
         &canon,
         raw,
+        Some(entries),
         &["input", "tools"],
         &["text", "format", "reasoning", "stream_options"],
     );

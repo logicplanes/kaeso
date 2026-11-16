@@ -4,7 +4,7 @@ use serde_json::{Value, json};
 
 use super::DIALECT;
 use super::node::Node;
-use super::overrides::{Overrides, apply};
+use super::overrides::{Key, Overrides, apply, string_key};
 use super::parts::{
     self, PARTS, TextKind, arguments_text, content_node, decode_function_call,
     decode_function_call_output, decode_parts, decode_reasoning, function_call_item,
@@ -92,7 +92,7 @@ fn decode_item(raw: &RawValue, origin: &Origin) -> Item {
 }
 
 fn decode_message(raw: &RawValue, origin: &Origin) -> Option<Item> {
-    let m: wire::MessageItem = serde_json::from_str(raw.get()).ok()?;
+    let m: wire::MessageItem<'_> = serde_json::from_str(raw.get()).ok()?;
     let role = match m.role.as_str() {
         "user" => Role::User,
         "assistant" => Role::Assistant,
@@ -108,9 +108,17 @@ fn decode_message(raw: &RawValue, origin: &Origin) -> Option<Item> {
             extras.form.insert(PARTS.to_owned(), true.into());
         }
     }
-    let refs: Vec<&Block> = blocks.iter().collect();
-    let canon = message_item(role, &refs, &extras, &mut Media::inline());
-    let overrides = Overrides::diff(&canon, raw, &["content"]);
+    // The content is the blocks just read: a string as it was, a list managed by the caller.
+    let overrides = Overrides::by_keys(raw, &["role", "content"], |k, v| match k {
+        "role" => string_key(v, wire_role(role)),
+        "content" => Key::Same,
+        _ => Key::Extra,
+    })
+    .unwrap_or_else(|| {
+        let refs: Vec<&Block> = blocks.iter().collect();
+        let canon = message_item(role, &refs, &extras, &mut Media::inline());
+        Overrides::diff(&canon, raw, &["content"])
+    });
     let mut item_overrides = Extras::new(origin.clone());
     overrides.record(&mut item_overrides, "");
     let set = match item_overrides.form.get("set") {
@@ -161,7 +169,7 @@ pub(super) struct DecodedInput {
     pub(super) messages: Vec<Message>,
 }
 
-pub(super) fn decode_items(items: &[Box<RawValue>], origin: &Origin) -> DecodedInput {
+pub(super) fn decode_items(items: &[&RawValue], origin: &Origin) -> DecodedInput {
     let mut decoded: Vec<Item> = items.iter().map(|r| decode_item(r, origin)).collect();
     let mut out = DecodedInput {
         system: Vec::new(),

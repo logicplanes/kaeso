@@ -110,6 +110,11 @@ struct Options {
     agent_paused_requests: Option<usize>,
     #[arg(long, help = "That pause, in milliseconds [31000]")]
     agent_pause_ms: Option<u64>,
+    #[arg(
+        long,
+        help = "Streams of a 3 MB OpenAI Responses conversation the agent scenario sends on to Anthropic Messages [50]"
+    )]
+    agent_large_requests: Option<usize>,
 }
 
 fn pick<T>(smoke: bool, full: T, small: T) -> T {
@@ -177,6 +182,7 @@ impl Options {
             agent_every_ms: self.agent_every_ms.unwrap_or(pick(smoke, 250, 20)),
             agent_paused_requests: self.agent_paused_requests.unwrap_or(pick(smoke, 5, 2)),
             agent_pause_ms: self.agent_pause_ms.unwrap_or(pick(smoke, 31_000, 100)),
+            agent_large_requests: self.agent_large_requests.unwrap_or(pick(smoke, 50, 3)),
         }
     }
 }
