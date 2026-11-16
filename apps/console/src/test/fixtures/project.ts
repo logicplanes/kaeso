@@ -241,6 +241,7 @@ export function failedLog(overrides: Partial<LogView> = {}): LogView {
     usage: { input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, reasoning_tokens: 0, estimated: false },
     fallbacks: [],
     tags: [],
+    guardrails: [],
     ...overrides,
   };
 }

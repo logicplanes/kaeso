@@ -964,6 +964,28 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.modelsUnavailable", () =>
     t("errors.modelApi.modelsUnavailable", "Kaeso cannot load this project's models right now. Try again shortly."),
   ),
+  rule("errors.guardrails.blockedBecause", (v) => t("errors.guardrails.blockedBecause", "The guardrail `{name}` blocked this request: {reason}", v)),
+  rule("errors.guardrails.blocked", (v) => t("errors.guardrails.blocked", "The guardrail `{name}` blocked this request.", v)),
+  rule("errors.guardrails.replyBlockedBecause", (v) =>
+    t("errors.guardrails.replyBlockedBecause", "The guardrail `{name}` blocked the model's reply: {reason}", v),
+  ),
+  rule("errors.guardrails.replyBlocked", (v) => t("errors.guardrails.replyBlocked", "The guardrail `{name}` blocked the model's reply.", v)),
+  rule("errors.guardrails.unchecked", (v) =>
+    t("errors.guardrails.unchecked", "The guardrail `{name}` could not check this request, so Kaeso refused it; try again shortly.", v),
+  ),
+  rule("errors.guardrails.unloaded", () => t("errors.guardrails.unloaded", "Kaeso cannot load this project's guardrails right now. Try again shortly.")),
+  rule("errors.guardrails.playgroundUnchecked", () =>
+    t("errors.guardrails.playgroundUnchecked", "A guardrail of this project could not check the request; try again shortly."),
+  ),
+  rule("errors.guardrails.playgroundBlocked", () => t("errors.guardrails.playgroundBlocked", "A guardrail of this project blocked the request.")),
+  rule("errors.guardrails.urlHost", () => t("errors.guardrails.urlHost", "`url` must be a full URL with a host, such as `https://guardrail.example.com`.")),
+  rule("errors.guardrails.urlCredentials", () => t("errors.guardrails.urlCredentials", "`url` can't hold a user name or password.")),
+  rule("errors.guardrails.timeout", () => t("errors.guardrails.timeout", "`timeout_ms` must be from 100 to 10000 milliseconds.")),
+  rule("errors.guardrails.phases", () => t("errors.guardrails.phases", "`phases` must name `request`, `reply` or both.")),
+  rule("errors.guardrails.notOrgGuardrail", (v) => t("errors.guardrails.notOrgGuardrail", "`{id}` is not a guardrail of this organization.", v)),
+  rule("errors.guardrails.twice", (v) => t("errors.guardrails.twice", "`{id}` is in the list twice.", v)),
+  rule("errors.guardrails.testNeedsReply", () => t("errors.guardrails.testNeedsReply", "A test of the `reply` phase needs a `reply`.")),
+  rule("errors.notFound.guardrail", () => t("errors.notFound.guardrail", "No such guardrail, or you cannot see it.")),
   rule("errors.modelApi.noSuchModel", (v) => t("errors.modelApi.noSuchModel", "The model `{model}` does not exist or this key may not use it.", v)),
   rule("errors.modelApi.noRoute", (v) => t("errors.modelApi.noRoute", "Kaeso does not serve `{path}`.", v)),
   rule("errors.modelApi.method", (v) => t("errors.modelApi.method", "`{path}` does not accept `{method}` requests.", v)),

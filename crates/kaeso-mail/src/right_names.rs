@@ -77,6 +77,18 @@ const NAMES: &[(&str, &str, &str, &str)] = &[
     ),
     ("costs.view", "View costs", "Kosten ansehen", "查看费用"),
     (
+        "guardrails.manage",
+        "Manage guardrails",
+        "Guardrails verwalten",
+        "管理防护规则",
+    ),
+    (
+        "guardrails.view",
+        "View guardrails",
+        "Guardrails ansehen",
+        "查看防护规则",
+    ),
+    (
         "instance.audit_log.view",
         "View instance audit log",
         "Instanz-Audit-Log ansehen",

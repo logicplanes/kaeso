@@ -26,6 +26,7 @@ mod edge;
 mod error_copy;
 mod gateway_overhead;
 mod gemini_apps;
+mod guardrails;
 mod images;
 mod instance_users;
 mod jobs;

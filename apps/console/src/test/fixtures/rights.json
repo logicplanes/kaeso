@@ -331,6 +331,28 @@
             "cloud_only": false,
             "owner_only": false,
             "needs": ["org.view"]
+          },
+          {
+            "id": "guardrails.view",
+            "scope": "org",
+            "name": "View guardrails",
+            "description": "See the organization's guardrails and the projects that use them (never their secrets).",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "guardrails.manage",
+            "scope": "org",
+            "name": "Manage guardrails",
+            "description": "Add, change, test and delete guardrails, and choose the projects that use them.",
+            "sensitive": true,
+            "recent_sign_in": true,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view", "guardrails.view"]
           }
         ]
       },

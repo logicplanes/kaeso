@@ -1011,6 +1011,7 @@ pub struct Caches {
     pub response_cache: TieredCache<crate::services::response_cache::Cached>,
     pub portal: TieredCache<crate::portal::snapshot::PortalSnapshot>,
     pub mcp_credentials: MemoryCache<crate::services::mcp_connections::Held>,
+    pub guardrails: MemoryCache<crate::services::guardrails::Armed>,
     pub mcp_handshakes: Cache<String, Arc<kaeso_upstream::mcp::Handshake>>,
     pub client_documents: Cache<String, Arc<kaeso_store::pg::agents::Client>>,
     pub portal_tokens: TieredCache<crate::portal::auth::TokenAuth>,
@@ -1059,6 +1060,7 @@ impl Caches {
             ),
             portal: TieredCache::new("ptl", valkey.clone(), subscription.clone(), mac.clone()),
             mcp_credentials: MemoryCache::new("mcred", valkey.clone(), subscription.clone()),
+            guardrails: MemoryCache::new("grd", valkey.clone(), subscription.clone()),
             mcp_handshakes: Cache::builder()
                 .max_capacity(10_000)
                 .time_to_live(HANDSHAKE_TTL)
@@ -1113,7 +1115,7 @@ impl Caches {
 
     // One look over every cache that loads its entries ahead of time; see `KEEP_WARM`.
     pub async fn keep_warm(&self) -> usize {
-        let (a, b, c, d, e, f, g, h, i, j, k) = tokio::join!(
+        let (a, b, c, d, e, f, g, h, i, j, k, l) = tokio::join!(
             self.api_keys.keep_warm(),
             self.org_keys.keep_warm(),
             self.credentials.keep_warm(),
@@ -1125,8 +1127,9 @@ impl Caches {
             self.portal.keep_warm(),
             self.portal_tokens.keep_warm(),
             self.mcp_credentials.keep_warm(),
+            self.guardrails.keep_warm(),
         );
-        a + b + c + d + e + f + g + h + i + j + k
+        a + b + c + d + e + f + g + h + i + j + k + l
     }
 
     pub fn spawn_keep_warm(&self, shutdown: tokio_util::sync::CancellationToken) {
@@ -1170,6 +1173,7 @@ impl Caches {
                 Some(("ptl", key)) => self.portal.drop_local(key).await,
                 Some(("ptok", key)) => self.portal_tokens.drop_local(key).await,
                 Some(("mcred", group)) => self.mcp_credentials.drop_group(group),
+                Some(("grd", group)) => self.guardrails.drop_group(group),
                 Some(("kpmr", _)) => self.kpmr_changed.notify_one(),
                 _ => self.clear_local(),
             },
@@ -1188,6 +1192,7 @@ impl Caches {
         self.portal.clear_subscribed();
         self.portal_tokens.clear_subscribed();
         self.mcp_credentials.clear_subscribed();
+        self.guardrails.clear_subscribed();
         self.mcp_handshakes.invalidate_all();
     }
 
@@ -1203,6 +1208,7 @@ impl Caches {
         self.portal.clear_local();
         self.portal_tokens.clear_local();
         self.mcp_credentials.clear_local();
+        self.guardrails.clear_local();
         self.mcp_handshakes.invalidate_all();
     }
 }

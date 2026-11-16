@@ -353,6 +353,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | 400 | The context is too long for the model. |
 | 400 | Several providers in the project serve the model id. Send `provider/model` instead. |
 | 400 | The project has no provider key for the model's provider. |
+| 400 | A [guardrail](../console/guardrails.md) of the project blocked the request or the model's reply. The message names the guardrail and gives its reason. |
 | 401 | The key is missing, unknown, disabled, archived or expired. |
 | 401 | The key's member or service account is no longer active, or its project or organization can't be used. |
 | 403 | The key has platform access only, or it is a platform key. Neither calls models. |
@@ -371,6 +372,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | 502 | A custom provider is at an address the install doesn't allow, or answered in a form its format can't read. |
 | 502 | The provider refused the project's provider key, didn't allow the request with it, or refused it for billing or quota reasons. |
 | 503 | Kaeso can't load the catalogue, the keys, the provider keys or the limits, or it is restarting. The OpenAI formats answer these with 500. |
+| 503 | A guardrail that refuses requests when it fails didn't answer in time, couldn't be reached or gave no verdict, or Kaeso can't load the project's guardrails. The OpenAI formats answer these with 500. |
 | 503 | The provider is overloaded, in the OpenAI and Gemini formats. |
 | 504 | The provider didn't answer in time. |
 | 529 | The provider is overloaded, in the Anthropic format. |

@@ -35,6 +35,7 @@ export function logRow(overrides: Partial<LogView> = {}): LogView {
     user_agent: "openai-python/1.40.0",
     fallbacks: [],
     tags: [],
+    guardrails: [],
     ...overrides,
   };
 }

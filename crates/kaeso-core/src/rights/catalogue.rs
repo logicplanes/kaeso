@@ -201,6 +201,8 @@ rights!(
         SecuritySsoRequire = "security.sso.require", Security, "Require SSO", true, true, false, [], "Require the accounts this organization manages to sign in only through its SSO.";
         Security2faRequire = "security.2fa.require", Security, "Require two-factor", false, true, false, [], "Require two-factor authentication for members.";
         SecurityKeyPolicyManage = "security.key_policy.manage", Security, "Set key lifetime", false, false, false, [], "Set the organization's maximum key lifetime.";
+        GuardrailsView = "guardrails.view", Security, "View guardrails", false, false, false, [], "See the organization's guardrails and the projects that use them (never their secrets).";
+        GuardrailsManage = "guardrails.manage", Security, "Manage guardrails", true, true, false, [GuardrailsView], "Add, change, test and delete guardrails, and choose the projects that use them.";
         PlatformKeysView = "platform_keys.view", Keys, "View platform keys", false, false, false, [], "See the organization's platform keys (metadata).";
         PlatformKeysCreate = "platform_keys.create", Keys, "Create platform keys", true, true, false, [PlatformKeysView], "Create and rotate organization platform keys, which manage everything at org level.";
         PlatformKeysRevoke = "platform_keys.revoke", Keys, "Disable platform keys", false, false, false, [PlatformKeysView], "Disable, enable or archive organization platform keys.";

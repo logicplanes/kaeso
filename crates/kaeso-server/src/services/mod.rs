@@ -11,6 +11,7 @@ pub mod credentials;
 pub mod custom_providers;
 pub mod dns;
 pub mod google_auth;
+pub mod guardrails;
 pub mod invites;
 pub mod key_endpoint;
 pub mod keys;

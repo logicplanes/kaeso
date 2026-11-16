@@ -73,7 +73,7 @@ describe("audit actions", () => {
     expect(targetKindLabel("agent")).toBe("Agent");
     expect(targetKindLabel("custom_provider")).toBe("Custom provider");
     expect(targetKindLabel("webhook")).toBe("Webhook");
-    expect(["mcp_server", "tool", "portal_grant"].map(targetKindLabel)).toEqual(["MCP server", "Tool", "Portal client"]);
+    expect(["mcp_server", "tool", "portal_grant", "guardrail"].map(targetKindLabel)).toEqual(["MCP server", "Tool", "Portal client", "Guardrail"]);
     expect(auditActionOptions().find((o) => o.value === "agent.")?.label).toBe("Agents: every action");
   });
 

@@ -30,6 +30,7 @@ pub struct Inner {
     pub upstream: kaeso_upstream::Upstream,
     pub mcp: kaeso_upstream::mcp::McpUpstream,
     pub public_mcp: kaeso_upstream::mcp::McpUpstream,
+    pub guardrails: kaeso_upstream::mcp::McpUpstream,
     pub limits: Arc<dyn crate::model_api::hooks::Limits>,
     pub sink: Arc<dyn crate::model_api::hooks::Sink>,
     pub usage: crate::services::usage::Batch,
@@ -76,6 +77,7 @@ impl AppState {
             p.config.custom_providers.allowed_networks.clone(),
         );
         let mcp_networks = p.config.mcp_servers.allowed_networks.clone();
+        let guardrail_networks = p.config.guardrails.allowed_networks.clone();
         let in_flight = p.config.body_limits.in_flight.0;
         let translating = crate::model_api::memory::Budget::new(in_flight);
         let otel = crate::services::otel::Exporter::new(&p.config.otel).map(Arc::new);
@@ -106,6 +108,12 @@ impl AppState {
             )),
             mcp: kaeso_upstream::mcp::McpUpstream::new(
                 kaeso_upstream::guard::Reach::networks(mcp_networks),
+                kaeso_upstream::guard::Lookup::default(),
+                connect_timeout,
+                concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),
+            ),
+            guardrails: kaeso_upstream::mcp::McpUpstream::new(
+                kaeso_upstream::guard::Reach::networks(guardrail_networks),
                 kaeso_upstream::guard::Lookup::default(),
                 connect_timeout,
                 concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),

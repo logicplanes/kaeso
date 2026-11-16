@@ -426,6 +426,25 @@ pub(super) enum Gathered {
     Broken(KppError),
 }
 
+// Reads a provider's whole stream before anything goes to the app, so a guardrail can check
+// the reply first.
+pub(super) async fn hold(
+    mut chunks: kaeso_upstream::ByteStream,
+    max: usize,
+) -> Result<Vec<Bytes>, UpstreamError> {
+    let mut held = Vec::new();
+    let mut read = 0usize;
+    while let Some(chunk) = chunks.next().await {
+        let bytes = chunk?;
+        read = read.saturating_add(bytes.len());
+        if read > max {
+            return Err(UpstreamError::TooLarge(max));
+        }
+        held.push(bytes);
+    }
+    Ok(held)
+}
+
 pub(super) async fn gather(
     mut chunks: kaeso_upstream::ByteStream,
     mut decoder: Box<dyn StreamDecoder>,

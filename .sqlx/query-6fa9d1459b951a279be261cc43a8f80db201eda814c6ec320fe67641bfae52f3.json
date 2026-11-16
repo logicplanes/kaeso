@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO guardrails (id, org_id, name, url, secret_ciphertext, secret_nonce, secret_wrapped_key, secret_key_id, timeout_ms, on_error, request_phase, reply_phase, streams, created_by_kind, created_by_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Bytea",
+        "Bytea",
+        "Bytea",
+        "Text",
+        "Int4",
+        "Text",
+        "Bool",
+        "Bool",
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6fa9d1459b951a279be261cc43a8f80db201eda814c6ec320fe67641bfae52f3"
+}

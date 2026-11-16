@@ -8,7 +8,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bytes::Bytes;
 use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{
-    ApiKeyId, CatalogueModelId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
+    ApiKeyId, CatalogueModelId, GuardrailId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
 };
 use kaeso_core::rights::ProjectRight;
 use kaeso_kpp::DialectId;
@@ -679,6 +679,8 @@ pub struct LogFilter {
     #[doc = "Only requests from this client app, as Kaeso names it from the user agent."]
     #[param(value_type = Option<super::ClientApp>)]
     pub client: Option<String>,
+    #[doc = "Only requests a guardrail allowed, blocked or rewrote."]
+    pub guardrail_action: Option<crate::services::guardrails::Action>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -797,6 +799,7 @@ impl LogFilter {
                 .map(message_filter)
                 .transpose()?,
             client: self.client.as_deref().map(client_filter).transpose()?,
+            guardrail_action: self.guardrail_action.map(|a| a.as_str().to_owned()),
         })
     }
 }
@@ -1023,6 +1026,53 @@ pub struct LogView {
     #[doc = "The version the user agent gives after a known client's name, such as `0.59.0`."]
     #[schema(example = "0.59.0")]
     pub client_version: Option<String>,
+    #[doc = "The guardrails that checked the request and its reply, in the order they ran."]
+    pub guardrails: Vec<GuardrailRunView>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "One guardrail's check of a request or its reply.")]
+pub struct GuardrailRunView {
+    #[doc = "The guardrail."]
+    pub guardrail: GuardrailId,
+    #[doc = "Its name when it ran."]
+    #[schema(example = "PII check")]
+    pub name: String,
+    #[doc = "When it checked."]
+    pub phase: crate::services::guardrails::Phase,
+    #[doc = "What it did; for a guardrail without a usable answer, what its On error setting\n\
+        chose."]
+    pub action: crate::services::guardrails::Action,
+    #[doc = "The category the guardrail named, such as `pii`."]
+    #[schema(example = "pii")]
+    pub category: Option<String>,
+    #[doc = "Why the guardrail gave no usable answer; `action` then follows its On error\n\
+        setting."]
+    pub failure: Option<crate::services::guardrails::Failure>,
+    #[doc = "The HTTP status of a guardrail that answered with an error or no verdict."]
+    pub status: Option<u16>,
+    #[doc = "How long the guardrail took, in milliseconds."]
+    pub duration_ms: u64,
+}
+
+fn guardrail_runs(stored: &str) -> Vec<GuardrailRunView> {
+    if stored.is_empty() {
+        return Vec::new();
+    }
+    serde_json::from_str::<Vec<crate::services::guardrails::Run>>(stored)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|r| GuardrailRunView {
+            guardrail: GuardrailId::from_uuid(r.guardrail),
+            name: r.name,
+            phase: r.phase,
+            action: r.action,
+            category: r.category,
+            failure: r.failure,
+            status: r.status,
+            duration_ms: r.duration_ms,
+        })
+        .collect()
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -1181,6 +1231,7 @@ fn view(r: &LogRow) -> LogView {
         tags: r.tags.clone(),
         client: none(ch::client_of(&r.user_agent)),
         client_version: ch::client_version(&r.user_agent).map(str::to_owned),
+        guardrails: guardrail_runs(&r.guardrails),
     }
 }
 
@@ -1408,7 +1459,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version,guardrails\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1522,6 +1573,13 @@ fn csv_line(v: &LogView) -> String {
         Text(v.tags.join(" ")),
         Text(v.client.clone().unwrap_or_default()),
         Text(v.client_version.clone().unwrap_or_default()),
+        Text(
+            v.guardrails
+                .iter()
+                .map(|g| format!("{}={}", g.name, g.action.as_str()))
+                .collect::<Vec<_>>()
+                .join("; "),
+        ),
     ];
     let mut line = cells
         .iter()

@@ -326,5 +326,9 @@
   "logs.filter.errorMessage": "Fehlermeldung",
   "logs.filter.client": "Client",
   "logs.inspector.client": "Client",
-  "logs.inspector.failedTriedAgain": "Nach {duration} fehlgeschlagen; erneut versucht"
+  "logs.inspector.failedTriedAgain": "Nach {duration} fehlgeschlagen; erneut versucht",
+  "logs.filter.guardrail": "Guardrail",
+  "logs.inspector.guardrailCategory": "Kategorie {category}",
+  "logs.inspector.guardrailRun": "{phase}: {action} in {duration}",
+  "logs.inspector.guardrails": "Guardrails"
 }

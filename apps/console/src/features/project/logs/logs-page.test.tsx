@@ -463,6 +463,30 @@ describe("LogsPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ tag: "search" }));
   });
 
+  it("filters by what a guardrail did", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs?guardrail_action=block"));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ guardrail_action: "block" }));
+    const toolbar = screen.getByRole("toolbar", { name: "Filter requests" });
+    expect(within(toolbar).getByRole("group", { name: "Filter: Guardrail" })).toHaveTextContent("Blocked");
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Guardrail filter" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Guardrail" }));
+    expect((await screen.findAllByRole("menuitemradio")).map((o) => o.textContent)).toEqual(["Allowed", "Blocked", "Rewritten"]);
+    await user.click(screen.getByRole("menuitemradio", { name: "Rewritten" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ guardrail_action: "replace" }));
+  });
+
+  it("ignores a guardrail action it doesn't know in the address", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    await renderApp(projectPath("logs?guardrail_action=maybe"));
+    await waitFor(() => expect(lastQuery()).not.toHaveProperty("guardrail_action"));
+  });
+
   it("narrows to the requests that worked, the response cache's answers and slow requests", async () => {
     signedIn();
     projectData();

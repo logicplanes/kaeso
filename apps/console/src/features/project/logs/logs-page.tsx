@@ -8,6 +8,7 @@ import { ENDPOINTS, logErrorsQuery, logsInfiniteQuery, type LogFilters } from "~
 import type { ErrorGroupView } from "~/api/generated/types";
 import { CommonErrors, filtersOf, messagePrefix } from "./common-errors";
 import { CLIENT_IDS, clientLabel } from "~/format/clients";
+import { guardrailActionLabel } from "~/format/guardrails";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { formatDuration, formatPrice } from "@logicplanes/kaeso-ui/format";
 import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
@@ -78,6 +79,7 @@ type FilterId =
   | "tag"
   | "error_message"
   | "client"
+  | "guardrail_action"
   | FlagFilterId;
 type ChoiceFilterId = Exclude<FilterId, FlagFilterId>;
 const isChoice = (id: string): id is ChoiceFilterId => id !== "fell_back";
@@ -103,7 +105,9 @@ const FILTER_IDS: FilterId[] = [
   "min_duration_ms",
   "min_cost",
   "tag",
+  "guardrail_action",
 ];
+const GUARDRAIL_ACTIONS = ["allow", "block", "replace"] as const;
 // Durations a request may take at least, in milliseconds.
 const SLOWER_THAN = [1_000, 5_000, 10_000, 30_000, 60_000];
 const VERDICTS = ["hit", "miss", "bypass"] as const;
@@ -115,6 +119,7 @@ const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPa
   tag: (tag) => ({ tag }),
   error_message: (error_message) => ({ error_message }),
   client: (client) => ({ client }),
+  guardrail_action: (v) => ({ guardrail_action: GUARDRAIL_ACTIONS.find((a) => a === v) }),
   provider: (provider) => ({ provider }),
   ingress: (ingress) => ({ ingress }),
   egress: (egress) => ({ egress }),
@@ -138,6 +143,7 @@ const filterLabel = (id: FilterId): string =>
     tag: t("logs.filter.tag", "Tag"),
     error_message: t("logs.filter.errorMessage", "Error message"),
     client: t("logs.filter.client", "Client"),
+    guardrail_action: t("logs.filter.guardrail", "Guardrail"),
     provider: common.provider(),
     ingress: t("logs.filter.appFormat", "App format"),
     egress: t("logs.filter.providerFormat", "Provider format"),
@@ -261,28 +267,30 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
                       ? messageChoices(commonErrors.data ?? [], filters.error_message)
                       : id === "client"
                         ? CLIENT_IDS.map((c) => ({ value: c, label: clientLabel(c) }))
-                        : id === "endpoint"
-                          ? ENDPOINTS.map((e) => ({ value: e, label: e }))
-                          : id === "min_cost"
-                            ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
-                            : id === "failed"
-                              ? [
-                                  { value: "true", label: outcomeLabel(true) },
-                                  { value: "false", label: outcomeLabel(false) },
-                                ]
-                              : id === "response_cache"
-                                ? VERDICTS.map((v) => ({ value: v, label: cacheLabel(v) }))
-                                : id === "min_duration_ms"
-                                  ? SLOWER_THAN.map((ms) => ({ value: String(ms), label: formatDuration(ms) }))
-                                  : id === "stream"
-                                    ? [
-                                        { value: "true", label: t("logs.filter.streamed", "Streamed") },
-                                        { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
-                                      ]
-                                    : [
-                                        { value: "api", label: "API" },
-                                        { value: "playground", label: t("logs.source.playground", "Playground") },
-                                      ];
+                        : id === "guardrail_action"
+                          ? GUARDRAIL_ACTIONS.map((a) => ({ value: a, label: guardrailActionLabel(a) }))
+                          : id === "endpoint"
+                            ? ENDPOINTS.map((e) => ({ value: e, label: e }))
+                            : id === "min_cost"
+                              ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
+                              : id === "failed"
+                                ? [
+                                    { value: "true", label: outcomeLabel(true) },
+                                    { value: "false", label: outcomeLabel(false) },
+                                  ]
+                                : id === "response_cache"
+                                  ? VERDICTS.map((v) => ({ value: v, label: cacheLabel(v) }))
+                                  : id === "min_duration_ms"
+                                    ? SLOWER_THAN.map((ms) => ({ value: String(ms), label: formatDuration(ms) }))
+                                    : id === "stream"
+                                      ? [
+                                          { value: "true", label: t("logs.filter.streamed", "Streamed") },
+                                          { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                                        ]
+                                      : [
+                                          { value: "api", label: "API" },
+                                          { value: "playground", label: t("logs.source.playground", "Playground") },
+                                        ];
   const current = (id: ChoiceFilterId): string | undefined => {
     const v = filters[id];
     return v === undefined ? undefined : String(v);

@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, secret_ciphertext, secret_nonce, secret_wrapped_key, secret_key_id FROM guardrails",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "secret_ciphertext",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "secret_ciphertext"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "secret_nonce",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "secret_nonce"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "secret_wrapped_key",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "secret_wrapped_key"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "secret_key_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "guardrails",
+            "name": "secret_key_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ca7a609acf2a25398c22b785b061059735d9722539a199a5688bc39b88497f2b"
+}

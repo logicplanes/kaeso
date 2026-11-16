@@ -21,6 +21,7 @@ Eine Liste, etwa der API-Schlüssel oder Mitglieder, ist ein einziger Tab-Stopp.
 - [Anbieter-Schlüssel](provider-keys.md): Verbinden Sie Ihre Schlüssel für Modellanbieter und wählen Sie, welche Projekte welchen nutzen.
 - [Eigene Anbieter](custom-providers.md): Fügen Sie einen eigenen Server, etwa ein selbst betriebenes vLLM oder einen internen Proxy, als Anbieter hinzu.
 - [MCP-Server der Organisation](mcp-servers.md): Fügen Sie die MCP-Server der Organisation hinzu, melden Sie sich an und prüfen Sie die Tools, die sie ändern.
+- [Guardrails](guardrails.md): Lassen Sie eigene Dienste Anfragen prüfen, bevor ein Modell sie erhält, und Antworten, bevor Apps sie erhalten.
 - [Modelle und Aliasse](models-and-aliases.md): Wählen Sie die Modelle, die ein Projekt aufrufen darf, und geben Sie ihnen eigene Namen.
 - [API-Schlüssel](api-keys.md): Erstellen Sie Schlüssel für Apps und Skripte, begrenzen Sie sie und schalten Sie sie ab.
 - [Tools](tools.md): Wählen Sie die MCP-Tools, die das Portal eines Projekts anbietet, wer sie aufruft, und verbinden Sie Clients.

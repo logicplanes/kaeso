@@ -685,6 +685,14 @@ impl ByteStream {
         }
     }
 
+    /// A stream of chunks already read, such as a reply held back until it was checked.
+    pub fn replay(chunks: Vec<Bytes>) -> ByteStream {
+        ByteStream::from_stream(
+            Box::pin(futures::stream::iter(chunks.into_iter().map(Ok))),
+            Duration::MAX,
+        )
+    }
+
     fn finish(&mut self) {
         self.done = true;
         self.lease = None;

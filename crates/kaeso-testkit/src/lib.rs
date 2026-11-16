@@ -2,6 +2,7 @@
 
 pub mod google;
 pub mod grok;
+pub mod guardrail;
 pub mod mcp;
 pub mod mock_decisions;
 pub mod mock_provider;

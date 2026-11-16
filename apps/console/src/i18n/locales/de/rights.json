@@ -226,5 +226,9 @@
   "rights.webhooksView.name": "Webhooks ansehen",
   "rights.webhooksView.description": "Die Webhooks der Organisation sehen, was sie empfangen und ihre letzten Zustellungen (nie Geheimnisse).",
   "rights.webhooksManage.name": "Webhooks verwalten",
-  "rights.webhooksManage.description": "Webhooks hinzufügen, ändern, testen und löschen und ihre Signaturgeheimnisse rotieren."
+  "rights.webhooksManage.description": "Webhooks hinzufügen, ändern, testen und löschen und ihre Signaturgeheimnisse rotieren.",
+  "rights.guardrailsView.name": "Guardrails ansehen",
+  "rights.guardrailsView.description": "Die Guardrails der Organisation und die Projekte, die sie nutzen, sehen (nie ihre Secrets).",
+  "rights.guardrailsManage.name": "Guardrails verwalten",
+  "rights.guardrailsManage.description": "Guardrails hinzufügen, ändern, testen und löschen und die Projekte wählen, die sie nutzen."
 }

@@ -104,6 +104,14 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.securityKeyPolicyManage.name", "Set key lifetime"),
     t("rights.securityKeyPolicyManage.description", "Set the organization's maximum key lifetime."),
   ],
+  "guardrails.view": () => [
+    t("rights.guardrailsView.name", "View guardrails"),
+    t("rights.guardrailsView.description", "See the organization's guardrails and the projects that use them (never their secrets)."),
+  ],
+  "guardrails.manage": () => [
+    t("rights.guardrailsManage.name", "Manage guardrails"),
+    t("rights.guardrailsManage.description", "Add, change, test and delete guardrails, and choose the projects that use them."),
+  ],
   "platform_keys.view": () => [
     t("rights.platformKeysView.name", "View platform keys"),
     t("rights.platformKeysView.description", "See the organization's platform keys (metadata)."),

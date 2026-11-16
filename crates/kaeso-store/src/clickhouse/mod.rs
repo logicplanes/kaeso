@@ -97,6 +97,13 @@ const MIGRATIONS: &[Migration] = &[
         name: "request_tags",
         sql: include_str!("../../migrations/clickhouse/0015_request_tags.sql"),
     },
+    // The guardrails a request passed through, with their verdicts, and the actions alone so
+    // the log can filter by them.
+    Migration {
+        version: 16,
+        name: "guardrails",
+        sql: include_str!("../../migrations/clickhouse/0016_guardrails.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -249,7 +256,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 31);
+        assert_eq!(all.len(), 32);
         assert!(all.iter().all(|s| s.starts_with("CREATE ")
             || s.starts_with("ALTER TABLE ")
             || s.starts_with("DROP ")));

@@ -9,7 +9,7 @@ Jede Modellanfrage durchläuft dieselben Prüfungen in derselben Reihenfolge. We
 ```mermaid
 sequenceDiagram
   accTitle: Ablauf einer Anfrage
-  accDescr: Die App sendet eine Anfrage an das Gateway. Das Gateway prüft den Schlüssel, liest die Anfrage, löst das Modell auf, prüft die Limits und wählt den Anbieter-Schlüssel; jede Prüfung kann die Anfrage mit den gezeigten Status ablehnen. Es sendet die übersetzte Anfrage an den Anbieter, gibt die übersetzte Antwort an die App zurück und berechnet dann die Nutzung und protokolliert die Anfrage.
+  accDescr: Die App sendet eine Anfrage an das Gateway. Das Gateway prüft den Schlüssel, liest die Anfrage, löst das Modell auf, fragt die Guardrails des Projekts, prüft die Limits und wählt den Anbieter-Schlüssel; jede Prüfung kann die Anfrage mit den gezeigten Status ablehnen. Es sendet die übersetzte Anfrage an den Anbieter, fragt die Guardrails, die Antworten prüfen, gibt die übersetzte Antwort an die App zurück und berechnet dann die Nutzung und protokolliert die Anfrage.
   participant App as Ihre App
   participant Gateway
   participant Provider as Anbieter
@@ -17,11 +17,13 @@ sequenceDiagram
   Note over Gateway: Schlüssel prüfen<br>401 oder 403
   Note over Gateway: Anfrage lesen<br>400, 413, 503 oder 529
   Note over Gateway: Modell auflösen<br>400 oder 404
+  Note over Gateway: Guardrails fragen<br>400, 429 oder 503
   Note over Gateway: Limits prüfen<br>403, 429 oder 503
   Note over Gateway: Anbieter-Schlüssel wählen<br>400
   Gateway->>Provider: Übersetzte Anfrage
   Note over Gateway,Provider: Zeitüberschreitung 504<br>Nicht erreichbar 502
   Provider-->>Gateway: Antwort
+  Note over Gateway: Guardrails für Antworten fragen<br>400 oder 503
   Gateway-->>App: Übersetzte Antwort
   Note over Gateway: Nutzung berechnen und protokollieren
 ```
@@ -69,6 +71,10 @@ Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine
 Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken, und ein Modell, das nur die Standardtemperatur annimmt, keine Temperatur. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat. Eine Aufwandsstufe, die das Modell nicht nennt, wird zur nächstgelegenen Stufe, die es nennt, und adaptives Denken für ein Claude-Modell ohne adaptives Denken zu `enabled`-Denken mit Budget; das nennt der Header `kaeso-adapted` der Antwort ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
 
 Eine Anfrage in einem OpenAI-Format für ein Claude-Modell braucht kein Ausgabelimit: Kaeso sendet das Maximum des Modells. Eine Messages-Anfrage ohne `max_tokens` erhält 400, so wie bei Anthropic. Eine Anfrage aus einem anderen Format, die mehr Ausgabe verlangt, als das Modell schreiben kann, erhält stattdessen das Maximum des Modells, und der Header `kaeso-adapted` der Antwort nennt das Feld, etwa `max_tokens`. Claude Code etwa verlangt von jedem Modell, das es nicht kennt, 32.000 Token.
+
+## Guardrails
+
+Nutzt das Projekt [Guardrails](../console/guardrails.md), fragt Kaeso sie zu einer Chat-Anfrage einmal, in ihrer Reihenfolge, vor dem Antwort-Cache und dem ersten Schritt einer Alias-Route. Ein Aufrufer, der bereits über einer seiner Anfrageraten liegt, erhält zuerst 429, ohne dass die Guardrails gefragt werden. Blockiert eine Guardrail, erhält die App 400; scheitert eine, die bei Fehlern ablehnt, erhält sie 503. Keine der beiden Anfragen erreicht einen Anbieter, fällt auf einen anderen Schritt zurück oder kostet etwas. Eine Ersetzung geht an die nächste Guardrail und dann an den Anbieter. Guardrails, die Antworten prüfen, sehen die Antwort, bevor Kaeso sie für die App schreibt, und eine gestreamte nur, wenn sie Streams zurückhalten.
 
 ## Limits
 

@@ -589,7 +589,8 @@ pub async fn key_id_usage(db: impl PgExecutor<'_>) -> Result<Vec<(String, i64)>,
            SELECT key_id FROM provider_credentials UNION ALL SELECT key_id FROM user_totp \
            UNION ALL SELECT key_id FROM org_oidc UNION ALL SELECT key_id FROM mcp_connections \
            UNION ALL SELECT oauth_client_secret_key_id FROM mcp_servers \
-           WHERE oauth_client_secret_key_id IS NOT NULL) k GROUP BY key_id ORDER BY key_id"
+           WHERE oauth_client_secret_key_id IS NOT NULL \
+           UNION ALL SELECT secret_key_id FROM guardrails) k GROUP BY key_id ORDER BY key_id"
     )
     .fetch_all(db)
     .await?;

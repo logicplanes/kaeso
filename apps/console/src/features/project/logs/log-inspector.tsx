@@ -56,6 +56,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { toast } from "~/shell/toast";
 import { readDraft, writeDraft } from "../playground/draft";
 import { playgroundStart } from "./playground-start";
+import { guardrailActionLabel, guardrailFailureLabel, guardrailPhaseLabel } from "~/format/guardrails";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -652,6 +653,38 @@ function Overview({
           ]}
         />
       </Section>
+      {e.guardrails.length > 0 && (
+        <Section title={t("logs.inspector.guardrails", "Guardrails")} spacing="none">
+          <KeyValue
+            layout="stacked"
+            className="-my-8 grid grid-cols-2 gap-x-32"
+            items={e.guardrails.map((g) => ({
+              label: g.name,
+              value: (
+                <span className="flex min-w-0 flex-col">
+                  <Text>
+                    {t("logs.inspector.guardrailRun", "{phase}: {action} in {duration}", {
+                      phase: guardrailPhaseLabel(g.phase),
+                      action: guardrailActionLabel(g.action),
+                      duration: seconds(g.duration_ms),
+                    })}
+                  </Text>
+                  {g.category && (
+                    <Text variant="small" tone="secondary">
+                      {t("logs.inspector.guardrailCategory", "Category {category}", { category: g.category })}
+                    </Text>
+                  )}
+                  {g.failure && (
+                    <Text variant="small" tone="secondary">
+                      {g.status ? `${guardrailFailureLabel(g.failure)} (${g.status})` : guardrailFailureLabel(g.failure)}
+                    </Text>
+                  )}
+                </span>
+              ),
+            }))}
+          />
+        </Section>
+      )}
       {sp && (
         <Section title={t("logs.inspector.stream", "Stream")} spacing="none">
           <KeyValue

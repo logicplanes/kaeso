@@ -828,6 +828,20 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
         cost: logged_cost(cost, o.request_id),
         user_agent: o.user_agent.clone().unwrap_or_default(),
         tags: o.tags.clone(),
+        guardrails: if o.guardrails.is_empty() {
+            String::new()
+        } else {
+            serde_json::to_string(&o.guardrails).unwrap_or_default()
+        },
+        guardrail_actions: {
+            let mut actions: Vec<String> = Vec::new();
+            for r in &o.guardrails {
+                if !actions.iter().any(|a| a == r.action.as_str()) {
+                    actions.push(r.action.as_str().to_owned());
+                }
+            }
+            actions
+        },
         client_ip: o.client_ip.map(|i| i.to_string()).unwrap_or_default(),
         upstream_request_id: o.upstream_request_id.clone().unwrap_or_default(),
         has_content: content,
@@ -983,6 +997,7 @@ fn text_bytes(log: &LogRow) -> u64 {
         &log.upstream_request_id,
         &log.egress_dialect,
         &log.provider,
+        &log.guardrails,
     ]
     .iter()
     .map(|s| s.len() as u64)

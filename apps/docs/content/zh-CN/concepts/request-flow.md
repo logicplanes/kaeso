@@ -9,7 +9,7 @@ order: 2
 ```mermaid
 sequenceDiagram
   accTitle: 请求流程
-  accDescr: 应用把请求发送给网关。网关检查密钥、读取请求、解析模型、检查限额并选择服务商密钥，每项检查都可能以图中的状态码拒绝请求。随后它把转换后的请求发送给服务商，把转换后的回复返回给应用，再计费并记录请求日志。
+  accDescr: 应用把请求发送给网关。网关检查密钥、读取请求、解析模型、询问项目的防护规则、检查限额并选择服务商密钥，每项检查都可能以图中的状态码拒绝请求。随后它把转换后的请求发送给服务商，询问检查回复的防护规则，把转换后的回复返回给应用，再计费并记录请求日志。
   participant App as 您的应用
   participant Gateway as 网关
   participant Provider as 服务商
@@ -17,11 +17,13 @@ sequenceDiagram
   Note over Gateway: 检查密钥<br>401 或 403
   Note over Gateway: 读取请求<br>400、413、503 或 529
   Note over Gateway: 解析模型<br>400 或 404
+  Note over Gateway: 询问防护规则<br>400、429 或 503
   Note over Gateway: 检查限额<br>403、429 或 503
   Note over Gateway: 选择服务商密钥<br>400
   Gateway->>Provider: 转换后的请求
   Note over Gateway,Provider: 超时 504<br>无法连接 502
   Provider-->>Gateway: 回复
+  Note over Gateway: 询问检查回复的防护规则<br>400 或 503
   Gateway-->>App: 转换后的回复
   Note over Gateway: 计费并记录日志
 ```
@@ -69,6 +71,10 @@ Kaeso 在项目目录中查找模型名称：先作为别名，再作为 `provid
 没有推理强度等级的模型则不会收到推理强度，不支持推理的模型不会收到自适应思考，只接受默认温度的模型不会收到温度。回复的 `kaeso-left-out` 响应头会注明 Kaeso 省略的内容。模型未列出的推理强度会变为它所列出的最近等级，对不支持自适应思考的 Claude 模型使用的自适应思考会变为带预算的 `enabled` 思考；回复的 `kaeso-adapted` 响应头会注明这些改动（[没有推理强度等级的模型](../development/kpp/reasoning.md#没有推理强度等级的模型)）。
 
 以 OpenAI 格式发往 Claude 模型的请求不需要设置输出上限，Kaeso 会发送该模型自身的最大值。缺少 `max_tokens` 的 Messages 请求会得到 400，与 Anthropic 的做法相同。来自其他格式、要求的输出超过模型能写出的上限的请求，会改为使用模型的最大值，回复的 `kaeso-adapted` 响应头会注明该字段，例如 `max_tokens`。例如，Claude Code 会向每个它不认识的模型请求 32,000 个 Token。
+
+## 防护规则
+
+项目使用[防护规则](../console/guardrails.md)时，Kaeso 会针对每个聊天请求按顺序询问它们一次，时机在响应缓存和别名路由的第一步之前。已超出某项请求速率的调用方会先收到 429，Kaeso 不会询问防护规则。防护规则拦截时，应用收到 400；设为失败时拒绝的防护规则出错时，应用收到 503。这两种请求都不会到达服务商、不会回退，也不产生费用。替换后的内容会交给下一条防护规则，再发送给服务商。检查回复的防护规则会在 Kaeso 为应用写出回复之前看到它；流式回复只有在防护规则暂扣流时才会被检查。
 
 ## 限额
 

@@ -501,6 +501,37 @@ describe("LogInspector", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ log: "req_0001", tag: "eval-42" }));
   });
 
+  it("lists the guardrails that checked the request, with their verdicts", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [
+        logEntry({
+          guardrails: [
+            { guardrail: "grd_pii", name: "PII check", phase: "request", action: "replace", category: "pii", failure: null, status: null, duration_ms: 18 },
+            { guardrail: "grd_out", name: "Output check", phase: "reply", action: "allow", category: null, failure: "status", status: 502, duration_ms: 1200 },
+            {
+              guardrail: "grd_slow",
+              name: "Slow check",
+              phase: "request",
+              action: "block",
+              category: null,
+              failure: "timeout",
+              status: null,
+              duration_ms: 2000,
+            },
+          ],
+        }),
+      ],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const guardrails = section(await sheet(), "Guardrails");
+    expect(guardrails).toHaveTextContent("PII checkRequest: Rewritten in 18 msCategory pii");
+    expect(guardrails).toHaveTextContent("Output checkReply: Allowed in 1.2 sAnswered with an error (502)");
+    expect(guardrails).toHaveTextContent("Slow checkRequest: Blocked in 2.0 sNo answer in time");
+  });
+
   it("names what it can't open as plain text, and opens a service account's sheet", async () => {
     signedIn({ projectRights: without("models.view", "keys.all.view") });
     projectData({ keys: [apiKey()], accounts: [serviceAccount()], aliases: [alias({ id: "al_fast", name: "fast" })] });

@@ -27,6 +27,7 @@ import { projectListKey, projectQuery, projectViewKey } from "~/api/queries/proj
 import { useApiMutation } from "~/auth/mutation";
 import { PictureControl, toPictureUpload } from "~/kaeso/picture";
 import { ProjectHeader } from "~/shell/project-header";
+import { GuardrailsSection } from "./guardrails-section";
 import { ResponseCacheSection } from "./response-cache-section";
 import { RetriesSection } from "./retries-section";
 import { useProjectRights } from "~/auth/rights";
@@ -71,6 +72,7 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
               {requestLogs && <ContentLogging org={org} project={project} canChange={rights.has("logs.content.manage")} archived={!!p.archived_at} />}
               <RetriesSection org={org} project={project} retries={p.retries} canChange={rights.has("project.update")} archived={!!p.archived_at} />
               <ResponseCacheSection org={org} project={project} canChange={rights.has("project.update")} archived={!!p.archived_at} />
+              <GuardrailsSection org={org} project={project} />
               {p.archived_at ? <ArchivedOn date={p.archived_at} /> : rights.has("project.archive") && <Archive org={org} project={project} name={p.name} />}
             </>
           )}

@@ -2,6 +2,7 @@ pub mod agents;
 pub mod credential_accounts;
 pub mod credentials;
 pub mod custom_providers;
+pub mod guardrails;
 pub mod invites;
 pub mod mcp_servers;
 pub mod members;
@@ -164,6 +165,15 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::WebhooksManage), routes!(webhooks::rotate)))
         .routes(s.route(Access::Org(R::WebhooksManage), routes!(webhooks::test)))
         .routes(s.route(Access::Org(R::WebhooksView), routes!(webhooks::deliveries)))
+        .routes(s.route(Access::Org(R::GuardrailsView), routes!(guardrails::list)))
+        .routes(s.route(Access::Org(R::GuardrailsView), routes!(guardrails::get)))
+        .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::create)))
+        .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::update)))
+        .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::delete)))
+        .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::rotate_secret)))
+        .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::test)))
+        .routes(s.route(Access::Project(kaeso_core::rights::ProjectRight::ProjectView), routes!(guardrails::list_project)))
+        .routes(s.route(Access::Org(R::GuardrailsManage), routes!(guardrails::set_project)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::member)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::org_grantors)))
 }

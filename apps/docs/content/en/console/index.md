@@ -21,6 +21,7 @@ A list, such as API keys or members, is a single Tab stop. Move between its rows
 - [Provider keys](provider-keys.md): Connect your keys for model providers, and choose which projects use each one.
 - [Custom providers](custom-providers.md): Add a server of your own, such as a self-hosted vLLM or an internal proxy, as a provider.
 - [Organization MCP servers](mcp-servers.md): Add the organization's MCP servers, sign in to them and review the tools they change.
+- [Guardrails](guardrails.md): Have services of your own check requests before a model gets them, and the replies before apps do.
 - [Models and aliases](models-and-aliases.md): Choose the models a project may call, and give them names of your own.
 - [API keys](api-keys.md): Create keys for apps and scripts, limit them, and turn them off.
 - [Tools](tools.md): Choose the MCP tools a project's portal offers, decide who may call them, and connect clients.

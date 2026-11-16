@@ -47,8 +47,8 @@ order: 4
 | 所有者 | 全部，包括未来版本新增的权限 | 全部 |
 | 管理员 | 除 `org.delete`、`org.ownership.transfer` 和 `billing.manage` 之外的全部 | 全部 |
 | 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`billing.manage` | 无 |
-| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 |
-| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`platform_keys.view`、`webhooks.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限去掉 `tools.use`，以及 `project.audit_log.view` |
+| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`guardrails.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 |
+| 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`guardrails.view`、`platform_keys.view`、`webhooks.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限去掉 `tools.use`，以及 `project.audit_log.view` |
 | 成员 | `org.view`、`members.view` | 无 |
 
 | 项目角色 | 权限 |
@@ -144,6 +144,8 @@ order: 4
 | `security.sso.require` | 要求 SSO | 要求此组织管理的账户只能通过其 SSO 登录。 | 敏感；需近期登录 |
 | `security.2fa.require` | 要求双重验证 | 要求成员使用双重验证。 | 需近期登录 |
 | `security.key_policy.manage` | 设置密钥有效期 | 设置组织的密钥最长有效期。 |  |
+| `guardrails.view` | 查看防护规则 | 查看组织的防护规则以及使用它们的项目（不含其机密）。 |  |
+| `guardrails.manage` | 管理防护规则 | 添加、更改、测试和删除防护规则，并选择使用它们的项目。 | 敏感；近期登录；需要 `guardrails.view` |
 
 ### 密钥
 
@@ -302,7 +304,7 @@ order: 4
 
 | 预设 | 组织权限 | 项目权限 | 账户权限 | 实例预设 |
 | --- | --- | --- | --- | --- |
-| 观察者 | `org.view`、`members.view`、`projects.view.all`、`mcp_servers.view`、`webhooks.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`audit_log.view` | `project.view`、`models.view`、`tools.view`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view`、`project.audit_log.view` | `account.view` | 只读 |
+| 观察者 | `org.view`、`members.view`、`projects.view.all`、`mcp_servers.view`、`guardrails.view`、`webhooks.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`audit_log.view` | `project.view`、`models.view`、`tools.view`、`limits.view`、`logs.metadata.view`、`usage.view`、`costs.view`、`project.audit_log.view` | `account.view` | 只读 |
 | 构建者 | 开发者角色的权限 | 开发者角色的权限去掉 `logs.content.view` 和 `tools.use`，再加上 `models.manage` | `account.view`、`account.keys.view` | 无 |
 | 运维者 | 管理员角色的权限，去掉不会授予智能体的权限 | 除 `tools.use` 外的全部 | 除 `account.keys.manage` 和 `account.memberships.leave` 外的全部 | 配置 |
 | 完全访问 | 除不会授予智能体的权限外的全部 | 除 `tools.use` 外的全部 | 全部 | 管理员 |

@@ -95,6 +95,7 @@ impl AgentPreset {
                 R::ProjectsViewAll,
                 R::McpServersView,
                 R::WebhooksView,
+                R::GuardrailsView,
                 R::LogsStorageView,
                 R::UsageOrgView,
                 R::CostsOrgView,

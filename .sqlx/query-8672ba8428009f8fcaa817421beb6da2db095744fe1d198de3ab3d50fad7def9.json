@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE guardrails SET secret_wrapped_key = $3, secret_key_id = $4 WHERE id = $1 AND secret_wrapped_key = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bytea",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8672ba8428009f8fcaa817421beb6da2db095744fe1d198de3ab3d50fad7def9"
+}
