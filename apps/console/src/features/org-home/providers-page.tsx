@@ -515,7 +515,7 @@ function DeleteKeyDialog({
       description={
         !credential.is_default
           ? credential.projects.length
-            ? t("orgHome.deleteKeyProjectsSwitch", "Its projects switch to the {provider} default.", { provider })
+            ? t("orgHome.deleteKeyProjectsSwitch", "Its projects without another {provider} key switch to the default.", { provider })
             : t("orgHome.deleteKeyUnused", "No project uses it; requests are not affected.")
           : successor
             ? t("orgHome.deleteKeySuccessor", "{name} becomes the {provider} default.", { name: successor.name, provider })
@@ -647,13 +647,17 @@ function RenameKeyDialog({ org, credential, onClose }: { org: string; credential
 function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; credential: CredentialView; keys: CredentialView[]; onClose: () => void }) {
   const projects = useQuery(orgProjectsQuery(org));
   const [chosen, setChosen] = useState<string[]>(credential.projects.map((p) => p.id));
+  const [weights, setWeights] = useState<Record<string, string>>(() => Object.fromEntries(credential.projects.map((p) => [p.id, String(p.weight)])));
   const providers = useProviders(org);
   const label = providers.name(credential.provider);
-  const otherKey = new Map<string, string>();
+  const otherKeys = new Map<string, string[]>();
   for (const k of keys) {
     if (k.provider !== credential.provider || k.id === credential.id) continue;
-    for (const p of k.projects) otherKey.set(p.id, k.name);
+    for (const p of k.projects) otherKeys.set(p.id, [...(otherKeys.get(p.id) ?? []), k.name]);
   }
+  const weightOf = (id: string) => Number(weights[id] ?? "1");
+  const pooled = chosen.filter((id) => otherKeys.has(id));
+  const badWeight = pooled.some((id) => !(weightOf(id) >= 1 && weightOf(id) <= 100));
   const options = [
     ...(projects.data ?? []).map((p) => ({ id: p.id, name: p.name })),
     ...credential.projects.filter((p) => !(projects.data ?? []).some((q) => q.id === p.id)),
@@ -663,7 +667,7 @@ function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; cred
       data(
         await api.PUT("/platform/v1/orgs/{org}/credentials/{credential}/projects", {
           params: { path: { org, credential: credential.id } },
-          body: { projects: chosen },
+          body: { projects: chosen, weights: Object.fromEntries(pooled.map((id) => [id, weightOf(id)])) },
         }),
       ),
     invalidates: [["orgs", org, "credentials"]],
@@ -689,7 +693,7 @@ function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; cred
       description={
         credential.is_default
           ? t("orgHome.assignDefaultKeyHint", "These projects keep it for {provider} even when another key becomes the default.", { provider: label })
-          : t("orgHome.assignKeyHint", "These projects use it for {provider} instead of the default.", { provider: label })
+          : t("orgHome.assignKeyHint", "These projects use it for {provider} instead of the default, beside their other keys.", { provider: label })
       }
       onSubmit={() => save.mutate()}
       footer={
@@ -697,7 +701,13 @@ function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; cred
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" loading={save.isPending} onClick={() => save.mutate()}>
+          <Button
+            variant="primary"
+            loading={save.isPending}
+            disabled={badWeight}
+            disabledReason={badWeight ? t("orgHome.keyWeightBlocked", "Give each weight from 1 to 100") : undefined}
+            onClick={() => save.mutate()}
+          >
             {t("common.save", "Save")}
           </Button>
         </>
@@ -708,17 +718,35 @@ function AssignKeyDialog({ org, credential, keys, onClose }: { org: string; cred
       ) : (
         <CheckboxGroup aria-label={t("common.projects", "Projects")} value={chosen} onValueChange={setChosen}>
           {options.map((p) => {
-            const other = otherKey.get(p.id);
+            const other = otherKeys.get(p.id);
             return (
               <Checkbox
                 key={p.id}
                 value={p.id}
                 label={p.name}
-                {...(other ? { description: t("orgHome.usesKeyNow", "Uses {name} now", { name: other }) } : {})}
+                {...(other ? { description: t("orgHome.usesKeysNow", "Also uses {names}", { names: other.join(", ") }) } : {})}
               />
             );
           })}
         </CheckboxGroup>
+      )}
+      {pooled.length > 0 && (
+        <div className="mt-16 flex flex-col gap-8">
+          <Text tone="secondary">
+            {t("orgHome.keyWeightsHint", "Each caller draws one key of a project by weight; a key that is refused or rate limited gives way.")}
+          </Text>
+          {options
+            .filter((o) => pooled.includes(o.id))
+            .map((o) => (
+              <Input
+                key={o.id}
+                label={t("orgHome.keyWeight", "Weight in {project}", { project: o.name })}
+                inputMode="numeric"
+                value={weights[o.id] ?? "1"}
+                onChange={(e) => setWeights({ ...weights, [o.id]: e.target.value.replace(/[^\d]/g, "") })}
+              />
+            ))}
+        </div>
       )}
     </Dialog>
   );

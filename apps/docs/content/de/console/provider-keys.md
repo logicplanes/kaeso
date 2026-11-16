@@ -118,7 +118,9 @@ Ein Grok-Konto bedient Anfragen wie ein xAI-API-Schlüssel, unter `https://api.x
 
 Jeder Anbieter hat einen Standardschlüssel, den jedes Projekt ohne zugewiesenen Schlüssel nutzt. Der erste Schlüssel, den Sie für einen Anbieter hinzufügen, wird sein Standard. Um den Standard zu verlegen, wählen Sie **Als Standard festlegen** im Menü eines anderen Schlüssels.
 
-Um einigen Projekten einen anderen Schlüssel zu geben, wählen Sie **Projekten zuweisen** im Menü dieses Schlüssels und wählen Sie die Projekte. Sie nutzen dann für diesen Anbieter diesen Schlüssel statt des Standards. Ein Projekt nutzt je Anbieter einen Schlüssel.
+Um einigen Projekten einen anderen Schlüssel zu geben, wählen Sie **Projekten zuweisen** im Menü dieses Schlüssels und wählen Sie die Projekte. Sie nutzen dann für diesen Anbieter diesen Schlüssel statt des Standards.
+
+Ein Projekt kann mehrere Schlüssel eines Anbieters nutzen, etwa Konten, deren Rate-Limits sich addieren, oder Azure-Ressourcen in mehreren Regionen: Weisen Sie ihm jeden davon zu. Jeder Aufrufer, nach seinem API-Schlüssel, Dienstkonto oder Mitglied, zieht dann einen der Schlüssel des Projekts und behält ihn, damit der Prompt-Cache des Anbieters weiter wirkt; ein Schlüssel mit höherer **Gewichtung in** dem Projekt wird von mehr Aufrufern gezogen, im Verhältnis der Gewichtungen von 1 bis 100. Wird ein Schlüssel abgelehnt, ist er abgemeldet, ohne Guthaben oder rate-limitiert, geht die Anfrage an den nächsten Schlüssel des Projekts, bevor ein Alias auf ein anderes Modell ausweicht, und der Schlüssel wartet: bei einem Rate-Limit bis zum `retry-after` des Anbieters, sonst fünf Minuten. Jedes Gateway einer Installation sieht dieselbe Ziehung und dieselben wartenden Schlüssel. Video-Jobs, nach denen Kaeso später fragt, nutzen den zuerst zugewiesenen Schlüssel des Projekts.
 
 ## Schlüssel ersetzen, umbenennen oder löschen
 
@@ -130,7 +132,7 @@ Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die 
 | Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** oder **Kein API-Zugang** zeigt, und beendet seine vorherige Sitzung bei OpenAI oder xAI |
 | Nutzung verwalten | Für ein ChatGPT-Konto: öffnet die Nutzungseinstellungen von ChatGPT, in denen sein Inhaber prüft und begrenzt, was Kaeso nutzt |
 | Umbenennen | Ändert den Namen, den die Konsole zeigt. Bei einem Dienstkonto-Schlüssel heißt es **Bearbeiten** und ändert auch den Standort, bei einem Schlüssel für Cloudflare AI Gateway das Konto und das Gateway, bei einem Schlüssel für Amazon Bedrock die Region |
-| Löschen | Entfernt den Schlüssel. Seine Projekte nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI oder xAI |
+| Löschen | Entfernt den Schlüssel. Seine Projekte ohne weiteren Schlüssel des Anbieters nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI oder xAI |
 
 Ein Konto zeigt **Abgemeldet**, wenn der Anbieter seine Sitzung beendet hat, etwa nachdem sein Inhaber Kaeso in ChatGPT getrennt hat. Ein Grok-Konto zeigt **Kein API-Zugang**, wenn xAI sein Abo ablehnt. In beiden Fällen schlagen seine Anfragen fehl, bis jemand mit **Anbieter-Schlüssel ändern** **Erneut anmelden** wählt.
 

@@ -39,8 +39,8 @@ pub struct Walked {
 pub struct Tried {
     pub status: u16,
     pub duration_ms: Option<u64>,
-    /// How many times the step sent the request, its retries included.
-    pub tries: u8,
+    /// How many requests the step sent: its retries and the keys of the project's pool it tried.
+    pub tries: u32,
 }
 
 pub fn stamp(resp: &mut Response, served: &Served) {
@@ -189,7 +189,7 @@ mod tests {
                 Some(Tried {
                     status: 529,
                     duration_ms: Some(1204),
-                    tries: 1,
+                    tries: 2,
                 }),
             ),
             step(
@@ -214,7 +214,7 @@ mod tests {
         .unwrap();
         assert_eq!(
             value.to_str().unwrap(),
-            r#""route";skipped, "route.fallback";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback.fallback";model="custom/a \"quoted\" \\ model";status=200, "route.else";status=200"#
+            r#""route";skipped, "route.fallback";model="anthropic/claude-sonnet-4-5";status=529;dur=1204;tries=2, "route.fallback.fallback";model="custom/a \"quoted\" \\ model";status=200, "route.else";status=200"#
         );
     }
 }

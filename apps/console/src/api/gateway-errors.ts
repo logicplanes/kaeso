@@ -493,6 +493,7 @@ const messages = (): Rule[] => [
   rule("errors.noLocation", () => t("errors.noLocation", "This key calls no location; leave `location` out.")),
   rule("errors.serviceAccount.notTaken", (v) => t("errors.serviceAccount.notTaken", "{provider} takes no service account key; add an API key.", v)),
   rule("errors.serviceAccount.notJson", () => t("errors.serviceAccount.notJson", "Paste the service account's whole JSON key file.")),
+  rule("errors.keyWeight", () => t("errors.keyWeight", "A weight is 1 to 100.")),
   rule("errors.serviceAccount.tooLong", () => t("errors.serviceAccount.tooLong", "The JSON key is longer than 16 KiB; paste the file Google Cloud made.")),
   rule("errors.serviceAccount.wrongType", () =>
     t("errors.serviceAccount.wrongType", "The JSON key isn't a service account key; its `type` must be `service_account`."),

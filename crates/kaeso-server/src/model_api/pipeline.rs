@@ -1524,9 +1524,10 @@ fn retry_wait(f: &Failure) -> Option<Duration> {
 
 // One step: its model tried once, and again up to `retries` times after a short-lived failure.
 // The tries share the step's deadline, its limit reservation and its one count against request
-// rates; the response cache is looked up before the first only. Each failed try that is tried
-// again joins `fell`, so the request log shows it under the request. Gives the step's answer or
-// its last failure, and how many times it sent the request.
+// rates; the response cache is looked up before the first only. Each try goes through the
+// project's key pool for the provider. Each failed try that is tried again joins `fell`, so the
+// request log shows it under the request. Gives the step's answer or its last failure, and how
+// many times it sent the request, every key of the pool it tried included.
 async fn tries(
     state: &AppState,
     rec: &mut Recording,
@@ -1535,31 +1536,34 @@ async fn tries(
     app_req: &Arc<Request>,
     step: StepTry<'_>,
     fell: &mut Vec<FellBack>,
-) -> (Result<Done, Failure>, u8) {
+) -> (Result<Done, Failure>, u32) {
     let began = tokio::time::Instant::now();
     rec.step_wait = None;
     let mut again: Option<Duration> = None;
-    let mut sent: u8 = 1;
+    // Tries of the step's model, and requests sent to the provider over every key of the pool.
+    let mut round: u8 = 1;
+    let mut sent: u32 = 0;
     loop {
         rec.outcome().fallbacks.clone_from(fell);
         let started = tokio::time::Instant::now();
-        let tried = Box::pin(attempt(
+        let (tried, keys) = Box::pin(attempt_pool(
             state,
             rec,
             sh,
             entry,
-            Arc::clone(app_req),
-            (**app_req).clone(),
+            app_req,
             TryAt {
                 step_timeout: step.timeout,
                 again,
             },
+            began,
         ))
         .await;
+        sent = sent.saturating_add(keys);
         let provider = entry.provider.to_string();
         let failure = match tried {
             Ok(done) => {
-                if sent > 1 {
+                if round > 1 {
                     metrics::counter!(crate::metrics::UPSTREAM_RETRIES, "provider" => provider, "outcome" => "answered").increment(1);
                 }
                 return (Ok(done), sent);
@@ -1570,13 +1574,13 @@ async fn tries(
         let left = rec.step_wait.map_or(Duration::MAX, |w| {
             (began + w).saturating_duration_since(now)
         });
-        let wait = if sent <= step.retries {
+        let wait = if round <= step.retries {
             retry_wait(&failure)
         } else {
             None
         };
         let Some(wait) = wait.filter(|w| *w < left) else {
-            if sent > 1 {
+            if round > 1 {
                 metrics::counter!(crate::metrics::UPSTREAM_RETRIES, "provider" => provider, "outcome" => "gave_up").increment(1);
             }
             return (Err(failure), sent);
@@ -1600,10 +1604,153 @@ async fn tries(
         // The wait is the provider's doing, not Kaeso's work: its overhead leaves it out.
         rec.waited = rec.waited.saturating_add(wait);
         again = Some(left.saturating_sub(wait));
-        sent = sent.saturating_add(1);
+        round = round.saturating_add(1);
     }
 }
 
+// One try of a step through the keys of the project's pool for its provider, in the order this
+// request tries them: a weighted draw that keeps each caller (its API key, service account or
+// member) on one key, so the provider's prompt cache keeps working, with the keys held moments
+// ago last. A key that is refused, out of credit, signed out or rate limited gives way to the
+// next, which keeps the step's reservation and the time it has left since `began`, as a try made
+// again does. Gives the answer or the last failure, and how many keys it sent the request to.
+async fn attempt_pool(
+    state: &AppState,
+    rec: &mut Recording,
+    sh: &Shared<'_>,
+    entry: &Entry,
+    app_req: &Arc<Request>,
+    at: TryAt,
+    began: tokio::time::Instant,
+) -> (Result<Done, Failure>, u32) {
+    let caller = sh.caller;
+    let provider = entry.provider.to_string();
+    let pool = match credentials::resolve(
+        state,
+        OrgId::from_uuid(caller.org_id),
+        ProjectId::from_uuid(caller.project_id),
+        &provider,
+    )
+    .await
+    {
+        // A video job is polled and fetched later with the project's first key, so it starts there.
+        Ok(primary) if primary.pool.len() > 1 && sh.kind != RequestKind::Video => {
+            primary.pool.clone()
+        }
+        _ => {
+            return (
+                attempt_with(state, rec, sh, entry, app_req, at, None).await,
+                1,
+            );
+        }
+    };
+    let seed = caller
+        .key_id
+        .or(caller.service_account_id)
+        .or(caller.user_id)
+        .map_or_else(|| rec.outcome().request_id.to_string(), |id| id.to_string());
+    let drawn = crate::services::key_pool::order(&pool, &format!("{seed}:{provider}"));
+    let now = state.clock.now();
+    let held = state
+        .cooldowns
+        .held_keys(&state.valkey, caller.project_id, &drawn, now)
+        .await;
+    let (ready, waiting): (Vec<_>, Vec<_>) = drawn.iter().zip(held).partition(|(_, h)| !h);
+    let order: Vec<Uuid> = ready.into_iter().chain(waiting).map(|(k, _)| *k).collect();
+    let Some((last, before)) = order.split_last() else {
+        return (
+            attempt_with(state, rec, sh, entry, app_req, at, None).await,
+            1,
+        );
+    };
+    let mut at = at;
+    let mut keys = 0;
+    for key in before {
+        keys += 1;
+        match attempt_with(state, rec, sh, entry, app_req, at, Some(*key)).await {
+            Err(f) => {
+                if !hold_pool_key(state, caller.project_id, *key, &f, now).await {
+                    return (Err(f), keys);
+                }
+                rec.attempt_failed(Instant::now());
+                tracing::info!(
+                    provider,
+                    kind = f.err.kind.as_str(),
+                    "a key of the project's pool gave way to the next"
+                );
+                let left = rec.step_wait.map_or(Duration::MAX, |w| {
+                    (began + w).saturating_duration_since(tokio::time::Instant::now())
+                });
+                at = TryAt {
+                    step_timeout: at.step_timeout,
+                    again: Some(left),
+                };
+            }
+            done => return (done, keys),
+        }
+    }
+    let tried = attempt_with(state, rec, sh, entry, app_req, at, Some(*last)).await;
+    if let Err(f) = &tried {
+        hold_pool_key(state, caller.project_id, *last, f, now).await;
+    }
+    (tried, keys + 1)
+}
+
+// One try with one key of the pool, or the project's own key for `None`.
+async fn attempt_with(
+    state: &AppState,
+    rec: &mut Recording,
+    sh: &Shared<'_>,
+    entry: &Entry,
+    app_req: &Arc<Request>,
+    at: TryAt,
+    key: Option<Uuid>,
+) -> Result<Done, Failure> {
+    Box::pin(attempt(
+        state,
+        rec,
+        sh,
+        entry,
+        Arc::clone(app_req),
+        (**app_req).clone(),
+        at,
+        key,
+    ))
+    .await
+}
+
+// Holds a key of a project's pool after a failure that is the key's own; returns whether it was.
+async fn hold_pool_key(
+    state: &AppState,
+    project: Uuid,
+    key: Uuid,
+    f: &Failure,
+    now: time::OffsetDateTime,
+) -> bool {
+    let Some(hold) = crate::services::key_pool::gives_way(&f.stage, &f.err) else {
+        return false;
+    };
+    if let Some(length) = hold {
+        let said = f.logged();
+        let held = cooldowns::Held {
+            until: now + length,
+            reason: match classify(f) {
+                Next::Fall(reason) => reason,
+                Next::Stop => RouteFailure::Unavailable,
+            },
+            status: f.err.status.unwrap_or(500),
+            error_kind: said.kind.as_str().to_owned(),
+            error_message: said.message.clone(),
+        };
+        state
+            .cooldowns
+            .hold_key(&state.valkey, project, key, held, now)
+            .await;
+    }
+    true
+}
+
+#[allow(clippy::too_many_arguments)]
 async fn attempt(
     state: &AppState,
     rec: &mut Recording,
@@ -1612,6 +1759,7 @@ async fn attempt(
     app_req: Arc<Request>,
     mut req: Request,
     at: TryAt,
+    member: Option<Uuid>,
 ) -> Result<Done, Failure> {
     let TryAt {
         step_timeout,
@@ -1765,11 +1913,12 @@ async fn attempt(
             timeouts
         }
     };
-    let credential = credentials::for_provider(
+    let credential = credentials::for_provider_member(
         state,
         OrgId::from_uuid(caller.org_id),
         ProjectId::from_uuid(caller.project_id),
         &eff.provider,
+        member,
     )
     .await
     .map_err(|e| match e {

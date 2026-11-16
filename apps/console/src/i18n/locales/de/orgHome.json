@@ -11,7 +11,7 @@
   "orgHome.archivedOn": "Archiviert am {date}",
   "orgHome.assignDefaultKeyHint": "Diese Projekte behalten ihn für {provider}, auch wenn ein anderer Schlüssel Standard wird.",
   "orgHome.assignKey": "{title} zuweisen",
-  "orgHome.assignKeyHint": "Diese Projekte nutzen ihn für {provider} statt des Standardschlüssels.",
+  "orgHome.assignKeyHint": "Diese Projekte nutzen ihn für {provider} statt des Standards, neben ihren anderen Schlüsseln.",
   "orgHome.assignToProjects": "Projekten zuweisen",
   "orgHome.breakdown": "Aufschlüsselung",
   "orgHome.breakdownHint": "Anfragen, Fehler und Token im Zeitraum",
@@ -26,7 +26,7 @@
   "orgHome.default": "Standard",
   "orgHome.deleteKey": "Schlüssel löschen",
   "orgHome.deleteKeyLast": "Anfragen an {provider} schlagen fehl, bis die Organisation einen weiteren Schlüssel hinzufügt.",
-  "orgHome.deleteKeyProjectsSwitch": "Die zugewiesenen Projekte wechseln zum {provider}-Standard.",
+  "orgHome.deleteKeyProjectsSwitch": "Seine Projekte ohne einen weiteren {provider}-Schlüssel wechseln zum Standard.",
   "orgHome.deleteKeyQuestion": "{title} löschen?",
   "orgHome.deleteKeySuccessor": "{name} wird zum {provider}-Standard.",
   "orgHome.deleteKeyUnused": "Kein Projekt nutzt ihn; Anfragen sind nicht betroffen.",
@@ -90,7 +90,6 @@
   "orgHome.serviceAccount": "Dienstkonto",
   "orgHome.serviceAccountIn": "Dienstkonto in {project}",
   "orgHome.usageBreakdown": "Nutzung im Detail",
-  "orgHome.usesKeyNow": "Nutzt derzeit {name}",
   "orgHome.signInAgain": "Erneut anmelden",
   "orgHome.manageUsage": "Nutzung verwalten",
   "orgHome.signedOut": "Abgemeldet",
@@ -361,5 +360,9 @@
   "orgHome.keyReaddressed": "{name} ruft jetzt {endpoint} auf",
   "orgHome.changeEndpointFirst": "Ändern Sie zuerst den Namen oder den Endpunkt",
   "orgHome.downloadCsv": "CSV herunterladen",
-  "orgHome.id": "ID"
+  "orgHome.id": "ID",
+  "orgHome.keyWeightBlocked": "Geben Sie jede Gewichtung von 1 bis 100 an",
+  "orgHome.usesKeysNow": "Nutzt auch {names}",
+  "orgHome.keyWeightsHint": "Jeder Aufrufer zieht einen Schlüssel eines Projekts nach Gewichtung; ein abgelehnter oder begrenzter Schlüssel weicht aus.",
+  "orgHome.keyWeight": "Gewichtung in {project}"
 }
