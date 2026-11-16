@@ -273,5 +273,6 @@
   "project.settings.keepMedia": "Medien aufbewahren",
   "project.settings.mediaNeedsContent": "Medien bleiben nur, wo Anfrageinhalte protokolliert werden.",
   "project.settings.mediaKept": "Bilder, Audio und Dateien bleiben bei den Inhalten.",
-  "project.settings.mediaLeftOut": "Von Medien bleiben nur Typ und Größe."
+  "project.settings.mediaLeftOut": "Von Medien bleiben nur Typ und Größe.",
+  "project.members.theirKeys": "Ihre Schlüssel"
 }

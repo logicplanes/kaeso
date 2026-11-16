@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
-import { catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
+import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
 import { apiError, on, page, requests } from "~/test/network";
 import { playgroundModel } from "~/test/fixtures/project-logs";
 import { renderApp } from "~/test/render";
@@ -513,5 +513,21 @@ describe("ModelSheet", () => {
     await hoverReason(user, edit, /You need Manage models/);
     expect(within(s).getByRole("button", { name: "Model actions" })).toHaveAttribute("aria-disabled", "true");
     expect(within(s).queryByRole("button", { name: "Reset to KPMR" })).not.toBeInTheDocument();
+  });
+
+  it("opens the model's requests and history, and each alias's route editor", async () => {
+    signedIn();
+    projectData({ aliases: [alias({ id: "al_fast", name: "fast" })] });
+    modelsApi({ models: [sonnet()] });
+    const { user, router } = await renderApp(projectPath("models?model=cm_sonnet"));
+    const s = await sheet("Sonnet");
+    const base = `/orgs/${ORG}/projects/${PROJECT}`;
+    expect(await within(s).findByRole("link", { name: "fast" })).toHaveAttribute("href", `${base}/models/aliases/al_fast`);
+    expect(within(s).queryByRole("link", { name: "default" })).not.toBeInTheDocument();
+    expect(s).toHaveTextContent("Aliasesfast, default");
+    expect(within(s).getByRole("link", { name: "History" })).toHaveAttribute("href", `${base}/audit-log?target=cm_sonnet`);
+    await user.click(within(s).getByRole("link", { name: "See requests" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`${base}/logs`));
+    expect(router.state.location.search).toEqual({ model: "claude-sonnet-4-5", provider: "anthropic" });
   });
 });

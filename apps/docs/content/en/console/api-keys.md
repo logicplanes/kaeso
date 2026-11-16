@@ -35,7 +35,7 @@ Give each app and each environment its own key. Its usage, logs and limits are t
 
 **Active** lists the keys that work, **Archived** the archived ones, and **All** every key, disabled and expired ones too. **Whose keys**, above the list, shows one member's or service account's keys.
 
-Choose a key to open its sheet. It shows whom the key belongs to, its access, who created it and when, its expiry, its last use and its id. With the right **Manage limits**, you can change its **Models** and **Limits** there at any time.
+Choose a key to open its sheet. It shows whom the key belongs to, its access, who created it and when, its expiry, its last use and its id. With the right **Manage limits**, you can change its **Models** and **Limits** there at any time. **See requests** opens the [request logs](request-logs.md) filtered to the key, and **History** the project's [audit log](organizations-and-projects.md#read-the-audit-log) filtered to it, each for someone who may read it.
 
 ## Rotate a key
 

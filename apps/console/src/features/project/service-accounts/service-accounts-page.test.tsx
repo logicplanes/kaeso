@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { signedIn, without } from "~/test/fixtures";
+import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, grant, listed, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { createdKey } from "~/test/fixtures/shell";
@@ -409,5 +409,15 @@ describe("ServiceAccountSheet", () => {
     await renderApp(projectPath("service-accounts?account=sa_deploy"));
     expect(await screen.findByText("Couldn't load this service account.")).toBeInTheDocument();
     expect((await notifications().findAllByText("You can't see this service account.")).length).toBeGreaterThan(0);
+  });
+
+  it("opens the service account's requests and history", async () => {
+    signedIn();
+    account(serviceAccount(), []);
+    await renderApp(projectPath("service-accounts?account=sa_deploy"));
+    const sheet = await screen.findByRole("dialog", { name: "ci-deploy" });
+    const base = `/orgs/${ORG}/projects/${PROJECT}`;
+    expect(await within(sheet).findByRole("link", { name: "See requests" })).toHaveAttribute("href", `${base}/logs?member=sa%3Asa_deploy`);
+    expect(within(sheet).getByRole("link", { name: "History" })).toHaveAttribute("href", `${base}/audit-log?target=sa_deploy`);
   });
 });

@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ALL_PROJECT_RIGHTS, USER, asAdmin, signedIn, without } from "~/test/fixtures";
+import { ALL_PROJECT_RIGHTS, ORG, PROJECT, USER, asAdmin, signedIn, without } from "~/test/fixtures";
 import { hoverReason, member as orgMember, notifications, paged } from "~/test/fixtures/org";
 import { grant, me, memberRights, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
@@ -358,5 +358,26 @@ describe("MemberSheet", () => {
     expect(within(sheet).queryByRole("heading", { name: "Models" })).not.toBeInTheDocument();
     expect(within(sheet).queryByRole("heading", { name: "Limits" })).not.toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project/limits")).toHaveLength(0);
+  });
+
+  it("opens the member's requests and keys", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    oneMember(projectMember());
+    await renderApp(projectPath("members?member=usr_grace"));
+    const sheet = await screen.findByRole("dialog", { name: "Grace Hopper" });
+    const base = `/orgs/${ORG}/projects/${PROJECT}`;
+    expect(await within(sheet).findByRole("link", { name: "See requests" })).toHaveAttribute("href", `${base}/logs?member=user%3Ausr_grace`);
+    expect(within(sheet).getByRole("link", { name: "Their keys" })).toHaveAttribute("href", `${base}/keys?owner=user%3Ausr_grace`);
+  });
+
+  it("offers no links to someone who may read neither log nor every key", async () => {
+    signedIn({ projectRights: without("logs.metadata.view", "project.audit_log.view", "keys.all.view") });
+    projectData({ members: [projectMember()] });
+    oneMember(projectMember());
+    await renderApp(projectPath("members?member=usr_grace"));
+    const sheet = await screen.findByRole("dialog", { name: "Grace Hopper" });
+    await within(sheet).findByText("Joined");
+    expect(within(sheet).queryByRole("link", { name: /See requests|Their keys/ })).not.toBeInTheDocument();
   });
 });

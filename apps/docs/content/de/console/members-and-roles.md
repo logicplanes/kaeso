@@ -57,7 +57,7 @@ Wählen Sie unter **Mitglieder** ein Mitglied, um sein Sheet zu öffnen:
 
 Wählen Sie auf der Seite **Mitglieder** eines Projekts **Mitglied hinzufügen** und wählen Sie jemanden aus der Organisation mit einer Projektrolle. Laden Sie Personen außerhalb der Organisation zuerst in die Organisation ein.
 
-Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md). **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es. In Ihrem eigenen Sheet heißt das **Projekt verlassen**. Rechte aus der Organisationsrolle eines Mitglieds zählen mit: Sie können es nur ändern oder entfernen, wenn Sie alle seine Rechte im Projekt haben. Nur Inhaber ändern oder entfernen Inhaber.
+Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md) sowie Links zu seinen Anfragen (**Anfragen ansehen**) und seinen Schlüsseln (**Ihre Schlüssel**), jeweils für alle, die sie sehen dürfen. **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es. In Ihrem eigenen Sheet heißt das **Projekt verlassen**. Rechte aus der Organisationsrolle eines Mitglieds zählen mit: Sie können es nur ändern oder entfernen, wenn Sie alle seine Rechte im Projekt haben. Nur Inhaber ändern oder entfernen Inhaber.
 
 ## Dienstkonto erstellen
 
@@ -67,7 +67,7 @@ Ein Dienstkonto ist ein Projektmitglied für Software, etwa ein Deployment, eine
 2. Geben Sie an, was es verwendet, etwa `checkout-production`.
 3. Wählen Sie seine Projektrolle. Seine Schlüssel handeln mit den Rechten dieser Rolle.
 
-Sein Sheet enthält seine Schlüssel mit **Schlüssel erstellen**, seinen Modellzugriff und seine Limits. **Dienstkonto archivieren** archiviert es samt Schlüsseln endgültig.
+Sein Sheet enthält seine Schlüssel mit **Schlüssel erstellen**, seinen Modellzugriff und seine Limits, und **Anfragen ansehen** und **Verlauf** öffnen seine Anfragen und seine Audit-Ereignisse. **Dienstkonto archivieren** archiviert es samt Schlüsseln endgültig.
 
 Ein Dienstkonto zu erstellen erfordert das Recht **Dienstkonten erstellen**, seine Schlüssel zu erstellen **Dienstkonto-Schlüssel erstellen**.
 

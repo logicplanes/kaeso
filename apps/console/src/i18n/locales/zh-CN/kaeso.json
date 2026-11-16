@@ -446,5 +446,7 @@
   "kaeso.providerKey.endpoint": "端点",
   "kaeso.providerKey.endpointHint": "密钥所属资源的地址，显示在密钥旁边。{link}",
   "kaeso.providerKey.endpointWhere": "在哪里找到它",
-  "kaeso.providerKey.endpointBlocked": "请粘贴密钥所属资源的端点"
+  "kaeso.providerKey.endpointBlocked": "请粘贴密钥所属资源的端点",
+  "kaeso.sheet.history": "历史记录",
+  "kaeso.sheet.seeRequests": "查看请求"
 }

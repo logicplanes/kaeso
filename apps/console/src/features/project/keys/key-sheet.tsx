@@ -22,6 +22,7 @@ import { asKeyState, usePartyName } from "./party";
 import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
+import { SheetLinks } from "~/kaeso/sheet-links";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -185,6 +186,7 @@ function KeyBody({ org, project, keyId, onClose }: { org: string; project: strin
           { label: t("keys.id", "Id"), value: k.id, copy: k.id },
         ]}
       />
+      <SheetLinks org={org} project={project} requests={{ key: k.id }} target={k.id} />
       {rights.has("limits.view") && (
         <ModelAccessSection
           org={org}

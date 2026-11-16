@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { KeyView } from "~/api/generated/types";
-import { signedIn, without } from "~/test/fixtures";
+import { ORG, PROJECT, signedIn, whoAmI, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { createdKey } from "~/test/fixtures/shell";
@@ -470,5 +470,37 @@ describe("KeySheet", () => {
     keyApi(apiKey({ created_by: createdBy as KeyView["created_by"] }));
     await renderApp(projectPath("keys?key=key_web"));
     expect(await sheet()).toHaveTextContent(text);
+  });
+
+  it("opens the key's requests and its history, for someone who may read them", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    const { user, router } = await renderApp(projectPath("keys?key=key_web"));
+    const dialog = await sheet();
+    expect(within(dialog).getByRole("link", { name: "History" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}/audit-log?target=key_web`);
+    await user.click(within(dialog).getByRole("link", { name: "See requests" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/logs`));
+    expect(router.state.location.search).toEqual({ key: "key_web" });
+  });
+
+  it("offers neither link without the rights, nor the requests on an install without a request log", async () => {
+    signedIn({ projectRights: without("logs.metadata.view", "project.audit_log.view") });
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    await renderApp(projectPath("keys?key=key_web"));
+    const dialog = await sheet();
+    expect(within(dialog).queryByRole("link", { name: "See requests" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("link", { name: "History" })).not.toBeInTheDocument();
+  });
+
+  it("offers only the history on an install that keeps no request log", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    await renderApp(projectPath("keys?key=key_web"));
+    const dialog = await sheet();
+    expect(within(dialog).getByRole("link", { name: "History" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("link", { name: "See requests" })).not.toBeInTheDocument();
   });
 });

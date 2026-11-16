@@ -45,7 +45,7 @@ Um das zu beheben, geben Sie dem Anbieter-Schlüssel Zugriff auf das Modell, ode
 
 ## Werte eines Modells ändern
 
-Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner Herkunft: von KPMR oder aus einem eigenen Wert dieses Projekts. **Werte anpassen** ändert sie nur für dieses Projekt, und **Auf KPMR zurücksetzen** stellt einen Wert der Quelle wieder her. Hat jemand anderes das Modell geändert, nachdem sein Sheet geladen wurde, meldet das Speichern dies und lädt die aktuellen Werte, sodass Sie Ihre Änderung erneut vornehmen können. **Im Playground ausprobieren** im Sheet eines Modells, das der Playground aufrufen kann, öffnet den [Playground](playground.md) mit diesem Modell.
+Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner Herkunft: von KPMR oder aus einem eigenen Wert dieses Projekts. **Werte anpassen** ändert sie nur für dieses Projekt, und **Auf KPMR zurücksetzen** stellt einen Wert der Quelle wieder her. Hat jemand anderes das Modell geändert, nachdem sein Sheet geladen wurde, meldet das Speichern dies und lädt die aktuellen Werte, sodass Sie Ihre Änderung erneut vornehmen können. **Im Playground ausprobieren** im Sheet eines Modells, das der Playground aufrufen kann, öffnet den [Playground](playground.md) mit diesem Modell. Seine Aliasse öffnen ihren Routen-Editor, und **Anfragen ansehen** und **Verlauf** öffnen die Anfragen an das Modell und seine Audit-Ereignisse.
 
 | Wert | Bedeutung |
 | --- | --- |

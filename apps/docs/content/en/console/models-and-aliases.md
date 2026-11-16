@@ -45,7 +45,7 @@ To fix it, give the provider key access to the model, or remove the model from t
 
 ## Change a model's values
 
-A model's sheet shows the **Values in use**, each with where it comes from: KPMR or an override in this project. **Edit overrides** changes them for this project only, and **Reset to KPMR** returns a value to the source. If someone else changed the model after its sheet loaded, saving says so and loads the current values, so you can make your change again. **Try in Playground** in the sheet of a model the Playground can call opens the [Playground](playground.md) on it.
+A model's sheet shows the **Values in use**, each with where it comes from: KPMR or an override in this project. **Edit overrides** changes them for this project only, and **Reset to KPMR** returns a value to the source. If someone else changed the model after its sheet loaded, saving says so and loads the current values, so you can make your change again. **Try in Playground** in the sheet of a model the Playground can call opens the [Playground](playground.md) on it. Its aliases open their route editors, and **See requests** and **History** open the model's requests and its audit events.
 
 | Value | What it is |
 | --- | --- |
