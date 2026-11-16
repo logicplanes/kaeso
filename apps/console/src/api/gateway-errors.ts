@@ -332,6 +332,8 @@ const messages = (): Rule[] => [
   rule("errors.usageFilterKey", (v) => t("errors.usageFilterKey", "`{name}` must be a `key` that grouping by `{name}` returns.", v)),
   rule("errors.usageByDayRange", () => t("errors.usageByDayRange", "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.")),
   rule("errors.timelineStepValues", () => t("errors.timelineStepValues", "Use `minute` or `hour`.")),
+  rule("errors.logEndpoint", () => t("errors.logEndpoint", "`endpoint` must be an endpoint, such as `responses`.")),
+  rule("errors.logMinCost", () => t("errors.logMinCost", "`min_cost` must be an amount in USD, such as `0.5`.")),
   rule("errors.timelineGroupValues", () => t("errors.timelineGroupValues", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`.")),
   rule("errors.timelineGroupValuesProject", () => t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`.")),
   rule("errors.timelineMinuteRange", () => t("errors.timelineMinuteRange", "By minute, `from` and `to` are at most 2 days apart; use `hour`.")),

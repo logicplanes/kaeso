@@ -45,8 +45,9 @@ pub const PREFIX: &str = "/platform/v1";
         description = "Manage a Kaeso install: organizations, projects, members, keys, provider credentials, models, limits, usage and logs. Every operation names the single right it checks. Errors are `{\"error\": {\"type\", \"message\", \"param\"}}`. Lists are paginated with `limit` and `after`.",
         license(name = "MIT", identifier = "MIT"),
     ),
-    // The request log filters' formats, which only parameters name, so nothing else adds them.
-    components(schemas(ErrorEnvelope, error::ErrorBody, RequestFormat)),
+    // The request log filters' formats and endpoints, which only parameters name, so nothing
+    // else adds them.
+    components(schemas(ErrorEnvelope, error::ErrorBody, RequestFormat, LoggedEndpoint)),
     modifiers(&Components),
     tags(
         (name = "auth", description = "Sign-in and sessions"),
@@ -358,6 +359,25 @@ impl utoipa::PartialSchema for RequestFormat {
 }
 
 impl utoipa::ToSchema for RequestFormat {}
+
+/// An endpoint as the request log names it, such as `chat/completions` or
+/// `models:generateContent`; its values come from the list the filter accepts.
+pub struct LoggedEndpoint;
+
+impl utoipa::PartialSchema for LoggedEndpoint {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        utoipa::openapi::ObjectBuilder::new()
+            .schema_type(utoipa::openapi::schema::Type::String)
+            .description(Some(
+                "An endpoint, as the request log names it: the path after the API version, or the Gemini method on the model.",
+            ))
+            .enum_values(Some(crate::services::logs::ENDPOINTS.iter().copied()))
+            .examples(["responses"])
+            .into()
+    }
+}
+
+impl utoipa::ToSchema for LoggedEndpoint {}
 
 #[cfg(test)]
 mod tests {

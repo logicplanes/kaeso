@@ -2,7 +2,7 @@ import { act, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { providers as providerList, signedIn, whoAmI, without } from "~/test/fixtures";
 import { credential, hoverReason, notifications } from "~/test/fixtures/org";
-import { apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
+import { alias, apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -326,6 +326,43 @@ describe("LogsPage", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Source" }));
     await user.click(await screen.findByRole("menuitemradio", { name: "Playground" }));
     await waitFor(() => expect(router.state.location.search).toMatchObject({ source: "playground" }));
+  });
+
+  it("filters by alias, fallback, endpoint and cost, from the URL and the menu", async () => {
+    signedIn();
+    projectData({ aliases: [alias()] });
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs?alias=fast&fell_back=true&min_cost=0.1&endpoint=nowhere"));
+
+    await waitFor(() => expect(lastQuery()).toMatchObject({ alias: "fast", fell_back: "true", min_cost: "0.1", endpoint: "nowhere" }));
+    const toolbar = screen.getByRole("toolbar", { name: "Filter requests" });
+    expect(within(toolbar).getByRole("group", { name: "Filter: Alias" })).toHaveTextContent("fast");
+    expect(within(toolbar).getByRole("group", { name: "Filter: Fell back" })).toHaveTextContent("yes");
+    expect(within(toolbar).getByRole("group", { name: "Filter: Cost at least" })).toHaveTextContent("$0.10");
+    await user.click(screen.getByRole("button", { name: "Remove the Endpoint filter" }));
+    await user.click(screen.getByRole("button", { name: "Remove the Alias filter" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ fell_back: true, min_cost: "0.1" }));
+
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Alias" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "fast" }));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Endpoint" }));
+    await user.click(await screen.findByRole("menuitemradio", { name: "responses" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ alias: "fast", endpoint: "responses" }));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ alias: "fast", endpoint: "responses", fell_back: "true", min_cost: "0.1" }));
+    await user.click(screen.getByRole("button", { name: "Remove the Fell back filter" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ alias: "fast", endpoint: "responses", min_cost: "0.1" }));
+  });
+
+  it("ignores a cost in the URL that isn't an amount", async () => {
+    signedIn();
+    projectData();
+    logsData();
+    await renderApp(projectPath("logs?min_cost=-1"));
+    await screen.findByText("No requests in this range");
+    expect(lastQuery().min_cost).toBeUndefined();
+    expect(screen.queryByRole("group", { name: "Filter: Cost at least" })).not.toBeInTheDocument();
   });
 
   it("narrows the list to one route by the app's and the provider's format", async () => {

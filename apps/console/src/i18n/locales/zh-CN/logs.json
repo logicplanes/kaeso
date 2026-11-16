@@ -280,5 +280,9 @@
   "logs.decision.answers": "回答",
   "logs.decision.state": "问题针对的内容",
   "logs.decision.questions": "问题",
-  "logs.decision.replyHint": "每个回答及其概率，按提问顺序排列。"
+  "logs.decision.replyHint": "每个回答及其概率，按提问顺序排列。",
+  "logs.filter.alias": "别名",
+  "logs.filter.fellBack": "已回退",
+  "logs.filter.endpoint": "端点",
+  "logs.filter.minCost": "费用至少"
 }

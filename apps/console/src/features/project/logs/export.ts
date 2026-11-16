@@ -2,6 +2,7 @@ import type { ExportFile } from "~/api/download";
 import { logsParams, toolCallParams, type LogFilters, type ToolCallFilters } from "~/api/queries/logs";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { fullDayLabel } from "~/format/period";
+import { formatPrice } from "@logicplanes/kaeso-ui/format";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -44,6 +45,10 @@ export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: 
       value: f.stream !== undefined && (f.stream ? t("logs.filter.streamed", "Streamed") : t("logs.filter.notStreamed", "Not streamed")),
     },
     { label: t("logs.filter.source", "Source"), value: f.source && (f.source === "api" ? "API" : t("logs.source.playground", "Playground")) },
+    { label: t("logs.filter.alias", "Alias"), value: f.alias },
+    { label: t("logs.filter.fellBack", "Fell back"), value: !!f.fell_back && common.yes() },
+    { label: t("logs.filter.endpoint", "Endpoint"), value: f.endpoint },
+    { label: t("logs.filter.minCost", "Cost at least"), value: f.min_cost && formatPrice(f.min_cost) },
   ];
   return filters.flatMap(({ label, value }) => (value ? [{ label, value }] : []));
 }

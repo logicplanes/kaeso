@@ -10,11 +10,19 @@ const RANGES = new Set(["1h", "7d", "30d"]);
 const text = <K extends string>(name: K, v: unknown): Partial<Record<K, string>> => (typeof v === "string" && v ? ({ [name]: v } as Record<K, string>) : {});
 const bool = (v: unknown) => (v === true || v === "true" ? true : v === false || v === "false" ? false : undefined);
 
+// The URL may read an amount as a number; at most the log's 12 decimal places count, and the
+// gateway refuses anything else.
+const minCost = (v: unknown): string | undefined => {
+  const text = typeof v === "number" ? String(v) : v;
+  return typeof text === "string" && /^\d+(\.\d{1,12})?$/.test(text) ? text : undefined;
+};
+
 function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
   const from = parseDay(s.from);
   const to = parseDay(s.to);
   const status = Number(s.status);
   const stream = bool(s.stream);
+  const cost = minCost(s.min_cost);
   const out: LogsSearch = {
     ...(typeof s.range === "string" && RANGES.has(s.range) ? { range: s.range as LogRange } : {}),
     ...(from && to && from <= to ? { from, to } : {}),
@@ -29,6 +37,10 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
     ...(s.source === "api" || s.source === "playground" ? { source: s.source } : {}),
     ...text("ingress", s.ingress),
     ...text("egress", s.egress),
+    ...text("alias", s.alias),
+    ...(bool(s.fell_back) ? { fell_back: true } : {}),
+    ...text("endpoint", s.endpoint),
+    ...(cost ? { min_cost: cost } : {}),
     ...text("log", s.log),
     ...(s.kind === "tools" ? { kind: "tools" as const } : {}),
     ...text("call", s.call),

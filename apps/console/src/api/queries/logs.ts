@@ -1,7 +1,7 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { dayEnd, dayStart } from "~/format/zone";
 import { api, data } from "../client";
-import type { LogEntryView, LogView, RequestFormat, ToolCallEntryView, ToolCallView } from "../generated/types";
+import type { LogEntryView, LogView, LoggedEndpoint, RequestFormat, ToolCallEntryView, ToolCallView } from "../generated/types";
 import { nextPageParam, refetchOnFocusWhileOnePage, type Page } from "../paging";
 
 export type LogRange = "1h" | "24h" | "7d" | "30d";
@@ -22,7 +22,52 @@ export interface LogFilters {
   source?: "api" | "playground";
   ingress?: string;
   egress?: string;
+  alias?: string;
+  fell_back?: boolean;
+  endpoint?: string;
+  /** USD, as a decimal string such as `0.5`. */
+  min_cost?: string;
 }
+
+/** Every endpoint the request log names, as the gateway's `endpoint` filter takes them. */
+export const ENDPOINTS: readonly LoggedEndpoint[] = [
+  "audio/speech",
+  "audio/transcriptions",
+  "audio/translations",
+  "chat/completions",
+  "decisions",
+  "embeddings",
+  "flows/image",
+  "flows/image/completed",
+  "images/edits",
+  "images/generations",
+  "images/variations",
+  "messages",
+  "messages/count_tokens",
+  "models:batchEmbedContents",
+  "models:countTokens",
+  "models:embedContent",
+  "models:generateContent",
+  "models:streamGenerateContent",
+  "music",
+  "rerank",
+  "responses",
+  "responses/input_tokens",
+  "sound-generation",
+  "speech-to-text",
+  "speech-to-text/realtime",
+  "systemone",
+  "text-to-dialogue",
+  "text-to-dialogue/multi-stream-input",
+  "text-to-dialogue/stream-input",
+  "text-to-speech",
+  "text-to-speech/multi-stream-input",
+  "text-to-speech/stream-input",
+  "videos",
+  "videos/completed",
+  "videos/remix",
+  "voice-changer",
+];
 
 export function logsParams(f: LogFilters, now = Date.now()) {
   const custom = f.from && f.to ? { from: f.from, to: f.to } : null;
@@ -44,6 +89,10 @@ export function logsParams(f: LogFilters, now = Date.now()) {
     // The URL may hold any text; the gateway refuses a format it doesn't know.
     ...(f.ingress ? { ingress_dialect: f.ingress as RequestFormat } : {}),
     ...(f.egress ? { egress_dialect: f.egress as RequestFormat } : {}),
+    ...(f.alias ? { alias: f.alias } : {}),
+    ...(f.fell_back ? { fell_back: true } : {}),
+    ...(f.endpoint ? { endpoint: f.endpoint as LoggedEndpoint } : {}),
+    ...(f.min_cost ? { min_cost: f.min_cost } : {}),
   };
 }
 
