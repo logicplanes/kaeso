@@ -276,5 +276,7 @@
   "project.settings.mediaLeftOut": "Von Medien bleiben nur Typ und Größe.",
   "project.members.theirKeys": "Ihre Schlüssel",
   "project.overview.downloadCsv": "CSV herunterladen",
-  "project.overview.id": "ID"
+  "project.overview.id": "ID",
+  "project.overview.byClient": "Nach Client",
+  "project.overview.client": "Client"
 }

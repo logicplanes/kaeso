@@ -323,5 +323,7 @@
   "logs.filter.contains": "enthält",
   "logs.filter.containsText": "enthält „{text}“",
   "logs.filter.containsTyped": "Enthält „{text}“",
-  "logs.filter.errorMessage": "Fehlermeldung"
+  "logs.filter.errorMessage": "Fehlermeldung",
+  "logs.filter.client": "Client",
+  "logs.inspector.client": "Client"
 }

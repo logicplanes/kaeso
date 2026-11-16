@@ -174,6 +174,8 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     grouped,
     groupedBefore,
     hours: hourly && !fine.isError ? fine : undefined,
+    /** Whether the hourly timeline covers the period: the request log is on and it spans at most 62 days. */
+    hourly,
     failures: hourly && !failures.isError ? failures : undefined,
     spend: limits.data?.find((l) => l.kind === "spend_budget"),
     limits,

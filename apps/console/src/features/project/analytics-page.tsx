@@ -12,7 +12,9 @@ import { DimensionView, dimensionTitle } from "~/kaeso/overview/dimension";
 import { ProjectHeader } from "~/shell/project-header";
 import { useQuery } from "@tanstack/react-query";
 import { usageSpanQuery } from "~/api/queries/usage";
-import { projectUsageQuery } from "~/api/queries/usage";
+import { projectUsageQuery, timelineQuery } from "~/api/queries/usage";
+import { clientUsage } from "~/format/clients";
+import { shiftDay } from "~/format/period";
 import { t } from "~/i18n";
 
 const loadParts = () => import("./analytics-breakdown");
@@ -23,10 +25,16 @@ const DIM: Record<ProjectView, Dimension> = { models: "model", keys: "key", memb
 
 export function AnalyticsPage({ org, project, search, view }: { org: string; project: string; search: AnalyticsSearch; view?: ProjectView | undefined }) {
   const navigate = useNavigate();
-  const by = search.by ?? "day";
   const o = useOverview({ org, project }, search);
+  // By client reads the hourly timeline, which covers at most 62 days of the request log.
+  const by = search.by === "client" && !o.hourly ? "day" : (search.by ?? "day");
   const span = useQuery(usageSpanQuery(org, project));
   const routes = useQuery({ ...projectUsageQuery(org, project, o.from, o.to, "route"), enabled: by === "route" });
+  const clients = useQuery({
+    ...timelineQuery(org, project, `${o.from}T00:00:00Z`, `${shiftDay(o.to, 1)}T00:00:00Z`, "hour", { group_by: "client" }),
+    enabled: by === "client",
+    select: clientUsage,
+  });
   const setSearch = (next: AnalyticsSearch) => void navigate({ to: ".", search: { ...search, ...next }, replace: true });
   const period: PeriodSearch = {
     ...(search.period ? { period: search.period } : {}),
@@ -51,7 +59,7 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
       </Tabs.List>
     </Tabs>
   );
-  const table = by === "day" ? o.daily : by === "route" ? routes : (o.grouped[by] ?? o.daily);
+  const table = by === "day" ? o.daily : by === "route" ? routes : by === "client" ? clients : (o.grouped[by] ?? o.daily);
 
   return (
     <>
@@ -84,6 +92,7 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
                   project={project}
                   from={o.from}
                   to={o.to}
+                  clients={o.hourly}
                   modelName={o.modelName}
                   loading={table.isPending || (by === "model" && o.namesLoading)}
                   failed={table.isError}

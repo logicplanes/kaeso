@@ -676,6 +676,9 @@ pub struct LogFilter {
     #[doc = "Only requests whose error message contains this text, in any case: 1 to\n\
         200 characters, such as `quota`."]
     pub error_message: Option<String>,
+    #[doc = "Only requests from this client app, as Kaeso names it from the user agent."]
+    #[param(value_type = Option<super::ClientApp>)]
+    pub client: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -793,8 +796,22 @@ impl LogFilter {
                 .as_deref()
                 .map(message_filter)
                 .transpose()?,
+            client: self.client.as_deref().map(client_filter).transpose()?,
         })
     }
+}
+
+fn client_filter(c: &str) -> ApiResult<String> {
+    ch::client_names()
+        .into_iter()
+        .find(|known| *known == c)
+        .map(str::to_owned)
+        .ok_or_else(|| {
+            ApiError::invalid(
+                "client",
+                "`client` must be a client app, such as `codex` or `other`.",
+            )
+        })
 }
 
 fn message_filter(m: &str) -> ApiResult<String> {
@@ -997,6 +1014,13 @@ pub struct LogView {
     #[doc = "The app's own tags from the `kaeso-tags` header, in the order it sent them."]
     #[schema(example = json!(["checkout", "eval-42"]))]
     pub tags: Vec<String>,
+    #[doc = "The client app the user agent names, such as `codex` or `openai-python`;\n\
+        `other` for one Kaeso doesn't know, `null` without a user agent."]
+    #[schema(value_type = Option<super::ClientApp>)]
+    pub client: Option<String>,
+    #[doc = "The version the user agent gives after a known client's name, such as `0.59.0`."]
+    #[schema(example = "0.59.0")]
+    pub client_version: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -1149,6 +1173,8 @@ fn view(r: &LogRow) -> LogView {
             detail: r.media_detail.clone(),
         }),
         tags: r.tags.clone(),
+        client: none(ch::client_of(&r.user_agent)),
+        client_version: ch::client_version(&r.user_agent).map(str::to_owned),
     }
 }
 
@@ -1376,7 +1402,7 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags\n";
+const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version\n";
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1482,6 +1508,8 @@ fn csv_line(v: &LogView) -> String {
         Number(v.cost_known.to_string()),
         Text(v.cost_basis.as_str().to_owned()),
         Text(v.tags.join(" ")),
+        Text(v.client.clone().unwrap_or_default()),
+        Text(v.client_version.clone().unwrap_or_default()),
     ];
     let mut line = cells
         .iter()

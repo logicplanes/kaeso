@@ -22,6 +22,8 @@ A project's **Overview** shows its activity over the last days, its latest reque
 
 A route is the app's format, the format Kaeso sent to the provider, and the provider. Its breakdown has a **Cache hit** column: the share of the input read from the prompt cache. The same model can hit the cache through one route and never through another, so **By route** shows where caching fails. Requests from before Kaeso recorded routes show as **Route not recorded**.
 
+**By client** splits a project's usage by the client app that sent it, named from the start of its user agent: Codex, Claude Code, the OpenAI and Anthropic SDKs for Python and Node.js, the AI SDK and curl, any other as **Other client**, and requests without a user agent apart. It reads the request logs, so it's offered for periods of up to 62 days, and a client's row opens its requests.
+
 A breakdown with media requests has a **Media** column: the images made, the characters spoken, the length of audio made or transcribed, and the videos made with their length. A group whose requests had no known price shows its cost as **Unknown**; one where only some had none shows its cost with how many requests are unknown.
 
 In both breakdowns, a number column's header sorts the rows, with what isn't known last, and **Download CSV** saves the rows as shown, in their order, with each row's id next to its name; the file is made in your browser. In a project's breakdown, a row opens the requests it counts in the request logs, in the period's UTC days: a day, week or month opens its own days; a model, key, member or route opens its requests, and the **Playground** row the Playground's. A route that wasn't recorded opens nothing. Rows open only for someone who may read the request logs.

@@ -15096,6 +15096,15 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "client",
+            "in": "query",
+            "description": "Only requests from this client app, as Kaeso names it from the user agent.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ClientApp"
+            }
           }
         ],
         "responses": {
@@ -15392,6 +15401,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "client",
+            "in": "query",
+            "description": "Only requests from this client app, as Kaeso names it from the user agent.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ClientApp"
             }
           }
         ],
@@ -15696,6 +15714,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "client",
+            "in": "query",
+            "description": "Only requests from this client app, as Kaeso names it from the user agent.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ClientApp"
             }
           }
         ],
@@ -21682,7 +21709,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded), or\nfor orgs `project`; default one bucket per step.",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), or for\norgs `project`; default one bucket per step.",
             "required": false,
             "schema": {
               "type": "string"
@@ -23510,7 +23537,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded), or\nfor orgs `project`; default one bucket per step.",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), or for\norgs `project`; default one bucket per step.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24987,6 +25014,24 @@
             "description": "Every entry of the catalogue, with its availability after the check."
           }
         }
+      },
+      "ClientApp": {
+        "type": "string",
+        "description": "A client app, as Kaeso names it from the start of the user agent; `other` for one it doesn't know.",
+        "enum": [
+          "codex",
+          "claude-code",
+          "openai-python",
+          "openai-js",
+          "anthropic-python",
+          "anthropic-js",
+          "ai-sdk",
+          "curl",
+          "other"
+        ],
+        "examples": [
+          "codex"
+        ]
       },
       "ConfirmRequest": {
         "type": "object",
@@ -30299,9 +30344,28 @@
                   "description": "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\nencoded for the provider, for requests in Anthropic's format\n(`anthropic_messages`); `0` means Kaeso marked nothing. Anthropic then\ncaches nothing, but Anthropic-compatible providers may cache by\nthemselves, so `usage` says what was read and written. The\ncount stays when sending the encoded request then failed. `null` for\nother formats, for requests refused before Kaeso encoded them and for\nrequests logged before Kaeso recorded it.",
                   "minimum": 0
                 },
+                "client": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ClientApp",
+                      "description": "The client app the user agent names, such as `codex` or `openai-python`;\n`other` for one Kaeso doesn't know, `null` without a user agent."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "client_ip": {
                   "type": "string",
                   "description": "Client address."
+                },
+                "client_version": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The version the user agent gives after a known client's name, such as `0.59.0`.",
+                  "example": "0.59.0"
                 },
                 "cost": {
                   "type": "string",
@@ -32896,9 +32960,28 @@
             "description": "The prompt-cache breakpoints (`cache_control`) in the request Kaeso\nencoded for the provider, for requests in Anthropic's format\n(`anthropic_messages`); `0` means Kaeso marked nothing. Anthropic then\ncaches nothing, but Anthropic-compatible providers may cache by\nthemselves, so `usage` says what was read and written. The\ncount stays when sending the encoded request then failed. `null` for\nother formats, for requests refused before Kaeso encoded them and for\nrequests logged before Kaeso recorded it.",
             "minimum": 0
           },
+          "client": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ClientApp",
+                "description": "The client app the user agent names, such as `codex` or `openai-python`;\n`other` for one Kaeso doesn't know, `null` without a user agent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "client_ip": {
             "type": "string",
             "description": "Client address."
+          },
+          "client_version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The version the user agent gives after a known client's name, such as `0.59.0`.",
+            "example": "0.59.0"
           },
           "cost": {
             "type": "string",

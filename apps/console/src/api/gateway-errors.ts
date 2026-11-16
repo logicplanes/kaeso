@@ -337,8 +337,13 @@ const messages = (): Rule[] => [
   rule("errors.logErrorMessage", () => t("errors.logErrorMessage", "`error_message` must be 1 to 200 characters.")),
   rule("errors.limitOneToFifty", () => t("errors.limitOneToFifty", "`limit` must be 1 to 50.")),
   rule("errors.logTag", () => t("errors.logTag", "`tag` must be 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.")),
-  rule("errors.timelineGroupValues", () => t("errors.timelineGroupValues", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`.")),
-  rule("errors.timelineGroupValuesProject", () => t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`.")),
+  rule("errors.timelineGroupValues", () =>
+    t("errors.timelineGroupValues", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."),
+  ),
+  rule("errors.timelineGroupValuesProject", () =>
+    t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."),
+  ),
+  rule("errors.logClient", () => t("errors.logClient", "`client` must be a client app, such as `codex` or `other`.")),
   rule("errors.timelineMinuteRange", () => t("errors.timelineMinuteRange", "By minute, `from` and `to` are at most 2 days apart; use `hour`.")),
   rule("errors.timelineHourRange", () => t("errors.timelineHourRange", "By hour, `from` and `to` are at most 62 days apart; use the daily usage.")),
   rule("errors.projectArchived", () => t("errors.projectArchived", "The project is archived and cannot be changed.")),

@@ -379,6 +379,25 @@ impl utoipa::PartialSchema for LoggedEndpoint {
 
 impl utoipa::ToSchema for LoggedEndpoint {}
 
+/// A client app as the request log names it from the user agent, such as `codex`; its values
+/// come from the store's table of user-agent prefixes.
+pub struct ClientApp;
+
+impl utoipa::PartialSchema for ClientApp {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        utoipa::openapi::ObjectBuilder::new()
+            .schema_type(utoipa::openapi::schema::Type::String)
+            .description(Some(
+                "A client app, as Kaeso names it from the start of the user agent; `other` for one it doesn't know.",
+            ))
+            .enum_values(Some(kaeso_store::clickhouse::logs::client_names()))
+            .examples(["codex"])
+            .into()
+    }
+}
+
+impl utoipa::ToSchema for ClientApp {}
+
 #[cfg(test)]
 mod tests {
     use super::*;

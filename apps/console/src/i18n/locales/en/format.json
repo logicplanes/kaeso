@@ -166,6 +166,8 @@
   "format.audit.partSeparator": "; ",
   "format.audit.roleRights": "{role}: {changes}",
   "format.bucket.weekOf": "Week of {date}",
+  "format.client.none": "No user agent",
+  "format.client.other": "Other client",
   "format.errorKind.authentication": "Authentication",
   "format.errorKind.billing": "Billing",
   "format.errorKind.clientDisconnected": "Client disconnected",

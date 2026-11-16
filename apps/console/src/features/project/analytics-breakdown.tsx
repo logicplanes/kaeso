@@ -14,16 +14,18 @@ import { useRequestLogs } from "~/auth/session";
 import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
 import type { AnalyticsSearch } from "~/kaeso/overview/views";
 import { useProjectRights } from "~/auth/rights";
+import { clientLabel } from "~/format/clients";
 import { t } from "~/i18n";
 import { usePhone } from "~/shell/use-phone";
 import { common } from "~/i18n/common";
 
-const byOptions = (g: Granularity) => [
+const byOptions = (g: Granularity, clients: boolean) => [
   { value: "day", label: t("project.overview.byTime", "{granularity, select, week {By week} month {By month} other {By day}}", { granularity: g }) },
   { value: "model", label: t("project.overview.byModel", "By model") },
   { value: "key", label: t("project.overview.byKey", "By key") },
   { value: "member", label: t("project.overview.byMember", "By member") },
   { value: "route", label: t("project.overview.byRoute", "By route") },
+  ...(clients ? [{ value: "client", label: t("project.overview.byClient", "By client") }] : []),
 ];
 const timeHeader = (g: Granularity) => t("project.overview.time", "{granularity, select, week {Week} month {Month} other {Day}}", { granularity: g });
 
@@ -39,6 +41,7 @@ export function Breakdown({
   project,
   from,
   to,
+  clients = false,
   rows,
   by,
   granularity = "day",
@@ -55,6 +58,8 @@ export function Breakdown({
   /** The period's first and last UTC day, which the rows count and their requests are found in. */
   from: string;
   to: string;
+  /** Whether usage can be broken down by client: the hourly timeline covers the period. */
+  clients?: boolean | undefined;
   rows: UsageRow[];
   by: NonNullable<AnalyticsSearch["by"]>;
   granularity?: Granularity | undefined;
@@ -92,6 +97,7 @@ export function Breakdown({
     if (by === "model") return modelName(r.key);
     if (by === "key") return keyName(r.key);
     if (by === "route") return routeText(r.key, providers.name);
+    if (by === "client") return clientLabel(r.key);
     const m = memberOf(r.key);
     const name = partyName({ kind: m.sa ? "service_account" : "user", id: m.id });
     return m.sa ? serviceAccountName(name) : name;
@@ -111,6 +117,8 @@ export function Breakdown({
         const [ingress = "", egress = "", provider = ""] = r.key.split(":");
         return ingress ? { ...period, ingress, egress, provider } : undefined;
       }
+      // Requests without a user agent name no client to filter by.
+      if (by === "client") return r.key ? { ...period, client: r.key } : undefined;
       const m = memberOf(r.key);
       return { ...period, member: `${m.sa ? "sa" : "user"}:${m.id}` };
     })();
@@ -129,6 +137,12 @@ export function Breakdown({
     }
     if (by === "key") return <Text truncate>{keyName(r.key)}</Text>;
     if (by === "route") return <RouteLabel route={r.key} providerName={providers.name} />;
+    if (by === "client")
+      return (
+        <Text truncate tone={r.key ? undefined : "secondary"}>
+          {clientLabel(r.key)}
+        </Text>
+      );
     const [kind, id = ""] = r.key.split(":");
     const sa = kind === "service_account";
     const name = partyName({ kind: sa ? "service_account" : "user", id });
@@ -143,7 +157,9 @@ export function Breakdown({
           ? t("project.overview.key", "Key")
           : by === "route"
             ? t("project.overview.route", "Route")
-            : t("project.overview.member", "Member");
+            : by === "client"
+              ? t("project.overview.client", "Client")
+              : t("project.overview.member", "Member");
   const cache = col.custom(
     { id: "cache", header: t("project.overview.cacheHit", "Cache hit"), size: NUMBER_WIDTH, priority: by === "route" ? 1 : 3 },
     (r: UsageRow) => r.cache_hit_rate ?? null,
@@ -247,7 +263,7 @@ export function Breakdown({
             size="sm"
             value={by}
             onValueChange={(v) => onByChange(v as NonNullable<AnalyticsSearch["by"]>)}
-            options={byOptions(granularity)}
+            options={byOptions(granularity, clients)}
           />
           <Button size="sm" variant="ghost" leadingIcon={icons.download} disabled={shown.length === 0} onClick={download}>
             {t("project.overview.downloadCsv", "Download CSV")}

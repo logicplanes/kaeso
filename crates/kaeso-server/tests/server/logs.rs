@@ -1382,14 +1382,15 @@ async fn exports_stream_large_ranges_in_both_formats() {
     assert!(text.starts_with("id,started_at,"));
     assert!(
         text.lines().next().unwrap().ends_with(
-            ",source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags"
+            ",source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version"
         ),
         "{text}"
     );
     assert_eq!(text.lines().count(), 2501);
     assert!(
-        text.lines().skip(1).all(|l| l
-            .ends_with(",\"api\",180,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\",\"\"")),
+        text.lines().skip(1).all(|l| l.ends_with(
+            ",\"api\",180,,2,40,\"hit\",\"\",\"\",\"\",,,\"\",true,\"reported\",\"\",\"other\",\"\""
+        )),
         "the overhead, the breakpoints, the upload and the response cache are exported, and a stream's processing time is empty for other requests"
     );
     assert!(text.contains("\"ua, with comma\""), "CSV fields are quoted");
@@ -2332,12 +2333,12 @@ async fn the_timeline_filters_groups_and_measures_latency() {
         (
             format!("{p}/usage/timeline?{range}&group_by=project"),
             "group_by",
-            "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`.",
+            "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`.",
         ),
         (
             format!("{o}/usage/timeline?{range}&group_by=day"),
             "group_by",
-            "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`.",
+            "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`.",
         ),
         (
             format!("{p}/usage/timeline?{range}&group_by=model&top=0"),
@@ -2749,7 +2750,7 @@ async fn kaeso_tags_label_a_request_in_the_log_its_filter_and_its_export() {
         text.lines()
             .nth(1)
             .unwrap()
-            .ends_with(",\"eval:run_7.b search\""),
+            .ends_with(",\"eval:run_7.b search\",\"\",\"\""),
         "{text}"
     );
 }
@@ -2883,4 +2884,121 @@ async fn the_request_log_finds_errors_by_their_message_and_counts_the_most_commo
         assert_eq!(r.status, StatusCode::BAD_REQUEST, "{limit}");
         assert_eq!(r.body["error"]["param"], "limit");
     }
+}
+
+#[tokio::test]
+async fn the_request_log_names_the_client_app_filters_and_groups_by_it() {
+    let env = env(&[]).await;
+    let hour = env
+        .app
+        .clock
+        .now()
+        .replace_minute(0)
+        .unwrap()
+        .replace_second(0)
+        .unwrap()
+        .replace_nanosecond(0)
+        .unwrap()
+        - time::Duration::hours(1);
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let five = hour + time::Duration::minutes(5);
+    let from = |ua: &str| LogRow {
+        user_agent: ua.into(),
+        ..row(org.uuid(), project.uuid(), five, 1).0
+    };
+    let rows = [
+        from("codex_cli_rs/0.59.0 (Mac OS 26.1.0; arm64) Ghostty/1.2.3"),
+        from("codex_cli_rs/0.60.1"),
+        from("OpenAI/Python 2.9.0"),
+        from("Mozilla/5.0"),
+        from(""),
+    ];
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
+        .await
+        .unwrap();
+    let count = |query: &'static str| {
+        let env = &env;
+        async move { logs(env, query).await["data"].as_array().unwrap().len() }
+    };
+    assert_eq!(count("?client=codex").await, 2);
+    assert_eq!(count("?client=openai-python").await, 1);
+    assert_eq!(
+        count("?client=other").await,
+        1,
+        "a user agent Kaeso doesn't know"
+    );
+    let refused = env
+        .app
+        .get(
+            &format!("{}/logs?client=vim", base(&env)),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        refused.status,
+        StatusCode::BAD_REQUEST,
+        "{:?}",
+        refused.body
+    );
+    assert_eq!(refused.body["error"]["param"], "client");
+    let python = logs(&env, "?client=openai-python").await;
+    assert_eq!(python["data"][0]["client"], "openai-python");
+    assert_eq!(python["data"][0]["client_version"], "2.9.0");
+    let all = logs(&env, "").await;
+    let mut seen: Vec<String> = all["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|r| format!("{}|{}", r["client"], r["client_version"]))
+        .collect();
+    seen.sort();
+    assert_eq!(
+        seen,
+        [
+            "\"codex\"|\"0.59.0\"",
+            "\"codex\"|\"0.60.1\"",
+            "\"openai-python\"|\"2.9.0\"",
+            "\"other\"|null",
+            "null|null"
+        ]
+    );
+
+    let rfc = |t: OffsetDateTime| {
+        t.format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let timeline = env
+        .app
+        .get(
+            &format!(
+                "{}/usage/timeline?from={}&to={}&step=minute&group_by=client",
+                base(&env),
+                rfc(hour),
+                rfc(hour + time::Duration::hours(1))
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(timeline.status, StatusCode::OK, "{:?}", timeline.body);
+    let groups: Vec<(String, u64)> = timeline.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|b| {
+            (
+                b["key"].as_str().unwrap().to_owned(),
+                b["requests"].as_u64().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        groups,
+        [
+            (String::new(), 1),
+            ("codex".to_owned(), 2),
+            ("openai-python".to_owned(), 1),
+            ("other".to_owned(), 1)
+        ]
+    );
 }

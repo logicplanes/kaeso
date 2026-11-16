@@ -276,5 +276,7 @@
   "project.settings.mediaLeftOut": "媒体只记录类型和大小。",
   "project.members.theirKeys": "其密钥",
   "project.overview.downloadCsv": "下载 CSV",
-  "project.overview.id": "ID"
+  "project.overview.id": "ID",
+  "project.overview.byClient": "按客户端",
+  "project.overview.client": "客户端"
 }
