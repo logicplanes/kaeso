@@ -52,6 +52,7 @@ mod oidc;
 mod operations;
 mod org_deletion;
 mod org_security;
+mod otel;
 mod platform_coverage;
 mod platform_keys;
 mod playground;

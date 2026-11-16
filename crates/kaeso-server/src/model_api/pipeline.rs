@@ -293,6 +293,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         stream_processing: None,
         user_agent: None,
         tags: Vec::new(),
+        trace: None,
         client_ip: None,
         upstream_request_id: None,
         request_body: None,
@@ -410,6 +411,7 @@ pub async fn serve_with(
         .get(header::USER_AGENT)
         .and_then(|v| v.to_str().ok())
         .map(str::to_owned);
+    outcome.trace = crate::services::otel::TraceParent::from_headers(&inc.headers);
     let mut rec = Recording {
         state: state.clone(),
         sink: state.sink.clone(),

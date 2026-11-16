@@ -23,6 +23,7 @@ pub const RESPONSE_CACHE_WRITES: &str = "kaeso_response_cache_writes_total";
 pub const LOG_BUFFER_BYTES: &str = "kaeso_log_buffer_bytes";
 pub const LOG_BUFFER_ROWS: &str = "kaeso_log_buffer_rows";
 pub const LOG_ROWS_DROPPED: &str = "kaeso_log_rows_dropped_total";
+pub const OTEL_SPANS: &str = "kaeso_otel_spans_total";
 pub const CLICKHOUSE_WRITE_FAILURES: &str = "kaeso_clickhouse_write_failures_total";
 pub const USAGE_ROWS_DROPPED: &str = "kaeso_usage_rows_dropped_total";
 pub const VALKEY_FAILURES: &str = "kaeso_valkey_failures_total";
@@ -115,6 +116,10 @@ pub fn describe() {
         "Log rows dropped because the buffer was full."
     );
     describe_counter!(CLICKHOUSE_WRITE_FAILURES, "Failed ClickHouse writes.");
+    describe_counter!(
+        OTEL_SPANS,
+        "Trace spans for the OpenTelemetry collector, by outcome: exported, failed (an export that failed; sent again unless refused) or dropped (lost)."
+    );
     describe_counter!(
         USAGE_ROWS_DROPPED,
         "Usage rows PostgreSQL refused for good, which are dropped."

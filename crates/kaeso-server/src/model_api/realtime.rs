@@ -102,6 +102,7 @@ struct Opening {
     model: String,
     query: Vec<(String, String)>,
     user_agent: Option<String>,
+    trace: Option<crate::services::otel::TraceParent>,
     started_at: OffsetDateTime,
 }
 
@@ -159,6 +160,7 @@ impl Opening {
                 .get(axum::http::header::USER_AGENT)
                 .and_then(|v| v.to_str().ok())
                 .map(str::to_owned),
+            trace: crate::services::otel::TraceParent::from_headers(headers),
             started_at: now,
         })
     }
@@ -676,6 +678,7 @@ impl Session {
         out.started_at = o.started_at;
         out.duration = duration;
         out.user_agent.clone_from(&o.user_agent);
+        out.trace.clone_from(&o.trace);
         out.client_ip = o.ip.0;
         out.realtime = Some(o.api);
         out.media = Some(measured.units(format));

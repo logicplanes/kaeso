@@ -67,6 +67,7 @@ services:
 | `kaeso_tokens_total{provider, kind}`, `kaeso_cost_microusd_total{provider}` | Entwicklung der Ausgaben |
 | `kaeso_log_buffer_rows`, `kaeso_log_buffer_bytes` | Ein wachsender Puffer: ClickHouse nimmt keine Schreibvorgänge an |
 | `kaeso_log_rows_dropped_total`, `kaeso_clickhouse_write_failures_total` | Jeder Anstieg: Protokollzeilen gingen verloren oder sind gefährdet |
+| `kaeso_otel_spans_total{outcome}` | Spans für den [Trace-Collector](#traces): `exported`, `failed` für einen gescheiterten Export und `dropped` für Spans, die ein voller Puffer, die Ablehnung des Collectors oder das Herunterfahren kostete. Ein Anstieg bei `dropped`: Collector und `KAESO_OTEL_ENDPOINT` prüfen |
 | `kaeso_usage_rows_dropped_total` | Jeder Anstieg: PostgreSQL hat Nutzung endgültig abgelehnt, und die Logzeile `a usage row cannot be recorded` nennt den Grund |
 | `kaeso_valkey_failures_total{operation}`, `kaeso_limits_fail_open_total{reason}` | Probleme mit Valkey. Währenddessen lehnen harte Budgets Anfragen mit 503 ab, und andere Limits lassen sie ungeprüft durch |
 | `kaeso_job_runs_total{job, outcome}` | `outcome="failed"` bei Hintergrundjobs. `job="kpmr_sync"` ist der Abgleich mit [KPMR](../concepts/kpmr.md) |
@@ -81,6 +82,45 @@ services:
 | `kaeso_tool_calls_total{source, status, error_type}` | Tool-Aufrufe über das [MCP-Portal](../api/mcp.md) (`source="portal"`) und den Playground, nach `status` (`ok`, `refused`, `error`) und `error_type`, leer bei einem Aufruf, der funktioniert hat. `upstream_auth`, `upstream_unreachable` und `timeout` deuten auf den MCP-Server; `denied` und `limited` auf den Aufrufer |
 | `kaeso_tool_call_duration_seconds{source, status}` | Wie lange Tool-Aufrufe dauerten |
 | `kaeso_update_available{version}` | 1 mit dem neuesten Release des Kanals der Installation als `version`, solange es neuer als die laufende Version ist, sonst 0 mit der laufenden Version; fehlt, solange Update-Prüfungen aus sind ([Neue Releases](upgrades.md#neue-releases)) |
+
+## Traces
+
+Mit gesetztem `KAESO_OTEL_ENDPOINT` sendet das Gateway von jeder Modellanfrage und jedem Tool-Aufruf über das [MCP-Portal](../api/mcp.md) einen Trace über OTLP/HTTP an einen OpenTelemetry-Collector ([Konfiguration](configuration.md#traces)). Tempo, Jaeger, Honeycomb, Datadog, Langfuse und Arize Phoenix nehmen ihn an, direkt oder über den OpenTelemetry Collector.
+
+```mermaid
+flowchart LR
+  accTitle: Die Spans einer Modellanfrage
+  accDescr: Der Span der App, den der Header traceparent nennt, ist der Elternteil von Kaesos Server-Span kaeso.request. Darunter liegt für jeden Schritt, der einen Anbieter aufrief, ein Client-Span, in der Reihenfolge der Versuche: hier ein Schritt, dessen Modell überlastet war, dann der Schritt, der mit einem anderen Modell antwortete und die Tokens und den Inhalt trägt.
+  app[Span der App<br>aus traceparent]:::outside
+  request[kaeso.request<br>Server-Span]:::accent
+  failed[chat claude-haiku-4-5<br>Client-Span, überlastet]
+  answered[chat gpt-4o<br>Client-Span, Tokens]
+  app --> request
+  request --> failed
+  request --> answered
+```
+
+- **Spans.** Eine Anfrage ist ein Server-Span, `kaeso.request`, von ihrem Eintreffen bis zum Ende ihrer Antwort oder ihres Streams. Darunter ist jeder Schritt, der einen Anbieter aufrief, ein Client-Span namens `{operation} {model}`, etwa `chat gpt-4o`: die gescheiterten Schritte einer [Alias-Route](../concepts/alias-routes.md) in der Reihenfolge der Versuche, dann der, der antwortete. Das Anfrageprotokoll behält, wie lange ein gescheiterter Schritt dauerte, nicht wann er begann, daher folgen die Client-Spans nacheinander auf Kaesos eigene Zeit. Eine Antwort aus dem [Antwort-Cache](../console/response-cache.md) hat keinen Client-Span. Ein Tool-Aufruf ist ein Server-Span, `execute_tool {tool}`.
+- **Trace-Kontext.** Eine Anfrage mit dem Header `traceparent` setzt den Trace der App fort (W3C Trace Context), ebenso ein Tool-Aufruf mit `traceparent` in seinem `_meta`; `tracestate` kommt mit. Ohne ihn beginnt die Anfrage einen Trace. Kaeso sendet `traceparent` nie an den Anbieter.
+- **Sampling.** Eine Anfrage mit `traceparent` folgt der Wahl der App. Andere bekommen einen Trace im Anteil `KAESO_OTEL_SAMPLE_RATIO`, nach ihrer Trace-ID.
+- **Konventionen.** Die Attribute folgen den GenAI Semantic Conventions von OpenTelemetry, die noch in Entwicklung sind. Kaeso folgt ihnen im Stand von Commit `e6658f1` von `open-telemetry/semantic-conventions-genai` (6. November 2026), auf den Kernkonventionen 1.45.0.
+- **Zustellung.** Spans warten im Speicher, höchstens `KAESO_OTEL_BUFFER_SIZE`, und gehen alle `KAESO_OTEL_FLUSH_INTERVAL` in Stapeln bis 512 hinaus, und noch einmal beim Herunterfahren. Ein Collector, der nicht erreichbar ist oder mit 429, 502, 503 oder 504 antwortet, bekommt sie beim nächsten Intervall erneut; jede andere Ablehnung verwirft sie. Der Export verzögert nie eine Anfrage und lässt keine scheitern.
+
+| Attribut | Span | Was es enthält |
+| --- | --- | --- |
+| `gen_ai.operation.name` | Jeder Span | `chat`, `generate_content` für die Gemini-API, `embeddings` oder der Endpunkt, den das Anfrageprotokoll nennt, etwa `images/generations`; `execute_tool` für einen Tool-Aufruf |
+| `gen_ai.request.model` | Anfrage, Schritt | An der Anfrage das Modell oder der Alias, den die App nannte; an einem Schritt das Modell des Anbieters |
+| `gen_ai.provider.name` | Anfrage, Schritt | Der Anbieter, mit dem Namen der Konventionen, wo sie einen haben, etwa `aws.bedrock`, `gcp.gemini` oder `x_ai`, sonst mit Kaesos ID |
+| `gen_ai.response.model` | Anfrage, antwortender Schritt | Das Modell, das laut Anbieter antwortete |
+| `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `gen_ai.usage.cache_read.input_tokens`, `gen_ai.usage.cache_write.input_tokens`, `gen_ai.usage.reasoning.output_tokens` | Antwortender Schritt, oder die Anfrage bei einer Antwort aus dem Cache | Tokens. Die Eingabe zählt Cache-Lese- und -Schreibvorgänge mit, wie die Konventionen |
+| `gen_ai.system_instructions`, `gen_ai.input.messages`, `gen_ai.output.messages` | Antwortender Schritt, mit `KAESO_OTEL_CONTENT` | Prompt und Antwort als JSON in der Form der Konventionen, ohne Medien. Eines über 128 KiB fällt weg, und `kaeso.content_omitted` sagt es |
+| `gen_ai.request.stream`, `http.response.status_code`, `error.type` | Anfrage, Schritt | Ob die Antwort gestreamt wurde, der Status und bei einem Fehler Kaesos Fehlerart, etwa `overloaded` |
+| `gen_ai.tool.name`, `kaeso.mcp_server.id`, `kaeso.tool_call.status` | Tool-Aufruf | Das Tool, wie das Portal es nennt, sein Server und `ok`, `refused` oder `error` |
+| `kaeso.request_id`, `kaeso.organization.id`, `kaeso.project.id`, `kaeso.key.id`, `kaeso.user.id`, `kaeso.service_account.id` | Anfrage | Wer sie sandte, mit den IDs der Platform API |
+| `kaeso.alias`, `kaeso.route.path`, `kaeso.skipped`, `kaeso.retried` | Anfrage, Schritt | Der Alias, die Stelle eines gescheiterten Schritts in seiner Route, ein Schritt, der übersprungen wurde, weil er kurz zuvor scheiterte, und ein Versuch, den der Schritt wiederholte ([Wiederholungen](../concepts/alias-routes.md#fallbacks)) |
+| `kaeso.cost_microusd`, `kaeso.ttfb_ms`, `kaeso.overhead_ms`, `kaeso.upstream_request_id`, `kaeso.response_cache`, `kaeso.cancelled`, `kaeso.usage_estimated`, `kaeso.tags`, `kaeso.endpoint`, `kaeso.source` | Anfrage | Wie das [Anfrageprotokoll](../console/request-logs.md) sie führt; `kaeso.usage_estimated` steht bei den Tokens |
+
+Wie die Protokolle enthalten Traces nie das Geheimnis eines API-Schlüssels, einen Anbieterschlüssel oder einen Authorization-Header.
 
 ## Protokolle
 

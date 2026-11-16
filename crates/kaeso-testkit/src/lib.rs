@@ -9,4 +9,5 @@ pub mod mock_realtime;
 pub mod mock_videos;
 pub mod oauth;
 pub mod oidc;
+pub mod otel;
 pub mod services;

@@ -29,6 +29,8 @@ pub const ALLOWED_HEADERS: &[&str] = &[
     "openai-beta",
     "openai-organization",
     "openai-project",
+    "traceparent",
+    "tracestate",
     "user-agent",
     "x-api-key",
     "x-goog-api-client",

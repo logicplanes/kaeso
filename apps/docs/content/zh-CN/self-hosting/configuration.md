@@ -310,6 +310,20 @@ MCP 服务器的地址由组织管理员选择，因此网关会像对待自定�
 | `KAESO_LOGS_FLUSH_INTERVAL`<br>`logs.flush_interval` | 文本 | `1s` | 网关把等待中的行写入 ClickHouse 的间隔。 |
 | `KAESO_LOGS_FLUSH_ROWS`<br>`logs.flush_rows` | 整数 | `5000` | 等待的行数达到此值时立即写入，至少为 1。 |
 
+### 追踪
+
+网关可以把每个模型请求和 MCP 工具调用的追踪发送到 OpenTelemetry collector（[追踪](monitoring.md#追踪)）。
+
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_OTEL_ENDPOINT`<br>`otel.endpoint` | 文本 | — | collector 的 OTLP/HTTP 地址，例如 `http://otel-collector:4318`。网关把 JSON 发送到其 `/v1/traces`；地址本身以 `/v1/traces` 结尾时则直接发送到该地址；设置了 `HTTPS_PROXY` 时经由其中的代理。未设置或为空时不发送追踪。 |
+| `KAESO_OTEL_HEADERS`<br>`otel.headers` | 文本，机密 | — | 发给 collector 的请求头，格式为以逗号分隔的 `name=value` 对，例如 `authorization=Bearer%20<token>`。值可以采用百分号编码，与 `OTEL_EXPORTER_OTLP_HEADERS` 相同。 |
+| `KAESO_OTEL_SERVICE_NAME`<br>`otel.service_name` | 文本 | `kaeso-gateway` | 追踪的 `service.name`。 |
+| `KAESO_OTEL_CONTENT`<br>`otel.content` | 布尔 | `false` | 在追踪中加入提示词和回复，仅限请求日志保留其内容的请求。图片、音频和文件从不导出。 |
+| `KAESO_OTEL_SAMPLE_RATIO`<br>`otel.sample_ratio` | 文本 | `1.0` | 没有 `traceparent` 的请求中被追踪的比例，取值 `0` 到 `1`。带有它的请求遵循应用的选择。 |
+| `KAESO_OTEL_BUFFER_SIZE`<br>`otel.buffer_size` | 整数 | `20000` | 等待发送给 collector 的 span 数量上限，至少为 1。超出时丢弃最旧的。 |
+| `KAESO_OTEL_FLUSH_INTERVAL`<br>`otel.flush_interval` | 文本 | `5s` | 网关发送等待中 span 的间隔，取值 `100ms` 到 `5m`。凑满 512 个的批次会立即发送。 |
+
 ### 实例默认值
 
 这些设置只用于初始化新实例。之后由实例管理员在**实例** › **常规**中修改，保留期在**实例** › **日志记录**中修改，也可以通过 Platform API 修改。保存的值优先。
