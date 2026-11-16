@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO scim_groups (id, org_id, display_name, external_id, members, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT (id) DO UPDATE SET display_name = EXCLUDED.display_name, external_id = EXCLUDED.external_id, members = EXCLUDED.members, updated_at = EXCLUDED.updated_at WHERE NOT EXISTS (SELECT 1 FROM scim_groups o WHERE o.org_id = EXCLUDED.org_id AND o.display_name = EXCLUDED.display_name AND o.id <> EXCLUDED.id)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "UuidArray",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c69a0e2ffdfd888175d1c1ca48f18641a61be6241ca91b7c4aff8ec7a0f4e8d5"
+}

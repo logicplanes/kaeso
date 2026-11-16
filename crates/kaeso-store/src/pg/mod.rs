@@ -33,6 +33,7 @@ pub mod portal_grants;
 pub mod projects;
 pub mod response_cache;
 pub mod roles;
+pub mod scim;
 pub mod service_accounts;
 pub mod sessions;
 pub mod sso_identities;

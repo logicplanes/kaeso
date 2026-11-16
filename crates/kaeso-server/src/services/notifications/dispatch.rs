@@ -89,11 +89,13 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::SecuritySsoDelete
         | A::SecuritySsoDomainVerify
         | A::SecuritySsoUpdate
+        | A::SecurityScimDelete
+        | A::SecurityScimRotate
         | A::PlatformKeyCreate
         | A::PlatformKeyRotate => &[Kind::OrgSecurity],
         A::InviteAccept => &[Kind::OrgMembers, Kind::InviteAccepted],
-        A::MemberJoinBySso => &[Kind::OrgMembers],
-        A::MemberRemove => &[Kind::OrgMembers, Kind::AccessChanged],
+        A::MemberJoinBySso | A::MemberProvision => &[Kind::OrgMembers],
+        A::MemberRemove | A::MemberDeprovision => &[Kind::OrgMembers, Kind::AccessChanged],
         A::KpmrModelDelisted | A::CatalogueModelPriceChange => &[Kind::ModelChanges],
         A::ProjectMemberAdd
         | A::ProjectMemberRemove

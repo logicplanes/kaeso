@@ -23666,6 +23666,187 @@
         "x-kaeso-access": "right:roles.manage"
       }
     },
+    "/platform/v1/orgs/{org}/scim": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The organization's SCIM provisioning: its base URL, token and last use.",
+        "description": "**Right:** `org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgScim",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScimStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/scim/token": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Creates the organization's SCIM token, or replaces it; a replaced token\nkeeps working for 24 hours. The token is shown once.",
+        "description": "**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
+        "operationId": "postOrgsOrgScimToken",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScimTokenCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "right:security.sso.manage"
+      },
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Deletes the organization's SCIM token at once, its replaced token too. Members\nstay; the identity provider can no longer change them.",
+        "description": "**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
+        "operationId": "deleteOrgsOrgScimToken",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          }
+        ],
+        "x-kaeso-access": "right:security.sso.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/security": {
       "get": {
         "tags": [
@@ -42067,6 +42248,94 @@
           "used",
           "not_used"
         ]
+      },
+      "ScimStatus": {
+        "type": "object",
+        "description": "The organization's SCIM provisioning.",
+        "required": [
+          "enabled",
+          "base_url",
+          "provisioned"
+        ],
+        "properties": {
+          "base_url": {
+            "type": "string",
+            "description": "The SCIM base URL to give the identity provider."
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the token was created."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the organization has a SCIM token, so its identity provider can provision."
+          },
+          "last4": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The last four characters of the token."
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The last request Kaeso refused or couldn't finish, as it answered it."
+          },
+          "last_error_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When that request came."
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the identity provider last called."
+          },
+          "previous_valid_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Until when the token it replaced still works."
+          },
+          "provisioned": {
+            "type": "integer",
+            "description": "How many members the identity provider provisioned and keeps active.",
+            "minimum": 0
+          }
+        }
+      },
+      "ScimTokenCreated": {
+        "type": "object",
+        "description": "A new SCIM token, shown once.",
+        "required": [
+          "token",
+          "scim"
+        ],
+        "properties": {
+          "scim": {
+            "$ref": "#/components/schemas/ScimStatus",
+            "description": "The provisioning with the new token."
+          },
+          "token": {
+            "type": "string",
+            "description": "The bearer token for the identity provider. Kaeso keeps only its hash."
+          }
+        }
       },
       "ScopeCatalogue": {
         "type": "object",

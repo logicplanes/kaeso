@@ -12,6 +12,7 @@ pub mod metrics;
 pub mod model_api;
 pub mod platform;
 pub mod portal;
+pub mod scim;
 pub mod serve;
 pub mod services;
 pub mod setup;

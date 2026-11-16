@@ -841,5 +841,6 @@
   "errors.batches.endpoint": "Die Anfragen der Datei verlangen `{endpoint}`; geben Sie diesen `endpoint` an.",
   "errors.batches.window": "`completion_window` muss `24h` sein.",
   "errors.batches.after": "`after` ist keine Batch-ID.",
-  "errors.batches.limit": "`limit` muss zwischen 1 und 100 liegen."
+  "errors.batches.limit": "`limit` muss zwischen 1 und 100 liegen.",
+  "errors.scimNeedsSso": "Verbinden Sie zuerst Single Sign-on; SCIM verwaltet die Konten, die darüber angemeldet werden."
 }

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT s.user_id FROM scim_users s JOIN org_memberships m ON m.org_id = s.org_id AND m.user_id = s.user_id WHERE s.org_id = $1 AND s.active",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "scim_users",
+            "name": "user_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8db88a44d545cea8ffe072b1a0a647c8a45f30b15e6a11cad7ec2625f5a4e8c4"
+}

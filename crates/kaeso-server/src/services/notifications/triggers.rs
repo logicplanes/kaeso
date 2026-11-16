@@ -355,7 +355,7 @@ async fn org_members(state: &AppState, e: &Event) -> ApiResult<usize> {
     let who = actor_name(state, e).await?;
     let change = match e.action {
         A::InviteAccept => Membership::Joined,
-        A::MemberJoinBySso => Membership::JoinedBySso,
+        A::MemberJoinBySso | A::MemberProvision => Membership::JoinedBySso,
         _ if e.actor == Some(member) => Membership::Left,
         _ => Membership::Removed(by(&who)),
     };
@@ -432,7 +432,7 @@ async fn access_changed(state: &AppState, e: &Event) -> ApiResult<usize> {
         .to_owned();
     let change = match e.action {
         A::ProjectMemberAdd => Access::Added(&role),
-        A::ProjectMemberRemove | A::MemberRemove => Access::Removed,
+        A::ProjectMemberRemove | A::MemberRemove | A::MemberDeprovision => Access::Removed,
         A::UserInstanceAdmin => Access::InstanceAdmin(
             e.after
                 .as_ref()

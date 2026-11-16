@@ -117,6 +117,7 @@ mod retries;
 mod roles;
 mod route_access;
 mod route_rights;
+mod scim;
 mod setup_email;
 mod stored_responses;
 mod streams;

@@ -76,6 +76,10 @@ Kommt eine Bestätigung ohne frische Anmeldung zurück, zeigt **Sicherheit** die
 
 Sobald die Verbindung steht, verwaltet die Organisation die Konten an ihren bestätigten Domains: Eine Anmeldung über ihren Anbieter öffnet alles, was diese Konten öffnen können, außer der Verwaltung der Instanz ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)).
 
+### Mitglieder vom Identitätsanbieter bereitstellen
+
+Unter **Sicherheit** › **Bereitstellung** lässt **Token erstellen** Ihren Identitätsanbieter Mitglieder über SCIM hinzufügen und entfernen: Okta, Microsoft Entra ID und andere Anbieter, die SCIM 2.0 sprechen. Ein Mitglied, das der Anbieter deaktiviert, verlässt die Organisation und ihre Projekte, und seine Schlüssel dort werden archiviert, wie bei **Aus Organisation entfernen**. Der Abschnitt zeigt die Basis-URL, wann der Anbieter zuletzt anfragte, wie viele Mitglieder er aktiv hält und den letzten Fehler ([SCIM-Bereitstellung](../api/scim.md)).
+
 ## Single Sign-on oder Zwei-Faktor-Authentifizierung verlangen
 
 Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen:

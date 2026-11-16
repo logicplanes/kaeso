@@ -277,5 +277,9 @@
   "format.guardrail.found.token": "{count, plural, other {# 个 JSON Web Token}}",
   "format.audit.action.storedResponsesOrgUpdate": "已允许或禁止存储的回复",
   "format.audit.action.storedResponsesProjectUpdate": "项目的存储回复设置已更改",
-  "format.audit.kind.storedResponses": "存储的回复"
+  "format.audit.kind.storedResponses": "存储的回复",
+  "format.audit.action.memberProvision": "身份提供方添加了成员",
+  "format.audit.action.memberDeprovision": "身份提供方移除了成员",
+  "format.audit.action.securityScimRotate": "已创建或替换 SCIM 令牌",
+  "format.audit.action.securityScimDelete": "已删除 SCIM 令牌"
 }

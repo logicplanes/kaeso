@@ -76,6 +76,10 @@ When a confirmation comes back without a fresh sign-in, **Security** shows **Rec
 
 Once connected, the organization manages the accounts at its verified domains: a sign-in through its provider opens everything those accounts can open, except instance administration ([managed accounts](../self-hosting/sign-in.md#managed-accounts)).
 
+### Provision members from your identity provider
+
+Under **Security** › **Provisioning**, **Create token** lets your identity provider add and remove members through SCIM: Okta, Microsoft Entra ID and other providers that speak SCIM 2.0. A member the provider deactivates leaves the organization and its projects, and their keys in it are archived, as with **Remove from organization**. The section shows the base URL, when the provider last called, how many members it keeps active and the last error ([SCIM provisioning](../api/scim.md)).
+
 ## Require single sign-on or two-factor authentication
 
 Under **Security**, you can tighten how members get into the organization:
