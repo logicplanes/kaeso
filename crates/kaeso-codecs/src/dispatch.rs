@@ -4,6 +4,7 @@ use kaeso_kpp::{
 };
 
 use crate::anthropic_messages::AnthropicMessages;
+use crate::bedrock_converse::BedrockConverse;
 use crate::cohere_rerank::CohereRerank;
 use crate::dashscope::DashScope;
 use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
@@ -64,6 +65,7 @@ macro_rules! dispatch {
             DialectId::CohereRerank => Ok(CohereRerank::$f($($arg),*)),
             DialectId::VoyageRerank => Ok(VoyageRerank::$f($($arg),*)),
             DialectId::JinaRerank => Ok(JinaRerank::$f($($arg),*)),
+            DialectId::BedrockConverse => Ok(BedrockConverse::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -140,6 +142,7 @@ pub fn decode_checked_request<B: RequestBody>(
         DialectId::CohereRerank => CohereRerank::decode_checked(kind, body, headers),
         DialectId::VoyageRerank => VoyageRerank::decode_checked(kind, body, headers),
         DialectId::JinaRerank => JinaRerank::decode_checked(kind, body, headers),
+        DialectId::BedrockConverse => BedrockConverse::decode_request(kind, body, headers),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }

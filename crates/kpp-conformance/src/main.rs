@@ -588,7 +588,7 @@ fn answer(app: &App, req: kaeso_kpp::Request, ingress: DialectId, kind: RequestK
     };
     egress.audio_format = EgressCtx::new(&req).audio_format;
     if let StreamMode::On { .. } = req.stream_mode() {
-        let bytes = match read(&dir.join(format!("streams/{}.sse", sc.name))) {
+        let bytes = match stream_fixture(sc.source, &dir, &sc.name) {
             Ok(b) => b,
             Err(e) => return error_response(ingress, &e),
         };
@@ -656,6 +656,17 @@ fn decode_fixture(
 ) -> Result<Reply, KppError> {
     let body = read(&dir.join(format!("responses/{name}.json")))?;
     dispatch::decode_response(source, 200, &HeaderList::new(), &body, egress)
+}
+
+// A stream fixture as the provider sends it: server-sent events, or for Amazon Bedrock's binary
+// event stream the JSON list of its messages (`streams/<name>.events.json`).
+fn stream_fixture(source: DialectId, dir: &Path, name: &str) -> Result<Vec<u8>, KppError> {
+    if source == DialectId::BedrockConverse {
+        let json = read(&dir.join(format!("streams/{name}.events.json")))?;
+        return kaeso_codecs::bedrock_converse::eventstream::from_fixture(&json)
+            .map_err(|e| KppError::provider(format!("conformance: {e}")));
+    }
+    read(&dir.join(format!("streams/{name}.sse")))
 }
 
 fn decode_stream(
@@ -731,7 +742,7 @@ async fn expected(State(app): State<App>, Query(q): Query<ExpectedQuery>) -> Res
         _ => EgressCtx::for_kind(kind, mode),
     };
     if q.stream {
-        let Ok(bytes) = read(&dir.join(format!("streams/{}.sse", q.name))) else {
+        let Ok(bytes) = stream_fixture(source, &dir, &q.name) else {
             return json_response(json!({"error": "missing"}));
         };
         return match decode_stream(source, &egress, &bytes) {
@@ -913,7 +924,8 @@ async fn scenarios(State(app): State<App>) -> Response {
                     (n.ends_with(".json") && !n.ends_with(".meta.json")) || n.ends_with(".sse")
                 })
                 .map(|n| {
-                    n.trim_end_matches(".json")
+                    n.trim_end_matches(".events.json")
+                        .trim_end_matches(".json")
                         .trim_end_matches(".sse")
                         .to_owned()
                 })

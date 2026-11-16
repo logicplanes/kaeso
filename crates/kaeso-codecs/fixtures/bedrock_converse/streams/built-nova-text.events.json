@@ -1,0 +1,51 @@
+[
+  {
+    "event": "messageStart",
+    "data": {
+      "role": "assistant"
+    }
+  },
+  {
+    "event": "contentBlockDelta",
+    "data": {
+      "contentBlockIndex": 0,
+      "delta": {
+        "text": "Hello! How can"
+      }
+    }
+  },
+  {
+    "event": "contentBlockDelta",
+    "data": {
+      "contentBlockIndex": 0,
+      "delta": {
+        "text": " I help you today?"
+      }
+    }
+  },
+  {
+    "event": "contentBlockStop",
+    "data": {
+      "contentBlockIndex": 0
+    }
+  },
+  {
+    "event": "messageStop",
+    "data": {
+      "stopReason": "end_turn"
+    }
+  },
+  {
+    "event": "metadata",
+    "data": {
+      "usage": {
+        "inputTokens": 4,
+        "outputTokens": 9,
+        "totalTokens": 13
+      },
+      "metrics": {
+        "latencyMs": 321
+      }
+    }
+  }
+]

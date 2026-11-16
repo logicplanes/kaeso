@@ -3271,7 +3271,13 @@ pub const PROVIDERS: &[Provider] = &[
         transcriptions: &[],
         videos: &[],
         decisions: &[],
-        dialects: &[DialectId::OpenAiChat, DialectId::AnthropicMessages],
+        // Converse serves the chat models that answer neither of the other two, such as Amazon
+        // Nova and Meta Llama (https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html).
+        dialects: &[
+            DialectId::OpenAiChat,
+            DialectId::AnthropicMessages,
+            DialectId::BedrockConverse,
+        ],
         // A refused key is a 401 on the Chat Completions route but a 403 `permission_error` on
         // the Messages route, with these messages for a malformed, an unsigned and an unknown key
         // (recorded live).
@@ -3310,6 +3316,7 @@ pub const PROVIDERS: &[Provider] = &[
             api_roots: &[
                 (DialectId::OpenAiChat, "/openai/v1"),
                 (DialectId::AnthropicMessages, "/anthropic/v1"),
+                (DialectId::BedrockConverse, ""),
             ],
             auth: &[(DialectId::AnthropicMessages, AuthStyle::XApiKey)],
         }),
@@ -4310,7 +4317,7 @@ mod tests {
     }
 
     #[test]
-    fn amazon_bedrock_calls_each_keys_region_with_chat_completions_and_messages_and_counts_no_tokens()
+    fn amazon_bedrock_calls_each_keys_region_with_chat_completions_messages_and_converse_and_counts_no_tokens()
      {
         let p = provider("amazon-bedrock").unwrap();
         assert_eq!(
@@ -4319,7 +4326,11 @@ mod tests {
                 "Amazon Bedrock",
                 AuthStyle::Bearer,
                 DialectId::OpenAiChat,
-                &[DialectId::OpenAiChat, DialectId::AnthropicMessages][..]
+                &[
+                    DialectId::OpenAiChat,
+                    DialectId::AnthropicMessages,
+                    DialectId::BedrockConverse
+                ][..]
             )
         );
         assert_eq!(
@@ -4347,6 +4358,7 @@ mod tests {
             r.api_root(DialectId::AnthropicMessages),
             Some("/anthropic/v1")
         );
+        assert_eq!(r.api_root(DialectId::BedrockConverse), Some(""));
         assert_eq!(r.api_root(DialectId::OpenAiResponses), None);
         assert_eq!(
             r.auth(DialectId::AnthropicMessages),

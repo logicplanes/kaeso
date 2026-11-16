@@ -397,6 +397,51 @@ fn error_response(dir: &Path, name: &str) -> Response {
         .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
 }
 
+// Amazon Bedrock's Converse API: `/model/{id}/converse`, and `/model/{id}/converse-stream`, which
+// answers in AWS's binary event stream encoding.
+fn converse_call(path: &str) -> Option<bool> {
+    let rest = path.strip_prefix("/model/")?;
+    if rest.ends_with("/converse-stream") {
+        Some(true)
+    } else if rest.ends_with("/converse") {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+fn converse(fixtures: &Path, stream: bool, headers: &HeaderMap, text: &str) -> Response {
+    use kaeso_codecs::bedrock_converse::eventstream;
+    let dir = fixtures.join("bedrock_converse");
+    let authed = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| {
+            (v.starts_with("Bearer ") && v.len() > 7)
+                || v.starts_with("AWS4-HMAC-SHA256 Credential=")
+        });
+    if !authed {
+        return error_response(&dir, "built-access-denied");
+    }
+    if let Some(name) = marker(text, "error") {
+        return error_response(&dir, name);
+    }
+    let name = marker(text, "fixture").unwrap_or("built-nova-text");
+    if !stream {
+        return json_file(&fixture_file(&dir, "responses", name, "json"));
+    }
+    let file = fixture_file(&dir, "streams", name, "events.json");
+    let body = std::fs::read(&file)
+        .ok()
+        .and_then(|b| eventstream::from_fixture(&b).ok())
+        .unwrap_or_else(|| panic!("mock: no stream fixture {}", file.display()));
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "application/vnd.amazon.eventstream")
+        .body(Body::from(body))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
 struct Answering {
     shared: Arc<Shared>,
     answered: bool,
@@ -466,6 +511,11 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
     let batch_upload = path == "/v1/files" && text.contains("name=\"purpose\"\r\n\r\nbatch");
     if batch_upload || path.starts_with("/v1/files/file-mock") || path.starts_with("/v1/batches") {
         return batch_api(&ctx, &method, &path, &headers, &body);
+    }
+    if method == Method::POST
+        && let Some(stream) = converse_call(&path)
+    {
+        return converse(&ctx.fixtures, stream, &headers, &text);
     }
     let platform = agent_platform_path(&path);
     if let Some(p) = &platform {

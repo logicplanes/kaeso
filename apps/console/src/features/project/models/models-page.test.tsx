@@ -98,7 +98,7 @@ describe("ModelsPage", () => {
         catalogueModel({
           id: "cm_opus",
           model_id: "claude-opus-4-1",
-          egress_dialect: "bedrock_converse",
+          egress_dialect: "bedrock_invoke",
           effective: { ...base, display_name: null, release_date: null },
         }),
       ],
@@ -106,7 +106,7 @@ describe("ModelsPage", () => {
     await renderApp(projectPath("models"));
 
     await screen.findByText("claude-opus-4-1");
-    expect(cells()).toEqual(["Anthropic2", "claude-opus-4-1bedrock_converse200K$3 / $15", "claude-sonnet-4-5messages200K— / $5"]);
+    expect(cells()).toEqual(["Anthropic2", "claude-opus-4-1bedrock_invoke200K$3 / $15", "claude-sonnet-4-5messages200K— / $5"]);
   });
 
   it("explains each price with its cache prices", async () => {

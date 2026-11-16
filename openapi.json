@@ -41411,7 +41411,8 @@
           "gemini_decisions",
           "cohere_rerank",
           "voyage_rerank",
-          "jina_rerank"
+          "jina_rerank",
+          "bedrock_converse"
         ],
         "examples": [
           "openai_responses"

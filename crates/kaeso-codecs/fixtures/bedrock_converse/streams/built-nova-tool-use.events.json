@@ -1,0 +1,93 @@
+[
+  {
+    "event": "messageStart",
+    "data": {
+      "role": "assistant"
+    }
+  },
+  {
+    "event": "contentBlockDelta",
+    "data": {
+      "contentBlockIndex": 0,
+      "delta": {
+        "text": "<thinking>The user wants the most popular song on WZPZ. I "
+      }
+    }
+  },
+  {
+    "event": "contentBlockDelta",
+    "data": {
+      "contentBlockIndex": 0,
+      "delta": {
+        "text": "will call the top_song tool with the sign WZPZ.</thinking>"
+      }
+    }
+  },
+  {
+    "event": "contentBlockStop",
+    "data": {
+      "contentBlockIndex": 0
+    }
+  },
+  {
+    "event": "contentBlockStart",
+    "data": {
+      "contentBlockIndex": 1,
+      "start": {
+        "toolUse": {
+          "toolUseId": "tooluse_20Z9zl0BQWSXjFuLKdTJcA",
+          "name": "top_song"
+        }
+      }
+    }
+  },
+  {
+    "event": "contentBlockDelta",
+    "data": {
+      "contentBlockIndex": 1,
+      "delta": {
+        "toolUse": {
+          "input": "{\"sign\":"
+        }
+      }
+    }
+  },
+  {
+    "event": "contentBlockDelta",
+    "data": {
+      "contentBlockIndex": 1,
+      "delta": {
+        "toolUse": {
+          "input": "\"WZPZ\"}"
+        }
+      }
+    }
+  },
+  {
+    "event": "contentBlockStop",
+    "data": {
+      "contentBlockIndex": 1
+    }
+  },
+  {
+    "event": "messageStop",
+    "data": {
+      "stopReason": "tool_use"
+    }
+  },
+  {
+    "event": "metadata",
+    "data": {
+      "usage": {
+        "inputTokens": 372,
+        "outputTokens": 41,
+        "totalTokens": 413,
+        "cacheReadInputTokens": 0,
+        "cacheWriteInputTokens": 0
+      },
+      "metrics": {
+        "latencyMs": 812
+      }
+    }
+  }
+]

@@ -45,7 +45,7 @@ fn page(language: &Language) -> (String, String) {
 
 fn format_name(dialect: DialectId) -> &'static str {
     let name = dialect.display_name();
-    ["OpenAI ", "Anthropic "]
+    ["OpenAI ", "Anthropic ", "Amazon Bedrock "]
         .into_iter()
         .find_map(|maker| name.strip_prefix(maker))
         .unwrap_or(name)

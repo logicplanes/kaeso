@@ -43,6 +43,7 @@ jobs:
           [
             audio_length,
             decode_anthropic_messages,
+            decode_bedrock_converse,
             decode_dashscope,
             decode_elevenlabs,
             decode_gemini,

@@ -91,6 +91,7 @@ describe("unitPriceLabels", () => {
     expect(dialectPill("openai_speech")).toBe("speech");
     expect(dialectPill("openai_transcriptions")).toBe("transcriptions");
     expect(dialectPill("elevenlabs")).toBe("elevenlabs");
+    expect(dialectPill("bedrock_converse")).toBe("converse");
   });
 
   it("names prices per video by their length", () => {

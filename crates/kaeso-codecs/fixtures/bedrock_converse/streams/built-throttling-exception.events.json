@@ -1,0 +1,23 @@
+[
+  {
+    "event": "messageStart",
+    "data": {
+      "role": "assistant"
+    }
+  },
+  {
+    "event": "contentBlockDelta",
+    "data": {
+      "contentBlockIndex": 0,
+      "delta": {
+        "text": "Hello"
+      }
+    }
+  },
+  {
+    "exception": "throttlingException",
+    "data": {
+      "message": "Too many tokens, please wait before trying again."
+    }
+  }
+]

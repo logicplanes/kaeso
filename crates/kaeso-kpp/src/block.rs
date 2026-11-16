@@ -515,6 +515,10 @@ pub enum OpaqueKind {
     OpenAiReasoningItemId,
     #[serde(rename = "gemini_thought_signature")]
     GeminiThoughtSignature,
+    #[serde(rename = "bedrock_reasoning_signature")]
+    BedrockReasoningSignature,
+    #[serde(rename = "bedrock_redacted_reasoning")]
+    BedrockRedactedReasoning,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -641,6 +645,14 @@ mod tests {
             (
                 OpaqueKind::GeminiThoughtSignature,
                 "gemini_thought_signature",
+            ),
+            (
+                OpaqueKind::BedrockReasoningSignature,
+                "bedrock_reasoning_signature",
+            ),
+            (
+                OpaqueKind::BedrockRedactedReasoning,
+                "bedrock_redacted_reasoning",
             ),
         ];
         for (kind, name) in kinds {

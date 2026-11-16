@@ -68,7 +68,7 @@ def expected(url: str, s: dict):
     return fetch_json(f"{url}/_expected?{query}")
 
 
-GENERATION = ("anthropic_messages", "openai_chat", "openai_responses", "gemini")
+GENERATION = ("anthropic_messages", "openai_chat", "openai_responses", "gemini", "bedrock_converse")
 
 # Video fixtures of providers that keep them beside other fixtures, by the folder they are in.
 VIDEO_PREFIXES = {"openai_videos": ("", "providers/togetherai/"), "elevenlabs": ("video/",)}
@@ -95,7 +95,8 @@ def _scenarios(source: str, kind: str) -> list[dict]:
             for f in sorted(d.iterdir()):
                 if f.suffix not in (".json", ".sse") or f.name.endswith(".meta.json"):
                     continue
-                name = f.stem
+                # Amazon Bedrock's binary streams are stored as the JSON list of their messages.
+                name = f.name.removesuffix(".events.json") if f.name.endswith(".events.json") else f.stem
                 if kind == "video":
                     name = f"{prefix}{folder}/{name}"
                 elif folder.startswith("responses/"):

@@ -358,6 +358,7 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 - Anthropic 的输出格式只有一个 schema：schema 的 `name` 会被丢弃，而 `description` 或 `strict: false` 为 `Unsupported`。
 - 从 Anthropic 发往 OpenAI 的 schema 会得到名称 `response`，因为 OpenAI 要求必须有名称。
 - Gemini 以 `responseJsonSchema` 接收 schema，以单独的 `responseMimeType: "application/json"` 接收 `json_object`；与 Anthropic 一样，schema 的 `name` 会被丢弃，`description` 或 `strict: false` 为 `Unsupported`。
+- Amazon Bedrock Converse 暂不接收输出格式：`json_object` 和 schema 均为 `Unsupported`。
 
 ## 采样参数
 
@@ -369,6 +370,7 @@ OpenAI Chat 编码器还会在响应一开始就发送它的角色 chunk，而�
 | OpenAI Chat Completions | `top_k`，以及超过四个的停止序列 |
 | OpenAI Responses | `top_k`、`seed`、各项惩罚和停止序列，Responses 没有这些参数；以及低于 16 个 Token 的输出上限，即 `CreateResponse` 的最小值 |
 | Gemini API | 超过五个停止序列（`GenerationConfig.stopSequences`） |
+| Amazon Bedrock Converse | `top_k`、`seed` 和惩罚参数，它们属于各模型系列自己的字段 |
 
 数字在同一方言内保持原来的写法：只要值未改变，`temperature: 1` 回来时仍是 `1`，`1.0` 仍是 `1.0`。跨方言时使用目标自己的写法，因此来自 Chat 的 `temperature: 1` 到达 Anthropic 时是 `1.0`。
 
@@ -402,6 +404,7 @@ KPP 没有 `n`：`n` 大于 1 的 Chat 请求在解码时就会被拒绝，与�
   - 一个在对话的最后一个内容块上，它会随着每一轮向前移动。
 
   这三个断点都放在块上，而不是使用顶层自动缓存，因此只认识块级断点（即 Claude Code 发送的形式）的 Anthropic 兼容服务商也能接受。
+- **Amazon Bedrock Converse** 只缓存到 `cachePoint` 块为止。每个提示都会变成其所在块或工具之后的一个 `cachePoint`，并带上其有效期；没有提示的请求不会得到 `cachePoint`。
 - **应用自己的提示优先。**带有缓存提示的请求只保留这些提示。Anthropic 最多接受 4 个断点，应用发送更多时会省略最早的那些。OpenAI 的 `prompt_cache_options` 设为 `mode: explicit` 且没有断点时不缓存任何内容，与 OpenAI 上的行为一致。Token 计数不会得到断点。
 - **有效期。**Anthropic 会把缓存保留 5 分钟或 1 小时。当应用要求 OpenAI 保留超过 5 分钟时（`prompt_cache_retention: "24h"`，或 `30m` 这样的 `prompt_cache_options.ttl`），发往 Anthropic 的每个断点都会请求 `1h`。
 - **每一轮都重复上一轮。**对话的第 *n+1* 轮编码后的工具、系统提示词、思考设置和消息与第 *n* 轮相同，后面再接新的消息；只有对话断点会移动，而 Anthropic 不把断点计入前缀，因此每一轮都能读取上一轮写入的缓存（`crates/kaeso-codecs/tests/prompt_cache.rs`）。
