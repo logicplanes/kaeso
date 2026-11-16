@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, DialogScope, Empty, FilterRow, Button, KeyDisplay, List, Menu, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
+import { AlertDialog, DialogScope, Empty, FilterRow, Button, Input, KeyDisplay, List, Menu, Select, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
 import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { toast } from "~/shell/toast";
 import { api, data } from "~/api/client";
@@ -16,6 +16,7 @@ import { SettingsPage } from "~/shell/settings-page";
 import { t } from "~/i18n";
 import { allPages } from "~/api/paging";
 import { LastUsed } from "~/kaeso/last-used";
+import { findKeys, isKeySort, keySortOptions, type KeySort } from "~/kaeso/key-list";
 
 const myKeysQuery = (includeArchived: boolean) => ({
   queryKey: ["me", "keys", { includeArchived }],
@@ -27,8 +28,11 @@ const myKeysQuery = (includeArchived: boolean) => ({
 
 const keyQueries = (key: KeyView, org: string | undefined) => [["me", "keys"], ...(org ? [["orgs", org, "projects", key.project_id, "keys"]] : [])];
 
-export function AccountKeysPage() {
+export type AccountKeysSearch = { sort?: KeySort };
+
+export function AccountKeysPage({ search }: { search: AccountKeysSearch }) {
   const navigate = useNavigate();
+  const [query, setQuery] = useState("");
   const memberships = useMemberships();
   const [scope, setScope] = useState<Scope>("active");
   const keys = useQuery(myKeysQuery(scope !== "active"));
@@ -65,7 +69,7 @@ export function AccountKeysPage() {
   };
 
   const fetched = keys.data ?? [];
-  const list = scope === "all" ? fetched : fetched.filter((k) => k.state === scope);
+  const list = findKeys(scope === "all" ? fetched : fetched.filter((k) => k.state === scope), query, search.sort);
   const groups: ListGroup[] = [...new Set(list.map((k) => k.project_id))].map((projectId) => {
     const items = list.filter((k) => k.project_id === projectId);
     return {
@@ -120,7 +124,27 @@ export function AccountKeysPage() {
       context={t("account.title", "Account")}
       description={t("account.apiKeysHint", "Your own keys in every project; each opens in its project.")}
     >
-      <FilterRow tabs={<ScopeTabs label={t("account.yourKeys", "Your keys")} value={scope} onChange={setScope} />} />
+      <FilterRow tabs={<ScopeTabs label={t("account.yourKeys", "Your keys")} value={scope} onChange={setScope} />}>
+        <Select
+          aria-label={t("keys.sort", "Sort")}
+          size="sm"
+          icon={icons.sort}
+          value={search.sort ?? "name"}
+          onValueChange={(v) => void navigate({ to: "/settings/account/keys", search: isKeySort(v) ? { sort: v } : {}, replace: true })}
+          options={keySortOptions()}
+        />
+        <div className="w-240">
+          <Input
+            type="search"
+            size="sm"
+            aria-label={t("keys.search", "Search keys")}
+            placeholder={t("keys.nameOrKey", "Name or key")}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onClear={() => setQuery("")}
+          />
+        </div>
+      </FilterRow>
       <List
         aria-label={t("account.yourKeys", "Your keys")}
         groups={groups}
@@ -133,6 +157,12 @@ export function AccountKeysPage() {
         empty={
           keys.isError ? (
             <LoadFailed title={t("account.keysFailed", "Your keys couldn't load")} size="md" />
+          ) : query.trim() ? (
+            <Empty
+              size="md"
+              title={t("keys.noneMatch", "No keys match your search")}
+              actions={<Button onClick={() => setQuery("")}>{t("keys.showEveryKey", "Show every key")}</Button>}
+            />
           ) : (
             <Empty
               size="md"

@@ -33,7 +33,7 @@ Give each app and each environment its own key. Its usage, logs and limits are t
 
 ## Find and change a key
 
-**Active** lists the keys that work, **Archived** the archived ones, and **All** every key, disabled and expired ones too. **Whose keys**, above the list, shows one member's or service account's keys.
+**Active** lists the keys that work, **Archived** the archived ones, and **All** every key, disabled and expired ones too. **Whose keys**, above the list, shows one member's or service account's keys. The search field finds keys by name or by the part of the key the list shows, and **Sort** orders them by **Name**, **Last used** or **Expires soonest**; press `/` to search. Your own keys under **Account** › **API keys** have the same search and sort.
 
 Choose a key to open its sheet. It shows whom the key belongs to, its access, who created it and when, its expiry, its last use and its id. With the right **Manage limits**, you can change its **Models** and **Limits** there at any time. **See requests** opens the [request logs](request-logs.md) filtered to the key, and **History** the project's [audit log](organizations-and-projects.md#read-the-audit-log) filtered to it, each for someone who may read it.
 

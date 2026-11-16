@@ -33,7 +33,7 @@ Geben Sie jeder App und jeder Umgebung einen eigenen Schlüssel. Dann sind ihre 
 
 ## Schlüssel finden und ändern
 
-**Aktiv** listet die Schlüssel, die funktionieren, **Archiviert** die archivierten und **Alle** jeden Schlüssel, auch deaktivierte und abgelaufene. **Inhaber der Schlüssel** über der Liste zeigt die Schlüssel eines Mitglieds oder Dienstkontos.
+**Aktiv** listet die Schlüssel, die funktionieren, **Archiviert** die archivierten und **Alle** jeden Schlüssel, auch deaktivierte und abgelaufene. **Inhaber der Schlüssel** über der Liste zeigt die Schlüssel eines Mitglieds oder Dienstkontos. Das Suchfeld findet Schlüssel nach Name oder nach dem Teil des Schlüssels, den die Liste zeigt, und **Sortieren** ordnet sie nach **Name**, **Zuletzt verwendet** oder **Läuft zuerst ab**; `/` springt zur Suche. Ihre eigenen Schlüssel unter **Konto** › **API-Schlüssel** haben dieselbe Suche und Sortierung.
 
 Wählen Sie einen Schlüssel, um sein Sheet zu öffnen. Es zeigt, wem der Schlüssel gehört, seinen Zugriff, wer ihn wann erstellt hat, seinen Ablauf, seine letzte Nutzung und seine ID. Mit dem Recht **Limits verwalten** können Sie dort jederzeit seine **Modelle** und **Limits** ändern. **Anfragen ansehen** öffnet die [Anfrageprotokolle](request-logs.md) gefiltert auf den Schlüssel und **Verlauf** das [Audit-Log](organizations-and-projects.md#audit-log-lesen) des Projekts gefiltert auf ihn, jeweils für alle, die es lesen dürfen.
 

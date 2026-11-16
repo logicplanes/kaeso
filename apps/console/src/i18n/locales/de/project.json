@@ -274,6 +274,8 @@
   "project.settings.mediaNeedsContent": "Medien bleiben nur, wo Anfrageinhalte protokolliert werden.",
   "project.settings.mediaKept": "Bilder, Audio und Dateien bleiben bei den Inhalten.",
   "project.settings.mediaLeftOut": "Von Medien bleiben nur Typ und Größe.",
+  "project.members.noneMatch": "Keine Mitglieder passen",
+  "project.members.clearFilters": "Suche und Rolle leeren",
   "project.members.theirKeys": "Ihre Schlüssel",
   "project.overview.downloadCsv": "CSV herunterladen",
   "project.overview.id": "ID",

@@ -57,7 +57,7 @@ Mit Gruppenregeln kann auch eine Anmeldung über Ihren Identitätsanbieter Rolle
 
 ## Personen zu einem Projekt hinzufügen
 
-Wählen Sie auf der Seite **Mitglieder** eines Projekts **Mitglied hinzufügen** und wählen Sie jemanden aus der Organisation mit einer Projektrolle. Laden Sie Personen außerhalb der Organisation zuerst in die Organisation ein.
+Wählen Sie auf der Seite **Mitglieder** eines Projekts **Mitglied hinzufügen** und wählen Sie jemanden aus der Organisation mit einer Projektrolle. Laden Sie Personen außerhalb der Organisation zuerst in die Organisation ein. Über der Liste findet das Suchfeld Mitglieder nach Name oder E-Mail, und die Rollenauswahl zeigt nur die Mitglieder einer Rolle.
 
 Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md) sowie Links zu seinen Anfragen (**Anfragen ansehen**) und seinen Schlüsseln (**Ihre Schlüssel**), jeweils für alle, die sie sehen dürfen. **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es. In Ihrem eigenen Sheet heißt das **Projekt verlassen**. Rechte aus der Organisationsrolle eines Mitglieds zählen mit: Sie können es nur ändern oder entfernen, wenn Sie alle seine Rechte im Projekt haben. Nur Inhaber ändern oder entfernen Inhaber.
 

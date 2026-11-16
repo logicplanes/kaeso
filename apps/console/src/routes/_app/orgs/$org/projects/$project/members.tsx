@@ -4,6 +4,7 @@ import { MembersPage, type MembersSearch } from "~/features/project/members/memb
 
 const membersSearch = (s: Record<string, unknown>): MembersSearch => ({
   ...(typeof s.member === "string" ? { member: s.member } : {}),
+  ...(typeof s.role === "string" && s.role ? { role: s.role } : {}),
   ...(s.add === true || s.add === "true" ? { add: true } : {}),
 });
 
