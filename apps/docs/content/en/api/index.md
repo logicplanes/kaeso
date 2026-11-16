@@ -12,6 +12,7 @@ Every install serves two APIs on its domain. Apps call models through the model 
 - [Images API](images.md): Generate and edit images with OpenAI's Images API on every provider that makes images.
 - [Audio API](audio.md): Make speech and transcribe or translate audio with OpenAI's audio API on every provider that offers it.
 - [Videos API](videos.md): Make videos with OpenAI's Videos API on every provider that makes video.
+- [Batches API](batches.md): Run many requests at a lower price with OpenAI's Batch and Files APIs.
 - [Decisions API](decisions.md): Ask decision models typed questions in OpenAI's, TypeSafe's or Gemini's decision format.
 - [Rerank API](rerank.md): Order documents by how well they answer a query with Cohere's rerank format.
 - [ElevenLabs API](elevenlabs.md): Call ElevenLabs speech, sound, music and transcription with the official ElevenLabs SDKs.

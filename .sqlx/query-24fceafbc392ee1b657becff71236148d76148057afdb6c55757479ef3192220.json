@@ -1,0 +1,283 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT b.id, b.org_id, b.project_id, b.api_key_id, b.user_id, b.service_account_id, b.credential_id, b.provider, b.upstream_id, b.input_file_id, b.output_file_id, b.error_file_id, b.endpoint, b.catalogue_model_id, b.model, b.upstream_model, b.prices, b.metadata, b.status, b.view, b.created_at, b.accounted_at FROM batches b WHERE b.org_id = $1 AND b.project_id = $2 AND ($3::uuid IS NULL OR (b.created_at, b.id) < ( SELECT a.created_at, a.id FROM batches a WHERE a.project_id = $2 AND a.id = $3)) ORDER BY b.created_at DESC, b.id DESC LIMIT $4",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "api_key_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "api_key_id"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "user_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "user_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "service_account_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "service_account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "credential_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "credential_id"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "provider",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "provider"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "upstream_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "upstream_id"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "input_file_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "input_file_id"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "output_file_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "output_file_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "error_file_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "error_file_id"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "endpoint",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "endpoint"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "catalogue_model_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "catalogue_model_id"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "model",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "model"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "upstream_model",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "upstream_model"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "prices",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "prices"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "metadata",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "metadata"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "status",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "status"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "view",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "view"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "accounted_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "batches",
+            "name": "accounted_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "24fceafbc392ee1b657becff71236148d76148057afdb6c55757479ef3192220"
+}

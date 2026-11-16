@@ -1,7 +1,7 @@
 ---
 title: 错误
 description: 模型请求失败时在各 API 格式下返回的内容，以及每个状态码的含义。
-order: 6
+order: 7
 ---
 
 模型请求失败时，会返回一个 HTTP 状态码和采用应用所调用格式的错误，因此 SDK 会抛出它惯常的错误。每个响应都带有 `kaeso-request-id` 响应头，[请求日志](../console/request-logs.md)中有同一 ID 的条目。Platform API 的错误见[其页面](platform-api.md#错误)。

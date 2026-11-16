@@ -1,7 +1,7 @@
 ---
 title: 重排序 API
 description: 使用 Cohere 的重排序格式，按文档回答查询的程度为其排序，可用于 Kaeso 调用其重排序模型的每个服务商。
-order: 12
+order: 13
 ---
 
 应用发送一个查询和一组文档，重排序模型返回每个文档的相关性分数，最相关的排在最前。检索流水线用它挑选交给聊天模型的段落。Kaeso 接受 Cohere 的重排序格式，即 Cohere SDK、LangChain、LlamaIndex 和大多数重排序客户端发送的格式，并调用每个服务商自己的重排序 API。

@@ -2,7 +2,7 @@
 title: Automate with the Platform API
 nav: Automation
 description: Set up a project, a model and a key for an app from a script, and read its usage and logs.
-order: 8
+order: 9
 ---
 
 Set up everything an app needs from a script: a project, a provider key, a model and the app's own API key. The requests use a platform key, which acts with the Admin role's rights in the whole organization.

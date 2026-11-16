@@ -1,5 +1,6 @@
 pub(crate) mod accounts;
 pub mod auth;
+pub(crate) mod batches;
 mod elevenlabs;
 pub mod errors;
 pub mod gemini;
@@ -337,6 +338,21 @@ pub fn router() -> Router<AppState> {
             get(stored_responses::retrieve).delete(stored_responses::delete),
         )
         .route("/v1/embeddings", post(embeddings))
+        .route("/v1/files", post(batches::files_create))
+        .route(
+            "/v1/files/{file_id}",
+            get(batches::files_get).delete(batches::files_delete),
+        )
+        .route("/v1/files/{file_id}/content", get(batches::files_content))
+        .route(
+            "/v1/batches",
+            post(batches::batches_create).get(batches::batches_list),
+        )
+        .route("/v1/batches/{batch_id}", get(batches::batches_get))
+        .route(
+            "/v1/batches/{batch_id}/cancel",
+            post(batches::batches_cancel),
+        )
         .route("/v1/rerank", post(rerank))
         .route("/v2/rerank", post(rerank))
         .route("/v1/decisions", post(decisions))

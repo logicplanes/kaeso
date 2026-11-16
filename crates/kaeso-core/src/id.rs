@@ -180,6 +180,8 @@ public_id!(ToolCallId, "call_");
 public_id!(VideoId, "video_");
 public_id!(ImageGenerationId, "imggen_");
 public_id!(GuardrailId, "grd_");
+public_id!(BatchFileId, "file_");
+public_id!(BatchId, "batch_");
 
 #[cfg(test)]
 mod tests {

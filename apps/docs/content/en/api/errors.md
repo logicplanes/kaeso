@@ -1,7 +1,7 @@
 ---
 title: Errors
 description: What a failed model request returns in each API format, and what each status means.
-order: 6
+order: 7
 ---
 
 A failed model request returns an HTTP status and an error in the format your app called, so the SDK raises its usual error. Every answer carries the header `kaeso-request-id`, and the [request logs](../console/request-logs.md) keep an entry under that id. Platform API errors are on [their own page](platform-api.md#errors).

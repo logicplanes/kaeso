@@ -1,7 +1,7 @@
 ---
 title: Fehler
 description: Was eine fehlgeschlagene Modellanfrage in jedem API-Format zurückgibt und was jeder Status bedeutet.
-order: 6
+order: 7
 ---
 
 Eine fehlgeschlagene Modellanfrage gibt einen HTTP-Status und einen Fehler im Format zurück, das Ihre App aufgerufen hat. So löst das SDK seinen gewohnten Fehler aus. Jede Antwort trägt den Header `kaeso-request-id`, und die [Anfrageprotokolle](../console/request-logs.md) führen einen Eintrag unter dieser ID. Die Fehler der Platform API stehen auf [ihrer eigenen Seite](platform-api.md#fehler).

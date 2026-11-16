@@ -684,7 +684,7 @@ async fn errors_under_v1_are_geminis_for_gemini_calls_and_geminis_key() {
     );
     for key in [Key::Header(&env.key), Key::Query(&env.key)] {
         gemini_error(
-            &gemini(&env, "GET", "/v1/files", key, None).await,
+            &gemini(&env, "GET", "/v1/assistants", key, None).await,
             404,
             "NOT_FOUND",
         );
@@ -705,7 +705,7 @@ async fn errors_under_v1_are_geminis_for_gemini_calls_and_geminis_key() {
         "{}",
         r.text()
     );
-    let r = gemini(&env, "GET", "/v1/files", Key::Bearer(&env.key), None).await;
+    let r = gemini(&env, "GET", "/v1/assistants", Key::Bearer(&env.key), None).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND);
     assert!(r.json()["error"]["type"].is_string(), "{}", r.text());
     assert!(env.mock.received().is_empty());

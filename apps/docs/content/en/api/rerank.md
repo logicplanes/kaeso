@@ -1,7 +1,7 @@
 ---
 title: Rerank API
 description: Order documents by how well they answer a query, with Cohere's rerank format, on every provider whose rerank models Kaeso calls.
-order: 12
+order: 13
 ---
 
 Apps send a query and a list of documents, and a rerank model answers with each document's relevance score, best first. Retrieval pipelines use it to pick the passages they hand to a chat model. Kaeso takes Cohere's rerank format, which the Cohere SDK, LangChain, LlamaIndex and most rerank clients send, and calls each provider's own rerank API.

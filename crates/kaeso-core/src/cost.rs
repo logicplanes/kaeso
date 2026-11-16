@@ -27,6 +27,59 @@ pub fn one_hour_cache_write_price(prices: &Fields) -> Option<Decimal> {
     })
 }
 
+/// The providers whose batch API runs OpenAI's batch format, with the share of the live price a
+/// batch costs: OpenAI's Batch API costs half (https://developers.openai.com/api/docs/guides/batch).
+pub const BATCH_PRICES: &[(&str, u8)] = &[("openai", 50)];
+
+/// The share of the live price `provider` charges for a batch, in percent; `None` for a provider
+/// whose batches Kaeso doesn't run.
+pub fn batch_percent(provider: &str) -> Option<u8> {
+    BATCH_PRICES
+        .iter()
+        .find(|(id, _)| *id == provider)
+        .map(|(_, percent)| *percent)
+}
+
+/// `prices` with every price at `percent` of itself, as a batch is billed.
+pub fn at_share(prices: &Fields, percent: u8) -> Fields {
+    let share = Decimal::from(percent) / Decimal::from(100);
+    let scale = |p: &mut Option<Decimal>| {
+        if let Some(v) = p.as_mut() {
+            *v *= share;
+        }
+    };
+    let mut out = prices.clone();
+    for p in [
+        &mut out.input_price,
+        &mut out.output_price,
+        &mut out.cache_read_price,
+        &mut out.cache_write_price,
+        &mut out.cache_write_1h_price,
+        &mut out.input_image_price,
+        &mut out.output_image_price,
+        &mut out.cache_read_image_price,
+        &mut out.input_audio_price,
+        &mut out.output_audio_price,
+    ] {
+        scale(p);
+    }
+    for t in out.price_tiers.iter_mut().flatten() {
+        for p in [
+            &mut t.input_price,
+            &mut t.output_price,
+            &mut t.cache_read_price,
+            &mut t.cache_write_price,
+            &mut t.cache_write_1h_price,
+        ] {
+            scale(p);
+        }
+    }
+    for u in out.unit_prices.iter_mut().flatten() {
+        u.usd *= share;
+    }
+    out
+}
+
 pub fn prices_for_prompt(prices: &Fields, prompt_tokens: u64) -> Fields {
     let tier = prices
         .price_tiers
@@ -729,6 +782,40 @@ mod tests {
             ..Fields::default()
         };
         assert_eq!(one_hour_cache_write_price(&unpriced_input), None);
+    }
+
+    #[test]
+    fn a_batch_costs_its_share_of_every_price() {
+        assert_eq!(batch_percent("openai"), Some(50));
+        assert_eq!(batch_percent("anthropic"), None);
+        let mut prices = tiered();
+        prices.unit_prices = Some(vec![UnitPrice {
+            usd: dec!(0.01),
+            ..UnitPrice::default()
+        }]);
+        let half = at_share(&prices, 50);
+        assert_eq!(
+            (
+                half.input_price,
+                half.output_price,
+                half.cache_read_price,
+                half.cache_write_1h_price
+            ),
+            (
+                Some(dec!(5)),
+                Some(dec!(25)),
+                Some(dec!(0.5)),
+                Some(dec!(10))
+            )
+        );
+        let tier = &half.price_tiers.as_ref().unwrap()[0];
+        assert_eq!(
+            (tier.input_price, tier.cache_read_price),
+            (Some(dec!(10)), None)
+        );
+        assert_eq!(half.unit_prices.as_ref().unwrap()[0].usd, dec!(0.005));
+        let usage = Usage::new(1_000_000, 1_000_000);
+        assert_eq!(cost(&usage, &half), cost(&usage, &prices) / dec!(2));
     }
 
     fn tiered() -> Fields {
