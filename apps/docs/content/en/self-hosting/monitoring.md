@@ -58,6 +58,7 @@ services:
 | `kaeso_request_upload_seconds{provider}` | The time apps take to send their request bodies. It grows with the size of the prompt and the app's connection; a rise here is the apps' or the network's, not Kaeso's |
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`, `timeout` or `connect`: a provider outage. `authentication` or `billing`: a provider key needs attention |
 | `kaeso_alias_fallbacks_total{provider, reason}` | Steps of [alias routes](../concepts/alias-routes.md) that failed and fell back, or were skipped because they had failed moments ago, by the step's provider. A rise for one provider is an outage your routes are covering |
+| `kaeso_upstream_retries_total{provider, outcome}` | Requests a step sent to its model again after a dropped connection, a 5xx or an overload ([alias routes](../concepts/alias-routes.md#fallbacks)), by whether a try was answered (`answered`) or every try failed (`gave_up`). Many `gave_up` mean the retries only delay a failure |
 | `kaeso_stream_failures_total{kind, provider}` | Streams that failed after their headers were sent. `kaeso_requests_total` counts them as 200, the request log as failures. `client_stalled`: apps that stopped reading their stream |
 | `kaeso_usage_estimates_total{reason, provider}` | Usage Kaeso had to estimate. `unreported`: a provider finished a reply without usage. `cancelled` and `failed`: apps that disconnected and streams that broke off |
 | `kaeso_limit_refusals_total{kind, level}` | Budgets running out |

@@ -325,5 +325,6 @@
   "logs.filter.containsTyped": "Enthält „{text}“",
   "logs.filter.errorMessage": "Fehlermeldung",
   "logs.filter.client": "Client",
-  "logs.inspector.client": "Client"
+  "logs.inspector.client": "Client",
+  "logs.inspector.failedTriedAgain": "Nach {duration} fehlgeschlagen; erneut versucht"
 }

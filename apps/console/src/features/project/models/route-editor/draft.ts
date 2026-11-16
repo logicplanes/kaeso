@@ -21,6 +21,8 @@ export type DraftModel = {
   fallback: DraftStep | null;
   fall_back_on: RouteFailure[];
   timeout_seconds: number | null;
+  /** How many times the step tries its model again; null for the project's setting. */
+  retries: number | null;
 };
 export type DraftCondition = { id: string; type: "condition"; match: "all" | "any"; rules: DraftRule[]; then: DraftStep; else: DraftStep };
 export type DraftBranch = { id: string; weight: number; step: DraftStep };
@@ -39,6 +41,7 @@ export const emptyModel = (model: string | null = null): DraftModel => ({
   fallback: null,
   fall_back_on: [...DEFAULT_FALL_BACK_ON],
   timeout_seconds: null,
+  retries: null,
 });
 
 export function defaultRule(): DraftRule {
@@ -55,6 +58,7 @@ export function fromRoute(step: RouteStep): DraftStep {
         fallback: step.fallback ? fromRoute(step.fallback) : null,
         fall_back_on: [...(step.fall_back_on ?? DEFAULT_FALL_BACK_ON)],
         timeout_seconds: step.timeout_seconds ?? null,
+        retries: step.retries ?? null,
       };
     case "condition":
       return {
@@ -99,6 +103,8 @@ export function toRoute(step: DraftStep): RouteStep {
         fallback: step.fallback ? toRoute(step.fallback) : null,
         fall_back_on: FAILURES.filter((f) => step.fall_back_on.includes(f)),
         timeout_seconds: step.timeout_seconds,
+        // Left out, the project's setting applies, as for a route saved before steps had one.
+        ...(step.retries !== null ? { retries: step.retries } : {}),
       };
     case "condition":
       return { type: "condition", match: step.match, rules: step.rules.map(ruleOut), then: toRoute(step.then), else: toRoute(step.else) };

@@ -762,6 +762,9 @@ pub struct ProjectModels {
     pub service_accounts: BTreeMap<Uuid, BTreeSet<Uuid>>,
     pub keys: BTreeMap<Uuid, BTreeSet<Uuid>>,
     pub open: BTreeSet<Uuid>,
+    /// The project's retries: how many times a request that names a model, or an alias step
+    /// that sets none, tries the model again after a short-lived failure.
+    pub retries: u8,
 }
 
 #[derive(Deserialize)]
@@ -775,6 +778,8 @@ struct Stored {
     open: BTreeSet<Uuid>,
     #[serde(default)]
     providers: OrgProviders,
+    #[serde(default)]
+    retries: u8,
 }
 
 impl From<Stored> for ProjectModels {
@@ -786,13 +791,14 @@ impl From<Stored> for ProjectModels {
             service_accounts: s.service_accounts,
             keys: s.keys,
             open: s.open,
+            retries: s.retries,
         }
     }
 }
 
 impl Serialize for ProjectModels {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut out = serializer.serialize_struct("ProjectModels", 7)?;
+        let mut out = serializer.serialize_struct("ProjectModels", 8)?;
         out.serialize_field("entries", self.catalogue.entries())?;
         out.serialize_field("aliases", self.catalogue.aliases())?;
         out.serialize_field("users", &self.users)?;
@@ -800,6 +806,7 @@ impl Serialize for ProjectModels {
         out.serialize_field("keys", &self.keys)?;
         out.serialize_field("open", &self.open)?;
         out.serialize_field("providers", &self.providers)?;
+        out.serialize_field("retries", &self.retries)?;
         out.end()
     }
 }
@@ -829,9 +836,14 @@ pub async fn project_models(
         .iter()
         .map(super::custom_providers::CustomProviderRow::custom_provider)
         .collect::<Result<Vec<_>, _>>()?;
+    let retries = sqlx::query_scalar!("SELECT retries FROM projects WHERE id = $1", project_id)
+        .fetch_optional(&mut *db)
+        .await?
+        .unwrap_or(0);
     let mut out = ProjectModels {
         catalogue: Catalogue::new(entries, aliases),
         providers: OrgProviders::new(providers),
+        retries: u8::try_from(retries).unwrap_or(0),
         ..ProjectModels::default()
     };
     let users = sqlx::query!(
@@ -954,6 +966,7 @@ mod tests {
                 }],
             ),
             users: BTreeMap::from([(user, BTreeSet::from([gpt.id]))]),
+            retries: 2,
             ..ProjectModels::default()
         };
         let json = serde_json::to_value(&models).unwrap();
@@ -972,6 +985,7 @@ mod tests {
                 "keys",
                 "open",
                 "providers",
+                "retries",
                 "service_accounts",
                 "users"
             ]
@@ -992,10 +1006,13 @@ mod tests {
         assert!(!back.access(None, None, None).allows(gpt.id));
         older.as_object_mut().unwrap().remove("open");
         older.as_object_mut().unwrap().remove("providers");
+        older.as_object_mut().unwrap().remove("retries");
         let older: ProjectModels = serde_json::from_value(older).unwrap();
         assert!(
-            older.open.is_empty() && older.providers == OrgProviders::default(),
-            "a value cached before `open` and `providers` reads back"
+            older.open.is_empty()
+                && older.providers == OrgProviders::default()
+                && older.retries == 0,
+            "a value cached before `open`, `providers` and `retries` reads back"
         );
     }
 

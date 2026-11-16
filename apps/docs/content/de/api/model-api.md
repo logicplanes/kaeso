@@ -296,6 +296,6 @@ Die SDKs von OpenAI und Anthropic laufen im Browser nur, wenn die App `dangerous
 
 ## Was Kaeso nicht tut
 
-- **Wiederholungen.** Kaeso sendet jede Anfrage einmal. Die SDKs wiederholen selbst, wo der Fehler es zulässt.
+- **Wiederholungen.** Kaeso sendet eine Anfrage nur dann erneut an ihr Modell, wenn das Projekt oder ein Alias-Schritt es verlangt, nach einer abgebrochenen Verbindung, einem 5xx oder einem überlasteten Anbieter, und nur, bevor eine Antwort die App erreicht hat ([Alias-Routen](../concepts/alias-routes.md#fallbacks)). Sonst sendet es jede Anfrage einmal; die SDKs wiederholen selbst, wo der Fehler es zulässt.
 - **Gespeicherter Zustand.** Kaeso lehnt Responses-Anfragen ab, die den Anbieter eine Antwort speichern oder fortsetzen lassen (`store: true`, `previous_response_id`, `conversation`, `background: true`). Senden Sie jedes Mal die ganze Unterhaltung.
 - **Stille Änderungen.** Kaeso lehnt ein Feld, das es nicht zum Anbieter des Modells übertragen kann, mit einem Fehler ab, der es nennt, und verwirft es nie. In Chat Completions, Messages und Embeddings erhält ein Feld, dessen Name mit `header:` beginnt oder einen `.` enthält, 400, weil Kaeso diesen Namen nicht übertragen kann; Responses behält solche Felder im Body. [Formatübersetzung](../concepts/format-translation.md) listet, was zwischen den Formaten übertragen wird.

@@ -330,6 +330,7 @@ describe("LogInspector", () => {
               error_message: "Overloaded",
               duration_ms: 1200,
               skipped: false,
+              retried: false,
             },
           ],
         }),
@@ -339,6 +340,33 @@ describe("LogInspector", () => {
     const route = section(await sheet(), "Route");
     expect(route).toHaveTextContent("Aliassturdy");
     expect(route).toHaveTextContent("Tried first529Overloadedanthropic/claude-sonnet-4-5Failed after 1.2 s");
+  });
+
+  it("says which tries the step made again after a short-lived failure", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow()],
+      entries: [
+        logEntry({
+          fallbacks: [
+            {
+              catalogue_model_id: "cm_sonnet",
+              path: "",
+              model: "anthropic/claude-sonnet-4-5",
+              status: 502,
+              error_kind: "provider_error",
+              error_message: "The connection to the provider failed before the response was complete.",
+              duration_ms: 300,
+              skipped: false,
+              retried: true,
+            },
+          ],
+        }),
+      ],
+    });
+    await renderApp(projectPath("logs?log=req_0001"));
+    expect(section(await sheet(), "Route")).toHaveTextContent("Tried first502Bad gatewayanthropic/claude-sonnet-4-5Failed after 300 ms; tried again");
   });
 
   it("says which steps the route skipped because they failed moments ago", async () => {
@@ -360,6 +388,7 @@ describe("LogInspector", () => {
               error_message: "Your credit balance is too low to access the Anthropic API.",
               duration_ms: 0,
               skipped: true,
+              retried: false,
             },
           ],
         }),

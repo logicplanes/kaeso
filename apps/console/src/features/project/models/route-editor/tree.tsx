@@ -81,13 +81,15 @@ function node(step: DraftStep, input: TreeInput): FlowCanvasNode {
       kind: kindLabel.model(),
       ...(m
         ? {
-            subtitle:
+            subtitle: [
               step.timeout_seconds === null
                 ? input.providerName(m.provider)
                 : t("models.route.withTimeout", "{provider} · {seconds} s", {
                     provider: input.providerName(m.provider),
                     seconds: formatNumber(step.timeout_seconds),
                   }),
+              ...(step.retries ? [t("models.route.retriesShort", "{count, plural, one {# retry} other {# retries}}", { count: step.retries })] : []),
+            ].join(" · "),
           }
         : {}),
       leading: glyph(step, input.models, input.providerName),

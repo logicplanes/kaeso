@@ -67,6 +67,8 @@ Ein Schritt weicht bei `unavailable`, `limited` und `unsupported` aus, wenn er k
 
 `timeout_seconds` eines Schritts, 1 bis 3600, ist die Zeit, die Kaeso auf das erste Byte des Modells wartet, und auf eine nicht gestreamte Antwort, bevor der Schritt als `unavailable` scheitert. Ohne den Wert gilt das Zeitlimit des Modells. Eine Anfrage kann es mit dem Header `kaeso-timeout` in Sekunden für jeden Schritt verkürzen, den sie erreicht, etwa eine interaktive App, die höchstens 20 Sekunden wartet; ein längerer Wert ändert nichts ([Zeitlimits](../api/model-api.md#zeitlimits)).
 
+`retries` eines Schritts, 0 bis 3, gibt an, wie oft Kaeso sein Modell erneut versucht, bevor der Schritt fehlschlägt oder ausweicht, wenn der Anbieter nicht erreichbar war, die Verbindung abbrach, mit 5xx antwortete oder überlastet war. Vor jedem Versuch wartet Kaeso 0,25 bis 2 Sekunden oder das `Retry-After` des Anbieters, wenn es höchstens 5 Sekunden beträgt; ein längeres beendet die Versuche. Eine Zeitüberschreitung, ein Ratenlimit oder eine abgelehnte Anfrage wird nie erneut versucht: Der Anbieter arbeitet an einer abgelaufenen Anfrage vielleicht noch und berechnet sie. Die Versuche teilen sich das Timeout des Schritts, und keiner beginnt, sobald der Stream begonnen hat. Ohne `retries` gilt die Einstellung **Wiederholungen** des Projekts, 0, wenn nichts gesetzt ist, wie für eine Anfrage, die ein Modell nennt ([Projekteinstellungen](../console/organizations-and-projects.md#projekteinstellungen-ändern)).
+
 Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der später abbricht, endet mit einem Fehlerereignis, wie ohne Route.
 
 ### Übersprungene Schritte
@@ -77,17 +79,18 @@ Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der sp�
 
 ## Limits, Kosten und der Cache
 
-- Jeder Schritt, den eine Anfrage versucht, zählt gegen die Limits seines Modells, Anfrageraten eingeschlossen. Ein Schritt, der scheitert, gibt zurück, was er von einem Budget hielt, bevor der nächste Schritt fragt.
+- Jeder Schritt, den eine Anfrage versucht, zählt gegen die Limits seines Modells, Anfrageraten eingeschlossen. Ein Schritt, der scheitert, gibt zurück, was er von einem Budget hielt, bevor der nächste Schritt fragt. Die Wiederholungen eines Schritts zählen einmal.
 - Nutzung und Kosten sind die des antwortenden Schritts, zu den Preisen seines Modells. Gescheiterte Schritte kosten in Kaeso nichts. Ein Anbieter kann eine Anfrage trotzdem abrechnen, an der er arbeitete, bevor ein Schritt sein Zeitlimit erreichte.
 - Der [Antwort-Cache](../console/response-cache.md) wird für das Modell jedes Schritts befragt, also antwortet eine gecachte Antwort jedes Schritts.
 
 ## Was Apps und Protokolle sehen
 
 - `kaeso-model` und `kaeso-provider` nennen den Schritt, der antwortete, oder den, der zuletzt scheiterte.
-- `kaeso-route` nennt jeden Schritt, den die Anfrage erreichte, der Reihe nach mit seinem Pfad in der Route, wie ein Probelauf ihn nennt, mit Modell und Status und, wenn er scheiterte, seiner Dauer in Millisekunden: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. Ein Schritt, den der Schlüssel nicht nutzen darf, trägt `skipped` und kein Modell; ein Schritt, der übersprungen wurde, weil er gerade scheiterte, trägt `skipped` und sein Modell ([Antwort-Header](../api/model-api.md#antwort-header)).
-- Das [Anfrageprotokoll](../console/request-logs.md) hält den Alias als angefragtes Modell fest und listet die Schritte, die es zuerst versuchte oder übersprang, jeden mit Status, Fehler und Dauer.
+- `kaeso-route` nennt jeden Schritt, den die Anfrage erreichte, der Reihe nach mit seinem Pfad in der Route, wie ein Probelauf ihn nennt, mit Modell und Status und, wenn er scheiterte, seiner Dauer in Millisekunden: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. Ein Schritt, den der Schlüssel nicht nutzen darf, trägt `skipped` und kein Modell; ein Schritt, der übersprungen wurde, weil er gerade scheiterte, trägt `skipped` und sein Modell ([Antwort-Header](../api/model-api.md#antwort-header)). Ein Schritt, der sein Modell erneut versuchte, trägt `tries` mit der Zahl seiner Sendungen, etwa `status=200;tries=2`.
+- Das [Anfrageprotokoll](../console/request-logs.md) hält den Alias als angefragtes Modell fest und listet die Schritte, die es zuerst versuchte oder übersprang, jeden mit Status, Fehler und Dauer. Ein Versuch, den ein Schritt wiederholte, steht ebenfalls dort, als erneut versucht markiert, und zählt in seinem Filter nicht als Ausweichen.
 - `/v1/models` listet den Alias mit den Angaben seines Hauptmodells: die `then`-Seite von Bedingungen und der schwerste Zweig von Aufteilungen. Darf der Schlüssel dieses Modell nicht nutzen, zeigt der Alias das erste andere Modell, das er nutzen darf.
 - `kaeso_alias_fallbacks_total{provider, reason}` zählt die Schritte, die auswichen oder übersprungen wurden ([Zustand und Metriken](../self-hosting/monitoring.md)).
+- `kaeso_upstream_retries_total{provider, outcome}` zählt die Anfragen, die ein Schritt erneut sendete, danach, ob ein Versuch beantwortet wurde (`answered`) oder jeder fehlschlug (`gave_up`).
 
 ## Eine Route testen
 

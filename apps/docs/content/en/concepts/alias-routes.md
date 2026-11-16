@@ -67,6 +67,8 @@ A step falls back on `unavailable`, `limited` and `unsupported` unless it lists 
 
 A step's `timeout_seconds`, 1 to 3600, is how long Kaeso waits for the model's first byte, and for a reply that isn't streamed, before the step fails as `unavailable`. Without it, the model's own timeout applies. A request can shorten it for every step it reaches with the header `kaeso-timeout`, in seconds, such as an interactive app that waits 20 seconds at most; a longer value changes nothing ([timeouts](../api/model-api.md#timeouts)).
 
+A step's `retries`, 0 to 3, is how many times Kaeso tries its model again before the step fails or falls back, when the provider couldn't be reached, broke the connection, answered 5xx or was overloaded. Before each try it waits 0.25 to 2 seconds, or the provider's `Retry-After` when that is 5 seconds or less; a longer one ends the tries. A timeout, a rate limit or a refused request is never tried again: the provider may still be working on a request that timed out, and bill it. The tries share the step's timeout, and none starts once the stream has begun. Without `retries`, the project's **Retries** setting applies, 0 unless set, as it does for a request that names a model ([project settings](../console/organizations-and-projects.md#change-project-settings)).
+
 Nothing falls back once the provider has answered: a stream that breaks off later ends with an error event, as without a route.
 
 ### Steps that are skipped
@@ -77,17 +79,18 @@ Nothing falls back once the provider has answered: a stream that breaks off late
 
 ## Limits, costs and the cache
 
-- Every step a request tries counts against the limits for its model, request rates included. A step that fails gives back what it held of a budget before the next step asks.
+- Every step a request tries counts against the limits for its model, request rates included. A step that fails gives back what it held of a budget before the next step asks. A step's retries count once.
 - Usage and cost are the answering step's, at its model's prices. Failed steps cost nothing in Kaeso. A provider may still bill a request it worked on before a step timed out.
 - The [response cache](../console/response-cache.md) is looked up for each step's model, so a cached reply of any step answers.
 
 ## What apps and logs see
 
 - `kaeso-model` and `kaeso-provider` name the step that answered, or the one that failed last.
-- `kaeso-route` names every step the request reached, in order, by its path in the route as a trace names it, with its model and status, and its time in milliseconds when it failed: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. A step the key may not use carries `skipped` and no model; a step skipped because it failed moments ago carries `skipped` and its model ([response headers](../api/model-api.md#response-headers)).
-- The [request log](../console/request-logs.md) keeps the alias as the requested model and lists the steps it tried or skipped first, each with its status, error and time.
+- `kaeso-route` names every step the request reached, in order, by its path in the route as a trace names it, with its model and status, and its time in milliseconds when it failed: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. A step the key may not use carries `skipped` and no model; a step skipped because it failed moments ago carries `skipped` and its model ([response headers](../api/model-api.md#response-headers)). A step that tried its model again carries `tries` with how many times it sent the request, such as `status=200;tries=2`.
+- The [request log](../console/request-logs.md) keeps the alias as the requested model and lists the steps it tried or skipped first, each with its status, error and time. A try a step made again is listed too, marked as tried again, and doesn't count as a fallback in its filter.
 - `/v1/models` lists the alias with the details of its main model: the `then` side of conditions and the heaviest branch of splits. When the key may not use that model, the alias shows the first other model it may use.
 - `kaeso_alias_fallbacks_total{provider, reason}` counts the steps that fell back or were skipped ([health and metrics](../self-hosting/monitoring.md)).
+- `kaeso_upstream_retries_total{provider, outcome}` counts the requests a step sent again, by whether a try was answered (`answered`) or every try failed (`gave_up`).
 
 ## Test a route
 

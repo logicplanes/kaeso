@@ -34,6 +34,11 @@ pub struct ProjectView {
     pub content_logging: bool,
     #[doc = "The longest lifetime of new keys in days; `null` for the org's limit."]
     pub max_key_lifetime_days: Option<i32>,
+    #[doc = "How many times a request that names a model, and an alias step that sets\n\
+        no `retries`, tries the model again when it can't be reached, answers 5xx or\n\
+        is overloaded: 0 to 3."]
+    #[schema(minimum = 0, maximum = 3)]
+    pub retries: u8,
     #[doc = "When archived."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub archived_at: Option<OffsetDateTime>,
@@ -55,6 +60,7 @@ impl ProjectView {
             name: p.name.clone(),
             content_logging: p.content_logging,
             max_key_lifetime_days: p.max_key_lifetime_days,
+            retries: u8::try_from(p.retries).unwrap_or(0),
             archived_at: p.archived_at,
             avatar_url: crate::platform::views::avatar_url(p.avatar.as_deref()),
             created_at: p.created_at,
@@ -186,6 +192,10 @@ pub async fn get(ctx: Ctx, Path(_p): Path<(String, String)>) -> ApiResult<Json<P
 pub struct ProjectUpdate {
     #[doc = "A new name, 1 to 100 characters."]
     pub name: Option<String>,
+    #[doc = "How many times a request that names a model, and an alias step that sets\n\
+        no `retries`, tries the model again after a short-lived failure: 0 to 3."]
+    #[schema(minimum = 0, maximum = 3)]
+    pub retries: Option<u8>,
 }
 
 fn archived() -> ApiError {
@@ -237,7 +247,7 @@ async fn change(
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/projects/{project}",
-    summary = "Renames the project.",
+    summary = "Renames the project or sets its retries.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path)),
     request_body = ProjectUpdate,
@@ -253,9 +263,18 @@ pub async fn update(
         if let Some(name) = &req.name {
             p.name = validate_name("name", name)?;
         }
+        if let Some(retries) = req.retries {
+            if retries > kaeso_core::catalogue::route::MAX_RETRIES {
+                return Err(ApiError::invalid("retries", "`retries` must be 0 to 3."));
+            }
+            p.retries = i16::from(retries);
+        }
         Ok(())
     })
     .await?;
+    if req.retries.is_some() {
+        crate::services::catalogue::forget(&state, after.id).await;
+    }
     Ok(Json(ProjectView::from_row(&after)))
 }
 

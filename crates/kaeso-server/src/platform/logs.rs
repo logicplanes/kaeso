@@ -659,7 +659,7 @@ pub struct LogFilter {
     #[doc = "Only requests to this alias, by its exact name."]
     pub alias: Option<String>,
     #[doc = "Only requests where an alias route fell back to a later step (`true`), or\n\
-        where none did (`false`)."]
+        where none did (`false`). A step that only tried its model again doesn't count."]
     pub fell_back: Option<bool>,
     #[doc = "Only requests to this endpoint, as the log names it."]
     #[param(value_type = Option<super::LoggedEndpoint>)]
@@ -1006,8 +1006,10 @@ pub struct LogView {
         app named a model."]
     #[schema(example = "chat-default")]
     pub alias: Option<String>,
-    #[doc = "The steps of the alias's route that failed before the one that\n\
-        answered, or before the last one tried, in the order they were tried."]
+    #[doc = "The tries that failed before the one that answered, or before the last\n\
+        one, in the order they were made: the steps of the alias's route that fell\n\
+        back, and the tries a step made again after a short-lived failure\n\
+        (`retried`)."]
     pub fallbacks: Vec<FallbackView>,
     #[doc = "What a media request took and made, such as images; `null` for other requests."]
     pub media: Option<MediaView>,
@@ -1068,6 +1070,9 @@ pub struct FallbackView {
     #[doc = "The step wasn't tried because it failed moments ago for a reason that\n\
         lasts; `status` and the error are from that failure."]
     pub skipped: bool,
+    #[doc = "The step tried the same model again after this try, which failed for a\n\
+        moment: the provider couldn't be reached, answered 5xx or was overloaded."]
+    pub retried: bool,
 }
 
 fn fallbacks(stored: &str) -> Vec<FallbackView> {
@@ -1089,6 +1094,7 @@ fn fallbacks(stored: &str) -> Vec<FallbackView> {
             error_message: f.error_message,
             duration_ms: f.duration_ms,
             skipped: f.skipped,
+            retried: f.retried,
         })
         .collect()
 }
@@ -1490,8 +1496,14 @@ fn csv_line(v: &LogView) -> String {
             v.fallbacks
                 .iter()
                 .map(|f| {
-                    let skipped = if f.skipped { " skipped" } else { "" };
-                    format!("{} {}{skipped}", f.model, f.status)
+                    let how = if f.skipped {
+                        " skipped"
+                    } else if f.retried {
+                        " retried"
+                    } else {
+                        ""
+                    };
+                    format!("{} {}{how}", f.model, f.status)
                 })
                 .collect::<Vec<_>>()
                 .join("; "),

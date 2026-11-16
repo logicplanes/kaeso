@@ -222,6 +222,27 @@ describe("route inspector", () => {
     expect(savedRoute()).toMatchObject({ timeout_seconds: 30, fall_back_on: ["unavailable"] });
   });
 
+  it("sets how many times a step tries its model again, or leaves it to the project", async () => {
+    const { user } = await open({ ...modelRoute("cm_sonnet", modelRoute("cm_haiku")), retries: 1 } as RouteStep);
+    await user.click(await step(/Claude Sonnet 4\.5/));
+    const tries = within(panel()).getByRole("combobox", { name: "Try again" });
+    expect(tries).toHaveTextContent("Once");
+    await user.click(tries);
+    await user.click(await screen.findByRole("option", { name: "Twice" }));
+    expect(await step(/Claude Sonnet 4\.5/)).toHaveTextContent("2 retries");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests("PATCH", ONE_ALIAS)).toHaveLength(1));
+    expect(savedRoute()).toMatchObject({ retries: 2 });
+    expect((savedRoute() as { fallback: object }).fallback).not.toHaveProperty("retries");
+
+    await user.click(within(panel()).getByRole("combobox", { name: "Try again" }));
+    await user.click(await screen.findByRole("option", { name: "The project's setting" }));
+    expect(await step(/Claude Sonnet 4\.5/)).not.toHaveTextContent("retr");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(requests("PATCH", ONE_ALIAS)).toHaveLength(2));
+    expect(savedRoute()).not.toHaveProperty("retries");
+  });
+
   it("adds a fallback from the panel and warns when the name is a model's", async () => {
     const { user } = await open(modelRoute("cm_sonnet"));
     await user.click(await step(/Claude Sonnet 4\.5/));

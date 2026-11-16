@@ -266,7 +266,8 @@ export function logColumns({
     ),
     fallbacks: col.custom(
       { id: "fallbacks", header: columnLabel("fallbacks"), size: 104, priority: 5 },
-      (r: LogView) => r.fallbacks.length,
+      // A try the step made again isn't a fallback; the inspector lists both.
+      (r: LogView) => r.fallbacks.filter((f) => !f.retried).length,
       (v) => (v > 0 ? formatNumber(v) : null),
       { align: "end" },
     ),

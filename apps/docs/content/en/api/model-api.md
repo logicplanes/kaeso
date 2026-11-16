@@ -296,6 +296,6 @@ The OpenAI and Anthropic SDKs refuse to run in a browser unless the app passes `
 
 ## What Kaeso doesn't do
 
-- **Retries.** Kaeso sends each request once. The SDKs retry on their own where the error allows it.
+- **Retries.** Kaeso sends a request to its model again only where the project or an alias step asks for it, after a dropped connection, a 5xx or an overloaded provider, and only before any reply has reached the app ([alias routes](../concepts/alias-routes.md#fallbacks)). Otherwise it sends each request once; the SDKs retry on their own where the error allows it.
 - **Stored state.** Kaeso refuses Responses requests that ask the provider to store or continue a response (`store: true`, `previous_response_id`, `conversation`, `background: true`). Send the whole conversation each time.
 - **Silent changes.** Kaeso refuses a field it can't carry to the model's provider, with an error that names it, and never drops it. In Chat Completions, Messages and Embeddings, a field whose name starts with `header:` or contains a `.` gets 400, because Kaeso can't carry that name; Responses keeps such fields in the body. [Format translation](../concepts/format-translation.md) lists what crosses between formats.

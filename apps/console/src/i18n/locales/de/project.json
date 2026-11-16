@@ -278,5 +278,11 @@
   "project.overview.downloadCsv": "CSV herunterladen",
   "project.overview.id": "ID",
   "project.overview.byClient": "Nach Client",
-  "project.overview.client": "Client"
+  "project.overview.client": "Client",
+  "project.retries.count": "{count, plural, =0 {Nie} one {Einmal} =2 {Zweimal} other {#-mal}}",
+  "project.retries.hint": "Versucht ein Modell erneut, wenn sein Anbieter kurz ausfällt.",
+  "project.retries.saved": "Erneut versuchen: {times}",
+  "project.retries.title": "Wiederholungen",
+  "project.retries.tryAgain": "Erneut versuchen",
+  "project.retries.tryAgainHint": "Nach abgebrochener Verbindung, einem 5xx oder einer Überlastung."
 }

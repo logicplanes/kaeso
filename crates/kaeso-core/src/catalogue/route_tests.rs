@@ -83,7 +83,7 @@ fn a_model_step_reads_with_its_defaults_and_writes_them_back() {
 #[test]
 fn unknown_fields_and_types_are_refused() {
     for bad in [
-        json!({ "type": "model", "model": m(1), "retries": 3 }),
+        json!({ "type": "model", "model": m(1), "attempts": 3 }),
         json!({ "type": "loop", "model": m(1) }),
         json!({ "type": "condition", "match": "all", "rules": [{ "field": "colour", "op": "in", "value": [] }], "then": { "type": "model", "model": m(1) }, "else": { "type": "model", "model": m(2) } }),
         json!({ "type": "model", "model": "openai/gpt-5" }),
@@ -113,7 +113,7 @@ fn a_full_route_round_trips_through_json() {
         ],
         "then": {
             "type": "model", "model": m(1),
-            "fallback": { "type": "model", "model": m(2), "fallback": null, "fall_back_on": ["unavailable"], "timeout_seconds": 20 },
+            "fallback": { "type": "model", "model": m(2), "fallback": null, "fall_back_on": ["unavailable"], "timeout_seconds": 20, "retries": 2 },
             "fall_back_on": ["unavailable", "limited", "unsupported", "rejected"],
             "timeout_seconds": 10
         },
@@ -146,6 +146,10 @@ fn validation_names_the_field_that_is_wrong() {
         (
             json!({ "type": "model", "model": m(1), "timeout_seconds": 3601 }),
             "route.timeout_seconds",
+        ),
+        (
+            json!({ "type": "model", "model": m(1), "retries": 4 }),
+            "route.retries",
         ),
         (
             json!({ "type": "model", "model": m(1), "fall_back_on": [], "fallback": { "type": "model", "model": m(2) } }),

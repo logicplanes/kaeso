@@ -54,9 +54,19 @@ struct Shared {
     gates: Mutex<HashMap<String, Arc<GateState>>>,
     gates_made: AtomicU64,
     video_polls: crate::mock_videos::Polls,
+    flaky: Mutex<HashMap<String, usize>>,
 }
 
 impl Shared {
+    // Counts a request that carries `[mock:flaky=<name> …]`; true while it is one of the
+    // first `fails`.
+    fn flaky_fails(&self, name: &str, fails: usize) -> bool {
+        let mut seen = self.flaky.lock().unwrap_or_else(PoisonError::into_inner);
+        let n = seen.entry(name.to_owned()).or_default();
+        *n += 1;
+        *n <= fails
+    }
+
     fn gate(&self, name: &str) -> Arc<GateState> {
         self.gates
             .lock()
@@ -607,6 +617,18 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
                     .map(str::to_owned)
             }),
     };
+    // `[mock:flaky=<name> <n> <fixture>]` fails the first `n` requests that carry it with the
+    // fixture and answers the ones after, as a provider that fails for a moment.
+    if let Some((name, fails, fixture)) = marker(&text, "flaky").and_then(|m| {
+        let mut parts = m.split(' ');
+        Some((parts.next()?, parts.next()?.parse().ok()?, parts.next()?))
+    }) && ctx.shared.flaky_fails(name, fails)
+    {
+        if fixture == "drop" {
+            return dropped_connection();
+        }
+        return error_response(&dir, fixture);
+    }
     if let Some((name, after)) = asked.as_deref().and_then(|m| failure_for(&text, m)) {
         if let Some(after) = after {
             tokio::time::sleep(after).await;
@@ -810,6 +832,17 @@ fn bytes_file(path: &Path, content_type: &str) -> Response {
         .status(StatusCode::OK)
         .header("content-type", content_type)
         .body(Body::from(bytes))
+        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+// The `drop` fixture of `[mock:flaky=…]`: the connection breaks before the reply's body is
+// complete, as a provider that couldn't be reached for a moment.
+fn dropped_connection() -> Response {
+    let chunks = futures::stream::once(async { Err::<Bytes, _>(std::io::Error::other("dropped")) });
+    Response::builder()
+        .status(StatusCode::OK)
+        .header("content-type", "application/json")
+        .body(Body::from_stream(chunks))
         .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
 }
 

@@ -26,7 +26,7 @@ sequenceDiagram
   Note over Gateway: Nutzung berechnen und protokollieren
 ```
 
-Kaeso übersetzt jede Anfrage, statt sie durchzureichen, und sendet sie genau einmal, ohne Wiederholung. Lehnt ein Schritt eine Anfrage ab, erhält die App den Fehler in ihrem eigenen Format, mit einem Status, den das Diagramm unter diesem Schritt zeigt.
+Kaeso übersetzt jede Anfrage, statt sie durchzureichen, und sendet sie einmal, es sei denn, das Projekt oder ein Alias-Schritt lässt es das Modell nach einem kurzen Ausfall erneut versuchen ([Alias-Routen](alias-routes.md#fallbacks)). Lehnt ein Schritt eine Anfrage ab, erhält die App den Fehler in ihrem eigenen Format, mit einem Status, den das Diagramm unter diesem Schritt zeigt.
 
 ## Der Schlüssel
 

@@ -120,6 +120,27 @@ describe("project settings", () => {
     expect(requests("PATCH", PROJECT_URL)).toHaveLength(1);
   });
 
+  it("sets how many times the project's requests try their model again", async () => {
+    setUp();
+    on("PATCH", PROJECT_URL, ({ body }: { body: { retries?: number } }) => project({ retries: body.retries ?? 0 }));
+    const { user } = await renderApp(projectPath("settings"));
+    const tries = await screen.findByRole("combobox", { name: "Try again" });
+    expect(tries).toHaveTextContent("Never");
+    await user.click(tries);
+    expect((await screen.findAllByRole("option")).map((o) => o.textContent)).toEqual(["Never", "Once", "Twice", "3 times"]);
+    await user.click(screen.getByRole("option", { name: "3 times" }));
+    expect(await notifications().findByText("Tries again: 3 times")).toBeInTheDocument();
+    expect(requests("PATCH", PROJECT_URL).map((r) => r.body)).toEqual([{ retries: 3 }]);
+  });
+
+  it("shows the project's retries without letting someone change them who may not edit the project", async () => {
+    setUp({ rights: without("project.update"), view: project({ retries: 1 }) });
+    await renderApp(projectPath("settings"));
+    const tries = await screen.findByRole("combobox", { name: "Try again" });
+    expect(tries).toHaveTextContent("Once");
+    expect(tries).toBeDisabled();
+  });
+
   it("locks the name and picture without Edit project and hides the sections that need other rights", async () => {
     setUp({ rights: without("project.update", "security.key_policy.project.manage", "project.archive", "logs.content.manage") });
     const { user } = await renderApp(projectPath("settings"));

@@ -100,6 +100,8 @@ pub(super) struct Recording {
     logging: Option<tokio::task::JoinHandle<(Bytes, Keep)>>,
     // Moves into a stream's pump, so a stream counts until it ends.
     serving: Option<crate::metrics::Serving>,
+    // How long the current step may take, from its first try: its retries share it.
+    step_wait: Option<Duration>,
 }
 
 impl Recording {
@@ -354,6 +356,9 @@ pub struct Failure {
     pub served: Served,
     pub stage: Stage,
     pub provider_said: Option<KppError>,
+    /// The provider couldn't be reached or broke the connection: a second try may get
+    /// through, unlike an address the install refuses or a reply too large to take.
+    pub dropped: bool,
 }
 
 impl Failure {
@@ -363,6 +368,7 @@ impl Failure {
             served: Served::default(),
             stage,
             provider_said: None,
+            dropped: false,
         }
     }
 
@@ -417,6 +423,7 @@ pub async fn serve_with(
         keep_in_cache: None,
         logging: None,
         serving: Some(crate::metrics::Serving::start()),
+        step_wait: None,
     };
     let cut = state.in_flight.cut();
     let done = tokio::select! {
@@ -647,6 +654,12 @@ pub(crate) fn upstream_error(e: &UpstreamError) -> KppError {
             )
         }
     }
+}
+
+// A connection that couldn't be made or broke: the only transport failures a second try may
+// get past.
+fn dropped(e: &UpstreamError) -> bool {
+    matches!(e, UpstreamError::Connect(_) | UpstreamError::Transfer(_))
 }
 
 pub(crate) fn upstream_error_from(e: &UpstreamError, provider: &ProviderRef) -> KppError {
@@ -1163,7 +1176,17 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             let app_req = Arc::new(req.clone());
             // Boxed so every future around a request holds a pointer, not the attempt's own
             // state: the request's futures are moved whole each time one is wrapped.
-            Box::pin(attempt(state, rec, &sh, entry, app_req, req, None)).await
+            let mut fell = Vec::new();
+            let model = format!("{}/{}", entry.provider, entry.model_id);
+            let step = StepTry {
+                path: "",
+                model: &model,
+                timeout: None,
+                retries: models.retries,
+            };
+            Box::pin(tries(state, rec, &sh, entry, &app_req, step, &mut fell))
+                .await
+                .0
         }
         Resolved::Alias(alias) => {
             rec.outcome().alias = Some(alias.name.clone());
@@ -1321,6 +1344,134 @@ fn begin_attempt(rec: &mut Recording) {
     o.response_cache = None;
 }
 
+/// A step as it is tried: where it sits in its route and what it calls, for its entries in the
+/// request log, its own timeout and how many times it may try its model again.
+#[derive(Clone, Copy)]
+struct StepTry<'a> {
+    path: &'a str,
+    model: &'a str,
+    timeout: Option<u32>,
+    retries: u8,
+}
+
+/// One try of a step: the step's own timeout, and for a try after the first the time the step
+/// has left. A later try keeps the first's reservation and skips the response cache.
+#[derive(Clone, Copy)]
+struct TryAt {
+    step_timeout: Option<u32>,
+    again: Option<Duration>,
+}
+
+const RETRY_WAIT_LEAST: Duration = Duration::from_millis(250);
+const RETRY_WAIT_MOST: Duration = Duration::from_secs(2);
+const LONGEST_RETRY_AFTER: Duration = Duration::from_secs(5);
+
+// How long to wait before a step tries its model again, or none for a failure a second try
+// won't change. Only a provider that couldn't be reached, answered 5xx or said it was
+// overloaded; never a timeout, which the provider may still be working on and bill. A
+// `Retry-After` of up to 5 seconds replaces the wait; a longer one ends the tries.
+fn retry_wait(f: &Failure) -> Option<Duration> {
+    let short_lived = match f.stage {
+        Stage::Upstream => f.dropped,
+        Stage::Provider => matches!(f.err.kind, ErrorKind::Overloaded | ErrorKind::ProviderError),
+        _ => false,
+    };
+    if !short_lived {
+        return None;
+    }
+    match f.err.retry_after {
+        Some(after) => (after <= LONGEST_RETRY_AFTER).then_some(after),
+        // Full jitter, so gateways that failed at once don't try again at once.
+        None => {
+            let [a, b] = kaeso_crypto::random_bytes::<2>();
+            let share = f64::from(u16::from_be_bytes([a, b])) / f64::from(u16::MAX);
+            Some(RETRY_WAIT_LEAST + (RETRY_WAIT_MOST - RETRY_WAIT_LEAST).mul_f64(share))
+        }
+    }
+}
+
+// One step: its model tried once, and again up to `retries` times after a short-lived failure.
+// The tries share the step's deadline, its limit reservation and its one count against request
+// rates; the response cache is looked up before the first only. Each failed try that is tried
+// again joins `fell`, so the request log shows it under the request. Gives the step's answer or
+// its last failure, and how many times it sent the request.
+async fn tries(
+    state: &AppState,
+    rec: &mut Recording,
+    sh: &Shared<'_>,
+    entry: &Entry,
+    app_req: &Arc<Request>,
+    step: StepTry<'_>,
+    fell: &mut Vec<FellBack>,
+) -> (Result<Done, Failure>, u8) {
+    let began = tokio::time::Instant::now();
+    rec.step_wait = None;
+    let mut again: Option<Duration> = None;
+    let mut sent: u8 = 1;
+    loop {
+        rec.outcome().fallbacks.clone_from(fell);
+        let started = tokio::time::Instant::now();
+        let tried = Box::pin(attempt(
+            state,
+            rec,
+            sh,
+            entry,
+            Arc::clone(app_req),
+            (**app_req).clone(),
+            TryAt {
+                step_timeout: step.timeout,
+                again,
+            },
+        ))
+        .await;
+        let provider = entry.provider.to_string();
+        let failure = match tried {
+            Ok(done) => {
+                if sent > 1 {
+                    metrics::counter!(crate::metrics::UPSTREAM_RETRIES, "provider" => provider, "outcome" => "answered").increment(1);
+                }
+                return (Ok(done), sent);
+            }
+            Err(f) => f,
+        };
+        let now = tokio::time::Instant::now();
+        let left = rec.step_wait.map_or(Duration::MAX, |w| {
+            (began + w).saturating_duration_since(now)
+        });
+        let wait = if sent <= step.retries {
+            retry_wait(&failure)
+        } else {
+            None
+        };
+        let Some(wait) = wait.filter(|w| *w < left) else {
+            if sent > 1 {
+                metrics::counter!(crate::metrics::UPSTREAM_RETRIES, "provider" => provider, "outcome" => "gave_up").increment(1);
+            }
+            return (Err(failure), sent);
+        };
+        rec.attempt_failed(Instant::now());
+        let said = failure.logged();
+        let status = failure.err.status.unwrap_or(500);
+        tracing::info!(model = step.model, status, error = %said.message, "a step's model failed for a moment; trying it again");
+        fell.push(FellBack {
+            catalogue_model_id: entry.id,
+            path: step.path.to_owned(),
+            model: step.model.to_owned(),
+            status,
+            error_kind: said.kind.as_str().to_owned(),
+            error_message: said.message.clone(),
+            duration_ms: u64::try_from(now.duration_since(started).as_millis()).unwrap_or(u64::MAX),
+            skipped: false,
+            retried: true,
+        });
+        tokio::time::sleep(wait).await;
+        // The wait is the provider's doing, not Kaeso's work: its overhead leaves it out.
+        rec.waited = rec.waited.saturating_add(wait);
+        again = Some(left.saturating_sub(wait));
+        sent = sent.saturating_add(1);
+    }
+}
+
 async fn attempt(
     state: &AppState,
     rec: &mut Recording,
@@ -1328,8 +1479,12 @@ async fn attempt(
     entry: &Entry,
     app_req: Arc<Request>,
     mut req: Request,
-    step_timeout: Option<u32>,
+    at: TryAt,
 ) -> Result<Done, Failure> {
+    let TryAt {
+        step_timeout,
+        again,
+    } = at;
     let Shared {
         ingress,
         kind,
@@ -1386,6 +1541,7 @@ async fn attempt(
             served,
             stage,
             provider_said: None,
+            dropped: false,
         }
     };
     {
@@ -1458,6 +1614,25 @@ async fn attempt(
     .with_model_override(eff.fields.timeout_seconds)
     .with_step_override(step_timeout, stream)
     .shortened_to(timeout, stream);
+    let timeouts = match again {
+        Some(left) => Timeouts {
+            first_byte: timeouts.first_byte.min(left),
+            request: if stream {
+                timeouts.request
+            } else {
+                timeouts.request.min(left)
+            },
+            ..timeouts
+        },
+        None => {
+            rec.step_wait = Some(if stream {
+                timeouts.first_byte
+            } else {
+                timeouts.request
+            });
+            timeouts
+        }
+    };
     let credential = credentials::for_provider(
         state,
         OrgId::from_uuid(caller.org_id),
@@ -1524,11 +1699,13 @@ async fn attempt(
         )
         .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect, eff.provider.responses())),
     };
-    rec.reservation = state
-        .limits
-        .admit(state, &admission)
-        .await
-        .map_err(|refusal| fail(Stage::Limits)(limited(refusal)))?;
+    if again.is_none() {
+        rec.reservation = state
+            .limits
+            .admit(state, &admission)
+            .await
+            .map_err(|refusal| fail(Stage::Limits)(limited(refusal)))?;
+    }
 
     if entry.is_unavailable()
         && !state
@@ -1651,25 +1828,30 @@ async fn attempt(
             served,
             stage,
             provider_said: None,
+            dropped: false,
         }
     };
-    let cached = consult_cache(
-        state,
-        rec,
-        headers,
-        response_cache::Request {
-            org: caller.org_id,
-            project: caller.project_id,
-            kind,
-            dialect: plan.dialect,
-            provider: eff.provider.id(),
-            entry: entry.id,
-            model: &eff.model_id,
-            encoded: &encoded,
-        },
-        stream,
-    )
-    .await;
+    let cached = if again.is_some() {
+        Consulted::Skip
+    } else {
+        consult_cache(
+            state,
+            rec,
+            headers,
+            response_cache::Request {
+                org: caller.org_id,
+                project: caller.project_id,
+                kind,
+                dialect: plan.dialect,
+                provider: eff.provider.id(),
+                entry: entry.id,
+                model: &eff.model_id,
+                encoded: &encoded,
+            },
+            stream,
+        )
+        .await
+    };
     rec.keep_in_cache = match cached {
         Consulted::Hit(stored) => {
             let encode_ctx = EncodeCtx::for_request(Arc::clone(&app_req)).with_created_at(
@@ -1780,7 +1962,10 @@ async fn attempt(
         if let UpstreamError::Refused(r) = &e {
             tracing::warn!(provider = eff.provider.id(), host = %r.host, "a custom provider's address is not allowed on this install");
         }
-        fail(Stage::Upstream)(upstream_error_from(&e, &eff.provider))
+        Failure {
+            dropped: dropped(&e),
+            ..fail(Stage::Upstream)(upstream_error_from(&e, &eff.provider))
+        }
     })?;
     if let Some(held) = &mut rec.held {
         held.keep(kept);
@@ -1805,6 +1990,7 @@ async fn attempt(
             served,
             stage,
             provider_said: None,
+            dropped: false,
         }
     };
     if plan.dialect == DialectId::ElevenLabs
@@ -1865,7 +2051,10 @@ async fn attempt(
             .map_err(|g| match g {
                 stream::Gathered::Transport(e) => {
                     count_upstream_error(transport_kind(&e), provider);
-                    fail(Stage::Upstream)(upstream_error(&e))
+                    Failure {
+                        dropped: dropped(&e),
+                        ..fail(Stage::Upstream)(upstream_error(&e))
+                    }
                 }
                 stream::Gathered::Provider(err) => {
                     count_upstream_error(err.kind.as_str(), provider);
@@ -1900,6 +2089,7 @@ async fn attempt(
                 keep_in_cache: None,
                 logging: rec.logging.take(),
                 serving: rec.serving.take(),
+                step_wait: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
@@ -1969,7 +2159,10 @@ async fn attempt(
                     while let Some(chunk) = s.next().await {
                         let chunk = chunk.map_err(|e| {
                             count_upstream_error(transport_kind(&e), provider);
-                            fail(Stage::Upstream)(upstream_error(&e))
+                            Failure {
+                                dropped: dropped(&e),
+                                ..fail(Stage::Upstream)(upstream_error(&e))
+                            }
                         })?;
                         if buf.len() + chunk.len() > MAX_ERROR_BODY {
                             break;
@@ -2361,21 +2554,19 @@ async fn route(
                 error_message: held.error_message,
                 duration_ms: 0,
                 skipped: true,
+                retried: false,
             });
             continue;
         }
-        rec.outcome().fallbacks.clone_from(&failed);
         let began = Instant::now();
-        let tried = Box::pin(attempt(
-            state,
-            rec,
-            sh,
-            entry,
-            Arc::clone(&app_req),
-            (*app_req).clone(),
-            step.timeout_seconds,
-        ))
-        .await;
+        let named = StepTry {
+            path: &planned.path,
+            model: &model,
+            timeout: step.timeout_seconds,
+            retries: step.retries.unwrap_or(sh.models.retries),
+        };
+        let (tried, sent) =
+            Box::pin(tries(state, rec, sh, entry, &app_req, named, &mut failed)).await;
         let ended = Instant::now();
         let took = u64::try_from(ended.duration_since(began).as_millis()).unwrap_or(u64::MAX);
         let mut failure = match tried {
@@ -2387,6 +2578,7 @@ async fn route(
                     tried: Some(Tried {
                         status: done.status(),
                         duration_ms: None,
+                        tries: sent,
                     }),
                 });
                 return Ok(done.with_route(&walked));
@@ -2403,6 +2595,7 @@ async fn route(
             tried: Some(Tried {
                 status,
                 duration_ms: Some(took),
+                tries: sent,
             }),
         });
         if let Some((reach, held)) = hold(state, &at, &failure, status).await {
@@ -2431,6 +2624,7 @@ async fn route(
             error_message: said.message.clone(),
             duration_ms: took,
             skipped: false,
+            retried: false,
         });
         let held = std::mem::take(&mut rec.reservation);
         state.limits.release(state, &held, &request_id).await;
@@ -2995,5 +3189,55 @@ mod tests {
                 assert!(text.contains("[redacted]"), "{provider} to {app}: {text}");
             }
         }
+    }
+
+    #[test]
+    fn only_a_dropped_connection_or_a_provider_that_failed_for_a_moment_is_tried_again() {
+        let failure = |stage: Stage, kind: ErrorKind, status: u16, dropped: bool| Failure {
+            dropped,
+            ..Failure::new(error(kind, status, "failed"), stage)
+        };
+        let jittered = |f: &Failure| {
+            let wait = retry_wait(f).expect("tried again");
+            assert!(
+                (RETRY_WAIT_LEAST..=RETRY_WAIT_MOST).contains(&wait),
+                "{wait:?}"
+            );
+        };
+        jittered(&failure(
+            Stage::Upstream,
+            ErrorKind::ProviderError,
+            502,
+            true,
+        ));
+        jittered(&failure(Stage::Provider, ErrorKind::Overloaded, 529, false));
+        jittered(&failure(
+            Stage::Provider,
+            ErrorKind::ProviderError,
+            500,
+            false,
+        ));
+        for f in [
+            // An address the install refuses, or a reply too large to take.
+            failure(Stage::Upstream, ErrorKind::ProviderError, 502, false),
+            // The provider may still be working on it, and bill it.
+            failure(Stage::Upstream, ErrorKind::Timeout, 504, false),
+            failure(Stage::Provider, ErrorKind::Timeout, 504, false),
+            failure(Stage::Provider, ErrorKind::RateLimited, 429, false),
+            failure(Stage::Provider, ErrorKind::InvalidRequest, 400, false),
+            failure(Stage::KeyRefused, ErrorKind::Authentication, 401, false),
+            failure(Stage::Limits, ErrorKind::RateLimited, 429, false),
+            failure(Stage::Reply, ErrorKind::ProviderError, 502, true),
+        ] {
+            assert_eq!(retry_wait(&f), None, "{:?} {:?}", f.stage, f.err.kind);
+        }
+        let after = |secs: u64| {
+            let mut f = failure(Stage::Provider, ErrorKind::Overloaded, 503, false);
+            f.err.retry_after = Some(Duration::from_secs(secs));
+            retry_wait(&f)
+        };
+        assert_eq!(after(3), Some(Duration::from_secs(3)));
+        assert_eq!(after(5), Some(Duration::from_secs(5)));
+        assert_eq!(after(6), None, "a longer wait ends the tries");
     }
 }

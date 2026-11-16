@@ -14,6 +14,7 @@ pub const COST: &str = "kaeso_cost_microusd_total";
 pub const LIMIT_REFUSALS: &str = "kaeso_limit_refusals_total";
 pub const UPSTREAM_ERRORS: &str = "kaeso_upstream_errors_total";
 pub const ALIAS_FALLBACKS: &str = "kaeso_alias_fallbacks_total";
+pub const UPSTREAM_RETRIES: &str = "kaeso_upstream_retries_total";
 pub const STREAM_FAILURES: &str = "kaeso_stream_failures_total";
 pub const USAGE_ESTIMATES: &str = "kaeso_usage_estimates_total";
 pub const REASONING_CONTINUITY: &str = "kaeso_reasoning_continuity_total";
@@ -78,6 +79,10 @@ pub fn describe() {
     describe_counter!(
         ALIAS_FALLBACKS,
         "Alias route steps that failed and fell back to the next, by provider and reason."
+    );
+    describe_counter!(
+        UPSTREAM_RETRIES,
+        "Requests a step sent its model again after a short-lived failure, by provider and outcome (answered, gave_up)."
     );
     describe_counter!(
         STREAM_FAILURES,

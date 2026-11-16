@@ -12,6 +12,8 @@ pub struct Project {
     pub content_logging: bool,
     pub keep_media: bool,
     pub max_key_lifetime_days: Option<i32>,
+    /// How many times a step tries its model again after a short-lived failure, 0 to 3.
+    pub retries: i16,
     pub archived_at: Option<OffsetDateTime>,
     pub created_at: OffsetDateTime,
     pub avatar: Option<String>,
@@ -41,7 +43,7 @@ pub async fn get(
 ) -> Result<Option<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT id, org_id, name, content_logging, keep_media, max_key_lifetime_days, archived_at, created_at, avatar \
+        "SELECT id, org_id, name, content_logging, keep_media, max_key_lifetime_days, retries, archived_at, created_at, avatar \
          FROM projects WHERE org_id = $1 AND id = $2",
         org_id,
         id
@@ -72,7 +74,7 @@ pub async fn get_for_update(
 ) -> Result<Option<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT id, org_id, name, content_logging, keep_media, max_key_lifetime_days, archived_at, created_at, avatar \
+        "SELECT id, org_id, name, content_logging, keep_media, max_key_lifetime_days, retries, archived_at, created_at, avatar \
          FROM projects WHERE org_id = $1 AND id = $2 FOR NO KEY UPDATE",
         org_id,
         id
@@ -109,14 +111,15 @@ pub async fn set_keep_media(
 pub async fn update(db: impl PgExecutor<'_>, p: &Project) -> Result<(), StoreError> {
     sqlx::query!(
         "UPDATE projects SET name = $3, content_logging = $4, max_key_lifetime_days = $5, archived_at = $6, \
-         avatar = $7, updated_at = now() WHERE org_id = $1 AND id = $2",
+         avatar = $7, retries = $8, updated_at = now() WHERE org_id = $1 AND id = $2",
         p.org_id,
         p.id,
         p.name,
         p.content_logging,
         p.max_key_lifetime_days,
         p.archived_at,
-        p.avatar
+        p.avatar,
+        p.retries
     )
     .execute(db)
     .await?;
@@ -134,7 +137,7 @@ pub async fn list(
 ) -> Result<Vec<Project>, StoreError> {
     Ok(sqlx::query_as!(
         Project,
-        "SELECT p.id, p.org_id, p.name, p.content_logging, p.keep_media, p.max_key_lifetime_days, p.archived_at, p.created_at, p.avatar \
+        "SELECT p.id, p.org_id, p.name, p.content_logging, p.keep_media, p.max_key_lifetime_days, p.retries, p.archived_at, p.created_at, p.avatar \
          FROM projects p WHERE p.org_id = $1 \
          AND ($2::uuid IS NULL OR EXISTS (SELECT 1 FROM project_memberships m WHERE m.project_id = p.id AND m.user_id = $2)) \
          AND ($6::uuid[] IS NULL OR p.id = ANY($6)) \
