@@ -7,7 +7,7 @@ use serde_json::value::RawValue;
 
 use super::DIALECT;
 use super::node::Node;
-use super::overrides::Overrides;
+use super::overrides::{Key, Overrides, string_key, text_parts_key};
 use super::wire;
 use crate::cross::{ReplyPolicy, opaque_replayable, reply_policy};
 use crate::inline_media::Media;
@@ -231,13 +231,58 @@ pub(super) fn decode_part(raw: &RawValue, kind: TextKind, origin: &Origin) -> Bl
         return unknown(raw, origin);
     };
     set_extras(&mut block, Extras::new(origin.clone()));
-    if let Some(canon) = canonical_part(&block, kind, &mut Media::inline()) {
-        let overrides = Overrides::diff(&canon, raw, &[]);
-        if let Some(extras) = extras_mut(&mut block) {
-            overrides.record(extras, "");
-        }
+    let overrides = part_keys(raw, &block, kind).or_else(|| {
+        canonical_part(&block, kind, &mut Media::inline())
+            .map(|canon| Overrides::diff(&canon, raw, &[]))
+    });
+    if let (Some(overrides), Some(extras)) = (overrides, extras_mut(&mut block)) {
+        overrides.record(extras, "");
     }
     block
+}
+
+// In a request, `text_part` and `refusal_part` hold what the part's own keys hold, but for the
+// type, which follows the message's role, and the annotations, which only assistant text writes.
+fn part_keys(raw: &RawValue, block: &Block, kind: TextKind) -> Option<Overrides> {
+    let assistant = match kind {
+        TextKind::Input => false,
+        TextKind::AssistantInput => true,
+        TextKind::Output => return None,
+    };
+    let (ty, required): (&str, &[&str]) = match block {
+        Block::Text(t) if t.cache.is_none() => (
+            if assistant {
+                "output_text"
+            } else {
+                "input_text"
+            },
+            &["type", "text"],
+        ),
+        Block::Refusal(_) => ("refusal", &["type", "refusal"]),
+        _ => return None,
+    };
+    let text = matches!(block, Block::Text(_));
+    let mut annotations = false;
+    let overrides = Overrides::by_keys(raw, required, |k, v| match k {
+        "type" => string_key(v, ty),
+        "text" if text => Key::Same,
+        "refusal" if !text => Key::Same,
+        "annotations" if text && assistant => {
+            annotations = true;
+            if v.trim_start().starts_with('[') {
+                Key::Same
+            } else {
+                Key::Unsure
+            }
+        }
+        "prompt_cache_breakpoint" if text => Key::Unsure,
+        _ => Key::Extra,
+    })?;
+    Some(if text && assistant && !annotations {
+        overrides.unset("annotations", serde_json::Value::Array(Vec::new()))
+    } else {
+        overrides
+    })
 }
 
 pub(super) fn extras_mut(block: &mut Block) -> Option<&mut Extras> {
@@ -260,7 +305,7 @@ fn set_extras(block: &mut Block, extras: Extras) {
 }
 
 pub(super) fn decode_parts(
-    content: &StringOr<Box<RawValue>>,
+    content: &StringOr<&RawValue>,
     kind: TextKind,
     origin: &Origin,
 ) -> Vec<Block> {
@@ -351,8 +396,19 @@ pub(super) fn decode_function_call(
     let w: wire::FunctionCallItem = serde_json::from_str(raw.get()).ok()?;
     let mut extras = Extras::new(origin.clone());
     let args = arguments_from(w.arguments.clone(), &mut extras);
-    let canon = function_call_item(&w.call_id, &w.name, &w.arguments, id_status);
-    Overrides::diff(&canon, raw, &[]).record(&mut extras, "");
+    let keys = id_status.is_none().then(|| {
+        Overrides::by_keys(raw, &["type"], |k, v| match k {
+            "type" => string_key(v, "function_call"),
+            "arguments" | "call_id" | "name" => Key::Same,
+            _ => Key::Extra,
+        })
+    });
+    keys.flatten()
+        .unwrap_or_else(|| {
+            let canon = function_call_item(&w.call_id, &w.name, &w.arguments, id_status);
+            Overrides::diff(&canon, raw, &[])
+        })
+        .record(&mut extras, "");
     strip_kaeso_id(&mut extras);
     let mut call = ToolCallBlock::new(w.call_id, w.name, args);
     call.extras = extras;
@@ -380,7 +436,7 @@ pub(super) fn decode_function_call_output(
     raw: &RawValue,
     origin: &Origin,
 ) -> Option<ToolResultBlock> {
-    let w: wire::FunctionCallOutputItem = serde_json::from_str(raw.get()).ok()?;
+    let w: wire::FunctionCallOutputItem<'_> = serde_json::from_str(raw.get()).ok()?;
     let content = decode_parts(&w.output, TextKind::Input, origin);
     let mut result = ToolResultBlock::new(w.call_id, content);
     result.extras = Extras::new(origin.clone());
@@ -390,8 +446,16 @@ pub(super) fn decode_function_call_output(
             result.extras.form.insert(PARTS.to_owned(), true.into());
         }
     }
-    let canon = function_call_output_item(&result.call_id, &result, &mut Media::inline());
-    Overrides::diff(&canon, raw, &["output"]).record(&mut result.extras, "");
+    Overrides::by_keys(raw, &["type"], |k, v| match k {
+        "type" => string_key(v, "function_call_output"),
+        "call_id" | "output" => Key::Same,
+        _ => Key::Extra,
+    })
+    .unwrap_or_else(|| {
+        let canon = function_call_output_item(&result.call_id, &result, &mut Media::inline());
+        Overrides::diff(&canon, raw, &["output"])
+    })
+    .record(&mut result.extras, "");
     Some(result)
 }
 
@@ -498,6 +562,7 @@ pub(super) fn decode_reasoning(raw: &RawValue, origin: &Origin) -> Option<Reason
     {
         return Some(block);
     }
+    let has_summary = w.summary.is_some();
     let mut block = ReasoningBlock::new(origin.clone());
     block.summary = w
         .summary
@@ -531,13 +596,27 @@ pub(super) fn decode_reasoning(raw: &RawValue, origin: &Origin) -> Option<Reason
     let kaeso = std::mem::take(&mut block.extras.form);
     block.extras = Extras::new(origin.clone());
     block.extras.form = kaeso;
-    let canon = reasoning_item(
-        w.id.as_deref(),
-        &block.summary,
-        w.encrypted_content.as_deref(),
-        &block.text,
-    );
-    Overrides::diff(&canon, raw, &[]).record(&mut block.extras, "");
+    let present = |held: bool| if held { Key::Same } else { Key::Extra };
+    let keys = Overrides::by_keys(raw, &["type", "summary"], |k, v| match k {
+        "type" => string_key(v, "reasoning"),
+        "id" => present(w.id.is_some()),
+        "encrypted_content" => present(w.encrypted_content.is_some()),
+        "summary" if has_summary => text_parts_key(v, "summary_text"),
+        "summary" => Key::Unsure,
+        "content" if block.text.is_empty() => Key::Extra,
+        "content" => text_parts_key(v, "reasoning_text"),
+        _ => Key::Extra,
+    });
+    keys.unwrap_or_else(|| {
+        let canon = reasoning_item(
+            w.id.as_deref(),
+            &block.summary,
+            w.encrypted_content.as_deref(),
+            &block.text,
+        );
+        Overrides::diff(&canon, raw, &[])
+    })
+    .record(&mut block.extras, "");
     Some(block)
 }
 

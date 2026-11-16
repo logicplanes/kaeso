@@ -142,3 +142,120 @@ fn streamed_events_through_each_encoder() {
         }
     }
 }
+
+// A coding agent's conversation as Codex sends it on its 600th turn: instructions, tools, and
+// for every turn a reasoning item, a function call and its output.
+fn codex_conversation(turns: usize) -> Vec<u8> {
+    let tools: Vec<_> = (0..20)
+        .map(|i| {
+            json!({
+                "type": "function",
+                "name": format!("tool_{i:02}"),
+                "description": format!("Tool {i} of the workspace. {}", "It reads or changes files and says what happened. ".repeat(6)),
+                "strict": false,
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": { "type": "string", "description": "The absolute path." },
+                        "limit": { "type": "integer", "minimum": 1, "maximum": 2000 }
+                    },
+                    "required": ["path"],
+                    "additionalProperties": false
+                }
+            })
+        })
+        .collect();
+    let mut input = vec![
+        json!({ "type": "message", "role": "developer", "content": [{ "type": "input_text", "text": "Follow the repository's rules." }] }),
+        json!({ "type": "message", "role": "user", "content": [{ "type": "input_text", "text": "Find out why the export is slow and fix it." }] }),
+    ];
+    for i in 0..turns {
+        input.push(json!({
+            "type": "reasoning",
+            "id": format!("rs_{i:06}"),
+            "summary": [{ "type": "summary_text", "text": format!("Step {i}: read the next stage before changing it.") }],
+            "content": null,
+            "encrypted_content": format!("gAAAAAB{}", "x".repeat(2400)),
+        }));
+        if i % 5 == 0 {
+            input.push(json!({
+                "type": "message",
+                "status": "completed",
+                "id": format!("msg_{i:06}"),
+                "role": "assistant",
+                "content": [{ "type": "output_text", "text": format!("Stage {i} reads its rows one batch at a time; I'll look at the next one."), "annotations": [] }],
+            }));
+        }
+        input.push(json!({
+            "type": "function_call",
+            "id": format!("fc_{i:06}"),
+            "name": format!("tool_{:02}", i % 20),
+            "arguments": format!(r#"{{"path":"/workspace/export/stage_{i}.rs","limit":200}}"#),
+            "call_id": format!("call_{i:06}"),
+        }));
+        input.push(json!({
+            "type": "function_call_output",
+            "call_id": format!("call_{i:06}"),
+            "output": (0..36).map(|l| format!("{l:>4}  let rows = export.stage({i}).read_batch(cursor, {l})?;\n")).collect::<String>(),
+        }));
+    }
+    serde_json::to_vec(&json!({
+        "model": "gpt-5.1-codex",
+        "max_output_tokens": 32000,
+        "instructions": "You are Codex, a coding agent. ".repeat(500),
+        "input": input,
+        "tools": tools,
+        "tool_choice": "auto",
+        "parallel_tool_calls": false,
+        "reasoning": { "effort": "medium", "summary": "auto" },
+        "store": false,
+        "stream": true,
+        "include": ["reasoning.encrypted_content"],
+        "prompt_cache_key": "019a0e5b-7c01-7000-8000-000000000001",
+    }))
+    .unwrap()
+}
+
+fn time_decode(dialect: DialectId, body: &[u8], rounds: u32) -> std::time::Duration {
+    let mut best = std::time::Duration::MAX;
+    for _ in 0..rounds {
+        let started = Instant::now();
+        dispatch::decode_request(dialect, RequestKind::Generate, body, &HeaderList::new()).unwrap();
+        best = best.min(started.elapsed());
+    }
+    best
+}
+
+#[test]
+#[ignore = "timing, run with --release --ignored --nocapture"]
+fn a_long_responses_conversation_decodes_about_as_fast_as_the_same_messages() {
+    let responses = codex_conversation(600);
+    let req = dispatch::decode_request(
+        DialectId::OpenAiResponses,
+        RequestKind::Generate,
+        &responses,
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = kaeso_codecs::EgressCtx::new(&req).with_provider("anthropic");
+    let messages = dispatch::encode_request(DialectId::AnthropicMessages, &req, &mut ctx)
+        .unwrap()
+        .body;
+    let checked = {
+        let started = Instant::now();
+        kaeso_codecs::limits::Checked::new(DialectId::OpenAiResponses, responses.as_slice())
+            .unwrap();
+        started.elapsed()
+    };
+    let r = time_decode(DialectId::OpenAiResponses, &responses, 60);
+    let m = time_decode(DialectId::AnthropicMessages, &messages, 60);
+    let mb = |b: &[u8]| b.len() as f64 / 1_000_000.0;
+    eprintln!(
+        "Responses {:.2} MB: decode {r:?} ({:.1} ms/MB), checked {checked:?}; Messages {:.2} MB: decode {m:?} ({:.1} ms/MB); ratio {:.2}",
+        mb(&responses),
+        r.as_secs_f64() * 1000.0 / mb(&responses),
+        mb(&messages),
+        m.as_secs_f64() * 1000.0 / mb(&messages),
+        r.as_secs_f64() / m.as_secs_f64(),
+    );
+}

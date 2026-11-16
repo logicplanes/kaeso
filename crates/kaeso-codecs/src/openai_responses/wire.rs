@@ -5,11 +5,11 @@ use serde_json::value::RawValue;
 use crate::wire::StringOr;
 
 #[derive(Debug, Deserialize)]
-pub(super) struct CreateResponse {
+pub(super) struct CreateResponse<'a> {
     #[serde(default)]
     pub model: Option<String>,
-    #[serde(default)]
-    pub input: Option<StringOr<Box<RawValue>>>,
+    #[serde(default, borrow)]
+    pub input: Option<StringOr<&'a RawValue>>,
     #[serde(default)]
     pub instructions: Option<String>,
     #[serde(default)]
@@ -84,9 +84,10 @@ pub(super) struct ToolChoiceFunction {
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct MessageItem {
+pub(super) struct MessageItem<'a> {
     pub role: String,
-    pub content: StringOr<Box<RawValue>>,
+    #[serde(borrow)]
+    pub content: StringOr<&'a RawValue>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -133,9 +134,10 @@ pub(super) struct FunctionCallItem {
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct FunctionCallOutputItem {
+pub(super) struct FunctionCallOutputItem<'a> {
     pub call_id: String,
-    pub output: StringOr<Box<RawValue>>,
+    #[serde(borrow)]
+    pub output: StringOr<&'a RawValue>,
 }
 
 #[derive(Debug, Deserialize)]

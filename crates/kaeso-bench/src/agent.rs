@@ -8,13 +8,28 @@ use hyper::Method;
 use serde::Serialize;
 
 use crate::client::{Call, Conn, connect, server_timing};
-use crate::harness::AGENT_MODEL;
+use crate::harness::{AGENT_MODEL, LARGE_MODEL};
 use crate::stats::Summary;
 
-pub(crate) const PATH: &str = "/v1/messages";
 const TOOLS: usize = 24;
 const TURNS: usize = 12;
-const END: &[u8] = b"event: message_stop";
+
+// Where an agent's requests go, and the event that ends each of their streams.
+#[derive(Clone, Copy)]
+pub(crate) struct Format {
+    path: &'static str,
+    end: &'static [u8],
+}
+
+pub(crate) const MESSAGES: Format = Format {
+    path: "/v1/messages",
+    end: b"event: message_stop",
+};
+
+pub(crate) const RESPONSES: Format = Format {
+    path: "/v1/responses",
+    end: b"event: response.completed",
+};
 
 #[derive(Clone, Debug, Default, Serialize)]
 pub(crate) struct Phase {
@@ -265,6 +280,182 @@ pub(crate) fn body(chunks: u64) -> Bytes {
     Bytes::from(serde_json::to_vec(&body).unwrap_or_default())
 }
 
+// An OpenAI Responses conversation the way Codex resends it late in a session: its
+// instructions, tools, and per turn a reasoning item, a function call and its output, with now
+// and then a message. `turns` of 600 make about 3 MB.
+#[derive(Serialize)]
+struct ResponsesBody {
+    model: &'static str,
+    max_output_tokens: u32,
+    stream: bool,
+    store: bool,
+    instructions: String,
+    tools: Vec<ResponsesTool>,
+    tool_choice: &'static str,
+    parallel_tool_calls: bool,
+    reasoning: Reasoning,
+    include: [&'static str; 1],
+    input: Vec<Item>,
+}
+
+#[derive(Serialize)]
+struct Reasoning {
+    effort: &'static str,
+    summary: &'static str,
+}
+
+#[derive(Serialize)]
+struct ResponsesTool {
+    r#type: &'static str,
+    name: String,
+    description: String,
+    strict: bool,
+    parameters: Schema,
+}
+
+#[derive(Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+enum Item {
+    Message {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        id: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        status: Option<&'static str>,
+        role: &'static str,
+        content: Vec<Part>,
+    },
+    Reasoning {
+        id: String,
+        summary: Vec<Part>,
+        content: Option<Vec<Part>>,
+        encrypted_content: String,
+    },
+    FunctionCall {
+        id: String,
+        name: String,
+        arguments: String,
+        call_id: String,
+    },
+    FunctionCallOutput {
+        call_id: String,
+        output: String,
+    },
+}
+
+#[derive(Serialize)]
+#[serde(tag = "type")]
+enum Part {
+    #[serde(rename = "input_text")]
+    Input { text: String },
+    #[serde(rename = "output_text")]
+    Output { text: String, annotations: [(); 0] },
+    #[serde(rename = "summary_text")]
+    Summary { text: String },
+}
+
+fn user(text: String) -> Item {
+    Item::Message {
+        id: None,
+        status: None,
+        role: "user",
+        content: vec![Part::Input { text }],
+    }
+}
+
+fn responses_turn(i: usize, input: &mut Vec<Item>) {
+    input.push(Item::Reasoning {
+        id: format!("rs_bench_{i:04}"),
+        summary: vec![Part::Summary {
+            text: format!("Step {i}: read the next stage before changing it."),
+        }],
+        content: None,
+        // OpenAI's encrypted reasoning, as long as it often is: most of the bytes Kaeso reads
+        // and then can't send to Anthropic.
+        encrypted_content: format!("gAAAAAB{}", "q".repeat(2400)),
+    });
+    if i.is_multiple_of(5) {
+        input.push(Item::Message {
+            id: Some(format!("msg_bench_{i:04}")),
+            status: Some("completed"),
+            role: "assistant",
+            content: vec![Part::Output {
+                text: format!(
+                    "Stage {i} reads its rows one batch at a time; I'll look at the next one."
+                ),
+                annotations: [],
+            }],
+        });
+    }
+    let call_id = format!("call_bench_{i:04}");
+    input.push(Item::FunctionCall {
+        id: format!("fc_bench_{i:04}"),
+        name: tool_name(i),
+        arguments: format!(
+            r#"{{"path":"/workspace/export/stage_{i}.rs","mode":"read","limit":200}}"#
+        ),
+        call_id: call_id.clone(),
+    });
+    input.push(Item::FunctionCallOutput {
+        call_id,
+        output: (0..36)
+            .map(|line| {
+                format!("{line:>4}  let rows_{i}_{line} = export.stage({i}).read_batch(cursor, {line})?;\n")
+            })
+            .collect(),
+    });
+}
+
+pub(crate) fn responses_body(turns: usize, chunks: u64) -> Bytes {
+    let mut input = vec![
+        Item::Message {
+            id: None,
+            status: None,
+            role: "developer",
+            content: vec![Part::Input {
+                text: "Follow the repository's rules and run its checks.".into(),
+            }],
+        },
+        user(
+            "Find out why the nightly export is slow and fix it. Show me what you changed.".into(),
+        ),
+    ];
+    for i in 0..turns {
+        responses_turn(i, &mut input);
+    }
+    input.push(user(format!(
+        "Go on with the fix. [mock:gen={}] [mock:tps=4000]",
+        chunks * 4
+    )));
+    let body = ResponsesBody {
+        model: LARGE_MODEL,
+        max_output_tokens: 4096,
+        stream: true,
+        store: false,
+        instructions: "You are Codex, a coding agent in the user's repository. ".repeat(270),
+        tools: (0..TOOLS)
+            .map(|i| {
+                let t = tool(i);
+                ResponsesTool {
+                    r#type: "function",
+                    name: t.name,
+                    description: t.description,
+                    strict: false,
+                    parameters: t.input_schema,
+                }
+            })
+            .collect(),
+        tool_choice: "auto",
+        parallel_tool_calls: false,
+        reasoning: Reasoning {
+            effort: "medium",
+            summary: "auto",
+        },
+        include: ["reasoning.encrypted_content"],
+        input,
+    };
+    Bytes::from(serde_json::to_vec(&body).unwrap_or_default())
+}
+
 #[derive(Default)]
 struct Sample {
     overhead_ms: Vec<f64>,
@@ -288,6 +479,7 @@ impl Sample {
 async fn one(
     addr: SocketAddr,
     key: &str,
+    format: Format,
     body: &Bytes,
     conn: &mut Option<Conn>,
 ) -> crate::Result<(Option<f64>, Option<f64>)> {
@@ -298,7 +490,7 @@ async fn one(
     let resp = c
         .send(Call {
             method: Method::POST,
-            path: PATH,
+            path: format.path,
             bearer: Some(key),
             origin: None,
             cookie: None,
@@ -311,8 +503,8 @@ async fn one(
     if status != 200 {
         return Err(format!("status {status}").into());
     }
-    if !text.windows(END.len()).any(|w| w == END) {
-        return Err("no message_stop".into());
+    if !text.windows(format.end.len()).any(|w| w == format.end) {
+        return Err("no end of stream".into());
     }
     Ok((timing.kaeso_ms, timing.upstream_ms))
 }
@@ -322,6 +514,7 @@ async fn one(
 pub(crate) async fn run(
     addr: SocketAddr,
     key: &str,
+    format: Format,
     body: &Bytes,
     requests: usize,
     every: Duration,
@@ -336,7 +529,7 @@ pub(crate) async fn run(
             tokio::time::sleep(pause).await;
         }
         let began = Instant::now();
-        match one(addr, key, body, &mut conn).await {
+        match one(addr, key, format, body, &mut conn).await {
             Ok((kaeso, upstream)) => {
                 sample.overhead_ms.extend(kaeso);
                 sample.upstream_ms.extend(upstream);
@@ -374,5 +567,35 @@ mod tests {
         assert!(text.starts_with(r#"{"model":"#), "{text:.40}");
         assert!(text.contains(r#"{"type":"tool_use","id":"#));
         assert!(text.contains(r#"{"type":"tool_result","tool_use_id":"#));
+    }
+
+    #[test]
+    fn the_large_request_is_a_codex_conversation_of_about_three_megabytes() {
+        let bytes = responses_body(600, 8);
+        assert!(
+            (2_800_000..3_400_000).contains(&bytes.len()),
+            "{}",
+            bytes.len()
+        );
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap_or_default();
+        assert_eq!(v["model"], LARGE_MODEL);
+        let input = v["input"].as_array().cloned().unwrap_or_default();
+        assert_eq!(input.len(), 2 + 600 * 3 + 120 + 1);
+        let last = input.last().map(|m| m["content"][0]["text"].clone());
+        assert_eq!(
+            last.and_then(|t| t.as_str().map(str::to_owned))
+                .unwrap_or_default(),
+            "Go on with the fix. [mock:gen=32] [mock:tps=4000]"
+        );
+        let text = String::from_utf8_lossy(&bytes);
+        for item in [
+            "reasoning",
+            "function_call",
+            "function_call_output",
+            "message",
+        ] {
+            assert!(text.contains(&format!(r#"{{"type":"{item}","#)), "{item}");
+        }
+        assert!(text.contains(r#""content":null,"encrypted_content":"gAAAAAB"#));
     }
 }

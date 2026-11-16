@@ -244,6 +244,39 @@ pub(crate) fn table(r: &Report<'_>) -> String {
                 ],
             );
         }
+        let l = &a.large;
+        let _ = writeln!(
+            out,
+            "\n### Agent session, late: {} app, {} provider, {} request\n",
+            l.app_format,
+            l.provider_format,
+            bytes(Some(l.request_bytes as f64))
+        );
+        header(
+            &mut out,
+            &[
+                "Streams",
+                "Sent",
+                "Overhead p50 / p95 / p99 / max",
+                "Failed",
+            ],
+        );
+        let o = &l.back_to_back.overhead_ms;
+        row(
+            &mut out,
+            &[
+                l.back_to_back.requests.to_string(),
+                "back to back".to_owned(),
+                format!(
+                    "{} / {} / {} / {}",
+                    ms(o.p50),
+                    ms(o.p95),
+                    ms(o.p99),
+                    ms(o.max)
+                ),
+                l.back_to_back.failed.to_string(),
+            ],
+        );
     }
     if !r.results.streams.is_empty() {
         let _ = writeln!(out, "\n### Concurrent streams\n");

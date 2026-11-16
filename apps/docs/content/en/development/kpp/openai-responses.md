@@ -41,6 +41,8 @@ An object with such a key is compared as a whole. When it differs from the canon
 
 Like every override, the field applies only while the canonical value at its path is unchanged. When a typed field inside that object changes, the object is written canonically and those keys are left out. For a top-level key, that is any typed field of the request, such as the `model`.
 
+Request input items are compared by their keys instead. A message, its text and refusal parts, a function call, its output and a reasoning item hold in every key the codec decoded what the canonical encoding writes there, so only the other keys, a `type` or `role` the canonical encoding spells differently and missing `annotations` become overrides: the same ones the comparison records, without building the canonical encoding or reading the values again. An item whose keys can't settle it, such as one with a `prompt_cache_breakpoint`, an image or file part, summary parts with other keys, or a key a key path can't hold, is compared as described above.
+
 ## Request: `CreateResponse` / `TokenCountsBody`
 
 | Wire field | KPP | Notes |
