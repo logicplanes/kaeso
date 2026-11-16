@@ -267,6 +267,37 @@ describe("instance updates page", () => {
     expect(screen.queryByRole("button", { name: /Update to/ })).not.toBeInTheDocument();
   });
 
+  it("shows a Helm install the helm upgrade that updates it, never the installer or the updater", async () => {
+    signedIn();
+    on("GET", "instance/updates", available({ installed_with: "helm", can_apply: false, updater: { state: "not_installed", version: null } }));
+    history();
+    await renderApp(PATH);
+    expect(await screen.findByText("This install runs on Kubernetes; update it with Helm.")).toBeInTheDocument();
+    expect(screen.getByText("Update with Helm, with your release's name and namespace")).toBeInTheDocument();
+    expect(document.body.textContent).toContain(
+      "helm upgrade kaeso oci://ghcr.io/logicplanes/charts/kaeso --namespace kaeso --version 40.4.3 --reset-then-reuse-values",
+    );
+    expect(document.body.textContent).not.toContain("install.sh");
+    expect(screen.queryByText("Turn the updater on, in the install's folder")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Update to/ })).not.toBeInTheDocument();
+  });
+
+  it("sends a Helm install's major release and manual steps to the upgrade guide, then to Helm", async () => {
+    signedIn();
+    const major = release({ version: "41.0.0", major: true });
+    on("GET", "instance/updates", available({ installed_with: "helm", manual: "major", can_apply: false, latest: major, releases: [major] }));
+    history();
+    const { router } = await renderApp(PATH);
+    expect(await screen.findByText("Update with Helm")).toBeInTheDocument();
+    expect(screen.getByText("Kaeso 41.0.0 is a new major version: read the upgrade guide, then update with Helm.")).toBeInTheDocument();
+    expect(document.body.textContent).toContain("--version 41.0.0 --reset-then-reuse-values");
+    on("GET", "instance/updates", available({ installed_with: "helm", manual: "manual_steps", can_apply: false }));
+    await router.invalidate();
+    const { queryClient } = await import("~/query");
+    await queryClient.invalidateQueries();
+    expect(await screen.findByText("A release on the way asks for steps of its own: follow the upgrade guide, then update with Helm.")).toBeInTheDocument();
+  });
+
   it("names manual steps on the way", async () => {
     signedIn();
     on("GET", "instance/updates", available({ manual: "manual_steps", can_apply: false }));

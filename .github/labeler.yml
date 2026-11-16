@@ -54,6 +54,7 @@
           - deploy/azure/**
           - deploy/caprover/**
           - deploy/coolify/**
+          - deploy/helm/**
           - deploy/dokploy/**
           - deploy/fly/**
           - deploy/gcp/**

@@ -1,0 +1,217 @@
+{{- $fullname := include "kaeso.fullname" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-gateway
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  {{- if not .Values.gateway.autoscaling.enabled }}
+  replicas: {{ .Values.gateway.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "kaeso.selector" (dict "root" . "component" "gateway") | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "kaeso.selector" (dict "root" . "component" "gateway") | nindent 8 }}
+        {{- with .Values.gateway.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        # A changed configuration file restarts the gateways, as a changed variable does.
+        checksum/config: {{ toJson .Values.gateway.config | sha256sum }}
+        {{- with .Values.gateway.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "kaeso.serviceAccountName" . }}
+      automountServiceAccountToken: false
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      terminationGracePeriodSeconds: {{ .Values.gateway.terminationGracePeriodSeconds }}
+      {{- with .Values.gateway.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      containers:
+        - name: gateway
+          image: {{ include "kaeso.image" (dict "root" . "image" .Values.gateway.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["serve"]
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            {{- if .Values.gateway.metrics.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.gateway.metrics.port }}
+              protocol: TCP
+            {{- end }}
+          env:
+            {{- include "kaeso.gatewayEnv" . | nindent 12 }}
+          {{- with .Values.gateway.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- include "kaeso.gatewayMounts" . | nindent 12 }}
+          # The gateway stops taking connections at the signal, before every node has stopped
+          # sending it new ones; the pause lets the Service drop it first.
+          {{- if .Values.gateway.preStopSeconds }}
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ .Values.gateway.preStopSeconds }}
+          {{- end }}
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            failureThreshold: 90
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Ready only while PostgreSQL and Valkey answer, so traffic goes elsewhere meanwhile.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+      volumes:
+        {{- include "kaeso.gatewayVolumes" (dict "root" . "configMap" (printf "%s-config" $fullname)) | nindent 8 }}
+      {{- with .Values.gateway.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.gateway.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.gateway.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.gateway.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-gateway
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "kaeso.selector" (dict "root" . "component" "gateway") | nindent 4 }}
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      protocol: TCP
+{{- if .Values.gateway.metrics.enabled }}
+---
+# Its own Service, so no ingress or route ever reaches the metrics through the gateway's.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-gateway-metrics
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway-metrics
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "kaeso.selector" (dict "root" . "component" "gateway") | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.gateway.metrics.port }}
+      targetPort: metrics
+      protocol: TCP
+{{- end }}
+{{- if .Values.gateway.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $fullname }}-gateway
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $fullname }}-gateway
+  minReplicas: {{ .Values.gateway.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.gateway.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.gateway.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}
+{{- if .Values.gateway.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $fullname }}-gateway
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+spec:
+  maxUnavailable: {{ .Values.gateway.podDisruptionBudget.maxUnavailable }}
+  selector:
+    matchLabels:
+      {{- include "kaeso.selector" (dict "root" . "component" "gateway") | nindent 6 }}
+{{- end }}
+{{- if and .Values.gateway.metrics.enabled .Values.gateway.metrics.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $fullname }}-gateway
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: gateway
+    {{- with .Values.gateway.metrics.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "kaeso.selector" (dict "root" . "component" "gateway-metrics") | nindent 6 }}
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: {{ .Values.gateway.metrics.serviceMonitor.interval }}
+{{- end }}

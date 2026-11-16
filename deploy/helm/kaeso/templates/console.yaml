@@ -1,0 +1,129 @@
+{{- $fullname := include "kaeso.fullname" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}-console
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+spec:
+  replicas: {{ .Values.console.replicaCount }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "kaeso.selector" (dict "root" . "component" "console") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaeso.selector" (dict "root" . "component" "console") | nindent 8 }}
+        {{- with .Values.console.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.console.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.console.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      containers:
+        - name: console
+          image: {{ include "kaeso.image" (dict "root" . "image" .Values.console.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          {{- if .Values.console.preStopSeconds }}
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ .Values.console.preStopSeconds }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.console.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          # The only places Caddy writes, as the Compose install's tmpfs mounts.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: data
+              mountPath: /var/lib/console/data
+            - name: config
+              mountPath: /var/lib/console/config
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: data
+          emptyDir: {}
+        - name: config
+          emptyDir: {}
+      {{- with .Values.console.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.console.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullname }}-console
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "kaeso.selector" (dict "root" . "component" "console") | nindent 4 }}
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+      protocol: TCP
+{{- if .Values.console.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $fullname }}-console
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: console
+spec:
+  maxUnavailable: {{ .Values.console.podDisruptionBudget.maxUnavailable }}
+  selector:
+    matchLabels:
+      {{- include "kaeso.selector" (dict "root" . "component" "console") | nindent 6 }}
+{{- end }}

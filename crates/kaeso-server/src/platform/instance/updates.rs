@@ -328,6 +328,8 @@ pub struct UpdatesView {
     #[doc = "The guide to updating by hand."]
     #[schema(example = "https://docs.kaeso.app/self-hosting/upgrades")]
     pub upgrade_guide: &'static str,
+    #[doc = "How Kaeso was installed: `compose` (the installer or Docker Compose) or `helm`, whose installs update with `helm upgrade`."]
+    pub installed_with: crate::config::InstalledWith,
     #[doc = "How many stars Kaeso has on GitHub, as the release feed said in the gateway's last successful check since it started; `null` before that, or when the feed doesn't say, as a mirror may not."]
     #[schema(example = 1200)]
     pub github_stars: Option<u64>,
@@ -401,6 +403,7 @@ async fn overview(state: &AppState) -> ApiResult<UpdatesView> {
         },
         job: job.map(UpdateJobView::of),
         upgrade_guide: UPGRADE_GUIDE,
+        installed_with: state.config.updates.installed_with,
         github_stars: state.github_stars.get(),
     })
 }

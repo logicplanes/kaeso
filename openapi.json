@@ -27595,6 +27595,14 @@
           "none"
         ]
       },
+      "InstalledWith": {
+        "type": "string",
+        "description": "How Kaeso was installed, which decides the commands that update it.",
+        "enum": [
+          "compose",
+          "helm"
+        ]
+      },
       "InstanceAgentPolicy": {
         "type": "object",
         "description": "Whether agents may sign in to the instance, and how far instance admins' agents may administer it.",
@@ -41299,7 +41307,8 @@
           "settings",
           "check",
           "updater",
-          "upgrade_guide"
+          "upgrade_guide",
+          "installed_with"
         ],
         "properties": {
           "can_apply": {
@@ -41324,6 +41333,10 @@
             "description": "How many stars Kaeso has on GitHub, as the release feed said in the gateway's last successful check since it started; `null` before that, or when the feed doesn't say, as a mirror may not.",
             "example": 1200,
             "minimum": 0
+          },
+          "installed_with": {
+            "$ref": "#/components/schemas/InstalledWith",
+            "description": "How Kaeso was installed: `compose` (the installer or Docker Compose) or `helm`, whose installs update with `helm upgrade`."
           },
           "job": {
             "oneOf": [

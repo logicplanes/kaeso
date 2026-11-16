@@ -62,6 +62,8 @@ check = true
 channel = "stable"
 mode = "manual"
 releases_url = "https://update.kaeso.app/v1/releases.json"
+# `helm` on an install from the Helm chart, which sets it.
+installed_with = "compose"
 
 [updater]
 url = "http://updater:8081"

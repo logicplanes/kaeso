@@ -202,6 +202,7 @@ export function updates(overrides: Partial<UpdatesView> = {}): UpdatesView {
     updater: { state: "ready", version: "40.4.2" },
     job: null,
     upgrade_guide: "https://docs.kaeso.app/self-hosting/upgrades",
+    installed_with: "compose",
     github_stars: 4,
     ...overrides,
   };

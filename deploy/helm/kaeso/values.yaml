@@ -1,0 +1,223 @@
+# Kaeso on Kubernetes. The defaults run the gateway and the console against PostgreSQL,
+# ClickHouse and Valkey that you bring; `bundled.enabled` runs single copies of them for trying
+# Kaeso out. https://docs.kaeso.app/self-hosting/platforms/kubernetes
+
+# The URL people and apps use to reach Kaeso, such as https://kaeso.example.com. Required.
+publicUrl: ""
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  registry: ghcr.io/logicplanes
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+gateway:
+  image:
+    repository: kaeso-gateway
+    # The chart's appVersion when empty.
+    tag: ""
+    # A digest such as sha256:…, which wins over the tag.
+    digest: ""
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 1
+  # The gateway lets streams run for 30 seconds after the signal, then takes up to 10 seconds
+  # each to record outcomes, write logs and send mail.
+  terminationGracePeriodSeconds: 75
+  # Seconds a stopping gateway keeps taking new connections, until the Service has dropped it.
+  preStopSeconds: 10
+  # Networks whose X-Forwarded-For the gateway believes: the ingress controller's pods. The
+  # private ranges cover most clusters' pod networks; name yours to be exact.
+  trustedProxies: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10,fc00::/7,127.0.0.0/8,::1/128"
+  metrics:
+    enabled: true
+    port: 9100
+    serviceMonitor:
+      enabled: false
+      interval: 30s
+      labels: {}
+  # Settings as environment variables, such as KAESO_CORS_ALLOWED_ORIGINS: value.
+  env: {}
+  # Further variables in Kubernetes' own form, such as values from a Secret.
+  extraEnv: []
+  extraEnvFrom: []
+  # Settings in the TOML file's form, such as { upstream: { request_timeout: "900s" } },
+  # rendered to the file KAESO_CONFIG names. https://docs.kaeso.app/self-hosting/configuration
+  config: {}
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+  priorityClassName: ""
+
+console:
+  image:
+    repository: kaeso-console
+    tag: ""
+    digest: ""
+  replicaCount: 2
+  preStopSeconds: 5
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+  podDisruptionBudget:
+    enabled: true
+    maxUnavailable: 1
+  podAnnotations: {}
+  podLabels: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+  priorityClassName: ""
+
+# Runs `kaeso migrate` once before an install or an upgrade reaches the gateway pods, so they
+# never migrate side by side. Off, each gateway migrates as it starts.
+migrations:
+  enabled: true
+  backoffLimit: 6
+  activeDeadlineSeconds: 900
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+# The keys that encrypt provider keys and other secrets at rest. Lose them and those secrets are
+# gone. Without existingSecret, the chart makes one on the first install and keeps it, also
+# after `helm uninstall`; back it up.
+masterKeys:
+  existingSecret: ""
+  key: master-keys
+
+# Connection URLs from Secrets you name, when `bundled.enabled` is off.
+postgres:
+  existingSecret: ""
+  key: url
+clickhouse:
+  # Without one, Kaeso keeps no request logs.
+  existingSecret: ""
+  key: url
+valkey:
+  existingSecret: ""
+  key: url
+  # PEM of a private authority that signed Valkey's certificate, for a rediss:// URL.
+  ca: ""
+
+mail:
+  # smtp, or log to only log that an email would have been sent.
+  transport: smtp
+  smtp:
+    host: ""
+    port: 587
+    # starttls, tls or none.
+    tls: starttls
+    user: ""
+    from: ""
+    password:
+      existingSecret: ""
+      key: password
+  # While no user exists, email the setup link here at every start.
+  setupEmail: ""
+
+ingress:
+  enabled: true
+  className: ""
+  # The host of publicUrl when empty.
+  host: ""
+  annotations: {}
+  # Seconds a silent stream may stay open; with an ingress-nginx class, the chart sets its
+  # proxy timeouts from it. Other controllers take it in their own annotations.
+  streamTimeoutSeconds: 3600
+  tls:
+    enabled: true
+    # The Secret of the certificate; <release>-tls when empty.
+    secretName: ""
+    # A cert-manager issuer that makes the certificate, such as letsencrypt.
+    certManager:
+      issuer: ""
+      kind: ClusterIssuer
+
+# A Gateway API HTTPRoute, instead of or besides the Ingress.
+httpRoute:
+  enabled: false
+  parentRefs: []
+  # publicUrl's host when empty.
+  hostnames: []
+  # Such as { request: "0s" } where your implementation supports it, so streams aren't cut.
+  timeouts: {}
+  annotations: {}
+
+serviceAccount:
+  create: true
+  name: ""
+  # Such as a cloud identity: eks.amazonaws.com/role-arn or iam.gke.io/gcp-service-account.
+  annotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+
+# Single copies of PostgreSQL, ClickHouse and Valkey, with the images the Compose install pins,
+# for trying Kaeso out. Not for production: no replicas, no backups, no tuning.
+bundled:
+  enabled: false
+  storageClass: ""
+  postgres:
+    image: postgres:18.6-alpine@sha256:83148c0bc09eac4d598b70a61e1404d0212b76c95c504bfd6c81a4c59ec91792
+    storage: 8Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 2Gi
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.3.62.3-alpine@sha256:1d45e52080e6ed136a6377863046a0e53d69fb0418d799f12e23184ed6460c55
+    storage: 16Gi
+    resources:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+      limits:
+        memory: 4Gi
+  valkey:
+    image: valkey/valkey:9.1.3-alpine@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+    storage: 2Gi
+    maxmemory: 512mb
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1Gi

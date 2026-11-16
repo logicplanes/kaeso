@@ -96,6 +96,19 @@ test("a release moves the Kaeso images of the Fly.io, Coolify, Dokploy and CapRo
   );
 });
 
+test("a release moves the Helm chart's version and appVersion together and leaves its dependencies alone", () => {
+  const chart = (version) => ({
+    "deploy/helm/kaeso/Chart.yaml": `apiVersion: v2\nname: kaeso\nversion: ${version}\nappVersion: "${version}"\nkubeVersion: ">=1.30.0-0"\n`,
+  });
+  const changes = apply(fake(tree("1.4.0", chart("1.4.0"))), "1.5.0");
+  assert.equal(changes.get("deploy/helm/kaeso/Chart.yaml"), chart("1.5.0")["deploy/helm/kaeso/Chart.yaml"]);
+  const drifted = { "deploy/helm/kaeso/Chart.yaml": chart("1.5.0")["deploy/helm/kaeso/Chart.yaml"].replace('appVersion: "1.5.0"', 'appVersion: "1.4.0"') };
+  assert.deepEqual(
+    check(fake(tree("1.5.0", drifted))).map(({ file, line }) => `${file}:${line}`),
+    ["deploy/helm/kaeso/Chart.yaml:4"],
+  );
+});
+
 test("a pre-release pins the crates' README dependency to itself", () => {
   const changes = apply(fake(tree("1.4.0")), "2.0.0-rc.1");
   assert.match(changes.get("crates/kaeso-kpp/README.md"), /^kaeso-kpp = "2\.0\.0-rc\.1"$/m);

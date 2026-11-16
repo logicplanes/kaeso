@@ -86,6 +86,7 @@ const PACKAGE_VERSION = /^( {2}"version": ")([^"]*)(")/m;
 const IMAGE_TAG = /(ghcr\.io\/logicplanes\/kaeso-[a-z]+:)([0-9A-Za-z.+-]+)()/g;
 const APP_SPEC_TAG = /(?<=repository: kaeso-[a-z]+\n\s+)(tag: )([0-9A-Za-z.+-]+)()/g;
 const CRATE_REQUIREMENT = /^(kaeso-[a-z-]+ = ")([^"]+)(")$/gm;
+const CHART_VERSION = /^((?:version|appVersion): "?)([0-9A-Za-z.+-]+)("?)$/gm;
 
 const PLATFORM_FILES = [
   "render.yaml",
@@ -130,6 +131,14 @@ const RULES = [
     required: true,
     read: (text) => matches(text, IMAGE_TAG, 2),
     write: (text, version) => replaceGroup(text, IMAGE_TAG, version),
+  },
+  {
+    what: "Helm chart version",
+    match: (file) => file === "deploy/helm/kaeso/Chart.yaml",
+    manifest: true,
+    required: true,
+    read: (text) => matches(text, CHART_VERSION, 2),
+    write: (text, version) => replaceGroup(text, CHART_VERSION, version),
   },
   {
     what: "App Platform image tag",

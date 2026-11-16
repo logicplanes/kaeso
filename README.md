@@ -61,7 +61,8 @@ On a cloud or a hosting platform, the [platform templates](https://docs.kaeso.ap
   <a href="https://docs.kaeso.app/self-hosting/platforms/gcp">Google Cloud</a> ·
   <a href="https://docs.kaeso.app/self-hosting/platforms/coolify">Coolify</a> ·
   <a href="https://docs.kaeso.app/self-hosting/platforms/dokploy">Dokploy</a> ·
-  <a href="https://docs.kaeso.app/self-hosting/platforms/caprover">CapRover</a>
+  <a href="https://docs.kaeso.app/self-hosting/platforms/caprover">CapRover</a> ·
+  <a href="https://docs.kaeso.app/self-hosting/platforms/kubernetes">Kubernetes</a>
 </p>
 
 ## Send your first request

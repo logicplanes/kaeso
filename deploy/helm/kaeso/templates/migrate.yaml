@@ -1,0 +1,80 @@
+{{- if .Values.migrations.enabled }}
+{{- $fullname := include "kaeso.fullname" . }}
+{{/*
+On an install with the bundled stores, they start with the release, so the Job runs after it is
+created; on every upgrade, and on an install with stores of your own, before the gateways change.
+*/}}
+{{- $hook := ternary "post-install,pre-upgrade" "pre-install,pre-upgrade" .Values.bundled.enabled }}
+{{- if .Values.gateway.config }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullname }}-migrate
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    helm.sh/hook: {{ $hook }}
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation
+data:
+  kaeso.toml: |
+    {{- include "kaeso.toml" (dict "values" .Values.gateway.config "prefix" "") | nindent 4 }}
+---
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $fullname }}-migrate
+  labels:
+    {{- include "kaeso.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    helm.sh/hook: {{ $hook }}
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "kaeso.selector" (dict "root" . "component" "migrate") | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      # The release's service account doesn't exist yet before an install; migrating needs none.
+      automountServiceAccountToken: false
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: migrate
+          image: {{ include "kaeso.image" (dict "root" . "image" .Values.gateway.image) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["migrate"]
+          env:
+            {{- include "kaeso.gatewayEnv" . | nindent 12 }}
+          {{- with .Values.gateway.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- include "kaeso.gatewayMounts" . | nindent 12 }}
+          resources:
+            {{- toYaml .Values.migrations.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+      volumes:
+        {{- include "kaeso.gatewayVolumes" (dict "root" . "configMap" (printf "%s-migrate" $fullname)) | nindent 8 }}
+      {{- with .Values.gateway.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.gateway.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

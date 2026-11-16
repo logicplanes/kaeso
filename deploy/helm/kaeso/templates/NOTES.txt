@@ -1,0 +1,17 @@
+Kaeso {{ .Chart.AppVersion }} is installed as {{ .Release.Name }} in {{ .Release.Namespace }}.
+{{- if .Values.bundled.enabled }}
+
+The bundled PostgreSQL, ClickHouse and Valkey are for trying Kaeso out, not for production.
+{{- end }}
+{{- if not .Values.masterKeys.existingSecret }}
+
+The master keys are in the Secret {{ include "kaeso.generatedSecret" . }}. Back them up: without
+them, the provider keys stored in Kaeso can't be read. `helm uninstall` keeps that Secret.
+{{- end }}
+
+Once the gateway is ready, print the one-time setup link and open it:
+
+  kubectl --namespace {{ .Release.Namespace }} rollout status deployment/{{ include "kaeso.fullname" . }}-gateway
+  kubectl --namespace {{ .Release.Namespace }} exec deployment/{{ include "kaeso.fullname" . }}-gateway -- kaeso setup-link
+
+Kaeso answers at {{ .Values.publicUrl }}.

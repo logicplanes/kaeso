@@ -803,6 +803,32 @@ async fn without_the_updater_the_admin_is_told_to_update_by_hand() {
         r.body["error"]["message"],
         "The updater isn't installed; update this install by hand."
     );
+    let view = app.get("/instance/updates", &owner.cookie).await;
+    assert_eq!(view.body["installed_with"], "compose", "{:?}", view.body);
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_install_from_the_helm_chart_says_so() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATES_INSTALLED_WITH", "helm"),
+        ],
+    )
+    .await;
+    let owner = app.setup().await;
+    let status = app
+        .post("/instance/updates/check", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(status.body["installed_with"], "helm", "{:?}", status.body);
+    assert_eq!(
+        status.body["can_apply"], false,
+        "Helm, not the updater, updates it"
+    );
     s.cleanup().await;
 }
 
