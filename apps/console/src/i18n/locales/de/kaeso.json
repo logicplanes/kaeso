@@ -446,5 +446,7 @@
   "kaeso.providerKey.endpoint": "Endpunkt",
   "kaeso.providerKey.endpointHint": "Die Adresse der Ressource, zu der der Schlüssel gehört, neben dem Schlüssel angezeigt. {link}",
   "kaeso.providerKey.endpointWhere": "Wo Sie ihn finden",
-  "kaeso.providerKey.endpointBlocked": "Fügen Sie den Endpunkt der Ressource des Schlüssels ein"
+  "kaeso.providerKey.endpointBlocked": "Fügen Sie den Endpunkt der Ressource des Schlüssels ein",
+  "kaeso.sheet.history": "Verlauf",
+  "kaeso.sheet.seeRequests": "Anfragen ansehen"
 }

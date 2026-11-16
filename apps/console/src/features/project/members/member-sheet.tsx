@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Button, DialogScope, Empty, KeyValue, Section, Sheet, Skeleton } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, DialogScope, Empty, KeyValue, Section, Sheet, Skeleton, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -23,6 +23,7 @@ import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
 import { useProjectGiver } from "~/auth/givers";
 import { useNeedsRight } from "~/auth/needs-right";
+import { SheetLinks } from "~/kaeso/sheet-links";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -111,6 +112,23 @@ function MemberBody({ org, project, userId, onClose }: { org: string; project: s
           { label: t("project.members.joined", "Joined"), value: formatDate(m.joined_at) },
           ...(m.user.state !== "active" ? [{ label: t("project.members.account", "Account"), value: userStateLabel(m.user.state) }] : []),
         ]}
+      />
+      <SheetLinks
+        org={org}
+        project={project}
+        requests={{ member: `user:${m.user.id}` }}
+        more={
+          rights.has("keys.all.view") && (
+            <Button
+              size="sm"
+              variant="ghost"
+              leadingIcon={icons.key}
+              href={`/orgs/${org}/projects/${project}/keys?owner=${encodeURIComponent(`user:${m.user.id}`)}`}
+            >
+              {t("project.members.theirKeys", "Their keys")}
+            </Button>
+          )
+        }
       />
       <Section title={common.role()} description={t("project.members.roleHint", "What they can do in this project.")} spacing="none">
         <div className="flex flex-col gap-12">

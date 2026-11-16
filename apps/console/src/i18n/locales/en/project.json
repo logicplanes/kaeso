@@ -51,6 +51,7 @@
   "project.members.roleHint": "What they can do in this project.",
   "project.members.roleSaved": "{name} is {role} in this project now",
   "project.members.saveRole": "Save role",
+  "project.members.theirKeys": "Their keys",
   "project.overview.breakdown": "Breakdown",
   "project.overview.breakdownHint": "Requests, errors, tokens and cache hits in the period",
   "project.overview.breakdownWithCost": "Requests, errors, tokens, cache hits and cost in the period",

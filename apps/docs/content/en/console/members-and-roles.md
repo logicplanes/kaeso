@@ -57,7 +57,7 @@ Open **Organization settings** › **Members** › **Roles** and choose **Create
 
 On a project's **Members** page, choose **Add member** and pick someone from the organization with a project role. Invite people outside the organization first.
 
-A project member's sheet also holds their [model access](#limit-the-models-someone-can-call) and [limits](limits-and-budgets.md). **Remove from project** archives their keys in the project, and they stay in the organization. On your own sheet, this is **Leave project**. Rights from a member's organization role count too: you can change or remove them only if you hold all their rights in the project. Only owners change or remove owners.
+A project member's sheet also holds their [model access](#limit-the-models-someone-can-call) and [limits](limits-and-budgets.md), and links to their requests (**See requests**) and their keys (**Their keys**), each for someone who may see them. **Remove from project** archives their keys in the project, and they stay in the organization. On your own sheet, this is **Leave project**. Rights from a member's organization role count too: you can change or remove them only if you hold all their rights in the project. Only owners change or remove owners.
 
 ## Create a service account
 
@@ -67,7 +67,7 @@ A service account is a project member for software, such as a deployment, a job 
 2. Say what uses it, such as `checkout-production`.
 3. Choose its project role. Its keys act with that role's rights.
 
-Its sheet holds its keys, with **Create key**, its model access and its limits. **Archive service account** archives it and its keys for good.
+Its sheet holds its keys, with **Create key**, its model access and its limits, and **See requests** and **History** open its requests and its audit events. **Archive service account** archives it and its keys for good.
 
 Creating a service account needs the right **Create service accounts**, and creating its keys **Create service account keys**.
 

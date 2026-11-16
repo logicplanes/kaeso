@@ -38,6 +38,7 @@ import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
 import { useProjectGiver } from "~/auth/givers";
 import { useNeedsRight } from "~/auth/needs-right";
+import { SheetLinks } from "~/kaeso/sheet-links";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { LastUsed } from "~/kaeso/last-used";
@@ -197,6 +198,7 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
           ]}
         />
       )}
+      <SheetLinks org={org} project={project} requests={{ member: `sa:${a.id}` }} target={a.id} />
       <Section title={common.role()} description={t("project.serviceAccounts.roleHint", "What it and its keys can do in this project.")} spacing="none">
         <div className="flex flex-col gap-12">
           <GrantEditor cat={cat} scope="project" roles={rolesOfScope(roles, "project")} value={editing} onChange={setGrant} giver={giver} readOnly={readOnly} />

@@ -1,12 +1,12 @@
-import { useState, type ReactNode } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Button, DialogScope, Empty, KeyValue, Menu, ModelLabel, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Button, DialogScope, Empty, KeyValue, Link, Menu, ModelLabel, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate, formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { CatalogueModelView, Fields } from "~/api/generated/types";
-import { catalogueModelQuery } from "~/api/queries/models";
+import { aliasesQuery, catalogueModelQuery } from "~/api/queries/models";
 import { playgroundModelsQuery } from "~/api/queries/playground";
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
@@ -21,6 +21,7 @@ import { modelName } from "~/format/models";
 import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
+import { SheetLinks } from "~/kaeso/sheet-links";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -170,7 +171,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
         items={[
           { label: common.provider(), value: provider },
           { label: t("models.modelId", "Model id"), value: m.model_id, mono: true, copy: m.model_id },
-          { label: t("models.aliases", "Aliases"), value: m.aliases.length ? m.aliases.join(", ") : common.none() },
+          { label: t("models.aliases", "Aliases"), value: m.aliases.length ? <AliasLinks org={org} project={project} names={m.aliases} /> : common.none() },
           { label: t("models.availability", "Availability"), value: availabilityLabel(m) },
           {
             label: t("models.addedAt", "Added"),
@@ -178,6 +179,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           },
         ]}
       />
+      <SheetLinks org={org} project={project} requests={{ model: m.model_id, provider: m.provider }} target={m.id} />
       <div className="flex flex-col gap-12">
         <div className="flex items-center justify-between gap-12">
           <Text weight="medium">{t("models.valuesInUse", "Values in use")}</Text>
@@ -246,6 +248,20 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
       </DialogScope>
     </div>
   );
+}
+
+// Each alias opens its route editor; one the list doesn't have yet stays text.
+function AliasLinks({ org, project, names }: { org: string; project: string; names: string[] }) {
+  const aliases = useQuery(aliasesQuery(org, project));
+  return names.map((name, i) => {
+    const id = aliases.data?.find((a) => a.name === name)?.id;
+    return (
+      <Fragment key={name}>
+        {i > 0 && ", "}
+        {id ? <Link href={`/orgs/${org}/projects/${project}/models/aliases/${id}`}>{name}</Link> : name}
+      </Fragment>
+    );
+  });
 }
 
 function RemoveModelDialog({
