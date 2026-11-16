@@ -774,6 +774,8 @@
   "errors.model.embeddingsNoRerank": "模型 `{model}` 是嵌入模型，无法对文档重排序。",
   "errors.modelApi.timeoutHeader": "请求头 `kaeso-timeout` 必须是 1 到 3600 之间的整数秒。",
   "errors.modelApi.logContentHeader": "请求头 `kaeso-log-content` 只接受 `off`，它会让此请求的内容不进入请求日志。",
+  "errors.kpmrSyncOff": "此实例已关闭模型数据同步；请设置 `KAESO_KPMR_SYNC=true` 以使用它。",
+  "errors.kpmrSyncFailed": "Kaeso 无法获取模型数据；系统页面会说明原因。",
   "errors.logEndpoint": "`endpoint` 必须是端点，例如 `responses`。",
   "errors.logMinCost": "`min_cost` 必须是以美元计的金额，例如 `0.5`。",
   "errors.logTag": "`tag` 必须由 1 到 64 个小写字母、数字、`.`、`_`、`:` 或 `-` 组成。",

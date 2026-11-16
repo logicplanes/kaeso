@@ -349,6 +349,8 @@ const messages = (): Rule[] => [
     t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."),
   ),
   rule("errors.logClient", () => t("errors.logClient", "`client` must be a client app, such as `codex` or `other`.")),
+  rule("errors.kpmrSyncOff", () => t("errors.kpmrSyncOff", "Model data sync is off on this install; set `KAESO_KPMR_SYNC=true` to use it.")),
+  rule("errors.kpmrSyncFailed", () => t("errors.kpmrSyncFailed", "Kaeso could not fetch the model data; the System page says why.")),
   rule("errors.timelineMinuteRange", () => t("errors.timelineMinuteRange", "By minute, `from` and `to` are at most 2 days apart; use `hour`.")),
   rule("errors.timelineHourRange", () => t("errors.timelineHourRange", "By hour, `from` and `to` are at most 62 days apart; use the daily usage.")),
   rule("errors.projectArchived", () => t("errors.projectArchived", "The project is archived and cannot be changed.")),

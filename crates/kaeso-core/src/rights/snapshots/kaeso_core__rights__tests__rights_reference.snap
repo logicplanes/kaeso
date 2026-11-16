@@ -236,7 +236,7 @@ expression: rights_reference()
 | Right | Category | Name | Allows | Needs (beyond `instance.system.view`) | Recent sign-in | Kaeso Cloud only |
 |---|---|---|---|---|:-:|:-:|
 | `instance.system.view` | Instance | View the system | See the system and its model data, the instance settings and the update status. |  |  |  |
-| `instance.settings.manage` ⚠ | Instance | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. |  |  |  |
+| `instance.settings.manage` ⚠ | Instance | Change instance settings | Change general, mail, logging, time zone and account settings, send a test email, and fetch model data now. |  |  |  |
 | `instance.updates.manage` ⚠ | Instance | Manage updates | Check for updates and change the update settings. |  |  |  |
 | `instance.updates.apply` ⚠ | Instance | Apply updates | Install a new version of Kaeso. | `instance.updates.manage` |  |  |
 | `instance.users.view` | Instance | View users | See every account of the instance and its organizations. |  |  |  |

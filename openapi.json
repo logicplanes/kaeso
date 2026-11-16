@@ -1671,6 +1671,60 @@
         "x-kaeso-access": "right:instance.audit_log.view"
       }
     },
+    "/platform/v1/instance/kpmr/sync": {
+      "post": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Fetch the model data from KPMR now, as the scheduled sync does.",
+        "description": "**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "postInstanceKpmrSync",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpmrSyncView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.settings.manage"
+      }
+    },
     "/platform/v1/instance/orgs": {
       "get": {
         "tags": [
@@ -31665,6 +31719,37 @@
           "tools": {
             "type": "boolean",
             "description": "Whether it may call the project's tools through its MCP portal."
+          }
+        }
+      },
+      "KpmrSyncView": {
+        "type": "object",
+        "description": "What fetching the model data from KPMR did.",
+        "required": [
+          "status",
+          "price_changes",
+          "delisted",
+          "relisted"
+        ],
+        "properties": {
+          "delisted": {
+            "type": "integer",
+            "description": "Models KPMR no longer lists.",
+            "minimum": 0
+          },
+          "price_changes": {
+            "type": "integer",
+            "description": "Model prices that changed.",
+            "minimum": 0
+          },
+          "relisted": {
+            "type": "integer",
+            "description": "Models KPMR lists again.",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "description": "`applied` when Kaeso took new data, `unchanged` when KPMR had none."
           }
         }
       },

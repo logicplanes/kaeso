@@ -774,6 +774,8 @@
   "errors.model.embeddingsNoRerank": "Das Modell `{model}` ist ein Embedding-Modell und kann keine Dokumente neu ordnen.",
   "errors.modelApi.timeoutHeader": "Der Header `kaeso-timeout` muss eine ganze Zahl von Sekunden zwischen 1 und 3600 sein.",
   "errors.modelApi.logContentHeader": "Der Header `kaeso-log-content` nimmt nur `off`, das den Inhalt dieser Anfrage aus dem Anfrageprotokoll hält.",
+  "errors.kpmrSyncOff": "Die Synchronisierung der Modelldaten ist in dieser Installation aus; setzen Sie `KAESO_KPMR_SYNC=true`, um sie zu nutzen.",
+  "errors.kpmrSyncFailed": "Kaeso konnte die Modelldaten nicht abrufen; die Seite System nennt den Grund.",
   "errors.logEndpoint": "`endpoint` muss ein Endpunkt sein, etwa `responses`.",
   "errors.logMinCost": "`min_cost` muss ein Betrag in USD sein, etwa `0.5`.",
   "errors.logTag": "`tag` muss aus 1 bis 64 Kleinbuchstaben, Ziffern, `.`, `_`, `:` oder `-` bestehen.",

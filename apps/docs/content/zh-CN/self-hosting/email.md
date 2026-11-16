@@ -27,6 +27,8 @@ KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 2. 选择**发送测试邮件**。邮件发给您自己，或发给您输入的地址。
 3. 如果发送失败或没有收到，用 `docker compose logs gateway` 在网关日志中查看 SMTP 服务器的回应。
 
+在服务器上，`docker compose exec gateway kaeso mail test you@example.com` 会用网关的设置发送同样的测试邮件，无需登录，并输出 SMTP 服务器的回应。
+
 [故障排除](troubleshooting.md#收不到邮件)列出了常见原因。
 
 ## 不用邮件服务器试用 Kaeso

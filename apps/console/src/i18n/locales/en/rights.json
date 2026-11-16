@@ -72,7 +72,7 @@
   "rights.instancePreset.none.name": "None",
   "rights.instancePreset.read.description": "Reads the system, users, organizations and the instance audit log.",
   "rights.instancePreset.read.name": "Read",
-  "rights.instanceSettingsManage.description": "Change general, mail, logging, time zone and account settings, and send a test email.",
+  "rights.instanceSettingsManage.description": "Change general, mail, logging, time zone and account settings, send a test email, and fetch model data now.",
   "rights.instanceSettingsManage.name": "Change instance settings",
   "rights.instanceSystemView.description": "See the system and its model data, the instance settings and the update status.",
   "rights.instanceSystemView.name": "View the system",

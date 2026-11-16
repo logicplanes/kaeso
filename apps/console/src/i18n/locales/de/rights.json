@@ -211,7 +211,7 @@
   "rights.instancePreset.none.name": "Keine",
   "rights.instancePreset.read.description": "Liest System, Benutzer, Organisationen und das Audit-Log der Instanz.",
   "rights.instancePreset.read.name": "Lesen",
-  "rights.instanceSettingsManage.description": "Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern und eine Test-E-Mail senden.",
+  "rights.instanceSettingsManage.description": "Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern, eine Test-E-Mail senden und Modelldaten sofort abrufen.",
   "rights.instanceSettingsManage.name": "Instanzeinstellungen ändern",
   "rights.instanceSystemView.description": "Das System und seine Modelldaten, die Instanzeinstellungen und den Update-Status sehen.",
   "rights.instanceSystemView.name": "System ansehen",

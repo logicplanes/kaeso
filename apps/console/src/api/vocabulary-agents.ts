@@ -8,7 +8,10 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   ],
   "instance.settings.manage": () => [
     t("rights.instanceSettingsManage.name", "Change instance settings"),
-    t("rights.instanceSettingsManage.description", "Change general, mail, logging, time zone and account settings, and send a test email."),
+    t(
+      "rights.instanceSettingsManage.description",
+      "Change general, mail, logging, time zone and account settings, send a test email, and fetch model data now.",
+    ),
   ],
   "instance.updates.manage": () => [
     t("rights.instanceUpdatesManage.name", "Manage updates"),

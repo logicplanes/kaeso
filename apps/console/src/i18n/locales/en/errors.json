@@ -294,6 +294,8 @@
   "errors.keysBeyondTheirOwnLimits": "A key can only create or rotate keys within its own limits; use a console session.",
   "errors.keysCantMintPlatformKeys": "Keys can't create keys with platform access; use a console session.",
   "errors.keysCantWidenTheirOwn": "A key can't widen `{field}` beyond its own; use a console session.",
+  "errors.kpmrSyncFailed": "Kaeso could not fetch the model data; the System page says why.",
+  "errors.kpmrSyncOff": "Model data sync is off on this install; set `KAESO_KPMR_SYNC=true` to use it.",
   "errors.lastInstanceAdmin": "This is the last instance admin; make someone else an instance admin first.",
   "errors.lastOwnerLeaving": "You are this organization's last owner; transfer ownership before leaving.",
   "errors.lastOwnerMakeAnother": "This is the organization's last owner; make someone else an owner first.",
