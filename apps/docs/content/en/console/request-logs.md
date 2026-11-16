@@ -111,7 +111,7 @@ A project can turn content logging off for itself in its **Settings**, with the 
 
 ## Delete logs
 
-The **Storage** tab, under **Logging**, shows how many entries the organization keeps and the space they take, per project. It and the **Deletions** tab need the right **View log storage**.
+The **Storage** tab, under **Logging**, shows how many entries the organization keeps and the space they take, per project. **Logical size** counts every request's content as it was received; **On disk** counts a long message that a conversation repeats in later requests once, which is how Kaeso stores it, and every request still reads back exactly as it was sent. It and the **Deletions** tab need the right **View log storage**.
 
 1. On the **Deletions** tab, choose **Delete logs**.
 2. Choose whole UTC days, and every project or one.

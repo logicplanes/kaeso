@@ -1228,7 +1228,7 @@ async fn timings_logged_in_whole_milliseconds_read_as_microseconds() {
     );
 }
 
-fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, ContentRow) {
+pub(crate) fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, ContentRow) {
     let id = Uuid::now_v7();
     (
         LogRow {
@@ -1295,6 +1295,7 @@ fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogRow, Content
             request_body: format!("{{\"n\":{i}}}"),
             reply: "{}".into(),
             expires_at: at + time::Duration::days(30),
+            request_parts: 0,
         },
     )
 }

@@ -10,6 +10,7 @@ use kaeso_core::id::RequestId;
 use kaeso_kpp::{DialectId, Reply, RequestKind, Response};
 use kaeso_store::StoreError;
 use kaeso_store::clickhouse::logs::{self as ch, ContentRow, LogRow};
+use kaeso_store::clickhouse::parts::{self as ch_parts, PartRow};
 use kaeso_store::clickhouse::tool_calls::{self, ToolCallContentRow, ToolCallRow};
 use kaeso_store::pg::log_jobs::{self, LogSettings};
 use rust_decimal::Decimal;
@@ -20,6 +21,7 @@ use uuid::Uuid;
 
 use crate::model_api::hooks::{Outcome, Sink};
 use crate::services::log_media::{self, Keep};
+use crate::services::log_parts;
 use crate::state::AppState;
 
 const WRITE_RETRY_WAIT: Duration = Duration::from_secs(2);
@@ -31,6 +33,7 @@ struct Entry {
     seq: u64,
     log: Option<LogRow>,
     content: Option<ContentRow>,
+    parts: Vec<PartRow>,
     call: Option<ToolCallRow>,
     call_content: Option<ToolCallContentRow>,
     size: u64,
@@ -40,6 +43,7 @@ impl Entry {
     fn holds_any(&self) -> bool {
         self.log.is_some()
             || self.content.is_some()
+            || !self.parts.is_empty()
             || self.call.is_some()
             || self.call_content.is_some()
     }
@@ -247,12 +251,15 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
     // One table at a time, each row dropped from the batch once written: a later table that
     // fails puts back only what it still holds, so nothing is written twice.
     let mut batch = batch;
+    // Parts before the bodies that name them, so a body is never read without its parts.
     for stage in [
         Stage::Logs,
         Stage::Calls,
+        Stage::Parts,
         Stage::Contents,
         Stage::CallContents,
     ] {
+        let mut written_parts = Vec::new();
         let written = match stage {
             Stage::Logs => {
                 let rows: Vec<&LogRow> = batch.iter().filter_map(|e| e.log.as_ref()).collect();
@@ -262,6 +269,10 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
                 let rows: Vec<&ToolCallRow> =
                     batch.iter().filter_map(|e| e.call.as_ref()).collect();
                 within(deadline, tool_calls::insert_calls(clickhouse, rows)).await
+            }
+            Stage::Parts => {
+                written_parts = merged_parts(&batch);
+                within(deadline, ch_parts::insert(clickhouse, &written_parts)).await
             }
             Stage::Contents => {
                 let rows: Vec<&ContentRow> =
@@ -284,12 +295,27 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
                 return Flushed::OutOfTime;
             }
         }
+        for p in written_parts {
+            state
+                .caches
+                .log_parts
+                .insert(
+                    (p.project_id, p.hash),
+                    log_parts::Written {
+                        first_at: p.first_at,
+                        last_at: p.last_at,
+                        expires_at: p.expires_at,
+                    },
+                )
+                .await;
+        }
         batch = batch
             .into_iter()
             .map(|mut e| {
                 match stage {
                     Stage::Logs => e.log = None,
                     Stage::Calls => e.call = None,
+                    Stage::Parts => e.parts = Vec::new(),
                     Stage::Contents => e.content = None,
                     Stage::CallContents => e.call_content = None,
                 }
@@ -305,8 +331,33 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
 enum Stage {
     Logs,
     Calls,
+    Parts,
     Contents,
     CallContents,
+}
+
+// Requests of one batch that name the same part write it as one row spanning them all.
+fn merged_parts(batch: &[Entry]) -> Vec<PartRow> {
+    let mut rows: Vec<PartRow> = Vec::new();
+    let mut at: std::collections::HashMap<(Uuid, ch_parts::Hash), usize> =
+        std::collections::HashMap::new();
+    for p in batch.iter().flat_map(|e| e.parts.iter()) {
+        match at
+            .get(&(p.project_id, p.hash))
+            .and_then(|i| rows.get_mut(*i))
+        {
+            Some(row) => {
+                row.first_at = row.first_at.min(p.first_at);
+                row.last_at = row.last_at.max(p.last_at);
+                row.expires_at = row.expires_at.max(p.expires_at);
+            }
+            None => {
+                at.insert((p.project_id, p.hash), rows.len());
+                rows.push(p.clone());
+            }
+        }
+    }
+    rows
 }
 
 fn put_back(state: &AppState, entries: Vec<Entry>) {
@@ -880,15 +931,24 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
         cost_known: crate::services::usage::cost_known(o),
         cost_basis: cost_basis(o).to_owned(),
     };
-    let content = content.then(|| ContentRow {
-        request_id: log.request_id,
-        org_id: log.org_id,
-        project_id: log.project_id,
-        started_at: log.started_at,
-        request_body,
-        reply,
-        expires_at: days(o.started_at, cfg.content_days.min(cfg.metadata_days)),
-    });
+    let content_expires = days(o.started_at, cfg.content_days.min(cfg.metadata_days));
+    let (content, parts) = if content {
+        let (request_body, placeholders, parts) =
+            split_history(state, o, request_body, content_expires).await;
+        let row = ContentRow {
+            request_id: log.request_id,
+            org_id: log.org_id,
+            project_id: log.project_id,
+            started_at: log.started_at,
+            request_body,
+            reply,
+            expires_at: content_expires,
+            request_parts: placeholders,
+        };
+        (Some(row), parts)
+    } else {
+        (None, Vec::new())
+    };
     let size = 512 + logical + text_bytes(&log);
     let cfg = &state.config.logs;
     state.logs.push(
@@ -896,6 +956,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
             seq: 0,
             log: Some(log),
             content,
+            parts,
             call: None,
             call_content: None,
             size,
@@ -958,6 +1019,7 @@ pub async fn record_tool_call(
             seq: 0,
             log: None,
             content: None,
+            parts: Vec::new(),
             call: Some(row),
             call_content,
             size,
@@ -984,6 +1046,68 @@ async fn tool_call_content(
         tracing::error!(error = %e, "cannot prepare a tool call's content for the log; it is logged without it");
         Default::default()
     })
+}
+
+// The body with its long history elements as placeholders, and the parts this request must
+// write: the ones this gateway hasn't written lately for a request like it.
+async fn split_history(
+    state: &AppState,
+    o: &Outcome,
+    body: String,
+    expires_at: OffsetDateTime,
+) -> (String, u32, Vec<PartRow>) {
+    let Some(caller) = &o.caller else {
+        return (body, 0, Vec::new());
+    };
+    let keys = log_parts::history_keys(o.ingress);
+    if keys.is_empty() || body.len() < log_parts::MIN_PART_BYTES {
+        return (body, 0, Vec::new());
+    }
+    let (body, split) = if body.len() < crate::model_api::pipeline::OFF_THREAD_BYTES {
+        let split = log_parts::split(&body, keys);
+        (body, split)
+    } else {
+        match tokio::task::spawn_blocking(move || {
+            let split = log_parts::split(&body, keys);
+            (body, split)
+        })
+        .await
+        {
+            Ok(done) => done,
+            Err(e) => {
+                tracing::error!(error = %e, request_id = %o.request_id, "cannot split a request's history for the log; it is logged without its content");
+                return (String::new(), 0, Vec::new());
+            }
+        }
+    };
+    let Some(split) = split else {
+        return (body, 0, Vec::new());
+    };
+    // A part outlives the request that writes it by the rewrite interval, so the requests that
+    // rely on it until the next write, each expiring a little later, are covered too.
+    let part_expires = expires_at
+        + time::Duration::try_from(ch_parts::REWRITE_EVERY).unwrap_or(time::Duration::HOUR);
+    let mut rows = Vec::new();
+    for (hash, part) in split.parts {
+        let covered = state
+            .caches
+            .log_parts
+            .get(&(caller.project_id, hash))
+            .await
+            .is_some_and(|w| w.covers(o.started_at, expires_at));
+        if !covered {
+            rows.push(PartRow {
+                org_id: caller.org_id,
+                project_id: caller.project_id,
+                hash,
+                body: part,
+                first_at: o.started_at,
+                last_at: o.started_at,
+                expires_at: part_expires,
+            });
+        }
+    }
+    (split.skeleton, split.placeholders, rows)
 }
 
 fn text_bytes(log: &LogRow) -> u64 {
@@ -1082,6 +1206,7 @@ mod tests {
             seq: 0,
             log: None,
             content: None,
+            parts: Vec::new(),
             call: None,
             call_content: None,
             size,

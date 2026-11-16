@@ -68,6 +68,6 @@ Anfrageprotokolle liegen in ClickHouse und belegen keinen Speicherplatz, wenn si
 
 Die Inhalte wachsen mit der Länge Ihrer Prompts und Antworten. Die Aufbewahrung begrenzt die Gesamtmenge. Bei einer Million Anfragen am Tag belegen die Standardfristen etwa 9 GB Metadaten (90 Tage) und 16 GB Inhalte (30 Tage).
 
-Ein Coding-Agent sendet mit jeder Runde sein ganzes Gespräch erneut, sodass die Anfragen einer Sitzung fast gleich sind. ClickHouse komprimiert eine Folge davon gemeinsam, und eine Stichprobe von Agenten-Sitzungen belegte etwa ein Fünfzigstel ihrer Größe auf der Festplatte.
+Ein Coding-Agent sendet mit jeder Runde sein ganzes Gespräch erneut, sodass die Anfragen einer Sitzung fast gleich sind. Kaeso speichert jede lange Nachricht, jeden System-Prompt und jedes Tool einer Anfrage im Format Anthropic Messages, OpenAI Chat Completions, OpenAI Responses oder Gemini einmal je Projekt, und ein Body nennt sie, statt sie zu wiederholen. So wächst der Inhalt einer Sitzung mit der Zahl ihrer Runden statt mit deren Quadrat. In einer Testsitzung mit 80 Runden belegten 2,5 MB Anfragen 42 KB auf dem Datenträger, ihre ersten 40 Runden die Hälfte davon.
 
 Jede Organisation wählt ihre Aufbewahrung auf ihrer Seite **Protokollierung**, innerhalb der Höchstwerte der Instanz ([Anfrageprotokolle](../console/request-logs.md)). Die Seite **System** der Instanz zeigt, wie viel Platz die Protokolle belegen.

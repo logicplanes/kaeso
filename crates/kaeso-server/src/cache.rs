@@ -1021,6 +1021,11 @@ pub struct Caches {
     pub key_blocks: Cache<String, time::OffsetDateTime>,
     pub time_zone: Cache<(), Arc<str>>,
     pub finished_videos: Cache<uuid::Uuid, Arc<kaeso_kpp::VideoJob>>,
+    /// The log content parts this gateway wrote, per project, as it last wrote them.
+    pub log_parts: Cache<
+        (uuid::Uuid, kaeso_store::clickhouse::parts::Hash),
+        crate::services::log_parts::Written,
+    >,
     pub refreshes: Flights,
     subscription: Arc<Subscription>,
 }
@@ -1093,6 +1098,7 @@ impl Caches {
                 .max_capacity(10_000)
                 .time_to_live(FINISHED_VIDEO_TTL)
                 .build(),
+            log_parts: Cache::builder().max_capacity(200_000).build(),
             refreshes: Flights::new(10_000),
             subscription,
         }

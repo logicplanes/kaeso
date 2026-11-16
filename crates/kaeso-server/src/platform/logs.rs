@@ -373,7 +373,8 @@ pub struct StorageView {
     #[doc = "Content as received, in bytes."]
     pub logical_bytes: u64,
     #[doc = "Estimated size on disk: metadata rows at the table's average row size,\n\
-        plus content at its current compression ratio."]
+        plus content at the ratio of what the content tables hold on disk, messages a\n\
+        conversation repeats stored once, to the content as received."]
     pub estimated_disk_bytes: u64,
     #[doc = "Per project."]
     pub projects: Vec<ProjectStorageView>,
@@ -387,15 +388,21 @@ pub(crate) async fn disk_factors(state: &AppState) -> ApiResult<(f64, f64)> {
     let content = ch::table_size(clickhouse, "request_content")
         .await
         .map_err(unavailable)?;
+    let parts = ch::table_size(clickhouse, "request_content_part")
+        .await
+        .map_err(unavailable)?;
+    let logical = ch::logical_total(clickhouse).await.map_err(unavailable)?;
     let per_row = if log.rows == 0 {
         0.0
     } else {
         log.bytes_on_disk as f64 / log.rows as f64
     };
-    let ratio = if content.uncompressed == 0 {
+    // Content as received against what both content tables hold on disk, so the parts that
+    // repeated messages share count once, as they are stored.
+    let ratio = if logical == 0 {
         1.0
     } else {
-        content.compressed as f64 / content.uncompressed as f64
+        (content.compressed + parts.compressed) as f64 / logical as f64
     };
     Ok((per_row, ratio))
 }

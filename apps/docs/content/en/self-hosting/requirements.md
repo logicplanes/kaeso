@@ -68,6 +68,6 @@ Request logs live in ClickHouse, and take no disk when they are off. Plan for th
 
 Content grows with the size of your prompts and replies. Retention caps the total. At a million requests a day, the default retention keeps about 9 GB of metadata (90 days) and 16 GB of content (30 days).
 
-A coding agent sends its whole conversation again with every turn, so one session's request bodies are nearly the same. ClickHouse compresses a run of them together, and a sample of agent sessions took about a fiftieth of their size on disk.
+A coding agent sends its whole conversation again with every turn, so one session's request bodies are nearly the same. Kaeso stores each long message, system prompt and tool of a request in the Anthropic Messages, OpenAI Chat Completions, OpenAI Responses or Gemini format once per project, and a body names them instead of repeating them, so a session's content grows with its number of turns rather than with their square. In a test session of 80 turns, 2.5 MB of request bodies took 42 KB on disk, and its first 40 turns half of that.
 
 Each organization chooses its retention on its **Logging** page, within the instance's maximums ([request logs](../console/request-logs.md)). The instance's **System** page shows how much the logs take.

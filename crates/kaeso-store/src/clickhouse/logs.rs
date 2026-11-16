@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use super::ClickHouse;
+use super::{ClickHouse, parts};
 use crate::StoreError;
 use crate::pg::usage::{Filter as UsageFilter, Member};
 
@@ -90,6 +90,8 @@ pub struct ContentRow {
     pub reply: String,
     #[serde(with = "clickhouse::serde::time::datetime")]
     pub expires_at: OffsetDateTime,
+    /// How many placeholders for parts `request_body` holds; 0 for a body stored whole.
+    pub request_parts: u32,
 }
 
 pub async fn insert_logs<'a>(
@@ -471,14 +473,35 @@ pub async fn contents(
     if ids.is_empty() {
         return Ok(Vec::new());
     }
-    Ok(ch
+    let mut rows = ch
         .client()
         .query("SELECT ?fields FROM request_content WHERE org_id = ? AND project_id = ? AND request_id IN ?")
         .bind(org)
         .bind(project)
         .bind(ids)
         .fetch_all::<ContentRow>()
-        .await?)
+        .await?;
+    let wanted: Vec<parts::Hash> = rows
+        .iter()
+        .filter(|r| r.request_parts > 0)
+        .flat_map(|r| parts::hashes(&r.request_body))
+        .collect();
+    if wanted.is_empty() {
+        return Ok(rows);
+    }
+    let found = parts::bodies(ch, org, project, &wanted).await?;
+    for row in rows.iter_mut().filter(|r| r.request_parts > 0) {
+        let missing = parts::hashes(&row.request_body)
+            .iter()
+            .filter(|h| !found.contains_key(*h))
+            .count();
+        if missing > 0 {
+            tracing::warn!(request_id = %row.request_id, missing, "parts of a logged request body are gone; it reads with their placeholders");
+        }
+        row.request_body = parts::splice(&row.request_body, &found);
+        row.request_parts = 0;
+    }
+    Ok(rows)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Row, Deserialize)]
@@ -525,6 +548,21 @@ pub async fn table_size(ch: &ClickHouse, table: &str) -> Result<TableSize, Store
         .unwrap_or_default())
 }
 
+/// All content as received the log holds, over every org: what the content tables' size on
+/// disk is compared with.
+pub async fn logical_total(ch: &ClickHouse) -> Result<u64, StoreError> {
+    #[derive(Row, Deserialize)]
+    struct Total {
+        bytes: u64,
+    }
+    Ok(ch
+        .client()
+        .query("SELECT toUInt64(sum(logical_bytes)) AS bytes FROM request_log")
+        .fetch_one::<Total>()
+        .await?
+        .bytes)
+}
+
 pub async fn delete_range(
     ch: &ClickHouse,
     org: Uuid,
@@ -565,12 +603,47 @@ pub async fn delete_range(
         }
         q.execute().await?;
     }
+    delete_parts(ch, org, project, from, to).await
+}
+
+// A part goes with a range only when every request that may rely on it does: one that started
+// between the part's `first_at` and its `last_at` plus the rewrite interval.
+async fn delete_parts(
+    ch: &ClickHouse,
+    org: Uuid,
+    project: Option<Uuid>,
+    from: OffsetDateTime,
+    to: OffsetDateTime,
+) -> Result<(), StoreError> {
+    let mut sql = String::from(
+        "DELETE FROM request_content_part WHERE org_id = ? AND first_at >= fromUnixTimestamp64Milli(?) AND last_at < fromUnixTimestamp64Milli(?)",
+    );
+    if project.is_some() {
+        sql.push_str(" AND project_id = ?");
+    }
+    let rewrite = time::Duration::try_from(parts::REWRITE_EVERY).unwrap_or(time::Duration::HOUR);
+    let mut q = ch
+        .client()
+        .query(&sql)
+        .with_setting("lightweight_deletes_sync", "0")
+        .bind(org)
+        .bind(millis(from))
+        .bind(millis(to - rewrite));
+    if let Some(p) = project {
+        q = q.bind(p);
+    }
+    q.execute().await?;
     Ok(())
+}
+
+fn millis(t: OffsetDateTime) -> i64 {
+    i64::try_from(t.unix_timestamp_nanos() / 1_000_000).unwrap_or(0)
 }
 
 const ORG_TABLES: &[&str] = &[
     "request_log",
     "request_content",
+    "request_content_part",
     "tool_calls",
     "tool_call_content",
 ];
