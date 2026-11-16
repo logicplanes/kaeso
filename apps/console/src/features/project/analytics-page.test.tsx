@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { signedIn, without } from "~/test/fixtures";
@@ -8,7 +9,7 @@ import { renderApp } from "~/test/render";
 
 const USAGE = "orgs/:org/projects/:project/usage";
 const PERIOD = "from=2026-10-01&to=2026-10-14";
-const breakdown = () => screen.findByRole("table", { name: "Usage breakdown" });
+const breakdown = () => screen.findByRole("grid", { name: "Usage breakdown" });
 const bodyRows = (table: HTMLElement) => within(table).getAllByRole("row").slice(1);
 
 function usage(by: Partial<Record<string, UsageRow[] | Response>> = {}): void {
@@ -261,6 +262,144 @@ describe("AnalyticsPage", () => {
     expect(await within(await breakdown()).findByText("No requests in this period")).toBeInTheDocument();
   });
 
+  it("sorts the numeric columns, an unknown cost last, and downloads the rows as shown", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({
+      model: [
+        usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 30, cost: "0.5" }),
+        usageRow({ key: "openai/=gpt-x", requests: 20, cost: null, cache_hit_rate: 0.25 }),
+        usageRow({ key: "openai/gpt-5.4-mini", requests: 10, cost: "2", errors: 3 }),
+      ],
+    });
+    const { user } = await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    const table = await breakdown();
+    await waitFor(() => expect(bodyRows(table)).toHaveLength(3));
+    const order = () => bodyRows(table).map((r) => (r.textContent?.includes("Sonnet") ? "sonnet" : r.textContent?.includes("mini") ? "mini" : "x"));
+    expect(within(table).getByRole("columnheader", { name: "Model" })).not.toHaveAttribute("aria-sort");
+
+    await user.click(within(table).getByRole("button", { name: "Cost" }));
+    const cost = within(table).getByRole("columnheader", { name: /Cost/ });
+    expect(order()).toEqual(cost.getAttribute("aria-sort") === "ascending" ? ["sonnet", "mini", "x"] : ["mini", "sonnet", "x"]);
+    await user.click(within(table).getByRole("button", { name: "Cost" }));
+    expect(order()).toEqual(cost.getAttribute("aria-sort") === "ascending" ? ["sonnet", "mini", "x"] : ["mini", "sonnet", "x"]);
+    await user.click(within(table).getByRole("button", { name: "Errors" }));
+    expect(order()[0] === "mini" || order()[2] === "mini").toBe(true);
+
+    const files: Blob[] = [];
+    const created = vi.spyOn(URL, "createObjectURL").mockImplementation((b) => (files.push(b as Blob), "blob:csv"));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      expect(this.download).toBe("usage-model-2026-10-01-2026-10-14.csv");
+    });
+    await user.click(within(table).getByRole("button", { name: "Cost" }));
+    await user.click(screen.getByRole("button", { name: "Download CSV" }));
+    const lines = (await (files[0] as Blob).text()).trimEnd().split("\r\n");
+    expect(lines[0]).toBe("Model,Id,Requests,Errors,Tokens,Cache hit,Cost");
+    expect(lines.slice(1).map((l) => l.split(",")[1])).toEqual(
+      order().map((o) => ({ sonnet: "anthropic/claude-sonnet-4-5", mini: "openai/gpt-5.4-mini", x: "openai/=gpt-x" })[o]),
+    );
+    // A name that starts like a formula stays text in a spreadsheet.
+    expect(lines.find((l) => l.includes("gpt-x"))).toBe("'=gpt-x,openai/=gpt-x,20,0,1500,0.25,");
+    created.mockRestore();
+    click.mockRestore();
+  });
+
+  it("downloads each grouping named as the table names it, without cost for someone who can't see it", async () => {
+    signedIn({ projectRights: without("costs.view") });
+    projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()] });
+    usage({
+      day: [usageRow({ key: "2026-10-13", media: { images: 2, characters: 0, audio_ms: 0, videos: 0, video_ms: 0 } })],
+      key: [usageRow({ key: "key_web" }), usageRow({ key: "playground", requests: 4 })],
+      member: [usageRow({ key: "service_account:sa_deploy" }), usageRow({ key: "user:usr_grace", requests: 2 })],
+      route: [
+        usageRow({ key: "openai_chat:anthropic_messages:anthropic" }),
+        usageRow({ key: "openai_images::", requests: 2 }),
+        usageRow({ key: "", requests: 1 }),
+      ],
+    });
+    const files: Blob[] = [];
+    const created = vi.spyOn(URL, "createObjectURL").mockImplementation((b) => (files.push(b as Blob), "blob:csv"));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    const { router } = await renderApp(projectPath(`analytics?${PERIOD}`));
+    const column = async (by: string, wait: string) => {
+      if (by !== "day") await router.navigate({ to: projectPath("analytics"), search: { from: "2026-10-01", to: "2026-10-14", by } } as never);
+      await within(await breakdown()).findByText(wait);
+      await userEvent.click(screen.getByRole("button", { name: "Download CSV" }));
+      const lines = (await (files.at(-1) as Blob).text()).trimEnd().split("\r\n");
+      return { header: lines[0], names: lines.slice(1).map((l) => l.split(",")[0]) };
+    };
+    expect(await column("day", "13 Oct")).toEqual({ header: "Day,Id,Requests,Errors,Tokens,Cache hit,Media", names: ["13 Oct"] });
+    expect((await column("key", "checkout-web")).names).toEqual(["checkout-web", "Playground"]);
+    expect((await column("member", "Grace Hopper")).names).toEqual(["ci-deploy (service account)", "Grace Hopper"]);
+    expect((await column("route", "Route not recorded")).names).toEqual(["Chat → Messages (Anthropic)", "Images", "Route not recorded"]);
+    created.mockRestore();
+    click.mockRestore();
+  });
+
+  it("opens the requests a row counts in the period's days", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()], models: [catalogueModel()] });
+    usage({
+      model: [usageRow({ key: "anthropic/claude-sonnet-4-5" }), usageRow({ key: "unpriced", requests: 1 })],
+      key: [usageRow({ key: "key_web" }), usageRow({ key: "playground", requests: 4 })],
+      member: [usageRow({ key: "service_account:sa_deploy" }), usageRow({ key: "user:usr_grace", requests: 2 })],
+      route: [usageRow({ key: "openai_chat:anthropic_messages:anthropic" }), usageRow({ key: "", requests: 1 })],
+    });
+    const { user, router } = await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
+    const open = async (by: string | null, row: number) => {
+      if (by) {
+        await router.navigate({ to: projectPath("analytics"), search: { from: "2026-10-01", to: "2026-10-14", by } } as never);
+      }
+      const table = await breakdown();
+      await waitFor(() => expect(bodyRows(table).length).toBeGreaterThan(row));
+      await user.click(bodyRows(table)[row] as HTMLElement);
+    };
+    const opened = async (search: Record<string, string>) => {
+      await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
+      expect(router.state.location.search).toEqual({ from: "2026-10-01", to: "2026-10-14", ...search });
+    };
+    await open(null, 0);
+    await opened({ model: "claude-sonnet-4-5", provider: "anthropic" });
+    await open("model", 1);
+    expect(router.state.location.pathname).toBe(projectPath("analytics"));
+    await open("key", 0);
+    await opened({ key: "key_web" });
+    await open("key", 1);
+    await opened({ source: "playground" });
+    await open("member", 0);
+    await opened({ member: "sa:sa_deploy" });
+    await open("member", 1);
+    await opened({ member: "user:usr_grace" });
+    await open("route", 0);
+    await opened({ ingress: "openai_chat", egress: "anthropic_messages", provider: "anthropic" });
+    await open("route", 1);
+    expect(router.state.location.pathname).toBe(projectPath("analytics"));
+  });
+
+  it("opens a week's requests within the period, and offers no rows to open without the request log's right", async () => {
+    signedIn();
+    projectData();
+    usage({ week: [usageRow({ key: "2026-06-01", requests: 3 }), usageRow({ key: "2026-09-28", requests: 5 })] });
+    const { user, router } = await renderApp(projectPath("analytics?from=2026-06-03&to=2026-09-30"));
+    const table = await breakdown();
+    await waitFor(() => expect(bodyRows(table)).toHaveLength(2));
+    await user.click(bodyRows(table)[1] as HTMLElement);
+    await waitFor(() => expect(router.state.location.search).toEqual({ from: "2026-06-03", to: "2026-06-07" }));
+    await router.navigate({ to: projectPath("analytics"), search: { from: "2026-06-03", to: "2026-09-30" } } as never);
+    const again = await breakdown();
+    await waitFor(() => expect(bodyRows(again)).toHaveLength(2));
+    await user.click(bodyRows(again)[0] as HTMLElement);
+    await waitFor(() => expect(router.state.location.search).toEqual({ from: "2026-09-28", to: "2026-09-30" }));
+  });
+
+  it("keeps the rows a plain table for someone who can't read the request log", async () => {
+    signedIn({ projectRights: without("logs.metadata.view") });
+    projectData();
+    usage({ day: [usageRow()] });
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+    expect(await screen.findByRole("table", { name: "Usage breakdown" })).toBeInTheDocument();
+  });
+
   it("offers a retry across the whole row when the rows fail without the right to see cost", async () => {
     signedIn({ projectRights: without("costs.view") });
     projectData();
@@ -269,7 +408,7 @@ describe("AnalyticsPage", () => {
 
     const table = await breakdown();
     expect(await within(table).findByText("Couldn't load these rows")).toBeInTheDocument();
-    expect(within(table).getByText("Couldn't load these rows").closest("[role=cell]")).toHaveAttribute("aria-colspan", "5");
+    expect(within(table).getByText("Couldn't load these rows").closest("[role=gridcell]")).toHaveAttribute("aria-colspan", "5");
   });
 
   it("leaves cost out without the right to see it", async () => {
@@ -318,7 +457,7 @@ describe("AnalyticsPage", () => {
     failing = false;
     await user.click(within(requestsChart).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(within(requestsChart).queryByText("Couldn't load this chart")).not.toBeInTheDocument());
-    await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
+    await waitFor(() => expect(bodyRows(screen.getByRole("grid", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
   });
 
   it("loads the daily rows again from the breakdown", async () => {
@@ -336,7 +475,7 @@ describe("AnalyticsPage", () => {
     expect(await within(await breakdown()).findByText("Couldn't load these rows")).toBeInTheDocument();
     failing = false;
     await user.click(within(await breakdown()).getByRole("button", { name: "Try again" }));
-    await waitFor(() => expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
+    await waitFor(() => expect(bodyRows(screen.getByRole("grid", { name: "Usage breakdown" }))[0]).toHaveTextContent("13 Oct"));
   });
 
   it("charts the weeks of a period longer than a quarter, and names the year of each when it spans two", async () => {
@@ -349,7 +488,7 @@ describe("AnalyticsPage", () => {
     await renderApp(projectPath("analytics?from=2025-10-21&to=2026-10-14&by=day"));
     await breakdown();
     await waitFor(() =>
-      expect(bodyRows(screen.getByRole("table", { name: "Usage breakdown" })).map((r) => within(r).getAllByRole("cell")[0]?.textContent)).toEqual([
+      expect(bodyRows(screen.getByRole("grid", { name: "Usage breakdown" })).map((r) => within(r).getAllByRole("gridcell")[0]?.textContent)).toEqual([
         "Week of 12 Oct 2026",
         "Week of 20 Oct 2025",
       ]),
@@ -404,7 +543,8 @@ describe("the analytics views", () => {
 
     await user.click(bodyRows(table)[1] as HTMLElement);
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
-    expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini");
+    // The model with its provider, in the period's days.
+    expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&provider=openai&from=2026-10-01&to=2026-10-14");
   });
 
   it("keeps the period when it moves between views", async () => {

@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRights } from "~/test/fixtures";
@@ -178,6 +179,56 @@ describe("organization analytics", () => {
     ).toEqual([PROJECT, OTHER_PROJECT]);
   });
 
+  it("sorts the breakdown by a number and downloads the rows as shown, named as in the table", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", page([member()]));
+    on("GET", "orgs/:org/projects/:project/service-accounts", ({ params }: { params: Record<string, string> }) =>
+      page(params.project === PROJECT ? [serviceAccount()] : []),
+    );
+    usage({
+      project: wrap([usageRow(PROJECT, { requests: 50, cost: "1" }), usageRow("proj_gone", { requests: 5, cost: "9" })]),
+      model: wrap([usageRow("openai/gpt-5", { requests: 3 }), usageRow("unknown", { requests: 2 })]),
+      member: wrap([
+        usageRow("user:usr_ada", { requests: 4 }),
+        usageRow("user:usr_gone"),
+        usageRow("service_account:sa_bot"),
+        usageRow("service_account:sa_lost"),
+      ]),
+    });
+    const files: Blob[] = [];
+    const created = vi.spyOn(URL, "createObjectURL").mockImplementation((b) => (files.push(b as Blob), "blob:csv"));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    const { user, router } = await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
+    const table = await breakdown();
+    await within(table).findByText("Checkout assistant");
+    await user.click(within(table).getByRole("button", { name: "Cost" }));
+    const desc = within(table).getByRole("columnheader", { name: /Cost/ }).getAttribute("aria-sort") === "descending";
+    await user.click(screen.getByRole("button", { name: "Download CSV" }));
+    const csv = async (i: number) => (await (files[i] as Blob).text()).trimEnd().split("\r\n");
+    const project = await csv(0);
+    expect(project[0]).toBe("Project,Id,Requests,Errors,Tokens,Cost");
+    expect(project.slice(1)).toEqual(
+      desc
+        ? ["proj_gone,proj_gone,5,0,150,9", `Checkout assistant,${PROJECT},50,0,150,1`]
+        : [`Checkout assistant,${PROJECT},50,0,150,1`, "proj_gone,proj_gone,5,0,150,9"],
+    );
+
+    await user.click(screen.getByRole("radio", { name: "By model" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ by: "model" }));
+    await within(await breakdown()).findByText("gpt-5");
+    await user.click(screen.getByRole("button", { name: "Download CSV" }));
+    expect((await csv(1)).slice(1).map((l) => l.split(",")[0])).toEqual(expect.arrayContaining(["openai/gpt-5", "No model"]));
+
+    await user.click(screen.getByRole("radio", { name: "By member" }));
+    await within(await breakdown()).findByText("Nightly bot");
+    await user.click(screen.getByRole("button", { name: "Download CSV" }));
+    expect((await csv(2)).slice(1).map((l) => l.split(",")[0])).toEqual(
+      expect.arrayContaining(["Ada Okafor", "Former member", "Nightly bot", "Service account"]),
+    );
+    created.mockRestore();
+    click.mockRestore();
+  });
+
   it("looks for service accounts only until each one in the breakdown is found", async () => {
     const many = ["proj_1", "proj_2", "proj_3", "proj_4", "proj_5", "proj_6"].map((id) => project({ id, name: id }));
     signedIn({ projects: many });
@@ -309,6 +360,13 @@ describe("organization analytics", () => {
     expect(within(table).queryByRole("columnheader", { name: "Cost" })).not.toBeInTheDocument();
     expect(screen.queryAllByText("Cost by project")).toHaveLength(0);
     expect(table).not.toHaveTextContent("$1.00");
+    const files: Blob[] = [];
+    const created = vi.spyOn(URL, "createObjectURL").mockImplementation((b) => (files.push(b as Blob), "blob:csv"));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    await userEvent.click(screen.getByRole("button", { name: "Download CSV" }));
+    expect((await (files[0] as Blob).text()).split("\r\n")[0]).toBe("Project,Id,Requests,Errors,Tokens");
+    created.mockRestore();
+    click.mockRestore();
   });
 
   it("spans the empty breakdown across the columns without costs", async () => {

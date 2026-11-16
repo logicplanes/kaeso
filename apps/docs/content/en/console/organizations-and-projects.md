@@ -24,6 +24,8 @@ A route is the app's format, the format Kaeso sent to the provider, and the prov
 
 A breakdown with media requests has a **Media** column: the images made, the characters spoken, the length of audio made or transcribed, and the videos made with their length. A group whose requests had no known price shows its cost as **Unknown**; one where only some had none shows its cost with how many requests are unknown.
 
+In both breakdowns, a number column's header sorts the rows, with what isn't known last, and **Download CSV** saves the rows as shown, in their order, with each row's id next to its name; the file is made in your browser. In a project's breakdown, a row opens the requests it counts in the request logs, in the period's UTC days: a day, week or month opens its own days; a model, key, member or route opens its requests, and the **Playground** row the Playground's. A route that wasn't recorded opens nothing. Rows open only for someone who may read the request logs.
+
 ## Change organization settings
 
 Open **Organization settings** in the menu at the foot of the sidebar. It has these pages:

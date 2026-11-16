@@ -82,6 +82,8 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
                   showCost={o.showCost}
                   org={org}
                   project={project}
+                  from={o.from}
+                  to={o.to}
                   modelName={o.modelName}
                   loading={table.isPending || (by === "model" && o.namesLoading)}
                   failed={table.isError}

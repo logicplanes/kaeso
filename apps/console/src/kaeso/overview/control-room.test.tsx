@@ -531,7 +531,20 @@ describe("the analytics views", () => {
     const table = await screen.findByRole("grid", { name: "Keys in the period" });
     expect(within(table).queryByRole("columnheader", { name: "Change" })).not.toBeInTheDocument();
     await user.click(await within(table).findByRole("row", { name: /checkout-web/ }));
-    await waitFor(() => expect(router.state.location.searchStr).toBe("?key=key_web"));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ key: "key_web" }));
+    const { from, to } = router.state.location.search as { from?: string; to?: string };
+    expect(from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(to).toBe(from);
+  });
+
+  it("opens a service account's requests from a project's members, in the period", async () => {
+    signedIn();
+    projectData({ accounts: [serviceAccount()] });
+    on("GET", USAGE, () => ({ data: [usageRow({ key: "service_account:sa_deploy", requests: 30 })] }));
+    const { user, router } = await renderApp(projectPath("analytics/members?from=2026-10-01&to=2026-10-14"));
+    const table = await screen.findByRole("grid", { name: "Members in the period" });
+    await user.click(await within(table).findByRole("row", { name: /ci-deploy/ }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ member: "sa:sa_deploy", from: "2026-10-01", to: "2026-10-14" }));
   });
 
   it("labels usage that reached no model, and goes back to the overview with the period", async () => {

@@ -46,7 +46,8 @@ export function bucketLabel(key: string, g: Granularity, withYear = false): stri
   return g === "week" ? t("format.bucket.weekOf", "Week of {date}", { date: weekName(key, withYear) }) : monthLabel(key);
 }
 
-const lastDay = (key: string, g: Granularity) => {
+/** The last day a bucket counts: the day itself, its week's Sunday or its month's last day. */
+export const lastDay = (key: string, g: Granularity) => {
   if (g === "day") return key;
   if (g === "week") return utcDay(new Date(at(key) + 6 * DAY));
   const [y = 1970, m = 1] = key.split("-").map(Number);
