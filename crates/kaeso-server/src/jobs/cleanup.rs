@@ -28,9 +28,12 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
         now - UNUSED_CLIENTS_KEPT,
     )
     .await?;
+    let deliveries =
+        kaeso_store::pg::webhooks::prune(&state.pg, now - crate::services::webhooks::KEEP).await?;
     Ok(format!(
         "deleted {sessions} sessions, {tokens} tokens, {invites} invites; revoked {agents} agents; \
-         deleted {} agent requests, {} agent tokens, {} agent clients, {} agent tool calls",
+         deleted {} agent requests, {} agent tokens, {} agent clients, {} agent tool calls, \
+         {deliveries} webhook deliveries",
         swept.requests, swept.tokens, swept.clients, swept.activity
     ))
 }

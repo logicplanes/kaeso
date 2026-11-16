@@ -178,6 +178,8 @@ rights!(
         OrgUpdate = "org.update", Organization, "Edit organization", false, false, false, [], "Rename the organization and change its picture and general settings.";
         OrgDelete = "org.delete", Organization, "Delete organization", true, true, false, [], "Schedule the organization for deletion, or restore it while it waits.";
         OrgOwnershipTransfer = "org.ownership.transfer", Organization, "Transfer ownership", true, true, false, [MembersView], "Make another member an owner in your place; only owners hold it.";
+        WebhooksView = "webhooks.view", Organization, "View webhooks", false, false, false, [], "See the organization's webhooks, what they receive and their last deliveries (never secrets).";
+        WebhooksManage = "webhooks.manage", Organization, "Manage webhooks", true, true, false, [WebhooksView], "Add, change, test and delete webhooks, and rotate their signing secrets.";
         MembersView = "members.view", Members, "View members", false, false, false, [], "See members, their roles and their rights.";
         MembersInvite = "members.invite", Members, "Invite members", false, false, false, [MembersView], "Invite people by email with a role you could grant yourself.";
         MembersInvitesRevoke = "members.invites.revoke", Members, "Cancel invites", false, false, false, [MembersView], "Cancel pending invitations.";

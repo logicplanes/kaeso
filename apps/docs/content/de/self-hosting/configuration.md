@@ -265,6 +265,14 @@ Die Adresse eines MCP-Servers wählt ein Organisations-Admin, also überwacht da
 
 Das Gateway folgt außerdem keinen Weiterleitungen eines eigenen Anbieters und ruft ihn ohne den Proxy in `HTTPS_PROXY` auf, weil ein Proxy den Namen an diesen Prüfungen vorbei auflösen würde. Erlauben Sie ein Netz nur, wo jeder Organisations-Admin die Server darin über das Gateway erreichen darf. Für ein vLLM auf demselben Host wie die Container des Gateways nennen Sie das Docker-Netz, etwa `172.16.0.0/12`.
 
+### Webhooks
+
+| Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- |
+| `KAESO_WEBHOOKS_ALLOWED_NETWORKS`<br>`webhooks.allowed_networks` | Text | — | Durch Kommas getrennte private, Loopback- oder andere nicht öffentliche Netze, an die [Webhooks](../console/webhooks.md) zustellen dürfen, etwa `10.20.0.0/16`, über `http` oder `https`. Andere Webhooks brauchen eine öffentliche `https`-Adresse. |
+
+Die Adresse eines Webhooks wählt ein Admin der Organisation, daher schützt das Gateway sie wie die eines MCP-Servers: Jede Verbindung wird nach der DNS-Auflösung geprüft, private, Loopback-, Link-local- und Cloud-Metadaten-Adressen werden abgelehnt, außer ein aufgeführtes Netz deckt sie ab, und Link-local- und Cloud-Metadaten-Adressen bleiben auch dann abgelehnt. Zustellungen gehen ohne den Proxy in `HTTPS_PROXY` und folgen keinen Weiterleitungen.
+
 ### Streams an Apps
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |

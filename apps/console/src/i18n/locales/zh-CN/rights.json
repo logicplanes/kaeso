@@ -222,5 +222,9 @@
   "rights.instanceUsersManage.description": "邀请、停用和重新启用账户，结束其会话并重置其双重验证。",
   "rights.instanceUsersManage.name": "管理用户",
   "rights.instanceUsersView.description": "查看实例的每个账户及其所在组织。",
-  "rights.instanceUsersView.name": "查看用户"
+  "rights.instanceUsersView.name": "查看用户",
+  "rights.webhooksView.name": "查看 Webhook",
+  "rights.webhooksView.description": "查看组织的 Webhook、它们接收的内容以及最近的投递（从不显示机密）。",
+  "rights.webhooksManage.name": "管理 Webhook",
+  "rights.webhooksManage.description": "添加、更改、测试和删除 Webhook，并轮换其签名密钥。"
 }

@@ -25,6 +25,7 @@ export const ORG_SETTINGS_PAGES: SettingsPage[] = [
   { id: "members", label: () => t("common.members", "Members"), icon: icons.members, path: "members", right: "members.view" },
   { id: "security", label: () => t("shell.settings.security", "Security"), icon: icons.security, path: "security", right: "org.view" },
   { id: "platform-keys", label: () => t("shell.settings.platformKeys", "Platform keys"), icon: icons.key, path: "platform-keys", right: "platform_keys.view" },
+  { id: "webhooks", label: () => t("shell.settings.webhooks", "Webhooks"), icon: icons.send, path: "webhooks", right: "webhooks.view" },
   { id: "logging", label: () => t("shell.settings.logging", "Logging"), icon: icons.requestLog, path: "logging", right: "org.view" },
   { id: "audit-log", label: () => t("shell.page.auditLog", "Audit log"), icon: icons.audit, path: "audit-log", right: "audit_log.view" },
 ];

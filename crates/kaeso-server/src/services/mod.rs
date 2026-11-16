@@ -36,3 +36,4 @@ pub mod updater;
 pub mod updates;
 pub mod usage;
 pub mod users;
+pub mod webhooks;

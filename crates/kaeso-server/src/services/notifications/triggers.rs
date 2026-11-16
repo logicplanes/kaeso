@@ -11,7 +11,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use super::dispatch::{
-    Event, Recipients, Send, about, deliver, instance_admins, org_holders, org_path,
+    Event, Recipients, Send, about, deliver, deliver_with, instance_admins, org_holders, org_path,
     project_holders, project_path, settings_path,
 };
 use crate::platform::audit::Action as A;
@@ -128,6 +128,7 @@ pub async fn on_event(state: &AppState, kind: Kind, e: &Event) -> ApiResult<usiz
         | Kind::McpServers
         | Kind::ConnectionExpired
         | Kind::ProviderKeys
+        | Kind::Webhooks
         | Kind::CostReport => Ok(0),
     }
 }
@@ -521,7 +522,11 @@ async fn model_changes(state: &AppState, e: &Event) -> ApiResult<usize> {
             &[ProjectRight::ModelsManage],
         )
         .await?;
-        sent += deliver(
+        let ids = serde_json::json!({
+            "catalogue_model_id": CatalogueModelId::from_uuid(entry.id).to_string(),
+            "provider_id": entry.provider,
+        });
+        sent += deliver_with(
             state,
             &send,
             &Fact::Model {
@@ -531,6 +536,7 @@ async fn model_changes(state: &AppState, e: &Event) -> ApiResult<usize> {
                 change: change.clone(),
             },
             to,
+            Some(ids),
         )
         .await?;
     }

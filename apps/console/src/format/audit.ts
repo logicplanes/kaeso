@@ -29,6 +29,7 @@ const KIND_LABELS: Record<string, () => string> = {
   tool: () => t("format.audit.kind.tool", "Tools"),
   tool_access: () => t("format.audit.kind.toolAccess", "Tool access"),
   user: () => t("format.audit.kind.user", "Users"),
+  webhook: () => t("format.audit.kind.webhook", "Webhooks"),
 };
 
 const ACTION_LABELS: Record<string, () => string> = {
@@ -141,6 +142,10 @@ const ACTION_LABELS: Record<string, () => string> = {
   "user.create_by_invite": () => t("format.audit.action.userCreateByInvite", "Account created from an invitation"),
   "user.create_by_sso": () => t("format.audit.action.userCreateBySso", "Account created by single sign-on"),
   "user.update": () => t("format.audit.action.userUpdate", "Profile changed"),
+  "webhook.create": () => t("format.audit.action.webhookCreate", "Webhook added"),
+  "webhook.update": () => t("format.audit.action.webhookUpdate", "Webhook changed"),
+  "webhook.secret_rotate": () => t("format.audit.action.webhookSecretRotate", "Webhook secret rotated"),
+  "webhook.delete": () => t("format.audit.action.webhookDelete", "Webhook deleted"),
   "user.email_change_request": () => t("format.audit.action.userEmailChangeRequest", "Email change requested"),
   "user.email_change_cancel": () => t("format.audit.action.userEmailChangeCancel", "Email change canceled"),
   "user.email_change": () => t("format.audit.action.userEmailChange", "Email address changed"),
@@ -210,6 +215,7 @@ const TARGET_KINDS: Record<string, () => string> = {
   key: () => t("format.targetKind.key", "Key"),
   role: () => t("format.targetKind.role", "Role"),
   update: () => t("format.targetKind.update", "Update"),
+  webhook: () => t("format.targetKind.webhook", "Webhook"),
 };
 export const targetKindLabel = (kind: string) => TARGET_KINDS[kind]?.() ?? kind;
 

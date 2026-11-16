@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM webhook_deliveries WHERE created_at < $1 AND status <> 'pending'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e2734aefd1959d84f5ec06e77c0f8f8bc98df0ec1c83a476a4ba40c7ee8e81bb"
+}

@@ -76,6 +76,7 @@ services:
 | `kaeso_auth_failures_total{method, reason}` | Häufungen fehlgeschlagener Anmeldungen oder Schlüssel. `reason="throttled"` zählt Anfragen, die die [Drosselung von API-Schlüsseln](configuration.md#drosselung-von-api-schlüsseln) abgelehnt hat |
 | `kaeso_key_failure_blocks_total` | Jeder Anstieg: Eine Adresse rät API-Schlüssel |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` oder `dropped`: Prüfen Sie die Einstellungen für [E-Mail](email.md) |
+| `kaeso_webhook_deliveries_total{outcome}` | Versuche, Ereignisse von [Webhooks](../console/webhooks.md) zuzustellen: `delivered`, `retried` für einen gescheiterten Versuch, der wiederholt wird, `failed` nach dem letzten Versuch und `dropped` für Ereignisse eines ausgeschalteten Webhooks. Ein Anstieg bei `failed`: Empfänger prüfen |
 | `kaeso_build_info{version}` | Die laufende Version |
 | `kaeso_connections_open`, `kaeso_connections_max` | Verbindungen, die das Gateway gerade bedient, und die meisten, die es gleichzeitig bedient (`server.max_connections`); an der Grenze warten neue. Alarmieren Sie bei `kaeso_connections_open / kaeso_connections_max` und fügen Sie Gateways hinzu, bevor der Wert 1 erreicht |
 | `kaeso_model_requests_in_flight` | Modellanfragen, die gerade bedient werden, Streams und Echtzeitsitzungen eingeschlossen, bis jede endet |

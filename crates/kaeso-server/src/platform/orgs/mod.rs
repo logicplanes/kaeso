@@ -9,6 +9,7 @@ pub mod org;
 pub mod platform_keys;
 pub mod roles;
 pub mod security;
+pub mod webhooks;
 
 use axum::Json;
 use axum::extract::State;
@@ -155,6 +156,14 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::change)))
         .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::approve)))
         .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::reject)))
+        .routes(s.route(Access::Org(R::WebhooksView), routes!(webhooks::list)))
+        .routes(s.route(Access::Org(R::WebhooksView), routes!(webhooks::get)))
+        .routes(s.route(Access::Org(R::WebhooksManage), routes!(webhooks::create)))
+        .routes(s.route(Access::Org(R::WebhooksManage), routes!(webhooks::update)))
+        .routes(s.route(Access::Org(R::WebhooksManage), routes!(webhooks::delete)))
+        .routes(s.route(Access::Org(R::WebhooksManage), routes!(webhooks::rotate)))
+        .routes(s.route(Access::Org(R::WebhooksManage), routes!(webhooks::test)))
+        .routes(s.route(Access::Org(R::WebhooksView), routes!(webhooks::deliveries)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::member)))
         .routes(s.route(Access::Org(R::MembersView), routes!(crate::platform::rights::org_grantors)))
 }

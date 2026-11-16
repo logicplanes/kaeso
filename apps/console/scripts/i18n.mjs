@@ -125,6 +125,7 @@ export const SAME_AS_ENGLISH = new Set([
   "logs.inspector.microseconds",
   "logs.param.topK",
   "logs.param.topP",
+  "org.webhooks.formatSlack",
   "orgHome.defaultGateway",
   "orgHome.mcp.headerValuePlaceholder",
   "project.tools.claudeCode",

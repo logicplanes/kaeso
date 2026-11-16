@@ -48,7 +48,7 @@ An organization role also holds rights in every project, on top of the member's 
 | Admin | All except `org.delete`, `org.ownership.transfer` and `billing.manage` | All |
 | Billing | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | None |
 | Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | None |
-| Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `platform_keys.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's without `tools.use`, and `project.audit_log.view` |
+| Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `platform_keys.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's without `tools.use`, and `project.audit_log.view` |
 | Member | `org.view`, `members.view` | None |
 
 | Project role | Rights |
@@ -96,6 +96,8 @@ Every change of roles and rights follows these rules:
 | `org.update` | Edit organization | Rename the organization and change its picture and general settings. |  |
 | `org.delete` | Delete organization | Schedule the organization for deletion, or restore it while it waits. | sensitive; recent sign-in |
 | `org.ownership.transfer` | Transfer ownership | Make another member an owner in your place; only owners hold it. | sensitive; recent sign-in; needs `members.view` |
+| `webhooks.view` | View webhooks | See the organization's webhooks, what they receive and their last deliveries (never secrets). |  |
+| `webhooks.manage` | Manage webhooks | Add, change, test and delete webhooks, and rotate their signing secrets. | sensitive; recent sign-in; needs `webhooks.view` |
 
 ### Members & access
 
@@ -300,7 +302,7 @@ The console offers four presets for an agent. Each is a starting point, and you 
 
 | Preset | Organization rights | Project rights | Account rights | Instance preset |
 | --- | --- | --- | --- | --- |
-| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Read |
+| Observer | `org.view`, `members.view`, `projects.view.all`, `mcp_servers.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `audit_log.view` | `project.view`, `models.view`, `tools.view`, `limits.view`, `logs.metadata.view`, `usage.view`, `costs.view`, `project.audit_log.view` | `account.view` | Read |
 | Builder | The Developer role's | The Developer role's without `logs.content.view` and `tools.use`, and `models.manage` | `account.view`, `account.keys.view` | None |
 | Operator | The Admin role's, without the rights never given to agents | All but `tools.use` | All but `account.keys.manage` and `account.memberships.leave` | Configure |
 | Full access | All but the rights never given to agents | All but `tools.use` | All | Admin |
@@ -327,7 +329,7 @@ An organization that doesn't allow agents is closed to every agent. An instance 
 
 ### Never given to agents
 
-No agent gets `org.ownership.transfer`, `security.sso.manage`, `security.sso.require` or `tools.use`: an MCP client reaches a project's tools only through the project's portal, signed in by a person. Agents also can't widen their own access, authorize other agents or manage anyone's agents. They never touch account security: the email address, password, two-factor authentication, recovery codes, sessions, links to single sign-on and deleting the account. [Tools](../api/mcp.md#tools) lists every action that needs a console session.
+No agent gets `org.ownership.transfer`, `security.sso.manage`, `security.sso.require`, `webhooks.manage` or `tools.use`: an MCP client reaches a project's tools only through the project's portal, signed in by a person, and only a person chooses where the organization's notices go. Agents also can't widen their own access, authorize other agents or manage anyone's agents. They never touch account security: the email address, password, two-factor authentication, recovery codes, sessions, links to single sign-on and deleting the account. [Tools](../api/mcp.md#tools) lists every action that needs a console session.
 
 ### Sensitive rights
 

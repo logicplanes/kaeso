@@ -157,6 +157,10 @@ actions! {
         UserTotpDisable = "user.totp_disable",
         UserTotpEnable = "user.totp_enable",
         UserUpdate = "user.update",
+        WebhookCreate = "webhook.create",
+        WebhookDelete = "webhook.delete",
+        WebhookSecretRotate = "webhook.secret_rotate",
+        WebhookUpdate = "webhook.update",
     ];
 }
 

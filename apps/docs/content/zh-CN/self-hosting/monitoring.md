@@ -76,6 +76,7 @@ services:
 | `kaeso_auth_failures_total{method, reason}` | 登录或密钥失败突增。`reason="throttled"` 统计被 [API 密钥限流](configuration.md#api-密钥限流)拒绝的请求 |
 | `kaeso_key_failure_blocks_total` | 任何增长：有地址在猜测 API 密钥 |
 | `kaeso_emails_total{kind, outcome}` | `outcome="failed"` 或 `dropped`：检查[邮件](email.md)设置 |
+| `kaeso_webhook_deliveries_total{outcome}` | 投递 [Webhook](../console/webhooks.md) 事件的尝试：`delivered`，失败后会重试的尝试为 `retried`，最后一次尝试失败为 `failed`，已关闭的 Webhook 的事件为 `dropped`。`failed` 增长时：检查接收方 |
 | `kaeso_build_info{version}` | 正在运行的版本 |
 | `kaeso_connections_open`、`kaeso_connections_max` | 网关当前服务的连接数，以及其同时服务的最大连接数（`server.max_connections`）；达到上限后，新连接需要等待。可对 `kaeso_connections_open / kaeso_connections_max` 设置告警，并在其达到 1 之前增加网关 |
 | `kaeso_model_requests_in_flight` | 当前正在服务的模型请求数，包括流和实时会话，直到各自结束 |

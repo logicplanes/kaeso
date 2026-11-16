@@ -11,6 +11,8 @@ expression: rights_reference()
 | `org.update` | Organization | Edit organization | Rename the organization and change its picture and general settings. |  |  |  |
 | `org.delete` ⚠ | Organization | Delete organization | Schedule the organization for deletion, or restore it while it waits. |  | ✓ |  |
 | `org.ownership.transfer` ⚠ | Organization | Transfer ownership | Make another member an owner in your place; only owners hold it. | `members.view` | ✓ |  |
+| `webhooks.view` | Organization | View webhooks | See the organization's webhooks, what they receive and their last deliveries (never secrets). |  |  |  |
+| `webhooks.manage` ⚠ | Organization | Manage webhooks | Add, change, test and delete webhooks, and rotate their signing secrets. | `webhooks.view` | ✓ |  |
 | `members.view` | Members & access | View members | See members, their roles and their rights. |  |  |  |
 | `members.invite` | Members & access | Invite members | Invite people by email with a role you could grant yourself. | `members.view` |  |  |
 | `members.invites.revoke` | Members & access | Cancel invites | Cancel pending invitations. | `members.view` |  |  |
@@ -111,6 +113,8 @@ expression: rights_reference()
 | `org.update` | ✓ | ✓ |  |  |  |  |
 | `org.delete` | ✓ |  |  |  |  |  |
 | `org.ownership.transfer` | ✓ |  |  |  |  |  |
+| `webhooks.view` | ✓ | ✓ |  |  | ✓ |  |
+| `webhooks.manage` | ✓ | ✓ |  |  |  |  |
 | `members.view` | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `members.invite` | ✓ | ✓ |  |  |  |  |
 | `members.invites.revoke` | ✓ | ✓ |  |  |  |  |
@@ -265,6 +269,8 @@ expression: rights_reference()
 | `org.update` |  |  | ✓ | ✓ |
 | `org.delete` |  |  |  | ✓ |
 | `org.ownership.transfer` |  |  |  |  |
+| `webhooks.view` | ✓ |  | ✓ | ✓ |
+| `webhooks.manage` |  |  |  |  |
 | `members.view` | ✓ | ✓ | ✓ | ✓ |
 | `members.invite` |  |  | ✓ | ✓ |
 | `members.invites.revoke` |  |  | ✓ | ✓ |
@@ -365,7 +371,7 @@ expression: rights_reference()
 
 ## Never given to agents
 
-`org.ownership.transfer`, `security.sso.manage`, `security.sso.require`
+`org.ownership.transfer`, `webhooks.manage`, `security.sso.manage`, `security.sso.require`
 
 ## Organization rights that reach into every project
 

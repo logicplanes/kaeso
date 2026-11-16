@@ -38,6 +38,7 @@ Open **Organization settings** in the menu at the foot of the sidebar. It has th
 | Members | Members, invitations and roles ([members and roles](members-and-roles.md)) |
 | Security | Single sign-on, the sign-in requirements, the maximum key lifetime and members' agents |
 | Platform keys | Keys for scripts that manage the organization ([platform keys](api-keys.md#platform-keys)) |
+| Webhooks | Where the organization's notices go, signed, such as on-call tools and chat ([webhooks](webhooks.md)) |
 | Logging | Content logging, retention, storage and log deletion ([request logs](request-logs.md#retention)) |
 | Audit log | Every change in the organization ([audit log](#read-the-audit-log)) |
 

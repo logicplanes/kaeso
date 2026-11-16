@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE notification_webhooks SET name = COALESCE($3, name), url = COALESCE($4, url), format = COALESCE($5, format), kinds = COALESCE($6, kinds), project_id = CASE WHEN $7 THEN $8 ELSE project_id END, enabled = COALESCE($9, enabled), disabled_reason = CASE WHEN $9 IS NULL THEN disabled_reason ELSE NULL END, consecutive_failures = CASE WHEN $9 THEN 0 ELSE consecutive_failures END, updated_at = $10 WHERE org_id = $1 AND id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "TextArray",
+        "Bool",
+        "Uuid",
+        "Bool",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "93603bb7ff7cf882e79c618314d7dd21199a0cdeb3e6a24d3d63e014c46bdfa8"
+}

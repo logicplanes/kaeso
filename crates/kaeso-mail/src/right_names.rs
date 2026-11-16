@@ -489,6 +489,18 @@ const NAMES: &[(&str, &str, &str, &str)] = &[
         "查看组织用量",
     ),
     ("usage.view", "View usage", "Nutzung ansehen", "查看用量"),
+    (
+        "webhooks.manage",
+        "Manage webhooks",
+        "Webhooks verwalten",
+        "管理 Webhook",
+    ),
+    (
+        "webhooks.view",
+        "View webhooks",
+        "Webhooks ansehen",
+        "查看 Webhook",
+    ),
 ];
 
 pub(crate) fn right_name(lang: Locale, id: &str) -> Option<&'static str> {

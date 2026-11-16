@@ -96,6 +96,13 @@ pub fn all() -> Vec<Job> {
             lock: 7,
             run: |s| Box::pin(mcp_sync::run(s)),
         },
+        // Often, so a webhook's event goes out within seconds of its notice.
+        Job {
+            name: "webhooks",
+            every: Duration::from_secs(5),
+            lock: 10,
+            run: |s| Box::pin(crate::services::webhooks::run(s)),
+        },
         // Shorter than `RENEW_AHEAD`, so an account in use never waits for its renewal.
         Job {
             name: "account_renewal",
