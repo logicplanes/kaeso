@@ -137,6 +137,7 @@ Kaeso 会就您的权限使您负责的事项给您发邮件，范围包括实�
 | 组织 | 成员变动 | `members.invite` | 每日 |
 | 组织 | 您的邀请已被接受 | 发出邀请的人 | 立即 |
 | 组织 | Webhook 需要处理 | `webhooks.manage` | 立即 |
+| 组织 | 登录规则影响到您 | 您，当某个组织开始要求您使用双重验证或单点登录时 | 立即 |
 | 组织 | 服务商密钥需要处理 | `provider_credentials.replace` | 立即 |
 | 组织 | 平台密钥即将过期 | `platform_keys.create`，以及仍是成员的密钥创建者 | 立即 |
 | 组织 | 模型变更 | 使用该模型的项目中的 `models.manage` | 每日 |

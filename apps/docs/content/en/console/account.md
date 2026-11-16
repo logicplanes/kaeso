@@ -137,6 +137,7 @@ The weekly summary and the monthly cost report go out on their own schedule, so 
 | Organization | Member changes | `members.invite` | Daily |
 | Organization | Your invitation was accepted | Whoever sent it | Now |
 | Organization | Webhooks need attention | `webhooks.manage` | Now |
+| Organization | A sign-in rule affects you | You, when an organization starts requiring two-factor authentication or single sign-on of you | Now |
 | Organization | Provider keys need attention | `provider_credentials.replace` | Now |
 | Organization | A platform key expires | `platform_keys.create`, and the key's creator while a member | Now |
 | Organization | Model changes | `models.manage` in a project that uses the model | Daily |

@@ -4,7 +4,7 @@ use kaeso_core::rights::{InstanceRight, OrgRight, ProjectRight};
 use kaeso_mail::Actor;
 use kaeso_mail::notices::{
     Access, Fact, Instance, KeyChange, Membership, ModelChange, Notes, Price, PriceChange,
-    Security, Update,
+    Requirement, Security, Update,
 };
 use kaeso_store::pg::{catalogue, custom_providers, invites, keys, orgs, projects, users};
 use serde_json::Value;
@@ -112,6 +112,7 @@ pub async fn on_event(state: &AppState, kind: Kind, e: &Event) -> ApiResult<usiz
         Kind::OrgMembers => org_members(state, e).await,
         Kind::InviteAccepted => invite_accepted(state, e).await,
         Kind::AccessChanged => access_changed(state, e).await,
+        Kind::SignInRequired => sign_in_required(state, e).await,
         Kind::ModelChanges => model_changes(state, e).await,
         Kind::KeyChanged => key_changed(state, e).await,
         Kind::ContentLogging => content_logging(state, e).await,
@@ -485,6 +486,96 @@ async fn access_changed(state: &AppState, e: &Event) -> ApiResult<usize> {
         about(user),
     )
     .await
+}
+
+// When an org starts requiring two-factor authentication, its active members without an
+// authenticator app hear what to do, apart from the accounts it manages while it requires single
+// sign-on; when it starts requiring single sign-on, the accounts it manages hear that they sign in
+// only through it, and those not linked to it yet that an admin has to help.
+async fn sign_in_required(state: &AppState, e: &Event) -> ApiResult<usize> {
+    let Some(org) = e.org else { return Ok(0) };
+    let flag = if e.action == A::SecurityRequire2fa {
+        "require_2fa"
+    } else {
+        "require_sso"
+    };
+    let on = |v: Option<&Value>| {
+        v.and_then(|v| v.get(flag))
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+    };
+    if on(e.before.as_ref()) || !on(e.after.as_ref()) {
+        return Ok(0);
+    }
+    let require_sso = e
+        .after
+        .as_ref()
+        .and_then(|a| a.get("require_sso"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false);
+    let members: Vec<_> = kaeso_store::pg::members::all_org(&state.pg, org)
+        .await?
+        .into_iter()
+        .filter(|m| m.user_state == "active")
+        .collect();
+    let domains = crate::services::managed::Domains::load(&state.pg, Some(org)).await?;
+    let managed = |email: Option<&str>| domains.manager(email).is_some_and(|(o, _)| o == org);
+    let place = org_name(state, org).await?;
+    let who = actor_name(state, e).await?;
+    let mut groups: Vec<(Requirement, &str, Vec<Uuid>)> = Vec::new();
+    if e.action == A::SecurityRequire2fa {
+        let ids: Vec<Uuid> = members.iter().map(|m| m.user_id).collect();
+        let with_totp = kaeso_store::pg::totp::enabled_among(&state.pg, &ids).await?;
+        let affected = members
+            .iter()
+            .filter(|m| !with_totp.contains(&m.user_id))
+            .filter(|m| !(require_sso && managed(m.email.as_deref())))
+            .map(|m| m.user_id)
+            .collect();
+        groups.push((
+            Requirement::TwoFactor,
+            "settings/account/security",
+            affected,
+        ));
+    } else {
+        let ids: Vec<Uuid> = members
+            .iter()
+            .filter(|m| managed(m.email.as_deref()))
+            .map(|m| m.user_id)
+            .collect();
+        let linked = kaeso_store::pg::sso_identities::among(&state.pg, org, &ids).await?;
+        let (yes, no): (Vec<Uuid>, Vec<Uuid>) = ids.into_iter().partition(|u| linked.contains(u));
+        groups.push((Requirement::SingleSignOn { linked: true }, "", yes));
+        groups.push((Requirement::SingleSignOn { linked: false }, "", no));
+    }
+    let mut sent = 0;
+    for (rule, open, to) in groups {
+        if to.is_empty() {
+            continue;
+        }
+        let send = Send {
+            kind: Kind::SignInRequired,
+            org: Some(org),
+            project: None,
+            place: Some(&place),
+            subject: subject(e, &format!("{rule:?}")),
+            open: if open.is_empty() {
+                org_path(org)
+            } else {
+                open.to_owned()
+            },
+            actor: e.actor,
+        };
+        let to: Recipients = to.into_iter().flat_map(about).collect();
+        sent += deliver(
+            state,
+            &send,
+            &Fact::SignInRequired { rule, by: by(&who) },
+            to,
+        )
+        .await?;
+    }
+    Ok(sent)
 }
 
 async fn model_changes(state: &AppState, e: &Event) -> ApiResult<usize> {

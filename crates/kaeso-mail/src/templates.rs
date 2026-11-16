@@ -30,6 +30,7 @@ pub enum EmailKind {
     ExportReady,
     WeeklySummary,
     AccessChanged,
+    SignInRequired,
     LimitReached,
     KeyChanged,
     ContentLogging,
@@ -81,6 +82,7 @@ impl EmailKind {
             EmailKind::ExportReady => "export_ready",
             EmailKind::WeeklySummary => "weekly_summary",
             EmailKind::AccessChanged => "access_changed",
+            EmailKind::SignInRequired => "sign_in_required",
             EmailKind::LimitReached => "limit_reached",
             EmailKind::KeyChanged => "key_changed",
             EmailKind::ContentLogging => "content_logging",
@@ -1612,6 +1614,14 @@ mod tests {
                 Because::AboutYou,
             ),
             one(
+                Some("Acme"),
+                Fact::SignInRequired {
+                    rule: Requirement::TwoFactor,
+                    by: ada,
+                },
+                Because::AboutYou,
+            ),
+            one(
                 Some("Checkout"),
                 Fact::LimitReached {
                     organization: "Acme",
@@ -1993,6 +2003,7 @@ mod tests {
             EmailKind::ExportReady,
             EmailKind::WeeklySummary,
             EmailKind::AccessChanged,
+            EmailKind::SignInRequired,
             EmailKind::LimitReached,
             EmailKind::KeyChanged,
             EmailKind::ContentLogging,
@@ -2599,7 +2610,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 48] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 49] = [
             (
                 EmailKind::Invitation,
                 [
@@ -2795,6 +2806,14 @@ mod tests {
                     "Sie wurden hinzugefügt",
                 ],
                 ["[Checkout] 您已被添加", "您已被添加"],
+            ),
+            (
+                EmailKind::SignInRequired,
+                [
+                    "[Acme] Richten Sie Zwei-Faktor-Authentifizierung ein",
+                    "Richten Sie Zwei-Faktor-Authentifizierung ein",
+                ],
+                ["[Acme] 请设置双重验证", "请设置双重验证"],
             ),
             (
                 EmailKind::LimitReached,

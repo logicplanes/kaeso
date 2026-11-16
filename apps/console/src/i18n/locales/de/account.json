@@ -267,6 +267,8 @@
   "account.notify.inviteAcceptedHint": "Wenn jemand beitritt, den Sie eingeladen haben.",
   "account.notify.providerKeys": "Anbieter-Schlüssel brauchen Aufmerksamkeit",
   "account.notify.providerKeysHint": "Wenn ein Anbieter einen Schlüssel oder ein Konto ablehnt.",
+  "account.notify.signInRequired": "Eine Anmelderegel betrifft Sie",
+  "account.notify.signInRequiredHint": "Wenn eine Organisation von Ihnen Zwei-Faktor oder Single Sign-on verlangt.",
   "account.notify.modelChanges": "Modelländerungen",
   "account.notify.modelChangesHint": "Wenn ein genutztes Modell wegfällt oder den Preis ändert.",
   "account.notify.costReport": "Monatlicher Kostenbericht",

@@ -1,0 +1,20 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Acme] 请设置双重验证
+
+请设置双重验证
+
+Acme
+
+Ada Lovelace 现在要求双重验证；请设置后再打开该组织。
+
+设置双重验证：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为它与您的账户有关。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

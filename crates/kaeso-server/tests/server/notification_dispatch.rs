@@ -776,3 +776,117 @@ async fn the_weekly_summary_names_each_organization_and_the_week_and_links_to_us
     }
     s.cleanup().await;
 }
+
+fn sign_in_mail(app: &App, to: &str) -> Vec<String> {
+    app.mail
+        .to(to)
+        .into_iter()
+        .filter(|m| m.kind.as_str() == "sign_in_required")
+        .map(|m| m.text)
+        .collect()
+}
+
+async fn require(app: &App, owner: &Owner, rule: &str, on: bool) {
+    app.call(
+        Method::PUT,
+        &format!("/orgs/{}/security/require-{rule}", owner.org_id),
+        Some(json!({ "enabled": on })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    settle(app).await;
+}
+
+async fn turn_on_totp(app: &App, cookie: &str) -> String {
+    let begin = app
+        .post("/me/totp", json!({}), Some(cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    let secret = begin.body["secret"].as_str().unwrap().to_owned();
+    app.post(
+        "/me/totp/confirm",
+        json!({ "code": common::totp_code(&secret, app) }),
+        Some(cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK)
+    .cookie()
+    .unwrap()
+}
+
+#[tokio::test]
+async fn requiring_two_factor_tells_the_members_without_it_what_to_do() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let mut owner = app.setup().await;
+    // The owner meets the requirement, so they can turn it off again.
+    owner.cookie = turn_on_totp(&app, &owner.cookie).await;
+    second(&app, &owner, "grace@example.com", "member").await;
+    let (lin, _) = second(&app, &owner, "lin@example.com", "member").await;
+    turn_on_totp(&app, &lin).await;
+
+    require(&app, &owner, "2fa", true).await;
+    let grace = sign_in_mail(&app, "grace@example.com");
+    assert_eq!(grace.len(), 1, "{grace:?}");
+    assert!(
+        grace[0].contains("now requires two-factor authentication"),
+        "{}",
+        grace[0]
+    );
+    assert!(
+        sign_in_mail(&app, "lin@example.com").is_empty(),
+        "lin has it"
+    );
+
+    // Turning it off tells nobody, and turning it on again the same day doesn't tell them twice.
+    require(&app, &owner, "2fa", false).await;
+    assert_eq!(sign_in_mail(&app, "grace@example.com").len(), 1);
+    require(&app, &owner, "2fa", true).await;
+    assert_eq!(sign_in_mail(&app, "grace@example.com").len(), 1);
+}
+
+#[tokio::test]
+async fn requiring_single_sign_on_tells_the_managed_accounts_how_they_sign_in_now() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    common::manage_domain(&app, &owner.org_id, "acme.example").await;
+    second(&app, &owner, "grace@example.com", "member").await;
+    second(&app, &owner, "ada@acme.example", "member").await;
+    let (_, linked) = second(&app, &owner, "lin@acme.example", "member").await;
+    sqlx::query(
+        "INSERT INTO sso_identities (org_id, user_id, issuer, subject, linked_at) \
+         VALUES ($1, $2, 'https://idp.example', 'lin', now())",
+    )
+    .bind(common::uuid(&owner.org_id))
+    .bind(linked)
+    .execute(&app.state.pg)
+    .await
+    .unwrap();
+
+    require(&app, &owner, "sso", true).await;
+    let ada = sign_in_mail(&app, "ada@acme.example");
+    assert_eq!(ada.len(), 1, "{ada:?}");
+    assert!(
+        ada[0].contains("which your account isn't linked to"),
+        "{}",
+        ada[0]
+    );
+    let lin = sign_in_mail(&app, "lin@acme.example");
+    assert_eq!(lin.len(), 1, "{lin:?}");
+    assert!(
+        lin[0].contains("from now on you sign in only through its provider"),
+        "{}",
+        lin[0]
+    );
+    assert!(
+        sign_in_mail(&app, "grace@example.com").is_empty(),
+        "a guest"
+    );
+
+    // With single sign-on required, two-factor leaves the accounts it manages out.
+    require(&app, &owner, "2fa", true).await;
+    assert_eq!(sign_in_mail(&app, "ada@acme.example").len(), 1);
+    assert_eq!(sign_in_mail(&app, "grace@example.com").len(), 1);
+}

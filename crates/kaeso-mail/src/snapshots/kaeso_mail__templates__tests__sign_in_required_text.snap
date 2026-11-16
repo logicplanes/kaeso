@@ -1,0 +1,20 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Acme] Set up two-factor authentication
+
+Set up two-factor authentication
+
+Acme
+
+Ada Lovelace now requires two-factor authentication; set it up to open the organization again.
+
+Set up two-factor:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because it's about your account.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag
