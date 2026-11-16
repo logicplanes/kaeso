@@ -18,6 +18,25 @@ mod flights;
 
 pub type Rebuilds = flights::Flights<LimitsError>;
 
+// A finishing request adds its usage to the in-memory batch and then charges the counters, which
+// add nothing to a counter that is missing. A rebuild reads the batch and then sets the counter.
+// Run between those two steps, a rebuild would miss the request (read before the add, set after
+// the charge found nothing) or count it twice (read after the add, set before the charge). The
+// two steps hold this gate shared, and a rebuild's read and set hold it alone, so a rebuild sees
+// either both steps or neither.
+#[derive(Debug, Default)]
+pub struct Charging(tokio::sync::RwLock<()>);
+
+impl Charging {
+    pub async fn finishing(&self) -> tokio::sync::RwLockReadGuard<'_, ()> {
+        self.0.read().await
+    }
+
+    async fn rebuilding(&self) -> tokio::sync::RwLockWriteGuard<'_, ()> {
+        self.0.write().await
+    }
+}
+
 const IN_FLIGHT_MARGIN: Duration = Duration::from_secs(300);
 
 const VALKEY_DEADLINE: Duration = Duration::from_secs(2);
@@ -705,6 +724,7 @@ async fn rebuild(
     };
     let since = l.period.start(now);
     let used = store::used(&state.pg, project, l.subject, l.model, since).await?;
+    let gate = state.charging.rebuilding().await;
     let (p_tokens, p_cost, p_requests) = state.usage.pending(project, l.subject, l.model, since);
     let value = units(used.tokens.saturating_add(p_tokens), used.cost + p_cost);
     let count = used.succeeded.saturating_add(p_requests);
@@ -730,6 +750,7 @@ async fn rebuild(
         .arg(average)
         .invoke_async::<i64>(&mut conn)
         .await?;
+    drop(gate);
     Ok(())
 }
 

@@ -459,6 +459,7 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
         return;
     };
     let (usage, c) = costed(outcome);
+    let finishing = state.charging.finishing().await;
     state.usage.add(UsageRow {
         day: outcome.started_at.to_offset(time::UtcOffset::UTC).date(),
         org_id: caller.org_id,
@@ -524,7 +525,9 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
         nano_usd: cost::nano_usd(c),
         succeeded: !outcome.is_error(),
     };
-    match engine::charge(state, &caller, entry, &request_id, at, charge).await {
+    let charged = engine::charge(state, &caller, entry, &request_id, at, charge).await;
+    drop(finishing);
+    match charged {
         Ok(moved) => {
             let used_up: Vec<_> = moved
                 .iter()
