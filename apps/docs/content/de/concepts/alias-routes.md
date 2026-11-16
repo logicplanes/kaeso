@@ -42,7 +42,7 @@ Eine Bedingung hat 1 bis 10 Regeln. Jede Regel liest eine Angabe über die Anfra
 | `input_tokens` | Die Eingabe hat `at_least` oder `below` eine Zahl von Tokens, geschätzt aus der Größe der Anfrage mit 4 Bytes je Token |
 | `key`, `member`, `service_account` | Der API-Schlüssel, das Mitglied oder das Dienstkonto, das die Anfrage sendete, ist `in` oder `not_in` einer Liste von bis zu 100 |
 
-Routen können `authorization`, `proxy-authorization`, `cookie`, `x-api-key`, `x-goog-api-key` und `api-key` nicht lesen, weil sie Zugangsdaten enthalten. Um nach Ihren eigenen Benutzern zu leiten, senden Sie aus Ihrer App einen Header wie `x-plan`.
+Routen können `authorization`, `proxy-authorization`, `cookie`, `x-api-key`, `x-goog-api-key` und `api-key` nicht lesen, weil sie Zugangsdaten enthalten. Um nach Ihren eigenen Benutzern zu leiten, senden Sie aus Ihrer App einen Header wie `x-plan`. Eine Browser-App kann ihn erst senden, wenn die Installation ihn in `KAESO_CORS_ALLOWED_HEADERS` listet ([Browser-Apps](../self-hosting/configuration.md#browser-apps)).
 
 ## Aufteilungen
 

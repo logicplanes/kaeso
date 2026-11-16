@@ -12,7 +12,7 @@ pub const ALLOW_METHODS: &str = "GET, POST, DELETE";
 
 pub const MAX_AGE_SECONDS: &str = "7200";
 
-pub const EXPOSE_HEADERS: &str = "kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, age, retry-after, retry-after-ms";
+pub const EXPOSE_HEADERS: &str = "kaeso-request-id, kaeso-upstream-request-id, kaeso-cost, kaeso-provider, kaeso-model, kaeso-left-out, kaeso-adapted, kaeso-route, kaeso-cache, server-timing, age, retry-after, retry-after-ms";
 
 pub const ALLOWED_HEADERS: &[&str] = &[
     "accept",
@@ -84,6 +84,59 @@ pub fn normalise(raw: &str) -> Result<String, OriginError> {
     Ok(url.origin().ascii_serialization())
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, thiserror::Error)]
+pub enum HeaderError {
+    #[error(
+        "must not be `*`; list the headers browser apps send beyond the SDKs', such as `x-plan`"
+    )]
+    Wildcard,
+    #[error("lists `{0}`, which is not a header name")]
+    NotAName(String),
+    #[error(
+        "lists `{0}`, which a browser app must never set: Kaeso reads cookies and forwarded addresses only from its own proxy"
+    )]
+    Reserved(String),
+}
+
+/// Headers the install lets browser apps on its listed origins send beyond the SDKs' own, such
+/// as one an alias route splits on.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ExtraHeaders(BTreeSet<String>);
+
+impl ExtraHeaders {
+    pub fn parse(raw: &str) -> Result<ExtraHeaders, HeaderError> {
+        raw.split(',')
+            .map(|n| n.trim().to_ascii_lowercase())
+            .filter(|n| !n.is_empty())
+            .map(|name| {
+                if name == "*" {
+                    return Err(HeaderError::Wildcard);
+                }
+                if axum::http::HeaderName::from_bytes(name.as_bytes()).is_err() {
+                    return Err(HeaderError::NotAName(name));
+                }
+                if name == "cookie" || name == "forwarded" || name.starts_with("x-forwarded-") {
+                    return Err(HeaderError::Reserved(name));
+                }
+                Ok(name)
+            })
+            .collect::<Result<_, _>>()
+            .map(ExtraHeaders)
+    }
+
+    pub fn contains(&self, name: &str) -> bool {
+        self.0.contains(name)
+    }
+}
+
+/// What the CORS middleware answers with: the origins that get CORS headers and the headers
+/// their preflights may name beyond the fixed list.
+#[derive(Clone, Debug, Default)]
+pub struct Cors {
+    pub origins: AllowedOrigins,
+    pub headers: ExtraHeaders,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct AllowedOrigins(BTreeSet<String>);
 
@@ -130,14 +183,14 @@ pub fn allowed_header(name: &str) -> bool {
         })
 }
 
-pub fn allow_headers(headers: &HeaderMap) -> Option<HeaderValue> {
+pub fn allow_headers(headers: &HeaderMap, extra: &ExtraHeaders) -> Option<HeaderValue> {
     let names: BTreeSet<String> = headers
         .get_all(header::ACCESS_CONTROL_REQUEST_HEADERS)
         .iter()
         .filter_map(|v| v.to_str().ok())
         .flat_map(|v| v.split(','))
         .map(|n| n.trim().to_ascii_lowercase())
-        .filter(|n| allowed_header(n))
+        .filter(|n| allowed_header(n) || extra.contains(n))
         .collect();
     if names.is_empty() {
         return None;
@@ -160,7 +213,7 @@ fn listed_origin(origins: &AllowedOrigins, headers: &HeaderMap) -> Option<Header
         .cloned()
 }
 
-fn preflight(origin: Option<HeaderValue>, headers: &HeaderMap) -> Response {
+fn preflight(origin: Option<HeaderValue>, headers: &HeaderMap, extra: &ExtraHeaders) -> Response {
     let mut resp = Response::new(Body::empty());
     *resp.status_mut() = StatusCode::NO_CONTENT;
     let h = resp.headers_mut();
@@ -173,7 +226,7 @@ fn preflight(origin: Option<HeaderValue>, headers: &HeaderMap) -> Response {
         header::ACCESS_CONTROL_ALLOW_METHODS,
         HeaderValue::from_static(ALLOW_METHODS),
     );
-    if let Some(names) = allow_headers(headers) {
+    if let Some(names) = allow_headers(headers, extra) {
         h.insert(header::ACCESS_CONTROL_ALLOW_HEADERS, names);
     }
     h.insert(
@@ -183,17 +236,13 @@ fn preflight(origin: Option<HeaderValue>, headers: &HeaderMap) -> Response {
     resp
 }
 
-pub async fn middleware(
-    State(origins): State<Arc<AllowedOrigins>>,
-    req: Request,
-    next: Next,
-) -> Response {
+pub async fn middleware(State(cors): State<Arc<Cors>>, req: Request, next: Next) -> Response {
     if !in_scope(req.uri().path()) {
         return next.run(req).await;
     }
-    let origin = listed_origin(&origins, req.headers());
+    let origin = listed_origin(&cors.origins, req.headers());
     if is_preflight(&req) {
-        return preflight(origin, req.headers());
+        return preflight(origin, req.headers(), &cors.headers);
     }
     let mut resp = next.run(req).await;
     let h = resp.headers_mut();
@@ -433,15 +482,40 @@ mod tests {
             "Authorization, Content-Type,x-stainless-os , X-Stainless-Lang",
             "cookie, x-api-key, authorization, Cache-Control",
         ]);
+        let none = ExtraHeaders::default();
         assert_eq!(
-            allow_headers(&h).unwrap(),
+            allow_headers(&h, &none).unwrap(),
             "authorization, cache-control, content-type, x-api-key, x-stainless-lang, x-stainless-os"
         );
         assert_eq!(
-            allow_headers(&requested(&["cookie, x-forwarded-for"])),
+            allow_headers(&requested(&["cookie, x-forwarded-for"]), &none),
             None
         );
-        assert_eq!(allow_headers(&requested(&[""])), None);
-        assert_eq!(allow_headers(&HeaderMap::new()), None);
+        assert_eq!(allow_headers(&requested(&[""]), &none), None);
+        assert_eq!(allow_headers(&HeaderMap::new(), &none), None);
+        let extra = ExtraHeaders::parse(" X-Plan, x-user-id ,").unwrap();
+        assert_eq!(
+            allow_headers(&requested(&["x-plan, X-User-Id, x-tenant"]), &extra).unwrap(),
+            "x-plan, x-user-id",
+            "listed extra headers only"
+        );
+        assert_eq!(allow_headers(&requested(&["x-plan"]), &none), None);
+    }
+
+    #[test]
+    fn extra_headers_refuse_a_wildcard_bad_names_and_reserved_ones() {
+        assert_eq!(ExtraHeaders::parse("").unwrap(), ExtraHeaders::default());
+        assert_eq!(ExtraHeaders::parse("x-plan, *"), Err(HeaderError::Wildcard));
+        assert_eq!(
+            ExtraHeaders::parse("x plan"),
+            Err(HeaderError::NotAName("x plan".into()))
+        );
+        for reserved in ["Cookie", "forwarded", "X-Forwarded-For", "x-forwarded-host"] {
+            assert_eq!(
+                ExtraHeaders::parse(reserved),
+                Err(HeaderError::Reserved(reserved.to_ascii_lowercase())),
+                "{reserved}"
+            );
+        }
     }
 }

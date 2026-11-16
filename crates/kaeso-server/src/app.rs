@@ -9,7 +9,10 @@ use crate::{health, http, mcp, model_api, platform, portal};
 pub fn router(state: AppState) -> Router {
     let (platform, _) = platform::router(&state);
     let in_process = platform.clone().with_state(state.clone());
-    let origins = state.config.cors.origins.clone();
+    let cors = crate::http::cors::Cors {
+        origins: state.config.cors.origins.clone(),
+        headers: state.config.cors.headers.clone(),
+    };
     let router = Router::new().merge(health::router()).merge(platform);
     // A read-only demo has no keys anyone could use, and agents could change it through MCP.
     let router = if state.config.auth.demo_user().is_some() {
@@ -34,11 +37,11 @@ pub fn router(state: AppState) -> Router {
         ))
         .with_state(state)
         .layer(middleware::from_fn(http::request_id::middleware));
-    if origins.is_empty() {
+    if cors.origins.is_empty() {
         return router;
     }
     router.layer(middleware::from_fn_with_state(
-        Arc::new(origins),
+        Arc::new(cors),
         http::cors::middleware,
     ))
 }

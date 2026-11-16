@@ -169,6 +169,8 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
     )?;
     config.cors.origins = AllowedOrigins::parse(&config.cors.allowed_origins)
         .map_err(|e| ConfigError::invalid("cors.allowed_origins", e.to_string()))?;
+    config.cors.headers = crate::http::cors::ExtraHeaders::parse(&config.cors.allowed_headers)
+        .map_err(|e| ConfigError::invalid("cors.allowed_headers", e.to_string()))?;
     config.validate()?;
     Ok(config)
 }
@@ -1049,6 +1051,35 @@ mod tests {
                 .to_string();
             assert!(
                 err.starts_with("KAESO_CORS_ALLOWED_ORIGINS (cors.allowed_origins) ")
+                    && err.contains(reason),
+                "{err}"
+            );
+        }
+    }
+
+    #[test]
+    fn extra_cors_headers_are_lowercased_and_checked_at_startup() {
+        let c =
+            load(&Map::minimal().set("KAESO_CORS_ALLOWED_HEADERS", "X-Plan, x-user-id")).unwrap();
+        assert!(c.cors.headers.contains("x-plan") && c.cors.headers.contains("x-user-id"));
+        for (bad, reason) in [
+            ("*", "must not be `*`"),
+            ("x-plan, x plan", "`x plan`, which is not a header name"),
+            ("Cookie", "`cookie`, which a browser app must never set"),
+            (
+                "x-forwarded-for",
+                "`x-forwarded-for`, which a browser app must never set",
+            ),
+            (
+                "forwarded",
+                "`forwarded`, which a browser app must never set",
+            ),
+        ] {
+            let err = load(&Map::minimal().set("KAESO_CORS_ALLOWED_HEADERS", bad))
+                .unwrap_err()
+                .to_string();
+            assert!(
+                err.starts_with("KAESO_CORS_ALLOWED_HEADERS (cors.allowed_headers) ")
                     && err.contains(reason),
                 "{err}"
             );

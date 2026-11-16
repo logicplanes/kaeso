@@ -85,8 +85,12 @@ pub struct ServerConfig {
 pub struct CorsConfig {
     #[serde(default)]
     pub allowed_origins: String,
+    #[serde(default)]
+    pub allowed_headers: String,
     #[serde(skip)]
     pub origins: AllowedOrigins,
+    #[serde(skip)]
+    pub headers: crate::http::cors::ExtraHeaders,
 }
 
 #[derive(Debug, Deserialize)]

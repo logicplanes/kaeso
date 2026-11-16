@@ -12,6 +12,7 @@ max_connections = 4096
 
 [cors]
 allowed_origins = ""
+allowed_headers = ""
 
 [postgres]
 pool_size = 20

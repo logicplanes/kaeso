@@ -42,7 +42,7 @@ flowchart TD
 | `input_tokens` | 输入 Token 数 `at_least` 或 `below` 某个值，按每 4 字节一个 Token 从请求大小估算 |
 | `key`、`member`、`service_account` | 发送请求的 API 密钥、成员或服务账号 `in` 或 `not_in` 一个最多 100 项的列表 |
 
-路由无法读取 `authorization`、`proxy-authorization`、`cookie`、`x-api-key`、`x-goog-api-key` 和 `api-key`，因为它们携带凭据。要按您自己的用户路由，请从应用发送 `x-plan` 这样的请求头。
+路由无法读取 `authorization`、`proxy-authorization`、`cookie`、`x-api-key`、`x-goog-api-key` 和 `api-key`，因为它们携带凭据。要按您自己的用户路由，请从应用发送 `x-plan` 这样的请求头。浏览器应用只有在实例将其列入 `KAESO_CORS_ALLOWED_HEADERS` 后才能发送它（[浏览器应用](../self-hosting/configuration.md#浏览器应用)）。
 
 ## 分流
 
