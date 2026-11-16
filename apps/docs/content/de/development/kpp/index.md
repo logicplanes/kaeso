@@ -105,6 +105,7 @@ Beide Crates sind auf crates.io veröffentlicht. Ihr Bibliothekscode darf nur vo
 | `gemini_decisions` | Die Decisions-API von Gemini (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
 | `cohere_rerank` | Das Rerank-Format von Cohere (`/v1/rerank`, `/v2/rerank`) ([Cohere Rerank](cohere-rerank.md)) |
 | `jina_rerank` | Das Rerank-Format von Jina AI, als das eines Anbieters ([Jina Rerank](jina-rerank.md)) |
+| `assemblyai` | Transkription über die Sync API von AssemblyAI ([AssemblyAI](assemblyai.md)) |
 | `voyage_rerank` | Das Rerank-Format von Voyage AI, als das eines Anbieters ([Voyage Rerank](voyage-rerank.md)) |
 | `replicate` | Die Predictions von Replicate: Bilder und Videojobs der Modelle, die Kaeso abbildet ([Replicate](replicate.md)) |
 | `cartesia` | Sonic-Sprachausgabe und Ink-Batch-Transkription von Cartesia ([Cartesia](cartesia.md)) |
@@ -318,6 +319,7 @@ Verändert ein Pull Request die Ausgabe über Dialekte hinweg, prüfen Sie den S
 - [Replicate](replicate.md): Sehen Sie, wie Bildanfragen und Videojobs Modell für Modell auf die Predictions von Replicate abgebildet werden.
 - [Deepgram](deepgram.md): Sehen Sie, wie Transkriptionen und Sprache auf die Speech-to-Text- und Aura-APIs von Deepgram abgebildet werden.
 - [Cartesia](cartesia.md): Sehen Sie, wie Sprach- und Transkriptionsanfragen auf die API von Cartesia abgebildet werden.
+- [AssemblyAI](assemblyai.md): Sehen Sie, wie Transkriptionsanfragen auf die Sync API von AssemblyAI abgebildet werden.
 - [System One](system-one.md): Finden Sie, wohin jedes Feld des Entscheidungsformats von TypeSafe in KPP gehört und wie jeder Anbieter es annimmt.
 - [OpenAI Decisions](openai-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von OpenAI in KPP gehört.
 - [Gemini Decisions](gemini-decisions.md): Finden Sie, wohin jedes Feld der Decisions-API von Gemini in KPP gehört.

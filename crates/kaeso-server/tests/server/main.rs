@@ -70,6 +70,7 @@ mod portal_signin;
 mod project_people;
 mod provider_alibaba;
 mod provider_amazon_bedrock;
+mod provider_assemblyai;
 mod provider_azure;
 mod provider_baseten;
 mod provider_cartesia;

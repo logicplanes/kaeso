@@ -179,6 +179,9 @@ export const providerMark = {
   azure: mode("#0078d4", "#2b88d8"),
   // Cartesia's Verdant, which its brand page forbids recolouring; it reads on both tiles.
   cartesia: mode("#309d4b", "#309d4b"),
+  // AssemblyAI's logomark as its media kit colours it on light and on dark backgrounds.
+  "assemblyai-front": mode("#1d1b16", "#c7c3b2"),
+  "assemblyai-back": mode("#777673", "#ffffff"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),

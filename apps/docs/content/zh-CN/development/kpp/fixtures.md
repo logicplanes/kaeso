@@ -30,6 +30,7 @@ order: 10
 | `gemini_decisions/` | Gemini 的 Decisions API（`/v1beta/decisions`）；每个回复都有同名的请求 |
 | `cohere_rerank/` | Cohere 的重排序格式（`/v1/rerank`、`/v2/rerank`）；`requests/object-documents.json` 是唯一一个 Kaeso 以另一种形式写给 Cohere 的请求 |
 | `jina_rerank/` | Jina AI 的重排序格式（Jina AI 的 `/v1/rerank`） |
+| `assemblyai/` | AssemblyAI 的 Sync API；`responses/` 为 `/v1/transcribe` 的转写，`plain/` 为纯文本错误 |
 | `voyage_rerank/` | Voyage AI 的重排序格式（Voyage AI 的 `/v1/rerank`） |
 | `replicate/` | Replicate 的 prediction；`requests/images/` 和 `requests/videos/`，模型写在 `<name>.meta.json` 中，`predictions/` 为 Replicate 回复的 prediction，`models/` 为官方模型集合 |
 | `cartesia/` | Cartesia 的 API；`requests/speech/` 为 `/tts/bytes` 的请求正文，`responses/stt/` 为 `/stt` 的转写，`plain/` 为纯文本错误 |

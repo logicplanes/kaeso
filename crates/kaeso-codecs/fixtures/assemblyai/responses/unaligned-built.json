@@ -1,0 +1,19 @@
+{
+  "text": "Hello world.",
+  "words": [
+    {
+      "text": "Hello",
+      "confidence": 0.98,
+      "start": 240,
+      "end": 640
+    },
+    {
+      "text": "world.",
+      "confidence": 0.42
+    }
+  ],
+  "confidence": 0.7,
+  "audio_duration_ms": 1500,
+  "session_id": "00000000-0000-0000-0000-000000000000",
+  "request_time_ms": 180.2
+}

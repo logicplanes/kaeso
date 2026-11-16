@@ -3795,3 +3795,16 @@ fn qianfan_models_speak_chat_completions_at_qianfans_prices_and_its_embedders_em
         7
     );
 }
+
+#[test]
+fn assemblyai_transcribes_through_its_sync_api_per_minute_of_audio() {
+    use crate::cost::{MediaUnits, media_cost};
+    assert_eq!(snapshot().providers["assemblyai"].models.len(), 1);
+    let u = eff(&entry("assemblyai", "universal-3-6-pro"));
+    assert_eq!(u.dialect, DialectId::AssemblyAi);
+    let heard = MediaUnits {
+        input_ms: 120_000,
+        ..MediaUnits::default()
+    };
+    assert_eq!(media_cost(&heard, &u.fields), dec!(0.01));
+}

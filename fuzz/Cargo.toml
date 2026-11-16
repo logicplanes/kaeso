@@ -156,6 +156,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decode_assemblyai"
+path = "fuzz_targets/decode_assemblyai.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "decode_dashscope"
 path = "fuzz_targets/decode_dashscope.rs"
 test = false

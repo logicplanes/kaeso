@@ -43,6 +43,7 @@ jobs:
           [
             audio_length,
             decode_anthropic_messages,
+            decode_assemblyai,
             decode_bedrock_converse,
             decode_cartesia,
             decode_cohere_rerank,

@@ -1448,6 +1448,26 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds an AssemblyAI key, which has no fixed prefix, with AssemblyAI's dashboard as its hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "assemblyai", name: "AssemblyAI prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "AssemblyAI");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your AssemblyAI API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "www.assemblyai.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://www.assemblyai.com/dashboard/home");
+    expect(readable(link.closest("p"))).toBe("Create one at www.assemblyai.com under API Keys.");
+    await user.type(within(dialog).getByLabelText("AssemblyAI API key"), "0123456789abcdef0123456789abcdef");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "AssemblyAI prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("AssemblyAI prod is the AssemblyAI default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "assemblyai", name: "AssemblyAI prod", secret: "0123456789abcdef0123456789abcdef", make_default: false },
+    ]);
+  });
+
   it("adds a Cohere key, which has no fixed prefix, with Cohere's dashboard as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "cohere", name: "Cohere prod", is_default: true }));
     const { user, dialog } = await open();

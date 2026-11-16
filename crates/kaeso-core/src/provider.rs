@@ -3815,6 +3815,57 @@ pub const PROVIDERS: &[Provider] = &[
         regional: None,
         key_endpoint: None,
     },
+    Provider {
+        id: "assemblyai",
+        name: "AssemblyAI",
+        // Keys are made in the dashboard under API Keys; AssemblyAI documents no prefix
+        // (https://www.assemblyai.com/docs/api-reference/overview).
+        key_page: KeyPage {
+            url: "https://www.assemblyai.com/dashboard/home",
+            label: "API Keys",
+        },
+        key_prefix: None,
+        // The Sync API: one request per transcript, audio of up to 20 minutes and 256 MB, a
+        // 30-second deadline. `https://sync.eu.assemblyai.com` keeps the audio in the EU
+        // (https://www.assemblyai.com/docs/api-reference/sync-api/transcribe).
+        default_base_url: "https://sync.assemblyai.com",
+        // "Optionally prefixed with `Bearer `" (the Sync API's OpenAPI `Authorization`).
+        auth: AuthStyle::Bearer,
+        // AssemblyAI transcribes; it writes no text, so a generation request never reaches it
+        // past the catalogue's checks.
+        generation: DialectId::AssemblyAi,
+        count_tokens: None,
+        embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[TranscriptionsEgress {
+            dialect: DialectId::AssemblyAi,
+            ..TranscriptionsEgress::ANY
+        }],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::AssemblyAi],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // The Sync API lists no models and has no request that checks a key, so a model check
+        // stays inconclusive.
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("AssemblyAI"),
+        responses: ResponsesProfile::compatible("AssemblyAI"),
+        messages: MessagesProfile::compatible("AssemblyAI"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+        regional: None,
+        key_endpoint: None,
+    },
 ];
 
 const _: () = {
@@ -4117,7 +4168,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate, deepgram, cartesia, qianfan"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate, deepgram, cartesia, qianfan, assemblyai"
         );
     }
 
@@ -4211,7 +4262,8 @@ mod tests {
                 "jina",
                 "replicate",
                 "deepgram",
-                "qianfan"
+                "qianfan",
+                "assemblyai"
             ]
         );
     }
@@ -5067,6 +5119,31 @@ mod tests {
         assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
         assert!(!p.chat.request.developer_role && p.chat.request.end_user);
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+    }
+
+    #[test]
+    fn assemblyai_transcribes_through_its_sync_api_in_its_own_dialect() {
+        let p = provider("assemblyai").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "AssemblyAI",
+                AuthStyle::Bearer,
+                DialectId::AssemblyAi,
+                &[DialectId::AssemblyAi][..]
+            )
+        );
+        assert_eq!(
+            (p.default_base_url, p.key_prefix, p.listing),
+            ("https://sync.assemblyai.com", None, ModelListing::Partial)
+        );
+        let stt = p
+            .transcriptions
+            .iter()
+            .find(|e| e.serves("universal-3-6-pro"))
+            .unwrap();
+        assert_eq!(stt.dialect, DialectId::AssemblyAi);
+        assert!(p.speech.is_empty() && p.images.is_empty() && p.embeddings.is_none());
     }
 
     #[test]
@@ -6087,7 +6164,8 @@ mod tests {
                 "replicate",
                 "deepgram",
                 "cartesia",
-                "qianfan"
+                "qianfan",
+                "assemblyai"
             ]
         );
         assert_eq!(

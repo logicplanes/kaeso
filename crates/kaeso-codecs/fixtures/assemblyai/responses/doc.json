@@ -1,0 +1,17 @@
+{
+  "text": "Hi, I'm calling about my Best Buy order...",
+  "words": [
+    {
+      "text": "Hi",
+      "confidence": 0.91
+    },
+    {
+      "text": "I'm",
+      "confidence": 0.88
+    }
+  ],
+  "confidence": 0.87,
+  "audio_duration_ms": 101567,
+  "session_id": "eb92c4ff-4bbb-429f-9b99-7279d7fe738f",
+  "request_time_ms": 243.7
+}

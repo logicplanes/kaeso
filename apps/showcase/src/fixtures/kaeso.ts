@@ -35,6 +35,7 @@ export const providers = [
   { id: "venice", name: "Venice" },
   { id: "voyage", name: "Voyage AI" },
   { id: "jina", name: "Jina AI" },
+  { id: "assemblyai", name: "AssemblyAI" },
   { id: "vercel", name: "Vercel" },
   { id: "ollama-cloud", name: "Ollama Cloud" },
   { id: "moonshotai", name: "Moonshot" },

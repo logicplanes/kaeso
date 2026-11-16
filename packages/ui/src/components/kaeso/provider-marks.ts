@@ -525,6 +525,19 @@ export const PROVIDER_MARKS: Record<string, ProviderMark> = {
     color: "text-mark-cartesia",
   },
 
+  assemblyai: {
+    parts: [
+      {
+        d: "M10.712 2.388C9.312 2.388 8.058 3.255 7.554 4.567L1 21.612H5.979L11.139 8.199C11.268 7.871 11.584 7.642 11.953 7.642C12.322 7.642 12.639 7.871 12.767 8.199H13.453V5.475H12.176L13.365 2.388H10.706L10.712 2.388Z",
+        color: "text-mark-assemblyai-front",
+      },
+      {
+        d: "M7.554 4.567C8.04 3.308 9.218 2.458 10.541 2.388H10.711H13.288C14.688 2.388 15.942 3.255 16.446 4.567L23 21.612H17.933L11.578 5.088C11.215 4.28 10.407 3.718 9.47 3.718C8.532 3.718 7.718 4.286 7.355 5.094L7.554 4.573V4.567Z",
+        color: "text-mark-assemblyai-back",
+      },
+    ],
+  },
+
   vllm: {
     parts: [
       { d: "M9.83 24V5.142H.4Z", color: "text-mark-vllm-yellow" },
