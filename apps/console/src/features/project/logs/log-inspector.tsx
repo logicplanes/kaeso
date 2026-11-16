@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import {
+  AlertDialog,
   Badge,
   Button,
   CodeBlock,
@@ -50,6 +52,9 @@ import { CodeText } from "~/kaeso/code-text";
 import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
+import { toast } from "~/shell/toast";
+import { readDraft, writeDraft } from "../playground/draft";
+import { playgroundStart } from "./playground-start";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 
@@ -122,10 +127,54 @@ export function LogInspector({
         )
       }
       subtitle={e?.model ? `${e.endpoint} · ${logId}` : logId}
-      actions={e?.stream ? <Badge>{t("logs.inspector.streamed", "Streamed")}</Badge> : undefined}
+      actions={
+        e ? (
+          <span className="flex items-center gap-8">
+            {e.stream && <Badge>{t("logs.inspector.streamed", "Streamed")}</Badge>}
+            <OpenInPlayground org={org} project={project} e={e} />
+          </span>
+        ) : undefined
+      }
     >
       {logId && <Body key={logId} org={org} project={project} logId={logId} keyName={keyName} onClose={onClose} onFilter={onFilter} />}
     </Sheet>
+  );
+}
+
+// Tries the logged request again in the Playground: its model, system prompt and settings in the
+// address, its last user message in the composer's draft, never in the address.
+function OpenInPlayground({ org, project, e }: { org: string; project: string; e: LogEntryView }) {
+  const rights = useProjectRights(org, project);
+  const navigate = useNavigate();
+  const [replacing, setReplacing] = useState(false);
+  const start = useMemo(() => playgroundStart(e), [e]);
+  if (!start || !rights.has("logs.content.view") || !rights.has("playground.use")) return null;
+  const open = () => {
+    if (start.prompt) writeDraft(project, start.prompt);
+    void navigate({ to: "/orgs/$org/projects/$project/playground", params: { org, project }, search: start.search });
+    if (start.systemLeftOut) toast(t("logs.inspector.systemLeftOut", "System prompt left out; it's over 8,000 characters"));
+  };
+  const draft = readDraft(project);
+  return (
+    <>
+      <Button
+        size="sm"
+        variant="ghost"
+        leadingIcon={icons.playground}
+        onClick={() => (start.prompt && draft.trim() && draft !== start.prompt ? setReplacing(true) : open())}
+      >
+        {t("logs.inspector.openInPlayground", "Open in Playground")}
+      </Button>
+      <AlertDialog
+        open={replacing}
+        onOpenChange={setReplacing}
+        title={t("logs.inspector.replaceDraft", "Replace your unsent prompt?")}
+        description={t("logs.inspector.replaceDraftHint", "The Playground holds a prompt you haven't sent; this request's last message takes its place.")}
+        tone="warning"
+        confirmLabel={t("logs.inspector.replace", "Replace")}
+        onConfirm={open}
+      />
+    </>
   );
 }
 

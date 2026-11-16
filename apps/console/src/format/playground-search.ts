@@ -4,7 +4,8 @@ const SUMMARIES = ["auto", "concise", "detailed", "off"] as const;
 type Summary = (typeof SUMMARIES)[number];
 
 export const MAX_COLUMNS = 4;
-const MAX_SYSTEM = 8000;
+/** The longest system prompt the address carries. */
+export const MAX_SYSTEM = 8000;
 
 export interface PlaygroundSearch {
   models?: string;

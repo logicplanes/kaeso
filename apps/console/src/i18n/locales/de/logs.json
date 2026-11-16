@@ -307,5 +307,10 @@
   "logs.inspector.onlyModel": "Nur Anfragen an dieses Modell zeigen",
   "logs.inspector.onlyAlias": "Nur Anfragen an diesen Alias zeigen",
   "logs.inspector.onlySender": "Nur Anfragen dieses Absenders zeigen",
-  "logs.inspector.onlyKey": "Nur Anfragen mit diesem Schlüssel zeigen"
+  "logs.inspector.onlyKey": "Nur Anfragen mit diesem Schlüssel zeigen",
+  "logs.inspector.openInPlayground": "Im Playground öffnen",
+  "logs.inspector.replace": "Ersetzen",
+  "logs.inspector.replaceDraft": "Ihren nicht gesendeten Prompt ersetzen?",
+  "logs.inspector.replaceDraftHint": "Im Playground wartet ein nicht gesendeter Prompt; die letzte Nachricht dieser Anfrage ersetzt ihn.",
+  "logs.inspector.systemLeftOut": "System-Prompt weggelassen; er hat mehr als 8.000 Zeichen"
 }

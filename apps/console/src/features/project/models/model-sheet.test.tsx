@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
-import { apiError, on, requests } from "~/test/network";
+import { apiError, on, page, requests } from "~/test/network";
+import { playgroundModel } from "~/test/fixtures/project-logs";
 import { renderApp } from "~/test/render";
 import { queryClient } from "~/query";
 
@@ -54,6 +55,32 @@ describe("ModelSheet", () => {
     expect(s).toHaveTextContent("Effortslow, highKPMR");
     expect(s).toHaveTextContent("Timeout120 sKPMR");
     expect(s).toHaveTextContent("Released29 Sep 2025KPMR");
+  });
+
+  it("tries a model the Playground can call there, and offers nothing for one it can't", async () => {
+    setUp([sonnet(), catalogueModel({ id: "cm_embed", model_id: "text-embedding-3", effective: { ...catalogueModel().effective, display_name: "Embed" } })]);
+    on(
+      "GET",
+      "orgs/:org/projects/:project/playground/models",
+      page([playgroundModel({ id: "cm_sonnet", provider: "anthropic", model_id: "claude-sonnet-4-5" })]),
+    );
+    const { user, router } = await renderApp(projectPath("models?model=cm_embed"));
+    await within(await sheet("Embed")).findByText("Values in use");
+    expect(screen.queryByRole("link", { name: "Try in Playground" })).not.toBeInTheDocument();
+
+    await router.navigate({ to: "/orgs/$org/projects/$project/models", params: { org: ORG, project: PROJECT }, search: { model: "cm_sonnet" } });
+    const tryIt = await within(await sheet("Sonnet")).findByRole("link", { name: "Try in Playground" });
+    await user.click(tryIt);
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/playground`));
+    expect(router.state.location.search).toEqual({ models: "anthropic/claude-sonnet-4-5" });
+  });
+
+  it("offers no Playground without the right to use it", async () => {
+    setUp([sonnet()], without("playground.use"));
+    await renderApp(projectPath("models?model=cm_sonnet"));
+    await within(await sheet("Sonnet")).findByText("Values in use");
+    expect(screen.queryByRole("link", { name: "Try in Playground" })).not.toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/projects/:project/playground/models")).toHaveLength(0);
   });
 
   it("shows an image model's image token prices and its prices per unit, estimates marked", async () => {

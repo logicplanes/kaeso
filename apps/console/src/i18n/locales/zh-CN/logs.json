@@ -307,5 +307,10 @@
   "logs.inspector.onlyModel": "只显示发往此模型的请求",
   "logs.inspector.onlyAlias": "只显示发往此别名的请求",
   "logs.inspector.onlySender": "只显示此发送者的请求",
-  "logs.inspector.onlyKey": "只显示使用此密钥的请求"
+  "logs.inspector.onlyKey": "只显示使用此密钥的请求",
+  "logs.inspector.openInPlayground": "在试验场中打开",
+  "logs.inspector.replace": "替换",
+  "logs.inspector.replaceDraft": "替换您未发送的提示词？",
+  "logs.inspector.replaceDraftHint": "试验场中有一条尚未发送的提示词；此请求的最后一条消息将取代它。",
+  "logs.inspector.systemLeftOut": "已省略系统提示词；它超过 8,000 个字符"
 }

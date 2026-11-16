@@ -16,7 +16,7 @@ Er listet jede Art von Modell, die das Projekt aufrufen kann, und jede Spalte ni
 
 **Leeren** leert das Gespräch jeder Spalte; **Rückgängig** in der Meldung holt es zurück.
 
-Die Adresse der Seite enthält die Modelle und Parameter, sodass ein Link denselben Vergleich öffnet. Ein Prompt, den Sie noch nicht gesendet haben, bleibt in Ihrem Browser. Das Gespräch bleibt erhalten, solange die Konsole in diesem Tab geöffnet ist, auch wenn Sie andere Seiten besuchen und zurückkehren. Die Konsole speichert es nie, daher beendet ein Neuladen oder Schließen des Tabs das Gespräch, und der Browser fragt vorher nach.
+Die Adresse der Seite enthält die Modelle und Parameter, sodass ein Link denselben Vergleich öffnet. Ein Prompt, den Sie noch nicht gesendet haben, bleibt in Ihrem Browser. Das Gespräch bleibt erhalten, solange die Konsole in diesem Tab geöffnet ist, auch wenn Sie andere Seiten besuchen und zurückkehren. Die Konsole speichert es nie, daher beendet ein Neuladen oder Schließen des Tabs das Gespräch, und der Browser fragt vorher nach. **Im Playground ausprobieren** im Sheet eines Modells und **Im Playground öffnen** an einer protokollierten Anfrage öffnen einen solchen Link, Letzteres mit der letzten Nachricht der Anfrage im Eingabefeld ([Anfrageprotokolle](request-logs.md)).
 
 ## Medienmodelle ausprobieren
 
