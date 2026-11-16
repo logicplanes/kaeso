@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { providers as providerList, signedIn, whoAmI, without } from "~/test/fixtures";
 import { credential, hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
-import { listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
+import { errorGroup, listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -374,6 +374,61 @@ describe("LogsPage", () => {
     expect(screen.getByRole("menuitemradio", { name: "claude-sonnet-4-5" })).toBeInTheDocument();
     await user.click(screen.getByRole("menuitemradio", { name: "anthropic/claude-sonnet-4-5" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ requested_model: "anthropic/claude-sonnet-4-5" }));
+  });
+
+  it("lists the most common errors above the failures, and a row lists the requests it counts", async () => {
+    signedIn();
+    projectData();
+    logsData({
+      rows: [logRow({ status: 429 })],
+      errors: [errorGroup(), errorGroup({ error_kind: "", status: 500, provider: "", count: 1, example: "" })],
+    });
+    const { user, router } = await renderApp(projectPath("logs?failed=true"));
+    const list = await screen.findByRole("grid", { name: "Most common errors" });
+    await waitFor(() => expect(within(list).getAllByRole("row")).toHaveLength(2));
+    expect(within(list).getAllByRole("row")[0]).toHaveTextContent(/Rate limit reached for gpt-5\.4-mini.*Rate limited · 429 · OpenAI.*12 requests/);
+    expect(requests("GET", "orgs/:org/projects/:project/logs/errors").at(-1)?.query.get("limit")).toBe("10");
+    await user.click(within(list).getAllByRole("gridcell")[0] as HTMLElement);
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({
+        failed: true,
+        error: "rate_limited",
+        status: 429,
+        provider: "openai",
+        error_message: "Rate limit reached for gpt",
+      }),
+    );
+    await waitFor(() => expect(lastQuery()).toMatchObject({ error_message: "Rate limit reached for gpt", error_kind: "rate_limited" }));
+  });
+
+  it("shows no most common errors without failures to count, and says when they couldn't load", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { router } = await renderApp(projectPath("logs?failed=true"));
+    await screen.findByRole("grid", { name: "Requests" });
+    await waitFor(() => expect(requests("GET", "orgs/:org/projects/:project/logs/errors")).toHaveLength(1));
+    expect(screen.queryByText("Most common errors")).not.toBeInTheDocument();
+    on("GET", "orgs/:org/projects/:project/logs/errors", apiError(503, "unavailable", "The request log is unavailable."));
+    await router.navigate({ to: projectPath("logs"), search: { failed: true, status: 500 } } as never);
+    expect(await screen.findByText("The most common errors couldn't load.")).toBeInTheDocument();
+  });
+
+  it("filters by text the error message contains, typed or chosen", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs?error_message=quota"));
+    await waitFor(() => expect(lastQuery()).toMatchObject({ error_message: "quota" }));
+    const toolbar = screen.getByRole("toolbar", { name: "Filter requests" });
+    expect(within(toolbar).getByRole("group", { name: "Filter: Error message" })).toHaveTextContent("Error messagecontainsquota");
+    await user.click(within(toolbar).getByRole("button", { name: "Remove the Error message filter" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    await user.click(screen.getByRole("button", { name: "Add filter" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Error message" }));
+    await user.keyboard("context length");
+    await user.click(await screen.findByRole("menuitem", { name: "Contains “context length”" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ error_message: "context length" }));
   });
 
   it("filters by a tag from the address or from the tags of the requests shown", async () => {

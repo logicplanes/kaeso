@@ -673,6 +673,9 @@ pub struct LogFilter {
     pub requested_model: Option<String>,
     #[doc = "Only requests the app tagged with this tag in the `kaeso-tags` header."]
     pub tag: Option<String>,
+    #[doc = "Only requests whose error message contains this text, in any case: 1 to\n\
+        200 characters, such as `quota`."]
+    pub error_message: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -785,7 +788,23 @@ impl LogFilter {
             min_cost: self.min_cost.as_deref().map(cost_filter).transpose()?,
             requested_model: self.requested_model.clone(),
             tag: self.tag.as_deref().map(tag_filter).transpose()?,
+            error_message: self
+                .error_message
+                .as_deref()
+                .map(message_filter)
+                .transpose()?,
         })
+    }
+}
+
+fn message_filter(m: &str) -> ApiResult<String> {
+    if (1..=200).contains(&m.chars().count()) {
+        Ok(m.to_owned())
+    } else {
+        Err(ApiError::invalid(
+            "error_message",
+            "`error_message` must be 1 to 200 characters.",
+        ))
     }
 }
 
@@ -1224,6 +1243,89 @@ fn content_view(c: &ch::ContentRow) -> ContentView {
         request: stored_json(&c.request_body),
         reply: stored_json(&c.reply),
     }
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[into_params(parameter_in = Query)]
+pub struct ErrorsParams {
+    #[doc = "How many kinds of failure to return, from 1 to 50; 10 when left out."]
+    pub limit: Option<u32>,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(
+    description = "One kind of failure: requests with the same error kind, status, provider and message once its numbers and ids are left out."
+)]
+pub struct ErrorGroupView {
+    #[doc = "The error kind, such as `rate_limited`."]
+    #[schema(example = "rate_limited")]
+    pub error_kind: String,
+    #[doc = "The HTTP status the app got."]
+    #[schema(example = 429)]
+    pub status: u16,
+    #[doc = "The provider; empty when the request reached none."]
+    #[schema(example = "openai")]
+    pub provider: String,
+    #[doc = "How many requests failed this way."]
+    pub count: u64,
+    #[doc = "When the first of them started."]
+    #[serde(with = "time::serde::rfc3339")]
+    #[schema(value_type = String)]
+    pub first_at: OffsetDateTime,
+    #[doc = "When the newest of them started."]
+    #[serde(with = "time::serde::rfc3339")]
+    #[schema(value_type = String)]
+    pub last_at: OffsetDateTime,
+    #[doc = "The newest one's error message."]
+    #[schema(example = "Rate limit reached; retry after 12 s.")]
+    pub example: String,
+    #[doc = "The newest one's request id."]
+    #[schema(value_type = String, example = "req_01m7h88803ep3sk3rt84ynzy2c")]
+    pub request_id: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/orgs/{org}/projects/{project}/logs/errors",
+    summary = "The most common failures among the requests the filters keep.",
+    description = "Failed requests (status 400 and up) grouped by `error_kind`, `status`,\n\
+    `provider` and their message with numbers, UUIDs and request ids left out, most\n\
+    frequent first, each with its count, first and last time, the newest message and\n\
+    the newest request's id. The filters are the request log's.",
+    tag = "logs",
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ErrorsParams, LogFilter),
+    responses((status = 200, body = List<ErrorGroupView>))
+)]
+pub async fn errors(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_p): Path<(String, String)>,
+    Query(params): Query<ErrorsParams>,
+    Query(f): Query<LogFilter>,
+) -> ApiResult<Json<List<ErrorGroupView>>> {
+    let limit = params.limit.unwrap_or(10);
+    if !(1..=50).contains(&limit) {
+        return Err(ApiError::invalid("limit", "`limit` must be 1 to 50."));
+    }
+    let p = &ctx.project()?.project;
+    let groups = ch::common_errors(log_store(&state)?, p.org_id, p.id, &f.filter()?, limit)
+        .await
+        .map_err(unavailable)?;
+    Ok(Json(List::complete(
+        groups
+            .into_iter()
+            .map(|g| ErrorGroupView {
+                error_kind: g.error_kind,
+                status: g.status,
+                provider: g.provider,
+                count: g.count,
+                first_at: g.first_at,
+                last_at: g.last_at,
+                example: kaeso_core::secret::redact_tokens(&g.example),
+                request_id: RequestId::from_uuid(g.request_id).to_string(),
+            })
+            .collect(),
+    )))
 }
 
 #[utoipa::path(

@@ -75,6 +75,7 @@ describe("exportFilters", () => {
     ]);
     expect(exportFilters({ range: "1h" })).toEqual([]);
     expect(exportFilters({ tag: "checkout" })).toEqual([{ label: "Tag", value: "checkout" }]);
+    expect(exportFilters({ error_message: "quota" })).toEqual([{ label: "Error message", value: "contains “quota”" }]);
   });
 });
 

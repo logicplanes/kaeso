@@ -104,6 +104,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ProjectUpdate), routes!(crate::platform::response_cache::update_project)))
         .routes(s.route(Access::Project(R::ProjectUpdate), routes!(crate::platform::response_cache::clear)))
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::list)))
+        .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::errors)))
         .routes(s.route(Access::Project(R::LogsExport), routes!(crate::platform::logs::export)))
         .routes(s.route(Access::Project(R::LogsMetadataView), routes!(crate::platform::logs::get)))
         .routes(s.route(Access::Project(R::LogsExport), routes!(crate::platform::tool_logs::export)))

@@ -4,7 +4,9 @@ import { useNavigate } from "@tanstack/react-router";
 import { AppFrame, Button, DataTable, DisplayOptions, Empty, type FilterChipChoice, useProviderGroups, Toolbar, icons } from "@logicplanes/kaeso-ui";
 import { useModelGroups } from "@logicplanes/kaeso-ui/playground";
 import { isApiError } from "~/api/errors";
-import { ENDPOINTS, logsInfiniteQuery, type LogFilters } from "~/api/queries/logs";
+import { ENDPOINTS, logErrorsQuery, logsInfiniteQuery, type LogFilters } from "~/api/queries/logs";
+import type { ErrorGroupView } from "~/api/generated/types";
+import { CommonErrors, filtersOf, messagePrefix } from "./common-errors";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { formatDuration, formatPrice } from "@logicplanes/kaeso-ui/format";
 import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
@@ -73,6 +75,7 @@ type FilterId =
   | "response_cache"
   | "min_duration_ms"
   | "tag"
+  | "error_message"
   | FlagFilterId;
 type ChoiceFilterId = Exclude<FilterId, FlagFilterId>;
 const isChoice = (id: string): id is ChoiceFilterId => id !== "fell_back";
@@ -90,6 +93,7 @@ const FILTER_IDS: FilterId[] = [
   "status",
   "failed",
   "error",
+  "error_message",
   "stream",
   "source",
   "response_cache",
@@ -106,6 +110,7 @@ const CHOICE_PATCH: { [K in ChoiceFilterId]: (v: string | undefined) => SearchPa
   model: (model) => ({ model }),
   requested_model: (requested_model) => ({ requested_model }),
   tag: (tag) => ({ tag }),
+  error_message: (error_message) => ({ error_message }),
   provider: (provider) => ({ provider }),
   ingress: (ingress) => ({ ingress }),
   egress: (egress) => ({ egress }),
@@ -127,6 +132,7 @@ const filterLabel = (id: FilterId): string =>
     model: common.model(),
     requested_model: t("logs.filter.requestedModel", "Requested model"),
     tag: t("logs.filter.tag", "Tag"),
+    error_message: t("logs.filter.errorMessage", "Error message"),
     provider: common.provider(),
     ingress: t("logs.filter.appFormat", "App format"),
     egress: t("logs.filter.providerFormat", "Provider format"),
@@ -147,6 +153,14 @@ const filterLabel = (id: FilterId): string =>
 // name from the URL that none of them is, such as a deleted alias, stays as the chip's value.
 // The log has no list of every tag, so the filter offers those of the requests loaded, and the
 // one in the address.
+// Messages can't be listed, so the filter offers the start of the most common errors' and takes
+// any text typed.
+function messageChoices(groups: readonly ErrorGroupView[], current: string | undefined): FilterChipChoice[] {
+  const texts = new Set(groups.flatMap((g) => messagePrefix(g.example) ?? []));
+  if (current) texts.add(current);
+  return [...texts].map((text) => ({ value: text, label: text }));
+}
+
 function tagChoices(rows: readonly { tags: string[] }[], current: string | undefined): FilterChipChoice[] {
   const tags = new Set(rows.flatMap((r) => r.tags));
   if (current) tags.add(current);
@@ -184,6 +198,8 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
 
   const base = useMemo(() => logs.data?.pages.flatMap((p) => p.data) ?? [], [logs.data]);
   const { rows, pending, fresh, cut, showPending } = useLiveLogs({ org, project, filters, live: !!live, base, scroller });
+  // Shown above the failures, and the message filter's choices; the same query either way.
+  const commonErrors = useQuery({ ...logErrorsQuery(org, project, filters), enabled: filters.failed === true });
   const hasNextPage = logs.hasNextPage && !cut;
   useLoadMoreNearEnd(scroller, { ...logs, hasNextPage });
   useRowStepping(rows, log, (id) => setSearch({ log: id }));
@@ -236,28 +252,30 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
                   ? requestedNames(catalogue.data ?? [], aliases.data ?? [])
                   : id === "tag"
                     ? tagChoices(rows, filters.tag)
-                    : id === "endpoint"
-                      ? ENDPOINTS.map((e) => ({ value: e, label: e }))
-                      : id === "min_cost"
-                        ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
-                        : id === "failed"
-                          ? [
-                              { value: "true", label: outcomeLabel(true) },
-                              { value: "false", label: outcomeLabel(false) },
-                            ]
-                          : id === "response_cache"
-                            ? VERDICTS.map((v) => ({ value: v, label: cacheLabel(v) }))
-                            : id === "min_duration_ms"
-                              ? SLOWER_THAN.map((ms) => ({ value: String(ms), label: formatDuration(ms) }))
-                              : id === "stream"
-                                ? [
-                                    { value: "true", label: t("logs.filter.streamed", "Streamed") },
-                                    { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
-                                  ]
-                                : [
-                                    { value: "api", label: "API" },
-                                    { value: "playground", label: t("logs.source.playground", "Playground") },
-                                  ];
+                    : id === "error_message"
+                      ? messageChoices(commonErrors.data ?? [], filters.error_message)
+                      : id === "endpoint"
+                        ? ENDPOINTS.map((e) => ({ value: e, label: e }))
+                        : id === "min_cost"
+                          ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
+                          : id === "failed"
+                            ? [
+                                { value: "true", label: outcomeLabel(true) },
+                                { value: "false", label: outcomeLabel(false) },
+                              ]
+                            : id === "response_cache"
+                              ? VERDICTS.map((v) => ({ value: v, label: cacheLabel(v) }))
+                              : id === "min_duration_ms"
+                                ? SLOWER_THAN.map((ms) => ({ value: String(ms), label: formatDuration(ms) }))
+                                : id === "stream"
+                                  ? [
+                                      { value: "true", label: t("logs.filter.streamed", "Streamed") },
+                                      { value: "false", label: t("logs.filter.notStreamed", "Not streamed") },
+                                    ]
+                                  : [
+                                      { value: "api", label: "API" },
+                                      { value: "playground", label: t("logs.source.playground", "Playground") },
+                                    ];
   const current = (id: ChoiceFilterId): string | undefined => {
     const v = filters[id];
     return v === undefined ? undefined : String(v);
@@ -286,6 +304,12 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
               : {
                   values: choice(id),
                   searchable: id === "key" || id === "member" || id === "alias" || id === "endpoint" || id === "requested_model" || id === "tag",
+                  ...(id === "error_message"
+                    ? {
+                        operator: t("logs.filter.contains", "contains"),
+                        freeText: (text: string) => t("logs.filter.containsTyped", "Contains “{text}”", { text }),
+                      }
+                    : {}),
                 }),
         },
   );
@@ -364,6 +388,17 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
               <Button size="sm" onClick={showPending}>
                 {t("logs.showNew", "{count, plural, one {Show # new request} other {Show # new requests}}", { count: pending.length })}
               </Button>
+            </div>
+          )}
+          {filters.failed === true && (
+            <div className="mx-16 my-12">
+              <CommonErrors
+                org={org}
+                project={project}
+                filters={filters}
+                providerName={catalog.name}
+                onPick={(g) => setSearch({ ...filtersOf(g), log: undefined })}
+              />
             </div>
           )}
           <DataTable

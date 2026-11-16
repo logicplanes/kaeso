@@ -45,6 +45,10 @@ export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: 
     { label: common.model(), value: f.model && (names.model ?? f.model) },
     { label: t("logs.filter.requestedModel", "Requested model"), value: f.requested_model },
     { label: t("logs.filter.tag", "Tag"), value: f.tag },
+    {
+      label: t("logs.filter.errorMessage", "Error message"),
+      value: f.error_message && t("logs.filter.containsText", "contains “{text}”", { text: f.error_message }),
+    },
     { label: common.provider(), value: f.provider && (names.provider ?? f.provider) },
     { label: t("logs.filter.appFormat", "App format"), value: f.ingress && dialectLabel(f.ingress) },
     { label: t("logs.filter.providerFormat", "Provider format"), value: f.egress && dialectLabel(f.egress) },

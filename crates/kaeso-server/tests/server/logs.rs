@@ -2753,3 +2753,134 @@ async fn kaeso_tags_label_a_request_in_the_log_its_filter_and_its_export() {
         "{text}"
     );
 }
+
+#[tokio::test]
+async fn the_request_log_finds_errors_by_their_message_and_counts_the_most_common() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let at = |minutes: i64| {
+        row(
+            org.uuid(),
+            project.uuid(),
+            now - time::Duration::minutes(minutes),
+            1,
+        )
+        .0
+    };
+    let failed = |minutes: i64, status: u16, kind: &str, message: &str| LogRow {
+        status,
+        error_kind: kind.into(),
+        error_message: message.into(),
+        ..at(minutes)
+    };
+    let rows = [
+        failed(
+            5,
+            429,
+            "rate_limited",
+            "Rate limit reached for req_01aa; retry after 12 s.",
+        ),
+        failed(
+            4,
+            429,
+            "rate_limited",
+            "Rate limit reached for req_01bb; retry after 30 s.",
+        ),
+        failed(
+            3,
+            429,
+            "rate_limited",
+            "Rate limit reached for req_01cc; retry after 7 s.",
+        ),
+        failed(
+            2,
+            403,
+            "permission_denied",
+            "Your QUOTA is used up for project 3f2b1c4d-0000-4000-8000-000000000001.",
+        ),
+        failed(1, 500, "provider_error", "The provider failed."),
+        at(1),
+    ];
+    let newest_rate = rows[2].request_id;
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
+        .await
+        .unwrap();
+    let count = |query: &'static str| {
+        let env = &env;
+        async move { logs(env, query).await["data"].as_array().unwrap().len() }
+    };
+    assert_eq!(
+        count("?failed=true&error_message=quota").await,
+        1,
+        "any case"
+    );
+    assert_eq!(count("?error_message=retry%20after").await, 3);
+    assert_eq!(count("?error_message=nothing%20like%20it").await, 0);
+    for query in [
+        "?error_message=",
+        &format!("?error_message={}", "x".repeat(201)),
+    ] {
+        let r = env
+            .app
+            .get(&format!("{}/logs{query}", base(&env)), &env.owner.cookie)
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{query}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], "error_message");
+    }
+
+    let errors = |query: &'static str| {
+        let env = &env;
+        async move {
+            env.app
+                .get(
+                    &format!("{}/logs/errors{query}", base(env)),
+                    &env.owner.cookie,
+                )
+                .await
+        }
+    };
+    let all = errors("").await;
+    assert_eq!(all.status, StatusCode::OK, "{:?}", all.body);
+    let groups = all.body["data"].as_array().unwrap();
+    assert_eq!(groups.len(), 3, "{groups:?}");
+    assert_eq!(
+        groups[0]["count"], 3,
+        "the retries count as one: {groups:?}"
+    );
+    assert_eq!(groups[0]["status"], 429);
+    assert_eq!(groups[0]["error_kind"], "rate_limited");
+    assert_eq!(
+        groups[0]["example"],
+        "Rate limit reached for req_01cc; retry after 7 s."
+    );
+    assert_eq!(
+        groups[0]["request_id"],
+        kaeso_core::id::RequestId::from_uuid(newest_rate).to_string()
+    );
+    assert!(groups[0]["first_at"].as_str().unwrap() < groups[0]["last_at"].as_str().unwrap());
+    assert_eq!(
+        groups
+            .iter()
+            .map(|g| g["count"].as_u64().unwrap())
+            .sum::<u64>(),
+        5
+    );
+    let quota = errors("?error_message=quota&limit=1").await;
+    assert_eq!(quota.body["data"].as_array().unwrap().len(), 1);
+    assert_eq!(quota.body["data"][0]["status"], 403);
+    let one = errors("?limit=1").await;
+    assert_eq!(one.body["data"].as_array().unwrap().len(), 1);
+    for limit in ["0", "51"] {
+        let r = env
+            .app
+            .get(
+                &format!("{}/logs/errors?limit={limit}", base(&env)),
+                &env.owner.cookie,
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{limit}");
+        assert_eq!(r.body["error"]["param"], "limit");
+    }
+}

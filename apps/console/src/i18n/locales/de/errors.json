@@ -774,5 +774,7 @@
   "errors.logEndpoint": "`endpoint` muss ein Endpunkt sein, etwa `responses`.",
   "errors.logMinCost": "`min_cost` muss ein Betrag in USD sein, etwa `0.5`.",
   "errors.logTag": "`tag` muss aus 1 bis 64 Kleinbuchstaben, Ziffern, `.`, `_`, `:` oder `-` bestehen.",
-  "errors.modelApi.tagsHeader": "Der Header `kaeso-tags` nimmt bis zu 10 kommagetrennte Tags aus je 1 bis 64 Kleinbuchstaben, Ziffern, `.`, `_`, `:` oder `-`."
+  "errors.modelApi.tagsHeader": "Der Header `kaeso-tags` nimmt bis zu 10 kommagetrennte Tags aus je 1 bis 64 Kleinbuchstaben, Ziffern, `.`, `_`, `:` oder `-`.",
+  "errors.logErrorMessage": "`error_message` muss 1 bis 200 Zeichen lang sein.",
+  "errors.limitOneToFifty": "`limit` muss zwischen 1 und 50 liegen."
 }

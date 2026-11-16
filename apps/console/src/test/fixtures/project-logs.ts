@@ -1,4 +1,4 @@
-import type { LogEntryView, LogView, PlaygroundModel } from "~/api/generated/types";
+import type { ErrorGroupView, LogEntryView, LogView, PlaygroundModel } from "~/api/generated/types";
 import { USER } from "../fixtures";
 import { apiError, on, page } from "../network";
 
@@ -82,12 +82,28 @@ export function eventStream(body: string, headers: Record<string, string> = {}):
   return new Response(body, { status: 200, headers: { "content-type": "text/event-stream", ...headers } });
 }
 
-export function logsData({ rows = [], entries = [] }: { rows?: LogView[]; entries?: LogEntryView[] } = {}): void {
+export function logsData({ rows = [], entries = [], errors = [] }: { rows?: LogView[]; entries?: LogEntryView[]; errors?: ErrorGroupView[] } = {}): void {
   on("GET", "orgs/:org/projects/:project/logs", listPage(rows));
   on("GET", "orgs/:org/projects/:project/logs/:log", ({ params }: { params: Record<string, string> }) => {
     const entry = entries.find((e) => e.id === params.log);
     return entry ?? apiError(404, "not_found", "No such request.");
   });
+  // Registered last, so it answers before `logs/:log`.
+  on("GET", "orgs/:org/projects/:project/logs/errors", page(errors));
+}
+
+export function errorGroup(overrides: Partial<ErrorGroupView> = {}): ErrorGroupView {
+  return {
+    error_kind: "rate_limited",
+    status: 429,
+    provider: "openai",
+    count: 12,
+    first_at: "2026-10-15T09:00:00Z",
+    last_at: "2026-10-15T11:58:00Z",
+    example: "Rate limit reached for gpt-5.4-mini; retry after 12 s.",
+    request_id: "req_0009",
+    ...overrides,
+  };
 }
 
 export function logContent(request: unknown, reply: unknown): NonNullable<LogEntryView["content"]> {

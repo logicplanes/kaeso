@@ -334,6 +334,8 @@ const messages = (): Rule[] => [
   rule("errors.timelineStepValues", () => t("errors.timelineStepValues", "Use `minute` or `hour`.")),
   rule("errors.logEndpoint", () => t("errors.logEndpoint", "`endpoint` must be an endpoint, such as `responses`.")),
   rule("errors.logMinCost", () => t("errors.logMinCost", "`min_cost` must be an amount in USD, such as `0.5`.")),
+  rule("errors.logErrorMessage", () => t("errors.logErrorMessage", "`error_message` must be 1 to 200 characters.")),
+  rule("errors.limitOneToFifty", () => t("errors.limitOneToFifty", "`limit` must be 1 to 50.")),
   rule("errors.logTag", () => t("errors.logTag", "`tag` must be 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.")),
   rule("errors.timelineGroupValues", () => t("errors.timelineGroupValues", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `project`.")),
   rule("errors.timelineGroupValuesProject", () => t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route` or `error_kind`.")),

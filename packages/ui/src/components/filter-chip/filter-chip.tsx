@@ -68,6 +68,11 @@ export interface FilterChipProps {
   values?: FilterChipChoice[] | undefined;
   groups?: CommandListGroup[] | undefined;
   searchable?: boolean | undefined;
+  /**
+   * Lets the search field's text be the value: the label of the item that takes it, such as
+   * `(text) => \`Contains “${text}”\``. The menu then always has a search field.
+   */
+  freeText?: ((text: string) => ReactNode) | undefined;
   width?: PickerPopoverProps["width"] | undefined;
   selected?: string[] | undefined;
   multiple?: boolean | undefined;
@@ -96,6 +101,7 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
     values,
     groups: givenGroups,
     searchable: forceSearch,
+    freeText,
     width,
     selected = [],
     multiple,
@@ -111,18 +117,26 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
   const t = useUiText();
   const locale = useLocale();
   const choices = givenGroups ? givenGroups.reduce((n, g) => n + g.items.length, 0) : (values?.length ?? 0);
-  const [open, setOwnOpen] = useState(!!defaultValuesOpen && choices > 0);
+  const usable = choices > 0 || !!freeText;
+  const [open, setOwnOpen] = useState(!!defaultValuesOpen && usable);
   const setOpen = (o: boolean) => {
     setOwnOpen(o);
     onValuesOpenChange?.(o);
   };
   const [query, setQuery] = useState("");
   const search = useRef<HTMLInputElement | null>(null);
-  const searchable = !!forceSearch || choices > SEARCH_ABOVE;
-  const long = !!givenGroups || choices > LIST_ABOVE;
+  const searchable = !!forceSearch || !!freeText || choices > SEARCH_ABOVE;
+  // Typed text is taken only from the menu's own search field.
+  const long = !freeText && (!!givenGroups || choices > LIST_ABOVE);
   const groups = useMemo(() => givenGroups ?? (long && values ? choiceGroups(values) : []), [givenGroups, long, values]);
   const q = query.trim().toLowerCase();
   const shown = searchable && q ? (values ?? []).filter((v) => textOf(v).toLowerCase().includes(q) || v.value.toLowerCase().includes(q)) : (values ?? []);
+  const typed = query.trim();
+  const takeTyped = () => {
+    onSelectedChange?.([typed]);
+    setOpen(false);
+    setQuery("");
+  };
   useEffect(() => {
     if (!open || !searchable || long) return;
     const timer = setTimeout(() => search.current?.focus(), 0);
@@ -207,7 +221,7 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
           }}
         >
           <Menu.Trigger>
-            <button type="button" {...(force ? { "data-force": force } : {})} className={cn(SEG, "divider-l", !onRemove && "pr-12")} disabled={choices === 0}>
+            <button type="button" {...(force ? { "data-force": force } : {})} className={cn(SEG, "divider-l", !onRemove && "pr-12")} disabled={!usable}>
               <span className={VALUE}>{value}</span>
             </button>
           </Menu.Trigger>
@@ -230,15 +244,21 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={(e) => {
+                          if (e.key === "Enter" && freeText && typed) {
+                            e.preventDefault();
+                            takeTyped();
+                            return;
+                          }
                           if (!["ArrowDown", "ArrowUp", "Escape", "Tab", "Enter"].includes(e.key)) e.stopPropagation();
                         }}
                         className="h-28 w-full bg-transparent text-body text-fg outline-none placeholder:text-fg-tertiary coarse:h-36"
                       />
                     ),
-                    ...(shown.length === 0 ? { footer: t("filterChip.noMatches", "No values match") } : {}),
+                    ...(shown.length === 0 && !(freeText && typed) ? { footer: t("filterChip.noMatches", "No values match") } : {}),
                   }
                 : {})}
             >
+              {freeText && typed && <Menu.Item onClick={takeTyped}>{freeText(typed)}</Menu.Item>}
               {multiple ? (
                 inRuns(shown, (v) => (
                   <Menu.CheckboxItem
