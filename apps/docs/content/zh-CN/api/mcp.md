@@ -253,7 +253,7 @@ sequenceDiagram
 - **操作。** 在视图中选择指标、期间或细分方式时，视图会通过客户端以智能体的权限再次调用该工具。视图按客户端的语言以英语、德语或简体中文显示，并跟随其浅色或深色主题。
 - **不支持 MCP Apps 时。** 不显示视图的客户端（例如 Claude Code）会收到一段简短的文字摘要，并以 `structuredContent` 收到相同的数据。
 
-该工具通过 `_meta.ui.resourceUri` 关联其视图，视图是类型为 `text/html;profile=mcp-app` 的资源 `ui://kaeso/stats`，通过 `resources/read` 获取。它是网关随二进制文件一起提供的单个 HTML 文档：不从别处加载任何内容，不包含令牌，并请求该扩展允许的最严格策略，不允许任何外部连接、脚本、样式、字体、图片或框架。它自身的 `Content-Security-Policy` 只允许其唯一的内联脚本，因此没有任何代码能执行 `eval`。视图把来自 Kaeso 的每个值都作为文本显示。
+该工具通过 `_meta.ui.resourceUri` 关联其视图，视图是类型为 `text/html;profile=mcp-app` 的资源 `ui://kaeso/stats`，通过 `resources/read` 获取。`initialize` 和 `server/discover` 的能力声明将 MCP Apps 声明为扩展 `io.modelcontextprotocol/ui`。视图是网关随二进制文件一起提供的单个 HTML 文档：不从别处加载任何内容，不包含令牌，并请求该扩展允许的最严格策略，不允许任何外部连接、脚本、样式、字体、图片或框架。它自身的 `Content-Security-Policy` 只允许其唯一的内联脚本，因此没有任何代码能执行 `eval`。视图把来自 Kaeso 的每个值都作为文本显示。
 
 ## 协议
 
@@ -280,7 +280,7 @@ sequenceDiagram
 | 429 | 来自您地址的未知令牌过多（[API 密钥限流](../self-hosting/configuration.md#api-密钥限流)）。`Retry-After` 说明何时可以重试。 |
 | 503 | Kaeso 无法访问其数据库。 |
 
-在较早的版本中，未知方法返回状态 200 和 JSON-RPC 错误 `-32601`，未知工具返回 `-32602`。失败的工具调用返回 200，带 `isError: true` 和文本 `<type>: <message>`。类型是 Platform API 的[错误类型](platform-api.md#错误)，缺少权限时为 `insufficient_rights`（[缺少权限](#缺少权限)）。
+在较早的版本中，未知方法返回状态 200 和 JSON-RPC 错误 `-32601`，未知工具返回 `-32602`。未知资源返回 `-32002`，版本 `2026-07-28` 中返回 `-32602`。失败的工具调用返回 200，带 `isError: true` 和文本 `<type>: <message>`。类型是 Platform API 的[错误类型](platform-api.md#错误)，缺少权限时为 `insufficient_rights`（[缺少权限](#缺少权限)）。
 
 ## 令牌
 

@@ -253,7 +253,7 @@ Das Tool dahinter ist `show_usage_stats`. Jedes Argument ist optional:
 - **Bedienung.** Wählen Sie in der Ansicht eine Kennzahl, einen Zeitraum oder eine Aufschlüsselung, ruft sie das Tool über den Client erneut auf, mit den Rechten des Agenten. Die Ansicht ist auf Englisch, Deutsch oder vereinfachtem Chinesisch, je nach Sprache des Clients, und folgt seinem hellen oder dunklen Design.
 - **Ohne MCP Apps.** Ein Client, der keine Ansichten zeigt, etwa Claude Code, erhält eine kurze Zusammenfassung als Text und dieselben Daten als `structuredContent`.
 
-Das Tool verknüpft seine Ansicht mit `_meta.ui.resourceUri`, und die Ansicht ist die Ressource `ui://kaeso/stats` vom Typ `text/html;profile=mcp-app`, aus `resources/read`. Sie ist ein einziges HTML-Dokument, das das Gateway in seiner Binärdatei mitbringt: Sie lädt nichts von anderswo, enthält kein Token und verlangt die strengste Richtlinie, die die Erweiterung erlaubt, ohne fremde Verbindungen, Skripte, Stile, Schriften, Bilder oder Frames. Ihre eigene `Content-Security-Policy` erlaubt nur ihr eines eingebettetes Skript, sodass nichts `eval` ausführen kann. Die Ansicht schreibt jeden Wert aus Kaeso als Text.
+Das Tool verknüpft seine Ansicht mit `_meta.ui.resourceUri`, und die Ansicht ist die Ressource `ui://kaeso/stats` vom Typ `text/html;profile=mcp-app`, aus `resources/read`. Die Capabilities von `initialize` und `server/discover` deklarieren MCP Apps als die Erweiterung `io.modelcontextprotocol/ui`. Die Ansicht ist ein einziges HTML-Dokument, das das Gateway in seiner Binärdatei mitbringt: Sie lädt nichts von anderswo, enthält kein Token und verlangt die strengste Richtlinie, die die Erweiterung erlaubt, ohne fremde Verbindungen, Skripte, Stile, Schriften, Bilder oder Frames. Ihre eigene `Content-Security-Policy` erlaubt nur ihr eines eingebettetes Skript, sodass nichts `eval` ausführen kann. Die Ansicht schreibt jeden Wert aus Kaeso als Text.
 
 ## Protokoll
 
@@ -280,7 +280,7 @@ Das Tool verknüpft seine Ansicht mit `_meta.ui.resourceUri`, und die Ansicht is
 | 429 | Von Ihrer Adresse kamen zu viele unbekannte Tokens ([Drosselung von API-Schlüsseln](../self-hosting/configuration.md#drosselung-von-api-schlüsseln)). `Retry-After` sagt, wann Sie es erneut versuchen können. |
 | 503 | Kaeso erreicht seine Datenbank nicht. |
 
-In älteren Versionen erhält eine unbekannte Methode den JSON-RPC-Fehler `-32601` mit Status 200, ein unbekanntes Tool `-32602`. Ein fehlgeschlagener Tool-Aufruf antwortet 200 mit `isError: true` und dem Text `<type>: <message>`. Der Typ ist der [Fehlertyp](platform-api.md#fehler) der Platform API oder `insufficient_rights` für ein [fehlendes Recht](#fehlende-rechte).
+In älteren Versionen erhält eine unbekannte Methode den JSON-RPC-Fehler `-32601` mit Status 200, ein unbekanntes Tool `-32602`. Eine unbekannte Ressource erhält `-32002`, in Version `2026-07-28` `-32602`. Ein fehlgeschlagener Tool-Aufruf antwortet 200 mit `isError: true` und dem Text `<type>: <message>`. Der Typ ist der [Fehlertyp](platform-api.md#fehler) der Platform API oder `insufficient_rights` für ein [fehlendes Recht](#fehlende-rechte).
 
 ## Tokens
 
