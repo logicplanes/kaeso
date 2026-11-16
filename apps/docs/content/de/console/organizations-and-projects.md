@@ -148,7 +148,7 @@ Das Blatt eines Mitglieds öffnet das Audit-Log mit **Änderungen dieser Person*
 
 Wählen Sie unter **Projekte** **Projekt erstellen** und geben Sie einen Namen ein. Sie werden Admin des Projekts. Dafür brauchen Sie das Recht **Projekte erstellen**.
 
-**Archiviert** listet archivierte Projekte, **Alle** jedes Projekt. Die Suche findet ein Projekt nach seinem Namen, und wer die Nutzung der Organisation sehen darf, sieht bei jedem Projekt seine Anfragen der letzten 30 Tage.
+**Archiviert** listet archivierte Projekte, **Alle** jedes Projekt. Die Suche findet ein Projekt nach seinem Namen, und wer die Nutzung der Organisation sehen darf, sieht bei jedem Projekt seine Anfragen der letzten 30 Tage. Für sie stellt **Sortierung** die Projekte mit den meisten Anfragen nach vorn oder, mit **Gesamtkosten ansehen**, die mit den höchsten Kosten; Projekte ohne Anfragen oder Kosten stehen zuletzt, nach Namen. Die Adresse behält die Reihenfolge, sodass Sie sie teilen können.
 
 Alle Projekte einer Organisation sind gleich. Wer der Organisation beitritt, kommt dadurch in kein Projekt: Eine Einladung nennt die Projekte, denen jemand beitritt, und alle anderen fügen Sie auf der Seite **Mitglieder** eines Projekts hinzu.
 
