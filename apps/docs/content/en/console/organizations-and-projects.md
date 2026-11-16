@@ -141,6 +141,7 @@ A project's **Settings** page holds these settings:
 | Maximum key lifetime | **Use the organization's limit**, or a shorter maximum for new keys in this project |
 | Content logging | Whether request and reply bodies are kept with their log entries. It can't be on while the organization has it off |
 | Keep media | Whether logged content keeps its images, audio and files ([request logs](request-logs.md#media-in-requests-and-replies)). It can't be on while the organization keeps none |
+| Retries | How many times, from **Never** to 3, a request that names a model, or an alias step without its own, tries the model again after a dropped connection, a 5xx or an overloaded provider ([alias routes](../concepts/alias-routes.md#fallbacks)) |
 | Archive project | Archives the project with its keys and service accounts, for good. Its keys stop working at once |
 
 Kaeso archives projects and never deletes them, so their usage and logs stay. Any project can be archived.

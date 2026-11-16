@@ -340,11 +340,12 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
         sql.push_str(" AND alias = ?");
         binds.push(Bind::Str(a.clone()));
     }
+    // A try the step made again lists `"retried":true`; a fallback doesn't.
     if let Some(fell) = f.fell_back {
         sql.push_str(if fell {
-            " AND fallbacks != ''"
+            " AND arrayExists(x -> NOT JSONExtractBool(x, 'retried'), JSONExtractArrayRaw(fallbacks))"
         } else {
-            " AND fallbacks = ''"
+            " AND NOT arrayExists(x -> NOT JSONExtractBool(x, 'retried'), JSONExtractArrayRaw(fallbacks))"
         });
     }
     if let Some(e) = &f.endpoint {

@@ -67,6 +67,8 @@ flowchart TD
 
 步骤的 `timeout_seconds`（1 到 3600）是 Kaeso 等待模型第一个字节、以及等待非流式回复的时长，超时后该步骤以 `unavailable` 失败。不设时使用模型自身的超时。请求可以用请求头 `kaeso-timeout`（单位为秒）为其到达的每个步骤缩短超时，例如最多等待 20 秒的交互式应用；更长的值不起作用（[超时](../api/model-api.md#超时)）。
 
+步骤的 `retries`（0 到 3）是在服务商无法连接、连接中断、返回 5xx 或过载时，Kaeso 在该步骤失败或回退之前重试其模型的次数。每次重试前等待 0.25 到 2 秒；如果服务商的 `Retry-After` 不超过 5 秒，则按其等待，更长则不再重试。超时、速率限制或被拒绝的请求从不重试：超时的请求服务商可能仍在处理并计费。各次尝试共享该步骤的超时，流一旦开始便不再重试。未设置 `retries` 时，适用项目的**重试**设置（未设置时为 0），与直接指定模型的请求相同（[项目设置](../console/organizations-and-projects.md#更改项目设置)）。
+
 服务商一旦应答，就不再回退：之后中断的流以错误事件结束，与没有路由时相同。
 
 ### 被跳过的步骤
@@ -77,17 +79,18 @@ flowchart TD
 
 ## 限额、费用和缓存
 
-- 请求尝试的每个步骤都计入其模型的限额，包括请求速率。失败的步骤会在下一步申请之前，归还它占用的预算额度。
+- 请求尝试的每个步骤都计入其模型的限额，包括请求速率。失败的步骤会在下一步申请之前，归还它占用的预算额度。同一步骤的重试只计一次。
 - 用量和费用以应答步骤为准，按其模型的价格计算。失败的步骤在 Kaeso 中不产生费用。不过，如果服务商在步骤超时前已处理请求，仍可能收费。
 - [响应缓存](../console/response-cache.md)会针对每个步骤的模型查询，因此任一步骤的缓存回复都可以应答。
 
 ## 应用和日志看到的内容
 
 - `kaeso-model` 和 `kaeso-provider` 给出应答的步骤，或最后失败的步骤。
-- `kaeso-route` 按顺序列出请求到达的每个步骤：它在路由中的路径（与试运行的命名相同）、模型和状态，失败时还有耗时（毫秒）：`"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。密钥无权使用的步骤带 `skipped`，不带模型；因刚刚失败而被跳过的步骤带 `skipped` 和它的模型（[响应头](../api/model-api.md#响应头)）。
-- [请求日志](../console/request-logs.md)把别名记为请求的模型，并列出先尝试或跳过的步骤，以及每个步骤的状态、错误和耗时。
+- `kaeso-route` 按顺序列出请求到达的每个步骤：它在路由中的路径（与试运行的命名相同）、模型和状态，失败时还有耗时（毫秒）：`"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`。密钥无权使用的步骤带 `skipped`，不带模型；因刚刚失败而被跳过的步骤带 `skipped` 和它的模型（[响应头](../api/model-api.md#响应头)）。重试过模型的步骤带有 `tries`，即发送请求的次数，例如 `status=200;tries=2`。
+- [请求日志](../console/request-logs.md)把别名记为请求的模型，并列出先尝试或跳过的步骤，以及每个步骤的状态、错误和耗时。步骤重试的尝试也会列出，标为已重试，且在其筛选中不算作回退。
 - `/v1/models` 按主模型的信息列出别名：条件取 `then` 一侧，分流取权重最大的分支。密钥无权使用该模型时，别名显示它可用的第一个其他模型。
 - `kaeso_alias_fallbacks_total{provider, reason}` 统计发生回退或被跳过的步骤（[健康状态和指标](../self-hosting/monitoring.md)）。
+- `kaeso_upstream_retries_total{provider, outcome}` 统计步骤重新发送的请求，按某次尝试得到应答（`answered`）或每次尝试都失败（`gave_up`）区分。
 
 ## 测试路由
 

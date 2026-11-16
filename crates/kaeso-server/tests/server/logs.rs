@@ -2466,6 +2466,26 @@ async fn kaeso_log_content_off_keeps_one_requests_content_out_of_the_log() {
     assert!(!without.to_string().contains("4111"), "{without}");
 }
 
+// A route step's failed tries as the gateway logs them, each tried again or fallen back from.
+fn tried(again: &[bool]) -> String {
+    let steps: Vec<Value> = again
+        .iter()
+        .map(|retried| {
+            json!({
+                "catalogue_model_id": Uuid::now_v7(),
+                "path": "route",
+                "model": "anthropic/claude-haiku-4-5",
+                "status": 529,
+                "error_kind": "overloaded",
+                "error_message": "Overloaded",
+                "duration_ms": 40,
+                "retried": retried,
+            })
+        })
+        .collect();
+    Value::from(steps).to_string()
+}
+
 #[tokio::test]
 async fn the_request_log_filters_by_alias_fallback_endpoint_and_cost() {
     let env = env(&[]).await;
@@ -2508,6 +2528,17 @@ async fn the_request_log_filters_by_alias_fallback_endpoint_and_cost() {
             cost: 0,
             ..base_row()
         },
+        // A step that only tried its model again didn't fall back.
+        LogRow {
+            endpoint: "embeddings".into(),
+            fallbacks: tried(&[true]),
+            ..base_row()
+        },
+        LogRow {
+            endpoint: "embeddings".into(),
+            fallbacks: tried(&[true, false]),
+            ..base_row()
+        },
     ];
     ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
         .await
@@ -2518,12 +2549,21 @@ async fn the_request_log_filters_by_alias_fallback_endpoint_and_cost() {
     };
     assert_eq!(count("?alias=fast").await, 2, "the exact name");
     assert_eq!(count("?alias=fast&fell_back=true").await, 1);
-    assert_eq!(count("?fell_back=false").await, 3);
+    assert_eq!(count("?fell_back=false").await, 4);
+    assert_eq!(count("?fell_back=true").await, 2);
+    let mixed = logs(&env, "?endpoint=embeddings&fell_back=true").await;
+    let retried: Vec<&Value> = mixed["data"][0]["fallbacks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|f| &f["retried"])
+        .collect();
+    assert_eq!(retried, [&json!(true), &json!(false)]);
     assert_eq!(count("?endpoint=chat/completions").await, 2);
     assert_eq!(count("?endpoint=messages").await, 1);
     assert_eq!(count("?min_cost=0.5").await, 2, "0.499999 is below it");
     assert_eq!(count("?min_cost=0.500000000000").await, 2);
-    assert_eq!(count("?min_cost=0").await, 4);
+    assert_eq!(count("?min_cost=0").await, 6);
     assert_eq!(count("?alias=fast&min_cost=0.55").await, 1);
 
     for (query, param) in [

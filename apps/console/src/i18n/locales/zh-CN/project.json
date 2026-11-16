@@ -278,5 +278,11 @@
   "project.overview.downloadCsv": "下载 CSV",
   "project.overview.id": "ID",
   "project.overview.byClient": "按客户端",
-  "project.overview.client": "客户端"
+  "project.overview.client": "客户端",
+  "project.retries.count": "{count, plural, =0 {从不} other {# 次}}",
+  "project.retries.hint": "服务商短暂失败时重试模型。",
+  "project.retries.saved": "重试：{times}",
+  "project.retries.title": "重试",
+  "project.retries.tryAgain": "重试",
+  "project.retries.tryAgainHint": "在连接中断、返回 5xx 或过载之后。"
 }

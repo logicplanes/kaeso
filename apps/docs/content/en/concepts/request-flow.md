@@ -26,7 +26,7 @@ sequenceDiagram
   Note over Gateway: Charge usage and log
 ```
 
-Kaeso translates every request rather than passing it through, and sends it once, without retries. When a step refuses a request, the app gets the error in its own format, with a status the diagram shows under that step.
+Kaeso translates every request rather than passing it through, and sends it once, unless the project or an alias step lets it try the model again after a short-lived failure ([alias routes](alias-routes.md#fallbacks)). When a step refuses a request, the app gets the error in its own format, with a status the diagram shows under that step.
 
 ## The key
 

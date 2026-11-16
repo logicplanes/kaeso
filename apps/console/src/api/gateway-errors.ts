@@ -680,6 +680,7 @@ const messages = (): Rule[] => [
   rule("errors.adaptiveThinking", () => t("errors.adaptiveThinking", "Adaptive thinking applies only to Anthropic models.")),
   rule("errors.thinkingBinding", () => t("errors.thinkingBinding", "Thinking binding applies only to Anthropic models.")),
   rule("errors.timeoutRange", () => t("errors.timeoutRange", "The timeout must be 1 to 3600 seconds.")),
+  rule("errors.retriesRange", () => t("errors.retriesRange", "`retries` must be 0 to 3.")),
   rule("errors.releaseDate", () => t("errors.releaseDate", "The release date must be a date, YYYY-MM-DD.")),
   rule("errors.customModelNeeds", (v) => t("errors.customModelNeeds", "A custom model needs {fields}.", v)),
   rule("errors.valueNotOneOf", (v) => t("errors.valueNotOneOf", "`{value}` is not one of {allowed}.", v)),

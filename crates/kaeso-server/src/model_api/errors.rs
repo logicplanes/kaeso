@@ -39,6 +39,8 @@ pub struct Walked {
 pub struct Tried {
     pub status: u16,
     pub duration_ms: Option<u64>,
+    /// How many times the step sent the request, its retries included.
+    pub tries: u8,
 }
 
 pub fn stamp(resp: &mut Response, served: &Served) {
@@ -95,6 +97,9 @@ fn route_header(route: &[Walked]) -> Option<HeaderValue> {
                     item.push_str(&format!(";status={}", t.status));
                     if let Some(ms) = t.duration_ms {
                         item.push_str(&format!(";dur={ms}"));
+                    }
+                    if t.tries > 1 {
+                        item.push_str(&format!(";tries={}", t.tries));
                     }
                 }
                 None => item.push_str(";skipped"),
@@ -184,6 +189,7 @@ mod tests {
                 Some(Tried {
                     status: 529,
                     duration_ms: Some(1204),
+                    tries: 1,
                 }),
             ),
             step(
@@ -192,6 +198,7 @@ mod tests {
                 Some(Tried {
                     status: 200,
                     duration_ms: None,
+                    tries: 1,
                 }),
             ),
             step(
@@ -200,6 +207,7 @@ mod tests {
                 Some(Tried {
                     status: 200,
                     duration_ms: None,
+                    tries: 1,
                 }),
             ),
         ])

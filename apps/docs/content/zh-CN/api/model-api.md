@@ -296,6 +296,6 @@ OpenAI 和 Anthropic 的 SDK 都只有在应用传入 `dangerouslyAllowBrowser: 
 
 ## Kaeso 不做的事
 
-- **重试。** Kaeso 每个请求只发送一次。SDK 会在错误允许时自行重试。
+- **重试。** 只有项目或别名步骤要求时，Kaeso 才会在连接中断、返回 5xx 或服务商过载后，且在任何回复到达应用之前，把请求重新发送给模型（[别名路由](../concepts/alias-routes.md#回退)）。否则每个请求只发送一次；SDK 会在错误允许时自行重试。
 - **存储状态。** 要求服务商存储或续接响应的 Responses 请求（`store: true`、`previous_response_id`、`conversation`、`background: true`），Kaeso 会拒绝。请每次发送完整对话。
 - **悄然更改。** 无法传递给模型服务商的字段，Kaeso 会拒绝并在错误中指出该字段，绝不会悄悄丢弃。在 Chat Completions、Messages 和 Embeddings 中，名称以 `header:` 开头或包含 `.` 的字段会得到 400，因为 Kaeso 无法传递这样的名称；Responses 则会把这类字段保留在请求正文中。格式之间能传递哪些内容，见[格式转换](../concepts/format-translation.md)。

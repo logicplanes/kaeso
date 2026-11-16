@@ -212,6 +212,9 @@ pub struct FellBack {
     pub duration_ms: u64,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub skipped: bool,
+    /// The step tried the same model again after this try.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub retried: bool,
 }
 
 impl Outcome {

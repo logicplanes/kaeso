@@ -5,7 +5,7 @@ import { t } from "~/i18n";
 import { DEFAULT_FALL_BACK_ON } from "./draft";
 
 export function modelRouteOf(model: string): RouteStep {
-  return { type: "model", model, fallback: null, fall_back_on: [...DEFAULT_FALL_BACK_ON], timeout_seconds: null };
+  return { type: "model", model, fallback: null, fall_back_on: [...DEFAULT_FALL_BACK_ON], timeout_seconds: null, retries: null };
 }
 
 export function RouteJsonDialog({ open, onOpenChange, name, route }: { open: boolean; onOpenChange: (open: boolean) => void; name: string; route: RouteStep }) {

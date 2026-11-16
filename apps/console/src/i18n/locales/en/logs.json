@@ -119,6 +119,7 @@
   "logs.inspector.events": "Events",
   "logs.inspector.failedAfter": "Failed after {duration}",
   "logs.inspector.failedBeforeReply": "The request failed before a reply arrived.",
+  "logs.inspector.failedTriedAgain": "Failed after {duration}; tried again",
   "logs.inspector.firstByteSent": "First byte sent",
   "logs.inspector.format": "Format",
   "logs.inspector.fromProvider": "From the provider",

@@ -573,7 +573,9 @@ function Overview({
                             <Text variant="small" tone="secondary">
                               {f.skipped
                                 ? t("logs.inspector.skippedRecently", "Skipped; it failed moments ago")
-                                : t("logs.inspector.failedAfter", "Failed after {duration}", { duration: seconds(f.duration_ms) })}
+                                : f.retried
+                                  ? t("logs.inspector.failedTriedAgain", "Failed after {duration}; tried again", { duration: seconds(f.duration_ms) })
+                                  : t("logs.inspector.failedAfter", "Failed after {duration}", { duration: seconds(f.duration_ms) })}
                             </Text>
                           </span>
                         ))}

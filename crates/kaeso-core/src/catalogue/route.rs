@@ -15,6 +15,9 @@ pub const MIN_BRANCHES: usize = 2;
 pub const MAX_BRANCHES: usize = 8;
 pub const MAX_IDS: usize = 100;
 pub const MAX_TIMEOUT_SECONDS: u32 = 3600;
+
+/// The most times a step tries its model again after a short-lived failure.
+pub const MAX_RETRIES: u8 = 3;
 pub const MAX_INPUT_TOKENS: u64 = 10_000_000;
 pub const MAX_HEADER_NAME: usize = 100;
 pub const MAX_HEADER_VALUE: usize = 200;
@@ -73,6 +76,12 @@ pub struct ModelStep {
     #[serde(default)]
     #[cfg_attr(feature = "openapi", schema(minimum = 1, maximum = 3600))]
     pub timeout_seconds: Option<u32>,
+    #[doc = "How many times to try the model again when it can't be reached, answers\n\
+        5xx or is overloaded, before the step fails or falls back: 0 to 3. Defaults\n\
+        to the project's setting, and absent then."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "openapi", schema(minimum = 0, maximum = 3))]
+    pub retries: Option<u8>,
 }
 
 pub fn default_fall_back_on() -> BTreeSet<Failure> {
@@ -480,6 +489,7 @@ impl Step {
             fallback: None,
             fall_back_on: default_fall_back_on(),
             timeout_seconds: None,
+            retries: None,
         })
     }
 
@@ -518,6 +528,13 @@ impl Step {
                         path,
                         "timeout_seconds",
                         "A timeout is 1 to 3600 seconds.",
+                    ));
+                }
+                if m.retries.is_some_and(|r| r > MAX_RETRIES) {
+                    return Err(refuse(
+                        path,
+                        "retries",
+                        "A step tries its model again at most 3 times.",
                     ));
                 }
                 if let Some(f) = &m.fallback {

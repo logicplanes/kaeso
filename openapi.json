@@ -12457,7 +12457,7 @@
         "tags": [
           "projects"
         ],
-        "summary": "Renames the project.",
+        "summary": "Renames the project or sets its retries.",
         "description": "**Right:** `project.update` on the project in the path.",
         "operationId": "patchOrgsOrgProjectsProject",
         "parameters": [
@@ -15046,7 +15046,7 @@
           {
             "name": "fell_back",
             "in": "query",
-            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`).",
+            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`). A step that only tried its model again doesn't count.",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -15352,7 +15352,7 @@
           {
             "name": "fell_back",
             "in": "query",
-            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`).",
+            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`). A step that only tried its model again doesn't count.",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -15665,7 +15665,7 @@
           {
             "name": "fell_back",
             "in": "query",
-            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`).",
+            "description": "Only requests where an alias route fell back to a later step (`true`), or\nwhere none did (`false`). A step that only tried its model again doesn't count.",
             "required": false,
             "schema": {
               "type": "boolean"
@@ -26663,7 +26663,8 @@
           "error_kind",
           "error_message",
           "duration_ms",
-          "skipped"
+          "skipped",
+          "retried"
         ],
         "properties": {
           "catalogue_model_id": {
@@ -26694,6 +26695,10 @@
             "type": "string",
             "description": "Where the step is in the route, as in a trace.",
             "example": "route.fallback"
+          },
+          "retried": {
+            "type": "boolean",
+            "description": "The step tried the same model again after this try, which failed for a\nmoment: the provider couldn't be reached, answered 5xx or was overloaded."
           },
           "skipped": {
             "type": "boolean",
@@ -30412,7 +30417,7 @@
                   "items": {
                     "$ref": "#/components/schemas/FallbackView"
                   },
-                  "description": "The steps of the alias's route that failed before the one that\nanswered, or before the last one tried, in the order they were tried."
+                  "description": "The tries that failed before the one that answered, or before the last\none, in the order they were made: the steps of the alias's route that fell\nback, and the tries a step made again after a short-lived failure\n(`retried`)."
                 },
                 "has_content": {
                   "type": "boolean",
@@ -31761,6 +31766,7 @@
                 "org_id",
                 "name",
                 "content_logging",
+                "retries",
                 "created_at"
               ],
               "properties": {
@@ -31809,6 +31815,13 @@
                 "org_id": {
                   "$ref": "#/components/schemas/OrgId",
                   "description": "The org."
+                },
+                "retries": {
+                  "type": "integer",
+                  "format": "int32",
+                  "description": "How many times a request that names a model, and an alias step that sets\nno `retries`, tries the model again when it can't be reached, answers 5xx or\nis overloaded: 0 to 3.",
+                  "maximum": 3,
+                  "minimum": 0
                 }
               }
             },
@@ -33028,7 +33041,7 @@
             "items": {
               "$ref": "#/components/schemas/FallbackView"
             },
-            "description": "The steps of the alias's route that failed before the one that\nanswered, or before the last one tried, in the order they were tried."
+            "description": "The tries that failed before the one that answered, or before the last\none, in the order they were made: the steps of the alias's route that fell\nback, and the tries a step made again after a short-lived failure\n(`retried`)."
           },
           "has_content": {
             "type": "boolean",
@@ -37218,6 +37231,16 @@
               "null"
             ],
             "description": "A new name, 1 to 100 characters."
+          },
+          "retries": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "How many times a request that names a model, and an alias step that sets\nno `retries`, tries the model again after a short-lived failure: 0 to 3.",
+            "maximum": 3,
+            "minimum": 0
           }
         },
         "additionalProperties": false
@@ -37230,6 +37253,7 @@
           "org_id",
           "name",
           "content_logging",
+          "retries",
           "created_at"
         ],
         "properties": {
@@ -37278,6 +37302,13 @@
           "org_id": {
             "$ref": "#/components/schemas/OrgId",
             "description": "The org."
+          },
+          "retries": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many times a request that names a model, and an alias step that sets\nno `retries`, tries the model again when it can't be reached, answers 5xx or\nis overloaded: 0 to 3.",
+            "maximum": 3,
+            "minimum": 0
           }
         }
       },
@@ -38306,6 +38337,16 @@
           "model": {
             "$ref": "#/components/schemas/CatalogueModelId",
             "description": "The catalogue model."
+          },
+          "retries": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "How many times to try the model again when it can't be reached, answers\n5xx or is overloaded, before the step fails or falls back: 0 to 3. Defaults\nto the project's setting, and absent then.",
+            "maximum": 3,
+            "minimum": 0
           },
           "timeout_seconds": {
             "type": [

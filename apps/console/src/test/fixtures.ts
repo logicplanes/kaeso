@@ -110,6 +110,7 @@ export function project(overrides: Partial<ProjectView> = {}): ProjectView {
     org_id: ORG,
     name: "Checkout assistant",
     content_logging: true,
+    retries: 0,
     created_at: NOW,
     archived_at: null,
     avatar_url: null,

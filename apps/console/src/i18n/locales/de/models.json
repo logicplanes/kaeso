@@ -457,5 +457,9 @@
   "models.problem.upstreamModel": "Die Modell-ID beim Anbieter darf keine Leerzeichen enthalten.",
   "models.upstreamModelHint": "Die ID, die der Anbieter statt der des Modells erhält, etwa der Name eines Azure-Deployments. Leer sendet die ID des Modells.",
   "models.route.seeRequests": "Anfragen ansehen",
-  "models.tryInPlayground": "Im Playground ausprobieren"
+  "models.tryInPlayground": "Im Playground ausprobieren",
+  "models.route.retries": "Erneut versuchen",
+  "models.route.retriesHint": "Nach einer abgebrochenen Verbindung, einem 5xx oder einem überlasteten Anbieter, vor dem Zurückfallen; nie nach einer Zeitüberschreitung.",
+  "models.route.retriesProject": "Einstellung des Projekts",
+  "models.route.retriesShort": "{count, plural, one {# Wiederholung} other {# Wiederholungen}}"
 }

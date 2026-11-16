@@ -17,6 +17,7 @@ import {
   icons,
 } from "@logicplanes/kaeso-ui";
 import { FlowWorkspace } from "@logicplanes/kaeso-ui/flow-canvas";
+import { retriesLabel } from "../../settings/retries-section";
 import { ModelPicker, type ModelPickerOption, type ModelPickerProvider } from "@logicplanes/kaeso-ui/playground";
 import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { RouteFailure, RouteFeature, RouteFormat, RouteRule } from "~/api/generated/types";
@@ -197,6 +198,19 @@ export function ModelPanel({ ctx, step }: { ctx: InspectorContext; step: DraftMo
           const text = e.target.value.replace(/[^\d]/g, "");
           set({ timeout_seconds: text === "" ? null : Number(text) }, `timeout:${step.id}`);
         }}
+      />
+      <Select
+        label={t("models.route.retries", "Try again")}
+        description={t("models.route.retriesHint", "After a dropped connection, a 5xx or an overloaded provider, before falling back; never after a timeout.")}
+        fullWidth
+        disabled={ctx.readOnly}
+        value={step.retries === null ? "project" : String(step.retries)}
+        error={fieldError(ctx, step.id, "retries")}
+        onValueChange={(v) => set({ retries: v === "project" ? null : Number(v) })}
+        options={[
+          { value: "project", label: t("models.route.retriesProject", "The project's setting") },
+          ...[0, 1, 2, 3].map((n) => ({ value: String(n), label: retriesLabel(n) })),
+        ]}
       />
     </FlowWorkspace.Panel>
   );
