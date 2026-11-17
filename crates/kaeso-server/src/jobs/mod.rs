@@ -28,6 +28,8 @@ pub enum JobError {
     Notify(#[from] crate::platform::error::ApiError),
     #[error("the job panicked: {0}")]
     Panicked(String),
+    #[error("{0}")]
+    Incomplete(String),
 }
 
 fn panic_message(payload: &(dyn std::any::Any + Send)) -> String {

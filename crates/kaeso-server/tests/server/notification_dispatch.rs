@@ -424,6 +424,86 @@ async fn the_cost_report_goes_out_on_the_first_at_831() {
 }
 
 #[tokio::test]
+async fn a_failed_cost_report_run_is_retried_and_each_org_reports_once() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let checkout = common::create_project(&app, &owner.org_id, &owner.cookie, "Checkout").await;
+    let globex = app
+        .post("/me/orgs", json!({ "name": "Globex" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let research = common::create_project(&app, &globex, &owner.cookie, "Research").await;
+    choose(&app, &owner.cookie, json!({ "cost_report": "now" })).await;
+    let in_next_month =
+        app.state.clock.now().date().replace_day(1).unwrap() + time::Duration::days(32);
+    let first = in_next_month.replace_day(1).unwrap();
+    let day = first - time::Duration::days(3);
+    kaeso_store::pg::limits::add_usage(
+        &app.state.pg,
+        &[
+            usage(
+                day,
+                common::uuid(&owner.org_id),
+                common::uuid(&checkout),
+                10,
+                "3.10",
+            ),
+            usage(
+                day,
+                common::uuid(&globex),
+                common::uuid(&research),
+                20,
+                "8.60",
+            ),
+        ],
+    )
+    .await
+    .unwrap();
+    app.clock.set(first.with_time(time!(8:31)).assume_utc());
+
+    // The first run fails for every organization, as when PostgreSQL refuses the usage query.
+    sqlx::query("ALTER TABLE usage_daily RENAME TO usage_daily_away")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "notifications")
+        .unwrap();
+    let failed = kaeso_server::jobs::run_once(&app.state, job)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(failed.contains("0 cost reports, 2 failed"), "{failed}");
+    sqlx::query("ALTER TABLE usage_daily_away RENAME TO usage_daily")
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+
+    assert!(
+        run_notices(&app).await.contains("2 cost reports"),
+        "the next run tries again"
+    );
+    assert!(
+        !run_notices(&app).await.contains("cost reports"),
+        "once a day"
+    );
+    settle(&app).await;
+    let reports: Vec<_> = app
+        .mail
+        .to(OWNER)
+        .into_iter()
+        .filter(|m| m.kind.as_str() == "cost_report")
+        .collect();
+    assert_eq!(reports.len(), 2, "one report for each organization");
+}
+
+#[tokio::test]
 async fn being_added_to_a_project_tells_the_person_added() {
     let s = TestServices::start().await;
     let app = App::start(&s).await;

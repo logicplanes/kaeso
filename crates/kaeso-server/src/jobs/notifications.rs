@@ -32,22 +32,84 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
     };
     let cutoff = today.with_time(AT).assume_utc() - offset;
     let mut done = vec![format!("{} digests", digests(&state, cutoff, now).await?)];
+    let mut failed = Vec::new();
     if local.time() >= AT && today.day() == 1 && first(&state, "cost", today).await {
-        done.push(format!(
-            "{} cost reports",
-            cost_reports(&state, today).await?
-        ));
+        let outcome = cost_reports(&state, today).await;
+        settle(
+            &state,
+            "cost",
+            today,
+            "cost reports",
+            outcome,
+            &mut done,
+            &mut failed,
+        )
+        .await;
     }
     if local.time() >= AT
         && today.weekday() == Weekday::Monday
         && first(&state, "weekly", today).await
     {
-        done.push(format!("{} weekly summaries", weekly(&state, today).await?));
+        let outcome = weekly(&state, today).await;
+        settle(
+            &state,
+            "weekly",
+            today,
+            "weekly summaries",
+            outcome,
+            &mut done,
+            &mut failed,
+        )
+        .await;
     }
     let keep = now - Duration::days(14);
     notifications::forget_digest_before(&state.pg, keep).await?;
     notifications::forget_sent_before(&state.pg, today - Duration::days(2)).await?;
+    if !failed.is_empty() {
+        done.extend(failed);
+        return Err(JobError::Incomplete(done.join(", ")));
+    }
     Ok(done.join(", "))
+}
+
+#[derive(Default)]
+struct Reports {
+    sent: usize,
+    failed: usize,
+}
+
+// A report that didn't reach everyone gives its day's claim back, so the next run, a minute
+// later, tries again; `claim_subject` keeps anyone who already got it from getting it twice.
+async fn settle(
+    state: &AppState,
+    what: &str,
+    day: Date,
+    label: &str,
+    outcome: Result<Reports, JobError>,
+    done: &mut Vec<String>,
+    failed: &mut Vec<String>,
+) {
+    match outcome {
+        Ok(r) if r.failed == 0 => done.push(format!("{} {label}", r.sent)),
+        Ok(r) => {
+            release(state, what, day).await;
+            failed.push(format!("{} {label}, {} failed", r.sent, r.failed));
+        }
+        Err(e) => {
+            release(state, what, day).await;
+            failed.push(format!("{label} failed: {e}"));
+        }
+    }
+}
+
+async fn release(state: &AppState, what: &str, day: Date) {
+    let key = state.valkey.key(&format!("notices:{what}:{day}"));
+    let mut conn = state.valkey.conn();
+    let deleted: Result<(), redis::RedisError> =
+        redis::cmd("DEL").arg(&key).query_async(&mut conn).await;
+    if let Err(e) = deleted {
+        tracing::warn!(error = %e, what, "cannot give back a report's claim in Valkey; it is retried in two days at the latest");
+    }
 }
 
 // Each report runs once a day across instances; if Valkey is down it may run again, and the
@@ -126,171 +188,203 @@ fn money(amount: Decimal) -> String {
     format!("{:.2}", amount.round_dp(2))
 }
 
-async fn cost_reports(state: &AppState, today: Date) -> Result<usize, JobError> {
+async fn cost_reports(state: &AppState, today: Date) -> Result<Reports, JobError> {
     let to = today.previous_day().unwrap_or(today);
     let from = to.replace_day(1).unwrap_or(to);
     let month = format!("{}-{:02}", from.year(), u8::from(from.month()));
-    let mut sent = 0;
+    let mut r = Reports::default();
     for org in orgs::active_ids(&state.pg).await? {
-        let by_project = usage::usage(
+        match cost_report(state, org, from, to, &month).await {
+            Ok(n) => r.sent += n,
+            Err(e) => {
+                tracing::warn!(error = %e, %org, "a monthly cost report couldn't be sent; the next run tries again");
+                r.failed += 1;
+            }
+        }
+    }
+    Ok(r)
+}
+
+async fn cost_report(
+    state: &AppState,
+    org: Uuid,
+    from: Date,
+    to: Date,
+    month: &str,
+) -> Result<usize, JobError> {
+    let by_project = usage::usage(
+        &state.pg,
+        org,
+        None,
+        from,
+        to,
+        usage::GroupBy::Project,
+        &usage::Filter::default(),
+    )
+    .await?;
+    let total: Decimal = by_project.iter().map(|p| p.cost).sum();
+    if by_project.iter().all(|p| p.requests == 0) {
+        return Ok(0);
+    }
+    let place = crate::services::notifications::triggers::org_name(state, org).await?;
+    let mut top: Vec<_> = by_project.iter().collect();
+    top.sort_by_key(|p| std::cmp::Reverse(p.cost));
+    let mut projects = Vec::new();
+    for p in top.into_iter().take(TOP) {
+        let Ok(project) = p.key.parse::<Uuid>() else {
+            continue;
+        };
+        let name =
+            crate::services::notifications::triggers::project_name(state, org, project).await?;
+        projects.push(ProjectUse {
+            organization: place.clone(),
+            name,
+            requests: None,
+            cost: money(p.cost),
+        });
+    }
+    let total = money(total);
+    let send = Send {
+        kind: Kind::CostReport,
+        org: Some(org),
+        project: None,
+        place: Some(&place),
+        subject: format!("cost:{org}:{month}"),
+        open: format!(
+            "{}/analytics?from={from}&to={to}&by=project&metric=cost",
+            org_path(org)
+        ),
+        actor: None,
+    };
+    let to = org_holders(state, org, &[OrgRight::CostsOrgView]).await?;
+    let fact = Fact::CostReport {
+        month: from,
+        total: &total,
+        projects,
+    };
+    Ok(deliver(state, &send, &fact, to).await?)
+}
+
+async fn weekly(state: &AppState, today: Date) -> Result<Reports, JobError> {
+    let to = today.previous_day().unwrap_or(today);
+    let from = today - Duration::days(7);
+    let mut r = Reports::default();
+    for user in notifications::opted_in(&state.pg, Kind::WeeklySummary.as_str()).await? {
+        match weekly_summary(state, user, today, from, to).await {
+            Ok(n) => r.sent += n,
+            Err(e) => {
+                tracing::warn!(error = %e, %user, "a weekly summary couldn't be sent; the next run tries again");
+                r.failed += 1;
+            }
+        }
+    }
+    Ok(r)
+}
+
+async fn weekly_summary(
+    state: &AppState,
+    user: Uuid,
+    today: Date,
+    from: Date,
+    to: Date,
+) -> Result<usize, JobError> {
+    let orgs_of = members::orgs_of_user(&state.pg, user).await?;
+    let names: BTreeMap<Uuid, &str> = orgs_of
+        .iter()
+        .map(|o| (o.org_id, o.org_name.as_str()))
+        .collect();
+    let mut grants = BTreeMap::new();
+    for o in &orgs_of {
+        if let Ok(g) = org_from_store(&o.grant()) {
+            grants.insert(o.org_id, g);
+        }
+    }
+    let mut requests = 0_i64;
+    let mut calls = 0_i64;
+    let mut cost = Decimal::ZERO;
+    let mut models: BTreeMap<String, i64> = BTreeMap::new();
+    let mut projects = Vec::new();
+    for p in members::projects_of_user(&state.pg, user).await? {
+        let own = project_from_store(&p.grant()).ok();
+        let held = effective_project_rights(grants.get(&p.org_id), own.as_ref());
+        if !held.contains(ProjectRight::UsageView) {
+            continue;
+        }
+        let rows = usage::usage(
             &state.pg,
-            org,
-            None,
+            p.org_id,
+            Some(p.project_id),
+            from,
+            to,
+            usage::GroupBy::Model,
+            &usage::Filter::default(),
+        )
+        .await?;
+        let tools = usage::tool_usage(
+            &state.pg,
+            p.org_id,
+            Some(p.project_id),
             from,
             to,
             usage::GroupBy::Project,
             &usage::Filter::default(),
         )
         .await?;
-        let total: Decimal = by_project.iter().map(|p| p.cost).sum();
-        if by_project.iter().all(|p| p.requests == 0) {
-            continue;
+        let r: i64 = rows.iter().map(|m| m.requests).sum();
+        let c: Decimal = rows.iter().map(|m| m.cost).sum();
+        for m in &rows {
+            *models.entry(m.key.clone()).or_default() += m.requests;
         }
-        let place = crate::services::notifications::triggers::org_name(state, org).await?;
-        let mut top: Vec<_> = by_project.iter().collect();
-        top.sort_by_key(|p| std::cmp::Reverse(p.cost));
-        let mut projects = Vec::new();
-        for p in top.into_iter().take(TOP) {
-            let Ok(project) = p.key.parse::<Uuid>() else {
-                continue;
-            };
-            let name =
-                crate::services::notifications::triggers::project_name(state, org, project).await?;
-            projects.push(ProjectUse {
-                organization: place.clone(),
-                name,
-                requests: None,
-                cost: money(p.cost),
-            });
-        }
-        let total = money(total);
-        let send = Send {
-            kind: Kind::CostReport,
-            org: Some(org),
-            project: None,
-            place: Some(&place),
-            subject: format!("cost:{month}"),
-            open: format!(
-                "{}/analytics?from={from}&to={to}&by=project&metric=cost",
-                org_path(org)
-            ),
-            actor: None,
-        };
-        let to = org_holders(state, org, &[OrgRight::CostsOrgView]).await?;
-        let fact = Fact::CostReport {
-            month: from,
-            total: &total,
-            projects,
-        };
-        sent += deliver(state, &send, &fact, to).await?;
-    }
-    Ok(sent)
-}
-
-async fn weekly(state: &AppState, today: Date) -> Result<usize, JobError> {
-    let to = today.previous_day().unwrap_or(today);
-    let from = today - Duration::days(7);
-    let mut sent = 0;
-    for user in notifications::opted_in(&state.pg, Kind::WeeklySummary.as_str()).await? {
-        let orgs_of = members::orgs_of_user(&state.pg, user).await?;
-        let names: BTreeMap<Uuid, &str> = orgs_of
-            .iter()
-            .map(|o| (o.org_id, o.org_name.as_str()))
-            .collect();
-        let mut grants = BTreeMap::new();
-        for o in &orgs_of {
-            if let Ok(g) = org_from_store(&o.grant()) {
-                grants.insert(o.org_id, g);
-            }
-        }
-        let mut requests = 0_i64;
-        let mut calls = 0_i64;
-        let mut cost = Decimal::ZERO;
-        let mut models: BTreeMap<String, i64> = BTreeMap::new();
-        let mut projects = Vec::new();
-        for p in members::projects_of_user(&state.pg, user).await? {
-            let own = project_from_store(&p.grant()).ok();
-            let held = effective_project_rights(grants.get(&p.org_id), own.as_ref());
-            if !held.contains(ProjectRight::UsageView) {
-                continue;
-            }
-            let rows = usage::usage(
-                &state.pg,
+        requests += r;
+        cost += c;
+        calls += tools.iter().map(|t| t.calls).sum::<i64>();
+        if r > 0 {
+            projects.push((
+                c,
                 p.org_id,
-                Some(p.project_id),
-                from,
-                to,
-                usage::GroupBy::Model,
-                &usage::Filter::default(),
-            )
-            .await?;
-            let tools = usage::tool_usage(
-                &state.pg,
-                p.org_id,
-                Some(p.project_id),
-                from,
-                to,
-                usage::GroupBy::Project,
-                &usage::Filter::default(),
-            )
-            .await?;
-            let r: i64 = rows.iter().map(|m| m.requests).sum();
-            let c: Decimal = rows.iter().map(|m| m.cost).sum();
-            for m in &rows {
-                *models.entry(m.key.clone()).or_default() += m.requests;
-            }
-            requests += r;
-            cost += c;
-            calls += tools.iter().map(|t| t.calls).sum::<i64>();
-            if r > 0 {
-                projects.push((
-                    c,
-                    p.org_id,
-                    ProjectUse {
-                        organization: names
-                            .get(&p.org_id)
-                            .map_or_else(|| p.org_id.to_string(), |n| (*n).to_owned()),
-                        name: p.project_name.clone(),
-                        requests: Some(r.to_string()),
-                        cost: money(c),
-                    },
-                ));
-            }
+                ProjectUse {
+                    organization: names
+                        .get(&p.org_id)
+                        .map_or_else(|| p.org_id.to_string(), |n| (*n).to_owned()),
+                    name: p.project_name.clone(),
+                    requests: Some(r.to_string()),
+                    cost: money(c),
+                },
+            ));
         }
-        if requests == 0 && calls == 0 {
-            continue;
-        }
-        projects.sort_by_key(|p| std::cmp::Reverse(p.0));
-        let mut top: Vec<(String, i64)> = models.into_iter().collect();
-        top.sort_by_key(|m| std::cmp::Reverse(m.1));
-        let open = projects.first().map_or_else(String::new, |(_, org, _)| {
-            format!(
-                "{}/analytics?from={from}&to={to}&by=project",
-                org_path(*org)
-            )
-        });
-        let fact = Fact::WeeklySummary {
-            from,
-            to,
-            requests: requests.to_string(),
-            tool_calls: calls.to_string(),
-            cost: money(cost),
-            projects: projects.into_iter().take(TOP).map(|(_, _, l)| l).collect(),
-            top_models: top.into_iter().take(3).map(|(m, _)| m).collect(),
-        };
-        let send = Send {
-            kind: Kind::WeeklySummary,
-            org: None,
-            project: None,
-            place: None,
-            subject: format!("weekly:{today}"),
-            open,
-            actor: None,
-        };
-        let to = BTreeMap::from([(user, Because::Right(ProjectRight::UsageView.as_str()))]);
-        sent += deliver(state, &send, &fact, to).await?;
     }
-    Ok(sent)
+    if requests == 0 && calls == 0 {
+        return Ok(0);
+    }
+    projects.sort_by_key(|p| std::cmp::Reverse(p.0));
+    let mut top: Vec<(String, i64)> = models.into_iter().collect();
+    top.sort_by_key(|m| std::cmp::Reverse(m.1));
+    let open = projects.first().map_or_else(String::new, |(_, org, _)| {
+        format!(
+            "{}/analytics?from={from}&to={to}&by=project",
+            org_path(*org)
+        )
+    });
+    let fact = Fact::WeeklySummary {
+        from,
+        to,
+        requests: requests.to_string(),
+        tool_calls: calls.to_string(),
+        cost: money(cost),
+        projects: projects.into_iter().take(TOP).map(|(_, _, l)| l).collect(),
+        top_models: top.into_iter().take(3).map(|(m, _)| m).collect(),
+    };
+    let send = Send {
+        kind: Kind::WeeklySummary,
+        org: None,
+        project: None,
+        place: None,
+        subject: format!("weekly:{today}"),
+        open,
+        actor: None,
+    };
+    let to = BTreeMap::from([(user, Because::Right(ProjectRight::UsageView.as_str()))]);
+    Ok(deliver(state, &send, &fact, to).await?)
 }
 
 #[cfg(test)]
