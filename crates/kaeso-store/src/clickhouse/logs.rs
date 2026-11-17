@@ -826,6 +826,10 @@ fn timeline_where(
     }
 }
 
+// The row written when a video job or an image generation finishes carries the job's cost and
+// tokens, but the job is the request that started it, and the row has no duration of its own.
+const STARTED: &str = "endpoint NOT IN ('videos/completed', 'flows/image/completed')";
+
 pub async fn timeline(
     ch: &ClickHouse,
     org: Uuid,
@@ -838,13 +842,13 @@ pub async fn timeline(
     let key = t.group.map_or("''", TimelineGroup::key);
     let mut sql = format!(
         "SELECT toInt64(toUnixTimestamp(toStartOfInterval(started_at, toIntervalSecond(?)))) AS start_unix, \
-         {key} AS key, count() AS requests, countIf(status >= 400) AS errors, \
+         {key} AS key, countIf({STARTED}) AS requests, countIf(status >= 400 AND {STARTED}) AS errors, \
          sum(input_tokens) AS input_tokens, sum(output_tokens) AS output_tokens, \
          sum(cache_read_tokens) AS cache_read_tokens, sum(cache_write_tokens) AS cache_write_tokens, \
          sum(reasoning_tokens) AS reasoning_tokens, sum(cost) AS cost, \
-         quantiles(0.5, 0.95)(duration_ms) AS duration, max(duration_ms) AS duration_max, \
-         quantilesIf(0.5, 0.95)(assumeNotNull(ttfb_ms), isNotNull(ttfb_ms)) AS ttfb, \
-         countIf(isNotNull(ttfb_ms)) AS with_ttfb"
+         quantilesIf(0.5, 0.95)(duration_ms, {STARTED}) AS duration, maxIf(duration_ms, {STARTED}) AS duration_max, \
+         quantilesIf(0.5, 0.95)(assumeNotNull(ttfb_ms), isNotNull(ttfb_ms) AND {STARTED}) AS ttfb, \
+         countIf(isNotNull(ttfb_ms) AND {STARTED}) AS with_ttfb"
     );
     let mut binds: Vec<Bind> = vec![Bind::I64(i64::from(step_seconds))];
     timeline_where(org, from, to, t, &mut sql, &mut binds);
