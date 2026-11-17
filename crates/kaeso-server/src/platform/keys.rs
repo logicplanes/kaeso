@@ -71,8 +71,12 @@ impl ExpiryRequest {
                 ));
             }
         };
-        expires_at(choice, now, max_days)
-            .map_err(|e| ApiError::invalid("expires_in_days", e.to_string()))
+        let param = if self.expires_on.is_some() {
+            "expires_on"
+        } else {
+            "expires_in_days"
+        };
+        expires_at(choice, now, max_days).map_err(|e| ApiError::invalid(param, e.to_string()))
     }
 }
 

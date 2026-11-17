@@ -140,6 +140,10 @@ async fn a_key_expires_on_the_date_sent_and_a_misspelt_field_is_refused() {
         }
     };
     refused(json!({ "name": "x", "expires_on": "18.11.2026" })).await;
+    let today = app.clock.now().date();
+    let (param, message) = refused(json!({ "name": "x", "expires_on": today.to_string() })).await;
+    assert_eq!(param, "expires_on");
+    assert_eq!(message, "The expiry date must be in the future.");
     let (param, message) = refused(json!({ "name": "x", "expires_in_day": 30 })).await;
     assert_eq!(param, "expires_in_day");
     assert_eq!(message, "`expires_in_day` is not a field of this request.");
