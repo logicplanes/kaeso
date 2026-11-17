@@ -167,7 +167,7 @@ export function applyEvent(state: ResponseState, event: string, data: Json, now:
 
 export function endResponse(state: ResponseState, status: "stopped" | "failed", now: number, error?: string, requestId?: string | null): ResponseState {
   if (!isLive(state)) return state;
-  return { ...state, status, endedAt: now, error: error ?? null, requestId: requestId ?? null, output: state.output.filter(Boolean) };
+  return { ...state, status, endedAt: now, error: error ?? null, requestId: requestId ?? state.requestId, output: state.output.filter(Boolean) };
 }
 
 export type InputItem = { role: "user"; content: ReturnType<typeof userContent> } | { role: "assistant"; content: string } | OutputItem;
@@ -210,13 +210,19 @@ export function historyItems(turns: readonly Turn[]): InputItem[] {
   return items;
 }
 
-export function replyView(r: ResponseState): Pick<ResponseViewProps, "text" | "reasoning" | "status" | "incompleteReason" | "error" | "reasoningDuration"> {
+/** What a reply shows; `linked` when its id is a link to the request log instead of text. */
+export function replyView(
+  r: ResponseState,
+  linked = false,
+): Pick<ResponseViewProps, "text" | "reasoning" | "status" | "incompleteReason" | "error" | "reasoningDuration"> {
   return {
     text: r.text,
     reasoning: r.reasoning,
     status: r.status === "waiting" ? "pending" : r.status === "completed" ? "done" : r.status === "failed" ? "error" : r.status,
     ...(r.incompleteReason ? { incompleteReason: r.incompleteReason } : {}),
-    ...(r.error ? { error: r.requestId ? t("playground.errorWithRequest", "{error} Request {id}", { error: r.error, id: r.requestId }) : r.error } : {}),
+    ...(r.error
+      ? { error: r.requestId && !linked ? t("playground.errorWithRequest", "{error} Request {id}", { error: r.error, id: r.requestId }) : r.error }
+      : {}),
     ...(r.reasoning && r.firstTextAt !== null && r.firstTokenAt !== null ? { reasoningDuration: r.firstTextAt - r.firstTokenAt } : {}),
   };
 }

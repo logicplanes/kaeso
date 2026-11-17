@@ -196,7 +196,8 @@ describe("a media turn that fails or is stopped", () => {
         }),
     );
     await user.click(within(answer).getByRole("button", { name: "Retry" }));
-    expect(await screen.findByText("Kaeso failed. Request req_42")).toBeInTheDocument();
+    expect(await screen.findByText("Kaeso failed.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View in request log" })).toHaveAttribute("href", expect.stringContaining("logs?log=req_42"));
 
     on("POST", route("audio/speech"), () => sound("audio/mpeg"));
     vi.mocked(URL.createObjectURL).mockImplementationOnce(() => {

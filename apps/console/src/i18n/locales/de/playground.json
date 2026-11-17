@@ -62,5 +62,6 @@
   "playground.decisions.title": "Fragen",
   "playground.decisions.unreadable": "Die Antworten des Modells ließen sich nicht lesen. Bitte erneut versuchen.",
   "playground.promptState": "Beschreiben, worum es in den Fragen geht",
-  "playground.promptStateEvery": "An alle Modelle senden, worum es in den Fragen geht"
+  "playground.promptStateEvery": "An alle Modelle senden, worum es in den Fragen geht",
+  "playground.viewInLog": "Im Anfrageprotokoll ansehen"
 }

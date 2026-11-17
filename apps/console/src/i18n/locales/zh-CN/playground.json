@@ -62,5 +62,6 @@
   "playground.decisions.title": "问题",
   "playground.decisions.unreadable": "无法读取模型的回答。请重试。",
   "playground.promptState": "描述这些问题针对的内容",
-  "playground.promptStateEvery": "向每个模型发送这些问题针对的内容"
+  "playground.promptStateEvery": "向每个模型发送这些问题针对的内容",
+  "playground.viewInLog": "在请求日志中查看"
 }
