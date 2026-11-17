@@ -582,7 +582,7 @@ pub async fn apply(
     let Some(plan) = plan.filter(|p| p.target.version.to_string() == req.version.trim()) else {
         return Err(ApiError::invalid(
             "version",
-            "That isn't the newest offered release; check for updates again.",
+            "A newer release is offered now; update to that one.",
         ));
     };
     if plan.manual.is_some() {

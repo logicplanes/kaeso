@@ -17,10 +17,17 @@ interface Shown {
 
 export function UpdateDialog({ opened, open, onOpenChange }: Shown & { opened: Opened }) {
   const [started, setStarted] = useState<string | null>("job" in opened ? opened.job : null);
+  const queryClient = useQueryClient();
   const start = useApiMutation({
     mutationFn: async (version: string) => data(await api.POST("/platform/v1/instance/updates/apply", { body: { version } })),
     invalidates: [["instance", "updates"]],
     onSuccess: (j) => setStarted(j.id),
+    // A newer release came in since the page loaded: show it, so the page offers that one.
+    onError: (error) => {
+      if (error.status !== 422 || error.param !== "version") return;
+      void queryClient.invalidateQueries({ queryKey: ["instance", "updates"] });
+      onOpenChange(false);
+    },
   });
   const job = useQuery({
     ...updateJobQuery(started ?? ""),
@@ -31,7 +38,6 @@ export function UpdateDialog({ opened, open, onOpenChange }: Shown & { opened: O
   });
   const j = started ? job.data : undefined;
   const finished = !!j && j.state !== "running";
-  const queryClient = useQueryClient();
   useEffect(() => {
     if (finished) void queryClient.invalidateQueries({ queryKey: ["instance", "updates"] });
   }, [finished, queryClient]);
