@@ -150,6 +150,7 @@
   "logs.inspector.noVectorsHint": "Embedding replies are numbers only; the log keeps their usage, not the vectors.",
   "logs.inspector.noneArrived": "None arrived",
   "logs.inspector.noneCounted": "None counted",
+  "logs.inspector.notBilled": "Not billed",
   "logs.inspector.notFound": "This request doesn't exist or was removed.",
   "logs.inspector.notLogged": "Content not logged",
   "logs.inspector.notLoggedHint": "Logging was off when this request ran, or its content has passed the retention period.",

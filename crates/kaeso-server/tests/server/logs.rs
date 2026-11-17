@@ -3293,3 +3293,92 @@ async fn the_request_log_names_the_client_app_filters_and_groups_by_it() {
         ]
     );
 }
+
+#[tokio::test]
+async fn the_log_and_its_export_say_what_each_cost_rests_on() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let rows: Vec<LogRow> = ["", "none", "estimated", "measured"]
+        .into_iter()
+        .enumerate()
+        .map(|(i, basis)| LogRow {
+            cost_basis: basis.into(),
+            endpoint: format!("e{i}"),
+            ..row(
+                org.uuid(),
+                project.uuid(),
+                now - time::Duration::minutes(1),
+                1,
+            )
+            .0
+        })
+        .collect();
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
+        .await
+        .unwrap();
+    let mut listed: Vec<(String, String)> = logs(&env, "").await["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| {
+            (
+                l["endpoint"].as_str().unwrap().to_owned(),
+                l["cost_basis"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect();
+    listed.sort();
+    assert_eq!(
+        listed,
+        [
+            ("e0".to_owned(), "reported".to_owned()),
+            ("e1".to_owned(), "none".to_owned()),
+            ("e2".to_owned(), "estimated".to_owned()),
+            ("e3".to_owned(), "measured".to_owned()),
+        ]
+    );
+
+    let req = axum::http::Request::builder()
+        .uri(format!("/platform/v1{}/logs/export?format=csv", base(&env)))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let csv = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    let csv = std::str::from_utf8(&csv).unwrap();
+    // The fields of one CSV line, quotes removed; the export quotes text that holds commas.
+    let fields = |line: &str| -> Vec<String> {
+        let (mut out, mut field, mut quoted) = (Vec::new(), String::new(), false);
+        for c in line.chars() {
+            match c {
+                '"' => quoted = !quoted,
+                ',' if !quoted => out.push(std::mem::take(&mut field)),
+                c => field.push(c),
+            }
+        }
+        out.push(field);
+        out
+    };
+    let mut lines = csv.lines();
+    let column = fields(lines.next().unwrap())
+        .iter()
+        .position(|h| h == "cost_basis")
+        .unwrap();
+    let mut exported: Vec<String> = lines.map(|l| fields(l)[column].clone()).collect();
+    exported.sort();
+    assert_eq!(
+        exported,
+        ["estimated", "measured", "none", "reported"],
+        "{csv}"
+    );
+}

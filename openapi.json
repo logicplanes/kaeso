@@ -27153,7 +27153,9 @@
         "description": "What a request's cost is based on.",
         "enum": [
           "reported",
-          "measured"
+          "measured",
+          "estimated",
+          "none"
         ]
       },
       "CreatedKey_KeyView": {
@@ -33616,7 +33618,7 @@
                 },
                 "cost_basis": {
                   "$ref": "#/components/schemas/CostBasis",
-                  "description": "What the cost's units come from: `reported` by the provider, or `measured`\nby Kaeso when the provider bills by the length of audio it was sent but\nreported none, and Kaeso read the length from the file's header."
+                  "description": "What the cost rests on: `none` when nothing was billed, `measured` by Kaeso\nwhen the provider bills by the length of audio it was sent but reported none\nand Kaeso read the length from the file's header, `estimated` when Kaeso\nestimated the tokens, or `reported` by the provider. Entries logged before\n`none` and `estimated` existed say `reported`."
                 },
                 "cost_known": {
                   "type": "boolean",
@@ -36563,7 +36565,7 @@
           },
           "cost_basis": {
             "$ref": "#/components/schemas/CostBasis",
-            "description": "What the cost's units come from: `reported` by the provider, or `measured`\nby Kaeso when the provider bills by the length of audio it was sent but\nreported none, and Kaeso read the length from the file's header."
+            "description": "What the cost rests on: `none` when nothing was billed, `measured` by Kaeso\nwhen the provider bills by the length of audio it was sent but reported none\nand Kaeso read the length from the file's header, `estimated` when Kaeso\nestimated the tokens, or `reported` by the provider. Entries logged before\n`none` and `estimated` existed say `reported`."
           },
           "cost_known": {
             "type": "boolean",
