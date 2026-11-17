@@ -21,7 +21,18 @@ impl MacKey {
     pub const TAG_LEN: usize = 32;
 
     pub fn derive(ring: &KeyRing, purpose: &str) -> MacKey {
-        let mut key = keyed(ring.active().bytes());
+        MacKey::from_master(ring.active().bytes(), purpose)
+    }
+
+    /// Whether `tag` was made with any key of the ring, the active one first: for tags that leave
+    /// the instance and must outlive a rotation, such as links in emails already sent.
+    pub fn verify_any(ring: &KeyRing, purpose: &str, parts: &[&[u8]], tag: &[u8]) -> bool {
+        ring.keys()
+            .any(|k| MacKey::from_master(k.bytes(), purpose).verify(parts, tag))
+    }
+
+    fn from_master(master: &[u8; 32], purpose: &str) -> MacKey {
+        let mut key = keyed(master);
         key.update(b"kaeso:");
         key.update(purpose.as_bytes());
         let derived: [u8; 32] = key.finalize().into_bytes().into();
@@ -120,5 +131,40 @@ mod tests {
 
     fn hex(bytes: &[u8]) -> String {
         bytes.iter().map(|b| format!("{b:02x}")).collect()
+    }
+
+    #[test]
+    fn a_tag_of_an_older_key_still_verifies_after_a_rotation() {
+        let old = crate::generate_master_key();
+        let new = crate::generate_master_key();
+        let before = KeyRing::parse(&old).unwrap();
+        let tag = MacKey::derive(&before, "unsubscribe").tag(&[b"user"]);
+        let rotated = KeyRing::parse(&secrecy::SecretString::from(format!(
+            "{},{}",
+            new.expose_secret(),
+            old.expose_secret()
+        )))
+        .unwrap();
+        assert!(!MacKey::derive(&rotated, "unsubscribe").verify(&[b"user"], &tag));
+        assert!(MacKey::verify_any(
+            &rotated,
+            "unsubscribe",
+            &[b"user"],
+            &tag
+        ));
+        assert!(!MacKey::verify_any(&rotated, "other", &[b"user"], &tag));
+        assert!(!MacKey::verify_any(
+            &rotated,
+            "unsubscribe",
+            &[b"other"],
+            &tag
+        ));
+        let removed = KeyRing::parse(&new).unwrap();
+        assert!(!MacKey::verify_any(
+            &removed,
+            "unsubscribe",
+            &[b"user"],
+            &tag
+        ));
     }
 }

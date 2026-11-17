@@ -112,7 +112,7 @@ impl KeyRing {
         self.keys().map(|k| k.id.as_str())
     }
 
-    fn keys(&self) -> impl Iterator<Item = &MasterKey> {
+    pub(crate) fn keys(&self) -> impl Iterator<Item = &MasterKey> {
         std::iter::once(&self.active).chain(&self.older)
     }
 }

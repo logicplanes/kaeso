@@ -110,7 +110,13 @@ pub fn verify_unsubscribe(state: &AppState, token: &str) -> Option<(UserId, Kind
     let user: UserId = parts.next()?.parse().ok()?;
     let kind: Kind = parts.next()?.parse().ok()?;
     let tag = URL_SAFE_NO_PAD.decode(parts.next()?).ok()?;
-    let valid = MacKey::derive(&state.keyring, UNSUBSCRIBE)
-        .verify(&[user.uuid().as_bytes(), kind.as_str().as_bytes()], &tag);
+    // Links in emails already sent keep working after a master-key rotation, as long as the old
+    // key stays in the ring.
+    let valid = MacKey::verify_any(
+        &state.keyring,
+        UNSUBSCRIBE,
+        &[user.uuid().as_bytes(), kind.as_str().as_bytes()],
+        &tag,
+    );
     (valid && !kind.always()).then_some((user, kind))
 }
