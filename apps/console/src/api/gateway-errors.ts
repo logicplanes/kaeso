@@ -514,6 +514,12 @@ const messages = (): Rule[] => [
   rule("errors.awsKey.badField", (v) => t("errors.awsKey.badField", "The AWS key's `{field}` isn't valid.", v)),
   rule("errors.awsKey.ambientOff", () => t("errors.awsKey.ambientOff", "This install doesn't let keys sign in as the gateway's AWS identity.")),
   rule("errors.awsKey.ambientAdmin", () => t("errors.awsKey.ambientAdmin", "Only instance admins can add a key that signs in as the gateway's AWS identity.")),
+  rule("errors.servicePrincipal.notTaken", (v) =>
+    t("errors.servicePrincipal.notTaken", "{provider} takes no Microsoft Entra ID service principal; add an API key.", v),
+  ),
+  rule("errors.servicePrincipal.notJson", () => t("errors.servicePrincipal.notJson", "Give the service principal as a JSON object.")),
+  rule("errors.servicePrincipal.missingField", (v) => t("errors.servicePrincipal.missingField", "The service principal has no `{field}`.", v)),
+  rule("errors.servicePrincipal.badField", (v) => t("errors.servicePrincipal.badField", "The service principal's `{field}` isn't valid.", v)),
   rule("errors.serviceAccount.tooLong", () => t("errors.serviceAccount.tooLong", "The JSON key is longer than 16 KiB; paste the file Google Cloud made.")),
   rule("errors.serviceAccount.wrongType", () =>
     t("errors.serviceAccount.wrongType", "The JSON key isn't a service account key; its `type` must be `service_account`."),
@@ -1069,6 +1075,21 @@ const messages = (): Rule[] => [
   rule("errors.batches.limit", () => t("errors.batches.limit", "`limit` must be 1 to 100.")),
   rule("errors.modelApi.keyRefused", () =>
     t("errors.modelApi.keyRefused", "The provider refused this project's provider key. Ask an organization admin to check it under Providers."),
+  ),
+  rule("errors.modelApi.entraRoleRefused", () =>
+    t(
+      "errors.modelApi.entraRoleRefused",
+      "Azure refused this project's Microsoft Entra ID service principal. It needs the Cognitive Services OpenAI User role on the resource; ask an organization admin to check it under Providers.",
+    ),
+  ),
+  rule("errors.modelApi.entraRefused", () =>
+    t(
+      "errors.modelApi.entraRefused",
+      "Microsoft Entra ID refused the service principal of this project's Azure key, so it is signed out. Ask an organization admin to replace it under Providers.",
+    ),
+  ),
+  rule("errors.modelApi.entraUnavailable", () =>
+    t("errors.modelApi.entraUnavailable", "Kaeso can't get an access token from Microsoft Entra ID right now. Try again shortly."),
   ),
   rule("errors.modelApi.permissionRefused", () =>
     t(

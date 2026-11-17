@@ -65,15 +65,14 @@ The list shows the region beside the key. To move the key to another region, cho
 
 ## Azure keys
 
-For Azure, a provider key is a key of one Azure OpenAI or Foundry resource, and it names that resource's endpoint.
+For Azure, a provider key belongs to one Azure OpenAI or Foundry resource and names that resource's endpoint. It signs in with the resource's key or with a Microsoft Entra ID service principal. On **Providers**, choose **Add provider key**, then **Azure**, and answer **How does Kaeso sign in to Azure?**:
 
-1. In the [Azure portal](https://portal.azure.com/), open the resource and its **Resource Management → Keys and Endpoint** page ([find the key and endpoint](https://learn.microsoft.com/en-us/azure/ai-services/authentication)).
-2. Copy **KEY 1** or **KEY 2**, and the **Endpoint**, such as `https://example.openai.azure.com`. An endpoint ending in `.services.ai.azure.com` or `.cognitiveservices.azure.com` works too, and a pasted `/openai/v1` is left out.
-3. In Kaeso, on **Providers**, choose **Add provider key**, then **Azure**, and paste the key and the endpoint.
+- **Resource key.** In the [Azure portal](https://portal.azure.com/), open the resource and its **Resource Management → Keys and Endpoint** page ([find the key and endpoint](https://learn.microsoft.com/en-us/azure/ai-services/authentication)). Copy **KEY 1** or **KEY 2**, and the **Endpoint**, such as `https://example.openai.azure.com`. An endpoint ending in `.services.ai.azure.com` or `.cognitiveservices.azure.com` works too, and a pasted `/openai/v1` is left out. Paste the key and the endpoint. Kaeso sends the key in `api-key`.
+- **Microsoft Entra ID.** For a resource whose key access is turned off. In the [Microsoft Entra admin center](https://entra.microsoft.com/), register an app under **App registrations** and add a client secret to it; on the resource, give the app the **Cognitive Services OpenAI User** role. Give the **Directory (tenant) ID** (or one of the tenant's domains), the **Application (client) ID**, the client secret's value and the resource's endpoint. Kaeso exchanges the secret for access tokens with the [client credentials grant](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow), for the scope `https://cognitiveservices.azure.com/.default` unless you choose `https://ai.azure.com/.default`, and sends each token as a bearer. It renews a token five minutes before it expires. When Entra ID refuses the secret, for example because it expired, the key shows **Signed out**, the people who can change provider keys get an email, and **Replace** takes a new secret.
 
-Kaeso calls the resource's OpenAI v1 API, `{endpoint}/openai/v1`, with the key in `api-key`. A request names a deployment of the resource: Kaeso sends the model's id, or its **Provider model ID** when the deployment has another name ([change a model's values](models-and-aliases.md#change-a-models-values)). Microsoft Entra ID sign-in isn't supported yet.
+Kaeso calls the resource's OpenAI v1 API, `{endpoint}/openai/v1`. A request names a deployment of the resource: Kaeso sends the model's id, or its **Provider model ID** when the deployment has another name ([change a model's values](models-and-aliases.md#change-a-models-values)).
 
-The list shows the endpoint's host beside the key. To move the key to another resource, choose **Edit** in its menu and give the other resource's endpoint; a new key of the same resource keeps the endpoint.
+The list shows the endpoint's host beside the key, and for a service principal its tenant and the client ID's last four characters. To move the key to another resource, choose **Edit** in its menu and give the other resource's endpoint; a new key of the same resource keeps the endpoint.
 
 ## Sign in with a ChatGPT account
 

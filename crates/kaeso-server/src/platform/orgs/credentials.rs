@@ -133,6 +133,10 @@ pub enum AuthMethodView {
         Bedrock: Kaeso signs each request with its temporary credentials. `account` is\n\
         the role's name, or `gateway`."]
     AwsRole,
+    #[doc = "A Microsoft Entra ID service principal, for Azure: Kaeso exchanges its\n\
+        client secret for access tokens. `account` is the tenant, `last4` the end of\n\
+        the client id."]
+    AzureServicePrincipal,
 }
 
 impl From<AuthMethod> for AuthMethodView {
@@ -144,6 +148,7 @@ impl From<AuthMethod> for AuthMethodView {
             AuthMethod::GoogleServiceAccount => AuthMethodView::GoogleServiceAccount,
             AuthMethod::AwsAccessKey => AuthMethodView::AwsAccessKey,
             AuthMethod::AwsRole => AuthMethodView::AwsRole,
+            AuthMethod::AzureServicePrincipal => AuthMethodView::AzureServicePrincipal,
         }
     }
 }
@@ -168,6 +173,7 @@ impl CredentialView {
             AuthMethodView::GoogleServiceAccount => AuthMethod::GoogleServiceAccount,
             AuthMethodView::AwsAccessKey => AuthMethod::AwsAccessKey,
             AuthMethodView::AwsRole => AuthMethod::AwsRole,
+            AuthMethodView::AzureServicePrincipal => AuthMethod::AzureServicePrincipal,
         }
     }
 
@@ -232,8 +238,10 @@ pub struct CredentialCreate {
         service account's whole JSON key file; with `aws_access_key` a JSON object with\n\
         `access_key_id`, `secret_access_key` and an optional `session_token`; with\n\
         `aws_role` a JSON object with an optional `role_arn` to assume and its\n\
-        `external_id`, or `{}` for the gateway's own identity. Stored encrypted and\n\
-        never shown again."]
+        `external_id`, or `{}` for the gateway's own identity; with\n\
+        `azure_service_principal` a JSON object with `tenant_id`, `client_id`,\n\
+        `client_secret` and an optional `scope`, one of the provider's\n\
+        `entra_id.scopes`. Stored encrypted and never shown again."]
     #[schema(example = "sk-proj-…")]
     pub secret: String,
     #[doc = "Make it the default for its provider. The first key of a provider\n\
@@ -241,7 +249,8 @@ pub struct CredentialCreate {
     #[serde(default)]
     pub make_default: bool,
     #[doc = "What `secret` is: `api_key` (the default), `google_service_account` for\n\
-        a provider whose `service_account` isn't `null`, or for `amazon-bedrock`\n\
+        a provider whose `service_account` isn't `null`, `azure_service_principal` for\n\
+        a provider whose `entra_id` isn't `null`, or for `amazon-bedrock`\n\
         `aws_access_key` or `aws_role`. `aws_role` needs an instance admin and an install\n\
         that allows it (`aws.ambient_credentials`)."]
     #[serde(default)]
@@ -284,6 +293,8 @@ pub enum KeyMethod {
     AwsAccessKey,
     #[doc = "The gateway's own AWS identity, with the role to assume as JSON."]
     AwsRole,
+    #[doc = "A Microsoft Entra ID service principal, as JSON."]
+    AzureServicePrincipal,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -572,6 +583,44 @@ pub async fn create(
             )
             .await?
         }
+        KeyMethod::AzureServicePrincipal => {
+            if provider
+                .built_in()
+                .is_none_or(|p| p.id != kaeso_core::azure::AZURE)
+            {
+                return Err(ApiError::invalid(
+                    "auth_method",
+                    format!(
+                        "{} takes no Microsoft Entra ID service principal; add an API key.",
+                        provider.name()
+                    ),
+                ));
+            }
+            region(&provider, req.location.as_deref(), None)?;
+            scope(
+                &provider,
+                req.account_id.as_deref(),
+                req.gateway_id.as_deref(),
+                None,
+            )?;
+            let endpoint = endpoint(&provider, req.endpoint.as_deref(), None)?;
+            let principal = service_principal(&req.secret)?;
+            let (sealed, last4) = (principal.sealed_form(), principal.last4());
+            add(
+                &state,
+                &ctx,
+                org,
+                Added {
+                    id: CredentialId::new(),
+                    provider: provider.id(),
+                    name: &name,
+                    make_default: req.make_default,
+                    secret: &sealed,
+                    auth: Auth::principal(&last4, principal.tenant_id(), endpoint.as_deref()),
+                },
+            )
+            .await?
+        }
     };
     Ok((StatusCode::CREATED, Json(view)))
 }
@@ -648,6 +697,20 @@ fn aws_secret(
         .rev()
         .collect();
     Ok((AuthMethod::AwsRole, sealed, label, last4))
+}
+
+// A Microsoft Entra ID service principal as JSON: `tenant_id`, `client_id`, `client_secret` and
+// an optional `scope`.
+fn service_principal(secret: &str) -> ApiResult<kaeso_core::azure::ServicePrincipal> {
+    use kaeso_core::azure::{Problem, ServicePrincipal};
+    ServicePrincipal::parse(secret.trim()).map_err(|p| {
+        let message = match p {
+            Problem::NotJson => "Give the service principal as a JSON object.".to_owned(),
+            Problem::Missing(field) => format!("The service principal has no `{field}`."),
+            Problem::Malformed(field) => format!("The service principal's `{field}` isn't valid."),
+        };
+        ApiError::invalid("secret", message)
+    })
 }
 
 fn service_account_sign_in(provider: &ProviderRef) -> ApiResult<ServiceAccountSignIn> {
@@ -810,6 +873,19 @@ impl<'a> Auth<'a> {
             location: Some(region),
             scope: None,
             endpoint: None,
+        }
+    }
+
+    fn principal(last4: &'a str, tenant: &'a str, endpoint: Option<&'a str>) -> Auth<'a> {
+        Auth {
+            method: AuthMethod::AzureServicePrincipal,
+            last4,
+            expires_at: None,
+            account: Some(tenant),
+            project: None,
+            location: None,
+            scope: None,
+            endpoint,
         }
     }
 
@@ -1140,6 +1216,25 @@ pub async fn replace(
         return Ok(Json(after));
     }
     let provider = provider_in_org(&state, org, &before.provider).await?;
+    if before.method() == AuthMethod::AzureServicePrincipal {
+        region(&provider, req.location.as_deref(), None)?;
+        scope(
+            &provider,
+            req.account_id.as_deref(),
+            req.gateway_id.as_deref(),
+            None,
+        )?;
+        let endpoint = endpoint(
+            &provider,
+            req.endpoint.as_deref(),
+            before.endpoint.as_deref(),
+        )?;
+        let principal = service_principal(&req.secret)?;
+        let (sealed, last4) = (principal.sealed_form(), principal.last4());
+        let auth = Auth::principal(&last4, principal.tenant_id(), endpoint.as_deref());
+        let after = rewrite(&state, &ctx, tx, &before, &name, &sealed, auth).await?;
+        return Ok(Json(after));
+    }
     let region = region(
         &provider,
         req.location.as_deref(),

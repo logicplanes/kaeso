@@ -103,7 +103,9 @@ const signedAs = (k: CredentialView): string =>
     ? t("orgHome.awsAccessKey", "Access key")
     : k.auth_method === "aws_role"
       ? t("orgHome.awsRole", "AWS role")
-      : t("orgHome.serviceAccount", "Service account");
+      : k.auth_method === "azure_service_principal"
+        ? t("orgHome.tenant", "Tenant")
+        : t("orgHome.serviceAccount", "Service account");
 
 const lastUsed = (k: CredentialView) => (k.last_used_at ? formatRelative(k.last_used_at) : t("common.never", "Never"));
 

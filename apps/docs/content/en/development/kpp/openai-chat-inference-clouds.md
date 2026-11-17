@@ -76,7 +76,7 @@ Sources: Azure's v1 OpenAPI document (`azure-v1-v1-generated.json` in [azure-res
 | `finish_reason: "content_filter"` | `StopReason::ContentFilter` | Also on a chunk without `delta` (`streams/filter-blocked-doc`), and on a reply without `content` (`responses/filtered-blocklist-doc`). |
 | a 400 with `code: "content_filter"` and `innererror` | `KppError` | `ContentFiltered`, with Azure's message (`errors/content-filter-prompt-doc`). |
 | `error.code` as a numeric string, such as `"401"` | `KppError` | The kind follows the status (`errors/recorded-invalid-api-key`). |
-| `{"statusCode": 401, "message": …}` | `KppError` | Azure's answer to a bearer that looks like an Entra ID token (`errors/recorded-entra-token`); Kaeso sends `api-key`, so apps only see it from another client. |
+| `{"statusCode": 401, "message": …}` | `KppError` | Azure's answer to an Entra ID token it doesn't accept (`errors/recorded-entra-token`); for a key that signs in with Entra ID, a refused key that names the role the service principal needs. |
 | `GET /openai/v1/models` | `ModelList` | The models a resource may deploy, not its deployments, so a model check only shows whether the key and its endpoint work (`ModelListing::Catalogue`). |
 
 The v1 API serves Responses with OpenAI's request body, plus `content_filters` in replies, which stay in extras; Kaeso sends a model as Responses when its **Sends as** value says so (`fixtures/openai_responses/providers/azure/`). Claude deployments answer only Anthropic's Messages API under `{endpoint}/anthropic`, and images, speech, transcriptions and videos are in the v1 API's preview only, so Kaeso calls none of them yet. Token counts are refused.

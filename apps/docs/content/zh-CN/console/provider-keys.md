@@ -65,15 +65,14 @@ Kaeso 会检查该文件是否为 `token_uri` 为 `https://oauth2.googleapis.com
 
 ## Azure 密钥
 
-对于 Azure，服务商密钥是某个 Azure OpenAI 或 Foundry 资源的密钥，并注明该资源的端点。
+对于 Azure，服务商密钥属于某个 Azure OpenAI 或 Foundry 资源，并注明该资源的端点。它可以用资源密钥登录，也可以用 Microsoft Entra ID 服务主体登录。在**服务商**页面选择**添加服务商密钥**，然后选择 **Azure**，并回答 **Kaeso 如何登录 Azure？**：
 
-1. 在 [Azure 门户](https://portal.azure.com/)中打开该资源及其 **Resource Management → Keys and Endpoint** 页面（见[查找密钥和端点](https://learn.microsoft.com/en-us/azure/ai-services/authentication)）。
-2. 复制 **KEY 1** 或 **KEY 2**，以及 **Endpoint**，例如 `https://example.openai.azure.com`。以 `.services.ai.azure.com` 或 `.cognitiveservices.azure.com` 结尾的端点也可以，一并粘贴的 `/openai/v1` 会被去掉。
-3. 在 Kaeso 的**服务商**页面选择**添加服务商密钥**，然后选择 **Azure**，粘贴密钥和端点。
+- **资源密钥。** 在 [Azure 门户](https://portal.azure.com/)中打开该资源及其 **Resource Management → Keys and Endpoint** 页面（见[查找密钥和端点](https://learn.microsoft.com/en-us/azure/ai-services/authentication)）。复制 **KEY 1** 或 **KEY 2**，以及 **Endpoint**，例如 `https://example.openai.azure.com`。以 `.services.ai.azure.com` 或 `.cognitiveservices.azure.com` 结尾的端点也可以，一并粘贴的 `/openai/v1` 会被去掉。粘贴密钥和端点。Kaeso 把密钥放在 `api-key` 中发送。
+- **Microsoft Entra ID。** 适用于关闭了密钥访问的资源。在 [Microsoft Entra 管理中心](https://entra.microsoft.com/)的 **App registrations** 下注册应用并为其添加客户端密码；在资源上为该应用分配 **Cognitive Services OpenAI User** 角色。填写**目录（租户）ID**（或租户的某个域名）、**应用程序（客户端）ID**、客户端密码的值以及资源的端点。Kaeso 通过[客户端凭据授予](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-client-creds-grant-flow)用密码换取访问令牌，范围为 `https://cognitiveservices.azure.com/.default`，除非你选择 `https://ai.azure.com/.default`，并把每个令牌作为 Bearer 发送。令牌在过期前五分钟续期。Entra ID 拒绝密码时（例如密码已过期），该密钥显示**已退出登录**，可以更改服务商密钥的人会收到邮件，**替换**可以填写新的密码。
 
-Kaeso 调用该资源的 OpenAI v1 API，即 `{endpoint}/openai/v1`，密钥放在 `api-key` 中。请求指定的是该资源的部署：Kaeso 发送模型 ID，部署名称不同时发送模型的**服务商模型 ID**（[更改模型的参数](models-and-aliases.md#更改模型的参数)）。尚不支持使用 Microsoft Entra ID 登录。
+Kaeso 调用该资源的 OpenAI v1 API，即 `{endpoint}/openai/v1`。请求指定的是该资源的部署：Kaeso 发送模型 ID，部署名称不同时发送模型的**服务商模型 ID**（[更改模型的参数](models-and-aliases.md#更改模型的参数)）。
 
-列表会在密钥旁显示端点的主机名。要把密钥改到其他资源，请在其菜单中选择**编辑**并填写另一个资源的端点；同一资源的新密钥会保留端点。
+列表会在密钥旁显示端点的主机名；对于服务主体，还会显示租户和客户端 ID 的最后四个字符。要把密钥改到其他资源，请在其菜单中选择**编辑**并填写另一个资源的端点；同一资源的新密钥会保留端点。
 
 ## 使用 ChatGPT 账户登录
 

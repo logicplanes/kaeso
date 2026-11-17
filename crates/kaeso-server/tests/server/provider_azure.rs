@@ -511,3 +511,250 @@ async fn a_model_check_only_tells_whether_the_key_and_its_endpoint_work() {
         "only Azure's model listing is read: {asked:?}"
     );
 }
+
+const TENANT: &str = "aaaabbbb-0000-cccc-1111-dddd2222eeee";
+const CLIENT: &str = "00001111-aaaa-2222-bbbb-3333cccc4444";
+const CLIENT_SECRET: &str = "A1bC2dE3fH4iJ5kL6mN7oP8qR9sT0u";
+
+fn principal(secret: &str, scope: Option<&str>) -> String {
+    let mut p = json!({ "tenant_id": TENANT, "client_id": CLIENT, "client_secret": secret });
+    if let Some(s) = scope {
+        p["scope"] = json!(s);
+    }
+    p.to_string()
+}
+
+async fn entra_env(secret: &str, scope: Option<&str>) -> (Env, String) {
+    let env = common::v1::env_with_google_token(Some(Arc::new(Capture::default()))).await;
+    let r = add_key(
+        &env,
+        json!({ "provider": "azure", "name": "Entra", "auth_method": "azure_service_principal", "secret": principal(secret, scope), "endpoint": ENDPOINT }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let id = r.body["id"].as_str().unwrap().to_owned();
+    env.app
+        .post(
+            &models(&env),
+            json!({ "provider": "azure", "model_id": GPT }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    (env, id)
+}
+
+fn token_requests(env: &Env) -> Vec<kaeso_testkit::mock_provider::Received> {
+    env.mock
+        .received()
+        .into_iter()
+        .filter(|r| {
+            r.path
+                .ends_with(kaeso_testkit::mock_provider::AZURE_TOKEN_PATH)
+        })
+        .collect()
+}
+
+async fn ask(env: &Env) -> common::v1::Answer {
+    call(
+        env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            GPT,
+            "Hello [mock:fixture=recorded-response-format-text]",
+        )),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn a_service_principal_signs_in_once_and_sends_its_token_as_a_bearer_renewed_before_it_expires()
+ {
+    let (env, _) = entra_env(CLIENT_SECRET, None).await;
+    let listed = env.app.get(&credentials(&env), &env.owner.cookie).await;
+    let key = listed.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|k| k["auth_method"] == "azure_service_principal")
+        .unwrap()
+        .clone();
+    assert_eq!(
+        (&key["account"], &key["last4"], &key["endpoint"]),
+        (&json!(TENANT), &json!("4444"), &json!(ENDPOINT))
+    );
+
+    let now = time::OffsetDateTime::now_utc();
+    env.app.clock.set(now);
+    for _ in 0..3 {
+        let r = ask(&env).await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        let sent = env.mock.last().unwrap();
+        let bearer = format!(
+            "Bearer {}1",
+            kaeso_testkit::mock_provider::AZURE_TOKEN_PREFIX
+        );
+        assert_eq!(sent.header("authorization"), Some(bearer.as_str()));
+        assert_eq!(sent.header("api-key"), None);
+    }
+    let tokens = token_requests(&env);
+    assert_eq!(tokens.len(), 1, "one exchange for three requests");
+    assert_eq!(tokens[0].path, format!("/{TENANT}/oauth2/v2.0/token"));
+    let form: std::collections::HashMap<String, String> =
+        url::form_urlencoded::parse(&tokens[0].body)
+            .into_owned()
+            .collect();
+    assert_eq!(form["grant_type"], "client_credentials");
+    assert_eq!(form["client_id"], CLIENT);
+    assert_eq!(form["client_secret"], CLIENT_SECRET);
+    assert_eq!(
+        form["scope"],
+        "https://cognitiveservices.azure.com/.default"
+    );
+
+    env.app.clock.advance(time::Duration::minutes(56));
+    let r = ask(&env).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        token_requests(&env).len(),
+        2,
+        "renewed five minutes before it expires"
+    );
+    assert!(
+        env.mock
+            .last()
+            .unwrap()
+            .header("authorization")
+            .unwrap()
+            .ends_with("mock-2")
+    );
+}
+
+#[tokio::test]
+async fn a_refused_secret_signs_the_key_out_until_it_is_replaced() {
+    let (env, id) = entra_env("refused-secret", Some("https://ai.azure.com/.default")).await;
+    let r = ask(&env).await;
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "Microsoft Entra ID refused the service principal of this project's Azure key, so it is signed out. Ask an organization admin to replace it under Providers."
+    );
+    let form: std::collections::HashMap<String, String> =
+        url::form_urlencoded::parse(&token_requests(&env)[0].body)
+            .into_owned()
+            .collect();
+    assert_eq!(form["scope"], "https://ai.azure.com/.default");
+    let shown = env
+        .app
+        .get(&format!("{}/{id}", credentials(&env)), &env.owner.cookie)
+        .await;
+    assert_eq!(shown.body["auth_error"], "signed_out", "{:?}", shown.body);
+
+    let before = token_requests(&env).len();
+    let r = ask(&env).await;
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
+    assert!(r.text().contains("so it is signed out"), "{}", r.text());
+    assert_eq!(
+        token_requests(&env).len(),
+        before,
+        "a signed-out key asks for no token"
+    );
+
+    let r = env
+        .app
+        .post(
+            &format!("{}/{id}/replace", credentials(&env)),
+            json!({ "secret": principal(CLIENT_SECRET, None) }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["auth_error"], Value::Null);
+    assert_eq!(r.body["endpoint"], ENDPOINT);
+    let r = ask(&env).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+}
+
+#[tokio::test]
+async fn a_resource_refusing_the_token_names_the_role_and_bad_principals_are_refused_when_added() {
+    let (env, _) = entra_env(CLIENT_SECRET, None).await;
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            GPT,
+            &format!("Hello {}", error("recorded-entra-token")),
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "Azure refused this project's Microsoft Entra ID service principal. It needs the Cognitive Services OpenAI User role on the resource; ask an organization admin to check it under Providers."
+    );
+
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            GPT,
+            "Hello [mock:fixture=recorded-response-format-text]",
+        )),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+
+    for (body, message) in [
+        (
+            json!({ "provider": "azure", "name": "x", "auth_method": "azure_service_principal", "secret": "nope", "endpoint": ENDPOINT }),
+            "Give the service principal as a JSON object.",
+        ),
+        (
+            json!({ "provider": "azure", "name": "x", "auth_method": "azure_service_principal", "secret": json!({ "tenant_id": TENANT, "client_id": CLIENT }).to_string(), "endpoint": ENDPOINT }),
+            "The service principal has no `client_secret`.",
+        ),
+        (
+            json!({ "provider": "azure", "name": "x", "auth_method": "azure_service_principal", "secret": principal("s", Some("https://graph.microsoft.com/.default")), "endpoint": ENDPOINT }),
+            "The service principal's `scope` isn't valid.",
+        ),
+        (
+            json!({ "provider": "openai", "name": "x", "auth_method": "azure_service_principal", "secret": principal("s", None) }),
+            "OpenAI takes no Microsoft Entra ID service principal; add an API key.",
+        ),
+        (
+            json!({ "provider": "azure", "name": "x", "auth_method": "azure_service_principal", "secret": principal("s", None) }),
+            "Azure keys belong to a resource; give its `endpoint`.",
+        ),
+    ] {
+        let r = add_key(&env, body).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{message}: {:?}", r.body);
+        assert_eq!(r.body["error"]["message"], message);
+    }
+    let providers = env
+        .app
+        .get(
+            &format!("/orgs/{}/providers", env.owner.org_id),
+            &env.owner.cookie,
+        )
+        .await;
+    let azure = providers.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|p| p["id"] == "azure")
+        .unwrap();
+    assert_eq!(azure["entra_id"]["role"], "Cognitive Services OpenAI User");
+    assert_eq!(
+        azure["entra_id"]["scopes"],
+        json!([
+            "https://cognitiveservices.azure.com/.default",
+            "https://ai.azure.com/.default"
+        ])
+    );
+}

@@ -127,6 +127,7 @@ async fn env_with(
                 mock.base_url,
                 kaeso_testkit::mock_provider::GOOGLE_TOKEN_PATH
             ),
+            azure_login: mock.base_url.clone(),
             ..Default::default()
         });
     let names: Vec<String> = PROVIDERS

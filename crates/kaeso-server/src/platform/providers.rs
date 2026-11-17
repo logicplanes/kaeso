@@ -78,6 +78,10 @@ pub struct ProviderView {
         instead of a Bedrock API key, with `auth_method` `aws_access_key` or\n\
         `aws_role`. `null` for other providers."]
     pub aws: Option<AwsSignInView>,
+    #[doc = "For Azure: a Microsoft Entra ID service principal a key may sign in with\n\
+        instead of a resource key, with `auth_method` `azure_service_principal`. `null`\n\
+        for other providers."]
+    pub entra_id: Option<EntraIdView>,
     #[doc = "Which format a model id is sent in when its catalogue entry names\n\
         none, the first matching pattern winning; models no pattern matches go\n\
         in the first of `dialects`. Empty for most providers."]
@@ -147,6 +151,19 @@ pub struct AwsSignInView {
         identity: the install allows it (`aws.ambient_credentials`) and the caller is\n\
         an instance admin."]
     pub gateway_identity: bool,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "How a provider takes a Microsoft Entra ID service principal.")]
+pub struct EntraIdView {
+    #[doc = "Where an app registration and its client secret are made."]
+    pub app_page: KeyPageView,
+    #[doc = "The scopes a key may ask its tokens for, the default first."]
+    #[schema(example = json!(["https://cognitiveservices.azure.com/.default"]))]
+    pub scopes: Vec<&'static str>,
+    #[doc = "The role the service principal needs on the resource."]
+    #[schema(example = "Cognitive Services OpenAI User")]
+    pub role: &'static str,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -240,6 +257,14 @@ impl ProviderView {
                 example: e.example,
             }),
             aws: None,
+            entra_id: (p.id == kaeso_core::azure::AZURE).then(|| EntraIdView {
+                app_page: KeyPageView {
+                    url: "https://entra.microsoft.com/",
+                    label: "App registrations",
+                },
+                scopes: kaeso_core::azure::SCOPES.to_vec(),
+                role: kaeso_core::azure::ROLE,
+            }),
             model_routes: p
                 .routes
                 .iter()
@@ -271,6 +296,7 @@ impl ProviderView {
             regions: None,
             key_endpoint: None,
             aws: None,
+            entra_id: None,
             model_routes: Vec::new(),
             server: p.server(),
         }

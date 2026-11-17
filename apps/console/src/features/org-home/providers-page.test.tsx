@@ -388,6 +388,31 @@ describe("organization providers", () => {
     ]);
   });
 
+  it("shows a service principal's tenant and endpoint, and offers to replace it once it is signed out", async () => {
+    signedIn();
+    const entra = credential({
+      id: "cred_entra",
+      provider: "azure",
+      name: "Entra",
+      auth_method: "azure_service_principal",
+      account: "aaaabbbb-0000-cccc-1111-dddd2222eeee",
+      endpoint: "https://example.openai.azure.com",
+      auth_error: "signed_out",
+      last4: "4444",
+    });
+    keys([production, entra]);
+    const { user } = await renderApp(PATH);
+
+    const key = await row("Entra");
+    expect(key).toHaveTextContent("Tenant");
+    expect(key).toHaveTextContent("aaaabbbb-0000-cccc-1111-dddd2222eeee");
+    expect(key).toHaveTextContent("example.openai.azure.com");
+    expect(key).toHaveTextContent("Signed out");
+    expect(key).not.toHaveTextContent("Service account");
+    await user.click(await screen.findByRole("button", { name: "Actions for Azure · Entra" }));
+    expect(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Replace" })).toBeInTheDocument();
+  });
+
   it("shows a Cloudflare key's account and gateway and moves it to the account's default gateway", async () => {
     signedIn();
     const cf = credential({

@@ -185,14 +185,32 @@ impl Asked<'_> {
             )));
         };
         let wait = self.state.config.upstream.first_byte_timeout;
+        let entra = match self.credential.azure.as_deref() {
+            Some(key) => Some(
+                crate::services::azure_auth::access_token(
+                    self.state,
+                    self.credential.id.uuid(),
+                    self.credential.revision,
+                    key,
+                )
+                .await
+                .map_err(|e| KppError::provider(e.to_string()))?,
+            ),
+            None => None,
+        };
+        let auth = if entra.is_some() {
+            Some(kaeso_core::provider::AuthStyle::Bearer)
+        } else {
+            self.provider.auth()
+        };
         let resp = self
             .state
             .upstream
             .send(Call {
                 base_url: base,
-                auth: self.provider.auth(),
+                auth,
                 guard: crate::model_api::pipeline::guard_for(self.provider),
-                credential: &self.credential.secret,
+                credential: entra.as_ref().unwrap_or(&self.credential.secret),
                 sigv4: None,
                 request: Outgoing::from(request),
                 stream: false,
