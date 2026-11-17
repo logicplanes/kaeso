@@ -330,6 +330,33 @@ fn replies_carry_images_usage_and_media_types() {
 }
 
 #[test]
+fn cached_tokens_count_against_the_image_tokens_first_and_never_twice() {
+    let usage = |cached: u64, image: u64, text: u64| {
+        let raw = kaeso_kpp::RawJson::from_string(
+            json!({
+                "input_tokens": image + text,
+                "input_tokens_details": {"cached_tokens": cached, "image_tokens": image, "text_tokens": text},
+                "output_tokens": 0,
+                "total_tokens": image + text
+            })
+            .to_string(),
+        )
+        .unwrap();
+        let u = super::response::usage_of(&raw, &kaeso_kpp::Origin::new(DialectId::OpenAiImages));
+        (
+            u.input_tokens,
+            u.cache_read_tokens,
+            u.input_image_tokens,
+            u.cache_read_image_tokens,
+        )
+    };
+    assert_eq!(usage(1289, 1289, 12), (12, 1289, Some(0), Some(1289)));
+    assert_eq!(usage(600, 1000, 50), (450, 600, Some(400), Some(600)));
+    assert_eq!(usage(500, 100, 900), (500, 500, Some(0), Some(100)));
+    assert_eq!(usage(0, 1289, 12), (1301, 0, Some(1289), None));
+}
+
+#[test]
 fn a_reply_from_another_format_gets_usage_in_openai_s_shape() {
     let mut r = ImageResponse::new(
         "gemini-3.1-flash-image",

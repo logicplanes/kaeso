@@ -71,7 +71,7 @@ The multipart reader (`kaeso_codecs::multipart`) is sans-IO and bounded: at most
 | `background`, `output_format`, `size`, `quality` | `settings` typed | |
 | `usage.input_tokens` (or OpenRouter's `prompt_tokens`) | `usage.input_tokens`, without `input_tokens_details.cached_tokens` | The usage object is kept in `usage.raw`. |
 | `usage.output_tokens` (or `completion_tokens`) | `usage.output_tokens` | |
-| `usage.input_tokens_details.image_tokens` | `usage.input_image_tokens` | |
+| `usage.input_tokens_details.image_tokens` | `usage.input_image_tokens`, without the cached share, which is `usage.cache_read_image_tokens` | The reply gives one `cached_tokens` for text and images, so it counts against the image tokens first; the uncached image tokens never exceed `input_tokens`. |
 | `usage.output_tokens_details.image_tokens` (or `completion_tokens_details`) | `usage.output_image_tokens` | |
 | no `usage` | form `no_usage` | |
 | `svg_usage`, `safety_identifier`, unknown keys | extras | |
