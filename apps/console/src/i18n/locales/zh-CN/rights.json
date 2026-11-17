@@ -211,7 +211,7 @@
   "rights.instancePreset.none.name": "无",
   "rights.instancePreset.read.description": "读取系统、用户、组织和实例审计日志。",
   "rights.instancePreset.read.name": "只读",
-  "rights.instanceSettingsManage.description": "更改常规、邮件、日志、时区和账户设置，并发送测试邮件。",
+  "rights.instanceSettingsManage.description": "更改常规、邮件、日志、时区和账户设置，发送测试邮件，并立即获取模型数据。",
   "rights.instanceSettingsManage.name": "更改实例设置",
   "rights.instanceSystemView.description": "查看系统及其模型数据、实例设置和更新状态。",
   "rights.instanceSystemView.name": "查看系统",

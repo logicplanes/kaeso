@@ -51,6 +51,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(a, routes!(agents::set)))
         .routes(s.route(i(InstanceSettingsManage), routes!(settings::test_email)))
         .routes(s.route(i(InstanceSystemView), routes!(system::get)))
+        .routes(s.route(i(InstanceSettingsManage), routes!(system::kpmr_sync)))
         .routes(s.route(i(InstanceSystemView), routes!(updates::get)))
         .routes(s.route(i(InstanceUpdatesManage), routes!(updates::check)))
         .routes(s.route(i(InstanceUpdatesManage), routes!(updates::settings)))

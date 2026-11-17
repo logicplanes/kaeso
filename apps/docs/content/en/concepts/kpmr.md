@@ -81,6 +81,8 @@ Decision models cost their input tokens; their output price is `0`.
 
 A job checks every five minutes whether the gateway is due to ask KPMR again. With `kpmr.interval` at `auto`, it follows the catalogue's `refresh_seconds`, kept between 5 minutes and 24 hours; a duration such as `6h` replaces it. After a failed attempt, the gateway tries again within an hour.
 
+**Sync now** on the **Model data** card under **Instance** › **System**, or `docker compose exec gateway kaeso kpmr sync` on the server, fetches it at once, and every gateway of the install takes the new data. Both need `kpmr.sync` on.
+
 ```mermaid
 sequenceDiagram
   accTitle: Fetching the catalogue

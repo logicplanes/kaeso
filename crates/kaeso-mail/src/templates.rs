@@ -1303,22 +1303,43 @@ pub fn budget_alert(lang: Locale, to: &str, alert: &BudgetAlert<'_>, url: &str) 
 }
 
 pub fn test(lang: Locale, to: &str) -> Email {
-    let (subject, heading, sentence) = match lang {
-        Locale::En => (
-            "Kaeso test email",
-            "Email works",
-            "This test from the instance settings arrived, so Kaeso can send email.",
-        ),
-        Locale::De => (
-            "Kaeso-Test-E-Mail",
-            "E-Mail funktioniert",
-            "Dieser Test aus den Instanzeinstellungen ist angekommen, also kann Kaeso E-Mails senden.",
-        ),
-        Locale::ZhCn => (
-            "Kaeso 测试邮件",
-            "邮件发送正常",
-            "这封来自实例设置的测试邮件已送达，说明 Kaeso 可以发送邮件。",
-        ),
+    test_from(lang, to, TestFrom::Settings)
+}
+
+/// Where a test email was asked for, which its sentence names.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TestFrom {
+    /// The instance settings or one's own notification settings in the console.
+    Settings,
+    /// `kaeso mail test` on the gateway's server.
+    Command,
+}
+
+pub fn test_from(lang: Locale, to: &str, from: TestFrom) -> Email {
+    let (subject, heading) = match lang {
+        Locale::En => ("Kaeso test email", "Email works"),
+        Locale::De => ("Kaeso-Test-E-Mail", "E-Mail funktioniert"),
+        Locale::ZhCn => ("Kaeso 测试邮件", "邮件发送正常"),
+    };
+    let sentence = match (lang, from) {
+        (Locale::En, TestFrom::Settings) => {
+            "This test from the instance settings arrived, so Kaeso can send email."
+        }
+        (Locale::En, TestFrom::Command) => {
+            "This test from the kaeso mail test command arrived, so Kaeso can send email."
+        }
+        (Locale::De, TestFrom::Settings) => {
+            "Dieser Test aus den Instanzeinstellungen ist angekommen, also kann Kaeso E-Mails senden."
+        }
+        (Locale::De, TestFrom::Command) => {
+            "Dieser Test vom Befehl kaeso mail test ist angekommen, also kann Kaeso E-Mails senden."
+        }
+        (Locale::ZhCn, TestFrom::Settings) => {
+            "这封来自实例设置的测试邮件已送达，说明 Kaeso 可以发送邮件。"
+        }
+        (Locale::ZhCn, TestFrom::Command) => {
+            "这封来自 kaeso mail test 命令的测试邮件已送达，说明 Kaeso 可以发送邮件。"
+        }
     };
     Email::new(
         to,
@@ -1734,6 +1755,19 @@ mod tests {
             }
         }
         text
+    }
+
+    #[test]
+    fn a_test_email_from_the_command_names_it() {
+        for lang in [Locale::En, Locale::De, Locale::ZhCn] {
+            let r = test_from(lang, TO, TestFrom::Command).render(&instance());
+            let name = match lang {
+                Locale::En => "test_command_text",
+                Locale::De => "test_command_de_text",
+                Locale::ZhCn => "test_command_zh-CN_text",
+            };
+            insta::assert_snapshot!(name, format!("Subject: {}\n\n{}", r.subject, r.text));
+        }
     }
 
     #[test]

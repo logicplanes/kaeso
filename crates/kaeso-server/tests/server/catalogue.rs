@@ -1214,3 +1214,65 @@ async fn metrics_say_how_old_the_model_data_is_and_whether_the_last_sync_failed(
         "new data moves it"
     );
 }
+
+#[tokio::test]
+async fn an_instance_admin_fetches_the_model_data_now() {
+    let s = TestServices::start().await;
+    let off = App::start(&s).await;
+    let owner = off.setup().await;
+    let r = off
+        .post("/instance/kpmr/sync", json!({}), Some(&owner.cookie))
+        .await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+    assert_eq!(
+        r.body["error"]["message"],
+        "Model data sync is off on this install; set `KAESO_KPMR_SYNC=true` to use it."
+    );
+
+    let served = common::kpmr::Served::new(kaeso_core::kpmr::EMBEDDED.to_owned());
+    let url = common::kpmr::serve(served.clone()).await;
+    let app = App::start_with(
+        &s,
+        &[
+            ("KAESO_KPMR_URL", url.as_str()),
+            ("KAESO_KPMR_SYNC", "true"),
+        ],
+    )
+    .await;
+    app.clock
+        .set(after_the_built_in_snapshot(time::Duration::hours(6)));
+    // Both gateways share the database, so the owner's session works on either.
+    let sync = || app.post("/instance/kpmr/sync", json!({}), Some(&owner.cookie));
+    let r = sync().await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["status"], "unchanged");
+
+    let mut changed = common::kpmr::built_in();
+    changed["providers"]["openai"]["models"]["gpt-new"] =
+        json!({ "id": "gpt-new", "name": "GPT New" });
+    served.lock().unwrap().body = changed.to_string();
+    let r = sync().await;
+    assert_eq!(
+        r.body,
+        json!({ "status": "applied", "price_changes": 0, "delisted": 0, "relisted": 0 })
+    );
+    assert!(
+        app.state
+            .kpmr
+            .current()
+            .snapshot
+            .model("openai", "gpt-new")
+            .is_some()
+    );
+
+    served.lock().unwrap().status = 500;
+    let r = sync().await;
+    assert_eq!(r.status, StatusCode::SERVICE_UNAVAILABLE, "{:?}", r.body);
+    let system = app.get("/instance/system", &owner.cookie).await;
+    assert!(
+        system.body["model_data"]["last_error"].is_string(),
+        "the System page says why: {:?}",
+        system.body["model_data"]
+    );
+    s.cleanup().await;
+}

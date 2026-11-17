@@ -5,7 +5,8 @@ use serde::Serialize;
 use time::OffsetDateTime;
 use utoipa::ToSchema;
 
-use crate::platform::error::ApiResult;
+use crate::platform::error::{ApiError, ApiResult};
+use crate::services::kpmr::Synced;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -127,4 +128,53 @@ pub async fn get(State(state): State<AppState>) -> ApiResult<Json<SystemView>> {
             last_error: sync.and_then(|r| r.last_error),
         },
     }))
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "What fetching the model data from KPMR did.")]
+pub struct KpmrSyncView {
+    #[doc = "`applied` when Kaeso took new data, `unchanged` when KPMR had none."]
+    pub status: &'static str,
+    #[doc = "Model prices that changed."]
+    pub price_changes: usize,
+    #[doc = "Models KPMR no longer lists."]
+    pub delisted: usize,
+    #[doc = "Models KPMR lists again."]
+    pub relisted: usize,
+}
+
+#[utoipa::path(
+    post,
+    path = "/instance/kpmr/sync",
+    summary = "Fetch the model data from KPMR now, as the scheduled sync does.",
+    tag = "instance",
+    responses((status = 200, body = KpmrSyncView))
+)]
+pub async fn kpmr_sync(State(state): State<AppState>) -> ApiResult<Json<KpmrSyncView>> {
+    if !state.config.kpmr.sync {
+        return Err(ApiError::Conflict(
+            "Model data sync is off on this install; set `KAESO_KPMR_SYNC=true` to use it.".into(),
+        ));
+    }
+    match crate::services::kpmr::sync(&state).await {
+        Ok(Synced::Unchanged) => Ok(Json(KpmrSyncView {
+            status: "unchanged",
+            price_changes: 0,
+            delisted: 0,
+            relisted: 0,
+        })),
+        Ok(Synced::Applied(a)) => Ok(Json(KpmrSyncView {
+            status: "applied",
+            price_changes: a.price_changes,
+            delisted: a.delisted,
+            relisted: a.relisted,
+        })),
+        // The attempt and its error are recorded, so the System page says what went wrong.
+        Err(e) => {
+            tracing::warn!(error = %e, "fetching KPMR data on request failed");
+            Err(ApiError::Unavailable(
+                "Kaeso could not fetch the model data; the System page says why.".into(),
+            ))
+        }
+    }
 }

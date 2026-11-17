@@ -107,11 +107,7 @@ pub async fn prepare_with(config: Config, overrides: Overrides) -> Result<AppSta
     instance::seed(&pool, &instance_defaults(&config)).await?;
     pg::updates::seed(&pool, &crate::services::updates::defaults(&config)).await?;
     let transport = overrides.mail.unwrap_or_else(|| mail_transport(&config));
-    let mailer = Mailer::start(
-        transport,
-        &config.smtp.from,
-        Instance::new(config.public_url.as_str()),
-    )?;
+    let mailer = mailer_with(&config, transport)?;
     let state = AppState::new(Parts {
         config,
         pg: pool,
@@ -127,6 +123,33 @@ pub async fn prepare_with(config: Config, overrides: Overrides) -> Result<AppSta
     });
     crate::services::kpmr::init(&state).await?;
     Ok(state)
+}
+
+/// `kaeso mail test`: sends a test email with the mailer the settings describe, without a
+/// database, and gives what the mail server answered when it refused.
+pub async fn send_test_email(config: &Config, to: &str) -> Result<(), MailError> {
+    send_test_email_with(config, mail_transport(config), to).await
+}
+
+pub async fn send_test_email_with(
+    config: &Config,
+    transport: Transport,
+    to: &str,
+) -> Result<(), MailError> {
+    let email = kaeso_mail::templates::test_from(
+        kaeso_mail::Locale::En,
+        to,
+        kaeso_mail::templates::TestFrom::Command,
+    );
+    mailer_with(config, transport)?.send_now(email).await
+}
+
+fn mailer_with(config: &Config, transport: Transport) -> Result<Mailer, MailError> {
+    Mailer::start(
+        transport,
+        &config.smtp.from,
+        Instance::new(config.public_url.as_str()),
+    )
 }
 
 fn mail_transport(config: &Config) -> Transport {

@@ -81,6 +81,8 @@ Entscheidungsmodelle kosten ihre Eingabe-Tokens; ihr Ausgabepreis ist `0`.
 
 Ein Job prüft alle fünf Minuten, ob das Gateway KPMR wieder fragen muss. Steht `kpmr.interval` auf `auto`, folgt es `refresh_seconds` des Katalogs, gehalten zwischen 5 Minuten und 24 Stunden; eine Dauer wie `6h` ersetzt es. Nach einem fehlgeschlagenen Versuch fragt das Gateway innerhalb einer Stunde erneut.
 
+**Jetzt synchronisieren** auf der Karte **Modelldaten** unter **Instanz** › **System** oder `docker compose exec gateway kaeso kpmr sync` auf dem Server ruft sie sofort ab, und jedes Gateway der Installation übernimmt die neuen Daten. Beides braucht `kpmr.sync` an.
+
 ```mermaid
 sequenceDiagram
   accTitle: Den Katalog abrufen
