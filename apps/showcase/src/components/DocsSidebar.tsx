@@ -67,8 +67,8 @@ export default function DocsSidebar({ sections, path: initial }: { sections: Nav
           </Sidebar.Group>
         ))}
       </Sidebar.Content>
-      <Sidebar.Footer className="gap-8">
-        <ThemeMenu side="top" align="start" />
+      <Sidebar.Footer className="justify-between gap-8">
+        <ThemeMenu display="segmented" size="sm" />
         <DocsLanguageMenu />
       </Sidebar.Footer>
     </Sidebar>

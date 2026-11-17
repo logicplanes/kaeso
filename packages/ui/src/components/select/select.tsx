@@ -11,21 +11,31 @@ import { MENU_ICON, MENU_ITEM, MENU_LABEL, MENU_POPUP, MENU_SEPARATOR } from "..
 import { anchorWidthStyle, useLayoutWidth } from "../../hooks/use-layout-width.js";
 import { useUiText } from "../../i18n/context.js";
 import { OptionCheckbox } from "./option-checkbox.js";
+import { INPUT_ICON_SIZE, LEADING } from "../input/sizes.js";
 
 export const KAESO_SELECT_VARIANTS = {
   appearance: {
-    default: { classes: "material-selector", description: "A pill with the same ring, hover and focus as a text input (default)" },
+    default: {
+      classes: "material-selector font-regular",
+      description: "A pill with the same ring, hover and focus as a text input, its value in the input's regular weight (default)",
+    },
     ghost: {
-      classes: "material-ghost focus-ring text-fg-secondary hover:text-fg focus-visible:text-fg open:text-fg",
+      classes: "material-ghost focus-ring font-medium text-fg-secondary hover:text-fg active:text-fg focus-visible:text-fg open:text-fg",
       description: "Inline in settings rows: “GPT-5 mini (default) ⌄”",
     },
-    header: { classes: "material-ghost focus-ring text-fg", description: "Transparent until hovered, in full text colour: a column header's model" },
+    header: {
+      classes: "material-ghost focus-ring font-medium text-fg",
+      description: "Transparent until hovered, in full text colour: a column header's model",
+    },
   },
   size: {
-    sm: { classes: "h-32 pl-12 pr-10 gap-6 text-body", description: "32px: settings rows and toolbars" },
-    md: { classes: "h-36 pl-16 pr-12 gap-8 text-body", description: "36px (default)" },
-    lg: { classes: "h-40 pl-18 pr-14 gap-8 text-body", description: "40px" },
-    xl: { classes: "h-48 pl-22 pr-18 gap-8 text-body-lg", description: "48px: sign-in and setup forms" },
+    sm: {
+      classes: "h-32 pl-12 pr-8 gap-6 text-body ghost-end:-mr-8 ghost-start:-ml-12",
+      description: "32px: settings rows and toolbars; the chevron centred in the pill's end, as in every field",
+    },
+    md: { classes: "h-36 pl-16 pr-10 gap-8 text-body ghost-end:-mr-10 ghost-start:-ml-16", description: "36px (default)" },
+    lg: { classes: "h-40 pl-18 pr-12 gap-8 text-body ghost-end:-mr-12 ghost-start:-ml-18", description: "40px" },
+    xl: { classes: "h-48 pl-22 pr-16 gap-8 text-body-lg ghost-end:-mr-16 ghost-start:-ml-22", description: "48px: sign-in and setup forms" },
   },
 } as const;
 export const KAESO_SELECT_DEFAULT_VARIANTS = { appearance: "default", size: "md" } as const;
@@ -165,15 +175,16 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(function Select
         {...(invalid || error ? { "aria-invalid": true } : {})}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "group/trigger relative inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control tap-target disabled:cursor-not-allowed",
+          "group/trigger relative inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill whitespace-nowrap transition-control tap-target disabled:cursor-not-allowed",
           KAESO_SELECT_VARIANTS.size[size].classes,
+          icon && LEADING[size],
           KAESO_SELECT_VARIANTS.appearance[appearance].classes,
           (invalid || error) && appearance !== "default" && "ring-invalid",
           fullWidth && "w-full",
           !(label || description || error) && className,
         )}
       >
-        {icon && <Icon icon={icon} size="sm" className="text-fg-secondary group-disabled/trigger:text-fg-disabled" />}
+        {icon && <Icon icon={icon} size={INPUT_ICON_SIZE[size]} className="text-fg-tertiary group-disabled/trigger:text-fg-disabled" />}
         <BaseSelect.Value
           className={cn(
             "min-w-0 flex-1 truncate text-left data-placeholder:font-regular data-placeholder:text-fg-tertiary group-disabled/trigger:data-placeholder:text-fg-disabled",

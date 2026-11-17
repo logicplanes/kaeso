@@ -16,7 +16,7 @@ export const KAESO_AVATAR_VARIANTS = {
   },
   kind: {
     person: { classes: "rounded-pill", description: "People are round" },
-    org: { classes: "rounded-org", description: "Organizations and projects: radius 8" },
+    org: { classes: "rounded-org", description: "Organizations and projects: a cut square, radius 6 (4 at 24px and under)" },
     agent: { classes: "bg-fill-3", description: "An agent acting for a person: one bot face on a square, the same for every agent" },
   },
 } as const;
@@ -28,6 +28,10 @@ export function initials(name: string, max: 1 | 2 = 2): string {
   const first = parts[0]?.[0] ?? "";
   return (max === 1 || parts.length < 2 ? first : first + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase();
 }
+
+// Initials move toward the part of the face a cut leaves whole, so the cut never takes a letter.
+const BADGE_NUDGE = { 20: "me-2 mb-2", 24: "me-4 mb-4", 28: "me-4 mb-4", 32: "me-4 mb-4", 40: "me-6 mb-6" } as const;
+const GROUP_NUDGE = { 20: "me-6", 24: "me-6", 28: "me-6", 32: "me-8", 40: "me-10" } as const;
 
 export interface AvatarProps {
   name: string;
@@ -62,7 +66,7 @@ const Root = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(props, ref
     return (
       <Tooltip content={label}>
         <AgentBadge ref={ref} size={size} label={label} className={className}>
-          <Face {...props} agent={undefined} className={undefined} decorative />
+          <Face {...props} agent={undefined} className={undefined} decorative nudge={BADGE_NUDGE[size]} />
         </AgentBadge>
       </Tooltip>
     );
@@ -71,7 +75,10 @@ const Root = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(props, ref
 });
 Root.displayName = "Avatar";
 
-const Face = forwardRef<HTMLSpanElement, AvatarProps>(function Face({ name, src, size = 24, kind = "person", decorative, className }, ref) {
+const Face = forwardRef<HTMLSpanElement, AvatarProps & { nudge?: string | undefined }>(function Face(
+  { name, src, size = 24, kind = "person", decorative, className, nudge },
+  ref,
+) {
   const [failedSrc, setFailedSrc] = useState<string | undefined>(undefined);
   const hydrating = useHydrating();
   return (
@@ -99,6 +106,8 @@ const Face = forwardRef<HTMLSpanElement, AvatarProps>(function Face({ name, src,
             onError={() => setFailedSrc(src)}
           />
         </>
+      ) : nudge ? (
+        <span className={nudge}>{initials(name, size === 20 ? 1 : 2)}</span>
       ) : (
         initials(name, size === 20 ? 1 : 2)
       )}
@@ -149,7 +158,13 @@ export const Group = forwardRef<HTMLDivElement, AvatarGroupProps>(function Avata
       aria-label={people.map((p) => p.name).join(t("avatarGroup.listSeparator", ", "))}
       className={cn("flex items-center", className)}
     >
-      {shown.map((p, i) => slot(i, <Face name={p.name} {...(p.src ? { src: p.src } : {})} size={size} decorative />, p.name + i))}
+      {shown.map((p, i) =>
+        slot(
+          i,
+          <Face name={p.name} {...(p.src ? { src: p.src } : {})} size={size} decorative {...(i < items - 1 ? { nudge: GROUP_NUDGE[size] } : {})} />,
+          p.name + i,
+        ),
+      )}
       {rest > 0 &&
         slot(
           shown.length,

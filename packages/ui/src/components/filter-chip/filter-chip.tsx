@@ -87,7 +87,7 @@ export interface FilterChipProps {
 const textOf = (v: FilterChipChoice) => v.textValue ?? (typeof v.label === "string" || typeof v.label === "number" ? String(v.label) : v.value);
 
 const SEG =
-  "relative inline-flex h-full min-w-0 cursor-pointer items-center gap-6 px-10 font-medium whitespace-nowrap transition-control tap-target disabled:cursor-default hover:bg-raised-hover active:bg-raised-pressed open:bg-raised-pressed focus-ring-segment";
+  "relative inline-flex h-full min-w-0 cursor-pointer items-center gap-6 px-10 font-medium whitespace-nowrap transition-control tap-target disabled:cursor-default hover:bg-raised-hover active:bg-raised-pressed open:bg-raised-pressed focus-ring-segment focus-visible:z-10";
 const VALUE = "min-w-0 max-w-240 truncate";
 
 export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function FilterChip(
@@ -158,11 +158,13 @@ export const FilterChip = forwardRef<HTMLDivElement, FilterChipProps>(function F
         {property}
       </span>
       {!operators?.length ? (
-        <span className={cn(SEG, "shrink-0 cursor-default text-fg-secondary divider-l hover:bg-transparent active:bg-transparent")}>{operator}</span>
+        <span className={cn(SEG, "shrink-0 cursor-default font-regular text-fg-secondary divider-l hover:bg-transparent active:bg-transparent")}>
+          {operator}
+        </span>
       ) : (
         <Menu>
           <Menu.Trigger>
-            <button type="button" className={cn(SEG, "shrink-0 text-fg-secondary divider-l")}>
+            <button type="button" className={cn(SEG, "shrink-0 font-regular text-fg-secondary divider-l hover:text-fg open:text-fg")}>
               {operator}
             </button>
           </Menu.Trigger>

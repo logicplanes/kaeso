@@ -101,9 +101,9 @@ function ToneIcon({ tone, multi }: { tone: Tone; multi: boolean }) {
 
 const SURFACE = "relative flex min-h-44 max-w-560 items-center gap-10 bg-toast py-8 text-body font-medium text-toast-fg shadow-toast";
 const ACTION =
-  "inline-flex h-32 shrink-0 cursor-pointer items-center rounded-pill bg-toast-action px-12 text-body font-medium text-toast-fg transition-control hover:bg-toast-action-hover focus-ring";
+  "inline-flex h-32 shrink-0 cursor-pointer items-center rounded-pill bg-toast-action px-12 text-body font-medium text-toast-fg transition-control hover:bg-toast-action-hover focus-ring focus-on-toast";
 const CLOSE =
-  "relative inline-flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-pill text-toast-fg-secondary transition-control tap-target hover:bg-toast-action hover:text-toast-fg focus-ring";
+  "relative inline-flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-pill text-toast-fg-secondary transition-control tap-target hover:bg-toast-action hover:text-toast-fg focus-ring focus-on-toast";
 const padEnd = (action: boolean, close: boolean) => (close ? "pr-10" : action ? "pr-6" : "pr-16");
 
 function useMultiline(title: ReactNode, description: ReactNode) {

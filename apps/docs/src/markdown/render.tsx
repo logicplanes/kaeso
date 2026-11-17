@@ -265,16 +265,14 @@ function Item({ item, ordered, n, ctx }: { item: ListItem; ordered: boolean; n: 
         <span className="flex shrink-0 items-center">
           <Checkbox checked={!!item.checked} readOnly aria-label={name} />
         </span>
+      ) : ordered ? (
+        <Text as="span" aria-hidden variant={ctx.size} tone="tertiary" tabular className="min-w-20 shrink-0 text-right">
+          {n}
+        </Text>
       ) : (
-        <Text
-          as="span"
-          aria-hidden
-          variant={ctx.size}
-          tone="secondary"
-          tabular
-          className={ordered ? "min-w-16 shrink-0 text-right" : "w-12 shrink-0 text-center"}
-        >
-          {ordered ? `${n}.` : "•"}
+        <Text as="span" aria-hidden variant={ctx.size} className="flex w-12 shrink-0 items-center self-start">
+          {"\u200b"}
+          <Separator tone="marker" className="w-12" />
         </Text>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-8">{blocks(item.c, ctx)}</div>
@@ -286,7 +284,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
   switch (b.t) {
     case "heading": {
       const variant = b.level === 2 ? "title" : b.level === 3 ? "title-sm" : b.level === 4 ? "body-lg" : "body";
-      const space = b.level === 2 ? "mt-32" : b.level === 3 ? "mt-16" : "mt-8";
+      const space = b.level === 2 ? "mt-40" : b.level === 3 ? "mt-20" : "mt-8";
       return (
         <Text
           key={i}
@@ -331,7 +329,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
     case "quote":
       return (
         <blockquote key={i} className="flex gap-16">
-          <Separator orientation="vertical" tone="default" />
+          <Separator orientation="vertical" tone="ink" />
           <div className="flex min-w-0 flex-1 flex-col gap-12">{blocks(b.c, { ...ctx, tone: "secondary" })}</div>
         </blockquote>
       );

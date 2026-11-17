@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { createContext, forwardRef, type MouseEvent, type ReactNode } from "react";
+import { createContext, forwardRef, isValidElement, type MouseEvent, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { icons } from "../../icons/vocabulary.js";
@@ -48,6 +48,8 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
 ) {
   const LinkComp = useLinkComponent();
   const navigates = !!(href || onClick);
+  // A switch is as narrow as a chevron, so it keeps its place at the row's end on a phone instead of dropping under the text.
+  const compact = isValidElement(control) && (control.type as { displayName?: string | undefined }).displayName === "Switch";
   const body = (
     <>
       {icon && (
@@ -62,7 +64,10 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
         {description && <span className="text-small text-fg-secondary text-pretty wrap-anywhere">{description}</span>}
       </span>
       {control && (
-        <span data-row-control="" className={cn("flex max-w-full shrink-0 items-center @max-settings-row:basis-full", icon && "@max-settings-row:pl-36")}>
+        <span
+          data-row-control=""
+          className={cn("flex max-w-full shrink-0 items-center", !compact && "@max-settings-row:basis-full", !compact && icon && "@max-settings-row:pl-36")}
+        >
           {control}
         </span>
       )}
@@ -77,8 +82,7 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
   const classes = cn(
     "@container relative flex w-full flex-wrap items-center gap-x-16 gap-y-8 px-20 text-left",
     description ? KAESO_SETTINGS_VARIANTS.row.default.classes : KAESO_SETTINGS_VARIANTS.row.single.classes,
-    "not-first:before:absolute not-first:before:top-0 not-first:before:right-20 not-first:before:h-1 not-first:before:bg-line-subtle not-first:before:forced-line",
-    icon ? "not-first:before:left-56" : "not-first:before:left-20",
+    "not-first:hairline-t",
     navigates && "cursor-pointer transition-control hover:bg-raised-hover active:bg-raised-pressed focus-ring-inset first:rounded-t-group last:rounded-b-group",
     className,
   );

@@ -129,9 +129,9 @@ function ProviderTiles({
                     {...(autoFocus && !searchable && si === 0 && i === 0 && !value ? { autoFocus: true } : {})}
                     onClick={() => !disabled && !p.disabled && onChoose?.(p.id)}
                     className={cn(
-                      "group/tile flex min-h-64 min-w-0 cursor-pointer items-center gap-10 rounded-group bg-raised px-10 py-12 sm:gap-12 sm:px-12 text-left shadow-control transition-control focus-ring forced-checked",
-                      "hover:not-data-checked:bg-raised-hover hover:not-data-checked:shadow-control-hover active:bg-raised-pressed",
-                      "data-checked:bg-item-hover data-checked:ring-step data-disabled:cursor-not-allowed data-disabled:opacity-40",
+                      "group/tile flex min-h-64 min-w-0 cursor-pointer items-center gap-10 rounded-group bg-fill-1 px-10 py-12 sm:gap-12 sm:px-12 text-left transition-control focus-ring forced-checked",
+                      "hover:not-data-checked:bg-fill-2 active:bg-fill-3",
+                      "data-checked:ring-step data-disabled:cursor-not-allowed data-disabled:opacity-40",
                     )}
                   >
                     <span aria-hidden className="flex">

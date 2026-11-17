@@ -53,6 +53,14 @@ describe("Tag states", () => {
     expect(screen.getByRole("button", { name: "latency" })).toHaveClass("material-soft", "bg-fill-2");
     expect(screen.getByRole("button", { name: "cost" })).toHaveClass("material-ghost", "shadow-ring");
   });
+  it("hovers an unpressed toggle with a stronger ring, not the fill that means pressed", () => {
+    render(
+      <Tag variant="outline" pressed={false} onClick={() => undefined}>
+        cost
+      </Tag>,
+    );
+    expect(screen.getByRole("button", { name: "cost" })).toHaveClass("hover:bg-transparent", "hover:shadow-selector-hover");
+  });
   it("gives a raised clickable tag the secondary control's material, which hovers to raised-hover", () => {
     render(<Tag onClick={() => undefined}>gpt-5</Tag>);
     expect(screen.getByRole("button", { name: "gpt-5" })).toHaveClass("material-secondary");

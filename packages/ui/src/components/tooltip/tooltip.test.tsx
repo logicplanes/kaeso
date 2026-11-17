@@ -14,4 +14,9 @@ describe("TooltipSurface", () => {
     expect(ref.current).toBe(screen.getByRole("tooltip"));
     expect(ref.current).toHaveTextContent("Collapse sidebar");
   });
+
+  it("is a dark island in both themes, so it never looks like a second light control beside the one it names", () => {
+    render(<TooltipSurface shortcut={["["]}>Collapse sidebar</TooltipSurface>);
+    expect(screen.getByRole("tooltip")).toHaveAttribute("data-theme", "dark");
+  });
 });

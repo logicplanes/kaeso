@@ -39,7 +39,7 @@ describe("Link", () => {
     expect(link).toHaveClass("text-inherit", "no-underline");
   });
 
-  it("draws a page to read next as a filled well with its name and sentence", () => {
+  it("draws a page to read next as a cut plate with its name and sentence, ringed by a hairline on hover", () => {
     render(
       <Link href="/console/api-keys" variant="card">
         <span>API keys</span>
@@ -47,7 +47,8 @@ describe("Link", () => {
       </Link>,
     );
     const card = screen.getByRole("link", { name: "API keys Limit a key to the models an app needs." });
-    expect(card).toHaveClass("bg-fill-1", "rounded-well", "flex-col");
+    expect(card).toHaveClass("bg-fill-1", "rounded-well", "flex-col", "p-16", "font-medium", "hover:shadow-control-hover");
+    expect(card).not.toHaveClass("hover:bg-fill-2", "px-2");
     expect(card).not.toHaveTextContent("#");
   });
 
@@ -68,7 +69,7 @@ describe("Link with an external icon", () => {
       </Link>,
     );
     const link = screen.getByRole("link", { name: /SDK reference/ });
-    expect(link.querySelector("svg")?.parentElement).toHaveClass("absolute", "end-16", "top-12");
+    expect(link.querySelector("svg")?.parentElement).toHaveClass("absolute", "end-16", "top-16", "h-20");
     expect(link).toHaveClass("pe-36");
   });
 

@@ -31,7 +31,7 @@ export const docs = {
     },
   },
   GrantSummary: {
-    description: "What an agent or a key may do, one short line each after a check mark, on a group surface with 20px inside, like a settings group.",
+    description: "What an agent or a key may do, one short line each after a check mark, on a flat cut plate with 20px inside, the note under a hairline.",
     props: {
       action: "A small button after the note (or alone, at the end), such as Customize.",
       "aria-label": 'The list\'s accessible name ("What it can do").',

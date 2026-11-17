@@ -28,7 +28,7 @@ describe("ModelCard", () => {
 });
 
 describe("Announcement", () => {
-  it("leads with its eyebrow and title, then the summary, actions and artwork", () => {
+  it("leads with its title, the kind of news under it and never above, then the summary, actions and artwork", () => {
     render(
       <Announcement
         eyebrow="New release"
@@ -39,7 +39,7 @@ describe("Announcement", () => {
       />,
     );
     const section = screen.getByRole("heading", { name: "Kaeso 40.5.0", level: 2 }).closest("section") as HTMLElement;
-    expect(section).toHaveTextContent("New releaseKaeso 40.5.0Search on every list.Read what's new");
+    expect(section).toHaveTextContent("Kaeso 40.5.0New releaseSearch on every list.Read what's new");
     expect(screen.getByRole("img", { name: "Kaeso 40.5.0 artwork" })).toBeInTheDocument();
   });
 

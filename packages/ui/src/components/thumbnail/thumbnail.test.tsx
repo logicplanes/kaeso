@@ -29,7 +29,7 @@ describe("Thumbnail", () => {
     const { container, rerender } = render(<Thumbnail src="/a.png" alt="Photo of a receipt" size="sm" />);
     expect(container.firstElementChild).toHaveClass("size-64");
     fireEvent.error(screen.getByRole("img"));
-    expect(screen.getByRole("img", { name: "Photo of a receipt" })).toHaveClass("text-caption");
+    expect(screen.getByRole("img", { name: "Photo of a receipt" })).toHaveClass("text-caption", "items-end", "text-start");
     rerender(<Thumbnail src="/b.png" alt="Photo" size="lg" />);
     expect(container.firstElementChild).toHaveClass("size-160");
   });

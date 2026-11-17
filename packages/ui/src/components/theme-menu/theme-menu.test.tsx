@@ -41,4 +41,21 @@ describe("ThemeMenu", () => {
     expect(menu).toHaveAttribute("data-side", "top");
     expect(menu).toHaveAttribute("data-align", "start");
   });
+
+  it("shows the three choices side by side when segmented, the current one checked, and switches with one tap", async () => {
+    const user = userEvent.setup();
+    render(
+      <ThemeProvider>
+        <ThemeMenu display="segmented" />
+      </ThemeProvider>,
+    );
+    const group = screen.getByRole("radiogroup", { name: "Theme" });
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["System", "Light", "Dark"]);
+    expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
+    expect(screen.queryByRole("button", { name: "Theme" })).toBeNull();
+    await user.click(screen.getByRole("radio", { name: "Dark" }));
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("dark");
+    expect(group).toBeInTheDocument();
+  });
 });

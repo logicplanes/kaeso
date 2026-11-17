@@ -32,7 +32,7 @@ export const GrantSummary = forwardRef<HTMLDivElement, GrantSummaryProps>(functi
 ) {
   const grouped = !!sections?.length;
   return (
-    <div ref={ref} className={cn("flex flex-col gap-16 rounded-group bg-raised shadow-xs", grouped ? "px-8 pt-8 pb-12" : "p-20", className)}>
+    <div ref={ref} className={cn("flex flex-col gap-16 rounded-group bg-fill-1", grouped ? "px-8 pt-8 pb-12" : "p-20", className)}>
       {grouped ? (
         <ul aria-label={ariaLabel} className="flex flex-col">
           {sections.map((section) => (
@@ -41,7 +41,7 @@ export const GrantSummary = forwardRef<HTMLDivElement, GrantSummaryProps>(functi
                 <ul className="flex flex-wrap gap-6">
                   {section.items.map((item, i) => (
                     <li key={i}>
-                      <Code>{item}</Code>
+                      <Code className="bg-fill-2">{item}</Code>
                     </li>
                   ))}
                 </ul>
@@ -60,7 +60,7 @@ export const GrantSummary = forwardRef<HTMLDivElement, GrantSummaryProps>(functi
         </ul>
       )}
       {(footer || action) && (
-        <div className={cn("flex items-center justify-between gap-12 pt-12 hairline-t", grouped && "px-12")}>
+        <div className={cn("flex items-center justify-between gap-12 pt-12 divider-t", grouped && "px-12")}>
           {footer && <p className="min-w-0 text-small text-fg-secondary text-pretty">{footer}</p>}
           {action && <div className="ml-auto shrink-0">{action}</div>}
         </div>

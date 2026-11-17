@@ -16,6 +16,19 @@ describe("Figure", () => {
     expect(figure.querySelector("figcaption")).toHaveTextContent("Route of a request");
   });
 
+  it("is one plate with its caption at the foot, under a hairline and hung from the left edge", () => {
+    render(
+      <Figure label="Diagram: route of a request" caption="Route of a request">
+        <span>Drawing</span>
+      </Figure>,
+    );
+    const figure = screen.getByRole("figure");
+    expect(figure).toHaveClass("rounded-well", "bg-fill-1");
+    const caption = figure.querySelector("figcaption");
+    expect(caption).toHaveClass("hairline-t-strong", "px-16");
+    expect(caption).not.toHaveClass("text-center");
+  });
+
   it("leaves the caption out when none is given and keeps layout classes on the figure", () => {
     const { container } = render(
       <Figure label="Diagram" surface="plain" className="mt-16">

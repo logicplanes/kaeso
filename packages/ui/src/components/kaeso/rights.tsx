@@ -215,7 +215,10 @@ export const RightsMatrix = forwardRef<HTMLDivElement, RightsMatrixProps>(functi
         const Header = readOnly ? "div" : "label";
         return (
           <section key={g.label} aria-labelledby={headingId} className="flex min-w-0 flex-col">
-            <Header data-right="" className={cn("flex items-start gap-12 px-12 pb-4", !readOnly && changeable.length > 0 && "cursor-pointer")}>
+            <Header
+              data-right=""
+              className={cn("mb-4 flex items-start gap-12 px-12 pb-12 hairline-b-strong", !readOnly && changeable.length > 0 && "cursor-pointer")}
+            >
               {!readOnly && (
                 <span className="flex h-20 items-center">
                   <CheckboxBox

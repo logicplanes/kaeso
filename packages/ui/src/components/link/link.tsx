@@ -16,16 +16,18 @@ export const KAESO_LINK_VARIANTS = {
       description: "Navigation-style links in footers and metadata; no underline until hover",
     },
     standalone: {
-      classes: "font-medium text-fg no-underline hover:underline hover:decoration-fg-tertiary hover:underline-offset-3",
-      description: "A link on its own line (“Team overview ›”)",
+      classes: "font-medium text-fg no-underline hover:opacity-60",
+      description: "A link on its own line (“Team overview ›”): full text that steps back to 60% on hover",
     },
     heading: {
       classes: "group/heading text-inherit no-underline",
       description: "A heading's link to itself: the heading's own look, with a # beside it on hover and keyboard focus",
     },
     card: {
-      classes: "mx-0 flex flex-col gap-4 rounded-well bg-fill-1 px-16 py-12 text-fg no-underline outline-offset-2 hover:bg-fill-2",
-      description: "A page to read next: a filled well with the page's name and one sentence about it",
+      classes:
+        "mx-0 flex flex-col gap-4 rounded-well bg-fill-1 p-16 text-body font-medium text-fg no-underline outline-offset-2 hover:shadow-control-hover active:bg-fill-2",
+      description:
+        "A page to read next: a flat cut plate with the page's name in medium weight and one sentence about it in secondary text; a hairline rings it on hover",
     },
   },
 } as const;
@@ -58,9 +60,9 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link({ hre
     >
       {children}
       {isExternal && (
-        <span aria-hidden="true" className={cn("whitespace-nowrap", variant === "card" && "absolute end-16 top-12")}>
+        <span aria-hidden="true" className={cn("whitespace-nowrap", variant === "card" && "absolute end-16 top-16 flex h-20 items-center")}>
           {"\u2060"}
-          <Icon icon={icons.externalLink} size="xs" className="ms-2 inline-block align-middle" />
+          <Icon icon={icons.externalLink} size="xs" className={cn("inline-block align-middle", variant === "inline" ? "ms-2" : "ms-4")} />
         </span>
       )}
       {variant === "heading" && (

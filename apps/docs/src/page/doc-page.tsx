@@ -18,15 +18,16 @@ export function DocPage({ meta, content, editBase }: LoadedPage) {
       <AppFrame.MenuButton className="absolute top-10 left-12 z-10" />
       <div className="mx-24 mt-24 mb-96 flex justify-center gap-64 md:mx-40 lg:mt-64">
         <article className="max-w-640 min-w-0 flex-1">
-          <header className="flex flex-col gap-8">
-            <Text as="h1" variant="title-lg" weight="semibold" className="text-balance wrap-break-word">
+          <header className="flex flex-col gap-12">
+            <Text as="h1" variant="display" weight="semibold" className="text-balance wrap-break-word">
               {meta.title}
             </Text>
-            <Text as="p" variant="body-lg" weight="regular" tone="secondary" className="text-pretty">
+            <Text as="p" variant="body-lg" weight="regular" tone="secondary" className="max-w-560 text-pretty">
               {meta.description}
             </Text>
           </header>
-          {content.blocks.length > 0 && <Markdown blocks={content.blocks} className="mt-40" />}
+          <Separator className="mt-32" />
+          {content.blocks.length > 0 && <Markdown blocks={content.blocks} className="mt-32" />}
           <PageFooter meta={meta} editBase={editBase} />
         </article>
         <div className="hidden w-200 shrink-0 xl:block">{content.toc.length > 1 && <TableOfContents items={content.toc} className="sticky top-64" />}</div>
@@ -38,9 +39,9 @@ export function DocPage({ meta, content, editBase }: LoadedPage) {
 function PageFooter({ meta, editBase }: { meta: PageMeta; editBase: string }) {
   const t = useText();
   return (
-    <footer className="mt-64 flex flex-col gap-24">
+    <footer className="mt-80 flex flex-col gap-40">
       {(meta.prev || meta.next) && (
-        <nav aria-label={t("page.steps")} className="grid grid-cols-2 gap-16">
+        <nav aria-label={t("page.steps")} className="grid grid-cols-2 gap-12">
           <div className="flex min-w-0">
             {meta.prev && <Step to={meta.prev} label={t("page.previous")} name={t("page.previousStep").replace("{title}", meta.prev.title)} />}
           </div>
@@ -49,12 +50,14 @@ function PageFooter({ meta, editBase }: { meta: PageMeta; editBase: string }) {
           </div>
         </nav>
       )}
-      <Separator />
-      <div className="flex flex-wrap items-start justify-between gap-x-24 gap-y-12">
-        <Link href={`${editBase}${meta.file}`} variant="quiet" external>
-          {t("page.edit")}
-        </Link>
-        <LegalLinks />
+      <div className="flex flex-col gap-20">
+        <Separator />
+        <div className="flex flex-wrap items-center justify-between gap-x-24 gap-y-12">
+          <Link href={`${editBase}${meta.file}`} variant="quiet" external>
+            {t("page.edit")}
+          </Link>
+          <LegalLinks />
+        </div>
       </div>
     </footer>
   );
@@ -62,13 +65,8 @@ function PageFooter({ meta, editBase }: { meta: PageMeta; editBase: string }) {
 
 function Step({ to, label, name, end = false }: { to: { path: string; title: string }; label: string; name: string; end?: boolean }) {
   return (
-    <Link
-      href={to.path}
-      variant="standalone"
-      aria-label={name}
-      className={`flex max-w-full min-w-0 flex-col gap-2 ${end ? "items-end text-right" : "items-start"}`}
-    >
-      <Text variant="small" tone="secondary">
+    <Link href={to.path} variant="card" aria-label={name} className={`w-full min-w-0 ${end ? "items-end text-right" : "items-start"}`}>
+      <Text variant="small" tone="tertiary">
         {label}
       </Text>
       {/* The flex gap is no space in the link's text, which label-in-name (WCAG 2.5.3) would read as "NextGet started". */}{" "}

@@ -17,9 +17,8 @@ vi.mock("./footer-menus", async (importOriginal) => {
   return importOriginal();
 });
 
-describe("the menus at the foot of the sidebar", () => {
-  it("open the menu clicked while they were still loading once they have loaded", async () => {
-    const user = userEvent.setup();
+describe("the foot of the sidebar", () => {
+  const renderDocs = () =>
     render(
       <ThemeProvider>
         <LinkProvider component={RouterLink}>
@@ -27,10 +26,28 @@ describe("the menus at the foot of the sidebar", () => {
         </LinkProvider>
       </ThemeProvider>,
     );
+
+  it("shows the three themes side by side and the current language by name, and opens the language clicked while the menu was loading", async () => {
+    const user = userEvent.setup();
+    renderDocs();
     await screen.findByRole("heading", { level: 1, name: "Kaeso documentation" });
-    for (const name of ["Theme", "Language"]) await user.click(screen.getByRole("button", { name }));
+    const theme = screen.getByRole("radiogroup", { name: "Theme" });
+    expect(theme).toBeInTheDocument();
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["System", "Light", "Dark"]);
+    const language = screen.getByRole("button", { name: "Language: English" });
+    expect(language).toHaveTextContent("English");
+    await user.click(language);
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     footerMenus.release();
     expect((await screen.findAllByRole("menuitemradio")).map((o) => o.textContent)).toEqual(["English", "Deutsch", "简体中文"]);
+  });
+
+  it("switches the theme with one tap", async () => {
+    const user = userEvent.setup();
+    footerMenus.release();
+    renderDocs();
+    await screen.findByRole("heading", { level: 1, name: "Kaeso documentation" });
+    await user.click(screen.getByRole("radio", { name: "Dark" }));
+    expect(document.documentElement).toHaveAttribute("data-theme", "dark");
   });
 });

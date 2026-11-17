@@ -98,7 +98,8 @@ export const Tag = forwardRef<HTMLElement, TagProps>(function Tag(
         clickable
           ? {
               raised: "material-secondary",
-              outline: "material-ghost shadow-ring text-fg-secondary hover:text-fg active:text-fg",
+              outline:
+                "material-ghost shadow-ring text-fg-secondary hover:bg-transparent hover:text-fg hover:shadow-selector-hover active:bg-fill-1 active:text-fg",
               soft: "material-soft bg-fill-2 hover:bg-fill-3",
             }[look]
           : KAESO_TAG_VARIANTS.variant[look].classes,

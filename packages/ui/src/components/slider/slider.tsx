@@ -97,6 +97,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(function Slider(
             >
               <span
                 aria-hidden
+                data-theme="dark"
                 className={cn(
                   "pointer-events-none absolute bottom-full left-1/2 mb-8 inline-flex h-24 -translate-x-1/2 items-center rounded-pill bg-tooltip px-8 text-caption font-medium tabular text-fg opacity-0 shadow-xs transition-opacity duration-120 group-data-dragging/thumb:opacity-100 group-focus-within-visible/thumb:opacity-100",
                   (force?.includes("dragging") || force?.includes("focus")) && "opacity-100",

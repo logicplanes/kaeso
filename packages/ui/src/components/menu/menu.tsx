@@ -98,7 +98,7 @@ function framed(header: ReactNode, footer: ReactNode) {
     return (
       <div {...rest} className={cn(className, "overflow-hidden p-0")}>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain rounded-menu p-6 scrollbar-quiet">
-          {header && <div className="mb-6 px-10 pt-6 pb-10 hairline-b">{header}</div>}
+          {header && <div className="-mx-6 mb-6 px-16 pt-6 pb-10 hairline-b-strong">{header}</div>}
           <div role={role} id={id} aria-labelledby={labelledBy} aria-orientation={orientation} className="flex flex-col">
             {children}
           </div>
@@ -190,11 +190,15 @@ function ItemContent({
   return (
     <>
       {leading ? (
-        <span className={cn("flex size-16 shrink-0 items-center justify-center", description && "self-start mt-10")}>{leading}</span>
+        <span data-menu-glyph="" className={cn("flex size-16 shrink-0 items-center justify-center", description && "self-start mt-10")}>
+          {leading}
+        </span>
+      ) : icon ? (
+        <span data-menu-glyph="" className={cn("flex size-16 shrink-0", description && "self-start mt-10")}>
+          <Icon icon={icon} size="sm" className={danger ? "text-danger-text forced-colors:text-current" : MENU_ICON} />
+        </span>
       ) : (
-        icon && (
-          <Icon icon={icon} size="sm" className={cn(danger ? "text-danger-text forced-colors:text-current" : MENU_ICON, description && "self-start mt-10")} />
-        )
+        <span aria-hidden className="hidden size-16 shrink-0 group-has-data-menu-glyph/menu:block" />
       )}
       {description ? (
         <span className="flex min-w-0 flex-1 flex-col gap-2 py-8">

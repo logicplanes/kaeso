@@ -195,7 +195,7 @@ export const TagInput = forwardRef<HTMLInputElement, TagInputProps>(function Tag
         }}
         className={cn(
           "my-4 min-w-32 flex-1 bg-transparent px-8 text-body text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed",
-          tags.length === 0 && "ps-10",
+          tags.length === 0 && "ps-12",
         )}
       />
       {name && <input type="hidden" name={name} value={tags.join(",")} />}

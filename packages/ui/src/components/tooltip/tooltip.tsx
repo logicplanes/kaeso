@@ -33,7 +33,7 @@ export const KAESO_TOOLTIP_VARIANTS = {
     },
     multiline: {
       classes: "rounded-tooltip px-12 py-8 max-w-280 text-pretty wrap-anywhere",
-      description: "Several lines: radius 12, max 280px",
+      description: "Several lines: radius 8, max 280px",
     },
   },
 } as const;
@@ -159,7 +159,8 @@ export const TooltipSurface = forwardRef<HTMLDivElement, TooltipSurfaceProps>(fu
     <div
       ref={ref}
       role="tooltip"
-      className={cn("inline-flex items-center gap-8 bg-tooltip text-small font-medium text-fg shadow-raised", KAESO_TOOLTIP_VARIANTS.shape[shape].classes)}
+      data-theme="dark"
+      className={cn("inline-flex items-center gap-8 bg-tooltip text-small font-medium text-fg shadow-xs", KAESO_TOOLTIP_VARIANTS.shape[shape].classes)}
     >
       <span>{children}</span>
       {shortcut && <Kbd keys={shortcut} />}

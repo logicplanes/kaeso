@@ -451,13 +451,13 @@ export const Legend = forwardRef<HTMLUListElement, LegendProps>(function Legend(
 Legend.displayName = "Legend";
 
 export const AXIS = {
-  grid: { stroke: "var(--k-line)", strokeDasharray: "3 3", strokeWidth: 1 },
+  grid: { stroke: "var(--k-line)", strokeWidth: 1 },
   baseline: { stroke: "var(--k-line-strong)", strokeWidth: 1 },
   label: { fill: "var(--k-text-tertiary)", fontSize: 12, fontWeight: 500, style: { fontVariantNumeric: "tabular-nums" as const } },
 };
 
 export const KAESO_CHARTS_VARIANTS = {
-  chrome: { default: { classes: "", description: "Dashed 3 3 grid, tertiary 12px labels, a strong baseline; no frame" } },
+  chrome: { default: { classes: "", description: "Solid 1px hairline grid, so only data is ever dashed; tertiary 12px labels, a strong baseline; no frame" } },
 } as const;
 export const KAESO_CHARTS_DEFAULT_VARIANTS = { chrome: "default" } as const;
 

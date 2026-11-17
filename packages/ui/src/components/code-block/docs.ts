@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   CodeBlock: {
     description:
-      "Highlighted code on a well in Kaeso's syntax palette, in every common language, each loaded the first time a block shows it: copy in the header with a title or tabs and on hover without, tabs, line numbers, collapse with a fade at the cut. Long lines scroll sideways inside 16px of padding at both ends, and the code fades out at an edge with more to scroll to.",
+      "Highlighted code on a flat plate (cut corners, no ring) in Kaeso's syntax palette, in every common language, each loaded the first time a block shows it: a quiet title bar under a hairline holds the title, the tabs and the copy circle, which otherwise shows on hover beside the first line; line numbers; collapse with a fade at the cut and a toggle hung from the code's edge. Long lines scroll sideways inside 16px of padding at both ends, and the code fades out at an edge with more to scroll to.",
     props: {
       code: "The code to show.",
       collapseAfter: "Collapse beyond this many lines (24 by default; 0 never collapses).",
@@ -11,10 +11,10 @@ export const docs = {
       highlightLines: "1-based line numbers to highlight.",
       lang: "The language to highlight (`ts` by default), or `text` to show the code plain. `resolveCodeLang` turns a Markdown fence name such as `py` or `sh` into one.",
       lineNumbers: "Shows line numbers.",
-      surface: "On a filled well (`well`) or on the panel itself (`plain`).",
+      surface: "On a flat plate (`well`) or on the panel itself (`plain`), such as inside a plate of your own.",
       onTabChange: "Called with the label of the tab a person chooses, to remember it.",
       tab: "The label of the tab to show, such as a language the reader chose before. A label the block lacks leaves its own choice.",
-      tabs: 'Several versions: "Python · Node · curl", shown as pill tabs.',
+      tabs: 'Several versions: "Python · Node · curl", shown as pill tabs in the title bar, the chosen one raised on the plate as in a segmented control.',
       title: "A file name in the title bar.",
       wrap: "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). They break at spaces, never inside a flag or a name unless it is wider than the line. `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.",
     },
@@ -29,7 +29,7 @@ export const docs = {
       copy: "Hide the copy circle, which copies the diff with + and - markers.",
       lang: "The language of both versions to highlight (`text` by default). `resolveCodeLang` turns a fence name such as `py` or `sh` into one.",
       lineNumbers: "Shows the old and the new line numbers.",
-      surface: "On a filled well (`well`) or on the panel itself (`plain`).",
+      surface: "On a flat plate (`well`) or on the panel itself (`plain`).",
       title: "A name in the title bar, beside the count of added and removed lines.",
       wrap: "Long lines wrap instead of scrolling sideways, keeping their indent: values in a narrow column such as a sheet.",
     },
@@ -40,7 +40,7 @@ export const docs = {
     props: {
       defaultDepth: "Levels open at first (2 by default).",
       query: "Highlights keys and values that contain this text.",
-      surface: "On a filled well (`well`) or on the panel itself (`plain`).",
+      surface: "On a flat plate (`well`) or on the panel itself (`plain`).",
       value: "The data to show as formatted JSON.",
     },
   },

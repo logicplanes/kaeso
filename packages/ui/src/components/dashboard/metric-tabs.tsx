@@ -99,7 +99,7 @@ export const MetricTabs = forwardRef<
                   {loading ? (
                     <Skeleton shape="line" className="w-80" />
                   ) : (
-                    <SwapValue text={textOf(item.value)} className="truncate text-title font-semibold text-fg tabular">
+                    <SwapValue text={textOf(item.value)} className="truncate text-title font-medium text-fg tabular">
                       {item.value}
                     </SwapValue>
                   )}
@@ -128,7 +128,7 @@ export const MetricTabs = forwardRef<
                   {loading ? (
                     <Skeleton shape="line" className="h-20 w-96" />
                   ) : (
-                    <SwapValue text={textOf(item.value)} className="truncate text-metric font-semibold text-fg tabular">
+                    <SwapValue text={textOf(item.value)} className="truncate text-metric font-medium text-fg tabular">
                       {item.value}
                     </SwapValue>
                   )}

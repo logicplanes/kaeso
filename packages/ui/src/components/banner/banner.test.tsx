@@ -90,11 +90,14 @@ describe("Banner, details", () => {
     expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
     warn.mockRestore();
   });
-  it("tells neutral from information by more than the tint: only information carries the info icon", () => {
+  it("tells the tones apart by their mark, on one plate: only information carries the info icon", () => {
     const { container, rerender } = render(<Banner>Maintenance is planned for Sunday.</Banner>);
     expect(container.querySelector("svg")).toBeNull();
     rerender(<Banner tone="info">New models are available.</Banner>);
     expect(container.querySelector("svg")).not.toBeNull();
+    rerender(<Banner tone="danger">The provider key was revoked.</Banner>);
+    expect(screen.getByRole("alert")).toHaveClass("bg-fill-1");
+    expect(container.querySelector(".text-danger-text svg, svg.text-danger-text")).not.toBeNull();
   });
   it("keeps one height whether or not it has an action, and an outline in forced colours", () => {
     render(<Banner>Maintenance is planned for Sunday.</Banner>);

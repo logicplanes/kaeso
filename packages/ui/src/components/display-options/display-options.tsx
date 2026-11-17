@@ -80,7 +80,15 @@ function Panel({ view, rows, toggles, properties, footer, inline }: DisplayOptio
                   {r.icon && <Icon icon={r.icon} size="sm" className="shrink-0 text-fg-secondary" />}
                   <span className="min-w-0 truncate">{r.label}</span>
                 </span>
-                <Select size="sm" appearance="default" aria-label={r.label} options={r.options} value={r.value} onValueChange={r.onChange} />
+                <Select
+                  size="sm"
+                  appearance="default"
+                  aria-label={r.label}
+                  options={r.options}
+                  value={r.value}
+                  onValueChange={r.onChange}
+                  className="min-w-120"
+                />
               </div>
             ))}
           </div>
@@ -94,7 +102,7 @@ function Panel({ view, rows, toggles, properties, footer, inline }: DisplayOptio
         )}
         {properties && (
           <div className="flex flex-col gap-8 p-12 not-first:hairline-t">
-            <span className="text-caption font-medium text-fg-secondary">{t("displayOptions.properties", "Display properties")}</span>
+            <span className="text-small font-medium text-fg-secondary">{t("displayOptions.properties", "Display properties")}</span>
             <div className="flex flex-wrap gap-6">
               {properties.options.map((o) => {
                 const on = properties.value.includes(o.value);

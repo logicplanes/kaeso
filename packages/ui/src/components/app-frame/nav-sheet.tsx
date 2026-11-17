@@ -50,10 +50,7 @@ export const NavSheet = forwardRef<HTMLDivElement, NavSheetProps>(function NavSh
           data-nav-sheet=""
           initialFocus={peek ? false : () => popup.current?.querySelector<HTMLElement>('[aria-current="page"]') ?? true}
           {...(returnFocus ? { finalFocus: returnFocus } : {})}
-          className={cn(
-            place,
-            "top-0 bottom-0 left-0 z-40 flex overflow-hidden rounded-r-sheet bg-chrome shadow-dialog outline-none safe-area-sheet sheet-motion",
-          )}
+          className={cn(place, "top-0 bottom-0 left-0 z-40 flex overflow-hidden bg-panel shadow-dialog outline-none safe-area-sheet sheet-motion")}
           onClick={(e) => {
             if ((e.target as HTMLElement).closest("a[href]")) onOpenChange(false);
           }}

@@ -187,12 +187,15 @@ export function DocsLocale({ children }: { children: ReactNode }) {
 
 export function DocsLanguageMenu() {
   const { lang } = useDocsLang();
+  const name = DOCS_LANGUAGES.find((l) => l.value === lang)?.label ?? lang;
   return (
     <Menu>
       <Menu.Trigger>
-        <Button variant="ghost" size="sm" icon={icons.language} aria-label={docsText(lang, "Language")} />
+        <Button variant="ghost" size="sm" leadingIcon={icons.language} aria-label={`${docsText(lang, "Language")}${lang === "zh-CN" ? "：" : ": "}${name}`}>
+          <span lang={lang}>{name}</span>
+        </Button>
       </Menu.Trigger>
-      <Menu.Content side="top" align="start" className="min-w-180">
+      <Menu.Content side="top" align="end" className="min-w-180">
         <Menu.RadioGroup value={lang} onValueChange={(v) => setDocsLang(parseDocsLang(String(v)) ?? "en")}>
           {DOCS_LANGUAGES.map((l) => (
             <Menu.RadioItem key={l.value} value={l.value}>

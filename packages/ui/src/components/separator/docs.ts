@@ -6,7 +6,7 @@ export const docs = {
     props: {
       label: 'A caption in the middle of a horizontal line ("or").',
       orientation: "A horizontal or vertical line.",
-      tone: "A subtle or a clearer line.",
+      tone: "A subtle line inside groups, a clearer one between regions, `strong` for a section head's rule, `marker` for a list item's short hairline, or `ink` in the text colour for a quotation's rule (2px wide when vertical).",
     },
   },
 } satisfies ComponentDocs;

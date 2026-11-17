@@ -525,7 +525,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
         {...(force ? { "data-force": force } : {})}
         className={cn(
           "group/row relative flex cursor-pointer items-center gap-12 text-body transition-control focus-ring-inset",
-          card ? "rounded-none px-20" : "rounded-item px-12",
+          card ? "px-20" : "px-12 row-rule",
           stacked || lines || wraps ? "min-h-56 py-8" : card && density === "default" ? "h-48" : KAESO_LIST_VARIANTS.density[density].classes,
           rowTone(card, !!selected),
           off && "pointer-events-none text-fg-disabled",
@@ -566,22 +566,25 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
           </TruncatedText>
         )}
         <span className={cn("flex min-w-0 flex-1", lines ? "flex-col items-stretch gap-4" : "contents")}>
-          <span className={cn("flex min-w-0", lines ? "w-full" : "flex-1", stacked ? "flex-col items-start gap-2" : "items-baseline gap-8")}>
-            {typeof item.title === "string" ? (
-              <Text truncate weight="medium" tone={off ? "inherit" : "default"} className={cn("min-w-0 shrink", stacked && "max-w-full")}>
-                {item.title}
-              </Text>
-            ) : (
-              <span className={cn("min-w-0 truncate font-medium", off ? "text-inherit" : "text-fg", stacked && "max-w-full")}>{item.title}</span>
-            )}
-            {item.subtitle && (
-              <TruncatedText
-                wrap={wraps}
-                className={cn("min-w-0", off ? "text-fg-disabled" : "text-fg-secondary", stacked ? "max-w-full text-small" : "flex-1 basis-0")}
-              >
-                {item.subtitle}
-              </TruncatedText>
-            )}
+          <span className={cn("flex min-w-0", lines ? "items-start gap-8" : "contents")}>
+            <span className={cn("flex min-w-0", "flex-1", stacked ? "flex-col items-start gap-2" : "items-baseline gap-8")}>
+              {typeof item.title === "string" ? (
+                <Text truncate weight="medium" tone={off ? "inherit" : "default"} className={cn("min-w-0 shrink", stacked && "max-w-full")}>
+                  {item.title}
+                </Text>
+              ) : (
+                <span className={cn("min-w-0 truncate font-medium", off ? "text-inherit" : "text-fg", stacked && "max-w-full")}>{item.title}</span>
+              )}
+              {item.subtitle && (
+                <TruncatedText
+                  wrap={wraps}
+                  className={cn("min-w-0", off ? "text-fg-disabled" : "text-fg-secondary", stacked ? "max-w-full text-small" : "flex-1 basis-0")}
+                >
+                  {item.subtitle}
+                </TruncatedText>
+              )}
+            </span>
+            {lines && item.actions && <span className="flex h-24 shrink-0 items-center gap-2">{item.actions}</span>}
           </span>
           {lines && (
             <span className="flex min-h-24 min-w-0 flex-wrap items-center gap-x-8">
@@ -590,7 +593,6 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
                 <span className={cn("shrink-0 text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>{item.date}</span>
               )}
               {trailing}
-              {item.actions && <span className="ml-auto flex shrink-0 items-center gap-2">{item.actions}</span>}
             </span>
           )}
         </span>

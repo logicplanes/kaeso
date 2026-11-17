@@ -4,8 +4,11 @@ import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_TABLE_OF_CONTENTS_VARIANTS = {
   state: {
-    default: { classes: "text-fg-secondary hover:text-fg", description: "A heading" },
-    active: { classes: "text-fg", description: "The heading in view, with a 2px ink bar on the rail (a solid line in forced colours)" },
+    default: { classes: "text-fg-tertiary hover:text-fg", description: "A heading, faded until it is read or pointed at" },
+    active: {
+      classes: "text-fg",
+      description: "The heading in view, at full strength, its row's hairline drawn in ink (the only line left in forced colours)",
+    },
   },
 } as const;
 export const KAESO_TABLE_OF_CONTENTS_DEFAULT_VARIANTS = { state: "default" } as const;
@@ -68,24 +71,26 @@ export const TableOfContents = forwardRef<HTMLElement, TableOfContentsProps>(fun
   const current = active ?? seen;
   return (
     <nav ref={ref} aria-label={title} className={cn("flex flex-col", className)}>
-      <span className="mb-8 text-caption font-medium text-fg-secondary">{title}</span>
-      <ul className="relative flex flex-col before:absolute before:inset-y-0 before:start-0 before:w-1 before:bg-line-subtle before:forced-line">
-        {items.map((i) => (
-          <li key={i.id}>
-            <a
-              href={`#${i.id}`}
-              aria-current={i.id === current ? "location" : undefined}
-              className={cn(
-                "relative ms-4 flex min-h-32 items-center rounded-pill py-4 pe-8 text-small transition-control focus-ring-inset coarse:min-h-44",
-                i.depth ? "ps-20" : "ps-8",
-                KAESO_TABLE_OF_CONTENTS_VARIANTS.state[i.id === current ? "active" : "default"].classes,
-              )}
-            >
-              {i.id === current && <span aria-hidden className="absolute inset-y-6 -start-4 w-2 rounded-pill bg-ink forced-line" />}
-              {i.label}
-            </a>
-          </li>
-        ))}
+      <span className="pb-8 text-small font-medium text-fg-secondary">{title}</span>
+      <ul className="flex flex-col hairline-t-strong">
+        {items.map((i) => {
+          const on = i.id === current;
+          return (
+            <li key={i.id} className={cn("relative flex hairline-b-strong", i.depth && "ms-12")}>
+              <span aria-hidden className={cn("absolute inset-x-0 bottom-0 h-1 bg-ink transition-control forced-line", !on && "opacity-0")} />
+              <a
+                href={`#${i.id}`}
+                aria-current={on ? "location" : undefined}
+                className={cn(
+                  "flex min-h-32 w-full items-center rounded-item py-8 pe-8 text-small transition-control focus-ring coarse:min-h-44",
+                  KAESO_TABLE_OF_CONTENTS_VARIANTS.state[on ? "active" : "default"].classes,
+                )}
+              >
+                {i.label}
+              </a>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );

@@ -46,7 +46,7 @@ export const Thumbnail = forwardRef<HTMLSpanElement, ThumbnailProps>(function Th
         <span
           role="img"
           aria-label={alt}
-          className={cn("flex size-full items-center justify-center overflow-hidden text-center text-fg-tertiary wrap-anywhere", FALLBACK[size])}
+          className={cn("flex size-full items-end justify-start overflow-hidden text-start text-fg-tertiary wrap-anywhere", FALLBACK[size])}
         >
           <span className={LINES[size]}>{alt}</span>
           <span aria-hidden className="pointer-events-none absolute inset-0 rounded-well shadow-ring" />

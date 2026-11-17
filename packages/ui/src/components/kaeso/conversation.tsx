@@ -107,7 +107,7 @@ function Blocks({ blocks, markdown }: { blocks: ContentBlock[]; markdown: boolea
             );
           case "tool_result":
             return (
-              <div key={i} className="flex flex-col gap-8 pl-12 hairline-l">
+              <div key={i} className="flex flex-col gap-8 pl-12 divider-l">
                 <span className="inline-flex items-center gap-8 text-small font-medium text-fg-secondary">
                   {t("conversationView.result", "Result")}
                   {b.tool_call_id && <span className="mono text-fg-tertiary">{b.tool_call_id}</span>}

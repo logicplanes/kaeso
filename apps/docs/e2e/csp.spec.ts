@@ -24,7 +24,9 @@ test("the build writes one strict policy, with no inline scripts or styles to al
   expect(header).toBe(
     "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
   );
-  expect(readFileSync(new URL("../dist-e2e/_headers", import.meta.url), "utf8")).toBe(`/*\n  Content-Security-Policy: ${header}\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n`);
+  expect(readFileSync(new URL("../dist-e2e/_headers", import.meta.url), "utf8")).toBe(
+    `/*\n  Content-Security-Policy: ${header}\n  Strict-Transport-Security: max-age=63072000; includeSubDomains\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: strict-origin-when-cross-origin\n`,
+  );
   const html = readFileSync(new URL("../dist-e2e/guides/keys-and-limits.html", import.meta.url), "utf8");
   expect(html).toContain(`<meta http-equiv="content-security-policy" content="${header.replace("; frame-ancestors 'none'", "")}">`);
 });
@@ -44,7 +46,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await expect(search).toHaveValue("key");
       await expect(page.getByRole("option").first()).toBeVisible();
       await page.keyboard.press("Escape");
-      const language = page.getByRole("button", { name: /^(Language|Sprache|语言)$/ });
+      const language = page.getByRole("button", { name: /^(Language: |Sprache: |语言：)/ });
       await language.click();
       await expect(page.getByRole("menuitemradio", { name: "Deutsch" })).toBeVisible();
       await page.keyboard.press("Escape");
@@ -79,10 +81,9 @@ test("moving between pages, languages and themes stays within the policy", async
   await page.goto("/");
   await page.getByRole("link", { name: "Keys and limits" }).first().click();
   await expect(page).toHaveURL("/guides/keys-and-limits");
-  await page.getByRole("button", { name: "Theme" }).click();
-  await page.getByRole("menuitemradio", { name: "Dark" }).click();
+  await page.getByRole("radio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.getByRole("button", { name: "Language" }).click();
+  await page.getByRole("button", { name: "Language: English" }).click();
   await page.getByRole("menuitemradio", { name: "简体中文" }).click();
   await expect(page).toHaveURL("/zh-CN/guides/keys-and-limits");
   await page.reload();

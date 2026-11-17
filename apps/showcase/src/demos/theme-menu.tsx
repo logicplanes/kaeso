@@ -21,6 +21,7 @@ export const meta = {
 export const examples = [
   { id: "basic", title: "Basic", fn: "Basic" },
   { id: "raised", title: "Raised", fn: "Raised" },
+  { id: "segmented", title: "Segmented", fn: "SegmentedChoices" },
 ];
 export function Basic() {
   return (
@@ -33,6 +34,13 @@ export function Raised() {
   return (
     <ThemeProvider>
       <ThemeMenu variant="secondary" size="md" />
+    </ThemeProvider>
+  );
+}
+export function SegmentedChoices() {
+  return (
+    <ThemeProvider>
+      <ThemeMenu display="segmented" />
     </ThemeProvider>
   );
 }
@@ -50,6 +58,12 @@ export function States() {
         ]}
         render={(r, p) => <ThemeMenu variant={r.label as "ghost"} {...p} />}
       />
+      <StateSection title="Segmented">
+        <div className="flex items-center gap-12">
+          <ThemeMenu display="segmented" size="sm" />
+          <ThemeMenu display="segmented" size="md" />
+        </div>
+      </StateSection>
       <StateSection title="Sizes">
         <div className="flex items-center gap-12">
           <ThemeMenu variant="secondary" size="sm" />

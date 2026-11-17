@@ -8,13 +8,15 @@ import { INDENT, dropIndent } from "./indent.js";
 import { numberWidth } from "./numbers.js";
 import { splitWords, type WordPart } from "./words.js";
 import { Text } from "../text/text.js";
+import { Icon } from "../icon/icon.js";
+import { icons } from "../../icons/vocabulary.js";
 import { useUiText } from "../../i18n/context.js";
 import { useScrollFadeX } from "../../hooks/use-scroll-fade.js";
 
 export const KAESO_CODE_BLOCK_VARIANTS = {
   surface: {
-    well: { classes: "rounded-well bg-fill-1", description: "A well: radius 14, fill, no ring (default)" },
-    plain: { classes: "bg-transparent", description: "No surface, inside another well" },
+    well: { classes: "rounded-well bg-fill-1", description: "A flat plate: cut corners (radius 6), fill, no ring (default)" },
+    plain: { classes: "bg-transparent", description: "No surface, inside another plate" },
   },
 } as const;
 export const KAESO_CODE_BLOCK_DEFAULT_VARIANTS = { surface: "well" } as const;
@@ -176,9 +178,9 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     <div ref={ref} className={cn("group/code relative min-w-0", KAESO_CODE_BLOCK_VARIANTS.surface[surface].classes, className)}>
       <BaseTabs.Root value={tab} onValueChange={(v: unknown) => choose(Number(v))}>
         {header && (
-          <div className="flex h-44 items-center gap-4 px-8 hairline-b">
+          <div className="flex h-44 items-center gap-4 px-6 hairline-b-strong">
             {title && (
-              <Text as="span" variant="small" tone="secondary" mono truncate className="px-8">
+              <Text as="span" variant="small" tone="secondary" mono truncate className="px-10">
                 {title}
               </Text>
             )}
@@ -190,7 +192,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
                     value={i}
                     className={cn(
                       "relative inline-flex h-28 cursor-pointer items-center rounded-pill px-10 text-small font-medium transition-control tap-target focus-ring",
-                      i === tab ? "bg-fill-3 text-fg" : "text-fg-secondary hover:bg-fill-2 hover:text-fg",
+                      i === tab ? "segment-indicator-raised text-fg shadow-segment" : "text-fg-secondary hover:text-fg active:bg-fill-2",
                     )}
                   >
                     {item.label}
@@ -222,20 +224,24 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
         )}
       </BaseTabs.Root>
       {collapseAfter > 0 && lines.length > collapseAfter && (
-        <div className="flex justify-center pb-12">
+        <div className="flex px-6 pb-6">
           <button
             type="button"
+            aria-expanded={expanded}
             onClick={() => setExpanded((e) => !e)}
-            className="relative inline-flex h-28 cursor-pointer items-center rounded-pill px-12 text-small font-medium text-fg-secondary transition-control tap-target hover:bg-fill-2 hover:text-fg focus-ring"
+            className="relative inline-flex h-28 cursor-pointer items-center gap-4 rounded-pill ps-10 pe-8 text-small font-medium text-fg-secondary transition-control tap-target hover:text-fg active:bg-fill-2 focus-ring"
           >
             <SwapText reserve={[t("codeBlock.showLess", "Show less"), t("codeBlock.showAllLines", "Show all {count} lines", { count: String(lines.length) })]}>
               {expanded ? t("codeBlock.showLess", "Show less") : t("codeBlock.showAllLines", "Show all {count} lines", { count: String(lines.length) })}
             </SwapText>
+            <span aria-hidden className={cn("inline-flex transition-control reduced:transition-none", expanded && "rotate-180")}>
+              <Icon icon={icons.chevronDown} size="xs" />
+            </span>
           </button>
         </div>
       )}
       {copy && !header && (
-        <div className="absolute top-8 right-8 opacity-0 transition-control group-hover/code:opacity-100 coarse:opacity-100 focus-within:opacity-100">
+        <div className="absolute top-10 right-10 opacity-0 transition-control group-hover/code:opacity-100 coarse:opacity-100 focus-within:opacity-100">
           <CopyButton value={text} label={t("codeBlock.copy", "Copy code")} />
         </div>
       )}

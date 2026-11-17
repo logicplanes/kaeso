@@ -19,7 +19,7 @@ const here = path === undefined ? localizedPath(lang, "/404") : localizedPath(la
 ---
 
 <Base title={title} description={description} path={path} notFound={notFound}>
-  <div class="isolate flex h-dvh w-full flex-col overflow-hidden bg-chrome text-fg lg:flex-row">
+  <div class="isolate flex h-dvh w-full flex-col overflow-hidden bg-panel text-fg lg:flex-row">
     <DocsSidebar client:load transition:persist="docs-sidebar" sections={sections(lang)} path={here} />
     <header class="shrink-0 bg-panel safe-area-bar lg:hidden">
       <div class="mt-8 flex h-52 items-center justify-between pr-20 pl-28">
@@ -49,20 +49,20 @@ const here = path === undefined ? localizedPath(lang, "/404") : localizedPath(la
         </span>
       </div>
     </header>
-    <main class="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel safe-area-panel lg:my-8 lg:mr-8 lg:rounded-panel lg:shadow-panel">
+    <main class="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel safe-area-panel lg:pt-8">
       <button
         type="button"
         data-sidebar-expand
         aria-label={t("Expand sidebar")}
         title={`${t("Expand sidebar")}  [`}
-        class="k-expand absolute top-10 left-12 z-10 hidden size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary material-ghost transition-control hover:text-fg focus-ring"
+        class="k-expand absolute top-18 left-12 z-10 hidden size-32 cursor-pointer items-center justify-center rounded-pill text-fg-secondary material-ghost transition-control hover:text-fg focus-ring"
       >
         <Icon icon={icons.sidebar} size="sm" />
       </button>
       <div id="k-panel" class="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-quiet">
         <div class="flex min-h-full flex-col">
           <slot />
-          <footer class="mt-auto px-24 pt-24 pb-32">
+          <footer class="mt-auto px-24 pt-64 pb-24">
             <LegalLinks />
           </footer>
         </div>

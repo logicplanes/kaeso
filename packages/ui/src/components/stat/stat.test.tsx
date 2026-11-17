@@ -17,6 +17,19 @@ describe("a tile Stat", () => {
     expect(drawn?.children).toHaveLength(4);
     expect(screen.getByLabelText("Cost per day")).toBeInTheDocument();
   });
+  it("sets the number at the plate's head and what it counts at its foot, over a rule, as kaeso.app sets its figures", () => {
+    render(
+      <StatGroup aria-label="Usage">
+        <Stat variant="tile" label="Requests" value="12,480" detail="vs. the previous 7 days" />
+      </StatGroup>,
+    );
+    const tile = screen.getByRole("listitem");
+    expect(tile).toHaveClass("figure-plate", "rounded-group");
+    expect(tile.firstElementChild).toHaveTextContent("Requests");
+    expect(screen.getByText("Requests")).toHaveClass("order-last", "mt-auto", "rule-t", "font-medium");
+    expect(screen.getByRole("list", { name: "Usage" })).toHaveClass("gap-8");
+    expect(screen.getByRole("list", { name: "Usage" })).not.toHaveClass("bg-line");
+  });
 });
 
 describe("a tile Stat while loading", () => {
@@ -107,7 +120,7 @@ describe("StatGroup on a narrow screen", () => {
     expect(statGridFit([106, 120, 136, 100], 342, false)).toEqual({ step: 1, single: false, two: false });
   });
   it("gives each tile a row when even the smallest size doesn't fit", () => {
-    expect(statGridFit([106, 120, 165, 100], 272, false)).toEqual({ step: 0, single: true, two: false });
+    expect(statGridFit([106, 120, 220, 100], 272, false)).toEqual({ step: 0, single: true, two: false });
   });
   it("counts the room of a tile that widens over a short row", () => {
     expect(statGridLayout(3, false)).toEqual({ cols: 2, spans: [1, 1, 2] });
@@ -119,8 +132,8 @@ describe("StatGroup on a narrow screen", () => {
   it("draws the numbers at the grid's step, in a line of the largest size's height", () => {
     render(<Stat variant="tile" label="Cost" value="$1,041.13" />);
     const value = screen.getByText("$1,041.13");
-    expect(value).toHaveClass("text-metric", "truncate");
-    expect(value.parentElement).toHaveClass("h-34");
+    expect(value).toHaveClass("text-display", "font-medium", "truncate");
+    expect(value.parentElement).toHaveClass("h-44");
   });
 });
 
@@ -137,10 +150,10 @@ describe("StatGroup with live values", () => {
       </StatGroup>
     );
     const { rerender } = render(grid("$41.13"));
-    const size = () => screen.getByText(/^\$/).className.match(/text-(metric|title|title-sm)\b/)?.[1];
-    expect(size()).toBe("metric");
+    const size = () => screen.getByText(/^\$/).className.match(/text-(display|metric|title|title-sm)\b/)?.[1];
+    expect(size()).toBe("display");
     rerender(grid("$1,041,213.13"));
-    expect(size()).not.toBe("metric");
+    expect(size()).not.toBe("display");
     const stepped = size();
     rerender(grid("$41.13"));
     expect(size()).toBe(stepped);

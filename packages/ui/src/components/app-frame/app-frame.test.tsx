@@ -1,12 +1,13 @@
 import { createRef, type ReactNode } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AppFrame } from "./app-frame.js";
 import { NavSheet } from "./nav-sheet.js";
 import { PageHeader } from "../page-header/page-header.js";
 import { Sidebar } from "../sidebar/sidebar.js";
 import { Button } from "../button/button.js";
+import { Banner } from "../banner/banner.js";
 import { icons } from "../../icons/vocabulary.js";
 import { LocaleProvider, type UiMessages } from "../../i18n/index.js";
 import de from "../../i18n/locales/de.js";
@@ -242,5 +243,63 @@ describe("AppFrame's refs", () => {
     const sheet = await screen.findByRole("dialog", { name: "Navigation" });
     expect(ref.current).toBe(sheet);
     expect(sheet).toContainElement(screen.getByRole("link", { name: "Request logs" }));
+  });
+});
+
+describe("AppFrame.Body", () => {
+  it("draws the hairline under the band above it only while its content is scrolled under that band", () => {
+    render(
+      <Sidebar.Provider shortcut={false}>
+        <PageHeader title="Request logs" />
+        <AppFrame.Body data-testid="body">
+          <p>Rows</p>
+        </AppFrame.Body>
+      </Sidebar.Provider>,
+    );
+    const header = screen.getByRole("banner");
+    const body = screen.getByTestId("body");
+    expect(header).not.toHaveAttribute("data-k-content-under");
+    body.scrollTop = 120;
+    fireEvent.scroll(body);
+    expect(header).toHaveAttribute("data-k-content-under");
+    body.scrollTop = 0;
+    fireEvent.scroll(body);
+    expect(header).not.toHaveAttribute("data-k-content-under");
+  });
+  it("takes the hairline away when it leaves", () => {
+    const { rerender } = render(
+      <>
+        <PageHeader title="Request logs" />
+        <AppFrame.Body data-testid="body" />
+      </>,
+    );
+    const body = screen.getByTestId("body");
+    body.scrollTop = 40;
+    fireEvent.scroll(body);
+    expect(screen.getByRole("banner")).toHaveAttribute("data-k-content-under");
+    rerender(<PageHeader title="Request logs" />);
+    expect(screen.getByRole("banner")).not.toHaveAttribute("data-k-content-under");
+  });
+});
+
+describe("AppFrame's panel", () => {
+  it("lets a full-width banner be its top edge, marked so the frame drops its 8px inset above it", () => {
+    render(
+      <AppFrame sidebar={<nav aria-label="Console" />}>
+        <Banner layout="full">This is a read-only demo with sample data.</Banner>
+        <PageHeader title="Overview" />
+      </AppFrame>,
+    );
+    const main = screen.getByRole("main");
+    expect(main.firstElementChild).toHaveAttribute("data-k-banner", "full");
+    expect(main).toHaveClass("frame-main-top");
+  });
+
+  it("is square and flush beside the sidebar, the sidebar on the same ground behind a hairline", () => {
+    render(<Console />);
+    const main = screen.getByRole("main");
+    expect(main).toHaveClass("bg-panel", "frame-main-top");
+    expect(main.className).not.toMatch(/rounded|shadow-panel|lg:m[rxy]?-/);
+    expect(screen.getByRole("navigation", { name: "Console" })).toHaveClass("bg-panel", "divider-r");
   });
 });

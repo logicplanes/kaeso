@@ -3,11 +3,11 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   AppFrame: {
     description:
-      "The page frame of an app: a skip link to the content, the sidebar, the inset panel and, on phones, a bar with a menu button. The navigation sheet's code loads once the page is idle or on the first tap; after a failed download the next tap or hover loads it again from a fresh address. Chromium and WebKit keep a failed download of a chunk the sheet shares with the rest of the app until the page is reloaded.",
+      "The page frame of an app: a skip link to the content, the sidebar and the content panel, one square ground divided by a hairline, and on phones a bar with a menu button. `AppFrame.Body` draws a hairline at the foot of the band right above it (the page header or a toolbar) while its content is scrolled under that band. The navigation sheet's code loads once the page is idle or on the first tap; after a failed download the next tap or hover loads it again from a fresh address. Chromium and WebKit keep a failed download of a chunk the sheet shares with the rest of the app until the page is reloaded.",
     props: {
       brandHref: "Where the phone bar's wordmark links to (the app's home), as `Sidebar.Brand`'s `href`; without it the wordmark is not a link.",
       brandLabel: "The accessible name of the phone bar's wordmark (default \"Kaeso\"), as `Sidebar.Brand`'s `label`.",
-      children: "The page, inside the inset panel.",
+      children: "The page, in the content panel.",
       corner: "A bottom-right status area. Unused by default.",
       fill: "`screen` fills the viewport (default); `parent` fills its container (previews, embedded tools).",
       phoneActions: "Icon buttons in the phone bar before the navigation toggle, such as search, so it is one tap away; pass `tooltip={false}` to each.",

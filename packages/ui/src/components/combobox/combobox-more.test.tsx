@@ -111,6 +111,22 @@ describe("Combobox right to left", () => {
     const single = screen.getByRole("combobox", { name: "Owner" }).closest(".material-field")!;
     expect([...single.classList].filter((c) => /^(pr|pl)-/.test(c))).toEqual([]);
   });
+
+  it("centres the chevron in the pill's end at every size, as the select and the input's buttons do", () => {
+    const sizes = { sm: "pe-2", md: "pe-4", lg: "pe-6", xl: "pe-10" } as const;
+    render(
+      <>
+        {Object.keys(sizes).map((size) => (
+          <Combobox key={size} size={size as keyof typeof sizes} aria-label={`Owner ${size}`} options={members} defaultValue="u1" />
+        ))}
+      </>,
+    );
+    for (const [size, end] of Object.entries(sizes)) {
+      const field = screen.getByRole("combobox", { name: `Owner ${size}` }).closest(".material-field")!;
+      expect(field).toHaveClass(end);
+      expect(within(field as HTMLElement).getByRole("button", { name: "Show options" })).toHaveClass("size-28");
+    }
+  });
 });
 
 describe("Autocomplete", () => {

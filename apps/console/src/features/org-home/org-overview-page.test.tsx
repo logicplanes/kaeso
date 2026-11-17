@@ -255,7 +255,7 @@ describe("the organization overview", () => {
     });
     await renderApp(`/orgs/${ORG}`);
     const news = await screen.findByRole("group", { name: "News", hidden: true });
-    expect(news).toHaveTextContent(/New release.*Kaeso 40\.5\.0/);
+    expect(news).toHaveTextContent(/Kaeso 40\.5\.0.*New release/);
     expect(news).not.toHaveTextContent("Added");
   });
 

@@ -235,3 +235,13 @@ describe("compact token counts on charts, in every language", () => {
     setFormatLocale("en");
   });
 });
+
+describe("ChartTooltip swatches", () => {
+  it("draws each row's swatch as the legend does: a line for a line chart, a square otherwise", () => {
+    const rows = [{ id: "gpt-5", label: "GPT-5", color: "var(--k-viz-1)", value: "$5.84" }];
+    const { container, rerender } = render(<ChartTooltip x={10} y={10} width={400} heading="Sat 3 Oct" rows={rows} visible shape="line" />);
+    expect(container.querySelector(".data-mark")).toHaveClass("h-2", "w-12");
+    rerender(<ChartTooltip x={10} y={10} width={400} heading="Sat 3 Oct" rows={rows} visible />);
+    expect(container.querySelector(".data-mark")).toHaveClass("size-10");
+  });
+});

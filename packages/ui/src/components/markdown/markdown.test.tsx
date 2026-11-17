@@ -30,8 +30,8 @@ describe("Markdown", () => {
     const ordered = [...c.querySelectorAll("ol")].at(-1);
     expect(ordered?.textContent).toContain("3.three");
     expect(ordered?.textContent).toContain("4.four");
-    expect(screen.getByRole("img", { name: "Done" }).parentElement).toHaveTextContent("shipped");
-    expect(screen.getByRole("img", { name: "Not done" }).parentElement).toHaveTextContent("next");
+    expect(screen.getByRole("img", { name: "Done" }).closest("li")).toHaveTextContent("shipped");
+    expect(screen.getByRole("img", { name: "Not done" }).closest("li")).toHaveTextContent("next");
     expect(c.textContent).not.toContain("[x]");
     expect(c.querySelector("input")).toBeNull();
   });
@@ -94,6 +94,18 @@ describe("Markdown", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Model" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "12" })).toBeInTheDocument();
+  });
+
+  it("gives a heading more room above than below and hangs bullets from a short rule centred on the first line", () => {
+    const c = md("# Routes\n\nText.\n\n## Limits\n\n- one\n- two", { size: "lg" });
+    expect(screen.getByRole("heading", { name: "Routes" })).toHaveClass("hairline-b-strong", "first:mt-0");
+    expect(screen.getByRole("heading", { name: "Limits" })).toHaveClass("mt-16");
+    expect(screen.getByRole("heading", { name: "Limits" })).not.toHaveClass("hairline-b-strong");
+    const markers = c.querySelectorAll("li > [data-marker]");
+    expect(markers).toHaveLength(2);
+    expect(markers[0]).toHaveClass("h-22");
+    expect(c.querySelector("ul")).toHaveClass("gap-8");
+    expect(c.textContent).not.toContain("•");
   });
 
   it("shows the start of a long text until Show all", async () => {

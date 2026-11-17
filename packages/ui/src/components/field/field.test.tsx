@@ -98,4 +98,24 @@ describe("required", () => {
     expect(label).toHaveTextContent("Rate limitOptional");
     expect(screen.getByRole("textbox", { name: "Rate limit Optional" })).toBeInTheDocument();
   });
+
+  it("sets the label a step under the value it names, and a legend as a section head over a hairline", () => {
+    render(
+      <>
+        <Fieldset legend="Limits">
+          <Field label="Requests per minute" description="Across every key in the project.">
+            <Input />
+          </Field>
+        </Fieldset>
+        <Fieldset legend="New key" description="Keys authenticate your applications.">
+          <Input aria-label="Key name" />
+        </Fieldset>
+      </>,
+    );
+    expect(screen.getByText("Requests per minute")).toHaveClass("text-small", "font-medium");
+    expect(screen.getByText("Across every key in the project.")).toHaveClass("text-small", "text-fg-secondary");
+    expect(screen.getByText("Limits")).toHaveClass("text-title-sm", "hairline-b-strong");
+    expect(screen.getByText("New key")).not.toHaveClass("hairline-b-strong");
+    expect(screen.getByText("Keys authenticate your applications.")).toHaveClass("hairline-b-strong");
+  });
 });

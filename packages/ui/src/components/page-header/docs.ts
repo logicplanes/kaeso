@@ -3,14 +3,14 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   PageHeader: {
     description:
-      "The 52px header of a page: its title, pill tabs, actions. On a phone the tabs move to a row of their own under the title and actions, and actions that would leave the title less than 96px move to a row of their own too, so the title isn't cut to a few letters and the tabs aren't squeezed beside a button.",
+      "The 52px header of a page: its title, pill tabs, actions. Whatever sits right above AppFrame.Body (this header, or a toolbar under it) shows a hairline at its foot while the content is scrolled under it, so the line separates only where something passes beneath. On a phone the tabs move to a row of their own under the title and actions, and actions that would leave the title less than 96px move to a row of their own too, so the title isn't cut to a few letters and the tabs aren't squeezed beside a button.",
     props: {
       actions: "At most one ink button; the rest ghost or raised circles with tooltips.",
       icon: "An icon before the title.",
       start:
         "Before everything: AppFrame.MenuButton, which shows while a wide screen's sidebar is collapsed (on a phone the frame's phone bar opens the navigation).",
       tabs: "Pill tabs after the title.",
-      title: "The page's title (15/600).",
+      title: "The page's title (17/600), alone: no label above it.",
     },
   },
 } satisfies ComponentDocs;

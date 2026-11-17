@@ -9,7 +9,7 @@ import { useUiText } from "../../i18n/context.js";
 export const KAESO_FLOW_VARIANTS = {
   node: {
     pill: { classes: "h-36 rounded-pill px-14", description: "A pill with a hairline (default)" },
-    box: { classes: "min-h-56 rounded-well px-16 py-10", description: "A rounded-14 box with a description line" },
+    box: { classes: "min-h-56 rounded-well px-16 py-10", description: "A cut plate (radius 6) with a description line" },
   },
 } as const;
 export const KAESO_FLOW_DEFAULT_VARIANTS = { node: "pill" } as const;

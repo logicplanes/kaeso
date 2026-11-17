@@ -3,8 +3,8 @@ import { cn } from "../../utils/cn.js";
 
 export const KAESO_SKELETON_VARIANTS = {
   shape: {
-    block: { classes: "rounded-well", description: "Rounded blocks for charts and wells (default)" },
-    line: { classes: "h-12 rounded-pill", description: "A pill line for text" },
+    block: { classes: "rounded-well", description: "A cut plate for charts and wells (default)" },
+    line: { classes: "h-12 rounded-bar", description: "A bar for a line of text, cut like a plate" },
     circle: { classes: "rounded-pill", description: "Avatars and icons" },
     control: { classes: "h-36 rounded-pill", description: "The shape of a 36px control" },
   },

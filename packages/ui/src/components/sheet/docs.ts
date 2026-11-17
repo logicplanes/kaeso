@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   Sheet: {
     description:
-      "A panel that slides in from the edge of the screen, for details and longer forms. While it slides out it keeps showing what it showed when it was open, so a page can let go of the row as soon as it closes.",
+      "A panel that slides in from the edge of the screen, for details and longer forms: its title alone at the top with its actions and the close circle at the end edge, a hairline under it once the body scrolls and over the footer while content is below. While it slides out it keeps showing what it showed when it was open, so a page can let go of the row as soon as it closes.",
     props: {
       actions: "Header actions before the close circle.",
       children: "The sheet's content.",

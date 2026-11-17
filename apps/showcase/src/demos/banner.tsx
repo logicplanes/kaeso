@@ -3,7 +3,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Banner",
-  description: "A standing notice about a state: a tint, an icon, the text and actions; errors are toasts.",
+  description: "A standing notice about a state: a flat plate, an icon in its tone's color, the text and actions; errors are toasts.",
   group: "Components",
   entry: "banner",
   import: "Banner",

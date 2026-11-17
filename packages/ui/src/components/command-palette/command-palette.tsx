@@ -111,7 +111,7 @@ function Palette({
           keywords: [item.hint ?? "", ...(item.keywords ?? [])],
           render: ({ active }: CommandListRowState) => (
             <>
-              {item.icon && <Icon icon={item.icon} size="sm" className={cn(active ? "text-fg" : "text-fg-secondary", "forced-colors:text-current")} />}
+              {item.icon && <Icon icon={item.icon} size="md" className={cn(active ? "text-fg" : "text-fg-secondary", "forced-colors:text-current")} />}
               <span className="min-w-0 truncate">{item.label}</span>
               {item.hint && (
                 <span
@@ -208,7 +208,7 @@ function Palette({
         }}
         footer={
           keyHints && (
-            <div className="flex h-40 shrink-0 items-center gap-16 px-16 text-caption font-medium text-fg-tertiary hairline-t">
+            <div className="flex h-40 shrink-0 items-center gap-16 px-18 text-caption font-medium text-fg-tertiary hairline-t-strong">
               <span className="inline-flex items-center gap-6">
                 <Kbd>up</Kbd>
                 <Kbd>down</Kbd> {t("commandPalette.toNavigate", "to navigate")}

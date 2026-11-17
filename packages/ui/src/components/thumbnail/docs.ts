@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   MediaView: {
     description:
-      "An image, an audio clip, a video or a file someone sent or a model made, with a line that names it and a download: an image is a thumbnail that opens to the whole image in place, audio and video play in the browser's own player.",
+      "An image, an audio clip, a video or a file someone sent or a model made, with a line that names it and a download: an image is a thumbnail that opens to the whole image in place, audio and video play in the browser's own player, and a file that can only be downloaded stands beside a file mark on a cut plate. The download carries its arrow.",
     props: {
       detail: "What the file is, after its name: its format, dimensions and size.",
       download: "The address the download saves from, when it isn't the one shown or played, such as a blob: URL beside an image's data: URL.",
@@ -15,7 +15,7 @@ export const docs = {
   },
   Thumbnail: {
     description:
-      "A square image someone sent, such as a photo in a conversation: cropped to fill, on a well with radius 14; when it can't load, its text alternative shows instead.",
+      "A square image someone sent, such as a photo in a conversation: cropped to fill, on a cut plate (radius 6) with a hairline just inside its edge; when it can't load, its text alternative shows instead, at the plate's foot like a caption.",
     props: {
       alt: "What the image shows, read by screen readers and shown in its place when it can't load.",
       size: "The width and height: 64, 120 or 160 pixels.",

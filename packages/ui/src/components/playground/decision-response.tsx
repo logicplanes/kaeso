@@ -121,7 +121,7 @@ function BoxAnswer({ answer, image, t }: { answer: Extract<DecisionAnswer, { kin
   return (
     <div className="flex flex-col gap-8">
       {image && (
-        <div className="relative max-w-480 min-w-0 overflow-hidden rounded-frame bg-fill-1 image-outline">
+        <div className="relative max-w-480 min-w-0 overflow-hidden rounded-well bg-fill-1 image-outline">
           <img src={image.src} alt={image.alt ?? ""} decoding="async" className="block h-auto w-full" />
           {edges && (
             <span

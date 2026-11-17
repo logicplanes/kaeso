@@ -52,6 +52,13 @@ describe("MediaView", () => {
     expect(screen.getByRole("link", { name: "Download" })).toHaveAttribute("download", "");
   });
 
+  it("sets a file that can only be downloaded beside a file mark on a cut plate", () => {
+    const { container } = render(<MediaView kind="file" src="blob:kaeso/3" label="invoice.pdf" detail="PDF, 90.0 KB" />);
+    expect(container.querySelector("figure")).toHaveClass("flex-row", "items-center");
+    expect(container.querySelector("figure > span[aria-hidden]")).toHaveClass("rounded-well", "bg-fill-1", "size-40");
+    expect(screen.getByRole("link", { name: "Download" })).toHaveAttribute("href", "blob:kaeso/3");
+  });
+
   it("downloads from another address than the one it shows when given one", () => {
     render(<MediaView src={PNG} download="blob:kaeso/9" label="Image" filename="image-1.png" />);
     expect(screen.getByRole("img", { name: "Image" })).toHaveAttribute("src", PNG);

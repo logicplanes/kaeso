@@ -11,7 +11,8 @@ export const KAESO_COLLAPSIBLE_VARIANTS = {
 } as const;
 export const KAESO_COLLAPSIBLE_DEFAULT_VARIANTS = { state: "closed" } as const;
 
-const TRIGGER = `${DISCLOSURE_TRIGGER} min-h-40 py-8 text-body font-medium text-fg hover:bg-fill-1 active:bg-fill-2 coarse:min-h-44`;
+// A title that wraps keeps its count and chevron on its first line, so the row hangs from the top, not the middle.
+const TRIGGER = "min-h-40 items-start py-10 text-body font-medium text-fg hover:bg-fill-1 active:bg-fill-2 coarse:min-h-44 coarse:py-12";
 
 function DisclosureText({ title, hint }: { title: ReactNode; hint: ReactNode | undefined }) {
   return (
@@ -44,9 +45,11 @@ export const Collapsible = forwardRef<HTMLDivElement, CollapsibleProps>(function
       {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
       className={cn("flex flex-col", className)}
     >
-      <BaseCollapsible.Trigger className={TRIGGER}>
+      <BaseCollapsible.Trigger className={cn(DISCLOSURE_TRIGGER, TRIGGER)}>
         <DisclosureText title={title} hint={hint} />
-        <DisclosureChevron />
+        <span className="flex h-20 shrink-0 items-center">
+          <DisclosureChevron />
+        </span>
       </BaseCollapsible.Trigger>
       <BaseCollapsible.Panel className="collapse-motion">
         <div className="px-12 pt-4 pb-12">{children}</div>

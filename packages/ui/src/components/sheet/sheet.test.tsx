@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRef, useState } from "react";
 import { Sheet } from "./sheet.js";
@@ -218,6 +218,27 @@ describe("Sheet", () => {
     );
     const sheet = await screen.findByRole("dialog", { name: "Request" });
     expect(sheet).toHaveClass("top-8", "right-8", "bottom-8", "max-sm:inset-0", "max-sm:w-auto", "max-sm:max-w-none", "max-sm:rounded-none");
+  });
+});
+
+describe("Sheet's hairlines", () => {
+  it("draws a hairline under the header once the body scrolls, and over the footer while content is below", () => {
+    const { container } = render(
+      <Sheet inline title="Request" footer={<Button variant="primary">Save</Button>}>
+        <p>Overview</p>
+      </Sheet>,
+    );
+    const header = container.querySelector<HTMLElement>("[data-sheet-header]")!;
+    const body = container.querySelector<HTMLElement>("[data-dialog-body]")!;
+    const footer = container.querySelector<HTMLElement>("[data-sheet-footer]")!;
+    expect(header).not.toHaveClass("hairline-b-strong");
+    expect(footer).not.toHaveClass("hairline-t-strong");
+    Object.defineProperty(body, "scrollHeight", { configurable: true, value: 900 });
+    Object.defineProperty(body, "clientHeight", { configurable: true, value: 400 });
+    body.scrollTop = 80;
+    fireEvent.scroll(body);
+    expect(header).toHaveClass("hairline-b-strong");
+    expect(footer).toHaveClass("hairline-t-strong");
   });
 });
 

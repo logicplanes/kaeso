@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   Empty: {
     description:
-      "An empty state: a title, one sentence, one action. No icon, no illustration. The `lg` title is a heading (h2) for a page that is empty; `md` and `compact` titles are text, so an empty table, list or section adds no heading to the page's outline.",
+      "An empty state: a strong title, one sentence, one action. No icon, no illustration. On a page (`lg`) and in a section (`md`) it hangs from the edge the page's title and rows start on, its title set large and tight; in a table or list row (`compact`) it is one short statement, centered. Inside a card it keeps 20px off the card's edges, like the card's rows. The title is a heading (h2) at every size.",
     props: {
       actions: "The one action that makes something appear; put a link to read more in the description.",
       children: "One sentence that says what to do, and an action.",

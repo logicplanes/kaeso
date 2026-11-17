@@ -13,16 +13,16 @@ const ratio = (a: string, b: string) => {
 };
 
 describe("Meter", () => {
-  it("turns amber at the first threshold and red at the limit, and says so in its value and to screen readers", () => {
+  it("turns amber at the first threshold and red at the limit, steps its value up to the text color and says so to screen readers", () => {
     const { rerender } = render(<Meter label="Monthly budget" value={0.5} valueLabel="$25.00 of $50.00" thresholds={[0.8]} caption="Resets in 12 days" />);
     expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "$25.00 of $50.00");
     expect(screen.getByText("$25.00 of $50.00")).toHaveClass("text-fg-secondary");
     rerender(<Meter label="Monthly budget" value={0.86} valueLabel="$43.00 of $50.00" thresholds={[0.8]} caption="Resets in 12 days" />);
     expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "$43.00 of $50.00, near the limit");
-    expect(screen.getByText("$43.00 of $50.00")).toHaveClass("text-warning-text");
+    expect(screen.getByText("$43.00 of $50.00")).toHaveClass("text-fg");
     rerender(<Meter label="Monthly budget" value={1.1} valueLabel="$55.00 of $50.00" thresholds={[0.8]} caption="Over the limit: requests are refused" />);
     expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "$55.00 of $50.00, over the limit");
-    expect(screen.getByText("Over the limit: requests are refused")).toHaveClass("text-danger-text");
+    expect(screen.getByText("Over the limit: requests are refused")).toHaveClass("text-fg");
   });
   it("cuts each threshold out of the bar exactly at its value, so the tick shows the surface below", () => {
     render(<Meter label="Requests" value={0.4} thresholds={[0.8, 0.5]} />);

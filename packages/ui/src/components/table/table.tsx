@@ -82,7 +82,7 @@ const HeaderCell = forwardRef<
       ref={ref}
       scope="col"
       className={cn(
-        "h-36 text-caption font-medium text-fg-secondary hairline-b-strong first:pl-0",
+        "h-36 text-caption font-medium text-fg-secondary rule-b first:pl-0",
         KAESO_TABLE_VARIANTS.density[density].classes,
         wrap ? "py-8 align-bottom text-balance" : "whitespace-nowrap",
         LAST[align],
@@ -104,7 +104,7 @@ const Cell = forwardRef<HTMLTableCellElement, TableCellProps>(function TableCell
     <td
       ref={ref}
       className={cn(
-        "h-40 py-10 align-middle text-fg first:pl-0",
+        "h-40 py-10 align-baseline text-fg first:pl-0",
         KAESO_TABLE_VARIANTS.density[density].classes,
         LAST[align],
         KAESO_TABLE_VARIANTS.align[align].classes,

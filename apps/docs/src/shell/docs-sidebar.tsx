@@ -1,11 +1,12 @@
 import { Suspense, lazy, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { Icon, Button, Sidebar, Text, icons, useTheme } from "@logicplanes/kaeso-ui";
+import { Icon, Button, Sidebar, Text, icons } from "@logicplanes/kaeso-ui";
 import { useFormatters } from "@logicplanes/kaeso-ui/i18n";
 import { homePath, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
-import type { FooterMenu } from "./footer-menus";
+import { LanguageButton } from "./language-button";
+import { ThemeSwitch } from "./theme-switch";
 import { openSearch } from "./search-store";
 
 export function SearchButton({ tooltip = true }: { tooltip?: boolean }) {
@@ -22,7 +23,7 @@ const CHANGELOG: Record<Locale, string> = {
 const REPOSITORY = "https://github.com/logicplanes/kaeso";
 const STARS_SHOWN_FROM = 100;
 
-const FooterMenus = lazy(() => import("./footer-menus"));
+const LanguageMenu = lazy(() => import("./footer-menus"));
 
 function StarCount({ stars }: { stars: number | null }) {
   const { formatNumber } = useFormatters();
@@ -38,27 +39,9 @@ function StarCount({ stars }: { stars: number | null }) {
   );
 }
 
-function FooterButtons({ onOpen }: { onOpen: (menu: FooterMenu) => void }) {
-  const t = useText();
-  const { resolvedTheme } = useTheme();
-  return (
-    <>
-      <Button
-        variant="ghost"
-        size="sm"
-        icon={resolvedTheme === "dark" ? icons.themeDark : icons.themeLight}
-        aria-label={t("theme.label")}
-        aria-haspopup="menu"
-        onClick={() => onOpen("theme")}
-      />
-      <Button variant="ghost" size="sm" icon={icons.language} aria-label={t("language.label")} aria-haspopup="menu" onClick={() => onOpen("language")} />
-    </>
-  );
-}
-
 export function DocsSidebar({ nav, stars }: { nav: NavGroup[]; stars: number | null }) {
   const t = useText();
-  const [opening, setOpening] = useState<FooterMenu | null>(null);
+  const [opening, setOpening] = useState(false);
   const locale = useSiteLocale();
   const pathname = useLocation({ select: (l) => l.pathname.replace(/\/+$/, "") || "/" });
   return (
@@ -88,9 +71,10 @@ export function DocsSidebar({ nav, stars }: { nav: NavGroup[]; stars: number | n
           </Sidebar.Group>
         ))}
       </Sidebar.Content>
-      <Sidebar.Footer className="gap-8">
-        <Suspense fallback={<FooterButtons onOpen={setOpening} />}>
-          <FooterMenus opening={opening} />
+      <Sidebar.Footer className="justify-between gap-8">
+        <ThemeSwitch />
+        <Suspense fallback={<LanguageButton onClick={() => setOpening(true)} />}>
+          <LanguageMenu opening={opening} />
         </Suspense>
       </Sidebar.Footer>
     </Sidebar>

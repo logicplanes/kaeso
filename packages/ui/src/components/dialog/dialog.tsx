@@ -1,3 +1,4 @@
+import { useScrolledUnder } from "../../hooks/use-scrolled-under.js";
 import { GutterContent, InsetContent, RaisedContent } from "../../utils/inset.js";
 import { usePortalContainer } from "../../utils/portal-context.js";
 import {
@@ -59,30 +60,6 @@ function isComposing(e: KeyboardEvent): boolean {
 
 function keepFocusOnBackdrop(e: MouseEvent<HTMLElement>) {
   if (e.target === e.currentTarget) e.preventDefault();
-}
-
-function useScrolledUnder<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
-  const [under, setUnder] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  const check = useCallback(() => {
-    const el = ref.current;
-    if (!el || el.closest("[data-resizing]")) return;
-    setUnder(el.scrollHeight - el.scrollTop - el.clientHeight > 1);
-    setScrolled(el.scrollTop > 0);
-  }, []);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    check();
-    el.addEventListener("scroll", check, { passive: true });
-    window.addEventListener("resize", check);
-    return () => {
-      el.removeEventListener("scroll", check);
-      window.removeEventListener("resize", check);
-    };
-  }, [check]);
-  return { ref, under, scrolled, check };
 }
 
 function useKeepFocus(box: HTMLElement | null, inline: boolean | undefined) {
@@ -184,19 +161,23 @@ function DialogFrame({
         <div
           data-dialog-header=""
           {...(bar ? { "data-bar": "" } : {})}
-          className={cn("flex flex-wrap items-start gap-x-12 px-24 pb-4", bar ? "pt-16" : "pt-20")}
+          className={cn(
+            "flex shrink-0 flex-wrap items-start gap-x-12 px-24 pb-16 transition-control",
+            bar ? "pt-16" : "pt-20",
+            scrolled && !toolbar && "hairline-b-strong",
+          )}
         >
           {bar && (
-            <span data-dialog-start="" className="flex h-32 min-w-0 items-center">
+            <span data-dialog-start="" className="-ms-8 flex h-32 min-w-0 items-center">
               {headerStart}
             </span>
           )}
-          <div data-dialog-titles="" className={cn("flex min-w-0 flex-col gap-4", bar ? "order-last basis-full pt-8" : "flex-1 pt-4")}>
-            <Title className="text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
+          <div data-dialog-titles="" className={cn("flex min-w-0 flex-col gap-8", bar ? "order-last basis-full pt-12" : "flex-1 pt-3")}>
+            <Title className="text-title font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
             {description && <Description className="text-body text-fg-secondary text-pretty wrap-anywhere">{description}</Description>}
           </div>
           {close && (
-            <span data-dialog-close="" className={cn("flex", bar && "ml-auto")}>
+            <span data-dialog-close="" className={cn("-me-8 flex h-32 items-center", bar && "ms-auto")}>
               {close}
             </span>
           )}
@@ -205,7 +186,7 @@ function DialogFrame({
           <div
             data-dialog-toolbar=""
             hidden={!slots.toolbar}
-            className={cn("flex shrink-0 flex-wrap items-center gap-8 px-24 pt-16 pb-12 transition-control", scrolled && "hairline-b")}
+            className={cn("flex shrink-0 flex-wrap items-center gap-8 px-24 pb-12 transition-control", scrolled && "hairline-b-strong")}
           >
             {toolbar}
           </div>
@@ -214,11 +195,7 @@ function DialogFrame({
           <div
             ref={ref}
             data-dialog-body=""
-            className={cn(
-              "min-h-0 flex-1 overflow-y-auto overscroll-contain px-24 scrollbar-quiet",
-              toolbar ? "pt-0" : "pt-16",
-              footer || footerStart ? "pb-8" : "pb-24",
-            )}
+            className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain px-24 pt-4 scrollbar-quiet", footer || footerStart ? "pb-8" : "pb-24")}
           >
             <GutterContent>
               <RaisedContent>{children}</RaisedContent>
@@ -229,8 +206,9 @@ function DialogFrame({
           <div
             data-dialog-footer=""
             className={cn(
-              "flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pt-16 pb-24 dialog-narrow:*:flex-auto dialog-narrow:**:data-shortcut:hidden transition-control",
-              under && "hairline-t",
+              "flex shrink-0 flex-wrap items-center justify-end gap-8 px-24 pb-24 dialog-narrow:*:flex-auto dialog-narrow:**:data-shortcut:hidden transition-control",
+              children ? "pt-16" : "pt-8",
+              under && "hairline-t-strong",
             )}
           >
             {footerStart && (
@@ -378,9 +356,9 @@ function AlertFrame({
       ref={frameRef}
       className={cn("@container flex min-h-0 w-440 flex-col", inline ? "rounded-dialog bg-raised shadow-dialog" : "self-center dialog-limits")}
     >
-      <div data-dialog-body="" className="flex min-h-0 flex-col gap-20 overflow-y-auto overscroll-contain px-24 pt-24 pb-4 scrollbar-quiet">
-        <div className="flex flex-col gap-6">
-          <Title className="text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
+      <div data-dialog-body="" className="flex min-h-0 flex-col gap-20 overflow-y-auto overscroll-contain px-24 pt-24 pb-8 scrollbar-quiet">
+        <div className="flex flex-col gap-8">
+          <Title className="text-title font-semibold text-fg text-balance wrap-anywhere">{title}</Title>
           <Description className="text-body text-fg-secondary text-pretty wrap-anywhere">{description}</Description>
         </div>
         {confirmText && (

@@ -4,8 +4,8 @@ import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_LABEL_VARIANTS = {
   size: {
-    md: { classes: "text-body font-medium", description: "14/500: field labels" },
-    sm: { classes: "text-small font-medium", description: "13/500: compact forms" },
+    md: { classes: "text-small font-medium", description: "13/500, no added tracking: field labels, a step under the 14px value they name" },
+    sm: { classes: "text-caption font-medium", description: "12/500: compact forms" },
   },
 } as const;
 
@@ -18,14 +18,12 @@ export interface LabelProps extends LabelHTMLAttributes<HTMLLabelElement> {
 export const Label = forwardRef<HTMLLabelElement, LabelProps>(function Label({ size = "md", optional, className, children, ...props }, ref) {
   const t = useUiText();
   return (
-    <label
-      ref={ref}
-      className={cn("inline-flex items-baseline gap-6 text-fg disabled:text-fg-disabled", KAESO_LABEL_VARIANTS.size[size].classes, className)}
-      {...props}
-    >
+    <label ref={ref} className={cn("text-fg disabled:text-fg-disabled", KAESO_LABEL_VARIANTS.size[size].classes, className)} {...props}>
       {children}
       {optional && (
-        <span className={cn("font-regular text-fg-tertiary", size === "sm" ? "text-caption" : "text-small")}>{t("label.optional", "Optional")}</span>
+        <span className={cn("ms-6 font-regular whitespace-nowrap text-fg-tertiary", size === "sm" ? "text-caption" : "text-small")}>
+          {t("label.optional", "Optional")}
+        </span>
       )}
     </label>
   );

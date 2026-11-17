@@ -33,7 +33,7 @@ The same holds at the right edge: the last box ends on the gutter, the last colu
 
 ## Vertical rhythm
 
-- The page header is 52px and the toolbar under it 48px; neither draws a line.
+- The page header is 52px and the toolbar under it 48px. Neither draws a line until content scrolls under them; then a hairline at the foot of the band shows where the page goes on.
 - A list or table starts 8px under the toolbar (`AppFrame.Body padding="list"`); a content page 16px under the header (`padding="page"`).
 - List rows are 44px (36px compact, 56px with a second line); table rows 40px; group headers 36px, with 16px above every one after the first.
 - A row's height never depends on its content: badges, pills and avatars fit inside it.

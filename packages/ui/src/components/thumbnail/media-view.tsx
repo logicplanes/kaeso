@@ -1,14 +1,19 @@
 import { forwardRef, useState } from "react";
 import { useUiText } from "../../i18n/context.js";
 import { cn } from "../../utils/cn.js";
+import { icons } from "../../icons/vocabulary.js";
+import { Icon } from "../icon/icon.js";
 import { Thumbnail } from "./thumbnail.js";
 
 export const KAESO_MEDIA_VIEW_VARIANTS = {
   kind: {
     image: { classes: "", description: "A thumbnail that opens to the whole image in place, and closes again (default)" },
     audio: { classes: "w-full max-w-400", description: "The browser's audio player" },
-    video: { classes: "w-full max-w-560 rounded-well bg-fill-1", description: "The browser's video player on a well" },
-    file: { classes: "", description: "Nothing to play: the name, the detail and the download alone" },
+    video: { classes: "w-full max-w-560 rounded-well bg-fill-1", description: "The browser's video player on a cut plate" },
+    file: {
+      classes: "flex-row items-center gap-12",
+      description: "Nothing to play: a file mark on a cut plate beside the name, the detail and the download",
+    },
   },
 } as const;
 export const KAESO_MEDIA_VIEW_DEFAULT_VARIANTS = { kind: "image" } as const;
@@ -34,13 +39,19 @@ export const MediaView = forwardRef<HTMLElement, MediaViewProps>(function MediaV
     <a
       href={download ?? src}
       download={filename ?? ""}
-      className="relative -mx-2 tap-target rounded-code px-2 font-medium text-fg no-underline outline-offset-0 transition-control focus-ring hover:underline hover:decoration-fg-tertiary hover:underline-offset-3"
+      className="relative -mx-2 inline-flex tap-target items-center gap-4 self-center rounded-code px-2 font-medium text-fg no-underline outline-offset-0 transition-control focus-ring hover:opacity-60"
     >
+      <Icon icon={icons.download} size="xs" />
       {t("mediaView.download", "Download")}
     </a>
   );
   return (
-    <figure ref={ref} className={cn("flex min-w-0 flex-col items-start gap-8", className)}>
+    <figure ref={ref} className={cn("flex min-w-0 flex-col items-start gap-8", kind === "file" && classes, className)}>
+      {kind === "file" && (
+        <span aria-hidden className="flex size-40 shrink-0 items-center justify-center rounded-well bg-fill-1 text-fg-secondary">
+          <Icon icon={icons.file} size="md" />
+        </span>
+      )}
       {kind === "image" && (
         <button
           type="button"

@@ -11,7 +11,7 @@ export const KAESO_DASHBOARD_VARIANTS = {
   surface: {
     grid: {
       classes: "grid gap-1 overflow-hidden rounded-group bg-line shadow-xs forced-line",
-      description: "Cells on one surface, split by hairlines like a StatGroup (default)",
+      description: "Cells on one raised surface with 6px corners, split by hairlines (default)",
     },
   },
 } as const;
@@ -123,8 +123,8 @@ export interface ReadoutProps {
 
 export const KAESO_READOUT_VARIANTS = {
   size: {
-    md: { classes: "text-metric", description: "28/32: the cell's main number (default)" },
-    sm: { classes: "text-title", description: "20/28: a number beside another, under a small label" },
+    md: { classes: "text-metric", description: "28/32 medium and tight: the cell's main number (default)" },
+    sm: { classes: "text-title", description: "20/26 medium: a number beside another, under a small label" },
   },
 } as const;
 export const KAESO_READOUT_DEFAULT_VARIANTS = { size: "md" } as const;
@@ -139,7 +139,7 @@ export const Readout = forwardRef<HTMLDivElement, ReadoutProps>(function Readout
           <Skeleton shape="line" className={md ? "h-20 w-96" : "w-64"} />
         ) : (
           <span className="flex min-w-0 items-baseline gap-6">
-            <SwapValue text={textOf(value)} className={cn("truncate font-semibold text-fg tabular", KAESO_READOUT_VARIANTS.size[size].classes)}>
+            <SwapValue text={textOf(value)} className={cn("truncate font-medium text-fg tabular", KAESO_READOUT_VARIANTS.size[size].classes)}>
               {value}
             </SwapValue>
             {unit && <span className="truncate text-small text-fg-secondary">{unit}</span>}

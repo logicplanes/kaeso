@@ -54,4 +54,9 @@ describe("Tabs", () => {
     const { container } = render(underline);
     expect(container.querySelector(".bg-ink")).toHaveClass("forced-line");
   });
+  it("draws the indicator as a square rule on the list's hairline", () => {
+    const { container } = render(underline);
+    expect(container.querySelector(".bg-ink")).not.toHaveClass("rounded-pill");
+    expect(screen.getByRole("tablist")).toHaveClass("hairline-b-strong");
+  });
 });

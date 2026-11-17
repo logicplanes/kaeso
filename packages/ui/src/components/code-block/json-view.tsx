@@ -8,7 +8,7 @@ import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_JSON_VIEW_VARIANTS = {
   surface: {
-    well: { classes: "rounded-well bg-fill-1 p-16", description: "On a well (default)" },
+    well: { classes: "rounded-well bg-fill-1 p-16", description: "On a flat plate: cut corners, fill, no ring (default)" },
     plain: { classes: "", description: "No surface" },
   },
 } as const;
@@ -190,13 +190,13 @@ function Node({
   const [o, c] = Array.isArray(value) ? ["[", "]"] : ["{", "}"];
   return (
     <div data-json-node="">
-      <div {...item} aria-expanded={open} className="group/row flex min-h-24 items-center rounded-cell focus-ring-inset" style={{ paddingLeft: depth * 16 }}>
+      <div {...item} aria-expanded={open} className="group/row flex min-h-20 items-start rounded-cell focus-ring-inset" style={{ paddingLeft: depth * 16 }}>
         <button
           type="button"
           tabIndex={-1}
           aria-hidden
           onClick={() => toggle(!open)}
-          className="relative -ml-4 inline-flex size-24 shrink-0 cursor-pointer items-center justify-center rounded-pill text-fg-tertiary tap-target hover:bg-fill-2 hover:text-fg"
+          className="relative inline-flex size-20 shrink-0 cursor-pointer items-center justify-center rounded-pill text-fg-tertiary tap-target hover:bg-fill-2 hover:text-fg"
         >
           <Icon icon={icons.chevronRight} size="xs" className={cn("transition-transform duration-180", open && "rotate-90")} />
         </button>

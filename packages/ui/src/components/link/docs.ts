@@ -8,7 +8,7 @@ export const docs = {
       external: "Opens in a new tab, adds rel and a 14px ↗. Detected from the href when not set.",
       href: "The address the link goes to.",
       variant:
-        "Underlined in text (`inline`), quiet in lists (`quiet`), on its own line with an arrow (`standalone`), inside a heading that links to itself (`heading`), or as a page to read next with its name and a sentence (`card`).",
+        "Underlined in text (`inline`), secondary until hovered in footers and lists (`quiet`), on its own line in full text that steps back on hover (`standalone`), inside a heading that links to itself (`heading`), or as a page to read next on a cut plate, its name strong and a sentence under it (`card`).",
     },
   },
 } satisfies ComponentDocs;

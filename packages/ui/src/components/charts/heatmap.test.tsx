@@ -29,6 +29,13 @@ describe("Heatmap", () => {
     expect(grid).not.toHaveTextContent("01");
   });
 
+  it("sets its Less–More key on a line as tall as View as table, so the two read level", () => {
+    render(<Heatmap {...props} />);
+    const key = screen.getByText("Less").parentElement!;
+    expect(key).toHaveClass("h-28", "items-center");
+    expect(screen.getByRole("button", { name: "View as table" })).toHaveClass("h-28");
+  });
+
   it("is one tab stop whose arrow keys walk the cells and say each value", async () => {
     render(<Heatmap {...props} />);
     await userEvent.tab();

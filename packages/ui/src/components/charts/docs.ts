@@ -33,7 +33,8 @@ export const docs = {
     },
   },
   Donut: {
-    description: "A ring of shares with the total in the center and a legend beside it, or under it when narrow. Use it for a few parts of one whole.",
+    description:
+      "A ring of shares with the total in the center and a legend beside it, or under it when narrow, its rows divided by hairlines. Use it for a few parts of one whole.",
     props: {
       "aria-label": 'The chart\'s accessible name ("Requests by model").',
       empty:

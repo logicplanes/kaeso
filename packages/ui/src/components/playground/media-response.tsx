@@ -43,7 +43,7 @@ export interface MediaResponseProps {
   className?: string | undefined;
 }
 
-const FRAME = "relative min-w-0 overflow-hidden rounded-frame bg-fill-1 image-outline";
+const FRAME = "relative min-w-0 overflow-hidden rounded-well bg-fill-1 image-outline";
 const WAITING = "animate-pulse-quiet reduced:animate-none";
 const VIDEO_FRAME = { aspectRatio: "16 / 9" } as const;
 

@@ -13,6 +13,16 @@ function State() {
 }
 
 describe("Sidebar", () => {
+  it("mirrors the head at the foot and lets the foot's last control give way first", () => {
+    render(
+      <Sidebar.Provider>
+        <Sidebar aria-label="Console">
+          <Sidebar.Footer data-testid="footer" />
+        </Sidebar>
+      </Sidebar.Provider>,
+    );
+    expect(screen.getByTestId("footer")).toHaveClass("mb-8", "min-h-52", "sidebar-foot");
+  });
   it("draws a line above the foot only while the list scrolls under it", () => {
     render(
       <Sidebar.Provider>

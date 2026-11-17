@@ -90,9 +90,29 @@ describe("Select", () => {
     expect(selector).toContain("box-shadow: var(--k-shadow-selector);");
     expect(selector).toContain("box-shadow: var(--k-shadow-selector-hover);");
     expect(selector).toContain("[data-popup-open]");
-    const focus = /inset 0 0 0 1px var\(--k-text\),\s+0 0 0 3px color-mix\(in srgb, var\(--k-text\) 10%, transparent\)/;
-    expect(block("material-field")).toMatch(focus);
-    expect(selector).toMatch(focus);
+    for (const material of [block("material-field"), selector]) {
+      expect(material).toContain("box-shadow: var(--k-shadow-control-selected);");
+      expect(material).toContain("box-shadow: inset 0 0 0 2px var(--k-danger);");
+      expect(material).not.toContain("color-mix");
+    }
+    expect(selector).toMatch(
+      /&\[data-popup-open\],\s+&\[data-force~="open"\],\s+:root:not\(\[data-k-pointer\]\) &:focus-visible,\s+&\[data-force~="focus"\] \{\s+box-shadow: var\(--k-shadow-control-selected\);/,
+    );
+  });
+
+  it("sets its value in the input's weight and centres the chevron in the pill's end, as every field does", () => {
+    render(
+      <>
+        <Select aria-label="Region" options={[{ value: "eu", label: "Europe" }]} defaultValue="eu" />
+        <Select aria-label="Model" icon={icons.model} size="lg" options={[{ value: "gpt-5", label: "gpt-5" }]} defaultValue="gpt-5" />
+        <Select aria-label="Default model" appearance="ghost" options={[{ value: "gpt-5", label: "gpt-5" }]} defaultValue="gpt-5" />
+      </>,
+    );
+    const region = screen.getByRole("combobox", { name: "Region" });
+    expect(region).toHaveClass("font-regular", "h-36", "pl-16", "pr-10");
+    expect(region).not.toHaveClass("font-medium");
+    expect(screen.getByRole("combobox", { name: "Model" })).toHaveClass("h-40", "pl-16", "pr-12");
+    expect(screen.getByRole("combobox", { name: "Default model" })).toHaveClass("font-medium");
   });
 
   it("gives a small trigger the hit area of every other control", () => {

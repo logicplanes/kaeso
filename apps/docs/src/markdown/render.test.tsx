@@ -122,10 +122,17 @@ describe("Markdown", () => {
       },
     ]);
     expect(screen.getAllByRole("list")[0]?.tagName).toBe("OL");
-    expect(screen.getByText("3.")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
     const box = screen.getByRole("checkbox", { name: "Set an expiry" });
     expect(box).toBeChecked();
     expect(box).toHaveAttribute("aria-readonly", "true");
+  });
+
+  it("marks a bulleted item with a short hairline that screen readers skip, as kaeso.app's articles do", () => {
+    const c = draw([{ t: "list", ordered: false, start: 1, items: [{ c: [{ t: "paragraph", tight: true, c: [{ t: "text", v: "Rotate the key" }] }] }] }]);
+    expect(c.textContent).not.toContain("•");
+    const rule = c.querySelector('li [aria-hidden] [role="separator"]');
+    expect(rule).toHaveClass("bg-fg-tertiary", "w-12");
   });
 
   it("names tables with the same columns after their sections, so no two regions share a name", () => {

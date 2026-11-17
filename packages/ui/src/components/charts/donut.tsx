@@ -179,7 +179,7 @@ export const Donut = forwardRef<
                 </g>
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-16 text-center">
-                <span ref={totalRef} className={cn("max-w-full font-semibold text-balance text-fg tabular wrap-anywhere", totalSize)}>
+                <span ref={totalRef} className={cn("max-w-full font-medium text-balance text-fg tabular wrap-anywhere", totalSize)}>
                   {total ?? formatValue(sum)}
                 </span>
                 <span className="text-caption font-medium text-fg-tertiary">{totalLabel ?? t("donut.total", "Total")}</span>
@@ -191,7 +191,7 @@ export const Donut = forwardRef<
                   key={d.id}
                   onMouseEnter={() => setFocus(d.id)}
                   onMouseLeave={() => setFocus(null)}
-                  className={cn("flex h-32 items-center gap-10 text-small opacity-motion", focus && focus !== d.id && "opacity-50")}
+                  className={cn("flex h-32 items-center gap-10 text-small opacity-motion hairline-b last:shadow-none", focus && focus !== d.id && "opacity-50")}
                 >
                   <Swatch color={color(d)} />
                   <Text variant="small" weight="medium" truncate className="flex-1">

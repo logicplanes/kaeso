@@ -42,7 +42,7 @@ test.describe("pages in every language", () => {
       const errors = failures(page);
       await open(page, `/${lang}/components/button`);
       await expect(page.getByRole("link", { name: SIDEBAR[lang] }).first()).toBeVisible();
-      await page.getByRole("button", { name: lang === "de" ? "Sprache" : "语言" }).click();
+      await page.getByRole("button", { name: lang === "de" ? "Sprache: Deutsch" : "语言：简体中文" }).click();
       await expect(page.getByRole("menuitemradio", { name: lang === "de" ? "Deutsch" : "简体中文" })).toHaveAttribute("aria-checked", "true");
       expect(errors).toEqual([]);
     });
@@ -91,7 +91,7 @@ test.describe("the visitor's language", () => {
     const page = await context.newPage();
     const errors = failures(page);
     await open(page, "/de/components/button");
-    await page.getByRole("button", { name: "Sprache" }).click();
+    await page.getByRole("button", { name: "Sprache: Deutsch" }).click();
     await page.getByRole("menuitemradio", { name: "English" }).click();
     await expect(page).toHaveURL(/\/components\/button$/);
     await expect(page).not.toHaveURL(/\/de\//);

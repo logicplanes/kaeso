@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   Tooltip: {
     description:
-      "A short label for a control, shown on hover and focus. When it says more than the control's name, it is also the control's accessible description. Never on disabled elements without a reason.",
+      "A short label for a control, shown on hover and focus, on a dark plate in both themes so it never reads as another control. When it says more than the control's name, it is also the control's accessible description. Never on disabled elements without a reason.",
     props: {
       children: "The trigger: a single element that accepts a ref.",
       content: "What the tooltip says. Keep it to the control's name or one short sentence.",

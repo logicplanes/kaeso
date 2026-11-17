@@ -25,7 +25,7 @@ describe("Table", () => {
       </Table>,
     );
     for (const name of ["Model", "Notes"]) expect(screen.getByRole("columnheader", { name })).toHaveClass("first:pl-0", "last:pr-2");
-    expect(screen.getByRole("columnheader", { name: "Requests" })).toHaveClass("last:pr-0", "text-right");
+    expect(screen.getByRole("columnheader", { name: "Requests" })).toHaveClass("last:pr-0", "text-right", "rule-b");
     expect(screen.getByRole("cell", { name: "Aliases" })).toHaveClass("last:pr-2");
     expect(screen.getByRole("cell", { name: "1,200" })).toHaveClass("last:pr-0", "tabular");
   });
@@ -45,6 +45,21 @@ describe("Table", () => {
     const long = screen.getByRole("columnheader", { name: /another organization/ });
     expect(long).not.toHaveClass("whitespace-nowrap");
     expect(long).toHaveClass("py-8", "align-bottom", "h-36");
+  });
+
+  it("sets every cell's first line on one baseline, so a key stays beside the first line of a note that wraps", () => {
+    render(
+      <Table>
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>checkout-web</Table.Cell>
+            <Table.Cell>Requests over the limit get a 429 with the seconds to wait.</Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table>,
+    );
+    expect(screen.getByRole("cell", { name: "checkout-web" })).toHaveClass("align-baseline");
+    expect(screen.getByRole("cell", { name: "checkout-web" })).not.toHaveClass("align-middle");
   });
 
   it("puts 12px between columns, or 8px in a compact table", () => {

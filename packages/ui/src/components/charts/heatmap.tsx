@@ -98,7 +98,7 @@ export const Heatmap = forwardRef<
         state={{ empty }}
         legend={
           empty ? undefined : (
-            <div className="flex items-center gap-3 text-caption font-medium text-fg-tertiary" aria-hidden>
+            <div className="flex h-28 items-center gap-3 text-caption font-medium text-fg-tertiary" aria-hidden>
               <span className="mr-4">{t("heatmap.less", "Less")}</span>
               {RAMP.map((c) => (
                 <span key={c} className="size-12 rounded-cell data-mark" style={{ background: c }} />

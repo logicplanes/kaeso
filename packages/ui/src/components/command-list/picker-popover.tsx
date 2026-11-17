@@ -58,7 +58,7 @@ export const PickerPopover = forwardRef<HTMLDivElement, PickerPopoverProps>(func
             data-side="bottom"
             className="fixed inset-safe-8 z-50 flex flex-col overflow-hidden rounded-sheet bg-raised text-fg shadow-dialog outline-none sheet-motion"
           >
-            <div className="flex min-h-60 shrink-0 items-center gap-12 px-24 py-12 hairline-b">
+            <div className="flex min-h-60 shrink-0 items-center gap-12 px-24 py-12 hairline-b-strong">
               <BaseDialog.Title className="min-w-0 flex-1 text-title-sm font-semibold text-fg text-balance wrap-anywhere">{title}</BaseDialog.Title>
               <BaseDialog.Close
                 render={<Button variant="ghost" size="sm" icon={icons.close} aria-label={t("pickerPopover.close", "Close")} tooltip={false} />}

@@ -41,7 +41,8 @@
     }
   }
 }
-@custom-variant ghost-end ([data-row-control] > &.material-ghost:last-child, [data-row-control] > :last-child > &.material-ghost:last-child);
+/* A select's hidden form input follows its trigger, so the trigger is the last thing that shows. */
+@custom-variant ghost-end ([data-row-control] > &.material-ghost:is(:last-child, :has(+ input[aria-hidden="true"]:last-child)), [data-row-control] > :last-child > &.material-ghost:last-child);
 
 @utility focus-ring {
   outline: 2px solid transparent;
@@ -383,21 +384,21 @@
   &[data-force~="hover"] {
     box-shadow: var(--k-shadow-field-hover);
   }
+  /* Rings step by weight, never by blur: 1px at rest, 2px of ink while the field takes typing, as a selected control. */
   &:focus-visible,
   &:has(:focus-visible),
   &[data-focused],
   &[data-force~="focus"] {
-    box-shadow:
-      inset 0 0 0 1px var(--k-text),
-      0 0 0 3px color-mix(in srgb, var(--k-text) 10%, transparent);
+    box-shadow: var(--k-shadow-control-selected);
   }
   &[aria-invalid="true"],
   &[data-invalid],
   &:has([aria-invalid="true"]),
   &[data-force~="invalid"] {
-    box-shadow:
-      inset 0 0 0 1px var(--k-danger),
-      0 0 0 3px color-mix(in srgb, var(--k-danger) 12%, transparent);
+    box-shadow: inset 0 0 0 1px var(--k-danger);
+    &:is(:focus-visible, :has(:focus-visible), [data-focused], [data-force~="focus"]) {
+      box-shadow: inset 0 0 0 2px var(--k-danger);
+    }
   }
   &:disabled,
   &[data-disabled],
@@ -430,9 +431,7 @@
       box-shadow: var(--k-shadow-selector-hover);
     }
   }
-  &[data-force~="hover"],
-  &[data-popup-open],
-  &[data-force~="open"] {
+  &[data-force~="hover"] {
     box-shadow: var(--k-shadow-selector-hover);
   }
   &:active:not(:disabled, [data-disabled], [aria-disabled="true"]),
@@ -440,17 +439,20 @@
     background-color: var(--k-raised-pressed);
     box-shadow: var(--k-shadow-selector-hover);
   }
+  /* Open, it holds the field's typing ring, so a select, a combobox and a date picker answer alike. */
+  &[data-popup-open],
+  &[data-force~="open"],
   :root:not([data-k-pointer]) &:focus-visible,
   &[data-force~="focus"] {
-    box-shadow:
-      inset 0 0 0 1px var(--k-text),
-      0 0 0 3px color-mix(in srgb, var(--k-text) 10%, transparent);
+    box-shadow: var(--k-shadow-control-selected);
   }
   &[aria-invalid="true"],
   &[data-force~="invalid"] {
-    box-shadow:
-      inset 0 0 0 1px var(--k-danger),
-      0 0 0 3px color-mix(in srgb, var(--k-danger) 12%, transparent);
+    box-shadow: inset 0 0 0 1px var(--k-danger);
+    &:is([data-popup-open], [data-force~="open"], [data-force~="focus"]),
+    :root:not([data-k-pointer]) &:focus-visible {
+      box-shadow: inset 0 0 0 2px var(--k-danger);
+    }
   }
   &:disabled,
   &[data-disabled],
@@ -478,9 +480,7 @@
   &[data-force~="focus"],
   &[data-drop],
   &[data-force~="drop"] {
-    box-shadow:
-      inset 0 0 0 1px var(--k-text),
-      0 0 0 3px color-mix(in srgb, var(--k-text) 10%, transparent);
+    box-shadow: var(--k-shadow-control-selected);
   }
   &:has(textarea:disabled),
   &[data-force~="disabled"] {
@@ -510,6 +510,13 @@
 @utility markdown-text-inset {
   & > :not(.rounded-well, :has(> table), :has(> button)) {
     padding-inline: 12px;
+  }
+  /* A table's rules run the column's full width; its first and last cells hang 12px in, on the text's edge. */
+  & > :has(> table) :is(th, td):first-child {
+    padding-inline-start: 12px;
+  }
+  & > :has(> table) :is(th, td):last-child {
+    padding-inline-end: 12px;
   }
 }
 
@@ -620,7 +627,6 @@
   width: var(--k-anchor-width, var(--anchor-width));
 }
 @utility popup-motion {
-  transform-origin: var(--transform-origin);
   transition-property: opacity, transform;
   transition-duration: var(--k-duration-overlay);
   transition-timing-function: var(--k-ease-overlay);
@@ -641,11 +647,10 @@
   }
   &[data-starting-style] {
     opacity: 0;
-    transform: translate(var(--k-shift-x), var(--k-shift-y)) scale(0.97);
+    transform: translate(var(--k-shift-x), var(--k-shift-y));
   }
   &[data-ending-style] {
     opacity: 0;
-    transform: scale(0.97);
     transition-duration: var(--k-duration-close-overlay);
     transition-timing-function: var(--k-ease-exit);
   }
@@ -656,11 +661,10 @@
   transition-timing-function: var(--k-ease-overlay);
   &[data-starting-style] {
     opacity: 0;
-    transform: scale(0.98);
+    transform: translateY(8px);
   }
   &[data-ending-style] {
     opacity: 0;
-    transform: scale(0.98);
     transition-duration: var(--k-duration-close-dialog);
     transition-timing-function: var(--k-ease-exit);
     pointer-events: none;
@@ -1117,6 +1121,8 @@
 @utility tab-line-pressed {
   box-shadow: inset 0 -2px 0 var(--k-line-strong);
 }
+/* Underline tabs: the list reaches 8px past the content edge on both sides so the first and last tab's focus ring isn't
+   clipped by its scroller; the hairline stays on the content edge. */
 @utility hairline-t-strong {
   box-shadow: inset 0 1px 0 var(--k-line);
 }
@@ -1137,6 +1143,51 @@
   box-shadow: inset 0 1px 0 var(--k-line);
   @media (forced-colors: active) {
     border-block-start: 1px solid CanvasText;
+  }
+}
+/* The page header lines up with the sidebar's head 8px down; a full-width banner is the frame's top edge instead. */
+@utility frame-main-top {
+  @media (width >= 64rem) {
+    padding-top: 8px;
+    &:has(> [data-k-banner="full"]:first-child) {
+      padding-top: 0;
+    }
+  }
+}
+@utility divider-r {
+  box-shadow: inset -1px 0 0 var(--k-line);
+  @media (forced-colors: active) {
+    border-inline-end: 1px solid CanvasText;
+  }
+}
+/* kaeso.app's rule in line-strong: under a section's title, and over what a figure counts at a plate's foot. */
+@utility rule-b {
+  box-shadow: inset 0 -1px 0 var(--k-line-strong);
+  @media (forced-colors: active) {
+    border-block-end: 1px solid CanvasText;
+  }
+}
+@utility rule-t {
+  box-shadow: inset 0 1px 0 var(--k-line-strong);
+  @media (forced-colors: active) {
+    border-block-start: 1px solid CanvasText;
+  }
+}
+/* A list or table row's hairline at its foot, from box edge to box edge, the same length as the head's rule above it.
+   A background image, so it is drawn over the row's own hover and selected fill rather than under it, and a border
+   would change the row's height. The row stays square: a radius would clip the line short at both ends. */
+@utility row-rule {
+  background-image: linear-gradient(var(--k-line-subtle), var(--k-line-subtle));
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  background-position: 0 100%;
+}
+/* A flat plate that holds a figure, as kaeso.app sets its key figures: no ring, so forced colours draw its edge. */
+@utility figure-plate {
+  background-color: var(--k-fill-1);
+  @media (forced-colors: active) {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }
 
@@ -1316,7 +1367,7 @@
   --choice-on-disabled: var(--k-text-disabled);
   --choice-glyph-disabled: var(--k-bg-panel);
   --choice-invalid: inset 0 0 0 1px var(--k-danger);
-  --choice-invalid-hover: inset 0 0 0 1px var(--k-danger), 0 0 0 3px color-mix(in srgb, var(--k-danger) 16%, transparent);
+  --choice-invalid-hover: inset 0 0 0 2px var(--k-danger);
   --choice-focus: var(--k-focus);
   --choice-tone: var(--choice-on);
   background-color: var(--choice-off);
@@ -1395,7 +1446,7 @@
   }
   :where([data-choice]:is([data-checked], [data-force~="checked"])) > &[data-shape="dot"] {
     background-color: var(--choice-center);
-    box-shadow: inset 0 0 0 5px var(--choice-tone);
+    box-shadow: inset 0 0 0 6px var(--choice-tone);
   }
   :where(:root:not([data-k-pointer]) [data-choice]:focus-visible, [data-choice][data-force~="focus"]) > & {
     outline-style: solid;
@@ -1417,15 +1468,16 @@
 }
 
 @utility choice-track {
-  --track-off: var(--k-fill-3);
+  --track-off: var(--k-fill-control, var(--k-bg-raised));
   --track-ring: var(--k-shadow-selector);
   --track-ring-hover: var(--k-shadow-selector-hover);
   --track-on: var(--k-ink);
   --track-on-hover: var(--k-ink-hover);
   --track-on-pressed: var(--k-ink-pressed);
-  --thumb-off: var(--k-switch-thumb);
+  --thumb-off: var(--k-line-field);
+  --thumb-off-hover: var(--k-line-field-hover);
   --thumb-on: var(--k-on-ink);
-  --thumb-shadow: var(--k-shadow-thumb);
+  --thumb-shadow: none;
   background-color: var(--track-off);
   box-shadow: var(--track-ring);
   transition-property: background-color, box-shadow, outline-color, opacity;
@@ -1440,12 +1492,14 @@
     --track-on-hover: Highlight;
     --track-on-pressed: Highlight;
     --thumb-off: CanvasText;
+    --thumb-off-hover: CanvasText;
     --thumb-on: HighlightText;
     --thumb-shadow: none;
     &:is([data-disabled], [aria-disabled="true"], [data-force~="disabled"]) {
       --track-ring: inset 0 0 0 1px GrayText;
       --track-on: GrayText;
       --thumb-off: GrayText;
+      --thumb-off-hover: GrayText;
       --thumb-on: Canvas;
     }
   }
@@ -1454,17 +1508,20 @@
     :where([data-choice-row]:hover) &:not([data-disabled], [data-readonly]) {
       box-shadow: var(--track-ring-hover);
       --track-on: var(--track-on-hover);
+      --thumb-off: var(--thumb-off-hover);
     }
   }
   &[data-force~="hover"] {
     box-shadow: var(--track-ring-hover);
     --track-on: var(--track-on-hover);
+    --thumb-off: var(--thumb-off-hover);
   }
   &:not([data-disabled], [data-readonly]):active,
   :where([data-choice-row]:active) &:not([data-disabled], [data-readonly]),
   &[data-force~="pressed"] {
     box-shadow: var(--track-ring-hover);
     --track-on: var(--track-on-pressed);
+    --thumb-off: var(--thumb-off-hover);
   }
   &:is([data-checked], [data-force~="checked"]) {
     background-color: var(--track-on);
@@ -1491,6 +1548,13 @@
   }
 }
 
+/* A lone checkbox in a field: its message hangs under the label's text, not under the box (18px box, 10px gap). */
+@utility field-notes {
+  &:has(> [data-choice-row]:first-child > :first-child [data-choice]) > p {
+    padding-inline-start: 28px;
+  }
+}
+
 @utility slider-track {
   background-color: var(--k-fill-3);
   @media (forced-colors: active) {
@@ -1513,9 +1577,7 @@
 
 @utility slider-thumb {
   background-color: var(--k-ink);
-  box-shadow:
-    0 0 0 2px var(--k-bg-panel),
-    var(--k-shadow-thumb);
+  box-shadow: 0 0 0 2px var(--k-bg-panel);
   outline: 2px solid transparent;
   outline-offset: 2px;
   transition-property: box-shadow, outline-color, scale;
@@ -1853,6 +1915,9 @@
 @utility toast-viewport-width {
   max-width: min(560px, calc(100vw - 32px));
 }
+@utility focus-on-toast {
+  --k-focus: var(--k-toast-fg);
+}
 @utility ring-step {
   box-shadow: inset 0 0 0 1px var(--k-ink);
 }
@@ -1962,6 +2027,23 @@
     opacity: 0;
     transform: translateX(-8px);
   }
+}
+/* The sidebar's foot mirrors its head; when the row is tight the last control (a language name) truncates first. */
+@utility sidebar-foot {
+  & > * {
+    min-width: 0;
+  }
+  & > :last-child:not(:first-child) {
+    flex-shrink: 1;
+  }
+}
+/* Set by AppFrame.Body on the band right above it (a page header, a toolbar) while its content is scrolled under it.
+   A background, not a shadow, so the band keeps a ring or line of its own. */
+[data-k-content-under] {
+  background-image: linear-gradient(var(--k-line), var(--k-line));
+  background-position: bottom;
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
 }
 
 /* Set by ThemeProvider for the frame a theme changes in. */

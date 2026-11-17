@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { Menu } from "./menu.js";
+import { icons } from "../../icons/vocabulary.js";
 
 function Orgs() {
   return (
@@ -29,5 +30,24 @@ describe("Menu", () => {
     expect(screen.getByText("Deletion on 20 Oct")).toHaveClass("text-danger-text", "text-small");
     expect(screen.getByText("Deletion on 20 Oct")).not.toHaveClass("text-fg-secondary");
     expect(screen.getByText("3 projects")).toHaveClass("text-fg-secondary");
+  });
+
+  it("keeps an item without an icon on the label column of a menu whose other items have icons", async () => {
+    render(
+      <Menu open>
+        <Menu.Trigger>
+          <button type="button">Key actions</button>
+        </Menu.Trigger>
+        <Menu.Content>
+          <Menu.Item icon={icons.delete}>Delete key</Menu.Item>
+          <Menu.Item>Archive key</Menu.Item>
+        </Menu.Content>
+      </Menu>,
+    );
+    await waitFor(() => expect(screen.getByRole("menuitem", { name: "Archive key" })).toBeInTheDocument());
+    expect(screen.getByRole("menu")).toHaveClass("group/menu");
+    expect(screen.getByRole("menuitem", { name: "Delete key" }).querySelector("[data-menu-glyph]")).not.toBeNull();
+    const spacer = screen.getByRole("menuitem", { name: "Archive key" }).firstElementChild;
+    expect(spacer).toHaveClass("hidden", "size-16", "group-has-data-menu-glyph/menu:block");
   });
 });

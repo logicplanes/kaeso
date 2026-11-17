@@ -2,22 +2,13 @@ import type * as React from "react";
 import { createContext, forwardRef, useContext, type HTMLAttributes, type InputHTMLAttributes } from "react";
 import { cn } from "../../utils/cn.js";
 import { focusInputOnPress } from "../../utils/field-press.js";
-import { Icon, type IconData, type IconSize } from "../icon/icon.js";
+import { Icon, type IconData } from "../icon/icon.js";
 import { Button } from "../button/button.js";
+import { INPUT_ICON_SIZE, KAESO_INPUT_GROUP_VARIANTS, LEADING, type InputSize } from "./sizes.js";
 
-export const KAESO_INPUT_GROUP_VARIANTS = {
-  size: {
-    sm: { classes: "h-32 px-12 gap-6 text-body", description: "32px: toolbars and compact forms" },
-    md: { classes: "h-36 px-16 gap-8 text-body", description: "36px: the default" },
-    lg: { classes: "h-40 px-18 gap-8 text-body", description: "40px" },
-    xl: { classes: "h-48 px-22 gap-8 text-body-lg", description: "48px: sign-in and setup forms" },
-  },
-} as const;
-export type InputSize = keyof typeof KAESO_INPUT_GROUP_VARIANTS.size;
+export { INPUT_ICON_SIZE, KAESO_INPUT_GROUP_VARIANTS, LEADING, type InputSize };
 
-export const LEADING: Record<InputSize, string> = { sm: "pl-10", md: "pl-14", lg: "pl-16", xl: "pl-20" };
 const TRAILING_BUTTON: Record<InputSize, string> = { sm: "pr-4", md: "pr-2", lg: "pr-4", xl: "pr-6" };
-export const INPUT_ICON_SIZE: Record<InputSize, IconSize> = { sm: "sm", md: "sm", lg: "md", xl: "lg" };
 
 const PREFIX_JOIN: Record<InputSize, string> = { sm: "-me-6", md: "-me-8", lg: "-me-8", xl: "-me-8" };
 

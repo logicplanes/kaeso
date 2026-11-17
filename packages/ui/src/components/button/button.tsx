@@ -12,8 +12,8 @@ import { icons } from "../../icons/vocabulary.js";
 
 export const KAESO_BUTTON_VARIANTS = {
   variant: {
-    primary: { classes: "material-primary", description: "Ink with a faint top light. Exactly one per view." },
-    secondary: { classes: "material-secondary", description: "Raised, ring and a soft shadow. The default." },
+    primary: { classes: "material-primary", description: "A flat ink fill. Exactly one per view." },
+    secondary: { classes: "material-secondary", description: "Raised, with a hairline ring and no shadow. The default." },
     ghost: { classes: "material-ghost", description: "Transparent until hovered: toolbars, rows, quiet actions" },
     quiet: {
       classes: "material-ghost text-fg-secondary hover:text-fg active:text-fg open:text-fg",

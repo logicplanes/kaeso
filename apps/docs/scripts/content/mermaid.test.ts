@@ -30,7 +30,7 @@ describe("renderMermaid", () => {
       expect(svgSize(svg)?.width).toBeGreaterThan(200);
       expect(svg).toContain(`fill="${rgb(neutral["bg-raised"][theme])}"`);
       expect(svg).toContain(`fill="${rgb(neutral.text[theme])}"`);
-      expect(svg).toMatch(/<rect [^>]*rx="10"/);
+      expect(svg).toMatch(/<rect [^>]*rx="4"/);
       expect(svg).toContain("Inter Variable");
     }
     expect(svgSize(result.svg.light)).toEqual(svgSize(result.svg.dark));

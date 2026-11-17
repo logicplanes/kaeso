@@ -7,7 +7,7 @@ import { warnStylingClassName } from "../../utils/dev.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
-import { KAESO_INPUT_GROUP_VARIANTS, LEADING, type InputSize } from "../input/input-group.js";
+import { INPUT_ICON_SIZE, KAESO_INPUT_GROUP_VARIANTS, LEADING, type InputSize } from "../input/sizes.js";
 import { Tag } from "../tag/tag.js";
 import { MENU_ICON, MENU_ITEM, MENU_POPUP } from "../menu/styles.js";
 
@@ -108,11 +108,13 @@ export interface MultiComboboxProps extends BaseProps {
 }
 export type ComboboxProps = SingleComboboxProps | MultiComboboxProps;
 
-const CHIPS: Record<InputSize, { field: string; row: string; chevron: string }> = {
-  sm: { field: "min-h-32 p-4 pe-32", row: "h-24", chevron: "end-2 top-2" },
-  md: { field: "min-h-36 p-4 pe-36", row: "h-28", chevron: "end-4 top-4" },
-  lg: { field: "min-h-40 p-6 pe-36", row: "h-28", chevron: "end-6 top-6" },
-  xl: { field: "min-h-48 p-8 pe-40 text-body-lg", row: "h-32", chevron: "end-10 top-10" },
+const SINGLE_END: Record<InputSize, string> = { sm: "pe-2", md: "pe-4", lg: "pe-6", xl: "pe-10" };
+
+const CHIPS: Record<InputSize, { field: string; row: string; chevron: string; empty: string }> = {
+  sm: { field: "min-h-32 p-4 pe-32", row: "h-24", chevron: "end-2 top-2", empty: "px-8" },
+  md: { field: "min-h-36 p-4 pe-36", row: "h-28", chevron: "end-4 top-4", empty: "px-12" },
+  lg: { field: "min-h-40 p-6 pe-36", row: "h-28", chevron: "end-6 top-6", empty: "px-12" },
+  xl: { field: "min-h-48 p-8 pe-40 text-body-lg", row: "h-32", chevron: "end-10 top-10", empty: "px-14" },
 };
 
 const CHEVRON = "inline-flex size-28 shrink-0 items-center justify-center rounded-pill text-fg-tertiary transition-control hover:bg-raised-hover hover:text-fg";
@@ -270,7 +272,9 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
                     </Tag>
                   </BaseCombobox.Chip>
                 ))}
-                <span className={cn("flex min-w-64 flex-1 basis-64 items-center", CHIPS[size].row, value.length === 0 ? "px-12" : "px-8")}>{inputEl}</span>
+                <span className={cn("flex min-w-64 flex-1 basis-64 items-center", CHIPS[size].row, value.length === 0 ? CHIPS[size].empty : "px-8")}>
+                  {inputEl}
+                </span>
                 <BaseCombobox.Trigger aria-label={t("combobox.showOptions", "Show options")} className={cn(CHEVRON, "absolute", CHIPS[size].chevron)}>
                   <Icon icon={icons.chevronDown} size="sm" />
                 </BaseCombobox.Trigger>
@@ -285,7 +289,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
           className={cn(
             "relative flex w-full min-w-0 items-center rounded-pill material-field transition-control cursor-text",
             KAESO_COMBOBOX_VARIANTS.size[size].classes,
-            "pe-4",
+            SINGLE_END[size],
             !(label || description || error) && className,
           )}
         >
@@ -447,7 +451,7 @@ export const Autocomplete = forwardRef<HTMLInputElement, AutocompleteProps>(func
           !(label || description || error) && className,
         )}
       >
-        {leadingIcon && <Icon icon={leadingIcon} size="sm" className="text-fg-tertiary" />}
+        {leadingIcon && <Icon icon={leadingIcon} size={INPUT_ICON_SIZE[size]} className="text-fg-tertiary" />}
         <BaseAutocomplete.Input
           ref={ref}
           placeholder={placeholder}

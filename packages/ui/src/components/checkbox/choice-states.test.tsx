@@ -39,6 +39,14 @@ describe("the choice mark", () => {
     expect(draw).not.toMatch(/animation/);
     expect(draw).toMatch(/:where\(\[data-checked\]\) & \{[^}]*transition-property: stroke-dashoffset;/);
   });
+  it("draws the switch flat, as the box: a field's ring and a grey thumb off, ink and a light thumb on, no shadow", () => {
+    const track = block("choice-track");
+    expect(track).toContain("--track-off: var(--k-fill-control, var(--k-bg-raised));");
+    expect(track).toContain("--thumb-off: var(--k-line-field);");
+    expect(track).toContain("--thumb-shadow: none;");
+    expect(track).not.toContain("--k-shadow-thumb");
+    expect(block("slider-thumb")).not.toContain("--k-shadow-thumb");
+  });
   it("gives the switch track and the slider forced-colour fills", () => {
     expect(block("choice-track")).toContain("--track-on: Highlight");
     expect(block("choice-thumb")).toContain("scale: 0.85");
