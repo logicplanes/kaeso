@@ -82,5 +82,7 @@
   "playground.export.refusedBecause": "已拒绝：{reason}",
   "playground.export.refused": "已拒绝",
   "playground.exportMarkdown": "Markdown",
-  "playground.export.noReply": "没有回复。"
+  "playground.export.noReply": "没有回复。",
+  "playground.edit": "编辑",
+  "playground.edited": "上一条提示词已放回输入框"
 }

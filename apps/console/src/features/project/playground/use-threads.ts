@@ -58,6 +58,8 @@ export function useThreads(
   const latest = useRef(threads);
   const leave = useRef(onLeave);
   const cleared = useRef<Turn[]>([]);
+  // The turns the last prompt made, one per column, which Edit takes back.
+  const [lastSend, setLastSend] = useState<readonly string[]>([]);
   useEffect(() => {
     latest.current = threads;
     leave.current = onLeave;
@@ -212,6 +214,7 @@ export function useThreads(
       for (const t of turns) live.current.set(t.turn.id, t.turn.response);
       release(cleared.current);
       cleared.current = [];
+      setLastSend(turns.map((t) => t.turn.id));
       setThreads((ts) => ts.map((t, i) => ({ ...t, turns: [...t.turns, ...turns.filter((x) => x.column === i).map((x) => x.turn)] })));
       for (const t of turns) start(t.turn, t);
     },
@@ -232,6 +235,7 @@ export function useThreads(
         response: newResponse(performance.now()),
       };
       live.current.set(turn.id, turn.response);
+      setLastSend((ids) => ids.map((x) => (x === last.id ? turn.id : x)));
       release([last]);
       setThreads((ts) => ts.map((t) => (t.key === thread.key ? { ...t, turns: [...t.turns.slice(0, -1), turn] } : t)));
       start(turn, again);
@@ -258,8 +262,37 @@ export function useThreads(
     const before = settled(threads, performance.now());
     release(cleared.current);
     cleared.current = before.flatMap((t) => t.turns);
+    setLastSend([]);
     setThreads((ts) => ts.map((t) => ({ ...t, turns: [] })));
     return before;
+  };
+
+  // Edit: the last prompt's turns leave every column, kept until the next send or clear so
+  // Undo can put them back.
+  const takeLast = (): Thread[] => {
+    const taken = new Set(lastSend);
+    const before = settled(threads, performance.now());
+    release(cleared.current);
+    cleared.current = before.flatMap((t) => t.turns.filter((x) => taken.has(x.id)));
+    setLastSend([]);
+    setThreads((ts) =>
+      ts.map((t) => {
+        const last = t.turns.at(-1);
+        return last && taken.has(last.id) ? { ...t, turns: t.turns.slice(0, -1) } : t;
+      }),
+    );
+    return before;
+  };
+
+  const putBack = (before: Thread[]) => {
+    setLastSend(cleared.current.map((x) => x.id));
+    cleared.current = [];
+    setThreads((ts) =>
+      ts.map((t) => {
+        const kept = before.find((b) => b.key === t.key);
+        return kept && kept.turns.length === t.turns.length + 1 ? kept : t;
+      }),
+    );
   };
 
   const restore = (before: Thread[]) => {
@@ -273,5 +306,7 @@ export function useThreads(
   };
 
   const busy = threads.some((t) => t.turns.some((x) => isLive(x.response)));
-  return { threads, busy, send, retry, stop, cancel, add, remove, clear, restore };
+  // The last prompt's turns, which Edit takes back once no reply is arriving.
+  const editable: ReadonlySet<string> = new Set(busy ? [] : lastSend);
+  return { threads, busy, editable, send, retry, stop, cancel, add, remove, clear, restore, takeLast, putBack };
 }

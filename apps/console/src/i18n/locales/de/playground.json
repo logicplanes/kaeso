@@ -82,5 +82,7 @@
   "playground.export.refusedBecause": "abgelehnt: {reason}",
   "playground.export.refused": "abgelehnt",
   "playground.exportMarkdown": "Markdown",
-  "playground.export.noReply": "Keine Antwort."
+  "playground.export.noReply": "Keine Antwort.",
+  "playground.edit": "Bearbeiten",
+  "playground.edited": "Der letzte Prompt ist wieder im Eingabefeld"
 }

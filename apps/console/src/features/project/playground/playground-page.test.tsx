@@ -424,6 +424,27 @@ describe("PlaygroundPage", () => {
     expect(screen.getByRole("link", { name: "View in request log" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}/logs?log=req_01abc`);
   });
 
+  it("edits the last prompt of the columns that answered it, leaving a column added since alone", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () => reply("Hello there"));
+    const { user } = await renderApp(PLAYGROUND);
+    const prompt = await screen.findByRole("textbox", { name: "Prompt" });
+    await user.type(prompt, "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByText("Hello there");
+    await user.click(addColumn());
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(prompt).toHaveValue("Hi");
+    expect(screen.queryByRole("list", { name: "Attachments" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Hello there")).not.toBeInTheDocument();
+    await user.click(notifications().getByRole("button", { name: "Undo" }));
+    expect(await screen.findByText("Hello there")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(1);
+  });
+
   it("exports the conversation as Markdown or JSON in the browser, without asking the gateway", async () => {
     signedIn();
     on("GET", MODELS, page([playgroundModel()]));

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@logicplanes/kaeso-ui";
+import { Button, icons } from "@logicplanes/kaeso-ui";
 import { ResponseMetrics, ResponseView, Thread, UserMessage, type ResponseStatus } from "@logicplanes/kaeso-ui/playground";
 import { answers, prompts } from "~/fixtures/playground";
 import { StateSection } from "~/lib/states";
@@ -104,7 +104,15 @@ export function ThreadDemo() {
         />
       </div>
       <div className="flex flex-col gap-12">
-        <UserMessage>Shorter subject line, please.</UserMessage>
+        <UserMessage
+          actions={
+            <Button size="sm" variant="quiet" leadingIcon={icons.edit}>
+              Edit
+            </Button>
+          }
+        >
+          Shorter subject line, please.
+        </UserMessage>
         <ResponseView aria-label="Claude Sonnet 4.5 response" status="streaming" text={'```json\n{\n  "subject": "Order #4471 is'} />
       </div>
     </Thread>
