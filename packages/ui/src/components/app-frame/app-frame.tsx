@@ -87,7 +87,7 @@ const Root = forwardRef<HTMLDivElement, AppFrameProps>(function AppFrame(
           onToggle={() => setNavOpen((o) => !o)}
           toggleRef={toggle}
         />
-        <Main id={mainId} className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel outline-none safe-area-panel lg:pt-8">
+        <Main id={mainId} className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-panel outline-none safe-area-panel frame-main-top">
           {children}
         </Main>
         {corner && <div className={cn(fill === "parent" ? "absolute" : "fixed", "right-16 bottom-16 z-10 flex items-center gap-8")}>{corner}</div>}

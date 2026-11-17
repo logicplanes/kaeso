@@ -3,6 +3,7 @@ import { icons } from "../../icons/vocabulary.js";
 import { useTheme, type ThemePreference } from "../../theme/theme-provider.js";
 import { Button } from "../button/button.js";
 import { Menu } from "../menu/menu.js";
+import { Segmented } from "../segmented/segmented.js";
 import { useUiText } from "../../i18n/context.js";
 
 export const KAESO_THEME_MENU_VARIANTS = {
@@ -14,6 +15,7 @@ export const KAESO_THEME_MENU_VARIANTS = {
 export const KAESO_THEME_MENU_DEFAULT_VARIANTS = { variant: "ghost" } as const;
 
 export interface ThemeMenuProps {
+  display?: "menu" | "segmented" | undefined;
   variant?: keyof typeof KAESO_THEME_MENU_VARIANTS.variant | undefined;
   size?: "sm" | "md" | undefined;
   side?: "top" | "bottom" | undefined;
@@ -22,11 +24,26 @@ export interface ThemeMenuProps {
 }
 
 export const ThemeMenu = forwardRef<HTMLButtonElement, ThemeMenuProps>(function ThemeMenu(
-  { variant = "ghost", size = "sm", side = "bottom", align = "end", "data-force": force },
+  { display = "menu", variant = "ghost", size = "sm", side = "bottom", align = "end", "data-force": force },
   ref,
 ) {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const t = useUiText();
+  if (display === "segmented")
+    return (
+      <Segmented
+        aria-label={t("themeMenu.theme", "Theme")}
+        size={size}
+        value={theme}
+        onValueChange={(v) => setTheme(v as ThemePreference)}
+        data-force={force}
+        options={[
+          { value: "system", icon: icons.themeSystem, "aria-label": t("themeMenu.system", "System") },
+          { value: "light", icon: icons.themeLight, "aria-label": t("themeMenu.light", "Light") },
+          { value: "dark", icon: icons.themeDark, "aria-label": t("themeMenu.dark", "Dark") },
+        ]}
+      />
+    );
   return (
     <Menu>
       <Menu.Trigger>

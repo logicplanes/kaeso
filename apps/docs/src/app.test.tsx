@@ -45,11 +45,12 @@ function phoneBar() {
   return within(bar);
 }
 
-async function themeChoice(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: "Theme" }));
-  const checked = (await screen.findAllByRole("menuitemradio")).find((o) => o.getAttribute("aria-checked") === "true");
-  await user.keyboard("{Escape}");
-  return checked?.textContent;
+async function themeChoice() {
+  const theme = await screen.findByRole("radiogroup", { name: "Theme" });
+  return within(theme)
+    .getAllByRole("radio")
+    .find((r) => (r as HTMLInputElement).checked || r.getAttribute("aria-checked") === "true")
+    ?.getAttribute("aria-label");
 }
 
 function app(path: string) {
@@ -90,8 +91,8 @@ describe("the site", () => {
     const user = userEvent.setup();
     const router = app("/guides/keys-and-limits");
     await screen.findByRole("heading", { level: 1, name: "Keys and limits" });
-    await waitFor(() => expect(screen.getByRole("button", { name: "Language" })).toHaveAttribute("aria-expanded", "false"));
-    await user.click(screen.getByRole("button", { name: "Language" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Language: English" })).toHaveAttribute("aria-expanded", "false"));
+    await user.click(screen.getByRole("button", { name: "Language: English" }));
     expect((await screen.findAllByRole("menuitemradio")).map((o) => o.textContent)).toEqual(["English", "Deutsch", "简体中文"]);
     expect(screen.getByRole("menuitemradio", { name: "English" })).toHaveAttribute("aria-checked", "true");
     await user.click(screen.getByRole("menuitemradio", { name: "Deutsch" }));
@@ -99,8 +100,8 @@ describe("the site", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Schlüssel und Limits" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Dokumentation" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Rechtliches" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Design" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Sprache" }));
+    expect(screen.getByRole("radiogroup", { name: "Design" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Sprache: Deutsch" }));
     expect(await screen.findByRole("menuitemradio", { name: "Deutsch" })).toHaveAttribute("aria-checked", "true");
     await user.keyboard("{Escape}");
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe("de");
@@ -111,8 +112,8 @@ describe("the site", () => {
     app("/zh-CN");
     expect(await screen.findByRole("navigation", { name: "文档" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "法律信息" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "主题" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "语言" })).toBeInTheDocument();
+    expect(screen.getByRole("radiogroup", { name: "主题" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "语言：简体中文" })).toBeInTheDocument();
   });
 
   it("links to Kaeso on GitHub under the changelog, without a count while it is below 100", async () => {
@@ -292,7 +293,7 @@ describe("search", () => {
     await user.type(await screen.findByPlaceholderText("Search the documentation"), "dark");
     await user.click(await screen.findByRole("option", { name: "Use the dark theme" }));
     await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "dark"));
-    expect(await themeChoice(user)).toBe("Dark");
+    expect(await themeChoice()).toBe("Dark");
     for (const [query, option, label] of [
       ["light", "Use the light theme", "Light"],
       ["system", "Use the system theme", "System"],
@@ -300,7 +301,7 @@ describe("search", () => {
       await user.click(phoneBar().getByRole("button", { name: "Search" }));
       await user.type(await screen.findByPlaceholderText("Search the documentation"), query);
       await user.click(await screen.findByRole("option", { name: option }));
-      expect(await themeChoice(user)).toBe(label);
+      expect(await themeChoice()).toBe(label);
     }
   });
 });

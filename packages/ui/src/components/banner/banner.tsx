@@ -67,6 +67,7 @@ export const Banner = forwardRef<HTMLDivElement, BannerProps>(function Banner(
     <div
       ref={ref}
       role={tone === "danger" ? "alert" : "status"}
+      data-k-banner={layout}
       className={cn(
         "@container w-full forced-colors:outline forced-colors:-outline-offset-1",
         KAESO_BANNER_VARIANTS.tone[tone].classes,

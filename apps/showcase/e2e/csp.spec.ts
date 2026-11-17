@@ -37,7 +37,7 @@ test("the build writes one policy that allows its inline scripts by hash, never 
   expect(read("components/button.html")).toContain(`<meta http-equiv="content-security-policy" content="${header.replace("; frame-ancestors 'none'", "")}">`);
 });
 
-const THEME = { en: "Theme", de: "Design", "zh-CN": "主题" } as const;
+const LANGUAGE = { en: "Language: English", de: "Sprache: Deutsch", "zh-CN": "语言：简体中文" } as const;
 const languageOf = (path: string) => (path.startsWith("/de") ? "de" : path.startsWith("/zh-CN") ? "zh-CN" : "en");
 const pages = ["/", "/installation", "/components/select", "/components/scroll-area", "/components/conversation-view/states", "/de", "/zh-CN/components/dialog", "/404"];
 
@@ -49,7 +49,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.goto(path);
       await hydrated(page);
       if (!path.endsWith("/states")) {
-        await page.getByRole("button", { name: THEME[languageOf(path)] }).click();
+        await page.getByRole("button", { name: LANGUAGE[languageOf(path)] }).click();
         await expect(page.getByRole("menuitemradio").first()).toBeVisible();
         await page.keyboard.press("Escape");
       }
@@ -84,10 +84,9 @@ test("moving between pages, languages and themes stays within the policy", async
   await hydrated(page);
   await page.getByRole("link", { name: "Select", exact: true }).first().click();
   await expect(page).toHaveURL("/components/select");
-  await page.getByRole("button", { name: "Theme" }).click();
-  await page.getByRole("menuitemradio", { name: "Dark" }).click();
+  await page.getByRole("radio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await page.getByRole("button", { name: "Language" }).click();
+  await page.getByRole("button", { name: "Language: English" }).click();
   await page.getByRole("menuitemradio", { name: "Deutsch" }).click();
   await expect(page).toHaveURL("/de/components/select");
   await page.getByRole("link", { name: "Übersicht" }).first().click();

@@ -1,38 +1,26 @@
-import { forwardRef, useEffect, useRef } from "react";
-import { Button, Menu, ThemeMenu, icons } from "@logicplanes/kaeso-ui";
+import { useEffect, useRef } from "react";
+import { Menu } from "@logicplanes/kaeso-ui";
 import { LANGUAGE_NAMES, LOCALES, isLocale } from "~/i18n/locales";
-import { useSiteLocale, useText } from "~/i18n/text";
+import { useSiteLocale } from "~/i18n/text";
+import { LanguageButton } from "./language-button";
 import { useSwitchLocale } from "./use-switch-locale";
 
-export type FooterMenu = "theme" | "language";
-
-export default function FooterMenus({ opening }: { opening: FooterMenu | null }) {
-  const theme = useRef<HTMLButtonElement>(null);
-  const language = useRef<HTMLButtonElement>(null);
+export default function LanguageMenu({ opening }: { opening: boolean }) {
+  const trigger = useRef<HTMLButtonElement>(null);
   const clickedWhileLoading = useRef(opening);
-  useEffect(() => {
-    const trigger = clickedWhileLoading.current && { theme, language }[clickedWhileLoading.current].current;
-    trigger?.focus();
-    trigger?.click();
-  }, []);
-  return (
-    <>
-      <ThemeMenu ref={theme} side="top" align="start" />
-      <LanguageMenu ref={language} />
-    </>
-  );
-}
-
-const LanguageMenu = forwardRef<HTMLButtonElement>(function LanguageMenu(_, ref) {
-  const t = useText();
   const locale = useSiteLocale();
   const switchTo = useSwitchLocale();
+  useEffect(() => {
+    if (!clickedWhileLoading.current) return;
+    trigger.current?.focus();
+    trigger.current?.click();
+  }, []);
   return (
     <Menu>
       <Menu.Trigger>
-        <Button variant="ghost" size="sm" ref={ref} icon={icons.language} aria-label={t("language.label")} />
+        <LanguageButton ref={trigger} />
       </Menu.Trigger>
-      <Menu.Content side="top" align="start" className="min-w-180">
+      <Menu.Content side="top" align="end" className="min-w-180">
         <Menu.RadioGroup
           value={locale}
           onValueChange={(value) => {
@@ -48,4 +36,4 @@ const LanguageMenu = forwardRef<HTMLButtonElement>(function LanguageMenu(_, ref)
       </Menu.Content>
     </Menu>
   );
-});
+}

@@ -234,16 +234,14 @@ test("nothing typed after ⌘K is lost while the search's code is held back, whi
 
 test("the theme switches and stays switched", async ({ page }) => {
   await page.goto("/");
-  const theme = page.getByRole("button", { name: "Theme" });
-  await theme.click();
-  await expect(page.getByRole("menuitemradio", { name: "System" })).toHaveAttribute("aria-checked", "true");
-  await page.getByRole("menuitemradio", { name: "Dark" }).click();
+  const theme = page.getByRole("radiogroup", { name: "Theme" });
+  await expect(theme.getByRole("radio", { name: "System" })).toBeChecked();
+  await theme.getByRole("radio", { name: "Dark" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-  await theme.click();
-  await expect(page.getByRole("menuitemradio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
-  await page.getByRole("menuitemradio", { name: "System" }).click();
+  await expect(theme.getByRole("radio", { name: "Dark" })).toBeChecked();
+  await theme.getByRole("radio", { name: "System" }).click();
   await expect(page.locator("html")).not.toHaveAttribute("data-theme");
 });
 
@@ -274,7 +272,8 @@ test.describe("on a phone", () => {
     await toggle.click();
     const sheet = page.getByRole("dialog", { name: "Navigation" });
     await expect(sheet).toBeVisible();
-    for (const name of ["Theme", "Language"]) await expect(sheet.getByRole("button", { name })).toBeVisible();
+    await expect(sheet.getByRole("radiogroup", { name: "Theme" })).toBeVisible();
+    await expect(sheet.getByRole("button", { name: "Language: English" })).toBeVisible();
     await sheet.getByRole("link", { name: "Models" }).click();
     await expect(page).toHaveURL("/reference/models");
     await expect(sheet).toBeHidden();
@@ -427,7 +426,7 @@ test.describe("on a phone", () => {
 test.describe("languages", () => {
   test("the language menu opens the same page in another language, which the next visit remembers", async ({ page }) => {
     await page.goto("/guides/keys-and-limits");
-    await page.getByRole("button", { name: "Language" }).click();
+    await page.getByRole("button", { name: "Language: English" }).click();
     await expect(page.getByRole("menuitemradio", { name: "English" })).toHaveAttribute("aria-checked", "true");
     await page.getByRole("menuitemradio", { name: "Deutsch" }).click();
     await expect(page).toHaveURL("/de/guides/keys-and-limits");

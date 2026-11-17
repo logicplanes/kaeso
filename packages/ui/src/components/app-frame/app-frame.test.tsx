@@ -7,6 +7,7 @@ import { NavSheet } from "./nav-sheet.js";
 import { PageHeader } from "../page-header/page-header.js";
 import { Sidebar } from "../sidebar/sidebar.js";
 import { Button } from "../button/button.js";
+import { Banner } from "../banner/banner.js";
 import { icons } from "../../icons/vocabulary.js";
 import { LocaleProvider, type UiMessages } from "../../i18n/index.js";
 import de from "../../i18n/locales/de.js";
@@ -282,10 +283,22 @@ describe("AppFrame.Body", () => {
 });
 
 describe("AppFrame's panel", () => {
+  it("lets a full-width banner be its top edge, marked so the frame drops its 8px inset above it", () => {
+    render(
+      <AppFrame sidebar={<nav aria-label="Console" />}>
+        <Banner layout="full">This is a read-only demo with sample data.</Banner>
+        <PageHeader title="Overview" />
+      </AppFrame>,
+    );
+    const main = screen.getByRole("main");
+    expect(main.firstElementChild).toHaveAttribute("data-k-banner", "full");
+    expect(main).toHaveClass("frame-main-top");
+  });
+
   it("is square and flush beside the sidebar, the sidebar on the same ground behind a hairline", () => {
     render(<Console />);
     const main = screen.getByRole("main");
-    expect(main).toHaveClass("bg-panel", "lg:pt-8");
+    expect(main).toHaveClass("bg-panel", "frame-main-top");
     expect(main.className).not.toMatch(/rounded|shadow-panel|lg:m[rxy]?-/);
     expect(screen.getByRole("navigation", { name: "Console" })).toHaveClass("bg-panel", "divider-r");
   });

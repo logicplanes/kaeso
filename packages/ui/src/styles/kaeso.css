@@ -1135,6 +1135,15 @@
     border-block-start: 1px solid CanvasText;
   }
 }
+/* The page header lines up with the sidebar's head 8px down; a full-width banner is the frame's top edge instead. */
+@utility frame-main-top {
+  @media (width >= 64rem) {
+    padding-top: 8px;
+    &:has(> [data-k-banner="full"]:first-child) {
+      padding-top: 0;
+    }
+  }
+}
 @utility divider-r {
   box-shadow: inset -1px 0 0 var(--k-line);
   @media (forced-colors: active) {
