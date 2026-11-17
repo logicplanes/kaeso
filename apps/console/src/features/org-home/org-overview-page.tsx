@@ -15,6 +15,7 @@ const OrgGlance = lazy(() => glance().then((m) => ({ default: m.OrgGlance })));
 const CostByProject = lazy(() => glance().then((m) => ({ default: m.CostByProject })));
 const ReleaseBanner = lazy(() => news().then((m) => ({ default: m.ReleaseBanner })));
 const NewModels = lazy(() => news().then((m) => ({ default: m.NewModels })));
+const RetiringProjects = lazy(() => import("./retiring-projects").then((m) => ({ default: m.RetiringProjects })));
 
 export function OrgOverviewPage({ org }: { org: string }) {
   const rights = useOrgRights(org);
@@ -39,6 +40,9 @@ export function OrgOverviewPage({ org }: { org: string }) {
         <div className="flex flex-col">
           <Suspense fallback={null}>
             <ReleaseBanner />
+          </Suspense>
+          <Suspense fallback={null}>
+            <RetiringProjects org={org} />
           </Suspense>
           <div className="mt-48">
             <HomeMetrics

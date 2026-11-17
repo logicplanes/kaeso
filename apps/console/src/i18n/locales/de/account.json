@@ -282,5 +282,9 @@
   "account.notify.webhooks": "Webhooks brauchen Aufmerksamkeit",
   "account.notify.webhooksHint": "Wenn ein Webhook 20-mal in Folge scheitert und ausgeschaltet wird.",
   "account.currency": "Währung",
-  "account.currencyHint": "Ausgaben auch darin, neben USD; im Konto gespeichert."
+  "account.currencyHint": "Ausgaben auch darin, neben USD; im Konto gespeichert.",
+  "account.notify.modelDeprecated": "Modell abgekündigt",
+  "account.notify.modelDeprecatedHint": "Wenn ein Anbieter einen Abschalttag für ein Modell eines Projekts nennt.",
+  "account.notify.modelShutdownSoon": "Modell wird bald abgeschaltet",
+  "account.notify.modelShutdownSoonHint": "30, 7 und 1 Tag bevor ein Modell abgeschaltet wird, das ein Projekt noch aufruft."
 }

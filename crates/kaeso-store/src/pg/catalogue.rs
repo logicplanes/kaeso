@@ -765,6 +765,8 @@ pub struct ProjectModels {
     /// The project's retries: how many times a request that names a model, or an alias step
     /// that sets none, tries the model again after a short-lived failure.
     pub retries: u8,
+    /// Whether requests that name a retired model are answered by its replacement.
+    pub serve_replacement: bool,
 }
 
 #[derive(Deserialize)]
@@ -780,6 +782,8 @@ struct Stored {
     providers: OrgProviders,
     #[serde(default)]
     retries: u8,
+    #[serde(default)]
+    serve_replacement: bool,
 }
 
 impl From<Stored> for ProjectModels {
@@ -792,13 +796,14 @@ impl From<Stored> for ProjectModels {
             keys: s.keys,
             open: s.open,
             retries: s.retries,
+            serve_replacement: s.serve_replacement,
         }
     }
 }
 
 impl Serialize for ProjectModels {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut out = serializer.serialize_struct("ProjectModels", 8)?;
+        let mut out = serializer.serialize_struct("ProjectModels", 9)?;
         out.serialize_field("entries", self.catalogue.entries())?;
         out.serialize_field("aliases", self.catalogue.aliases())?;
         out.serialize_field("users", &self.users)?;
@@ -807,6 +812,7 @@ impl Serialize for ProjectModels {
         out.serialize_field("open", &self.open)?;
         out.serialize_field("providers", &self.providers)?;
         out.serialize_field("retries", &self.retries)?;
+        out.serialize_field("serve_replacement", &self.serve_replacement)?;
         out.end()
     }
 }
@@ -840,10 +846,14 @@ pub async fn project_models(
         .fetch_optional(&mut *db)
         .await?
         .unwrap_or(0);
+    let serve_replacement = super::model_lifecycle::settings(&mut *db, project_id)
+        .await?
+        .serve_replacement;
     let mut out = ProjectModels {
         catalogue: Catalogue::new(entries, aliases),
         providers: OrgProviders::new(providers),
         retries: u8::try_from(retries).unwrap_or(0),
+        serve_replacement,
         ..ProjectModels::default()
     };
     let users = sqlx::query!(
@@ -986,6 +996,7 @@ mod tests {
                 "open",
                 "providers",
                 "retries",
+                "serve_replacement",
                 "service_accounts",
                 "users"
             ]

@@ -20,6 +20,7 @@ pub mod key_endpoint;
 pub mod key_pool;
 pub mod keys;
 pub mod kpmr;
+pub mod lifecycle;
 pub mod limits;
 pub mod linked_billing;
 pub mod linked_billing_keys;

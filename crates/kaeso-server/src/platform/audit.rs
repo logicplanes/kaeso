@@ -41,6 +41,7 @@ actions! {
         CatalogueModelCheck = "catalogue_model.check",
         CatalogueModelCreate = "catalogue_model.create",
         CatalogueModelDelete = "catalogue_model.delete",
+        CatalogueModelMove = "catalogue_model.move",
         CatalogueModelPriceChange = "catalogue_model.price_change",
         CatalogueModelUpdate = "catalogue_model.update",
         CredentialAssign = "credential.assign",
@@ -124,6 +125,7 @@ actions! {
         ProjectMemberAdd = "project.member_add",
         ProjectMemberRemove = "project.member_remove",
         ProjectMemberRightsUpdate = "project.member_rights_update",
+        ProjectModelLifecycle = "project.model_lifecycle",
         ProjectToolsUpdate = "project.tools_update",
         ProjectUpdate = "project.update",
         ResponseCacheClear = "response_cache.clear",
@@ -379,10 +381,43 @@ pub async fn system_event(
     after: Option<Value>,
     at: time::OffsetDateTime,
 ) -> Result<(), kaeso_store::StoreError> {
+    system_event_in(db, (org, None), action, target, before, after, at).await
+}
+
+pub async fn system_project_event(
+    db: &mut sqlx::PgConnection,
+    (org, project): (OrgId, ProjectId),
+    action: Action,
+    target: Option<(&'static str, String)>,
+    before: Option<Value>,
+    after: Option<Value>,
+    at: time::OffsetDateTime,
+) -> Result<(), kaeso_store::StoreError> {
+    system_event_in(
+        db,
+        (Some(org), Some(project)),
+        action,
+        target,
+        before,
+        after,
+        at,
+    )
+    .await
+}
+
+async fn system_event_in(
+    db: &mut sqlx::PgConnection,
+    (org, project): (Option<OrgId>, Option<ProjectId>),
+    action: Action,
+    target: Option<(&'static str, String)>,
+    before: Option<Value>,
+    after: Option<Value>,
+    at: time::OffsetDateTime,
+) -> Result<(), kaeso_store::StoreError> {
     let notice = notices(action).then(|| Notice {
         action,
         org: org.map(|o| o.uuid()),
-        project: None,
+        project: project.map(|p| p.uuid()),
         actor: None,
         target: target.as_ref().map(|(_, id)| id.clone()),
         before: before.clone(),
@@ -393,7 +428,7 @@ pub async fn system_event(
         &NewEvent {
             id: AuditEventId::new().uuid(),
             org_id: org.map(|o| o.uuid()),
-            project_id: None,
+            project_id: project.map(|p| p.uuid()),
             actor_kind: "system",
             actor_id: None,
             agent_id: None,

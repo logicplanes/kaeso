@@ -72,7 +72,7 @@ async fn each_person_sees_the_emails_their_rights_let_them_receive() {
     );
     assert_eq!(
         kinds(&mine.body).len(),
-        24,
+        26,
         "an owner and instance admin gets every kind"
     );
     let security = kind(&mine.body, "account_security");
@@ -131,6 +131,8 @@ async fn each_person_sees_the_emails_their_rights_let_them_receive() {
             "limit_reached",
             "key_expiry",
             "key_changed",
+            "model_deprecated",
+            "model_shutdown_soon",
             "content_logging",
             "connection_expired",
             "portal_clients",

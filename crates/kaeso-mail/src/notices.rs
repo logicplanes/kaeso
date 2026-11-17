@@ -237,6 +237,35 @@ impl PriceChange {
 pub enum ModelChange {
     Delisted,
     Price(Vec<PriceChange>),
+    /// The provider announced that it retires the model, on a day if it named one.
+    Deprecated {
+        shutdown_on: Option<Date>,
+        replacement: Option<String>,
+    },
+    /// The project still calls a model that stops working in `days` days.
+    ShutdownSoon {
+        shutdown_on: Date,
+        days: i64,
+        replacement: Option<String>,
+        requests: u64,
+    },
+    /// The model shut down and Kaeso moved the project's aliases to its replacement.
+    Moved {
+        replacement: String,
+        aliases: usize,
+    },
+}
+
+impl ModelChange {
+    fn email(&self) -> EmailKind {
+        match self {
+            ModelChange::Delisted | ModelChange::Price(_) => EmailKind::ModelChanges,
+            ModelChange::Deprecated { .. } => EmailKind::ModelDeprecated,
+            ModelChange::ShutdownSoon { .. } | ModelChange::Moved { .. } => {
+                EmailKind::ModelShutdownSoon
+            }
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -621,7 +650,7 @@ impl Fact<'_> {
             Fact::InviteAccepted { .. } => EmailKind::InviteAccepted,
             Fact::ProviderKey { .. } => EmailKind::ProviderKeys,
             Fact::WebhookDisabled { .. } => EmailKind::Webhooks,
-            Fact::Model { .. } => EmailKind::ModelChanges,
+            Fact::Model { change, .. } => change.email(),
             Fact::CostReport { .. } => EmailKind::CostReport,
             Fact::InstanceUpdate { .. } => EmailKind::InstanceUpdates,
             Fact::SignedUp { .. } => EmailKind::InstancePeople,
@@ -760,8 +789,41 @@ impl Fact<'_> {
                     Label::Provider.of(lang, *provider),
                     Label::Model.of(lang, *model),
                 ];
-                if let ModelChange::Price(changes) = change {
-                    out.extend(changes.iter().map(|c| c.detail(lang)));
+                match change {
+                    ModelChange::Price(changes) => {
+                        out.extend(changes.iter().map(|c| c.detail(lang)));
+                    }
+                    ModelChange::Deprecated {
+                        shutdown_on,
+                        replacement,
+                    } => {
+                        out.extend(shutdown_on.map(|d| Label::ShutsDown.of(lang, lang.date(d))));
+                        out.extend(
+                            replacement
+                                .as_deref()
+                                .map(|r| Label::Replacement.of(lang, r)),
+                        );
+                    }
+                    ModelChange::ShutdownSoon {
+                        shutdown_on,
+                        replacement,
+                        requests,
+                        ..
+                    } => {
+                        out.push(Label::ShutsDown.of(lang, lang.date(*shutdown_on)));
+                        out.extend(
+                            replacement
+                                .as_deref()
+                                .map(|r| Label::Replacement.of(lang, r)),
+                        );
+                        out.push(
+                            Label::RequestsThisWeek.of(lang, lang.number(&requests.to_string())),
+                        );
+                    }
+                    ModelChange::Moved { replacement, .. } => {
+                        out.push(Label::Replacement.of(lang, replacement.as_str()));
+                    }
+                    ModelChange::Delisted => {}
                 }
                 out
             }
@@ -1051,6 +1113,53 @@ impl Fact<'_> {
                 ModelChange::Price(_) => w(
                     format!("{model} changed its price"),
                     format!("{provider} changed the price of {model}; costs from now on use it."),
+                    "Open models",
+                ),
+                ModelChange::Deprecated {
+                    shutdown_on,
+                    replacement,
+                } => {
+                    let to = replacement.as_deref().unwrap_or("another model");
+                    let sentence = match shutdown_on {
+                        Some(d) => format!(
+                            "{provider} shuts {model} down on {}; move {project} to {to} before then.",
+                            Locale::En.date(*d)
+                        ),
+                        None => format!(
+                            "{provider} deprecated {model}; requests from {project} keep working for now."
+                        ),
+                    };
+                    w(format!("{model} is deprecated"), sentence, "Open models")
+                }
+                ModelChange::ShutdownSoon {
+                    days,
+                    replacement,
+                    requests,
+                    ..
+                } => {
+                    let to = replacement.as_deref().unwrap_or("another model");
+                    let heading = match days {
+                        ..=0 => format!("{model} shuts down today"),
+                        1 => format!("{model} shuts down tomorrow"),
+                        n => format!("{model} shuts down in {n} days"),
+                    };
+                    w(
+                        heading,
+                        format!(
+                            "{project} called {model} {} times in the last 7 days; move it to {to}.",
+                            Locale::En.number(&requests.to_string())
+                        ),
+                        "Open models",
+                    )
+                }
+                ModelChange::Moved {
+                    replacement,
+                    aliases,
+                } => w(
+                    format!("{model} was moved to {replacement}"),
+                    format!(
+                        "{model} shut down, so Kaeso moved {aliases} aliases of {project} to {replacement}."
+                    ),
                     "Open models",
                 ),
             },
@@ -1418,6 +1527,53 @@ impl Fact<'_> {
                     format!("{model} hat einen neuen Preis"),
                     format!(
                         "{provider} hat den Preis von {model} geändert; Kosten ab jetzt nutzen ihn."
+                    ),
+                    "Modelle öffnen",
+                ),
+                ModelChange::Deprecated {
+                    shutdown_on,
+                    replacement,
+                } => {
+                    let to = replacement.as_deref().unwrap_or("ein anderes Modell");
+                    let sentence = match shutdown_on {
+                        Some(d) => format!(
+                            "{provider} schaltet {model} am {} ab; stellen Sie {project} bis dahin auf {to} um.",
+                            Locale::De.date(*d)
+                        ),
+                        None => format!(
+                            "{provider} hat {model} abgekündigt; Anfragen aus {project} funktionieren vorerst weiter."
+                        ),
+                    };
+                    w(format!("{model} wird abgekündigt"), sentence, "Modelle öffnen")
+                }
+                ModelChange::ShutdownSoon {
+                    days,
+                    replacement,
+                    requests,
+                    ..
+                } => {
+                    let to = replacement.as_deref().unwrap_or("ein anderes Modell");
+                    let heading = match days {
+                        ..=0 => format!("{model} wird heute abgeschaltet"),
+                        1 => format!("{model} wird morgen abgeschaltet"),
+                        n => format!("{model} wird in {n} Tagen abgeschaltet"),
+                    };
+                    w(
+                        heading,
+                        format!(
+                            "{project} hat {model} in 7 Tagen {}-mal aufgerufen; stellen Sie auf {to} um.",
+                            Locale::De.number(&requests.to_string())
+                        ),
+                        "Modelle öffnen",
+                    )
+                }
+                ModelChange::Moved {
+                    replacement,
+                    aliases,
+                } => w(
+                    format!("{model} wurde durch {replacement} ersetzt"),
+                    format!(
+                        "{model} ist abgeschaltet, daher hat Kaeso {aliases} Aliasse von {project} auf {replacement} umgestellt."
                     ),
                     "Modelle öffnen",
                 ),
@@ -1793,6 +1949,79 @@ impl Fact<'_> {
                         "更改了",
                         model,
                         "的价格；此后的成本按新价格计算。",
+                    ]),
+                    "打开模型",
+                ),
+                ModelChange::Deprecated {
+                    shutdown_on,
+                    replacement,
+                } => {
+                    let to = replacement.as_deref().unwrap_or("其他模型");
+                    let sentence = match shutdown_on {
+                        Some(d) => zh(&[
+                            provider,
+                            "将于",
+                            &Locale::ZhCn.date(*d),
+                            "停用",
+                            model,
+                            "；请在此之前将",
+                            project,
+                            "切换到",
+                            to,
+                            "。",
+                        ]),
+                        None => zh(&[
+                            provider,
+                            "已弃用",
+                            model,
+                            "；",
+                            project,
+                            "的请求暂时仍可正常使用。",
+                        ]),
+                    };
+                    w(zh(&[model, "已弃用"]), sentence, "打开模型")
+                }
+                ModelChange::ShutdownSoon {
+                    days,
+                    replacement,
+                    requests,
+                    ..
+                } => {
+                    let to = replacement.as_deref().unwrap_or("其他模型");
+                    let heading = match days {
+                        ..=0 => zh(&[model, "今天停用"]),
+                        1 => zh(&[model, "明天停用"]),
+                        n => zh(&[model, "将在", &n.to_string(), "天后停用"]),
+                    };
+                    w(
+                        heading,
+                        zh(&[
+                            project,
+                            "在最近 7 天内调用了",
+                            model,
+                            "共",
+                            &requests.to_string(),
+                            "次；请切换到",
+                            to,
+                            "。",
+                        ]),
+                        "打开模型",
+                    )
+                }
+                ModelChange::Moved {
+                    replacement,
+                    aliases,
+                } => w(
+                    zh(&[model, "已切换到", replacement]),
+                    zh(&[
+                        model,
+                        "已停用，Kaeso 已将",
+                        project,
+                        "的",
+                        &aliases.to_string(),
+                        "个别名切换到",
+                        replacement,
+                        "。",
                     ]),
                     "打开模型",
                 ),

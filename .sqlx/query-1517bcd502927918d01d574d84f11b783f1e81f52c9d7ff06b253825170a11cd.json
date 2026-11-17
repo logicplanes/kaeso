@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO project_model_lifecycle (project_id, move_on_shutdown, serve_replacement, updated_at) VALUES ($1, $2, $3, $4) ON CONFLICT (project_id) DO UPDATE SET move_on_shutdown = $2, serve_replacement = $3, updated_at = $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Bool",
+        "Bool",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "1517bcd502927918d01d574d84f11b783f1e81f52c9d7ff06b253825170a11cd"
+}

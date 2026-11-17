@@ -213,6 +213,7 @@ export function signedIn(options: SignedInOptions = {}): WhoAmI {
   on("GET", "orgs/:org/providers", page(providers));
   on("GET", "orgs/:org", ({ params }: { params: Record<string, string> }) => org({ id: params.org ?? ORG }));
   on("GET", "orgs/:org/projects", page(projects));
+  on("GET", "orgs/:org/deprecations", { data: [] });
   on("GET", "orgs/:org/projects/:project", ({ params }: { params: Record<string, string> }) => projects.find((p) => p.id === params.project) ?? project());
   on("GET", "orgs/:org/projects/:project/my-rights", ({ params }: { params: Record<string, string> }) =>
     myRights(options.projectRights ?? ALL_PROJECT_RIGHTS, params.project),

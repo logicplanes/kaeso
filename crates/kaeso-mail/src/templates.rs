@@ -41,6 +41,8 @@ pub enum EmailKind {
     InviteAccepted,
     ProviderKeys,
     ModelChanges,
+    ModelDeprecated,
+    ModelShutdownSoon,
     CostReport,
     InstanceUpdates,
     InstancePeople,
@@ -88,6 +90,8 @@ impl EmailKind {
             EmailKind::InviteAccepted => "invite_accepted",
             EmailKind::ProviderKeys => "provider_keys",
             EmailKind::ModelChanges => "model_changes",
+            EmailKind::ModelDeprecated => "model_deprecated",
+            EmailKind::ModelShutdownSoon => "model_shutdown_soon",
             EmailKind::CostReport => "cost_report",
             EmailKind::InstanceUpdates => "instance_updates",
             EmailKind::InstancePeople => "instance_people",
@@ -1622,6 +1626,47 @@ mod tests {
                 Because::Right("models.manage"),
             ),
             one(
+                Some("Checkout"),
+                Fact::Model {
+                    provider: "OpenAI",
+                    project: "Checkout",
+                    model: "gpt-4o",
+                    change: ModelChange::Deprecated {
+                        shutdown_on: Some(date!(2026 - 11 - 30)),
+                        replacement: Some("gpt-5.5".to_owned()),
+                    },
+                },
+                Because::Right("models.view"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::Model {
+                    provider: "OpenAI",
+                    project: "Checkout",
+                    model: "gpt-4o",
+                    change: ModelChange::ShutdownSoon {
+                        shutdown_on: date!(2026 - 11 - 30),
+                        days: 7,
+                        replacement: Some("gpt-5.5".to_owned()),
+                        requests: 1234,
+                    },
+                },
+                Because::Right("models.view"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::Model {
+                    provider: "OpenAI",
+                    project: "Checkout",
+                    model: "gpt-4o",
+                    change: ModelChange::Moved {
+                        replacement: "gpt-5.5".to_owned(),
+                        aliases: 3,
+                    },
+                },
+                Because::Right("models.view"),
+            ),
+            one(
                 Some("Acme"),
                 Fact::CostReport {
                     month: date!(2026 - 10 - 01),
@@ -1757,6 +1802,23 @@ mod tests {
         text
     }
 
+    fn snapshot_names(emails: &[Email]) -> Vec<String> {
+        let mut seen = std::collections::HashMap::<&str, usize>::new();
+        emails
+            .iter()
+            .map(|email| {
+                let kind = email.kind.as_str();
+                let n = seen.entry(kind).or_default();
+                *n += 1;
+                if *n == 1 {
+                    kind.to_owned()
+                } else {
+                    format!("{kind}_{n}")
+                }
+            })
+            .collect()
+    }
+
     #[test]
     fn a_test_email_from_the_command_names_it() {
         for lang in [Locale::En, Locale::De, Locale::ZhCn] {
@@ -1772,13 +1834,14 @@ mod tests {
 
     #[test]
     fn every_email_renders() {
-        for email in all() {
+        let emails = all();
+        for (email, name) in emails.iter().zip(snapshot_names(&emails)) {
             let r = email.render(&instance());
             insta::assert_snapshot!(
-                format!("{}_text", email.kind.as_str()),
+                format!("{name}_text"),
                 format!("Subject: {}\n\n{}", r.subject, r.text)
             );
-            insta::assert_snapshot!(format!("{}_html", email.kind.as_str()), r.html);
+            insta::assert_snapshot!(format!("{name}_html"), r.html);
         }
     }
 
@@ -1822,6 +1885,8 @@ mod tests {
             EmailKind::InviteAccepted,
             EmailKind::ProviderKeys,
             EmailKind::ModelChanges,
+            EmailKind::ModelDeprecated,
+            EmailKind::ModelShutdownSoon,
             EmailKind::CostReport,
             EmailKind::InstanceUpdates,
             EmailKind::InstancePeople,
@@ -2396,11 +2461,12 @@ mod tests {
     #[test]
     fn german_and_chinese_render() {
         for lang in [Locale::De, Locale::ZhCn] {
-            for email in all_in(lang) {
+            let emails = all_in(lang);
+            for (email, name) in emails.iter().zip(snapshot_names(&emails)) {
                 let r = email.render(&instance());
                 assert_eq!(r.lang, lang);
                 insta::assert_snapshot!(
-                    format!("{}_{}_text", email.kind.as_str(), lang.tag()),
+                    format!("{name}_{}_text", lang.tag()),
                     format!("Subject: {}\n\n{}", r.subject, r.text)
                 );
             }
@@ -2409,7 +2475,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 42] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 45] = [
             (
                 EmailKind::Invitation,
                 [
@@ -2699,6 +2765,36 @@ mod tests {
                     "gpt-4o wird eingestellt",
                 ],
                 ["[Checkout] gpt-4o 已下架", "gpt-4o 已下架"],
+            ),
+            (
+                EmailKind::ModelDeprecated,
+                [
+                    "[Checkout] gpt-4o wird abgekündigt",
+                    "gpt-4o wird abgekündigt",
+                ],
+                ["[Checkout] gpt-4o 已弃用", "gpt-4o 已弃用"],
+            ),
+            (
+                EmailKind::ModelShutdownSoon,
+                [
+                    "[Checkout] gpt-4o wird in 7 Tagen abgeschaltet",
+                    "gpt-4o wird in 7 Tagen abgeschaltet",
+                ],
+                [
+                    "[Checkout] gpt-4o 将在 7 天后停用",
+                    "gpt-4o 将在 7 天后停用",
+                ],
+            ),
+            (
+                EmailKind::ModelShutdownSoon,
+                [
+                    "[Checkout] gpt-4o wurde durch gpt-5.5 ersetzt",
+                    "gpt-4o wurde durch gpt-5.5 ersetzt",
+                ],
+                [
+                    "[Checkout] gpt-4o 已切换到 gpt-5.5",
+                    "gpt-4o 已切换到 gpt-5.5",
+                ],
             ),
             (
                 EmailKind::CostReport,

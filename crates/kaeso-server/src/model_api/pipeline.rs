@@ -388,6 +388,8 @@ pub enum Stage {
     Reply,
     Guardrail,
     Shutdown,
+    /// The model is past its shutdown day and the project doesn't answer with its replacement.
+    Retired(String),
     /// An account's plan reached its usage limit: like a provider refusal, but it holds every
     /// model of the account.
     PlanLimit,
@@ -1701,6 +1703,48 @@ async fn tries(
     step: StepTry<'_>,
     fell: &mut Vec<FellBack>,
 ) -> (Result<Done, Failure>, u32) {
+    let entry = match instead_of_retired(state, sh, entry) {
+        Retirement::Serves => entry,
+        Retirement::Replaced(replacement, said) => {
+            tracing::info!(model = step.model, replacement = %replacement.model_id, "a retired model's request goes to its replacement");
+            metrics::counter!(crate::metrics::RETIRED_MODEL_REQUESTS, "outcome" => "replaced")
+                .increment(1);
+            fell.push(FellBack {
+                catalogue_model_id: entry.id,
+                path: step.path.to_owned(),
+                model: step.model.to_owned(),
+                status: 410,
+                error_kind: said.kind.as_str().to_owned(),
+                error_message: said.message.clone(),
+                duration_ms: 0,
+                skipped: true,
+                retried: false,
+            });
+            rec.outcome().fallbacks.clone_from(fell);
+            replacement
+        }
+        Retirement::Refused(err) => {
+            metrics::counter!(crate::metrics::RETIRED_MODEL_REQUESTS, "outcome" => "refused")
+                .increment(1);
+            let served = Served {
+                model: Some(entry.model_id.clone()),
+                provider: Some(entry.provider.clone()),
+                lifecycle: lifecycle_headers(state, entry),
+                ..Served::default()
+            };
+            return (
+                Err(Failure {
+                    err,
+                    served,
+                    stage: Stage::Retired(format!("{}/{}", entry.provider, entry.model_id)),
+                    provider_said: None,
+                    dropped: false,
+                    not_found_in_request: false,
+                }),
+                0,
+            );
+        }
+    };
     let began = tokio::time::Instant::now();
     rec.step_wait = None;
     let mut again: Option<Duration> = None;
@@ -1770,6 +1814,85 @@ async fn tries(
         again = Some(left.saturating_sub(wait));
         round = round.saturating_add(1);
     }
+}
+
+enum Retirement<'a> {
+    Serves,
+    Replaced(&'a Entry, KppError),
+    Refused(KppError),
+}
+
+// A step whose model is past its shutdown day fails with a clear error, so a route falls back,
+// unless the project answers with the replacement and the caller may use it: the step then
+// calls the replacement, and the request log keeps the retired model as a skipped try.
+fn instead_of_retired<'a>(state: &AppState, sh: &Shared<'a>, entry: &Entry) -> Retirement<'a> {
+    let loaded = state.kpmr.current();
+    let today = state.clock.now().date();
+    if !entry.is_retired(&loaded.snapshot, today) {
+        return Retirement::Serves;
+    }
+    let lifecycle = entry
+        .lifecycle(&loaded.snapshot)
+        .cloned()
+        .unwrap_or_default();
+    let err = retired_model(entry, &lifecycle);
+    if !sh.models.serve_replacement {
+        return Retirement::Refused(err);
+    }
+    let caller = sh.caller;
+    let replacement = lifecycle.replacement.as_deref().and_then(|to| {
+        sh.models.catalogue.entries().iter().find(|e| {
+            e.provider == entry.provider
+                && e.model_id == to
+                && !e.is_retired(&loaded.snapshot, today)
+                && sh
+                    .models
+                    .access(caller.key_id, caller.user_id, caller.service_account_id)
+                    .allows(e.id)
+        })
+    });
+    match replacement {
+        Some(r) => Retirement::Replaced(r, err),
+        None => Retirement::Refused(err),
+    }
+}
+
+fn retired_model(entry: &Entry, lifecycle: &kaeso_core::kpmr::Lifecycle) -> KppError {
+    let name = format!("{}/{}", entry.provider, entry.model_id);
+    let day = lifecycle.shutdown_on.map(kaeso_core::kpmr::day::format);
+    let message = match (day, lifecycle.replacement.as_deref()) {
+        (Some(d), Some(r)) => {
+            format!("The model `{name}` was retired on {d}; its provider recommends `{r}`.")
+        }
+        (Some(d), None) => format!("The model `{name}` was retired on {d}."),
+        (None, Some(r)) => format!("The model `{name}` is retired; its provider recommends `{r}`."),
+        (None, None) => format!("The model `{name}` is retired."),
+    };
+    error(ErrorKind::NotFound, 410, message).with_param("model")
+}
+
+// RFC 9745's `Deprecation` and RFC 8594's `Sunset` for a reply of a deprecated model, with a
+// `Link` to the replacement's KPMR page and to the provider's announcement.
+fn lifecycle_headers(state: &AppState, entry: &Entry) -> Option<super::errors::LifecycleHeaders> {
+    let loaded = state.kpmr.current();
+    let model = entry.kpmr_model(&loaded.snapshot)?;
+    let lifecycle = model.lifecycle.clone().unwrap_or_default();
+    let headers = super::errors::LifecycleHeaders {
+        deprecated_on: lifecycle.deprecated_on.or(lifecycle.announced_on),
+        shutdown_on: lifecycle.shutdown_on,
+        successor: lifecycle.replacement.as_ref().map(|r| {
+            format!(
+                "https://kpmr.kaeso.app/models/{}/{}",
+                entry.provider,
+                r.split('/')
+                    .map(|p| url::form_urlencoded::byte_serialize(p.as_bytes()).collect::<String>())
+                    .collect::<Vec<_>>()
+                    .join("/")
+            )
+        }),
+        announcement: lifecycle.source.clone(),
+    };
+    (headers.deprecated_on.is_some() || headers.shutdown_on.is_some()).then_some(headers)
 }
 
 // One try of a step through the keys of the project's pool for its provider, in the order this
@@ -2020,6 +2143,7 @@ async fn attempt(
         adapted: Vec::new(),
         route: Vec::new(),
         upstream_request_id: None,
+        lifecycle: lifecycle_headers(state, entry),
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -3190,6 +3314,7 @@ fn classify(f: &Failure) -> Next {
         | Stage::Credential
         | Stage::Upstream
         | Stage::KeyRefused
+        | Stage::Retired(_)
         | Stage::Unserved(_) => Next::Fall(RouteFailure::Unavailable),
         Stage::Capability | Stage::NeedsApiKey { .. } => Next::Fall(RouteFailure::Unsupported),
         // Kaeso can't read the counters: every other step would be refused the same way.

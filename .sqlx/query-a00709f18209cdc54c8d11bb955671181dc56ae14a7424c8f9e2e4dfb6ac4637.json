@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO model_lifecycle_notices (project_id, provider, model_id, stage, shutdown_on, sent_at) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (project_id, provider, model_id, stage) DO UPDATE SET shutdown_on = EXCLUDED.shutdown_on, sent_at = EXCLUDED.sent_at WHERE model_lifecycle_notices.shutdown_on IS DISTINCT FROM EXCLUDED.shutdown_on RETURNING project_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "model_lifecycle_notices",
+            "name": "project_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text",
+        "Date",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "a00709f18209cdc54c8d11bb955671181dc56ae14a7424c8f9e2e4dfb6ac4637"
+}

@@ -28,6 +28,7 @@ pub mod mcp_connections;
 pub mod mcp_servers;
 pub mod mcp_tools;
 pub mod members;
+pub mod model_lifecycle;
 pub mod notifications;
 pub mod oidc;
 pub mod orgs;

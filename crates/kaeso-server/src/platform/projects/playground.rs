@@ -464,7 +464,7 @@ fn refusal(f: &Failure, ask: &Ask) -> ApiError {
         ),
         Stage::Provider | Stage::PlanLimit => from_provider(e),
         Stage::KeyRefused => from_provider(f.logged()),
-        Stage::Unserved(_) => ApiError::NotFound(e.message.clone()),
+        Stage::Unserved(_) | Stage::Retired(_) => ApiError::NotFound(e.message.clone()),
         Stage::Reply => provider_error(
             StatusCode::BAD_GATEWAY,
             &own(

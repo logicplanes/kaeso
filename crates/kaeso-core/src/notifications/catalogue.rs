@@ -193,6 +193,8 @@ kinds! {
     LimitReached = "limit_reached", Project, "Limit reached", Daily, false, false, [Right::Project(ProjectRight::LimitsManage), Right::Project(ProjectRight::KeysOwnCreate)], "A limit blocks requests of a project or of your keys.";
     KeyExpiry = "key_expiry", Project, "Your key expires", Now, false, false, [Right::Project(ProjectRight::KeysOwnCreate), Right::Project(ProjectRight::KeysAllManage)], "A key you own expires soon.";
     KeyChanged = "key_changed", Project, "Your key changed", Now, false, false, [Right::Project(ProjectRight::KeysOwnCreate)], "Someone else disabled, rotated or archived a key you own.";
+    ModelDeprecated = "model_deprecated", Project, "Model deprecated", Daily, false, false, [Right::Project(ProjectRight::ModelsView)], "A model a project uses gets a shutdown date from its provider.";
+    ModelShutdownSoon = "model_shutdown_soon", Project, "Model shuts down soon", Now, false, false, [Right::Project(ProjectRight::ModelsView)], "A model a project still calls shuts down within 30, 7 or 1 days, or moved to its replacement.";
     ContentLogging = "content_logging", Project, "Content logging changed", Daily, false, false, [Right::Project(ProjectRight::ProjectView)], "A project you're in starts or stops keeping prompts and replies.";
     McpServers = "mcp_servers", Tools, "MCP servers need attention", Now, false, false, [Right::Org(OrgRight::McpServersManage)], "A shared connection signed out, or a changed tool waits for review.";
     ConnectionExpired = "connection_expired", Tools, "Your connection expired", Now, false, false, [Right::Project(ProjectRight::ToolsUse)], "A server signed your own connection out.";

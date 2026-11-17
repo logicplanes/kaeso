@@ -86,6 +86,9 @@ pub(crate) enum Label {
     Installs,
     Expires,
     TopModels,
+    ShutsDown,
+    Replacement,
+    RequestsThisWeek,
 }
 
 impl Label {
@@ -118,6 +121,9 @@ impl Label {
             (Locale::En, Label::Installs) => "Installs",
             (Locale::En, Label::Expires) => "Expires",
             (Locale::En, Label::TopModels) => "Top models",
+            (Locale::En, Label::ShutsDown) => "Shuts down",
+            (Locale::En, Label::Replacement) => "Replacement",
+            (Locale::En, Label::RequestsThisWeek) => "Requests in the last 7 days",
             (Locale::De, Label::Organization) => "Organisation",
             (Locale::De, Label::Project) => "Projekt",
             (Locale::De, Label::AppliesTo) => "Gilt für",
@@ -145,6 +151,9 @@ impl Label {
             (Locale::De, Label::Installs) => "Installation",
             (Locale::De, Label::Expires) => "Läuft ab",
             (Locale::De, Label::TopModels) => "Meistgenutzte Modelle",
+            (Locale::De, Label::ShutsDown) => "Abschaltung",
+            (Locale::De, Label::Replacement) => "Nachfolger",
+            (Locale::De, Label::RequestsThisWeek) => "Anfragen der letzten 7 Tage",
             (Locale::ZhCn, Label::Organization) => "组织",
             (Locale::ZhCn, Label::Project) => "项目",
             (Locale::ZhCn, Label::AppliesTo) => "适用于",
@@ -172,6 +181,9 @@ impl Label {
             (Locale::ZhCn, Label::Installs) => "安装方式",
             (Locale::ZhCn, Label::Expires) => "过期时间",
             (Locale::ZhCn, Label::TopModels) => "常用模型",
+            (Locale::ZhCn, Label::ShutsDown) => "停用日期",
+            (Locale::ZhCn, Label::Replacement) => "替代模型",
+            (Locale::ZhCn, Label::RequestsThisWeek) => "最近 7 天的请求",
         }
     }
 

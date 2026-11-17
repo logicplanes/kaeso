@@ -1,0 +1,25 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] gpt-4o was moved to gpt-5.5
+
+gpt-4o was moved to gpt-5.5
+
+Acme / Checkout
+
+gpt-4o shut down, so Kaeso moved 3 aliases of Checkout to gpt-5.5.
+
+Project: Checkout
+Provider: OpenAI
+Model: gpt-4o
+Replacement: gpt-5.5
+
+Open models:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you hold the right “View models”.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag
