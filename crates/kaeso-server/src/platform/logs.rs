@@ -110,7 +110,45 @@ pub struct OrgLogSettingsUpdate {
     pub content_retention_days: Option<i32>,
 }
 
-async fn forget_org(state: &AppState, org: Uuid) -> ApiResult<()> {
+pub(crate) struct Shrunk {
+    pub org: Uuid,
+    pub metadata: (i32, i32),
+    pub content: (i32, i32),
+}
+
+// A shorter retention deletes what it no longer keeps at once, through a log job.
+pub(crate) async fn shrink(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    s: &Shrunk,
+    now: OffsetDateTime,
+    (kind, by): (&str, Option<Uuid>),
+) -> ApiResult<()> {
+    for (job, (before, after)) in [
+        ("shrink_metadata", s.metadata),
+        ("shrink_content", s.content),
+    ] {
+        if after >= before {
+            continue;
+        }
+        log_jobs::enqueue(
+            &mut **tx,
+            &log_jobs::NewLogJob {
+                id: Uuid::now_v7(),
+                org_id: s.org,
+                project_id: None,
+                kind: job,
+                from_at: OffsetDateTime::UNIX_EPOCH,
+                to_at: now - time::Duration::days(i64::from(after)),
+                requested_by_kind: kind,
+                requested_by_id: by,
+            },
+        )
+        .await?;
+    }
+    Ok(())
+}
+
+pub(crate) async fn forget_org(state: &AppState, org: Uuid) -> ApiResult<()> {
     let mut after = None;
     loop {
         let page = projects::list(&state.pg, org, None, None, true, after, 500).await?;
@@ -156,7 +194,9 @@ pub async fn update_org_settings(
     if let Some(d) = req.content_retention_days {
         org.content_retention_days = d;
     }
-    if !(1..=limits.max_metadata_retention_days).contains(&org.metadata_retention_days) {
+    if req.metadata_retention_days.is_some()
+        && !(1..=limits.max_metadata_retention_days).contains(&org.metadata_retention_days)
+    {
         return Err(ApiError::invalid(
             "metadata_retention_days",
             format!(
@@ -165,7 +205,9 @@ pub async fn update_org_settings(
             ),
         ));
     }
-    if !(1..=limits.max_content_retention_days).contains(&org.content_retention_days) {
+    if req.content_retention_days.is_some()
+        && !(1..=limits.max_content_retention_days).contains(&org.content_retention_days)
+    {
         return Err(ApiError::invalid(
             "content_retention_days",
             format!(
@@ -186,41 +228,12 @@ pub async fn update_org_settings(
     if org.keep_media != before.keep_media {
         orgs::set_keep_media(&mut *tx, org.id, org.keep_media).await?;
     }
-    let epoch = OffsetDateTime::UNIX_EPOCH;
-    if org.metadata_retention_days < before.metadata_retention_days {
-        let cut = now - time::Duration::days(i64::from(org.metadata_retention_days));
-        log_jobs::enqueue(
-            &mut *tx,
-            &log_jobs::NewLogJob {
-                id: Uuid::now_v7(),
-                org_id: org.id,
-                project_id: None,
-                kind: "shrink_metadata",
-                from_at: epoch,
-                to_at: cut,
-                requested_by_kind: kind,
-                requested_by_id: by,
-            },
-        )
-        .await?;
-    }
-    if org.content_retention_days < before.content_retention_days {
-        let cut = now - time::Duration::days(i64::from(org.content_retention_days));
-        log_jobs::enqueue(
-            &mut *tx,
-            &log_jobs::NewLogJob {
-                id: Uuid::now_v7(),
-                org_id: org.id,
-                project_id: None,
-                kind: "shrink_content",
-                from_at: epoch,
-                to_at: cut,
-                requested_by_kind: kind,
-                requested_by_id: by,
-            },
-        )
-        .await?;
-    }
+    let shrunk = Shrunk {
+        org: org.id,
+        metadata: (before.metadata_retention_days, org.metadata_retention_days),
+        content: (before.content_retention_days, org.content_retention_days),
+    };
+    shrink(&mut tx, &shrunk, now, (kind, by)).await?;
     ctx.audit(Some(ctx.org()?.id()), Action::LogsSettingsUpdate)
         .before(serde_json::json!({ "content_logging": before.content_logging, "keep_media": before.keep_media, "metadata_retention_days": before.metadata_retention_days, "content_retention_days": before.content_retention_days }))
         .after(serde_json::json!({ "content_logging": org.content_logging, "keep_media": org.keep_media, "metadata_retention_days": org.metadata_retention_days, "content_retention_days": org.content_retention_days }))

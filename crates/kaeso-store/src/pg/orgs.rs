@@ -215,6 +215,49 @@ pub async fn delete_final(tx: &mut sqlx::PgConnection, org_id: Uuid) -> Result<(
     Ok(())
 }
 
+/// An organization whose retention went down to the install's maximum, with what it had.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CappedRetention {
+    pub id: Uuid,
+    pub metadata_before: i32,
+    pub metadata_days: i32,
+    pub content_before: i32,
+    pub content_days: i32,
+}
+
+/// Lowers every organization's retentions above the install's maximums to them, content never
+/// above metadata, and returns the organizations it changed.
+pub async fn cap_retentions(
+    db: impl PgExecutor<'_>,
+    max_metadata_days: i32,
+    max_content_days: i32,
+) -> Result<Vec<CappedRetention>, StoreError> {
+    let rows = sqlx::query!(
+        "UPDATE organizations o \
+         SET metadata_retention_days = LEAST(old.metadata_retention_days, $1), \
+             content_retention_days = LEAST(old.content_retention_days, $2, old.metadata_retention_days, $1), \
+             updated_at = now() \
+         FROM organizations old \
+         WHERE old.id = o.id AND (old.metadata_retention_days > $1 OR old.content_retention_days > $2) \
+         RETURNING o.id, old.metadata_retention_days AS metadata_before, o.metadata_retention_days, \
+             old.content_retention_days AS content_before, o.content_retention_days",
+        max_metadata_days,
+        max_content_days
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|r| CappedRetention {
+            id: r.id,
+            metadata_before: r.metadata_before,
+            metadata_days: r.metadata_retention_days,
+            content_before: r.content_before,
+            content_days: r.content_retention_days,
+        })
+        .collect())
+}
+
 pub async fn active_ids(db: impl PgExecutor<'_>) -> Result<Vec<Uuid>, StoreError> {
     Ok(
         sqlx::query_scalar!("SELECT id FROM organizations WHERE state = 'active' ORDER BY id")
