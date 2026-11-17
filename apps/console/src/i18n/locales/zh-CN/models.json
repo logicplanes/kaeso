@@ -460,6 +460,8 @@
   "models.status": "状态",
   "models.anyStatus": "任意状态",
   "models.showThem": "查看",
+  "models.alias.duplicate": "复制",
+  "models.route.copyGone": "该别名已不存在；请改为新建一个",
   "models.route.seeRequests": "查看其请求",
   "models.tryInPlayground": "在试验场中试用",
   "models.route.retries": "重试",
