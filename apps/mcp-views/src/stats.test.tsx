@@ -120,6 +120,26 @@ describe("the usage view", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Open beside the chat" })).toBeNull());
   });
 
+  it("counts a latency row's requests in the singular for one", async () => {
+    const latency = stats({
+      metric: "latency",
+      groups: [
+        { key: "a", label: "openai/gpt-5", value: 420, requests: 1 },
+        { key: "b", label: "anthropic/claude-sonnet-4-5", value: 380, requests: 2 },
+      ],
+    });
+    const { bridge } = await host({}, () => ok(latency));
+    await act(async () => {
+      await bridge.sendToolInput({ arguments: {} });
+      await bridge.sendToolResult(ok(latency));
+    });
+    expect(await screen.findByText("1 request")).toBeVisible();
+    expect(screen.getByText("2 requests")).toBeVisible();
+    act(() => bridge.setHostContext({ locale: "de-DE" }));
+    expect(await screen.findByText("1 Anfrage")).toBeVisible();
+    expect(screen.getByText("2 Anfragen")).toBeVisible();
+  });
+
   it("writes every value from Kaeso as text, never as markup", async () => {
     const { bridge } = await host();
     const label = '<img src=x onerror="window.hacked=1">';

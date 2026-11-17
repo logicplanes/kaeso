@@ -18,6 +18,12 @@ export function setLocale(tag: string | undefined): UiLocale {
   return current;
 }
 
+// Whether `count` takes the singular form in the view's language (one in English and German;
+// Chinese has no singular form).
+export function isOne(count: number): boolean {
+  return new Intl.PluralRules(current).select(count) === "one";
+}
+
 export function t(key: string, english: string, values: Record<string, string | number> = {}): string {
   const template = CATALOGS[current]?.[key] ?? english;
   return template.replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? String(values[name]) : whole));

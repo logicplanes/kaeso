@@ -24,7 +24,7 @@ import { Text } from "@logicplanes/kaeso-ui/text";
 import { ThemeProvider } from "@logicplanes/kaeso-ui/theme";
 import { TooltipProvider } from "@logicplanes/kaeso-ui/tooltip";
 import { GROUPS, METRICS, numeric, RANGES, type Group, type Metric, type Range, type Stats, type Value } from "./data";
-import { setLocale, t } from "./i18n";
+import { isOne, setLocale, t } from "./i18n";
 import type { State, Store } from "./store";
 
 const metricLabel = (m: Metric) =>
@@ -166,7 +166,9 @@ function Breakdown({ stats, loading }: { stats: Stats | null; loading: boolean }
       value: formatValue(metric, g.value),
       secondary:
         metric === "latency"
-          ? t("stats.ofRequests", "{requests} requests", { requests: formatNumber(g.requests) })
+          ? isOne(g.requests)
+            ? t("stats.ofRequest", "{requests} request", { requests: formatNumber(g.requests) })
+            : t("stats.ofRequests", "{requests} requests", { requests: formatNumber(g.requests) })
           : v !== null && total > 0
             ? formatPercent(v / total)
             : undefined,
