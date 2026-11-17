@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 403,
+    "message": "You do not have permission to access the File oxwwu82fr55g or it may not exist.",
+    "status": "PERMISSION_DENIED"
+  }
+}

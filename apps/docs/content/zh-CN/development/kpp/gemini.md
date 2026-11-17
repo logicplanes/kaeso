@@ -213,7 +213,7 @@ Google 的错误体 `{"error": {"code", "message", "status", "details"}}`（[问
 | `INVALID_ARGUMENT` | `InvalidRequest` | `details[].reason` 为 `API_KEY_INVALID` 时为 `Authentication`（`errors/recorded-error-invalid-key.json`）；消息说明输入超过最大 Token 数时为 `ContextTooLong`。 |
 | `FAILED_PRECONDITION`、`OUT_OF_RANGE` | `InvalidRequest` | 例如密钥所在国家不提供图像生成。 |
 | `UNAUTHENTICATED` | `Authentication` | |
-| `PERMISSION_DENIED` | `PermissionDenied` | |
+| `PERMISSION_DENIED` | `PermissionDenied` | 当消息表明密钥无法访问请求所指的文件（例如已删除、已过期或属于其他项目的 `fileData.fileUri`，`errors/file-permission-denied-published.json`）时为 `InvalidRequest`：问题在于请求，而不是密钥。 |
 | `NOT_FOUND` | `NotFound` | |
 | `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`（例如 `"23s"`）→ `retry_after`。 |
 | `UNAVAILABLE` | `Overloaded` | |

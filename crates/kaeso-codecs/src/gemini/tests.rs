@@ -886,6 +886,12 @@ fn errors_name_their_kind_and_retry_delay() {
         err("image-generation-region").kind,
         ErrorKind::InvalidRequest
     );
+    let file = err("file-permission-denied-published");
+    assert_eq!(
+        (file.kind, file.status),
+        (ErrorKind::InvalidRequest, Some(403)),
+        "a file the key can't read is the request's fault, not the key's"
+    );
     let foreign = kaeso_kpp::KppError::new(ErrorKind::RateLimited, "Slow down.")
         .with_origin(DialectId::OpenAiChat)
         .with_raw(json!({"error": {"message": "openai"}}));
