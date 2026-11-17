@@ -55,11 +55,15 @@ pub fn effective(
     providers: &OrgProviders,
 ) -> Option<Effective> {
     let loaded = state.kpmr.current();
-    core::effective(
-        entry,
-        &loaded.snapshot,
-        crate::services::custom_providers::in_effect(state, providers),
-    )
+    let providers = crate::services::custom_providers::in_effect(state, providers);
+    if entry.overrides.currency.is_some() {
+        let mut in_usd = entry.clone();
+        in_usd.overrides = in_usd
+            .overrides
+            .in_usd(&crate::services::exchange_rates::book(state));
+        return core::effective(&in_usd, &loaded.snapshot, providers);
+    }
+    core::effective(entry, &loaded.snapshot, providers)
 }
 
 pub fn request_name(entry: &core::Entry, catalogue: &Catalogue) -> String {

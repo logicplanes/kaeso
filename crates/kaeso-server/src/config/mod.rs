@@ -59,6 +59,7 @@ pub struct Config {
     pub legal: LegalConfig,
     pub key_failures: KeyFailuresConfig,
     pub kpmr: KpmrConfig,
+    pub exchange_rates: ExchangeRatesConfig,
     pub updates: UpdatesConfig,
     pub updater: UpdaterConfig,
     pub providers: ProvidersConfig,
@@ -241,6 +242,12 @@ pub struct KpmrConfig {
     pub interval: KpmrInterval,
     #[serde(default, deserialize_with = "kpmr_keys")]
     pub public_keys: Vec<kaeso_core::kpmr::TrustedKey>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExchangeRatesConfig {
+    pub url: Url,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -612,6 +619,22 @@ impl Config {
                     "must be an https URL (http is only allowed for localhost)".into(),
                 );
             }
+        }
+        match self.exchange_rates.url.scheme() {
+            "https" => {}
+            "http" if is_loopback_host(&self.exchange_rates.url) => {}
+            _ => {
+                return invalid(
+                    "exchange_rates.url",
+                    "must be an https URL (http is only allowed for localhost)".into(),
+                );
+            }
+        }
+        if !self.exchange_rates.url.path().ends_with('/') {
+            return invalid(
+                "exchange_rates.url",
+                "must end with `/`: the folder that holds the ECB's files".into(),
+            );
         }
         if self.public_url.path() != "/"
             || self.public_url.query().is_some()

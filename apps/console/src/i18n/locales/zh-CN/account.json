@@ -8,7 +8,7 @@
   "account.apiKeysHint": "您在所有项目中的密钥；点击即在所属项目中打开。",
   "account.appCode": "应用中的验证码",
   "account.appearance": "外观",
-  "account.appearanceHint": "控制台在此浏览器中的外观，以及它对您使用的语言。",
+  "account.appearanceHint": "控制台在此浏览器中的外观、语言和货币。",
   "account.archiveKey": "归档密钥",
   "account.archiveKeyConfirm": "归档 {name}？",
   "account.archiveKeyConfirmHint": "使用它的应用将无法再通过网关验证；归档无法撤销，历史记录会保留。",
@@ -277,5 +277,7 @@
   "account.orgEmailsOff": "已停止发送关于 {org} 的邮件",
   "account.orgEmailsOn": "已恢复发送关于 {org} 的邮件",
   "account.notify.webhooks": "Webhook 需要处理",
-  "account.notify.webhooksHint": "当某个 Webhook 连续失败 20 次并被关闭时。"
+  "account.notify.webhooksHint": "当某个 Webhook 连续失败 20 次并被关闭时。",
+  "account.currency": "货币",
+  "account.currencyHint": "支出也以此货币显示在美元旁；保存到您的账户。"
 }

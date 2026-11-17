@@ -5,6 +5,7 @@ pub mod auth;
 pub mod avatars;
 pub mod cookies;
 pub mod error;
+pub mod exchange_rates;
 pub mod grants;
 pub mod instance;
 pub mod json;

@@ -151,6 +151,12 @@ pub struct Fields {
         models a provider bills by unit; they add to the token prices."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unit_prices: Option<Vec<UnitPrice>>,
+    #[doc = "The currency of the prices this entry sets, an ISO 4217 code such as `EUR`;\n\
+        absent means `USD`. Kaeso keeps them as entered and costs requests in USD at\n\
+        the latest ECB reference rate, so the effective fields are always in USD."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "openapi", schema(example = "EUR"))]
+    pub currency: Option<String>,
     #[doc = "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n\
         `openai_chat`, `openai_embeddings` or a rerank format such as `cohere_rerank`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -446,6 +452,7 @@ macro_rules! each_field {
             output_audio_price,
             reasoning_price,
             unit_prices,
+            currency,
             egress_dialect,
             adaptive_thinking,
             thinking_binding,
@@ -482,6 +489,7 @@ pub const FIELD_NAMES: &[&str] = &[
     "output_audio_price",
     "reasoning_price",
     "unit_prices",
+    "currency",
     "egress_dialect",
     "adaptive_thinking",
     "thinking_binding",
@@ -600,6 +608,7 @@ impl Fields {
             reasoning_price: pricing.reasoning,
             unit_prices: (!pricing.per_unit.is_empty())
                 .then(|| pricing.per_unit.iter().map(UnitPrice::from_kpmr).collect()),
+            currency: None,
             egress_dialect: m.egress_dialect().or(match m.kind.as_deref() {
                 Some("embedding") => Some(DialectId::OpenAiEmbeddings),
                 // KPMR names no format for rerank models; Cohere's is Kaeso's default, and a
@@ -657,7 +666,61 @@ impl Fields {
         Ok(())
     }
 
+    // A price without a rate for its currency is left out, so its cost is unknown, not wrong.
+    #[must_use]
+    pub fn in_usd(mut self, book: &crate::currency::RateBook) -> Fields {
+        let Some(code) = self.currency.take() else {
+            return self;
+        };
+        let convert = |p: &mut Option<Decimal>| *p = p.and_then(|v| book.to_usd(v, &code));
+        for p in [
+            &mut self.input_price,
+            &mut self.output_price,
+            &mut self.cache_read_price,
+            &mut self.cache_write_price,
+            &mut self.cache_write_1h_price,
+            &mut self.input_image_price,
+            &mut self.output_image_price,
+            &mut self.cache_read_image_price,
+            &mut self.input_audio_price,
+            &mut self.output_audio_price,
+            &mut self.reasoning_price,
+        ] {
+            convert(p);
+        }
+        for tier in self.price_tiers.iter_mut().flatten() {
+            for p in [
+                &mut tier.input_price,
+                &mut tier.output_price,
+                &mut tier.cache_read_price,
+                &mut tier.cache_write_price,
+                &mut tier.cache_write_1h_price,
+            ] {
+                convert(p);
+            }
+        }
+        if let Some(units) = self.unit_prices.take() {
+            let kept: Vec<UnitPrice> = units
+                .into_iter()
+                .filter_map(|mut u| {
+                    u.usd = book.to_usd(u.usd, &code)?;
+                    Some(u)
+                })
+                .collect();
+            self.unit_prices = (!kept.is_empty()).then_some(kept);
+        }
+        self
+    }
+
     pub fn validate(&self, provider: &ProviderRef) -> Result<(), FieldError> {
+        if let Some(code) = &self.currency
+            && !crate::currency::is_code(code)
+        {
+            return Err(FieldError::new(
+                "currency",
+                "`currency` must be a three-letter ISO 4217 code, such as `EUR`.",
+            ));
+        }
         if let Some(n) = &self.display_name
             && (n.trim().is_empty() || n.chars().count() > 200)
         {

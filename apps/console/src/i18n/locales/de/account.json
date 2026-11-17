@@ -8,7 +8,7 @@
   "account.apiKeysHint": "Ihre eigenen Schlüssel in allen Projekten; jeder öffnet sich in seinem Projekt.",
   "account.appCode": "Code aus der App",
   "account.appearance": "Darstellung",
-  "account.appearanceHint": "Wie die Konsole in diesem Browser aussieht und in welcher Sprache sie mit Ihnen spricht.",
+  "account.appearanceHint": "Wie die Konsole in diesem Browser aussieht, ihre Sprache und ihre Währung.",
   "account.archiveKey": "Schlüssel archivieren",
   "account.archiveKeyConfirm": "{name} archivieren?",
   "account.archiveKeyConfirmHint": "Anwendungen damit werden vom Gateway abgewiesen; das lässt sich nicht rückgängig machen, der Verlauf bleibt.",
@@ -277,5 +277,7 @@
   "account.orgEmailsOff": "E-Mails zu {org} gestoppt",
   "account.orgEmailsOn": "E-Mails zu {org} wieder an",
   "account.notify.webhooks": "Webhooks brauchen Aufmerksamkeit",
-  "account.notify.webhooksHint": "Wenn ein Webhook 20-mal in Folge scheitert und ausgeschaltet wird."
+  "account.notify.webhooksHint": "Wenn ein Webhook 20-mal in Folge scheitert und ausgeschaltet wird.",
+  "account.currency": "Währung",
+  "account.currencyHint": "Ausgaben auch darin, neben USD; im Konto gespeichert."
 }

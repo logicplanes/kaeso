@@ -172,6 +172,14 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | 文本 | `auto` | 多久向 KPMR 询问一次变更：`auto` 跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；也可设为至少 5 分钟的时长，例如 `6h`。 |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | 文本 | — | 除 KPMR 内置密钥外还要信任的密钥，以逗号分隔，每个为 `<key id>:<base64 Ed25519 public key>`，用于您自己的注册表；签名无法由任何受信任密钥验证的目录会被拒绝。 |
 
+### 汇率
+
+网关获取欧洲央行的参考汇率，用于美元以外的[货币](../concepts/currencies.md)。实例管理员可在控制台中关闭获取。
+
+| 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
+| --- | --- | --- | --- |
+| `KAESO_EXCHANGE_RATES_URL`<br>`exchange_rates.url` | 文本 | `https://www.ecb.europa.eu/stats/eurofxref/` | 获取欧洲央行欧元参考汇率的文件夹，即欧洲央行自己的或存有 `eurofxref-daily.xml` 和 `eurofxref-hist-90d.xml` 的镜像：`https`，或 localhost 上的 `http`，以 `/` 结尾。 |
+
 ### 更新
 
 `updates.channel` 和 `updates.mode` 只用于初始化新实例。之后由实例管理员在**实例** › **更新**中修改（[升级](upgrades.md)）。`updates.check` 在每次检查时读取。

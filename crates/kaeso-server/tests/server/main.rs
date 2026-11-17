@@ -25,6 +25,7 @@ mod demo;
 mod drills;
 mod edge;
 mod error_copy;
+mod exchange_rates;
 mod gateway_overhead;
 mod gemini_apps;
 mod guardrails;

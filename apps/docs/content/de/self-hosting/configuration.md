@@ -172,6 +172,14 @@ Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, d
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | Text | `auto` | Wie oft KPMR nach Änderungen gefragt wird: `auto` folgt `refresh_seconds` des Katalogs innerhalb von 5 Minuten bis 24 Stunden, oder eine Dauer von mindestens 5 Minuten wie `6h`. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | Text | — | Kommagetrennte Schlüssel, denen das Gateway neben dem eingebauten Schlüssel von KPMR vertraut, je `<key id>:<base64 Ed25519 public key>`, für eine eigene Registry; ein Katalog, dessen Signatur kein vertrauenswürdiger Schlüssel bestätigt, wird abgelehnt. |
 
+### Wechselkurse
+
+Das Gateway holt die Referenzkurse der Europäischen Zentralbank für [Währungen](../concepts/currencies.md) neben dem US-Dollar. Instanz-Admins schalten den Abruf in der Konsole aus.
+
+| Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
+| --- | --- | --- | --- |
+| `KAESO_EXCHANGE_RATES_URL`<br>`exchange_rates.url` | Text | `https://www.ecb.europa.eu/stats/eurofxref/` | Der Ordner, aus dem die Euro-Referenzkurse der EZB kommen, der der EZB oder ein Spiegel mit `eurofxref-daily.xml` und `eurofxref-hist-90d.xml`: `https`, oder `http` auf localhost, mit `/` am Ende. |
+
 ### Updates
 
 `updates.channel` und `updates.mode` legen nur die Anfangswerte einer neuen Installation fest. Danach ändern Instanz-Admins sie unter **Instanz** › **Updates** ([Upgrades](upgrades.md)). `updates.check` gilt bei jeder Prüfung.

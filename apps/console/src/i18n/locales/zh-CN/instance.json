@@ -449,5 +449,14 @@
   "instance.updates.helmMajor": "Kaeso {version} 是新的主版本：请先阅读升级指南，再使用 Helm 更新。",
   "instance.updates.helmSteps": "即将发布的版本需要单独的步骤：请按升级指南操作，再使用 Helm 更新。",
   "instance.updates.helmTitle": "使用 Helm 更新，填入您的 release 名称和命名空间",
-  "instance.updates.withHelm": "使用 Helm 更新"
+  "instance.updates.withHelm": "使用 Helm 更新",
+  "instance.ratesOn": "Kaeso 每天获取汇率",
+  "instance.ratesOff": "Kaeso 不再获取汇率",
+  "instance.exchangeRates": "汇率",
+  "instance.exchangeRatesHint": "欧洲央行的每日汇率将美元换算为其他货币，用于价格和支出。",
+  "instance.fetchRates": "获取汇率",
+  "instance.fetchRatesHint": "关闭后保留已有汇率；没有汇率时仅用美元。",
+  "instance.latestRates": "最新汇率",
+  "instance.ratesFailed": "上次获取失败：{error}",
+  "instance.noRates": "暂无"
 }

@@ -6,6 +6,7 @@ import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRig
 import { member, notifications, serviceAccount, usageRow } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { me as account } from "~/test/fixtures/instance-account";
 
 const PERIOD = "from=2026-10-01&to=2026-10-07";
 const USAGE = "orgs/:org/usage";
@@ -62,6 +63,20 @@ describe("organization analytics", () => {
     ).toEqual(["Project", "Requests", "Cost"]);
     expect(link.closest("[role=cell]")?.textContent).toBe("Checkout assistant");
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("$2.00");
+  });
+
+  it("shows the organization's cost in the currency picked, next to the dollars", async () => {
+    signedIn();
+    on("GET", "me", account({ display_currency: "GBP" }));
+    usage({ day: wrap([usageRow("2026-10-02", { cost: "2.75", converted_cost: "2.06" })]) });
+    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
+
+    expect(await screen.findByText("≈ £2.06")).toBeInTheDocument();
+    expect(
+      usageQueries()
+        .filter((q) => q["group_by"] === "day")
+        .every((q) => q["currency"] === "GBP"),
+    ).toBe(true);
   });
 
   it("shows the period's usage, the cost by project and the projects ordered by requests", async () => {

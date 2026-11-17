@@ -492,5 +492,12 @@
   "kaeso.providerKey.resourceKeyHint": "KEY 1 oder KEY 2 der Ressource, wo Schlüsselzugriff aktiv ist.",
   "kaeso.providerKey.entraId": "Microsoft Entra ID",
   "kaeso.providerKey.entraIdHint": "Ein Service Principal; funktioniert, wo die Ressource keine Schlüssel zulässt.",
-  "kaeso.providerKey.signInMethodTitle": "Wie meldet sich Kaeso bei {provider} an?"
+  "kaeso.providerKey.signInMethodTitle": "Wie meldet sich Kaeso bei {provider} an?",
+  "kaeso.currency.approx": "≈ {amount}",
+  "kaeso.currency.noRates": "Noch keine Wechselkurse: Kaeso holt die der EZB einmal pro Arbeitstag",
+  "kaeso.currency.ratesOff": "Wechselkurse sind auf dieser Installation aus",
+  "kaeso.currency.label": "Währung",
+  "kaeso.currency.usdOnly": "Nur US-Dollar",
+  "kaeso.currency.noteBefore": "≈ {currency} zum EZB-Kurs des jeweiligen Tages; vor dem {first} zum Kurs vom {day}.",
+  "kaeso.currency.note": "≈ {currency} zum EZB-Kurs des jeweiligen Tages; der neueste ist vom {day}."
 }

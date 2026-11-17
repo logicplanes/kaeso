@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
+import { exchangeRates, ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
 import { apiError, on, page, requests } from "~/test/network";
@@ -255,6 +255,81 @@ describe("ModelSheet", () => {
     expect(await within(s).findByText("Values in use")).toBeInTheDocument();
   });
 
+  it("shows prices entered in euros with their dollars, and edits them in euros", async () => {
+    const euros = catalogueModel({
+      overrides: { currency: "EUR", input_price: "2.5" },
+      effective: { ...catalogueModel().effective, display_name: "Sonnet", input_price: "2.777777778" },
+    });
+    setUp([euros]);
+    on("PATCH", ONE_MODEL, euros);
+    const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Sonnet");
+    await within(s).findByText("Values in use");
+    expect(s).toHaveTextContent("Input price€2.50 / M tokens (≈ $2.78)overrideReset to KPMR");
+    expect(s).toHaveTextContent("Output price$15.00 / M tokensKPMR");
+    await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
+    expect(within(s).getByRole("combobox", { name: "Currency" })).toHaveTextContent("EUR");
+    expect(within(s).getByRole("spinbutton", { name: "Input price" })).toHaveValue("2.5");
+    expect(s).toHaveTextContent("≈ $2.777778 at the ECB rate of 13 Nov 2026");
+    await user.type(within(s).getByRole("spinbutton", { name: "Output price" }), "10");
+    await user.click(within(s).getByRole("button", { name: "Save overrides" }));
+
+    expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
+    expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { output_price: "10" } }]);
+  });
+
+  it("says when prices entered in a currency have no exchange rate", async () => {
+    const francs = catalogueModel({
+      overrides: { currency: "CHF", input_price: "2" },
+      effective: { ...catalogueModel().effective, display_name: "Sonnet", input_price: null },
+    });
+    setUp([francs]);
+    await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Sonnet");
+    await within(s).findByText("Values in use");
+    expect(s).toHaveTextContent("Input priceCHF 2.00 / M tokens (no exchange rate)override");
+  });
+
+  it("turns the prices into the currency picked, and saves them all in it", async () => {
+    setUp();
+    on("PATCH", ONE_MODEL, sonnet());
+    const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Sonnet");
+    await user.click(await within(s).findByRole("button", { name: "Edit overrides" }));
+    await user.click(within(s).getByRole("combobox", { name: "Currency" }));
+    await user.click(await screen.findByRole("option", { name: /^GBP/ }));
+    expect(within(s).getByRole("spinbutton", { name: "Input price" })).toHaveValue("1.875");
+    await user.click(within(s).getByRole("button", { name: "Save overrides" }));
+
+    expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
+    expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([
+      {
+        overrides: {
+          currency: "GBP",
+          input_price: "1.875",
+          output_price: "11.25",
+          cache_read_price: "0.225",
+          cache_write_price: null,
+          cache_write_1h_price: null,
+        },
+      },
+    ]);
+  });
+
+  it("offers only dollars for prices on an install without exchange rates", async () => {
+    setUp();
+    on("GET", "me/exchange-rates", exchangeRates({}, true));
+    const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Sonnet");
+    await user.click(await within(s).findByRole("button", { name: "Edit overrides" }));
+    expect(within(s).getByRole("spinbutton", { name: "Input price" })).toBeInTheDocument();
+    expect(within(s).queryByRole("combobox", { name: "Currency" })).not.toBeInTheDocument();
+  });
+
   it("shows and changes whether the model accepts a forced tool choice", async () => {
     const opus = catalogueModel({ effective: { ...catalogueModel().effective, forced_tool_choice: false } });
     setUp([opus]);
@@ -325,7 +400,7 @@ describe("ModelSheet", () => {
     const price = within(s).getByRole("spinbutton", { name: "Output price" });
     await user.clear(price);
     await user.type(price, "2.");
-    await hoverReason(user, within(s).getByRole("button", { name: "Save overrides" }), "Prices are decimal amounts in USD, like 3.00.");
+    await hoverReason(user, within(s).getByRole("button", { name: "Save overrides" }), "Prices are decimal amounts, like 3.00.");
     await user.click(within(s).getByRole("button", { name: "Cancel" }));
     expect(await within(s).findByText("Values in use")).toBeInTheDocument();
     expect(requests("PATCH", ONE_MODEL)).toHaveLength(0);

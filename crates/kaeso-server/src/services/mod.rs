@@ -12,6 +12,7 @@ pub mod cooldowns;
 pub mod credentials;
 pub mod custom_providers;
 pub mod dns;
+pub mod exchange_rates;
 pub mod google_auth;
 pub mod guardrails;
 pub mod invites;

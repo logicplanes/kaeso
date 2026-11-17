@@ -492,5 +492,12 @@
   "kaeso.providerKey.resourceKeyHint": "资源的 KEY 1 或 KEY 2，适用于启用了密钥访问的资源。",
   "kaeso.providerKey.entraId": "Microsoft Entra ID",
   "kaeso.providerKey.entraIdHint": "服务主体；适用于不允许使用密钥的资源。",
-  "kaeso.providerKey.signInMethodTitle": "Kaeso 如何登录 {provider}？"
+  "kaeso.providerKey.signInMethodTitle": "Kaeso 如何登录 {provider}？",
+  "kaeso.currency.approx": "≈ {amount}",
+  "kaeso.currency.noRates": "尚无汇率：Kaeso 每个工作日获取一次欧洲央行汇率",
+  "kaeso.currency.ratesOff": "此安装已关闭汇率",
+  "kaeso.currency.label": "货币",
+  "kaeso.currency.usdOnly": "仅美元",
+  "kaeso.currency.noteBefore": "≈ {currency} 按当日欧洲央行汇率计算；{first} 之前按 {day} 的汇率。",
+  "kaeso.currency.note": "≈ {currency} 按当日欧洲央行汇率计算；最新汇率为 {day}。"
 }

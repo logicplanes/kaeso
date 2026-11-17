@@ -149,6 +149,50 @@ pub async fn usage(
         .await?)
 }
 
+pub async fn costs_by_day(
+    db: impl PgExecutor<'_>,
+    org: Uuid,
+    project: Option<Uuid>,
+    from: Date,
+    to: Date,
+    group: GroupBy,
+    filter: &Filter,
+) -> Result<Vec<(String, Date, Decimal)>, StoreError> {
+    // As `usage`: the grouping expression comes from the enum, the values are bound.
+    let sql = format!(
+        "SELECT {key} AS key, day, sum(cost) AS cost \
+         FROM usage_daily WHERE org_id = $1 AND ($2::uuid IS NULL OR project_id = $2) AND day >= $3 AND day <= $4 \
+         AND ($5::text IS NULL OR provider = $5) AND ($6::text IS NULL OR model_id = $6) \
+         AND ($7::uuid IS NULL OR coalesce(api_key_id, '00000000-0000-0000-0000-000000000000') = $7) \
+         AND ($8::uuid IS NULL OR user_id = $8) \
+         AND ($9::uuid IS NULL OR (user_id IS NULL AND service_account_id = $9)) \
+         AND ($10::text IS NULL OR (ingress_dialect = $10 AND egress_dialect = $11 AND provider = $12)) \
+         AND ($13::text IS NULL OR provider = $13) \
+         GROUP BY 1, 2",
+        key = group.key()
+    );
+    let route = filter.route.as_ref();
+    let model = filter.model.as_ref();
+    Ok(
+        sqlx::query_as::<_, (String, Date, Decimal)>(sqlx::AssertSqlSafe(sql))
+            .bind(org)
+            .bind(project)
+            .bind(from)
+            .bind(to)
+            .bind(filter.provider.as_deref())
+            .bind(model.map(|m| m.id.as_str()))
+            .bind(filter.key)
+            .bind(filter.user())
+            .bind(filter.service_account())
+            .bind(route.map(|r| r.ingress_dialect.as_str()))
+            .bind(route.map(|r| r.egress_dialect.as_str()))
+            .bind(route.map(|r| r.provider.as_str()))
+            .bind(model.and_then(|m| m.provider.as_deref()))
+            .fetch_all(db)
+            .await?,
+    )
+}
+
 pub async fn span(
     db: impl PgExecutor<'_>,
     org: Uuid,

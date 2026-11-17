@@ -32,6 +32,10 @@ pub struct UsageQuery {
         `route`, or for orgs `project`. A week or month that starts before `from`\n\
         or ends after `to` counts only the days in the period."]
     pub group_by: Option<String>,
+    #[doc = "Also give each row's cost in this currency, an ISO 4217 code from\n\
+        `exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\n\
+        rate, and days before the install's first rates at the latest rate."]
+    pub currency: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, IntoParams)]
@@ -167,6 +171,9 @@ pub struct UsageRow {
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
     pub cost: Option<String>,
+    #[doc = "`cost` in the `currency` asked for, an estimate; `null` when none was\n\
+        asked or `cost` is."]
+    pub converted_cost: Option<String>,
     #[doc = "Tool calls through the project's MCP portals, refusals included. Counted by\n\
         day and project, so 0 when grouped or filtered by model, provider, key,\n\
         member or route."]
@@ -342,6 +349,7 @@ async fn usage(
     }
     let filter = f.parse()?;
     let (org, project, costs) = (scope.org, scope.project, scope.costs);
+    let converter = crate::platform::exchange_rates::converter(state, q.currency.as_deref())?;
     let rows = store::usage(&state.pg, org, project, from, to, group, &filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
@@ -363,6 +371,7 @@ async fn usage(
                 cache_write_tokens: count(r.cache_write_tokens),
                 reasoning_tokens: count(r.reasoning_tokens),
                 cost: costs.then(|| r.cost.normalize().to_string()),
+                converted_cost: None,
                 tool_calls: 0,
                 tool_call_errors: 0,
                 unpriced: count(r.media.unpriced),
@@ -389,6 +398,7 @@ async fn usage(
             reasoning_tokens: 0,
             cache_hit_rate: None,
             cost: costs.then(|| "0".to_owned()),
+            converted_cost: None,
             tool_calls: 0,
             tool_call_errors: 0,
             unpriced: 0,
@@ -396,6 +406,27 @@ async fn usage(
         });
         row.tool_calls = count(t.calls);
         row.tool_call_errors = count(t.errors);
+    }
+    if let (Some((book, code)), true) = (&converter, costs) {
+        let by_day = store::costs_by_day(&state.pg, org, project, from, to, group, &filter)
+            .await
+            .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
+        let mut sums: std::collections::BTreeMap<String, rust_decimal::Decimal> =
+            std::collections::BTreeMap::new();
+        for (key, day, cost) in by_day {
+            let converted = book.convert(cost, code, day).unwrap_or_default();
+            *sums.entry(key).or_default() += converted;
+        }
+        for (key, row) in &mut merged {
+            row.converted_cost = Some(
+                sums.get(key)
+                    .copied()
+                    .unwrap_or_default()
+                    .round_dp(6)
+                    .normalize()
+                    .to_string(),
+            );
+        }
     }
     Ok(Json(List::complete(merged.into_values().collect())))
 }

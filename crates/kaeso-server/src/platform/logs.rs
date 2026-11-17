@@ -1,3 +1,4 @@
+use crate::platform::exchange_rates::CurrencyParam;
 use axum::Json;
 use axum::body::Body;
 use axum::extract::State;
@@ -1009,6 +1010,11 @@ pub struct LogView {
         request made or heard, such as a video model without a price per clip; `cost`\n\
         is then 0 and means unknown."]
     pub cost_known: bool,
+    #[doc = "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\n\
+        latest for days before the install's first rates), an estimate; absent when no\n\
+        currency was asked or the cost is unknown."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub converted_cost: Option<String>,
     #[doc = "What the cost rests on: `none` when nothing was billed, `measured` by Kaeso\n\
         when the provider bills by the length of audio it was sent but reported none\n\
         and Kaeso read the length from the file's header, `estimated` when Kaeso\n\
@@ -1207,6 +1213,20 @@ pub struct StreamProgressView {
     pub processing_us: Option<u32>,
 }
 
+fn converted(
+    mut v: LogView,
+    converter: Option<&(std::sync::Arc<kaeso_core::currency::RateBook>, String)>,
+) -> LogView {
+    if let Some((book, code)) = converter
+        && v.cost_known
+        && let Ok(cost) = v.cost.parse::<rust_decimal::Decimal>()
+    {
+        v.converted_cost =
+            crate::platform::exchange_rates::convert(book, code, cost, v.started_at.date());
+    }
+    v
+}
+
 fn view(r: &LogRow) -> LogView {
     let principal_id = if r.principal_kind == "user" {
         UserId::from_uuid(r.principal_id).to_string()
@@ -1245,6 +1265,7 @@ fn view(r: &LogRow) -> LogView {
         },
         cost: cost_from_raw(r.cost).to_string(),
         cost_known: r.cost_known,
+        converted_cost: None,
         cost_basis: CostBasis::of(&r.cost_basis),
         user_agent: r.user_agent.clone(),
         client_ip: r.client_ip.clone(),
@@ -1300,7 +1321,7 @@ pub(crate) fn decode_cursor(c: &str) -> Option<(OffsetDateTime, Uuid)> {
     to the bucket's `duration_p95_ms`. Pages hold up to 100 entries; pass\n\
     `next_cursor` as `after` for the next.",
     tag = "logs",
-    params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, LogFilter),
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, LogFilter, CurrencyParam),
     responses((status = 200, body = List<LogView>))
 )]
 pub async fn list(
@@ -1309,7 +1330,9 @@ pub async fn list(
     Path(_p): Path<(String, String)>,
     Query(page): Query<PageParams>,
     Query(f): Query<LogFilter>,
+    Query(c): Query<CurrencyParam>,
 ) -> ApiResult<Json<List<LogView>>> {
+    let converter = crate::platform::exchange_rates::converter(&state, c.currency.as_deref())?;
     let page = page.page_by(decode_cursor)?;
     let p = &ctx.project()?.project;
     let rows = ch::search(
@@ -1323,7 +1346,7 @@ pub async fn list(
     .await
     .map_err(unavailable)?;
     Ok(Json(List::from_page(&page, rows, encode_cursor, |r| {
-        view(&r)
+        converted(view(&r), converter.as_ref())
     })))
 }
 
@@ -1458,14 +1481,16 @@ pub async fn errors(
     `kaeso-request-id` header), plus the request and reply bodies when content\n\
     was logged and the caller holds `logs.content.view`.",
     tag = "logs",
-    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("log" = RequestId, Path)),
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("log" = RequestId, Path), CurrencyParam),
     responses((status = 200, body = LogEntryView))
 )]
 pub async fn get(
     State(state): State<AppState>,
     ctx: Ctx,
     Path((_o, _p, id)): Path<(String, String, String)>,
+    Query(c): Query<CurrencyParam>,
 ) -> ApiResult<Json<LogEntryView>> {
+    let converter = crate::platform::exchange_rates::converter(&state, c.currency.as_deref())?;
     let id: RequestId = id.parse().map_err(|_| ApiError::not_found("log entry"))?;
     let scope = ctx.project()?;
     let p = &scope.project;
@@ -1484,7 +1509,7 @@ pub async fn get(
         None
     };
     Ok(Json(LogEntryView {
-        log: view(&row),
+        log: converted(view(&row), converter.as_ref()),
         content,
     }))
 }

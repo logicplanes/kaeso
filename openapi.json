@@ -4102,7 +4102,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Changes the user's display name or language.",
+        "summary": "Changes the user's display name, language or display currency.",
         "description": "**Access:** a signed-in console session, or an agent granted `account.update`.",
         "operationId": "patchMe",
         "requestBody": {
@@ -5271,6 +5271,60 @@
           {}
         ],
         "x-kaeso-access": "public"
+      }
+    },
+    "/platform/v1/me/exchange-rates": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "The exchange rates spend can be read in and prices entered in.",
+        "description": "The European Central Bank's euro reference rates of the latest working day the install has, as units per US dollar. Kaeso stores and calculates in US dollars; the rates convert prices entered in another currency and spend shown in one.\n\n**Access:** a signed-in console session, or an agent granted `account.view`.",
+        "operationId": "getMeExchangeRates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRates"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:account.view"
       }
     },
     "/platform/v1/me/keys": {
@@ -16288,6 +16342,16 @@
             "schema": {
               "$ref": "#/components/schemas/GuardrailAction"
             }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "Also give each cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: at the rate of the day it was spent, or\nthe latest rate for days before the install's first rates.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "EUR"
           }
         ],
         "responses": {
@@ -17598,6 +17662,16 @@
             "schema": {
               "$ref": "#/components/schemas/RequestId"
             }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "Also give each cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: at the rate of the day it was spent, or\nthe latest rate for days before the install's first rates.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "EUR"
           }
         ],
         "responses": {
@@ -22763,6 +22837,15 @@
             }
           },
           {
+            "name": "currency",
+            "in": "query",
+            "description": "Also give each row's cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\nrate, and days before the install's first rates at the latest rate.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "model",
             "in": "query",
             "description": "Only this model, as `provider/model` like the `key` of a row grouped\nby `model`, such as `openai/gpt-5`; a model id without `/` matches it at\nevery provider.",
@@ -25057,6 +25140,15 @@
             "name": "group_by",
             "in": "query",
             "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, or for orgs `project`. A week or month that starts before `from`\nor ends after `to` counts only the days in the period.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "Also give each row's cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\nrate, and days before the install's first rates at the latest rate.",
             "required": false,
             "schema": {
               "type": "string"
@@ -28107,6 +28199,26 @@
           }
         }
       },
+      "CurrencyRate": {
+        "type": "object",
+        "description": "A currency spend can be read in, and what one US dollar buys of it.",
+        "required": [
+          "currency",
+          "per_usd"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "The ISO 4217 code.",
+            "example": "EUR"
+          },
+          "per_usd": {
+            "type": "string",
+            "description": "Units of the currency one US dollar buys at the latest rates: the ECB's\neuro rate of the currency divided by its euro rate of the dollar.",
+            "example": "0.907935355003"
+          }
+        }
+      },
       "CustomAuthView": {
         "type": "string",
         "description": "How Kaeso sends a custom provider's key.",
@@ -29064,6 +29176,93 @@
           }
         }
       },
+      "ExchangeRates": {
+        "type": "object",
+        "description": "The exchange rates the install holds.",
+        "required": [
+          "source",
+          "fetching",
+          "rates"
+        ],
+        "properties": {
+          "checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the install last fetched the rates."
+          },
+          "day": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day of the latest rates; `null` while the install has none, when only\nUS dollars can be used.",
+            "example": "2026-11-16"
+          },
+          "fetching": {
+            "type": "boolean",
+            "description": "Whether the install fetches the rates each day; instance admins turn it off."
+          },
+          "first_day": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day of the oldest rates. Spend on earlier days is converted at the\nlatest rates.",
+            "example": "2026-08-20"
+          },
+          "rates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurrencyRate"
+            },
+            "description": "The currencies of the latest rates, US dollar and euro included, by code;\njust the US dollar without rates."
+          },
+          "source": {
+            "type": "string",
+            "description": "Where the rates come from: `ecb`, the European Central Bank's euro foreign\nexchange reference rates.",
+            "example": "ecb"
+          }
+        }
+      },
+      "ExchangeRatesSetting": {
+        "type": "object",
+        "description": "The daily fetch of the ECB's euro reference rates.",
+        "required": [
+          "fetch"
+        ],
+        "properties": {
+          "checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the install last fetched the rates."
+          },
+          "day": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day of the latest rates the install has.",
+            "example": "2026-11-16"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last fetch failed; `null` when it worked. Kaeso tries again in 15\nminutes."
+          },
+          "fetch": {
+            "type": "boolean",
+            "description": "Whether the install fetches the rates each working day. Off keeps the rates\nit has; without any, only US dollars can be used."
+          }
+        }
+      },
       "ExpiryRequest": {
         "type": "object",
         "description": "When a new key expires: `expires_in_days` (1, 7, 30 or 90), or\n`expires_on` (a date, UTC), or neither for never.",
@@ -29197,6 +29396,14 @@
             "format": "int64",
             "description": "The context window in tokens.",
             "minimum": 0
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The currency of the prices this entry sets, an ISO 4217 code such as `EUR`;\nabsent means `USD`. Kaeso keeps them as entered and costs requests in USD at\nthe latest ECB reference rate, so the effective fields are always in USD.",
+            "example": "EUR"
           },
           "decisions": {
             "oneOf": [
@@ -29463,6 +29670,14 @@
             "format": "int64",
             "description": "The context window in tokens.",
             "minimum": 0
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The currency of the prices this entry sets, an ISO 4217 code such as `EUR`;\nabsent means `USD`. Kaeso keeps them as entered and costs requests in USD at\nthe latest ECB reference rate, so the effective fields are always in USD.",
+            "example": "EUR"
           },
           "decisions": {
             "oneOf": [
@@ -34001,6 +34216,13 @@
                   "description": "The version the user agent gives after a known client's name, such as `0.59.0`.",
                   "example": "0.59.0"
                 },
+                "converted_cost": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\nlatest for days before the install's first rates), an estimate; absent when no\ncurrency was asked or the cost is unknown."
+                },
                 "cost": {
                   "type": "string",
                   "description": "Cost in USD at the prices of request time."
@@ -36460,6 +36682,13 @@
                   "description": "Cache writes.",
                   "minimum": 0
                 },
+                "converted_cost": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "`cost` in the `currency` asked for, an estimate; `null` when none was\nasked or `cost` is."
+                },
                 "cost": {
                   "type": [
                     "string",
@@ -36947,6 +37176,13 @@
             ],
             "description": "The version the user agent gives after a known client's name, such as `0.59.0`.",
             "example": "0.59.0"
+          },
+          "converted_cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\nlatest for days before the install's first rates), an estimate; absent when no\ncurrency was asked or the cost is unknown."
           },
           "cost": {
             "type": "string",
@@ -38256,9 +38492,15 @@
               "totp_enabled",
               "has_password",
               "recovery_codes_left",
-              "locale"
+              "locale",
+              "display_currency"
             ],
             "properties": {
+              "display_currency": {
+                "type": "string",
+                "description": "The currency the console shows spend in next to US dollars, an ISO 4217\ncode from `exchange-rates`; `USD` for dollars only.",
+                "example": "EUR"
+              },
               "has_password": {
                 "type": "boolean",
                 "description": "Whether a password is set."
@@ -40598,6 +40840,14 @@
         "type": "object",
         "description": "Profile changes.",
         "properties": {
+          "display_currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The currency to show spend in next to US dollars: `USD` for dollars only,\nor a code from `exchange-rates`.",
+            "example": "EUR"
+          },
           "locale": {
             "oneOf": [
               {
@@ -43453,6 +43703,13 @@
             "format": "int32",
             "description": "Default content retention, in days."
           },
+          "exchange_rates": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the install fetches the ECB's exchange rates each working day."
+          },
           "max_content_retention_days": {
             "type": [
               "integer",
@@ -43529,7 +43786,8 @@
           "org_deletion_grace_days",
           "timezone",
           "sign_in",
-          "mail"
+          "mail",
+          "exchange_rates"
         ],
         "properties": {
           "account_creation": {
@@ -43562,6 +43820,10 @@
             "type": "integer",
             "format": "int32",
             "description": "Log content retention of new orgs, in days."
+          },
+          "exchange_rates": {
+            "$ref": "#/components/schemas/ExchangeRatesSetting",
+            "description": "The exchange rates the console converts prices and spend with."
           },
           "mail": {
             "$ref": "#/components/schemas/MailSettings",
@@ -45749,6 +46011,13 @@
             "format": "int64",
             "description": "Cache writes.",
             "minimum": 0
+          },
+          "converted_cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`cost` in the `currency` asked for, an estimate; `null` when none was\nasked or `cost` is."
           },
           "cost": {
             "type": [
