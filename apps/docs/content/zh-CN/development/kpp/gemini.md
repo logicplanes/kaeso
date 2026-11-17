@@ -197,7 +197,7 @@ Schema `CountTokensRequest` 和 `CountTokensResponse`。
 
 - **音频。** 只包含 `inlineData` 音频的 part（语音模型以这种方式流式发送 16 位 PCM 片段，见 `streams/recorded-stream-speech.sse`）会开始一个音频块，之后同一媒体类型的此类 part 以 `Audio` 增量延续它；其他方言按顺序收到这些片段。
 - **块。** 文本 part 延续当前的文本块，思考 part 延续当前的推理块。函数调用是一个完整的工具调用块：开始、一个参数增量、结束。思考 part 上的签名是其块中的 `Opaque` 增量；其他 part 上的签名是它之前一个只有签名的推理块。其他 part 是未知块。
-- **用量与结束。** 每个 chunk 都带 `usageMetadata`；带 `finishReason` 的那个在最后一个块结束后变为 `ResponseDelta`。没有 `finishReason` 就结束的流以错误结束。
+- **用量与结束。** 每个 chunk 都带 `usageMetadata`；带 `finishReason` 的那个在最后一个块结束后变为 `ResponseDelta`。被拦截的提示词会以一个带 `promptFeedback.blockReason`、没有 `candidates` 的 chunk 返回，它以 `stop = ContentFilter` 及其用量结束回复，与非流式回复相同。两者都没有就结束的流以错误结束。
 - **同方言回放。** 每个 chunk 的第一个事件带有形式标记 `chunk`：去掉 part、结束原因和最终用量之后的 chunk。编码器把它们放回去，因此每个 chunk 都按收到的原样输出。
 - **其他方言**每个文本增量得到一个 chunk，每个函数调用一个 chunk，最后一个 chunk 带空文本 part、`finishReason` 和 `usageMetadata`。
 - **错误。** 带 `error` 对象的 `data:` 行是错误事件；编码器也以同样方式写出错误。

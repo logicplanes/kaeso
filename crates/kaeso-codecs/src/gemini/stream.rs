@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use kaeso_kpp::{
     AudioDelta, AudioHeader, Block, BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, Extras,
     KppError, OpaqueKind, Origin, RawItem, RawJson, ReasoningHeader, ResponseDelta, ResponseStart,
-    ResponseStop, StreamEvent, ToolCallHeader,
+    ResponseStop, StopReason, StreamEvent, ToolCallHeader,
 };
 use serde_json::{Map, Value, json};
 
@@ -284,7 +284,14 @@ impl Decoder {
             }
         }
         let finish = finish.and_then(|f| f.as_str().map(str::to_owned));
-        let usage = if finish.is_some() {
+        // Google answers a blocked prompt with one chunk: `promptFeedback.blockReason` and no
+        // candidates. It ends the reply as the same body does unstreamed.
+        let blocked = env.get("candidates").is_none()
+            && env
+                .get("promptFeedback")
+                .and_then(|p| p.get("blockReason"))
+                .is_some();
+        let usage = if finish.is_some() || blocked {
             env.as_object_mut().and_then(|e| e.remove("usageMetadata"))
         } else {
             None
@@ -316,10 +323,13 @@ impl Decoder {
                 matches!(e, StreamEvent::BlockStart(s) if matches!(s.block, BlockHeader::ToolCall(_)))
             });
         }
-        if let Some(f) = &finish {
+        if finish.is_some() || blocked {
             self.close(out);
             let mut extras = self.extras();
-            let stop = stop_from_wire(f, self.saw_calls, &mut extras);
+            let stop = match &finish {
+                Some(f) => stop_from_wire(f, self.saw_calls, &mut extras),
+                None => StopReason::ContentFilter,
+            };
             let usage = match usage.as_ref().map(serde_json::value::to_raw_value) {
                 Some(Ok(raw)) => match super::response::decode_usage(&raw, &self.origin) {
                     Ok(u) => Some(u),
