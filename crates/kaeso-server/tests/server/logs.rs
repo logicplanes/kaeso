@@ -1968,6 +1968,39 @@ async fn a_clickhouse_that_stops_answering_does_not_hold_the_log_writer() {
 }
 
 #[tokio::test]
+async fn a_column_a_migration_added_after_the_first_write_is_fetched_again() {
+    let env = env(&[]).await;
+    let ch = env.app.state.clickhouse.as_ref().unwrap();
+    let alter = |sql: &'static str| async move { ch.client().query(sql).execute().await.unwrap() };
+    // As before a migration: the first write fetches the table's columns without the new one.
+    alter("ALTER TABLE request_log DROP COLUMN overhead_us").await;
+    call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(messages("claude-haiku-4-5", "x")),
+    )
+    .await;
+    env.app.state.in_flight.settled().await;
+    let before = kaeso_server::services::logs::flush_once(&env.app.state).await;
+    assert!(before.is_err(), "{before:?}");
+    assert!(env.app.state.logs.failing());
+    assert_eq!(env.app.state.logs.len(), 1, "the row waits in memory");
+    alter("ALTER TABLE request_log ADD COLUMN overhead_us Nullable(UInt32)").await;
+    let after = kaeso_server::services::logs::flush_once(&env.app.state).await;
+    assert_eq!(after.unwrap(), 1, "the columns were fetched again");
+    assert!(!env.app.state.logs.failing());
+    assert_eq!(
+        logs(&env, "?limit=10").await["data"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+#[tokio::test]
 async fn the_timeline_counts_requests_by_minute_and_hour() {
     let env = env(&[]).await;
     let hour = env

@@ -60,6 +60,7 @@ pub struct Buffer {
     rows: AtomicUsize,
     bytes: AtomicU64,
     dropped: AtomicU64,
+    failing: std::sync::atomic::AtomicBool,
     wake: Notify,
 }
 
@@ -199,6 +200,15 @@ impl Buffer {
         self.len() == 0
     }
 
+    /// Whether the last write to ClickHouse failed; readiness reports the logs degraded then.
+    pub fn failing(&self) -> bool {
+        self.failing.load(Ordering::Relaxed)
+    }
+
+    fn wrote(&self, ok: bool) {
+        self.failing.store(!ok, Ordering::Relaxed);
+    }
+
     pub fn dropped(&self) -> u64 {
         self.dropped.load(Ordering::Relaxed)
     }
@@ -288,8 +298,20 @@ async fn flush_by(state: &AppState, deadline: Option<tokio::time::Instant>) -> F
             }
         };
         match written {
-            Some(Ok(())) => {}
-            Some(Err(e)) => return Flushed::Failed(keep_unwritten(state, batch, e)),
+            Some(Ok(())) => state.logs.wrote(true),
+            Some(Err(e)) => {
+                state.logs.wrote(false);
+                // The client keeps a table's columns from its first insert for the life of the
+                // process, so a migration that ran since then fails every insert until the
+                // columns are fetched again.
+                if matches!(
+                    e,
+                    StoreError::ClickHouse(clickhouse::error::Error::SchemaMismatch(_))
+                ) {
+                    clickhouse.client().clear_cached_metadata().await;
+                }
+                return Flushed::Failed(keep_unwritten(state, batch, e));
+            }
             None => {
                 put_back(state, batch);
                 return Flushed::OutOfTime;
@@ -405,6 +427,10 @@ pub fn spawn_writer(state: AppState, draining: CancellationToken, stop: Cancella
                 () = draining.cancelled(), if !draining.is_cancelled() => {}
                 () = tokio::time::sleep(every) => {}
                 () = state.logs.wake.notified() => {}
+            }
+            // Rows wait in memory until the tables have every column the gateway writes.
+            if !state.clickhouse_migrated() {
+                continue;
             }
             loop {
                 match flush_once(&state).await {

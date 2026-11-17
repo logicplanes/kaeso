@@ -187,6 +187,8 @@ pub fn spawn_clickhouse_migrations(state: AppState, shutdown: CancellationToken)
         loop {
             match clickhouse.migrate(&state.pg).await {
                 Ok(()) => {
+                    // An insert before the migrations may have kept the old columns.
+                    clickhouse.client().clear_cached_metadata().await;
                     state.set_clickhouse_migrated();
                     return;
                 }
