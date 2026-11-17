@@ -305,7 +305,7 @@ Kaeso 自己就是授权服务器。其颁发者是实例的公共 URL，例如 
 | `GET /.well-known/oauth-authorization-server` | 授权服务器元数据：下列端点、唯一的 PKCE 方法 `S256`、仅限公共客户端（`none`）、客户端 ID 元数据文档，以及每次重定向中的 `iss`（RFC 9207） |
 | `POST /oauth/register` | 注册客户端（RFC 7591），带 1 到 10 个重定向 URI，并返回其 `client_id`（`cli_…`）。重定向 URI 使用 HTTPS、任意端口的回环地址或私有 scheme |
 | `GET /oauth/authorize` | 接受 `response_type=code`、`client_id`、`redirect_uri`、`state` 以及带 `code_challenge_method=S256` 的 `code_challenge`。如果发送 `resource`，它是 `/mcp` 的地址（`scope` 为 `kaeso`），或项目的门户（`scope` 为 `tools`）；`state` 最多 2000 个字符。有人授权过该客户端的智能体之后，被拒绝的请求才会带着 `error` 返回环回地址或私有方案的重定向 URI；在此之前，以及对 HTTPS 地址，改由控制台显示错误 |
-| `POST /oauth/token` | 表单编码。`grant_type=authorization_code` 带 `code`、`client_id`、`redirect_uri` 和 `code_verifier`，或 `grant_type=refresh_token` 带 `refresh_token` 和 `client_id` |
+| `POST /oauth/token` | 表单编码。`grant_type=authorization_code` 带 `code`、`client_id`、`code_verifier`，以及 OAuth 2.0 要求的 `redirect_uri`（发送时必须与授权时的一致；遵循 OAuth 2.1 的客户端会省略它）；或 `grant_type=refresh_token` 带 `refresh_token` 和 `client_id` |
 | `POST /oauth/revoke` | 表单编码的 `token`。结束该令牌所属的登录；对未知令牌也返回 200 |
 
 按照 RFC 8252 的规定，回环重定向 URI 每次登录都可以换端口。其主机和路径必须与注册时一致。

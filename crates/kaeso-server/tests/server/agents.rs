@@ -435,6 +435,52 @@ async fn tokens_rotate_and_a_reused_refresh_token_ends_the_sign_in() {
     );
 }
 
+async fn approved_code(app: &App, owner: &Owner, client: &str) -> String {
+    let request = request_token(app, client).await;
+    let approved = approve(app, &owner.cookie, &request, builder(&owner.org_id))
+        .await
+        .expect_status(StatusCode::OK);
+    query_of(approved.body["redirect_to"].as_str().unwrap())["code"].clone()
+}
+
+#[tokio::test]
+async fn a_token_request_without_redirect_uri_signs_in_and_a_different_one_is_refused() {
+    let (_s, app, owner) = setup().await;
+    let client = register(&app, "OAuth 2.1 agent").await;
+    let without = approved_code(&app, &owner, &client).await;
+    let tokens = oauth_post(
+        &app,
+        "/oauth/token",
+        form(&[
+            ("grant_type", "authorization_code"),
+            ("code", &without),
+            ("client_id", &client),
+            ("code_verifier", VERIFIER),
+        ]),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(tokens.body["token_type"], "Bearer");
+    let elsewhere = approved_code(&app, &owner, &client).await;
+    let refused = oauth_post(
+        &app,
+        "/oauth/token",
+        form(&[
+            ("grant_type", "authorization_code"),
+            ("code", &elsewhere),
+            ("client_id", &client),
+            ("redirect_uri", "http://127.0.0.1:50001/elsewhere"),
+            ("code_verifier", VERIFIER),
+        ]),
+    )
+    .await
+    .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(
+        refused.body["error_description"],
+        "`redirect_uri` differs from the one authorized."
+    );
+}
+
 #[tokio::test]
 async fn codes_need_the_right_verifier_client_and_redirect_once() {
     let (_s, app, owner) = setup().await;

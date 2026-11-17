@@ -378,6 +378,38 @@ async fn a_metadata_client_trimmed_after_its_document_was_read_still_signs_in() 
 }
 
 #[tokio::test]
+async fn a_portal_token_request_without_redirect_uri_signs_in() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let e = env(&s, &mock).await;
+    let request = request_of(&authorize(&e.app, CLAUDE, &resource(&e.project), "tools").await);
+    let approved = e
+        .app
+        .post(
+            "/me/agent-requests/approve-portal",
+            json!({ "request": request }),
+            Some(&e.owner.cookie),
+        )
+        .await;
+    assert_eq!(approved.status, StatusCode::OK, "{:?}", approved.body);
+    let code = query_of(approved.body["redirect_to"].as_str().unwrap())["code"].clone();
+    let tokens = oauth_post(
+        &e.app,
+        "/oauth/token",
+        form(&[
+            ("grant_type", "authorization_code"),
+            ("code", &code),
+            ("client_id", CLAUDE),
+            ("code_verifier", VERIFIER),
+            ("resource", &resource(&e.project)),
+        ]),
+    )
+    .await;
+    assert_eq!(tokens.status, StatusCode::OK, "{:?}", tokens.body);
+    assert_eq!(tokens.body["scope"], "tools");
+}
+
+#[tokio::test]
 async fn a_token_works_only_where_it_was_issued() {
     let s = TestServices::start().await;
     let mock = MockMcp::start(Options::default()).await;
