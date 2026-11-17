@@ -606,6 +606,11 @@ impl<'a> PartEncoder<'a> {
             (own && c.extras.form_flag(D, FORM_NO_ID)) || c.id.starts_with(GENERATED_ID_PREFIX);
         let args = if own && c.extras.form_flag(D, FORM_NO_ARGS) && c.arguments.get() == "{}" {
             None
+        } else if !own && !c.arguments.is_object() {
+            // `functionCall.args` is a `Struct`, which google-genai refuses as anything else:
+            // another format's text, array or cut-off arguments become `{"input": …}`, as in
+            // requests to Gemini, and `null` becomes `{}`.
+            Some(crate::adapt::as_object(&c.arguments)?.into_inner())
         } else {
             Some(c.arguments.clone().into_inner())
         };

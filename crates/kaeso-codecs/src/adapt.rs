@@ -227,7 +227,7 @@ fn calls_without_object(
         })
 }
 
-fn as_object(arguments: &RawJson) -> Result<RawJson, KppError> {
+pub(crate) fn as_object(arguments: &RawJson) -> Result<RawJson, KppError> {
     let invalid = |e: serde_json::Error| {
         KppError::invalid_request(format!("A tool call's arguments cannot be sent: {e}."))
     };
