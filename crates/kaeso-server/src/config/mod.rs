@@ -1,3 +1,4 @@
+mod duration;
 mod load;
 mod settings;
 mod size;
@@ -32,7 +33,7 @@ pub struct Config {
     pub public_url: Url,
     #[serde(deserialize_with = "networks")]
     pub trusted_proxies: Vec<ipnet::IpNet>,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub shutdown_grace: Duration,
     pub server: ServerConfig,
     #[serde(default)]
@@ -78,11 +79,11 @@ pub struct Config {
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ServerConfig {
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub header_read_timeout: Duration,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub body_read_timeout: Duration,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub body_read_deadline: Duration,
     pub max_connections: usize,
 }
@@ -220,7 +221,7 @@ fn set(value: Option<&str>) -> Option<&str> {
 #[serde(deny_unknown_fields)]
 pub struct KeyFailuresConfig {
     pub per_address: u32,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub window: Duration,
 }
 
@@ -246,11 +247,9 @@ impl<'de> Deserialize<'de> for KpmrInterval {
         if s.trim() == "auto" {
             return Ok(KpmrInterval::Auto);
         }
-        humantime_serde::re::humantime::parse_duration(s.trim())
-            .map(KpmrInterval::Every)
-            .map_err(|_| {
-                serde::de::Error::custom(format!("`{s}` is not `auto` or a duration such as 1h"))
-            })
+        duration::parse(&s).map(KpmrInterval::Every).map_err(|_| {
+            serde::de::Error::custom(format!("`{s}` is not `auto` or a duration such as 1h"))
+        })
     }
 }
 
@@ -315,7 +314,10 @@ pub struct WebhooksConfig {
 pub struct McpServersConfig {
     #[serde(default, deserialize_with = "networks")]
     pub allowed_networks: Vec<ipnet::IpNet>,
-    #[serde(with = "humantime_serde", default = "fifteen_minutes")]
+    #[serde(
+        deserialize_with = "duration::deserialize",
+        default = "fifteen_minutes"
+    )]
     pub sync_interval: Duration,
 }
 
@@ -354,7 +356,7 @@ pub struct AwsConfig {
 pub struct McpPortalConfig {
     #[serde(default = "four_mib")]
     pub response_limit: ByteSize,
-    #[serde(with = "humantime_serde", default = "sixty_seconds")]
+    #[serde(deserialize_with = "duration::deserialize", default = "sixty_seconds")]
     pub call_timeout: Duration,
 }
 
@@ -398,22 +400,22 @@ impl ProvidersConfig {
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct UpstreamConfig {
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub connect_timeout: Duration,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub request_timeout: Duration,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub first_byte_timeout: Duration,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub stream_idle_timeout: Duration,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StreamsConfig {
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub keepalive_interval: Duration,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub max_duration: Duration,
     pub max_bytes: ByteSize,
 }
@@ -421,7 +423,7 @@ pub struct StreamsConfig {
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ContinuityConfig {
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub reasoning_ttl: Duration,
 }
 
@@ -449,7 +451,7 @@ pub struct BodyLimitsConfig {
 #[serde(deny_unknown_fields)]
 pub struct LogsConfig {
     pub buffer_size: ByteSize,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub flush_interval: Duration,
     pub flush_rows: u32,
 }
@@ -466,7 +468,7 @@ pub struct OtelConfig {
     #[serde(deserialize_with = "ratio")]
     pub sample_ratio: f64,
     pub buffer_size: u32,
-    #[serde(with = "humantime_serde")]
+    #[serde(deserialize_with = "duration::deserialize")]
     pub flush_interval: Duration,
 }
 
