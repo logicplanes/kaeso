@@ -17,6 +17,13 @@ export function expiryRequest(choice: Expiry, date: Date | null): ExpiryRequest 
   return { expires_in_days: Number(choice) };
 }
 
+// A key stops at the start of the picked day in UTC, so a day whose UTC start has passed is gone
+// even where it has only begun locally, and the policy's maximum counts to that start too.
+export function expiryDayDisabled(day: string, now: number, latest: number | null): boolean {
+  const start = Date.parse(`${day}T00:00:00Z`);
+  return start <= now || (latest !== null && start > latest);
+}
+
 export function ExpiryPicker({
   value,
   onChange,
@@ -80,7 +87,7 @@ export function ExpiryPicker({
           label={t("kaeso.expiry.date", "Expiry date")}
           value={date}
           onValueChange={onDateChange}
-          disabledDays={(d) => d.getTime() <= now || (latest !== null && d.getTime() > latest)}
+          disabledDays={(d) => expiryDayDisabled(pickedDay(d), now, latest)}
           description={t("kaeso.expiry.dateHint", "The key stops working at the start of this day (UTC).")}
         />
       )}

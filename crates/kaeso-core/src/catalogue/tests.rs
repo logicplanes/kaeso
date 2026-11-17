@@ -2099,6 +2099,15 @@ fn thinking_off_becomes_the_lowest_effort_of_a_model_that_always_reasons() {
         "a model that lists `none` takes it"
     );
     kept("none", C, &qwen);
+    for model in ["deepseek-flash", "deepseek-v4-pro"] {
+        let deepseek = eff(&entry("deepseek", model));
+        assert_eq!(
+            adapted(thinking_off(), A, &deepseek).2,
+            Vec::<String>::new(),
+            "{model} turns thinking off with `none`"
+        );
+        kept("none", C, &deepseek);
+    }
     let haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
     assert_eq!(
         adapted(thinking_off(), C, &haiku),
