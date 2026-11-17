@@ -87,7 +87,15 @@ pub async fn list(
     )))
 }
 
-async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<keys::KeyRow> {
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Use {
+    Read,
+    Change,
+}
+
+// Reading a key needs only the endpoint's right, as listing does; changing it also needs
+// `keys.own.manage` in its project, since a key outlives its member's role there.
+async fn own(state: &AppState, ctx: &Ctx, id: &str, using: Use) -> ApiResult<keys::KeyRow> {
     let me = ctx.user_id()?;
     let id: ApiKeyId = id.parse().map_err(|_| ApiError::not_found("key"))?;
     let row = keys::get_of_user(&state.pg, me.uuid(), id.uuid())
@@ -106,7 +114,9 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<keys::KeyRow> {
             ApiError::NotFound(_) => ApiError::not_found("key"),
             e => e,
         })?;
-        if !project.is_some_and(|p| p.rights.contains(ProjectRight::KeysOwnManage)) {
+        if using == Use::Change
+            && !project.is_some_and(|p| p.rights.contains(ProjectRight::KeysOwnManage))
+        {
             return Err(refused(
                 &ctx.caller,
                 Right::Project(ProjectRight::KeysOwnManage),
@@ -125,6 +135,9 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<keys::KeyRow> {
         }
         require_policy(state, ctx.sign_in()?, Area::of_org(&f.org)).await?;
     }
+    if using == Use::Read && found.is_none() {
+        return Err(ApiError::not_found("key"));
+    }
     let rights = match found {
         Some(f) => {
             let org = f.org_grant.as_ref().map(org_from_store).transpose()?;
@@ -137,7 +150,7 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str) -> ApiResult<keys::KeyRow> {
         }
         None => Default::default(),
     };
-    if !rights.contains(ProjectRight::KeysOwnManage) {
+    if using == Use::Change && !rights.contains(ProjectRight::KeysOwnManage) {
         return Err(ApiError::PermissionDenied(
             "You need the right `keys.own.manage` in this key's project to change it.".into(),
         ));
@@ -158,7 +171,7 @@ pub async fn disable(
     ctx: Ctx,
     Path(id): Path<String>,
 ) -> ApiResult<Json<KeyView>> {
-    let row = own(&state, &ctx, &id).await?;
+    let row = own(&state, &ctx, &id, Use::Change).await?;
     Ok(Json(
         change(
             &state,
@@ -185,7 +198,7 @@ pub async fn enable(
     ctx: Ctx,
     Path(id): Path<String>,
 ) -> ApiResult<Json<KeyView>> {
-    let row = own(&state, &ctx, &id).await?;
+    let row = own(&state, &ctx, &id, Use::Change).await?;
     Ok(Json(
         change(
             &state,
@@ -212,7 +225,7 @@ pub async fn archive(
     ctx: Ctx,
     Path(id): Path<String>,
 ) -> ApiResult<Json<KeyView>> {
-    let row = own(&state, &ctx, &id).await?;
+    let row = own(&state, &ctx, &id, Use::Change).await?;
     Ok(Json(
         change(
             &state,
@@ -240,7 +253,7 @@ pub async fn get(
     Path(id): Path<String>,
 ) -> ApiResult<Json<KeyView>> {
     Ok(Json(KeyView::from_row(
-        &own(&state, &ctx, &id).await?,
+        &own(&state, &ctx, &id, Use::Read).await?,
         ctx.now,
     )))
 }
