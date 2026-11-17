@@ -1232,6 +1232,10 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.realtimeEndedUnclosed", () => t("errors.modelApi.realtimeEndedUnclosed", "ElevenLabs ended the session without closing it.")),
   rule("errors.modelApi.realtimeIdle", () => t("errors.modelApi.realtimeIdle", "The session was idle too long; open a new one when you need it.")),
   rule("errors.modelApi.realtimeHourUp", () => t("errors.modelApi.realtimeHourUp", "The session reached Kaeso's limit of one hour; open a new one.")),
+  rule("errors.modelApi.noProviderKey", (v) =>
+    t("errors.modelApi.noProviderKey", "This project has no provider key for {provider}. Ask an organization admin to add one under Providers.", v),
+  ),
+  // Entries logged before the message changed.
   rule("errors.modelApi.noCredential", (v) =>
     t(
       "errors.modelApi.noCredential",

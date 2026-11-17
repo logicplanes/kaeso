@@ -848,19 +848,30 @@ async fn a_custom_provider_that_cannot_be_reached_refuses_the_key_or_answers_unr
         "no key was sent"
     );
 
-    let r = call(
-        &env,
-        "/v1/messages",
-        Some(&env.key),
-        true,
-        Some(messages("picky/m", "hi")),
-    )
-    .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    // No key in the project is the install's problem, like a refused key, in every format.
+    for (path, anthropic, body) in [
+        ("/v1/messages", true, messages("picky/m", "hi")),
+        ("/v1/chat/completions", false, chat("picky/m", "hi")),
+        (
+            "/v1/responses",
+            false,
+            json!({ "model": "picky/m", "input": "hi" }),
+        ),
+    ] {
+        let r = call(&env, path, Some(&env.key), anthropic, Some(body)).await;
+        assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{path}: {}", r.text());
+        assert_eq!(
+            error_message(&r),
+            "This project has no provider key for Lab picky. Ask an organization admin to add one under Providers.",
+            "{path}"
+        );
+        assert!(!r.text().contains(&owner.org_id), "{path}: {}", r.text());
+        assert!(!r.text().contains("/platform/"), "{path}: {}", r.text());
+    }
+    let logged = env.outcomes().await.pop().unwrap();
     assert!(
-        error_message(&r).starts_with("No credential for the provider `picky`"),
-        "{}",
-        r.text()
+        !format!("{:?}", logged.error_message).contains(&owner.org_id),
+        "{logged:?}"
     );
 }
 

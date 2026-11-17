@@ -352,7 +352,6 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 400 | Die Anfrage zählt Token, und der Anbieter des Modells hat keinen Endpunkt zum Zählen von Token. |
 | 400 | Der Kontext ist zu lang für das Modell. |
 | 400 | Mehrere Anbieter im Projekt bieten die Modell-ID an. Senden Sie stattdessen `provider/model`. |
-| 400 | Das Projekt hat keinen Anbieter-Schlüssel für den Anbieter des Modells. |
 | 400 | Eine [Guardrail](../console/guardrails.md) des Projekts hat die Anfrage oder die Antwort des Modells blockiert. Die Meldung nennt die Guardrail und ihren Grund. |
 | 401 | Der Schlüssel fehlt, ist unbekannt, deaktiviert, archiviert oder abgelaufen. |
 | 401 | Das Mitglied oder Dienstkonto des Schlüssels ist nicht mehr aktiv, oder sein Projekt oder seine Organisation ist nicht nutzbar. |
@@ -371,6 +370,7 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 502 | Kaeso erreicht den Anbieter nicht, oder die Übertragung ist fehlgeschlagen. |
 | 502 | Ein eigener Anbieter liegt an einer Adresse, die die Installation nicht erlaubt, oder hat in einer Form geantwortet, die sein Format nicht lesen kann. |
 | 502 | Der Anbieter hat den Anbieter-Schlüssel des Projekts abgelehnt, die Anfrage damit nicht erlaubt, oder ihn aus Abrechnungs- oder Kontingentgründen abgelehnt. |
+| 502 | Das Projekt hat keinen Anbieter-Schlüssel für den Anbieter des Modells. Wie ein abgelehnter Anbieter-Schlüssel ist das ein Problem der Installation, und die Meldung verweist an einen Organisationsadmin. |
 | 503 | Kaeso kann den Katalog, die Schlüssel, die Anbieter-Schlüssel oder die Limits nicht laden, oder Kaeso startet gerade neu. Die OpenAI-Formate antworten darauf mit 500. |
 | 503 | Eine Guardrail, die bei Fehlern ablehnt, hat nicht rechtzeitig geantwortet, war nicht erreichbar oder gab kein Urteil, oder Kaeso kann die Guardrails des Projekts nicht laden. Die OpenAI-Formate antworten darauf mit 500. |
 | 503 | Der Anbieter ist überlastet, in den OpenAI-Formaten und im Gemini-Format. |

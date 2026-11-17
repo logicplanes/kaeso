@@ -894,7 +894,7 @@ async fn a_request_refused_before_the_provider_costs_nothing() {
         Some(json!({"text": "Hi.", "model_id": "eleven_flash_v2_5"})),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
     assert_eq!(env.mock.received().len(), before);
     let o = outcome(&env).await;
     assert_eq!(

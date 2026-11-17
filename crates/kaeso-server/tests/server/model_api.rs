@@ -471,12 +471,11 @@ async fn errors_arrive_in_the_apps_format() {
         Some(chat("gpt-4o", "x")),
     )
     .await;
-    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
-    assert!(
-        r.json()["error"]["message"]
-            .as_str()
-            .unwrap()
-            .contains("`openai`")
+    // No key for the provider is the install's problem, as a refused key is, not the app's.
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "This project has no provider key for OpenAI. Ask an organization admin to add one under Providers."
     );
     let r = call(&env, "/v1/nothing", Some(&env.key), true, Some(json!({}))).await;
     assert_eq!(r.status, StatusCode::NOT_FOUND);

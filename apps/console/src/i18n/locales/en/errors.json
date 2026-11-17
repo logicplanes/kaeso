@@ -457,6 +457,7 @@
   "errors.modelApi.modelsUnavailable": "Kaeso cannot load this project's models right now. Try again shortly.",
   "errors.modelApi.noBaseUrl": "No base URL is configured for this provider.",
   "errors.modelApi.noCredential": "No credential for the provider `{provider}` is set up for this project. An org admin adds a key for it with POST /platform/v1/orgs/{org}/credentials, makes one of the org's keys the default, or assigns one to this project.",
+  "errors.modelApi.noProviderKey": "This project has no provider key for {provider}. Ask an organization admin to add one under Providers.",
   "errors.modelApi.noRequestRight": "The owner of this API key may not call models in its project (the right `api.request` is missing).",
   "errors.modelApi.noRoute": "Kaeso does not serve `{path}`.",
   "errors.modelApi.noSuchModel": "The model `{model}` does not exist or this key may not use it.",
