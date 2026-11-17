@@ -300,6 +300,7 @@ const messages = (): Rule[] => [
   rule("errors.fieldInvalidId", (v) => t("errors.fieldInvalidId", "`{name}` is not a valid id.", v)),
   rule("errors.fieldIdPrefix", (v) => t("errors.fieldIdPrefix", "`{name}` must be an id starting with `{prefix}`.", v)),
   rule("errors.fieldTime", (v) => t("errors.fieldTime", "`{name}` must be a time such as 2026-10-01T00:00:00Z.", v)),
+  rule("errors.fieldNoNul", (v) => t("errors.fieldNoNul", "`{name}` must be text without a NUL character.", v)),
   rule("errors.fieldDate", (v) => t("errors.fieldDate", "`{name}` must be a date, YYYY-MM-DD.", v)),
   rule("errors.fieldFormat", (v) => t("errors.fieldFormat", "`{name}` must be a format, such as `openai_responses`.", v)),
   rule("errors.fieldLength100", (v) => t("errors.fieldLength100", "`{name}` must be 1 to 100 characters.", v)),

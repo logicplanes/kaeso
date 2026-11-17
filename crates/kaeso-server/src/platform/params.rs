@@ -139,6 +139,20 @@ pub fn id_param<T: PublicId + FromStr>(raw: &str, what: &str) -> Result<T, ApiEr
     raw.parse().map_err(|_| ApiError::not_found(what))
 }
 
+// PostgreSQL text can't hold NUL, so a filter with one would fail in the database: it is refused
+// as the request's own error, naming the parameter.
+pub fn text<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+    let Some(s) = Option::<String>::deserialize(d)? else {
+        return Ok(None);
+    };
+    if s.contains('\0') {
+        return Err(serde::de::Error::custom(
+            "expected text without a NUL character",
+        ));
+    }
+    Ok(Some(s))
+}
+
 pub fn rfc3339<'de, D: Deserializer<'de>>(d: D) -> Result<Option<OffsetDateTime>, D::Error> {
     let Some(s) = Option::<std::borrow::Cow<'de, str>>::deserialize(d)? else {
         return Ok(None);

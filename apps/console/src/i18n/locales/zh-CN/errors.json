@@ -89,6 +89,7 @@
   "errors.fieldPositive": "`{name}` 必须为正数。",
   "errors.fieldRequired": "缺少 `{name}`。",
   "errors.fieldTime": "`{name}` 必须是时间，例如 2026-10-01T00:00:00Z。",
+  "errors.fieldNoNul": "`{name}` 必须是不含 NUL 字符的文本。",
   "errors.fieldTrueOrFalse": "`{name}` 必须为 `true` 或 `false`。",
   "errors.fieldUnknown": "`{name}` 不是此请求的字段。",
   "errors.fieldWholeNumber": "`{name}` 必须是整数。",

@@ -89,6 +89,7 @@
   "errors.fieldPositive": "`{name}` muss positiv sein.",
   "errors.fieldRequired": "`{name}` ist erforderlich.",
   "errors.fieldTime": "`{name}` muss eine Zeit wie 2026-10-01T00:00:00Z sein.",
+  "errors.fieldNoNul": "`{name}` muss Text ohne NUL-Zeichen sein.",
   "errors.fieldTrueOrFalse": "`{name}` muss `true` oder `false` sein.",
   "errors.fieldUnknown": "`{name}` ist kein Feld dieser Anfrage.",
   "errors.fieldWholeNumber": "`{name}` muss eine ganze Zahl sein.",

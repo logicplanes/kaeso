@@ -118,8 +118,10 @@ pub struct AuditFilter {
     #[doc = "Only events by this user (`usr_…`)."]
     pub actor: Option<UserId>,
     #[doc = "Only actions starting with this, e.g. `project.` or `member.remove`."]
+    #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub action: Option<String>,
     #[doc = "Only events about this target id."]
+    #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub target: Option<String>,
     #[doc = "Only events about this project (`proj_…`); always the project of the\n\
         path in a project's audit log."]
