@@ -10,7 +10,8 @@ use serde_json::{Number, Value, json};
 use super::DIALECT;
 use super::blocks::ser;
 use super::wire::{
-    ChoiceAnswerWire, NoulAnswerWire, PromptFeedbackWire, ResponseWire, ScoreAnswerWire, UsageWire,
+    ChoiceAnswerWire, ModalityWire, NoulAnswerWire, PromptFeedbackWire, ResponseWire,
+    ScoreAnswerWire, UsageWire,
 };
 use crate::codec::{EgressCtx, EncodeCtx, HeaderList};
 use crate::decisions::{SentKind, option_key, question_keys, top_probability};
@@ -143,9 +144,31 @@ pub(super) fn decode(
 // reference"); the rest of the input is text.
 fn usage_of(raw: &RawJson, origin: &Origin) -> Result<Usage, KppError> {
     let u: UsageWire = raw.parse().map_err(|_| bad("`usage` is not valid"))?;
+    let (image, audio) = by_modality(&u.input_tokens_by_modality);
+    let (cached_image, cached_audio) = by_modality(&u.cached_tokens_by_modality);
+    let mut usage = Usage::new(
+        u.total_input_tokens.saturating_sub(u.total_cached_tokens),
+        u.total_output_tokens,
+    );
+    usage.cache_read_tokens = u.total_cached_tokens;
+    // `input_tokens_by_modality` counts the cached tokens too, like `total_input_tokens`; KPP's
+    // `input_*_tokens` are shares of `input_tokens`, which leaves the cache out (#994).
+    usage.input_image_tokens = image.map(|n| n.saturating_sub(cached_image.unwrap_or(0)));
+    usage.input_audio_tokens = audio.map(|n| n.saturating_sub(cached_audio.unwrap_or(0)));
+    usage.cache_read_image_tokens = cached_image;
+    usage.reasoning_tokens = u.total_thought_tokens;
+    usage.raw = raw
+        .to_value()
+        .ok()
+        .map(|v| RawUsage::new(origin.clone(), v));
+    Ok(usage)
+}
+
+// Image, video and document tokens count as image tokens, as Google's guide counts them.
+fn by_modality(counts: &[ModalityWire]) -> (Option<u64>, Option<u64>) {
     let mut image = None::<u64>;
     let mut audio = None::<u64>;
-    for m in &u.input_tokens_by_modality {
+    for m in counts {
         let slot = match m.modality.as_str() {
             "image" | "video" | "document" => &mut image,
             "audio" => &mut audio,
@@ -153,19 +176,7 @@ fn usage_of(raw: &RawJson, origin: &Origin) -> Result<Usage, KppError> {
         };
         *slot = Some(slot.unwrap_or(0).saturating_add(m.tokens));
     }
-    let mut usage = Usage::new(
-        u.total_input_tokens.saturating_sub(u.total_cached_tokens),
-        u.total_output_tokens,
-    );
-    usage.cache_read_tokens = u.total_cached_tokens;
-    usage.input_image_tokens = image;
-    usage.input_audio_tokens = audio;
-    usage.reasoning_tokens = u.total_thought_tokens;
-    usage.raw = raw
-        .to_value()
-        .ok()
-        .map(|v| RawUsage::new(origin.clone(), v));
-    Ok(usage)
+    (image, audio)
 }
 
 fn decode_answer(
@@ -350,7 +361,11 @@ fn usage_value(u: &Usage) -> Value {
         return raw.clone();
     }
     let total = u.total_input_tokens();
-    let image = u.input_image_tokens.unwrap_or(0);
+    let cached_image = u.cache_read_image_tokens.unwrap_or(0);
+    let image = u
+        .input_image_tokens
+        .unwrap_or(0)
+        .saturating_add(cached_image);
     let audio = u.input_audio_tokens.unwrap_or(0);
     let mut modalities = vec![json!({
         "modality": "text",
@@ -372,6 +387,13 @@ fn usage_value(u: &Usage) -> Value {
         && let Value::Object(map) = &mut v
     {
         map.insert("total_cached_tokens".into(), u.cache_read_tokens.into());
+        if cached_image > 0 {
+            let cached_image = cached_image.min(u.cache_read_tokens);
+            let mut cached =
+                vec![json!({"modality": "text", "tokens": u.cache_read_tokens - cached_image})];
+            cached.push(json!({"modality": "image", "tokens": cached_image}));
+            map.insert("cached_tokens_by_modality".into(), Value::Array(cached));
+        }
     }
     v
 }

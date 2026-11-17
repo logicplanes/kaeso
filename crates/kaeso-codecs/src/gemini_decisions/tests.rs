@@ -1355,3 +1355,60 @@ fn foreign_extras_and_unknown_blocks_are_refused_elsewhere() {
     ))]);
     assert!(encode(&foreign).is_err());
 }
+
+#[test]
+fn cached_image_and_audio_tokens_are_not_uncached_input_too() {
+    let req = decode(&fixture("requests", "image"));
+    let (_, c) = encode(&req).unwrap();
+    let mut body: Value = serde_json::from_slice(&fixture("responses", "image")).unwrap();
+    body["usage"] = json!({
+        "total_input_tokens": 417,
+        "input_tokens_by_modality": [
+            {"modality": "text", "tokens": 31},
+            {"modality": "image", "tokens": 66},
+            {"modality": "audio", "tokens": 320}
+        ],
+        "total_cached_tokens": 186,
+        "cached_tokens_by_modality": [
+            {"modality": "image", "tokens": 66},
+            {"modality": "audio", "tokens": 120}
+        ],
+        "total_output_tokens": 0,
+        "total_tokens": 417
+    });
+    let r = decided(GeminiDecisions::decode_response(
+        200,
+        &HeaderList::new(),
+        &serde_json::to_vec(&body).unwrap(),
+        &c,
+    ));
+    let u = &r.usage;
+    assert_eq!((u.input_tokens, u.cache_read_tokens), (231, 186));
+    assert_eq!(
+        (
+            u.input_image_tokens,
+            u.cache_read_image_tokens,
+            u.input_audio_tokens
+        ),
+        (Some(0), Some(66), Some(200))
+    );
+
+    let mut other = r.clone();
+    other.usage.raw = None;
+    let v = reply_to(DIALECT, &Reply::Decide(other), &req).unwrap();
+    assert_eq!(
+        v["usage"]["input_tokens_by_modality"],
+        json!([
+            {"modality": "text", "tokens": 151},
+            {"modality": "image", "tokens": 66},
+            {"modality": "audio", "tokens": 200}
+        ])
+    );
+    assert_eq!(
+        v["usage"]["cached_tokens_by_modality"],
+        json!([
+            {"modality": "text", "tokens": 120},
+            {"modality": "image", "tokens": 66}
+        ])
+    );
+}
