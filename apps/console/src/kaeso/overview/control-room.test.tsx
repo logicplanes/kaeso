@@ -118,7 +118,7 @@ describe("the analytics control room", () => {
 
     await user.click(within(cell("Models by tool calls")).getByRole("button", { name: /gpt-5\.4-mini/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
-    expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&from=2026-10-01&to=2026-10-14");
+    expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&from=2026-10-01&to=2026-10-14&utc=true");
   });
 
   it("counts the requests the spend leaves out because no price covers them", async () => {
@@ -143,11 +143,11 @@ describe("the analytics control room", () => {
     expect(within(cell("Tokens per day, UTC")).queryByText("vs. prior 14 days")).not.toBeInTheDocument();
     const keys = within(cell("Keys by tokens")).getByRole("list");
     await user.click(await within(keys).findByRole("button", { name: /checkout-web/ }));
-    await waitFor(() => expect(router.state.location.searchStr).toBe("?key=key_web&from=2026-10-01&to=2026-10-14"));
+    await waitFor(() => expect(router.state.location.searchStr).toBe("?key=key_web&from=2026-10-01&to=2026-10-14&utc=true"));
 
     await router.navigate({ href: projectPath(`analytics?${PERIOD}&metric=errors`) });
     await user.click(await within(await screen.findByRole("list", { name: "Models by failed requests" })).findByRole("button", { name: /gpt-5\.4-mini/ }));
-    await waitFor(() => expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&failed=true&from=2026-10-01&to=2026-10-14"));
+    await waitFor(() => expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&failed=true&from=2026-10-01&to=2026-10-14&utc=true"));
   });
 
   it("says what failed and when answers were slowest, and opens the request logs for each", async () => {
@@ -179,7 +179,7 @@ describe("the analytics control room", () => {
     await waitFor(() => expect(failed).toHaveTextContent(/4↑300% worse10% of requests/));
     expect(within(failed).getByRole("link", { name: "Failed requests" })).toHaveAttribute(
       "href",
-      projectPath("logs?failed=true&from=2026-10-01&to=2026-10-14"),
+      projectPath("logs?failed=true&from=2026-10-01&to=2026-10-14&utc=true"),
     );
     expect(
       requests("GET", `${USAGE}/timeline`)
@@ -193,13 +193,13 @@ describe("the analytics control room", () => {
     expect(slowest.map((b) => b.textContent)).toEqual([expect.stringMatching(/Oct 12.*12 requests8\.1 s/), expect.stringMatching(/Oct 13.*30 requests2\.4 s/)]);
 
     await user.click(kinds[0] as HTMLElement);
-    await waitFor(() => expect(router.state.location.searchStr).toBe("?failed=true&error=rate_limited&from=2026-10-01&to=2026-10-14"));
+    await waitFor(() => expect(router.state.location.searchStr).toBe("?failed=true&error=rate_limited&from=2026-10-01&to=2026-10-14&utc=true"));
     await router.navigate({ href: projectPath(`analytics?${PERIOD}`) });
     await user.click(await within(await screen.findByRole("list", { name: "Failures by kind" })).findByRole("button", { name: /Other failures/ }));
-    await waitFor(() => expect(router.state.location.searchStr).toBe("?failed=true&from=2026-10-01&to=2026-10-14"));
+    await waitFor(() => expect(router.state.location.searchStr).toBe("?failed=true&from=2026-10-01&to=2026-10-14&utc=true"));
     await router.navigate({ href: projectPath(`analytics?${PERIOD}`) });
     await user.click(await within(await screen.findByRole("list", { name: "Slowest hours, 95th percentile" })).findByRole("button", { name: /Oct 12/ }));
-    await waitFor(() => expect(router.state.location.searchStr).toBe("?from=2026-10-12&to=2026-10-12&min_duration_ms=8100"));
+    await waitFor(() => expect(router.state.location.searchStr).toBe("?from=2026-10-12&to=2026-10-12&utc=true&min_duration_ms=8100"));
   });
 
   it("keeps the slowest hour of a quiet period, and says how the cache and the tokens of a request did", async () => {
@@ -544,7 +544,7 @@ describe("the analytics views", () => {
     const { user, router } = await renderApp(projectPath("analytics/members?from=2026-10-01&to=2026-10-14"));
     const table = await screen.findByRole("grid", { name: "Members in the period" });
     await user.click(await within(table).findByRole("row", { name: /ci-deploy/ }));
-    await waitFor(() => expect(router.state.location.search).toEqual({ member: "sa:sa_deploy", from: "2026-10-01", to: "2026-10-14" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ member: "sa:sa_deploy", from: "2026-10-01", to: "2026-10-14", utc: true }));
   });
 
   it("labels usage that reached no model, and goes back to the overview with the period", async () => {

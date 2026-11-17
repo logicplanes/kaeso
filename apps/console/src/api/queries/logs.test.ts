@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import { ENDPOINTS, logsParams } from "./logs";
+import { afterEach, describe, expect, it } from "vitest";
+import { setFormatTimeZone } from "@logicplanes/kaeso-ui/format";
+import { ENDPOINTS, logsParams, toolCallParams } from "./logs";
 
 describe("request log filters", () => {
   it("offer every endpoint the gateway's filter takes", () => {
@@ -19,5 +20,26 @@ describe("request log filters", () => {
       min_cost: "0.5",
     });
     expect(logsParams({ fell_back: false }, 0)).not.toHaveProperty("fell_back");
+  });
+});
+
+describe("the request log's window", () => {
+  afterEach(() => setFormatTimeZone(undefined));
+
+  it("reads days in the install's time zone, and Analytics' links as UTC days", () => {
+    setFormatTimeZone("America/Los_Angeles");
+    expect(logsParams({ from: "2026-10-12", to: "2026-10-12" })).toMatchObject({
+      from: "2026-10-12T07:00:00.000Z",
+      to: "2026-10-13T07:00:00.000Z",
+    });
+    expect(logsParams({ from: "2026-10-12", to: "2026-10-13", utc: true, failed: true })).toEqual({
+      from: "2026-10-12T00:00:00.000Z",
+      to: "2026-10-14T00:00:00.000Z",
+      failed: true,
+    });
+    expect(toolCallParams({ from: "2026-10-12", to: "2026-10-12", utc: true })).toMatchObject({
+      from: "2026-10-12T00:00:00.000Z",
+      to: "2026-10-13T00:00:00.000Z",
+    });
   });
 });

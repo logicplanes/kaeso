@@ -1,5 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
-import { dayEnd, dayStart } from "~/format/zone";
+import { shiftDay } from "~/format/period";
+import { dayStart } from "~/format/zone";
 import { api, data } from "../client";
 import type { ClientApp, LogEntryView, LogView, LoggedEndpoint, RequestFormat, ToolCallEntryView, ToolCallView } from "../generated/types";
 import { nextPageParam, refetchOnFocusWhileOnePage, type Page } from "../paging";
@@ -11,6 +12,8 @@ export interface LogFilters {
   range?: LogRange;
   from?: string;
   to?: string;
+  /** `from` and `to` are days in UTC, as Analytics counts them, not in the install's time zone. */
+  utc?: boolean;
   key?: string;
   member?: string;
   model?: string;
@@ -83,8 +86,9 @@ export const ENDPOINTS: readonly LoggedEndpoint[] = [
 
 export function logsParams(f: LogFilters, now = Date.now()) {
   const custom = f.from && f.to ? { from: f.from, to: f.to } : null;
-  const from = custom ? dayStart(custom.from) : new Date(now - RANGE_MS[f.range ?? "24h"]).toISOString();
-  const to = custom ? dayEnd(custom.to) : undefined;
+  const start = f.utc ? utcDayStart : dayStart;
+  const from = custom ? start(custom.from) : new Date(now - RANGE_MS[f.range ?? "24h"]).toISOString();
+  const to = custom ? start(shiftDay(custom.to, 1)) : undefined;
   return {
     from,
     ...(to ? { to } : {}),
@@ -128,6 +132,8 @@ export const logErrorsQuery = (org: string, project: string, filters: LogFilters
         }),
       ).data,
   });
+
+const utcDayStart = (day: string) => `${day}T00:00:00.000Z`;
 
 export const logsInfiniteQuery = (org: string, project: string, filters: LogFilters) =>
   infiniteQueryOptions({
@@ -198,6 +204,7 @@ export interface ToolCallFilters {
   range?: LogRange;
   from?: string;
   to?: string;
+  utc?: boolean;
   key?: string;
   member?: string;
   server?: string;
@@ -211,6 +218,7 @@ export function toolCallParams(f: ToolCallFilters, now = Date.now()) {
     {
       ...(f.range ? { range: f.range } : {}),
       ...(f.from && f.to ? { from: f.from, to: f.to } : {}),
+      ...(f.utc ? { utc: true } : {}),
       ...(f.key ? { key: f.key } : {}),
       ...(f.member ? { member: f.member } : {}),
     },

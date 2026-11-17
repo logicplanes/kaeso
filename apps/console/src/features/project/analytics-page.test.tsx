@@ -605,7 +605,7 @@ describe("the analytics views", () => {
     await user.click(bodyRows(table)[1] as HTMLElement);
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
     // The model with its provider, in the period's days.
-    expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&provider=openai&from=2026-10-01&to=2026-10-14");
+    expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&provider=openai&from=2026-10-01&to=2026-10-14&utc=true");
   });
 
   it("keeps the period when it moves between views", async () => {

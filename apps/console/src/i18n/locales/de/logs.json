@@ -187,6 +187,7 @@
   "logs.stop.toolUse": "Tool-Aufruf",
   "logs.streamPill": "Stream",
   "logs.timeRange": "Zeitraum",
+  "logs.utcDays": "Tage in UTC",
   "logs.title": "Anfrageprotokolle",
   "logs.tokens.cacheRead": "{count} aus dem Cache gelesen",
   "logs.tokens.cacheWrite": "{count} in den Cache geschrieben",

@@ -156,7 +156,7 @@ function SlowestCell({ o, hours }: { o: Overview; hours: NonNullable<Overview["h
               // That day's requests at least as slow as the hour's 95th percentile.
               onOpen: (start: string) => {
                 const day = utcDay(new Date(start));
-                void navigate({ href: `${logs}?from=${day}&to=${day}&min_duration_ms=${String(p95.get(start))}` });
+                void navigate({ href: `${logs}?from=${day}&to=${day}&utc=true&min_duration_ms=${String(p95.get(start))}` });
               },
             }
           : {})}

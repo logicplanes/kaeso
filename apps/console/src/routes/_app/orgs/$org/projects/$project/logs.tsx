@@ -27,7 +27,7 @@ function validateLogsSearch(s: Record<string, unknown>): LogsSearch {
   const cost = minCost(s.min_cost);
   const out: LogsSearch = {
     ...(typeof s.range === "string" && RANGES.has(s.range) ? { range: s.range as LogRange } : {}),
-    ...(from && to && from <= to ? { from, to } : {}),
+    ...(from && to && from <= to ? { from, to, ...(bool(s.utc) ? { utc: true } : {}) } : {}),
     ...text("key", s.key),
     ...text("member", s.member),
     ...text("model", s.model),

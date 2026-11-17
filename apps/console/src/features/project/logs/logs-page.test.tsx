@@ -862,6 +862,26 @@ describe("LogsPage", () => {
     await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-04T15:00:00.000Z", to: "2026-10-07T15:00:00.000Z" }));
   });
 
+  it("reads Analytics' days in UTC, and the install's days again once the range is picked", async () => {
+    signedIn({ session: whoAmI({ timezone: "Asia/Tokyo" }) });
+    projectData();
+    logsData({ rows: [logRow()] });
+    const { user, router } = await renderApp(projectPath("logs?failed=true&from=2026-10-01&to=2026-10-03&utc=true"));
+
+    await screen.findByRole("row", { name: /key_web/ });
+    expect(screen.getByText("Days in UTC")).toBeInTheDocument();
+    await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-01T00:00:00.000Z", to: "2026-10-04T00:00:00.000Z" }));
+    await user.click(screen.getByRole("button", { description: "Days" }));
+    const dialog = await screen.findByRole("dialog", { name: "Choose a date range" });
+    const start = within(dialog).getByRole("textbox", { name: "Start date" });
+    await user.clear(start);
+    await user.type(start, "2026-10-02");
+    await user.click(within(dialog).getByRole("button", { name: "Apply" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ failed: true, from: "2026-10-02", to: "2026-10-03" }));
+    expect(screen.queryByText("Days in UTC")).not.toBeInTheDocument();
+    await waitFor(() => expect(lastQuery()).toMatchObject({ from: "2026-10-01T15:00:00.000Z", to: "2026-10-03T15:00:00.000Z" }));
+  });
+
   it("names a filter value it can't resolve by its id, and removes the status and streamed filters", async () => {
     signedIn();
     projectData({ models: [catalogueModel({ model_id: "gpt-5.4-mini", effective: { ...catalogueModel().effective, display_name: "gpt-5.4-mini" } })] });

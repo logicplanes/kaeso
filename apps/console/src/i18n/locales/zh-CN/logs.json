@@ -187,6 +187,7 @@
   "logs.stop.toolUse": "工具调用",
   "logs.streamPill": "流式",
   "logs.timeRange": "时间范围",
+  "logs.utcDays": "UTC 日期",
   "logs.title": "请求日志",
   "logs.tokens.cacheRead": "{count} 缓存读取",
   "logs.tokens.cacheWrite": "{count} 缓存写入",
