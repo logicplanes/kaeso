@@ -200,17 +200,23 @@ pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
         ),
         (image_out, prices.output_image_price.or(prices.output_price)),
         (audio_out, prices.output_audio_price.or(prices.output_price)),
+        // A model that lists no cache price bills its cache tokens at the input price, which is
+        // what `tokens_priced` counts on.
         (
             usage.cache_read_tokens - image_cached,
-            prices.cache_read_price,
+            prices.cache_read_price.or(prices.input_price),
         ),
         (
             image_cached,
-            prices.cache_read_image_price.or(prices.cache_read_price),
+            prices
+                .cache_read_image_price
+                .or(prices.cache_read_price)
+                .or(prices.input_image_price)
+                .or(prices.input_price),
         ),
         (
             usage.cache_write_tokens.saturating_sub(one_hour),
-            prices.cache_write_price,
+            prices.cache_write_price.or(prices.input_price),
         ),
         (one_hour, one_hour_cache_write_price(prices)),
     ]
@@ -657,6 +663,34 @@ mod tests {
             Ok(()),
             "`search` is a unit an override may set"
         );
+    }
+
+    #[test]
+    fn cache_tokens_of_a_model_without_cache_prices_cost_its_input_price() {
+        let prices = Fields {
+            input_price: Some(dec!(1)),
+            output_price: Some(dec!(2)),
+            ..Fields::default()
+        };
+        let mut usage = Usage::new(100_000, 0);
+        usage.cache_read_tokens = 900_000;
+        usage.cache_write_tokens = 500_000;
+        assert!(is_priced(&usage, Some(&prices), None));
+        assert_eq!(cost(&usage, &prices), dec!(1.5));
+        let listed = Fields {
+            cache_read_price: Some(dec!(0.1)),
+            cache_write_price: Some(dec!(1.25)),
+            ..prices.clone()
+        };
+        assert_eq!(cost(&usage, &listed), dec!(0.815));
+        let images = Fields {
+            input_image_price: Some(dec!(3)),
+            ..prices
+        };
+        let mut cached_images = Usage::new(0, 0);
+        cached_images.cache_read_tokens = 1_000_000;
+        cached_images.cache_read_image_tokens = Some(1_000_000);
+        assert_eq!(cost(&cached_images, &images), dec!(3));
     }
 
     #[test]
