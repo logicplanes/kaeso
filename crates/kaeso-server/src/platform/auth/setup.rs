@@ -115,6 +115,8 @@ pub async fn setup(
             "The setup link is invalid or expired; run `kaeso setup-link` for a new one.",
         ));
     }
+    // Other links still out there, such as emails from other gateways, end with this one.
+    tokens::retire_all(&mut *tx, TokenKind::Setup, None, ctx.now).await?;
     let user = UserId::new();
     users::insert(
         &mut *tx,
