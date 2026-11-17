@@ -98,9 +98,11 @@ pub(super) fn units_of_transcription(r: &TranscriptionRequest) -> MediaUnits {
 }
 
 // Only the file's headers are read, never its audio; a file that states no length leaves the
-// length unknown, and the request goes ahead either way.
+// length unknown, and the request goes ahead either way. Audio sent as a link or a file id is
+// never read, so only the provider's reply can say its length.
 fn measure(units: &mut MediaUnits, audio: &AudioInput) {
     let Source::Base64(b) = &audio.source else {
+        units.input_length_unknown = true;
         return;
     };
     match kaeso_codecs::audio_length::audio_duration(&b.data) {
@@ -318,6 +320,26 @@ mod tests {
     use kaeso_kpp::{GeneratedImage, ImageInput, ImageOperation, ImageQuality, ImageSettings};
 
     use super::*;
+
+    #[test]
+    fn audio_sent_as_a_link_or_a_file_id_has_no_known_length_until_the_reply_says() {
+        for source in [
+            Source::Url("https://example.com/memo.webm".into()),
+            Source::file_id(DialectId::OpenAiTranscriptions, "file-abc"),
+        ] {
+            let r = kaeso_kpp::TranscriptionRequest::new(
+                "whisper-large-v3",
+                kaeso_kpp::TranscriptionOperation::Transcribe,
+                kaeso_kpp::AudioInput::new(source),
+            );
+            let mut units = units_of_transcription(&r);
+            assert!(units.input_length_unknown && !units.measured);
+            let mut reply = TranscriptionResponse::default();
+            reply.duration = Some(3.32);
+            add_transcript(&mut units, &reply);
+            assert_eq!((units.input_ms, units.input_length_unknown), (3320, false));
+        }
+    }
 
     #[test]
     fn logged_requests_keep_fields_and_drop_image_bytes() {

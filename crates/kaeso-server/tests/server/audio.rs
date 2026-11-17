@@ -973,3 +973,61 @@ async fn voice_listings_count_against_the_keys_request_rate() {
     let r = elevenlabs(&env, "/v1/voices", None).await;
     assert_eq!(r.status, StatusCode::OK, "another key is not held back");
 }
+
+#[tokio::test]
+async fn groq_json_and_text_transcriptions_are_priced_by_groqs_own_length() {
+    let env = env().await;
+    for (format, plain) in [("json", false), ("text", true)] {
+        let r = upload(
+            &env,
+            "/v1/audio/transcriptions",
+            &[("model", "whisper-large-v3"), ("response_format", format)],
+        )
+        .await;
+        assert_eq!(r.status, StatusCode::OK, "{format}: {}", r.text());
+        let body = String::from_utf8_lossy(&env.mock.last().unwrap().body).into_owned();
+        assert!(body.contains("verbose_json"), "{format}: {body}");
+        if plain {
+            assert!(!r.text().starts_with('{'), "{}", r.text());
+        } else {
+            assert!(r.json()["text"].is_string() && r.json().get("segments").is_none());
+        }
+        let o = outcome(&env).await;
+        let media = o.media.clone().unwrap();
+        assert_eq!(
+            (media.input_ms, media.measured),
+            (3320, false),
+            "{format}: Groq's own length"
+        );
+        assert!(kaeso_server::services::usage::cost_known(&o), "{format}");
+    }
+
+    // Audio sent as a link is priced from the length in Groq's reply.
+    let mut form = Vec::new();
+    for (name, value) in [
+        ("model", "whisper-large-v3"),
+        ("response_format", "json"),
+        ("url", "https://example.com/memo.webm"),
+    ] {
+        form.extend_from_slice(
+            format!("--kb\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n")
+                .as_bytes(),
+        );
+    }
+    form.extend_from_slice(b"--kb--\r\n");
+    let req = Request::builder()
+        .uri("/v1/audio/transcriptions")
+        .method("POST")
+        .header("authorization", format!("Bearer {}", env.key))
+        .header("content-type", "multipart/form-data; boundary=kb")
+        .body(Body::from(form))
+        .unwrap();
+    let resp = env.app.router.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    env.app.state.in_flight.settled().await;
+    let body = String::from_utf8_lossy(&env.mock.last().unwrap().body).into_owned();
+    assert!(body.contains("https://example.com/memo.webm"), "{body}");
+    let o = outcome(&env).await;
+    assert_eq!(o.media.as_ref().unwrap().input_ms, 3320);
+    assert!(kaeso_server::services::usage::cost_known(&o));
+}

@@ -17,6 +17,10 @@ pub struct TranscriptionsProfile {
     pub formats: &'static [&'static str],
     /// Whether the provider takes `response_format`; one without answers one JSON form.
     pub format_field: bool,
+    /// The forms whose reply says nothing of the audio's length. When the provider also has
+    /// `verbose_json`, which does, Kaeso asks for that and writes the app's form from it, so
+    /// the request is priced by the provider's own length.
+    pub lengthless: &'static [&'static str],
     pub language: LanguageField,
     pub timestamps: TimestampsField,
     /// Whether the provider times single words, not only segments.
@@ -91,6 +95,7 @@ impl TranscriptionsProfile {
             "diarized_json",
         ],
         format_field: true,
+        lengthless: &[],
         language: LanguageField::Field,
         timestamps: TimestampsField::Granularities("timestamp_granularities[]"),
         words: true,
@@ -102,10 +107,12 @@ impl TranscriptionsProfile {
         extensions: &[],
     };
 
-    /// Groq's Whisper models: an audio link in `url`, no subtitles and no streams.
+    /// Groq's Whisper models: an audio link in `url`, no subtitles and no streams. Only
+    /// `verbose_json` has the `duration` Groq bills by.
     pub const GROQ: TranscriptionsProfile = TranscriptionsProfile {
         provider: "Groq",
         formats: &["json", "text", "verbose_json"],
+        lengthless: &["json", "text"],
         streams: false,
         url_field: Some("url"),
         ..TranscriptionsProfile::OPENAI

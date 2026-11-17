@@ -242,11 +242,16 @@ pub(super) struct Plan {
 }
 
 /// The form a provider is asked for when it lacks the app's: subtitles and segments are made
-/// from `verbose_json`, plain text from `json`.
+/// from `verbose_json`, plain text from `json`. A form whose reply says no length (`lengthless`)
+/// is asked as `verbose_json` when the provider has it, so the request can be priced.
 pub(crate) fn provider_format(
     app: &TranscriptFormat,
     has: impl Fn(&str) -> bool,
+    lengthless: &[&str],
 ) -> Option<TranscriptFormat> {
+    if lengthless.contains(&app.as_wire()) && has("verbose_json") {
+        return Some(TranscriptFormat::VerboseJson);
+    }
     if has(app.as_wire()) {
         return Some(app.clone());
     }
@@ -285,7 +290,7 @@ pub(super) fn plan(r: &TranscriptionRequest, p: &TranscriptionsProfile) -> Resul
         }
     };
     let app = r.format_or_default();
-    let format = provider_format(&app, |f| p.has_format(f)).ok_or_else(|| {
+    let format = provider_format(&app, |f| p.has_format(f), p.lengthless).ok_or_else(|| {
         refused(
             p,
             &format!("`response_format: {}`", app.as_wire()),
