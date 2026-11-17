@@ -36,6 +36,7 @@ import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
 import { costUSD } from "~/format/money";
+import { curlCommand } from "./curl";
 import { describeUserAgent } from "~/format/user-agent";
 import { clientLabel } from "~/format/clients";
 import { orgProjectsQuery } from "~/api/queries/projects";
@@ -776,13 +777,23 @@ function RequestTab({ e, Conversation, Decision }: { e: LogEntryView; Conversati
   const view = useMemo(() => requestView(e.ingress_dialect, body), [e.ingress_dialect, body]);
   const media = useMemo(() => collectMedia(body), [body]);
   const readable = useMemo(() => forReading(body), [body]);
+  const curl = useMemo(() => curlCommand(e, window.location.origin), [e]);
   if (!e.content) return <NotLogged />;
   const embeddings = embeddingsView(e.ingress_dialect, body);
   const decision = decisionView(e.ingress_dialect, body);
   const mapped = !!(view || embeddings || decision);
   return (
     <div className="mt-24 flex flex-col gap-24">
-      <TabHeader control={mapped && <Switch size="sm" label={t("logs.inspector.showRaw", "Show raw")} checked={raw} onCheckedChange={setRaw} />}>
+      <TabHeader
+        control={
+          (mapped || curl) && (
+            <span className="flex items-center gap-12">
+              {mapped && <Switch size="sm" label={t("logs.inspector.showRaw", "Show raw")} checked={raw} onCheckedChange={setRaw} />}
+              {curl && <CopyButton value={curl} variant="secondary" label={t("logs.inspector.copyCurl", "Copy as curl")} />}
+            </span>
+          )
+        }
+      >
         <Text variant="small" tone="secondary">
           {t("logs.inspector.requestAsSent", "The app's body as sent, in {format}.", { format: dialectLabel(e.ingress_dialect) })}
         </Text>
