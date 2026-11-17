@@ -956,6 +956,9 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.timeoutHeader", () =>
     t("errors.modelApi.timeoutHeader", "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600."),
   ),
+  rule("errors.modelApi.notCached", () =>
+    t("errors.modelApi.notCached", "No cached reply answers this request, and `only-if-cached` keeps it from the provider."),
+  ),
   rule("errors.modelApi.ambiguous", (v) =>
     t(
       "errors.modelApi.ambiguous",

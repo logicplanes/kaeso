@@ -371,6 +371,8 @@ pub enum Stage {
     /// An account's plan reached its usage limit: like a provider refusal, but it holds every
     /// model of the account.
     PlanLimit,
+    /// `Cache-Control: only-if-cached` and nothing in the cache answers.
+    NotCached,
 }
 
 #[derive(Clone, Debug)]
@@ -2279,6 +2281,7 @@ async fn attempt(
         }
         Consulted::Store(slot) => Some(slot),
         Consulted::Skip => None,
+        Consulted::NotCached => return Err(fail(Stage::NotCached)(not_cached())),
     };
     let sent_req = counted_at_provider(account, &eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
@@ -2991,7 +2994,9 @@ fn classify(f: &Failure) -> Next {
         | Stage::ModelAccess(_)
         | Stage::Reply
         | Stage::Guardrail
-        | Stage::Shutdown => Next::Stop,
+        | Stage::Shutdown
+        // The app asked for no provider; another step would be refused the same way.
+        | Stage::NotCached => Next::Stop,
     }
 }
 
@@ -3342,6 +3347,8 @@ enum Consulted {
     Skip,
     Store(response_cache::Slot),
     Hit(Box<response_cache::Stored>),
+    /// `only-if-cached` and no stored reply answers: the provider isn't called.
+    NotCached,
 }
 
 async fn consult_cache(
@@ -3351,33 +3358,50 @@ async fn consult_cache(
     request: response_cache::Request<'_>,
     stream: bool,
 ) -> Consulted {
-    let Some(active) = response_cache::active(state, request.project).await else {
-        return Consulted::Skip;
-    };
     let directive = response_cache::directive(headers);
+    let skip = if directive.only_if_cached {
+        Consulted::NotCached
+    } else {
+        Consulted::Skip
+    };
+    let Some(active) = response_cache::active(state, request.project).await else {
+        return skip;
+    };
     let decided = |rec: &mut Recording, v: Verdict| {
         rec.outcome().response_cache = Some(v);
         response_cache::count_lookup(v);
     };
     if !response_cache::cacheable(request.kind, stream) || !directive.write && !directive.read {
         decided(rec, Verdict::Bypass);
-        return Consulted::Skip;
+        return skip;
     }
     let slot = in_place(request.encoded.body.len(), || {
         response_cache::slot(state, active, &request)
     });
     if directive.read
         && let Some(stored) = response_cache::get(state, &slot).await
+        && directive.takes(stored.age(state.clock.now()))
     {
         decided(rec, Verdict::Hit);
         return Consulted::Hit(Box::new(stored));
     }
+    // A reply older than `max-age` is a miss too, and the new one replaces it.
     decided(rec, Verdict::Miss);
-    if directive.write {
+    if directive.only_if_cached {
+        Consulted::NotCached
+    } else if directive.write {
         Consulted::Store(slot)
     } else {
         Consulted::Skip
     }
+}
+
+fn not_cached() -> KppError {
+    error(
+        ErrorKind::Timeout,
+        504,
+        "No cached reply answers this request, and `only-if-cached` keeps it from the provider.",
+    )
 }
 
 async fn replay(

@@ -263,7 +263,7 @@ Chat Completions 没有存放模型推理内容的字段，Gemini 格式也没�
 
 ## 响应缓存
 
-项目可以用已存储的回复应答重复的相同请求（[响应缓存](../console/response-cache.md)）。发送 `Cache-Control: no-cache` 可重新询问服务商并存储新回复，发送 `Cache-Control: no-store` 可让该请求跳过缓存。
+项目可以用已存储的回复应答重复的相同请求（[响应缓存](../console/response-cache.md)）。发送 `Cache-Control: no-cache` 可重新询问服务商并存储新回复，发送 `Cache-Control: no-store` 可让该请求跳过缓存，发送 `Cache-Control: max-age=60` 只接受最近一分钟内存储的回复，发送 `Cache-Control: only-if-cached` 则从缓存应答或返回 504，从不调用服务商。
 
 ## 响应头
 
