@@ -51,7 +51,7 @@ import {
 import { useHistory } from "./history";
 import { AliasPanel, ConditionPanel, ModelPanel, SplitPanel, type FieldErrors, type InspectorContext } from "./inspector";
 import { moveLabel, type Names } from "./labels";
-import { RouteJsonDialog } from "./route-json";
+import { RouteChangesDialog, RouteJsonDialog } from "./route-json";
 import { pathIds, toneOf, useRouteSend, type Walked } from "./send";
 import { TestPanel, asSent, firstRequest, sentHeaders, useTrace, type TestMode, type TestRequest } from "./test-panel";
 import { START, canvasTree, stepName, type Outcome } from "./tree";
@@ -195,6 +195,7 @@ function Editor({
   const sender = useRouteSend(org, project);
   const [started, setStarted] = useState<{ kind: Template; root: DraftStep } | null>(() => (start ? null : { kind: "single", root: history.present.root }));
   const [json, setJson] = useState(false);
+  const [changes, setChanges] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [nameError, setNameError] = useState<string>();
   const [stepErrors, setStepErrors] = useState<FieldErrors>(new Map());
@@ -572,6 +573,17 @@ function Editor({
                 {t("models.route.seeRequests", "See its requests")}
               </Button>
             )}
+            {saved && !readOnly && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!dirty}
+                {...(dirty ? {} : { disabledReason: t("models.route.nothingToSave", "Nothing has changed since the last save.") })}
+                onClick={() => setChanges(true)}
+              >
+                {t("models.route.changes", "Changes")}
+              </Button>
+            )}
             <Button size="sm" icon={icons.code} variant="ghost" aria-label={t("models.route.showJson", "Show as JSON")} onClick={() => setJson(true)} />
             {saved && !readOnly && (
               <Button
@@ -636,6 +648,14 @@ function Editor({
         </FlowWorkspace>
       )}
       <RouteJsonDialog open={json} onOpenChange={setJson} name={doc.name.trim()} route={route} />
+      {saved && (
+        <RouteChangesDialog
+          open={changes}
+          onOpenChange={setChanges}
+          saved={{ name: saved.name, route: saved.route }}
+          draft={{ name: doc.name.trim(), route }}
+        />
+      )}
       {saved && view && (
         <DialogScope open={deleting}>
           <DeleteAliasDialog
