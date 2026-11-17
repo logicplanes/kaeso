@@ -761,3 +761,74 @@ async fn own_keys_follow_the_orgs_sign_in_requirements() {
     assert!(untouched);
     s.cleanup().await;
 }
+
+#[tokio::test]
+async fn a_key_is_renamed_by_its_manager_or_owner_and_keeps_working() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = common::first_project(&app, &owner).await;
+    let (secret, created) = key(&app, &owner, &project, json!({ "name": "test" })).await;
+    let id = created["id"].as_str().unwrap();
+    let path = format!("/orgs/{}/projects/{project}/keys/{id}", owner.org_id);
+    let rename = |path: String, name: &'static str, cookie: String| {
+        let app = &app;
+        async move {
+            app.call(
+                Method::PATCH,
+                &path,
+                Some(json!({ "name": name })),
+                Some(&cookie),
+            )
+            .await
+        }
+    };
+
+    let r = rename(path.clone(), "support-bot", owner.cookie.clone()).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["name"], "support-bot");
+    assert_eq!(
+        app.get(&path, &owner.cookie).await.body["name"],
+        "support-bot"
+    );
+    let models = common::v1::call_app(&app, "/v1/models", Some(&secret), false, None).await;
+    assert_eq!(models.status, StatusCode::OK, "the secret keeps working");
+
+    let audit = app
+        .get(
+            &format!("/orgs/{}/audit-log?action=key.rename", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    let event = &audit.body["data"][0];
+    assert_eq!(event["target_id"], id, "{event}");
+    assert_eq!(
+        (&event["before"]["name"], &event["after"]["name"]),
+        (&json!("test"), &json!("support-bot")),
+        "{event}"
+    );
+
+    let r = rename(format!("/me/keys/{id}"), "my bot", owner.cookie.clone()).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["name"], "my bot");
+    let r = rename(path.clone(), "", owner.cookie.clone()).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+    assert_eq!(r.body["error"]["param"], "name");
+
+    let (viewer, _) = common::join_first_project(
+        &app,
+        &owner,
+        json!({ "email": "vic@example.com", "role": "member" }),
+        "Vic",
+    )
+    .await;
+    let r = rename(path.clone(), "mine now", viewer).await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+    assert_eq!(r.body["error"]["right"], "keys.all.manage");
+
+    app.post(&format!("{path}/archive"), json!({}), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    let r = rename(path, "late", owner.cookie.clone()).await;
+    assert_eq!(r.status, StatusCode::CONFLICT, "{:?}", r.body);
+}

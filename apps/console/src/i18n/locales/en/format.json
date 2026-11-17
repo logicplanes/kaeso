@@ -46,6 +46,7 @@
   "format.audit.action.keyCreate": "Key created",
   "format.audit.action.keyDisable": "Key disabled",
   "format.audit.action.keyEnable": "Key enabled",
+  "format.audit.action.keyRename": "Key renamed",
   "format.audit.action.keyRotate": "Key rotated",
   "format.audit.action.kpmrModelDelisted": "Model taken off KPMR",
   "format.audit.action.kpmrPriceChange": "Price changed in KPMR",

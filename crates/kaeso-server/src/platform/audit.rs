@@ -73,6 +73,7 @@ actions! {
         KeyCreate = "key.create",
         KeyDisable = "key.disable",
         KeyEnable = "key.enable",
+        KeyRename = "key.rename",
         KeyRotate = "key.rotate",
         KpmrModelDelisted = "kpmr.model_delisted",
         KpmrPriceChange = "kpmr.price_change",

@@ -58,6 +58,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ServiceAccountsKeysCreate), routes!(keys::create_for_service_account)))
         .routes(s.route(Access::Project(R::KeysAllView), routes!(keys::list)))
         .routes(s.route(Access::Project(R::KeysAllView), routes!(keys::get)))
+        .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::rename)))
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::disable)))
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::enable)))
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::archive)))

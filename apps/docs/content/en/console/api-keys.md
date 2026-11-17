@@ -69,7 +69,7 @@ Besides **Rotate**, the menu of a key's sheet has three actions:
 | Enable  | A disabled key works again. A key that a person disabled is enabled only by a person, and only its owner's own disable can be undone under **API keys** in the account |
 | Archive | The key stops working for good. Its history stays                                                                                                                      |
 
-Changing your own keys needs the right **Manage own keys**, and changing anyone's keys **Manage all keys**.
+**Rename** in the same menu changes the key's name, such as when it moves to another app; its secret keeps working, and the audit log records the old and the new name. Changing your own keys needs the right **Manage own keys**, and changing anyone's keys **Manage all keys**.
 
 A key also stops working when it expires, when its project is archived, and when its member leaves the project or the organization. Kaeso emails 7 days and 1 day before a key expires. The email goes to the key's owner, or for a service account's key to the project's admins. Anyone can turn these emails off under **Your key expires** in their account's **Notifications**.
 
