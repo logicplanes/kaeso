@@ -542,6 +542,28 @@ pub(crate) fn check_text_only(
     Ok(())
 }
 
+/// The resolution hint of an image from the other OpenAI format: Chat's `image_url.detail` and
+/// Responses' `detail` take the same values, `low`, `high` and `auto`, Responses also
+/// `original`. `None` when the image came from elsewhere or `target` doesn't take the value.
+pub(crate) fn openai_image_detail(extras: &Extras, target: DialectId) -> Option<RawJson> {
+    let (from, key, values): (_, _, &[&str]) = match target {
+        DialectId::OpenAiResponses => (
+            DialectId::OpenAiChat,
+            "image_url.detail",
+            &["low", "high", "auto", "original"],
+        ),
+        DialectId::OpenAiChat => (
+            DialectId::OpenAiResponses,
+            "detail",
+            &["low", "high", "auto"],
+        ),
+        _ => return None,
+    };
+    let detail = extras.fields_for(from)?.get(key)?;
+    let value = detail.parse::<String>().ok()?;
+    values.contains(&value.as_str()).then(|| detail.clone())
+}
+
 pub fn check_foreign(req: &Request, target: &Origin) -> Result<(), KppError> {
     match req {
         Request::Generate(r) | Request::CountTokens(r) => check_generate(r, target),

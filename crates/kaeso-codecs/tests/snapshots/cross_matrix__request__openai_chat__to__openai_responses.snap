@@ -322,14 +322,17 @@ expression: outcomes
               "type": "input_text"
             },
             {
+              "detail": "low",
               "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
               "type": "input_image"
             },
             {
+              "detail": "high",
               "image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
               "type": "input_image"
             },
             {
+              "detail": "auto",
               "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
               "type": "input_image"
             }
@@ -1929,6 +1932,7 @@ expression: outcomes
               "type": "input_text"
             },
             {
+              "detail": "low",
               "image_url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC",
               "type": "input_image"
             }
