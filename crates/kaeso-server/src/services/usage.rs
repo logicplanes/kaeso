@@ -598,7 +598,12 @@ async fn alert(
     at: OffsetDateTime,
     used: i64,
 ) {
-    let period_start = limit.period.start(at).unwrap_or(Date::MIN);
+    // A `total` budget has no period; its alerts are kept under a start PostgreSQL's `date` can
+    // hold, which `Date::MIN` (year -9999) isn't.
+    let period_start = limit
+        .period
+        .start(at)
+        .unwrap_or(OffsetDateTime::UNIX_EPOCH.date());
     for t in thresholds {
         match store::mark_alert(&state.pg, limit.id, period_start, *t).await {
             Ok(true) => {}

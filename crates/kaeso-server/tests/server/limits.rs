@@ -744,6 +744,46 @@ async fn soft_budgets_alert_once_per_threshold() {
 }
 
 #[tokio::test]
+async fn a_total_budget_alerts_once_per_threshold_too() {
+    let env = common::v1::env(None, None).await;
+    let lim = limit(&env, json!({ "level": "project", "kind": "token_budget", "period": "total", "amount": 50, "hard": false, "alert_thresholds": [50, 100] })).await;
+    let id = lim["id"].as_str().unwrap();
+    assert_eq!(ask(&env, &env.key).await.status, StatusCode::OK);
+    used(&env, id, "28").await;
+    env.app.wait_for_mail("owner@example.com", 1).await;
+    assert_eq!(ask(&env, &env.key).await.status, StatusCode::OK);
+    used(&env, id, "56").await;
+    env.app.wait_for_mail("owner@example.com", 2).await;
+    assert_eq!(ask(&env, &env.key).await.status, StatusCode::OK);
+    used(&env, id, "84").await;
+    assert_eq!(
+        env.app.state.in_flight.end(Duration::from_secs(10)).await,
+        0
+    );
+    env.app.state.mailer.flush().await;
+    let alerts: Vec<_> = env
+        .app
+        .mail
+        .to("owner@example.com")
+        .into_iter()
+        .filter(|m| m.subject.contains("total token budget"))
+        .collect();
+    assert_eq!(alerts.len(), 2, "{alerts:?}");
+    assert!(alerts[0].subject.contains("50%") && alerts[1].subject.contains("100%"));
+    let audit = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/audit-log?action=limit.threshold_reached",
+                env.owner.org_id
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(audit.body["data"].as_array().unwrap().len(), 2);
+}
+
+#[tokio::test]
 async fn counters_are_rebuilt_from_postgres_after_valkey_loses_them() {
     let env = common::v1::env(None, None).await;
     let (secret, id) = key_of(&env, "k", json!({})).await;
