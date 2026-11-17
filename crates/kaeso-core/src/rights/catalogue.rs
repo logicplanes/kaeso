@@ -268,6 +268,7 @@ rights!(
         InstanceOrgsView = "instance.orgs.view", Instance, "View organizations", false, false, false, [], "See every organization with its members, projects and usage.";
         InstanceOrgsManage = "instance.orgs.manage", Instance, "Manage organizations", true, false, false, [InstanceOrgsView], "Create and rename organizations, appoint owners and schedule or cancel their deletion.";
         InstanceAuditLogView = "instance.audit_log.view", Instance, "View instance audit log", false, false, false, [], "Read the instance audit log.";
+        InstanceAuditLogExport = "instance.audit_log.export", Instance, "Export instance audit log", false, false, false, [InstanceAuditLogView], "Export the instance audit log.";
     }
 );
 

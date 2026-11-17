@@ -244,6 +244,7 @@ expression: rights_reference()
 | `instance.orgs.view` | Instance | View organizations | See every organization with its members, projects and usage. |  |  |  |
 | `instance.orgs.manage` ⚠ | Instance | Manage organizations | Create and rename organizations, appoint owners and schedule or cancel their deletion. | `instance.orgs.view` |  |  |
 | `instance.audit_log.view` | Instance | View instance audit log | Read the instance audit log. |  |  |  |
+| `instance.audit_log.export` | Instance | Export instance audit log | Export the instance audit log. | `instance.audit_log.view` |  |  |
 
 ## Account rights
 
@@ -374,6 +375,7 @@ expression: rights_reference()
 | `instance.orgs.view` |  | ✓ | ✓ | ✓ |
 | `instance.orgs.manage` |  |  |  | ✓ |
 | `instance.audit_log.view` |  | ✓ | ✓ | ✓ |
+| `instance.audit_log.export` |  |  |  | ✓ |
 
 ## Never given to agents
 

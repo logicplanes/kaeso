@@ -83,7 +83,7 @@ Claude Code 或 Codex 等智能体通过 [MCP 服务器](../api/mcp.md)代表其
 
 ## 查看审计日志
 
-实例的**审计日志**记录对用户、组织和实例设置的更改，以及更改者和更改时间。它像组织的审计日志一样标出智能体所做的更改，**智能体**筛选只显示这些更改（[查看审计日志](organizations-and-projects.md#查看审计日志)）。
+实例的**审计日志**记录对用户、组织和实例设置的更改，以及更改者和更改时间。它像组织的审计日志一样标出智能体所做的更改，**智能体**筛选只显示这些更改（[查看审计日志](organizations-and-projects.md#查看审计日志)）。**导出为 JSON Lines** 会下载筛选条件所显示的事件，每行一个，最新的在前，日志也会记录这次导出。Platform API 的 `instance/audit-log/export` 在拥有 `instance.audit_log.export` 权限时执行同样的操作。
 
 ## 下一步
 

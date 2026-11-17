@@ -59,8 +59,31 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(i(InstanceSystemView), routes!(updates::job)))
         .routes(s.route(i(InstanceAuditLogView), routes!(audit_list)))
         .routes(s.route(i(InstanceAuditLogView), routes!(audit_get)))
+        .routes(s.route(i(InstanceAuditLogExport), routes!(audit_export)))
         .routes(s.route(i(InstanceOrgsView), routes!(orgs::projects_list)))
         .routes(s.route(i(InstanceOrgsView), routes!(orgs::usage)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/instance/audit-log/export",
+    summary = "The instance audit log as JSON Lines (one event per line, newest first).",
+    tag = "instance",
+    params(AuditFilter),
+    responses((status = 200, description = "JSON Lines of audit events.", content_type = "application/x-ndjson", body = AuditEventView))
+)]
+pub async fn audit_export(
+    State(state): State<AppState>,
+    ctx: super::access::Ctx,
+    Query(filter): Query<AuditFilter>,
+) -> ApiResult<axum::response::Response> {
+    audit_log::check_range(&filter)?;
+    ctx.audit(None, super::audit::Action::AuditLogExport)
+        .write(&mut *state.pg.acquire().await?)
+        .await?;
+    // No email when it finishes: the export-finished notice belongs to an organization, and
+    // the console downloads the file while the admin waits.
+    audit_log::export(state.pg.clone(), None, filter, async {})
 }
 
 #[utoipa::path(

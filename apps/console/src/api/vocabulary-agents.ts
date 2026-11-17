@@ -38,6 +38,10 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
     t("rights.instanceAuditLogView.name", "View instance audit log"),
     t("rights.instanceAuditLogView.description", "Read the instance audit log."),
   ],
+  "instance.audit_log.export": () => [
+    t("rights.instanceAuditLogExport.name", "Export instance audit log"),
+    t("rights.instanceAuditLogExport.description", "Export the instance audit log."),
+  ],
   "account.view": () => [
     t("rights.accountView.name", "View the account"),
     t("rights.accountView.description", "See the profile, organizations, notification settings and what's new."),

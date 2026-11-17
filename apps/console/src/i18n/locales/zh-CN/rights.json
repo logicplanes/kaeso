@@ -223,6 +223,8 @@
   "rights.instanceUsersManage.name": "管理用户",
   "rights.instanceUsersView.description": "查看实例的每个账户及其所在组织。",
   "rights.instanceUsersView.name": "查看用户",
+  "rights.instanceAuditLogExport.description": "导出实例的审计日志。",
+  "rights.instanceAuditLogExport.name": "导出实例审计日志",
   "rights.webhooksView.name": "查看 Webhook",
   "rights.webhooksView.description": "查看组织的 Webhook、它们接收的内容以及最近的投递（从不显示机密）。",
   "rights.webhooksManage.name": "管理 Webhook",

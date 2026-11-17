@@ -839,6 +839,46 @@ async fn every_change_is_audited_and_the_log_can_be_filtered_and_exported() {
             .iter()
             .all(|e| e["org_id"].is_null())
     );
+    let before = instance.body["data"].as_array().unwrap().len();
+    let export = |cookie: String| {
+        let app = &app;
+        async move {
+            let req = axum::http::Request::get("/platform/v1/instance/audit-log/export")
+                .header("cookie", format!("__Host-kaeso_session={cookie}"))
+                .body(axum::body::Body::empty())
+                .unwrap();
+            tower::ServiceExt::oneshot(app.router.clone(), req)
+                .await
+                .unwrap()
+        }
+    };
+    let res = export(owner.cookie.clone()).await;
+    assert_eq!(res.status(), StatusCode::OK);
+    assert_eq!(res.headers()["content-type"], "application/x-ndjson");
+    let text = String::from_utf8(
+        axum::body::to_bytes(res.into_body(), 1 << 20)
+            .await
+            .unwrap()
+            .to_vec(),
+    )
+    .unwrap();
+    let lines: Vec<Value> = text
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    assert_eq!(
+        lines.len(),
+        before + 1,
+        "every instance event and the export: {text}"
+    );
+    assert_eq!(lines[0]["action"], "audit_log.export");
+    assert!(lines.iter().all(|e| e["org_id"].is_null()), "{text}");
+    let listed = app.get("/instance/audit-log", &owner.cookie).await;
+    assert_eq!(listed.body["data"][0]["action"], "audit_log.export");
+
+    let (member, _) = join(&app, &owner, "member@example.com", "member", json!([])).await;
+    let refused = export(member).await;
+    assert_eq!(refused.status(), StatusCode::FORBIDDEN);
     s.cleanup().await;
 }
 

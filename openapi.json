@@ -1487,6 +1487,126 @@
         "x-kaeso-access": "right:instance.audit_log.view"
       }
     },
+    "/platform/v1/instance/audit-log/export": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The instance audit log as JSON Lines (one event per line, newest first).",
+        "description": "**Right:** `instance.audit_log.export`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "getInstanceAuditLogExport",
+        "parameters": [
+          {
+            "name": "actor",
+            "in": "query",
+            "description": "Only events by this user (`usr_…`).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "description": "Only actions starting with this, e.g. `project.` or `member.remove`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "description": "Only events about this target id.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "Only events about this project (`proj_…`); always the project of the\npath in a project's audit log.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "by_agents",
+            "in": "query",
+            "description": "Only events done by agents (`true`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Not before this time (RFC 3339).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Before this time (RFC 3339).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON Lines of audit events.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.audit_log.export"
+      }
+    },
     "/platform/v1/instance/audit-log/{event}": {
       "get": {
         "tags": [

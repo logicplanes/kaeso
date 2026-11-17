@@ -280,6 +280,7 @@ order: 4
 | `instance.orgs.view` | 查看组织 | 查看每个组织及其成员、项目和用量。 |  |
 | `instance.orgs.manage` | 管理组织 | 创建和重命名组织、任命所有者，以及计划或取消其删除。 | 敏感；需要 `instance.orgs.view` |
 | `instance.audit_log.view` | 查看实例审计日志 | 查看实例的审计日志。 |  |
+| `instance.audit_log.export` | 导出实例审计日志 | 导出实例的审计日志。 | 需要 `instance.audit_log.view` |
 
 ## 账户权限
 
