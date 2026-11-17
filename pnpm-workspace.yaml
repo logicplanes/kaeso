@@ -4,6 +4,12 @@ packages:
 allowBuilds:
   esbuild: true
   sharp: true
+auditConfig:
+  ignoreGhsas:
+    # picomatch through 4.0.7 backtracks exponentially on globs like +(*), and no fixed release exists yet. It runs only
+    # in the showcase's and the console's build tooling (Astro, Vite, tinyglobby), on the repository's own patterns,
+    # never on a glob someone sends. Remove this once picomatch publishes a fix.
+    - GHSA-fc5q-39xc-vjpf
 overrides:
   katex: 0.18.2
   # GHSA-g3hv-75wg-m249 is fixed only in 11.0.1; eslint and typescript-eslint still ask for ^10 and use only Minimatch#match, which 11 keeps.
