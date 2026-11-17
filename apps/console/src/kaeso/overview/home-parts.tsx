@@ -8,7 +8,7 @@ import { useRequestLogs } from "~/auth/session";
 import { dayFormat, dayLabel, shiftDay, utcDay } from "~/format/period";
 import { t } from "~/i18n";
 import { byBucket, periodUSD, totals } from "~/kaeso/usage-panels";
-import { cacheHit, change, forecast, METRICS, metricTotal, type MetricId } from "./metrics";
+import { cacheHit, change, forecast, forecastFrom, METRICS, metricTotal, type MetricId } from "./metrics";
 import { fill, iso, useMinute, utcTimeFormat } from "./timeline";
 
 // The trends draw only once their numbers arrive, so their chart code loads beside the data instead of with the page.
@@ -94,7 +94,8 @@ export function HomeMetrics({
   const usage = (f: string, to: string) => (project ? projectUsageQuery(org, project, f, to, "day") : orgUsageQuery(org, f, to, "day"));
   const now = useQuery({ ...usage(from, today), enabled: canUsage, placeholderData: (p) => p, refetchInterval: 60_000 });
   const prev = useQuery({ ...usage(before.from, before.to), enabled: canUsage, placeholderData: (p) => p });
-  const month = useQuery({ ...usage(monthStart, today), enabled: canUsage && showCost, refetchInterval: 60_000 });
+  const monthFrom = forecastFrom(today);
+  const month = useQuery({ ...usage(monthFrom, today), enabled: canUsage && showCost, refetchInterval: 60_000 });
   const logsOn = useRequestLogs();
   const minute = useMinute();
   const fine = useQuery({
@@ -124,8 +125,8 @@ export function HomeMetrics({
   const loading = now.isPending;
   const s = totals(all);
   const hit = cacheHit(all);
-  const spent = totals(month.data ?? []).cost ?? "0";
-  const ahead = month.data ? forecast(month.data, monthStart, today) : undefined;
+  const spent = totals((month.data ?? []).filter((r) => r.key >= monthStart)).cost ?? "0";
+  const ahead = month.data ? forecast(month.data, monthFrom, today) : undefined;
   return (
     <>
       <div className="mb-12 flex items-center justify-between gap-12">

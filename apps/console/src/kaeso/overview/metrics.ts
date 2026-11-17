@@ -114,9 +114,17 @@ export function metricTotal(id: MetricId, rows: UsageRow[]): number {
 }
 
 /** Spend so far this month and where it lands if the last seven full days keep their pace. */
+// The pace takes the seven days before `today`, which reach into the previous month during the
+// first week; the rows the forecast reads start there.
+export function forecastFrom(today: string): string {
+  const monthStart = `${today.slice(0, 8)}01`;
+  const weekAgo = shiftDay(today, -7);
+  return weekAgo < monthStart ? weekAgo : monthStart;
+}
+
 export function forecast(rows: UsageRow[], from: string, to: string) {
   const monthStart = `${to.slice(0, 8)}01`;
-  if (from > monthStart) return undefined;
+  if (from > forecastFrom(to)) return undefined;
   const byDay = new Map(rows.map((r) => [r.key, Number(r.cost ?? 0)]));
   const [y = 1970, m = 1, d = 1] = to.split("-").map(Number);
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();

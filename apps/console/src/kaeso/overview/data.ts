@@ -15,7 +15,7 @@ import { t } from "~/i18n";
 import { useProviders } from "~/kaeso/providers";
 import { byBucket, totals } from "~/kaeso/usage-panels";
 import { keyLabel, serviceAccountName, usePartyName } from "~/features/project/keys/party";
-import { forecast, type Dimension } from "./metrics";
+import { forecast, forecastFrom, type Dimension } from "./metrics";
 import { fill, iso, useMinute } from "./timeline";
 
 /** Keeps the last period's rows on screen while the next period loads, but only for the same scope and grouping, so another project's numbers never show through. */
@@ -86,8 +86,8 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     retry: false,
   });
   const today = utcDay(new Date(nowMs));
-  const monthStart = `${today.slice(0, 8)}01`;
-  const month = useQuery({ ...usage(monthStart, today, "day"), enabled: ready && showCost });
+  const monthFrom = forecastFrom(today);
+  const month = useQuery({ ...usage(monthFrom, today, "day"), enabled: ready && showCost });
   const single = from === to;
   const contextFrom = shiftDay(to, -13);
   const context = useQuery({ ...usage(contextFrom, to, "day"), enabled: ready && single });
@@ -188,7 +188,7 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     projectOf,
     namesLoading: models.isLoading || keys.isLoading || projects.isLoading || orgMembers.isLoading,
     live: to === utcDay(new Date()),
-    forecast: month.data ? forecast(month.data, monthStart, today) : undefined,
+    forecast: month.data ? forecast(month.data, monthFrom, today) : undefined,
     forecastLoading: showCost && month.isPending,
   };
 }
