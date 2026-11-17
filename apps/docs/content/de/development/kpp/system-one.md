@@ -36,7 +36,7 @@ Eine Entscheidungsanfrage wird zu `Request::Decide(DecideRequest)` dekodiert. Ih
 | noul-`criteria` Objekt | `Predicate.when_true`, `.when_false` typisiert | `true` und `false` als `Description::Text` oder `Description::Json`; `null` ist Form (`verbatim`). Das Objekt selbst ist Form `criteria_object`, damit `{}` zurückkommt. |
 | noul-`criteria` `null` | Form (`verbatim`) | |
 | choice-`criteria` Objekt | `Choice.options` typisiert | Jeder Schlüssel ist `ChoiceValue::Text`, in Reihenfolge; seine Beschreibung wie bei noul. Eine Beschreibung `null` ist Form `null` an der Option. |
-| score-`criteria` Array | `Score.levels` typisiert | Jedes Element ist die `description` der Stufe; Stufe `i` zählt `i`. |
+| score-`criteria` Array | `Score.levels` typisiert | Jedes Element ist die `description` der Stufe; Stufe `i` zählt `i`. Ein `null`-Element wird abgelehnt (`InvalidRequest`), da es sich nicht zurückschreiben ließe. |
 | box-`criteria` | Extras | Eine Box-Frage hat keine Kriterien; trotzdem gesendete bleiben an der Frage. |
 | `assets` | `assets` typisiert | Nach Referenz, in Reihenfolge. |
 | `assets.*.type` | nichts | Muss `image` sein, sonst `InvalidRequest`; fehlend ist Form `no_type`. |

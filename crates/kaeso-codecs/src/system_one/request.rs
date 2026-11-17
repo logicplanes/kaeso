@@ -483,10 +483,17 @@ fn decode_question(key: &str, value: &RawValue, origin: &Origin) -> Result<Quest
                     &criteria_param,
                 )
             })?;
-            let levels = items
-                .into_iter()
-                .map(|item| Level::new(None, description_of(RawJson::from(item))))
-                .collect();
+            let mut levels = Vec::with_capacity(items.len());
+            for (i, item) in items.into_iter().enumerate() {
+                // A `null` level has nothing to write back, so it would be refused on the way out.
+                let Some(description) = description_of(RawJson::from(item)) else {
+                    return Err(invalid(
+                        "Every level of a `score` question needs a text or a value; `null` is neither.",
+                        format!("{criteria_param}[{i}]"),
+                    ));
+                };
+                levels.push(Level::new(None, Some(description)));
+            }
             QuestionKind::Score(Score::new(levels))
         }
         "box" => {
