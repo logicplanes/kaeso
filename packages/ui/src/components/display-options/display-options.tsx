@@ -80,7 +80,15 @@ function Panel({ view, rows, toggles, properties, footer, inline }: DisplayOptio
                   {r.icon && <Icon icon={r.icon} size="sm" className="shrink-0 text-fg-secondary" />}
                   <span className="min-w-0 truncate">{r.label}</span>
                 </span>
-                <Select size="sm" appearance="default" aria-label={r.label} options={r.options} value={r.value} onValueChange={r.onChange} />
+                <Select
+                  size="sm"
+                  appearance="default"
+                  aria-label={r.label}
+                  options={r.options}
+                  value={r.value}
+                  onValueChange={r.onChange}
+                  className="min-w-120"
+                />
               </div>
             ))}
           </div>

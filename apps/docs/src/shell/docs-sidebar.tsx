@@ -1,11 +1,12 @@
 import { Suspense, lazy, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
-import { Icon, Button, Sidebar, Text, ThemeMenu, icons } from "@logicplanes/kaeso-ui";
+import { Icon, Button, Sidebar, Text, icons } from "@logicplanes/kaeso-ui";
 import { useFormatters } from "@logicplanes/kaeso-ui/i18n";
 import { homePath, type Locale } from "~/i18n/locales";
 import { useSiteLocale, useText } from "~/i18n/text";
 import type { NavGroup } from "~/markdown/ast";
 import { LanguageButton } from "./language-button";
+import { ThemeSwitch } from "./theme-switch";
 import { openSearch } from "./search-store";
 
 export function SearchButton({ tooltip = true }: { tooltip?: boolean }) {
@@ -71,7 +72,7 @@ export function DocsSidebar({ nav, stars }: { nav: NavGroup[]; stars: number | n
         ))}
       </Sidebar.Content>
       <Sidebar.Footer className="justify-between gap-8">
-        <ThemeMenu display="segmented" size="sm" />
+        <ThemeSwitch />
         <Suspense fallback={<LanguageButton onClick={() => setOpening(true)} />}>
           <LanguageMenu opening={opening} />
         </Suspense>

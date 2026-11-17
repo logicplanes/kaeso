@@ -30,8 +30,8 @@ describe("Markdown", () => {
     const ordered = [...c.querySelectorAll("ol")].at(-1);
     expect(ordered?.textContent).toContain("3.three");
     expect(ordered?.textContent).toContain("4.four");
-    expect(screen.getByRole("img", { name: "Done" }).parentElement).toHaveTextContent("shipped");
-    expect(screen.getByRole("img", { name: "Not done" }).parentElement).toHaveTextContent("next");
+    expect(screen.getByRole("img", { name: "Done" }).closest("li")).toHaveTextContent("shipped");
+    expect(screen.getByRole("img", { name: "Not done" }).closest("li")).toHaveTextContent("next");
     expect(c.textContent).not.toContain("[x]");
     expect(c.querySelector("input")).toBeNull();
   });

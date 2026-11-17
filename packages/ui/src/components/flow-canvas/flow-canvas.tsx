@@ -126,7 +126,10 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
   const sizeRef = useRef(size);
   sizeRef.current = size;
   const [view, setView] = useState<View>({ x: 0, y: PAD, k: 1 });
-  const fitted = useRef(false);
+  // Until the person moves the view, it fits again whenever the canvas changes size, so a canvas measured mid-layout
+  // (an island hydrating before its column has a width) still ends up fitted.
+  const held = useRef(false);
+  const fittedTo = useRef<{ w: number; h: number } | null>(null);
   const [focusKey, setFocusKey] = useState<string | null>(null);
   const [actionsOpen, setActionsOpen] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -142,29 +145,34 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
   }, []);
 
   useLayoutEffect(() => {
-    if (fitted.current || size.w === 0 || size.h === 0) return;
-    fitted.current = true;
+    if (held.current || size.w === 0 || size.h === 0) return;
+    if (fittedTo.current && fittedTo.current.w === size.w && fittedTo.current.h === size.h) return;
+    fittedTo.current = size;
     setView(fitView(layout.bounds, size.w, size.h));
   }, [layout, size]);
 
   const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
+    held.current = true;
     setView((v) => {
       const k = clampK(v.k * factor);
       const ratio = k / v.k;
       return { k, x: round(cx - (cx - v.x) * ratio), y: round(cy - (cy - v.y) * ratio) };
     });
   }, []);
-  const zoomStep = useCallback(
-    (dir: 1 | -1) =>
-      setView((v) => {
-        const k = stepped(v.k, dir);
-        const cx = sizeRef.current.w / 2;
-        const cy = sizeRef.current.h / 2;
-        return { k, x: round(cx - ((cx - v.x) * k) / v.k), y: round(cy - ((cy - v.y) * k) / v.k) };
-      }),
-    [],
-  );
-  const fit = useCallback(() => setView(fitView(layout.bounds, sizeRef.current.w, sizeRef.current.h)), [layout]);
+  const zoomStep = useCallback((dir: 1 | -1) => {
+    held.current = true;
+    setView((v) => {
+      const k = stepped(v.k, dir);
+      const cx = sizeRef.current.w / 2;
+      const cy = sizeRef.current.h / 2;
+      return { k, x: round(cx - ((cx - v.x) * k) / v.k), y: round(cy - ((cy - v.y) * k) / v.k) };
+    });
+  }, []);
+  const fit = useCallback(() => {
+    held.current = false;
+    fittedTo.current = sizeRef.current;
+    setView(fitView(layout.bounds, sizeRef.current.w, sizeRef.current.h));
+  }, [layout]);
 
   const reveal = useCallback(
     (key: string) => {
@@ -209,6 +217,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
         const box = el.getBoundingClientRect();
         zoomAt(Math.exp(-e.deltaY * unit * 0.01), e.clientX - box.left, e.clientY - box.top);
       } else {
+        held.current = true;
         setView((v) => ({ ...v, x: round(v.x - e.deltaX * unit), y: round(v.y - e.deltaY * unit) }));
       }
     };
@@ -255,6 +264,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
       const ox = g.x - box.left;
       const oy = g.y - box.top;
       g.moved = true;
+      held.current = true;
       setView({ k, x: round(cx - (ox - g.view.x) * ratio), y: round(cy - (oy - g.view.y) * ratio) });
       return;
     }
@@ -264,6 +274,7 @@ export const FlowCanvas = forwardRef<HTMLDivElement, FlowCanvasProps>(function F
     if (!g.moved && Math.abs(dx) + Math.abs(dy) < DRAG) return;
     if (!g.moved) setDragging(true);
     g.moved = true;
+    held.current = true;
     setView({ ...g.view, x: round(g.view.x + dx), y: round(g.view.y + dy) });
   };
 

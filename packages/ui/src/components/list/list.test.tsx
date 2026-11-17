@@ -198,6 +198,13 @@ describe("List", () => {
     expect(line).toHaveClass("flex-wrap", "min-h-24");
     expect(line).not.toHaveClass("h-24");
     unmount();
+    const withActions = [{ ...rows[0]!, actions: <button type="button">Copy</button> }];
+    const { unmount: gone } = render(<List aria-label="Invitations" items={withActions} />);
+    const actions = screen.getByRole("button", { name: "Copy" }).parentElement!;
+    expect(actions).toHaveClass("shrink-0", "h-24");
+    expect(actions.previousElementSibling).toContainElement(screen.getByText("shell-invitee@example.com"));
+    expect(actions.parentElement?.nextElementSibling).toContainElement(screen.getByText("Accepted"));
+    gone();
     spy.mockReturnValue(900);
     render(<List aria-label="Invitations" items={rows} />);
     expect(screen.getByRole("gridcell")).not.toHaveClass("min-h-56");
@@ -213,7 +220,8 @@ describe("List on the gutter", () => {
     expect(header).toHaveClass("px-12");
     const row = screen.getByRole("gridcell", { name: /checkout-web/ });
     expect(row.parentElement).toHaveClass("px-24");
-    expect(row).toHaveClass("px-12", "rounded-item", "row-rule");
+    expect(row).toHaveClass("px-12", "row-rule");
+    expect(row).not.toHaveClass("rounded-item");
     expect(row.className).not.toMatch(/(^| )-m[lrx]-/);
   });
   it("uses a dialog's own 24px padding as its gutter instead of adding a second one", () => {

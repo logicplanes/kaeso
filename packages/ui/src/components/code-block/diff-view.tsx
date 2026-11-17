@@ -137,7 +137,7 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
 
   return (
     <div ref={ref} className={cn("relative min-w-0", KAESO_DIFF_VIEW_VARIANTS.surface[surface].classes, className)}>
-      <div className="flex h-44 items-center gap-4 px-6 hairline-b">
+      <div className="flex h-44 items-center gap-4 px-6 hairline-b-strong">
         {title && (
           <Text as="span" variant="small" tone="secondary" mono truncate className="px-10">
             {title}

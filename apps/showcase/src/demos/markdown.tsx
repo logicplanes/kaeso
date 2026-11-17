@@ -72,6 +72,8 @@ const headings = "# Heading 1\n\n## Heading 2\n\n### Heading 3\n\n#### Heading 4
 const numbered = Array.from({ length: 12 }, (_, i) => `${i + 1}. Retry attempt ${i + 1} backs off for ${2 ** Math.min(i, 6)} s`).join("\n");
 const wide =
   "| Model | Requests | p95 | Region | Provider key |\n|---|--:|--:|---|---|\n| gpt-5 | 4,812 | 2.4 s | eu-west-1 | …4f2a |\n| claude-sonnet-4-5 | 1,204 | 0.9 s | us-east-1 | …9c1d |";
+const bullets =
+  "Three things to check:\n\n- The retry loop backs off before it tries again.\n- Each key has its own limit:\n  - `checkout-api` at 60 a minute\n  - `batch-jobs` at 600 a minute\n- The budget alert fires at 80%.\n\n> A limit protects the provider account.\n>\n> Raise it only when the traffic is wanted.\n\n---\n\nThe next run starts at 15:00.";
 const link = "See https://kaeso.example.com/docs/usage/limits-and-budgets/per-project-limits#alerts-and-hard-limits for the details.";
 
 export function States() {
@@ -85,6 +87,13 @@ export function States() {
           <Markdown size="lg" headingLevel={1} text={headings} />
           <Markdown headingLevel={1} text={headings} />
           <Markdown size="small" headingLevel={1} text={headings} />
+        </div>
+      </StateSection>
+      <StateSection title="Bullets, nested, a quote and a rule at each size">
+        <div className="grid grid-cols-3 gap-24">
+          <Markdown size="lg" text={bullets} />
+          <Markdown text={bullets} />
+          <Markdown size="small" text={bullets} />
         </div>
       </StateSection>
       <StateSection title="Past nine, a wide table and a long link at 320px, wrapped code">

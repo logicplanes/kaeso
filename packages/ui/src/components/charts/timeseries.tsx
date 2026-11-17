@@ -455,7 +455,15 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
             </svg>
           )}
           {active !== null && times[active] && (
-            <ChartTooltip x={activeX} y={activeY} width={size.width} visible heading={headingFormat(active)} rows={rowsFor(active)} />
+            <ChartTooltip
+              x={activeX}
+              y={activeY}
+              width={size.width}
+              visible
+              heading={headingFormat(active)}
+              rows={rowsFor(active)}
+              shape={kind === "line" ? "line" : "square"}
+            />
           )}
           <ChartLive>
             {keys.index !== null && active !== null && times[keys.index] ? liveLine(headingFormat(keys.index), rowsFor(keys.index), t) : null}

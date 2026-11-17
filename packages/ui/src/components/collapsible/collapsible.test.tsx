@@ -14,7 +14,10 @@ describe("Collapsible", () => {
     expect(trigger).toHaveClass("rounded-pill", "px-12", "hover:bg-fill-1", "focus-ring-inset", "coarse:min-h-44");
     expect(trigger.className).not.toMatch(/(^|\s)-mx-/);
     expect(trigger.lastElementChild?.querySelector("svg")).not.toBeNull();
-    expect(trigger.lastElementChild).toHaveClass("-mx-6");
+    expect(trigger.lastElementChild?.firstElementChild).toHaveClass("-mx-6");
+    expect(trigger).toHaveClass("items-start", "py-10", "coarse:py-12");
+    expect(trigger).not.toHaveClass("items-center");
+    expect(trigger.lastElementChild).toHaveClass("h-20", "items-center");
     const hint = screen.getByText("With where each comes from");
     expect(hint).toHaveClass("tabular-nums", "whitespace-nowrap");
     expect(hint.parentElement).toHaveClass("items-baseline");

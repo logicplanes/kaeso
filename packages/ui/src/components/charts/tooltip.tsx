@@ -58,9 +58,13 @@ export interface ChartTooltipProps {
   heading: ReactNode;
   rows: TooltipRow[];
   visible: boolean;
+  shape?: "square" | "line" | undefined;
 }
 
-export const ChartTooltip = forwardRef<HTMLDivElement, ChartTooltipProps>(function ChartTooltip({ x, xLeft = x, y, width, heading, rows, visible }, ref) {
+export const ChartTooltip = forwardRef<HTMLDivElement, ChartTooltipProps>(function ChartTooltip(
+  { x, xLeft = x, y, width, heading, rows, visible, shape = "square" },
+  ref,
+) {
   const el = useRef<HTMLDivElement | null>(null);
   const root = useMemo(() => mergeRefs(el, ref), [ref]);
   const [own, setOwn] = useState({ w: 0, h: 0, room: Infinity });
@@ -91,7 +95,7 @@ export const ChartTooltip = forwardRef<HTMLDivElement, ChartTooltipProps>(functi
       <div className="flex flex-col gap-4">
         {rows.map((r) => (
           <div key={r.id} className="flex items-center gap-8">
-            <Swatch color={r.color} />
+            <Swatch color={r.color} shape={shape} />
             <span className="min-w-0 flex-1 truncate pr-12 text-fg-secondary">{r.label}</span>
             <span className="font-medium text-fg tabular">{r.value}</span>
             {r.share !== undefined && <span className="w-40 text-right text-fg-tertiary tabular">{r.share}</span>}

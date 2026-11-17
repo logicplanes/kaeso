@@ -72,17 +72,17 @@ export const TableOfContents = forwardRef<HTMLElement, TableOfContentsProps>(fun
   return (
     <nav ref={ref} aria-label={title} className={cn("flex flex-col", className)}>
       <span className="pb-8 text-small font-medium text-fg-secondary">{title}</span>
-      <ul className="flex flex-col hairline-b-strong">
+      <ul className="flex flex-col hairline-t-strong">
         {items.map((i) => {
           const on = i.id === current;
           return (
-            <li key={i.id} className={cn("relative flex hairline-t-strong", i.depth && "ms-12")}>
-              <span aria-hidden className={cn("absolute inset-x-0 top-0 h-1 bg-ink transition-control forced-line", !on && "opacity-0")} />
+            <li key={i.id} className={cn("relative flex hairline-b-strong", i.depth && "ms-12")}>
+              <span aria-hidden className={cn("absolute inset-x-0 bottom-0 h-1 bg-ink transition-control forced-line", !on && "opacity-0")} />
               <a
                 href={`#${i.id}`}
                 aria-current={on ? "location" : undefined}
                 className={cn(
-                  "flex min-h-32 w-full items-center py-8 pe-8 text-small transition-control focus-ring coarse:min-h-44",
+                  "flex min-h-32 w-full items-center rounded-item py-8 pe-8 text-small transition-control focus-ring coarse:min-h-44",
                   KAESO_TABLE_OF_CONTENTS_VARIANTS.state[on ? "active" : "default"].classes,
                 )}
               >

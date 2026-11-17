@@ -74,7 +74,7 @@ export const ProviderBadge = forwardRef<
       aria-hidden={withName || undefined}
       {...(!withName ? { role: "img", "aria-label": label } : {})}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center bg-fill-1 font-semibold shadow-ring",
+        "inline-flex shrink-0 items-center justify-center bg-raised font-semibold shadow-ring",
         mark ? (mark.color ?? "text-fg") : "text-fg-secondary",
         KAESO_IDENTITY_VARIANTS.provider[size].classes,
       )}

@@ -13,7 +13,6 @@ export const LanguageButton = forwardRef<HTMLButtonElement, Omit<ComponentProps<
       variant="ghost"
       size="sm"
       leadingIcon={icons.language}
-      trailingIcon={icons.unfold}
       aria-label={t("language.current").replace("{name}", name)}
       aria-haspopup="menu"
       {...props}

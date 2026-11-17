@@ -51,8 +51,7 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
           <dt
             className={cn(
               "text-small font-medium text-fg-secondary",
-              layout === "columns" && "flex min-h-36 min-w-120 items-center py-8 pe-24 hairline-b",
-              layout === "columns" && it.wrap && "items-start",
+              layout === "columns" && "flex min-h-36 min-w-120 items-start pt-10 pb-8 pe-24 hairline-b",
               grid && "flex min-w-0",
             )}
           >
@@ -60,16 +59,21 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
           </dt>
           <dd
             className={cn(
-              "group/kv flex min-w-0 items-center gap-4 text-body text-fg",
+              "group/kv flex min-w-0 gap-4 text-body text-fg",
               grid ? "min-h-24" : "min-h-36",
-              layout === "columns" && "hairline-b",
+              layout === "columns" ? cn("items-start pb-8 hairline-b", it.mono ? "pt-10" : "pt-8") : it.wrap ? "items-start" : "items-center",
+              layout === "stacked" && it.wrap && "py-8",
               it.mono && "mono text-small",
-              it.wrap && (grid ? "items-start" : "items-start py-8"),
             )}
           >
             {it.wrap ? <span className="min-w-0 break-words">{it.value}</span> : <TruncatedText className="block min-w-0">{it.value}</TruncatedText>}
             {it.copy && (
-              <span className="shrink-0 opacity-0 transition-control group-hover/kv:opacity-100 coarse:opacity-100 focus-within:opacity-100">
+              <span
+                className={cn(
+                  "shrink-0 opacity-0 transition-control group-hover/kv:opacity-100 coarse:opacity-100 focus-within:opacity-100",
+                  layout === "columns" && "-my-2",
+                )}
+              >
                 <CopyButton value={it.copy} size="xs" />
               </span>
             )}

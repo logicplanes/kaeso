@@ -47,7 +47,7 @@ describe("Link", () => {
       </Link>,
     );
     const card = screen.getByRole("link", { name: "API keys Limit a key to the models an app needs." });
-    expect(card).toHaveClass("bg-fill-1", "rounded-well", "flex-col", "p-16", "font-medium", "hover:shadow-ring");
+    expect(card).toHaveClass("bg-fill-1", "rounded-well", "flex-col", "p-16", "font-medium", "hover:shadow-control-hover");
     expect(card).not.toHaveClass("hover:bg-fill-2", "px-2");
     expect(card).not.toHaveTextContent("#");
   });

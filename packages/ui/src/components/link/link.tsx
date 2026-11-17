@@ -25,7 +25,7 @@ export const KAESO_LINK_VARIANTS = {
     },
     card: {
       classes:
-        "mx-0 flex flex-col gap-4 rounded-well bg-fill-1 p-16 text-body font-medium text-fg no-underline outline-offset-2 hover:shadow-ring active:bg-fill-2",
+        "mx-0 flex flex-col gap-4 rounded-well bg-fill-1 p-16 text-body font-medium text-fg no-underline outline-offset-2 hover:shadow-control-hover active:bg-fill-2",
       description:
         "A page to read next: a flat cut plate with the page's name in medium weight and one sentence about it in secondary text; a hairline rings it on hover",
     },

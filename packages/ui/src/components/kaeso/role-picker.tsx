@@ -96,7 +96,7 @@ export const RolePicker = forwardRef<HTMLDivElement, RolePickerProps>(function R
           <Fragment key={s.caption ?? "all"}>
             <div className="flex flex-col gap-8">
               {s.caption && <span className="text-caption font-medium text-fg-secondary">{s.caption}</span>}
-              <div className="flex flex-col overflow-hidden rounded-group bg-raised shadow-xs">
+              <div className="flex flex-col overflow-hidden rounded-group bg-fill-1">
                 {s.items.map((r, i) => {
                   const id = `${baseId}-${si}-${i}`;
                   const off = disabled || r.disabled;
@@ -107,8 +107,8 @@ export const RolePicker = forwardRef<HTMLDivElement, RolePickerProps>(function R
                       data-choice-row=""
                       {...(r["data-force"] ? { "data-force": r["data-force"] } : {})}
                       className={cn(
-                        "flex min-h-56 cursor-pointer items-center gap-16 px-20 py-12 transition-control not-first:hairline-t",
-                        off ? "cursor-not-allowed" : "hover:bg-raised-hover active:bg-raised-pressed focus-ring-card-row-within",
+                        "flex min-h-56 cursor-pointer items-center gap-16 px-20 py-12 transition-control not-first:divider-t",
+                        off ? "cursor-not-allowed" : "hover:bg-fill-2 active:bg-fill-3 focus-ring-card-row-within",
                       )}
                     >
                       <span className="flex min-w-0 flex-1 flex-col gap-2">

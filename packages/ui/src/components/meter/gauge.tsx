@@ -58,11 +58,11 @@ export const MeterGauge = forwardRef<
           })}
         </svg>
         <div className="absolute inset-x-0 bottom-0 mx-auto flex max-w-140 flex-col items-center text-center">
-          {status && <span className="text-caption font-medium text-fg">{status}</span>}
           <span className="max-w-full text-metric font-semibold text-fg tabular wrap-anywhere">{shown}</span>
         </div>
       </div>
       {label && <span className="mt-4 max-w-full text-center text-caption font-medium text-pretty text-fg-tertiary">{label}</span>}
+      <span className="min-h-16 text-caption font-medium text-fg">{status}</span>
     </div>
   );
 });

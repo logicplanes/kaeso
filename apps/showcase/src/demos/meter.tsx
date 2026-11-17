@@ -3,7 +3,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Meter",
-  description: "A limit or quota: label and value, a 6px pill track, threshold ticks and a caption. Progress for work.",
+  description: "A limit or quota: label and value, a 6px track cut square, threshold ticks and a caption. Progress for work.",
   group: "Components",
   entry: "meter",
   import: "Meter, Progress",

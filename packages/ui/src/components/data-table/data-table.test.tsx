@@ -177,7 +177,7 @@ describe("DataTable", () => {
       render(<DataTable aria-label="Costs" data={rows} columns={columns.map((c) => ({ ...c, meta: { ...c.meta, priority: 1 } }))} getRowId={(r) => r.id} />);
       const cell = within(screen.getByText("staging").closest<HTMLElement>("[role=row]")!).getAllByRole("cell").at(-1)!;
       const header = screen.getAllByRole("columnheader").at(-1)!;
-      expect(cell).toHaveClass("sticky", "rounded-r-item", "row-rule");
+      expect(cell).toHaveClass("sticky", "row-rule");
       expect(cell.closest("[role=row]")).toHaveClass("row-rule");
       expect(header).toHaveClass("sticky", "right-0", "bg-panel", "rule-b");
       expect(header.className).not.toMatch(/rounded/);
@@ -222,7 +222,7 @@ describe("DataTable on the gutter", () => {
     expect(cells[0]).toHaveClass("px-12");
     expect(cells[0]).not.toHaveClass("pl-24");
     expect(cells.at(-1)).not.toHaveClass("pr-24");
-    expect(screen.getByText("checkout-web").closest("[role=row]")).toHaveClass("rounded-item");
+    expect(screen.getByText("checkout-web").closest("[role=row]")).not.toHaveClass("rounded-item");
   });
   it("takes no gutter of its own inside a padded page body", () => {
     const { container } = render(

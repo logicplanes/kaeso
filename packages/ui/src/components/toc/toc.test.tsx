@@ -19,10 +19,11 @@ describe("TableOfContents", () => {
     expect(screen.getByRole("link", { name: "Installation" })).not.toHaveAttribute("aria-current");
     expect(screen.getByRole("link", { name: "Installation" })).toHaveClass("text-fg-tertiary");
   });
-  it("draws a hairline over every row and the ink line over the current one only, kept in forced colours", () => {
+  it("draws a hairline under every row and the ink line under the current one only, kept in forced colours", () => {
     const { container } = render(<TableOfContents items={items} active="usage" />);
     const rows = screen.getAllByRole("listitem");
-    for (const row of rows) expect(row).toHaveClass("hairline-t-strong");
+    for (const row of rows) expect(row).toHaveClass("hairline-b-strong");
+    expect(screen.getByRole("list")).toHaveClass("hairline-t-strong");
     const lines = [...container.querySelectorAll(".bg-ink")];
     expect(lines).toHaveLength(items.length);
     expect(lines.filter((l) => !l.classList.contains("opacity-0"))).toEqual([rows[1]!.querySelector(".bg-ink")]);

@@ -122,7 +122,7 @@ describe("ProviderPicker", () => {
   it("keeps the chosen tile's ink ring under the pointer", () => {
     render(<ProviderPicker appearance="grid" aria-label="Provider" providers={providers} value="mistral" />);
     const chosen = screen.getByRole("radio", { name: /Mistral/ });
-    expect(chosen).toHaveClass("data-checked:ring-step", "hover:not-data-checked:shadow-control-hover", "forced-checked");
+    expect(chosen).toHaveClass("data-checked:ring-step", "hover:not-data-checked:bg-fill-2", "forced-checked");
   });
 });
 

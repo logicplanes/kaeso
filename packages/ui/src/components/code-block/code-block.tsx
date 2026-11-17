@@ -178,7 +178,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     <div ref={ref} className={cn("group/code relative min-w-0", KAESO_CODE_BLOCK_VARIANTS.surface[surface].classes, className)}>
       <BaseTabs.Root value={tab} onValueChange={(v: unknown) => choose(Number(v))}>
         {header && (
-          <div className="flex h-44 items-center gap-4 px-6 hairline-b">
+          <div className="flex h-44 items-center gap-4 px-6 hairline-b-strong">
             {title && (
               <Text as="span" variant="small" tone="secondary" mono truncate className="px-10">
                 {title}
@@ -192,7 +192,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
                     value={i}
                     className={cn(
                       "relative inline-flex h-28 cursor-pointer items-center rounded-pill px-10 text-small font-medium transition-control tap-target focus-ring",
-                      i === tab ? "bg-fill-2 text-fg" : "text-fg-secondary hover:text-fg active:bg-fill-2",
+                      i === tab ? "segment-indicator-raised text-fg shadow-segment" : "text-fg-secondary hover:text-fg active:bg-fill-2",
                     )}
                   >
                     {item.label}

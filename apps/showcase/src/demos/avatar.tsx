@@ -4,7 +4,7 @@ import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Avatar",
-  description: "People round with initials or a picture; organizations and projects at radius 8; agents as a bot face on a square.",
+  description: "People round with initials or a picture; organizations and projects at radius 6; agents as a bot face on a square.",
   group: "Components",
   entry: "avatar",
   import: "Avatar",

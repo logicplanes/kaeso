@@ -238,6 +238,38 @@ describe("FlowCanvas", () => {
     expect(transform()).toBe(before);
   });
 
+  it("fits again when the canvas changes size, until the person moves the view", async () => {
+    const resized: ((entries: unknown[]) => void)[] = [];
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(cb: (entries: unknown[]) => void) {
+          resized.push(cb);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const resize = async (w: number, h: number) => {
+      size(w, h);
+      await act(async () => {
+        resized.forEach((cb) => cb([]));
+        await new Promise((r) => requestAnimationFrame(r));
+      });
+    };
+    size(120, 420);
+    render(<FlowCanvas root={route} aria-label="Route" />);
+    const early = transform();
+    await resize(1200, 900);
+    expect(transform()).not.toBe(early);
+    expect(scale()).toBe(1);
+    await userEvent.click(screen.getByRole("button", { name: "Zoom out" }));
+    const zoomed = transform();
+    await resize(1000, 900);
+    expect(transform()).toBe(zoomed);
+    vi.unstubAllGlobals();
+  });
+
   it("zooms with the buttons and keys between 25% and 150%, and fits again", async () => {
     size(1200, 900);
     render(<FlowCanvas root={route} aria-label="Route" />);

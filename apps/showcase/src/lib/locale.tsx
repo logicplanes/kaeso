@@ -191,13 +191,7 @@ export function DocsLanguageMenu() {
   return (
     <Menu>
       <Menu.Trigger>
-        <Button
-          variant="ghost"
-          size="sm"
-          leadingIcon={icons.language}
-          trailingIcon={icons.unfold}
-          aria-label={`${docsText(lang, "Language")}${lang === "zh-CN" ? "：" : ": "}${name}`}
-        >
+        <Button variant="ghost" size="sm" leadingIcon={icons.language} aria-label={`${docsText(lang, "Language")}${lang === "zh-CN" ? "：" : ": "}${name}`}>
           <span lang={lang}>{name}</span>
         </Button>
       </Menu.Trigger>

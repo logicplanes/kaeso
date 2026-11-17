@@ -70,11 +70,11 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
     <FieldContext.Provider value={value}>
       <div ref={ref} className={cn(KAESO_FIELD_VARIANTS.layout[layout].classes, className)} data-disabled={disabled || undefined} {...props}>
         {label && (
-          <Label id={labelId} htmlFor={controlId} optional={optional} className="flex" {...(disabled ? { "data-disabled": "" } : {})}>
+          <Label id={labelId} htmlFor={controlId} optional={optional} className="block" {...(disabled ? { "data-disabled": "" } : {})}>
             {label}
           </Label>
         )}
-        <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6 field-notes">
           {children}
           {description && (
             <p id={descriptionId} className="text-small text-pretty text-fg-secondary">

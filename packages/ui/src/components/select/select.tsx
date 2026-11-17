@@ -20,7 +20,7 @@ export const KAESO_SELECT_VARIANTS = {
       description: "A pill with the same ring, hover and focus as a text input, its value in the input's regular weight (default)",
     },
     ghost: {
-      classes: "material-ghost focus-ring font-medium text-fg-secondary hover:text-fg focus-visible:text-fg open:text-fg",
+      classes: "material-ghost focus-ring font-medium text-fg-secondary hover:text-fg active:text-fg focus-visible:text-fg open:text-fg",
       description: "Inline in settings rows: “GPT-5 mini (default) ⌄”",
     },
     header: {
@@ -30,12 +30,12 @@ export const KAESO_SELECT_VARIANTS = {
   },
   size: {
     sm: {
-      classes: "h-32 pl-12 pr-8 gap-6 text-body",
+      classes: "h-32 pl-12 pr-8 gap-6 text-body ghost-end:-mr-8 ghost-start:-ml-12",
       description: "32px: settings rows and toolbars; the chevron centred in the pill's end, as in every field",
     },
-    md: { classes: "h-36 pl-16 pr-10 gap-8 text-body", description: "36px (default)" },
-    lg: { classes: "h-40 pl-18 pr-12 gap-8 text-body", description: "40px" },
-    xl: { classes: "h-48 pl-22 pr-16 gap-8 text-body-lg", description: "48px: sign-in and setup forms" },
+    md: { classes: "h-36 pl-16 pr-10 gap-8 text-body ghost-end:-mr-10 ghost-start:-ml-16", description: "36px (default)" },
+    lg: { classes: "h-40 pl-18 pr-12 gap-8 text-body ghost-end:-mr-12 ghost-start:-ml-18", description: "40px" },
+    xl: { classes: "h-48 pl-22 pr-16 gap-8 text-body-lg ghost-end:-mr-16 ghost-start:-ml-22", description: "48px: sign-in and setup forms" },
   },
 } as const;
 export const KAESO_SELECT_DEFAULT_VARIANTS = { appearance: "default", size: "md" } as const;

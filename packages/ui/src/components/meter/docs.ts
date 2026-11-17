@@ -9,7 +9,7 @@ export const docs = {
       caption: '"Resets in 12 days"; near or over the limit, say what happens, such as "Over the limit: requests are refused".',
       label: "The label above the bar, or the caption under a gauge's arc.",
       leading: "Leading content in the label row (an icon).",
-      shape: "A bar (`bar`), or a half circle with square ends (`gauge`) that says near or over the limit over the number in its middle.",
+      shape: "A bar (`bar`), or a half circle with square ends (`gauge`) with the number in its middle and, under its caption, near or over the limit.",
       thresholds: "Alert thresholds as ratios, drawn as ticks: [0.5, 0.8]. A gauge marks 0.8 when none are given.",
       tone: "Colors the bar by how full it is (`auto`) or keeps it neutral.",
       trailing: "Content at the end of the label row, such as the value.",

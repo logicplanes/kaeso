@@ -25,7 +25,7 @@ describe("Figure", () => {
     const figure = screen.getByRole("figure");
     expect(figure).toHaveClass("rounded-well", "bg-fill-1");
     const caption = figure.querySelector("figcaption");
-    expect(caption).toHaveClass("hairline-t", "px-16");
+    expect(caption).toHaveClass("hairline-t-strong", "px-16");
     expect(caption).not.toHaveClass("text-center");
   });
 

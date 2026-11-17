@@ -272,7 +272,7 @@ function Item({ item, ordered, n, ctx }: { item: ListItem; ordered: boolean; n: 
       ) : (
         <Text as="span" aria-hidden variant={ctx.size} className="flex w-12 shrink-0 items-center self-start">
           {"\u200b"}
-          <Separator tone="strong" className="w-12" />
+          <Separator tone="marker" className="w-12" />
         </Text>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-8">{blocks(item.c, ctx)}</div>
@@ -328,7 +328,7 @@ function block(b: Block, i: number, ctx: Ctx): ReactNode {
       return <CodeBlock key={i} code={b.code} lang={b.lang} collapseAfter={0} wrap={b.wrap ?? "phone"} {...(b.title ? { title: b.title } : {})} />;
     case "quote":
       return (
-        <blockquote key={i} className="flex gap-20">
+        <blockquote key={i} className="flex gap-16">
           <Separator orientation="vertical" tone="ink" />
           <div className="flex min-w-0 flex-1 flex-col gap-12">{blocks(b.c, { ...ctx, tone: "secondary" })}</div>
         </blockquote>

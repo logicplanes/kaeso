@@ -3,7 +3,7 @@ import type { ComponentDocs } from "../../component-docs.js";
 export const docs = {
   DataTable: {
     description:
-      "A table for many rows: sorting, selection, loading and empty states, more rows on demand, and virtual scrolling for long lists. Its head stands on a rule in the strong line colour and every row a hairline at its foot. One tab stop: the arrows move between rows and header buttons, Right reaches a row's controls, Shift with Left or Right resizes a column from its header, and a header's context menu widens, narrows or resets it.",
+      "A table for many rows: sorting, selection, loading and empty states, more rows on demand, and virtual scrolling for long lists. Its head stands on a rule in the strong line colour and every row a hairline at its foot, the same length; a row's hover and selected fill is square and sits under that hairline. One tab stop: the arrows move between rows and header buttons, Right reaches a row's controls, Shift with Left or Right resizes a column from its header, and a header's context menu widens, narrows or resets it.",
     props: {
       activeRowId: "The id of the row whose detail is open, in a sheet beside the table: it keeps the selected fill and is marked aria-current.",
       "aria-label": "The table's accessible name.",

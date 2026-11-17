@@ -9,7 +9,8 @@ export const KAESO_SEPARATOR_VARIANTS = {
   tone: {
     subtle: { classes: "bg-line-subtle", description: "Inside groups and tables (default)" },
     default: { classes: "bg-line", description: "Between regions that tone and space cannot separate" },
-    strong: { classes: "bg-line-strong", description: "A section head's rule and a list's hairline marker, as kaeso.app draws them" },
+    strong: { classes: "bg-line-strong", description: "A section head's rule, as kaeso.app draws it" },
+    marker: { classes: "bg-fg-tertiary", description: "A list item's short hairline marker, as kaeso.app's articles draw it" },
     ink: {
       classes: "bg-fg",
       description: "A quotation's rule: kaeso.app's blockquote stands behind a line in the text colour, 2px wide when vertical",

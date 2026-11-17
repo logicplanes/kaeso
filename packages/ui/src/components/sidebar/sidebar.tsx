@@ -279,7 +279,8 @@ const Root = forwardRef<HTMLElement, SidebarProps>(function Sidebar({ resizable 
           {hint !== null && !dragging && (
             <span
               aria-hidden
-              className="pointer-events-none absolute left-16 flex w-max flex-col gap-2 rounded-tooltip-lg bg-tooltip px-12 py-8 text-small text-fg-secondary shadow-raised"
+              data-theme="dark"
+              className="pointer-events-none absolute left-16 flex w-max flex-col gap-2 rounded-tooltip-lg bg-tooltip px-12 py-8 text-small text-fg-secondary shadow-xs"
               style={{ top: Math.max(8, hint - 24) }}
             >
               <span>{strong(t("sidebar.dragToResize", "**Drag** to resize"))}</span>
@@ -640,7 +641,7 @@ const Footer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(functi
     <div
       ref={ref}
       className={cn(
-        "flex shrink-0 items-center gap-4 pt-8 pb-12 transition-control group-data-scrolled-under/sidebar:hairline-t-strong",
+        "mb-8 flex min-h-52 shrink-0 items-center gap-8 transition-control sidebar-foot group-data-scrolled-under/sidebar:hairline-t-strong",
         rail ? "px-8" : "px-16",
         className,
       )}
@@ -710,7 +711,7 @@ export interface SidebarItemProps {
   "data-force"?: string | undefined;
 }
 
-const DEPTH = ["", "pl-32", "pl-52"] as const;
+const DEPTH = ["", "pl-36", "pl-60"] as const;
 
 const Item = forwardRef<HTMLElement, SidebarItemProps>(function SidebarItem(
   { children, icon, leading, href, onClick, active, count, trailing, depth = 0, shortcut, className, "data-force": force },

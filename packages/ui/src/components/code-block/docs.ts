@@ -14,7 +14,7 @@ export const docs = {
       surface: "On a flat plate (`well`) or on the panel itself (`plain`), such as inside a plate of your own.",
       onTabChange: "Called with the label of the tab a person chooses, to remember it.",
       tab: "The label of the tab to show, such as a language the reader chose before. A label the block lacks leaves its own choice.",
-      tabs: 'Several versions: "Python · Node · curl", shown as quiet pill tabs in the title bar.',
+      tabs: 'Several versions: "Python · Node · curl", shown as pill tabs in the title bar, the chosen one raised on the plate as in a segmented control.',
       title: "A file name in the title bar.",
       wrap: "Long lines wrap instead of scrolling sideways: code in a narrow column (a model's response). They break at spaces, never inside a flag or a name unless it is wider than the line. `phone` wraps them only below 640px, with wrapped parts indented, and scrolls from there up.",
     },

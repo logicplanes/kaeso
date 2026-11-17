@@ -344,7 +344,7 @@ function DataTableInner<T>(
             ? "bg-raised group-hover/tr:bg-raised-hover group-active/tr:bg-raised-pressed"
             : "bg-panel group-hover/tr:bg-fill-1 group-active/tr:bg-fill-2",
       i === 0 ? "left-0" : "right-0",
-      !inset && !header && (i === 0 ? "rounded-l-item row-rule" : "rounded-r-item row-rule"),
+      !inset && !header && "row-rule",
     );
 
   const focusable = !!onRowClick || !!selectable;
@@ -540,7 +540,7 @@ function DataTableInner<T>(
         style={{ ...gridStyle, ...style }}
         className={cn(
           "group/tr grid w-full text-body text-fg transition-control focus-ring-inset",
-          !inset && "rounded-item row-rule",
+          !inset && "row-rule",
           KAESO_DATA_TABLE_VARIANTS.density[density].classes,
           onRowClick && "cursor-pointer",
           rowTone(onRaised, on),

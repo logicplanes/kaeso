@@ -58,6 +58,17 @@ describe("Settings", () => {
     expect(screen.getByText("3 active").parentElement).not.toHaveAttribute("data-row-control");
   });
 
+  it("keeps a switch at the row's end on a phone, where a wider control moves under the text", () => {
+    render(
+      <SettingsGroup aria-label="Time">
+        <SettingsRow title="Show times in UTC" icon={icons.key} control={<Switch aria-label="Show times in UTC" />} />
+      </SettingsGroup>,
+    );
+    const slot = screen.getByRole("switch", { name: "Show times in UTC" }).closest("[data-row-control]");
+    expect(slot).not.toHaveClass("@max-settings-row:basis-full");
+    expect(slot).not.toHaveClass("@max-settings-row:pl-36");
+  });
+
   it("leaves out the heading when a section has none", () => {
     render(
       <Section spacing="settings">

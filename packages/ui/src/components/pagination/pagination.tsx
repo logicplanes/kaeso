@@ -93,7 +93,7 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>(function Pagi
                 if (p !== page) onPageChange?.(p);
               }}
               className={cn(
-                "relative inline-flex h-32 min-w-40 cursor-pointer items-center justify-center rounded-pill px-8 text-body font-medium tabular transition-control tap-target focus-ring-inset",
+                "relative inline-flex h-32 min-w-40 cursor-pointer items-center justify-center rounded-pill px-6 text-body font-medium tabular transition-control tap-target focus-ring-inset",
                 p === current ? "bg-fill-2 text-fg" : "text-fg-secondary hover:bg-fill-1 hover:text-fg active:bg-fill-2",
               )}
             >

@@ -203,11 +203,11 @@ describe("CodeBlock", () => {
         ]}
       />,
     );
-    expect(screen.getByRole("tab", { name: "Python" })).toHaveClass("bg-fill-2", "text-fg", "tap-target");
+    expect(screen.getByRole("tab", { name: "Python" })).toHaveClass("segment-indicator-raised", "shadow-segment", "text-fg", "tap-target");
     expect(screen.getByRole("tab", { name: "curl" })).toHaveClass("text-fg-secondary", "hover:text-fg");
-    expect(screen.getByRole("tab", { name: "curl" })).not.toHaveClass("bg-fill-2");
+    expect(screen.getByRole("tab", { name: "curl" })).not.toHaveClass("segment-indicator-raised");
     const copy = screen.getByRole("button", { name: "Copy code" });
-    expect(copy.closest(".hairline-b")).not.toBeNull();
+    expect(copy.closest(".hairline-b-strong")).not.toBeNull();
     expect(copy.closest(".opacity-0")).toBeNull();
   });
 

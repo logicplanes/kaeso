@@ -86,10 +86,10 @@ const FIELD_SIZE: Record<ButtonSize, string> = {
   sm: "h-32 pl-12 pr-4 text-small",
   md: "h-36 pl-16 pr-2 text-small",
   lg: "h-40 pl-18 pr-4 text-small",
-  xl: "h-40 pl-18 pr-4 text-small",
+  xl: "h-48 pl-22 pr-4 text-small",
 };
 
-const FIELD_CIRCLE: Record<ButtonSize, ButtonSize> = { xs: "xs", sm: "xs", md: "sm", lg: "sm", xl: "sm" };
+const FIELD_CIRCLE: Record<ButtonSize, ButtonSize> = { xs: "xs", sm: "xs", md: "sm", lg: "sm", xl: "lg" };
 
 const CopyField = forwardRef<HTMLDivElement, Omit<CopyButtonProps, "display">>(function CopyField(
   { value, children: display, label, size = "sm", variant: _variant, onCopy, className, ...props },

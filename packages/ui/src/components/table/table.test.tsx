@@ -47,6 +47,21 @@ describe("Table", () => {
     expect(long).toHaveClass("py-8", "align-bottom", "h-36");
   });
 
+  it("sets every cell's first line on one baseline, so a key stays beside the first line of a note that wraps", () => {
+    render(
+      <Table>
+        <Table.Body>
+          <Table.Row>
+            <Table.Cell>checkout-web</Table.Cell>
+            <Table.Cell>Requests over the limit get a 429 with the seconds to wait.</Table.Cell>
+          </Table.Row>
+        </Table.Body>
+      </Table>,
+    );
+    expect(screen.getByRole("cell", { name: "checkout-web" })).toHaveClass("align-baseline");
+    expect(screen.getByRole("cell", { name: "checkout-web" })).not.toHaveClass("align-middle");
+  });
+
   it("puts 12px between columns, or 8px in a compact table", () => {
     const table = (density?: "compact") => (
       <Table density={density}>

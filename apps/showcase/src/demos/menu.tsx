@@ -3,7 +3,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Menu",
-  description: "A rounded dropdown: 16px radius, 34px rows, icons that wake on highlight.",
+  description: "A dropdown on a cut plate: radius 10, 34px rows, icons that wake on highlight.",
   group: "Components",
   entry: "menu",
   import: "Menu",

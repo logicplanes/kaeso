@@ -132,7 +132,7 @@ describe("Markdown", () => {
     const c = draw([{ t: "list", ordered: false, start: 1, items: [{ c: [{ t: "paragraph", tight: true, c: [{ t: "text", v: "Rotate the key" }] }] }] }]);
     expect(c.textContent).not.toContain("•");
     const rule = c.querySelector('li [aria-hidden] [role="separator"]');
-    expect(rule).toHaveClass("bg-line-strong", "w-12");
+    expect(rule).toHaveClass("bg-fg-tertiary", "w-12");
   });
 
   it("names tables with the same columns after their sections, so no two regions share a name", () => {

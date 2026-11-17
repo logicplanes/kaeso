@@ -6,7 +6,7 @@ import { StateSection } from "~/lib/states";
 export const meta = {
   title: "Dialog",
   description:
-    "A modal dialog: 440, 560 or 720 wide, radius 20; title, description, body, actions. Enter in a field and ⌘Enter submit. Longer forms use StepDialog: one question per step.",
+    "A modal dialog: 440, 560 or 720 wide, radius 14; title, description, body, actions. Enter in a field and ⌘Enter submit. Longer forms use StepDialog: one question per step.",
   group: "Components",
   entry: "dialog",
   import: "Dialog",

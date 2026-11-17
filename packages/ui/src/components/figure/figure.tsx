@@ -60,7 +60,7 @@ export const Figure = forwardRef<HTMLElement, FigureProps>(function Figure({ chi
         </div>
       </ScrollArea>
       {caption && (
-        <figcaption className={cn("text-small text-pretty text-fg-secondary hairline-t", surface === "well" ? "px-16 py-12 sm:px-24" : "pt-12")}>
+        <figcaption className={cn("text-small text-pretty text-fg-secondary hairline-t-strong", surface === "well" ? "px-16 py-12 sm:px-24" : "pt-12")}>
           {caption}
         </figcaption>
       )}

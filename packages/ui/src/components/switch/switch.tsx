@@ -118,7 +118,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
         </span>
         {(description ?? reason) && (
           <span id={named.descriptionId} className="flex flex-col text-small text-pretty">
-            {description && <span className={disabled && !soft ? "text-fg-disabled" : "text-fg-secondary"}>{description}</span>}
+            {description && <span className={disabled ? "text-fg-tertiary" : "text-fg-secondary"}>{description}</span>}
             {reason && <span className="text-fg-secondary">{reason}</span>}
           </span>
         )}

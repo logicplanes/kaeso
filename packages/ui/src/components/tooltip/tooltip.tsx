@@ -159,7 +159,8 @@ export const TooltipSurface = forwardRef<HTMLDivElement, TooltipSurfaceProps>(fu
     <div
       ref={ref}
       role="tooltip"
-      className={cn("inline-flex items-center gap-8 bg-tooltip text-small font-medium text-fg shadow-raised", KAESO_TOOLTIP_VARIANTS.shape[shape].classes)}
+      data-theme="dark"
+      className={cn("inline-flex items-center gap-8 bg-tooltip text-small font-medium text-fg shadow-xs", KAESO_TOOLTIP_VARIANTS.shape[shape].classes)}
     >
       <span>{children}</span>
       {shortcut && <Kbd keys={shortcut} />}

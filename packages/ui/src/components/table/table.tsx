@@ -104,7 +104,7 @@ const Cell = forwardRef<HTMLTableCellElement, TableCellProps>(function TableCell
     <td
       ref={ref}
       className={cn(
-        "h-40 py-10 align-middle text-fg first:pl-0",
+        "h-40 py-10 align-baseline text-fg first:pl-0",
         KAESO_TABLE_VARIANTS.density[density].classes,
         LAST[align],
         KAESO_TABLE_VARIANTS.align[align].classes,

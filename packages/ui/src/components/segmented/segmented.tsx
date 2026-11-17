@@ -18,7 +18,7 @@ export const KAESO_SEGMENTED_VARIANTS = {
 export const KAESO_SEGMENTED_DEFAULT_VARIANTS = { size: "md" } as const;
 
 const ITEM = { sm: "h-28 px-10 text-body", md: "h-32 px-12 text-body" } as const;
-const ITEM_ICON = { sm: "w-32 px-0", md: "w-36 px-0" } as const;
+const ITEM_ICON = { sm: "w-28 px-0", md: "w-32 px-0" } as const;
 const ITEM_LEADING_ICON = { sm: "pl-8", md: "pl-10" } as const;
 
 export interface SegmentedOption {
@@ -96,8 +96,7 @@ export const Segmented = forwardRef<HTMLDivElement, SegmentedProps>(function Seg
       <span
         aria-hidden
         className={cn(
-          "absolute top-0 left-0 -z-10 rounded-pill shadow-segment",
-          raised ? "segment-indicator-raised" : "bg-raised",
+          "absolute top-0 left-0 -z-10 rounded-pill shadow-segment segment-indicator-raised",
           ind.animate && "indicator-motion",
           !ind.ready && "opacity-0",
         )}

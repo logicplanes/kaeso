@@ -3,7 +3,7 @@ import { StateSection } from "~/lib/states";
 
 export const meta = {
   title: "Badge",
-  description: "A small pill label: 22px, 12/500. Words carry the meaning.",
+  description: "A small label on a cut plate: 22px, 12/500. Words carry the meaning.",
   group: "Components",
   entry: "badge",
   import: "Badge",

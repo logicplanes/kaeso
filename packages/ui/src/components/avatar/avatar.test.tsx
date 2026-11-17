@@ -83,6 +83,15 @@ describe("Avatar", () => {
     expect(container.querySelector(".ring-panel")).toBeNull();
   });
 
+  it("moves initials away from a cut, so the next face or the agent badge never takes a letter", () => {
+    const { container } = render(<Avatar.Group size={32} people={[{ name: "Ada Okafor" }, { name: "Lin Park" }]} />);
+    const [first, last] = [...container.querySelectorAll<HTMLElement>("[role=group] > span > span")];
+    expect(first!.firstElementChild).toHaveClass("me-8");
+    expect(last!.firstElementChild).toBeNull();
+    render(<Avatar name="Tomas Reyes" size={28} agent={{ name: "Checkout assistant", model: "gpt-5" }} />);
+    expect(screen.getByText("TR")).toHaveClass("me-4", "mb-4");
+  });
+
   it("outlines a photo in its own shape, so a light picture keeps its edge without a grey line on it", () => {
     const { container } = render(<Avatar name="Ada Okafor" src="https://example.com/ada.png" />);
     expect(container.querySelector("img")).toHaveClass("image-outline");

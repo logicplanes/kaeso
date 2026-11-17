@@ -167,15 +167,17 @@ function inline(tokens: Token[] | undefined): ReactNode[] {
   });
 }
 
-function Task({ done }: { done: boolean }) {
+function Task({ done, size }: { done: boolean; size: MarkdownSize }) {
   const t = useUiText();
   return (
-    <span
-      role="img"
-      aria-label={done ? t("markdown.taskDone", "Done") : t("markdown.taskOpen", "Not done")}
-      className={cn("mt-3 inline-flex size-14 shrink-0 items-center justify-center rounded-checkbox", done ? "bg-ink text-on-ink" : "shadow-ring")}
-    >
-      {done && <Icon icon={icons.check} size="xs" className="size-12" />}
+    <span className={cn("flex shrink-0 items-center", LINE[size])}>
+      <span
+        role="img"
+        aria-label={done ? t("markdown.taskDone", "Done") : t("markdown.taskOpen", "Not done")}
+        className={cn("inline-flex size-14 items-center justify-center rounded-checkbox", done ? "bg-ink text-on-ink" : "shadow-selector")}
+      >
+        {done && <Icon icon={icons.check} size="xs" className="size-12" />}
+      </span>
     </span>
   );
 }
@@ -188,9 +190,9 @@ function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
   return (
     <Tag className={cn("flex flex-col", LIST_GAP[ctx.size])}>
       {list.items.map((item, i) => (
-        <li key={i} className="flex gap-8">
+        <li key={i} className="flex gap-12">
           {item.task ? (
-            <Task done={!!item.checked} />
+            <Task done={!!item.checked} size={ctx.size} />
           ) : list.ordered ? (
             <Text
               as="span"
@@ -205,8 +207,8 @@ function List({ list, ctx }: { list: Tokens.List; ctx: Ctx }) {
               {`${start + i}.`}
             </Text>
           ) : (
-            <span aria-hidden data-marker className={cn("flex w-8 shrink-0 items-center", LINE[ctx.size])}>
-              <span className="h-1 w-8 bg-fg-tertiary forced-line" />
+            <span aria-hidden data-marker className={cn("flex w-12 shrink-0 items-center", LINE[ctx.size])}>
+              <span className="h-1 w-12 bg-fg-tertiary forced-line" />
             </span>
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -283,8 +285,8 @@ function block(t: Token, ctx: Ctx, tight: boolean): ReactNode {
       );
     case "blockquote":
       return (
-        <blockquote className="flex gap-12">
-          <span aria-hidden className="w-2 shrink-0 self-stretch bg-fg-tertiary forced-line" />
+        <blockquote className="flex gap-16">
+          <span aria-hidden className="w-2 shrink-0 self-stretch bg-fg forced-line" />
           <div className="flex min-w-0 flex-1 flex-col gap-8 text-fg-secondary">{blocks((t as Tokens.Blockquote).tokens, ctx)}</div>
         </blockquote>
       );

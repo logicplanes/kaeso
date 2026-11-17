@@ -55,7 +55,7 @@ export function Overview() {
                 height={220}
                 timeZone="UTC"
                 series={[
-                  { id: "now", label: "This period", points: points(NOW) },
+                  { id: "now", label: "This period", color: "var(--k-viz-1)", points: points(NOW) },
                   { id: "before", label: "Prior 30 days", color: "var(--k-text-tertiary)", dashed: true, points: points(BEFORE) },
                 ]}
               />

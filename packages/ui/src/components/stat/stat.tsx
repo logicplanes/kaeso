@@ -60,11 +60,7 @@ const PlainStat = forwardRef<HTMLDivElement, StatProps>(function PlainStat({ val
     <div ref={ref} className={cn("flex min-w-0 flex-wrap items-baseline gap-x-8 gap-y-4", className)}>
       <span className={cn("font-medium text-fg tabular", KAESO_STAT_VARIANTS.size[size].classes)}>{value}</span>
       {unit && <span className="text-body-lg font-regular text-fg-secondary">{unit}</span>}
-      {delta && (
-        <Badge tone={delta.tone ?? "neutral"} className="self-center">
-          {delta.label}
-        </Badge>
-      )}
+      {delta && <Badge tone={delta.tone ?? "neutral"}>{delta.label}</Badge>}
     </div>
   );
 });

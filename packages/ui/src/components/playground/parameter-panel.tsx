@@ -133,23 +133,21 @@ function SliderRow({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-baseline justify-between gap-12">
-        <span className={cn("text-body font-medium", disabled ? "text-fg-disabled" : "text-fg")}>{label}</span>
+        <span className={cn("text-small font-medium", disabled ? "text-fg-disabled" : "text-fg")}>{label}</span>
         <span className={cn("text-small tabular", unset ? "text-fg-tertiary" : "text-fg-secondary")}>
           {unset ? t("parameterPanel.valueDefault", "{value} (default)", { value: shown }) : shown}
         </span>
       </div>
-      <div className="px-8">
-        <Slider
-          aria-label={label}
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          disabled={disabled}
-          formatValue={(v) => formatNumber(v, { minimumFractionDigits: digits, maximumFractionDigits: digits })}
-          onValueChange={(v) => onChange(Array.isArray(v) ? (v[0] ?? min) : v)}
-        />
-      </div>
+      <Slider
+        aria-label={label}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        formatValue={(v) => formatNumber(v, { minimumFractionDigits: digits, maximumFractionDigits: digits })}
+        onValueChange={(v) => onChange(Array.isArray(v) ? (v[0] ?? min) : v)}
+      />
     </div>
   );
 }
@@ -276,7 +274,7 @@ const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
             onValueChange={(v: string) => set({ reasoningEffort: v === "default" ? undefined : (v as ReasoningEffort) })}
           />
           <div className="flex flex-col gap-8">
-            <span className={cn("text-body font-medium", disabled ? "text-fg-disabled" : "text-fg")}>
+            <span className={cn("text-small font-medium", disabled ? "text-fg-disabled" : "text-fg")}>
               {t("parameterPanel.reasoningSummary", "Reasoning summary")}
             </span>
             <Segmented
@@ -367,7 +365,7 @@ const PanelBody = forwardRef<HTMLDivElement, PanelBodyProps>(function PanelBody(
       )}
       {translate && (
         <div className="flex flex-col gap-8">
-          <span className={cn("text-body font-medium", disabled ? "text-fg-disabled" : "text-fg")}>{t("parameterPanel.transcript", "Transcript")}</span>
+          <span className={cn("text-small font-medium", disabled ? "text-fg-disabled" : "text-fg")}>{t("parameterPanel.transcript", "Transcript")}</span>
           <Segmented
             aria-label={t("parameterPanel.transcript", "Transcript")}
             size="sm"

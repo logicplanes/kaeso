@@ -11,7 +11,7 @@ export const docs = {
   },
   Menu: {
     description:
-      "A dropdown menu: a 10px plate with 4px rows inset 6px, 34px rows that grow when a label wraps, hairlines between groups that run edge to edge, typeahead, Home/End, loops. An item's shortcut and hint describe it rather than name it. Checkbox and radio items show a check when chosen; the group's label says whether it takes one or several.",
+      "A dropdown menu: a 10px plate with 4px rows inset 6px, 34px rows that grow when a label wraps, hairlines between groups that run edge to edge, labels on one column (an item without an icon lines up with those that have one), typeahead, Home/End, loops. An item's shortcut and hint describe it rather than name it. Checkbox and radio items show a check when chosen; the group's label says whether it takes one or several.",
     props: {
       children: "The trigger and the menu's content.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",

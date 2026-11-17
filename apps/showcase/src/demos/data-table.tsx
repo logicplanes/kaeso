@@ -140,7 +140,7 @@ const modelColumns: ColumnDef<ModelRow, any>[] = [
 
 export const meta = {
   title: "DataTable",
-  description: "The console's table: a 36px header, 40px rows without lines, numbers right, sorting, resizing, selection, virtualization.",
+  description: "The console's table: a 36px header on a strong rule, 40px rows on hairlines, numbers right, sorting, resizing, selection, virtualization.",
   group: "Components",
   entry: "data-table",
   import: "DataTable, col",

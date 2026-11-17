@@ -1,5 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
+import { useInset } from "../../utils/inset.js";
 
 export const KAESO_EMPTY_VARIANTS = {
   size: {
@@ -25,8 +26,9 @@ export interface EmptyProps {
 
 export const Empty = forwardRef<HTMLDivElement, EmptyProps>(function Empty({ title, description, actions, size = "lg", children, className }, ref) {
   const compact = size === "compact";
+  const inset = useInset();
   return (
-    <div ref={ref} className={cn("flex flex-col", KAESO_EMPTY_VARIANTS.size[size].classes, className)}>
+    <div ref={ref} className={cn("flex flex-col", KAESO_EMPTY_VARIANTS.size[size].classes, inset && "px-20", className)}>
       <div className={cn("flex flex-col", TEXT[size])}>
         <h2 className={cn("font-semibold text-fg text-balance", TITLE[size])}>{title}</h2>
         {description && <p className={cn("max-w-44ch text-fg-secondary text-pretty", DESCRIPTION[size])}>{description}</p>}

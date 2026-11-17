@@ -41,7 +41,8 @@
     }
   }
 }
-@custom-variant ghost-end ([data-row-control] > &.material-ghost:last-child, [data-row-control] > :last-child > &.material-ghost:last-child);
+/* A select's hidden form input follows its trigger, so the trigger is the last thing that shows. */
+@custom-variant ghost-end ([data-row-control] > &.material-ghost:is(:last-child, :has(+ input[aria-hidden="true"]:last-child)), [data-row-control] > :last-child > &.material-ghost:last-child);
 
 @utility focus-ring {
   outline: 2px solid transparent;
@@ -509,6 +510,13 @@
 @utility markdown-text-inset {
   & > :not(.rounded-well, :has(> table), :has(> button)) {
     padding-inline: 12px;
+  }
+  /* A table's rules run the column's full width; its first and last cells hang 12px in, on the text's edge. */
+  & > :has(> table) :is(th, td):first-child {
+    padding-inline-start: 12px;
+  }
+  & > :has(> table) :is(th, td):last-child {
+    padding-inline-end: 12px;
   }
 }
 
@@ -1113,6 +1121,8 @@
 @utility tab-line-pressed {
   box-shadow: inset 0 -2px 0 var(--k-line-strong);
 }
+/* Underline tabs: the list reaches 8px past the content edge on both sides so the first and last tab's focus ring isn't
+   clipped by its scroller; the hairline stays on the content edge. */
 @utility hairline-t-strong {
   box-shadow: inset 0 1px 0 var(--k-line);
 }
@@ -1163,8 +1173,9 @@
     border-block-start: 1px solid CanvasText;
   }
 }
-/* A list or table row's hairline at its foot, from box edge to box edge. A background, not a ring: an inset shadow
-   would follow the row's rounded corners and hook up at both ends, and a border would change the row's height. */
+/* A list or table row's hairline at its foot, from box edge to box edge, the same length as the head's rule above it.
+   A background image, so it is drawn over the row's own hover and selected fill rather than under it, and a border
+   would change the row's height. The row stays square: a radius would clip the line short at both ends. */
 @utility row-rule {
   background-image: linear-gradient(var(--k-line-subtle), var(--k-line-subtle));
   background-repeat: no-repeat;
@@ -1537,6 +1548,13 @@
   }
 }
 
+/* A lone checkbox in a field: its message hangs under the label's text, not under the box (18px box, 10px gap). */
+@utility field-notes {
+  &:has(> [data-choice-row]:first-child > :first-child [data-choice]) > p {
+    padding-inline-start: 28px;
+  }
+}
+
 @utility slider-track {
   background-color: var(--k-fill-3);
   @media (forced-colors: active) {
@@ -1897,6 +1915,9 @@
 @utility toast-viewport-width {
   max-width: min(560px, calc(100vw - 32px));
 }
+@utility focus-on-toast {
+  --k-focus: var(--k-toast-fg);
+}
 @utility ring-step {
   box-shadow: inset 0 0 0 1px var(--k-ink);
 }
@@ -2005,6 +2026,15 @@
   [data-collapsed] > & {
     opacity: 0;
     transform: translateX(-8px);
+  }
+}
+/* The sidebar's foot mirrors its head; when the row is tight the last control (a language name) truncates first. */
+@utility sidebar-foot {
+  & > * {
+    min-width: 0;
+  }
+  & > :last-child:not(:first-child) {
+    flex-shrink: 1;
   }
 }
 /* Set by AppFrame.Body on the band right above it (a page header, a toolbar) while its content is scrolled under it.
