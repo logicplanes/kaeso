@@ -117,6 +117,7 @@ Der Encoder schreibt, was KPP hält, und lehnt vor dem Senden ab, was das Format
 | `usage.input_tokens` | `usage.input_tokens` typisiert | OpenAI zählt Cache-Lese- und Schreibvorgänge darin mit, KPP nicht, daher werden beide abgezogen. |
 | `usage.input_tokens_details.cached_tokens` | `usage.cache_read_tokens` typisiert | |
 | `usage.input_tokens_details.cache_write_tokens` | `usage.cache_write_tokens` typisiert | |
+| `usage.input_tokens_details.cache_write_tokens_details.ttl_12h_tokens` | `usage.cache_write_breakdown.ephemeral_12h` typisiert | Die 12 Stunden gehaltenen Schreibvorgänge, zum 2,5-Fachen des Eingabepreises, wie bei [Responses](openai-responses.md). |
 | `usage.output_tokens` | `usage.output_tokens` typisiert | 0 bei OpenAI. |
 | `usage.output_tokens_details.reasoning_tokens` | `usage.reasoning_tokens` typisiert | |
 | `usage` | `usage.raw` | `total_tokens` und andere Schlüssel kommen im selben Format zurück. |

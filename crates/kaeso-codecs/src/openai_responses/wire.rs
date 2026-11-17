@@ -206,6 +206,8 @@ pub(super) struct InputDetails {
     pub cached_tokens: Option<u64>,
     #[serde(default)]
     pub cache_write_tokens: Option<u64>,
+    #[serde(default)]
+    pub cache_write_tokens_details: Option<crate::openai_decisions::CacheWriteTtls>,
 }
 
 #[derive(Debug, Deserialize)]

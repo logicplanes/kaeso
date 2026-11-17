@@ -252,6 +252,7 @@ order: 7
 | `ResponseUsage.input_tokens` | `usage.input_tokens` + `usage.cache_read_tokens` + `usage.cache_write_tokens`（参见[用量](cross-format.md#用量)） |
 | `ResponseUsage.input_tokens_details.cached_tokens` | `usage.cache_read_tokens` |
 | `ResponseUsage.input_tokens_details.cache_write_tokens` | `usage.cache_write_tokens` |
+| `ResponseUsage.input_tokens_details.cache_write_tokens_details.ttl_12h_tokens` | `usage.cache_write_breakdown.ephemeral_12h`，即保留 12 小时的写入，按输入价格的 2.5 倍计费；其余为按缓存写入价格计费的 30 分钟写入（`ttl_30m_tokens`） |
 | `ResponseUsage.output_tokens` | `usage.output_tokens` |
 | `ResponseUsage.output_tokens_details.reasoning_tokens` | `usage.reasoning_tokens` |
 | `ResponseUsage.total_tokens` | 推导得出（输入 + 输出）；原对象存于 `usage.raw`，对本方言优先使用 |

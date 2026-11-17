@@ -252,6 +252,7 @@ Every remaining property of the covered schemas, by name:
 | `ResponseUsage.input_tokens` | `usage.input_tokens` + `usage.cache_read_tokens` + `usage.cache_write_tokens` ([usage](cross-format.md#usage)) |
 | `ResponseUsage.input_tokens_details.cached_tokens` | `usage.cache_read_tokens` |
 | `ResponseUsage.input_tokens_details.cache_write_tokens` | `usage.cache_write_tokens` |
+| `ResponseUsage.input_tokens_details.cache_write_tokens_details.ttl_12h_tokens` | `usage.cache_write_breakdown.ephemeral_12h`, the writes kept for 12 hours, which cost 2.5 times the input price; the rest are the 30-minute writes (`ttl_30m_tokens`) at the cache write price |
 | `ResponseUsage.output_tokens` | `usage.output_tokens` |
 | `ResponseUsage.output_tokens_details.reasoning_tokens` | `usage.reasoning_tokens` |
 | `ResponseUsage.total_tokens` | derived (input + output); the original object is in `usage.raw` and wins for this dialect |

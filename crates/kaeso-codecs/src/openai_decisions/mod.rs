@@ -11,6 +11,8 @@ mod response;
 pub(crate) mod state;
 mod wire;
 
+pub(crate) use wire::CacheWriteTtls;
+
 #[cfg(test)]
 mod tests;
 

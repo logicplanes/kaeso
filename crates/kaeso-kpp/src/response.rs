@@ -164,6 +164,14 @@ impl Usage {
 pub struct CacheWriteBreakdown {
     pub ephemeral_5m: u64,
     pub ephemeral_1h: u64,
+    /// The writes OpenAI keeps for 12 hours (`prompt_cache_options.ttl: "12h"`), which it bills
+    /// at 2.5 times the input price; the rest of `cache_write_tokens` is its 30-minute rate.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub ephemeral_12h: u64,
+}
+
+fn is_zero(n: &u64) -> bool {
+    *n == 0
 }
 
 impl CacheWriteBreakdown {
@@ -171,6 +179,16 @@ impl CacheWriteBreakdown {
         CacheWriteBreakdown {
             ephemeral_5m,
             ephemeral_1h,
+            ephemeral_12h: 0,
+        }
+    }
+
+    /// OpenAI's writes kept for 12 hours, the rest of the cache writes being its 30-minute ones.
+    pub fn twelve_hours(ephemeral_12h: u64) -> Self {
+        CacheWriteBreakdown {
+            ephemeral_5m: 0,
+            ephemeral_1h: 0,
+            ephemeral_12h,
         }
     }
 }

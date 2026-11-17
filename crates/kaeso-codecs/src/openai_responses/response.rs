@@ -74,6 +74,11 @@ pub(super) fn decode_usage(raw: &RawValue, origin: &Origin) -> Result<Usage, Kpp
     );
     usage.cache_read_tokens = cached;
     usage.cache_write_tokens = written;
+    usage.cache_write_breakdown = w
+        .input_tokens_details
+        .as_ref()
+        .and_then(|d| d.cache_write_tokens_details)
+        .and_then(crate::openai_decisions::CacheWriteTtls::breakdown);
     usage.reasoning_tokens = w.output_tokens_details.and_then(|d| d.reasoning_tokens);
     usage.raw = serde_json::from_str::<Value>(raw.get())
         .ok()

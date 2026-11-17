@@ -117,6 +117,7 @@ order: 8
 | `usage.input_tokens` | `usage.input_tokens`（类型化） | OpenAI 在其中计入缓存读取和写入，KPP 不计入，因此两者都会被减去。 |
 | `usage.input_tokens_details.cached_tokens` | `usage.cache_read_tokens`（类型化） | |
 | `usage.input_tokens_details.cache_write_tokens` | `usage.cache_write_tokens`（类型化） | |
+| `usage.input_tokens_details.cache_write_tokens_details.ttl_12h_tokens` | `usage.cache_write_breakdown.ephemeral_12h`（类型化） | 保留 12 小时的写入，按输入价格的 2.5 倍计费，同 [Responses](openai-responses.md)。 |
 | `usage.output_tokens` | `usage.output_tokens`（类型化） | 在 OpenAI 为 0。 |
 | `usage.output_tokens_details.reasoning_tokens` | `usage.reasoning_tokens`（类型化） | |
 | `usage` | `usage.raw` | `total_tokens` 和其他键在相同格式中原样返回。 |

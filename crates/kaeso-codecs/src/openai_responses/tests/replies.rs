@@ -483,3 +483,33 @@ fn a_reply_whose_usage_cannot_be_read_is_a_provider_error_not_zero_usage() {
     let resp = decode_resp(&serde_json::to_vec(&body).unwrap());
     assert_eq!(resp.usage, Usage::default());
 }
+
+#[test]
+fn twelve_hour_cache_writes_keep_their_own_share() {
+    // The usage of OpenAI's prompt caching guide: 3000 tokens written for 30 minutes, 4000 for
+    // 12 hours (https://developers.openai.com/api/docs/guides/prompt-caching).
+    let raw = serde_json::value::to_raw_value(&json!({
+        "input_tokens": 12000,
+        "input_tokens_details": {
+            "cached_tokens": 4000,
+            "cache_write_tokens": 7000,
+            "cache_write_tokens_details": {"ttl_30m_tokens": 3000, "ttl_12h_tokens": 4000}
+        },
+        "output_tokens": 10,
+        "total_tokens": 12010
+    }))
+    .unwrap();
+    let u = super::super::response::decode_usage(
+        &raw,
+        &kaeso_kpp::Origin::new(DialectId::OpenAiResponses),
+    )
+    .unwrap();
+    assert_eq!(
+        (u.input_tokens, u.cache_read_tokens, u.cache_write_tokens),
+        (1000, 4000, 7000)
+    );
+    assert_eq!(
+        u.cache_write_breakdown,
+        Some(kaeso_kpp::CacheWriteBreakdown::twelve_hours(4000))
+    );
+}
