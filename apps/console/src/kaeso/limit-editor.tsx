@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Field, NumberInput, Segmented, Select, Switch, TagInput, Text } from "@logicplanes/kaeso-ui";
 import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
-import type { CatalogueModelView } from "~/api/generated/types";
+import type { CatalogueModelView, LimitView } from "~/api/generated/types";
 import { catalogueModelOption } from "./model-options";
 import { useModelPickerProviders } from "./providers";
 import { limitKindLabel, limitUnit } from "~/format/labels";
@@ -18,6 +18,16 @@ export interface LimitDraft {
   hard: boolean;
   alert_thresholds: number[];
 }
+
+/** A limit as the editor edits it, to change it or to make the same limit for someone else. */
+export const draftOf = (limit: LimitView): LimitDraft => ({
+  kind: limit.kind as LimitDraft["kind"],
+  amount: limit.amount,
+  period: limit.period as LimitDraft["period"],
+  model: limit.model ?? null,
+  hard: limit.hard,
+  alert_thresholds: limit.alert_thresholds,
+});
 
 export const newLimit = (): LimitDraft => ({ kind: "spend_budget", amount: "", period: "month", model: null, hard: true, alert_thresholds: [50, 80, 100] });
 

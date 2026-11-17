@@ -31,5 +31,10 @@
   "limits.whatHint": "Raten lehnen Anfragen darüber ab; Budgets lehnen ab oder warnen, wenn sie aufgebraucht sind.",
   "limits.whatTitle": "Welches Limit?",
   "limits.whoHint": "Eine Anfrage muss die Limits ihres Schlüssels, ihres Mitglieds und des Projekts einhalten.",
-  "limits.whoTitle": "Für wen gilt es?"
+  "limits.whoTitle": "Für wen gilt es?",
+  "limits.copyTo": "Kopieren nach …",
+  "limits.copyTitle": "Limit kopieren",
+  "limits.sort": "Sortieren",
+  "limits.sortLevel": "Ebene",
+  "limits.sortUsed": "Am meisten genutzt"
 }

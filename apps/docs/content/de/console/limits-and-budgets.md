@@ -56,6 +56,10 @@ Beim Bearbeiten ändern Sie den Betrag eines Limits und, bei einem Budget, seine
 
 Hat jemand anderes das Limit geändert, nachdem die Seite geladen wurde, meldet das Speichern dies und lädt das aktuelle Limit. Nehmen Sie Ihre Änderung dann erneut vor.
 
+**Kopieren nach …** im Menü des Limits eines Mitglieds oder Schlüssels legt dasselbe Limit für ein anderes Mitglied, Dienstkonto oder einen anderen Schlüssel an: Sie wählen nur, für wen, und Art, Betrag, Zeitraum, Modell und Warnungen kommen vom kopierten Limit. Wer schon ein Limit dieser Art, dieses Zeitraums und Modells hat, wird nicht angeboten, weil jeder nur eines haben kann.
+
+**Sortieren** ordnet jede Ebene nach **Ebene**, der Vorgabe, oder nach **Am meisten genutzt**: das vollste Limit zuerst, Limits mit unbekannter Nutzung zuletzt. Die Adresse der Seite behält die Reihenfolge.
+
 ## Was eine App sieht
 
 Kaeso beantwortet eine abgelehnte Anfrage mit Status 429, im API-Format der App, mit einer Meldung, die das Limit nennt:

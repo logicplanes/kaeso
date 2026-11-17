@@ -4,6 +4,7 @@ import { LimitsPage, type LimitsSearch } from "~/features/project/limits/limits-
 
 const limitsSearch = (s: Record<string, unknown>): LimitsSearch => ({
   ...(s.level === "project" || s.level === "member" || s.level === "key" ? { level: s.level } : {}),
+  ...(s.sort === "used" ? { sort: "used" as const } : {}),
   ...(s.add === true || s.add === "true" ? { add: true } : {}),
 });
 
