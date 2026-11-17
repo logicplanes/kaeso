@@ -19170,7 +19170,7 @@
           "projects"
         ],
         "summary": "Speaks text in the Playground as the signed-in member.",
-        "description": "An OpenAI `audio/speech` request to one of the project's speech models, as the\nsigned-in member: the reply is the audio. Charged to the project and logged with the\nsource `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "An OpenAI `audio/speech` request to one of the project's speech models, as the\nsigned-in member: the reply is the audio. Charged to the project and logged with the\nsource `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundAudioSpeech",
         "parameters": [
           {
@@ -19252,12 +19252,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -19269,7 +19263,7 @@
           "projects"
         ],
         "summary": "Transcribes audio in the Playground as the signed-in member.",
-        "description": "An OpenAI `audio/transcriptions` upload to one of the project's transcription models,\nas the signed-in member, up to `KAESO_BODY_LIMITS_AUDIO`. Charged to the project and\nlogged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "An OpenAI `audio/transcriptions` upload to one of the project's transcription models,\nas the signed-in member, up to `KAESO_BODY_LIMITS_AUDIO`. Charged to the project and\nlogged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundAudioTranscriptions",
         "parameters": [
           {
@@ -19351,12 +19345,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -19368,7 +19356,7 @@
           "projects"
         ],
         "summary": "Translates audio into English text in the Playground as the signed-in member.",
-        "description": "An OpenAI `audio/translations` upload to one of the project's transcription models\nthat translate, as the signed-in member, up to `KAESO_BODY_LIMITS_AUDIO`. Charged to the\nproject and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "An OpenAI `audio/translations` upload to one of the project's transcription models\nthat translate, as the signed-in member, up to `KAESO_BODY_LIMITS_AUDIO`. Charged to the\nproject and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundAudioTranslations",
         "parameters": [
           {
@@ -19450,12 +19438,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -19467,7 +19449,7 @@
           "projects"
         ],
         "summary": "Asks a decision model typed questions in the Playground as the signed-in member.",
-        "description": "A TypeSafe System One request (`model`, `state`, `questions`, `assets`), as JSON or\nas `multipart/form-data` whose first part is `request`, to one of the project's models that\nmake decisions, as the signed-in member, up to `KAESO_BODY_LIMITS_DECISIONS`. Kaeso sends it\nin the format the model's provider takes and answers in System One's. Charged to the project,\ncounted against its limits and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "A TypeSafe System One request (`model`, `state`, `questions`, `assets`), as JSON or\nas `multipart/form-data` whose first part is `request`, to one of the project's models that\nmake decisions, as the signed-in member, up to `KAESO_BODY_LIMITS_DECISIONS`. Kaeso sends it\nin the format the model's provider takes and answers in System One's. Charged to the project,\ncounted against its limits and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundDecisions",
         "parameters": [
           {
@@ -19563,12 +19545,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -19580,7 +19556,7 @@
           "projects"
         ],
         "summary": "Edits images in the Playground as the signed-in member.",
-        "description": "An OpenAI `images/edits` upload (`multipart/form-data` with `image[]`) to one of the\nproject's image models, as the signed-in member, up to `KAESO_BODY_LIMITS_IMAGES`.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "An OpenAI `images/edits` upload (`multipart/form-data` with `image[]`) to one of the\nproject's image models, as the signed-in member, up to `KAESO_BODY_LIMITS_IMAGES`.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundImagesEdits",
         "parameters": [
           {
@@ -19662,12 +19638,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -19679,7 +19649,7 @@
           "projects"
         ],
         "summary": "Makes images in the Playground as the signed-in member.",
-        "description": "An OpenAI `images/generations` request to one of the project's image models, as\nthe signed-in member: the reply is OpenAI's, with the images as `b64_json` or `url`.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "An OpenAI `images/generations` request to one of the project's image models, as\nthe signed-in member: the reply is OpenAI's, with the images as `b64_json` or `url`.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundImagesGenerations",
         "parameters": [
           {
@@ -19761,12 +19731,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -19778,7 +19742,7 @@
           "projects"
         ],
         "summary": "The models the signed-in member can call in the Playground.",
-        "description": "The project's catalogue without embeddings, reranking and realtime models,\nnarrowed by the member's model access, with each model's `mode` (text, image, speech,\nsound effects, music, transcription, video or decision) and what the Playground shows and\noffers for it (reasoning, efforts, temperature, voices, image options, decision question\ntypes and limits, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "The project's catalogue without embeddings, reranking and realtime models,\nnarrowed by the member's model access, with each model's `mode` (text, image, speech,\nsound effects, music, transcription, video or decision) and what the Playground shows and\noffers for it (reasoning, efforts, temperature, voices, image options, decision question\ntypes and limits, prices). A reply's cost is `(input − cached) ×\ninput_price + cached × cache_read_price + output × output_price`, per\nmillion tokens, at the prices of the highest of `price_tiers` whose\n`context_above` the input exceeds, as the request log charges it\n(Anthropic cache writes, which Responses usage does not show, are in the\nlog's cost only).\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "getOrgsOrgProjectsProjectPlaygroundModels",
         "parameters": [
           {
@@ -19836,12 +19800,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -19853,7 +19811,7 @@
           "projects"
         ],
         "summary": "Makes music in the Playground as the signed-in member.",
-        "description": "An ElevenLabs `music` request (`prompt`, `music_length_ms`, `model_id`) to one of the\nproject's music models, as the signed-in member: the reply is the audio. Charged to the\nproject and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "An ElevenLabs `music` request (`prompt`, `music_length_ms`, `model_id`) to one of the\nproject's music models, as the signed-in member: the reply is the audio. Charged to the\nproject and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundMusic",
         "parameters": [
           {
@@ -19935,12 +19893,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -19952,7 +19904,7 @@
           "projects"
         ],
         "summary": "Sends a Playground request as the signed-in member.",
-        "description": "Sends a request to one of the project's models as the signed-in member\nand streams the reply as OpenAI Responses events (`response.created`,\n`response.output_item.added`, `response.reasoning_summary_text.delta`,\n`response.output_text.delta`, `response.completed` with usage, `error`),\nwith keepalive comments while the model is quiet. Closing the stream\ncancels the provider request. The request counts against the member's\nand the project's limits and budgets, is charged to the project, and is\nlogged with the source `playground`. With `route`, the request takes that\nroute instead of the saved alias's, and `headers` reach its conditions and\nsplits; the `kaeso-route` header names every step it tried. Needs a console\nsession; failures before the stream starts are Platform API errors\n(`provider_error` when the provider fails, refuses the provider key, is\noverloaded or times out).\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "Sends a request to one of the project's models as the signed-in member\nand streams the reply as OpenAI Responses events (`response.created`,\n`response.output_item.added`, `response.reasoning_summary_text.delta`,\n`response.output_text.delta`, `response.completed` with usage, `error`),\nwith keepalive comments while the model is quiet. Closing the stream\ncancels the provider request. The request counts against the member's\nand the project's limits and budgets, is charged to the project, and is\nlogged with the source `playground`. With `route`, the request takes that\nroute instead of the saved alias's, and `headers` reach its conditions and\nsplits; the `kaeso-route` header names every step it tried. Needs a console\nsession; failures before the stream starts are Platform API errors\n(`provider_error` when the provider fails, refuses the provider key, is\noverloaded or times out).\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundResponses",
         "parameters": [
           {
@@ -20051,12 +20003,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -20068,7 +20014,7 @@
           "projects"
         ],
         "summary": "Makes a sound effect in the Playground as the signed-in member.",
-        "description": "An ElevenLabs `sound-generation` request (`text`, `duration_seconds`, `model_id`) to\none of the project's sound effect models, as the signed-in member: the reply is the audio.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "An ElevenLabs `sound-generation` request (`text`, `duration_seconds`, `model_id`) to\none of the project's sound effect models, as the signed-in member: the reply is the audio.\nCharged to the project and logged with the source `playground`; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundSoundEffects",
         "parameters": [
           {
@@ -20150,12 +20096,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -20167,7 +20107,7 @@
           "projects"
         ],
         "summary": "Starts a video in the Playground as the signed-in member.",
-        "description": "An OpenAI `videos` request to one of the project's video models, as the signed-in\nmember: the reply is the job, to follow with `GET …/playground/videos/{video}`. The job is\ncharged to the project when it ends and logged with the source `playground`; needs a\nconsole session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "An OpenAI `videos` request to one of the project's video models, as the signed-in\nmember: the reply is the job, to follow with `GET …/playground/videos/{video}`. The job is\ncharged to the project when it ends and logged with the source `playground`; needs a\nconsole session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "postOrgsOrgProjectsProjectPlaygroundVideos",
         "parameters": [
           {
@@ -20249,12 +20189,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -20266,7 +20200,7 @@
           "projects"
         ],
         "summary": "A video the signed-in member started in the Playground.",
-        "description": "The job, as OpenAI's Videos API shows it, after asking its provider how it\nstands, with the `kaeso-cost` header once it ended: what it was charged, `0` for a job that\nfailed, or `unknown`. Only videos the member started in the Playground; needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "The job, as OpenAI's Videos API shows it, after asking its provider how it\nstands, with the `kaeso-cost` header once it ended: what it was charged, `0` for a job that\nfailed, or `unknown`. Only videos the member started in the Playground; needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "getOrgsOrgProjectsProjectPlaygroundVideosVideo",
         "parameters": [
           {
@@ -20341,12 +20275,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -20356,7 +20284,7 @@
           "projects"
         ],
         "summary": "Cancels or deletes a video the signed-in member started in the Playground.",
-        "description": "Deletes the job at its provider where the provider can, which cancels one\nstill running there, and forgets it. Needs a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "Deletes the job at its provider where the provider can, which cancels one\nstill running there, and forgets it. Needs a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "deleteOrgsOrgProjectsProjectPlaygroundVideosVideo",
         "parameters": [
           {
@@ -20431,12 +20359,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
@@ -20448,7 +20370,7 @@
           "projects"
         ],
         "summary": "The file of a video the signed-in member made in the Playground.",
-        "description": "The completed video's file, streamed from its provider with `Range` passed\nthrough; `variant` (`video`, `thumbnail`, `spritesheet`) as in OpenAI's Videos API.\nNeeds a console session.\n\n**Right:** `playground.use` on the project in the path.",
+        "description": "The completed video's file, streamed from its provider with `Range` passed\nthrough; `variant` (`video`, `thumbnail`, `spritesheet`) as in OpenAI's Videos API.\nNeeds a console session.\n\n**Right:** `playground.use` on the project in the path; a console session only.",
         "operationId": "getOrgsOrgProjectsProjectPlaygroundVideosVideoContent",
         "parameters": [
           {
@@ -20552,12 +20474,6 @@
         "security": [
           {
             "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
           }
         ],
         "x-kaeso-access": "right:playground.use"
