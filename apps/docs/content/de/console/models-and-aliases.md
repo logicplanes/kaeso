@@ -23,7 +23,7 @@ Die Installation hält die Daten von KPMR selbst aktuell, standardmäßig etwa s
 
 ## Ein Modell finden
 
-Der Tab **Katalog** gruppiert die Modelle nach Anbieter. Grenzen Sie ihn auf einen Anbieter ein, auf eine Fähigkeit wie **Tool-Aufrufe** oder **Bildeingabe**, oder mit **Nur angepasste** auf Modelle, deren Werte in diesem Projekt geändert sind. Auf einem Smartphone liegen diese Filter unter **Filter**. Das Sortiermenü ordnet die Modelle jedes Anbieters nach **Modell-ID**, **Eingabepreis** oder **Neueste zuerst**.
+Der Tab **Katalog** gruppiert die Modelle nach Anbieter. Grenzen Sie ihn auf einen Anbieter ein, auf eine Fähigkeit wie **Tool-Aufrufe** oder **Bildeingabe**, nach **Status** auf die Modelle, die der Anbieter nicht bereitstellt (**Nicht verfügbar**) oder die KPMR als veraltet markiert oder nicht mehr listet, oder mit **Nur angepasste** auf Modelle, deren Werte in diesem Projekt geändert sind. Findet **Verfügbarkeit prüfen** nicht verfügbare Modelle, listet **Anzeigen** in seiner Meldung sie auf. Auf einem Smartphone liegen diese Filter unter **Filter**. Das Sortiermenü ordnet die Modelle jedes Anbieters nach **Modell-ID**, **Eingabepreis** oder **Neueste zuerst**.
 
 ## Verfügbarkeit
 

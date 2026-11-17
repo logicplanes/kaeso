@@ -23,7 +23,7 @@ The install keeps KPMR's data current by itself, about every hour by default, an
 
 ## Find a model
 
-The **Catalogue** tab groups models by provider. Narrow it to one provider, to a capability such as **Tool calling** or **Image input**, or with **Only overridden** to models with values changed in this project. On a phone, these filters sit under **Filters**. The sort menu orders each provider's models by **Model id**, **Input price** or **Newest release**.
+The **Catalogue** tab groups models by provider. Narrow it to one provider, to a capability such as **Tool calling** or **Image input**, by **Status** to the models the provider doesn't serve (**Unavailable**) or KPMR deprecated or no longer lists, or with **Only overridden** to models with values changed in this project. After **Check availability** finds unavailable models, **Show them** in its notice lists them. On a phone, these filters sit under **Filters**. The sort menu orders each provider's models by **Model id**, **Input price** or **Newest release**.
 
 ## Availability
 

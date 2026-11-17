@@ -46,15 +46,31 @@ import { common } from "~/i18n/common";
 import { patchSearch, type SearchPatch } from "~/search";
 
 export type ModelsSort = "model" | "price" | "release";
+/** What a catalogue model's badges say: the provider doesn't serve it, KPMR deprecated it, or
+ * KPMR no longer lists it (never a custom model). */
+export type ModelStatus = "unavailable" | "deprecated" | "delisted";
+const MODEL_STATUSES: readonly ModelStatus[] = ["unavailable", "deprecated", "delisted"];
+
+const hasStatus = (m: CatalogueModelView, status: ModelStatus): boolean =>
+  status === "unavailable" ? m.availability === "unavailable" : status === "deprecated" ? m.deprecated : !m.listed && !m.custom;
+
 export type ModelsSearch = {
   tab?: "aliases";
   model?: string;
   provider?: string;
   cap?: Capability;
+  status?: ModelStatus;
   overridden?: boolean;
   sort?: ModelsSort;
   add?: boolean;
 };
+
+// The same words as the badges.
+const statusOptions = () => [
+  { value: "unavailable", label: t("models.unavailable", "Unavailable") },
+  { value: "deprecated", label: t("models.deprecated", "Deprecated") },
+  { value: "delisted", label: t("models.delisted", "No longer listed") },
+];
 
 function sorted(list: CatalogueModelView[], sort: ModelsSort): CatalogueModelView[] {
   const by = {
@@ -103,9 +119,10 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         (m) =>
           (!search.provider || m.provider === search.provider) &&
           (!search.cap || capabilities(m.effective).includes(search.cap)) &&
+          (!search.status || hasStatus(m, search.status)) &&
           (!search.overridden || overriddenFields(m).length > 0),
       ),
-    [all, search.provider, search.cap, search.overridden],
+    [all, search.provider, search.cap, search.status, search.overridden],
   );
   const groups: ListGroup[] = useMemo(() => {
     const providers = [...new Set(filtered.map((m) => m.provider))].sort();
@@ -153,18 +170,21 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         return;
       }
       const unavailable = result.models.filter((m) => m.availability === "unavailable").length;
+      if (!unavailable) {
+        toast.success(t("models.checkedAll", "Checked {count, plural, one {# model} other {# models}}; all available", { count: result.models.length }));
+        return;
+      }
       toast.success(
-        unavailable
-          ? t("models.checkedSome", "Checked {count, plural, one {# model} other {# models}}; {unavailable} unavailable", {
-              count: result.models.length,
-              unavailable,
-            })
-          : t("models.checkedAll", "Checked {count, plural, one {# model} other {# models}}; all available", { count: result.models.length }),
+        t("models.checkedSome", "Checked {count, plural, one {# model} other {# models}}; {unavailable} unavailable", {
+          count: result.models.length,
+          unavailable,
+        }),
+        { action: { label: t("models.showThem", "Show them"), onClick: () => setSearch({ status: "unavailable", model: undefined }) } },
       );
     },
   });
 
-  const filtering = !!(search.provider || search.cap || search.overridden);
+  const filtering = !!(search.provider || search.cap || search.status || search.overridden);
   const addButton = (
     <Button size="sm" variant="primary" leadingIcon={icons.add} disabled={!canManage} {...(reason ? { disabledReason: reason } : {})} onClick={create.run}>
       {create.label}
@@ -191,12 +211,20 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         onValueChange={(v) => setSearch({ cap: capabilityOptions().find((c) => c.value === v)?.value })}
         options={[{ value: "any", label: t("models.anyCapability", "Any capability") }, ...capabilityOptions()]}
       />
+      <Select
+        aria-label={t("models.status", "Status")}
+        size="sm"
+        {...(stacked ? { fullWidth: true } : {})}
+        value={search.status ?? "any"}
+        onValueChange={(v) => setSearch({ status: MODEL_STATUSES.find((s) => s === v) })}
+        options={[{ value: "any", label: t("models.anyStatus", "Any status") }, ...statusOptions()]}
+      />
       <Button variant="selector" size="sm" pressed={!!search.overridden} onPressedChange={(v) => setSearch({ overridden: v || undefined })}>
         {t("models.onlyOverridden", "Only overridden")}
       </Button>
     </>
   );
-  const activeFilters = [search.provider, search.cap, search.overridden].filter(Boolean).length;
+  const activeFilters = [search.provider, search.cap, search.status, search.overridden].filter(Boolean).length;
   return (
     <>
       <ProjectHeader
@@ -275,7 +303,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
                 }
                 actions={
                   filtering ? (
-                    <Button onClick={() => setSearch({ provider: undefined, cap: undefined, overridden: undefined })}>
+                    <Button onClick={() => setSearch({ provider: undefined, cap: undefined, status: undefined, overridden: undefined })}>
                       {t("models.clearFilters", "Clear filters")}
                     </Button>
                   ) : canManage ? (
