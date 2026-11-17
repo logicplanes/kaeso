@@ -105,7 +105,7 @@ Each organization chooses what it keeps, and for how long, under **Organization 
 | Metadata retention | 90 days | How long log entries are kept |
 | Content retention | 30 days | How long request and reply bodies are kept. Never longer than the metadata |
 
-Shortening a retention deletes older entries at once, after you confirm it, and lengthening it applies to new ones. The install sets the defaults for new organizations and the longest retention an organization may choose ([instance settings](instance-administration.md#change-install-settings)). Changing these settings, or content logging or kept media for the organization, needs the right **Manage log settings** and a recent sign-in.
+Shortening a retention deletes older entries at once, after you confirm it, and the entries it keeps then expire by the shorter retention too; lengthening it applies to new ones. The install sets the defaults for new organizations and the longest retention an organization may choose ([instance settings](instance-administration.md#change-install-settings)). Changing these settings, or content logging or kept media for the organization, needs the right **Manage log settings** and a recent sign-in.
 
 A project can turn content logging off for itself in its **Settings**, with the right **Switch content logging**. An app keeps a single request's content out with the header `kaeso-log-content: off` ([model API](../api/model-api.md#keeping-content-out-of-the-log)). It can't turn it on while the organization has it off. The same right switches **Keep media** for the project, which can't be on while the organization keeps none.
 

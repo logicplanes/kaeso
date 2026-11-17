@@ -1184,6 +1184,26 @@ impl Sink for Recorder {
     }
 }
 
+// The entries a shorter retention keeps were written with the old one's expiry; they take the
+// organization's retention now, which a later change may have shortened further.
+async fn shorten_expiry(
+    state: &AppState,
+    clickhouse: &kaeso_store::clickhouse::ClickHouse,
+    job: &log_jobs::LogJob,
+) -> Result<(), StoreError> {
+    let Some(org) = kaeso_store::pg::orgs::get(&state.pg, job.org_id).await? else {
+        return Ok(());
+    };
+    let content = job.kind == "shrink_content";
+    let days = if content {
+        org.content_retention_days.min(org.metadata_retention_days)
+    } else {
+        org.metadata_retention_days
+    };
+    let days = u32::try_from(days.max(1)).unwrap_or(1);
+    ch::shorten_expiry(clickhouse, job.org_id, days, content).await
+}
+
 pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
     let Some(clickhouse) = state.clickhouse.as_ref() else {
         return Ok("request logs are off; log jobs wait".to_owned());
@@ -1191,7 +1211,7 @@ pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
     let jobs = log_jobs::pending(&state.pg, 20).await?;
     let mut done = 0;
     for job in jobs {
-        let result = ch::delete_range(
+        let mut result = ch::delete_range(
             clickhouse,
             job.org_id,
             job.project_id,
@@ -1200,6 +1220,9 @@ pub async fn run_jobs(state: &AppState) -> Result<String, StoreError> {
             job.kind == "shrink_content",
         )
         .await;
+        if result.is_ok() && job.kind.starts_with("shrink_") {
+            result = shorten_expiry(state, clickhouse, &job).await;
+        }
         let error = result.as_ref().err().map(ToString::to_string);
         log_jobs::finish(&state.pg, job.id, state.clock.now(), error.as_deref()).await?;
         if error.is_none() {

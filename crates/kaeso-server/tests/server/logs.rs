@@ -1606,6 +1606,55 @@ async fn retention_shrinks_and_deletions_remove_rows() {
 }
 
 #[tokio::test]
+async fn entries_a_shortened_retention_keeps_expire_by_it() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    seed(&env, 2, now - time::Duration::days(1)).await;
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let ch = env.app.state.clickhouse.as_ref().unwrap();
+    let kept_days = || async {
+        ch::search(
+            ch,
+            org.uuid(),
+            project.uuid(),
+            &ch::Filter::default(),
+            None,
+            10,
+        )
+        .await
+        .unwrap()
+        .iter()
+        .map(|r| (r.expires_at - r.started_at).whole_days())
+        .collect::<Vec<_>>()
+    };
+    assert!(kept_days().await.iter().all(|d| (89..=90).contains(d)));
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{}/logs/settings", env.owner.org_id),
+            Some(json!({ "metadata_retention_days": 30, "content_retention_days": 7 })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    kaeso_server::services::logs::run_jobs(&env.app.state)
+        .await
+        .unwrap();
+    let mut days = Vec::new();
+    for _ in 0..100 {
+        days = kept_days().await;
+        if days.len() == 2 && days.iter().all(|d| (29..=30).contains(d)) {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    assert_eq!(days.len(), 2, "{days:?}");
+    assert!(days.iter().all(|d| (29..=30).contains(d)), "{days:?}");
+}
+
+#[tokio::test]
 async fn lowering_the_install_maximum_lowers_organizations_above_it() {
     let env = env(&[]).await;
     let now = env.app.clock.now().replace_nanosecond(0).unwrap();
