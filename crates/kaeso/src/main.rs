@@ -55,6 +55,15 @@ enum Command {
 #[derive(Subcommand)]
 enum UserCommand {
     #[command(
+        about = "List the accounts with their address, name, state, whether they are instance admins and use two-factor authentication, and when they were created"
+    )]
+    List {
+        #[arg(long, help = "Only instance admins")]
+        instance_admins: bool,
+        #[arg(long, help = "Only accounts whose address or name contains this text")]
+        search: Option<String>,
+    },
+    #[command(
         name = "reset-2fa",
         about = "Remove a user's TOTP and recovery codes and end their sessions, as a last resort when they lost their device"
     )]
@@ -239,6 +248,19 @@ async fn run(command: Command) -> Result<()> {
                 None => say!("Kaeso is already set up: a user exists. Sign in instead."),
             }
         }
+        Command::User(UserCommand::List {
+            instance_admins,
+            search,
+        }) => {
+            let state = kaeso_server::serve::prepare(config).await?;
+            let listed = kaeso_server::services::users::operator_list(
+                &state,
+                instance_admins,
+                search.as_deref(),
+            )
+            .await?;
+            say!("{}", user_table(&listed));
+        }
         Command::User(UserCommand::Reset2fa { email }) => {
             let state = kaeso_server::serve::prepare(config).await?;
             match kaeso_server::services::users::operator_reset_2fa(&state, &email).await? {
@@ -365,6 +387,27 @@ async fn run(command: Command) -> Result<()> {
     Ok(())
 }
 
+// Tab-separated, so it reads in a terminal and splits with `cut -f`.
+fn user_table(listed: &[kaeso_server::services::users::Listed]) -> String {
+    if listed.is_empty() {
+        return "No account matches.".to_owned();
+    }
+    let yes = |b: bool| if b { "yes" } else { "no" };
+    let mut lines = vec!["EMAIL\tNAME\tSTATE\tINSTANCE ADMIN\tTWO-FACTOR\tCREATED".to_owned()];
+    lines.extend(listed.iter().map(|u| {
+        format!(
+            "{}\t{}\t{}\t{}\t{}\t{}",
+            u.email,
+            u.name,
+            u.state,
+            yes(u.instance_admin),
+            yes(u.two_factor),
+            u.created_at.date()
+        )
+    }));
+    lines.join("\n")
+}
+
 fn probe_address(config: &Config) -> SocketAddr {
     let ip = match config.listen.ip() {
         IpAddr::V4(ip) if ip.is_unspecified() => IpAddr::V4(Ipv4Addr::LOCALHOST),
@@ -471,6 +514,37 @@ mod tests {
 
     fn probe(listen: &str) -> SocketAddr {
         probe_address(&load_config(&source(listen)).unwrap())
+    }
+
+    #[test]
+    fn the_user_list_is_one_tab_separated_line_per_account() {
+        use kaeso_server::services::users::Listed;
+        let at = time::macros::datetime!(2026-10-01 08:00 UTC);
+        let listed = [
+            Listed {
+                email: "ada@example.com".into(),
+                name: "Ada Lovelace".into(),
+                state: "active".into(),
+                instance_admin: true,
+                two_factor: true,
+                created_at: at,
+            },
+            Listed {
+                email: "grace@example.com".into(),
+                name: "Grace Hopper".into(),
+                state: "deactivated".into(),
+                instance_admin: false,
+                two_factor: false,
+                created_at: at,
+            },
+        ];
+        assert_eq!(
+            user_table(&listed),
+            "EMAIL\tNAME\tSTATE\tINSTANCE ADMIN\tTWO-FACTOR\tCREATED\n\
+             ada@example.com\tAda Lovelace\tactive\tyes\tyes\t2026-10-01\n\
+             grace@example.com\tGrace Hopper\tdeactivated\tno\tno\t2026-10-01"
+        );
+        assert_eq!(user_table(&[]), "No account matches.");
     }
 
     #[test]

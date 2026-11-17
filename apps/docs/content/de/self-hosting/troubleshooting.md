@@ -144,7 +144,7 @@ Kaeso meldet dann keines der beiden über diese Adresse an, schickt keinem einen
 
 ## Niemand kann sich über Single Sign-on anmelden
 
-Auf einer Installation ohne Passwörter lässt ein defekter Identitätsanbieter keinen Weg hinein. Schalten Sie Passwörter nicht wieder ein: Geben Sie einen einmaligen Anmeldelink für einen Instanz-Admin aus, wie [Wieder hineinkommen](sign-in.md#wieder-hineinkommen) zeigt.
+Auf einer Installation ohne Passwörter lässt ein defekter Identitätsanbieter keinen Weg hinein. Schalten Sie Passwörter nicht wieder ein: Finden Sie die Adresse eines Instanz-Admins mit `kaeso user list --instance-admins` und geben Sie einen einmaligen Anmeldelink für ihn aus, wie [Wieder hineinkommen](sign-in.md#wieder-hineinkommen) zeigt.
 
 ## Jemand meldet eine Anfrage-ID
 

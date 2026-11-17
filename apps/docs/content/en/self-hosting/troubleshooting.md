@@ -144,7 +144,7 @@ Kaeso then signs neither in by that address, sends neither a link, and logs `acc
 
 ## Nobody can sign in through single sign-on
 
-On an install without passwords, a broken identity provider leaves no way in. Don't turn passwords back on: print a one-time sign-in link for an instance admin, as [get back in](sign-in.md#get-back-in) shows.
+On an install without passwords, a broken identity provider leaves no way in. Don't turn passwords back on: find an instance admin's address with `kaeso user list --instance-admins` and print a one-time sign-in link for them, as [get back in](sign-in.md#get-back-in) shows.
 
 ## Someone reports a request id
 
