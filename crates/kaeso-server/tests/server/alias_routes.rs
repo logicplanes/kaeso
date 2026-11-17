@@ -522,6 +522,34 @@ async fn a_refusal_of_the_request_itself_never_holds_a_step() {
 }
 
 #[tokio::test]
+async fn a_not_found_about_a_file_the_request_names_refuses_it_and_holds_no_step() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    let r = ask(
+        &env,
+        App::Messages,
+        "sturdy",
+        "Hi [mock:fail=claude-haiku-4-5 not-found-file]",
+        false,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{}", r.text());
+    let message = r.json()["error"]["message"].as_str().unwrap().to_owned();
+    assert!(message.starts_with("File `file_"), "{message}");
+    assert_eq!(
+        walked(&r),
+        ["\"route\";model=\"anthropic/claude-haiku-4-5\";status=404"]
+    );
+    let r = ask(&env, App::Messages, "sturdy", "Hi again", false).await;
+    assert_eq!(
+        walked(&r),
+        ["\"route\";model=\"anthropic/claude-haiku-4-5\";status=200"]
+    );
+}
+
+#[tokio::test]
 async fn a_held_step_is_tried_when_no_later_step_is_ready() {
     let env = env().await;
     let claude = model_id(&env, "claude-haiku-4-5").await;

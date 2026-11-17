@@ -61,7 +61,7 @@ When a model step fails, Kaeso moves on to its fallback if the step's `fall_back
 | `unavailable` | The provider can't be reached, times out, is overloaded or answers 5xx; it refuses the project's provider key or doesn't serve the model; the project has no provider key for it |
 | `limited` | The provider's rate limit or quota (429), or a Kaeso [limit or budget](../console/limits-and-budgets.md) for the step's model: 429, or 403 for a spend budget that can't price the request. When Kaeso can't check limits at all (503), no step falls back |
 | `unsupported` | The model can't take something the request uses, such as images, PDFs, tools or a JSON schema. Kaeso knows this from the catalogue before it sends anything |
-| `rejected` | The provider refuses the request itself: 400 or 413, such as a context that is too long or content it filters |
+| `rejected` | The provider refuses the request itself: 400 or 413, such as a context that is too long or content it filters, or 404 for something the request names, such as a file, while it serves the model |
 
 A step falls back on `unavailable`, `limited` and `unsupported` unless it lists others. Add `rejected` only for a fallback that can take what the first model refused, such as a model with a longer context.
 
