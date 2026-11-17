@@ -226,7 +226,7 @@ test("a Markdown system prompt reads as Markdown, and Show raw shows it as sent"
   await sheet.getByRole("tab", { name: "Request" }).click();
   const prompt = sheet.getByRole("region", { name: "System" });
   await expect(prompt.getByRole("heading", { name: "Harness" })).toBeVisible();
-  await expect(prompt.getByRole("listitem")).toHaveText(["•Read the order", "•Answer in one line"]);
+  await expect(prompt.getByRole("listitem")).toHaveText(["Read the order", "Answer in one line"]);
   await expect(prompt.getByText("<system-reminder>Stay calm.</system-reminder>")).toBeVisible();
 
   await sheet.getByRole("switch", { name: "Show raw" }).click();
