@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { project, signedIn } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { logSettings, projectData, projectPath } from "~/test/fixtures/project";
-import { on, requests } from "~/test/network";
+import { noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import type { ProjectResponseCache } from "~/api/generated/types";
 
@@ -47,7 +47,7 @@ describe("project response cache", () => {
   it("changes how long replies are kept and clears the cache", async () => {
     setUp({ settings: on_ });
     on("PATCH", CACHE, cache({ enabled: true, effective: true, ttl_seconds: 86400 }));
-    on("POST", CLEAR, null);
+    on("POST", CLEAR, noContent);
     const { user } = await renderApp(projectPath("settings"));
 
     expect(await screen.findByText("Non-streamed requests sent twice get the stored reply.")).toBeInTheDocument();
