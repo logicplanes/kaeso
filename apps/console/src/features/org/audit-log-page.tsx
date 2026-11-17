@@ -30,7 +30,7 @@ export function OrgAuditLogPage({ org, search }: { org: string; search: AuditSea
       if (kind === "user") return `${base}/members?member=${id}`;
       if (kind === "invite") return `${base}/members?tab=invites`;
       if (kind === "credential") return `/orgs/${org}/providers`;
-      if (kind === "platform_key") return `${base}/platform-keys`;
+      if (kind === "platform_key") return `${base}/platform-keys?key=${id}`;
       if (kind === "org") return `${base}/general`;
       return undefined;
     },
