@@ -97,6 +97,8 @@ def install(tmp_path_factory):
     )
     env = {
         "KAESO_DOMAIN": ":80",
+        "KAESO_PUBLIC_URL": f"http://localhost:{port}",
+        "KAESO_SMTP_FROM": '"Kaeso <kaeso@example.com>"',
         "POSTGRES_PASSWORD": os.urandom(16).hex(),
         "POSTGRES_SUPERUSER_PASSWORD": os.urandom(16).hex(),
         "CLICKHOUSE_PASSWORD": os.urandom(16).hex(),

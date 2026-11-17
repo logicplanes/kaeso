@@ -36,7 +36,7 @@ def installed(tmp_path_factory):
     def install() -> subprocess.CompletedProcess:
         with SCRIPT.open() as script:
             return subprocess.run(
-                ["sh", "-s", "--", "--dir", str(work), "--domain", ":80"],
+                ["sh", "-s", "--", "--dir", str(work), "--domain", ":80", "--public-url", f"http://localhost:{port}"],
                 stdin=script, env=env, capture_output=True, text=True, timeout=600,
             )
 
@@ -56,6 +56,9 @@ def test_one_command_installs_kaeso_and_prints_the_setup_link(installed):
 
     settings = dict(line.split("=", 1) for line in (work / ".env").read_text().splitlines())
     assert settings["KAESO_DOMAIN"] == ":80"
+    # The gateway starts from what the installer wrote: compose.test.yaml sets no address.
+    assert settings["KAESO_PUBLIC_URL"] == url
+    assert settings["KAESO_SMTP_FROM"] == '"Kaeso <kaeso@localhost>"'
     assert settings["KAESO_MAIL_TRANSPORT"] == "log"
     passwords = [settings[name] for name in ("POSTGRES_PASSWORD", "POSTGRES_SUPERUSER_PASSWORD", "CLICKHOUSE_PASSWORD", "VALKEY_PASSWORD")]
     assert all(re.fullmatch(r"[0-9a-f]{48}", password) for password in passwords)
@@ -138,6 +141,44 @@ def run_part(call: str, tmp_path: Path, env: dict[str, str] | None = None) -> su
 def test_a_typed_domain_is_cleaned_or_refused(typed, domain, tmp_path):
     result = run_part(f"clean_domain '{typed}'", tmp_path)
     assert (result.stdout.strip() if result.returncode == 0 else None) == domain
+
+
+@pytest.mark.parametrize(
+    ("typed", "url"),
+    [
+        ("https://kaeso.example.com", "https://kaeso.example.com"),
+        ("https://Kaeso.Example.com/", "https://kaeso.example.com"),
+        ("http://localhost:8080", "http://localhost:8080"),
+        ("kaeso.example.com", None),
+        ("https://kaeso.example.com/console", None),
+        ("https://kaeso.example.com:80x", None),
+        ("ftp://kaeso.example.com", None),
+        ("https://", None),
+    ],
+)
+def test_a_public_url_is_a_bare_origin(typed, url, tmp_path):
+    result = run_part(f"clean_public_url '{typed}'", tmp_path)
+    assert (result.stdout.strip() if result.returncode == 0 else None) == url
+
+
+@pytest.mark.parametrize(
+    ("domain", "given", "written"),
+    [
+        (":80", "", ["KAESO_PUBLIC_URL=http://localhost", 'KAESO_SMTP_FROM="Kaeso <kaeso@localhost>"']),
+        (":8080", "", ["KAESO_PUBLIC_URL=http://localhost:8080", 'KAESO_SMTP_FROM="Kaeso <kaeso@localhost>"']),
+        (":80", "https://kaeso.example.com", ["KAESO_PUBLIC_URL=https://kaeso.example.com", 'KAESO_SMTP_FROM="Kaeso <kaeso@kaeso.example.com>"']),
+        ("kaeso.example.com", "", []),
+        ("kaeso.example.com", "https://ai.example.com", ["KAESO_PUBLIC_URL=https://ai.example.com"]),
+    ],
+)
+def test_a_port_as_the_domain_gets_an_address_and_a_sender(domain, given, written, tmp_path):
+    (tmp_path / ".env").write_text(f"KAESO_DOMAIN={domain}\n")
+    result = run_part(f"public_url='{given}'; public_address", tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / ".env").read_text().splitlines()[1:] == written
+    again = run_part("public_url=''; public_address", tmp_path)
+    assert again.returncode == 0, again.stderr
+    assert (tmp_path / ".env").read_text().splitlines()[1:] == written, "a second run keeps them"
 
 
 def stub(tmp_path: Path, name: str, body: str) -> dict[str, str]:

@@ -64,6 +64,8 @@ services:
 - 如果用户通过 `https://` 加 `KAESO_DOMAIN` 以外的地址访问 Kaeso，请在 `.env` 中把 `KAESO_PUBLIC_URL` 设为该地址。
 - 切勿转发指标端口 9100。
 
+如果想保留 Caddy，让它改为向你的代理提供普通 HTTP，请把一个端口作为域名、把代理的地址传给安装程序：`sh -s -- --domain :80 --public-url https://kaeso.example.com`。Caddy 随后在 80 端口上不使用证书地应答，安装程序会把 `KAESO_PUBLIC_URL` 和该地址下的发件人写入 `.env`。不加 `--public-url` 时，地址为 `http://localhost` 加上该端口。
+
 ### 连接在 Docker 中运行的代理
 
 如果代理在同一台服务器的 Docker 中运行，请通过 Docker 网络而不是发布的端口把它连接到 Kaeso。为代理和 Kaeso 单独创建一个网络：

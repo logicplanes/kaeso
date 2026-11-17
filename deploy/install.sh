@@ -9,6 +9,7 @@ set -eu
 # Wrapped in a function so that a download cut off halfway runs nothing.
 main() {
   domain="${KAESO_DOMAIN:-}"
+  public_url="${KAESO_PUBLIC_URL:-}"
   dir="${KAESO_INSTALL_DIR:-}"
   version="${KAESO_VERSION:-latest}"
   install_docker="${KAESO_INSTALL_DOCKER:-}"
@@ -21,6 +22,7 @@ main() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --domain) domain="${2:?--domain needs a value}"; shift 2 ;;
+      --public-url) public_url="${2:?--public-url needs a value}"; shift 2 ;;
       --dir) dir="${2:?--dir needs a value}"; shift 2 ;;
       --version) version="${2:?--version needs a value}"; shift 2 ;;
       --install-docker) install_docker=yes; shift ;;
@@ -42,6 +44,10 @@ main() {
   if [ -n "$domain" ]; then
     cleaned="$(clean_domain "$domain")" || fail "\"$domain\" is not a domain. Give one such as kaeso.example.com, or localhost."
     domain="$cleaned"
+  fi
+  if [ -n "$public_url" ]; then
+    cleaned="$(clean_public_url "$public_url")" || fail "\"$public_url\" is not an address. Give one such as https://kaeso.example.com, with no path."
+    public_url="$cleaned"
   fi
 
   umask 077
@@ -102,6 +108,7 @@ main() {
     } >.env.part
     mv .env.part .env
   fi
+  public_address
 
   pin_subnet "$project"
   turn_on_updater
@@ -188,7 +195,10 @@ Installs Kaeso with Docker Compose into a new folder and starts it.
 
 Usage: curl -fsSL https://kaeso.app/install.sh | sh -s -- [options]
 
-  --domain DOMAIN    the domain Kaeso answers on (default: localhost)
+  --domain DOMAIN    the domain Kaeso answers on (default: localhost), or a port such as :80 for plain HTTP behind
+                     another proxy
+  --public-url URL   the address people open Kaeso at, when it isn't https:// and the domain, such as the address of
+                     the proxy in front of a port (default for a port: http://localhost and the port)
   --dir DIR          the folder to install into (default: this folder when it holds an install, otherwise ./kaeso)
   --version VERSION  the release to install (default: the newest stable release)
   --install-docker   on Linux, install Docker Engine first if it's missing, without asking
@@ -196,8 +206,8 @@ Usage: curl -fsSL https://kaeso.app/install.sh | sh -s -- [options]
   --no-updater       leave the updater off, so Kaeso updates only by hand
   --update           in an install, update it to the newest stable release, or to the one --version names
 
-The environment variables KAESO_DOMAIN, KAESO_INSTALL_DIR, KAESO_VERSION, KAESO_INSTALL_DOCKER=yes, KAESO_NO_OPEN=yes,
-KAESO_NO_UPDATER=yes and KAESO_UPDATE=yes set the same options.
+The environment variables KAESO_DOMAIN, KAESO_PUBLIC_URL, KAESO_INSTALL_DIR, KAESO_VERSION, KAESO_INSTALL_DOCKER=yes,
+KAESO_NO_OPEN=yes, KAESO_NO_UPDATER=yes and KAESO_UPDATE=yes set the same options.
 Running it again in the same folder keeps the settings and the master key, turns on the updater if it's off, and starts
 Kaeso if it's stopped.
 When Docker Desktop, OrbStack or Colima is installed but stopped, the installer starts it.
@@ -410,6 +420,51 @@ clean_domain() {
     "" | *[!a-z0-9.-]* | .* | *. | -* | *..*) return 1 ;;
   esac
   printf '%s\n' "$d"
+}
+
+# The gateway takes a bare origin: http or https, a host and a port, no path.
+clean_public_url() {
+  u="$(printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's#/$##')"
+  case "$u" in
+    http://* | https://*) ;;
+    *) return 1 ;;
+  esac
+  rest="${u#*://}"
+  host="${rest%%:*}"
+  case "$rest" in
+    *:*) port="${rest#*:}" ;;
+    *) port= ;;
+  esac
+  case "$host" in
+    "" | *[!A-Za-z0-9.-]* | .* | *. | -* | *..*) return 1 ;;
+  esac
+  case "$port" in
+    *[!0-9]*) return 1 ;;
+  esac
+  printf '%s://%s%s\n' "${u%%://*}" "$(printf '%s' "$host" | tr '[:upper:]' '[:lower:]')" "${port:+:$port}"
+}
+
+# A port as the domain has no host for the gateway's address or the emails' sender, which
+# compose.yaml builds from it; without them the gateway doesn't start.
+public_address() {
+  current="$(sed -n 's/^KAESO_DOMAIN=//p' .env | head -n 1)"
+  grep -q '^KAESO_PUBLIC_URL=' .env && return 0
+  if [ -z "$public_url" ]; then
+    case "$current" in
+      :80) public_url=http://localhost ;;
+      :[0-9]*) public_url="http://localhost$current" ;;
+      *) return 0 ;;
+    esac
+  fi
+  echo "KAESO_PUBLIC_URL=$public_url" >>.env
+  case "$current" in
+    :*)
+      grep -q '^KAESO_SMTP_FROM=' .env || {
+        host="${public_url#*://}"
+        echo "KAESO_SMTP_FROM=\"Kaeso <kaeso@${host%%:*}>\"" >>.env
+      }
+      ;;
+  esac
 }
 
 choose_domain() {
