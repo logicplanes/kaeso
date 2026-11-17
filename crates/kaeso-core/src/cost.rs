@@ -64,6 +64,7 @@ pub fn at_share(prices: &Fields, percent: u8) -> Fields {
         &mut out.cache_read_image_price,
         &mut out.input_audio_price,
         &mut out.output_audio_price,
+        &mut out.reasoning_price,
     ] {
         scale(p);
     }
@@ -153,6 +154,7 @@ pub fn decision_prices(prices: &Fields) -> Fields {
         output_price: zero,
         output_image_price: zero,
         output_audio_price: zero,
+        reasoning_price: zero,
         price_tiers: prices.price_tiers.as_ref().map(|tiers| {
             tiers
                 .iter()
@@ -198,14 +200,24 @@ pub fn cost(usage: &Usage, prices: &Fields) -> Decimal {
         .output_audio_tokens
         .unwrap_or(0)
         .min(usage.output_tokens - image_out);
+    // Reasoning tokens are a share of the output too, billed at the reasoning price when the
+    // catalogue lists one, such as Qwen Plus's thinking output.
+    let reasoning = match prices.reasoning_price {
+        Some(_) => usage
+            .reasoning_tokens
+            .unwrap_or(0)
+            .min(usage.output_tokens - image_out - audio_out),
+        None => 0,
+    };
     let total = [
         (usage.input_tokens - image_in - audio_in, prices.input_price),
         (image_in, prices.input_image_price.or(prices.input_price)),
         (audio_in, prices.input_audio_price.or(prices.input_price)),
         (
-            usage.output_tokens - image_out - audio_out,
+            usage.output_tokens - image_out - audio_out - reasoning,
             prices.output_price,
         ),
+        (reasoning, prices.reasoning_price),
         (image_out, prices.output_image_price.or(prices.output_price)),
         (audio_out, prices.output_audio_price.or(prices.output_price)),
         // A model that lists no cache price bills its cache tokens at the input price, which is
@@ -711,6 +723,41 @@ mod tests {
     }
 
     #[test]
+    fn reasoning_tokens_cost_the_reasoning_price_when_the_catalogue_lists_one() {
+        let prices = Fields {
+            input_price: Some(dec!(0.4)),
+            output_price: Some(dec!(1.2)),
+            ..Fields::default()
+        };
+        let mut usage = Usage::new(0, 3_000_000);
+        usage.reasoning_tokens = Some(1_000_000);
+        assert_eq!(
+            cost(&usage, &prices),
+            dec!(3.6),
+            "the output price without one"
+        );
+        let qwen_plus = Fields {
+            reasoning_price: Some(dec!(4)),
+            ..prices.clone()
+        };
+        assert_eq!(cost(&usage, &qwen_plus), dec!(6.4), "2M at 1.2, 1M at 4");
+        usage.reasoning_tokens = Some(9_000_000);
+        assert_eq!(
+            cost(&usage, &qwen_plus),
+            dec!(12),
+            "never more than the output"
+        );
+        usage.output_audio_tokens = Some(1_000_000);
+        assert_eq!(
+            cost(&usage, &qwen_plus),
+            dec!(9.2),
+            "audio first, at the output price, then reasoning"
+        );
+        let decision = decision_prices(&qwen_plus);
+        assert_eq!(cost(&usage, &decision), Decimal::ZERO);
+    }
+
+    #[test]
     fn a_decision_costs_its_input_and_cache_tokens_and_never_its_output() {
         let mut prices = Fields {
             input_price: Some(dec!(0.1)),
@@ -884,6 +931,12 @@ mod tests {
         assert_eq!(half.unit_prices.as_ref().unwrap()[0].usd, dec!(0.005));
         let usage = Usage::new(1_000_000, 1_000_000);
         assert_eq!(cost(&usage, &half), cost(&usage, &prices) / dec!(2));
+        prices.reasoning_price = Some(dec!(80));
+        let half = at_share(&prices, 50);
+        assert_eq!(half.reasoning_price, Some(dec!(40)));
+        let mut thinking = Usage::new(1_000_000, 1_000_000);
+        thinking.reasoning_tokens = Some(400_000);
+        assert_eq!(cost(&thinking, &half), cost(&thinking, &prices) / dec!(2));
     }
 
     fn tiered() -> Fields {

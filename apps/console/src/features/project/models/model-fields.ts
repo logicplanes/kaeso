@@ -159,6 +159,7 @@ export function fieldRows(): { key: keyof Fields; label: string; kind: FieldKind
     { key: "cache_read_image_price", label: t("models.field.cacheReadImagePrice", "Image cache read price"), kind: "price" },
     { key: "input_audio_price", label: t("models.field.inputAudioPrice", "Audio input price"), kind: "price" },
     { key: "output_audio_price", label: t("models.field.outputAudioPrice", "Audio output price"), kind: "price" },
+    { key: "reasoning_price", label: t("models.field.reasoningPrice", "Reasoning price"), kind: "price" },
     { key: "unit_prices", label: t("models.field.unitPrices", "Prices per unit"), kind: "units" },
     { key: "egress_dialect", label: t("models.field.sendsAs", "Sends as"), kind: "dialect" },
     { key: "tool_call", label: t("models.cap.tools", "Tool calling"), kind: "bool" },

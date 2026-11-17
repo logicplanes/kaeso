@@ -28990,6 +28990,14 @@
             ],
             "description": "Whether it reasons."
           },
+          "reasoning_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million reasoning tokens, the share of output the provider reports as\nreasoning; absent means the output price.",
+            "example": "4.00"
+          },
           "release_date": {
             "type": [
               "string",
@@ -29253,6 +29261,14 @@
               "null"
             ],
             "description": "Whether it reasons."
+          },
+          "reasoning_price": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "USD per million reasoning tokens, the share of output the provider reports as\nreasoning; absent means the output price.",
+            "example": "4.00"
           },
           "release_date": {
             "type": [

@@ -437,6 +437,11 @@ impl WorstCase {
         };
         let usage = kaeso_kpp::Usage::new(input, output.unwrap_or(0));
         let mut priced = prices.clone();
+        // The model may spend all of its output on reasoning.
+        priced.output_price = [prices.output_price, prices.reasoning_price]
+            .into_iter()
+            .flatten()
+            .max();
         let one_hour = asks_for_one_hour_cache(request)
             .then(|| crate::cost::one_hour_cache_write_price(prices))
             .flatten();
@@ -780,6 +785,33 @@ mod tests {
         assert_eq!(
             worst.nano_usd,
             crate::cost::nano_usd(Decimal::from(input) * dec!(0.125) / dec!(1000000))
+        );
+    }
+
+    #[test]
+    fn a_generation_reserves_its_output_at_the_reasoning_price_when_that_is_dearer() {
+        let plain = priced("1", "1.2");
+        let mut thinking = plain.clone();
+        thinking.reasoning_price = Some(dec!(4));
+        let request = generate(Some(1000));
+        let input = crate::estimate::tokens_of_bytes(4000);
+        let at = |output_price: Decimal| {
+            crate::cost::nano_usd(
+                (Decimal::from(input) + Decimal::from(1000) * output_price) / dec!(1000000),
+            )
+        };
+        assert_eq!(
+            WorstCase::of(&request, 4000, &plain, openai()).nano_usd,
+            at(dec!(1.2))
+        );
+        assert_eq!(
+            WorstCase::of(&request, 4000, &thinking, openai()).nano_usd,
+            at(dec!(4))
+        );
+        thinking.reasoning_price = Some(dec!(0.5));
+        assert_eq!(
+            WorstCase::of(&request, 4000, &thinking, openai()).nano_usd,
+            at(dec!(1.2))
         );
     }
 

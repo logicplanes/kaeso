@@ -74,6 +74,8 @@ pub struct Pricing {
     pub input_audio: Option<Decimal>,
     #[serde(default, deserialize_with = "price")]
     pub output_audio: Option<Decimal>,
+    #[serde(default, deserialize_with = "price")]
+    pub reasoning: Option<Decimal>,
     #[serde(default, deserialize_with = "unit_prices")]
     pub per_unit: Vec<UnitPrice>,
 }

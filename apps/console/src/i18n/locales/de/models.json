@@ -437,6 +437,7 @@
   "models.unit.minimumSeconds": "mindestens {seconds} s",
   "models.field.inputAudioPrice": "Preis für Audioeingabe",
   "models.field.outputAudioPrice": "Preis für Audioausgabe",
+  "models.field.reasoningPrice": "Preis für Reasoning",
   "models.unit.video": "Video",
   "models.unit.duration": "{seconds} s lang",
   "models.decisionsBadge": "Entscheidungen",
