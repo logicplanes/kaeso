@@ -7,6 +7,7 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use kaeso_server::config::{self, Config, ProcessSource, Source};
 use kaeso_server::services::admin_sso::OperatorAdminSso;
+use kaeso_server::services::notifications::dispatch::notifying;
 use kaeso_server::services::sso::OperatorVerify;
 use kaeso_server::services::users::{OperatorReset, OperatorSignIn};
 use secrecy::ExposeSecret;
@@ -266,10 +267,13 @@ async fn run(command: Command) -> Result<()> {
         }
         Command::Sso(SsoCommand::VerifyDomain { domain, org }) => {
             let state = kaeso_server::serve::prepare(config).await?;
-            match kaeso_server::services::sso::operator_verify_domain(
+            match notifying(
                 &state,
-                &domain,
-                org.as_deref(),
+                kaeso_server::services::sso::operator_verify_domain(
+                    &state,
+                    &domain,
+                    org.as_deref(),
+                ),
             )
             .await?
             {
@@ -300,7 +304,12 @@ async fn run(command: Command) -> Result<()> {
         }
         Command::Instance(InstanceCommand::AdminSso { org }) => {
             let state = kaeso_server::serve::prepare(config).await?;
-            match kaeso_server::services::admin_sso::operator_set(&state, &org).await? {
+            match notifying(
+                &state,
+                kaeso_server::services::admin_sso::operator_set(&state, &org),
+            )
+            .await?
+            {
                 OperatorAdminSso::NotAnOrg => {
                     anyhow::bail!(
                         "{org} is not an organization id; give one such as org_…, or none"
