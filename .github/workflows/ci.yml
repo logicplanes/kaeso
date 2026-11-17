@@ -94,6 +94,9 @@ jobs:
               - openapi.json
               - CHANGELOG.md
               - .github/labeler.yml
+              # scripts/advisories.test.mjs compares the two advisory lists.
+              - deny.toml
+              - osv-scanner.toml
               - scripts/**
               - apps/**
               - packages/**
