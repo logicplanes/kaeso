@@ -330,7 +330,8 @@ fn marker<'a>(body: &'a str, name: &str) -> Option<&'a str> {
 // `[mock:fail=<model> <fixture>]` fails only the requests for that model, so one request
 // can fail on one model and succeed on the next; a body may carry several. The fixture
 // `stall` never answers. `[mock:fail=<model> <fixture> <ms>]` answers after `ms` milliseconds,
-// as a provider that is slow to fail.
+// as a provider that is slow to fail. `stream:<fixture>` answers 200 with that stream fixture,
+// as a provider whose stream fails after it answered.
 // `[mock:key-fail=<part> <fixture>]` fails only the requests whose key, in `authorization`,
 // `x-api-key` or `api-key`, contains `<part>`, so one key of a pool can fail while another answers.
 fn key_failure_for<'a>(body: &'a str, headers: &HeaderMap) -> Option<&'a str> {
@@ -725,6 +726,11 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         }
         if name == "stall" {
             std::future::pending::<()>().await;
+        }
+        if let Some(fixture) = name.strip_prefix("stream:") {
+            let bytes = std::fs::read(fixture_file(&dir, "streams", fixture, "sse"))
+                .unwrap_or_else(|e| panic!("mock: no stream fixture {dialect}/{fixture}: {e}"));
+            return sse(ctx.shared.clone(), bytes, StreamMode::Normal, None, None);
         }
         return error_response(&dir, name);
     }

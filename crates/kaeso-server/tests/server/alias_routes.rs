@@ -1151,3 +1151,58 @@ async fn a_request_shortens_each_steps_wait_with_kaeso_timeout_but_never_lengthe
         );
     }
 }
+
+#[tokio::test]
+async fn a_stream_that_fails_before_any_output_falls_back_and_one_after_output_does_not() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    for app in APPS {
+        let r = ask(
+            &env,
+            app,
+            "sturdy",
+            "Hi [mock:fail=claude-haiku-4-5 stream:error-overloaded-at-start]",
+            true,
+        )
+        .await;
+        let what = format!("{app:?}");
+        assert_eq!(r.status, StatusCode::OK, "{what}: {}", r.text());
+        assert_eq!(r.header("kaeso-model"), Some("gpt-4o"), "{what}");
+        assert_eq!(walked(&r).len(), 2, "{what}: {:?}", walked(&r));
+        assert!(!r.text().contains("Overloaded"), "{what}: {}", r.text());
+        env.app.clock.advance(time::Duration::seconds(31));
+    }
+    // Once the stream carried output, the app has it, and the error reaches it as an event.
+    let r = ask(
+        &env,
+        App::Chat,
+        "sturdy",
+        "Hi [mock:fail=claude-haiku-4-5 stream:error-overloaded-mid-stream]",
+        true,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"));
+    assert!(r.text().contains("Here is a long"), "{}", r.text());
+    assert!(r.text().contains("\"error\""), "{}", r.text());
+}
+
+#[tokio::test]
+async fn a_stream_that_fails_before_any_output_answers_with_its_status_without_a_route() {
+    let env = env().await;
+    let r = ask(
+        &env,
+        App::Messages,
+        "claude-haiku-4-5",
+        "Hi [mock:fail=claude-haiku-4-5 stream:error-overloaded-at-start]",
+        true,
+    )
+    .await;
+    assert_eq!(r.status.as_u16(), 529, "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "overloaded_error");
+    let o = env.outcomes().await.pop().unwrap();
+    assert_eq!(o.status, 529);
+    assert_eq!(o.error_kind.as_deref(), Some("overloaded"));
+}

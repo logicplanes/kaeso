@@ -2526,7 +2526,26 @@ async fn attempt(
                 .await
                 .map_err(fail(Stage::Reply))
         }
-        ResponseBody::Stream(chunks) if success => {
+        ResponseBody::Stream(mut chunks) if success => {
+            let media_type = dispatch::stream_media_type(ingress, &encode_ctx);
+            // An event stream answers once it carries output: one that fails before, such as an
+            // account at its plan's limit, fails this attempt, and a route falls back.
+            if media_type.starts_with("text/event-stream") {
+                let peeker =
+                    dispatch::stream_decoder(plan.dialect, &ectx).map_err(fail(Stage::Reply))?;
+                if let Some(mut err) =
+                    stream::peek(&mut chunks, peeker, state.config.streams.keepalive_interval).await
+                {
+                    redact_key_fragments(&mut err);
+                    count_upstream_error(err.kind.as_str(), provider);
+                    let mut err = super::accounts::account_error(account, err);
+                    // The status the app's format gives this kind, as the app will get it.
+                    if err.status.is_none() {
+                        err.status = Some(dispatch::encode_error(ingress, &err).status);
+                    }
+                    return Err(fail(Stage::Provider)(err));
+                }
+            }
             let chunks = if kind == RequestKind::Generate
                 && sh.guards.is_some_and(|g| g.armed.checks_replies(true))
             {
@@ -2604,7 +2623,6 @@ async fn attempt(
                     .filter(|_| kind == RequestKind::Generate)
                     .map(crate::services::guardrails::rules::Restoring::new),
             };
-            let media_type = dispatch::stream_media_type(ingress, &encode_ctx);
             let aborted = stream::Aborted::default();
             // Audio has no room for an error once it has begun, so its status waits for the
             // provider's first bytes; event streams answer at once and carry errors as events.

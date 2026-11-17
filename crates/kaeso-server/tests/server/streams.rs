@@ -158,11 +158,12 @@ async fn headers_and_keepalives_reach_a_waiting_chat_app_at_once() {
         .bearer_auth(&env.key)
         .json(&streaming(chat(
             "claude-haiku-4-5",
-            "Hi [mock:silence=3000]",
+            "Hi [mock:silence=4000]",
         )))
         .send()
         .await
         .unwrap();
+    // The reply starts once the provider sends output, or when the first keepalive is due.
     let headers_after = started.elapsed();
     assert_eq!(resp.status(), 200);
     assert!(
@@ -185,7 +186,7 @@ async fn headers_and_keepalives_reach_a_waiting_chat_app_at_once() {
     );
     assert!(keepalive_at.len() >= 2, "{keepalive_at:?}: {seen}");
     assert!(
-        keepalive_at[0] < Duration::from_millis(2000),
+        keepalive_at[0] < Duration::from_millis(2500),
         "the first keepalive took {:?}",
         keepalive_at[0]
     );

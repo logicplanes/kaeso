@@ -497,14 +497,13 @@ async fn a_reached_usage_limit_answers_429_with_the_usage_page() {
         .await;
     assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
     assert_eq!(r.json()["error"]["message"], USAGE);
+    // A stream that fails before any output answers with the status too, as the app asked for
+    // nothing it could have read yet.
     let mut streamed = chat("openai/gpt-5", "Hi");
     streamed["stream"] = json!(true);
     let r = p.call("/v1/chat/completions", false, streamed).await;
-    let events = sse(&r.text());
-    assert!(
-        events.iter().any(|e| e["error"]["message"] == USAGE),
-        "{events:?}"
-    );
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert_eq!(r.json()["error"]["message"], USAGE);
     assert_eq!(p.sent().len(), 4, "no request is retried");
     let logged = p.capture.all();
     assert!(

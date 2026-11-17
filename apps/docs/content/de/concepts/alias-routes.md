@@ -69,7 +69,7 @@ Ein Schritt weicht bei `unavailable`, `limited` und `unsupported` aus, wenn er k
 
 `retries` eines Schritts, 0 bis 3, gibt an, wie oft Kaeso sein Modell erneut versucht, bevor der Schritt fehlschlägt oder ausweicht, wenn der Anbieter nicht erreichbar war, die Verbindung abbrach, mit 5xx antwortete oder überlastet war. Vor jedem Versuch wartet Kaeso 0,25 bis 2 Sekunden oder das `Retry-After` des Anbieters, wenn es höchstens 5 Sekunden beträgt; ein längeres beendet die Versuche. Eine Zeitüberschreitung, ein Ratenlimit oder eine abgelehnte Anfrage wird nie erneut versucht: Der Anbieter arbeitet an einer abgelaufenen Anfrage vielleicht noch und berechnet sie. Die Versuche teilen sich das Timeout des Schritts, und keiner beginnt, sobald der Stream begonnen hat. Ohne `retries` gilt die Einstellung **Wiederholungen** des Projekts, 0, wenn nichts gesetzt ist, wie für eine Anfrage, die ein Modell nennt ([Projekteinstellungen](../console/organizations-and-projects.md#projekteinstellungen-ändern)).
 
-Nichts weicht mehr aus, sobald der Anbieter geantwortet hat: Ein Stream, der später abbricht, endet mit einem Fehlerereignis, wie ohne Route.
+Ein Stream gilt als beantwortet, sobald er Ausgabe trägt. Einer, der vorher scheitert, etwa bei einem Konto am Limit seines Plans, weicht aus wie ein Schritt, der mit diesem Fehler geantwortet hat. Nichts weicht mehr aus, sobald der Stream Ausgabe getragen hat: Ein Stream, der später abbricht, endet mit einem Fehlerereignis, wie ohne Route.
 
 ### Übersprungene Schritte
 

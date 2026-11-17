@@ -700,6 +700,9 @@ pub struct ByteStream {
     sleep: Pin<Box<tokio::time::Sleep>>,
     done: bool,
     lease: Option<Lease>,
+    // Chunks a reader looked at and put back, and the error that followed them; they come first.
+    put_back: std::collections::VecDeque<Bytes>,
+    put_back_error: Option<UpstreamError>,
 }
 
 impl ByteStream {
@@ -721,6 +724,20 @@ impl ByteStream {
             sleep: Box::pin(tokio::time::sleep_until(later(now, idle))),
             done: false,
             lease: None,
+            put_back: std::collections::VecDeque::new(),
+            put_back_error: None,
+        }
+    }
+
+    /// Puts chunks already read back in front, in their order, and the error that ended the
+    /// stream after them, so a reader that looked at the start of the stream can hand it on
+    /// whole.
+    pub fn put_back(&mut self, read: Vec<Bytes>, then: Option<UpstreamError>) {
+        for chunk in read.into_iter().rev() {
+            self.put_back.push_front(chunk);
+        }
+        if then.is_some() {
+            self.put_back_error = then;
         }
     }
 
@@ -742,6 +759,12 @@ impl Stream for ByteStream {
     type Item = Result<Bytes, UpstreamError>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        if let Some(chunk) = self.put_back.pop_front() {
+            return Poll::Ready(Some(Ok(chunk)));
+        }
+        if let Some(e) = self.put_back_error.take() {
+            return Poll::Ready(Some(Err(e)));
+        }
         if self.done {
             return Poll::Ready(None);
         }
