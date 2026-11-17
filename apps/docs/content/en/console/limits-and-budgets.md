@@ -68,6 +68,8 @@ Kaeso answers a refused request with status 429, in the app's own API format, wi
 - With a budget used up, the message says when the budget resets.
 - Over a tool call rate, an MCP client gets status 429 with `Retry-After` and a JSON-RPC error that says when to retry.
 
+Apps don't have to wait for a 429. Every model API answer carries `kaeso-limits` with how much of each rate and hard budget is left and when it frees up, so a batch job can slow down near a token rate and an agent can stop before a budget runs out, such as `"key.requests.minute";limit=60;remaining=41;reset=17`. A 429 from Kaeso carries the limit that refused it with `remaining=0`. It is sent only when the key's owner may see the project's limits, and spend only with the right to see costs ([response headers](../api/model-api.md)).
+
 While requests still running could use up a hard budget or a token rate, Kaeso refuses the next request with `Retry-After: 1` until they finish. Each running request holds what it can cost at most, at the model's prices. That is its input, estimated from its size, and its output limit (`max_tokens` or `max_output_tokens`, or else the model's own). A stream holds it for as long as it runs.
 
 The input counts at the highest of the model's input and cache prices, at its long-context prices when the estimated input is longer than a tier's threshold. When a request asks for Anthropic's one-hour cache, that includes the one-hour cache write price ([models and aliases](models-and-aliases.md#change-a-models-values)).

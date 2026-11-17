@@ -11,7 +11,7 @@ use redis::Script;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::model_api::hooks::{Admission, Caller, Limits, Refusal, Reservation};
+use crate::model_api::hooks::{Admission, Caller, Left, Limits, Refusal, Reservation};
 use crate::state::AppState;
 
 mod flights;
@@ -82,6 +82,8 @@ local req = ARGV[2]
 local ttl = tonumber(ARGV[#ARGV])
 local missing = {}
 local own = {}
+local used = {}
+local resets = {}
 local function flying(key)
   local f = key .. ':f'
   local r = key .. ':r'
@@ -137,6 +139,14 @@ for i = 1, #KEYS do
     local retry = 1
     if oldest ~= nil then retry = math.max(oldest + 60 - now, 1) end
     if enforced and sum >= units then return {1, i, retry} end
+    -- A request rate counts this request below, so it is used already.
+    if t == 1 then
+      used[i] = sum + 1
+      if oldest == nil then resets[i] = 60 else resets[i] = retry end
+    else
+      used[i] = sum
+      if oldest == nil then resets[i] = 60 else resets[i] = retry end
+    end
     if t == 2 then
       if bounded and sum + reserve > units then
         if reserve > units then return {4, i} end
@@ -153,6 +163,7 @@ for i = 1, #KEYS do
     elseif enforced then
       v = tonumber(v)
       if v >= units then return {1, i, 0} end
+      used[i] = v
       local count = tonumber(redis.call('HGET', key, 'n') or '0')
       local avg = tonumber(redis.call('HGET', key, 'a') or '0')
       if count > 0 then avg = math.ceil(v / count) end
@@ -188,7 +199,13 @@ for i = 1, #KEYS do
     if redis.call('TTL', r) < ttl then redis.call('EXPIRE', r, ttl) end
   end
 end
-return {0}
+-- What each limit has used and when its rate window frees it; -1 where there is nothing to say.
+local out = {0}
+for i = 1, #KEYS do
+  table.insert(out, used[i] or -1)
+  table.insert(out, resets[i] or -1)
+end
+return out
 ";
 
 const EXTEND: &str = r"
@@ -610,6 +627,7 @@ fn noun(subject: Subject) -> &'static str {
     }
 }
 
+#[derive(Clone, Copy)]
 enum Why {
     Over(i64),
     Busy,
@@ -632,6 +650,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
             ),
             retry_after: Some(Duration::from_secs(1)),
             param: None,
+            left: None,
         },
         Why::TooLarge => Refusal {
             status: 429,
@@ -642,6 +661,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
             ),
             retry_after: None,
             param: None,
+            left: None,
         },
         Why::Over(retry) if l.kind.is_rate() => {
             let secs = u64::try_from(retry.max(1)).unwrap_or(1);
@@ -655,6 +675,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 ),
                 retry_after: Some(Duration::from_secs(secs)),
                 param: None,
+                left: None,
             }
         }
         Why::Over(_) => {
@@ -677,6 +698,7 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 ),
                 retry_after: None,
                 param: None,
+                left: None,
             }
         }
     }
@@ -700,6 +722,7 @@ fn unpriced_refusal(subject: Subject, u: &Unpriced) -> Refusal {
         message,
         retry_after: None,
         param: Some(u.param),
+        left: None,
     }
 }
 
@@ -791,6 +814,7 @@ impl Limits for ValkeyLimits {
                                 .into(),
                         retry_after: None,
                         param: None,
+                        left: None,
                     });
                 }
             };
@@ -820,10 +844,25 @@ impl Limits for ValkeyLimits {
                 let refused = |i: usize, why: Why| {
                     let l = applicable.get(i).copied().ok_or_else(unavailable)?;
                     metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
-                    Err(refusal(l, a.at, why))
+                    let mut r = refusal(l, a.at, why);
+                    // Nothing is left of a limit that is used up or held by requests in flight.
+                    r.left = match why {
+                        Why::Over(retry) => left(l, a.at, l.units(), retry),
+                        Why::Busy => left(l, a.at, l.units(), 1),
+                        Why::TooLarge => None,
+                    };
+                    Err(r)
                 };
                 match run_admit(state, a, &applicable).await {
-                    Ok(Admit::Pass) => return Ok(reservation(state, a, &applicable)),
+                    Ok(Admit::Pass(used)) => {
+                        let mut held = reservation(state, a, &applicable);
+                        held.left = applicable
+                            .iter()
+                            .zip(used)
+                            .filter_map(|(l, (used, reset))| left(l, a.at, used, reset))
+                            .collect();
+                        return Ok(held);
+                    }
                     Ok(Admit::Refused(i, retry)) => return refused(i, Why::Over(retry)),
                     Ok(Admit::Busy(i)) => return refused(i, Why::Busy),
                     Ok(Admit::TooLarge(i)) => return refused(i, Why::TooLarge),
@@ -870,7 +909,41 @@ fn unavailable() -> Refusal {
             .into(),
         retry_after: None,
         param: None,
+        left: None,
     }
+}
+
+// What the reply header says of a limit: its name, amount, what is left and when it frees up.
+// Only enforced limits (rates and hard budgets) are reported; `used` is -1 for the others.
+fn left(l: &Limit, at: OffsetDateTime, used: i64, reset: i64) -> Option<Left> {
+    if !l.enforced() || used < 0 {
+        return None;
+    }
+    let kind = match l.kind {
+        Kind::RequestRate => "requests",
+        Kind::TokenRate | Kind::TokenBudget => "tokens",
+        Kind::SpendBudget => "spend",
+        Kind::ToolCallRate => "tool_calls",
+    };
+    let reset = if l.kind.is_rate() {
+        Some(reset.max(0))
+    } else {
+        l.period
+            .resets_at(at)
+            .map(|t| (t - at).whole_seconds().max(0))
+    };
+    Some(Left {
+        name: format!(
+            "{}.{kind}.{}",
+            l.subject.level().as_str(),
+            l.period.as_str()
+        ),
+        model: l.model.is_some(),
+        spend: l.kind == Kind::SpendBudget,
+        limit: l.units(),
+        remaining: l.units().saturating_sub(used).max(0),
+        reset,
+    })
 }
 
 fn reserves(l: &Limit) -> bool {
@@ -885,6 +958,7 @@ fn reservation(state: &AppState, a: &Admission, applicable: &[&Limit]) -> Reserv
             .map(|l| state.valkey.key(&l.counter(a.at)))
             .collect(),
         ttl: in_flight_ttl(a.timeout),
+        left: Vec::new(),
     }
 }
 
@@ -948,7 +1022,8 @@ fn fail(applicable: &[&Limit], error: &LimitsError) -> Result<Reservation, Refus
 }
 
 enum Admit {
-    Pass,
+    /// Each limit's used amount and rate reset, `-1` where there is nothing to say.
+    Pass(Vec<(i64, i64)>),
     Refused(usize, i64),
     Busy(usize),
     TooLarge(usize),
@@ -979,7 +1054,13 @@ async fn run_admit(
         .map_err(|_| LimitsError::Timeout)??;
     let index = |i: i64| usize::try_from(i - 1).unwrap_or(usize::MAX);
     Ok(match out.as_slice() {
-        [0] => Admit::Pass,
+        [0, rest @ ..] if rest.len() == applicable.len() * 2 => Admit::Pass(
+            rest.as_chunks::<2>()
+                .0
+                .iter()
+                .map(|&[u, r]| (u, r))
+                .collect(),
+        ),
         [1, i, retry] => Admit::Refused(index(*i), *retry),
         [3, i] => Admit::Busy(index(*i)),
         [4, i] => Admit::TooLarge(index(*i)),
