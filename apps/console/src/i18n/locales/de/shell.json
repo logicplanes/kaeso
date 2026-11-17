@@ -147,6 +147,8 @@
   "shell.keyword.mcp": "MCP",
   "shell.palette.portalCopied": "Portaladresse kopiert",
   "shell.settings.connections": "Verbindungen",
+  "shell.palette.openRequest": "Anfrage {id} öffnen",
+  "shell.palette.inProject": "In {project}",
   "shell.settings.webhooks": "Webhooks",
   "shell.settings.guardrails": "Guardrails"
 }

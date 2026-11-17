@@ -147,6 +147,8 @@
   "shell.keyword.mcp": "MCP",
   "shell.palette.portalCopied": "已复制门户地址",
   "shell.settings.connections": "连接",
+  "shell.palette.openRequest": "打开请求 {id}",
+  "shell.palette.inProject": "在 {project} 中",
   "shell.settings.webhooks": "Webhook",
   "shell.settings.guardrails": "防护规则"
 }
