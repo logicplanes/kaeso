@@ -36,7 +36,7 @@ Diese Optionen wählen die Szenarien und ihre Größen; ohne sie gelten alle Sze
 
 | Option | Standard | Legt fest |
 | --- | --- | --- |
-| `--scenarios` | Alle | Die Szenarien, durch Kommas getrennt: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed`, `agent` |
+| `--scenarios` | Alle | Die Szenarien, durch Kommas getrennt: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed`, `portal`, `agent`, `masking` |
 | `--baseline-requests`, `--baseline-concurrency` | 20.000, 64 | Nicht gestreamte Anfragen der Baseline und die Verbindungen, über die sie laufen |
 | `--streams` | 100, 1.000, 5.000 | Anzahlen gleichzeitiger Streams, je ein Lauf |
 | `--gap-ms`, `--chunks` | 100, 100 | Der Abstand des Mocks zwischen zwei Chunks und die Chunks eines Streams |
@@ -75,7 +75,9 @@ Jedes Szenario beginnt mit einem frischen Gateway:
 | Abbrüche | Ein Anteil der Streams trennt die Verbindung an einer Stelle zwischen einem Fünftel und vier Fünfteln des Streams. Ihre Mock-Streams enden nie von selbst, sodass jeder Abbruch eine Anfrage beim Anbieter zu schließen hat. Die anderen lesen bis zum Ende |
 | Langsame Clients | Ein Anteil der Clients liest den ersten Chunk und hört dann auf, mit einem kleinen Empfangspuffer, während der Mock ohne Ende jede Millisekunde ein Text-Delta von 4 KiB schreibt. Sie nutzen ein zweites Projekt, das keine Inhalte protokolliert, sodass der Speicher des Gateways zeigt, was es für sie puffert, und nicht die Antwort, die es für das Protokoll behält. Die anderen lesen normal |
 | Gemischt | Streams, Abbrüche und langsame Clients zugleich, neben nicht gestreamten Anfragen, so schnell das Gateway sie beantwortet |
+| MCP-Portal | Nach 50 Aufwärmaufrufen rufen die Clients 10 Sekunden lang über 8 Verbindungen (mit `--smoke` 1 Sekunde über 2) ein lesendes Tool des Mock-MCP-Servers über das [MCP-Portal](../concepts/mcp-portal.md) eines Projekts auf. Es meldet Aufrufe pro Sekunde, Kaesos Zeit, die des MCP-Servers und die CPU des Gateways pro Aufruf |
 | Agenten-Sitzung | Ein Client sendet die Streams der Sitzung eines Coding-Agenten, einen nach dem anderen über eine Verbindung. Jede Anfrage hat etwa 50 KB im Format Anthropic Messages: einen System-Prompt, 24 Tool-Definitionen mit ihren Schemas und ein Gespräch aus Tool-Aufrufen und ihren Ergebnissen. Sie verlangt einen Alias, dessen Route einen Schritt hat, das OpenAI-Responses-Modell des Mocks, in einem Projekt, das Inhalte protokolliert. Die Streams laufen zuerst direkt nacheinander, dann einer alle 250 ms über mehr als die 30 Sekunden, nach denen Kaeso die Einstellungen eines Projekts neu lädt, dann jeder nach einer Pause, die länger ist. Zuletzt kommt eine späte Runde einer Codex-Sitzung, direkt nacheinander: etwa 3 MB im Format OpenAI Responses, mit Anweisungen, 24 Tools und 600 Runden aus Reasoning, einem Funktionsaufruf und seiner Ausgabe, für das Anthropic-Messages-Modell des Mocks |
+| Eingebaute Regeln | Die [eingebauten Regeln der Guardrails](../console/guardrails.md#eingebaute-regeln), jeder Detektor auf Maskieren, durchsuchen etwa 16 MiB (mit `--smoke` 1 MiB) agentenartigen Text mit einer E-Mail-Adresse, einer Telefonnummer, einem Schlüssel und einer IP-Adresse in jeder Zeile. Das läuft im Prozess des Benchmarks, ohne das Gateway, und meldet, wie lange die Suche dauerte und wie viele MiB pro Sekunde das sind |
 
 ## Zahlen lesen
 
@@ -113,6 +115,8 @@ Ein Lauf schlägt fehl, und der Befehl endet mit einem Fehler, wenn eine Prüfun
 - Jeder hängende Stream endete, und Kaeso protokollierte jeden als `client_stalled`.
 - Der Speicher des Gateways wuchs um weniger als 1 MiB pro Stream, während einige Clients nicht mehr lasen.
 - Nach keinem Szenario blieb beim Mock-Anbieter ein Stream offen.
+- Jeder Tool-Aufruf über das MCP-Portal erreichte den MCP-Server.
+- Die eingebauten Regeln fanden jeden Wert, der in ihren Text gesetzt wurde.
 
 `cargo coverage-gateway` führt den Benchmark mit `--smoke` aus (`crates/kaeso-bench/tests/smoke.rs`), sodass CI bei jeder Änderung am Gateway jedes Szenario in kleiner Größe ausführt.
 

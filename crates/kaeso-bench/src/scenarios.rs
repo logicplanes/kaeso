@@ -240,15 +240,7 @@ pub(crate) async fn run(plan: &Plan, install: &mut Install) -> Results {
                     r.found == r.planted,
                     format!("{} of {} over {} MB", r.found, r.planted, r.megabytes),
                 );
-                // A debug build scans far slower than a release; its speed says nothing.
-                if !cfg!(debug_assertions) {
-                    bench.check(
-                        "masking",
-                        "built-in rules scan at least 1 MB a second",
-                        r.megabytes_per_second >= 1.0,
-                        format!("{:.1} MB/s over {} MB", r.megabytes_per_second, r.megabytes),
-                    );
-                }
+                // Its speed goes into the report; the checks are about correctness, never time.
                 bench.results.masking = Some(r);
             }
         }

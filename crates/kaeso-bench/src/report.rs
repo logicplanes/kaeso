@@ -343,6 +343,20 @@ pub(crate) fn table(r: &Report<'_>) -> String {
         let _ = writeln!(out);
         slow_table(&mut out, &mx.slow_clients);
     }
+    if let Some(m) = &r.results.masking {
+        let _ = writeln!(out, "\n### Built-in rules: every detector masking\n");
+        header(&mut out, &["Text", "Values", "Found", "Time", "MiB/s"]);
+        row(
+            &mut out,
+            &[
+                bytes(Some(m.megabytes as f64 * 1024.0 * 1024.0)),
+                m.planted.to_string(),
+                m.found.to_string(),
+                ms(Some(m.seconds * 1000.0)),
+                format!("{:.1}", m.megabytes_per_second),
+            ],
+        );
+    }
     let _ = writeln!(out, "\n### Checks\n");
     header(&mut out, &["Scenario", "Check", "Result"]);
     for c in &r.results.checks {

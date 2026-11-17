@@ -36,7 +36,7 @@ These options choose the scenarios and their sizes; every scenario and default a
 
 | Option | Default | Sets |
 | --- | --- | --- |
-| `--scenarios` | All | Scenarios to run, comma-separated: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed`, `agent` |
+| `--scenarios` | All | Scenarios to run, comma-separated: `baseline`, `streams`, `cancellation`, `slow-clients`, `mixed`, `portal`, `agent`, `masking` |
 | `--baseline-requests`, `--baseline-concurrency` | 20,000, 64 | Non-streamed requests in the baseline and the connections they go over |
 | `--streams` | 100, 1,000, 5,000 | Concurrent stream counts, one run each |
 | `--gap-ms`, `--chunks` | 100, 100 | The mock's gap between two chunks and the chunks in a stream |
@@ -75,7 +75,9 @@ Each scenario starts with a fresh gateway:
 | Cancellation | A share of the streams disconnects at a point between a fifth and four fifths of the stream. Their mock streams never end on their own, so each disconnect has a provider request to close. The others read to the end |
 | Slow clients | A share of the clients reads the first chunk and then stops, on a small receive buffer, while the mock writes a 4 KiB text delta every millisecond without end. They use a second project that logs no content, so the gateway's memory shows what it buffers for them, not the reply it keeps for the log. The others read normally |
 | Mixed | Streams, disconnects and slow clients at once, beside non-streamed requests as fast as the gateway answers them |
+| MCP portal | After 50 warm-up calls, the clients call a read-only tool of the mock MCP server through a project's [MCP portal](../concepts/mcp-portal.md) for 10 seconds over 8 connections (1 second over 2 with `--smoke`). It reports calls per second, Kaeso's time, the MCP server's and the gateway's CPU per call |
 | Agent session | One client sends the streams of a coding agent's session, one after another on one connection. Each request is about 50 KB in the Anthropic Messages format: a system prompt, 24 tool definitions with their schemas, and a conversation of tool calls and their results. It asks for an alias whose route has one step, the mock's OpenAI Responses model, in a project that logs content. The streams go back to back first, then one every 250 ms for longer than the 30 seconds after which Kaeso loads a project's settings again, then each after a pause longer than that. Last comes a late turn of a Codex session, back to back: about 3 MB in the OpenAI Responses format, with instructions, 24 tools and 600 turns of reasoning, a function call and its output, for the mock's Anthropic Messages model |
+| Built-in rules | The [built-in guardrail rules](../console/guardrails.md#built-in-rules), every detector set to mask, scan about 16 MiB (1 MiB with `--smoke`) of agent-like text with an email address, a phone number, a key and an IP address on every line. It runs in the benchmark's process, without the gateway, and reports how long the scan took and how many MiB a second that is |
 
 ## Read the numbers
 
@@ -113,6 +115,8 @@ A run fails, and the command exits with an error, when a check fails. The checks
 - Every stalled stream ended, and Kaeso logged each as `client_stalled`.
 - The gateway's memory grew by less than 1 MiB per stream while some clients stopped reading.
 - No stream was left open at the mock provider after any scenario.
+- Every tool call through the MCP portal reached the MCP server.
+- The built-in rules found every value planted in their text.
 
 `cargo coverage-gateway` runs the benchmark with `--smoke` (`crates/kaeso-bench/tests/smoke.rs`), so CI runs every scenario at small sizes on every change to the gateway.
 
