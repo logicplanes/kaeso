@@ -232,6 +232,7 @@ async fn admins_add_change_and_delete_custom_providers_with_their_own_rights_and
             "regions": null,
             "key_endpoint": null,
             "aws": null,
+            "entra_id": null,
             "model_routes": [],
         })
     );

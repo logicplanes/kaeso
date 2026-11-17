@@ -16,6 +16,9 @@ use crate::state::AppState;
 pub const SIGNED_OUT: &str = "signed_out";
 pub const NO_API_ACCESS: &str = "no_api_access";
 
+/// What a signed-out service principal key names as its account.
+pub const ENTRA_ID: &str = "Microsoft Entra ID";
+
 pub fn aad(id: CredentialId) -> Vec<u8> {
     format!("cred:{id}").into_bytes()
 }
@@ -27,6 +30,11 @@ pub struct Resolved {
     pub method: AuthMethod,
     pub account: Option<Account>,
     pub google: Option<std::sync::Arc<crate::services::google_auth::ServiceAccount>>,
+    /// A Microsoft Entra ID service principal, for an Azure key that signs in with one.
+    pub azure: Option<std::sync::Arc<crate::services::azure_auth::Principal>>,
+    /// Why a key that isn't an account can't make requests, such as a service principal whose
+    /// secret Entra ID refused.
+    pub stopped: Option<Stopped>,
     /// The account, and optionally the gateway, a key of a provider whose API path names the
     /// account calls, such as Cloudflare AI Gateway.
     pub scope: Option<KeyScope>,
@@ -86,6 +94,8 @@ impl Resolved {
             method: AuthMethod::ApiKey,
             account: None,
             google: None,
+            azure: None,
+            stopped: None,
             scope: None,
             region: None,
             endpoint: None,
@@ -210,6 +220,9 @@ async fn resolve_member(
     member: Option<Uuid>,
 ) -> Result<std::sync::Arc<Resolved>, ResolveError> {
     let resolved = cached(state, org, project, provider, member).await?;
+    if let Some(stopped) = resolved.stopped {
+        return Err(stopped.error(ENTRA_ID));
+    }
     let Some(account) = resolved.account else {
         touch(state, &resolved);
         return Ok(resolved);
@@ -459,6 +472,7 @@ fn open(
 ) -> Result<Resolved, CryptoError> {
     let method = AuthMethod::parse(&row.auth_method).ok_or(CryptoError::Malformed)?;
     let mut google = None;
+    let mut azure = None;
     let (secret, account) = if method.is_account() {
         let tokens = tokens(keyring, row)?;
         let account = Account {
@@ -478,6 +492,13 @@ fn open(
         .ok_or(CryptoError::Malformed)?;
         google = Some(std::sync::Arc::new(opened));
         (String::new(), None)
+    } else if method == AuthMethod::AzureServicePrincipal {
+        let principal = kaeso_core::azure::ServicePrincipal::parse(&plain(keyring, row)?)
+            .map_err(|_| CryptoError::Malformed)?;
+        azure = Some(std::sync::Arc::new(
+            crate::services::azure_auth::Principal { principal, org },
+        ));
+        (String::new(), None)
     } else {
         (plain(keyring, row)?, None)
     };
@@ -488,6 +509,9 @@ fn open(
         method,
         account,
         google,
+        azure,
+        stopped: Stopped::read(row.auth_error.as_deref())
+            .filter(|_| method == AuthMethod::AzureServicePrincipal),
         scope: row.account_id.clone().map(|account_id| KeyScope {
             account_id,
             gateway_id: row.gateway_id.clone(),
@@ -569,6 +593,7 @@ pub async fn renew_ahead(state: &AppState) -> Result<String, StoreError> {
 
 pub async fn forget_org(state: &AppState, org: Uuid) {
     state.google_tokens.forget_org(org);
+    state.azure_tokens.forget_org(org);
     state
         .caches
         .credentials

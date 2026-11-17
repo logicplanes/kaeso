@@ -2,6 +2,7 @@
 
 pub mod accounts;
 pub mod assembler;
+pub mod azure;
 pub mod catalogue;
 pub mod clock;
 pub mod cost;

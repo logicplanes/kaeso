@@ -221,7 +221,8 @@ pub async fn refreshed(
 
 pub async fn sign_out(db: impl PgExecutor<'_>, id: Uuid, reason: &str) -> Result<(), StoreError> {
     sqlx::query!(
-        "UPDATE provider_credentials SET auth_error = $2 WHERE id = $1 AND auth_method IN ('chatgpt', 'grok')",
+        "UPDATE provider_credentials SET auth_error = $2 WHERE id = $1 \
+         AND auth_method IN ('chatgpt', 'grok', 'azure_service_principal')",
         id,
         reason
     )

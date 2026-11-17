@@ -674,3 +674,62 @@ async fn aws_secret_keys_and_session_tokens_never_reach_the_log() {
         assert!(!text.contains(s), "{s} reached the log");
     }
 }
+
+#[tokio::test]
+async fn entra_id_client_secrets_and_tokens_never_reach_the_log() {
+    let logs = Captured::default();
+    let subscriber = tracing_subscriber::fmt()
+        .json()
+        .with_max_level(tracing::Level::TRACE)
+        .with_writer(logs.clone())
+        .finish();
+    let _logging = tracing::subscriber::set_default(subscriber);
+    let env = common::v1::env_with_google_token(None).await;
+    let mut secrets = Vec::new();
+    for (name, secret) in [
+        ("Signs in", "A1bC2dE3fH4iJ5kL6mN7oP8qR9sT0uLOGGED"),
+        ("Refused", "refused-LOGGEDSECRET"),
+    ] {
+        secrets.push(secret);
+        let principal = json!({ "tenant_id": "aaaabbbb-0000-cccc-1111-dddd2222eeee", "client_id": "00001111-aaaa-2222-bbbb-3333cccc4444", "client_secret": secret });
+        let r = env
+            .app
+            .post(
+                &format!("/orgs/{}/credentials", env.owner.org_id),
+                json!({ "provider": "azure", "name": name, "auth_method": "azure_service_principal", "secret": principal.to_string(), "endpoint": "https://example.openai.azure.com", "make_default": true }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+        env.app
+            .post(
+                &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+                json!({ "provider": "azure", "model_id": "gpt-5" }),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        common::v1::call(
+            &env,
+            "/v1/chat/completions",
+            Some(&env.key),
+            false,
+            Some(common::v1::chat(
+                "gpt-5",
+                "Hello [mock:fixture=recorded-response-format-text]",
+            )),
+        )
+        .await;
+    }
+    let text = logs.text();
+    assert!(
+        text.contains("provider_credentials"),
+        "the test's own log is captured"
+    );
+    for s in secrets {
+        assert!(!text.contains(s), "{s} reached the log");
+    }
+    assert!(
+        !text.contains(kaeso_testkit::mock_provider::AZURE_TOKEN_PREFIX),
+        "an access token reached the log"
+    );
+}

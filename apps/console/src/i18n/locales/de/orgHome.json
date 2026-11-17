@@ -366,5 +366,6 @@
   "orgHome.keyWeightsHint": "Jeder Aufrufer zieht einen Schlüssel eines Projekts nach Gewichtung; ein abgelehnter oder begrenzter Schlüssel weicht aus.",
   "orgHome.keyWeight": "Gewichtung in {project}",
   "orgHome.awsAccessKey": "Zugriffsschlüssel",
-  "orgHome.awsRole": "AWS-Rolle"
+  "orgHome.awsRole": "AWS-Rolle",
+  "orgHome.tenant": "Mandant"
 }

@@ -187,16 +187,20 @@ pub enum AuthMethod {
     /// The gateway's own AWS identity, optionally assuming a role, that signs requests with
     /// Signature Version 4.
     AwsRole,
+    /// A Microsoft Entra ID service principal (tenant, client id and client secret) that Kaeso
+    /// exchanges for access tokens.
+    AzureServicePrincipal,
 }
 
 impl AuthMethod {
-    pub const ALL: [AuthMethod; 6] = [
+    pub const ALL: [AuthMethod; 7] = [
         AuthMethod::ApiKey,
         AuthMethod::ChatGpt,
         AuthMethod::Grok,
         AuthMethod::GoogleServiceAccount,
         AuthMethod::AwsAccessKey,
         AuthMethod::AwsRole,
+        AuthMethod::AzureServicePrincipal,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -207,6 +211,7 @@ impl AuthMethod {
             AuthMethod::GoogleServiceAccount => "google_service_account",
             AuthMethod::AwsAccessKey => "aws_access_key",
             AuthMethod::AwsRole => "aws_role",
+            AuthMethod::AzureServicePrincipal => "azure_service_principal",
         }
     }
 
@@ -221,7 +226,10 @@ impl AuthMethod {
     pub const fn is_secret_key(self) -> bool {
         matches!(
             self,
-            AuthMethod::ApiKey | AuthMethod::GoogleServiceAccount | AuthMethod::AwsAccessKey
+            AuthMethod::ApiKey
+                | AuthMethod::GoogleServiceAccount
+                | AuthMethod::AwsAccessKey
+                | AuthMethod::AzureServicePrincipal
         )
     }
 
@@ -3328,7 +3336,8 @@ pub const PROVIDERS: &[Provider] = &[
         // A resource's KEY 1 or KEY 2, on its "Keys and Endpoint" page in the Azure portal, with
         // the endpoint beside it; keys have no prefix and differ in length between older and
         // newer resources (https://learn.microsoft.com/en-us/azure/ai-services/authentication).
-        // Microsoft Entra ID tokens are not taken yet.
+        // A key may instead be a Microsoft Entra ID service principal, whose tokens go as a bearer
+        // (`kaeso_core::azure`).
         key_page: KeyPage {
             url: "https://portal.azure.com/",
             label: "Keys and Endpoint",

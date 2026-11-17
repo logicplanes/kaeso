@@ -969,6 +969,9 @@ describe("ProviderKeyDialog", () => {
     const add = () => within(dialog).getByRole("button", { name: "Add key" });
 
     await choose(user, dialog, "Azure");
+    expect(await within(dialog).findByRole("heading", { name: "How does Kaeso sign in to Azure?" })).toBeVisible();
+    expect(within(dialog).getByRole("radio", { name: /^Resource key/ })).toBeChecked();
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your Azure API key" })).toBeVisible();
     const link = within(dialog).getByRole("link", { name: "portal.azure.com (opens in a new tab)" });
@@ -1008,6 +1011,104 @@ describe("ProviderKeyDialog", () => {
         secret: "0123456789abcdef0123456789abcdef",
         make_default: false,
         endpoint: "https://example.openai.azure.com/openai/v1/",
+      },
+    ]);
+  });
+
+  it("adds an Azure key that signs in with a Microsoft Entra ID service principal", async () => {
+    on(
+      "POST",
+      CREDENTIALS,
+      credential({
+        provider: "azure",
+        name: "Entra",
+        auth_method: "azure_service_principal",
+        account: "aaaabbbb-0000-cccc-1111-dddd2222eeee",
+        endpoint: "https://example.openai.azure.com",
+      }),
+    );
+    const { user, dialog } = await open();
+    const add = () => within(dialog).getByRole("button", { name: "Add key" });
+
+    await choose(user, dialog, "Azure");
+    await user.click(await within(dialog).findByRole("radio", { name: /^Microsoft Entra ID/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^Resource key/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^Microsoft Entra ID/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+
+    expect(await within(dialog).findByRole("heading", { name: "Add a Microsoft Entra ID service principal" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "entra.microsoft.com (opens in a new tab)" });
+    expect((link.closest("p") as HTMLElement).textContent?.replace(/\u2060? \(opens in a new tab\)/, "")).toBe(
+      "Register an app at entra.microsoft.com under App registrations; give it the Cognitive Services OpenAI User role on the resource.",
+    );
+    await hoverReason(user, add(), "Give the tenant ID or one of its domains");
+    await user.click(within(dialog).getByRole("textbox", { name: "Directory (tenant) ID" }));
+    await user.paste("contoso.onmicrosoft.com");
+    await hoverReason(user, add(), "Give the application (client) ID");
+    await user.click(within(dialog).getByRole("textbox", { name: "Application (client) ID" }));
+    await user.paste("00001111-aaaa-2222-bbbb-3333cccc4444");
+    await hoverReason(user, add(), "Paste the client secret's value");
+    await user.click(within(dialog).getByLabelText("Client secret"));
+    await user.paste("A1bC2dE3fH4iJ5kL6mN7oP8qR9sT0u");
+    await hoverReason(user, add(), "Paste the endpoint of the key's resource");
+    await user.click(within(dialog).getByRole("textbox", { name: "Endpoint" }));
+    await user.paste("https://example.openai.azure.com");
+    await hoverReason(user, add(), "Give the key a name");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Entra");
+    await user.click(within(dialog).getByRole("combobox", { name: "Token scope" }));
+    await user.click(await screen.findByRole("option", { name: "https://ai.azure.com/.default" }));
+    await user.click(add());
+
+    await notifications().findByText("Entra is the Azure default");
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      {
+        provider: "azure",
+        name: "Entra",
+        secret: JSON.stringify({
+          tenant_id: "contoso.onmicrosoft.com",
+          client_id: "00001111-aaaa-2222-bbbb-3333cccc4444",
+          client_secret: "A1bC2dE3fH4iJ5kL6mN7oP8qR9sT0u",
+          scope: "https://ai.azure.com/.default",
+        }),
+        make_default: false,
+        auth_method: "azure_service_principal",
+        endpoint: "https://example.openai.azure.com",
+      },
+    ]);
+  });
+
+  it("replaces a service principal with new credentials and the first scope", async () => {
+    const key = credential({
+      id: "cred_entra",
+      provider: "azure",
+      name: "Entra",
+      auth_method: "azure_service_principal",
+      account: "aaaabbbb-0000-cccc-1111-dddd2222eeee",
+      endpoint: "https://example.openai.azure.com",
+      auth_error: "signed_out",
+    });
+    on("POST", `${CREDENTIALS}/:credential/replace`, { ...key, auth_error: null });
+    const { user, dialog } = await open({ keys: [key], replace: key });
+
+    expect(within(dialog).getByRole("heading", { name: "Add the new service principal" })).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox", { name: "Endpoint" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("textbox", { name: "Directory (tenant) ID" }));
+    await user.paste("aaaabbbb-0000-cccc-1111-dddd2222eeee");
+    await user.click(within(dialog).getByRole("textbox", { name: "Application (client) ID" }));
+    await user.paste("00001111-aaaa-2222-bbbb-3333cccc4444");
+    await user.click(within(dialog).getByLabelText("Client secret"));
+    await user.paste("new-secret");
+    await user.click(within(dialog).getByRole("button", { name: "Replace key" }));
+
+    await notifications().findByText("Azure · Entra replaced");
+    expect(requests("POST", `${CREDENTIALS}/:credential/replace`).map((r) => r.body)).toEqual([
+      {
+        secret: JSON.stringify({
+          tenant_id: "aaaabbbb-0000-cccc-1111-dddd2222eeee",
+          client_id: "00001111-aaaa-2222-bbbb-3333cccc4444",
+          client_secret: "new-secret",
+          scope: "https://cognitiveservices.azure.com/.default",
+        }),
       },
     ]);
   });

@@ -52,6 +52,21 @@ pub async fn collecting<T>(work: impl Future<Output = T>) -> (T, Vec<Event>) {
         .await
 }
 
+// A change made outside a request, such as one of the CLI's, notifies as the same change in the
+// console does: its audit events' notifications go out once it succeeded, and the mailer has
+// sent them before this returns, as the process may exit right after.
+pub async fn notifying<T, E>(
+    state: &AppState,
+    work: impl Future<Output = Result<T, E>>,
+) -> Result<T, E> {
+    let (out, events) = collecting(work).await;
+    if out.is_ok() {
+        dispatch(state, &events).await;
+        state.mailer.flush().await;
+    }
+    out
+}
+
 pub fn spawn(state: &AppState, events: Vec<Event>) {
     if events.is_empty() {
         return;

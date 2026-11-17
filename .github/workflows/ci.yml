@@ -60,6 +60,7 @@ jobs:
               - clippy.toml
               - deny.toml
               - .cargo/**
+              - .config/**
               - .sqlx/**
               - openapi.json
               - crates/**
@@ -99,6 +100,7 @@ jobs:
               - plugins/**
               - .claude-plugin/**
               - .cursor-plugin/**
+              - crates/kaeso-server/assets/mcp-stats.html
             # The console's, the docs site's and the showcase's own suites run only when they or what they build on changed.
             console:
               - package.json
@@ -116,6 +118,8 @@ jobs:
               - .node-version
               - tsconfig.base.json
               - packages/**
+              - scripts/csp.mjs
+              - scripts/check-site.mjs
               - apps/docs/**
             showcase:
               - package.json
@@ -124,14 +128,23 @@ jobs:
               - .node-version
               - tsconfig.base.json
               - packages/**
+              - scripts/csp.mjs
+              - scripts/check-site.mjs
               - apps/showcase/**
+            # The platform templates are read by the install test, the version check and prettier.
             deploy:
               - deploy/**
               - e2e/install/**
               - e2e/kubernetes/**
+              - render.yaml
+              - .do/**
+              - .railway/**
             repository:
               - "*.md"
               - LICENSE
+              - render.yaml
+              - .do/**
+              - .railway/**
               - deploy/**/*.md
               - .github/**
               - .editorconfig

@@ -857,5 +857,12 @@
   "errors.awsKey.badField": "AWS 密钥的 `{field}` 无效。",
   "errors.awsKey.missingField": "AWS 密钥缺少 `{field}`。",
   "errors.awsKey.notJson": "请以 JSON 对象提供 AWS 密钥。",
-  "errors.awsKey.notTaken": "{provider} 不接受 AWS 密钥；请添加 API 密钥。"
+  "errors.awsKey.notTaken": "{provider} 不接受 AWS 密钥；请添加 API 密钥。",
+  "errors.servicePrincipal.notTaken": "{provider} 不接受 Microsoft Entra ID 服务主体；请添加 API 密钥。",
+  "errors.servicePrincipal.notJson": "请以 JSON 对象提供服务主体。",
+  "errors.servicePrincipal.missingField": "服务主体缺少 `{field}`。",
+  "errors.servicePrincipal.badField": "服务主体的 `{field}` 无效。",
+  "errors.modelApi.entraRoleRefused": "Azure 拒绝了此项目的 Microsoft Entra ID 服务主体。它需要资源上的 Cognitive Services OpenAI User 角色；请让组织管理员在“服务商”下检查。",
+  "errors.modelApi.entraRefused": "Microsoft Entra ID 拒绝了此项目 Azure 密钥的服务主体，因此该密钥已退出登录。请让组织管理员在“服务商”下替换它。",
+  "errors.modelApi.entraUnavailable": "Kaeso 目前无法从 Microsoft Entra ID 获取访问令牌。请稍后再试。"
 }

@@ -312,7 +312,10 @@ async fn begin(
         | AuthMethod::ApiKey
         | AuthMethod::GoogleServiceAccount
         | AuthMethod::AwsAccessKey
-        | AuthMethod::AwsRole => begin_callback(state, ctx, user, sign_in, wanted).await,
+        | AuthMethod::AwsRole
+        | AuthMethod::AzureServicePrincipal => {
+            begin_callback(state, ctx, user, sign_in, wanted).await
+        }
     }
 }
 

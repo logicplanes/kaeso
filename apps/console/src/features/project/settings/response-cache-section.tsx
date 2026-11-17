@@ -41,7 +41,9 @@ export function ResponseCacheSection({ org, project, canChange, archived }: { or
       ),
   });
   const clear = useApiMutation({
-    mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/response-cache/clear", path)),
+    mutationFn: async () => {
+      await api.POST("/platform/v1/orgs/{org}/projects/{project}/response-cache/clear", path);
+    },
     invalidates: [query.queryKey],
     onSuccess: () => toast.success(t("project.responseCache.cleared", "Response cache cleared")),
   });

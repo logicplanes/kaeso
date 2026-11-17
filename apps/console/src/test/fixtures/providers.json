@@ -26,6 +26,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -50,6 +51,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -74,6 +76,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -103,6 +106,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -127,6 +131,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -151,6 +156,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -175,6 +181,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -199,6 +206,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -223,6 +231,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -247,6 +256,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -271,6 +281,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -295,6 +306,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -319,6 +331,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -343,6 +356,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -367,6 +381,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -391,6 +406,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -415,6 +431,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -439,6 +456,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -503,6 +521,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [
         {
           "pattern": "claude-*",
@@ -536,6 +555,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -560,6 +580,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -584,6 +605,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -608,6 +630,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -632,6 +655,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -656,6 +680,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -680,6 +705,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -704,6 +730,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -728,6 +755,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -758,6 +786,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -782,6 +811,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -806,6 +836,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -830,6 +861,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -854,6 +886,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -878,6 +911,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -902,6 +936,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -926,6 +961,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -950,6 +986,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -974,6 +1011,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -998,6 +1036,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -1022,6 +1061,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -1081,6 +1121,7 @@
         },
         "gateway_identity": false
       },
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -1112,6 +1153,14 @@
         "example": "https://example.openai.azure.com"
       },
       "aws": null,
+      "entra_id": {
+        "app_page": {
+          "url": "https://entra.microsoft.com/",
+          "label": "App registrations"
+        },
+        "scopes": ["https://cognitiveservices.azure.com/.default", "https://ai.azure.com/.default"],
+        "role": "Cognitive Services OpenAI User"
+      },
       "model_routes": [],
       "server": null
     },
@@ -1136,6 +1185,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     },
@@ -1160,6 +1210,7 @@
       "regions": null,
       "key_endpoint": null,
       "aws": null,
+      "entra_id": null,
       "model_routes": [],
       "server": null
     }

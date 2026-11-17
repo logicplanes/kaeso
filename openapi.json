@@ -26827,7 +26827,8 @@
           "grok",
           "google_service_account",
           "aws_access_key",
-          "aws_role"
+          "aws_role",
+          "azure_service_principal"
         ]
       },
       "AvailabilityState": {
@@ -27525,7 +27526,7 @@
           },
           "auth_method": {
             "$ref": "#/components/schemas/KeyMethod",
-            "description": "What `secret` is: `api_key` (the default), `google_service_account` for\na provider whose `service_account` isn't `null`, or for `amazon-bedrock`\n`aws_access_key` or `aws_role`. `aws_role` needs an instance admin and an install\nthat allows it (`aws.ambient_credentials`)."
+            "description": "What `secret` is: `api_key` (the default), `google_service_account` for\na provider whose `service_account` isn't `null`, `azure_service_principal` for\na provider whose `entra_id` isn't `null`, or for `amazon-bedrock`\n`aws_access_key` or `aws_role`. `aws_role` needs an instance admin and an install\nthat allows it (`aws.ambient_credentials`)."
           },
           "endpoint": {
             "type": [
@@ -27566,7 +27567,7 @@
           },
           "secret": {
             "type": "string",
-            "description": "The provider's API key; with `auth_method` `google_service_account` the\nservice account's whole JSON key file; with `aws_access_key` a JSON object with\n`access_key_id`, `secret_access_key` and an optional `session_token`; with\n`aws_role` a JSON object with an optional `role_arn` to assume and its\n`external_id`, or `{}` for the gateway's own identity. Stored encrypted and\nnever shown again.",
+            "description": "The provider's API key; with `auth_method` `google_service_account` the\nservice account's whole JSON key file; with `aws_access_key` a JSON object with\n`access_key_id`, `secret_access_key` and an optional `session_token`; with\n`aws_role` a JSON object with an optional `role_arn` to assume and its\n`external_id`, or `{}` for the gateway's own identity; with\n`azure_service_principal` a JSON object with `tenant_id`, `client_id`,\n`client_secret` and an optional `scope`, one of the provider's\n`entra_id.scopes`. Stored encrypted and never shown again.",
             "example": "sk-proj-…"
           }
         },
@@ -28666,6 +28667,36 @@
         "enum": [
           "openai_embeddings"
         ]
+      },
+      "EntraIdView": {
+        "type": "object",
+        "description": "How a provider takes a Microsoft Entra ID service principal.",
+        "required": [
+          "app_page",
+          "scopes",
+          "role"
+        ],
+        "properties": {
+          "app_page": {
+            "$ref": "#/components/schemas/KeyPageView",
+            "description": "Where an app registration and its client secret are made."
+          },
+          "role": {
+            "type": "string",
+            "description": "The role the service principal needs on the resource.",
+            "example": "Cognitive Services OpenAI User"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The scopes a key may ask its tokens for, the default first.",
+            "example": [
+              "https://cognitiveservices.azure.com/.default"
+            ]
+          }
+        }
       },
       "ErrorBody": {
         "type": "object",
@@ -31419,7 +31450,8 @@
           "api_key",
           "google_service_account",
           "aws_access_key",
-          "aws_role"
+          "aws_role",
+          "azure_service_principal"
         ]
       },
       "KeyPageView": {
@@ -35274,6 +35306,17 @@
                   ],
                   "description": "The format of the provider's embeddings models, which serve\n`/v1/embeddings`; `null` when it has none.",
                   "example": null
+                },
+                "entra_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EntraIdView",
+                      "description": "For Azure: a Microsoft Entra ID service principal a key may sign in with\ninstead of a resource key, with `auth_method` `azure_service_principal`. `null`\nfor other providers."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "hides_built_in": {
                   "type": [
@@ -41149,6 +41192,17 @@
             ],
             "description": "The format of the provider's embeddings models, which serve\n`/v1/embeddings`; `null` when it has none.",
             "example": null
+          },
+          "entra_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EntraIdView",
+                "description": "For Azure: a Microsoft Entra ID service principal a key may sign in with\ninstead of a resource key, with `auth_method` `azure_service_principal`. `null`\nfor other providers."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "hides_built_in": {
             "type": [
