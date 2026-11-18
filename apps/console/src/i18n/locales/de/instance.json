@@ -128,6 +128,7 @@
   "instance.invitationSent": "Einladung an {email} gesendet",
   "instance.inviteUser": "Benutzer einladen",
   "instance.inviteUserHint": "Eingeladene erhalten einen Link zur Kontoerstellung und sind in keiner Organisation, bis eine sie einlädt.",
+  "instance.invites.noneYetHint": "Laden Sie mit Benutzer einladen Personen in die Installation ein; jeder Link gilt 21 Tage.",
   "instance.keptMetadata": "Metadaten {metadata} Tage aufbewahrt.",
   "instance.keptWithContent": "Metadaten {metadata} Tage, Inhalte {content} Tage aufbewahrt.",
   "instance.last30Days": "Letzte 30 Tage",

@@ -3689,6 +3689,91 @@
       }
     },
     "/platform/v1/instance/users/invites": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The invitations to the install, without an org.",
+        "description": "**Right:** `instance.users.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "getInstanceUsersInvites",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items to return, 1 to 100. Default 20.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The `next_cursor` of the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pending",
+            "in": "query",
+            "description": "Only pending invites (default true).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_InviteView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.users.view"
+      },
       "post": {
         "tags": [
           "instance"
@@ -3733,6 +3818,128 @@
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.users.manage"
+      }
+    },
+    "/platform/v1/instance/users/invites/{invite}": {
+      "delete": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Revokes a pending invitation to the install; its link stops working.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "deleteInstanceUsersInvitesInvite",
+        "parameters": [
+          {
+            "name": "invite",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InviteId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.users.manage"
+      }
+    },
+    "/platform/v1/instance/users/invites/{invite}/resend": {
+      "post": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Sends an invitation to the install again, with a new link valid 21 days;\nthe old link stops working.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "postInstanceUsersInvitesInviteResend",
+        "parameters": [
+          {
+            "name": "invite",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InviteId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"

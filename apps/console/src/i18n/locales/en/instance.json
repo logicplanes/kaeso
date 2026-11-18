@@ -138,6 +138,7 @@
   "instance.invitationSent": "Invitation sent to {email}",
   "instance.inviteUser": "Invite user",
   "instance.inviteUserHint": "They get a link to create an account, and join no organization until one invites them.",
+  "instance.invites.noneYetHint": "Invite people to the install with Invite user; each link works for 21 days.",
   "instance.keptMetadata": "Metadata kept {metadata} days.",
   "instance.keptWithContent": "Metadata kept {metadata} days, content {content} days.",
   "instance.last30Days": "Last 30 days",

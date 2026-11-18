@@ -166,6 +166,8 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::GuardrailUpdate
         | A::ProjectGuardrailsUpdate
         | A::InstanceInvite
+        | A::InstanceInviteResend
+        | A::InstanceInviteRevoke
         | A::InstanceSetup
         | A::InstanceUpdateCheck
         | A::InstanceUpdateSettings

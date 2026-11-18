@@ -5,6 +5,7 @@ import type {
   InstanceOrgView,
   InstanceUserOrg,
   InstanceUserView,
+  InviteView,
   LinkedBillingView,
   MemberView,
   ProjectView,
@@ -25,6 +26,15 @@ export const instanceUserOrgsQuery = (user: string) =>
   queryOptions({
     queryKey: ["instance", "users", "one", user, "orgs"],
     queryFn: async (): Promise<InstanceUserOrg[]> => data(await api.GET("/platform/v1/instance/users/{user}/orgs", { params: { path: { user } } })).data,
+  });
+
+export const instanceInvitesQuery = (pendingOnly: boolean) =>
+  queryOptions({
+    queryKey: ["instance", "users", "invites", { pendingOnly }],
+    queryFn: (): Promise<InviteView[]> =>
+      allPages(async (after) =>
+        data(await api.GET("/platform/v1/instance/users/invites", { params: { query: { limit: 100, pending: pendingOnly, ...(after ? { after } : {}) } } })),
+      ),
   });
 
 export const instanceUsersQuery = (search: string, state: string | undefined) =>
