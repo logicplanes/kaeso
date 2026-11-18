@@ -6,9 +6,9 @@ allowBuilds:
   sharp: true
 auditConfig:
   ignoreGhsas:
-    # picomatch through 4.0.7 backtracks exponentially on globs like +(*), and no fixed release exists yet. It runs only
-    # in the showcase's and the console's build tooling (Astro, Vite, tinyglobby), on the repository's own patterns,
-    # never on a glob someone sends. Remove this once picomatch publishes a fix.
+    # picomatch through 4.0.7 has no upstream release for GHSA-fc5q-39xc-vjpf yet, and pnpm audit checks version numbers
+    # rather than patchedDependencies; both installed versions (2.3.2 and 4.0.7) are patched below in patches/. Remove
+    # this and those patches once picomatch publishes a fixed release.
     - GHSA-fc5q-39xc-vjpf
 overrides:
   katex: 0.18.2
@@ -18,3 +18,5 @@ patchedDependencies:
   # Lazy skips use() once its module arrived, which React 19 reports when it replays a suspended render
   # (https://github.com/TanStack/router/issues/8487); the patch calls use() on the fulfilled promise too.
   "@tanstack/react-router@1.170.46": patches/@tanstack__react-router@1.170.46.patch
+  picomatch@2.3.2: patches/picomatch@2.3.2.patch
+  picomatch@4.0.7: patches/picomatch@4.0.7.patch

@@ -1,0 +1,98 @@
+diff --git a/lib/parse.js b/lib/parse.js
+index caa2b86aa5a567df33cef4bda3c7a97794f439f8..d62b9c6b08761d662b1d61a3d80e4dc81d11ed0a 100644
+--- a/lib/parse.js
++++ b/lib/parse.js
+@@ -139,6 +139,70 @@ const normalizeSimpleBranch = branch => {
+   return value.replace(/\\(.)/g, '$1');
+ };
+ 
++const hasUnboundedWildcard = branch => {
++  let escaped = false;
++  let bracket = 0;
++  let paren = 0;
++  let quote = 0;
++
++  for (let i = 0; i < branch.length; i++) {
++    const ch = branch[i];
++
++    if (escaped === true) {
++      escaped = false;
++      continue;
++    }
++
++    if (ch === '\\') {
++      escaped = true;
++      continue;
++    }
++
++    if (ch === '"') {
++      quote = quote === 1 ? 0 : 1;
++      continue;
++    }
++
++    if (quote === 1) {
++      continue;
++    }
++
++    if (ch === '[') {
++      bracket++;
++      continue;
++    }
++
++    if (ch === ']' && bracket > 0) {
++      bracket--;
++      continue;
++    }
++
++    if (ch === '(') {
++      paren++;
++      continue;
++    }
++
++    if (ch === ')' && paren > 0) {
++      paren--;
++      continue;
++    }
++
++    if (bracket > 0 || paren > 0) {
++      continue;
++    }
++
++    if (ch === '*' && branch[i + 1] !== '(') {
++      return true;
++    }
++
++    if ((ch === '+' || ch === '*') && branch[i + 1] === '(' && !parseRepeatedExtglob(branch)) {
++      return true;
++    }
++  }
++
++  return false;
++};
++
+ const hasRepeatedCharPrefixOverlap = branches => {
+   const values = branches.map(normalizeSimpleBranch).filter(Boolean);
+ 
+@@ -292,9 +356,12 @@ const analyzeRepeatedExtglob = (body, options) => {
+ 
+   const branches = splitTopLevel(body).map(branch => branch.trim());
+ 
++  if (branches.some(branch => branch === '')) {
++    return { risky: true };
++  }
++
+   if (branches.length > 1) {
+     if (
+-      branches.some(branch => branch === '') ||
+       branches.some(branch => /^[*?]+$/.test(branch)) ||
+       hasRepeatedCharPrefixOverlap(branches)
+     ) {
+@@ -308,7 +375,7 @@ const analyzeRepeatedExtglob = (body, options) => {
+       return { risky: true, safeOutput };
+     }
+ 
+-    if (repeatedExtglobRecursion(branch) > max) {
++    if (hasUnboundedWildcard(branch) || repeatedExtglobRecursion(branch) > max) {
+       return { risky: true };
+     }
+   }
