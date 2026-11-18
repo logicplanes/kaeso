@@ -35,6 +35,8 @@ Kaeso meldet sich auf eine von drei Arten bei einem Server an:
 
 Eine Verbindung ist gemeinsam, sodass jeder Aufrufer ein Konto nutzt, oder jede Person meldet sich mit ihrem eigenen unter **Konto** › **Verbindungen** an. Kaeso versiegelt Geheimnisse und Tokens mit dem Hauptschlüssel und erneuert OAuth-Tokens, bevor sie ablaufen. Lehnt ein Server eine Verbindung ab, markiert Kaeso sie einmal als abgemeldet und nutzt sie nicht mehr, bis sich jemand erneut anmeldet.
 
+Unter **Konto** › **Verbindungen** sagt jede Ihrer Verbindungen, wann Sie sie zuletzt verwendet haben. **Details** zeigt, wann Sie sich angemeldet haben, wann Kaeso den Zugang erneuert, wann Sie die Verbindung zuletzt verwendet haben und, bei einem geheimen Header, seinen Namen und seine letzten vier Zeichen. Eine gemeinsame Verbindung zeigt dasselbe im Blatt des Servers.
+
 ## Geänderte Tools
 
 Kaeso speichert einen Hash der Definition jedes Tools: Name, Titel, Beschreibung, Schemas und Hinweise. Es fragt jeden Server im Abstand `mcp_servers.sync_interval` nach seinen Tools, standardmäßig alle 15 Minuten, und wenn jemand den Server in der Konsole prüft.
