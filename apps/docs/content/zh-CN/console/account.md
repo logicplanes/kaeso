@@ -131,7 +131,7 @@ Kaeso 会就您的权限使您负责的事项给您发邮件，范围包括实�
 | 工具 | MCP 服务器需要处理 | `mcp_servers.manage` | 立即 |
 | 工具 | 您的连接已过期 | 您，针对您连接了自己账户的服务器 | 立即 |
 | 工具 | 门户上的新客户端 | `tools.manage` | 每日 |
-| 组织 | 安全设置已变更 | `security.sso.manage` 或 `platform_keys.view` | 立即 |
+| 组织 | 安全设置已变更，以及新的共享链接 | `security.sso.manage` 或 `platform_keys.view`；共享链接为 `usage.share.manage` | 立即 |
 | 组织 | 所有权和删除 | 所有者 | 始终 |
 | 组织 | 成员变动 | `members.invite` | 每日 |
 | 组织 | 您的邀请已被接受 | 发出邀请的人 | 立即 |

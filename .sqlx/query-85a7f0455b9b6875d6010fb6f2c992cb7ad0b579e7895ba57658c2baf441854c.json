@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT shared_links AS allow, shared_link_max_days AS max_days FROM organizations WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "allow",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "shared_links"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "max_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "shared_link_max_days"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "85a7f0455b9b6875d6010fb6f2c992cb7ad0b579e7895ba57658c2baf441854c"
+}

@@ -899,5 +899,16 @@
   "errors.linkedSpendLimit": "此项目的关联密钥已达到其组织的支出上限；请在那里提高上限。",
   "errors.linkedUnavailable": "服务商目前无法向此项目关联的组织计费；请检查其计费状态。",
   "errors.linkedUnlinked": "此项目的关联密钥已不再关联；请在“服务商”中重新关联。",
-  "errors.linkedNeedsSetup": "关联计费需要重新设置此安装的 OAuth 应用；请联系实例管理员。"
+  "errors.linkedNeedsSetup": "关联计费需要重新设置此安装的 OAuth 应用；请联系实例管理员。",
+  "errors.share.gone": "此共享链接不存在、已过期或已被撤销。",
+  "errors.share.membersOnly": "此链接仅供组织成员使用；请登录后查看。",
+  "errors.share.personOnly": "共享链接须由人创建；请登录或使用智能体。",
+  "errors.share.off": "此组织不允许共享链接；请联系其管理员。",
+  "errors.share.needsProject": "此类链接需要 `project`。",
+  "errors.share.needsMember": "成员统计需要 `member`。",
+  "errors.share.membersOnlyPolicy": "此组织仅允许面向其成员的链接。",
+  "errors.share.days": "`days` 必须为 1 到 400。",
+  "errors.share.snapshot": "快照需要 `from` 和 `to`，相隔不超过 400 天且不晚于今天。",
+  "errors.share.onlyWhatYouSee": "您只能分享自己能看到的内容；请向管理员申请查看权限。",
+  "errors.share.costs": "显示费用需要查看费用的权限。"
 }

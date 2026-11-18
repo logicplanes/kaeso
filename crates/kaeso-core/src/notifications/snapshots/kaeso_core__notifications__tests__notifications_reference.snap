@@ -19,7 +19,7 @@ expression: reference()
 | `mcp_servers` | Tools | MCP servers need attention | now | now, daily, off |  | `mcp_servers.manage` | A shared connection signed out, or a changed tool waits for review. |
 | `connection_expired` | Tools | Your connection expired | now | now, daily, off |  | `tools.use` | A server signed your own connection out. |
 | `portal_clients` | Tools | New client on a portal | daily | now, daily, off |  | `tools.manage` | Someone connected a new client to a project's MCP portal. |
-| `org_security` | Organization | Security settings changed | now | now, daily, off |  | `security.sso.manage`, `platform_keys.view` | Someone else changed sign-in rules, single sign-on or platform keys. |
+| `org_security` | Organization | Security settings changed | now | now, daily, off |  | `security.sso.manage`, `platform_keys.view`, `usage.share.manage` | Someone else changed sign-in rules, single sign-on or platform keys, or shared usage through a link. |
 | `org_ownership` | Organization | Ownership and deletion | now |  | ✓ | `org.ownership.transfer` | An organization changes owners, is scheduled for deletion or is restored. |
 | `org_members` | Organization | Member changes | daily | now, daily, off |  | `members.invite` | People join or leave an organization. |
 | `invite_accepted` | Organization | Your invitation was accepted | now | now, daily, off |  | `members.invite` | Someone you invited joined. |

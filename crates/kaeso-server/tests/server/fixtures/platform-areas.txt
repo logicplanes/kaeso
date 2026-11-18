@@ -24,6 +24,7 @@ org | Security | orgs/{org}/security | security.* |
 org | Org platform keys | orgs/{org}/platform-keys | platform_keys.* |
 org | Logs | orgs/{org}/logs/settings, orgs/{org}/logs/storage, orgs/{org}/logs/deletions | logs.settings.manage, logs.storage.view, logs.delete |
 org | Audit log | orgs/{org}/audit-log | audit_log.* |
+org | Shared links | orgs/{org}/shared-links, orgs/{org}/security/shared-links, share | usage.share, usage.share.manage |
 org | Billing | orgs/{org}/billing | billing.* | cloud
 project | Overview | orgs/{org}/projects/{project}/usage, orgs/{org}/projects/{project}/usage/span | usage.view, costs.view |
 project | Settings | orgs/{org}/projects/{project}, orgs/{org}/projects/{project}/avatar, orgs/{org}/projects/{project}/archive, orgs/{org}/projects/{project}/key-policy, orgs/{org}/projects/{project}/logs/settings | project.update, project.archive, security.key_policy.project.manage, logs.content.manage |

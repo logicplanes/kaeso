@@ -156,5 +156,6 @@
   "shell.palette.inProject": "在 {project} 中",
   "shell.settings.webhooks": "Webhook",
   "shell.settings.guardrails": "防护规则",
-  "shell.settings.linkedBilling": "关联计费"
+  "shell.settings.linkedBilling": "关联计费",
+  "shell.settings.sharedLinks": "共享链接"
 }

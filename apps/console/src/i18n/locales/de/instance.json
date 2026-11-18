@@ -511,5 +511,14 @@
   "instance.linkedServiceAccount": "Dienstkonto-ID",
   "instance.linkedPolicy": "Verknüpftes Profil in jeder Anfrage nennen",
   "instance.linkedPolicyHint": "Nur einschalten, wenn {provider} sagt, dass Ihre App billing_policy braucht.",
-  "instance.linkedMissing": "Füllen Sie Client-ID, Audience, Organisation und Regel aus"
+  "instance.linkedMissing": "Füllen Sie Client-ID, Audience, Organisation und Regel aus",
+  "instance.shareMarkSaved": "Geteilte Seiten aktualisiert",
+  "instance.sharedLinksOn": "Organisationen können Links teilen",
+  "instance.sharedLinksOff": "Geteilte Links sind aus",
+  "instance.sharedLinks": "Geteilte Links",
+  "instance.sharedLinksHint": "Schreibgeschützte Nutzungslinks, die Organisationen für Personen ohne Konto erstellen.",
+  "instance.allowSharedLinks": "Geteilte Links erlauben",
+  "instance.allowSharedLinksHint": "Aus, hört jeder Link auf und keiner kann erstellt werden.",
+  "instance.shareMark": "Erstellt mit Kaeso",
+  "instance.shareMarkHint": "Ein kleines Zeichen am Fuß jeder geteilten Seite."
 }

@@ -96,6 +96,8 @@ pub struct SecurityView {
     #[doc = "Where an identity provider must send users back: the redirect URL\n\
         to register in its OpenID Connect app, also before a connection exists."]
     pub sso_redirect_url: String,
+    #[doc = "Who the organization's shared links may reach, and for how long."]
+    pub shared_links: crate::platform::share::SharedLinksPolicy,
 }
 
 async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
@@ -143,6 +145,9 @@ async fn view(state: &AppState, org: &orgs::Org) -> ApiResult<SecurityView> {
         sso_default_role,
         sso,
         sso_redirect_url: crate::auth::oidc::redirect_url(state),
+        shared_links: crate::platform::share::SharedLinksPolicy::of(
+            &kaeso_store::pg::shared_links::policy(&state.pg, org.id).await?,
+        ),
     })
 }
 

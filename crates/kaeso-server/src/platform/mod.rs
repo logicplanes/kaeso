@@ -20,6 +20,7 @@ pub mod projects;
 pub mod providers;
 pub mod response_cache;
 pub mod rights;
+pub mod share;
 pub mod stored_responses;
 pub mod tool_logs;
 pub mod usage;
@@ -289,6 +290,12 @@ async fn security_headers(
     resp
 }
 
+fn share_routes(s: &Secure) -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(s.route(access::Access::Public, utoipa_axum::routes!(share::open)))
+        .routes(s.route(access::Access::Public, utoipa_axum::routes!(share::preview)))
+}
+
 pub fn openapi() -> OpenApiDoc {
     build(&Secure::documentation_only()).1
 }
@@ -299,7 +306,8 @@ fn build(secure: &Secure) -> (Router<AppState>, OpenApiDoc) {
         .merge(me::routes(secure))
         .merge(orgs::routes(secure))
         .merge(projects::routes(secure))
-        .merge(instance::routes(secure));
+        .merge(instance::routes(secure))
+        .merge(share_routes(secure));
     let (router, mut doc) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest(PREFIX, api)
         .split_for_parts();

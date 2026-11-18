@@ -66,7 +66,7 @@ const kinds: Readonly<Record<string, Words>> = {
   }),
   org_security: () => ({
     name: t("account.notify.orgSecurity", "Security settings changed"),
-    description: t("account.notify.orgSecurityHint", "When someone changes sign-in rules, SSO or platform keys."),
+    description: t("account.notify.orgSecurityHint", "When someone changes sign-in rules, SSO or platform keys, or shares usage."),
   }),
   org_ownership: () => ({
     name: t("account.notify.orgOwnership", "Ownership and deletion"),

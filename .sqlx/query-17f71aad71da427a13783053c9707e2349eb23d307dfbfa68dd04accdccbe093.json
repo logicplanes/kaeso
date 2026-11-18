@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE instance_settings SET shared_links = $1, share_mark = $2, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bool",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "17f71aad71da427a13783053c9707e2349eb23d307dfbfa68dd04accdccbe093"
+}

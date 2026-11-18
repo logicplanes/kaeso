@@ -31,7 +31,7 @@ A webhook's menu has **Send test**, **Turn off** or **Turn on**, **Rotate secret
 | Model shuts down soon | `model.shutdown_soon`, `model.moved` |
 | Content logging changed | `project.content_logging_changed` |
 | MCP servers need attention | `mcp_server.signed_out`, `mcp_server.tool_held` |
-| Security settings changed | `organization.security_changed` |
+| Security settings changed | `organization.security_changed`, `share.created` |
 | Member changes | `organization.member_joined`, `organization.member_left` |
 | Provider keys need attention | `provider_key.refused`, `provider_key.signed_out`, `provider_key.spend_limit_reached`, `provider_key.unlinked` |
 | Model changes | `model.delisted`, `model.price_changed` |
@@ -81,6 +81,7 @@ A JSON delivery is a `POST` with `content-type: application/json` and a body lik
 | `mcp_server.signed_out` | `server_id`, `server` (its name) |
 | `mcp_server.tool_held` | `server_id`, `server`, `tool`: a tool that changed and waits for approval |
 | `organization.security_changed` | `change` (`sign_in_rules`, `single_sign_on`, `agent_policy`, `key_policy`, `platform_key_created` or `platform_key_rotated`), `platform_key` (its name, for the last two), `by` |
+| `share.created` | `title` (the link's), `audience` (`anyone` or `members`), `by` ([share usage](share-usage.md)) |
 | `organization.member_joined` | `person`, `sso` (whether they arrived through single sign-on) |
 | `organization.member_left` | `person`, `removed_by` (`null` when they left) |
 | `provider_key.refused` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refusal` with the provider's `status` and `message`, `billing` (a billing problem) and `first_at` and `last_at` |

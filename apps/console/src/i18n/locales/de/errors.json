@@ -899,5 +899,16 @@
   "errors.linkedSpendLimit": "Der verknüpfte Schlüssel dieses Projekts hat das Ausgabenlimit seiner Organisation erreicht; erhöhen Sie es dort.",
   "errors.linkedUnavailable": "Der Anbieter kann die verknüpfte Organisation dieses Projekts gerade nicht abrechnen; prüfen Sie ihre Abrechnung.",
   "errors.linkedUnlinked": "Der verknüpfte Schlüssel dieses Projekts ist nicht mehr verknüpft; verknüpfen Sie ihn unter Anbieter erneut.",
-  "errors.linkedNeedsSetup": "Verknüpfte Abrechnung braucht wieder die OAuth-App der Installation; fragen Sie einen Instanz-Admin."
+  "errors.linkedNeedsSetup": "Verknüpfte Abrechnung braucht wieder die OAuth-App der Installation; fragen Sie einen Instanz-Admin.",
+  "errors.share.gone": "Dieser geteilte Link existiert nicht, ist abgelaufen oder wurde widerrufen.",
+  "errors.share.membersOnly": "Dieser Link ist für die Mitglieder der Organisation; melden Sie sich an, um ihn zu sehen.",
+  "errors.share.personOnly": "Geteilte Links erstellt eine Person; melden Sie sich an oder nutzen Sie einen Agenten.",
+  "errors.share.off": "Diese Organisation erlaubt keine geteilten Links; fragen Sie einen ihrer Admins.",
+  "errors.share.needsProject": "Diese Art von Link braucht ein `project`.",
+  "errors.share.needsMember": "Die Statistik eines Mitglieds braucht ein `member`.",
+  "errors.share.membersOnlyPolicy": "Diese Organisation erlaubt Links nur für ihre Mitglieder.",
+  "errors.share.days": "`days` muss 1 bis 400 sein.",
+  "errors.share.snapshot": "Eine Momentaufnahme braucht `from` und `to`, höchstens 400 Tage auseinander und nicht nach heute.",
+  "errors.share.onlyWhatYouSee": "Sie können nur teilen, was Sie sehen; bitten Sie einen Admin um das Recht, es zu sehen.",
+  "errors.share.costs": "Kosten zu zeigen braucht das Recht, sie zu sehen."
 }

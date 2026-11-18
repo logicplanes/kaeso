@@ -370,12 +370,48 @@ async fn usage(
         ));
     }
     let filter = f.parse()?;
-    let (org, project, costs) = (scope.org, scope.project, scope.costs);
     let converter = crate::platform::exchange_rates::converter(state, q.currency.as_deref())?;
-    let rows = store::usage(&state.pg, org, project, from, to, group, &filter)
+    let rows = rows(
+        state,
+        UsageOf {
+            org: scope.org,
+            project: scope.project,
+            costs: scope.costs,
+        },
+        (from, to),
+        group,
+        &filter,
+        converter.as_ref(),
+    )
+    .await?;
+    Ok(Json(List::complete(rows)))
+}
+
+/// Whose usage, and whether with costs.
+pub(crate) struct UsageOf {
+    pub org: Uuid,
+    pub project: Option<Uuid>,
+    pub costs: bool,
+}
+
+/// The usage rows of an org or one of its projects, as the usage endpoints return them;
+/// `costs` false leaves every cost out, and `converter` adds each cost in its currency.
+pub(crate) async fn rows(
+    state: &AppState,
+    UsageOf {
+        org,
+        project,
+        costs,
+    }: UsageOf,
+    (from, to): (Date, Date),
+    group: GroupBy,
+    filter: &store::Filter,
+    converter: Option<&(std::sync::Arc<kaeso_core::currency::RateBook>, String)>,
+) -> ApiResult<Vec<UsageRow>> {
+    let rows = store::usage(&state.pg, org, project, from, to, group, filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
-    let tools = store::tool_usage(&state.pg, org, project, from, to, group, &filter)
+    let tools = store::tool_usage(&state.pg, org, project, from, to, group, filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
     let ids = ids_of(group);
@@ -429,8 +465,8 @@ async fn usage(
         row.tool_calls = count(t.calls);
         row.tool_call_errors = count(t.errors);
     }
-    if let (Some((book, code)), true) = (&converter, costs) {
-        let by_day = store::costs_by_day(&state.pg, org, project, from, to, group, &filter)
+    if let (Some((book, code)), true) = (converter, costs) {
+        let by_day = store::costs_by_day(&state.pg, org, project, from, to, group, filter)
             .await
             .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
         let mut sums: std::collections::BTreeMap<String, rust_decimal::Decimal> =
@@ -450,7 +486,7 @@ async fn usage(
             );
         }
     }
-    Ok(Json(List::complete(merged.into_values().collect())))
+    Ok(merged.into_values().collect())
 }
 
 #[utoipa::path(

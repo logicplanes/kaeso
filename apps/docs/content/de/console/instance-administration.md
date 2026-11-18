@@ -44,6 +44,7 @@ Unter **Allgemein**:
 | Single Sign-on für Instanz-Admins | **Keine** oder eine Organisation mit Single Sign-on, deren Anbieter ihre verwalteten Instanz-Admins zur Verwaltung der Instanz anmelden darf ([Instanz-Admins](../self-hosting/sign-in.md#instanz-admins)) |
 | Zeitzone | Die Zeitzone der Installation. Die Konsole zeigt jede Zeit darin, für alle, Anfrageprotokoll und Audit-Log filtern nach ihren Tagen, und automatische Updates richten sich nach ihr. **Diese Zone verwenden** wechselt zu der Ihres Browsers |
 | Wechselkurse | Ob die Installation die Referenzkurse der EZB an jedem Arbeitstag holt, der Tag der neuesten und warum der letzte Abruf fehlschlug. Aus behält die vorhandenen Kurse ([Währungen](../concepts/currencies.md)) |
+| Geteilte Links | **Geteilte Links erlauben** lässt Organisationen [Nutzung teilen](share-usage.md); aus, funktioniert kein Link mehr. **Erstellt mit Kaeso** zeigt ein kleines Zeichen am Fuß geteilter Seiten |
 | Löschen von Organisationen | Ob sich Organisationen überhaupt löschen lassen, und die Schonfrist, 1 bis 90 Tage |
 
 Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf. Wird die längste gesenkt, sinkt jede Organisation darüber auf sie, und ihre älteren Einträge werden sofort gelöscht, wie wenn eine Organisation ihre Aufbewahrung verkürzt.

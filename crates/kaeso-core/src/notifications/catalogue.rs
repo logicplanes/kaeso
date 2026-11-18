@@ -199,7 +199,7 @@ kinds! {
     McpServers = "mcp_servers", Tools, "MCP servers need attention", Now, false, false, [Right::Org(OrgRight::McpServersManage)], "A shared connection signed out, or a changed tool waits for review.";
     ConnectionExpired = "connection_expired", Tools, "Your connection expired", Now, false, false, [Right::Project(ProjectRight::ToolsUse)], "A server signed your own connection out.";
     PortalClients = "portal_clients", Tools, "New client on a portal", Daily, false, false, [Right::Project(ProjectRight::ToolsManage)], "Someone connected a new client to a project's MCP portal.";
-    OrgSecurity = "org_security", Organization, "Security settings changed", Now, false, false, [Right::Org(OrgRight::SecuritySsoManage), Right::Org(OrgRight::PlatformKeysView)], "Someone else changed sign-in rules, single sign-on or platform keys.";
+    OrgSecurity = "org_security", Organization, "Security settings changed", Now, false, false, [Right::Org(OrgRight::SecuritySsoManage), Right::Org(OrgRight::PlatformKeysView), Right::Org(OrgRight::UsageShareManage)], "Someone else changed sign-in rules, single sign-on or platform keys, or shared usage through a link.";
     OrgOwnership = "org_ownership", Organization, "Ownership and deletion", Now, true, false, [Right::Org(OrgRight::OrgOwnershipTransfer)], "An organization changes owners, is scheduled for deletion or is restored.";
     OrgMembers = "org_members", Organization, "Member changes", Daily, false, false, [Right::Org(OrgRight::MembersInvite)], "People join or leave an organization.";
     InviteAccepted = "invite_accepted", Organization, "Your invitation was accepted", Now, false, false, [Right::Org(OrgRight::MembersInvite)], "Someone you invited joined.";

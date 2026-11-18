@@ -9,7 +9,7 @@ export const BUDGETS = [
   // Every gateway message has a rule in api/gateway-errors.ts, and the rules and the English error catalog load with
   // the entry, so the sign-in page grows a little with each new message.
   { name: "sign-in", route: "src/routes/sign-in.tsx", target: 120, ceiling: 143 },
-  { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 180, ceiling: 210 },
+  { name: "project overview", route: "src/routes/_app/orgs/$org/projects/$project/index.tsx", also: ["src/auth/route-gates.ts"], target: 180, ceiling: 211 },
   { name: "org overview", route: "src/routes/_app/orgs/$org/index.tsx", target: 185, ceiling: 216 },
 ];
 

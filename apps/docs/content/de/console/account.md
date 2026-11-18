@@ -131,7 +131,7 @@ Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Z
 | Tools | MCP-Server brauchen Aufmerksamkeit | `mcp_servers.manage` | Sofort |
 | Tools | Ihre Verbindung ist abgelaufen | Sie, bei einem Server, mit dem Sie Ihr eigenes Konto verbunden haben | Sofort |
 | Tools | Neuer Client an einem Portal | `tools.manage` | Täglich |
-| Organisation | Sicherheitseinstellungen geändert | `security.sso.manage` oder `platform_keys.view` | Sofort |
+| Organisation | Sicherheitseinstellungen geändert, und neue geteilte Links | `security.sso.manage` oder `platform_keys.view`; `usage.share.manage` für geteilte Links | Sofort |
 | Organisation | Inhaberschaft und Löschung | Inhaber | Immer |
 | Organisation | Mitgliederänderungen | `members.invite` | Täglich |
 | Organisation | Ihre Einladung wurde angenommen | Wer sie gesendet hat | Sofort |

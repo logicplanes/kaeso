@@ -309,7 +309,18 @@ async fn org_security(state: &AppState, e: &Event) -> ApiResult<usize> {
     let key = text(e.after.as_ref(), "name")
         .unwrap_or_default()
         .to_owned();
+    let title = text(e.after.as_ref(), "title")
+        .unwrap_or_default()
+        .to_owned();
+    let public = text(e.after.as_ref(), "audience") == Some("anyone");
     let (change, page) = match e.action {
+        A::SharedLinkCreate => (
+            Security::SharedLinkCreated {
+                name: &title,
+                public,
+            },
+            "shared-links",
+        ),
         A::PlatformKeyCreate => (Security::PlatformKeyCreated(&key), "platform-keys"),
         A::PlatformKeyRotate => (Security::PlatformKeyRotated(&key), "platform-keys"),
         A::SecurityKeyPolicy => (Security::KeyPolicy, "security"),
@@ -328,12 +339,12 @@ async fn org_security(state: &AppState, e: &Event) -> ApiResult<usize> {
         open: format!("{}/{page}", settings_path(org)),
         actor: e.actor,
     };
-    let to = org_holders(
-        state,
-        org,
-        &[OrgRight::SecuritySsoManage, OrgRight::PlatformKeysView],
-    )
-    .await?;
+    let holders: &[OrgRight] = if e.action == A::SharedLinkCreate {
+        &[OrgRight::UsageShareManage]
+    } else {
+        &[OrgRight::SecuritySsoManage, OrgRight::PlatformKeysView]
+    };
+    let to = org_holders(state, org, holders).await?;
     deliver(
         state,
         &send,

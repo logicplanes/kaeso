@@ -288,5 +288,11 @@
   "format.audit.action.securitySsoGroupsUpdate": "单点登录组规则已更改",
   "format.audit.action.credentialFallback": "关联密钥的备用设置已更改",
   "format.audit.action.instanceLinkedBillingUpdate": "关联计费应用已设置",
-  "format.audit.action.instanceLinkedBillingDelete": "关联计费应用已移除"
+  "format.audit.action.instanceLinkedBillingDelete": "关联计费应用已移除",
+  "format.audit.action.securitySharedLinks": "共享链接策略已更改",
+  "format.audit.action.sharedLinkCreate": "已分享链接",
+  "format.audit.action.sharedLinkOpen": "共享链接已打开",
+  "format.audit.action.sharedLinkRevoke": "共享链接已撤销",
+  "format.audit.kind.sharedLink": "共享链接",
+  "format.targetKind.sharedLink": "共享链接"
 }
