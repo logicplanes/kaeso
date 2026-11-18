@@ -91,7 +91,7 @@ Under **Security** › **Single sign-on** › **Groups**, rules give the people 
 
 The rules apply at each sign-in through your provider, so a change in a group applies at the person's next sign-in. A token without the claim changes nothing, and **Security** shows when that last happened, so a claim broken at the provider can't take access away. **Groups in your last sign-in** lists the values your own token carried, to copy the exact strings into rules.
 
-Okta sends groups once the app has a groups claim with a filter, such as **Matches regex** `.*`. Microsoft Entra ID sends group object ids, not names; for a person in more than 200 groups it sends a reference instead of the list, which Kaeso doesn't follow, so emit only the groups assigned to the app.
+Okta sends groups once the app has a groups claim with a filter, such as **Matches regex** `.*`. Microsoft Entra ID sends group object ids, not names. For a person in more than 200 groups, it sends a reference instead of the list. Kaeso then reads the person's groups from Microsoft Graph with the sign-in's access token. That needs the delegated `User.Read` permission and no scope of another API under **Extra scopes**; if Graph refuses, the sign-in changes nothing. To map app roles instead of groups, set **Groups claim** to `roles`, and rules match your app roles' values.
 
 ## Require single sign-on or two-factor authentication
 

@@ -22,14 +22,14 @@ use openidconnect::{
 use rsa::pkcs1::EncodeRsaPrivateKey;
 use serde::{Deserialize, Serialize};
 
-/// The `groups` claim an identity provider adds when the app asks for it; left out when unset.
+/// Claims an identity provider adds on request, such as `groups` or `roles`.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-struct Groups {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    groups: Option<Vec<String>>,
+struct Extra {
+    #[serde(flatten)]
+    claims: serde_json::Map<String, serde_json::Value>,
 }
 
-impl AdditionalClaims for Groups {}
+impl AdditionalClaims for Extra {}
 use sha2::{Digest, Sha256};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -60,8 +60,13 @@ struct Inner {
     client_secret: String,
     key: CoreRsaPrivateSigningKey,
     grants: Mutex<HashMap<String, Grant>>,
-    // The `groups` claim of each address's ID tokens; none unless set.
-    groups: Mutex<HashMap<String, Vec<String>>>,
+    // The extra claims of each address's ID tokens; none unless set.
+    claims: Mutex<HashMap<String, serde_json::Map<String, serde_json::Value>>>,
+    // What Microsoft Graph's `/me/transitiveMemberOf` lists for each address.
+    memberships: Mutex<HashMap<String, Vec<serde_json::Value>>>,
+    // Each access token handed out, and whose it is.
+    access: Mutex<HashMap<String, String>>,
+    graph_refuses: Mutex<bool>,
     fault: Mutex<Fault>,
     hold: Mutex<Option<Hold>>,
 }
@@ -102,19 +107,63 @@ pub struct Authorized {
 impl MockIdp {
     /// The `groups` claim the ID tokens for `email` carry from now on; `None` leaves it out.
     pub fn set_groups(&self, email: &str, groups: Option<&[&str]>) {
-        if let Ok(mut all) = self.inner.groups.lock() {
-            match groups {
-                Some(g) => {
-                    all.insert(
-                        email.to_owned(),
-                        g.iter().map(|s| (*s).to_owned()).collect(),
-                    );
+        self.set_claim(email, "groups", groups);
+    }
+
+    /// A claim the ID tokens for `email` carry from now on, as a list; `None` leaves it out.
+    pub fn set_claim(&self, email: &str, claim: &str, values: Option<&[&str]>) {
+        if let Ok(mut all) = self.inner.claims.lock() {
+            let mine = all.entry(email.to_owned()).or_default();
+            match values {
+                Some(v) => {
+                    mine.insert(claim.to_owned(), serde_json::json!(v));
                 }
                 None => {
-                    all.remove(email);
+                    mine.remove(claim);
                 }
             }
         }
+    }
+
+    /// Makes `email` a member of more groups than fit into a token, as Microsoft Entra ID does:
+    /// the ID tokens name a source instead of the `groups` claim, and the mock Graph lists the
+    /// groups, a page of two at a time, with a directory role among them.
+    pub fn set_groups_overage(&self, email: &str, groups: &[&str]) {
+        if let Ok(mut all) = self.inner.claims.lock() {
+            let mine = all.entry(email.to_owned()).or_default();
+            mine.remove("groups");
+            mine.insert(
+                "_claim_names".into(),
+                serde_json::json!({ "groups": "src1" }),
+            );
+            mine.insert(
+                "_claim_sources".into(),
+                serde_json::json!({ "src1": { "endpoint": "https://graph.example/users/0/getMemberObjects" } }),
+            );
+        }
+        let mut listed: Vec<serde_json::Value> = groups
+            .iter()
+            .map(|g| serde_json::json!({ "@odata.type": "#microsoft.graph.group", "id": g }))
+            .collect();
+        listed.insert(
+            1,
+            serde_json::json!({ "@odata.type": "#microsoft.graph.directoryRole", "id": "a-directory-role" }),
+        );
+        if let Ok(mut all) = self.inner.memberships.lock() {
+            all.insert(email.to_owned(), listed);
+        }
+    }
+
+    /// Whether the mock Graph refuses every request, as it does without the `User.Read` scope.
+    pub fn set_graph_refuses(&self, refuses: bool) {
+        if let Ok(mut r) = self.inner.graph_refuses.lock() {
+            *r = refuses;
+        }
+    }
+
+    /// The mock Microsoft Graph, for an Entra cloud whose sign-in host is the issuer's.
+    pub fn graph(&self) -> String {
+        format!("{}/graph", self.inner.issuer)
     }
 
     pub async fn start(client_id: &str, client_secret: &str) -> MockIdp {
@@ -136,7 +185,10 @@ impl MockIdp {
             client_secret: client_secret.to_owned(),
             key,
             grants: Mutex::new(HashMap::new()),
-            groups: Mutex::new(HashMap::new()),
+            claims: Mutex::new(HashMap::new()),
+            memberships: Mutex::new(HashMap::new()),
+            access: Mutex::new(HashMap::new()),
+            graph_refuses: Mutex::new(false),
             fault: Mutex::new(Fault::None),
             hold: Mutex::new(None),
         });
@@ -145,6 +197,7 @@ impl MockIdp {
             .route("/jwks", get(jwks))
             .route("/token", post(token))
             .route("/authorize", get(sign_in_form).post(sign_in))
+            .route("/graph/v1.0/me/transitiveMemberOf", get(member_of))
             .with_state(inner.clone());
         tokio::spawn(async move {
             let _ = axum::serve(listener, app).await;
@@ -393,18 +446,19 @@ async fn token(
             _ => Some(true),
         })
         .set_name(Some(name));
-    let groups = inner
-        .groups
+    let extra = inner
+        .claims
         .lock()
         .ok()
-        .and_then(|g| g.get(&grant.email).cloned());
-    let claims = IdTokenClaims::<Groups, CoreGenderClaim>::new(
+        .and_then(|c| c.get(&grant.email).cloned())
+        .unwrap_or_default();
+    let claims = IdTokenClaims::<Extra, CoreGenderClaim>::new(
         IssuerUrl::new(issuer).expect("issuer"),
         vec![Audience::new(audience)],
         expires,
         issued,
         standard,
-        Groups { groups },
+        Extra { claims: extra },
     )
     .set_nonce(Some(Nonce::new(nonce)))
     .set_auth_time(match fault {
@@ -412,9 +466,13 @@ async fn token(
         Fault::NoAuthTime => None,
         _ => Some(now),
     });
-    let access = AccessToken::new("mock-access-token".into());
+    let access_token = format!("access-{}", uuid::Uuid::now_v7().simple());
+    if let Ok(mut all) = inner.access.lock() {
+        all.insert(access_token.clone(), grant.email.clone());
+    }
+    let access = AccessToken::new(access_token.clone());
     let Ok(id_token) = IdToken::<
-        Groups,
+        Extra,
         CoreGenderClaim,
         CoreJweContentEncryptionAlgorithm,
         CoreJwsSigningAlgorithm,
@@ -430,7 +488,7 @@ async fn token(
     (
         StatusCode::OK,
         Json(serde_json::json!({
-            "access_token": "mock-access-token",
+            "access_token": access_token,
             "token_type": "Bearer",
             "expires_in": 300,
             "id_token": id_token.to_string(),
@@ -440,4 +498,51 @@ async fn token(
 
 fn urlencode(s: &str) -> String {
     url::form_urlencoded::byte_serialize(s.as_bytes()).collect()
+}
+
+const GRAPH_PAGE: usize = 2;
+
+async fn member_of(
+    State(inner): State<Arc<Inner>>,
+    headers: HeaderMap,
+    axum::extract::Query(q): axum::extract::Query<HashMap<String, String>>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    let refused = (
+        StatusCode::FORBIDDEN,
+        Json(serde_json::json!({ "error": { "code": "Authorization_RequestDenied" } })),
+    );
+    if inner.graph_refuses.lock().map(|r| *r).unwrap_or(true) {
+        return refused;
+    }
+    let email = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .and_then(|t| inner.access.lock().ok()?.get(t).cloned());
+    let Some(email) = email else {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(serde_json::json!({ "error": { "code": "InvalidAuthenticationToken" } })),
+        );
+    };
+    let all = inner
+        .memberships
+        .lock()
+        .ok()
+        .and_then(|m| m.get(&email).cloned())
+        .unwrap_or_default();
+    let from: usize = q
+        .get("$skiptoken")
+        .and_then(|t| t.parse().ok())
+        .unwrap_or(0);
+    let page: Vec<_> = all.iter().skip(from).take(GRAPH_PAGE).cloned().collect();
+    let mut body = serde_json::json!({ "value": page });
+    if from + GRAPH_PAGE < all.len() {
+        body["@odata.nextLink"] = serde_json::json!(format!(
+            "{}/graph/v1.0/me/transitiveMemberOf?$skiptoken={}",
+            inner.issuer,
+            from + GRAPH_PAGE
+        ));
+    }
+    (StatusCode::OK, Json(body))
 }

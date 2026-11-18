@@ -558,6 +558,7 @@ pub fn accounts_at(base: &str) -> kaeso_server::services::provider_accounts::End
         google_token: kaeso_core::google::TOKEN_URI.to_owned(),
         azure_login: kaeso_core::azure::LOGIN.to_owned(),
         anthropic_billing: hosts,
+        entra: kaeso_server::auth::entra::clouds(),
     }
 }
 

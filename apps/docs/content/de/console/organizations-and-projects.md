@@ -91,7 +91,7 @@ Unter **Sicherheit** › **Single Sign-on** › **Gruppen** geben Regeln den Per
 
 Die Regeln gelten bei jeder Anmeldung über Ihren Anbieter, eine Änderung an einer Gruppe also bei der nächsten Anmeldung der Person. Ein Token ohne den Claim ändert nichts, und **Sicherheit** zeigt, wann das zuletzt geschah, damit ein beim Anbieter kaputter Claim keinen Zugriff wegnimmt. **Gruppen Ihrer letzten Anmeldung** listet die Werte, die Ihr eigenes Token trug, um die genauen Zeichenketten in Regeln zu kopieren.
 
-Okta sendet Gruppen, sobald die App einen Gruppen-Claim mit Filter hat, etwa **Matches regex** `.*`. Microsoft Entra ID sendet Objekt-IDs der Gruppen, keine Namen; bei mehr als 200 Gruppen sendet es statt der Liste einen Verweis, dem Kaeso nicht folgt, also geben Sie nur die der App zugewiesenen Gruppen aus.
+Okta sendet Gruppen, sobald die App einen Gruppen-Claim mit Filter hat, etwa **Matches regex** `.*`. Microsoft Entra ID sendet Objekt-IDs der Gruppen, keine Namen. Bei mehr als 200 Gruppen sendet es statt der Liste einen Verweis. Kaeso liest die Gruppen der Person dann mit dem Zugriffstoken der Anmeldung aus Microsoft Graph. Das braucht die delegierte Berechtigung `User.Read` und keinen Scope einer anderen API unter **Zusätzliche Scopes**; lehnt Graph ab, ändert die Anmeldung nichts. Um App-Rollen statt Gruppen zuzuordnen, setzen Sie **Gruppen-Claim** auf `roles`, und Regeln vergleichen die Werte Ihrer App-Rollen.
 
 ## Single Sign-on oder Zwei-Faktor-Authentifizierung verlangen
 
