@@ -1282,6 +1282,113 @@ pub async fn replace(
     Ok(Json(after))
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+#[schema(description = "What the provider said about a key.")]
+pub enum CredentialCheckResult {
+    #[doc = "The provider answered with the key."]
+    Ok,
+    #[doc = "The provider refused the key; `detail` says why."]
+    Refused,
+    #[doc = "The provider couldn't be reached; try again later."]
+    Unreachable,
+    #[doc = "Only a model request can tell: the provider lists no models where the key\n\
+        calls it."]
+    Unknown,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "A key's check against its provider.")]
+pub struct CredentialCheck {
+    #[doc = "What the provider said."]
+    pub result: CredentialCheckResult,
+    #[doc = "With `ok`, how many models the provider lists for the key; `null` when its\n\
+        listing names what it offers rather than what the key can call."]
+    pub models: Option<usize>,
+    #[doc = "With `refused` or `unreachable`, what the provider or the connection to it\n\
+        answered, as it came and without any part of the key."]
+    pub detail: Option<String>,
+}
+
+impl CredentialCheck {
+    fn of(result: CredentialCheckResult, detail: Option<String>) -> Self {
+        CredentialCheck {
+            result,
+            models: None,
+            detail,
+        }
+    }
+}
+
+#[utoipa::path(
+    post,
+    path = "/orgs/{org}/credentials/{credential}/check",
+    summary = "Asks the provider whether it takes a key, without a model request.",
+    description = "Kaeso reads the provider's model listing with the key, or what stands in\n\
+    for one. Nothing is billed and no model's availability is recorded. A provider that\n\
+    lists no models where the key calls it answers `unknown`: only a model request can\n\
+    tell.",
+    tag = "orgs",
+    params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
+    responses((status = 200, body = CredentialCheck))
+)]
+pub async fn check(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path((_org, id)): Path<(String, String)>,
+) -> ApiResult<Json<CredentialCheck>> {
+    use crate::services::availability::{self, KeyCheck};
+    use service::ResolveError;
+    let org = ctx.org()?.org.id;
+    let id = parse_id(&id)?;
+    let before = {
+        let mut db = state.pg.acquire().await?;
+        view(&mut db, org, id).await?
+    };
+    let provider = provider_in_org(&state, org, &before.provider).await?;
+    let resolved = match service::by_id(
+        &state,
+        OrgId::from_uuid(org),
+        CredentialId::from_uuid(id),
+        provider.id(),
+    )
+    .await
+    {
+        Ok(Some(r)) => r,
+        Ok(None) => return Err(ApiError::not_found("credential")),
+        Err(e @ (ResolveError::SignedOut { .. } | ResolveError::NoApiAccess { .. })) => {
+            return Ok(Json(CredentialCheck::of(
+                CredentialCheckResult::Refused,
+                Some(e.to_string()),
+            )));
+        }
+        Err(e @ ResolveError::Unrenewed { .. }) => {
+            return Ok(Json(CredentialCheck::of(
+                CredentialCheckResult::Unreachable,
+                Some(e.to_string()),
+            )));
+        }
+        Err(ResolveError::Store(e)) => return Err(e.into()),
+        Err(e) => return Err(ApiError::internal(e)),
+    };
+    Ok(Json(
+        match availability::check_key(&state, &resolved, &provider).await {
+            KeyCheck::Works(models) => CredentialCheck {
+                result: CredentialCheckResult::Ok,
+                models,
+                detail: None,
+            },
+            KeyCheck::Refused(e) => {
+                CredentialCheck::of(CredentialCheckResult::Refused, Some(e.message))
+            }
+            KeyCheck::Unreached(e) => {
+                CredentialCheck::of(CredentialCheckResult::Unreachable, Some(e.message))
+            }
+            KeyCheck::Unknown => CredentialCheck::of(CredentialCheckResult::Unknown, None),
+        },
+    ))
+}
+
 const REPLACE_ACCOUNT: &str =
     "This key signs in with an account; sign in again instead of replacing it.";
 

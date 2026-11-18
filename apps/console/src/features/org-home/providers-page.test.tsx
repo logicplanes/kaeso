@@ -191,7 +191,7 @@ describe("organization providers", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((i) => i.textContent),
-    ).toEqual(["Make default", "Assign to projects", "Sign in again", expect.stringMatching(/^Manage usage/), "Rename", "Delete"]);
+    ).toEqual(["Make default", "Test key", "Assign to projects", "Sign in again", expect.stringMatching(/^Manage usage/), "Rename", "Delete"]);
     const usage = within(menu).getByRole("menuitem", { name: /Manage usage/ });
     expect(usage).toHaveAttribute("href", "https://chatgpt.com/settings/usage");
     expect(usage).toHaveAttribute("target", "_blank");
@@ -233,7 +233,7 @@ describe("organization providers", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((i) => i.textContent),
-    ).toEqual(["Assign to projects", "Sign in again", "Rename", "Delete"]);
+    ).toEqual(["Test key", "Assign to projects", "Sign in again", "Rename", "Delete"]);
     await user.click(within(menu).getByRole("menuitem", { name: "Sign in again" }));
     expect(await screen.findByRole("dialog", { name: /Sign in again to SpaceX · Ada's Grok/ })).toBeInTheDocument();
   });
@@ -267,6 +267,38 @@ describe("organization providers", () => {
     expect(requests("POST", "orgs/:org/credentials/:credential/default").map((r) => r.params.credential)).toEqual(["cred_staging"]);
   });
 
+  it("tests a key with its provider and says what the provider answered", async () => {
+    signedIn();
+    keys([production, staging]);
+    const CHECK = "orgs/:org/credentials/:credential/check";
+    const answers = [
+      { result: "ok", models: 12, detail: null },
+      { result: "ok", models: 1, detail: null },
+      { result: "ok", models: null, detail: null },
+      { result: "refused", models: null, detail: "Incorrect API key provided." },
+      { result: "unreachable", models: null, detail: "connection refused" },
+      { result: "unknown", models: null, detail: null },
+    ];
+    let n = 0;
+    on("POST", CHECK, () => answers[n++]);
+    const { user } = await renderApp(PATH);
+    const expected = [
+      "OpenAI takes Staging and lists 12 models for it",
+      "OpenAI takes Staging and lists 1 model for it",
+      "OpenAI takes Staging",
+      "OpenAI refused Staging.",
+      "OpenAI couldn't be reached; try again later",
+      "Only a model request to OpenAI confirms Staging",
+    ];
+    for (const text of expected) {
+      await user.click(within(await openMenu(user, "Staging")).getByRole("menuitem", { name: "Test key" }));
+      expect(await notifications().findByText(text)).toBeInTheDocument();
+    }
+    expect(notifications().getByText("Incorrect API key provided.")).toBeInTheDocument();
+    expect(notifications().getByText("connection refused")).toBeInTheDocument();
+    expect(requests("POST", CHECK).map((r) => r.params.credential)).toEqual(Array(6).fill("cred_staging"));
+  });
+
   it("shows a service account key's email, project and location, replaces it and moves it to another location", async () => {
     signedIn();
     const sa = credential({
@@ -298,7 +330,7 @@ describe("organization providers", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((i) => i.textContent),
-    ).toEqual(["Assign to projects", "Replace", "Edit", "Delete"]);
+    ).toEqual(["Test key", "Assign to projects", "Replace", "Edit", "Delete"]);
     await user.click(within(menu).getByRole("menuitem", { name: "Edit" }));
     const dialog = await screen.findByRole("dialog", { name: "Edit Gemini Enterprise Agent Platform · Agent Platform" });
     await user.hover(within(dialog).getByRole("button", { name: "Save" }));
@@ -895,7 +927,15 @@ describe("organization providers", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((i) => i.textContent),
-    ).toEqual(["Assign to projects", "Link again", "Who pays when it can't", expect.stringMatching(/^Set spend limit in Claude Console/), "Rename", "Unlink"]);
+    ).toEqual([
+      "Test key",
+      "Assign to projects",
+      "Link again",
+      "Who pays when it can't",
+      expect.stringMatching(/^Set spend limit in Claude Console/),
+      "Rename",
+      "Unlink",
+    ]);
     expect(within(menu).getByRole("menuitem", { name: /Set spend limit/ })).toHaveAttribute("href", "https://platform.claude.com/linked-platforms");
     await user.click(within(menu).getByRole("menuitem", { name: "Who pays when it can't" }));
     const fallback = await screen.findByRole("dialog", { name: "Who pays when Anthropic · Acme Claude can't" });
