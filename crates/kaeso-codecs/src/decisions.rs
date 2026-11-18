@@ -102,8 +102,8 @@ pub(crate) fn sent_kind(question: &Question, options: Vec<String>) -> SentKind {
     }
 }
 
-/// TypeSafe's (and Perplexity's) confidence of a choice: how far the top probability is above an
-/// even split, `(p_max − 1/n) / (1 − 1/n)`, and 1 for a single option
+/// TypeSafe's, Perplexity's and OpenAI's confidence of a choice: how far the top probability is
+/// above an even split, `(p_max − 1/n) / (1 − 1/n)`, and 1 for a single option
 /// (<https://docs.typesafe.ai/confidence#choice>). Missing probabilities count as 0.
 pub(crate) fn choice_spread_confidence(probabilities: &[Option<f64>]) -> Option<f64> {
     let n = probabilities.len();
@@ -118,7 +118,7 @@ pub(crate) fn choice_spread_confidence(probabilities: &[Option<f64>]) -> Option<
     Some(((top - even) / (1.0 - even)).clamp(0.0, 1.0))
 }
 
-/// TypeSafe's confidence of a score: one minus the probability-weighted distance
+/// TypeSafe's and OpenAI's confidence of a score: one minus the probability-weighted distance
 /// from the most likely level over that of an even spread, floored at 0, and 1 for a single level
 /// (<https://docs.typesafe.ai/confidence#score>). Missing probabilities count as 0; the first of
 /// equally likely levels is the most likely.
@@ -166,6 +166,16 @@ mod tests {
         );
         close(choice_spread_confidence(&[Some(1.0)]), 1.0);
         close(choice_spread_confidence(&[Some(0.9), None]), 0.8);
+        // `gpt-6-luna` on three- and four-option choices rounds this spread to two decimal places
+        // (0.86 for 0.91/0.06/0.03 and 0.83 for 0.87/0.06/0.05/0.02).
+        close(
+            choice_spread_confidence(&[Some(0.91), Some(0.06), Some(0.03)]),
+            0.865,
+        );
+        close(
+            choice_spread_confidence(&[Some(0.87), Some(0.06), Some(0.05), Some(0.02)]),
+            0.62 / 0.75,
+        );
         assert_eq!(choice_spread_confidence(&[]), None);
         assert_eq!(choice_spread_confidence(&[None, None]), None);
     }
@@ -192,6 +202,21 @@ mod tests {
         );
         close(score_spread_confidence(&[Some(1.0)]), 1.0);
         close(score_spread_confidence(&[Some(1.0), Some(0.0)]), 1.0);
+        // `gpt-6-luna` on skewed three-level scores reports 0.22, 0.9 and 0.08 on these three
+        // distributions, matching TypeSafe's spread rather than `(p_max − 1/n) / (1 − 1/n)` or
+        // `p_max`.
+        close(
+            score_spread_confidence(&[Some(0.55), Some(0.38), Some(0.07)]),
+            0.22,
+        );
+        close(
+            score_spread_confidence(&[Some(0.05), Some(0.93), Some(0.02)]),
+            0.895,
+        );
+        close(
+            score_spread_confidence(&[Some(0.48), Some(0.43), Some(0.09)]),
+            0.085,
+        );
         assert_eq!(score_spread_confidence(&[]), None);
     }
 
