@@ -477,4 +477,11 @@ describe("a user's sheet", () => {
     await renderApp(`${PATH}?user=usr_grace`);
     expect(await screen.findByText("This user can't be shown right now.")).toBeInTheDocument();
   });
+
+  it("opens the instance audit log at the user's changes and the changes to them", async () => {
+    signedIn();
+    const { sheet } = await openUser(GRACE);
+    expect(within(sheet).getByRole("link", { name: "Their changes" })).toHaveAttribute("href", `/settings/instance/audit-log?actor=${GRACE.id}`);
+    expect(within(sheet).getByRole("link", { name: "Changes to them" })).toHaveAttribute("href", `/settings/instance/audit-log?target=${GRACE.id}`);
+  });
 });

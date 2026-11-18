@@ -420,4 +420,24 @@ describe("MemberSheet", () => {
     expect(await screen.findByRole("combobox", { name: "Role" })).toHaveTextContent("role_gone");
     expect(await screen.findByText("No members match")).toBeInTheDocument();
   });
+
+  it("opens the project's audit log at the member's changes and the changes to them, with View project audit log", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    oneMember();
+    await renderApp(projectPath("members?member=usr_grace"));
+    const sheet = await screen.findByRole("dialog", { name: "Grace Hopper" });
+    expect(await within(sheet).findByRole("link", { name: "Their changes" })).toHaveAttribute("href", projectPath("audit-log?actor=usr_grace"));
+    expect(within(sheet).getByRole("link", { name: "Changes to them" })).toHaveAttribute("href", projectPath("audit-log?target=usr_grace"));
+  });
+
+  it("leaves the audit log links out without View project audit log", async () => {
+    signedIn({ projectRights: without("project.audit_log.view") });
+    projectData({ members: [projectMember()] });
+    oneMember();
+    await renderApp(projectPath("members?member=usr_grace"));
+    const sheet = await screen.findByRole("dialog", { name: "Grace Hopper" });
+    expect(await within(sheet).findByText("Joined")).toBeInTheDocument();
+    expect(within(sheet).queryByRole("link", { name: "Their changes" })).not.toBeInTheDocument();
+  });
 });

@@ -16,6 +16,7 @@ import { userStateLabel } from "~/format/labels";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { AccessView } from "~/kaeso/access-view";
+import { AuditLinks } from "~/kaeso/audit-links";
 import { useCatalogue } from "~/kaeso/catalogue";
 import { asGrant, sameGrant, type Grant } from "~/kaeso/grant";
 import { GrantEditor } from "~/kaeso/rights-editor";
@@ -191,6 +192,7 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
           />
         </Section>
       )}
+      {rights.has("audit_log.view") && <AuditLinks log={`/settings/orgs/${org}/audit-log`} user={m.user.id} />}
       {canTransfer && (
         <Section
           title={t("org.ownership.title", "Ownership")}

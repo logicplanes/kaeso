@@ -90,6 +90,8 @@ Nach einem Update sieht jeder, der die Konsole öffnet, einmal **Neu in Kaeso**.
 
 Das **Audit-Log** der Instanz verzeichnet Änderungen an Benutzern, Organisationen und den Einstellungen der Installation, jeweils mit Urheber und Zeitpunkt. Es kennzeichnet Änderungen von Agenten wie das Audit-Log einer Organisation, und der Filter **Agenten** zeigt nur diese ([Audit-Log lesen](organizations-and-projects.md#audit-log-lesen)). **JSON Lines exportieren** lädt die Ereignisse herunter, die die Filter zeigen, eines pro Zeile, das neueste zuerst, und das Log verzeichnet den Export. `instance/audit-log/export` der Platform API tut dasselbe mit dem Recht `instance.audit_log.export`.
 
+Das Blatt eines Benutzers unter **Benutzer** öffnet es mit **Änderungen dieser Person** bei seinen Änderungen und mit **Änderungen an dieser Person** bei den Änderungen an ihm.
+
 ## Nächste Schritte
 
 - [Konfiguration](../self-hosting/configuration.md): Legen Sie Anmeldemethoden, E-Mail und andere Einstellungen des Gateways fest.
