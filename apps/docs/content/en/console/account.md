@@ -70,7 +70,7 @@ At the top, **Agents** shows the MCP server's address with the marks of Claude C
 - rename it;
 - change its rights in the same editor as the consent page, then choose **Save rights**;
 - **Revoke** it, which signs it out at once;
-- read its **Activity**: every tool call of the last 90 days, with the tool, its target, the result, the time and the IP address.
+- read its **Activity**: every tool call of the last 90 days, with the tool, the organization and project it acted in, its target, the result, the time and the IP address.
 
 An agent keeps working until you revoke it, until it goes 90 days unused, or until all your sessions end, such as when you reset your password. Changing your password ends it only when you choose **Also disconnect my agents**. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
 

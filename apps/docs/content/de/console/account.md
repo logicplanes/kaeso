@@ -70,7 +70,7 @@ Oben zeigt **Agenten** die Adresse des MCP-Servers mit den Zeichen von Claude Co
 - ihn umbenennen;
 - seine Rechte im selben Editor wie auf der Zustimmungsseite ändern und dann **Rechte speichern** wählen;
 - ihn **Widerrufen**, was ihn sofort abmeldet;
-- seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, Ziel, Ergebnis, Zeit und IP-Adresse.
+- seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, der Organisation und dem Projekt, in denen er wirkte, Ziel, Ergebnis, Zeit und IP-Adresse.
 
 Ein Agent arbeitet, bis Sie ihn widerrufen, bis er 90 Tage ungenutzt bleibt oder bis alle Ihre Sitzungen enden, etwa wenn Sie Ihr Passwort zurücksetzen. Eine Änderung des Passworts beendet ihn nur, wenn Sie **Auch meine Agenten trennen** wählen. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
 

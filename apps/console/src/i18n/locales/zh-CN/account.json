@@ -175,6 +175,7 @@
   "account.agentCall": "{result} · {when} · {address}",
   "account.agentCallNoRight": "缺少权限",
   "account.agentCallOk": "完成",
+  "account.agentCallPlace": "{org} › {project}",
   "account.agentDetails": "详情",
   "account.agentFailed": "无法加载此智能体",
   "account.agentGone": "此智能体已被撤销或不存在。",

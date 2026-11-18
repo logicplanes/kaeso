@@ -16,6 +16,7 @@
   "account.agentCall": "{result} · {when} · {address}",
   "account.agentCallNoRight": "Missing a right",
   "account.agentCallOk": "Done",
+  "account.agentCallPlace": "{org} › {project}",
   "account.agentDetails": "Details",
   "account.agentFailed": "This agent couldn't load",
   "account.agentGone": "This agent was revoked or doesn't exist.",
