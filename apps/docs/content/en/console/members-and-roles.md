@@ -57,7 +57,7 @@ Open **Organization settings** › **Members** › **Roles** and choose **Create
 
 ## Add people to a project
 
-On a project's **Members** page, choose **Add member** and pick someone from the organization with a project role. Invite people outside the organization first.
+On a project's **Members** page, choose **Add member** and pick someone from the organization with a project role. Invite people outside the organization first. Above the list, the search field finds members by name or email, and the role select shows only one role's members.
 
 A project member's sheet also holds their [model access](#limit-the-models-someone-can-call) and [limits](limits-and-budgets.md), and links to their requests (**See requests**) and their keys (**Their keys**), each for someone who may see them. **Remove from project** archives their keys in the project, and they stay in the organization. On your own sheet, this is **Leave project**. Rights from a member's organization role count too: you can change or remove them only if you hold all their rights in the project. Only owners change or remove owners.
 

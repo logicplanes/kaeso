@@ -380,4 +380,44 @@ describe("MemberSheet", () => {
     await within(sheet).findByText("Joined");
     expect(within(sheet).queryByRole("link", { name: /See requests|Their keys/ })).not.toBeInTheDocument();
   });
+
+  it("finds members by name or email and by role, the role kept in the address", async () => {
+    signedIn();
+    projectData({
+      members: [
+        me(),
+        projectMember({ grant: grant("viewer"), user: { id: "usr_lin", name: "Lin Wu", email: "lin@north.example" } }),
+        projectMember({ user: { id: "usr_grace", name: "Grace Hopper", email: "grace@example.com" } }),
+      ],
+    });
+    const { user, router } = await renderApp(projectPath("members?role=viewer"));
+    const grid = () => screen.getByRole("grid", { name: "Members" });
+    await waitFor(() => expect(within(grid()).getAllByRole("row")).toHaveLength(1));
+    expect(within(grid()).getByText("Lin Wu")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("combobox", { name: "Role" }));
+    await user.click(await screen.findByRole("option", { name: "Every role" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    await user.type(screen.getByRole("searchbox", { name: "Search members" }), "NORTH");
+    await waitFor(() => expect(within(grid()).getAllByRole("row")).toHaveLength(1));
+    await user.clear(screen.getByRole("searchbox", { name: "Search members" }));
+    await user.type(screen.getByRole("searchbox", { name: "Search members" }), "nobody");
+    expect(await screen.findByText("No members match")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Clear search and role" }));
+    await waitFor(() => expect(within(grid()).getAllByRole("row")).toHaveLength(3));
+    await user.type(screen.getByRole("searchbox", { name: "Search members" }), "NORTH");
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(screen.getByRole("searchbox", { name: "Search members" })).toHaveValue("");
+    await user.click(screen.getByRole("combobox", { name: "Role" }));
+    await user.click(await screen.findByRole("option", { name: "Viewer" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ role: "viewer" }));
+  });
+
+  it("keeps a role from the address that the project doesn't know", async () => {
+    signedIn();
+    projectData({ members: [me()] });
+    await renderApp(projectPath("members?role=role_gone"));
+    expect(await screen.findByRole("combobox", { name: "Role" })).toHaveTextContent("role_gone");
+    expect(await screen.findByText("No members match")).toBeInTheDocument();
+  });
 });

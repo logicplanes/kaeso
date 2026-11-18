@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { allKeysQuery, keyFilter } from "~/api/queries/keys";
 import { KeysPage, type KeysSearch } from "~/features/project/keys/keys-page";
+import { isKeySort } from "~/kaeso/key-sort";
 
 const keysSearch = (s: Record<string, unknown>): KeysSearch => ({
   ...(typeof s.key === "string" ? { key: s.key } : {}),
   ...(typeof s.owner === "string" ? { owner: s.owner } : {}),
   ...(s.scope === "archived" || s.scope === "all" ? { scope: s.scope } : {}),
+  ...(isKeySort(s.sort) ? { sort: s.sort } : {}),
   ...(s.create === true || s.create === "true" ? { create: true } : {}),
 });
 

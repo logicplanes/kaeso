@@ -312,4 +312,30 @@ describe("your API keys", () => {
     expect(screen.queryByRole("button", { name: "Actions for support-bot" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Actions for old-bot" })).not.toBeInTheDocument();
   });
+
+  it("searches your keys and sorts them by when they expire, kept in the address", async () => {
+    signedIn();
+    keys([key(), key({ id: "key_ci", name: "ci-deploy", redacted: "sk-kso-Ci9…zzzz", expires_at: "2027-01-01T00:00:00Z" })]);
+    const { user, router } = await renderApp(PATH);
+    await waitFor(() => expect(within(grid()).getAllByRole("row").length).toBeGreaterThan(2));
+    await user.click(screen.getByRole("combobox", { name: "Sort" }));
+    await user.click(await screen.findByRole("option", { name: "Expires soonest" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ sort: "expiry" }));
+    const rows = () =>
+      within(grid())
+        .getAllByRole("row")
+        .map((r) => r.textContent ?? "");
+    expect(rows().findIndex((r) => r.includes("ci-deploy"))).toBeLessThan(rows().findIndex((r) => r.includes("support-bot")));
+
+    await user.type(screen.getByRole("searchbox", { name: "Search keys" }), "ci");
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(screen.getByRole("searchbox", { name: "Search keys" })).toHaveValue("");
+    await user.type(screen.getByRole("searchbox", { name: "Search keys" }), "nothing");
+    expect(await screen.findByText("No keys match your search")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Show every key" }));
+    expect(await screen.findByText("ci-deploy")).toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Sort" }));
+    await user.click(await screen.findByRole("option", { name: "Name" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+  });
 });

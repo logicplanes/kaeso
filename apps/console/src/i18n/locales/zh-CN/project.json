@@ -274,6 +274,8 @@
   "project.settings.mediaNeedsContent": "只有记录请求内容时才保留媒体。",
   "project.settings.mediaKept": "图片、音频和文件随请求内容一起保留。",
   "project.settings.mediaLeftOut": "媒体只记录类型和大小。",
+  "project.members.noneMatch": "没有匹配的成员",
+  "project.members.clearFilters": "清除搜索和角色",
   "project.members.theirKeys": "其密钥",
   "project.overview.downloadCsv": "下载 CSV",
   "project.overview.id": "ID",

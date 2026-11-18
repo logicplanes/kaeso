@@ -273,4 +273,38 @@ describe("KeysPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({}));
     await waitFor(() => expect(keyRequests()).toContainEqual({ include_archived: "true", limit: "100" }));
   });
+
+  it("narrows the keys as you type, keeps the sort in the address and clears what matches nothing", async () => {
+    signedIn();
+    projectData({ keys: [apiKey(), apiKey({ id: "key_ci", name: "ci-deploy", redacted: "sk-kso-Ci9…zzzz", last_used_at: NOW })] });
+    const { user, router } = await renderApp(projectPath("keys?sort=used"));
+    const list = await screen.findByRole("grid", { name: "Keys" });
+    expect(
+      within(list)
+        .getAllByRole("row")
+        .map((r) => r.textContent),
+    ).toEqual([expect.stringContaining("ci-deploy"), expect.stringContaining("checkout-web")]);
+    expect(screen.getByRole("combobox", { name: "Sort" })).toHaveTextContent("Last used");
+
+    await user.keyboard("/");
+    const searchBox = screen.getByRole("searchbox", { name: "Search keys" });
+    expect(searchBox).toHaveFocus();
+    await user.keyboard("zzzz");
+    await waitFor(() => expect(within(screen.getByRole("grid", { name: "Keys" })).getAllByRole("row")).toHaveLength(1));
+    await user.clear(searchBox);
+    await user.type(searchBox, "nothing");
+    expect(await screen.findByText("No keys for this filter")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Clear filter" }));
+    expect(searchBox).toHaveValue("");
+    await user.type(searchBox, "ci");
+    await user.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(searchBox).toHaveValue("");
+
+    await user.click(screen.getByRole("combobox", { name: "Sort" }));
+    await user.click(await screen.findByRole("option", { name: "Expires soonest" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ sort: "expiry" }));
+    await user.click(screen.getByRole("combobox", { name: "Sort" }));
+    await user.click(await screen.findByRole("option", { name: "Name" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+  });
 });
