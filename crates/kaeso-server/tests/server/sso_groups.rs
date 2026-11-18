@@ -310,8 +310,8 @@ async fn too_many_entra_groups_for_the_token_are_read_from_graph_and_a_refused_r
     let read = last_groups(app, owner, &cookie).await;
     assert_eq!(
         read["your_last_groups"],
-        json!(["g-1", "kaeso-admins", "g-3"]),
-        "every page, and groups only"
+        json!(["g-1", "a-directory-role", "kaeso-admins", "g-3"]),
+        "every page, groups and directory roles, as the token would list them"
     );
     assert_eq!(read["claim_missing_at"], Value::Null);
 

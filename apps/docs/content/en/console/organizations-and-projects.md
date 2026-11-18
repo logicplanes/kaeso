@@ -93,6 +93,8 @@ The rules apply at each sign-in through your provider, so a change in a group ap
 
 Okta sends groups once the app has a groups claim with a filter, such as **Matches regex** `.*`. Microsoft Entra ID sends group object ids, not names. For a person in more than 200 groups, it sends a reference instead of the list. Kaeso then reads the person's groups from Microsoft Graph with the sign-in's access token. That needs the delegated `User.Read` permission and no scope of another API under **Extra scopes**; if Graph refuses, the sign-in changes nothing. To map app roles instead of groups, set **Groups claim** to `roles`, and rules match your app roles' values.
 
+Graph lists every group and directory role the person is in, nested ones included. With **Security groups**, the token leaves out distribution lists and Microsoft 365 groups, but with `User.Read` Kaeso can't tell them apart in Graph. A rule on one of them would apply only to people in more than 200 groups, so name security groups and directory roles in rules.
+
 ## Require single sign-on or two-factor authentication
 
 Under **Security**, you can tighten how members get into the organization:
