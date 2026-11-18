@@ -19,7 +19,7 @@ Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [KPMR](../concepts
 
 Für einen [eigenen Anbieter](custom-providers.md#seine-modelle-hinzufügen) Ihrer Organisation listet der Dialog stattdessen die Modell-IDs, die die Modellliste des Anbieters nennt. Er trägt die Limits und Fähigkeiten ein, die er findet, und Sie geben die Preise ein.
 
-Die Installation hält die Daten von KPMR selbst aktuell, standardmäßig etwa stündlich, und Instanz-Admins sehen ihren Stand unter [System](instance-administration.md#system-prüfen). Ein Modell, das KPMR nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das KPMR als veraltet kennzeichnet, ist als **Veraltet** markiert.
+Die Installation hält die Daten von KPMR selbst aktuell, standardmäßig etwa stündlich, und Instanz-Admins sehen ihren Stand unter [System](instance-administration.md#system-prüfen). Ein Modell, das KPMR nicht mehr führt, bleibt mit seinen letzten bekannten Werten im Katalog und ist als **Nicht mehr gelistet** markiert. Ein Modell, das KPMR als veraltet kennzeichnet, ist als **Veraltet** markiert, und eines mit Abschaltdatum als **Abschaltung** mit dem Tag; der Tab **Läuft aus** zeigt, wer sie noch aufruft, und stellt auf ihre Nachfolger um ([Modell-Lebenszyklus](../concepts/model-lifecycle.md)).
 
 ## Ein Modell finden
 

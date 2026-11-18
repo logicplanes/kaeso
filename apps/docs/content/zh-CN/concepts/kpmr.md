@@ -65,6 +65,7 @@ KPMR 是 Logicplanes 在 [kpmr.kaeso.app](https://kpmr.kaeso.app) 运行的服�
 - **每个键都存在。**未知的值为 `null`，因此 Kaeso 能区分“未知”和“否”。
 - **价格是精确的十进制字符串**，单位为每百万 Token 的美元，从不使用浮点数。`cache_write_1h` 是保留一小时的缓存写入价格，在服务商有公开说明时提供。
 - **`pricing.tiers`** 列出模型的长上下文价格，`context_above` 最小的一档在前，没有则为空。当请求的提示词超过 `context_above` 个 Token 时，该请求的所有 Token 均按该档价格计费；值为 `null` 的价格沿用基础价格。
+- **`lifecycle`** 包含服务商宣布停用、弃用和停用该模型的日期，以及推荐的替代模型 `replacement`，宣布之前均为 `null`。`status` 会在这些日期变为 `deprecated`，然后变为 `retired`（[模型生命周期](model-lifecycle.md)）。
 - **`gateway.egress_dialect`** 指明 Kaeso 调用该模型所用的 API 格式（当它不是服务商的默认格式时）。
 - **未知的键会被忽略。**格式 1 中新增的字段不会影响旧版网关；会影响旧版网关的变更将成为格式 2。
 

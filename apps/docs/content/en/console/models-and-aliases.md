@@ -19,7 +19,7 @@ Each model brings its prices, limits and capabilities from [KPMR](../concepts/kp
 
 For one of your organization's [custom providers](custom-providers.md#add-its-models), the dialog lists the model ids the provider's own listing names instead. It fills in the limits and capabilities it finds, and you enter the prices.
 
-The install keeps KPMR's data current by itself, about every hour by default, and instance admins see its state under [System](instance-administration.md#check-the-system). A model that KPMR stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that KPMR marks deprecated is marked **Deprecated**.
+The install keeps KPMR's data current by itself, about every hour by default, and instance admins see its state under [System](instance-administration.md#check-the-system). A model that KPMR stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that KPMR marks deprecated is marked **Deprecated**, and one with a shutdown date **Shuts down** with the day; the **Retiring** tab shows who still calls them and moves them to their replacements ([model lifecycle](../concepts/model-lifecycle.md)).
 
 ## Find a model
 

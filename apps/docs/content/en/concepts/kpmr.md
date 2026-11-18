@@ -65,6 +65,7 @@ The catalogue is a JSON document in Kaeso's own format, versioned by a format nu
 - **Every key is present.** An unknown value is `null`, so Kaeso can tell "unknown" from "no".
 - **Prices are exact decimal strings** in US dollars per million tokens, never floating-point numbers. `cache_write_1h` is the price of a cache write kept for an hour, where the provider documents one.
 - **`pricing.tiers`** lists a model's long-context prices, lowest `context_above` first, or is empty. A tier's prices apply to every token of a request whose prompt is longer than `context_above` tokens; a `null` price is the base price.
+- **`lifecycle`** has the days the provider announced, deprecates and shuts down the model and the `replacement` it recommends, each `null` until announced. `status` is `deprecated` and then `retired` on those days ([model lifecycle](model-lifecycle.md)).
 - **`gateway.egress_dialect`** names the API format Kaeso sends the model in, when it isn't the provider's default.
 - **Unknown keys are ignored.** A new field in format 1 doesn't break an older gateway; a change that would break it becomes format 2.
 

@@ -1086,6 +1086,27 @@ impl Entry {
             .or(self.last_known.as_ref())
             .is_some_and(kpmr::Model::is_deprecated)
     }
+
+    /// The KPMR model behind a built-in entry: the current one, else the last one KPMR listed.
+    pub fn kpmr_model<'a>(&'a self, snapshot: &'a kpmr::Catalogue) -> Option<&'a kpmr::Model> {
+        if self.custom {
+            return None;
+        }
+        snapshot
+            .model(&self.provider, &self.model_id)
+            .or(self.last_known.as_ref())
+    }
+
+    /// When its provider retires the model and what it recommends instead, if KPMR says.
+    pub fn lifecycle<'a>(&'a self, snapshot: &'a kpmr::Catalogue) -> Option<&'a kpmr::Lifecycle> {
+        self.kpmr_model(snapshot)?.lifecycle.as_ref()
+    }
+
+    /// Whether the model has stopped working by `today`.
+    pub fn is_retired(&self, snapshot: &kpmr::Catalogue, today: time::Date) -> bool {
+        self.kpmr_model(snapshot)
+            .is_some_and(|m| m.is_retired(today))
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

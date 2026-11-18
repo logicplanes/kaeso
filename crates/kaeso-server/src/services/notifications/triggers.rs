@@ -122,6 +122,8 @@ pub async fn on_event(state: &AppState, kind: Kind, e: &Event) -> ApiResult<usiz
         | Kind::OrgOwnership
         | Kind::BudgetAlerts
         | Kind::KeyExpiry
+        | Kind::ModelDeprecated
+        | Kind::ModelShutdownSoon
         | Kind::ExportReady
         | Kind::WeeklySummary
         | Kind::LimitReached

@@ -125,6 +125,8 @@ The weekly summary and the monthly cost report go out on their own schedule, so 
 | Project | Your access changed | You | Now |
 | Project | Budget alerts, Limit reached | `limits.manage`, or the owner of a key with a limit | Now, Daily |
 | Project | Your key expires, Your key changed | The key's owner | Now |
+| Project | Model deprecated | `models.view` in a project that uses the model | Daily |
+| Project | Model shuts down soon | `models.view` in a project that still calls the model | Now |
 | Project | Content logging changed | Every member of the project | Daily |
 | Tools | MCP servers need attention | `mcp_servers.manage` | Now |
 | Tools | Your connection expired | You, for a server you connected your own account to | Now |

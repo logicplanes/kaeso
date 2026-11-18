@@ -10041,6 +10041,73 @@
         "x-kaeso-access": "right:providers.custom.manage"
       }
     },
+    "/platform/v1/orgs/{org}/deprecations": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "The organization's projects that use models their providers retire.",
+        "description": "Lists the projects the caller can see, as the project list does.\n\n**Right:** `org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgDeprecations",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgRetirements"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.view"
+      }
+    },
     "/platform/v1/orgs/{org}/guardrails": {
       "get": {
         "tags": [
@@ -15056,6 +15123,245 @@
         "x-kaeso-access": "right:project.update"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/deprecations": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "The project's models that their providers retire: dates, replacement,\nthe aliases and route steps that call them, and who still calls them.",
+        "description": "`usage` is `null` without `usage.view`.\n\n**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectDeprecations",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetiringModels"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/deprecations/{model}/move": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Shows what moving a retiring model to its replacement would change.",
+        "description": "**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectDeprecationsModelMove",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      },
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Moves every alias and route step that calls a retiring model to its\nreplacement, adding the replacement to the catalogue when it's missing.",
+        "description": "The catalogue model itself stays, so apps that name it directly keep\nworking until the shutdown.\n\n**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectDeprecationsModelMove",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/guardrails": {
       "get": {
         "tags": [
@@ -19139,6 +19445,167 @@
           }
         ],
         "x-kaeso-access": "right:project.members.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/model-lifecycle": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "What the project does when a model it uses shuts down.",
+        "description": "**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectModelLifecycle",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLifecycleSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      },
+      "put": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Sets what the project does when a model it uses shuts down.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "putOrgsOrgProjectsProjectModelLifecycle",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelLifecycleSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLifecycleSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/models": {
@@ -27566,6 +28033,37 @@
         },
         "additionalProperties": false
       },
+      "AliasUseView": {
+        "type": "object",
+        "description": "An alias whose route calls the model.",
+        "required": [
+          "alias_id",
+          "name",
+          "steps"
+        ],
+        "properties": {
+          "alias_id": {
+            "$ref": "#/components/schemas/AliasId",
+            "description": "The alias."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "chat"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The steps that call the model, as a trace names them, fallbacks and the\nbranches of conditions and splits included.",
+            "example": [
+              "route",
+              "route.fallback"
+            ]
+          }
+        }
+      },
       "AliasView": {
         "type": "object",
         "description": "An alias: a name apps send as `model`, and the route requests take.",
@@ -27855,6 +28353,27 @@
               "type": "string"
             },
             "description": "Model ids the catalogue already had."
+          }
+        }
+      },
+      "CallerCount": {
+        "type": "object",
+        "description": "A caller and how many requests it sent.",
+        "required": [
+          "id",
+          "requests"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The key, member or service account id, or the client app's name.",
+            "example": "key_01J9Z8W5D6Q4X7G2R1V3N5M8KT"
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests.",
+            "minimum": 0
           }
         }
       },
@@ -29344,6 +29863,28 @@
             "type": "string",
             "format": "date-time",
             "description": "Last changed."
+          }
+        }
+      },
+      "DayCount": {
+        "type": "object",
+        "description": "Requests on one day.",
+        "required": [
+          "day",
+          "requests"
+        ],
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "The day, UTC.",
+            "example": "2026-11-04"
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests.",
+            "minimum": 0
           }
         }
       },
@@ -32784,6 +33325,54 @@
             ],
             "description": "The privacy policy.",
             "example": "https://example.com/privacy"
+          }
+        }
+      },
+      "LifecycleView": {
+        "type": "object",
+        "description": "When the provider retires a model and what it recommends instead, as\nKPMR publishes it. Each field is `null` while unknown.",
+        "properties": {
+          "announced_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the provider announced the deprecation.",
+            "example": "2026-11-04"
+          },
+          "deprecated_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the model became deprecated.",
+            "example": "2026-11-04"
+          },
+          "replacement": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The provider's model id it recommends instead.",
+            "example": "claude-sonnet-5-5"
+          },
+          "shutdown_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the provider stops serving the model.",
+            "example": "2027-02-04"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The page where the provider announced it."
           }
         }
       },
@@ -39987,6 +40576,25 @@
           }
         }
       },
+      "ModelLifecycleSettings": {
+        "type": "object",
+        "description": "What a project does when a model it uses shuts down.",
+        "required": [
+          "move_on_shutdown",
+          "serve_replacement"
+        ],
+        "properties": {
+          "move_on_shutdown": {
+            "type": "boolean",
+            "description": "On a model's shutdown day, move the aliases and route steps that call it\nto its replacement, adding the replacement when it's missing. Off by default."
+          },
+          "serve_replacement": {
+            "type": "boolean",
+            "description": "After a model's shutdown, answer requests that name it with its\nreplacement instead of failing. The reply names the model that answered and\nthe request log marks it. Off by default: price and behaviour change."
+          }
+        },
+        "additionalProperties": false
+      },
       "ModelRouteView": {
         "type": "object",
         "description": "A pattern of model ids and the format they are sent in.",
@@ -40055,6 +40663,30 @@
           }
         },
         "additionalProperties": false
+      },
+      "MoveView": {
+        "type": "object",
+        "description": "What moving a model to its replacement changes, or changed.",
+        "required": [
+          "model",
+          "adds_replacement",
+          "steps"
+        ],
+        "properties": {
+          "adds_replacement": {
+            "type": "boolean",
+            "description": "Whether the replacement is (or was) added to the catalogue first."
+          },
+          "model": {
+            "$ref": "#/components/schemas/RetiringModelView",
+            "description": "The retiring model."
+          },
+          "steps": {
+            "type": "integer",
+            "description": "How many route steps point at the replacement afterwards.",
+            "minimum": 0
+          }
+        }
       },
       "MyMembership": {
         "type": "object",
@@ -40730,6 +41362,22 @@
           }
         },
         "additionalProperties": false
+      },
+      "OrgRetirements": {
+        "type": "object",
+        "description": "The organization's projects that use retiring models, soonest shutdown first.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectRetirements"
+            },
+            "description": "The projects, only those the caller can see and that use one."
+          }
+        }
       },
       "OrgRightsDetail": {
         "type": "object",
@@ -41790,6 +42438,28 @@
           }
         }
       },
+      "PriceChange": {
+        "type": "object",
+        "description": "A price per million tokens before and after a move.",
+        "properties": {
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The retiring model's price in USD; `null` when unknown.",
+            "example": "3"
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The replacement's price in USD; `null` when unknown.",
+            "example": "3"
+          }
+        }
+      },
       "PriceTier": {
         "type": "object",
         "description": "The prices for every token of a request whose prompt is longer than\n`context_above` tokens, output included. An absent price is the model's own\nprice.",
@@ -42264,6 +42934,45 @@
           }
         },
         "additionalProperties": false
+      },
+      "ProjectRetirements": {
+        "type": "object",
+        "description": "A project's retiring models, in short.",
+        "required": [
+          "project_id",
+          "name",
+          "models",
+          "retired"
+        ],
+        "properties": {
+          "models": {
+            "type": "integer",
+            "description": "How many of its models their providers retire or will retire.",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "next_shutdown_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The soonest shutdown still ahead; `null` without one.",
+            "example": "2027-02-04"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
+          },
+          "retired": {
+            "type": "integer",
+            "description": "How many of them are past their shutdown day.",
+            "minimum": 0
+          }
+        }
       },
       "ProjectRightsDetail": {
         "type": "object",
@@ -43028,6 +43737,46 @@
           }
         }
       },
+      "ReplacementView": {
+        "type": "object",
+        "description": "The model the provider recommends instead.",
+        "required": [
+          "model_id",
+          "listed",
+          "input_price",
+          "output_price"
+        ],
+        "properties": {
+          "catalogue_model_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CatalogueModelId",
+                "description": "The project's catalogue model for it; `null` when the project doesn't have\nit yet, and a move adds it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_price": {
+            "$ref": "#/components/schemas/PriceChange",
+            "description": "The input price per million tokens."
+          },
+          "listed": {
+            "type": "boolean",
+            "description": "Whether KPMR lists it for the provider; one it doesn't can't be added."
+          },
+          "model_id": {
+            "type": "string",
+            "description": "The provider's model id.",
+            "example": "claude-sonnet-5-5"
+          },
+          "output_price": {
+            "$ref": "#/components/schemas/PriceChange",
+            "description": "The output price per million tokens."
+          }
+        }
+      },
       "RequestFormat": {
         "type": "string",
         "description": "A request format, as the request log names it: the format an app sent or the one Kaeso sent to the provider.",
@@ -43151,6 +43900,165 @@
           "miss",
           "bypass"
         ]
+      },
+      "RetirementState": {
+        "type": "string",
+        "description": "Where a model is in its retirement.",
+        "enum": [
+          "announced",
+          "deprecated",
+          "retired"
+        ]
+      },
+      "RetiringModelView": {
+        "type": "object",
+        "description": "A model of the project that its provider retires or will retire.",
+        "required": [
+          "id",
+          "provider",
+          "model_id",
+          "state",
+          "lifecycle",
+          "aliases"
+        ],
+        "properties": {
+          "aliases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AliasUseView"
+            },
+            "description": "The aliases and route steps that call it."
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Days until the shutdown, negative once it passed; `null` without a date."
+          },
+          "id": {
+            "$ref": "#/components/schemas/CatalogueModelId",
+            "description": "The catalogue model."
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/LifecycleView",
+            "description": "The dates, the replacement and the source."
+          },
+          "model_id": {
+            "type": "string",
+            "description": "The provider's model id.",
+            "example": "claude-sonnet-4-5-20250929"
+          },
+          "provider": {
+            "type": "string",
+            "description": "The provider.",
+            "example": "anthropic"
+          },
+          "replacement": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReplacementView",
+                "description": "The replacement and how the project stands with it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/RetirementState",
+            "description": "Where it is in its retirement."
+          },
+          "usage": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RetiringUsage",
+                "description": "Who calls it; `null` without the right to see the project's usage."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "RetiringModels": {
+        "type": "object",
+        "description": "The project's models that their providers retire, soonest shutdown first.",
+        "required": [
+          "data",
+          "soon"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RetiringModelView"
+            },
+            "description": "The models."
+          },
+          "soon": {
+            "type": "integer",
+            "description": "How many of them shut down within 90 days or have already.",
+            "minimum": 0
+          }
+        }
+      },
+      "RetiringUsage": {
+        "type": "object",
+        "description": "Who still calls a retiring model, and whether the calls go down.",
+        "required": [
+          "requests",
+          "keys",
+          "members",
+          "service_accounts",
+          "clients",
+          "daily"
+        ],
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CallerCount"
+            },
+            "description": "Client apps, by the user agent they send, that called it in the last 30\ndays; empty without the request log store."
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayCount"
+            },
+            "description": "Requests per day from the announcement (at most a year back) until today."
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CallerCount"
+            },
+            "description": "Keys that called it in the last 30 days, most requests first."
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CallerCount"
+            },
+            "description": "Members that called it in the last 30 days."
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests in the last 30 days.",
+            "minimum": 0
+          },
+          "service_accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CallerCount"
+            },
+            "description": "Service accounts that called it in the last 30 days."
+          }
+        }
       },
       "Revoked": {
         "type": "object",
@@ -47280,7 +48188,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The notices to receive: `budget_alerts`, `limit_reached`, `key_expiry`,\n`content_logging`, `mcp_servers`, `org_security`, `org_members`, `provider_keys`,\n`model_changes`.",
+            "description": "The notices to receive: `budget_alerts`, `limit_reached`, `key_expiry`,\n`model_deprecated`, `model_shutdown_soon`, `content_logging`, `mcp_servers`,\n`org_security`, `org_members`, `provider_keys`, `model_changes`.",
             "example": [
               "budget_alerts",
               "provider_keys"

@@ -40,6 +40,14 @@ const kinds: Readonly<Record<string, Words>> = {
     name: t("account.notify.keyChanged", "Your key changed"),
     description: t("account.notify.keyChangedHint", "When someone else disables, rotates or archives it."),
   }),
+  model_deprecated: () => ({
+    name: t("account.notify.modelDeprecated", "Model deprecated"),
+    description: t("account.notify.modelDeprecatedHint", "When a provider names a shutdown day for a model a project uses."),
+  }),
+  model_shutdown_soon: () => ({
+    name: t("account.notify.modelShutdownSoon", "Model shuts down soon"),
+    description: t("account.notify.modelShutdownSoonHint", "30, 7 and 1 days before a model a project still calls shuts down."),
+  }),
   content_logging: () => ({
     name: t("account.notify.contentLogging", "Content logging changed"),
     description: t("account.notify.contentLoggingHint", "When a project starts or stops keeping prompts."),
