@@ -339,7 +339,7 @@ describe("the command palette", () => {
     await user.click(within(list).getByRole("option", { name: /Keyboard shortcuts/ }));
     const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
     expect(within(sheet).getByText("Single keys work when no field has focus.")).toBeInTheDocument();
-    expect(within(sheet).getByText("Go to request logs")).toBeInTheDocument();
+    expect(within(sheet).getByText("Organization audit log")).toBeInTheDocument();
   });
 
   it("offers only the account and the theme to someone outside every organization", async () => {

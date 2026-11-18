@@ -1,13 +1,9 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "@tanstack/react-router";
-import { useOrgRights } from "~/auth/session";
+import { useNavigate } from "@tanstack/react-router";
 import { useCreateAction } from "./create-action";
 import { takeEarlyKeys } from "./early-keys";
-import { readLast } from "./last";
+import { useGoKeys } from "./go-keys";
 import { isPaletteOpen } from "./palette-store";
-import { orgPath, projectPath } from "./pages";
-import { useProjectPages } from "./project-pages";
-import { ORG_SETTINGS_PAGES } from "./settings-pages";
 import { onShortcutSheet, openShortcutSheet } from "./shortcuts-store";
 
 function typing(target: EventTarget | null): boolean {
@@ -20,12 +16,8 @@ function layerOpen(): boolean {
 
 export function ShortcutsHost() {
   const navigate = useNavigate();
-  const params = useParams({ strict: false });
   const create = useCreateAction();
-  const org = params.org ?? readLast()?.org;
-  const project = params.project;
-  const pages = useProjectPages(org ?? "", project ?? "");
-  const orgRights = useOrgRights(org ?? "");
+  const goKeys = useGoKeys();
   const pendingG = useRef<number>(0);
 
   useEffect(() => {
@@ -33,21 +25,10 @@ export function ShortcutsHost() {
       if (e.metaKey || e.ctrlKey || e.altKey || typing(e.target) || layerOpen() || isPaletteOpen()) return;
       if (Date.now() - pendingG.current < 1200) {
         pendingG.current = 0;
-        const key = e.key;
-        const page = pages.find((p) => p.key === key);
-        if (page && org && project) {
+        const go = goKeys.find((k) => k.key === e.key);
+        if (go) {
           e.preventDefault();
-          void navigate({ to: page.path ? `${projectPath(org, project)}/${page.path}` : projectPath(org, project) });
-        } else if (key === "o" && org && !project && orgRights.has("org.view")) {
-          e.preventDefault();
-          void navigate({ to: orgPath(org) });
-        } else if (key === "s") {
-          e.preventDefault();
-          const settings = org ? ORG_SETTINGS_PAGES.find((p) => !p.right || orgRights.has(p.right)) : undefined;
-          void navigate({ to: settings ? `/settings/orgs/${org}/${settings.path}` : "/settings/account/profile" });
-        } else if (key === "a" && org && orgRights.has("audit_log.view")) {
-          e.preventDefault();
-          void navigate({ to: `/settings/orgs/${org}/audit-log` });
+          void navigate({ to: go.to });
         }
         return;
       }
@@ -78,7 +59,7 @@ export function ShortcutsHost() {
     window.addEventListener("keydown", onKey);
     for (const e of takeEarlyKeys()) onKey(e);
     return () => window.removeEventListener("keydown", onKey);
-  }, [create, navigate, org, orgRights, pages, project]);
+  }, [create, goKeys, navigate]);
 
   return <ShortcutSheetHost />;
 }

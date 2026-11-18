@@ -251,7 +251,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
           label: p.label(),
           icon: p.icon,
           hint: t("common.project", "Project"),
-          ...(p.shortcut ? { shortcut: p.shortcut } : {}),
+          shortcut: [["g"], [p.key]],
           onSelect: go(p.path ? `${projectPath(org, project)}/${p.path}` : projectPath(org, project)),
         })),
       ...ORG_AREA_PAGES.filter((p) => org && orgRights.has(p.right)).map((p) => ({
