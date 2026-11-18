@@ -449,5 +449,14 @@
   "instance.updates.helmMajor": "Kaeso {version} ist eine neue Hauptversion: Lesen Sie die Upgrade-Anleitung und aktualisieren Sie dann mit Helm.",
   "instance.updates.helmSteps": "Ein kommendes Release verlangt eigene Schritte: Folgen Sie der Upgrade-Anleitung und aktualisieren Sie dann mit Helm.",
   "instance.updates.helmTitle": "Mit Helm aktualisieren, mit Name und Namespace Ihres Releases",
-  "instance.updates.withHelm": "Mit Helm aktualisieren"
+  "instance.updates.withHelm": "Mit Helm aktualisieren",
+  "instance.ratesOn": "Kaeso holt die Wechselkurse täglich",
+  "instance.ratesOff": "Kaeso holt keine Wechselkurse mehr",
+  "instance.exchangeRates": "Wechselkurse",
+  "instance.exchangeRatesHint": "Die Tageskurse der EZB rechnen USD für Preise und Ausgaben um.",
+  "instance.fetchRates": "Wechselkurse holen",
+  "instance.fetchRatesHint": "Aus behält die vorhandenen Kurse; ohne Kurse nur USD.",
+  "instance.latestRates": "Neueste Kurse",
+  "instance.ratesFailed": "Der letzte Abruf schlug fehl: {error}",
+  "instance.noRates": "Noch keine"
 }

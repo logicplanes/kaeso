@@ -86,6 +86,21 @@ pub fn all() -> Vec<Job> {
             lock: 4,
             run: |s| Box::pin(kpmr::run(s)),
         },
+        // Often enough to retry a failed fetch within 15 minutes; `due` waits six hours after one
+        // that worked.
+        Job {
+            name: "exchange_rates",
+            every: Duration::from_secs(300),
+            lock: 12,
+            run: |s| {
+                Box::pin(async move {
+                    if !crate::services::exchange_rates::due(&s).await? {
+                        return Ok("not due".into());
+                    }
+                    Ok(crate::services::exchange_rates::sync(&s).await?)
+                })
+            },
+        },
         Job {
             name: "update_check",
             every: Duration::from_secs(60),

@@ -55,7 +55,8 @@ pub fn config_result(
         .set("KAESO_KPMR_PUBLIC_KEYS", kpmr::PUBLIC_KEYS.as_str())
         .set("KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS", "true")
         .set("KAESO_UPDATES_CHECK", "false")
-        .set("KAESO_UPDATES_RELEASES_URL", "http://127.0.0.1:9/releases");
+        .set("KAESO_UPDATES_RELEASES_URL", "http://127.0.0.1:9/releases")
+        .set("KAESO_EXCHANGE_RATES_URL", "http://127.0.0.1:9/ecb/");
     for (k, v) in extra {
         source = source.set(k, *v);
     }

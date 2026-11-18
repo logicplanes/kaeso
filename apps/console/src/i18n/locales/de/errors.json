@@ -869,5 +869,8 @@
   "errors.servicePrincipal.badField": "`{field}` des Service Principals ist ungültig.",
   "errors.modelApi.entraRoleRefused": "Azure hat den Service Principal von Microsoft Entra ID dieses Projekts abgelehnt. Er braucht die Rolle Cognitive Services OpenAI User auf der Ressource; bitten Sie einen Organisations-Admin, ihn unter Anbieter zu prüfen.",
   "errors.modelApi.entraRefused": "Microsoft Entra ID hat den Service Principal des Azure-Schlüssels dieses Projekts abgelehnt, daher ist er abgemeldet. Bitten Sie einen Organisations-Admin, ihn unter Anbieter zu ersetzen.",
-  "errors.modelApi.entraUnavailable": "Kaeso bekommt gerade kein Zugriffstoken von Microsoft Entra ID. Versuchen Sie es gleich noch einmal."
+  "errors.modelApi.entraUnavailable": "Kaeso bekommt gerade kein Zugriffstoken von Microsoft Entra ID. Versuchen Sie es gleich noch einmal.",
+  "errors.currency.noRatePrices": "Kaeso hat keinen Wechselkurs für {code}; geben Sie die Preise in USD an.",
+  "errors.currency.noRate": "Kaeso hat keinen Wechselkurs für {code}; nutzen Sie eine Währung aus `exchange-rates`.",
+  "errors.currency.code": "`currency` muss ein dreistelliger ISO-4217-Code sein, etwa `EUR`."
 }

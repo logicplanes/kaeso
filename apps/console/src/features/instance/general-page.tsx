@@ -11,6 +11,7 @@ import { LoadFailed } from "~/features/org/load-failed";
 import { AccountsSettings } from "./accounts-settings";
 import { AdminSsoSettings } from "./admin-sso-settings";
 import { AgentsSettings } from "./agents-settings";
+import { ExchangeRatesSettings } from "./exchange-rates-settings";
 import { InstancePage } from "./instance-page";
 import { TimeZoneSettings } from "./time-zone-settings";
 import { t } from "~/i18n";
@@ -33,6 +34,7 @@ export function InstanceGeneralPage() {
           <SignIn settings={s} />
           <AdminSsoSettings settings={s} />
           <TimeZoneSettings settings={s} />
+          <ExchangeRatesSettings settings={s} />
           <AgentsSettings />
           <OrgDeletion key={s.org_deletion_grace_days} settings={s} />
         </>

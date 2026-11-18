@@ -122,6 +122,7 @@ pub async fn prepare_with(config: Config, overrides: Overrides) -> Result<AppSta
         accounts: overrides.accounts,
     });
     crate::services::kpmr::init(&state).await?;
+    crate::services::exchange_rates::load(&state).await?;
     Ok(state)
 }
 

@@ -14,6 +14,7 @@ pub mod batches;
 pub mod catalogue;
 pub mod credentials;
 pub mod custom_providers;
+pub mod exchange_rates;
 pub mod guardrails;
 pub mod image_generations;
 pub mod instance;

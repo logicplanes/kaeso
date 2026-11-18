@@ -1,0 +1,50 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT day, currency, per_eur FROM exchange_rates ORDER BY day, currency",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "day",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "exchange_rates",
+            "name": "day"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "currency",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "exchange_rates",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "per_eur",
+        "type_info": "Numeric",
+        "origin": {
+          "Table": {
+            "table": "exchange_rates",
+            "name": "per_eur"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "908a3740d201ade6bf0a3b0ba79dad4c005e2d45d619cdcbc9a1d98c7e0f29ff"
+}

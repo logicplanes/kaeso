@@ -137,7 +137,7 @@
   "models.problem.format": "自定义模型需要指定 Kaeso 发送的格式。",
   "models.problem.limits": "自定义模型需要上下文和输出上限。",
   "models.problem.modalities": "自定义模型需要指定输入和输出。",
-  "models.problem.price": "价格须为以美元计的小数金额，如 3.00。",
+  "models.problem.price": "价格须为小数金额，如 3.00。",
   "models.problem.prices": "自定义模型需要输入和输出价格。",
   "models.problem.whole": "上限和超时须为整数。",
   "models.removeFromCatalogue": "从目录中移除",
@@ -471,5 +471,11 @@
   "models.route.retries": "重试",
   "models.route.retriesHint": "在连接中断、返回 5xx 或服务商过载后、回退之前重试；超时后从不重试。",
   "models.route.retriesProject": "项目的设置",
-  "models.route.retriesShort": "{count, plural, other {重试 # 次}}"
+  "models.route.retriesShort": "{count, plural, other {重试 # 次}}",
+  "models.noRate": "此货币尚无汇率；按这些价格的请求费用未知。",
+  "models.inDollars": "≈ {price}，按 {day} 的欧洲央行汇率",
+  "models.field.currency": "货币",
+  "models.currencyHint": "以下价格以此货币计；Kaeso 以美元计算请求费用。",
+  "models.pricePerMillionIn": "{price} / 百万 Token（≈ {usd}）",
+  "models.pricePerMillionNoRate": "{price} / 百万 Token（无汇率）"
 }

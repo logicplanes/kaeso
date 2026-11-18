@@ -27,6 +27,7 @@ pub struct Inner {
     pub caches: Caches,
     pub response_cache: crate::services::response_cache::Shared,
     pub kpmr: crate::services::kpmr::Kpmr,
+    pub exchange_rates: crate::services::exchange_rates::Rates,
     pub upstream: kaeso_upstream::Upstream,
     pub mcp: kaeso_upstream::mcp::McpUpstream,
     pub public_mcp: kaeso_upstream::mcp::McpUpstream,
@@ -98,6 +99,7 @@ impl AppState {
             caches,
             response_cache,
             kpmr: crate::services::kpmr::Kpmr::embedded(),
+            exchange_rates: crate::services::exchange_rates::Rates::default(),
             upstream: kaeso_upstream::Upstream::new(
                 connect_timeout,
                 concat!("kaeso-gateway/", env!("CARGO_PKG_VERSION")),

@@ -2,7 +2,9 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
-import { signedIn, without } from "~/test/fixtures";
+import { exchangeRates, signedIn, without } from "~/test/fixtures";
+import { me } from "~/test/fixtures/instance-account";
+import { hoverReason } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, listed, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -554,6 +556,50 @@ describe("AnalyticsPage", () => {
         "Week of 20 Oct 2025",
       ]),
     );
+  });
+
+  it("shows the cost in the currency picked next to the dollars, with the rates it used", async () => {
+    signedIn();
+    let mine = me({ display_currency: "EUR" });
+    on("GET", "me", () => mine);
+    on("PATCH", "me", ({ body }: { body: { display_currency: string } }) => (mine = me(body)));
+    projectData();
+    usage({ day: [usageRow({ key: "2026-10-13", cost: "2", converted_cost: "1.8" }), usageRow({ cost: "1.25", converted_cost: "1.15" })] });
+    const { user } = await renderApp(projectPath(`analytics?${PERIOD}`));
+
+    expect(await screen.findByText("≈ €2.95")).toBeInTheDocument();
+    expect(screen.getByText("≈ EUR at each day's ECB rate; the latest is of 13 Nov 2026.")).toBeInTheDocument();
+    expect(requests("GET", USAGE).some((r) => r.query.get("currency") === "EUR")).toBe(true);
+    await user.click(screen.getByRole("combobox", { name: "Currency" }));
+    await user.click(await screen.findByRole("option", { name: /^USD/ }));
+    await waitFor(() => expect(requests("PATCH", "me").map((r) => r.body)).toEqual([{ display_currency: "USD" }]));
+    await waitFor(() => expect(screen.queryByText(/ECB rate/)).not.toBeInTheDocument());
+  });
+
+  it("says which days use the latest rate when the period starts before the oldest rates", async () => {
+    signedIn();
+    on("GET", "me", me({ display_currency: "GBP" }));
+    on("GET", "me/exchange-rates", exchangeRates({ first_day: "2026-10-05" }));
+    projectData();
+    usage({ day: [usageRow({ converted_cost: "0.94" })] });
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+
+    expect(await screen.findByText("≈ GBP at each day's ECB rate; before 5 Oct 2026 at the rate of 13 Nov 2026.")).toBeInTheDocument();
+    expect(screen.getByText("≈ £0.94")).toBeInTheDocument();
+  });
+
+  it("offers only dollars without exchange rates, and says why", async () => {
+    signedIn();
+    on("GET", "me/exchange-rates", exchangeRates({ fetching: false }, true));
+    projectData();
+    usage();
+    const { user } = await renderApp(projectPath(`analytics?${PERIOD}`));
+
+    await breakdown();
+    const only = screen.getByRole("button", { name: "USD" });
+    expect(only).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, only, "Exchange rates are off on this install");
+    expect(requests("GET", USAGE).some((r) => r.query.has("currency"))).toBe(false);
   });
 
   it("chooses a period from the picker", async () => {

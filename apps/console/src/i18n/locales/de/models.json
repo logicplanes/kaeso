@@ -137,7 +137,7 @@
   "models.problem.format": "Ein eigenes Modell braucht das Format, in dem Kaeso es anspricht.",
   "models.problem.limits": "Ein eigenes Modell braucht sein Kontext- und Ausgabelimit.",
   "models.problem.modalities": "Ein eigenes Modell braucht seine Eingaben und Ausgaben.",
-  "models.problem.price": "Preise sind Dezimalbeträge in USD, etwa 3,00.",
+  "models.problem.price": "Preise sind Dezimalbeträge, etwa 3,00.",
   "models.problem.prices": "Ein eigenes Modell braucht seinen Eingabe- und Ausgabepreis.",
   "models.problem.whole": "Limits und Zeitlimit sind ganze Zahlen.",
   "models.removeFromCatalogue": "Aus dem Katalog entfernen",
@@ -471,5 +471,11 @@
   "models.route.retries": "Erneut versuchen",
   "models.route.retriesHint": "Nach einer abgebrochenen Verbindung, einem 5xx oder einem überlasteten Anbieter, vor dem Zurückfallen; nie nach einer Zeitüberschreitung.",
   "models.route.retriesProject": "Einstellung des Projekts",
-  "models.route.retriesShort": "{count, plural, one {# Wiederholung} other {# Wiederholungen}}"
+  "models.route.retriesShort": "{count, plural, one {# Wiederholung} other {# Wiederholungen}}",
+  "models.noRate": "Noch kein Wechselkurs für diese Währung; Anfragen zu diesen Preisen haben unbekannte Kosten.",
+  "models.inDollars": "≈ {price} zum EZB-Kurs vom {day}",
+  "models.field.currency": "Währung",
+  "models.currencyHint": "Die Preise unten sind darin; Kaeso berechnet Anfragen in USD.",
+  "models.pricePerMillionIn": "{price} / Mio. Token (≈ {usd})",
+  "models.pricePerMillionNoRate": "{price} / Mio. Token (kein Wechselkurs)"
 }

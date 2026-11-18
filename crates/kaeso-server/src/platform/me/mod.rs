@@ -21,6 +21,10 @@ use crate::state::AppState;
 pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(s.route(Access::Me(AccountView), routes!(profile::get)))
+        .routes(s.route(
+            Access::Me(AccountView),
+            routes!(crate::platform::exchange_rates::get),
+        ))
         .routes(s.route(Access::Session, routes!(agents::list)))
         .routes(s.route(Access::Session, routes!(agents::catalogue)))
         .routes(s.route(Access::Session, routes!(agents::grantable)))

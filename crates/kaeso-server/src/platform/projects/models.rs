@@ -225,10 +225,23 @@ fn overrides_from(
     Ok(fields)
 }
 
-fn check_fields(fields: &Fields, provider: &ProviderRef, custom: bool) -> ApiResult<()> {
+fn check_fields(
+    state: &AppState,
+    fields: &Fields,
+    provider: &ProviderRef,
+    custom: bool,
+) -> ApiResult<()> {
     fields
         .validate(provider)
         .map_err(|e| ApiError::invalid(&e.field, e.message))?;
+    if let Some(code) = fields.currency.as_deref()
+        && !crate::services::exchange_rates::known(state, code)
+    {
+        return Err(ApiError::invalid(
+            "currency",
+            format!("Kaeso has no exchange rate for {code}; enter the prices in USD."),
+        ));
+    }
     if custom {
         fields
             .validate_custom()
@@ -722,7 +735,7 @@ pub async fn create(
     if req.custom && overrides.egress_dialect.is_none() {
         overrides.egress_dialect = prov.route(&req.model_id);
     }
-    check_fields(&overrides, &prov, req.custom)?;
+    check_fields(&state, &overrides, &prov, req.custom)?;
     let mut tx = state.pg.begin().await?;
     let row = insert_entry(&ctx, &mut tx, &prov, &req.model_id, &overrides, req.custom)
         .await?
@@ -1003,7 +1016,7 @@ pub async fn update(
     let prov = provider_of(&providers, &row.provider)?;
     let before = row.entry()?.overrides;
     let after = overrides_from(Some(&req.overrides), before.clone())?;
-    check_fields(&after, &prov, row.custom)?;
+    check_fields(&state, &after, &prov, row.custom)?;
     let json = serde_json::to_value(&after).map_err(ApiError::internal)?;
     if !catalogue::set_overrides(&mut *tx, row.project_id, row.id, &json).await? {
         return Err(ApiError::not_found("catalogue model"));

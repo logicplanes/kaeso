@@ -35,8 +35,10 @@ import { logEntryQuery, type LogFilters } from "~/api/queries/logs";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
+import { approxMoney } from "~/format/currency";
 import { costUSD } from "~/format/money";
 import { curlCommand } from "./curl";
+import { useDisplayCurrency } from "~/kaeso/currency";
 import { describeUserAgent } from "~/format/user-agent";
 import { clientLabel } from "~/format/clients";
 import { orgProjectsQuery } from "~/api/queries/projects";
@@ -110,7 +112,8 @@ export function LogInspector({
   /** Narrows the list to the requests that share a value; the inspector stays open. */
   onFilter: (filter: InspectorFilter) => void;
 }) {
-  const entry = useQuery({ ...logEntryQuery(org, project, logId ?? ""), enabled: !!logId });
+  const display = useDisplayCurrency();
+  const entry = useQuery({ ...logEntryQuery(org, project, logId ?? "", display?.code), enabled: !!logId });
   const modelName = useModelName(org, project);
   const e = entry.data;
   return (
@@ -197,7 +200,8 @@ function Body({
   onFilter: (filter: InspectorFilter) => void;
 }) {
   const rights = useProjectRights(org, project);
-  const entry = useQuery(logEntryQuery(org, project, logId));
+  const display = useDisplayCurrency();
+  const entry = useQuery(logEntryQuery(org, project, logId, display?.code));
   const projectName = useQuery(orgProjectsQuery(org)).data?.find((p) => p.id === project)?.name;
   useRememberRecent(
     entry.data
@@ -368,6 +372,7 @@ function Overview({
   const partyName = usePartyName(org, project);
   const modelName = useModelName(org, project);
   const targets = useTargets(org, project, e, keyName);
+  const currency = useDisplayCurrency()?.code;
   const only = (filter: InspectorFilter) => () => onFilter(filter);
   const providers = useProviders(org);
   const u = e.usage;
@@ -478,11 +483,13 @@ function Overview({
               ? t("logs.inspector.notBilled", "Not billed")
               : !e.cost_known
                 ? t("logs.inspector.costUnknown", "No price for what it made")
-                : e.cost_basis === "measured"
-                  ? t("logs.inspector.costMeasured", "From the audio's length, which Kaeso read from the file")
-                  : u.estimated
-                    ? t("logs.inspector.estimated", "Estimated")
-                    : undefined
+                : currency && e.converted_cost
+                  ? approxMoney(e.converted_cost, currency)
+                  : e.cost_basis === "measured"
+                    ? t("logs.inspector.costMeasured", "From the audio's length, which Kaeso read from the file")
+                    : u.estimated
+                      ? t("logs.inspector.estimated", "Estimated")
+                      : undefined
           }
         />
       </StatGroup>

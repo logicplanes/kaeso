@@ -869,5 +869,8 @@
   "errors.servicePrincipal.badField": "服务主体的 `{field}` 无效。",
   "errors.modelApi.entraRoleRefused": "Azure 拒绝了此项目的 Microsoft Entra ID 服务主体。它需要资源上的 Cognitive Services OpenAI User 角色；请让组织管理员在“服务商”下检查。",
   "errors.modelApi.entraRefused": "Microsoft Entra ID 拒绝了此项目 Azure 密钥的服务主体，因此该密钥已退出登录。请让组织管理员在“服务商”下替换它。",
-  "errors.modelApi.entraUnavailable": "Kaeso 目前无法从 Microsoft Entra ID 获取访问令牌。请稍后再试。"
+  "errors.modelApi.entraUnavailable": "Kaeso 目前无法从 Microsoft Entra ID 获取访问令牌。请稍后再试。",
+  "errors.currency.noRatePrices": "Kaeso 没有 {code} 的汇率；请以 USD 输入价格。",
+  "errors.currency.noRate": "Kaeso 没有 {code} 的汇率；请使用 `exchange-rates` 中的货币。",
+  "errors.currency.code": "`currency` 必须是三个字母的 ISO 4217 代码，例如 `EUR`。"
 }

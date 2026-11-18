@@ -1,8 +1,20 @@
-import type { Membership, MyMembership, OrgView, ProjectRightsView, ProjectView, ProviderView, RightsCatalogue, RoleView, WhoAmI } from "~/api/generated/types";
+import type {
+  ExchangeRates,
+  Membership,
+  MyMembership,
+  OrgView,
+  ProjectRightsView,
+  ProjectView,
+  ProviderView,
+  RightsCatalogue,
+  RoleView,
+  WhoAmI,
+} from "~/api/generated/types";
 import rightsCatalogue from "./fixtures/rights.json";
 import roleList from "./fixtures/roles.json";
 import providerList from "./fixtures/providers.json";
 import { noContent, on, page } from "./network";
+import { me } from "./fixtures/instance-account";
 
 export const ORG = "org_northwind";
 export const PROJECT = "proj_checkout";
@@ -154,6 +166,26 @@ export interface SignedInOptions {
   projects?: ProjectView[];
 }
 
+/** The rates an install with the ECB's rates of one day holds; `usdOnly` is an install without any. */
+export function exchangeRates(overrides: Partial<ExchangeRates> = {}, usdOnly = false): ExchangeRates {
+  return {
+    source: "ecb",
+    fetching: true,
+    day: usdOnly ? null : "2026-11-13",
+    first_day: usdOnly ? null : "2026-08-20",
+    checked_at: usdOnly ? null : "2026-11-13T15:10:00Z",
+    rates: usdOnly
+      ? [{ currency: "USD", per_usd: "1" }]
+      : [
+          { currency: "EUR", per_usd: "0.9" },
+          { currency: "GBP", per_usd: "0.75" },
+          { currency: "JPY", per_usd: "150" },
+          { currency: "USD", per_usd: "1" },
+        ],
+    ...overrides,
+  };
+}
+
 export function signedIn(options: SignedInOptions = {}): WhoAmI {
   const session = options.session ?? whoAmI();
   const memberships = options.memberships ?? [myMembership()];
@@ -174,6 +206,8 @@ export function signedIn(options: SignedInOptions = {}): WhoAmI {
     },
   });
   on("POST", "me/whats-new/seen", noContent);
+  on("GET", "me", () => me());
+  on("GET", "me/exchange-rates", exchangeRates());
   on("GET", "orgs/:org/rights", catalogue);
   on("GET", "orgs/:org/roles", page(roles));
   on("GET", "orgs/:org/providers", page(providers));

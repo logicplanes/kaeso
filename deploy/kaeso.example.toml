@@ -57,6 +57,9 @@ url = "https://kpmr.kaeso.app/v1/catalogue"
 interval = "auto"
 public_keys = ""
 
+[exchange_rates]
+url = "https://www.ecb.europa.eu/stats/eurofxref/"
+
 [updates]
 check = true
 channel = "stable"
