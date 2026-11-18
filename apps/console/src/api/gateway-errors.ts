@@ -340,11 +340,9 @@ const messages = (): Rule[] => [
   rule("errors.logErrorMessage", () => t("errors.logErrorMessage", "`error_message` must be 1 to 200 characters.")),
   rule("errors.limitOneToFifty", () => t("errors.limitOneToFifty", "`limit` must be 1 to 50.")),
   rule("errors.logTag", () => t("errors.logTag", "`tag` must be 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.")),
-  rule("errors.timelineGroupValues", () =>
-    t("errors.timelineGroupValues", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."),
-  ),
+  rule("errors.timelineGroupValues", () => t("errors.timelineGroupValues", "Group by `project` or a field of the request log, such as `model` or `status`.")),
   rule("errors.timelineGroupValuesProject", () =>
-    t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."),
+    t("errors.timelineGroupValuesProject", "Group by a field of the request log, such as `model`, `status` or `response_cache`."),
   ),
   rule("errors.logClient", () => t("errors.logClient", "`client` must be a client app, such as `codex` or `other`.")),
   rule("errors.kpmrSyncOff", () => t("errors.kpmrSyncOff", "Model data sync is off on this install; set `KAESO_KPMR_SYNC=true` to use it.")),
