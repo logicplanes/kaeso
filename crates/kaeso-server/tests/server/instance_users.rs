@@ -366,3 +366,90 @@ async fn an_operator_lists_the_accounts_and_finds_the_instance_admins() {
         ["Ada Lovelace"]
     );
 }
+
+async fn last_sign_in(app: &App, owner: &Owner, user: &str) -> Option<time::OffsetDateTime> {
+    let one = app
+        .get(&format!("/instance/users/{user}"), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let listed = app.get("/instance/users", &owner.cookie).await;
+    let row = listed.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|u| u["id"] == user)
+        .unwrap()
+        .clone();
+    assert_eq!(row["last_signed_in_at"], one.body["last_signed_in_at"]);
+    one.body["last_signed_in_at"].as_str().map(|s| {
+        time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339).unwrap()
+    })
+}
+
+#[tokio::test]
+async fn instance_admins_see_when_each_user_last_signed_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let set_up = last_sign_in(&app, &owner, &owner.user_id).await;
+    assert!(
+        set_up.is_some(),
+        "setting up the install signs its owner in"
+    );
+
+    app.clock.advance(time::Duration::hours(1));
+    let (_, grace) = join(&app, &owner, "grace@example.com", "Grace Hopper").await;
+    let joined = last_sign_in(&app, &owner, &grace).await.unwrap();
+    assert!(joined > set_up.unwrap());
+
+    app.clock.advance(time::Duration::hours(1));
+    let before = app.mail.to("grace@example.com").len();
+    app.post(
+        "/auth/magic-link",
+        json!({ "email": "grace@example.com" }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.wait_for_mail("grace@example.com", before + 1).await;
+    app.post(
+        "/auth/magic-link/verify",
+        json!({ "token": app.last_token("grace@example.com") }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let link = last_sign_in(&app, &owner, &grace).await.unwrap();
+    assert!(link > joined);
+
+    app.clock.advance(time::Duration::hours(1));
+    let cookie = app
+        .post(
+            "/auth/password",
+            json!({ "email": "grace@example.com", "password": PASSWORD }),
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK)
+        .cookie()
+        .unwrap();
+    let password = last_sign_in(&app, &owner, &grace).await.unwrap();
+    assert!(password > link);
+
+    // Turning on two-factor replaces the session with one that carries the earlier sign-in.
+    app.clock.advance(time::Duration::minutes(5));
+    let begin = app
+        .post("/me/totp", json!({}), Some(&cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    let secret = begin.body["secret"].as_str().unwrap().to_owned();
+    app.post(
+        "/me/totp/confirm",
+        json!({ "code": common::totp_code(&secret, &app) }),
+        Some(&cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(last_sign_in(&app, &owner, &grace).await, Some(password));
+    s.cleanup().await;
+}

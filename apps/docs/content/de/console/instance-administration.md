@@ -10,7 +10,7 @@ Die Seiten finden Sie unter **Instanz** im Menü am Fuß der Seitenleiste.
 
 ## Benutzer verwalten
 
-**Benutzer** listet jedes Konto der Installation: aktiv, deaktiviert oder gelöscht. **Benutzer einladen** lädt jemanden ohne Organisation in die Installation ein. Einer Organisation tritt die Person bei, wenn eine Organisation sie einlädt.
+**Benutzer** listet jedes Konto der Installation: aktiv, deaktiviert oder gelöscht. **Benutzer einladen** lädt jemanden ohne Organisation in die Installation ein. Einer Organisation tritt die Person bei, wenn eine Organisation sie einlädt. **Letzte Anmeldung** zeigt, wann sich jeder Benutzer zuletzt angemeldet hat, mit welcher Methode auch immer; das Einschalten der Zwei-Faktor-Authentifizierung zählt nicht als Anmeldung. Bei jemandem, der sich nicht mehr angemeldet hat, seit die Installation das festhält, steht **Nie**.
 
 **Zwei-Faktor** zeigt, wer eine Authenticator-App nutzt. Instanz-Admins tragen das Abzeichen **Instanz-Admin**, und **Verwaltet von** nennt die Organisation, die ein Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)). Wählen Sie einen Benutzer, um sein Sheet zu öffnen. Es listet die Organisationen, denen er angehört, mit seiner Rolle in jeder, und hat diese Aktionen:
 

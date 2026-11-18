@@ -74,8 +74,9 @@ pub async fn create_until(
     let token = random_token();
     let hash = secret::hash(&token);
     let id = SessionId::new();
+    let signed_in_at = s.signed_in_at.min(now);
     sessions::insert(
-        db,
+        &mut *db,
         &NewSession {
             id: id.uuid(),
             token_hash: &hash,
@@ -83,7 +84,7 @@ pub async fn create_until(
             method: s.method.as_str(),
             second_factor: s.second_factor,
             oidc_org_id: s.oidc_org,
-            signed_in_at: s.signed_in_at.min(now),
+            signed_in_at,
             now,
             expires_at,
             ip: s.ip,
@@ -91,6 +92,7 @@ pub async fn create_until(
         },
     )
     .await?;
+    kaeso_store::pg::users::signed_in(&mut *db, s.user_id.uuid(), signed_in_at).await?;
     Ok(Created {
         token: secrecy::SecretString::from(token),
         id,

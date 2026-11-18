@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE users SET last_signed_in_at = $2 WHERE id = $1 AND (last_signed_in_at IS NULL OR last_signed_in_at < $2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b7c36d1432406078731886058c2541dfc2407f8c741661b8e23aef401709c9b1"
+}

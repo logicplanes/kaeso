@@ -10,7 +10,7 @@ The pages are under **Instance**, in the menu at the foot of the sidebar.
 
 ## Manage users
 
-**Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them.
+**Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them. **Last sign-in** shows when each user last signed in, by any method; turning on two-factor authentication doesn't count as one. It shows **Never** for someone who hasn't signed in since the install began recording it.
 
 **Two-factor** shows who uses an authenticator app. Instance admins carry an **Instance admin** badge, and **Managed by** names the organization that manages an account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)). Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
 

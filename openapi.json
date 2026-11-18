@@ -33082,6 +33082,14 @@
               "totp_enabled"
             ],
             "properties": {
+              "last_signed_in_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the user last signed in; `null` when they haven't since the install\nbegan recording it."
+              },
               "managed_by": {
                 "oneOf": [
                   {
@@ -35620,6 +35628,14 @@
                     "totp_enabled"
                   ],
                   "properties": {
+                    "last_signed_in_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time",
+                      "description": "When the user last signed in; `null` when they haven't since the install\nbegan recording it."
+                    },
                     "managed_by": {
                       "oneOf": [
                         {

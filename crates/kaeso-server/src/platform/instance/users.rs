@@ -8,6 +8,7 @@ use kaeso_mail::Actor;
 use kaeso_store::pg::invites::{self, NewInvite};
 use kaeso_store::pg::{members, totp, users};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::auth::sessions;
@@ -36,6 +37,10 @@ pub struct InstanceUserView {
     #[doc = "The org that manages the account: its address is at a verified email\n\
         domain of an org with an SSO connection; `null` when no org does."]
     pub managed_by: Option<ManagedBy>,
+    #[doc = "When the user last signed in; `null` when they haven't since the install\n\
+        began recording it."]
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub last_signed_in_at: Option<OffsetDateTime>,
 }
 
 fn managed_by(domains: &Domains, u: &users::User) -> Option<ManagedBy> {
@@ -50,6 +55,9 @@ async fn view(state: &AppState, u: &users::User) -> ApiResult<InstanceUserView> 
         user: UserView::from_row(u),
         totp_enabled: totp::is_enabled(&state.pg, u.id).await?,
         managed_by: managed_by(&domains, u),
+        last_signed_in_at: users::last_sign_ins(&state.pg, &[u.id])
+            .await?
+            .remove(&u.id),
     })
 }
 
@@ -88,6 +96,7 @@ pub async fn list(
     let list = List::from_rows(&page, rows, |u| u.id, |u| u);
     let ids: Vec<uuid::Uuid> = list.data.iter().map(|u| u.id).collect();
     let with_totp = totp::enabled_among(&state.pg, &ids).await?;
+    let sign_ins = users::last_sign_ins(&state.pg, &ids).await?;
     let domains = Domains::load(&state.pg, None).await?;
     let data = list
         .data
@@ -96,6 +105,7 @@ pub async fn list(
             user: UserView::from_row(u),
             totp_enabled: with_totp.contains(&u.id),
             managed_by: managed_by(&domains, u),
+            last_signed_in_at: sign_ins.get(&u.id).copied(),
         })
         .collect();
     Ok(Json(List {
