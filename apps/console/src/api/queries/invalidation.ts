@@ -11,7 +11,7 @@ export function invalidationFilters(invalidation: Invalidation): InvalidateQuery
 const projectPart = (key: QueryKey, part: string, org?: string): boolean =>
   key[0] === "orgs" && (org === undefined || key[1] === org) && key[2] === "projects" && key[4] === part;
 
-const CATALOGUE_VIEWS = ["models", "aliases", "playground"];
+const CATALOGUE_VIEWS = ["models", "aliases", "playground", "deprecations"];
 
 export const modelCatalogues: QueryMatch = ({ queryKey }) => CATALOGUE_VIEWS.some((part) => projectPart(queryKey, part));
 

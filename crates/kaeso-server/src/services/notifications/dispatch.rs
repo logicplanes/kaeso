@@ -147,6 +147,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::CatalogueModelCheck
         | A::CatalogueModelCreate
         | A::CatalogueModelDelete
+        | A::CatalogueModelMove
         | A::CatalogueModelUpdate
         | A::CredentialAssign
         | A::CredentialCreate
@@ -201,6 +202,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::ProjectArchive
         | A::ProjectCreate
         | A::ProjectKeyPolicy
+        | A::ProjectModelLifecycle
         | A::ProjectMcpServersUpdate
         | A::ProjectToolsUpdate
         | A::ProjectUpdate

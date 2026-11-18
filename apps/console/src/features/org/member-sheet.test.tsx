@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
-import { ADMIN_ORG_RIGHTS, ALL_ORG_RIGHTS, ORG, PROJECT, USER, asAdmin, signedIn } from "~/test/fixtures";
+import { ADMIN_ORG_RIGHTS, ALL_ORG_RIGHTS, ORG, PROJECT, USER, asAdmin, membership, signedIn, whoAmI } from "~/test/fixtures";
 import { OTHER_USER, THIRD_USER, hoverReason, member, memberRights, membersData, notifications, roleGrant } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -272,5 +272,21 @@ describe("a member's sheet", () => {
     await renderApp(sheetOf(OTHER_USER));
     const sheet = await screen.findByRole("dialog", { name: "Member" });
     expect(await within(sheet).findByText("This member can't be shown right now.")).toBeInTheDocument();
+  });
+
+  it("opens the audit log at the member's changes and the changes to them, with View audit log", async () => {
+    signedIn();
+    membersData([ada, grace]);
+    const { sheet } = await openSheet(OTHER_USER, "Grace Hopper");
+    expect(within(sheet).getByRole("link", { name: "Their changes" })).toHaveAttribute("href", `/settings/orgs/${ORG}/audit-log?actor=${OTHER_USER}`);
+    expect(within(sheet).getByRole("link", { name: "Changes to them" })).toHaveAttribute("href", `/settings/orgs/${ORG}/audit-log?target=${OTHER_USER}`);
+  });
+
+  it("leaves the audit log links out without View audit log", async () => {
+    signedIn({ session: whoAmI({ memberships: [membership({ rights: ALL_ORG_RIGHTS.filter((r) => r !== "audit_log.view") })] }) });
+    membersData([ada, grace]);
+    const { sheet } = await openSheet(OTHER_USER, "Grace Hopper");
+    expect(within(sheet).queryByRole("link", { name: "Their changes" })).not.toBeInTheDocument();
+    expect(within(sheet).queryByRole("heading", { name: "Audit log" })).not.toBeInTheDocument();
   });
 });

@@ -11,6 +11,9 @@ import type {
   ProjectLogSettings,
   ProjectMemberView,
   ProjectRightsView,
+  ReplacementView,
+  RetiringModelView,
+  RetiringUsage,
   SearchHit,
   ServiceAccountView,
   UsageRow,
@@ -273,6 +276,8 @@ export interface ProjectData {
   limits?: LimitView[];
   models?: CatalogueModelView[];
   aliases?: AliasView[];
+  retiring?: RetiringModelView[];
+  soon?: number;
 }
 
 export function projectData(d: ProjectData = {}): void {
@@ -294,6 +299,8 @@ export function projectData(d: ProjectData = {}): void {
   );
   on("GET", "orgs/:org/projects/:project/models", page(d.models ?? []));
   on("GET", "orgs/:org/projects/:project/aliases", page(d.aliases ?? []));
+  on("GET", "orgs/:org/projects/:project/deprecations", { data: d.retiring ?? [], soon: d.soon ?? 0 });
+  on("GET", "orgs/:org/projects/:project/model-lifecycle", { move_on_shutdown: false, serve_replacement: false });
   on("GET", "orgs/:org/projects/:project/members/:user/models", access());
   on("GET", "orgs/:org/projects/:project/service-accounts/:account/models", access());
   on("GET", "orgs/:org/projects/:project/keys/:key/models", access());
@@ -335,4 +342,51 @@ export function modelsApi({ models = [], hits = [], previews = [] }: ModelsApi =
     ({ query }: { query: URLSearchParams }) =>
       previews.find((p) => p.provider === query.get("provider") && p.model_id === query.get("model")) ?? apiError(404, "not_found", "KPMR doesn't list it."),
   );
+}
+
+export function retiringModel(over: Partial<RetiringModelView> = {}): RetiringModelView {
+  return {
+    id: "model_gpt4o",
+    provider: "openai",
+    model_id: "gpt-4o",
+    state: "deprecated",
+    days_left: 20,
+    lifecycle: {
+      announced_on: "2026-10-01",
+      deprecated_on: "2026-10-01",
+      shutdown_on: "2026-11-05",
+      replacement: "gpt-5.5",
+      source: "https://example.com/deprecations",
+    },
+    replacement: retiringReplacement(),
+    aliases: [{ alias_id: "alias_chat", name: "chat", steps: ["route", "route.fallback"] }],
+    usage: retiringUsage(),
+    ...over,
+  };
+}
+
+export function retiringReplacement(over: Partial<ReplacementView> = {}): ReplacementView {
+  return {
+    model_id: "gpt-5.5",
+    catalogue_model_id: null,
+    listed: true,
+    input_price: { from: "2.5", to: "1.25" },
+    output_price: { from: "10", to: null },
+    ...over,
+  };
+}
+
+export function retiringUsage(over: Partial<RetiringUsage> = {}): RetiringUsage {
+  return {
+    requests: 12,
+    keys: [{ id: "key_app", requests: 7 }],
+    members: [{ id: "usr_ada", requests: 5 }],
+    service_accounts: [{ id: "sa_jobs", requests: 2 }],
+    clients: [{ id: "openai-python", requests: 9 }],
+    daily: [
+      { day: "2026-10-14", requests: 8 },
+      { day: "2026-10-15", requests: 4 },
+    ],
+    ...over,
+  };
 }

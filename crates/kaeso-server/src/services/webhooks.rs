@@ -32,10 +32,12 @@ use crate::services::notifications::dispatch::{Send, deliver, org_holders, setti
 use crate::state::AppState;
 
 /// The notices a webhook can take: those about an organization, never one person's.
-pub const KINDS: [Kind; 9] = [
+pub const KINDS: [Kind; 11] = [
     Kind::BudgetAlerts,
     Kind::LimitReached,
     Kind::KeyExpiry,
+    Kind::ModelDeprecated,
+    Kind::ModelShutdownSoon,
     Kind::ContentLogging,
     Kind::McpServers,
     Kind::OrgSecurity,
@@ -375,6 +377,46 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
             ModelChange::Delisted => (
                 "model.delisted",
                 json!({ "provider": provider, "model": model }),
+            ),
+            ModelChange::Deprecated {
+                shutdown_on,
+                replacement,
+            } => (
+                "model.deprecated",
+                json!({
+                    "provider": provider,
+                    "model": model,
+                    "shutdown_on": shutdown_on.map(kaeso_core::kpmr::day::format),
+                    "replacement": replacement,
+                }),
+            ),
+            ModelChange::ShutdownSoon {
+                shutdown_on,
+                days,
+                replacement,
+                requests,
+            } => (
+                "model.shutdown_soon",
+                json!({
+                    "provider": provider,
+                    "model": model,
+                    "shutdown_on": kaeso_core::kpmr::day::format(*shutdown_on),
+                    "days_left": days,
+                    "replacement": replacement,
+                    "requests_7d": requests,
+                }),
+            ),
+            ModelChange::Moved {
+                replacement,
+                aliases,
+            } => (
+                "model.moved",
+                json!({
+                    "provider": provider,
+                    "model": model,
+                    "replacement": replacement,
+                    "aliases": aliases,
+                }),
             ),
             ModelChange::Price(prices) => (
                 "model.price_changed",

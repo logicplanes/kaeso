@@ -27,6 +27,8 @@ A webhook's menu has **Send test**, **Turn off** or **Turn on**, **Rotate secret
 | Budget alerts | `budget.alert` |
 | Limit reached | `limit.reached` |
 | Your key expires | `key.expiring` |
+| Model deprecated | `model.deprecated` |
+| Model shuts down soon | `model.shutdown_soon`, `model.moved` |
 | Content logging changed | `project.content_logging_changed` |
 | MCP servers need attention | `mcp_server.signed_out`, `mcp_server.tool_held` |
 | Security settings changed | `organization.security_changed` |
@@ -86,6 +88,9 @@ A JSON delivery is a `POST` with `content-type: application/json` and a body lik
 | `provider_key.spend_limit_reached` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refused_at`, `resets_at` (when the provider lets requests through again at the latest) |
 | `provider_key.unlinked` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `unlinked_at` |
 | `model.delisted` | `catalogue_model_id`, `provider_id`, `provider`, `model` |
+| `model.deprecated` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `shutdown_on` (`null` without a date), `replacement` ([model lifecycle](../concepts/model-lifecycle.md)) |
+| `model.shutdown_soon` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `shutdown_on`, `days_left`, `replacement`, `requests_7d` (the project's requests to the model in the last 7 days) |
+| `model.moved` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `replacement`, `aliases` (how many moved) |
 | `model.price_changed` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `prices`: each changed price (`input`, `output`, `cache_read`, `cache_write`, `cache_write_1h`) with its old and new US dollars per million tokens, `from` and `to`, `null` where it had or has no price |
 | `webhook.test` | `webhook_id`, `name` |
 

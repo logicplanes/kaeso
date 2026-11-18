@@ -126,6 +126,21 @@ pub fn all() -> Vec<Job> {
             lock: 10,
             run: |s| Box::pin(crate::services::webhooks::run(s)),
         },
+        // Hourly, so a warning goes out on its day and a move soon after a shutdown.
+        Job {
+            name: "model_lifecycle",
+            every: Duration::from_secs(3600),
+            lock: 11,
+            run: |s| {
+                Box::pin(async move {
+                    let r = crate::services::lifecycle::run(&s).await?;
+                    Ok(format!(
+                        "{} announced, {} warned, {} moved, {} replacements added",
+                        r.announced, r.warned, r.moved, r.added
+                    ))
+                })
+            },
+        },
         // Shorter than `RENEW_AHEAD`, so an account in use never waits for its renewal.
         Job {
             name: "account_renewal",

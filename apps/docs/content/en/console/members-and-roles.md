@@ -16,7 +16,7 @@ Open **Organization settings** › **Members** and choose **Invite members**. Th
 2. **What can they do in the organization?** Choose their organization role.
 3. **Which projects?** Add the projects they join, each with a role. They join no other project; you can add them to more later.
 
-**Send invitation** emails each person a link that works for 21 days. **Invites** lists the pending invitations, where you can **Resend** or **Revoke** each one. Accepted, revoked and expired invitations are under **All**.
+**Send invitation** emails each person a link that works for 21 days. **Invites** lists the pending invitations, where you can **Resend** or **Revoke** each one. Accepted, revoked and expired invitations are under **All**, where **Resend** sends an expired one again with a new link, and **Invite again** opens **Invite members** for a revoked one with its address and roles filled in, leaving out projects archived since. To revoke several pending invitations at once, select them and choose **Revoke** in the selection bar; it asks once and names any that couldn't be revoked.
 
 Once someone accepts an invitation, Kaeso revokes their other pending invitations to the organization. An invitation never changes the roles of someone who is already a member. On **Members**, search by name or email address, or choose a role to see who holds it.
 

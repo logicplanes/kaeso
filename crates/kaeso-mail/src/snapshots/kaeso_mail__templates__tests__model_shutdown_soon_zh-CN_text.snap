@@ -1,0 +1,27 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] gpt-4o 将在 7 天后停用
+
+gpt-4o 将在 7 天后停用
+
+Acme / Checkout
+
+Checkout 在最近 7 天内调用了 gpt-4o 共 1234 次；请切换到 gpt-5.5。
+
+项目： Checkout
+服务商： OpenAI
+模型： gpt-4o
+停用日期： 2026年11月30日
+替代模型： gpt-5.5
+最近 7 天的请求： 1,234
+
+打开模型：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有“查看模型”权限。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

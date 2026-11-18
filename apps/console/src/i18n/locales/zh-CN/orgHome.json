@@ -395,5 +395,8 @@
   "orgHome.unlink": "取消关联",
   "orgHome.keyUnlinked": "已取消关联 {title}",
   "orgHome.unlinkQuestion": "取消关联 {title}？",
-  "orgHome.unlinkHint": "{provider} 将不再把此安装的请求计入关联的组织。"
+  "orgHome.unlinkHint": "{provider} 将不再把此安装的请求计入关联的组织。",
+  "orgHome.retiring.title": "{count, plural, other {# 个项目使用即将停用的模型}}",
+  "orgHome.retiring.next": "{count, plural, other {# 个模型}}，最早于 {date} 停用",
+  "orgHome.retiring.retired": "{count, plural, other {# 个模型}}，其中 {retired} 个已停用"
 }

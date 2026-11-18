@@ -9,7 +9,7 @@ const SORTS = new Set<string>(["price", "release"]);
 const STATUSES = new Set<string>(["unavailable", "deprecated", "delisted"] satisfies ModelStatus[]);
 
 const modelsSearch = (s: Record<string, unknown>): ModelsSearch => ({
-  ...(s.tab === "aliases" ? { tab: "aliases" as const } : {}),
+  ...(s.tab === "aliases" || s.tab === "retiring" ? { tab: s.tab } : {}),
   ...(typeof s.model === "string" ? { model: s.model } : {}),
   ...(typeof s.provider === "string" ? { provider: s.provider } : {}),
   ...(typeof s.cap === "string" && CAPS.has(s.cap) ? { cap: s.cap as Capability } : {}),

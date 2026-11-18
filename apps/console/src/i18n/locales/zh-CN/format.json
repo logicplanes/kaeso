@@ -11,6 +11,8 @@
   "format.audit.action.catalogueModelDelete": "已移除模型",
   "format.audit.action.catalogueModelPriceChange": "模型价格已变更",
   "format.audit.action.catalogueModelUpdate": "已更改模型数值",
+  "format.audit.action.catalogueModelMove": "已将模型切换到替代模型",
+  "format.audit.action.projectModelLifecycle": "已更改项目的模型停用设置",
   "format.audit.action.credentialAssign": "已将提供商密钥分配给项目",
   "format.audit.action.credentialCreate": "已添加提供商密钥",
   "format.audit.action.credentialDefault": "已将提供商密钥设为默认",

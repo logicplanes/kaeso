@@ -65,6 +65,7 @@ Der Katalog ist ein JSON-Dokument in Kaesos eigenem Format, versioniert durch ei
 - **Jeder Schlüssel ist vorhanden.** Ein unbekannter Wert ist `null`, sodass Kaeso „unbekannt“ von „nein“ unterscheiden kann.
 - **Preise sind exakte Dezimalzahlen als Strings** in US-Dollar je Million Token, nie Gleitkommazahlen. `cache_write_1h` ist der Preis eines Cache-Schreibvorgangs, der eine Stunde gilt, wo der Anbieter einen dokumentiert.
 - **`pricing.tiers`** listet die Preise eines Modells für lange Kontexte, das niedrigste `context_above` zuerst, oder ist leer. Die Preise einer Stufe gelten für jedes Token einer Anfrage, deren Prompt länger als `context_above` Token ist; ein Preis `null` ist der Grundpreis.
+- **`lifecycle`** enthält die Tage, an denen der Anbieter die Abschaltung angekündigt hat, das Modell abkündigt und abschaltet, und den empfohlenen Nachfolger `replacement`, jeweils `null` bis zur Ankündigung. `status` wird an diesen Tagen `deprecated` und dann `retired` ([Modell-Lebenszyklus](model-lifecycle.md)).
 - **`gateway.egress_dialect`** nennt das API-Format, in dem Kaeso das Modell aufruft, wenn es nicht das Standardformat des Anbieters ist.
 - **Unbekannte Schlüssel werden ignoriert.** Ein neues Feld im Format 1 stört ein älteres Gateway nicht; eine Änderung, die es stören würde, wird Format 2.
 

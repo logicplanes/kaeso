@@ -134,6 +134,8 @@ Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Akt
 
 Die Änderung eines Agenten zeigt das Bild des Mitglieds, für das er handelt, mit einem kleinen Bot-Abzeichen unten rechts. Fahren Sie darüber, um Mitglied, Agent und Modellfamilie zu sehen. der Filter **Agenten** zeigt nur die Änderungen von Agenten, und die Platform API nennt den Agenten in `actor.agent` ([Aktivität und Audit](../api/mcp.md#aktivität-und-audit)).
 
+Das Blatt eines Mitglieds öffnet das Audit-Log mit **Änderungen dieser Person** bei ihren Änderungen und mit **Änderungen an dieser Person** bei den Änderungen an ihr, für alle, die dieses Log lesen dürfen: unter **Mitglieder** in den **Organisationseinstellungen** das der Organisation, in einem Projekt das des Projekts.
+
 | Aktion | Recht |
 | --- | --- |
 | Das Audit-Log der Organisation lesen | **Audit-Log ansehen** |

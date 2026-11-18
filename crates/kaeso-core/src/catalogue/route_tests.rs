@@ -653,3 +653,28 @@ fn features_come_from_what_the_request_uses() {
     )]));
     assert_eq!(features_of(&counted), BTreeSet::from([Feature::Images]));
 }
+
+#[test]
+fn every_step_that_calls_a_model_is_found_and_pointed_at_another() {
+    let mut step = route(json!({
+        "type": "split", "by": "request", "branches": [
+            { "weight": 50, "step": { "type": "model", "model": m(1), "fallback": { "type": "model", "model": m(2), "fallback": { "type": "model", "model": m(1) } } } },
+            { "weight": 50, "step": { "type": "condition", "match": "any",
+                "rules": [{ "field": "format", "op": "in", "value": ["openai_chat"] }],
+                "then": { "type": "model", "model": m(3) }, "else": { "type": "model", "model": m(1) } } }
+        ]
+    }));
+    assert_eq!(
+        step.paths_of(id(1)),
+        [
+            "route.branches.0.step",
+            "route.branches.0.step.fallback.fallback",
+            "route.branches.1.step.else"
+        ]
+    );
+    assert_eq!(step.paths_of(id(3)), ["route.branches.1.step.then"]);
+    assert!(step.paths_of(id(9)).is_empty());
+    assert_eq!(step.replace(id(1), id(4)), 3);
+    assert!(!step.uses(id(1)) && step.uses(id(4)) && step.uses(id(2)));
+    assert_eq!(step.replace(id(1), id(4)), 0);
+}

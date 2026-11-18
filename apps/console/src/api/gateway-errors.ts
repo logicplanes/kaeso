@@ -1049,6 +1049,20 @@ const messages = (): Rule[] => [
   rule("errors.guardrails.noSecret", () => t("errors.guardrails.noSecret", "Built-in rules have no signing secret.")),
   rule("errors.guardrails.sampleTooLong", () => t("errors.guardrails.sampleTooLong", "`text` takes at most 100000 characters.")),
   rule("errors.notFound.guardrail", () => t("errors.notFound.guardrail", "No such guardrail, or you cannot see it.")),
+  rule("errors.modelApi.retiredFor", (v) =>
+    t("errors.modelApi.retiredFor", "The model `{model}` was retired on {date}; its provider recommends `{replacement}`.", v),
+  ),
+  rule("errors.modelApi.retiredOn", (v) => t("errors.modelApi.retiredOn", "The model `{model}` was retired on {date}.", v)),
+  rule("errors.modelApi.retiredRecommends", (v) =>
+    t("errors.modelApi.retiredRecommends", "The model `{model}` is retired; its provider recommends `{replacement}`.", v),
+  ),
+  rule("errors.modelApi.retired", (v) => t("errors.modelApi.retired", "The model `{model}` is retired.", v)),
+  rule("errors.lifecycle.noReplacement", (v) => t("errors.lifecycle.noReplacement", "KPMR names no replacement for `{model}`, so it can't be moved.", v)),
+  rule("errors.lifecycle.replacementNotListed", (v) =>
+    t("errors.lifecycle.replacementNotListed", "The replacement `{model}` isn't in KPMR, so it can't be added.", v),
+  ),
+  rule("errors.lifecycle.addedMeanwhile", (v) => t("errors.lifecycle.addedMeanwhile", "The catalogue got `{model}` meanwhile; try again.", v)),
+  rule("errors.lifecycle.notRetiring", () => t("errors.lifecycle.notRetiring", "No model of this project is retired or has a shutdown date with that id.")),
   rule("errors.modelApi.noSuchModel", (v) => t("errors.modelApi.noSuchModel", "The model `{model}` does not exist or this key may not use it.", v)),
   rule("errors.modelApi.noRoute", (v) => t("errors.modelApi.noRoute", "Kaeso does not serve `{path}`.", v)),
   rule("errors.modelApi.method", (v) => t("errors.modelApi.method", "`{path}` does not accept `{method}` requests.", v)),

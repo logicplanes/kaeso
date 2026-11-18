@@ -53,6 +53,7 @@ mod mcp_servers_api;
 mod mcp_tools;
 mod metrics_emitted;
 mod model_api;
+mod model_lifecycle;
 mod notification_dispatch;
 mod notification_settings;
 mod oidc;

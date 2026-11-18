@@ -134,6 +134,8 @@ Each entry shows when it happened, who made the change, the action and its targe
 
 An agent's change shows the picture of the member it acts for, with a small bot badge at its lower right. Hover over it to see the member, the agent and its model family. the **Agents** filter shows only the changes agents made, and the Platform API names the agent in `actor.agent` ([activity and audit](../api/mcp.md#activity-and-audit)).
 
+A member's sheet opens the audit log at their changes with **Their changes**, and at the changes made to them with **Changes to them**, for people who may read that log: under **Members** in **Organization settings** the organization's, in a project its own.
+
 | To | Right |
 | --- | --- |
 | Read the organization's audit log | **View audit log** |

@@ -23,9 +23,9 @@ import {
   type ListGroup,
 } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
-import type { CatalogueModelView } from "~/api/generated/types";
+import type { CatalogueModelView, RetiringModelView } from "~/api/generated/types";
 import { api, data } from "~/api/client";
-import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
+import { aliasesQuery, catalogueQuery, retiringQuery } from "~/api/queries/models";
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
@@ -38,6 +38,7 @@ import { AddModelsDialog } from "./add-models-dialog";
 import { AliasesTab } from "./aliases-tab";
 import { capabilities, capabilityOptions, contextLabel, dialectPill, overriddenFields, priceLabel } from "./model-fields";
 import { ModelSheet } from "./model-sheet";
+import { RetiringBanner, RetiringTab, shutdownLabel } from "./retiring";
 import { checkFailureLabel } from "./availability";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -55,7 +56,7 @@ const hasStatus = (m: CatalogueModelView, status: ModelStatus): boolean =>
   status === "unavailable" ? m.availability === "unavailable" : status === "deprecated" ? m.deprecated : !m.listed && !m.custom;
 
 export type ModelsSearch = {
-  tab?: "aliases";
+  tab?: "aliases" | "retiring";
   model?: string;
   provider?: string;
   cap?: Capability;
@@ -92,6 +93,8 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   const [adding, setAdding] = useState(!!search.add && tab === "catalogue");
   const catalogue = useQuery(catalogueQuery(org, project));
   const aliases = useQuery(aliasesQuery(org, project));
+  const retiring = useQuery(retiringQuery(org, project));
+  const retiringById = useMemo(() => new Map((retiring.data?.data ?? []).map((m) => [m.id, m])), [retiring.data]);
   const sort = search.sort ?? "model";
   const reason = canManage ? undefined : needs("models.manage");
 
@@ -149,12 +152,12 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               {...(m.effective.display_name && m.effective.display_name !== m.model_id ? { name: m.effective.display_name } : {})}
             />
           ),
-          meta: <ModelMeta m={m} />,
+          meta: <ModelMeta m={m} shutdown={retiringById.get(m.id)} />,
           date: m.effective.release_date ? monthLabel(m.effective.release_date) : undefined,
         })),
       };
     });
-  }, [filtered, sort, catalog]);
+  }, [filtered, sort, catalog, retiringById]);
 
   const check = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/models/check", { params: { path: { org, project } } })),
@@ -233,7 +236,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         page={common.models()}
         path="models"
         tabs={
-          <Tabs variant="pill" value={tab} onValueChange={(v) => setSearch({ tab: v === "aliases" ? "aliases" : undefined, model: undefined })}>
+          <Tabs variant="pill" value={tab} onValueChange={(v) => setSearch({ tab: v === "aliases" || v === "retiring" ? v : undefined, model: undefined })}>
             <Tabs.List aria-label={common.models()}>
               <Tabs.Tab value="catalogue" {...(catalogue.data ? { count: catalogue.data.length } : {})}>
                 {t("models.catalogue", "Catalogue")}
@@ -241,6 +244,11 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               <Tabs.Tab value="aliases" {...(aliases.data ? { count: aliases.data.length } : {})}>
                 {t("models.aliases", "Aliases")}
               </Tabs.Tab>
+              {(retiring.data?.data.length ?? 0) > 0 && (
+                <Tabs.Tab value="retiring" count={retiring.data?.data.length}>
+                  {t("models.retiring.title", "Retiring")}
+                </Tabs.Tab>
+              )}
             </Tabs.List>
           </Tabs>
         }
@@ -288,6 +296,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
             />
           </Toolbar>
           <AppFrame.Body padding="list">
+            <RetiringBanner count={retiring.data?.soon ?? 0} onShow={() => setSearch({ tab: "retiring", model: undefined })} />
             {catalogue.isPending ? (
               <List aria-label={common.models()} items={[]} loading />
             ) : catalogue.isError ? (
@@ -318,9 +327,13 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
             )}
           </AppFrame.Body>
         </>
-      ) : (
+      ) : tab === "aliases" ? (
         <AppFrame.Body padding="list">
           <AliasesTab org={org} project={project} canManage={canManage} />
+        </AppFrame.Body>
+      ) : (
+        <AppFrame.Body padding="list">
+          <RetiringTab org={org} project={project} canManage={canManage} />
         </AppFrame.Body>
       )}
       <ModelSheet org={org} project={project} modelId={search.model} onClose={() => setSearch({ model: undefined })} />
@@ -329,7 +342,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   );
 }
 
-function ModelMeta({ m }: { m: CatalogueModelView }) {
+function ModelMeta({ m, shutdown }: { m: CatalogueModelView; shutdown?: RetiringModelView | undefined }) {
   const f = m.effective;
   const overridden = overriddenFields(m).length;
   const unit =
@@ -352,7 +365,21 @@ function ModelMeta({ m }: { m: CatalogueModelView }) {
       {unavailable && <span className="md:hidden">{unavailable}</span>}
       <span className="hidden items-center gap-8 md:flex">
         {unavailable}
-        {m.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>}
+        {shutdown && shutdownLabel(shutdown) ? (
+          <Tooltip
+            content={
+              shutdown.lifecycle.replacement
+                ? t("models.retiring.replaceWith", "Replace with {model}", { model: shutdown.lifecycle.replacement })
+                : t("models.retiring.noReplacement", "No replacement named")
+            }
+          >
+            <Badge tone={shutdown.state === "retired" ? "danger" : "warning"} tabIndex={0}>
+              {shutdownLabel(shutdown)}
+            </Badge>
+          </Tooltip>
+        ) : (
+          m.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
+        )}
         {!m.listed && !m.custom && <Badge tone="warning">{t("models.delisted", "No longer listed")}</Badge>}
         {m.custom ? (
           <Badge>{t("models.custom", "Custom")}</Badge>
