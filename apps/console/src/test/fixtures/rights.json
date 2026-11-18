@@ -461,6 +461,28 @@
             "needs": ["org.view", "usage.org.view"]
           },
           {
+            "id": "usage.share",
+            "scope": "org",
+            "name": "Share usage",
+            "description": "Share read-only links to the usage, member stats and budgets one can see, and revoke one's own.",
+            "sensitive": false,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view"]
+          },
+          {
+            "id": "usage.share.manage",
+            "scope": "org",
+            "name": "Manage shared links",
+            "description": "See and revoke everyone's shared links, and choose who links may reach and for how long.",
+            "sensitive": true,
+            "recent_sign_in": false,
+            "cloud_only": false,
+            "owner_only": false,
+            "needs": ["org.view", "usage.share"]
+          },
+          {
             "id": "billing.view",
             "scope": "org",
             "name": "View billing",

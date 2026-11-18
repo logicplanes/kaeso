@@ -511,5 +511,14 @@
   "instance.linkedServiceAccount": "服务账号 ID",
   "instance.linkedPolicy": "在每个请求中注明关联的用户资料",
   "instance.linkedPolicyHint": "仅当 {provider} 表示您的应用需要 billing_policy 时开启。",
-  "instance.linkedMissing": "请填写客户端 ID、受众、组织和规则"
+  "instance.linkedMissing": "请填写客户端 ID、受众、组织和规则",
+  "instance.shareMarkSaved": "共享页面已更新",
+  "instance.sharedLinksOn": "组织可以分享链接",
+  "instance.sharedLinksOff": "共享链接已关闭",
+  "instance.sharedLinks": "共享链接",
+  "instance.sharedLinksHint": "组织为没有账户的人创建的只读用量链接。",
+  "instance.allowSharedLinks": "允许共享链接",
+  "instance.allowSharedLinksHint": "关闭后，所有链接失效且无法创建新链接。",
+  "instance.shareMark": "由 Kaeso 制作",
+  "instance.shareMarkHint": "每个共享页面底部的小标记。"
 }

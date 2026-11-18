@@ -39,6 +39,7 @@ pub mod roles;
 pub mod scim;
 pub mod service_accounts;
 pub mod sessions;
+pub mod shared_links;
 pub mod sso_groups;
 pub mod sso_identities;
 pub mod stored_responses;

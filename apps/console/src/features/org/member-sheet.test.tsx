@@ -290,3 +290,20 @@ describe("a member's sheet", () => {
     expect(within(sheet).queryByRole("heading", { name: "Audit log" })).not.toBeInTheDocument();
   });
 });
+
+describe("sharing a member's usage", () => {
+  it("shares one's own last 30 days without the right to see the org's usage", async () => {
+    asAdmin(ADMIN_ORG_RIGHTS.filter((r) => r !== "usage.org.view" && r !== "costs.org.view"));
+    membersData([ada, grace]);
+    const own = await openSheet(USER, "Ada Okafor");
+    expect(within(own.sheet).getByText("Share your last 30 days of usage as a read-only link.")).toBeInTheDocument();
+    expect(within(own.sheet).getByRole("button", { name: "Share" })).toBeInTheDocument();
+  });
+
+  it("offers no sharing of someone else's usage without the right to see it", async () => {
+    asAdmin(ADMIN_ORG_RIGHTS.filter((r) => r !== "usage.org.view" && r !== "costs.org.view"));
+    membersData([ada, grace]);
+    const { sheet } = await openSheet(OTHER_USER, "Grace Hopper");
+    expect(within(sheet).queryByRole("button", { name: "Share" })).not.toBeInTheDocument();
+  });
+});

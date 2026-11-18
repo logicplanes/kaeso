@@ -208,6 +208,15 @@ export function signedIn(options: SignedInOptions = {}): WhoAmI {
   on("POST", "me/whats-new/seen", noContent);
   on("GET", "me", () => me());
   on("GET", "me/exchange-rates", exchangeRates());
+  on("GET", "orgs/:org/security", {
+    require_2fa: false,
+    require_sso: false,
+    sso: null,
+    sso_default_role: null,
+    sso_redirect_url: "https://console.northwind.test/sso/callback",
+    max_key_lifetime_days: null,
+    shared_links: { allow: "members", max_days: 90 },
+  });
   on("GET", "orgs/:org/rights", catalogue);
   on("GET", "orgs/:org/roles", page(roles));
   on("GET", "orgs/:org/providers", page(providers));

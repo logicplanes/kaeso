@@ -46,10 +46,10 @@ order: 4
 | --- | --- | --- |
 | 所有者 | 全部，包括未来版本新增的权限 | 全部 |
 | 管理员 | 除 `org.delete`、`org.ownership.transfer` 和 `billing.manage` 之外的全部 | 全部 |
-| 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`billing.manage` | 无 |
-| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`guardrails.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 |
+| 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`usage.share`、`billing.view`、`billing.manage` | 无 |
+| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`guardrails.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`usage.share` | 无 |
 | 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`guardrails.view`、`platform_keys.view`、`webhooks.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限去掉 `tools.use`，以及 `project.audit_log.view` |
-| 成员 | `org.view`、`members.view` | 无 |
+| 成员 | `org.view`、`members.view`、`usage.share` | 无 |
 
 | 项目角色 | 权限 |
 | --- | --- |
@@ -169,6 +169,8 @@ order: 4
 | --- | --- | --- | --- |
 | `usage.org.view` | 查看组织用量 | 查看所有项目的用量。 |  |
 | `costs.org.view` | 查看组织费用 | 查看所有项目的费用。 | 需要 `usage.org.view` |
+| `usage.share` | 分享用量 | 分享自己可见的用量、成员统计和预算的只读链接，并撤销自己的链接。 |  |
+| `usage.share.manage` | 管理共享链接 | 查看并撤销所有人的共享链接，并决定链接可以面向谁、有效多久。 | 敏感；需要 `usage.share` |
 | `billing.view` | 查看账单 | 查看套餐、发票和付款状态（Kaeso Cloud）。 | 仅限 Kaeso Cloud |
 | `billing.manage` | 管理账单 | 更改套餐和付款方式（Kaeso Cloud）。 | 仅限 Kaeso Cloud；需要 `billing.view` |
 

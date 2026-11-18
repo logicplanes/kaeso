@@ -35,6 +35,7 @@ import { OrgPage } from "./org-page";
 import { OrgAgents } from "./agents-section";
 import { Provisioning } from "./provisioning-section";
 import { SsoGroups } from "./sso-groups-section";
+import { SharedLinksPolicy } from "./shared-links-policy";
 import { useOrgGiver } from "~/auth/givers";
 import { useNeedsRight } from "~/auth/needs-right";
 
@@ -50,7 +51,7 @@ export function OrgSecurityPage({ org }: { org: string }) {
       title={t("org.security.title", "Security")}
       hidden={t("org.security.hidden", "You can't see the security settings here")}
       right="org.view"
-      description={t("org.security.description", "How members and their agents get in, and how long keys may live.")}
+      description={t("org.security.description", "How members and their agents get in, how long keys live and who links reach.")}
     >
       {security.isError ? (
         <LoadFailed title={t("org.security.loadFailed", "The security settings couldn't load")} />
@@ -63,6 +64,7 @@ export function OrgSecurityPage({ org }: { org: string }) {
           {s.sso && <SsoGroups org={org} />}
           <Requirements org={org} security={s} />
           <KeyPolicy org={org} days={s.max_key_lifetime_days ?? null} />
+          <SharedLinksPolicy org={org} policy={s.shared_links} />
           <OrgAgents org={org} />
         </>
       )}

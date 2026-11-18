@@ -40,6 +40,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { locale, t, type Locale } from "~/i18n";
 import { LoadFailed } from "~/features/org/load-failed";
 import { common } from "~/i18n/common";
+import { Share, lastDays } from "~/kaeso/share";
 
 type Level = "project" | "member" | "key";
 export type LimitsSearch = { level?: Level; sort?: "used"; add?: boolean };
@@ -198,6 +199,7 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
                 { value: "used", label: t("limits.sortUsed", "Most used") },
               ]}
             />
+            <Share org={org} target={{ kind: "budget", project, ...lastDays(1), costs: rights.has("costs.view") }} />
             <Button
               size="sm"
               variant="primary"

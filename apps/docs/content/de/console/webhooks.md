@@ -31,7 +31,7 @@ Das Menü eines Webhooks hat **Test senden**, **Ausschalten** oder **Einschalten
 | Modell wird bald abgeschaltet | `model.shutdown_soon`, `model.moved` |
 | Inhaltsprotokollierung geändert | `project.content_logging_changed` |
 | MCP-Server brauchen Aufmerksamkeit | `mcp_server.signed_out`, `mcp_server.tool_held` |
-| Sicherheitseinstellungen geändert | `organization.security_changed` |
+| Sicherheitseinstellungen geändert | `organization.security_changed`, `share.created` |
 | Mitgliederänderungen | `organization.member_joined`, `organization.member_left` |
 | Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_key.refused`, `provider_key.signed_out`, `provider_key.spend_limit_reached`, `provider_key.unlinked` |
 | Modelländerungen | `model.delisted`, `model.price_changed` |
@@ -81,6 +81,7 @@ Eine JSON-Zustellung ist ein `POST` mit `content-type: application/json` und ein
 | `mcp_server.signed_out` | `server_id`, `server` (sein Name) |
 | `mcp_server.tool_held` | `server_id`, `server`, `tool`: ein Tool, das sich änderte und auf Freigabe wartet |
 | `organization.security_changed` | `change` (`sign_in_rules`, `single_sign_on`, `agent_policy`, `key_policy`, `platform_key_created` oder `platform_key_rotated`), `platform_key` (sein Name, bei den letzten beiden), `by` |
+| `share.created` | `title` (der des Links), `audience` (`anyone` oder `members`), `by` ([Nutzung teilen](share-usage.md)) |
 | `organization.member_joined` | `person`, `sso` (ob sie über Single Sign-on kam) |
 | `organization.member_left` | `person`, `removed_by` (`null`, wenn sie selbst ging) |
 | `provider_key.refused` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refusal` mit `status` und `message` des Anbieters, `billing` (ein Abrechnungsproblem) sowie `first_at` und `last_at` |

@@ -3,6 +3,7 @@ use axum::extract::State;
 use kaeso_core::accounts::{AccountCreation, DomainRule, MAX_DOMAINS, OrgCreation};
 use kaeso_core::id::OrgId;
 use kaeso_store::pg::instance::{self, AdminSso, InstanceSettings};
+use kaeso_store::pg::shared_links::{self, InstanceSwitches};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -76,6 +77,11 @@ pub struct SettingsView {
     pub mail: MailSettings,
     #[doc = "The exchange rates the console converts prices and spend with."]
     pub exchange_rates: ExchangeRatesSetting,
+    #[doc = "Whether organizations may make shared links; off, every link stops working\n\
+        and none can be made."]
+    pub shared_links: bool,
+    #[doc = "Whether the pages of shared links show a small *Made with Kaeso* mark."]
+    pub share_mark: bool,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -129,6 +135,7 @@ fn view(
     s: &InstanceSettings,
     admin_sso: Option<&AdminSso>,
     rates: &ExchangeRatesSetting,
+    shares: InstanceSwitches,
 ) -> SettingsView {
     let c = &state.config;
     let policy = accounts::policy(s);
@@ -166,6 +173,8 @@ fn view(
             from: c.smtp.from.clone(),
         },
         exchange_rates: rates.clone(),
+        shared_links: shares.shared_links,
+        share_mark: shares.share_mark,
     }
 }
 
@@ -184,6 +193,7 @@ pub async fn get(State(state): State<AppState>) -> ApiResult<Json<SettingsView>>
         &instance::get(&state.pg).await?,
         admin_sso.as_ref(),
         &rates,
+        shared_links::instance(&state.pg).await?,
     )))
 }
 
@@ -232,6 +242,7 @@ pub async fn set_admin_sso(
         &changed.settings,
         changed.after.as_ref(),
         &rates,
+        shared_links::instance(&state.pg).await?,
     )))
 }
 
@@ -265,6 +276,10 @@ pub struct SettingsUpdate {
     pub timezone: Option<String>,
     #[doc = "Whether the install fetches the ECB's exchange rates each working day."]
     pub exchange_rates: Option<bool>,
+    #[doc = "Whether organizations may make shared links."]
+    pub shared_links: Option<bool>,
+    #[doc = "Whether shared links' pages show *Made with Kaeso*."]
+    pub share_mark: Option<bool>,
 }
 
 #[utoipa::path(
@@ -289,6 +304,12 @@ pub async fn update(
     let mut tx = state.pg.begin().await?;
     let before = instance::get_for_update(&mut tx).await?;
     let rates_before = rates_setting(&state, &mut *tx).await?;
+    let shares_before = shared_links::instance(&mut *tx).await?;
+    let shares = InstanceSwitches {
+        shared_links: req.shared_links.unwrap_or(shares_before.shared_links),
+        share_mark: req.share_mark.unwrap_or(shares_before.share_mark),
+    };
+    shared_links::set_instance(&mut *tx, shares).await?;
     let mut after = before.clone();
     if let Some(a) = req.account_creation {
         after.account_creation = a.as_str().to_owned();
@@ -392,8 +413,20 @@ pub async fn update(
     let rates_after = rates_setting(&state, &mut *tx).await?;
     let admin_sso = instance::admin_sso(&mut *tx).await?;
     ctx.audit(None, Action::InstanceSettingsUpdate)
-        .before(view(&state, &before, admin_sso.as_ref(), &rates_before))
-        .after(view(&state, &after, admin_sso.as_ref(), &rates_after))
+        .before(view(
+            &state,
+            &before,
+            admin_sso.as_ref(),
+            &rates_before,
+            shares_before,
+        ))
+        .after(view(
+            &state,
+            &after,
+            admin_sso.as_ref(),
+            &rates_after,
+            shares,
+        ))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -403,7 +436,13 @@ pub async fn update(
     if after.timezone != before.timezone {
         state.caches.time_zone.invalidate_all();
     }
-    Ok(Json(view(&state, &after, admin_sso.as_ref(), &rates_after)))
+    Ok(Json(view(
+        &state,
+        &after,
+        admin_sso.as_ref(),
+        &rates_after,
+        shares,
+    )))
 }
 
 fn allowed_domains(domains: &[String]) -> ApiResult<Vec<String>> {

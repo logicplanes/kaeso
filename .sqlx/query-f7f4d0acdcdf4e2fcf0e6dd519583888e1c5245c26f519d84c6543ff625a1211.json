@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE organizations SET shared_links = $2, shared_link_max_days = $3 WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f7f4d0acdcdf4e2fcf0e6dd519583888e1c5245c26f519d84c6543ff625a1211"
+}

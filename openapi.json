@@ -25676,6 +25676,86 @@
         "x-kaeso-access": "right:security.sso.require"
       }
     },
+    "/platform/v1/orgs/{org}/security/shared-links": {
+      "put": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Sets who the organization's shared links may reach and how long they may last.",
+        "description": "Links made before keep their audience and expiry, but none reaches\nfurther than the policy now allows: with `off` they stop working, with `members` they\nneed a member's sign-in.\n\n**Right:** `usage.share.manage` on the organization in the path.",
+        "operationId": "putOrgsOrgSecuritySharedLinks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedLinksPolicy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedLinksPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.share.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/security/sso": {
       "put": {
         "tags": [
@@ -26001,6 +26081,218 @@
           }
         ],
         "x-kaeso-access": "right:security.sso.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/shared-links": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The organization's shared links that still work, newest first.",
+        "description": "Every link with `usage.share.manage`, else one's own. The addresses\naren't listed; they were shown once.\n\n**Right:** `usage.share` on the organization in the path.",
+        "operationId": "getOrgsOrgSharedLinks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_SharedLinkView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.share"
+      },
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Makes a read-only link to usage, a member's stats, a project's budgets or a project's summary.",
+        "description": "Anyone with the address, or the organization's members signed in to Kaeso,\ncan open the link without other rights. It shows only what its maker can see, and stops\nworking when they no longer can, leave the organization, it expires or is revoked. The\naddress is returned this once. Request logs are never shared.\n\n**Right:** `usage.share` on the organization in the path.",
+        "operationId": "postOrgsOrgSharedLinks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedLinkCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedLinkSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.share"
+      }
+    },
+    "/platform/v1/orgs/{org}/shared-links/{link}": {
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Revokes a shared link; it stops working at once.",
+        "description": "One's own link, or any with `usage.share.manage`.\n\n**Right:** `usage.share` on the organization in the path.",
+        "operationId": "deleteOrgsOrgSharedLinksLink",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "link",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SharedLinkId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.share"
       }
     },
     "/platform/v1/orgs/{org}/stored-responses": {
@@ -27162,6 +27454,117 @@
           }
         ],
         "x-kaeso-access": "right:webhooks.manage"
+      }
+    },
+    "/platform/v1/share/{token}": {
+      "get": {
+        "tags": [
+          "share"
+        ],
+        "summary": "What a shared link shows.",
+        "description": "Opens a shared link by the token in its address: no sign-in for a link\nfor anyone, a session of one of the organization's members otherwise. Each open is\ncounted and written to the organization's audit log. Answers carry\n`X-Robots-Tag: noindex`.\n\n**Access:** public; no authentication.",
+        "operationId": "getShareToken",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "The token after `/share/` in the link's address.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
+    },
+    "/platform/v1/share/{token}/image.png": {
+      "get": {
+        "tags": [
+          "share"
+        ],
+        "summary": "The preview image of a shared link, for chats and social posts.",
+        "description": "A 1200×630 PNG with the chart of the link's metric over its period; a\nlink for members only gets an image without numbers. Not counted as an open.\n\n**Access:** public; no authentication.",
+        "operationId": "getShareTokenImagePng",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "The token after `/share/` in the link's address.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/png": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
       }
     }
   },
@@ -37819,6 +38222,168 @@
           }
         }
       },
+      "List_SharedLinkView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A read-only link to an org's usage, a member's stats, a project's budgets or a project's summary.",
+              "required": [
+                "id",
+                "kind",
+                "title",
+                "live",
+                "metric",
+                "show_costs",
+                "hide_members",
+                "hide_keys",
+                "hide_projects",
+                "audience",
+                "created_by",
+                "created_at",
+                "views"
+              ],
+              "properties": {
+                "audience": {
+                  "type": "string",
+                  "description": "Who can open it: `anyone` with the link, or `members` of the organization\nsigned in to Kaeso."
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Created."
+                },
+                "created_by": {
+                  "$ref": "#/components/schemas/UserId",
+                  "description": "Who made it."
+                },
+                "days": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The days a live link shows, today included."
+                },
+                "expires_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it stops working; `null` for never."
+                },
+                "from": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "The first day of a snapshot (UTC)."
+                },
+                "hide_keys": {
+                  "type": "boolean",
+                  "description": "Whether keys show as *Key 1*, *Key 2* and so on."
+                },
+                "hide_members": {
+                  "type": "boolean",
+                  "description": "Whether members show as *Member 1*, *Member 2* and so on."
+                },
+                "hide_projects": {
+                  "type": "boolean",
+                  "description": "Whether projects show as *Project 1*, *Project 2* and so on, and the\nproject's own name is left out."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/SharedLinkId",
+                  "description": "Id."
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "`analytics`, `member`, `budget` or `project_card`."
+                },
+                "last_opened_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it was last opened."
+                },
+                "live": {
+                  "type": "boolean",
+                  "description": "Whether it shows the last `days` days whenever it is opened (`true`), or\nthe numbers of `from` to `to` as they were when it was made."
+                },
+                "member": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/UserId",
+                      "description": "The member whose stats it shows, for `member`."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "metric": {
+                  "type": "string",
+                  "description": "The metric its chart shows: `requests`, `tokens`, `cost`, `errors`, `tools`\nor `cache`."
+                },
+                "project": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectId",
+                      "description": "The project it shows; `null` for the whole organization."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "show_costs": {
+                  "type": "boolean",
+                  "description": "Whether it shows costs."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "The title the page shows."
+                },
+                "to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "The last day of a snapshot (UTC)."
+                },
+                "views": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "How often it was opened."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_TimelineBucket": {
         "type": "object",
         "description": "A page of results.",
@@ -45258,7 +45823,8 @@
         "required": [
           "require_2fa",
           "require_sso",
-          "sso_redirect_url"
+          "sso_redirect_url",
+          "shared_links"
         ],
         "properties": {
           "max_key_lifetime_days": {
@@ -45276,6 +45842,10 @@
           "require_sso": {
             "type": "boolean",
             "description": "Whether the accounts the org manages sign in only through its SSO,\neverywhere on the install; guests keep their own sign-in."
+          },
+          "shared_links": {
+            "$ref": "#/components/schemas/SharedLinksPolicy",
+            "description": "Who the organization's shared links may reach, and for how long."
           },
           "sso": {
             "oneOf": [
@@ -45687,6 +46257,20 @@
             "format": "int32",
             "description": "Days a new deletion waits, 1 to 90. Dates already set don't move."
           },
+          "share_mark": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether shared links' pages show *Made with Kaeso*."
+          },
+          "shared_links": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether organizations may make shared links."
+          },
           "timezone": {
             "type": [
               "string",
@@ -45714,7 +46298,9 @@
           "timezone",
           "sign_in",
           "mail",
-          "exchange_rates"
+          "exchange_rates",
+          "shared_links",
+          "share_mark"
         ],
         "properties": {
           "account_creation": {
@@ -45787,6 +46373,14 @@
             "maximum": 90,
             "minimum": 1
           },
+          "share_mark": {
+            "type": "boolean",
+            "description": "Whether the pages of shared links show a small *Made with Kaeso* mark."
+          },
+          "shared_links": {
+            "type": "boolean",
+            "description": "Whether organizations may make shared links; off, every link stops working\nand none can be made."
+          },
           "sign_in": {
             "$ref": "#/components/schemas/SignInMethods",
             "description": "Sign-in methods (read-only)."
@@ -45847,6 +46441,621 @@
           }
         },
         "additionalProperties": false
+      },
+      "SharedBreakdown": {
+        "type": "object",
+        "description": "Usage split one way.",
+        "required": [
+          "by",
+          "rows"
+        ],
+        "properties": {
+          "by": {
+            "type": "string",
+            "description": "`model`, `key`, `member`, `route`, `project` or `client`."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedRow"
+            },
+            "description": "Its groups, the most requests first."
+          }
+        }
+      },
+      "SharedLimit": {
+        "type": "object",
+        "description": "A limit or budget of a shared project, with what it used.",
+        "required": [
+          "level",
+          "kind",
+          "period",
+          "amount",
+          "hard"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Requests, tool calls, tokens or USD."
+          },
+          "hard": {
+            "type": "boolean",
+            "description": "Whether it refuses requests once used up."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`request_rate`, `token_rate`, `tool_call_rate`, `token_budget` or\n`spend_budget`."
+          },
+          "level": {
+            "type": "string",
+            "description": "`project`, `member` or `key`."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The one model it counts, as `provider/model`; `null` for every model."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The member's or key's name; `null` for the project or when the link hides it."
+          },
+          "number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The place of a hidden member or key, as in a breakdown.",
+            "minimum": 0
+          },
+          "period": {
+            "type": "string",
+            "description": "`minute`, `day`, `month` or `total`."
+          },
+          "resets_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the current period ends; `null` for `total` and rates."
+          },
+          "used": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Used in the current period, in the unit of `amount`, when known."
+          }
+        }
+      },
+      "SharedLinkCreate": {
+        "type": "object",
+        "description": "A shared link to make.",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "audience": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`members` (default): people signed in to an account in the organization.\n`anyone` with the link, where the organization allows it."
+          },
+          "days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The days a live link shows, today included, 1 to 400; default 30.",
+            "example": 30
+          },
+          "expires_in_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "1, 7, 30 or 90 days; absent for a link that never expires, where the\norganization allows it.",
+            "example": 30
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The first day of a snapshot (UTC)."
+          },
+          "hide_keys": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Show keys as *Key 1*, *Key 2* and so on."
+          },
+          "hide_members": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Show members as *Member 1*, *Member 2* and so on."
+          },
+          "hide_projects": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Show projects as *Project 1*, *Project 2* and so on."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`analytics` (the org's usage, or a project's with `project`), `member` (one\nmember's usage across the org), `budget` (a project's limits and budgets) or\n`project_card` (a project's summary).",
+            "example": "analytics"
+          },
+          "live": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Live (default): the last `days` days whenever it is opened. `false`: a\nsnapshot of `from` to `to` as the numbers are now."
+          },
+          "member": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member, for `member`: oneself, or anyone with `usage.org.view`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metric": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The metric its chart shows; default `requests`."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "The project; needed for `budget` and `project_card`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "show_costs": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Show costs; needs the right to see them. Off by default."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The title the page shows, 1 to 100 characters; one that names what it\nshows when absent.",
+            "example": "October spend"
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The last day of a snapshot (UTC), at most 400 days after `from`."
+          }
+        },
+        "additionalProperties": false
+      },
+      "SharedLinkId": {
+        "type": "string",
+        "examples": [
+          "shl_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^shl_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "SharedLinkSecret": {
+        "type": "object",
+        "description": "A new shared link, with its address shown this once.",
+        "required": [
+          "link",
+          "url"
+        ],
+        "properties": {
+          "link": {
+            "$ref": "#/components/schemas/SharedLinkView",
+            "description": "The link."
+          },
+          "url": {
+            "type": "string",
+            "description": "The address to share; it holds the link's token, which Kaeso keeps only\nas a hash.",
+            "example": "https://kaeso.example.com/share/9fQ2kX7mVb3pL8rT1wZ5yH4uJ6sD0gA2cE7nM1qR3tU"
+          }
+        }
+      },
+      "SharedLinkView": {
+        "type": "object",
+        "description": "A read-only link to an org's usage, a member's stats, a project's budgets or a project's summary.",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "live",
+          "metric",
+          "show_costs",
+          "hide_members",
+          "hide_keys",
+          "hide_projects",
+          "audience",
+          "created_by",
+          "created_at",
+          "views"
+        ],
+        "properties": {
+          "audience": {
+            "type": "string",
+            "description": "Who can open it: `anyone` with the link, or `members` of the organization\nsigned in to Kaeso."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created."
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "Who made it."
+          },
+          "days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The days a live link shows, today included."
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it stops working; `null` for never."
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The first day of a snapshot (UTC)."
+          },
+          "hide_keys": {
+            "type": "boolean",
+            "description": "Whether keys show as *Key 1*, *Key 2* and so on."
+          },
+          "hide_members": {
+            "type": "boolean",
+            "description": "Whether members show as *Member 1*, *Member 2* and so on."
+          },
+          "hide_projects": {
+            "type": "boolean",
+            "description": "Whether projects show as *Project 1*, *Project 2* and so on, and the\nproject's own name is left out."
+          },
+          "id": {
+            "$ref": "#/components/schemas/SharedLinkId",
+            "description": "Id."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`analytics`, `member`, `budget` or `project_card`."
+          },
+          "last_opened_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was last opened."
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Whether it shows the last `days` days whenever it is opened (`true`), or\nthe numbers of `from` to `to` as they were when it was made."
+          },
+          "member": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member whose stats it shows, for `member`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metric": {
+            "type": "string",
+            "description": "The metric its chart shows: `requests`, `tokens`, `cost`, `errors`, `tools`\nor `cache`."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "The project it shows; `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "show_costs": {
+            "type": "boolean",
+            "description": "Whether it shows costs."
+          },
+          "title": {
+            "type": "string",
+            "description": "The title the page shows."
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The last day of a snapshot (UTC)."
+          },
+          "views": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How often it was opened."
+          }
+        }
+      },
+      "SharedLinksPolicy": {
+        "type": "object",
+        "description": "Who an organization's shared links may reach, and for how long.",
+        "required": [
+          "allow"
+        ],
+        "properties": {
+          "allow": {
+            "type": "string",
+            "description": "`off`: no links; `members`: links only for people signed in to the\norganization; `anyone`: links anyone with the address can open.",
+            "example": "members"
+          },
+          "max_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The longest a link may last: 1, 7, 30 or 90 days; `null` lets links never\nexpire.",
+            "example": 90
+          }
+        }
+      },
+      "SharedRow": {
+        "type": "object",
+        "description": "One row of a shared view: a day, or one group of a breakdown.",
+        "required": [
+          "requests",
+          "errors",
+          "input_tokens",
+          "output_tokens",
+          "cache_read_tokens",
+          "cache_write_tokens",
+          "reasoning_tokens",
+          "tool_calls"
+        ],
+        "properties": {
+          "cache_read_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Cache reads.",
+            "minimum": 0
+          },
+          "cache_write_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Cache writes.",
+            "minimum": 0
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cost in USD; `null` when the link hides costs."
+          },
+          "errors": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests answered with a status of 400 or above.",
+            "minimum": 0
+          },
+          "input_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Uncached input tokens.",
+            "minimum": 0
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day (`YYYY-MM-DD`), model (`provider/model`), route or client; `playground`\nfor requests from the Playground. `null` for projects, keys and members, which\ngo by `name` or `number`."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The project's, key's or member's name; `null` when the link hides it or the\nrow is a day, model, route or client."
+          },
+          "number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The place of a hidden project, key or member, 1 for the one with the most\nrequests, shown as *Member 1* and the like; `null` when its name shows.",
+            "minimum": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Output tokens.",
+            "minimum": 0
+          },
+          "reasoning_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reasoning tokens.",
+            "minimum": 0
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests, refusals included.",
+            "minimum": 0
+          },
+          "tool_calls": {
+            "type": "integer",
+            "format": "int64",
+            "description": "MCP tool calls.",
+            "minimum": 0
+          }
+        }
+      },
+      "SharedView": {
+        "type": "object",
+        "description": "What a shared link shows.",
+        "required": [
+          "kind",
+          "title",
+          "organization",
+          "live",
+          "from",
+          "to",
+          "metric",
+          "costs",
+          "created_at",
+          "made_with_kaeso",
+          "days",
+          "previous_days",
+          "breakdowns",
+          "limits"
+        ],
+        "properties": {
+          "breakdowns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedBreakdown"
+            },
+            "description": "The period's usage split by model, key, member, route, project or client,\nas the kind of link shows it."
+          },
+          "costs": {
+            "type": "boolean",
+            "description": "Whether costs show; without them every `cost` is `null` and spend budgets\nare left out."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the link was made."
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedRow"
+            },
+            "description": "Usage by day in the period, days without usage left out."
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the link stops working; `null` for never."
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "description": "The first day shown (UTC)."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`analytics`, `member`, `budget` or `project_card`."
+          },
+          "limits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedLimit"
+            },
+            "description": "The project's limits and budgets, for `budget`."
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Whether the numbers are of the last days up to today, worked out as the\npage is opened; `false` for numbers kept from when the link was made."
+          },
+          "made_with_kaeso": {
+            "type": "boolean",
+            "description": "Whether the page shows a small *Made with Kaeso* mark."
+          },
+          "member": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The member's name, for `member`; `null` when the link hides member names."
+          },
+          "metric": {
+            "type": "string",
+            "description": "The metric its chart shows."
+          },
+          "organization": {
+            "type": "string",
+            "description": "The organization's name."
+          },
+          "previous_days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedRow"
+            },
+            "description": "Usage by day in the period of the same length before it, for comparison."
+          },
+          "project": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The project's name; `null` for the whole organization or when the link\nhides project names."
+          },
+          "title": {
+            "type": "string",
+            "description": "The title its maker gave it."
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "description": "The last day shown (UTC)."
+          }
+        }
       },
       "SignInMethods": {
         "type": "object",

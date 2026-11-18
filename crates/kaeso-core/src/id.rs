@@ -182,6 +182,7 @@ public_id!(ImageGenerationId, "imggen_");
 public_id!(GuardrailId, "grd_");
 public_id!(BatchFileId, "file_");
 public_id!(BatchId, "batch_");
+public_id!(SharedLinkId, "shl_");
 
 #[cfg(test)]
 mod tests {

@@ -431,6 +431,17 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                 }),
             ),
         },
+        Fact::OrgSecurity {
+            change: Security::SharedLinkCreated { name, public },
+            by,
+        } => (
+            "share.created",
+            json!({
+                "title": name,
+                "audience": if *public { "anyone" } else { "members" },
+                "by": actor(by),
+            }),
+        ),
         Fact::OrgSecurity { change, by } => {
             let (what, key) = match change {
                 Security::SignInRules => ("sign_in_rules", None),
@@ -439,6 +450,7 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                 Security::KeyPolicy => ("key_policy", None),
                 Security::PlatformKeyCreated(name) => ("platform_key_created", Some(*name)),
                 Security::PlatformKeyRotated(name) => ("platform_key_rotated", Some(*name)),
+                Security::SharedLinkCreated { .. } => ("shared_link_created", None),
             };
             (
                 "organization.security_changed",

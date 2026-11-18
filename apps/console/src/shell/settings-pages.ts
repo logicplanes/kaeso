@@ -27,6 +27,7 @@ export const ORG_SETTINGS_PAGES: SettingsPage[] = [
   { id: "guardrails", label: () => t("shell.settings.guardrails", "Guardrails"), icon: icons.security, path: "guardrails", right: "guardrails.view" },
   { id: "platform-keys", label: () => t("shell.settings.platformKeys", "Platform keys"), icon: icons.key, path: "platform-keys", right: "platform_keys.view" },
   { id: "webhooks", label: () => t("shell.settings.webhooks", "Webhooks"), icon: icons.send, path: "webhooks", right: "webhooks.view" },
+  { id: "shared-links", label: () => t("shell.settings.sharedLinks", "Shared links"), icon: icons.alias, path: "shared-links", right: "usage.share" },
   { id: "logging", label: () => t("shell.settings.logging", "Logging"), icon: icons.requestLog, path: "logging", right: "org.view" },
   { id: "audit-log", label: () => t("shell.page.auditLog", "Audit log"), icon: icons.audit, path: "audit-log", right: "audit_log.view" },
 ];

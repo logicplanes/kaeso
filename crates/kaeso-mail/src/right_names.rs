@@ -506,6 +506,13 @@ const NAMES: &[(&str, &str, &str, &str)] = &[
         "Gesamtnutzung ansehen",
         "查看组织用量",
     ),
+    ("usage.share", "Share usage", "Nutzung teilen", "分享用量"),
+    (
+        "usage.share.manage",
+        "Manage shared links",
+        "Geteilte Links verwalten",
+        "管理共享链接",
+    ),
     ("usage.view", "View usage", "Nutzung ansehen", "查看用量"),
     (
         "webhooks.manage",

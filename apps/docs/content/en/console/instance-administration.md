@@ -44,6 +44,7 @@ Under **General**:
 | Single sign-on for instance admins | **None**, or an organization with single sign-on whose provider may sign its managed instance admins in to administer the instance ([instance admins](../self-hosting/sign-in.md#instance-admins)) |
 | Time zone | The install's time zone. Every time in the console shows in it, for everyone, the request log and audit log filter by its days, and automatic updates follow it. **Use this zone** switches to your browser's |
 | Exchange rates | Whether the install fetches the ECB's reference rates each working day, the day of the latest and why the last fetch failed. Off keeps the rates it has ([currencies](../concepts/currencies.md)) |
+| Shared links | **Allow shared links** lets organizations [share usage](share-usage.md); off, every link stops working. **Made with Kaeso** shows a small mark at the foot of shared pages |
 | Deleting organizations | Whether organizations can be deleted at all, and the grace period, 1 to 90 days |
 
 Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose. Lowering the longest brings every organization above it down to it, and their older entries are deleted at once, as when an organization shortens its retention.

@@ -255,7 +255,7 @@
   "account.notify.portalClients": "门户上的新客户端",
   "account.notify.portalClientsHint": "当有人把新客户端连接到门户时。",
   "account.notify.orgSecurity": "安全设置已变更",
-  "account.notify.orgSecurityHint": "当有人更改登录规则、SSO 或平台密钥时。",
+  "account.notify.orgSecurityHint": "当有人更改登录规则、SSO 或平台密钥，或分享用量时。",
   "account.notify.orgOwnership": "所有权和删除",
   "account.notify.orgOwnershipHint": "当组织更换所有者或被删除时。",
   "account.notify.orgMembers": "成员变动",

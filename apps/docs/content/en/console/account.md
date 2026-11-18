@@ -131,7 +131,7 @@ The weekly summary and the monthly cost report go out on their own schedule, so 
 | Tools | MCP servers need attention | `mcp_servers.manage` | Now |
 | Tools | Your connection expired | You, for a server you connected your own account to | Now |
 | Tools | New client on a portal | `tools.manage` | Daily |
-| Organization | Security settings changed | `security.sso.manage` or `platform_keys.view` | Now |
+| Organization | Security settings changed, and new shared links | `security.sso.manage` or `platform_keys.view`; `usage.share.manage` for shared links | Now |
 | Organization | Ownership and deletion | Owners | Always |
 | Organization | Member changes | `members.invite` | Daily |
 | Organization | Your invitation was accepted | Whoever sent it | Now |

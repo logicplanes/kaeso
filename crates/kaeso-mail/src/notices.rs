@@ -55,6 +55,7 @@ pub enum Security<'a> {
     KeyPolicy,
     PlatformKeyCreated(&'a str),
     PlatformKeyRotated(&'a str),
+    SharedLinkCreated { name: &'a str, public: bool },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1015,8 +1016,21 @@ impl Fact<'_> {
                         "A platform key was rotated".to_owned(),
                         format!("rotated the platform key {name}"),
                     ),
+                    Security::SharedLinkCreated { name, public: true } => (
+                        "Usage was shared with anyone who has the link".to_owned(),
+                        format!("shared {name} with anyone who has the link"),
+                    ),
+                    Security::SharedLinkCreated { name, public: false } => (
+                        "Usage was shared with the organization".to_owned(),
+                        format!("shared {name} with the organization's members"),
+                    ),
                 };
-                w(heading, format!("{} {what}.", who(by)), "Open security")
+                let open = if matches!(change, Security::SharedLinkCreated { .. }) {
+                    "Open shared links"
+                } else {
+                    "Open security"
+                };
+                w(heading, format!("{} {what}.", who(by)), open)
             }
             Fact::Member { person, change } => {
                 let (heading, sentence) = match change {
@@ -1426,8 +1440,21 @@ impl Fact<'_> {
                         "Plattformschlüssel rotiert".to_owned(),
                         format!("hat den Plattformschlüssel {name} rotiert"),
                     ),
+                    Security::SharedLinkCreated { name, public: true } => (
+                        "Nutzung für alle mit dem Link geteilt".to_owned(),
+                        format!("hat {name} mit allen geteilt, die den Link haben"),
+                    ),
+                    Security::SharedLinkCreated { name, public: false } => (
+                        "Nutzung mit der Organisation geteilt".to_owned(),
+                        format!("hat {name} mit den Mitgliedern der Organisation geteilt"),
+                    ),
                 };
-                w(heading, format!("{} {what}.", who(by)), "Sicherheit öffnen")
+                let open = if matches!(change, Security::SharedLinkCreated { .. }) {
+                    "Geteilte Links öffnen"
+                } else {
+                    "Sicherheit öffnen"
+                };
+                w(heading, format!("{} {what}.", who(by)), open)
             }
             Fact::Member { person, change } => {
                 let (heading, sentence) = match change {
@@ -1840,8 +1867,24 @@ impl Fact<'_> {
                     Security::PlatformKeyRotated(name) => {
                         ("已轮换平台密钥".to_owned(), zh(&["轮换了平台密钥 ", name]))
                     }
+                    Security::SharedLinkCreated { name, public: true } => (
+                        "用量已分享给所有持有链接的人".to_owned(),
+                        zh(&["将 ", name, " 分享给了所有持有链接的人"]),
+                    ),
+                    Security::SharedLinkCreated {
+                        name,
+                        public: false,
+                    } => (
+                        "用量已分享给组织".to_owned(),
+                        zh(&["将 ", name, " 分享给了组织成员"]),
+                    ),
                 };
-                w(heading, zh(&[&who(by), &what, "。"]), "打开安全设置")
+                let open = if matches!(change, Security::SharedLinkCreated { .. }) {
+                    "打开共享链接"
+                } else {
+                    "打开安全设置"
+                };
+                w(heading, zh(&[&who(by), &what, "。"]), open)
             }
             Fact::Member { person, change } => {
                 let (heading, sentence) = match change {
@@ -2286,4 +2329,47 @@ pub fn digest(lang: Locale, to: &str, items: &[DigestItem], open: &str, links: &
             .action(button, open)
             .footnote(footnote(lang, Because::Daily, links)),
     )
+}
+
+#[cfg(test)]
+mod shared_link_tests {
+    use super::*;
+
+    #[test]
+    fn a_shared_link_says_who_it_reaches_in_every_language() {
+        let fact = |public| Fact::OrgSecurity {
+            change: Security::SharedLinkCreated {
+                name: "October spend",
+                public,
+            },
+            by: Actor::Person("Ada"),
+        };
+        let words = fact(true).words(Locale::En);
+        assert_eq!(
+            words.heading,
+            "Usage was shared with anyone who has the link"
+        );
+        assert_eq!(
+            words.sentence,
+            "Ada shared October spend with anyone who has the link."
+        );
+        assert_eq!(words.button, "Open shared links");
+        assert_eq!(
+            fact(false).words(Locale::En).sentence,
+            "Ada shared October spend with the organization's members."
+        );
+        let de = fact(true).words(Locale::De);
+        assert_eq!(
+            de.sentence,
+            "Ada hat October spend mit allen geteilt, die den Link haben."
+        );
+        assert_eq!(de.button, "Geteilte Links öffnen");
+        let zh = fact(false).words(Locale::ZhCn);
+        assert_eq!(zh.heading, "用量已分享给组织");
+        assert_eq!(zh.button, "打开共享链接");
+        assert_eq!(
+            line(Locale::En, &fact(false)),
+            "Usage was shared with the organization"
+        );
+    }
 }

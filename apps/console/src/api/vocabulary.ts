@@ -135,6 +135,14 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   "logs.delete": () => [t("rights.logsDelete.name", "Delete logs"), t("rights.logsDelete.description", "Delete the organization's logs for a time range.")],
   "usage.org.view": () => [t("rights.usageOrgView.name", "View org usage"), t("rights.usageOrgView.description", "See usage across all projects.")],
   "costs.org.view": () => [t("rights.costsOrgView.name", "View org costs"), t("rights.costsOrgView.description", "See costs across all projects.")],
+  "usage.share": () => [
+    t("rights.usageShare.name", "Share usage"),
+    t("rights.usageShare.description", "Share read-only links to the usage, member stats and budgets one can see, and revoke one's own."),
+  ],
+  "usage.share.manage": () => [
+    t("rights.usageShareManage.name", "Manage shared links"),
+    t("rights.usageShareManage.description", "See and revoke everyone's shared links, and choose who links may reach and for how long."),
+  ],
   "billing.view": () => [
     t("rights.billingView.name", "View billing"),
     t("rights.billingView.description", "See plan, invoices and payment status (Kaeso Cloud)."),

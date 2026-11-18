@@ -2775,6 +2775,7 @@ dependencies = [
  "proptest",
  "redis",
  "reqwest",
+ "resvg",
  "rust_decimal",
  "ruzstd",
  "secrecy",

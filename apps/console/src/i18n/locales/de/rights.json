@@ -232,5 +232,9 @@
   "rights.guardrailsView.name": "Guardrails ansehen",
   "rights.guardrailsView.description": "Die Guardrails der Organisation und die Projekte, die sie nutzen, sehen (nie ihre Secrets).",
   "rights.guardrailsManage.name": "Guardrails verwalten",
-  "rights.guardrailsManage.description": "Guardrails hinzufügen, ändern, testen und löschen und die Projekte wählen, die sie nutzen."
+  "rights.guardrailsManage.description": "Guardrails hinzufügen, ändern, testen und löschen und die Projekte wählen, die sie nutzen.",
+  "rights.usageShare.name": "Nutzung teilen",
+  "rights.usageShare.description": "Schreibgeschützte Links zu sichtbarer Nutzung, Mitgliedsstatistiken und Budgets teilen und die eigenen widerrufen.",
+  "rights.usageShareManage.name": "Geteilte Links verwalten",
+  "rights.usageShareManage.description": "Alle geteilten Links sehen und widerrufen und festlegen, wen Links erreichen dürfen und wie lange."
 }

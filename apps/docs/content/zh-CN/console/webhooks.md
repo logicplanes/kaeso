@@ -31,7 +31,7 @@ Webhook 的菜单中有**发送测试**、**关闭**或**开启**、**轮换密�
 | 模型即将停用 | `model.shutdown_soon`、`model.moved` |
 | 内容记录已变更 | `project.content_logging_changed` |
 | MCP 服务器需要处理 | `mcp_server.signed_out`、`mcp_server.tool_held` |
-| 安全设置已变更 | `organization.security_changed` |
+| 安全设置已变更 | `organization.security_changed`, `share.created` |
 | 成员变动 | `organization.member_joined`、`organization.member_left` |
 | 服务商密钥需要处理 | `provider_key.refused`、`provider_key.signed_out`、`provider_key.spend_limit_reached`、`provider_key.unlinked` |
 | 模型变更 | `model.delisted`、`model.price_changed` |
@@ -81,6 +81,7 @@ JSON 投递是一个 `POST` 请求，带有 `content-type: application/json`，�
 | `mcp_server.signed_out` | `server_id`、`server`（服务器名称） |
 | `mcp_server.tool_held` | `server_id`、`server`、`tool`：已变更并等待批准的工具 |
 | `organization.security_changed` | `change`（`sign_in_rules`、`single_sign_on`、`agent_policy`、`key_policy`、`platform_key_created` 或 `platform_key_rotated`）、`platform_key`（后两种情况下的密钥名称）、`by` |
+| `share.created` | `title`（链接的标题）、`audience`（`anyone` 或 `members`）、`by`（[分享用量](share-usage.md)） |
 | `organization.member_joined` | `person`、`sso`（是否通过单点登录加入） |
 | `organization.member_left` | `person`、`removed_by`（本人离开时为 `null`） |
 | `provider_key.refused` | `provider_key_id`、`provider`、`name`、`default`、`projects`、`refusal`（含服务商的 `status` 和 `message`、`billing`（是否为计费问题）以及 `first_at` 和 `last_at`） |

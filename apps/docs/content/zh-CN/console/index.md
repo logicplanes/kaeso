@@ -29,6 +29,7 @@ order: 3
 - [请求日志](request-logs.md)：查找任意请求，导出日志，并选择保留哪些内容。
 - [响应缓存](response-cache.md)：用已存储的回复应答重复的相同请求。
 - [Webhook](webhooks.md)：把组织的通知签名后发送到值班工具、聊天和脚本。
+- [分享用量](share-usage.md)：与没有账户的人分享用量、成员统计和预算的只读链接。
 - [试验场](playground.md)：并排比较最多四个模型。
 - [账户和语言](account.md)：保护账户安全，并选择主题和语言。
 - [实例管理](instance-administration.md)：管理实例的用户、组织、设置和更新。

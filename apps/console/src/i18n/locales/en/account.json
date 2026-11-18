@@ -180,7 +180,7 @@
   "account.notify.orgOwnership": "Ownership and deletion",
   "account.notify.orgOwnershipHint": "When an organization changes owners or is deleted.",
   "account.notify.orgSecurity": "Security settings changed",
-  "account.notify.orgSecurityHint": "When someone changes sign-in rules, SSO or platform keys.",
+  "account.notify.orgSecurityHint": "When someone changes sign-in rules, SSO or platform keys, or shares usage.",
   "account.notify.portalClients": "New client on a portal",
   "account.notify.portalClientsHint": "When someone connects a new client to a portal.",
   "account.notify.providerKeys": "Provider keys need attention",

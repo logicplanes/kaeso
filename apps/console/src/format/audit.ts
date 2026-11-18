@@ -28,6 +28,7 @@ const KIND_LABELS: Record<string, () => string> = {
   security: () => t("format.audit.kind.security", "Security"),
   stored_responses: () => t("format.audit.kind.storedResponses", "Stored responses"),
   service_account: () => t("format.audit.kind.serviceAccount", "Service accounts"),
+  shared_link: () => t("format.audit.kind.sharedLink", "Shared links"),
   tool: () => t("format.audit.kind.tool", "Tools"),
   tool_access: () => t("format.audit.kind.toolAccess", "Tool access"),
   user: () => t("format.audit.kind.user", "Users"),
@@ -152,6 +153,10 @@ const ACTION_LABELS: Record<string, () => string> = {
   "security.require_2fa": () => t("format.audit.action.securityRequire2fa", "Two-factor requirement changed"),
   "security.key_policy": () => t("format.audit.action.securityKeyPolicy", "Key lifetime changed"),
   "security.agents_policy": () => t("format.audit.action.securityAgentsPolicy", "Organization agent policy changed"),
+  "security.shared_links": () => t("format.audit.action.securitySharedLinks", "Shared links policy changed"),
+  "shared_link.create": () => t("format.audit.action.sharedLinkCreate", "Link shared"),
+  "shared_link.open": () => t("format.audit.action.sharedLinkOpen", "Shared link opened"),
+  "shared_link.revoke": () => t("format.audit.action.sharedLinkRevoke", "Shared link revoked"),
   "service_account.create": () => t("format.audit.action.serviceAccountCreate", "Service account created"),
   "service_account.update": () => t("format.audit.action.serviceAccountUpdate", "Service account changed"),
   "service_account.archive": () => t("format.audit.action.serviceAccountArchive", "Service account archived"),
@@ -237,6 +242,7 @@ const TARGET_KINDS: Record<string, () => string> = {
   role: () => t("format.targetKind.role", "Role"),
   update: () => t("format.targetKind.update", "Update"),
   webhook: () => t("format.targetKind.webhook", "Webhook"),
+  shared_link: () => t("format.targetKind.sharedLink", "Shared link"),
 };
 export const targetKindLabel = (kind: string) => TARGET_KINDS[kind]?.() ?? kind;
 

@@ -534,3 +534,21 @@ describe("exchange rates", () => {
     expect(await notifications().findByText("Kaeso fetches the exchange rates daily")).toBeInTheDocument();
   });
 });
+
+describe("shared links", () => {
+  it("turns shared links and the Made with Kaeso mark off", async () => {
+    signedIn();
+    settingsApi();
+    const { user } = await renderApp(PATH);
+
+    const allow = await screen.findByRole("switch", { name: "Allow shared links" });
+    expect(allow).toBeChecked();
+    await user.click(allow);
+    expect(await notifications().findByText("Shared links are off")).toBeInTheDocument();
+    await user.click(screen.getByRole("switch", { name: "Made with Kaeso" }));
+    expect(await notifications().findByText("Shared pages updated")).toBeInTheDocument();
+    await user.click(screen.getByRole("switch", { name: "Allow shared links" }));
+    expect(await notifications().findByText("Organizations can share links")).toBeInTheDocument();
+    expect(patches()).toEqual([{ shared_links: false }, { share_mark: false }, { shared_links: true }]);
+  });
+});
