@@ -345,6 +345,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         cache_breakpoints: None,
         response_cache: None,
         alias: None,
+        line: None,
         fallbacks: Vec::new(),
         gemini: None,
         image: None,
@@ -2160,6 +2161,7 @@ async fn attempt(
         let o = rec.outcome();
         o.catalogue_model_id = Some(entry.id);
         o.model_id = Some(eff.model_id.clone());
+        o.line = entry.is_line().then(|| entry.model_id.clone());
         o.provider = Some(eff.provider.metric_label());
         o.custom_provider = eff.provider.custom().map(|c| c.id().to_string());
         o.prices = Some(if kind == RequestKind::Decide {

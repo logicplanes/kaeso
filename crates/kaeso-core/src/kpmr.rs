@@ -404,12 +404,34 @@ impl Model {
     }
 }
 
+/// A name such as `claude-opus-latest` that KPMR keeps pointed at the newest stable model of
+/// a family: the model it points at now, since when, and the one before.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Line {
+    pub model: String,
+    #[serde(default)]
+    pub since: Option<String>,
+    #[serde(default)]
+    pub previous: Option<String>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Provider {
     pub id: String,
     #[serde(default)]
     pub name: Option<String>,
     pub models: BTreeMap<String, Model>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub lines: BTreeMap<String, Line>,
+}
+
+impl Provider {
+    /// The line's current target, when KPMR lists both the line and the model.
+    pub fn line(&self, name: &str) -> Option<&Line> {
+        self.lines
+            .get(name)
+            .filter(|l| self.models.contains_key(&l.model))
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -462,6 +484,19 @@ struct ProviderDoc<'a> {
     name: Option<Value>,
     #[serde(default, borrow)]
     models: Option<&'a RawValue>,
+    #[serde(default)]
+    lines: Option<Value>,
+}
+
+// A line this gateway cannot read is left out, never the provider.
+fn lines_of(raw: Option<Value>) -> BTreeMap<String, Line> {
+    let Some(Value::Object(lines)) = raw else {
+        return BTreeMap::new();
+    };
+    lines
+        .into_iter()
+        .filter_map(|(name, v)| Some((name, serde_json::from_value::<Line>(v).ok()?)))
+        .collect()
 }
 
 fn readable(model: &Model) -> bool {
@@ -511,12 +546,14 @@ pub fn parse(json: &[u8], providers: &[ProviderId]) -> Result<Parsed, ParseError
                 _ => skipped.push(format!("{id}/{model_id}")),
             }
         }
+        let lines = lines_of(provider.lines);
         catalogue.providers.insert(
             id.to_string(),
             Provider {
                 id: id.to_string(),
                 name,
                 models: parsed,
+                lines,
             },
         );
     }

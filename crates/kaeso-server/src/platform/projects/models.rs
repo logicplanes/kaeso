@@ -50,6 +50,10 @@ pub struct CatalogueModelView {
     pub delisted_at: Option<OffsetDateTime>,
     #[doc = "Whether KPMR marks it deprecated."]
     pub deprecated: bool,
+    #[doc = "For a model line such as `claude-opus-latest`: the model requests go to\n\
+        now, whose values `effective` holds. See `/lines` for how it moves."]
+    #[schema(example = "claude-opus-5-5")]
+    pub line_target: Option<String>,
     #[doc = "Whether the provider serves it to the project's provider key, as the\n\
         last check or request found."]
     pub availability: AvailabilityState,
@@ -156,6 +160,7 @@ fn named_view(
         listed: row.delisted_at.is_none() && !row.custom,
         delisted_at: row.delisted_at,
         deprecated: entry.is_deprecated(&state.kpmr.current().snapshot),
+        line_target: entry.target.clone(),
         availability: entry.availability.into(),
         availability_checked_at: row.availability_checked_at,
         overrides: entry.overrides,

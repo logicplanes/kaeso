@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models WHERE org_id = $1 AND id = $2",
+  "query": "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target FROM catalogue_models WHERE provider = $1 AND model_id = $2 AND NOT custom AND line_target IS NULL",
   "describe": {
     "columns": [
       {
@@ -178,12 +178,23 @@
             "name": "revision"
           }
         }
+      },
+      {
+        "ordinal": 16,
+        "name": "line_target",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_models",
+            "name": "line_target"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Uuid"
+        "Text",
+        "Text"
       ]
     },
     "nullable": [
@@ -202,8 +213,9 @@
       true,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "adf715752343ac617c06a82172f458514db250bac456180c02265206b0bb574b"
+  "hash": "cf5e2d6fe2ef40153d825fc0400a7139c49d0ff811789b55197b80bccdcf892d"
 }

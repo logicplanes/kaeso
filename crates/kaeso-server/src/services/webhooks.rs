@@ -32,12 +32,13 @@ use crate::services::notifications::dispatch::{Send, deliver, org_holders, setti
 use crate::state::AppState;
 
 /// The notices a webhook can take: those about an organization, never one person's.
-pub const KINDS: [Kind; 11] = [
+pub const KINDS: [Kind; 12] = [
     Kind::BudgetAlerts,
     Kind::LimitReached,
     Kind::KeyExpiry,
     Kind::ModelDeprecated,
     Kind::ModelShutdownSoon,
+    Kind::ModelLines,
     Kind::ContentLogging,
     Kind::McpServers,
     Kind::OrgSecurity,
@@ -442,6 +443,38 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                 "by": actor(by),
             }),
         ),
+        Fact::Line {
+            provider,
+            line,
+            change,
+            ..
+        } => {
+            let prices = |prices: &[kaeso_mail::notices::LinePrice]| {
+                prices
+                    .iter()
+                    .map(|p| json!({ "price": p.price, "from": p.from, "to": p.to }))
+                    .collect::<Vec<_>>()
+            };
+            match change {
+                kaeso_mail::notices::LineChange::Moved {
+                    from,
+                    to,
+                    prices: changed,
+                    how,
+                } => (
+                    "line.moved",
+                    json!({ "provider": provider, "line": line, "from": from, "to": to, "prices": prices(changed), "policy": how }),
+                ),
+                kaeso_mail::notices::LineChange::Available {
+                    from,
+                    to,
+                    prices: changed,
+                } => (
+                    "line.move_available",
+                    json!({ "provider": provider, "line": line, "from": from, "to": to, "prices": prices(changed) }),
+                ),
+            }
+        }
         Fact::OrgSecurity { change, by } => {
             let (what, key) = match change {
                 Security::SignInRules => ("sign_in_rules", None),

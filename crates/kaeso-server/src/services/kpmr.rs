@@ -43,6 +43,7 @@ static FORMAT: LazyLock<Vec<u8>> = LazyLock::new(|| {
                 id: id.to_string(),
                 name: None,
                 models: BTreeMap::from([(String::new(), model.clone())]),
+                lines: BTreeMap::from([(String::new(), kpmr::Line::default())]),
             };
             (id.to_string(), provider)
         })

@@ -578,6 +578,16 @@ describe("LogInspector", () => {
     expect(section(dialog, "Sent by")).toHaveTextContent("key_web");
   });
 
+  it("names the model line a request reached its model through", async () => {
+    signedIn();
+    projectData();
+    logsData({ rows: [logRow()], entries: [logEntry({ line: "gpt-latest", model: "gpt-5.5" })] });
+    await renderApp(projectPath("logs?log=req_0001"));
+    const dialog = await sheet();
+    expect(await within(dialog).findByText("Model line")).toBeInTheDocument();
+    expect(within(dialog).getByText("gpt-latest")).toBeInTheDocument();
+  });
+
   it("shows dashes for a request that never reached a model, and the stream's first byte", async () => {
     signedIn();
     projectData();

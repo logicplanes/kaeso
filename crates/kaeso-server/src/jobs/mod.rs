@@ -141,6 +141,21 @@ pub fn all() -> Vec<Job> {
                 })
             },
         },
+        // Often enough that a line follows KPMR soon after a sync.
+        Job {
+            name: "model_lines",
+            every: Duration::from_secs(600),
+            lock: 13,
+            run: |s| {
+                Box::pin(async move {
+                    let r = crate::services::lines::run(&s).await?;
+                    Ok(format!(
+                        "{} moved, {} waiting, {} held",
+                        r.moved, r.waiting, r.held
+                    ))
+                })
+            },
+        },
         // Shorter than `RENEW_AHEAD`, so an account in use never waits for its renewal.
         Job {
             name: "account_renewal",

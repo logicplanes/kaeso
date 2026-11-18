@@ -135,6 +135,7 @@
   "logs.inspector.inputsEmbedded": "{count, plural, one {# input embedded.} other {# inputs embedded.}}",
   "logs.inspector.keepalives": "Keepalives",
   "logs.inspector.keptBlock": "A block kept as it came:",
+  "logs.inspector.line": "Model line",
   "logs.inspector.loadFailed": "Couldn't load this request.",
   "logs.inspector.message": "Message",
   "logs.inspector.messageFrom": "Message from {provider}",

@@ -14,6 +14,8 @@
   "format.audit.action.catalogueModelCheck": "Models checked with the provider",
   "format.audit.action.catalogueModelCreate": "Model added",
   "format.audit.action.catalogueModelDelete": "Model removed",
+  "format.audit.action.catalogueModelLineMove": "Model line moved",
+  "format.audit.action.catalogueModelLineUpdate": "Model line settings changed",
   "format.audit.action.catalogueModelMove": "Model moved to its replacement",
   "format.audit.action.catalogueModelPriceChange": "Model price changed",
   "format.audit.action.catalogueModelUpdate": "Model values changed",

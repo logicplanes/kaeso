@@ -1283,6 +1283,7 @@ pub(crate) fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogR
             media_detail: String::new(),
             cost_known: true,
             cost_basis: String::new(),
+            line: String::new(),
             tags: Vec::new(),
             guardrails: String::new(),
             guardrail_actions: Vec::new(),
