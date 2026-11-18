@@ -137,6 +137,7 @@ The weekly summary and the monthly cost report go out on their own schedule, so 
 | Organization | Your invitation was accepted | Whoever sent it | Now |
 | Organization | Webhooks need attention | `webhooks.manage` | Now |
 | Organization | Provider keys need attention | `provider_credentials.replace` | Now |
+| Organization | A platform key expires | `platform_keys.create`, and the key's creator while a member | Now |
 | Organization | Model changes | `models.manage` in a project that uses the model | Daily |
 | Organization | Monthly cost report | `costs.org.view` | On |
 | Instance | Updates, Instance settings changed | Instance admins | Now |

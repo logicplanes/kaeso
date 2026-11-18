@@ -88,6 +88,8 @@ Einen Plattform-Schlüssel zu erstellen erfordert das Recht **Plattform-Schlüss
 
 Wählen Sie einen Plattform-Schlüssel, um seine Details zu öffnen: wer ihn wann erstellt hat, wann er abläuft, wann er zuletzt verwendet wurde, seine ID und die Aktionen seines Menüs. Nach einer Rotation verbinden **Ersetzt durch** und **Rotiert aus** den alten und den neuen Schlüssel, die denselben Namen tragen. Ein Plattform-Schlüssel, den das Audit-Log der Organisation nennt, öffnet dieselben Details.
 
+Kaeso schickt 7 Tage und 1 Tag vor dem Ablauf eines Plattform-Schlüssels eine E-Mail, außer er ist deaktiviert, archiviert oder rotiert. Sie geht an alle in der Organisation mit **Plattform-Schlüssel erstellen** und an die Person, die den Schlüssel erstellt hat, solange sie noch Mitglied ist. Jede Person kann diese E-Mails unter **Ein Plattform-Schlüssel läuft ab** in den **Benachrichtigungen** ihres Kontos abschalten.
+
 ## Nächste Schritte
 
 - [Modelle aufrufen](../get-started/calling-models.md): Senden Sie Ihre erste Anfrage mit dem neuen Schlüssel.

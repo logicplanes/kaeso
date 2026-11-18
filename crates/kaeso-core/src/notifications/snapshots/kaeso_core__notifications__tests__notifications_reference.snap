@@ -25,6 +25,7 @@ expression: reference()
 | `invite_accepted` | Organization | Your invitation was accepted | now | now, daily, off |  | `members.invite` | Someone you invited joined. |
 | `webhooks` | Organization | Webhooks need attention | now | now, daily, off |  | `webhooks.manage` | A webhook failed 20 times in a row and was turned off. |
 | `provider_keys` | Organization | Provider keys need attention | now | now, daily, off |  | `provider_credentials.replace` | A provider rejects a key again and again, or an account signed out. |
+| `platform_key_expiry` | Organization | A platform key expires | now | now, daily, off |  | `platform_keys.create` | A platform key of an organization expires soon. |
 | `model_changes` | Organization | Model changes | daily | now, daily, off |  | `models.manage` | A model a project uses is delisted or changes its price. |
 | `cost_report` | Organization | Monthly cost report | now | now, off |  | `costs.org.view` | On the 1st: last month's cost by project and model. |
 | `instance_updates` | Instance | Updates | now | now, daily, off |  | `instance.updates.manage` | A new version is out, or an update finished or was rolled back. |

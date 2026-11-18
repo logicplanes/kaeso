@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO platform_key_expiry_warnings (key_id, days_before) SELECT unnest($1::uuid[]), $2 ON CONFLICT DO NOTHING RETURNING key_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "key_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "platform_key_expiry_warnings",
+            "name": "key_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "UuidArray",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "844e99f675a340c926f824922b7255d84c2fc4bdf9decfe9fba5a7c6b54fc825"
+}

@@ -137,6 +137,7 @@ Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Z
 | Organisation | Ihre Einladung wurde angenommen | Wer sie gesendet hat | Sofort |
 | Organisation | Webhooks brauchen Aufmerksamkeit | `webhooks.manage` | Sofort |
 | Organisation | Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_credentials.replace` | Sofort |
+| Organisation | Ein Plattform-Schlüssel läuft ab | `platform_keys.create` und wer den Schlüssel erstellt hat, solange Mitglied | Sofort |
 | Organisation | Modelländerungen | `models.manage` in einem Projekt, das das Modell nutzt | Täglich |
 | Organisation | Monatlicher Kostenbericht | `costs.org.view` | Ein |
 | Instanz | Updates, Instanzeinstellungen geändert | Instanz-Admins | Sofort |

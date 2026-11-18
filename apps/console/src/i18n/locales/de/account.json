@@ -257,6 +257,8 @@
   "account.notify.portalClientsHint": "Wenn jemand einen neuen Client mit einem Portal verbindet.",
   "account.notify.orgSecurity": "Sicherheitseinstellungen geändert",
   "account.notify.orgSecurityHint": "Wenn sich Anmelderegeln, SSO oder Plattformschlüssel ändern oder jemand Nutzung teilt.",
+  "account.notify.platformKeyExpiry": "Ein Plattform-Schlüssel läuft ab",
+  "account.notify.platformKeyExpiryHint": "Bevor ein Plattform-Schlüssel einer Organisation abläuft.",
   "account.notify.orgOwnership": "Inhaberschaft und Löschung",
   "account.notify.orgOwnershipHint": "Bei Inhaberwechsel oder Löschung einer Organisation.",
   "account.notify.orgMembers": "Mitgliederänderungen",
