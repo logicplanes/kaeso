@@ -148,7 +148,7 @@ A member's sheet opens the audit log at their changes with **Their changes**, an
 
 On **Projects**, choose **Create project** and give it a name. You become the project's admin. Creating a project needs the right **Create projects**.
 
-**Archived** lists archived projects, and **All** every project. Search finds a project by name, and each project shows its requests in the last 30 days to people who can see the organization's usage.
+**Archived** lists archived projects, and **All** every project. Search finds a project by name, and each project shows its requests in the last 30 days to people who can see the organization's usage. For them, **Sort** puts the projects with the most requests first, or, with **View org costs**, the ones with the highest cost; projects without requests or cost come last, by name. The address keeps the order, so you can share it.
 
 All of an organization's projects are alike. People who join the organization join no project by it: an invitation names the projects they join, and anyone else is added on a project's **Members** page.
 
