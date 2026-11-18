@@ -4,6 +4,7 @@ import { InstanceOrgsPage, type InstanceOrgsSearch } from "~/features/instance/o
 const orgsSearch = (s: Record<string, unknown>): InstanceOrgsSearch => ({
   ...(typeof s.q === "string" && s.q.trim() ? { q: s.q.trim() } : {}),
   ...(s.sort === "deletion" ? { sort: "deletion" as const } : {}),
+  ...(s.sso === "with" || s.sso === "without" ? { sso: s.sso } : {}),
   ...(s.create === true || s.create === "true" ? { create: true } : {}),
 });
 

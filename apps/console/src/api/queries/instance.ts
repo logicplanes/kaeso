@@ -51,15 +51,21 @@ export const instanceOrgQuery = (org: string) =>
     queryFn: async (): Promise<InstanceOrgView> => data(await api.GET("/platform/v1/instance/orgs/{org}", { params: { path: { org } } })),
   });
 
-export const instanceOrgsQuery = (search: string, sort: "created" | "deletion" = "created") =>
+export const instanceOrgsQuery = (search: string, sort: "created" | "deletion" = "created", sso?: boolean) =>
   infiniteQueryOptions({
-    queryKey: ["instance", "orgs", { search, sort }],
+    queryKey: ["instance", "orgs", { search, sort, sso }],
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam, signal, client }) => {
       const page = data(
         await api.GET("/platform/v1/instance/orgs", {
           params: {
-            query: { limit: 100, ...(search ? { search } : {}), ...(sort === "deletion" ? { sort } : {}), ...(pageParam ? { after: pageParam } : {}) },
+            query: {
+              limit: 100,
+              ...(search ? { search } : {}),
+              ...(sort === "deletion" ? { sort } : {}),
+              ...(sso === undefined ? {} : { sso }),
+              ...(pageParam ? { after: pageParam } : {}),
+            },
           },
           signal,
         }),

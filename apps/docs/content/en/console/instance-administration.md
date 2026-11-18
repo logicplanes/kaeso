@@ -12,7 +12,7 @@ The pages are under **Instance**, in the menu at the foot of the sidebar.
 
 **Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them.
 
-Instance admins carry an **Instance admin** badge, and **Managed by** names the organization that manages an account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)). Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
+**Two-factor** shows who uses an authenticator app. Instance admins carry an **Instance admin** badge, and **Managed by** names the organization that manages an account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)). Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
 
 | Action | What it does |
 | --- | --- |
@@ -26,7 +26,7 @@ Kaeso emails the user when you end their sessions or reset their two-factor auth
 
 ## Manage organizations
 
-**Organizations** lists every organization with its members, projects and state. **Create organization** creates one with the owner you choose, or with you as its owner when you choose none.
+**Organizations** lists every organization with its members, projects and state. **Create organization** creates one with the owner you choose, or with you as its owner when you choose none. **Sign-in** says whether each requires single sign-on, two-factor authentication or both, and **Single sign-on** filters the list to the organizations with or without an SSO connection.
 
 An organization's page shows its metadata, owners, members and projects. It also shows its requests, tokens, cost and stored logs for the last 30 days. On it, you can rename, delete and restore the organization.
 
