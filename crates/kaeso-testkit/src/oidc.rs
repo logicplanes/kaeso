@@ -127,7 +127,7 @@ impl MockIdp {
 
     /// Makes `email` a member of more groups than fit into a token, as Microsoft Entra ID does:
     /// the ID tokens name a source instead of the `groups` claim, and the mock Graph lists the
-    /// groups, a page of two at a time, with a directory role among them.
+    /// groups, a page of two at a time, with a directory role and an administrative unit.
     pub fn set_groups_overage(&self, email: &str, groups: &[&str]) {
         if let Ok(mut all) = self.inner.claims.lock() {
             let mine = all.entry(email.to_owned()).or_default();
@@ -149,6 +149,7 @@ impl MockIdp {
             1,
             serde_json::json!({ "@odata.type": "#microsoft.graph.directoryRole", "id": "a-directory-role" }),
         );
+        listed.push(serde_json::json!({ "@odata.type": "#microsoft.graph.administrativeUnit", "id": "an-administrative-unit" }));
         if let Ok(mut all) = self.inner.memberships.lock() {
             all.insert(email.to_owned(), listed);
         }

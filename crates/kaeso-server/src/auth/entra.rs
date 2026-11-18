@@ -49,6 +49,7 @@ pub fn graph_for<'a>(clouds: &'a [Cloud], issuer: &str) -> Option<&'a str> {
 }
 
 const MAX_PAGES: usize = 50;
+const KEPT: &[&str] = &["#microsoft.graph.group", "#microsoft.graph.directoryRole"];
 const BUDGET: Duration = Duration::from_secs(15);
 
 #[derive(Deserialize)]
@@ -66,8 +67,8 @@ struct Member {
     kind: Option<String>,
 }
 
-/// The object ids of every group the signed-in person is in, directly or through other groups,
-/// read with the access token of their sign-in. `User.Read` is enough:
+/// The object ids of every group and directory role the signed-in person is in, directly or
+/// through other groups, read with the access token of their sign-in. `User.Read` is enough:
 /// https://learn.microsoft.com/en-us/graph/api/user-list-transitivememberof
 pub async fn member_groups(
     allow_private: bool,
@@ -110,11 +111,9 @@ async fn pages(
         groups.extend(
             page.value
                 .into_iter()
-                .filter(|m| {
-                    m.kind
-                        .as_deref()
-                        .is_none_or(|k| k == "#microsoft.graph.group")
-                })
+                // A token's groups claim carries directory roles by object id too, so a rule on one
+                // must match either way: https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-group-claims
+                .filter(|m| m.kind.as_deref().is_none_or(|k| KEPT.contains(&k)))
                 .map(|m| m.id),
         );
         match page.next {

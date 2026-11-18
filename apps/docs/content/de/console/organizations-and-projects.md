@@ -93,6 +93,8 @@ Die Regeln gelten bei jeder Anmeldung über Ihren Anbieter, eine Änderung an ei
 
 Okta sendet Gruppen, sobald die App einen Gruppen-Claim mit Filter hat, etwa **Matches regex** `.*`. Microsoft Entra ID sendet Objekt-IDs der Gruppen, keine Namen. Bei mehr als 200 Gruppen sendet es statt der Liste einen Verweis. Kaeso liest die Gruppen der Person dann mit dem Zugriffstoken der Anmeldung aus Microsoft Graph. Das braucht die delegierte Berechtigung `User.Read` und keinen Scope einer anderen API unter **Zusätzliche Scopes**; lehnt Graph ab, ändert die Anmeldung nichts. Um App-Rollen statt Gruppen zuzuordnen, setzen Sie **Gruppen-Claim** auf `roles`, und Regeln vergleichen die Werte Ihrer App-Rollen.
 
+Graph liefert jede Gruppe und jede Verzeichnisrolle der Person, verschachtelte eingeschlossen. Mit **Security groups** lässt das Token Verteilerlisten und Microsoft-365-Gruppen weg, doch mit `User.Read` kann Kaeso sie in Graph nicht unterscheiden. Eine Regel auf eine solche Gruppe gälte dann nur für Personen in mehr als 200 Gruppen; nennen Sie in Regeln deshalb Sicherheitsgruppen und Verzeichnisrollen.
+
 ## Single Sign-on oder Zwei-Faktor-Authentifizierung verlangen
 
 Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen:
