@@ -74,6 +74,9 @@ pub struct LogRow {
     pub guardrails: String,
     /// The actions of those guardrails, so the log can filter by them.
     pub guardrail_actions: Vec<String>,
+    /// The provider key that paid; the nil id when no provider was sent the request.
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub credential_id: Uuid,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]

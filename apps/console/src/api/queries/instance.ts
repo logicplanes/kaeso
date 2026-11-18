@@ -5,6 +5,7 @@ import type {
   InstanceOrgView,
   InstanceUserOrg,
   InstanceUserView,
+  LinkedBillingView,
   MemberView,
   ProjectView,
   SettingsView,
@@ -130,3 +131,8 @@ export const updateJobQuery = (update: string) =>
     queryKey: ["instance", "updates", "jobs", update],
     queryFn: async (): Promise<UpdateJobView> => data(await api.GET("/platform/v1/instance/updates/jobs/{update}", { params: { path: { update } } })),
   });
+
+export const linkedBillingQuery = queryOptions({
+  queryKey: ["instance", "linked-billing"],
+  queryFn: async (): Promise<LinkedBillingView[]> => data(await api.GET("/platform/v1/instance/linked-billing")),
+});

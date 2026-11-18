@@ -240,6 +240,8 @@ pub struct UsageRow {
     pub provider: String,
     pub ingress_dialect: String,
     pub egress_dialect: String,
+    /// The provider key that paid; `None` for requests no provider was sent.
+    pub credential_id: Option<Uuid>,
     pub requests: i64,
     pub errors: i64,
     pub input_tokens: i64,
@@ -269,13 +271,13 @@ pub async fn add_usage(db: impl PgExecutor<'_>, rows: &[UsageRow]) -> Result<(),
         "INSERT INTO usage_daily AS u (day, org_id, project_id, user_id, service_account_id, api_key_id, \
            catalogue_model_id, model_id, provider, ingress_dialect, egress_dialect, requests, errors, input_tokens, \
            output_tokens, cache_read_tokens, cache_write_tokens, reasoning_tokens, cost, unpriced, images, characters, \
-           audio_ms, videos, video_ms) \
+           audio_ms, videos, video_ms, credential_id) \
          SELECT * FROM unnest($1::date[], $2::uuid[], $3::uuid[], $4::uuid[], $5::uuid[], $6::uuid[], $7::uuid[], \
            $8::text[], $9::text[], $10::text[], $11::text[], $12::bigint[], $13::bigint[], $14::bigint[], $15::bigint[], \
            $16::bigint[], $17::bigint[], $18::bigint[], $19::numeric[], $20::bigint[], $21::bigint[], $22::bigint[], \
-           $23::bigint[], $24::bigint[], $25::bigint[]) \
+           $23::bigint[], $24::bigint[], $25::bigint[], $26::uuid[]) \
          ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, \
-           egress_dialect) DO UPDATE SET \
+           egress_dialect, credential_id) DO UPDATE SET \
            requests = u.requests + excluded.requests, errors = u.errors + excluded.errors, \
            input_tokens = u.input_tokens + excluded.input_tokens, \
            output_tokens = u.output_tokens + excluded.output_tokens, \
@@ -310,7 +312,8 @@ pub async fn add_usage(db: impl PgExecutor<'_>, rows: &[UsageRow]) -> Result<(),
         &media!(characters),
         &media!(audio_ms),
         &media!(videos),
-        &media!(video_ms)
+        &media!(video_ms),
+        &col!(credential_id) as &[Option<Uuid>]
     )
     .execute(db)
     .await?;

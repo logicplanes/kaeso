@@ -328,11 +328,9 @@ const messages = (): Rule[] => [
   rule("errors.exportFormat", () => t("errors.exportFormat", "Use `jsonl` or `csv`.")),
   rule("errors.csvMetadataOnly", () => t("errors.csvMetadataOnly", "CSV exports carry metadata only.")),
   rule("errors.exportContentRight", () => t("errors.exportContentRight", "Exporting content needs the right `logs.content.view`.")),
-  rule("errors.usageGroupValues", () =>
-    t("errors.usageGroupValues", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`."),
-  ),
+  rule("errors.usageGroupValues", () => t("errors.usageGroupValues", "Use `project`, `billed_to` or what a project's usage groups by, such as `day`.")),
   rule("errors.usageGroupValuesProject", () =>
-    t("errors.usageGroupValuesProject", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`."),
+    t("errors.usageGroupValuesProject", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."),
   ),
   rule("errors.usageFilterKey", (v) => t("errors.usageFilterKey", "`{name}` must be a `key` that grouping by `{name}` returns.", v)),
   rule("errors.usageByDayRange", () => t("errors.usageByDayRange", "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.")),
@@ -682,6 +680,20 @@ const messages = (): Rule[] => [
   rule("errors.accountUnverified", (v) => t("errors.accountUnverified", "The answer from {product} could not be verified; start again.", v)),
   rule("errors.accountNoPlan", (v) => t("errors.accountNoPlan", "The account didn't allow using its {product} plan; start again and allow it.", v)),
   rule("errors.accountOther", (v) => t("errors.accountOther", "You signed in to another {product} account; sign in as {account}.", v)),
+  rule("errors.linkedNotSetUp", (v) => t("errors.linkedNotSetUp", "Linked billing for {provider} isn't set up on this install; ask an instance admin.", v)),
+  rule("errors.linkedOneLink", (v) => t("errors.linkedOneLink", "This organization already has a linked {provider} key; link it again or unlink it.", v)),
+  rule("errors.linkedAlready", (v) => t("errors.linkedAlready", "That {organization} is already linked to another organization on this install.", v)),
+  rule("errors.linkedAppRefused", (v) => t("errors.linkedAppRefused", "{provider} refused the install's OAuth app; ask an instance admin to check it.", v)),
+  rule("errors.linkedNoRefresh", (v) => t("errors.linkedNoRefresh", "{provider} issued no refresh token; ask an instance admin to turn on Offline access.", v)),
+  rule("errors.linkedNotCallback", () => t("errors.linkedNotCallback", "The address isn't this install's linked billing callback; start again.")),
+  rule("errors.linkedDeclined", () => t("errors.linkedDeclined", "Linking didn't complete; sign in with an account that has the Admin or Billing role.")),
+  rule("errors.noLinkedBilling", (v) => t("errors.noLinkedBilling", "{provider} offers no linked billing; add an API key for it.", v)),
+  rule("errors.linkedFallbackKey", () => t("errors.linkedFallbackKey", "`credential` must be another key of the provider that isn't a link.")),
+  rule("errors.linkedField", (v) => t("errors.linkedField", "`{name}` must be 1 to {max} characters without spaces.", v)),
+  rule("errors.linkedSpendLimit", () => t("errors.linkedSpendLimit", "This project's linked key reached its organization's spend limit; raise it there.")),
+  rule("errors.linkedUnavailable", () => t("errors.linkedUnavailable", "The provider can't bill this project's linked organization now; check its billing.")),
+  rule("errors.linkedUnlinked", () => t("errors.linkedUnlinked", "This project's linked key is no longer linked; link it again under Providers.")),
+  rule("errors.linkedNeedsSetup", () => t("errors.linkedNeedsSetup", "Linked billing needs the install's OAuth app again; ask an instance admin.")),
   rule("errors.accountNeedsApiKey", (v) =>
     t("errors.accountNeedsApiKey", "{provider}'s {api} needs an API key; this project's key for it is a {product} account.", v),
   ),
@@ -1110,6 +1122,41 @@ const messages = (): Rule[] => [
     t(
       "errors.modelApi.accountRefused",
       "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.",
+    ),
+  ),
+  rule("errors.modelApi.linkedSpendLimit", (v) =>
+    t(
+      "errors.modelApi.linkedSpendLimit",
+      "The linked {organization} of this project's {provider} key reached its spend limit. Its admins can raise it in {console}.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.linkedUnavailable", (v) =>
+    t(
+      "errors.modelApi.linkedUnavailable",
+      "{provider} can't bill the linked {organization} of this project's key right now. Its admins can check its billing in {console}.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.linkedUnlinked", (v) =>
+    t(
+      "errors.modelApi.linkedUnlinked",
+      "The {organization} of this project's {provider} key is no longer linked. Ask an organization admin to link it again under Providers.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.linkedNeedsSetup", (v) =>
+    t(
+      "errors.modelApi.linkedNeedsSetup",
+      "Linked billing for this project's {provider} key needs the install's OAuth app. Ask an instance admin to set it up again.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.linkedUncovered", (v) =>
+    t(
+      "errors.modelApi.linkedUncovered",
+      "A linked {organization} pays only for messages and token counting. Use an API key for {provider} in this project for this request.",
+      v,
     ),
   ),
   rule("errors.modelApi.accountSignedOut", (v) =>

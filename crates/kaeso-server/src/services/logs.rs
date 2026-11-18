@@ -931,6 +931,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
             }
             actions
         },
+        credential_id: o.credential_id.unwrap_or_default(),
         client_ip: o.client_ip.map(|i| i.to_string()).unwrap_or_default(),
         upstream_request_id: o.upstream_request_id.clone().unwrap_or_default(),
         has_content: content,

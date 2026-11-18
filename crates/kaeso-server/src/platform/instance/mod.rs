@@ -1,4 +1,5 @@
 pub mod agents;
+pub mod linked_billing;
 pub mod orgs;
 pub mod settings;
 pub mod system;
@@ -63,6 +64,11 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(i(InstanceAuditLogExport), routes!(audit_export)))
         .routes(s.route(i(InstanceOrgsView), routes!(orgs::projects_list)))
         .routes(s.route(i(InstanceOrgsView), routes!(orgs::usage)))
+        .routes(s.route(i(InstanceSystemView), routes!(linked_billing::list)))
+        .routes(s.route(i(InstanceSettingsManage), routes!(linked_billing::set, linked_billing::delete)))
+        .routes(s.route(i(InstanceSettingsManage), routes!(linked_billing::check)))
+        .routes(s.route(Access::Public, routes!(linked_billing::discovery)))
+        .routes(s.route(Access::Public, routes!(linked_billing::jwks)))
 }
 
 #[utoipa::path(

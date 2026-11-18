@@ -198,7 +198,11 @@ impl Asked<'_> {
             ),
             None => None,
         };
-        let auth = if entra.is_some() {
+        // A link's access token goes as a bearer in place of Anthropic's `x-api-key`; the
+        // Models endpoints take it.
+        let auth = if entra.is_some()
+            || self.credential.method == kaeso_core::provider::AuthMethod::LinkedBilling
+        {
             Some(kaeso_core::provider::AuthStyle::Bearer)
         } else {
             self.provider.auth()

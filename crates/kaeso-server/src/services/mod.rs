@@ -21,6 +21,8 @@ pub mod key_pool;
 pub mod keys;
 pub mod kpmr;
 pub mod limits;
+pub mod linked_billing;
+pub mod linked_billing_keys;
 pub mod log_media;
 pub mod log_parts;
 pub mod logs;

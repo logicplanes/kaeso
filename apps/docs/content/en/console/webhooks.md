@@ -31,7 +31,7 @@ A webhook's menu has **Send test**, **Turn off** or **Turn on**, **Rotate secret
 | MCP servers need attention | `mcp_server.signed_out`, `mcp_server.tool_held` |
 | Security settings changed | `organization.security_changed` |
 | Member changes | `organization.member_joined`, `organization.member_left` |
-| Provider keys need attention | `provider_key.refused`, `provider_key.signed_out` |
+| Provider keys need attention | `provider_key.refused`, `provider_key.signed_out`, `provider_key.spend_limit_reached`, `provider_key.unlinked` |
 | Model changes | `model.delisted`, `model.price_changed` |
 
 These are the notices about the organization and its projects ([emails](account.md#choose-your-emails)). A person's own notices, such as their account's security or an export they started, never go to a webhook. A webhook with a project gets that project's events only; one without gets every event of the organization and its projects. Key expiry is told for every key that expires, not only to its owner.
@@ -83,6 +83,8 @@ A JSON delivery is a `POST` with `content-type: application/json` and a body lik
 | `organization.member_left` | `person`, `removed_by` (`null` when they left) |
 | `provider_key.refused` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refusal` with the provider's `status` and `message`, `billing` (a billing problem) and `first_at` and `last_at` |
 | `provider_key.signed_out` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `signed_out_at` |
+| `provider_key.spend_limit_reached` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refused_at`, `resets_at` (when the provider lets requests through again at the latest) |
+| `provider_key.unlinked` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `unlinked_at` |
 | `model.delisted` | `catalogue_model_id`, `provider_id`, `provider`, `model` |
 | `model.price_changed` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `prices`: each changed price (`input`, `output`, `cache_read`, `cache_write`, `cache_write_1h`) with its old and new US dollars per million tokens, `from` and `to`, `null` where it had or has no price |
 | `webhook.test` | `webhook_id`, `name` |

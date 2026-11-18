@@ -94,9 +94,11 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         A::PortalGrantCreate => &[Kind::NewApp, Kind::PortalClients],
         A::InstanceUpdateFinish => &[Kind::InstanceUpdates],
         A::OrgCreate | A::UserCreateBySso | A::UserSignup => &[Kind::InstancePeople],
-        A::InstanceSettingsUpdate | A::InstanceAdminSsoUpdate | A::InstanceAgentsPolicy => {
-            &[Kind::InstanceSettings]
-        }
+        A::InstanceSettingsUpdate
+        | A::InstanceAdminSsoUpdate
+        | A::InstanceAgentsPolicy
+        | A::InstanceLinkedBillingUpdate
+        | A::InstanceLinkedBillingDelete => &[Kind::InstanceSettings],
         A::SecurityAgentsPolicy
         | A::SecurityKeyPolicy
         | A::SecurityRequireSso
@@ -150,6 +152,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::CredentialCreate
         | A::CredentialDefault
         | A::CredentialDelete
+        | A::CredentialFallback
         | A::CredentialRename
         | A::CredentialReplace
         | A::CustomProviderCreate

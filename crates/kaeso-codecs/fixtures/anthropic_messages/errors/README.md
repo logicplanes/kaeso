@@ -32,6 +32,12 @@
 | `rate-limit.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, RateLimitError (headers from https://platform.claude.com/docs/en/api/rate-limits#response-headers) |
 | `rate-limit-spend-cap.json` | 429 `rate_limit_error` **without** `retry-after`; carries `error.details.error_code: enforced_spend_limit_reached` (field not in the OpenAPI spec). | doc: https://platform.claude.com/docs/en/api/rate-limits#reaching-your-spend-cap |
 | `rate-limit-spend-cap.meta.json` | HTTP status (and headers) for the body above. | doc: https://platform.claude.com/docs/en/api/rate-limits#reaching-your-spend-cap |
+| `linked-spend-limit.json` | 402 `billing_error` with `error.details.error_code: linked_organization_spend_limit_reached`: a request billed through linked billing whose linked organization reached a spend limit or has no credit that can pay. Message text is constructed. | doc: https://platform.claude.com/docs/en/manage-claude/oauth-apps/oauth-reference#billing-errors (status, type and code; `error.details.error_code` per https://platform.claude.com/docs/en/manage-claude/oauth-apps/organization-billing-connections#expected-errors) |
+| `linked-spend-limit.meta.json` | HTTP status for the body above. | doc: as above |
+| `linked-billing-unavailable.json` | 402 `billing_error` with `error.details.error_code: linked_organization_billing_unavailable`. Message text is constructed. | doc: as above |
+| `linked-billing-unavailable.meta.json` | HTTP status for the body above. | doc: as above |
+| `linked-not-billable.json` | 403 `permission_error` with `error.details.error_code: user_profile_not_billable`: the link ended or the organization can't be billed this way. Message text is constructed. | doc: as above |
+| `linked-not-billable.meta.json` | HTTP status for the body above. | doc: as above |
 | `api-error.json` | 500 `api_error`. | schema: ErrorResponse, APIError |
 | `api-error.meta.json` | HTTP status (and headers) for the body above. | schema: ErrorResponse, APIError |
 | `timeout.json` | 504 `timeout_error`. | schema: ErrorResponse, GatewayTimeoutError |

@@ -445,6 +445,23 @@ fn refusal(f: &Failure, ask: &Ask) -> ApiError {
             ),
             e,
         ),
+        Stage::Linked(refusal) => ApiError::Conflict(
+            match refusal {
+                kaeso_core::linked_billing::Refusal::SpendLimit => {
+                    "This project's linked key reached its organization's spend limit; raise it there."
+                }
+                kaeso_core::linked_billing::Refusal::BillingUnavailable => {
+                    "The provider can't bill this project's linked organization now; check its billing."
+                }
+                kaeso_core::linked_billing::Refusal::Unlinked => {
+                    "This project's linked key is no longer linked; link it again under Providers."
+                }
+                kaeso_core::linked_billing::Refusal::NeedsSetup => {
+                    "Linked billing needs the install's OAuth app again; ask an instance admin."
+                }
+            }
+            .to_owned(),
+        ),
         Stage::Provider | Stage::PlanLimit => from_provider(e),
         Stage::KeyRefused => from_provider(f.logged()),
         Stage::Unserved(_) => ApiError::NotFound(e.message.clone()),

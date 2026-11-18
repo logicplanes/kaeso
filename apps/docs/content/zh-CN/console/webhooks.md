@@ -31,7 +31,7 @@ Webhook 的菜单中有**发送测试**、**关闭**或**开启**、**轮换密�
 | MCP 服务器需要处理 | `mcp_server.signed_out`、`mcp_server.tool_held` |
 | 安全设置已变更 | `organization.security_changed` |
 | 成员变动 | `organization.member_joined`、`organization.member_left` |
-| 服务商密钥需要处理 | `provider_key.refused`、`provider_key.signed_out` |
+| 服务商密钥需要处理 | `provider_key.refused`、`provider_key.signed_out`、`provider_key.spend_limit_reached`、`provider_key.unlinked` |
 | 模型变更 | `model.delisted`、`model.price_changed` |
 
 这些是关于组织及其项目的通知（见[邮件](account.md#选择接收的邮件)）。个人自己的通知，例如其账户安全或其发起的导出，从不发送到 Webhook。绑定了项目的 Webhook 只接收该项目的事件；未绑定项目的 Webhook 接收组织及其所有项目的每个事件。即将过期的密钥会针对每个密钥发送，而不仅告知其所有者。
@@ -83,6 +83,8 @@ JSON 投递是一个 `POST` 请求，带有 `content-type: application/json`，�
 | `organization.member_left` | `person`、`removed_by`（本人离开时为 `null`） |
 | `provider_key.refused` | `provider_key_id`、`provider`、`name`、`default`、`projects`、`refusal`（含服务商的 `status` 和 `message`、`billing`（是否为计费问题）以及 `first_at` 和 `last_at`） |
 | `provider_key.signed_out` | `provider_key_id`、`provider`、`name`、`default`、`projects`、`signed_out_at` |
+| `provider_key.spend_limit_reached` | `provider_key_id`、`provider`、`name`、`default`、`projects`、`refused_at`、`resets_at`（服务商最迟何时重新放行请求） |
+| `provider_key.unlinked` | `provider_key_id`、`provider`、`name`、`default`、`projects`、`unlinked_at` |
 | `model.delisted` | `catalogue_model_id`、`provider_id`、`provider`、`model` |
 | `model.price_changed` | `catalogue_model_id`、`provider_id`、`provider`、`model`、`prices`：每项变更的价格（`input`、`output`、`cache_read`、`cache_write`、`cache_write_1h`）及其每百万 token 的新旧美元价格 `from` 和 `to`，无价格时为 `null` |
 | `webhook.test` | `webhook_id`、`name` |

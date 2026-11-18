@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT u.credential_id AS \"credential_id!\", coalesce(sum(u.cost), 0) AS \"cost!\", coalesce(sum(u.requests - u.errors), 0)::bigint AS \"requests!\" FROM usage_daily u JOIN provider_credentials c ON c.id = u.credential_id AND c.org_id = u.org_id WHERE u.org_id = $1 AND u.day >= $2 AND u.day <= $3 AND c.auth_method = 'linked_billing' GROUP BY u.credential_id ORDER BY u.credential_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "credential_id!",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "usage_daily",
+            "name": "credential_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "cost!",
+        "type_info": "Numeric",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 2,
+        "name": "requests!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      true,
+      null,
+      null
+    ]
+  },
+  "hash": "9fd5c01f90c8f32c6132b31829d959ad514d941b7e9d11c734a2f0ff8a0de009"
+}

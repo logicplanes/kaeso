@@ -29,8 +29,9 @@ pub struct UsageQuery {
     pub to: Option<String>,
     #[doc = "`day` (default), `week` (Monday to Sunday, named by its Monday),\n\
         `month` (named by its first day), `model`, `provider`, `key`, `member`,\n\
-        `route`, or for orgs `project`. A week or month that starts before `from`\n\
-        or ends after `to` counts only the days in the period."]
+        `route`, `billed_to` (the provider key that paid, `none` for requests no\n\
+        provider was sent), or for orgs `project`. A week or month that starts\n\
+        before `from` or ends after `to` counts only the days in the period."]
     pub group_by: Option<String>,
     #[doc = "Also give each row's cost in this currency, an ISO 4217 code from\n\
         `exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\n\
@@ -61,6 +62,9 @@ pub struct UsageFilter {
         `openai_responses:anthropic_messages:anthropic`."]
     #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub route: Option<String>,
+    #[doc = "Only the requests this provider key paid for, as grouping by `billed_to`\n\
+        names it: a provider key id, or `none`."]
+    pub billed_to: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, IntoParams)]
@@ -119,7 +123,17 @@ impl UsageFilter {
                 _ => return Err(not_a_key("route")),
             },
         };
+        let billed_to = match self.billed_to.as_deref() {
+            None => None,
+            Some("none") => Some(Uuid::nil()),
+            Some(k) => Some(
+                k.parse::<kaeso_core::id::CredentialId>()
+                    .map_err(|_| not_a_key("billed_to"))?
+                    .uuid(),
+            ),
+        };
         Ok(store::Filter {
+            billed_to,
             provider: self
                 .provider
                 .as_deref()
@@ -209,6 +223,7 @@ enum Ids {
     Project,
     Key,
     Member,
+    Credential,
 }
 
 fn ids_of(group: GroupBy) -> Ids {
@@ -222,6 +237,7 @@ fn ids_of(group: GroupBy) -> Ids {
         GroupBy::Project => Ids::Project,
         GroupBy::Key => Ids::Key,
         GroupBy::Member => Ids::Member,
+        GroupBy::BilledTo => Ids::Credential,
     }
 }
 
@@ -233,6 +249,11 @@ fn public_key(ids: Ids, key: String) -> String {
         Ids::Key => match id(&key) {
             Some(u) if u.is_nil() => "playground".to_owned(),
             Some(u) => ApiKeyId::from_uuid(u).to_string(),
+            None => key,
+        },
+        Ids::Credential => match id(&key) {
+            Some(u) if u.is_nil() => "none".to_owned(),
+            Some(u) => kaeso_core::id::CredentialId::from_uuid(u).to_string(),
             None => key,
         },
         Ids::Member => match key.split_once(':') {
@@ -329,14 +350,15 @@ async fn usage(
         "key" => GroupBy::Key,
         "member" => GroupBy::Member,
         "route" => GroupBy::Route,
+        "billed_to" => GroupBy::BilledTo,
         "project" if scope.org_wide => GroupBy::Project,
         _ => {
             return Err(ApiError::invalid(
                 "group_by",
                 if scope.org_wide {
-                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`."
+                    "Use `project`, `billed_to` or what a project's usage groups by, such as `day`."
                 } else {
-                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`."
+                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."
                 },
             ));
         }

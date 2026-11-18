@@ -1068,6 +1068,10 @@ pub struct LogView {
     pub client_version: Option<String>,
     #[doc = "The guardrails that checked the request and its reply, in the order they ran."]
     pub guardrails: Vec<GuardrailRunView>,
+    #[doc = "The provider key that paid for the request, the last one it was sent with;\n\
+        for a linked key, the organization it links paid. `null` when no provider was\n\
+        sent the request, and for requests logged before Kaeso recorded it."]
+    pub billed_to: Option<kaeso_core::id::CredentialId>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -1292,6 +1296,8 @@ fn view(r: &LogRow) -> LogView {
         client: none(ch::client_of(&r.user_agent)),
         client_version: ch::client_version(&r.user_agent).map(str::to_owned),
         guardrails: guardrail_runs(&r.guardrails),
+        billed_to: (!r.credential_id.is_nil())
+            .then(|| kaeso_core::id::CredentialId::from_uuid(r.credential_id)),
     }
 }
 

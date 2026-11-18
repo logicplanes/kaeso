@@ -1,9 +1,11 @@
 pub mod agents;
 pub mod credential_accounts;
+pub mod credential_links;
 pub mod credentials;
 pub mod custom_providers;
 pub mod guardrails;
 pub mod invites;
+pub mod linked_billing;
 pub mod mcp_servers;
 pub mod members;
 pub mod org;
@@ -122,6 +124,9 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::ProviderCredentialsCreate), routes!(credential_accounts::finish)))
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credential_accounts::start_again)))
         .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(credential_accounts::finish_again)))
+        .routes(s.route(Access::Org(R::ProviderCredentialsView), routes!(linked_billing::fallbacks)))
+        .routes(s.route(Access::Org(R::ProviderCredentialsReplace), routes!(linked_billing::set_fallback)))
+        .routes(s.route(Access::Org(R::CostsOrgView), routes!(linked_billing::costs)))
         .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::logs::get_org_settings)))
         .routes(s.route(Access::Org(R::LogsSettingsManage), routes!(crate::platform::logs::update_org_settings)))
         .routes(s.route(Access::Org(R::OrgView), routes!(crate::platform::response_cache::get_org)))

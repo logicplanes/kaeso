@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub mod claude;
 pub mod google;
 pub mod grok;
 pub mod guardrail;

@@ -3216,6 +3216,101 @@ mod tests {
     }
 
     #[test]
+    fn linked_key_notices_say_who_stopped_paying_and_what_to_do() {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings/account/notifications".to_owned(),
+            unsubscribe: None,
+        };
+        let projects = ["Checkout".to_owned()];
+        let key = Credential {
+            organization: "Acme",
+            provider: "Anthropic",
+            name: "Acme Claude",
+            last4: None,
+            account: Some("ocon_01EXAMPLE"),
+            default: true,
+            projects: &projects,
+            last_used: None,
+            zone: "Europe/Berlin",
+        };
+        let mail = |lang, change| {
+            notice(
+                lang,
+                TO,
+                Some(at("Acme")),
+                &Fact::ProviderKey { key: &key, change },
+                Because::Right("provider_credentials.replace"),
+                URL,
+                &links,
+            )
+        };
+        let limit = ProviderKey::SpendLimitReached {
+            at: datetime!(2026 - 11 - 17 21:00),
+            resets: datetime!(2026 - 12 - 01 01:00),
+        };
+        let ended = ProviderKey::Unlinked {
+            at: datetime!(2026 - 11 - 17 21:00),
+        };
+        let en = mail(Locale::En, limit);
+        assert_eq!(en.subject, "[Acme] Acme Claude reached its spend limit");
+        assert_eq!(
+            en.content.sentence.as_deref(),
+            Some(
+                "Anthropic refused requests billed to Acme Claude (ocon_01EXAMPLE); its admins can raise the limit there."
+            )
+        );
+        let text = en.render(&instance()).text;
+        assert!(
+            text.contains("Resets: 1 Dec 2026, 01:00 Europe/Berlin\n"),
+            "{text}"
+        );
+        let en = mail(Locale::En, ended);
+        assert_eq!(en.subject, "[Acme] Anthropic link Acme Claude ended");
+        let text = en.render(&instance()).text;
+        assert!(
+            text.contains("Unlinked: 17 Nov 2026, 21:00 Europe/Berlin\n"),
+            "{text}"
+        );
+        for lang in Locale::ALL {
+            for email in [mail(lang, limit), mail(lang, ended)] {
+                let c = &email.content;
+                let most = if lang == Locale::En { 115 } else { 125 };
+                let sentence = c.sentence.as_deref().unwrap_or_default();
+                assert!(sentence.chars().count() <= most, "{sentence}");
+                assert!(c.heading.chars().count() <= 55, "{}", c.heading);
+            }
+        }
+        let setup = |lang| {
+            notice(
+                lang,
+                TO,
+                None,
+                &Fact::InstanceChanged {
+                    change: Instance::LinkedBillingSetup("Anthropic"),
+                    by: Actor::Operator,
+                },
+                Because::Right("instance.settings.manage"),
+                URL,
+                &links,
+            )
+        };
+        assert_eq!(
+            setup(Locale::En).content.heading,
+            "Linked billing for Anthropic needs setup"
+        );
+        for lang in Locale::ALL {
+            let c = setup(lang).content;
+            assert!(c.heading.chars().count() <= 55, "{}", c.heading);
+            assert!(
+                c.sentence.as_deref().unwrap_or_default().chars().count() <= 115,
+                "{:?}",
+                c.sentence
+            );
+        }
+    }
+
+    #[test]
     fn price_changes_list_each_price_that_moved() {
         use crate::notices::*;
         let links = Links {
@@ -3316,6 +3411,7 @@ mod tests {
             Label::LastRefused,
             Label::LastUsed,
             Label::SignedOut,
+            Label::Unlinked,
             Label::Model,
             Label::InputPrice,
             Label::OutputPrice,
