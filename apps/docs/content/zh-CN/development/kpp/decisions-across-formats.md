@@ -54,7 +54,7 @@ Google 拒绝超过 128 个字符或 512 字节、两端有空格、含控制字
 
 回复按位置跨格式：应用格式的编码器从应用的请求中取得每个名称、选项和级别。
 
-- **置信度（D8）。** 保持原格式的回复逐字节保留其 `confidence`。来自其他格式的回复根据概率重新计算：System One 应用使用 TypeSafe 的公式，OpenAI 应用也一样，因为其文档中的两个示例与这些公式一致。Gemini 应用使用 Google 的规则：取最高概率，是非题取 `max(p, 1 − p)`。对 OpenAI 和 System One 应用，是非题的答案没有置信度。
+- **置信度（D8）。** 保持原格式的回复逐字节保留其 `confidence`。来自其他格式的回复根据概率重新计算：System One 应用使用 TypeSafe 的公式，OpenAI 应用也一样：OpenAI 未在文档中说明计算规则，而 `gpt-6-luna` 在多选项选择和偏斜的多级别评分上的结果均与这些公式一致。Gemini 应用使用 Google 的规则：取最高概率，是非题取 `max(p, 1 − p)`。对 OpenAI 和 System One 应用，是非题的答案没有置信度。
 - **拒答（D9）。** OpenAI 的拒答以 `{"type": "refusal"}` 写在问题的键下，到达 System One 应用。TypeSafe 的 SDK 会跳过它们不认识的答案类型，其他答案照常有效。Gemini 的格式没有拒答这种答案，因此含拒答的回复以 `ContentFiltered` 到达 Gemini 应用：一个代码为 `safety` 的 400，消息中列出被拒答的问题。
 - **安全拦截（D10）。** Gemini 以带安全代码的 400，或以带 `prompt_feedback.block_reason` 且没有答案的回复报告被拦截的输入。两者都以各应用自己格式的 `ContentFiltered` 到达。
 - **标签和图例。** OpenAI 应用从其请求中得到每个级别的标签；System One 和 Gemini 应用从其请求的级别得到 `legend`。
