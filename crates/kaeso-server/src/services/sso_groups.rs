@@ -1,7 +1,8 @@
 //! An organization's role and project memberships from its identity provider's groups: at each
 //! sign-in through its provider, the rules that match the ID token's groups set the person's
 //! organization role and add their project memberships, and in `sync` mode take away what a
-//! rule gave once it no longer matches. Only what a rule gave is ever taken away.
+//! rule gave once it no longer matches. Only what a rule gave is ever taken away, and a sign-in
+//! whose groups can't be read changes nothing.
 
 use std::collections::BTreeMap;
 
@@ -13,7 +14,8 @@ use serde_json::{Value, json};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::auth::oidc::Identity;
+use crate::auth::entra;
+use crate::auth::oidc::{Claimed, Identity};
 use crate::platform::audit::{Action, system_event};
 use crate::platform::error::ApiResult;
 use crate::platform::grants::RoleRef;
@@ -66,26 +68,74 @@ fn project_role_of(g: &Grant) -> Value {
     json!({ "role": RoleRef::of_project(g) })
 }
 
+/// The organization's group settings and the groups of one sign-in.
+#[derive(Debug)]
+pub struct SignInGroups {
+    settings: store::Settings,
+    groups: Option<Vec<String>>,
+}
+
+/// Reads the groups of a sign-in through the organization's provider, before its transaction:
+/// for a person in more groups than fit into an Entra ID token, this asks Microsoft Graph.
+pub async fn read(
+    state: &AppState,
+    org: Uuid,
+    issuer: &str,
+    identity: &Identity,
+) -> ApiResult<Option<SignInGroups>> {
+    let Some(settings) = store::settings(&state.pg, org).await? else {
+        return Ok(None);
+    };
+    let groups = match identity.groups(&settings.claim) {
+        Claimed::Listed(groups) => Some(groups),
+        Claimed::Missing => None,
+        Claimed::TooMany => from_graph(state, issuer, identity).await,
+    };
+    Ok(Some(SignInGroups { settings, groups }))
+}
+
+async fn from_graph(state: &AppState, issuer: &str, identity: &Identity) -> Option<Vec<String>> {
+    let Some(graph) = entra::graph_for(&state.accounts.entra, issuer) else {
+        tracing::warn!(
+            "an ID token pointed elsewhere for its groups; only Microsoft Entra ID's are read"
+        );
+        return None;
+    };
+    match entra::member_groups(
+        state.config.auth.oidc_allow_private_networks,
+        graph,
+        &identity.access_token,
+    )
+    .await
+    {
+        Ok(groups) => Some(groups),
+        Err(e) => {
+            tracing::warn!(error = %e, "the groups of a sign-in could not be read from Microsoft Graph");
+            None
+        }
+    }
+}
+
 /// Applies the organization's rules to a member who signed in through its provider.
 pub async fn apply(
     tx: &mut sqlx::PgConnection,
     org: Uuid,
     user: Uuid,
-    identity: &Identity,
+    read: Option<&SignInGroups>,
     default: Option<Grant>,
     now: OffsetDateTime,
 ) -> ApiResult<Applied> {
     let mut applied = Applied::default();
-    let Some(settings) = store::settings(&mut *tx, org).await? else {
+    let Some(SignInGroups { settings, groups }) = read else {
         return Ok(applied);
     };
-    let Some(groups) = identity.groups(&settings.claim) else {
-        // A token without the claim changes nothing: a claim broken at the provider must not
-        // take a company's access away.
+    let Some(groups) = groups else {
+        // Groups that can't be read change nothing: a claim broken at the provider, or a list
+        // too long for the token that Graph wouldn't give, must not take anyone's access away.
         store::claim_missing(&mut *tx, org, now).await?;
         return Ok(applied);
     };
-    store::set_last_groups(&mut *tx, org, user, &groups).await?;
+    store::set_last_groups(&mut *tx, org, user, groups).await?;
     let rules = store::rules(&mut *tx, org).await?;
     if rules.is_empty() {
         return Ok(applied);

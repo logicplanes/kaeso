@@ -71,6 +71,8 @@ pub struct Endpoints {
     /// `api` the Claude API, which issues the install's service account tokens and keeps user
     /// profiles.
     pub anthropic_billing: Hosts,
+    /// The Microsoft Entra ID clouds whose sign-ins read group memberships from Microsoft Graph.
+    pub entra: Vec<crate::auth::entra::Cloud>,
 }
 
 impl Default for Endpoints {
@@ -90,6 +92,7 @@ impl Default for Endpoints {
                 auth: "https://auth.claude.com".into(),
                 api: "https://api.anthropic.com".into(),
             },
+            entra: crate::auth::entra::clouds(),
         }
     }
 }
