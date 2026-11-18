@@ -130,7 +130,7 @@ Under **General**, choose **Delete organization** and type the organization's na
 
 The organization's **Audit log**, in **Organization settings**, records every change in the organization. A project's **Audit log**, in the project's sidebar, records every change in that project.
 
-Each entry shows when it happened, who made the change, the action and its target. Filter by actor, action, target id and days. Choose an entry to see the IP address, user agent and request id, any change of rights, and the values before and after.
+Each entry shows when it happened, who made the change, the action and its target. Filter by actor, action, target id and days. Choose an entry to see the IP address, user agent and request id, any change of rights, and the values before and after. A target that still exists shows its name, and opens with a click when you may see it: in a project, a member, key, model, alias, service account, limit, tool grant or the project's settings. A deleted target keeps the name it had, without a link.
 
 An agent's change shows the picture of the member it acts for, with a small bot badge at its lower right. Hover over it to see the member, the agent and its model family. the **Agents** filter shows only the changes agents made, and the Platform API names the agent in `actor.agent` ([activity and audit](../api/mcp.md#activity-and-audit)).
 

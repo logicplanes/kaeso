@@ -130,7 +130,7 @@ Wählen Sie unter **Allgemein** **Organisation löschen** und bestätigen Sie mi
 
 Das **Audit-Log** der Organisation unter **Organisationseinstellungen** verzeichnet jede Änderung in der Organisation. Das **Audit-Log** eines Projekts in dessen Seitenleiste verzeichnet jede Änderung im Projekt.
 
-Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Aktion und ihr Ziel. Filtern Sie nach Akteur, Aktion, Ziel-ID und Tagen. Wählen Sie einen Eintrag, um IP-Adresse, User-Agent und Anfrage-ID, geänderte Rechte und die Werte vorher und nachher zu sehen.
+Jeder Eintrag zeigt, wann es geschah, wer die Änderung vorgenommen hat, die Aktion und ihr Ziel. Filtern Sie nach Akteur, Aktion, Ziel-ID und Tagen. Wählen Sie einen Eintrag, um IP-Adresse, User-Agent und Anfrage-ID, geänderte Rechte und die Werte vorher und nachher zu sehen. Ein Ziel, das noch existiert, zeigt seinen Namen und öffnet sich mit einem Klick, wenn Sie es sehen dürfen: in einem Projekt ein Mitglied, ein Schlüssel, ein Modell, ein Alias, ein Dienstkonto, ein Limit, eine Tool-Freigabe oder die Einstellungen des Projekts. Ein gelöschtes Ziel behält seinen Namen, ohne Link.
 
 Die Änderung eines Agenten zeigt das Bild des Mitglieds, für das er handelt, mit einem kleinen Bot-Abzeichen unten rechts. Fahren Sie darüber, um Mitglied, Agent und Modellfamilie zu sehen. der Filter **Agenten** zeigt nur die Änderungen von Agenten, und die Platform API nennt den Agenten in `actor.agent` ([Aktivität und Audit](../api/mcp.md#aktivität-und-audit)).
 
