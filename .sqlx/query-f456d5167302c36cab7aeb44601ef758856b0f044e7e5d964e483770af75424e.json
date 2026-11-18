@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH before AS (SELECT spend_limited_until FROM provider_credentials WHERE id = $1 FOR UPDATE) UPDATE provider_credentials SET spend_limited_until = $2 WHERE id = $1 AND auth_method = 'linked_billing' RETURNING (SELECT spend_limited_until FROM before) IS NULL AS \"newly!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "newly!",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "f456d5167302c36cab7aeb44601ef758856b0f044e7e5d964e483770af75424e"
+}

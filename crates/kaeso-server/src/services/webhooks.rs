@@ -348,6 +348,17 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                     "provider_key.signed_out",
                     with(base, json!({ "signed_out_at": at(*when) })),
                 ),
+                ProviderKey::SpendLimitReached { at: when, resets } => (
+                    "provider_key.spend_limit_reached",
+                    with(
+                        base,
+                        json!({ "refused_at": at(*when), "resets_at": at(*resets) }),
+                    ),
+                ),
+                ProviderKey::Unlinked { at: when } => (
+                    "provider_key.unlinked",
+                    with(base, json!({ "unlinked_at": at(*when) })),
+                ),
             }
         }
         Fact::ServerSignedOut { server } => ("mcp_server.signed_out", json!({ "server": server })),

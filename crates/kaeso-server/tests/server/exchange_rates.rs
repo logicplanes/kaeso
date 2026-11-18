@@ -313,6 +313,7 @@ async fn spend_is_shown_in_the_chosen_currency_at_each_days_rate() {
                 provider: "openai".into(),
                 ingress_dialect: "openai_chat".into(),
                 egress_dialect: "openai_chat".into(),
+                credential_id: None,
                 requests: 1,
                 errors: 0,
                 input_tokens: 1,

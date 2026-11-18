@@ -52,6 +52,10 @@ Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern e
 
 Passwörter, Anmeldelinks und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest. **Allgemein** zeigt, ob Passwörter und Anmeldelinks eingeschaltet sind, und **System** die E-Mail, beide nur zur Ansicht. Single Sign-on richtet jede Organisation auf ihrer Seite **Sicherheit** ein. **Test-E-Mail senden** auf **System** prüft, ob das Gateway E-Mails senden kann.
 
+## Verknüpfte Abrechnung einrichten
+
+Unter **Verknüpfte Abrechnung** richtet ein Instanz-Admin die OAuth-App der Installation bei jedem Anbieter mit [verknüpfter Abrechnung](linked-billing.md) ein, damit Organisationen diesen Anbieter über ihr eigenes Konto dort bezahlen können. Die Seite zeigt die zu registrierende Weiterleitungs-URI, den Aussteller und das Subject, gebildet aus der öffentlichen URL der Installation, nimmt die Client-ID der App und die übrigen Werte entgegen, und **Prüfen** testet die App, bevor jemand verknüpft. Solange keine App eingerichtet ist, sehen Organisationen die Option mit dem Hinweis, einen Instanz-Admin zu fragen. Wird die App entfernt oder ersetzt, hält das jeden verknüpften Schlüssel an, der dann **Instanz muss eingerichtet werden** zeigt; lehnt der Anbieter die App ab, bekommen Instanz-Admins eine E-Mail.
+
 ## Agenten zulassen
 
 Agenten wie Claude Code oder Codex handeln über den [MCP-Server](../api/mcp.md) für ihren Benutzer. Unter **Allgemein** enthält **Agenten** die Agenten-Richtlinie der Instanz:

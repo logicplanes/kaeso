@@ -82,6 +82,16 @@ pub enum ProviderKey<'a> {
     SignedOut {
         at: PrimitiveDateTime,
     },
+    /// A linked organization reached a spend limit it set; refusals last until `resets` at the
+    /// latest.
+    SpendLimitReached {
+        at: PrimitiveDateTime,
+        resets: PrimitiveDateTime,
+    },
+    /// A link to the customer's own organization at the provider ended.
+    Unlinked {
+        at: PrimitiveDateTime,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -167,6 +177,13 @@ impl Credential<'_> {
             }
             ProviderKey::SignedOut { at } => {
                 out.push(Label::SignedOut.of(lang, lang.moment(*at, self.zone)));
+            }
+            ProviderKey::SpendLimitReached { at, resets } => {
+                out.push(Label::LastRefused.of(lang, lang.moment(*at, self.zone)));
+                out.push(Label::Resets.of(lang, lang.moment(*resets, self.zone)));
+            }
+            ProviderKey::Unlinked { at } => {
+                out.push(Label::Unlinked.of(lang, lang.moment(*at, self.zone)));
             }
         }
         out.push(
@@ -321,6 +338,9 @@ pub enum Instance<'a> {
     AdminSso,
     AgentPolicy,
     OrgCreated(&'a str),
+    /// The provider refused the install's app for linked billing, or it was removed: every
+    /// linked key of the provider waits for it.
+    LinkedBillingSetup(&'a str),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1001,6 +1021,20 @@ impl Fact<'_> {
                         ),
                         "Open provider keys",
                     ),
+                    ProviderKey::SpendLimitReached { .. } => w(
+                        format!("{name} reached its spend limit"),
+                        format!(
+                            "{provider} refused requests billed to {shown}; its admins can raise the limit there."
+                        ),
+                        "Open provider keys",
+                    ),
+                    ProviderKey::Unlinked { .. } => w(
+                        format!("{provider} link {name} ended"),
+                        format!(
+                            "{provider} no longer bills {shown}; link the organization again under Providers."
+                        ),
+                        "Open provider keys",
+                    ),
                 }
             }
             Fact::Model {
@@ -1086,6 +1120,12 @@ impl Fact<'_> {
                     Instance::OrgCreated(name) => (
                         format!("{name} was created"),
                         format!("{} created the organization {name}.", who(by)),
+                    ),
+                    Instance::LinkedBillingSetup(provider) => (
+                        format!("Linked billing for {provider} needs setup"),
+                        format!(
+                            "Linked keys of {provider} can't pay until its OAuth app works again; check it."
+                        ),
                     ),
                 };
                 w(heading, sentence, "Open instance")
@@ -1345,6 +1385,20 @@ impl Fact<'_> {
                         ),
                         "Anbieter-Schlüssel öffnen",
                     ),
+                    ProviderKey::SpendLimitReached { .. } => w(
+                        format!("{name} hat das Ausgabenlimit erreicht"),
+                        format!(
+                            "{provider} lehnt über {shown} abgerechnete Anfragen ab; dessen Admins können das Limit dort erhöhen."
+                        ),
+                        "Anbieter-Schlüssel öffnen",
+                    ),
+                    ProviderKey::Unlinked { .. } => w(
+                        format!("{provider}-Verknüpfung {name} ist beendet"),
+                        format!(
+                            "{provider} rechnet nicht mehr über {shown} ab; verknüpfen Sie die Organisation unter Anbieter erneut."
+                        ),
+                        "Anbieter-Schlüssel öffnen",
+                    ),
                 }
             }
             Fact::Model {
@@ -1444,6 +1498,12 @@ impl Fact<'_> {
                     Instance::OrgCreated(name) => (
                         format!("{name} wurde erstellt"),
                         format!("{} hat die Organisation {name} erstellt.", who(by)),
+                    ),
+                    Instance::LinkedBillingSetup(provider) => (
+                        format!("Verknüpfte Abrechnung für {provider} einrichten"),
+                        format!(
+                            "Verknüpfte Schlüssel von {provider} zahlen erst wieder, wenn die OAuth-App funktioniert; prüfen Sie sie."
+                        ),
                     ),
                 };
                 w(heading, sentence, "Instanz öffnen")
@@ -1686,6 +1746,26 @@ impl Fact<'_> {
                         zh(&[provider, "结束了账户", &shown, "的会话；请重新登录。"]),
                         "打开服务商密钥",
                     ),
+                    ProviderKey::SpendLimitReached { .. } => w(
+                        zh(&[name, "已达到支出上限"]),
+                        zh(&[
+                            provider,
+                            "拒绝了由",
+                            &shown,
+                            "付费的请求；其管理员可以在那里提高上限。",
+                        ]),
+                        "打开服务商密钥",
+                    ),
+                    ProviderKey::Unlinked { .. } => w(
+                        zh(&[provider, "关联", name, "已结束"]),
+                        zh(&[
+                            provider,
+                            "不再向",
+                            &shown,
+                            "计费；请在“服务商”中重新关联该组织。",
+                        ]),
+                        "打开服务商密钥",
+                    ),
                 }
             }
             Fact::Model {
@@ -1781,6 +1861,13 @@ impl Fact<'_> {
                     Instance::OrgCreated(name) => {
                         (zh(&["已创建", name]), zh(&[&by, "创建了组织 ", name, "。"]))
                     }
+                    Instance::LinkedBillingSetup(provider) => (
+                        zh(&[provider, "的关联计费需要设置"]),
+                        zh(&[
+                            provider,
+                            "的关联密钥在其 OAuth 应用恢复正常前无法付费；请检查该应用。",
+                        ]),
+                    ),
                 };
                 w(heading, sentence, "打开实例")
             }

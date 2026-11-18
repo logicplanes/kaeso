@@ -1286,6 +1286,7 @@ pub(crate) fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogR
             tags: Vec::new(),
             guardrails: String::new(),
             guardrail_actions: Vec::new(),
+            credential_id: Uuid::nil(),
         },
         ContentRow {
             request_id: id,

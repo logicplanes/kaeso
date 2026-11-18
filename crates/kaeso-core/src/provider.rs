@@ -190,10 +190,13 @@ pub enum AuthMethod {
     /// A Microsoft Entra ID service principal (tenant, client id and client secret) that Kaeso
     /// exchanges for access tokens.
     AzureServicePrincipal,
+    /// A link to the customer's own organization at the provider, approved with OAuth, that the
+    /// provider bills requests to; Kaeso holds the connection's tokens and renews them.
+    LinkedBilling,
 }
 
 impl AuthMethod {
-    pub const ALL: [AuthMethod; 7] = [
+    pub const ALL: [AuthMethod; 8] = [
         AuthMethod::ApiKey,
         AuthMethod::ChatGpt,
         AuthMethod::Grok,
@@ -201,6 +204,7 @@ impl AuthMethod {
         AuthMethod::AwsAccessKey,
         AuthMethod::AwsRole,
         AuthMethod::AzureServicePrincipal,
+        AuthMethod::LinkedBilling,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -212,6 +216,7 @@ impl AuthMethod {
             AuthMethod::AwsAccessKey => "aws_access_key",
             AuthMethod::AwsRole => "aws_role",
             AuthMethod::AzureServicePrincipal => "azure_service_principal",
+            AuthMethod::LinkedBilling => "linked_billing",
         }
     }
 
@@ -219,7 +224,17 @@ impl AuthMethod {
         AuthMethod::ALL.into_iter().find(|m| m.as_str() == s)
     }
 
+    /// Whether the key holds OAuth tokens that Kaeso renews: a signed-in account or a
+    /// billing connection.
     pub const fn is_account(self) -> bool {
+        matches!(
+            self,
+            AuthMethod::ChatGpt | AuthMethod::Grok | AuthMethod::LinkedBilling
+        )
+    }
+
+    /// Whether the key is a person's signed-in account, as opposed to a billing connection.
+    pub const fn is_sign_in(self) -> bool {
         matches!(self, AuthMethod::ChatGpt | AuthMethod::Grok)
     }
 
@@ -3777,6 +3792,11 @@ mod tests {
         assert!(AuthMethod::ChatGpt.is_account());
         assert!(AuthMethod::Grok.is_account());
         assert!(!AuthMethod::ApiKey.is_account());
+        assert!(AuthMethod::LinkedBilling.is_account() && !AuthMethod::LinkedBilling.is_sign_in());
+        assert_eq!(
+            AuthMethod::parse("linked_billing"),
+            Some(AuthMethod::LinkedBilling)
+        );
     }
 
     #[test]

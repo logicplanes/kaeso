@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod envelope;
+mod es256;
 mod keyring;
 mod mac;
 pub mod password;
@@ -9,6 +10,7 @@ mod rs256;
 pub mod totp;
 
 pub use envelope::{Sealed, open, rewrap, seal};
+pub use es256::{EcPublicKey, EcSigner};
 pub use keyring::{KeyRing, KeyRingError, MasterKey, generate_master_key};
 pub use mac::{MacKey, hmac_sha256};
 pub use random::{random_bytes, random_token};
@@ -25,7 +27,7 @@ pub enum CryptoError {
     Malformed,
     #[error("the password could not be hashed")]
     Hash,
-    #[error("the private key is not an RSA key in PKCS #8 form")]
+    #[error("the private key is not a key of the expected kind in PKCS #8 form")]
     PrivateKey,
     #[error("the private key cannot sign")]
     Sign,

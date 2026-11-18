@@ -16,6 +16,8 @@ pub enum GroupBy {
     Key,
     Member,
     Route,
+    /// The provider key that paid, the nil id for requests no provider was sent.
+    BilledTo,
 }
 
 impl GroupBy {
@@ -33,6 +35,9 @@ impl GroupBy {
                  ELSE 'service_account:' || coalesce(service_account_id, '00000000-0000-0000-0000-000000000000')::text END"
             }
             GroupBy::Route => "ingress_dialect || ':' || egress_dialect || ':' || provider",
+            GroupBy::BilledTo => {
+                "coalesce(credential_id, '00000000-0000-0000-0000-000000000000')::text"
+            }
         }
     }
 }
@@ -64,6 +69,8 @@ pub struct Filter {
     pub key: Option<Uuid>,
     pub member: Option<Member>,
     pub route: Option<Route>,
+    /// The provider key that paid; the nil id for requests no provider was sent.
+    pub billed_to: Option<Uuid>,
 }
 
 impl Filter {
@@ -126,6 +133,7 @@ pub async fn usage(
          AND ($9::uuid IS NULL OR (user_id IS NULL AND service_account_id = $9)) \
          AND ($10::text IS NULL OR (ingress_dialect = $10 AND egress_dialect = $11 AND provider = $12)) \
          AND ($13::text IS NULL OR provider = $13) \
+         AND ($14::uuid IS NULL OR coalesce(credential_id, '00000000-0000-0000-0000-000000000000') = $14) \
          GROUP BY 1 ORDER BY ({key}) COLLATE \"C\"",
         key = group.key()
     );
@@ -145,6 +153,7 @@ pub async fn usage(
         .bind(route.map(|r| r.egress_dialect.as_str()))
         .bind(route.map(|r| r.provider.as_str()))
         .bind(model.and_then(|m| m.provider.as_deref()))
+        .bind(filter.billed_to)
         .fetch_all(db)
         .await?)
 }

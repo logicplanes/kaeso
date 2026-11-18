@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location, account_id, gateway_id, endpoint FROM provider_credentials",
+  "query": "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location, account_id, gateway_id, endpoint, spend_limited_until, (SELECT a.send_billing_policy FROM linked_billing_apps a WHERE a.provider = provider_credentials.provider) AS billing_policy FROM provider_credentials WHERE org_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -145,10 +145,30 @@
             "name": "endpoint"
           }
         }
+      },
+      {
+        "ordinal": 13,
+        "name": "spend_limited_until",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "spend_limited_until"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "billing_policy",
+        "type_info": "Bool",
+        "origin": "Expression"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
     },
     "nullable": [
       false,
@@ -163,8 +183,10 @@
       true,
       true,
       true,
-      true
+      true,
+      true,
+      null
     ]
   },
-  "hash": "76ef8ea26178f5c336629b5c97dfd493a81dfbf3b4f51a1484303b2f474d1548"
+  "hash": "a52ffb732f9826662cb6ad1953d421743f3fe2091c62b6772235e50859b3958d"
 }

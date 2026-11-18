@@ -67,6 +67,10 @@ pub struct Endpoints {
     pub google_token: String,
     /// Microsoft Entra ID's host, whose `/{tenant}/oauth2/v2.0/token` issues Azure keys' tokens.
     pub azure_login: String,
+    /// Anthropic's linked billing: `auth` is the authorization server (`auth.claude.com`),
+    /// `api` the Claude API, which issues the install's service account tokens and keeps user
+    /// profiles.
+    pub anthropic_billing: Hosts,
 }
 
 impl Default for Endpoints {
@@ -82,6 +86,10 @@ impl Default for Endpoints {
             },
             google_token: kaeso_core::google::TOKEN_URI.to_owned(),
             azure_login: kaeso_core::azure::LOGIN.to_owned(),
+            anthropic_billing: Hosts {
+                auth: "https://auth.claude.com".into(),
+                api: "https://api.anthropic.com".into(),
+            },
         }
     }
 }
@@ -95,7 +103,14 @@ impl Endpoints {
             | AuthMethod::GoogleServiceAccount
             | AuthMethod::AwsAccessKey
             | AuthMethod::AwsRole
-            | AuthMethod::AzureServicePrincipal => None,
+            | AuthMethod::AzureServicePrincipal
+            | AuthMethod::LinkedBilling => None,
+        }
+    }
+
+    pub fn billing(&self, adapter: kaeso_core::linked_billing::Adapter) -> &Hosts {
+        match adapter {
+            kaeso_core::linked_billing::Adapter::Anthropic => &self.anthropic_billing,
         }
     }
 }
@@ -117,6 +132,8 @@ const fn revoke_path(method: AuthMethod) -> &'static str {
 pub const fn renew_before(method: AuthMethod) -> time::Duration {
     match method {
         AuthMethod::Grok => time::Duration::minutes(2),
+        // The margin of the linked billing guide's own refresh schedule.
+        AuthMethod::LinkedBilling => time::Duration::minutes(10),
         _ => time::Duration::minutes(5),
     }
 }
@@ -150,6 +167,20 @@ pub struct Tokens {
     pub sub: String,
     #[serde(default, with = "time::serde::rfc3339::option")]
     pub earliest_refresh_at: Option<OffsetDateTime>,
+    /// For a billing connection: the connection and the user profile it bills.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub connection: Option<Connection>,
+}
+
+/// What a billing connection's tokens belong to.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Connection {
+    pub connection_id: String,
+    pub user_profile_id: String,
+    /// When the refresh token stops working, a year after the link at most; a refresh doesn't
+    /// move it.
+    #[serde(default, with = "time::serde::rfc3339::option")]
+    pub refresh_expires_at: Option<OffsetDateTime>,
 }
 
 impl std::fmt::Debug for Tokens {
@@ -243,6 +274,7 @@ impl Granted {
             scopes,
             sub: sub.to_owned(),
             earliest_refresh_at,
+            connection: None,
         })
     }
 
@@ -263,6 +295,7 @@ impl Granted {
             },
             sub: old.sub.clone(),
             earliest_refresh_at,
+            connection: old.connection.clone(),
         }
     }
 }
@@ -1057,6 +1090,7 @@ mod tests {
             scopes: vec!["openid".into()],
             sub: "user-1".into(),
             earliest_refresh_at: None,
+            connection: None,
         };
         let shown = format!("{tokens:?}");
         for secret in ["eyJaccess", "refresh-secret", "eyJid"] {

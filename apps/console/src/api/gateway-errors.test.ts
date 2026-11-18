@@ -235,8 +235,8 @@ describe("a refusal to create an account or an organization", () => {
 describe("a refusal of a usage grouping or filter", () => {
   it("is translated in German and Chinese", async () => {
     await speak("de");
-    expect((await errorFromResponse(refusal("Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`."))).message).toBe(
-      "`day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` oder `project` verwenden.",
+    expect((await errorFromResponse(refusal("Use `project`, `billed_to` or what a project's usage groups by, such as `day`."))).message).toBe(
+      "`project`, `billed_to` oder eine Gruppierung der Projektnutzung wie `day` verwenden.",
     );
     expect((await errorFromResponse(refusal("Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."))).message).toBe(
       "`model`, `provider`, `key`, `member`, `route`, `error_kind` oder `client` verwenden.",
@@ -245,8 +245,8 @@ describe("a refusal of a usage grouping or filter", () => {
       "`member` muss ein `key` sein, wie ihn die Gruppierung nach `member` liefert.",
     );
     await speak("zh-CN");
-    expect((await errorFromResponse(refusal("Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`."))).message).toBe(
-      "请使用 `day`、`week`、`month`、`model`、`provider`、`key`、`member` 或 `route`。",
+    expect((await errorFromResponse(refusal("Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."))).message).toBe(
+      "请使用 `day`、`week`、`month`、`model`、`provider`、`key`、`member`、`route` 或 `billed_to`。",
     );
     expect((await errorFromResponse(refusal("Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."))).message).toBe(
       "请使用 `model`、`provider`、`key`、`member`、`route`、`error_kind`、`client` 或 `project`。",

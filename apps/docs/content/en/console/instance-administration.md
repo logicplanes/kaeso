@@ -52,6 +52,10 @@ Changing account creation, organization creation or the allowed domains needs a 
 
 Passwords, sign-in links and email are set in the gateway's [configuration](../self-hosting/configuration.md). **General** shows whether passwords and sign-in links are on and **System** shows email, both read-only. Single sign-on is set up per organization, on its **Security** page. **Send test email** on **System** checks that the gateway can send mail.
 
+## Set up linked billing
+
+Under **Linked billing**, an instance admin sets up the install's OAuth app at each provider that offers [linked billing](linked-billing.md), so organizations can pay that provider through their own account there. The page shows the redirect URI, issuer and subject to register, built from the install's public URL, takes the app's client ID and the rest, and **Check** tests the app before anyone links. Until an app is set, organizations see the option with a note to ask an instance admin. Removing or replacing the app holds every linked key, which then shows **Needs instance setup**; instance admins get one email when the provider refuses the app.
+
 ## Let agents in
 
 Agents, such as Claude Code or Codex, act for their user through the [MCP server](../api/mcp.md). Under **General**, **Agents** holds the instance's agent policy:

@@ -831,4 +831,154 @@ describe("organization providers", () => {
       }
     });
   });
+
+  it("shows a linked key's organization, status and cost, and its own actions", async () => {
+    signedIn();
+    const link = credential({
+      id: "cred_link",
+      provider: "anthropic",
+      name: "Acme Claude",
+      auth_method: "linked_billing",
+      account: "ocon_0001",
+      last4: "",
+      spend_limited_until: "2026-12-01T00:00:00Z",
+    });
+    const apiKey = credential({ id: "cred_ant", provider: "anthropic", name: "Ant key", is_default: false });
+    keys([
+      link,
+      apiKey,
+      credential({
+        id: "cred_gone",
+        provider: "anthropic",
+        name: "Gone",
+        auth_method: "linked_billing",
+        account: "ocon_0002",
+        last4: "",
+        auth_error: "unlinked",
+        is_default: false,
+      }),
+      credential({
+        id: "cred_wait",
+        provider: "anthropic",
+        name: "Waiting",
+        auth_method: "linked_billing",
+        account: "ocon_0003",
+        last4: "",
+        auth_error: "needs_setup",
+        is_default: false,
+      }),
+    ]);
+    on("GET", "orgs/:org/linked-billing/costs", {
+      from: "2026-11-01",
+      to: "2026-11-17",
+      keys: [{ credential: "cred_link", cost: "12.5", requests: 3 }],
+      total: "12.5",
+    });
+    on("GET", "orgs/:org/linked-billing/fallbacks", []);
+    on("GET", "orgs/:org/projects", page([project(), project({ id: OTHER_PROJECT, name: "Support bot" })]));
+    on("PUT", "orgs/:org/linked-billing/fallbacks", [{ project: PROJECT, provider: "anthropic", credential: "cred_ant" }]);
+    on("DELETE", `${CREDENTIALS}/:credential`, noContent());
+    const { user } = await renderApp(PATH);
+    const linked = await row("Acme Claude");
+    expect(linked).toHaveTextContent("Linked billing");
+    expect(linked).toHaveTextContent("ocon_0001");
+    await waitFor(() => expect(linked).toHaveTextContent("$12.50 this month"));
+    expect(linked).toHaveTextContent("Spend limit reached");
+    expect(linked).not.toHaveTextContent("…");
+    expect(await row("Gone")).toHaveTextContent("Unlinked in Claude Console");
+    expect(await row("Gone")).toHaveTextContent("$0.00 this month");
+    expect(await row("Waiting")).toHaveTextContent("Needs instance setup");
+
+    await user.click(await screen.findByRole("button", { name: "Actions for Anthropic · Acme Claude" }));
+    const menu = await screen.findByRole("menu");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((i) => i.textContent),
+    ).toEqual(["Assign to projects", "Link again", "Who pays when it can't", expect.stringMatching(/^Set spend limit in Claude Console/), "Rename", "Unlink"]);
+    expect(within(menu).getByRole("menuitem", { name: /Set spend limit/ })).toHaveAttribute("href", "https://platform.claude.com/linked-platforms");
+    await user.click(within(menu).getByRole("menuitem", { name: "Who pays when it can't" }));
+    const fallback = await screen.findByRole("dialog", { name: "Who pays when Anthropic · Acme Claude can't" });
+    await user.click(within(fallback).getByRole("combobox", { name: "Project" }));
+    await user.click(await screen.findByRole("option", { name: "Support bot" }));
+    await user.click(within(fallback).getByRole("combobox", { name: "When it can't pay" }));
+    await user.click(await screen.findByRole("option", { name: "Fall back to Ant key" }));
+    await user.click(within(fallback).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(requests("PUT", "orgs/:org/linked-billing/fallbacks").map((r) => r.body)).toEqual([
+        { project: OTHER_PROJECT, provider: "anthropic", credential: "cred_ant" },
+      ]),
+    );
+    expect(await notifications().findByText("Fallback saved")).toBeInTheDocument();
+
+    await user.click(await screen.findByRole("button", { name: "Actions for Anthropic · Acme Claude" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Link again" }));
+    await user.click(within(await screen.findByRole("dialog", { name: "Link again · Acme Claude" })).getByRole("button", { name: "Cancel" }));
+
+    await user.click(await screen.findByRole("button", { name: "Actions for Anthropic · Acme Claude" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Unlink" }));
+    const unlink = await screen.findByRole("alertdialog", { name: "Unlink Anthropic · Acme Claude?" });
+    expect(within(unlink).getByText("Anthropic stops billing the linked organization for this install's requests.")).toBeInTheDocument();
+    await user.click(within(unlink).getByRole("button", { name: "Unlink" }));
+    expect(await notifications().findByText("Anthropic · Acme Claude unlinked")).toBeInTheDocument();
+  });
+
+  it("offers no fallback key when the provider has none but links, and drops a fallback", async () => {
+    signedIn();
+    const link = credential({ id: "cred_link", provider: "anthropic", name: "Acme Claude", auth_method: "linked_billing", account: "ocon_0001", last4: "" });
+    keys([link]);
+    on("GET", "orgs/:org/linked-billing/costs", { from: "2026-11-01", to: "2026-11-17", keys: [], total: "0" });
+    on("GET", "orgs/:org/linked-billing/fallbacks", [{ project: PROJECT, provider: "anthropic", credential: "cred_old" }]);
+    on("GET", "orgs/:org/projects", page([project()]));
+    on("PUT", "orgs/:org/linked-billing/fallbacks", []);
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for Anthropic · Acme Claude" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Who pays when it can't" }));
+    const fallback = await screen.findByRole("dialog");
+    expect(within(fallback).getByText("Add an API key for Anthropic to fall back to.")).toBeInTheDocument();
+    await user.click(within(fallback).getByRole("combobox", { name: "When it can't pay" }));
+    await user.click(await screen.findByRole("option", { name: "The request fails" }));
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+    await waitFor(() =>
+      expect(requests("PUT", "orgs/:org/linked-billing/fallbacks").map((r) => r.body)).toEqual([{ project: PROJECT, provider: "anthropic", credential: null }]),
+    );
+  });
+
+  it("asks for a project before saving a fallback", async () => {
+    signedIn();
+    keys([credential({ id: "cred_link", provider: "anthropic", name: "Acme Claude", auth_method: "linked_billing", account: "ocon_0001", last4: "" })]);
+    on("GET", "orgs/:org/linked-billing/costs", { from: "2026-11-01", to: "2026-11-17", keys: [], total: "0" });
+    on("GET", "orgs/:org/linked-billing/fallbacks", []);
+    on("GET", "orgs/:org/projects", () => new Response(null, { status: 500 }));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Actions for Anthropic · Acme Claude" }));
+    await user.click(within(await screen.findByRole("menu")).getByRole("menuitem", { name: "Who pays when it can't" }));
+    const fallback = await screen.findByRole("dialog");
+    await hoverReason(user, within(fallback).getByRole("button", { name: "Save" }), "Choose a project");
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+    expect(requests("PUT", "orgs/:org/linked-billing/fallbacks")).toHaveLength(0);
+    await user.click(within(fallback).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("names a link whose provider no longer offers linked billing by the provider", async () => {
+    signedIn();
+    keys([
+      credential({
+        id: "cred_hidden",
+        provider: "openai",
+        name: "Old link",
+        auth_method: "linked_billing",
+        account: "ocon_0009",
+        last4: "",
+        auth_error: "unlinked",
+      }),
+    ]);
+    on("GET", "orgs/:org/linked-billing/costs", { from: "2026-11-01", to: "2026-11-17", keys: [], total: "0" });
+    await renderApp(PATH);
+    const old = await row("Old link");
+    expect(old).toHaveTextContent("OpenAI: ocon_0009");
+    expect(within(old).getByText("Unlinked")).toBeInTheDocument();
+    expect(old).not.toHaveTextContent("Unlinked in");
+  });
 });

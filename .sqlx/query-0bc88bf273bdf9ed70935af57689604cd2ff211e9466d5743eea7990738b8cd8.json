@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO linked_billing_keys (kid, ciphertext, nonce, wrapped_key, key_id) SELECT $1, $2, $3, $4, $5 WHERE NOT EXISTS (SELECT 1 FROM linked_billing_keys)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Bytea",
+        "Bytea",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0bc88bf273bdf9ed70935af57689604cd2ff211e9466d5743eea7990738b8cd8"
+}

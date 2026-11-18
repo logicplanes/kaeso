@@ -31,7 +31,7 @@ Das Menü eines Webhooks hat **Test senden**, **Ausschalten** oder **Einschalten
 | MCP-Server brauchen Aufmerksamkeit | `mcp_server.signed_out`, `mcp_server.tool_held` |
 | Sicherheitseinstellungen geändert | `organization.security_changed` |
 | Mitgliederänderungen | `organization.member_joined`, `organization.member_left` |
-| Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_key.refused`, `provider_key.signed_out` |
+| Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_key.refused`, `provider_key.signed_out`, `provider_key.spend_limit_reached`, `provider_key.unlinked` |
 | Modelländerungen | `model.delisted`, `model.price_changed` |
 
 Das sind die Benachrichtigungen über die Organisation und ihre Projekte ([E-Mails](account.md#e-mails-wählen)). Die eigenen Benachrichtigungen einer Person, etwa zur Sicherheit ihres Kontos oder zu einem Export, den sie startete, gehen nie an einen Webhook. Ein Webhook mit einem Projekt bekommt nur dessen Ereignisse; einer ohne bekommt jedes Ereignis der Organisation und ihrer Projekte. Ablaufende Schlüssel meldet er für jeden Schlüssel, nicht nur dessen Inhaber.
@@ -83,6 +83,8 @@ Eine JSON-Zustellung ist ein `POST` mit `content-type: application/json` und ein
 | `organization.member_left` | `person`, `removed_by` (`null`, wenn sie selbst ging) |
 | `provider_key.refused` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refusal` mit `status` und `message` des Anbieters, `billing` (ein Abrechnungsproblem) sowie `first_at` und `last_at` |
 | `provider_key.signed_out` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `signed_out_at` |
+| `provider_key.spend_limit_reached` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refused_at`, `resets_at` (wann der Anbieter spätestens wieder Anfragen durchlässt) |
+| `provider_key.unlinked` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `unlinked_at` |
 | `model.delisted` | `catalogue_model_id`, `provider_id`, `provider`, `model` |
 | `model.price_changed` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `prices`: jeder geänderte Preis (`input`, `output`, `cache_read`, `cache_write`, `cache_write_1h`) mit seinen alten und neuen US-Dollar je Million Token, `from` und `to`, `null` wo er keinen Preis hatte oder hat |
 | `webhook.test` | `webhook_id`, `name` |

@@ -10,6 +10,7 @@ import {
   Radio,
   RadioGroup,
   StepDialog,
+  Text,
   icons,
   useStepDialog,
   type ProviderPickerOption,
@@ -30,9 +31,10 @@ import { ServiceAccountFields, serviceAccountBlocked } from "./service-account-f
 import { AwsKeyFields, awsKeyBlocked, awsSecret, emptyAwsKey, type AwsKey, type AwsMethod } from "./aws-key-fields";
 import { EntraIdFields, emptyPrincipal, principalBlocked, principalSecret, type Principal } from "./entra-id-fields";
 import { keyTitle, providerOptions, useProviders } from "./providers";
+import { rememberLink } from "./linked-billing";
 
 type DialogStep = ComponentProps<typeof StepDialog>["steps"][number];
-type Method = "api_key" | "account" | "service_account" | "service_principal" | AwsMethod;
+type Method = "api_key" | "account" | "service_account" | "service_principal" | "linked" | AwsMethod;
 
 const isAws = (m: string | undefined): m is AwsMethod => m === "aws_access_key" || m === "aws_role";
 
@@ -40,6 +42,7 @@ function methodOf(replace: CredentialView | undefined): Method {
   if (!replace || replace.auth_method === "api_key") return "api_key";
   if (replace.auth_method === "google_service_account") return "service_account";
   if (replace.auth_method === "azure_service_principal") return "service_principal";
+  if (replace.auth_method === "linked_billing") return "linked";
   if (isAws(replace.auth_method)) return replace.auth_method;
   return "account";
 }
@@ -145,6 +148,8 @@ export function ProviderKeyDialog({
   const withAws = isAws(method) && (awsSignIn !== null || !!replace);
   const awsRegions = known?.regions ?? null;
   const entraId = known?.entra_id ?? null;
+  const linkedOffer = known?.linked_billing ?? null;
+  const linking = method === "linked" && (linkedOffer !== null || replace?.auth_method === "linked_billing");
   const withPrincipal = method === "service_principal";
   const scopes = entraId?.scopes ?? [];
   const chosenLocation = location ?? serviceAccount?.default_location ?? "";
@@ -160,6 +165,22 @@ export function ProviderKeyDialog({
       ),
     [providers, keys],
   );
+  const link = useApiMutation({
+    mutationFn: async () => {
+      if (replace) return data(await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/oauth", { params: { path: { org, credential: replace.id } } }));
+      return data(
+        await api.POST("/platform/v1/orgs/{org}/credentials/oauth", {
+          params: { path: { org } },
+          body: { provider: chosen, name: name.trim(), make_default: makeDefault, linked_billing: true },
+        }),
+      );
+    },
+    onSuccess: (started) => {
+      if (!started.authorize_url) return;
+      rememberLink({ org, attempt: started.attempt, ...(replace ? { credential: replace.id } : {}) });
+      window.location.assign(started.authorize_url);
+    },
+  });
   const begin = useApiMutation({
     mutationFn: async (_begin: Begin) => {
       if (replace) return data(await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/oauth", { params: { path: { org, credential: replace.id } } }));
@@ -720,6 +741,91 @@ export function ProviderKeyDialog({
       </RadioGroup>
     ),
   };
+  const organization = linkedOffer?.organization ?? "";
+  const linkedMethodStep: DialogStep = {
+    id: "method",
+    title: t("kaeso.providerKey.linkedMethodTitle", "Add an API key or link your {organization}?", { organization }),
+    content: (
+      <RadioGroup
+        variant="cards"
+        aria-label={t("kaeso.providerKey.method", "Sign-in method")}
+        value={method}
+        onValueChange={(v) => {
+          setMethod(v === "linked" ? "linked" : "api_key");
+          setSecret("");
+        }}
+      >
+        <Radio
+          value="api_key"
+          label={t("kaeso.providerKey.apiKey", "API key")}
+          description={t("kaeso.providerKey.apiKeyHint", "Requests are billed to the {provider} account of the key.", { provider: label })}
+        />
+        <Radio
+          value="linked"
+          label={organization}
+          description={t("kaeso.providerKey.linkedHint", "Requests are billed to your {organization}, within the limit it sets.", { organization })}
+        />
+      </RadioGroup>
+    ),
+  };
+  const linkBlocked =
+    linkedOffer && !linkedOffer.ready
+      ? t("kaeso.providerKey.linkNotReady", "Ask an instance admin to set up linked billing first")
+      : !replace && !name.trim()
+        ? t("kaeso.providerKey.nameBlocked", "Give the key a name")
+        : undefined;
+  const linkStep: DialogStep = {
+    id: "link",
+    title: (
+      <span className="flex items-center gap-10">
+        {provider && (
+          <span aria-hidden className="flex">
+            <ProviderBadge provider={provider} name={label} size="lg" />
+          </span>
+        )}
+        {replace
+          ? t("kaeso.providerKey.linkAgainTitle", "Link your {organization} again", { organization: organization || label })
+          : t("kaeso.providerKey.linkTitle", "Link your {organization}", { organization })}
+      </span>
+    ),
+    description: t("kaeso.providerKey.linkRoles", "Approve it at {provider} with the {roles} role in the organization you link.", {
+      provider: label,
+      roles: (linkedOffer?.roles ?? []).join(t("kaeso.providerKey.linkRolesOr", " or ")),
+    }),
+    blockedReason: linkBlocked,
+    content: (
+      <div className="flex flex-col gap-12">
+        {!replace && (
+          <Input
+            label={t("common.name", "Name")}
+            placeholder={t("kaeso.providerKey.linkNamePlaceholder", "Our {organization}", { organization })}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={100}
+            autoFocus
+          />
+        )}
+        <Text variant="small" tone="secondary">
+          {t(
+            "kaeso.providerKey.linkRuns",
+            "Requests run in this install's own organization, so your organization's IP allowlists, encryption keys and data retention don't apply.",
+          )}
+        </Text>
+        <Text variant="small" tone="secondary">
+          {t(
+            "kaeso.providerKey.linkLimits",
+            "Only an organization that pays {provider} directly can be linked, and only to one organization of this install.",
+            { provider: label },
+          )}
+        </Text>
+        {replace && (
+          <Text variant="small" tone="secondary">
+            {t("kaeso.providerKey.linkAgainEnds", "The current link ends first; requests fail until you approve again.")}
+          </Text>
+        )}
+      </div>
+    ),
+  };
   const defaultStep: DialogStep[] = current
     ? [
         {
@@ -764,25 +870,36 @@ export function ProviderKeyDialog({
     content: <ProviderChoice choices={choices} value={provider} onChoose={choose} />,
   };
   const signInStep = pastes ? accountStep : deviceStep;
+  const linksOnly = !account && !serviceAccount && !awsSignIn && !entraId && linkedOffer !== null;
   const secretStep = withAws ? awsStep : withPrincipal ? principalStep : serviceAccountStep && withServiceAccount ? serviceAccountStep : keyStep;
   const steps: DialogStep[] = replace
-    ? [signingIn ? signInStep : secretStep]
+    ? [linking ? linkStep : signingIn ? signInStep : secretStep]
     : [
         providerStep,
-        ...(account ? [methodStep] : serviceAccount ? [serviceAccountMethodStep] : awsSignIn || entraId ? [providerMethodStep] : []),
-        ...(signingIn ? [...defaultStep, signInStep] : [secretStep, ...defaultStep]),
+        ...(account
+          ? [methodStep]
+          : serviceAccount
+            ? [serviceAccountMethodStep]
+            : awsSignIn || entraId
+              ? [providerMethodStep]
+              : linksOnly
+                ? [linkedMethodStep]
+                : []),
+        ...(linking ? [...defaultStep, linkStep] : signingIn ? [...defaultStep, signInStep] : [secretStep, ...defaultStep]),
       ];
-  const ready = signingIn
-    ? pastes
-      ? !!attempt && !!callback.trim() && (replace || name.trim())
-      : waiting && (replace || name.trim())
-    : withServiceAccount
-      ? !serviceAccountBlocked(secret) && (replace || name.trim())
-      : isAws(method)
-        ? !awsBlocked
-        : withPrincipal
-          ? !blockedPrincipal
-          : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && !endpointBlocked && (replace || name.trim());
+  const ready = linking
+    ? !linkBlocked
+    : signingIn
+      ? pastes
+        ? !!attempt && !!callback.trim() && (replace || name.trim())
+        : waiting && (replace || name.trim())
+      : withServiceAccount
+        ? !serviceAccountBlocked(secret) && (replace || name.trim())
+        : isAws(method)
+          ? !awsBlocked
+          : withPrincipal
+            ? !blockedPrincipal
+            : secret.trim() && !/\s/.test(secret.trim()) && (!regions || location) && !endpointBlocked && (replace || name.trim());
 
   return (
     <StepDialog
@@ -790,23 +907,27 @@ export function ProviderKeyDialog({
       open
       onOpenChange={(o) => !o && onClose()}
       title={
-        replace && signingIn
-          ? t("kaeso.providerKey.signInAgainTitle", "Sign in again to {provider} · {name}", { provider: label, name: replace.name })
-          : replace
-            ? t("kaeso.providerKey.replaceTitle", "Replace {provider} · {name}", { provider: providers.name(replace.provider), name: replace.name })
-            : t("kaeso.providerKey.addTitle", "Add provider key")
+        replace && linking
+          ? t("kaeso.providerKey.linkAgainDialog", "Link again · {name}", { name: replace.name })
+          : replace && signingIn
+            ? t("kaeso.providerKey.signInAgainTitle", "Sign in again to {provider} · {name}", { provider: label, name: replace.name })
+            : replace
+              ? t("kaeso.providerKey.replaceTitle", "Replace {provider} · {name}", { provider: providers.name(replace.provider), name: replace.name })
+              : t("kaeso.providerKey.addTitle", "Add provider key")
       }
       submitLabel={
-        replace && signingIn
-          ? t("kaeso.providerKey.signInAgain", "Sign in again")
-          : replace
-            ? t("kaeso.providerKey.replace", "Replace key")
-            : signingIn
-              ? t("kaeso.providerKey.addAccount", "Add account")
-              : t("kaeso.providerKey.add", "Add key")
+        linking
+          ? t("kaeso.providerKey.linkSubmit", "Link your {organization}", { organization: organization || label })
+          : replace && signingIn
+            ? t("kaeso.providerKey.signInAgain", "Sign in again")
+            : replace
+              ? t("kaeso.providerKey.replace", "Replace key")
+              : signingIn
+                ? t("kaeso.providerKey.addAccount", "Add account")
+                : t("kaeso.providerKey.add", "Add key")
       }
-      submitting={save.isPending}
-      onSubmit={() => provider && ready && (signingIn && !pastes && attempt ? poll.mutate(attempt.attempt) : save.mutate())}
+      submitting={save.isPending || link.isPending}
+      onSubmit={() => provider && ready && (linking ? link.mutate() : signingIn && !pastes && attempt ? poll.mutate(attempt.attempt) : save.mutate())}
       steps={steps}
     />
   );

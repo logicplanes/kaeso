@@ -93,6 +93,8 @@ describe("ProviderKeyDialog", () => {
     await hoverReason(user, within(dialog).getByRole("button", { name: "Continue" }), "Choose a provider");
     expect(within(dialog).getByRole("group", { name: "Other providers" })).toContainElement(within(dialog).getByRole("radio", { name: "Anthropic" }));
     await user.click(within(dialog).getByRole("radio", { name: "Anthropic" }));
+    expect(await within(dialog).findByRole("heading", { name: "Add an API key or link your Claude organization?" })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
 
     expect(await within(dialog).findByRole("heading", { name: "Paste your Anthropic API key" })).toBeVisible();
     expectKeyHint(dialog, "platform.claude.com", "https://platform.claude.com/settings/keys", "Settings → API keys", "sk-ant-");
@@ -308,6 +310,7 @@ describe("ProviderKeyDialog", () => {
   it("says what the key step still needs", async () => {
     const { user, dialog } = await open();
     await choose(user, dialog, "Anthropic");
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     const secret = within(dialog).getByLabelText("Anthropic API key");
     const add = () => within(dialog).getByRole("button", { name: "Add key" });
     await hoverReason(user, add(), "Paste the Anthropic API key");
@@ -1627,7 +1630,9 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("radio", { name: /^ChatGPT account/ }));
     await user.click(within(dialog).getByRole("button", { name: "Back" }));
     await choose(user, dialog, "Anthropic");
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
     expect(await within(dialog).findByRole("heading", { name: "Paste your Anthropic API key" })).toBeVisible();
+    await user.click(within(dialog).getByRole("button", { name: "Back" }));
     await user.click(within(dialog).getByRole("button", { name: "Back" }));
     await choose(user, dialog, "OpenAI");
     expect(within(dialog).getByRole("radio", { name: /^API key/ })).toHaveAttribute("aria-checked", "true");
@@ -1889,5 +1894,84 @@ describe("ProviderKeyDialog", () => {
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
     expect(onClose).toHaveBeenCalled();
     expect(requests("POST", CREDENTIALS)).toHaveLength(0);
+  });
+
+  it("links a Claude organization instead of adding a key", async () => {
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    on("POST", `${CREDENTIALS}/oauth`, {
+      attempt: "att_link",
+      authorize_url: "https://auth.claude.com/oauth/authorize?client_id=c&request_uri=r",
+      device: null,
+      expires_at: "2026-11-17T12:10:00Z",
+      expires_in: 600,
+    });
+    const ready = providers.map((p) => (p.id === "anthropic" && p.linked_billing ? { ...p, linked_billing: { ...p.linked_billing, ready: true } } : p));
+    const { user, dialog } = await open({ keys: [credential({ id: "cred_ant", provider: "anthropic", name: "Ant key" })] }, ready);
+    await choose(user, dialog, "Anthropic");
+    await user.click(within(dialog).getByRole("radio", { name: /^Claude organization/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^API key/ }));
+    await user.click(within(dialog).getByRole("radio", { name: /^Claude organization/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Make it the Anthropic default?" })).toBeVisible();
+    await user.click(within(dialog).getByRole("radio", { name: /^Make this key the default/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("heading", { name: "Link your Claude organization" })).toBeVisible();
+    expect(within(dialog).getByText("Approve it at Anthropic with the Admin or Billing role in the organization you link.")).toBeInTheDocument();
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Link your Claude organization" }), "Give the key a name");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Acme Claude");
+    await user.click(within(dialog).getByRole("button", { name: "Link your Claude organization" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://auth.claude.com/oauth/authorize?client_id=c&request_uri=r"));
+    expect(requests("POST", `${CREDENTIALS}/oauth`).map((r) => r.body)).toEqual([
+      { provider: "anthropic", name: "Acme Claude", make_default: true, linked_billing: true },
+    ]);
+    expect(JSON.parse(window.sessionStorage.getItem("kaeso.linked-billing") ?? "{}")).toEqual({ org: ORG, attempt: "att_link" });
+  });
+
+  it("stays put when the gateway names no approval page for a link", async () => {
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    on("POST", `${CREDENTIALS}/oauth`, { attempt: "att_none", authorize_url: null, device: null, expires_at: "2026-11-17T12:10:00Z", expires_in: 600 });
+    const ready = providers.map((p) => (p.id === "anthropic" && p.linked_billing ? { ...p, linked_billing: { ...p.linked_billing, ready: true } } : p));
+    const { user, dialog } = await open({}, ready);
+    await choose(user, dialog, "Anthropic");
+    await user.click(within(dialog).getByRole("radio", { name: /^Claude organization/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Acme Claude");
+    await user.click(within(dialog).getByRole("button", { name: "Link your Claude organization" }));
+    await waitFor(() => expect(requests("POST", `${CREDENTIALS}/oauth`)).toHaveLength(1));
+    expect(assign).not.toHaveBeenCalled();
+    expect(window.sessionStorage.getItem("kaeso.linked-billing")).toBeNull();
+  });
+
+  it("asks for the instance's app before linking", async () => {
+    const { user, dialog } = await open();
+    await choose(user, dialog, "Anthropic");
+    await user.click(within(dialog).getByRole("radio", { name: /^Claude organization/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Acme Claude");
+    await hoverReason(
+      user,
+      within(dialog).getByRole("button", { name: "Link your Claude organization" }),
+      "Ask an instance admin to set up linked billing first",
+    );
+  });
+
+  it("links a linked key again, ending its link first", async () => {
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    const linked = credential({ id: "cred_link", provider: "anthropic", name: "Acme Claude", auth_method: "linked_billing", account: "ocon_1", last4: "" });
+    on("POST", `${CREDENTIALS}/:credential/oauth`, {
+      attempt: "att_again",
+      authorize_url: "https://auth.claude.com/oauth/authorize?client_id=c&request_uri=r2",
+      device: null,
+      expires_at: "2026-11-17T12:10:00Z",
+      expires_in: 600,
+    });
+    const ready = providers.map((p) => (p.id === "anthropic" && p.linked_billing ? { ...p, linked_billing: { ...p.linked_billing, ready: true } } : p));
+    on("GET", "orgs/:org/providers", page(ready));
+    await renderUi(<ProviderKeyDialog org={ORG} keys={[linked]} replace={linked} onClose={vi.fn()} />);
+    const dialog = await screen.findByRole("dialog", { name: "Link again · Acme Claude" });
+    expect(within(dialog).getByText("The current link ends first; requests fail until you approve again.")).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Link your Claude organization" }));
+    await waitFor(() => expect(assign).toHaveBeenCalledWith("https://auth.claude.com/oauth/authorize?client_id=c&request_uri=r2"));
+    expect(JSON.parse(window.sessionStorage.getItem("kaeso.linked-billing") ?? "{}")).toEqual({ org: ORG, attempt: "att_again", credential: "cred_link" });
   });
 });

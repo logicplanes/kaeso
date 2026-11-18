@@ -82,6 +82,11 @@ pub struct ProviderView {
         instead of a resource key, with `auth_method` `azure_service_principal`. `null`\n\
         for other providers."]
     pub entra_id: Option<EntraIdView>,
+    #[doc = "For a provider whose customers can pay through their own organization\n\
+        (linked billing), such as Anthropic: a key may be a link instead of a secret,\n\
+        made with `linked_billing` in `POST /orgs/{org}/credentials/oauth`. `null` for\n\
+        other providers."]
+    pub linked_billing: Option<LinkedBillingOfferView>,
     #[doc = "Which format a model id is sent in when its catalogue entry names\n\
         none, the first matching pattern winning; models no pattern matches go\n\
         in the first of `dialects`. Empty for most providers."]
@@ -151,6 +156,27 @@ pub struct AwsSignInView {
         identity: the install allows it (`aws.ambient_credentials`) and the caller is\n\
         an instance admin."]
     pub gateway_identity: bool,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(
+    description = "How an organization links its own account at a provider to pay for its requests."
+)]
+pub struct LinkedBillingOfferView {
+    #[doc = "What is linked."]
+    #[schema(example = "Claude organization")]
+    pub organization: &'static str,
+    #[doc = "Where the linked organization's admins manage it."]
+    #[schema(example = "Claude Console")]
+    pub console: &'static str,
+    #[doc = "Where the linked organization sets its spend limit for the install and unlinks it."]
+    #[schema(example = "https://platform.claude.com/linked-platforms")]
+    pub spend_limit_url: &'static str,
+    #[doc = "The roles one of whom approves the link."]
+    #[schema(example = json!(["Admin", "Billing"]))]
+    pub roles: Vec<&'static str>,
+    #[doc = "Whether an instance admin set up the install's app, so links can be made."]
+    pub ready: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -265,6 +291,13 @@ impl ProviderView {
                 scopes: kaeso_core::azure::SCOPES.to_vec(),
                 role: kaeso_core::azure::ROLE,
             }),
+            linked_billing: p.linked_billing().map(|l| LinkedBillingOfferView {
+                organization: l.organization,
+                console: l.console,
+                spend_limit_url: l.spend_limit_url,
+                roles: l.roles.to_vec(),
+                ready: false,
+            }),
             model_routes: p
                 .routes
                 .iter()
@@ -297,6 +330,7 @@ impl ProviderView {
             key_endpoint: None,
             aws: None,
             entra_id: None,
+            linked_billing: None,
             model_routes: Vec::new(),
             server: p.server(),
         }
@@ -326,6 +360,7 @@ pub async fn list(
     let hidden = |id: &str| custom.custom().iter().any(|c| c.id().as_str() == id);
     let gateway_identity =
         state.config.aws.ambient_credentials && ctx.session().is_ok_and(|s| s.is_instance_admin);
+    let apps = kaeso_store::pg::linked_billing::apps(&state.pg).await?;
     Ok(Json(List::complete(
         PROVIDERS
             .iter()
@@ -340,6 +375,9 @@ pub async fn list(
                         },
                         gateway_identity,
                     });
+                }
+                if let Some(offer) = &mut view.linked_billing {
+                    offer.ready = apps.iter().any(|a| a.provider == p.id);
                 }
                 view
             })

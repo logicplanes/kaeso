@@ -499,5 +499,19 @@
   "kaeso.currency.label": "货币",
   "kaeso.currency.usdOnly": "仅美元",
   "kaeso.currency.noteBefore": "≈ {currency} 按当日欧洲央行汇率计算；{first} 之前按 {day} 的汇率。",
-  "kaeso.currency.note": "≈ {currency} 按当日欧洲央行汇率计算；最新汇率为 {day}。"
+  "kaeso.currency.note": "≈ {currency} 按当日欧洲央行汇率计算；最新汇率为 {day}。",
+  "kaeso.overview.linkedPaid": "其中 {cost} 通过关联计费支付。",
+  "kaeso.providerKey.linkedMethodTitle": "添加 API 密钥，还是关联您的 {organization}？",
+  "kaeso.providerKey.linkedHint": "请求计入您的 {organization}，以其设置的上限为限。",
+  "kaeso.providerKey.linkNotReady": "请先联系实例管理员设置关联计费",
+  "kaeso.providerKey.linkAgainTitle": "重新关联您的 {organization}",
+  "kaeso.providerKey.linkTitle": "关联您的 {organization}",
+  "kaeso.providerKey.linkRoles": "请在 {provider} 处以您要关联的组织中的 {roles} 角色批准。",
+  "kaeso.providerKey.linkRolesOr": " 或 ",
+  "kaeso.providerKey.linkNamePlaceholder": "我们的 {organization}",
+  "kaeso.providerKey.linkRuns": "请求在此安装自有的组织中运行，因此您组织的 IP 允许列表、加密密钥和数据保留设置不适用。",
+  "kaeso.providerKey.linkLimits": "只有直接向 {provider} 付费的组织才能关联，且只能关联到此安装中的一个组织。",
+  "kaeso.providerKey.linkAgainEnds": "当前关联会先结束；在您再次批准之前，请求都会失败。",
+  "kaeso.providerKey.linkAgainDialog": "重新关联 · {name}",
+  "kaeso.providerKey.linkSubmit": "关联您的 {organization}"
 }

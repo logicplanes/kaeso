@@ -153,6 +153,35 @@ describe("the organization overview", () => {
     expect(bar).not.toHaveAccessibleName(/proj_free/);
   });
 
+  it("says how much of this month's cost was paid through linked billing", async () => {
+    signedIn();
+    on("GET", "orgs/:org/usage", ({ query }: { query: URLSearchParams }) => ({
+      data: query.get("group_by") === "project" ? [usageRow(PROJECT, { cost: "4" })] : [],
+    }));
+    on("GET", "orgs/:org/usage/timeline", { data: [] });
+    on("GET", "orgs/:org/projects/:project/usage", { data: [] });
+    on(
+      "GET",
+      "orgs/:org/credentials",
+      page([
+        credential({ id: "cred_link", provider: "anthropic", name: "Acme Claude", auth_method: "linked_billing", auth_error: "unlinked" }),
+        credential({ id: "cred_wait", provider: "anthropic", name: "Waiting", auth_method: "linked_billing", auth_error: "needs_setup" }),
+      ]),
+    );
+    on("GET", "orgs/:org/linked-billing/costs", {
+      from: "2026-10-01",
+      to: "2026-10-15",
+      keys: [{ credential: "cred_link", cost: "1.5", requests: 2 }],
+      total: "1.5",
+    });
+    models(0);
+    await renderApp(`/orgs/${ORG}`);
+    expect(await screen.findByText("$1.50 of it was paid through linked billing.")).toBeInTheDocument();
+    const list = await screen.findByRole("list", { name: "Providers" });
+    expect(await within(list).findByText("Unlinked")).toBeInTheDocument();
+    expect(within(list).getByText("Needs instance setup")).toBeInTheDocument();
+  });
+
   it("lists provider keys by last use with the ones that need attention", async () => {
     signedIn();
     usage();

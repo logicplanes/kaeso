@@ -171,6 +171,8 @@ pub struct Outcome {
     pub egress: Option<DialectId>,
     pub provider: Option<&'static str>,
     pub custom_provider: Option<String>,
+    /// The provider key that paid for the request: the last one it was sent with.
+    pub credential_id: Option<Uuid>,
     pub requested_model: Option<String>,
     pub catalogue_model_id: Option<Uuid>,
     pub model_id: Option<String>,

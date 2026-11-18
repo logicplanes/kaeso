@@ -52,6 +52,8 @@ pub struct Inner {
     pub accounts: crate::services::provider_accounts::Endpoints,
     pub google_tokens: crate::services::google_auth::GoogleTokens,
     pub azure_tokens: crate::services::azure_auth::AzureTokens,
+    /// The install's key for linked billing's client assertions, read once.
+    pub linked_billing: crate::services::linked_billing::Signers,
     pub github_stars: crate::services::updates::GitHubStars,
     clickhouse_migrated: AtomicBool,
 }
@@ -154,6 +156,7 @@ impl AppState {
             accounts: p.accounts.unwrap_or_default(),
             google_tokens: crate::services::google_auth::GoogleTokens::default(),
             azure_tokens: crate::services::azure_auth::AzureTokens::default(),
+            linked_billing: crate::services::linked_billing::Signers::default(),
             github_stars: crate::services::updates::GitHubStars::default(),
             clickhouse_migrated: AtomicBool::new(false),
         }))

@@ -27,6 +27,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -52,6 +53,13 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": {
+        "organization": "Claude organization",
+        "console": "Claude Console",
+        "spend_limit_url": "https://platform.claude.com/linked-platforms",
+        "roles": ["Admin", "Billing"],
+        "ready": false
+      },
       "model_routes": [],
       "server": null
     },
@@ -77,6 +85,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -107,6 +116,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -132,6 +142,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -157,6 +168,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -182,6 +194,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -207,6 +220,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -232,6 +246,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -257,6 +272,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -282,6 +298,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -307,6 +324,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -332,6 +350,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -357,6 +376,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -382,6 +402,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -407,6 +428,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -432,6 +454,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -457,6 +480,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -522,6 +546,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [
         {
           "pattern": "claude-*",
@@ -556,6 +581,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -581,6 +607,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -606,6 +633,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -631,6 +659,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -656,6 +685,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -681,6 +711,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -706,6 +737,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -731,6 +763,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -756,6 +789,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -787,6 +821,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -812,6 +847,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -837,6 +873,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -862,6 +899,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -887,6 +925,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -912,6 +951,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -937,6 +977,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -962,6 +1003,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -987,6 +1029,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -1012,6 +1055,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -1037,6 +1081,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -1062,6 +1107,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -1122,6 +1168,7 @@
         "gateway_identity": false
       },
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -1161,6 +1208,7 @@
         "scopes": ["https://cognitiveservices.azure.com/.default", "https://ai.azure.com/.default"],
         "role": "Cognitive Services OpenAI User"
       },
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -1186,6 +1234,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     },
@@ -1211,6 +1260,7 @@
       "key_endpoint": null,
       "aws": null,
       "entra_id": null,
+      "linked_billing": null,
       "model_routes": [],
       "server": null
     }

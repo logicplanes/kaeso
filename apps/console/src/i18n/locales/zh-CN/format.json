@@ -283,5 +283,8 @@
   "format.audit.action.memberDeprovision": "身份提供方移除了成员",
   "format.audit.action.securityScimRotate": "已创建或替换 SCIM 令牌",
   "format.audit.action.securityScimDelete": "已删除 SCIM 令牌",
-  "format.audit.action.securitySsoGroupsUpdate": "单点登录组规则已更改"
+  "format.audit.action.securitySsoGroupsUpdate": "单点登录组规则已更改",
+  "format.audit.action.credentialFallback": "关联密钥的备用设置已更改",
+  "format.audit.action.instanceLinkedBillingUpdate": "关联计费应用已设置",
+  "format.audit.action.instanceLinkedBillingDelete": "关联计费应用已移除"
 }

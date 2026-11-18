@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "WITH kept AS (INSERT INTO linked_billing_profiles (org_id, provider, client_id, user_profile_id) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING RETURNING user_profile_id) SELECT user_profile_id AS \"user_profile_id!\" FROM kept UNION ALL SELECT user_profile_id FROM linked_billing_profiles WHERE org_id = $1 AND provider = $2 AND client_id = $3 LIMIT 1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_profile_id!",
+        "type_info": "Text",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "22f430fed1c100ba033f3d21ebdd248ac5d06cd1f41e9f17f9878f833d9b6b2a"
+}
