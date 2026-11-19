@@ -189,6 +189,7 @@ function AddGuardrailDialog({ org, onClose }: { org: string; onClose: () => void
     <>
       <StepDialog
         open
+        size="md"
         onOpenChange={(o) => !o && (created ? reveal.done() : onClose())}
         result={reveal.result}
         title={t("org.guardrails.add", "Add guardrail")}

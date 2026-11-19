@@ -49,6 +49,12 @@ describe("KeyValue", () => {
     expect(screen.getByText(/The connection to the provider/)).toHaveClass("break-words");
   });
 
+  it("keeps the line breaks of a value that wraps, so a rewritten prompt reads line by line", () => {
+    render(<KeyValue items={[{ label: "Rewritten text", value: "Mail [EMAIL_1]\nThe key is [API_KEY_1]", wrap: true }]} />);
+    expect(screen.getByText(/Mail \[EMAIL_1\]/)).toHaveClass("whitespace-pre-line");
+    expect(screen.getByText(/Mail \[EMAIL_1\]/).textContent).toBe("Mail [EMAIL_1]\nThe key is [API_KEY_1]");
+  });
+
   it("keeps its rows at their own height beside a taller neighbour instead of stretching to fill", () => {
     const { container } = render(<KeyValue items={items} />);
     expect(container.querySelector("dl")).toHaveClass("content-start", "h-fit");

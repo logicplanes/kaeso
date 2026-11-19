@@ -66,7 +66,11 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
               it.mono && "mono text-small",
             )}
           >
-            {it.wrap ? <span className="min-w-0 break-words">{it.value}</span> : <TruncatedText className="block min-w-0">{it.value}</TruncatedText>}
+            {it.wrap ? (
+              <span className="min-w-0 break-words whitespace-pre-line">{it.value}</span>
+            ) : (
+              <TruncatedText className="block min-w-0">{it.value}</TruncatedText>
+            )}
             {it.copy && (
               <span
                 className={cn(
