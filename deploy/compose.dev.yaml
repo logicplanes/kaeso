@@ -1,7 +1,7 @@
 name: kaeso-dev
 
 x-node: &node
-  image: node:24.22.2-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8
+  image: node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
   working_dir: /stack
   profiles: [console]
   volumes:
@@ -59,7 +59,7 @@ services:
       retries: 30
 
   mail:
-    image: axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
+    image: axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
     ports:
       - 127.0.0.1:${KAESO_MAIL_SMTP_PORT:-51025}:1025
       - 127.0.0.1:${KAESO_MAIL_PORT:-58025}:8025
