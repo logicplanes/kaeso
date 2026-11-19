@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Badge, Button, Code, DataTable, DialogScope, Empty, Status, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Badge, Button, DataTable, DialogScope, Empty, Status, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import type { McpServerView, ProjectView } from "~/api/generated/types";
 import { mcpServersQuery } from "~/api/queries/mcp-servers";
@@ -80,7 +80,11 @@ export function OrgMcpServersPage({ org, search = {} }: { org: string; search?: 
         col.custom(
           { id: "handle", header: t("orgHome.mcp.handle", "Handle"), size: 120, priority: 2 },
           (s: McpServerView) => s.handle,
-          (handle: string) => <Code>{handle}</Code>,
+          (handle: string) => (
+            <Text variant="small" mono truncate>
+              {handle}
+            </Text>
+          ),
         ),
         col.status({ id: "connection", header: t("orgHome.mcp.connection", "Connection"), size: 208, priority: 1 }, (s: McpServerView) => connectionWord(s)),
         col.custom(

@@ -304,7 +304,9 @@ describe("the organization overview", () => {
     const { user, router } = await renderApp(`/orgs/${ORG}`);
     const mystery = (await screen.findByRole("heading", { name: "mystery" })).closest("article, section") as HTMLElement;
     expect(mystery).toHaveTextContent("OpenAI");
-    expect(within(mystery).getByRole("link", { name: "Open in models" })).toBeInTheDocument();
+    expect(within(mystery).getByRole("link", { name: "Open in Checkout assistant" })).toBeInTheDocument();
+    const old = screen.getByRole("heading", { name: "claude-old" }).closest("article, section") as HTMLElement;
+    expect(within(old).getByRole("link", { name: "Add to Checkout assistant" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}/models`);
     expect(screen.queryByText("New")).not.toBeInTheDocument();
     const more = screen.getByRole("list", { name: "More new models" });
     await user.click(within(more).getByRole("button", { name: /claude-plain/ }));

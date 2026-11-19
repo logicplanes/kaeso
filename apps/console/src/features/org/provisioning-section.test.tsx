@@ -37,10 +37,12 @@ describe("provisioning", () => {
     });
     const { user } = await renderApp(PATH);
     expect(await screen.findByText("No token: the identity provider can't provision.")).toBeInTheDocument();
-    expect(screen.getAllByText(BASE).length).toBeGreaterThan(0);
+    expect(screen.getByText("Enter it at the provider with the token below.")).toBeInTheDocument();
+    expect(screen.getAllByText(BASE)).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: "Create token" }));
     const dialog = await screen.findByRole("dialog", { name: "SCIM token created" });
-    expect(within(dialog).getByText("sk-kso-scim-secret")).toBeInTheDocument();
+    expect(within(dialog).getByRole("textbox", { name: "Key" })).toHaveTextContent("sk-kso-scim-secret");
+    expect(within(dialog).getByText("Shown once. Store it now.")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Finish" }));
     expect(await screen.findByText("Ends in WxYz")).toBeInTheDocument();
     expect(screen.getByText(/12 members provisioned/)).toBeInTheDocument();

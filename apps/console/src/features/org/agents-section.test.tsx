@@ -23,7 +23,8 @@ describe("agents in an organization", () => {
     agentPolicy();
     const { user } = await renderApp(PATH);
     expect(await screen.findByRole("switch", { name: "Allow members' agents" })).toBeChecked();
-    await user.click(screen.getByRole("radio", { name: "Observer" }));
+    await user.click(screen.getByRole("combobox", { name: "Most an agent may do" }));
+    await user.click(await screen.findByRole("option", { name: /Observer/ }));
     await waitFor(() => expect(requests("PUT", "orgs/:org/security/agents").map((r) => r.body)).toEqual([{ allowed: true, max: "observer" }]));
     await user.click(screen.getByRole("switch", { name: "Allow members' agents" }));
     await waitFor(() => expect(requests("PUT", "orgs/:org/security/agents").at(-1)?.body).toEqual({ allowed: false, max: "observer" }));

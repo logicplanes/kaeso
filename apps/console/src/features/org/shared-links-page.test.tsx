@@ -61,17 +61,22 @@ describe("the organization's shared links", () => {
         last_opened_at: null,
       }),
       link({ id: "shl_3", title: "Old project", project: "proj_gone" }),
+      link({ id: "shl_4", title: "October snapshot", project: null, live: false, days: null, from: "2026-10-01", to: "2026-10-31" }),
+      link({ id: "shl_5", kind: "budget", title: "Checkout budgets", days: null }),
     ]);
     const { user } = await renderApp(PATH);
 
     const list = await screen.findByRole("grid", { name: "Shared links" });
-    await waitFor(() => expect(within(list).getAllByRole("row")).toHaveLength(3));
-    const [first, second, third] = within(list).getAllByRole("row");
-    expect(third).toHaveTextContent("Analytics · proj_gone");
+    await waitFor(() => expect(within(list).getAllByRole("row")).toHaveLength(5));
+    const [first, second, third, snapshot, budget] = within(list).getAllByRole("row");
+    expect(snapshot).toHaveTextContent("Analytics · 1 Oct 2026 to 31 Oct 2026 · Whole organization");
+    expect(budget).toHaveTextContent("Budget status ·");
+    expect(budget).not.toHaveTextContent("Last 30 days");
+    expect(third).toHaveTextContent("Analytics · Last 30 days · proj_gone");
     expect(first).toHaveTextContent("October spend");
     expect(first).toHaveTextContent("Anyone with the link");
     expect(first).toHaveTextContent("3 views · Expires 13 Nov 2026");
-    expect(second).toHaveTextContent("Member stats · Whole organization · Grace Hopper");
+    expect(second).toHaveTextContent("Member stats · Last 30 days · Whole organization · Grace Hopper");
     expect(second).toHaveTextContent("1 view · Never expires");
 
     await user.click(within(first as HTMLElement).getByRole("button", { name: "Revoke" }));
@@ -80,7 +85,7 @@ describe("the organization's shared links", () => {
     await user.click(within(dialog).getByRole("button", { name: "Revoke" }));
     await waitFor(() => expect(requests("DELETE", `${LINKS}/:link`).map((r) => r.path)).toEqual([`/platform/v1/orgs/${ORG}/shared-links/shl_1`]));
     expect(await notifications().findByText("October spend no longer works")).toBeInTheDocument();
-    await waitFor(() => expect(within(list).getAllByRole("row")).toHaveLength(2));
+    await waitFor(() => expect(within(list).getAllByRole("row")).toHaveLength(4));
   });
 
   it("offers to revoke only one's own links without the right to manage them", async () => {
