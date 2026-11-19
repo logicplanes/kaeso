@@ -5,6 +5,8 @@ use std::time::Duration;
 use kaeso_core::currency::{self, RateBook};
 use kaeso_store::StoreError;
 use kaeso_store::pg::exchange_rates as store;
+use rust_decimal::Decimal;
+use time::Date;
 use url::Url;
 
 use crate::state::AppState;
@@ -172,4 +174,60 @@ pub fn known(state: &AppState, code: &str) -> bool {
 
 pub async fn status(state: &AppState) -> Result<store::Status, StoreError> {
     store::status(&state.pg).await
+}
+
+#[derive(Clone, Debug)]
+pub struct Money {
+    book: Arc<RateBook>,
+    pub code: String,
+}
+
+impl Money {
+    pub fn of(state: &AppState, code: &str) -> Money {
+        Money {
+            book: book(state),
+            code: code.to_owned(),
+        }
+    }
+
+    pub async fn of_org(state: &AppState, org: uuid::Uuid) -> Result<Money, StoreError> {
+        let code = kaeso_store::pg::orgs::get(&state.pg, org)
+            .await?
+            .map_or_else(|| currency::USD.to_owned(), |o| o.currency);
+        Ok(Money::of(state, &code))
+    }
+
+    pub fn is_usd(&self) -> bool {
+        self.code == currency::USD
+    }
+
+    // Spend is converted at the rate of the day it was spent, never at today's.
+    pub fn on(&self, usd: Decimal, day: Date) -> Option<Decimal> {
+        self.book.convert(usd, &self.code, day)
+    }
+
+    pub fn now(&self, usd: Decimal) -> Option<Decimal> {
+        self.book.from_usd(usd, &self.code)
+    }
+
+    pub fn to_usd(&self, amount: Decimal) -> Option<Decimal> {
+        self.book.to_usd(amount, &self.code)
+    }
+
+    pub fn text_on(&self, usd: Decimal, day: Date) -> Option<String> {
+        self.on(usd, day).map(|v| self.text(v))
+    }
+
+    // Dollars keep every decimal they were costed with; a conversion is an estimate to six.
+    pub fn text(&self, amount: Decimal) -> String {
+        if self.is_usd() {
+            amount.normalize().to_string()
+        } else {
+            amount_text(amount)
+        }
+    }
+}
+
+pub fn amount_text(v: Decimal) -> String {
+    v.round_dp(6).normalize().to_string()
 }

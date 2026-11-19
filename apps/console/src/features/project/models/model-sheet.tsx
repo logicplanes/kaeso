@@ -2,7 +2,7 @@ import { Fragment, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertDialog, Badge, Button, DialogScope, Empty, KeyValue, Link, Menu, ModelLabel, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
-import { formatDate, formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatDate, formatNumber } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { CatalogueModelView, Fields } from "~/api/generated/types";
@@ -10,14 +10,17 @@ import { aliasesQuery, catalogueModelQuery } from "~/api/queries/models";
 import { playgroundModelsQuery } from "~/api/queries/playground";
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
-import { formatMoney } from "~/format/currency";
+import { moneyIn } from "~/format/currency";
+import { type Prices } from "~/format/prices";
+import { exchangeRatesQuery } from "~/api/queries/exchange-rates";
+import { useOrgPrices } from "~/kaeso/org-prices";
 import { dialectLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
 import { fullDayLabel } from "~/format/period";
 import { usePartyName } from "../keys/party";
 import { availabilityLabel, unavailableHint } from "./availability";
 import { capabilities, decisionLabels, fieldRows, tierLabels, unitPriceLabels, type FieldKind } from "./model-fields";
-import { ModelForm, changedFields, draftFrom, draftProblem, editBase, modalityLabel, type FieldDraft } from "./model-form";
+import { ModelForm, changedFields, draftProblem, editBase, modalityLabel, startDraft, type FieldDraft } from "./model-form";
 import { modelName } from "~/format/models";
 import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
@@ -59,7 +62,10 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
   const partyName = usePartyName(org, project);
   const providers = useProviders(org);
   const [editing, setEditing] = useState<FieldDraft | null>(null);
+  const [start, setStart] = useState<FieldDraft | undefined>(undefined);
   const [removing, setRemoving] = useState(false);
+  const prices = useOrgPrices(org);
+  const rates = useQuery(exchangeRatesQuery);
 
   const patch = useApiMutation({
     mutationFn: async (overrides: Partial<Fields> | Record<string, null>) =>
@@ -96,7 +102,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
 
   if (editing) {
     const problem = draftProblem(editing, m.custom);
-    const changes = changedFields(editing, base, dialects);
+    const changes = changedFields(editing, base, dialects, start);
     const save = () =>
       patch.mutate(changes, {
         onSuccess: () => {
@@ -106,7 +112,13 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
       });
     return (
       <div className="flex flex-col gap-20">
-        <ModelForm value={editing} onChange={setEditing} dialects={dialects} overrideNote={!providers.get(m.provider)?.custom} />
+        <ModelForm
+          value={editing}
+          onChange={setEditing}
+          dialects={dialects}
+          orgCurrency={prices.money.code}
+          overrideNote={!providers.get(m.provider)?.custom}
+        />
         <div className="flex justify-end gap-8">
           <Button
             onClick={() => {
@@ -193,7 +205,11 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
             leadingIcon={icons.edit}
             disabled={!canManage}
             {...(reason ? { disabledReason: reason } : {})}
-            onClick={() => setEditing(draftFrom(base))}
+            onClick={() => {
+              const first = startDraft(base, prices.money.code, rates.data);
+              setStart(first);
+              setEditing(first);
+            }}
           >
             {t("models.editOverrides", "Edit overrides")}
           </Button>
@@ -204,9 +220,9 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
             const value = shown[row.key];
             const tiers =
               row.kind === "tiers"
-                ? tierLabels(shown)
+                ? tierLabels(shown, prices)
                 : row.kind === "units"
-                  ? unitPriceLabels(shown)
+                  ? unitPriceLabels(shown, prices)
                   : row.kind === "decisions" && shown.decisions
                     ? decisionLabels(shown.decisions)
                     : [];
@@ -225,8 +241,8 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
                   ) : (
                     <Text tone={overridden ? "default" : "secondary"} truncate>
                       {row.kind === "price" && overridden && m.overrides.currency
-                        ? entered(m.overrides[row.key] as string, m.overrides.currency, value as string | null | undefined)
-                        : show(row.kind, row.key, value)}
+                        ? entered(prices, m.overrides[row.key] as string, m.overrides.currency, value as string | null | undefined)
+                        : show(prices, row.kind, row.key, value)}
                     </Text>
                   )}
                   <Text variant="caption" tone="tertiary">
@@ -370,18 +386,17 @@ function inUse(m: Pick<CatalogueModelView, "effective" | "egress_dialect">): Fie
   return { ...m.effective, egress_dialect: m.effective.egress_dialect ?? m.egress_dialect };
 }
 
-function entered(price: string, code: string, usd: string | null | undefined): string {
-  const values = { price: formatMoney(price, code), usd: usd ? formatUSD(usd) : "" };
-  return usd
-    ? t("models.pricePerMillionIn", "{price} / M tokens (≈ {usd})", values)
-    : t("models.pricePerMillionNoRate", "{price} / M tokens (no exchange rate)", values);
+// A price entered in the organization's currency reads as entered; one in another currency is converted like every other.
+function entered(prices: Prices, price: string, code: string, usd: string | null | undefined): string {
+  if (!usd) return t("models.pricePerMillionNoRate", "{price} / M tokens (no exchange rate)", { price: moneyIn(code).price(price) });
+  return t("models.pricePerMillion", "{price} / M tokens", { price: code === prices.money.code ? prices.money.price(price) : prices.unit(usd) });
 }
 
-function show(kind: FieldKind, key: keyof Fields, v: unknown): string {
+function show(prices: Prices, kind: FieldKind, key: keyof Fields, v: unknown): string {
   if (v === null || v === undefined || (Array.isArray(v) && v.length === 0)) return "—";
   switch (kind) {
     case "price":
-      return t("models.pricePerMillion", "{price} / M tokens", { price: formatUSD(String(v)) });
+      return t("models.pricePerMillion", "{price} / M tokens", { price: prices.unit(String(v)) });
     case "number":
       return key === "timeout_seconds"
         ? t("models.seconds", "{seconds} s", { seconds: formatNumber(Number(v)) })

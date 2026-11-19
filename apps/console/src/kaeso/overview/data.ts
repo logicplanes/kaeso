@@ -12,7 +12,7 @@ import { analyticsGranularity } from "~/format/buckets";
 import { previousPeriod, shiftDay, utcDay, type PeriodSearch } from "~/format/period";
 import { comparedWith, resolvePeriod } from "~/format/presets";
 import { t } from "~/i18n";
-import { useDisplayChoice } from "~/kaeso/currency";
+import { useOrgMoney } from "~/kaeso/org-money";
 import { useProviders } from "~/kaeso/providers";
 import { byBucket, totals } from "~/kaeso/usage-panels";
 import { keyLabel, serviceAccountName, usePartyName } from "~/features/project/keys/party";
@@ -51,15 +51,12 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   const logsOn = useRequestLogs();
   const span = useQuery({ ...usageSpanQuery(org, project), enabled: canUsage });
   const { from, to, period } = resolvePeriod(search, span.data?.first_day);
-  const choice = useDisplayChoice();
-  const ready = canUsage && (period !== "all" || !span.isPending) && (!showCost || choice.settled);
+  const money = useOrgMoney(org);
+  const ready = canUsage && (period !== "all" || !span.isPending);
   const g = analyticsGranularity(from, to);
   const before = previousPeriod(from, to);
   const compare = comparedWith(period, from, to);
-  const display = choice.display;
-  const currency = showCost ? display?.code : undefined;
-  const base = (f: string, tt: string, by: GroupBy) =>
-    project ? projectUsageQuery(org, project, f, tt, by, currency) : orgUsageQuery(org, f, tt, by, currency);
+  const base = (f: string, tt: string, by: GroupBy) => (project ? projectUsageQuery(org, project, f, tt, by) : orgUsageQuery(org, f, tt, by));
   const usage = (f: string, tt: string, by: GroupBy) => {
     const q = base(f, tt, by);
     return { ...q, placeholderData: keepWithin(q.queryKey, by) };
@@ -161,8 +158,8 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     compareLabel: compare ?? "",
     canUsage,
     showCost,
-    /** The currency costs are also shown in, when the person picked one and may see costs. */
-    display: currency ? display : undefined,
+    /** Writes spend in the organization's currency, which the usage endpoints convert it to. */
+    money,
     can,
     daily,
     rows,

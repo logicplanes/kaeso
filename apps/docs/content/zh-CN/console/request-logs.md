@@ -84,7 +84,7 @@ Anthropic 只缓存请求用 `cache_control` 标记的提示部分；对于使�
 
 | 格式 | 内容 |
 | --- | --- |
-| CSV | 元数据，供电子表格使用 |
+| CSV | 元数据，供电子表格使用。费用在 `cost_usd` 中；使用其他货币的组织还会以该货币给出，例如 `cost_eur`（[货币](../concepts/currencies.md)） |
 | JSON Lines | 元数据，每行一个请求 |
 | JSON Lines（含内容） | 元数据，以及已存储的请求和回复 |
 

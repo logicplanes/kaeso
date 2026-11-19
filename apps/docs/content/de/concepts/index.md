@@ -42,5 +42,5 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 - [Formatübersetzung](format-translation.md): Sehen Sie, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft.
 - [Rechte](rights.md): Schlagen Sie jedes Recht nach, welche Rollen es haben und nach welchen Regeln Sie es vergeben.
 - [KPMR](kpmr.md): Erfahren Sie, woher die Modelldaten kommen und wie eine Installation sie aktuell hält.
-- [Währungen](currencies.md): Geben Sie Preise ein und lesen Sie Ausgaben in anderen Währungen, zu den Tageskursen der EZB.
+- [Währungen](currencies.md): Zeigen Sie Ausgaben, Preise und Budgets einer Organisation in ihrer eigenen Währung, zu den Tageskursen der EZB.
 - [MCP-Portal](mcp-portal.md): Geben Sie KI-Clients die Tools Ihrer MCP-Server, mit Anmeldung, Rechten, Limits und Protokollen von Kaeso.

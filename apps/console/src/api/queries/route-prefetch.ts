@@ -3,13 +3,11 @@ import { analyticsGranularity } from "~/format/buckets";
 import type { PeriodSearch } from "~/format/period";
 import { resolvePeriod } from "~/format/presets";
 import { auditLogQuery, type AuditFilters } from "./audit";
-import { cachedDisplayCode } from "./exchange-rates";
 import { logsInfiniteQuery, type LogFilters } from "./logs";
 import { projectUsageQuery, usageSpanQuery } from "./usage";
 
 export function prefetchLogs(client: QueryClient, org: string, project: string, filters: LogFilters): Promise<void> {
-  const currency = cachedDisplayCode(client);
-  return client.prefetchInfiniteQuery(logsInfiniteQuery(org, project, currency ? { ...filters, currency } : filters));
+  return client.prefetchInfiniteQuery(logsInfiniteQuery(org, project, filters));
 }
 
 export function prefetchProjectAuditLog(client: QueryClient, org: string, project: string, filters: AuditFilters): Promise<void> {
@@ -20,5 +18,5 @@ export async function prefetchProjectAnalytics(client: QueryClient, org: string,
   const span = search.period === "all" ? await client.ensureQueryData(usageSpanQuery(org, project)).catch(() => undefined) : undefined;
   if (search.period === "all" && !span) return;
   const { from, to } = resolvePeriod(search, span?.first_day);
-  await client.prefetchQuery(projectUsageQuery(org, project, from, to, analyticsGranularity(from, to), cachedDisplayCode(client)));
+  await client.prefetchQuery(projectUsageQuery(org, project, from, to, analyticsGranularity(from, to)));
 }

@@ -15,6 +15,7 @@ import { modelName } from "~/format/models";
 import { t } from "~/i18n";
 import { parentConflict, parentFilters } from "./limit-checks";
 import { LimitFigure } from "./limit-figure";
+import { useOrgCurrency } from "./org-money";
 import { LimitEditor, alertThresholds, draftOf, limitBody, limitProblem, newLimit, type LimitDraft } from "./limit-editor";
 
 export type LimitOwner = { kind: "user" | "service_account"; id: string };
@@ -24,9 +25,9 @@ export function useParentLimits(org: string, project: string, target: { level: "
   return results.flatMap((r) => r.data ?? []);
 }
 
-export function limitBlocker(draft: LimitDraft, parents: LimitView[]): string | null {
+export function limitBlocker(draft: LimitDraft, parents: LimitView[], currency: string): string | null {
   if (!draft.amount) return t("kaeso.limits.enterAmount", "Enter an amount");
-  const own = limitProblem(draft);
+  const own = limitProblem(draft, currency);
   if (own) return own;
   const over = parentConflict(draft, parents);
   return over
@@ -62,7 +63,8 @@ export function LimitsSection({
   const parents = useParentLimits(org, project, target, owner);
   const catalogue = useQuery(catalogueQuery(org, project));
   const [draft, setDraft] = useState<LimitDraft | null>(null);
-  const blocker = draft && limitBlocker(draft, parents);
+  const currency = useOrgCurrency(org);
+  const blocker = draft && limitBlocker(draft, parents, currency);
   const add = useApiMutation({
     mutationFn: async (d: LimitDraft) =>
       data(
@@ -200,6 +202,7 @@ export function EditLimitDialog({
   onRemove?: (() => void) | undefined;
 }) {
   const catalogue = useQuery(catalogueQuery(org, project));
+  const currency = useOrgCurrency(org);
   const [editing, setEditing] = useState<LimitDraft>(() => draftOf(limit));
   const update = useApiMutation({
     mutationFn: async (d: LimitDraft) =>
@@ -218,7 +221,7 @@ export function EditLimitDialog({
       if (error.status === 412) onClose();
     },
   });
-  const problem = limitProblem(editing);
+  const problem = limitProblem(editing, limit.currency ?? currency);
   return (
     <Dialog
       busy={update.isPending}

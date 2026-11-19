@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
 use axum::Json;
 use axum::extract::State;
-use kaeso_core::currency::{self, RateBook};
+use kaeso_core::currency;
 use rust_decimal::Decimal;
-use serde::{Deserialize, Serialize};
-use time::{Date, OffsetDateTime};
-use utoipa::{IntoParams, ToSchema};
+use serde::Serialize;
+use time::OffsetDateTime;
+use utoipa::ToSchema;
 
 use crate::platform::error::{ApiError, ApiResult};
 use crate::services::exchange_rates as service;
@@ -92,37 +90,9 @@ pub async fn get(State(state): State<AppState>) -> ApiResult<Json<ExchangeRates>
     Ok(Json(view(&state).await?))
 }
 
-#[derive(Debug, Default, Deserialize, IntoParams)]
-#[into_params(parameter_in = Query)]
-pub struct CurrencyParam {
-    #[doc = "Also give each cost in this currency, an ISO 4217 code from\n\
-        `exchange-rates`, as `converted_cost`: at the rate of the day it was spent, or\n\
-        the latest rate for days before the install's first rates."]
-    #[param(example = "EUR")]
-    pub currency: Option<String>,
-}
-
-pub(crate) fn converter(
-    state: &AppState,
-    code: Option<&str>,
-) -> ApiResult<Option<(Arc<RateBook>, String)>> {
-    match code {
-        None | Some(currency::USD) => Ok(None),
-        Some(code) if service::known(state, code) => {
-            Ok(Some((service::book(state), code.to_owned())))
-        }
-        Some(code) => Err(unknown("currency", code)),
-    }
-}
-
 pub(crate) fn unknown(param: &str, code: &str) -> ApiError {
     ApiError::invalid(
         param,
         format!("Kaeso has no exchange rate for {code}; use a currency from `exchange-rates`."),
     )
-}
-
-pub(crate) fn convert(book: &RateBook, code: &str, usd: Decimal, day: Date) -> Option<String> {
-    book.convert(usd, code, day)
-        .map(|v| v.round_dp(6).normalize().to_string())
 }

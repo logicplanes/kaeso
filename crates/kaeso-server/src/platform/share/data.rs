@@ -12,6 +12,7 @@ use uuid::Uuid;
 
 use crate::platform::error::ApiResult;
 use crate::platform::usage::{UsageOf, UsageRow, rows};
+use crate::services::exchange_rates::Money;
 use crate::state::AppState;
 
 pub const KINDS: [&str; 4] = ["analytics", "member", "budget", "project_card"];
@@ -46,6 +47,10 @@ pub struct SharedRow {
     pub reasoning_tokens: u64,
     #[doc = "Cost in USD; `null` when the link hides costs."]
     pub cost: Option<String>,
+    #[doc = "`cost` in the view's `currency`, each day at that day's ECB rate; `null`\n\
+        when the link hides costs."]
+    #[serde(default)]
+    pub converted_cost: Option<String>,
     #[doc = "MCP tool calls."]
     pub tool_calls: u64,
 }
@@ -75,8 +80,11 @@ pub struct SharedLimit {
     pub model: Option<String>,
     #[doc = "`minute`, `day`, `month` or `total`."]
     pub period: String,
-    #[doc = "Requests, tool calls, tokens or USD."]
+    #[doc = "Requests, tool calls, tokens, or for a spend budget an amount in `currency`."]
     pub amount: String,
+    #[doc = "The currency of a spend budget's `amount` and `used`; `null` for counts."]
+    #[serde(default)]
+    pub currency: Option<String>,
     #[doc = "Used in the current period, in the unit of `amount`, when known."]
     pub used: Option<String>,
     #[doc = "Whether it refuses requests once used up."]
@@ -94,11 +102,40 @@ pub struct SharedData {
     pub breakdowns: Vec<SharedBreakdown>,
     pub limits: Vec<SharedLimit>,
     pub costs: bool,
+    // Kept with a snapshot, so it reads as it was made even after the org changes currency.
+    #[serde(default = "usd")]
+    pub currency: String,
+}
+
+fn usd() -> String {
+    kaeso_core::currency::USD.to_owned()
 }
 
 impl SharedData {
+    // A snapshot kept before organizations had a currency holds dollars only.
+    pub fn kept(mut self) -> SharedData {
+        if self.currency == kaeso_core::currency::USD {
+            let fill = |rows: &mut Vec<SharedRow>| {
+                for r in rows.iter_mut().filter(|r| r.converted_cost.is_none()) {
+                    r.converted_cost.clone_from(&r.cost);
+                }
+            };
+            fill(&mut self.days);
+            fill(&mut self.previous_days);
+            for b in &mut self.breakdowns {
+                fill(&mut b.rows);
+            }
+        }
+        self
+    }
+
     pub fn without_costs(mut self) -> SharedData {
-        let strip = |rows: &mut Vec<SharedRow>| rows.iter_mut().for_each(|r| r.cost = None);
+        let strip = |rows: &mut Vec<SharedRow>| {
+            rows.iter_mut().for_each(|r| {
+                r.cost = None;
+                r.converted_cost = None;
+            });
+        };
         strip(&mut self.days);
         strip(&mut self.previous_days);
         for b in &mut self.breakdowns {
@@ -191,6 +228,11 @@ fn shared(r: &UsageRow, costs: bool) -> SharedRow {
         cache_write_tokens: r.cache_write_tokens,
         reasoning_tokens: r.reasoning_tokens,
         cost: if costs { r.cost.clone() } else { None },
+        converted_cost: if costs {
+            r.converted_cost.clone()
+        } else {
+            None
+        },
         tool_calls: r.tool_calls,
     }
 }
@@ -290,6 +332,7 @@ async fn clients(
     filter: &usage_store::Filter,
     (from, to): (Date, Date),
     costs: bool,
+    money: &Money,
 ) -> Option<Vec<SharedRow>> {
     if (to - from).whole_days() >= LONGEST_CLIENT_SPAN {
         return None;
@@ -297,7 +340,8 @@ async fn clients(
     let ch = crate::platform::logs::log_store(state).ok()?;
     let start = from.midnight().assume_utc();
     let end = to.next_day()?.midnight().assume_utc();
-    let step = u32::try_from((end - start).whole_seconds()).ok()?;
+    // A bucket per day, so each day's cost is converted at its own rate.
+    let step = 86_400;
     let query = ch_logs::Timeline {
         project,
         filter: filter.clone(),
@@ -323,13 +367,18 @@ async fn clients(
         row.cache_write_tokens += r.cache_write_tokens;
         row.reasoning_tokens += r.reasoning_tokens;
         if costs {
-            let sum = row
-                .cost
-                .as_deref()
-                .and_then(|c| c.parse::<rust_decimal::Decimal>().ok())
-                .unwrap_or_default()
-                + kaeso_core::cost::cost_from_raw(r.cost);
-            row.cost = Some(sum.normalize().to_string());
+            let add = |sum: &Option<String>, more: rust_decimal::Decimal| {
+                sum.as_deref()
+                    .and_then(|c| c.parse::<rust_decimal::Decimal>().ok())
+                    .unwrap_or_default()
+                    + more
+            };
+            let cost = kaeso_core::cost::cost_from_raw(r.cost);
+            let day = time::OffsetDateTime::from_unix_timestamp(r.start_unix)
+                .map_or(from, |at| at.date());
+            let converted = money.on(cost, day).unwrap_or_default();
+            row.cost = Some(add(&row.cost, cost).normalize().to_string());
+            row.converted_cost = Some(money.text(add(&row.converted_cost, converted)));
         }
     }
     let mut rows: Vec<SharedRow> = by.into_values().collect();
@@ -351,8 +400,10 @@ pub(crate) async fn compute(
         member: link.member_id.map(usage_store::Member::User),
         ..usage_store::Filter::default()
     };
+    let money = Money::of_org(state, org).await?;
     let mut data = SharedData {
         costs,
+        currency: money.code.clone(),
         ..SharedData::default()
     };
     if link.kind == "budget" {
@@ -369,7 +420,7 @@ pub(crate) async fn compute(
         project,
         costs,
     };
-    let day_rows = |window| rows(state, of(), window, GroupBy::Day, &filter, None);
+    let day_rows = |window| rows(state, of(), window, GroupBy::Day, &filter, &money);
     data.days = day_rows((from, to))
         .await?
         .iter()
@@ -398,7 +449,7 @@ pub(crate) async fn compute(
     };
     let mut book = book(state, org).await?;
     for (by, group) in dims {
-        let found = rows(state, of(), (from, to), *group, &filter, None).await?;
+        let found = rows(state, of(), (from, to), *group, &filter, &money).await?;
         fill_names(state, &mut book, &found, by).await?;
         let mut out: Vec<SharedRow> = found.iter().map(|r| shared(r, costs)).collect();
         match *by {
@@ -413,7 +464,7 @@ pub(crate) async fn compute(
         });
     }
     if link.kind != "project_card"
-        && let Some(rows) = clients(state, org, project, &filter, (from, to), costs).await
+        && let Some(rows) = clients(state, org, project, &filter, (from, to), costs, &money).await
     {
         data.breakdowns.push(SharedBreakdown {
             by: "client".into(),
@@ -496,6 +547,7 @@ async fn limits(state: &AppState, link: &SharedLink, names: Names) -> ApiResult<
             model: l.model.and_then(|m| model_names.get(&m).cloned()),
             period: view.period.to_owned(),
             amount: view.amount,
+            currency: view.currency,
             used: view.used,
             hard: view.hard,
             resets_at: view.resets_at,

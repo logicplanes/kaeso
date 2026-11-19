@@ -28,7 +28,8 @@ import { totalTokens } from "~/kaeso/tokens";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
 import { costWidth, UsageCost } from "~/kaeso/media-usage";
-import { saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
+import { costColumns, saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
+import { useOrgMoney } from "~/kaeso/org-money";
 import { t } from "~/i18n";
 
 export type OrgBreakdown = "project" | "model" | "member" | "billed_to";
@@ -78,6 +79,7 @@ export function OrgUsageBreakdown({
   const phone = usePhone();
   const rights = useOrgRights(org);
   const providers = useProviders(org);
+  const money = useOrgMoney(org);
   const usage = useQuery({ ...orgUsageQuery(org, from, to, by), enabled: ready });
   const members = useQuery({ ...orgMembersQuery(org), enabled: by === "member" && rights.has("members.view") });
   const keys = useQuery({ ...orgCredentialsQuery(org), enabled: by === "billed_to" && rights.has("provider_credentials.view") });
@@ -207,8 +209,8 @@ export function OrgUsageBreakdown({
       ? [
           col.custom(
             { id: "cost", header: t("common.cost", "Cost"), size: costWidth(rows, NUMBER_WIDTH, phone), priority: 1 },
-            (r: UsageRow) => r.cost ?? "",
-            (_v: string, r: UsageRow) => <UsageCost row={r} />,
+            (r: UsageRow) => r.converted_cost ?? "",
+            (_v: string, r: UsageRow) => <UsageCost row={r} money={money} />,
             { align: "end" },
           ),
         ]
@@ -224,7 +226,7 @@ export function OrgUsageBreakdown({
           { header: t("common.requests", "Requests"), value: (r) => r.requests },
           { header: t("orgHome.errors", "Errors"), value: (r) => r.errors },
           { header: t("common.tokens", "Tokens"), value: (r) => totalTokens(r) },
-          ...(showCost ? [{ header: t("common.cost", "Cost"), value: (r: UsageRow) => r.cost }] : []),
+          ...(showCost ? costColumns(money) : []),
         ],
         rows,
       ),

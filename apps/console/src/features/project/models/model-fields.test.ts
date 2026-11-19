@@ -1,8 +1,12 @@
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { afterEach, describe, expect, it } from "vitest";
 import { contextLabel, decisionLabels, dialectPill, tierLabels, unitPriceLabels } from "./model-fields";
-import { changedFields, decisionsOf, draftFrom, draftProblem, editBase, inCurrency, inDollars } from "./model-form";
+import { changedFields, decisionsOf, draftFrom, draftProblem, editBase, inCurrency, inOrgCurrency, startDraft } from "./model-form";
+import { moneyIn } from "~/format/currency";
+import { pricesIn } from "~/format/prices";
 import { exchangeRates } from "~/test/fixtures";
+
+const dollars = pricesIn(moneyIn("USD"), undefined);
 
 const limits = [8192, 128_000, 200_000, 1_048_576, 2_000_000];
 
@@ -41,9 +45,9 @@ describe("tierLabels", () => {
         { context_above: 1_048_576, output_price: "0.625" },
       ],
     };
-    expect(tierLabels(f)).toEqual(["Above 272K: $20.00 / $75.00", "Above 1M: $10.00 / $0.625"]);
-    expect(tierLabels({ price_tiers: [{ context_above: 32_000 }] })).toEqual(["Above 32K: — / —"]);
-    expect(tierLabels({})).toEqual([]);
+    expect(tierLabels(f, dollars)).toEqual(["Above 272K: $20.00 / $75.00", "Above 1M: $10.00 / $0.625"]);
+    expect(tierLabels({ price_tiers: [{ context_above: 32_000 }] }, dollars)).toEqual(["Above 32K: — / —"]);
+    expect(tierLabels({}, dollars)).toEqual([]);
   });
 });
 
@@ -57,13 +61,13 @@ describe("unitPriceLabels", () => {
         { per: "second", of: "output", usd: "0.5" },
       ],
     };
-    expect(unitPriceLabels(f)).toEqual([
+    expect(unitPriceLabels(f, dollars)).toEqual([
       "$0.04 per image of output (low, 1K)",
       "$0.01 per image of input",
       "$0.08 per megapixel of output, estimated",
       "$0.50 per second of output",
     ]);
-    expect(unitPriceLabels({})).toEqual([]);
+    expect(unitPriceLabels({}, dollars)).toEqual([]);
     expect(dialectPill("openai_images")).toBe("images");
     expect(dialectPill("minimax_images")).toBe("images");
   });
@@ -80,7 +84,7 @@ describe("unitPriceLabels", () => {
         { per: "search", of: "input", usd: "0.01" },
       ],
     };
-    expect(unitPriceLabels(f)).toEqual([
+    expect(unitPriceLabels(f, dollars)).toEqual([
       "$15.00 per million characters of input",
       "$0.11 per hour of input (at least 10 s)",
       "$0.12 per minute of output",
@@ -107,7 +111,7 @@ describe("unitPriceLabels", () => {
         { per: "video", of: "output", usd: "0.2" },
       ],
     };
-    expect(unitPriceLabels(f)).toEqual(["$0.28 per video of output (768p, 6 s long)", "$0.20 per video of output"]);
+    expect(unitPriceLabels(f, dollars)).toEqual(["$0.28 per video of output (768p, 6 s long)", "$0.20 per video of output"]);
     expect(dialectPill("xai_videos")).toBe("videos");
     expect(dialectPill("veo")).toBe("videos");
   });
@@ -194,10 +198,22 @@ describe("prices in another currency", () => {
     expect(inCurrency(draft, "CHF", rates).input_price).toBe("2.777777778");
   });
 
-  it("shows the dollars a price is costed at and the rate's day, or that the currency has no rate", () => {
-    expect(inDollars("2.5", "0.9", "2026-11-13")).toBe("≈ $2.777778 at the ECB rate of 13 Nov 2026");
-    expect(inDollars("", "0.9", "2026-11-13")).toBeUndefined();
-    expect(inDollars("2.5", undefined, "2026-11-13")).toBe("No exchange rate for this currency yet; requests at these prices show an unknown cost.");
+  it("shows a price entered in another currency in the organization's, or that the currency has no rate", () => {
+    expect(inOrgCurrency("2.5", "EUR", "USD", rates)).toBe("≈ $2.777778 at the ECB rate of 13 Nov 2026");
+    expect(inOrgCurrency("3", "GBP", "EUR", rates)).toBe("≈ €3.60 at the ECB rate of 13 Nov 2026");
+    expect(inOrgCurrency("2.5", "EUR", "EUR", rates)).toBeUndefined();
+    expect(inOrgCurrency("", "GBP", "EUR", rates)).toBeUndefined();
+    expect(inOrgCurrency("2.5", "CHF", "EUR", rates)).toBe("No exchange rate for this currency yet; requests at these prices show an unknown cost.");
+  });
+
+  it("starts the editor in the organization's currency without pinning the prices it only showed converted", () => {
+    const first = startDraft(inUse, "EUR", rates);
+    expect([first.currency, first.input_price, first.output_price]).toEqual(["EUR", "2.5", "13.5"]);
+    expect(changedFields({ ...first, display_name: "Sonnet" }, inUse, [], first)).toEqual({ display_name: "Sonnet" });
+    expect(changedFields({ ...first, output_price: "12" }, inUse, [], first)).toMatchObject({ currency: "EUR", input_price: "2.5", output_price: "12" });
+    expect(startDraft(inUse, "USD", rates).currency).toBe("USD");
+    expect(startDraft(inUse, "CHF", rates).currency).toBe("USD");
+    expect(startDraft({ ...inUse, currency: "GBP" }, "EUR", rates).currency).toBe("GBP");
   });
 
   it("takes prices in any currency, still as decimal amounts", () => {

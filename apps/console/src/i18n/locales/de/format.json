@@ -160,7 +160,7 @@
   "format.inviteState.pending": "Ausstehend",
   "format.keyState.disabled": "Deaktiviert",
   "format.limit.requestRate": "Anfragerate von {amount} Anfragen pro Minute",
-  "format.limit.spendBudget": "Ausgabenbudget von {amount} USD {period, select, day {pro Tag} month {pro Monat} other {insgesamt}}",
+  "format.limit.spendBudget": "Ausgabenbudget von {amount} {currency} {period, select, day {pro Tag} month {pro Monat} other {insgesamt}}",
   "format.limit.tokenBudget": "Token-Budget von {amount} Token {period, select, day {pro Tag} month {pro Monat} other {insgesamt}}",
   "format.limit.tokenRate": "Token-Rate von {amount} Token pro Minute",
   "format.limitKind.requestRate": "Anfragerate",

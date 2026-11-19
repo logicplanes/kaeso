@@ -1,7 +1,6 @@
 use rust_decimal::Decimal;
 use sqlx::PgExecutor;
 use time::{Date, OffsetDateTime};
-use uuid::Uuid;
 
 use crate::StoreError;
 
@@ -77,33 +76,6 @@ pub async fn checked(
         "UPDATE instance_settings SET exchange_rates_checked_at = $1, exchange_rates_error = $2",
         at,
         error
-    )
-    .execute(db)
-    .await?;
-    Ok(())
-}
-
-pub async fn display_currency(
-    db: impl PgExecutor<'_>,
-    user: Uuid,
-) -> Result<Option<String>, StoreError> {
-    Ok(
-        sqlx::query_scalar!("SELECT display_currency FROM users WHERE id = $1", user)
-            .fetch_optional(db)
-            .await?
-            .flatten(),
-    )
-}
-
-pub async fn set_display_currency(
-    db: impl PgExecutor<'_>,
-    user: Uuid,
-    currency: Option<&str>,
-) -> Result<(), StoreError> {
-    sqlx::query!(
-        "UPDATE users SET display_currency = $2, updated_at = now() WHERE id = $1",
-        user,
-        currency
     )
     .execute(db)
     .await?;

@@ -1,16 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogueModelView } from "~/api/generated/types";
 import type { PlaygroundModel } from "~/api/queries/playground";
+import { moneyIn } from "~/format/currency";
+import { pricesIn } from "~/format/prices";
 import { catalogueModelOption, keepChosen, playgroundModelOption, recentModels, rememberModel } from "./model-options";
 
 const entry = (effective: Partial<CatalogueModelView["effective"]>, more: Partial<CatalogueModelView> = {}) =>
   ({ id: "cm_01", provider: "openai", model_id: "gpt-5-mini", deprecated: false, effective, ...more }) as unknown as CatalogueModelView;
+
+const usd = pricesIn(moneyIn("USD"), undefined);
 
 describe("model picker options", () => {
   it("carry a catalogue model's name, id, capabilities, context and price", () => {
     expect(
       catalogueModelOption(
         entry({ display_name: "GPT-5 mini", tool_call: true, reasoning: true, context_limit: 400_000, input_price: "0.25", output_price: "2" }),
+        usd,
       ),
     ).toEqual({
       value: "cm_01",
@@ -24,12 +29,12 @@ describe("model picker options", () => {
   });
 
   it("write fractional prices exactly and whole dollars short, as the Models page does", () => {
-    expect(catalogueModelOption(entry({ input_price: "0.075", output_price: "0.3" })).price).toBe("$0.075 / $0.30");
-    expect(catalogueModelOption(entry({ input_price: "4", output_price: "20" })).price).toBe("$4 / $20");
+    expect(catalogueModelOption(entry({ input_price: "0.075", output_price: "0.3" }), usd).price).toBe("$0.075 / $0.30");
+    expect(catalogueModelOption(entry({ input_price: "4", output_price: "20" }), usd).price).toBe("$4 / $20");
   });
 
   it("leave out a name that repeats the id, and mark deprecated models", () => {
-    expect(catalogueModelOption(entry({ display_name: "gpt-5-mini" }, { deprecated: true }))).toEqual({
+    expect(catalogueModelOption(entry({ display_name: "gpt-5-mini" }, { deprecated: true }), usd)).toEqual({
       value: "cm_01",
       provider: "openai",
       model: "gpt-5-mini",
@@ -50,7 +55,7 @@ describe("model picker options", () => {
       output_price: "15",
       provider_key: false,
     } as unknown as PlaygroundModel;
-    expect(playgroundModelOption(m, "anthropic/claude-sonnet-4-5", "No Anthropic key")).toEqual({
+    expect(playgroundModelOption(m, "anthropic/claude-sonnet-4-5", "No Anthropic key", usd)).toEqual({
       value: "anthropic/claude-sonnet-4-5",
       provider: "anthropic",
       model: "claude-sonnet-4-5",
@@ -65,7 +70,10 @@ describe("model picker options", () => {
 
   it("disable a Playground model the project's account can't call and say what it needs", () => {
     const m = { provider: "openai", model_id: "gpt-image-2", display_name: "GPT Image 2", input_modalities: ["text"], provider_key: true, needs_api_key: true };
-    expect(playgroundModelOption(m as unknown as PlaygroundModel, "gpt-image-2", "No OpenAI key")).toMatchObject({ disabled: true, note: "Needs an API key" });
+    expect(playgroundModelOption(m as unknown as PlaygroundModel, "gpt-image-2", "No OpenAI key", usd)).toMatchObject({
+      disabled: true,
+      note: "Needs an API key",
+    });
   });
 
   it("leave out what a Playground model doesn't list", () => {
@@ -80,15 +88,21 @@ describe("model picker options", () => {
       output_price: null,
       provider_key: true,
     } as unknown as PlaygroundModel;
-    expect(playgroundModelOption(m, "gpt-5-mini", "No OpenAI key")).toEqual({ value: "gpt-5-mini", provider: "openai", model: "gpt-5-mini", capabilities: [] });
+    expect(playgroundModelOption(m, "gpt-5-mini", "No OpenAI key", usd)).toEqual({
+      value: "gpt-5-mini",
+      provider: "openai",
+      model: "gpt-5-mini",
+      capabilities: [],
+    });
   });
 
   it("grey out a model its provider doesn't serve, except where it is already chosen", () => {
     const unserved = catalogueModelOption(
       entry({ display_name: "Llama 3.1 8B" }, { provider: "groq", model_id: "llama-3.1-8b-instant", availability: "unavailable" }),
+      usd,
     );
     expect(unserved).toMatchObject({ disabled: true, note: "The provider doesn't serve it" });
-    const served = catalogueModelOption(entry({}, { id: "cm_02", availability: "available" }));
+    const served = catalogueModelOption(entry({}, { id: "cm_02", availability: "available" }), usd);
     expect(served.disabled).toBeUndefined();
     expect(keepChosen([unserved, served], ["cm_01"])).toEqual([{ ...unserved, disabled: false }, served]);
     expect(keepChosen([unserved], [])).toEqual([unserved]);
@@ -100,7 +114,7 @@ describe("model picker options", () => {
       provider_key: true,
       availability: "unavailable",
     };
-    expect(playgroundModelOption(playground as unknown as PlaygroundModel, "groq/llama-3.1-8b-instant", "No Groq key")).toMatchObject({
+    expect(playgroundModelOption(playground as unknown as PlaygroundModel, "groq/llama-3.1-8b-instant", "No Groq key", usd)).toMatchObject({
       disabled: true,
       note: "The provider doesn't serve it",
     });

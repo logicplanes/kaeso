@@ -236,6 +236,7 @@ pub struct Budget {
     pub kind: LimitKind,
     pub period: LimitPeriod,
     pub amount: String,
+    pub currency: String,
 }
 
 impl Budget {
@@ -353,17 +354,17 @@ impl Budget {
             (Locale::En, LimitKind::RequestRate) => format!("{n} requests per minute"),
             (Locale::En, LimitKind::TokenRate) => format!("{n} tokens per minute"),
             (Locale::En, LimitKind::TokenBudget) => format!("{n} tokens"),
-            (Locale::En, LimitKind::SpendBudget) => format!("{n} USD"),
+            (Locale::En, LimitKind::SpendBudget) => format!("{n} {}", self.currency),
             (Locale::En, LimitKind::ToolCallRate) => format!("{n} tool calls per minute"),
             (Locale::De, LimitKind::RequestRate) => format!("{n} Anfragen pro Minute"),
             (Locale::De, LimitKind::TokenRate) => format!("{n} Token pro Minute"),
             (Locale::De, LimitKind::TokenBudget) => format!("{n} Token"),
-            (Locale::De, LimitKind::SpendBudget) => format!("{n} USD"),
+            (Locale::De, LimitKind::SpendBudget) => format!("{n} {}", self.currency),
             (Locale::De, LimitKind::ToolCallRate) => format!("{n} Tool-Aufrufe pro Minute"),
             (Locale::ZhCn, LimitKind::RequestRate) => format!("每分钟 {n} 次请求"),
             (Locale::ZhCn, LimitKind::TokenRate) => format!("每分钟 {n} 个 Token"),
             (Locale::ZhCn, LimitKind::TokenBudget) => format!("{n} 个 Token"),
-            (Locale::ZhCn, LimitKind::SpendBudget) => format!("{n} USD"),
+            (Locale::ZhCn, LimitKind::SpendBudget) => format!("{n} {}", self.currency),
             (Locale::ZhCn, LimitKind::ToolCallRate) => format!("每分钟 {n} 次工具调用"),
         }
     }
@@ -1438,6 +1439,7 @@ pub fn test_from(lang: Locale, to: &str, from: TestFrom) -> Email {
 mod tests {
 
     use super::*;
+    use crate::locale::Amount;
     use time::macros::{date, datetime};
 
     const TO: &str = "owner@example.com";
@@ -1455,6 +1457,7 @@ mod tests {
             kind: LimitKind::SpendBudget,
             period: LimitPeriod::Month,
             amount: amount.to_owned(),
+            currency: "USD".to_owned(),
         }
     }
 
@@ -1580,25 +1583,25 @@ mod tests {
                     to: date!(2026 - 11 - 08),
                     requests: "12480".to_owned(),
                     tool_calls: "312".to_owned(),
-                    cost: "41.20".to_owned(),
+                    cost: vec![Amount::new("41.20", "USD")],
                     projects: vec![
                         ProjectUse {
                             organization: "Acme".to_owned(),
                             name: "Checkout".to_owned(),
                             requests: Some("9120".to_owned()),
-                            cost: "30.10".to_owned(),
+                            cost: Amount::new("30.10", "USD"),
                         },
                         ProjectUse {
                             organization: "Globex".to_owned(),
                             name: "Research".to_owned(),
                             requests: Some("2400".to_owned()),
-                            cost: "8.60".to_owned(),
+                            cost: Amount::new("8.60", "USD"),
                         },
                         ProjectUse {
                             organization: "Acme".to_owned(),
                             name: "Support".to_owned(),
                             requests: Some("960".to_owned()),
-                            cost: "2.50".to_owned(),
+                            cost: Amount::new("2.50", "USD"),
                         },
                     ],
                     top_models: vec!["claude-haiku-4-5".to_owned(), "gpt-4o".to_owned()],
@@ -1799,19 +1802,19 @@ mod tests {
                 Some("Acme"),
                 Fact::CostReport {
                     month: date!(2026 - 10 - 01),
-                    total: "412.50",
+                    total: &Amount::new("412.50", "USD"),
                     projects: vec![
                         ProjectUse {
                             organization: "Acme".to_owned(),
                             name: "Checkout".to_owned(),
                             requests: None,
-                            cost: "300.00".to_owned(),
+                            cost: Amount::new("300.00", "USD"),
                         },
                         ProjectUse {
                             organization: "Acme".to_owned(),
                             name: "Support".to_owned(),
                             requests: None,
-                            cost: "112.50".to_owned(),
+                            cost: Amount::new("112.50", "USD"),
                         },
                     ],
                 },
@@ -2327,7 +2330,7 @@ mod tests {
             organization: org.to_owned(),
             name: name.to_owned(),
             requests: Some("10".to_owned()),
-            cost: "1.00".to_owned(),
+            cost: Amount::new("1.00", "USD"),
         };
         let week = |lang, projects| {
             notice(
@@ -2339,7 +2342,7 @@ mod tests {
                     to: date!(2026 - 11 - 02),
                     requests: "20".to_owned(),
                     tool_calls: "0".to_owned(),
-                    cost: "2.00".to_owned(),
+                    cost: vec![Amount::new("2.00", "USD")],
                     projects,
                     top_models: Vec::new(),
                 },
@@ -3234,6 +3237,7 @@ mod tests {
             kind,
             period,
             amount: amount.to_owned(),
+            currency: "USD".to_owned(),
         };
         let tokens = b(LimitKind::TokenBudget, LimitPeriod::Day, "1500000");
         assert_eq!(tokens.english(), "daily token budget of 1500000 tokens");
@@ -3253,6 +3257,12 @@ mod tests {
         let spend = b(LimitKind::SpendBudget, LimitPeriod::Total, "12.5");
         assert_eq!(spend.english(), "total spend budget of 12.5 USD");
         assert_eq!(spend.per_period(Locale::En), "12.5 USD in total");
+        let euros = Budget {
+            currency: "EUR".to_owned(),
+            ..b(LimitKind::SpendBudget, LimitPeriod::Month, "40")
+        };
+        assert_eq!(euros.english(), "monthly spend budget of 40 EUR");
+        assert_eq!(euros.per_period(Locale::De), "40 EUR pro Monat");
         assert_eq!(tokens.per_period(Locale::De), "1.500.000 Token pro Tag");
         assert_eq!(rate.per_period(Locale::ZhCn), "每分钟 600 次请求");
         assert_eq!(tokens.per_period(Locale::ZhCn), "每日 1,500,000 个 Token");

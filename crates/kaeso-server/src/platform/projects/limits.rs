@@ -21,6 +21,7 @@ use crate::platform::json::Body;
 use crate::platform::pagination::List;
 use crate::platform::params::{Path, Query, id_param};
 use crate::platform::precondition::{IfMatch, etag};
+use crate::services::exchange_rates::{self as rates, Money};
 use crate::services::limits as engine;
 use crate::state::AppState;
 
@@ -49,9 +50,14 @@ pub struct LimitView {
     pub model: Option<CatalogueModelId>,
     #[doc = "`minute` (rates), `day`, `month` or `total` (budgets; UTC calendar periods)."]
     pub period: &'static str,
-    #[doc = "Requests, tool calls, tokens, or USD (a decimal string)."]
+    #[doc = "Requests, tool calls, tokens, or for a spend budget an amount in `currency`\n\
+        (a decimal string)."]
     #[schema(value_type = String, example = "50")]
     pub amount: String,
+    #[doc = "The currency of a spend budget's `amount` and `used`, the organization's;\n\
+        `null` for counts. Kaeso checks it in USD at the latest ECB rate."]
+    #[schema(example = "EUR")]
+    pub currency: Option<String>,
     #[doc = "Hard budgets refuse requests once used up; soft budgets only alert."]
     pub hard: bool,
     #[doc = "Alert thresholds in percent."]
@@ -62,7 +68,7 @@ pub struct LimitView {
     #[doc = "When the current period ends; `null` for `total`."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub resets_at: Option<OffsetDateTime>,
-    #[doc = "A description, e.g. \"monthly spend budget of 50 USD\"."]
+    #[doc = "A description, e.g. \"monthly spend budget of 50 EUR\"."]
     pub description: String,
     #[doc = "Created."]
     #[serde(with = "time::serde::rfc3339")]
@@ -108,10 +114,16 @@ pub(crate) async fn view(
     now: OffsetDateTime,
 ) -> ApiResult<LimitView> {
     let l = row.limit()?;
+    let money = Money::of(state, l.currency());
     let used = engine::current(state, project, &l, now)
         .await
         .map(|units| match l.kind {
-            Kind::SpendBudget => kaeso_core::cost::from_nano(units).to_string(),
+            Kind::SpendBudget => {
+                let usd = kaeso_core::cost::from_nano(units);
+                money
+                    .now(usd)
+                    .map_or_else(|| usd.to_string(), |v| money.text(v))
+            }
             _ => units.to_string(),
         });
     Ok(LimitView {
@@ -122,6 +134,7 @@ pub(crate) async fn view(
         model: l.model.map(CatalogueModelId::from_uuid),
         period: l.period.as_str(),
         amount: amount_text(&l),
+        currency: l.currency.clone(),
         hard: l.hard,
         alert_thresholds: l.thresholds.clone(),
         used,
@@ -162,8 +175,9 @@ pub struct LimitCreate {
     #[doc = "`minute` for rates; `day`, `month` or `total` for budgets."]
     #[schema(example = "month")]
     pub period: String,
-    #[doc = "Requests, tool calls, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\n\
-        budget."]
+    #[doc = "Requests, tool calls, tokens, or for a spend budget an amount in the\n\
+        organization's `currency`; at most 10^12, and a spend budget worth at most\n\
+        1,000,000,000 USD."]
     #[schema(value_type = LimitAmount, example = "50")]
     #[serde(deserialize_with = "kaeso_core::limits::amount")]
     pub amount: Option<Decimal>,
@@ -225,6 +239,7 @@ pub(crate) async fn limit_from(
     project: Uuid,
     subject: Subject,
     req: &LimitCreate,
+    currency: &str,
 ) -> ApiResult<Limit> {
     let kind = Kind::parse(&req.kind).ok_or_else(|| {
         ApiError::invalid(
@@ -251,13 +266,14 @@ pub(crate) async fn limit_from(
         model: req.model.map(|m| m.uuid()),
         period,
         amount,
+        currency: (kind == Kind::SpendBudget).then(|| currency.to_owned()),
         hard: kind.is_rate() || req.hard.unwrap_or(true),
         thresholds: req
             .alert_thresholds
             .clone()
             .unwrap_or_else(|| kind.default_thresholds()),
     };
-    limits::validate(&l).map_err(|e| ApiError::invalid(e.field, e.message))?;
+    limits::validate(&l, &rates::book(state)).map_err(|e| ApiError::invalid(e.field, e.message))?;
     Ok(l)
 }
 
@@ -330,6 +346,7 @@ pub(crate) async fn check_hierarchy(
     member_hint: Option<Subject>,
 ) -> ApiResult<()> {
     let others: Vec<&Limit> = all.iter().filter(|o| o.id != l.id).collect();
+    let book = rates::book(state);
     let member = match (l.subject, member_hint) {
         (Subject::Key(_), Some(m)) => Some(m),
         (Subject::Key(k), None) => key_member(state, project, k).await?,
@@ -342,7 +359,7 @@ pub(crate) async fn check_hierarchy(
             (Subject::Key(_), s) => Some(s) == member,
             _ => false,
         };
-        if is_parent && limits::exceeds(l, parent) {
+        if is_parent && limits::exceeds(l, parent, &book) {
             return Err(ApiError::invalid(
                 "amount",
                 format!(
@@ -364,7 +381,7 @@ pub(crate) async fn check_hierarchy(
             }
             _ => false,
         };
-        if is_child && limits::exceeds(child, l) {
+        if is_child && limits::exceeds(child, l, &book) {
             over.push(format!("{} ({})", who(child.subject), amount_text(child)));
         }
     }
@@ -438,7 +455,7 @@ pub async fn create(
     super::ensure_active(&ctx, super::MODELS_ARCHIVED)?;
     let project = ctx.project()?.project.id;
     let subject = subject_of(&state, project, &req).await?;
-    let l = limit_from(&state, project, subject, &req).await?;
+    let l = limit_from(&state, project, subject, &req, &ctx.org()?.org.currency).await?;
     let row = create_limit(&state, &ctx, &l).await?;
     Ok((
         StatusCode::CREATED,
@@ -574,7 +591,8 @@ pub async fn update(
     if let Some(t) = req.alert_thresholds {
         l.thresholds = t;
     }
-    limits::validate(&l).map_err(|e| ApiError::invalid(e.field, e.message))?;
+    limits::validate(&l, &rates::book(&state))
+        .map_err(|e| ApiError::invalid(e.field, e.message))?;
     let all = all_limits(&mut *tx, project).await?;
     if l.amount > before.amount {
         may_loosen(&state, &ctx, project, &before, &all, "amount").await?;
@@ -657,8 +675,9 @@ pub struct KeyLimit {
     #[doc = "`minute` for rates; `day`, `month` or `total` for budgets."]
     #[schema(example = "day")]
     pub period: String,
-    #[doc = "Requests, tool calls, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\n\
-        budget."]
+    #[doc = "Requests, tool calls, tokens, or for a spend budget an amount in the\n\
+        organization's `currency`; at most 10^12, and a spend budget worth at most\n\
+        1,000,000,000 USD."]
     #[schema(value_type = LimitAmount, example = "5")]
     #[serde(deserialize_with = "kaeso_core::limits::amount")]
     pub amount: Option<Decimal>,
@@ -676,6 +695,7 @@ pub(crate) async fn key_limits(
     key: Uuid,
     member: Option<Subject>,
     specs: &[KeyLimit],
+    currency: &str,
 ) -> ApiResult<Vec<Limit>> {
     store::lock_project(&mut **tx, project).await?;
     let existing = all_limits(&mut **tx, project).await?;
@@ -693,7 +713,7 @@ pub(crate) async fn key_limits(
             hard: spec.hard,
             alert_thresholds: spec.alert_thresholds.clone(),
         };
-        let l = limit_from(state, project, Subject::Key(key), &req).await?;
+        let l = limit_from(state, project, Subject::Key(key), &req, currency).await?;
         if out
             .iter()
             .any(|o| o.kind == l.kind && o.model == l.model && o.period == l.period)

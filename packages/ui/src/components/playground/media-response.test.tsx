@@ -87,6 +87,16 @@ describe("ResponseMetrics without a known cost", () => {
   });
 });
 
+describe("ResponseMetrics in another currency", () => {
+  it("writes the cost the way it's given, in place of dollars", () => {
+    const { rerender } = render(<ResponseMetrics duration={1200} cost="0.004213" />);
+    expect(screen.getByText("$0.004213")).toBeInTheDocument();
+    rerender(<ResponseMetrics duration={1200} cost="0.004213" formatCost={(usd) => `€${(Number(usd) * 0.9).toFixed(4)}`} />);
+    expect(screen.getByText("€0.0038")).toBeInTheDocument();
+    expect(screen.queryByText(/\$/)).toBeNull();
+  });
+});
+
 describe("Button download", () => {
   it("saves a link under a name instead of opening it", () => {
     render(

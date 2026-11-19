@@ -239,7 +239,7 @@
   "format.inviteState.pending": "Pending",
   "format.keyState.disabled": "Disabled",
   "format.limit.requestRate": "request rate of {amount} requests per minute",
-  "format.limit.spendBudget": "{period, select, day {daily} month {monthly} other {total}} spend budget of {amount} USD",
+  "format.limit.spendBudget": "{period, select, day {daily} month {monthly} other {total}} spend budget of {amount} {currency}",
   "format.limit.tokenBudget": "{period, select, day {daily} month {monthly} other {total}} token budget of {amount} tokens",
   "format.limit.tokenRate": "token rate of {amount} tokens per minute",
   "format.limit.toolCallRate": "tool call rate of {amount} tool calls per minute",

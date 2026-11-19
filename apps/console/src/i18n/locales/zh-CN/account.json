@@ -286,8 +286,6 @@
   "account.orgEmailsOn": "已恢复发送关于 {org} 的邮件",
   "account.notify.webhooks": "Webhook 需要处理",
   "account.notify.webhooksHint": "当某个 Webhook 连续失败 20 次并被关闭时。",
-  "account.currency": "货币",
-  "account.currencyHint": "支出也以此货币显示在美元旁；保存到您的账户。",
   "account.notify.modelDeprecated": "模型已弃用",
   "account.notify.modelDeprecatedHint": "服务商为项目使用的模型指定停用日期时。",
   "account.notify.modelShutdownSoon": "模型即将停用",

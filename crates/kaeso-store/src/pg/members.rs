@@ -299,6 +299,7 @@ pub struct UserOrg {
     pub role_rights: Option<Vec<String>>,
     pub role_project_rights: Option<Vec<String>>,
     pub org_avatar: Option<String>,
+    pub org_currency: String,
 }
 
 impl_grant!(UserOrg);
@@ -310,7 +311,8 @@ pub async fn orgs_of_user(
     Ok(sqlx::query_as!(
         UserOrg,
         "SELECT o.id AS org_id, o.name AS org_name, o.state AS org_state, o.deletion_due_at AS org_deletion_due_at, \
-         o.require_2fa, o.require_sso, m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\", o.avatar AS org_avatar \
+         o.require_2fa, o.require_sso, m.preset, m.role_id, m.rights_added, m.rights_removed, r.name AS \"role_name?\", r.rights AS \"role_rights?\", r.project_rights AS \"role_project_rights?\", o.avatar AS org_avatar, \
+         o.currency AS org_currency \
          FROM org_memberships m JOIN organizations o ON o.id = m.org_id LEFT JOIN org_roles r ON r.id = m.role_id \
          WHERE m.user_id = $1 ORDER BY o.id",
         user_id

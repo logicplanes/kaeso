@@ -78,20 +78,21 @@ const KEY_STATES: Record<string, () => string> = {
 };
 export const keyStateLabel = (s: string) => KEY_STATES[s]?.() ?? titled(s);
 
-const LIMIT_KINDS: Record<string, { label: () => string; unit: () => string }> = {
+const LIMIT_KINDS: Record<string, { label: () => string; unit: (currency: string) => string }> = {
   request_rate: { label: () => t("format.limitKind.requestRate", "Request rate"), unit: () => t("format.limitUnit.requestsPerMinute", "requests / min") },
   token_rate: { label: () => t("format.limitKind.tokenRate", "Token rate"), unit: () => t("format.limitUnit.tokensPerMinute", "tokens / min") },
   token_budget: { label: () => t("format.limitKind.tokenBudget", "Token budget"), unit: () => t("format.limitUnit.tokens", "tokens") },
-  spend_budget: { label: () => t("format.limitKind.spendBudget", "Spend budget"), unit: () => "USD" },
+  spend_budget: { label: () => t("format.limitKind.spendBudget", "Spend budget"), unit: (currency) => currency },
   tool_call_rate: {
     label: () => t("format.limitKind.toolCallRate", "Tool call rate"),
     unit: () => t("format.limitUnit.toolCallsPerMinute", "tool calls / min"),
   },
 };
 export const limitKindLabel = (k: string) => LIMIT_KINDS[k]?.label() ?? titled(k);
-export const limitUnit = (k: string) => LIMIT_KINDS[k]?.unit() ?? "";
+/** A limit's unit; a spend budget's is its currency. */
+export const limitUnit = (k: string, currency = "USD") => LIMIT_KINDS[k]?.unit(currency) ?? "";
 
-export function limitDescription(l: { kind: string; period: string; amount: string }): string {
+export function limitDescription(l: { kind: string; period: string; amount: string; currency?: string | null | undefined }): string {
   const amount = formatNumber(Number(l.amount), { maximumFractionDigits: 6, useGrouping: locale() !== "en" });
   const period = l.period;
   switch (l.kind) {
@@ -104,7 +105,11 @@ export function limitDescription(l: { kind: string; period: string; amount: stri
     case "token_budget":
       return t("format.limit.tokenBudget", "{period, select, day {daily} month {monthly} other {total}} token budget of {amount} tokens", { period, amount });
     default:
-      return t("format.limit.spendBudget", "{period, select, day {daily} month {monthly} other {total}} spend budget of {amount} USD", { period, amount });
+      return t("format.limit.spendBudget", "{period, select, day {daily} month {monthly} other {total}} spend budget of {amount} {currency}", {
+        period,
+        amount,
+        currency: l.currency ?? "USD",
+      });
   }
 }
 

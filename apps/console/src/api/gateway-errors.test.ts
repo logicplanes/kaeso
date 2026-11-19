@@ -69,11 +69,11 @@ describe("a refusal of a feature a spend budget can't price", () => {
 
 describe("a refusal of a spend budget that is too large", () => {
   it("is translated in German and Chinese", async () => {
-    const message = "The amount must be positive and at most 1,000,000,000 USD.";
+    const message = "The amount must be positive and worth at most 1,000,000,000 USD.";
     await speak("de");
-    expect((await errorFromResponse(refusal(message))).message).toBe("Der Betrag muss positiv und höchstens 1.000.000.000 USD sein.");
+    expect((await errorFromResponse(refusal(message))).message).toBe("Der Betrag muss positiv sein und höchstens 1.000.000.000 USD wert.");
     await speak("zh-CN");
-    expect((await errorFromResponse(refusal(message))).message).toBe("数额必须为正数且不超过 1,000,000,000 USD。");
+    expect((await errorFromResponse(refusal(message))).message).toBe("数额必须为正数，且价值不超过 1,000,000,000 USD。");
   });
 });
 

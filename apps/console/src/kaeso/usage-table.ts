@@ -1,5 +1,7 @@
 import type { SortingState } from "@logicplanes/kaeso-ui";
 import type { UsageRow } from "~/api/generated/types";
+import { USD, type Money } from "~/format/currency";
+import { t } from "~/i18n";
 import { totalTokens } from "./tokens";
 
 // The number each sortable usage column orders by; null for what isn't known, which sorts last.
@@ -9,7 +11,7 @@ const SORT_VALUE: Record<string, (r: UsageRow) => number | null> = {
   tokens: (r) => totalTokens(r),
   cache: (r) => r.cache_hit_rate ?? null,
   // Cost is a decimal string; one the gateway can't price has none.
-  cost: (r) => (r.cost ? Number(r.cost) : null),
+  cost: (r) => (r.converted_cost ? Number(r.converted_cost) : null),
 };
 
 /** Whether a usage table's column sorts: the numeric ones. */
@@ -33,6 +35,15 @@ export function sortUsage(rows: UsageRow[], sorting: SortingState): UsageRow[] {
 export interface CsvColumn {
   header: string;
   value: (r: UsageRow) => string | number | null | undefined;
+}
+
+/** The cost in the organization's currency, named by its code, and in US dollars beside it for accounting. */
+export function costColumns(money: Money): CsvColumn[] {
+  const named = (currency: string) => t("kaeso.usage.costIn", "Cost ({currency})", { currency });
+  return [
+    { header: named(money.code), value: (r) => r.converted_cost },
+    ...(money.code === USD ? [] : [{ header: named(USD), value: (r: UsageRow) => r.cost }]),
+  ];
 }
 
 // A spreadsheet runs a cell that starts like a formula, so a name such as `=SUM(…)` is kept as text.

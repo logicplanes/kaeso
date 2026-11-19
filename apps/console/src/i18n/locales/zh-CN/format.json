@@ -160,7 +160,7 @@
   "format.inviteState.pending": "待接受",
   "format.keyState.disabled": "已停用",
   "format.limit.requestRate": "请求速率（每分钟 {amount} 个请求）",
-  "format.limit.spendBudget": "{period, select, day {每日} month {每月} other {总}}支出预算（{amount} USD）",
+  "format.limit.spendBudget": "{period, select, day {每日} month {每月} other {总}}支出预算（{amount} {currency}）",
   "format.limit.tokenBudget": "{period, select, day {每日} month {每月} other {总}} Token 预算（{amount} 个 Token）",
   "format.limit.tokenRate": "Token 速率（每分钟 {amount} 个 Token）",
   "format.limitKind.requestRate": "请求速率",

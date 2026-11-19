@@ -49,10 +49,6 @@ pub struct Me {
     pub recovery_codes_left: i64,
     #[doc = "The language the console is shown in: `auto` follows the browser."]
     pub locale: UserLocale,
-    #[doc = "The currency the console shows spend in next to US dollars, an ISO 4217\n\
-        code from `exchange-rates`; `USD` for dollars only."]
-    #[schema(example = "EUR")]
-    pub display_currency: String,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -101,9 +97,6 @@ pub(crate) async fn load(state: &AppState, user: UserId) -> ApiResult<(users::Us
         locale: UserLocale::from_stored(
             users::get_locale(&state.pg, user.uuid()).await?.as_deref(),
         ),
-        display_currency: kaeso_store::pg::exchange_rates::display_currency(&state.pg, user.uuid())
-            .await?
-            .unwrap_or_else(|| kaeso_core::currency::USD.to_owned()),
     };
     Ok((row, me))
 }
@@ -128,16 +121,12 @@ pub struct ProfileUpdate {
     pub name: Option<String>,
     #[doc = "The language the console is shown in; `auto` follows the browser."]
     pub locale: Option<UserLocale>,
-    #[doc = "The currency to show spend in next to US dollars: `USD` for dollars only,\n\
-        or a code from `exchange-rates`."]
-    #[schema(example = "EUR")]
-    pub display_currency: Option<String>,
 }
 
 #[utoipa::path(
     patch,
     path = "/me",
-    summary = "Changes the user's display name, language or display currency.",
+    summary = "Changes the user's display name or language.",
     tag = "me",
     request_body = ProfileUpdate,
     responses((status = 200, body = Me))
@@ -165,17 +154,6 @@ pub async fn update(
     }
     if let Some(locale) = req.locale {
         users::set_locale(&state.pg, user.uuid(), locale.stored()).await?;
-    }
-    if let Some(code) = req.display_currency.as_deref() {
-        let stored = crate::platform::exchange_rates::converter(&state, Some(code))
-            .map_err(|_| crate::platform::exchange_rates::unknown("display_currency", code))?
-            .map(|(_, code)| code);
-        kaeso_store::pg::exchange_rates::set_display_currency(
-            &state.pg,
-            user.uuid(),
-            stored.as_deref(),
-        )
-        .await?;
     }
     Ok(Json(load(&state, user).await?.1))
 }

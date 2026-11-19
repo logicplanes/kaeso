@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use kaeso_core::notifications::Kind;
 use kaeso_core::rights::{OrgRight, ProjectRight, effective_project_rights};
-use kaeso_mail::Locale;
 use kaeso_mail::notices::{self, Because, DigestItem, Fact, Links, ProjectUse};
+use kaeso_mail::{Amount, Locale};
 use kaeso_store::pg::{instance, members, notifications, orgs, usage, users};
 use rust_decimal::Decimal;
 use time::macros::time;
@@ -12,6 +12,7 @@ use uuid::Uuid;
 
 use crate::jobs::JobError;
 use crate::platform::grants::{org_from_store, project_from_store};
+use crate::services::exchange_rates::Money;
 use crate::services::notifications::dispatch::{Send, deliver, org_holders, org_path};
 use crate::state::AppState;
 
@@ -184,8 +185,34 @@ async fn digests(
     }
 }
 
-fn money(amount: Decimal) -> String {
+fn plain(amount: Decimal) -> String {
     format!("{:.2}", amount.round_dp(2))
+}
+
+// Each day's spend at that day's rate, by project.
+async fn converted_costs(
+    state: &AppState,
+    money: &Money,
+    org: Uuid,
+    project: Option<Uuid>,
+    from: Date,
+    to: Date,
+) -> Result<BTreeMap<String, Decimal>, JobError> {
+    let mut sums: BTreeMap<String, Decimal> = BTreeMap::new();
+    for (key, day, cost) in usage::costs_by_day(
+        &state.pg,
+        org,
+        project,
+        from,
+        to,
+        usage::GroupBy::Project,
+        &usage::Filter::default(),
+    )
+    .await?
+    {
+        *sums.entry(key).or_default() += money.on(cost, day).unwrap_or_default();
+    }
+    Ok(sums)
 }
 
 async fn cost_reports(state: &AppState, today: Date) -> Result<Reports, JobError> {
@@ -222,13 +249,16 @@ async fn cost_report(
         &usage::Filter::default(),
     )
     .await?;
-    let total: Decimal = by_project.iter().map(|p| p.cost).sum();
     if by_project.iter().all(|p| p.requests == 0) {
         return Ok(0);
     }
+    let money = Money::of_org(state, org).await?;
+    let converted = converted_costs(state, &money, org, None, from, to).await?;
+    let in_currency = |key: &str| converted.get(key).copied().unwrap_or_default();
+    let total: Decimal = converted.values().sum();
     let place = crate::services::notifications::triggers::org_name(state, org).await?;
     let mut top: Vec<_> = by_project.iter().collect();
-    top.sort_by_key(|p| std::cmp::Reverse(p.cost));
+    top.sort_by_key(|p| std::cmp::Reverse(in_currency(&p.key)));
     let mut projects = Vec::new();
     for p in top.into_iter().take(TOP) {
         let Ok(project) = p.key.parse::<Uuid>() else {
@@ -240,10 +270,10 @@ async fn cost_report(
             organization: place.clone(),
             name,
             requests: None,
-            cost: money(p.cost),
+            cost: Amount::new(&plain(in_currency(&p.key)), &money.code),
         });
     }
-    let total = money(total);
+    let total = Amount::new(&plain(total), &money.code);
     let send = Send {
         kind: Kind::CostReport,
         org: Some(org),
@@ -301,7 +331,8 @@ async fn weekly_summary(
     }
     let mut requests = 0_i64;
     let mut calls = 0_i64;
-    let mut cost = Decimal::ZERO;
+    let mut cost: BTreeMap<String, Decimal> = BTreeMap::new();
+    let mut currencies: BTreeMap<Uuid, Money> = BTreeMap::new();
     let mut models: BTreeMap<String, i64> = BTreeMap::new();
     let mut projects = Vec::new();
     for p in members::projects_of_user(&state.pg, user).await? {
@@ -331,12 +362,22 @@ async fn weekly_summary(
         )
         .await?;
         let r: i64 = rows.iter().map(|m| m.requests).sum();
-        let c: Decimal = rows.iter().map(|m| m.cost).sum();
+        let money = match currencies.entry(p.org_id) {
+            std::collections::btree_map::Entry::Occupied(e) => e.into_mut(),
+            std::collections::btree_map::Entry::Vacant(e) => {
+                e.insert(Money::of_org(state, p.org_id).await?)
+            }
+        };
+        let money = &*money;
+        let c: Decimal = converted_costs(state, money, p.org_id, Some(p.project_id), from, to)
+            .await?
+            .values()
+            .sum();
         for m in &rows {
             *models.entry(m.key.clone()).or_default() += m.requests;
         }
         requests += r;
-        cost += c;
+        *cost.entry(money.code.clone()).or_default() += c;
         calls += tools.iter().map(|t| t.calls).sum::<i64>();
         if r > 0 {
             projects.push((
@@ -348,7 +389,7 @@ async fn weekly_summary(
                         .map_or_else(|| p.org_id.to_string(), |n| (*n).to_owned()),
                     name: p.project_name.clone(),
                     requests: Some(r.to_string()),
-                    cost: money(c),
+                    cost: Amount::new(&plain(c), &money.code),
                 },
             ));
         }
@@ -370,7 +411,10 @@ async fn weekly_summary(
         to,
         requests: requests.to_string(),
         tool_calls: calls.to_string(),
-        cost: money(cost),
+        cost: cost
+            .iter()
+            .map(|(code, c)| Amount::new(&plain(*c), code))
+            .collect(),
         projects: projects.into_iter().take(TOP).map(|(_, _, l)| l).collect(),
         top_models: top.into_iter().take(3).map(|(m, _)| m).collect(),
     };
@@ -394,9 +438,9 @@ mod tests {
     #[test]
     fn money_is_a_plain_amount_with_cents_for_the_email_to_format() {
         let amount = |s: &str| s.parse::<Decimal>().unwrap_or_default();
-        assert_eq!(money(amount("41.2")), "41.20");
-        assert_eq!(money(amount("1412.505")), "1412.50");
-        assert_eq!(money(amount("0")), "0.00");
-        assert_eq!(money(amount("3.14159")), "3.14");
+        assert_eq!(plain(amount("41.2")), "41.20");
+        assert_eq!(plain(amount("1412.505")), "1412.50");
+        assert_eq!(plain(amount("0")), "0.00");
+        assert_eq!(plain(amount("3.14159")), "3.14");
     }
 }

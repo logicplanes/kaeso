@@ -56,6 +56,7 @@ JSON 投递是一个 `POST` 请求，带有 `content-type: application/json`，�
     "kind": "spend_budget",
     "period": "month",
     "amount": "100",
+    "currency": "USD",
     "used": "80.42",
     "percent": 80,
     "applies_to": { "type": "project" },
@@ -69,7 +70,7 @@ JSON 投递是一个 `POST` 请求，带有 `content-type: application/json`，�
 - 组织级事件的 `project` 为 `null`。
 - `summary` 是通知的英文摘要。
 - `url` 打开事件相关的控制台页面。
-- ID 的格式与 [Platform API](../api/platform-api.md) 相同。金额为字符串：支出以美元计，其他以 token 或请求数计。
+- ID 的格式与 [Platform API](../api/platform-api.md) 相同。金额为字符串：支出预算以其 `currency`（即组织的货币）计，其他以 token 或请求数计。
 
 `data` 包含：
 

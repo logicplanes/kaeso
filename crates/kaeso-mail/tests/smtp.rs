@@ -5,8 +5,8 @@ use kaeso_mail::notices::{
 };
 use kaeso_mail::templates::{self, Email};
 use kaeso_mail::{
-    Actor, Budget, BudgetAlert, BudgetScope, Instance, LimitKind, LimitPeriod, Locale, Mailer,
-    SmtpSecurity, SmtpSettings, Transport,
+    Actor, Amount, Budget, BudgetAlert, BudgetScope, Instance, LimitKind, LimitPeriod, Locale,
+    Mailer, SmtpSecurity, SmtpSettings, Transport,
 };
 use serde_json::Value;
 use time::macros::{date, datetime};
@@ -19,6 +19,7 @@ fn every_email(to: &str) -> Vec<Email> {
         kind: LimitKind::SpendBudget,
         period: LimitPeriod::Month,
         amount: "50".to_owned(),
+        currency: "EUR".to_owned(),
     };
     let (due, expires) = (date!(2026 - 11 - 10), date!(2026 - 10 - 18));
     Locale::ALL
@@ -98,7 +99,7 @@ fn reports(l: Locale, to: &str) -> Vec<Email> {
         organization: "Acme".to_owned(),
         name: name.to_owned(),
         requests: requests.map(str::to_owned),
-        cost: cost.to_owned(),
+        cost: Amount::new(cost, "EUR"),
     };
     let facts = [
         Fact::WeeklySummary {
@@ -106,13 +107,13 @@ fn reports(l: Locale, to: &str) -> Vec<Email> {
             to: date!(2026 - 11 - 08),
             requests: "12480".to_owned(),
             tool_calls: "312".to_owned(),
-            cost: "41.20".to_owned(),
+            cost: vec![Amount::new("41.20", "EUR")],
             projects: vec![project("Checkout", Some("9120"), "30.10")],
             top_models: vec!["gpt-4o".to_owned()],
         },
         Fact::CostReport {
             month: date!(2026 - 10 - 01),
-            total: "412.50",
+            total: &Amount::new("412.50", "EUR"),
             projects: vec![project("Checkout", None, "300.00")],
         },
         Fact::InstanceUpdate {

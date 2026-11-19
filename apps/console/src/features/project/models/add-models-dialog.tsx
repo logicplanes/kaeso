@@ -31,9 +31,12 @@ import { routedDialect, useOrgProviderKeys, useProviderOptions, useProviders } f
 import { orgPath } from "~/shell/pages";
 import { recall, remember } from "~/shell/session-memory";
 import { monthLabel } from "~/format/period";
-import { ModelForm, allFields, changedFields, draftFrom, draftProblem, type FieldDraft } from "./model-form";
+import { ModelForm, allFields, changedFields, draftFrom, draftProblem, startDraft, type FieldDraft } from "./model-form";
+import { exchangeRatesQuery } from "~/api/queries/exchange-rates";
 import { OfferedLines } from "./lines";
 import { contextLabel, priceLabel } from "./model-fields";
+import { useOrgPrices } from "~/kaeso/org-prices";
+import type { Prices } from "~/format/prices";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { common } from "~/i18n/common";
@@ -83,8 +86,14 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const [q, setQ] = useState("");
   const [deprecated, setDeprecated] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [review, setReview] = useState<{ preview: Preview; draft: FieldDraft } | null>(null);
-  const [custom, setCustom] = useState<{ modelId: string; preview: Preview | null; checked: boolean; draft: FieldDraft; found?: boolean }>(emptyCustom());
+  const [review, setReview] = useState<{ preview: Preview; draft: FieldDraft; start: FieldDraft } | null>(null);
+  const [custom, setCustom] = useState<{ modelId: string; preview: Preview | null; checked: boolean; draft: FieldDraft; start?: FieldDraft; found?: boolean }>(
+    emptyCustom(),
+  );
+  const prices = useOrgPrices(org);
+  const rates = useQuery(exchangeRatesQuery);
+  const code = prices.money.code;
+  const start = useCallback((f: Fields) => startDraft(f, code, rates.data), [code, rates.data]);
   const search = useDebounced(q.trim(), 250);
   const hits = useQuery({
     ...modelSearchQuery(org, project, { q: search, provider, include_deprecated: deprecated }),
@@ -133,20 +142,21 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       try {
         const preview = await queryClient.fetchQuery(modelPreviewQuery(org, project, provider, modelId));
         if (!preview) return toast.error(t("models.noLongerInKpmr", "KPMR doesn't list {model} any more.", { model: modelId }));
-        setReview({ preview, draft: draftFrom(previewFields(preview)) });
+        const first = start(previewFields(preview));
+        setReview({ preview, draft: first, start: first });
         setView("review");
       } catch (e) {
         toastApiError(e);
       }
     },
-    [queryClient, org, project, provider],
+    [queryClient, org, project, provider, start],
   );
   const providerName = catalog.name;
-  const columns = useMemo(() => hitColumns(providerName, (id) => void startReview(id)), [providerName, startReview]);
+  const columns = useMemo(() => hitColumns(providerName, prices, (id) => void startReview(id)), [providerName, prices, startReview]);
 
   const ownDraft = (modelId: string) => {
     const detected = detectedFor(modelId);
-    return { draft: { ...draftFrom(detected ?? {}), egress_dialect: dialects[0] ?? "" }, found: !!detected };
+    return { draft: { ...start(detected ?? {}), egress_dialect: dialects[0] ?? "" }, found: !!detected };
   };
   const typeOwn = (modelId: string) => {
     setCustom({ modelId, preview: null, checked: !!modelId, ...ownDraft(modelId) });
@@ -158,8 +168,8 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     if (!modelId || custom.checked) return;
     const preview = await queryClient.fetchQuery(modelPreviewQuery(org, project, provider, modelId)).catch(() => null);
     const routed = routedDialect(catalog.get(provider), modelId);
-    const draft = preview ? draftFrom(previewFields(preview)) : routed ? { ...custom.draft, egress_dialect: routed } : custom.draft;
-    setCustom({ modelId, preview, checked: true, draft });
+    const draft = preview ? start(previewFields(preview)) : routed ? { ...custom.draft, egress_dialect: routed } : custom.draft;
+    setCustom({ modelId, preview, checked: true, draft, ...(preview ? { start: draft } : {}) });
   };
 
   const ids = [...selected];
@@ -180,7 +190,11 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   const reviewProblem = review ? draftProblem(review.draft, false) : null;
   const addReviewed = () => {
     if (review && !reviewProblem)
-      addOne.mutate({ model_id: review.preview.model_id, custom: false, overrides: changedFields(review.draft, previewFields(review.preview), dialects) });
+      addOne.mutate({
+        model_id: review.preview.model_id,
+        custom: false,
+        overrides: changedFields(review.draft, previewFields(review.preview), dialects, review.start),
+      });
   };
   const isCustom = custom.checked && !custom.preview;
   const customProblem = custom.checked ? draftProblem(custom.draft, isCustom) : null;
@@ -191,7 +205,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     addOne.mutate({
       model_id: modelId,
       custom: isCustom,
-      overrides: custom.preview ? changedFields(custom.draft, previewFields(custom.preview), dialects) : allFields(custom.draft, dialects),
+      overrides: custom.preview ? changedFields(custom.draft, previewFields(custom.preview), dialects, custom.start) : allFields(custom.draft, dialects),
     });
   };
   const addAll = () => batch.mutate({ all_current: true });
@@ -396,7 +410,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     description: t("models.reviewHint", "Values from KPMR; what you change becomes an override for this project."),
     content: review ? (
       <div className="flex flex-col gap-16">
-        <ModelForm value={review.draft} onChange={(draft) => setReview({ ...review, draft })} dialects={dialects} />
+        <ModelForm value={review.draft} onChange={(draft) => setReview({ ...review, draft })} dialects={dialects} orgCurrency={code} />
       </div>
     ) : null,
     footer: (
@@ -466,7 +480,13 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
             </Banner>
           ))}
         {custom.checked && (
-          <ModelForm value={custom.draft} onChange={(draft) => setCustom({ ...custom, draft })} dialects={dialects} overrideNote={!ownProvider} />
+          <ModelForm
+            value={custom.draft}
+            onChange={(draft) => setCustom({ ...custom, draft })}
+            dialects={dialects}
+            orgCurrency={code}
+            overrideNote={!ownProvider}
+          />
         )}
       </div>
     ),
@@ -556,7 +576,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   );
 }
 
-function hitColumns(providerName: (id: string) => string, review: (modelId: string) => void) {
+function hitColumns(providerName: (id: string) => string, prices: Prices, review: (modelId: string) => void) {
   const fixed = <T extends object>(column: T) => ({ ...column, enableResizing: false });
   return [
     fixed(
@@ -599,7 +619,7 @@ function hitColumns(providerName: (id: string) => string, review: (modelId: stri
       col.custom(
         { id: "price", header: t("models.priceInOut", "Per 1M in / out"), size: 128, priority: 2 },
         (h: SearchHit) => Number(h.input_price ?? -1),
-        (_v: number, h: SearchHit) => priceLabel(h),
+        (_v: number, h: SearchHit) => priceLabel(h, prices),
         { align: "end" },
       ),
     ),

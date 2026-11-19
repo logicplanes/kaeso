@@ -1,13 +1,14 @@
 import { lazy, Suspense, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CellInset, Dashboard, DashboardCell, Readout, Segmented, Text, type Change } from "@logicplanes/kaeso-ui";
-import { formatNumber, formatPercent, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { orgUsageQuery, projectUsageQuery, timelineQuery } from "~/api/queries/usage";
 import { useRequestLogs } from "~/auth/session";
 import { dayFormat, dayLabel, shiftDay, utcDay } from "~/format/period";
 import { t } from "~/i18n";
-import { byBucket, periodUSD, totals } from "~/kaeso/usage-panels";
+import { useOrgMoney } from "~/kaeso/org-money";
+import { byBucket, totals } from "~/kaeso/usage-panels";
 import { cacheHit, change, forecast, forecastFrom, METRICS, metricTotal, type MetricId } from "./metrics";
 import { fill, iso, useMinute, utcTimeFormat } from "./timeline";
 
@@ -91,6 +92,7 @@ export function HomeMetrics({
   const from = shiftDay(today, -(days - 1));
   const before = { from: shiftDay(from, -days), to: shiftDay(from, -1) };
   const monthStart = `${today.slice(0, 8)}01`;
+  const money = useOrgMoney(org);
   const usage = (f: string, to: string) => (project ? projectUsageQuery(org, project, f, to, "day") : orgUsageQuery(org, f, to, "day"));
   const now = useQuery({ ...usage(from, today), enabled: canUsage, placeholderData: (p) => p, refetchInterval: 60_000 });
   const prev = useQuery({ ...usage(before.from, before.to), enabled: canUsage, placeholderData: (p) => p });
@@ -150,39 +152,39 @@ export function HomeMetrics({
           detail={ch("requests") ? vs : undefined}
           trend={series((r) => r?.requests ?? 0)}
           labels={labels}
-          format={METRICS.requests.format}
+          format={(v) => METRICS.requests.format(v, money)}
           color={METRICS.requests.color}
           loading={loading}
         />
         <TrendCell
           title={METRICS.tokens.label()}
           href={link("tokens")}
-          value={METRICS.tokens.format(s.tokens)}
+          value={METRICS.tokens.format(s.tokens, money)}
           change={ch("tokens")}
           detail={ch("tokens") ? vs : undefined}
           trend={series(METRICS.tokens.of)}
           labels={labels}
-          format={METRICS.tokens.format}
+          format={(v) => METRICS.tokens.format(v, money)}
           color={METRICS.tokens.color}
           loading={loading}
         />
         <TrendCell
           title={METRICS.cache.label()}
           href={link()}
-          value={hit === null ? "—" : METRICS.cache.format(hit)}
+          value={hit === null ? "—" : METRICS.cache.format(hit, money)}
           change={ch("cache")}
           detail={ch("cache") ? vs : undefined}
           trend={series(METRICS.cache.of)}
           labels={labels}
-          format={METRICS.cache.format}
+          format={(v) => METRICS.cache.format(v, money)}
           color={METRICS.cache.color}
           loading={loading}
         />
         {showCost && (
           <DashboardCell className="lg:col-span-1" title={t("kaeso.home.monthSpend", "{month} spend", { month: monthName(monthStart) })} href={link("cost")}>
             <Readout
-              value={periodUSD(spent)}
-              {...(ahead ? { detail: t("project.home.onPace", "On pace for {amount}", { amount: formatUSD(ahead.projected.toFixed(2)) }) } : {})}
+              value={money.period(spent)}
+              {...(ahead ? { detail: t("project.home.onPace", "On pace for {amount}", { amount: money.period(ahead.projected.toFixed(2)) }) } : {})}
               loading={month.isPending}
             />
             {monthExtra && (
@@ -198,7 +200,7 @@ export function HomeMetrics({
           <TrendCell
             title={METRICS.cost.label()}
             href={link("cost")}
-            value={periodUSD(s.cost ?? "0")}
+            value={money.period(s.cost ?? "0")}
             change={ch("cost")}
             detail={
               s.unpriced
@@ -209,7 +211,7 @@ export function HomeMetrics({
             }
             trend={series(METRICS.cost.of)}
             labels={labels}
-            format={METRICS.cost.format}
+            format={(v) => METRICS.cost.format(v, money)}
             color={METRICS.cost.color}
             loading={loading}
           />
@@ -222,7 +224,7 @@ export function HomeMetrics({
           detail={t("kaeso.overview.ofRequests", "{rate} of requests", { rate: formatPercent(s.requests ? s.errors / s.requests : 0) })}
           trend={series((r) => r?.errors ?? 0)}
           labels={labels}
-          format={METRICS.requests.format}
+          format={(v) => METRICS.requests.format(v, money)}
           color={METRICS.errors.color}
           loading={loading}
         />

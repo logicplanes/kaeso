@@ -13,13 +13,12 @@ import {
   UsageBreakdown,
   type RankItem,
 } from "@logicplanes/kaeso-ui";
-import { formatDuration, formatNumber, formatPercent, formatTokens, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatDuration, formatNumber, formatPercent, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { bucketLabel, spansYears } from "~/format/buckets";
 import { errorKindLabel } from "~/format/labels";
 import { dayFormat, utcDay } from "~/format/period";
 import { t } from "~/i18n";
-import { periodUSD } from "~/kaeso/usage-panels";
 import { projectPath } from "~/shell/pages";
 import { DayContext, hourLabel, logsRange, MetricChart, rank, useOpenRow } from "./parts";
 import type { Overview } from "./data";
@@ -267,9 +266,9 @@ function ForecastCell({ o }: { o: Overview }) {
       }
     >
       <Readout
-        value={o.forecast ? formatUSD(o.forecast.projected.toFixed(2)) : "—"}
+        value={o.forecast ? o.money.period(o.forecast.projected.toFixed(2)) : "—"}
         {...(o.forecast
-          ? { detail: t("kaeso.overview.soFar", "{amount} so far, at the last 7 days' pace", { amount: formatUSD(o.forecast.soFar.toFixed(2)) }) }
+          ? { detail: t("kaeso.overview.soFar", "{amount} so far, at the last 7 days' pace", { amount: o.money.period(o.forecast.soFar.toFixed(2)) }) }
           : {})}
         loading={o.forecastLoading}
       />
@@ -286,13 +285,13 @@ function ForecastCell({ o }: { o: Overview }) {
 
 function CostSplitCell({ o }: { o: Overview }) {
   const q = o.project ? o.grouped.model : o.grouped.project;
-  const priced = [...(q?.data ?? [])].filter((r) => Number(r.cost ?? 0) > 0).sort((a, b) => Number(b.cost) - Number(a.cost));
+  const priced = [...(q?.data ?? [])].filter((r) => Number(r.converted_cost ?? 0) > 0).sort((a, b) => Number(b.converted_cost) - Number(a.converted_cost));
   const top = priced.slice(0, 4).map((r) => ({
     id: r.key,
     label: o.project ? o.modelName(r.key) : (o.projectOf(r.key)?.name ?? r.key),
-    value: Number(r.cost),
+    value: Number(r.converted_cost),
   }));
-  const rest = priced.slice(4).reduce((a, r) => a + Number(r.cost), 0);
+  const rest = priced.slice(4).reduce((a, r) => a + Number(r.converted_cost), 0);
   const slices = rest > 0 ? [...top, { id: "other", label: t("kaeso.overview.other", "Other"), value: rest, color: "var(--k-fill-3)" }] : top;
   const title = o.project ? t("kaeso.overview.costByModel", "Cost by model") : t("kaeso.overview.costByProject", "Cost by project");
   return (
@@ -300,7 +299,7 @@ function CostSplitCell({ o }: { o: Overview }) {
       <CellInset>
         <div className="mt-8 flex flex-col gap-12">
           {slices.length > 0 ? (
-            <ShareBar aria-label={title} slices={slices} formatValue={(v) => periodUSD(v.toFixed(6))} />
+            <ShareBar aria-label={title} slices={slices} formatValue={(v) => o.money.period(v.toFixed(6))} />
           ) : (
             !q?.isPending && (
               <Text variant="small" tone="tertiary">

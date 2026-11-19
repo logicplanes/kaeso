@@ -10,6 +10,7 @@ import { modelAccessQuery, type Principal } from "~/api/queries/members";
 import { joinList } from "~/format/labels";
 import { modelName } from "~/format/models";
 import { catalogueModelOption, keepChosen } from "./model-options";
+import { useOrgPrices } from "./org-prices";
 import { useModelPickerProviders } from "./providers";
 import { t } from "~/i18n";
 import { useApiMutation } from "~/auth/mutation";
@@ -30,6 +31,7 @@ export function ModelAccessSection({ org, project, subject, canEdit }: { org: st
     const m = byId(id);
     return m ? modelName(m) : id;
   };
+  const prices = useOrgPrices(org);
   const choices = useMemo(
     () => (subject.kind === "key" ? (owner.data?.effective ?? []) : (catalogue.data ?? []).map((m) => m.id)),
     [subject.kind, owner.data, catalogue.data],
@@ -38,9 +40,9 @@ export function ModelAccessSection({ org, project, subject, canEdit }: { org: st
     () =>
       choices.map((id) => {
         const m = catalogue.data?.find((x) => x.id === id);
-        return m ? catalogueModelOption(m) : { value: id, provider: "", model: id };
+        return m ? catalogueModelOption(m, prices) : { value: id, provider: "", model: id };
       }),
-    [choices, catalogue.data],
+    [choices, catalogue.data, prices],
   );
   const providers = useModelPickerProviders(
     org,

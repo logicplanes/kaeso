@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { atFixtureTime } from "~/test/clock";
-import { ALL_PROJECT_RIGHTS, signedIn } from "~/test/fixtures";
+import { ALL_PROJECT_RIGHTS, myMembership, signedIn } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, limit, memberRights, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
@@ -86,6 +86,24 @@ describe("LimitsSection", () => {
     expect(section).toHaveTextContent("· In total · cm_retired");
     expect(section).toHaveTextContent("Never resets");
     expect(requests("GET", LIMITS).map((r) => Object.fromEntries(r.query))).toEqual(expect.arrayContaining([{ user: "usr_grace" }, { level: "project" }]));
+  });
+
+  it("shows and takes spend budgets in the organization's currency", async () => {
+    signedIn({ memberships: [myMembership({ org_currency: "EUR" })] });
+    const euros = limit({ ...memberBudget, amount: "40", used: "12.1", currency: "EUR", description: "monthly spend budget of 40 EUR" });
+    projectData({ members: [projectMember()], models: [sonnet], limits: [euros] });
+    on("GET", "orgs/:org/projects/:project/members/:user", projectMember());
+    on("GET", "orgs/:org/projects/:project/members/:user/rights", memberRights(["project.view"]));
+    const { user } = await renderApp(projectPath("members?member=usr_grace"));
+    const sheet = await screen.findByRole("dialog", { name: "Grace Hopper" });
+    const section = (await within(sheet).findByRole("heading", { name: "Limits" })).closest("section") as HTMLElement;
+
+    await within(section).findAllByRole("meter");
+    expect(section).toHaveTextContent("€12.10 of €40.00");
+    expect(section).not.toHaveTextContent("$");
+    await startDraft(user, section);
+    expect(within(section).getByText("€")).toBeInTheDocument();
+    expect(within(section).getByText("EUR")).toBeInTheDocument();
   });
 
   it("adds a member limit once it's below the project's", async () => {

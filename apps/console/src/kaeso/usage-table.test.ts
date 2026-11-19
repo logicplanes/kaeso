@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { usageRow } from "~/test/fixtures/project";
-import { sortUsage, sortsUsage, usageCsv } from "./usage-table";
+import { moneyIn } from "~/format/currency";
+import { costColumns, sortUsage, sortsUsage, usageCsv } from "./usage-table";
 
 const rows = [
   usageRow({ key: "a", requests: 1, cache_hit_rate: 0.5, cost: "3" }),
@@ -32,5 +33,11 @@ describe("usage tables", () => {
       rows,
     );
     expect(csv).toBe('"Name, full",Requests,Cost\r\n"Say ""hi""",1,3\r\n\'-1 or @me,3,\r\n"line\nbreak",2,0.5\r\n');
+  });
+
+  it("names the cost by its currency, with US dollars beside it for accounting in another one", () => {
+    const row = usageRow({ key: "a", cost: "1.1", converted_cost: "1", currency: "EUR" });
+    expect(usageCsv(costColumns(moneyIn("EUR")), [row])).toBe("Cost (EUR),Cost (USD)\r\n1,1.1\r\n");
+    expect(usageCsv(costColumns(moneyIn("USD")), [usageRow({ cost: "1.1" })])).toBe("Cost (USD)\r\n1.1\r\n");
   });
 });

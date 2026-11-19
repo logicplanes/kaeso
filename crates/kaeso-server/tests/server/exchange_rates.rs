@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use axum::http::{Method, StatusCode};
 use common::uuid;
 use common::v1::{Env, call, chat};
+use kaeso_core::clock::Clock as _;
 use serde_json::{Value, json};
 
 // The ECB's two files as it writes them: single quotes in the daily one, double in the history.
@@ -100,17 +101,13 @@ async fn without_rates_only_dollars_and_the_first_fetch_takes_90_days() {
         none["rates"],
         json!([{ "currency": "USD", "per_usd": "1" }])
     );
-    let r = env
-        .app
-        .call(
-            Method::PATCH,
-            "/me",
-            Some(json!({ "display_currency": "EUR" })),
-            Some(&env.owner.cookie),
-        )
-        .await;
+    let r = set_currency(&env, "EUR").await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
-    assert_eq!(r.body["error"]["param"], "display_currency");
+    assert_eq!(r.body["error"]["param"], "currency");
+    assert_eq!(
+        r.body["error"]["message"],
+        "Kaeso has no exchange rate for EUR; use a currency from `exchange-rates`."
+    );
 
     assert_eq!(run_job(&env).await, "2 new days, latest 2026-11-13");
     assert_eq!(ecb.asked(), ["eurofxref-hist-90d.xml"]);
@@ -287,57 +284,202 @@ async fn prices_in_euros_are_kept_as_entered_and_costed_in_dollars() {
     );
 }
 
-#[tokio::test]
-async fn spend_is_shown_in_the_chosen_currency_at_each_days_rate() {
-    let (_ecb, url) = Ecb::start().await;
-    let env = env_with(&url).await;
-    run_job(&env).await;
-    env.app.clock.advance(time::Duration::hours(7));
-    run_job(&env).await;
-    let format = time::macros::format_description!("[year]-[month]-[day]");
-    let day = |d: &str| time::Date::parse(d, &format).unwrap();
-    // $10 on a day with rates of its own, on a Saturday (Friday's rates) and before the first
-    // rates (the latest).
-    for d in ["2026-11-12", "2026-11-14", "2026-11-01"] {
-        kaeso_store::pg::limits::add_usage(
-            &env.app.state.pg,
-            &[kaeso_store::pg::limits::UsageRow {
-                day: day(d),
-                org_id: uuid(&env.owner.org_id),
-                project_id: uuid(&env.project),
-                user_id: None,
-                service_account_id: None,
-                api_key_id: None,
-                catalogue_model_id: None,
-                model_id: "gpt-4o".into(),
-                provider: "openai".into(),
-                ingress_dialect: "openai_chat".into(),
-                egress_dialect: "openai_chat".into(),
-                credential_id: None,
-                requests: 1,
-                errors: 0,
-                input_tokens: 1,
-                output_tokens: 0,
-                cache_read_tokens: 0,
-                cache_write_tokens: 0,
-                reasoning_tokens: 0,
-                cost: rust_decimal::Decimal::TEN,
-                media: Default::default(),
-            }],
+async fn set_currency(env: &Env, code: &str) -> common::Resp {
+    env.app
+        .call(
+            Method::PATCH,
+            &format!("/orgs/{}", env.owner.org_id),
+            Some(json!({ "currency": code })),
+            Some(&env.owner.cookie),
         )
         .await
-        .unwrap();
+}
+
+// A request whose worst case fits the budget: the mock answers with 18 output tokens.
+fn capped() -> Value {
+    json!({ "model": "claude-haiku-4-5", "max_tokens": 18, "messages": [{ "role": "user", "content": "Hi" }] })
+}
+
+async fn with_rates(env: &Env) {
+    run_job(env).await;
+    env.app.clock.advance(time::Duration::hours(7));
+    run_job(env).await;
+}
+
+async fn spend_on(env: &Env, d: &str, cost: rust_decimal::Decimal) {
+    let format = time::macros::format_description!("[year]-[month]-[day]");
+    kaeso_store::pg::limits::add_usage(
+        &env.app.state.pg,
+        &[kaeso_store::pg::limits::UsageRow {
+            day: time::Date::parse(d, &format).unwrap(),
+            org_id: uuid(&env.owner.org_id),
+            project_id: uuid(&env.project),
+            user_id: None,
+            service_account_id: None,
+            api_key_id: None,
+            catalogue_model_id: None,
+            model_id: "gpt-4o".into(),
+            provider: "openai".into(),
+            ingress_dialect: "openai_chat".into(),
+            egress_dialect: "openai_chat".into(),
+            credential_id: None,
+            requests: 1,
+            errors: 0,
+            input_tokens: 1,
+            output_tokens: 0,
+            cache_read_tokens: 0,
+            cache_write_tokens: 0,
+            reasoning_tokens: 0,
+            cost,
+            media: Default::default(),
+        }],
+    )
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn the_org_sets_its_currency_and_the_change_is_audited() {
+    let (_ecb, url) = Ecb::start().await;
+    let env = env_with(&url).await;
+    let org = format!("/orgs/{}", env.owner.org_id);
+    assert_eq!(
+        env.app.get(&org, &env.owner.cookie).await.body["currency"],
+        "USD"
+    );
+    with_rates(&env).await;
+    for refused in ["euro", "CHF"] {
+        let r = set_currency(&env, refused).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{refused}: {:?}", r.body);
+        assert_eq!(r.body["error"]["param"], "currency");
     }
-    let base = format!("/orgs/{}/projects/{}/usage", env.owner.org_id, env.project);
-    let by_day = env
+    let r = set_currency(&env, "EUR").await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(r.body["currency"], "EUR");
+    assert_eq!(
+        env.app.get(&org, &env.owner.cookie).await.body["currency"],
+        "EUR"
+    );
+    let memberships = env.app.get("/me/memberships", &env.owner.cookie).await;
+    assert_eq!(
+        memberships.body["data"][0]["org_currency"], "EUR",
+        "{:?}",
+        memberships.body
+    );
+    let audit = env
         .app
         .get(
-            &format!("{base}?from=2026-11-01&to=2026-11-16&currency=GBP"),
+            &format!("{org}/audit-log?action=org.update"),
             &env.owner.cookie,
         )
         .await;
-    assert_eq!(by_day.status, StatusCode::OK, "{:?}", by_day.body);
-    let rows: Vec<(String, String, String)> = by_day.body["data"]
+    let event = &audit.body["data"][0];
+    assert_eq!(
+        (&event["before"]["currency"], &event["after"]["currency"]),
+        (&json!("USD"), &json!("EUR")),
+        "{event}"
+    );
+
+    // The currency is the org's, never a person's.
+    let me = env.app.get("/me", &env.owner.cookie).await;
+    assert_eq!(me.body.get("display_currency"), None, "{:?}", me.body);
+    let r = env
+        .app
+        .call(
+            Method::PATCH,
+            "/me",
+            Some(json!({ "display_currency": "EUR" })),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{:?}", r.body);
+}
+
+#[tokio::test]
+async fn spend_budgets_are_set_in_the_org_currency_and_checked_in_dollars() {
+    let (_ecb, url) = Ecb::start().await;
+    let env = env_with(&url).await;
+    with_rates(&env).await;
+    let limits = format!("/orgs/{}/projects/{}/limits", env.owner.org_id, env.project);
+    let budget = |amount: &str, period: &str| json!({ "level": "project", "kind": "spend_budget", "period": period, "amount": amount });
+    let r = env
+        .app
+        .post(&limits, budget("11.014", "total"), Some(&env.owner.cookie))
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    assert_eq!(r.body["currency"], "USD");
+    let dollars = r.body["id"].as_str().unwrap().to_owned();
+
+    // At 1.1014 dollars to the euro, $11.014 is €10.
+    assert_eq!(set_currency(&env, "EUR").await.status, StatusCode::OK);
+    let r = env
+        .app
+        .get(&format!("{limits}/{dollars}"), &env.owner.cookie)
+        .await;
+    assert_eq!(
+        (
+            &r.body["amount"],
+            &r.body["currency"],
+            &r.body["description"]
+        ),
+        (
+            &json!("10"),
+            &json!("EUR"),
+            &json!("total spend budget of 10 EUR")
+        ),
+        "{:?}",
+        r.body
+    );
+    let audit = env
+        .app
+        .get(
+            &format!("/orgs/{}/audit-log?action=limit.update", env.owner.org_id),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        audit.body["data"][0]["after"]["description"],
+        "total spend budget of 10 EUR"
+    );
+
+    // €0.0003 is $0.00033: a third request of $0.0001 still fits, which $0.0003 wouldn't allow.
+    let r = env
+        .app
+        .post(&limits, budget("0.0003", "month"), Some(&env.owner.cookie))
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    assert_eq!(r.body["currency"], "EUR");
+    let monthly = r.body["id"].as_str().unwrap().to_owned();
+    for _ in 0..3 {
+        let r = call(&env, "/v1/messages", Some(&env.key), true, Some(capped())).await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    }
+    env.app.state.in_flight.settled().await;
+    // $0.0003 used is €0.000272.
+    let r = env
+        .app
+        .get(&format!("{limits}/{monthly}"), &env.owner.cookie)
+        .await;
+    assert_eq!(r.body["used"], "0.000272", "{:?}", r.body);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(capped())).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert!(
+        r.text().contains("monthly spend budget of 0.0003 EUR"),
+        "{}",
+        r.text()
+    );
+}
+
+async fn by_day(env: &Env, base: &str) -> Vec<(String, String, String, String)> {
+    let r = env
+        .app
+        .get(
+            &format!("{base}?from=2026-11-01&to=2026-11-16"),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body["data"]
         .as_array()
         .unwrap()
         .iter()
@@ -346,65 +488,221 @@ async fn spend_is_shown_in_the_chosen_currency_at_each_days_rate() {
                 r["key"].as_str().unwrap().to_owned(),
                 r["cost"].as_str().unwrap().to_owned(),
                 r["converted_cost"].as_str().unwrap().to_owned(),
+                r["currency"].as_str().unwrap().to_owned(),
             )
         })
-        .collect();
+        .collect()
+}
+
+#[tokio::test]
+async fn spend_is_read_in_the_org_currency_at_each_days_rate() {
+    let (_ecb, url) = Ecb::start().await;
+    let env = env_with(&url).await;
+    env.app
+        .state
+        .clickhouse
+        .as_ref()
+        .unwrap()
+        .migrate(&env.app.state.pg)
+        .await
+        .unwrap();
+    with_rates(&env).await;
+    // $10 on a day with rates of its own, on a Saturday (Friday's rates) and before the first
+    // rates (the latest).
+    for d in ["2026-11-12", "2026-11-14", "2026-11-01"] {
+        spend_on(&env, d, rust_decimal::Decimal::TEN).await;
+    }
+    let base = format!("/orgs/{}/projects/{}/usage", env.owner.org_id, env.project);
+    let row = |day: &str, converted: &str, code: &str| {
+        (
+            day.to_owned(),
+            "10".to_owned(),
+            converted.to_owned(),
+            code.to_owned(),
+        )
+    };
     assert_eq!(
-        rows,
+        by_day(&env, &base).await,
+        [
+            row("2026-11-01", "10", "USD"),
+            row("2026-11-12", "10", "USD"),
+            row("2026-11-14", "10", "USD"),
+        ],
+        "in US dollars nothing is converted"
+    );
+    assert_eq!(set_currency(&env, "GBP").await.status, StatusCode::OK);
+    assert_eq!(
+        by_day(&env, &base).await,
         [
             // 0.8345 / 1.1014 pounds a dollar, the latest.
-            ("2026-11-01".into(), "10".into(), "7.576721".into()),
+            row("2026-11-01", "7.576721", "GBP"),
             // 0.83 / 1.08.
-            ("2026-11-12".into(), "10".into(), "7.685185".into()),
+            row("2026-11-12", "7.685185", "GBP"),
             // Friday's 0.84 / 1.09.
-            ("2026-11-14".into(), "10".into(), "7.706422".into()),
+            row("2026-11-14", "7.706422", "GBP"),
         ]
     );
     let by_model = env
         .app
         .get(
-            &format!("{base}?from=2026-11-01&to=2026-11-16&group_by=model&currency=GBP"),
+            &format!("{base}?from=2026-11-01&to=2026-11-16&group_by=model"),
             &env.owner.cookie,
         )
         .await;
     assert_eq!(by_model.body["data"][0]["converted_cost"], "22.968328");
-    let plain = env
+
+    // The request log and the timeline read $10 an hour ago at the latest rate.
+    let at = env.app.clock.now().replace_nanosecond(0).unwrap() - time::Duration::hours(1);
+    let (mut logged, _) = crate::logs::row(uuid(&env.owner.org_id), uuid(&env.project), at, 1);
+    logged.cost = 10_000_000_000_000;
+    let id = logged.request_id;
+    kaeso_store::clickhouse::logs::insert_logs(
+        env.app.state.clickhouse.as_ref().unwrap(),
+        &[logged],
+    )
+    .await
+    .unwrap();
+    let rfc = |t: time::OffsetDateTime| {
+        t.format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let project = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let list = env
         .app
         .get(
-            &format!("{base}?from=2026-11-01&to=2026-11-16"),
+            &format!(
+                "{project}/logs?from={}",
+                rfc(at - time::Duration::minutes(1))
+            ),
             &env.owner.cookie,
         )
         .await;
-    assert_eq!(plain.body["data"][0]["converted_cost"], Value::Null);
-    let unknown = env
+    assert_eq!(list.status, StatusCode::OK, "{:?}", list.body);
+    let entry = &list.body["data"][0];
+    assert_eq!(
+        (&entry["cost"], &entry["converted_cost"], &entry["currency"]),
+        (&json!("10"), &json!("7.576721"), &json!("GBP")),
+        "{entry}"
+    );
+    let one = env
         .app
-        .get(&format!("{base}?currency=CHF"), &env.owner.cookie)
+        .get(
+            &format!(
+                "{project}/logs/{}",
+                kaeso_core::id::RequestId::from_uuid(id)
+            ),
+            &env.owner.cookie,
+        )
         .await;
-    assert_eq!(unknown.status, StatusCode::BAD_REQUEST);
-    assert_eq!(unknown.body["error"]["param"], "currency");
+    assert_eq!(one.body["converted_cost"], "7.576721", "{:?}", one.body);
+    // £7 is $9.24 at the latest rate, so the $10 request counts; £8 ($10.56) leaves it out.
+    for (min, found) in [("7", 1), ("8", 0)] {
+        let r = env
+            .app
+            .get(
+                &format!(
+                    "{project}/logs?from={}&min_cost={min}",
+                    rfc(at - time::Duration::minutes(1))
+                ),
+                &env.owner.cookie,
+            )
+            .await;
+        assert_eq!(
+            r.body["data"].as_array().unwrap().len(),
+            found,
+            "{min}: {:?}",
+            r.body
+        );
+    }
+    let timeline = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/usage/timeline?from={}&to={}&step=hour",
+                env.owner.org_id,
+                rfc(at - time::Duration::hours(1)),
+                rfc(at + time::Duration::hours(1))
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(timeline.status, StatusCode::OK, "{:?}", timeline.body);
+    let bucket = &timeline.body["data"][0];
+    assert_eq!(
+        (&bucket["converted_cost"], &bucket["currency"]),
+        (&json!("7.576721"), &json!("GBP")),
+        "{bucket}"
+    );
 
-    // A person's choice is kept on their account.
+    // A CSV export names the currency of its second cost column.
+    let req = axum::http::Request::builder()
+        .uri(format!(
+            "/platform/v1{project}/logs/export?format=csv&from={}",
+            rfc(at - time::Duration::minutes(1))
+        ))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let body = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    let text = std::str::from_utf8(&body).unwrap();
+    let header: Vec<&str> = text.lines().next().unwrap().split(',').collect();
+    let at_column = |name: &str| header.iter().position(|h| *h == name).unwrap();
+    let line: Vec<&str> = text.lines().nth(1).unwrap().split(',').collect();
+    assert_eq!(line[at_column("cost_usd")], "10", "{text}");
+    assert_eq!(line[at_column("cost_gbp")], "7.576721", "{text}");
+
+    // A live shared link reads the same pounds.
     let r = env
         .app
         .call(
-            Method::PATCH,
-            "/me",
-            Some(json!({ "display_currency": "GBP" })),
+            Method::PUT,
+            &format!("/orgs/{}/security/shared-links", env.owner.org_id),
+            Some(json!({ "allow": "anyone", "max_days": 90 })),
             Some(&env.owner.cookie),
         )
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    assert_eq!(r.body["display_currency"], "GBP");
-    let me = env.app.get("/me", &env.owner.cookie).await;
-    assert_eq!(me.body["display_currency"], "GBP");
+    spend_on(
+        &env,
+        &env.app.clock.now().date().to_string(),
+        rust_decimal::Decimal::TEN,
+    )
+    .await;
     let r = env
         .app
-        .call(
-            Method::PATCH,
-            "/me",
-            Some(json!({ "display_currency": "USD" })),
+        .post(
+            &format!("/orgs/{}/shared-links", env.owner.org_id),
+            json!({ "kind": "analytics", "project": env.project, "audience": "anyone", "days": 7, "expires_in_days": 30, "metric": "cost", "show_costs": true }),
             Some(&env.owner.cookie),
         )
         .await;
-    assert_eq!(r.body["display_currency"], "USD");
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let token = r.body["url"]
+        .as_str()
+        .unwrap()
+        .rsplit_once("/share/")
+        .unwrap()
+        .1
+        .to_owned();
+    let shared = env
+        .app
+        .call(Method::GET, &format!("/share/{token}"), None, None)
+        .await;
+    assert_eq!(shared.status, StatusCode::OK, "{:?}", shared.body);
+    assert_eq!(shared.body["currency"], "GBP");
+    let today = shared.body["days"].as_array().unwrap().last().unwrap();
+    assert_eq!(
+        (&today["cost"], &today["converted_cost"]),
+        (&json!("10"), &json!("7.576721")),
+        "{today}"
+    );
 }

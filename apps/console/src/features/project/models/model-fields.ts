@@ -1,6 +1,7 @@
 import type { Capability } from "@logicplanes/kaeso-ui";
-import { formatContext, formatNumber, formatPrice, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatContext, formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView, DecisionFields, Fields } from "~/api/generated/types";
+import type { Prices } from "~/format/prices";
 import { t } from "~/i18n";
 
 export function capabilities(f: Fields): Capability[] {
@@ -27,15 +28,15 @@ export function contextLabel(tokens: number | null | undefined): string {
   return tokens ? formatContext(tokens) : "—";
 }
 
-export function priceLabel(f: Pick<Fields, "input_price" | "output_price">): string {
+export function priceLabel(f: Pick<Fields, "input_price" | "output_price">, prices: Prices): string {
   if (!f.input_price && !f.output_price) return "—";
-  const short = (v: string | null | undefined) => (v ? (Number(v) % 1 === 0 ? formatUSD(v, { decimals: 0 }) : formatPrice(v)) : "—");
+  const short = (v: string | null | undefined) => (v ? prices.short(v) : "—");
   if (f.input_price && f.output_price && Number(f.output_price) === 0) return short(f.input_price);
   return `${short(f.input_price)} / ${short(f.output_price)}`;
 }
 
-export function tierLabels(f: Fields): string[] {
-  const price = (v: string | null | undefined) => (v ? formatPrice(v) : "—");
+export function tierLabels(f: Fields, prices: Prices): string[] {
+  const price = (v: string | null | undefined) => (v ? prices.price(v) : "—");
   return (f.price_tiers ?? []).map((tier) =>
     t("models.priceTier", "Above {context}: {input} / {output}", {
       context: formatContext(tier.context_above),
@@ -45,7 +46,7 @@ export function tierLabels(f: Fields): string[] {
   );
 }
 
-export function unitPriceLabels(f: Fields): string[] {
+export function unitPriceLabels(f: Fields, prices: Prices): string[] {
   return (f.unit_prices ?? []).map((u) => {
     const units: Record<string, () => string> = {
       image: () => t("models.unit.image", "image"),
@@ -64,8 +65,8 @@ export function unitPriceLabels(f: Fields): string[] {
     const conditions = [u.size, u.quality, u.resolution, length, sound, minimum].filter((c): c is string => !!c);
     const label =
       u.per === "search"
-        ? t("models.unitPriceSearch", "{price} per web search", { price: formatUSD(u.usd) })
-        : t("models.unitPrice", "{price} per {unit} of {side}", { price: formatUSD(u.usd), unit, side });
+        ? t("models.unitPriceSearch", "{price} per web search", { price: prices.unit(u.usd) })
+        : t("models.unitPrice", "{price} per {unit} of {side}", { price: prices.unit(u.usd), unit, side });
     const shown = conditions.length ? `${label} (${conditions.join(t("models.listSeparator", ", "))})` : label;
     return u.estimate ? t("models.unitPriceEstimate", "{price}, estimated", { price: shown }) : shown;
   });

@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { exchangeRates, ORG, PROJECT, signedIn, without } from "~/test/fixtures";
+import { exchangeRates, myMembership, ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
 import { apiError, on, page, requests } from "~/test/network";
@@ -27,8 +27,8 @@ const sonnet = () =>
     },
   });
 
-function setUp(models = [sonnet()], rights?: string[]) {
-  signedIn(rights ? { projectRights: rights } : {});
+function setUp(models = [sonnet()], rights?: string[], currency = "USD") {
+  signedIn({ ...(rights ? { projectRights: rights } : {}), memberships: [myMembership({ org_currency: currency })] });
   projectData();
   modelsApi({ models });
 }
@@ -255,7 +255,7 @@ describe("ModelSheet", () => {
     expect(await within(s).findByText("Values in use")).toBeInTheDocument();
   });
 
-  it("shows prices entered in euros with their dollars, and edits them in euros", async () => {
+  it("shows prices entered in euros in the organization's dollars, and edits them in euros", async () => {
     const euros = catalogueModel({
       overrides: { currency: "EUR", input_price: "2.5" },
       effective: { ...catalogueModel().effective, display_name: "Sonnet", input_price: "2.777777778" },
@@ -266,7 +266,7 @@ describe("ModelSheet", () => {
 
     const s = await sheet("Sonnet");
     await within(s).findByText("Values in use");
-    expect(s).toHaveTextContent("Input price€2.50 / M tokens (≈ $2.78)overrideReset to KPMR");
+    expect(s).toHaveTextContent("Input price$2.78 / M tokensoverrideReset to KPMR");
     expect(s).toHaveTextContent("Output price$15.00 / M tokensKPMR");
     await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
     expect(within(s).getByRole("combobox", { name: "Currency" })).toHaveTextContent("EUR");
@@ -277,6 +277,28 @@ describe("ModelSheet", () => {
 
     expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
     expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { output_price: "10" } }]);
+  });
+
+  it("shows every price in the organization's currency, and starts editing in it without pinning KPMR's prices", async () => {
+    setUp([sonnet()], undefined, "EUR");
+    on("PATCH", ONE_MODEL, sonnet());
+    const { user } = await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Sonnet");
+    await within(s).findByText("Values in use");
+    expect(s).toHaveTextContent("Input price€2.25 / M tokens");
+    expect(s).toHaveTextContent("Output price€13.50 / M tokensKPMR");
+    expect(s).not.toHaveTextContent("$");
+    await user.click(within(s).getByRole("button", { name: "Edit overrides" }));
+    expect(within(s).getByRole("combobox", { name: "Currency" })).toHaveTextContent("EUR");
+    expect(within(s).getByRole("spinbutton", { name: "Output price" })).toHaveValue("13.5");
+    expect(s).not.toHaveTextContent("≈");
+    await user.clear(within(s).getByRole("textbox", { name: "Display name" }));
+    await user.type(within(s).getByRole("textbox", { name: "Display name" }), "Sonnet fast");
+    await user.click(within(s).getByRole("button", { name: "Save overrides" }));
+
+    expect(await notifications().findByText("Overrides saved")).toBeInTheDocument();
+    expect(requests("PATCH", ONE_MODEL).map((r) => r.body)).toEqual([{ overrides: { display_name: "Sonnet fast" } }]);
   });
 
   it("says when prices entered in a currency have no exchange rate", async () => {

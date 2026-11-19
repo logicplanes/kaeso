@@ -104,6 +104,9 @@ pub struct MyMembership {
     pub org_deletion_due_at: Option<time::OffsetDateTime>,
     #[doc = "The org's picture; `null` without one."]
     pub org_avatar_url: Option<String>,
+    #[doc = "The currency the org shows and enters money in, an ISO 4217 code."]
+    #[schema(example = "EUR")]
+    pub org_currency: String,
     #[doc = "The user's org role."]
     pub role: crate::platform::grants::RoleRef,
     #[doc = "Deprecated: the built-in role's name, `custom` for a custom role."]
@@ -167,6 +170,7 @@ pub async fn memberships(State(state): State<AppState>, ctx: Ctx) -> ApiResult<J
                     .collect(),
                 org_avatar_url: crate::platform::views::avatar_url(o.org_avatar.as_deref()),
                 org_name: o.org_name,
+                org_currency: o.org_currency,
                 org_state: o.org_state,
                 org_deletion_due_at: o.org_deletion_due_at,
                 preset: o.preset,

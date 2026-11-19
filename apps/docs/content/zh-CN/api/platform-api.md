@@ -115,8 +115,8 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 格式 | 基于 JSON 的 REST：路径使用复数 kebab case（`service-accounts`），字段使用 `snake_case`。请求正文以 `content-type: application/json` 发送；端点不认识的字段会得到 400。 |
 | ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`mem_…`、`inv_…`、`svc_…`、`key_…`、`opk_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`ses_…`、`req_…`、`evt_…`、`exp_…`、`upd_…`、`agt_…`、`act_…`、`cli_…`、`mcp_…`、`conn_…`、`tool_…`、`grant_…`、`call_…`、`video_…`。 |
 | 时间 | RFC 3339，UTC。每个响应都在 `Kaeso-Time-Zone` 中给出实例的时区，例如 `Europe/Berlin`，即控制台显示时间所用的时区。 |
-| 金额 | 以十进制字符串表示的美元，例如 `"0.0001"`。价格和数额以十进制字符串或整数发送；JSON 小数（例如 `0.5`）会得到 400。 |
-| 限额数额 | 最多 10^12 个请求或 Token；支出预算最多 1,000,000,000 美元。 |
+| 金额 | 十进制字符串，例如 `"0.0001"`：`cost` 以美元计，`converted_cost` 和支出预算以组织的 `currency` 计（[货币](../concepts/currencies.md#在-platform-api-中)）。价格和数额以十进制字符串或整数发送；JSON 小数（例如 `0.5`）会得到 400。 |
+| 限额数额 | 最多 10^12 个请求或 Token；支出预算最多相当于 1,000,000,000 美元。 |
 | 创建 | 对集合发送 `POST`，以 201 和新资源响应。 |
 | 更新 | 发送只含待更改字段的 `PATCH`。`PUT` 设置一个完整的值，例如图片、密钥策略或 SSO 连接。 |
 | 操作 | `POST …/archive`、`…/disable`、`…/enable`、`…/replace` 或 `…/restore`。归档会保留记录。 |

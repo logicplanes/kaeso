@@ -9,6 +9,8 @@ import { useProjectRights } from "~/auth/rights";
 import { useRequestLogs } from "~/auth/session";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
+import { useOrgPrices } from "~/kaeso/org-prices";
+import { USD } from "~/format/currency";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
 import { modelRef } from "./request";
@@ -200,12 +202,17 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
     return () => window.removeEventListener("beforeunload", warnOnLeave);
   }, [empty]);
   const named = useQuery(projectQuery(org, project));
+  const prices = useOrgPrices(org);
   // Built from the page's own state: exporting sends nothing to the gateway.
   const conversation = (): Exported => ({
     project: named.data?.name,
     parameters: searchOf(parameters),
     columns: columnsOf(refs, models, threads),
     at: new Date(),
+    cost: (usd) => {
+      const v = prices.convert(usd);
+      return v === null ? "—" : prices.money.request(v);
+    },
   });
   const exportAs = (format: "md" | "json") => {
     const c = conversation();
@@ -247,10 +254,15 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   const options = useMemo(
     () =>
       chat.map((m) => {
-        const option = playgroundModelOption(m, modelRef(m), t("playground.noProviderKeyShort", "No {provider} key", { provider: providers.name(m.provider) }));
+        const option = playgroundModelOption(
+          m,
+          modelRef(m),
+          t("playground.noProviderKeyShort", "No {provider} key", { provider: providers.name(m.provider) }),
+          prices,
+        );
         return option.note || m.mode === "text" ? option : { ...option, note: modeLabel(m.mode) };
       }),
-    [chat, providers],
+    [chat, providers, prices],
   );
   const providerIds = useMemo(() => [...new Set(chat.map((m) => m.provider))], [chat]);
   const pickerProviders = useModelPickerProviders(org, providerIds);
@@ -418,6 +430,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           onCancel={cancel}
                           onEdit={editable.has(lastTurn.id) ? () => editLast(lastTurn) : null}
                           logHref={logHref}
+                          formatCost={prices.money.code === USD ? undefined : prices.price}
                         />
                       ) : empty ? (
                         i === 0 && (

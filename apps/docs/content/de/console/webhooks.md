@@ -56,6 +56,7 @@ Eine JSON-Zustellung ist ein `POST` mit `content-type: application/json` und ein
     "kind": "spend_budget",
     "period": "month",
     "amount": "100",
+    "currency": "USD",
     "used": "80.42",
     "percent": 80,
     "applies_to": { "type": "project" },
@@ -69,7 +70,7 @@ Eine JSON-Zustellung ist ein `POST` mit `content-type: application/json` und ein
 - `project` ist `null` für ein Ereignis der Organisation.
 - `summary` ist die Zeile der Benachrichtigung auf Englisch.
 - `url` öffnet die Seite der Konsole, um die es geht.
-- IDs haben die Form der [Platform API](../api/platform-api.md). Beträge sind Zeichenketten: US-Dollar für Ausgaben, sonst Token oder Anfragen.
+- IDs haben die Form der [Platform API](../api/platform-api.md). Beträge sind Zeichenketten: die eines Ausgabenbudgets in seiner `currency`, der der Organisation, sonst Token oder Anfragen.
 
 `data` enthält:
 

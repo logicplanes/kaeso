@@ -22,6 +22,7 @@ const row = (overrides: Partial<SharedRow> = {}): SharedRow => ({
   cost: null,
   tool_calls: 0,
   ...overrides,
+  converted_cost: overrides.converted_cost !== undefined ? overrides.converted_cost : (overrides.cost ?? null),
 });
 
 // The end of today's day budget, UTC, so the day is under way whenever the test runs.
@@ -38,6 +39,7 @@ const view = (overrides: Partial<SharedView> = {}): SharedView => ({
   to: "2026-10-14",
   metric: "requests",
   costs: false,
+  currency: "USD",
   created_at: "2026-10-14T09:00:00Z",
   expires_at: "2026-11-13T09:00:00Z",
   made_with_kaeso: true,
@@ -119,6 +121,59 @@ describe("a shared link's page", () => {
     expect(cost).toHaveAttribute("aria-selected", "true");
   });
 
+  it("shows cost and budgets in the organization's currency, never in dollars", async () => {
+    signedOut();
+    on(
+      "GET",
+      "share/:token",
+      view({
+        costs: true,
+        currency: "EUR",
+        metric: "cost",
+        days: [row({ key: "2026-10-13", cost: "11", converted_cost: "10.08" }), row({ cost: "2.2", converted_cost: "2.02" })],
+        previous_days: [],
+      }),
+    );
+    await renderApp(`/share/${TOKEN}`);
+
+    expect(await screen.findByRole("tab", { name: /Cost.*€12\.10/ })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent("$");
+  });
+
+  it("shows a spend budget in the currency it was set in", async () => {
+    signedOut();
+    on(
+      "GET",
+      "share/:token",
+      view({
+        kind: "budget",
+        costs: true,
+        currency: "EUR",
+        breakdowns: [],
+        days: [],
+        previous_days: [],
+        limits: [
+          {
+            level: "project",
+            name: null,
+            number: null,
+            kind: "spend_budget",
+            model: null,
+            period: "total",
+            amount: "40",
+            currency: "EUR",
+            used: "12.1",
+            hard: true,
+            resets_at: null,
+          },
+        ],
+      }),
+    );
+    await renderApp(`/share/${TOKEN}`);
+
+    expect(await screen.findByText("€12.10 of €40.00")).toBeInTheDocument();
+  });
+
   it("shows a project's budgets with what they used and where they're heading", async () => {
     signedOut();
     on(
@@ -139,6 +194,7 @@ describe("a shared link's page", () => {
             model: null,
             period: "month",
             amount: "50",
+            currency: "USD",
             used: "12.5",
             hard: true,
             resets_at: "2026-11-01T00:00:00Z",
@@ -151,6 +207,7 @@ describe("a shared link's page", () => {
             model: "openai/gpt-5.4-mini",
             period: "minute",
             amount: "60",
+            currency: null,
             used: "6",
             hard: true,
             resets_at: null,
@@ -163,6 +220,7 @@ describe("a shared link's page", () => {
             model: null,
             period: "total",
             amount: "1000",
+            currency: null,
             used: null,
             hard: false,
             resets_at: null,
@@ -175,6 +233,7 @@ describe("a shared link's page", () => {
             model: null,
             period: "day",
             amount: "100000000",
+            currency: null,
             used: "10624184",
             hard: true,
             resets_at: tomorrow(),

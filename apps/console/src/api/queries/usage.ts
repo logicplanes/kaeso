@@ -6,27 +6,26 @@ export type GroupBy = "day" | "week" | "month" | "model" | "key" | "member" | "r
 
 const CHARTED = { refetchOnWindowFocus: false } as const;
 
-/** `currency` also gives each row's cost in it, as `converted_cost`. */
-export const projectUsageQuery = (org: string, project: string, from: string, to: string, groupBy: GroupBy, currency?: string) =>
+export const projectUsageQuery = (org: string, project: string, from: string, to: string, groupBy: GroupBy) =>
   queryOptions({
     ...CHARTED,
-    queryKey: ["orgs", org, "projects", project, "usage", { from, to, groupBy, ...(currency ? { currency } : {}) }],
+    queryKey: ["orgs", org, "projects", project, "usage", { from, to, groupBy }],
     queryFn: async (): Promise<UsageRow[]> =>
       data(
         await api.GET("/platform/v1/orgs/{org}/projects/{project}/usage", {
-          params: { path: { org, project }, query: { from, to, group_by: groupBy, ...(currency ? { currency } : {}) } },
+          params: { path: { org, project }, query: { from, to, group_by: groupBy } },
         }),
       ).data,
   });
 
-export const orgUsageQuery = (org: string, from: string, to: string, groupBy: GroupBy, currency?: string) =>
+export const orgUsageQuery = (org: string, from: string, to: string, groupBy: GroupBy) =>
   queryOptions({
     ...CHARTED,
-    queryKey: ["orgs", org, "usage", { from, to, groupBy, ...(currency ? { currency } : {}) }],
+    queryKey: ["orgs", org, "usage", { from, to, groupBy }],
     queryFn: async (): Promise<UsageRow[]> =>
       data(
         await api.GET("/platform/v1/orgs/{org}/usage", {
-          params: { path: { org }, query: { from, to, group_by: groupBy, ...(currency ? { currency } : {}) } },
+          params: { path: { org }, query: { from, to, group_by: groupBy } },
         }),
       ).data,
   });

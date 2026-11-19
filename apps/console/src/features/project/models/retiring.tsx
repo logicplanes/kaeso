@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertDialog, Badge, Banner, Button, Empty, KeyValue, Link, List, Sheet, Sparkline, Text } from "@logicplanes/kaeso-ui";
-import { formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatNumber } from "@logicplanes/kaeso-ui/format";
+import type { Prices } from "~/format/prices";
+import { useOrgPrices } from "~/kaeso/org-prices";
 import type { CallerCount, MoveView, RetiringModelView } from "~/api/generated/types";
 import { api, data } from "~/api/client";
 import { projectCatalogue } from "~/api/queries/invalidation";
@@ -53,9 +55,8 @@ export function RetiringBanner({ count, onShow }: { count: number; onShow: () =>
   );
 }
 
-const price = (v: string | null | undefined) => (v === null || v === undefined ? t("models.retiring.unknownPrice", "unknown") : formatUSD(v));
-
-function priceChange(from: string | null | undefined, to: string | null | undefined): string {
+function priceChange(prices: Prices, from: string | null | undefined, to: string | null | undefined): string {
+  const price = (v: string | null | undefined) => (v === null || v === undefined ? t("models.retiring.unknownPrice", "unknown") : prices.unit(v));
   return t("models.retiring.priceChange", "{from} → {to}", { from: price(from), to: price(to) });
 }
 
@@ -163,6 +164,7 @@ function RetiringBody({
   onMoved: () => void;
 }) {
   const rights = useProjectRights(org, project);
+  const prices = useOrgPrices(org);
   const logs = useRequestLogs() && rights.has("logs.metadata.view");
   const [moving, setMoving] = useState(false);
   const base = `/orgs/${org}/projects/${project}`;
@@ -190,8 +192,8 @@ function RetiringBody({
           { label: t("models.retiring.replacement", "Replacement"), value: l.replacement ?? common.none(), mono: !!l.replacement },
           ...(r
             ? [
-                { label: t("models.retiring.inputPrice", "Input price"), value: priceChange(r.input_price.from, r.input_price.to) },
-                { label: t("models.retiring.outputPrice", "Output price"), value: priceChange(r.output_price.from, r.output_price.to) },
+                { label: t("models.retiring.inputPrice", "Input price"), value: priceChange(prices, r.input_price.from, r.input_price.to) },
+                { label: t("models.retiring.outputPrice", "Output price"), value: priceChange(prices, r.output_price.from, r.output_price.to) },
               ]
             : []),
           ...(l.source

@@ -286,8 +286,6 @@
   "account.orgEmailsOn": "E-Mails zu {org} wieder an",
   "account.notify.webhooks": "Webhooks brauchen Aufmerksamkeit",
   "account.notify.webhooksHint": "Wenn ein Webhook 20-mal in Folge scheitert und ausgeschaltet wird.",
-  "account.currency": "Währung",
-  "account.currencyHint": "Ausgaben auch darin, neben USD; im Konto gespeichert.",
   "account.notify.modelDeprecated": "Modell abgekündigt",
   "account.notify.modelDeprecatedHint": "Wenn ein Anbieter einen Abschalttag für ein Modell eines Projekts nennt.",
   "account.notify.modelShutdownSoon": "Modell wird bald abgeschaltet",

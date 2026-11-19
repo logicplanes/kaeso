@@ -215,6 +215,7 @@ export const docs = {
       costKnown: 'False when the model has no price for what it made: the cost reads "Unknown" (true by default).',
       cost: 'USD as a decimal string, shown with its own decimals (two at least, six at most): "0.004213" reads "$0.004213", "1.2311" reads "$1.2311", zero reads "$0" and less than a millionth reads "< $0.000001".',
       duration: "Milliseconds from sending to the last token.",
+      formatCost: "Writes `cost` in place of the dollar format, such as in another currency at the day's rate.",
       inputTokens: "The tokens sent, once known.",
       live: "A response is arriving: Total counts up from `startedAt`, and an unknown cost isn't called Unknown yet.",
       outputTokens: "The tokens received, once known.",

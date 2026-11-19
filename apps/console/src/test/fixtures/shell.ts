@@ -60,7 +60,10 @@ export function usage(overrides: Partial<UsageRow> = {}): UsageRow {
     tool_call_errors: 0,
     unpriced: 0,
     media: { images: 0, characters: 0, audio_ms: 0, videos: 0, video_ms: 0 },
+    currency: "USD",
     ...overrides,
+    // In US dollars the converted cost is the cost; a row in another currency names its own.
+    converted_cost: overrides.converted_cost !== undefined ? overrides.converted_cost : overrides.cost !== undefined ? overrides.cost : "1.25",
   };
 }
 

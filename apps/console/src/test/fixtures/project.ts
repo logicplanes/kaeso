@@ -95,6 +95,7 @@ export function limit(overrides: Partial<LimitView> = {}): LimitView {
     resets_at: "2026-11-01T00:00:00Z",
     subject: { type: "project", id: PROJECT },
     description: "monthly spend budget of 50 USD",
+    currency: overrides.kind === undefined || overrides.kind === "spend_budget" ? "USD" : null,
     revision: 1,
     created_at: NOW,
     updated_at: NOW,
@@ -212,7 +213,9 @@ export function usageRow(overrides: Partial<UsageRow> = {}): UsageRow {
     tool_call_errors: 0,
     unpriced: 0,
     media: { images: 0, characters: 0, audio_ms: 0, videos: 0, video_ms: 0 },
+    currency: "USD",
     ...overrides,
+    converted_cost: overrides.converted_cost !== undefined ? overrides.converted_cost : overrides.cost !== undefined ? overrides.cost : "1.25",
   };
 }
 
@@ -228,6 +231,8 @@ export function failedLog(overrides: Partial<LogView> = {}): LogView {
     started_at: DAY_AGO,
     client_ip: "127.0.0.1",
     cost: "0",
+    converted_cost: "0",
+    currency: "USD",
     cost_known: true,
     cost_basis: "reported",
     duration_ms: 12,
