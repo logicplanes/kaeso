@@ -28,6 +28,7 @@ export const ICON_GROUPS = {
     "database",
     "update",
     "security",
+    "guardrail",
     "session",
     "overview",
     "chart",

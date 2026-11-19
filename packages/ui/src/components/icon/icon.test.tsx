@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Icon } from "./icon.js";
 import { icons } from "../../icons/vocabulary.js";
+import { ICON_GROUPS } from "../../icons/groups.js";
 
 describe("Icon", () => {
   it("is hidden by default and keeps its name when labelled, whatever else it is given", () => {
@@ -27,6 +28,16 @@ describe("Icon", () => {
       return Math.round(((grid * Number(svg.getAttribute("width"))) / 24) * 100) / 100;
     });
     expect(drawn).toEqual([1.5, 1.5]);
+  });
+
+  it("files every name of the vocabulary under exactly one group of the reference", () => {
+    const filed: string[] = Object.values(ICON_GROUPS).flat();
+    expect([...filed].sort()).toEqual(Object.keys(icons).sort());
+  });
+
+  it("draws every Kaeso object differently, so two of them never look alike", () => {
+    const objects = ICON_GROUPS["Kaeso objects"];
+    expect(new Set(objects.map((name) => icons[name])).size).toBe(objects.length);
   });
 
   it("draws one icon until it changes, then shrinks the old one out as the new one grows in", () => {
