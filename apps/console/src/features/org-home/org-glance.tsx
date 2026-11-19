@@ -16,7 +16,7 @@ import {
   type RankItem,
 } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatRelative } from "@logicplanes/kaeso-ui/format";
-import { linkedCostsQuery, orgCredentialsQuery } from "~/api/queries/credentials";
+import { orgCredentialsQuery } from "~/api/queries/credentials";
 import { mcpServersQuery } from "~/api/queries/mcp-servers";
 import { invitesQuery, orgMembersQuery } from "~/api/queries/orgs";
 import { orgProjectsQuery } from "~/api/queries/projects";
@@ -59,26 +59,7 @@ export function CostByProject({ org }: { org: string }) {
     .slice(0, 4)
     .map((r) => ({ id: r.key, label: projects.data?.find((p) => p.id === r.key)?.name ?? r.key, value: Number(r.cost) }));
   if (!slices.length) return null;
-  return (
-    <>
-      <ShareBar aria-label={t("kaeso.overview.costByProject", "Cost by project")} slices={slices} formatValue={(v) => periodUSD(v.toFixed(6))} />
-      <LinkedShare org={org} />
-    </>
-  );
-}
-
-// What linked organizations paid through their own provider accounts, to match with the spend
-// the provider's console shows for the install's app.
-function LinkedShare({ org }: { org: string }) {
-  const keys = useQuery(orgCredentialsQuery(org));
-  const linked = (keys.data ?? []).some((k) => k.auth_method === "linked_billing");
-  const costs = useQuery({ ...linkedCostsQuery(org), enabled: linked, refetchInterval: REFRESH });
-  if (!costs.data || Number(costs.data.total) <= 0) return null;
-  return (
-    <Text variant="small" tone="secondary">
-      {t("kaeso.overview.linkedPaid", "{cost} of it was paid through linked billing.", { cost: periodUSD(costs.data.total) })}
-    </Text>
-  );
+  return <ShareBar aria-label={t("kaeso.overview.costByProject", "Cost by project")} slices={slices} formatValue={(v) => periodUSD(v.toFixed(6))} />;
 }
 
 function ProjectsCell({ org }: { org: string }) {
@@ -198,15 +179,7 @@ function ProvidersCell({ org }: { org: string }) {
             </>
           ),
           secondary: k.auth_error ? (
-            <Status tone="warning">
-              {k.auth_error === "signed_out"
-                ? t("orgHome.signedOut", "Signed out")
-                : k.auth_error === "unlinked"
-                  ? t("orgHome.unlinked", "Unlinked")
-                  : k.auth_error === "needs_setup"
-                    ? t("orgHome.linkedNeedsSetup", "Needs instance setup")
-                    : t("orgHome.noApiAccess", "No API access")}
-            </Status>
+            <Status tone="warning">{k.auth_error === "signed_out" ? t("orgHome.signedOut", "Signed out") : t("orgHome.noApiAccess", "No API access")}</Status>
           ) : k.last_used_at ? (
             formatRelative(k.last_used_at)
           ) : (

@@ -66,26 +66,6 @@ pub async fn rewrap(pg: &PgPool, ring: &KeyRing) -> Result<RewrapReport, MasterK
             report.rewrapped += 1;
         }
     }
-    for k in kaeso_store::pg::linked_billing::all_signing_keys(pg).await? {
-        let sealed = Sealed {
-            ciphertext: k.ciphertext,
-            nonce: k.nonce,
-            wrapped_key: k.wrapped_key,
-            key_id: k.key_id,
-        };
-        if let Some(new) = kaeso_crypto::rewrap(ring, &sealed)?
-            && kaeso_store::pg::linked_billing::set_signing_key_wrapped(
-                pg,
-                &k.kid,
-                &sealed.wrapped_key,
-                &new.wrapped_key,
-                &new.key_id,
-            )
-            .await?
-        {
-            report.rewrapped += 1;
-        }
-    }
     for (user, t) in totp::all_sealed(pg).await? {
         let sealed = Sealed {
             ciphertext: t.secret_ciphertext,

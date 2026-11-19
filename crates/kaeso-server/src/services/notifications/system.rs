@@ -57,10 +57,6 @@ enum Change<'a> {
         since: OffsetDateTime,
     },
     SignedOut,
-    SpendLimit {
-        until: OffsetDateTime,
-    },
-    Unlinked,
 }
 
 fn clip(s: &str, max: usize) -> String {
@@ -183,59 +179,6 @@ pub async fn account_signed_out(state: &AppState, org: Uuid, credential: Uuid) {
     );
 }
 
-pub async fn linked_spend_limit(
-    state: &AppState,
-    org: Uuid,
-    credential: Uuid,
-    until: OffsetDateTime,
-) {
-    warn(
-        provider_key(state, org, credential, Change::SpendLimit { until }).await,
-        "linked_spend_limit",
-    );
-}
-
-pub async fn linked_unlinked(state: &AppState, org: Uuid, credential: Uuid) {
-    warn(
-        provider_key(state, org, credential, Change::Unlinked).await,
-        "linked_unlinked",
-    );
-}
-
-/// Every linked key of a provider waits for the install's app: its instance admins hear about
-/// it once a day at most, not once for each key.
-pub async fn linked_needs_setup(state: &AppState, provider: &str) {
-    let result = async {
-        let name = kaeso_core::provider::provider(provider).map_or(provider, |p| p.name);
-        let send = Send {
-            kind: Kind::InstanceSettings,
-            org: None,
-            project: None,
-            place: None,
-            subject: format!("linked_billing_setup:{provider}"),
-            open: "settings/instance/linked-billing".to_owned(),
-            actor: None,
-        };
-        let to = super::dispatch::instance_admins(
-            state,
-            kaeso_core::rights::InstanceRight::InstanceSettingsManage,
-        )
-        .await?;
-        deliver(
-            state,
-            &send,
-            &Fact::InstanceChanged {
-                change: kaeso_mail::notices::Instance::LinkedBillingSetup(name),
-                by: kaeso_mail::Actor::Operator,
-            },
-            to,
-        )
-        .await
-    }
-    .await;
-    warn(result, "linked_needs_setup");
-}
-
 pub fn key_answered(credential: Uuid) {
     if !COUNTING.load(Ordering::Relaxed) {
         return;
@@ -321,19 +264,6 @@ async fn provider_key(
         Change::SignedOut => (
             "signed_out",
             ProviderKey::SignedOut {
-                at: local(now, &zone),
-            },
-        ),
-        Change::SpendLimit { until } => (
-            "spend_limit",
-            ProviderKey::SpendLimitReached {
-                at: local(now, &zone),
-                resets: local(until, &zone),
-            },
-        ),
-        Change::Unlinked => (
-            "unlinked",
-            ProviderKey::Unlinked {
                 at: local(now, &zone),
             },
         ),

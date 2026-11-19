@@ -26,7 +26,6 @@ pub struct CredentialRow {
     pub account_id: Option<String>,
     pub gateway_id: Option<String>,
     pub endpoint: Option<String>,
-    pub spend_limited_until: Option<OffsetDateTime>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -44,9 +43,6 @@ pub struct SealedRow {
     pub account_id: Option<String>,
     pub gateway_id: Option<String>,
     pub endpoint: Option<String>,
-    pub spend_limited_until: Option<OffsetDateTime>,
-    /// For a link: whether the install's app asks each request to name the linked profile.
-    pub billing_policy: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -177,8 +173,7 @@ pub async fn replace(db: impl PgExecutor<'_>, c: &NewCredential<'_>) -> Result<b
     Ok(sqlx::query!(
         "UPDATE provider_credentials SET name = $3, ciphertext = $4, nonce = $5, wrapped_key = $6, key_id = $7, last4 = $8, \
          auth_method = $9, expires_at = $10, account_label = $11, project = $12, location = $13, account_id = $14, \
-         gateway_id = $15, endpoint = $16, auth_error = NULL, spend_limited_until = NULL, revision = revision + 1, \
-         updated_at = now() WHERE org_id = $1 AND id = $2",
+         gateway_id = $15, endpoint = $16, auth_error = NULL, revision = revision + 1, updated_at = now() WHERE org_id = $1 AND id = $2",
         c.org_id,
         c.id,
         c.name,
@@ -227,7 +222,7 @@ pub async fn refreshed(
 pub async fn sign_out(db: impl PgExecutor<'_>, id: Uuid, reason: &str) -> Result<(), StoreError> {
     sqlx::query!(
         "UPDATE provider_credentials SET auth_error = $2 WHERE id = $1 \
-         AND auth_method IN ('chatgpt', 'grok', 'azure_service_principal', 'linked_billing')",
+         AND auth_method IN ('chatgpt', 'grok', 'azure_service_principal')",
         id,
         reason
     )
@@ -369,8 +364,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         CredentialRow,
         "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, \
-         created_at, updated_at, auth_method, account_label, auth_error, project, location, account_id, gateway_id, endpoint, \
-         spend_limited_until FROM provider_credentials WHERE org_id = $1 AND id = $2",
+         created_at, updated_at, auth_method, account_label, auth_error, project, location, account_id, gateway_id, endpoint FROM provider_credentials WHERE org_id = $1 AND id = $2",
         org_id,
         id
     )
@@ -382,8 +376,7 @@ pub async fn list(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<Credentia
     Ok(sqlx::query_as!(
         CredentialRow,
         "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, \
-         created_at, updated_at, auth_method, account_label, auth_error, project, location, account_id, gateway_id, endpoint, \
-         spend_limited_until FROM provider_credentials WHERE org_id = $1 \
+         created_at, updated_at, auth_method, account_label, auth_error, project, location, account_id, gateway_id, endpoint FROM provider_credentials WHERE org_id = $1 \
          ORDER BY provider, is_default DESC, created_at DESC, id DESC",
         org_id
     )
@@ -506,15 +499,11 @@ pub async fn resolve_member(
     Ok(sqlx::query_as!(
         SealedRow,
         "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision, c.auth_method, c.expires_at, \
-         c.auth_error, c.location, c.account_id, c.gateway_id, c.endpoint, c.spend_limited_until, \
-         (SELECT a.send_billing_policy FROM linked_billing_apps a WHERE a.provider = c.provider) AS billing_policy \
-         FROM provider_credentials c \
+         c.auth_error, c.location, c.account_id, c.gateway_id, c.endpoint FROM provider_credentials c \
          WHERE c.org_id = $1 AND c.provider = $3 AND c.id = $4 AND ( \
              EXISTS (SELECT 1 FROM project_provider_keys a WHERE a.credential_id = c.id AND a.project_id = $2) \
              OR (c.is_default AND NOT EXISTS ( \
-                 SELECT 1 FROM project_provider_keys a WHERE a.project_id = $2 AND a.provider = $3)) \
-             OR EXISTS (SELECT 1 FROM linked_billing_fallbacks f \
-                 WHERE f.project_id = $2 AND f.provider = $3 AND f.credential_id = c.id))",
+                 SELECT 1 FROM project_provider_keys a WHERE a.project_id = $2 AND a.provider = $3)))",
         org_id,
         project_id,
         provider,
@@ -533,9 +522,7 @@ pub async fn resolve(
     Ok(sqlx::query_as!(
         SealedRow,
         "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision, c.auth_method, c.expires_at, \
-         c.auth_error, c.location, c.account_id, c.gateway_id, c.endpoint, c.spend_limited_until, \
-         (SELECT a.send_billing_policy FROM linked_billing_apps a WHERE a.provider = c.provider) AS billing_policy \
-         FROM provider_credentials c \
+         c.auth_error, c.location, c.account_id, c.gateway_id, c.endpoint FROM provider_credentials c \
          LEFT JOIN project_provider_keys a ON a.credential_id = c.id AND a.project_id = $2 \
          WHERE c.org_id = $1 AND c.provider = $3 AND (a.project_id IS NOT NULL OR c.is_default) \
          ORDER BY a.project_id IS NULL, a.created_at, c.id LIMIT 1",
@@ -555,9 +542,7 @@ pub async fn sealed(
     Ok(sqlx::query_as!(
         SealedRow,
         "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location, \
-         account_id, gateway_id, endpoint, spend_limited_until, \
-         (SELECT a.send_billing_policy FROM linked_billing_apps a WHERE a.provider = provider_credentials.provider) \
-         AS billing_policy \
+         account_id, gateway_id, endpoint \
          FROM provider_credentials WHERE org_id = $1 AND id = $2",
         org_id,
         id
@@ -622,7 +607,7 @@ pub async fn renewable(
     Ok(sqlx::query_as!(
         Renewable,
         r#"SELECT id, org_id, provider, auth_method, expires_at AS "expires_at!" FROM provider_credentials
-         WHERE auth_method IN ('chatgpt', 'grok', 'linked_billing') AND auth_error IS NULL
+         WHERE auth_method IN ('chatgpt', 'grok') AND auth_error IS NULL
          AND expires_at IS NOT NULL AND expires_at <= $1 AND last_used_at >= $2
          ORDER BY expires_at"#,
         by,
@@ -636,9 +621,7 @@ pub async fn all_sealed(db: impl PgExecutor<'_>) -> Result<Vec<SealedRow>, Store
     Ok(sqlx::query_as!(
         SealedRow,
         "SELECT id, ciphertext, nonce, wrapped_key, key_id, revision, auth_method, expires_at, auth_error, location, \
-         account_id, gateway_id, endpoint, spend_limited_until, \
-         (SELECT a.send_billing_policy FROM linked_billing_apps a WHERE a.provider = provider_credentials.provider) \
-         AS billing_policy \
+         account_id, gateway_id, endpoint \
          FROM provider_credentials"
     )
     .fetch_all(db)
@@ -672,8 +655,7 @@ pub async fn key_id_usage(db: impl PgExecutor<'_>) -> Result<Vec<(String, i64)>,
            UNION ALL SELECT key_id FROM org_oidc UNION ALL SELECT key_id FROM mcp_connections \
            UNION ALL SELECT oauth_client_secret_key_id FROM mcp_servers \
            WHERE oauth_client_secret_key_id IS NOT NULL \
-           UNION ALL SELECT secret_key_id FROM guardrails WHERE secret_key_id IS NOT NULL \
-           UNION ALL SELECT key_id FROM linked_billing_keys) k GROUP BY key_id ORDER BY key_id"
+           UNION ALL SELECT secret_key_id FROM guardrails WHERE secret_key_id IS NOT NULL) k GROUP BY key_id ORDER BY key_id"
     )
     .fetch_all(db)
     .await?;

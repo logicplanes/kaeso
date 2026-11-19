@@ -94,14 +94,8 @@ pub struct CredentialView {
     pub endpoint: Option<String>,
     #[doc = "Why the account can't make requests until someone signs in again:\n\
         `signed_out` when the provider ended its session, `no_api_access` when its\n\
-        plan doesn't include API access; for a link, `unlinked` when it ended and\n\
-        `needs_setup` while the install's app is missing; `null` while it works."]
+        plan doesn't include API access; `null` while it works."]
     pub auth_error: Option<AuthErrorView>,
-    #[doc = "For a link, until when at the latest the linked organization's spend limit\n\
-        refuses its requests; `null` while it pays. It clears as soon as a request\n\
-        goes through again."]
-    #[serde(with = "time::serde::rfc3339::option")]
-    pub spend_limited_until: Option<OffsetDateTime>,
     #[doc = "The id of the master key that wraps it (never the key)."]
     #[schema(example = "k1")]
     pub key_id: String,
@@ -143,10 +137,6 @@ pub enum AuthMethodView {
         client secret for access tokens. `account` is the tenant, `last4` the end of\n\
         the client id."]
     AzureServicePrincipal,
-    #[doc = "A link to the organization's own account at the provider, which the\n\
-        provider bills (linked billing), approved with OAuth: Kaeso renews the\n\
-        connection's tokens by itself. `account` is the connection's id."]
-    LinkedBilling,
 }
 
 impl From<AuthMethod> for AuthMethodView {
@@ -159,7 +149,6 @@ impl From<AuthMethod> for AuthMethodView {
             AuthMethod::AwsAccessKey => AuthMethodView::AwsAccessKey,
             AuthMethod::AwsRole => AuthMethodView::AwsRole,
             AuthMethod::AzureServicePrincipal => AuthMethodView::AzureServicePrincipal,
-            AuthMethod::LinkedBilling => AuthMethodView::LinkedBilling,
         }
     }
 }
@@ -173,12 +162,6 @@ pub enum AuthErrorView {
     #[doc = "The account's plan doesn't include API access; sign in with another\n\
         account or use an API key."]
     NoApiAccess,
-    #[doc = "A link ended, at the provider or because its tokens couldn't be renewed;\n\
-        link it again."]
-    Unlinked,
-    #[doc = "The install's OAuth app for linked billing is missing, was replaced or is\n\
-        refused; an instance admin sets it up again."]
-    NeedsSetup,
 }
 
 impl CredentialView {
@@ -191,7 +174,6 @@ impl CredentialView {
             AuthMethodView::AwsAccessKey => AuthMethod::AwsAccessKey,
             AuthMethodView::AwsRole => AuthMethod::AwsRole,
             AuthMethodView::AzureServicePrincipal => AuthMethod::AzureServicePrincipal,
-            AuthMethodView::LinkedBilling => AuthMethod::LinkedBilling,
         }
     }
 
@@ -223,12 +205,8 @@ impl CredentialView {
             endpoint: r.endpoint.clone(),
             auth_error: r.auth_error.as_deref().map(|e| match e {
                 service::NO_API_ACCESS => AuthErrorView::NoApiAccess,
-                crate::services::linked_billing::UNLINKED
-                | crate::services::linked_billing::ON_HOLD => AuthErrorView::Unlinked,
-                crate::services::linked_billing::NEEDS_SETUP => AuthErrorView::NeedsSetup,
                 _ => AuthErrorView::SignedOut,
             }),
-            spend_limited_until: r.spend_limited_until,
             key_id: r.key_id.clone(),
             created_by: creator(&r.created_by_kind, r.created_by_id),
             created_at: r.created_at,
@@ -1655,8 +1633,7 @@ pub async fn assign(
     provider's models.",
     description = "For an account, Kaeso also asks the provider to end the account's\n\
     session once the key is deleted. The key is deleted even when the\n\
-    provider can't be reached. A link (linked billing) is unlinked at the provider\n\
-    first, and stays while the provider can't be reached.",
+    provider can't be reached.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("credential" = CredentialId, Path)),
     responses((status = 204))
@@ -1668,12 +1645,6 @@ pub async fn delete(
 ) -> ApiResult<StatusCode> {
     let org = ctx.org()?.org.id;
     let id = parse_id(&id)?;
-    let mut db = state.pg.acquire().await?;
-    let linked = view(&mut db, org, id).await?;
-    drop(db);
-    if linked.method() == AuthMethod::LinkedBilling {
-        super::credential_links::unlink(&state, org, &linked).await?;
-    }
     let mut tx = state.pg.begin().await?;
     let before = view(&mut tx, org, id).await?;
     credentials::lock_provider(&mut tx, org, &before.provider).await?;
