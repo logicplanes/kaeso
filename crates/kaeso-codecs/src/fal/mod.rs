@@ -16,6 +16,8 @@ mod videos;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_edges;
 
 use kaeso_kpp::{DialectId, KppError, Origin, Reply, Request, RequestKind, Source, VideoJob};
 use serde_json::Value;
