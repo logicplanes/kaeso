@@ -113,8 +113,8 @@ const MIGRATIONS: &[Migration] = &[
         name: "content_parts",
         sql: include_str!("../../migrations/clickhouse/0017_content_parts.sql"),
     },
-    // Which provider key paid for each request, so a log entry names the organization a linked
-    // key bills; the nil id for requests no provider was sent and for those logged before.
+    // Which provider key paid for each request, so a log entry names it; the nil id for requests
+    // no provider was sent and for those logged before.
     Migration {
         version: 18,
         name: "billed_to",

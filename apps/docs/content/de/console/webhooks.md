@@ -34,7 +34,7 @@ Das Menü eines Webhooks hat **Test senden**, **Ausschalten** oder **Einschalten
 | MCP-Server brauchen Aufmerksamkeit | `mcp_server.signed_out`, `mcp_server.tool_held` |
 | Sicherheitseinstellungen geändert | `organization.security_changed`, `share.created` |
 | Mitgliederänderungen | `organization.member_joined`, `organization.member_left` |
-| Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_key.refused`, `provider_key.signed_out`, `provider_key.spend_limit_reached`, `provider_key.unlinked` |
+| Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_key.refused`, `provider_key.signed_out` |
 | Modelländerungen | `model.delisted`, `model.price_changed` |
 
 Das sind die Benachrichtigungen über die Organisation und ihre Projekte ([E-Mails](account.md#e-mails-wählen)). Die eigenen Benachrichtigungen einer Person, etwa zur Sicherheit ihres Kontos oder zu einem Export, den sie startete, gehen nie an einen Webhook. Ein Webhook mit einem Projekt bekommt nur dessen Ereignisse; einer ohne bekommt jedes Ereignis der Organisation und ihrer Projekte. Ablaufende Schlüssel meldet er für jeden Schlüssel, nicht nur dessen Inhaber.
@@ -87,8 +87,6 @@ Eine JSON-Zustellung ist ein `POST` mit `content-type: application/json` und ein
 | `organization.member_left` | `person`, `removed_by` (`null`, wenn sie selbst ging) |
 | `provider_key.refused` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refusal` mit `status` und `message` des Anbieters, `billing` (ein Abrechnungsproblem) sowie `first_at` und `last_at` |
 | `provider_key.signed_out` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `signed_out_at` |
-| `provider_key.spend_limit_reached` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refused_at`, `resets_at` (wann der Anbieter spätestens wieder Anfragen durchlässt) |
-| `provider_key.unlinked` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `unlinked_at` |
 | `model.delisted` | `catalogue_model_id`, `provider_id`, `provider`, `model` |
 | `model.deprecated` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `shutdown_on` (`null` ohne Datum), `replacement` ([Modell-Lebenszyklus](../concepts/model-lifecycle.md)) |
 | `model.shutdown_soon` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `shutdown_on`, `days_left`, `replacement`, `requests_7d` (die Anfragen des Projekts an das Modell in den letzten 7 Tagen) |

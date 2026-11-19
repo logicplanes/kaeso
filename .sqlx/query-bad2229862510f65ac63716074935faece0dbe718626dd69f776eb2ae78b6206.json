@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, created_at, updated_at, auth_method, account_label, auth_error, project, location, account_id, gateway_id, endpoint, spend_limited_until FROM provider_credentials WHERE org_id = $1 ORDER BY provider, is_default DESC, created_at DESC, id DESC",
+  "query": "SELECT id, org_id, provider, name, is_default, key_id, last4, created_by_kind, created_by_id, last_used_at, created_at, updated_at, auth_method, account_label, auth_error, project, location, account_id, gateway_id, endpoint FROM provider_credentials WHERE org_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -222,21 +222,11 @@
             "name": "endpoint"
           }
         }
-      },
-      {
-        "ordinal": 20,
-        "name": "spend_limited_until",
-        "type_info": "Timestamptz",
-        "origin": {
-          "Table": {
-            "table": "provider_credentials",
-            "name": "spend_limited_until"
-          }
-        }
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -260,9 +250,8 @@
       true,
       true,
       true,
-      true,
       true
     ]
   },
-  "hash": "c8aed117d8965def424a586d4a3aed4c5ee1151713c74b235182a3f69e8b40ff"
+  "hash": "bad2229862510f65ac63716074935faece0dbe718626dd69f776eb2ae78b6206"
 }

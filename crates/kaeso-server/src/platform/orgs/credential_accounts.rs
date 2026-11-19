@@ -47,16 +47,6 @@ fn refuse(param: Option<&str>, message: impl Into<String>) -> ApiError {
     }
 }
 
-fn no_link(provider: &Provider) -> ApiError {
-    ApiError::invalid(
-        "provider",
-        format!(
-            "{provider} offers no linked billing; add an API key for it.",
-            provider = provider.name
-        ),
-    )
-}
-
 fn no_sign_in(provider: &Provider) -> ApiError {
     ApiError::invalid(
         "provider",
@@ -149,11 +139,6 @@ pub struct AccountStart {
         becomes the default either way."]
     #[serde(default)]
     pub make_default: bool,
-    #[doc = "Link the organization's own account at a provider whose `linked_billing`\n\
-        isn't `null`, such as a Claude organization at `anthropic`, which the provider\n\
-        then bills, instead of signing in to a person's account."]
-    #[serde(default)]
-    pub linked_billing: bool,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -163,9 +148,7 @@ pub struct AccountAttempt {
     #[schema(example = "019a1b2c-3d4e-7f60-8a9b-0c1d2e3f4a5b")]
     pub attempt: String,
     #[doc = "For a ChatGPT account, the provider's sign-in page: open it in a browser\n\
-        where the account's owner can sign in; for a link, the provider's approval\n\
-        page, which sends the browser back to the install's callback; `null` for a\n\
-        device sign-in."]
+        where the account's owner can sign in; `null` for a device sign-in."]
     pub authorize_url: Option<String>,
     #[doc = "For a Grok account, the code its owner confirms at the provider; `null`\n\
         for a ChatGPT account."]
@@ -218,8 +201,7 @@ pub struct AccountFinish {
     #[doc = "For a ChatGPT account, the address the provider sent the browser to\n\
         after the sign-in, as the address bar shows it:\n\
         `http://127.0.0.1:<port>/auth/callback?…`. The page doesn't load, because\n\
-        nothing listens there. For a link, the address of the install's callback the\n\
-        provider sent the browser to. Leave it out for a Grok account."]
+        nothing listens there. Leave it out for a Grok account."]
     #[schema(example = "http://127.0.0.1:51234/auth/callback?code=…&state=…")]
     #[serde(default)]
     pub callback_url: Option<String>,
@@ -331,8 +313,9 @@ async fn begin(
         | AuthMethod::GoogleServiceAccount
         | AuthMethod::AwsAccessKey
         | AuthMethod::AwsRole
-        | AuthMethod::AzureServicePrincipal
-        | AuthMethod::LinkedBilling => begin_callback(state, ctx, user, sign_in, wanted).await,
+        | AuthMethod::AzureServicePrincipal => {
+            begin_callback(state, ctx, user, sign_in, wanted).await
+        }
     }
 }
 
@@ -475,20 +458,6 @@ pub async fn start(
             ),
         ));
     }
-    if req.linked_billing {
-        super::credential_links::offers(provider).ok_or_else(|| no_link(provider))?;
-        let name = validate_name(&req.name)?;
-        return super::credential_links::begin(
-            &state,
-            &ctx,
-            provider,
-            name,
-            req.make_default,
-            None,
-        )
-        .await
-        .map(Json);
-    }
     let sign_in = sign_in_of(provider, None).ok_or_else(|| no_sign_in(provider))?;
     let name = validate_name(&req.name)?;
     let wanted = Wanted {
@@ -527,12 +496,6 @@ pub async fn start_again(
     let mut db = state.pg.acquire().await?;
     let before = view(&mut db, org, id).await?;
     let provider = validate_provider(&before.provider)?;
-    if before.method() == AuthMethod::LinkedBilling {
-        drop(db);
-        return super::credential_links::begin_again(&state, &ctx, provider, &before)
-            .await
-            .map(Json);
-    }
     let sign_in = sign_in_of(provider, Some(before.method()))
         .filter(|_| before.method().is_account())
         .ok_or_else(|| ApiError::bad_request(NOT_ACCOUNT))?;
@@ -1042,13 +1005,6 @@ pub async fn finish(
     Path((_org, attempt)): Path<(String, String)>,
     Body(req): Body<AccountFinish>,
 ) -> ApiResult<Finished> {
-    if let Some(pasted) = req.callback_url.as_deref()
-        && super::credential_links::is_callback(&state, pasted)
-    {
-        return super::credential_links::finish(&state, &ctx, &attempt, pasted, None)
-            .await
-            .map(Finished::Created);
-    }
     let (pending, sign_in, signed) =
         match answered(&state, &ctx, &attempt, req.callback_url.as_deref(), None).await? {
             Answered::Waiting(waiting) => return Ok(Finished::Waiting(waiting)),
@@ -1096,13 +1052,6 @@ pub async fn finish_again(
     Body(req): Body<AccountFinish>,
 ) -> ApiResult<Finished> {
     let id = parse_id(&id)?;
-    if let Some(pasted) = req.callback_url.as_deref()
-        && super::credential_links::is_callback(&state, pasted)
-    {
-        return super::credential_links::finish(&state, &ctx, &attempt, pasted, Some(id))
-            .await
-            .map(Finished::Updated);
-    }
     let (pending, sign_in, signed) = match answered(
         &state,
         &ctx,

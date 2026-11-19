@@ -128,12 +128,7 @@ async fn check_one(
             )));
         }
         Err(ResolveError::Store(e)) => return Err(e.into()),
-        Err(
-            ResolveError::SignedOut { .. }
-            | ResolveError::NoApiAccess { .. }
-            | ResolveError::Unlinked { .. }
-            | ResolveError::NeedsSetup { .. },
-        ) => {
+        Err(ResolveError::SignedOut { .. } | ResolveError::NoApiAccess { .. }) => {
             return Ok(Some(Err(failure(
                 row,
                 name,

@@ -1725,258 +1725,6 @@
         "x-kaeso-access": "right:instance.settings.manage"
       }
     },
-    "/platform/v1/instance/linked-billing": {
-      "get": {
-        "tags": [
-          "instance"
-        ],
-        "summary": "The providers whose organizations can pay through linked billing, and the\ninstall's app at each.",
-        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
-        "operationId": "getInstanceLinkedBilling",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LinkedBillingView"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:instance.system.view"
-      }
-    },
-    "/platform/v1/instance/linked-billing/{provider}": {
-      "put": {
-        "tags": [
-          "instance"
-        ],
-        "summary": "Sets up or replaces the install's OAuth app for linked billing.",
-        "description": "Linked keys keep working while the client id stays the same. A new\nclient id is a new app, whose links the earlier keys don't have: they show\n`needs_setup` until they are linked again or the earlier app is set back.\n\n**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
-        "operationId": "putInstanceLinkedBillingProvider",
-        "parameters": [
-          {
-            "name": "provider",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ProviderId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LinkedBillingAppSet"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LinkedBillingView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:instance.settings.manage"
-      },
-      "delete": {
-        "tags": [
-          "instance"
-        ],
-        "summary": "Removes the install's OAuth app for linked billing.",
-        "description": "Every linked key of the provider shows `needs_setup` and stops paying\nuntil an app is set up again; the links themselves stay at the provider.\n\n**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
-        "operationId": "deleteInstanceLinkedBillingProvider",
-        "parameters": [
-          {
-            "name": "provider",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ProviderId"
-            }
-          }
-        ],
-        "responses": {
-          "204": {},
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:instance.settings.manage"
-      }
-    },
-    "/platform/v1/instance/linked-billing/{provider}/check": {
-      "post": {
-        "tags": [
-          "instance"
-        ],
-        "summary": "Checks the install's OAuth app against the provider before anyone links.",
-        "description": "Gets a token for the app's operator service account, keeps one user\nprofile of its own for checks, and makes a link request with the install's\nredirect URI, which nobody approves: a wrong client id, audience or issuer, a\nredirect URI the app doesn't list, or a missing scope shows as `check_problem`.\n\n**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
-        "operationId": "postInstanceLinkedBillingProviderCheck",
-        "parameters": [
-          {
-            "name": "provider",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/ProviderId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LinkedBillingView"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:instance.settings.manage"
-      }
-    },
     "/platform/v1/instance/orgs": {
       "get": {
         "tags": [
@@ -4459,98 +4207,6 @@
           }
         ],
         "x-kaeso-access": "right:instance.users.manage"
-      }
-    },
-    "/platform/v1/linked-billing/oidc/.well-known/openid-configuration": {
-      "get": {
-        "tags": [
-          "instance"
-        ],
-        "summary": "The OpenID discovery document of the issuer that signs the install's client\nassertions for linked billing.",
-        "description": "**Access:** public; no authentication.",
-        "operationId": "getLinkedBillingOidcWellKnownOpenidConfiguration",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {}
-        ],
-        "x-kaeso-access": "public"
-      }
-    },
-    "/platform/v1/linked-billing/oidc/jwks.json": {
-      "get": {
-        "tags": [
-          "instance"
-        ],
-        "summary": "The public keys of the issuer that signs the install's client assertions for\nlinked billing.",
-        "description": "**Access:** public; no authentication.",
-        "operationId": "getLinkedBillingOidcJwksJson",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {}
-        ],
-        "x-kaeso-access": "public"
       }
     },
     "/platform/v1/me": {
@@ -9096,7 +8752,7 @@
           "orgs"
         ],
         "summary": "Deletes a provider key. Its projects use the default again; when it was\nthe default, the most recently added remaining key of its provider\nbecomes the default, and without one, projects can no longer call that\nprovider's models.",
-        "description": "For an account, Kaeso also asks the provider to end the account's\nsession once the key is deleted. The key is deleted even when the\nprovider can't be reached. A link (linked billing) is unlinked at the provider\nfirst, and stays while the provider can't be reached.\n\n**Right:** `provider_credentials.delete` on the organization in the path.",
+        "description": "For an account, Kaeso also asks the provider to end the account's\nsession once the key is deleted. The key is deleted even when the\nprovider can't be reached.\n\n**Right:** `provider_credentials.delete` on the organization in the path.",
         "operationId": "deleteOrgsOrgCredentialsCredential",
         "parameters": [
           {
@@ -11537,224 +11193,6 @@
           }
         ],
         "x-kaeso-access": "right:members.invite"
-      }
-    },
-    "/platform/v1/orgs/{org}/linked-billing/costs": {
-      "get": {
-        "tags": [
-          "orgs"
-        ],
-        "summary": "This month's cost the org's linked keys paid, to match with the provider's\nown figures for the install's app.",
-        "description": "**Right:** `costs.org.view` on the organization in the path.",
-        "operationId": "getOrgsOrgLinkedBillingCosts",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/OrgId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LinkedCosts"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:costs.org.view"
-      }
-    },
-    "/platform/v1/orgs/{org}/linked-billing/fallbacks": {
-      "get": {
-        "tags": [
-          "orgs"
-        ],
-        "summary": "The projects that fall back to another key when their linked key can't pay.",
-        "description": "**Right:** `provider_credentials.view` on the organization in the path.",
-        "operationId": "getOrgsOrgLinkedBillingFallbacks",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/OrgId"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LinkedFallback"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:provider_credentials.view"
-      },
-      "put": {
-        "tags": [
-          "orgs"
-        ],
-        "summary": "Sets who pays for a project's requests when its linked key can't.",
-        "description": "By default only the linked organization pays: a request its spend limit\nrefuses, or that finds the link gone, fails. With a fallback, the other key pays\nfor such a request instead, and the request log shows which key paid.\n\n**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
-        "operationId": "putOrgsOrgLinkedBillingFallbacks",
-        "parameters": [
-          {
-            "name": "org",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/OrgId"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LinkedFallbackSet"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LinkedFallback"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "413": {
-            "$ref": "#/components/responses/TooLarge"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/Internal"
-          },
-          "503": {
-            "$ref": "#/components/responses/Unavailable"
-          }
-        },
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "api_key": []
-          },
-          {
-            "agent": []
-          }
-        ],
-        "x-kaeso-access": "right:provider_credentials.replace"
       }
     },
     "/platform/v1/orgs/{org}/logs/deletions": {
@@ -28585,7 +28023,7 @@
               "string",
               "null"
             ],
-            "description": "For a ChatGPT account, the provider's sign-in page: open it in a browser\nwhere the account's owner can sign in; for a link, the provider's approval\npage, which sends the browser back to the install's callback; `null` for a\ndevice sign-in."
+            "description": "For a ChatGPT account, the provider's sign-in page: open it in a browser\nwhere the account's owner can sign in; `null` for a device sign-in."
           },
           "device": {
             "oneOf": [
@@ -28651,7 +28089,7 @@
               "string",
               "null"
             ],
-            "description": "For a ChatGPT account, the address the provider sent the browser to\nafter the sign-in, as the address bar shows it:\n`http://127.0.0.1:<port>/auth/callback?…`. The page doesn't load, because\nnothing listens there. For a link, the address of the install's callback the\nprovider sent the browser to. Leave it out for a Grok account.",
+            "description": "For a ChatGPT account, the address the provider sent the browser to\nafter the sign-in, as the address bar shows it:\n`http://127.0.0.1:<port>/auth/callback?…`. The page doesn't load, because\nnothing listens there. Leave it out for a Grok account.",
             "example": "http://127.0.0.1:51234/auth/callback?code=…&state=…"
           }
         },
@@ -28744,10 +28182,6 @@
           "name"
         ],
         "properties": {
-          "linked_billing": {
-            "type": "boolean",
-            "description": "Link the organization's own account at a provider whose `linked_billing`\nisn't `null`, such as a Claude organization at `anthropic`, which the provider\nthen bills, instead of signing in to a person's account."
-          },
           "make_default": {
             "type": "boolean",
             "description": "Make it the default for its provider. The first key of a provider\nbecomes the default either way."
@@ -29608,9 +29042,7 @@
         "description": "Why an account can't make requests.",
         "enum": [
           "signed_out",
-          "no_api_access",
-          "unlinked",
-          "needs_setup"
+          "no_api_access"
         ]
       },
       "AuthMethodView": {
@@ -29623,8 +29055,7 @@
           "google_service_account",
           "aws_access_key",
           "aws_role",
-          "azure_service_principal",
-          "linked_billing"
+          "azure_service_principal"
         ]
       },
       "AvailabilityState": {
@@ -30609,7 +30040,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/AuthErrorView",
-                "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; for a link, `unlinked` when it ended and\n`needs_setup` while the install's app is missing; `null` while it works."
+                "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; `null` while it works."
               },
               {
                 "type": "null"
@@ -30703,14 +30134,6 @@
             "type": "string",
             "description": "The provider it authenticates to.",
             "example": "openai"
-          },
-          "spend_limited_until": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time",
-            "description": "For a link, until when at the latest the linked organization's spend limit\nrefuses its requests; `null` while it pays. It clears as soon as a request\ngoes through again."
           },
           "updated_at": {
             "type": "string",
@@ -35146,360 +34569,6 @@
         },
         "additionalProperties": false
       },
-      "LinkedBillingApp": {
-        "type": "object",
-        "description": "The install's OAuth app at the provider.",
-        "required": [
-          "client_id",
-          "audience",
-          "organization_id",
-          "federation_rule_id",
-          "send_billing_policy",
-          "updated_at"
-        ],
-        "properties": {
-          "audience": {
-            "type": "string",
-            "description": "The audience the app's client authentication expects."
-          },
-          "check_problem": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "What the last check found wrong: `federation` (the service account token was\nrefused), `client` (the client id or assertion was refused), `request` (the\nlink request was refused, such as a redirect URI that isn't registered),\n`scope`, `unauthorized` (no operator service account or workspace) or\n`unreachable`; `null` when it passed."
-          },
-          "checked_at": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time",
-            "description": "When **Check** last ran; `null` since the app changed."
-          },
-          "client_id": {
-            "type": "string",
-            "description": "The app's client id.",
-            "example": "oaapp_01EXAMPLE"
-          },
-          "federation_rule_id": {
-            "type": "string",
-            "description": "The federation rule that maps the install's assertions to the app's operator\nservice account.",
-            "example": "fdrl_01EXAMPLE"
-          },
-          "organization_id": {
-            "type": "string",
-            "description": "The UUID of the install's organization at the provider."
-          },
-          "send_billing_policy": {
-            "type": "boolean",
-            "description": "Whether each request also names the linked user profile and sets\n`billing_policy`, which the provider's beta may require of some installs."
-          },
-          "service_account_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The operator service account, when set."
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Last changed."
-          },
-          "workspace_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The workspace the rule's tokens run in, when the rule covers several."
-          }
-        }
-      },
-      "LinkedBillingAppSet": {
-        "type": "object",
-        "description": "The install's OAuth app at the provider.",
-        "required": [
-          "client_id",
-          "audience",
-          "organization_id",
-          "federation_rule_id"
-        ],
-        "properties": {
-          "audience": {
-            "type": "string",
-            "description": "The audience the app's client authentication tab shows."
-          },
-          "client_id": {
-            "type": "string",
-            "description": "The app's client id, from the app's page."
-          },
-          "federation_rule_id": {
-            "type": "string",
-            "description": "The federation rule for the operator service account, `fdrl_…`."
-          },
-          "organization_id": {
-            "type": "string",
-            "description": "The UUID of the install's organization at the provider."
-          },
-          "send_billing_policy": {
-            "type": "boolean",
-            "description": "Send the linked user profile and `billing_policy` with each request; turn it\non only when the provider says the install needs them."
-          },
-          "service_account_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The operator service account, `svac_…`."
-          },
-          "workspace_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The workspace for the rule's tokens, `wrkspc_…`; needed when the rule covers\nmore than one."
-          }
-        },
-        "additionalProperties": false
-      },
-      "LinkedBillingOfferView": {
-        "type": "object",
-        "description": "How an organization links its own account at a provider to pay for its requests.",
-        "required": [
-          "organization",
-          "console",
-          "spend_limit_url",
-          "roles",
-          "ready"
-        ],
-        "properties": {
-          "console": {
-            "type": "string",
-            "description": "Where the linked organization's admins manage it.",
-            "example": "Claude Console"
-          },
-          "organization": {
-            "type": "string",
-            "description": "What is linked.",
-            "example": "Claude organization"
-          },
-          "ready": {
-            "type": "boolean",
-            "description": "Whether an instance admin set up the install's app, so links can be made."
-          },
-          "roles": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "The roles one of whom approves the link.",
-            "example": [
-              "Admin",
-              "Billing"
-            ]
-          },
-          "spend_limit_url": {
-            "type": "string",
-            "description": "Where the linked organization sets its spend limit for the install and unlinks it.",
-            "example": "https://platform.claude.com/linked-platforms"
-          }
-        }
-      },
-      "LinkedBillingView": {
-        "type": "object",
-        "description": "How the install pays a provider through its customers' own organizations.",
-        "required": [
-          "provider",
-          "provider_name",
-          "organization",
-          "apps_url",
-          "docs_url",
-          "redirect_uri",
-          "issuer",
-          "jwks_url",
-          "jwks",
-          "subject",
-          "linked_keys"
-        ],
-        "properties": {
-          "app": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LinkedBillingApp",
-                "description": "The app, once an instance admin set it up; `null` before."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "apps_url": {
-            "type": "string",
-            "description": "Where the provider's admins register the install's OAuth app.",
-            "example": "https://platform.claude.com/settings/oauth-apps"
-          },
-          "docs_url": {
-            "type": "string",
-            "description": "The provider's guide to setting up the app."
-          },
-          "issuer": {
-            "type": "string",
-            "description": "The issuer to register as the app's identity provider: the install signs its\nclient assertions itself.",
-            "example": "https://kaeso.example.com/platform/v1/linked-billing/oidc"
-          },
-          "jwks": {
-            "type": "object",
-            "description": "The issuer's public keys, to paste for an identity provider registered with\nits key set, as an install the provider can't reach needs."
-          },
-          "jwks_url": {
-            "type": "string",
-            "description": "Where the issuer's public keys are, for an identity provider registered by\nits JWKS URL.",
-            "example": "https://kaeso.example.com/platform/v1/linked-billing/oidc/jwks.json"
-          },
-          "linked_keys": {
-            "type": "integer",
-            "format": "int64",
-            "description": "How many provider keys of organizations are links through the app."
-          },
-          "organization": {
-            "type": "string",
-            "description": "What an organization links, such as `Claude organization`.",
-            "example": "Claude organization"
-          },
-          "provider": {
-            "$ref": "#/components/schemas/ProviderId",
-            "description": "The provider, such as `anthropic`."
-          },
-          "provider_name": {
-            "type": "string",
-            "description": "The provider's name.",
-            "example": "Anthropic"
-          },
-          "redirect_uri": {
-            "type": "string",
-            "description": "The redirect URI to register on the app, built from the install's public URL.",
-            "example": "https://kaeso.example.com/linked-billing/callback"
-          },
-          "subject": {
-            "type": "string",
-            "description": "The subject of every assertion, for the app's subject pattern.",
-            "example": "kaeso:linked-billing:anthropic"
-          }
-        }
-      },
-      "LinkedCost": {
-        "type": "object",
-        "description": "What a linked key's organization paid through Kaeso this month.",
-        "required": [
-          "credential",
-          "cost",
-          "requests"
-        ],
-        "properties": {
-          "cost": {
-            "type": "string",
-            "description": "The cost in USD, at the prices Kaeso knows, from the first of the month (UTC).",
-            "example": "12.5"
-          },
-          "credential": {
-            "$ref": "#/components/schemas/CredentialId",
-            "description": "The linked key."
-          },
-          "requests": {
-            "type": "integer",
-            "format": "int64",
-            "description": "The requests it paid for."
-          }
-        }
-      },
-      "LinkedCosts": {
-        "type": "object",
-        "description": "This month's cost the org's linked keys paid, by key.",
-        "required": [
-          "from",
-          "to",
-          "keys",
-          "total"
-        ],
-        "properties": {
-          "from": {
-            "type": "string",
-            "description": "The first day counted (UTC, `YYYY-MM-DD`).",
-            "example": "2026-11-01"
-          },
-          "keys": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LinkedCost"
-            },
-            "description": "Each linked key with requests this month."
-          },
-          "to": {
-            "type": "string",
-            "description": "The last day counted, today (UTC).",
-            "example": "2026-11-17"
-          },
-          "total": {
-            "type": "string",
-            "description": "Their total.",
-            "example": "12.5"
-          }
-        }
-      },
-      "LinkedFallback": {
-        "type": "object",
-        "description": "Who pays for a project's requests when its linked key can't.",
-        "required": [
-          "project",
-          "provider",
-          "credential"
-        ],
-        "properties": {
-          "credential": {
-            "$ref": "#/components/schemas/CredentialId",
-            "description": "The key that pays instead when the linked organization's spend limit is\nreached or the link is gone."
-          },
-          "project": {
-            "$ref": "#/components/schemas/ProjectId",
-            "description": "The project."
-          },
-          "provider": {
-            "$ref": "#/components/schemas/ProviderId",
-            "description": "The provider whose linked key the project uses."
-          }
-        }
-      },
-      "LinkedFallbackSet": {
-        "type": "object",
-        "description": "A project's fallback for its linked key, or `null` to pay only through the link.",
-        "required": [
-          "project",
-          "provider"
-        ],
-        "properties": {
-          "credential": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CredentialId",
-                "description": "Another key of the provider that isn't a link; `null` for none."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "project": {
-            "$ref": "#/components/schemas/ProjectId",
-            "description": "The project."
-          },
-          "provider": {
-            "$ref": "#/components/schemas/ProviderId",
-            "description": "The provider, one whose `linked_billing` isn't `null`."
-          }
-        },
-        "additionalProperties": false
-      },
       "List_AgentActivityView": {
         "type": "object",
         "description": "A page of results.",
@@ -36071,7 +35140,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/AuthErrorView",
-                      "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; for a link, `unlinked` when it ended and\n`needs_setup` while the install's app is missing; `null` while it works."
+                      "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; `null` while it works."
                     },
                     {
                       "type": "null"
@@ -36165,14 +35234,6 @@
                   "type": "string",
                   "description": "The provider it authenticates to.",
                   "example": "openai"
-                },
-                "spend_limited_until": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time",
-                  "description": "For a link, until when at the latest the linked organization's spend limit\nrefuses its requests; `null` while it pays. It clears as soon as a request\ngoes through again."
                 },
                 "updated_at": {
                   "type": "string",
@@ -37235,7 +36296,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/CredentialId",
-                      "description": "The provider key that paid for the request, the last one it was sent with;\nfor a linked key, the organization it links paid. `null` when no provider was\nsent the request, and for requests logged before Kaeso recorded it."
+                      "description": "The provider key that paid for the request, the last one it was sent with.\n`null` when no provider was sent the request, and for requests logged before\nKaeso recorded it."
                     },
                     {
                       "type": "null"
@@ -39021,17 +38082,6 @@
                   "description": "How the provider's API keys start; `null` when they have no fixed prefix.",
                   "example": "gsk_"
                 },
-                "linked_billing": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/LinkedBillingOfferView",
-                      "description": "For a provider whose customers can pay through their own organization\n(linked billing), such as Anthropic: a key may be a link instead of a secret,\nmade with `linked_billing` in `POST /orgs/{org}/credentials/oauth`. `null` for\nother providers."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
                 "model_routes": {
                   "type": "array",
                   "items": {
@@ -40438,7 +39488,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/CredentialId",
-                "description": "The provider key that paid for the request, the last one it was sent with;\nfor a linked key, the organization it links paid. `null` when no provider was\nsent the request, and for requests logged before Kaeso recorded it."
+                "description": "The provider key that paid for the request, the last one it was sent with.\n`null` when no provider was sent the request, and for requests logged before\nKaeso recorded it."
               },
               {
                 "type": "null"
@@ -45469,17 +44519,6 @@
             ],
             "description": "How the provider's API keys start; `null` when they have no fixed prefix.",
             "example": "gsk_"
-          },
-          "linked_billing": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/LinkedBillingOfferView",
-                "description": "For a provider whose customers can pay through their own organization\n(linked billing), such as Anthropic: a key may be a link instead of a secret,\nmade with `linked_billing` in `POST /orgs/{org}/credentials/oauth`. `null` for\nother providers."
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "model_routes": {
             "type": "array",
