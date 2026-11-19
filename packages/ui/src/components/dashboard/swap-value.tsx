@@ -15,13 +15,14 @@ function useChanged(value: string): number {
 
 // A name such as a key or model rolls one span per character, which drops its kerning and its ellipsis.
 const NUMBER = /^[^\p{L}]*\d/u;
+export const isNumber = (text: string) => NUMBER.test(text);
 
 export const SwapValue = forwardRef<HTMLSpanElement, { children: ReactNode; text: string; className: string }>(function SwapValue(
   { children, text, className },
   ref,
 ) {
   const changes = useChanged(text);
-  if (NUMBER.test(text)) return <RollingNumber ref={ref} value={text} className={className} />;
+  if (isNumber(text)) return <RollingNumber ref={ref} value={text} className={className} />;
   return (
     <span ref={ref} key={changes} className={cn(className, changes > 0 && "value-swap-in")}>
       {children}

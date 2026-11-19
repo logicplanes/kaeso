@@ -150,6 +150,7 @@ describe("Readout", () => {
   it("writes a name, such as the busiest key, as one kerned word that ends in an ellipsis when it's cut", () => {
     const { container, rerender } = render(<Readout size="sm" value="checkout-web" />);
     expect(screen.getByText("checkout-web")).toHaveClass("truncate");
+    expect(screen.getByText("checkout-web")).not.toHaveClass("tabular");
     expect(container.querySelector("[data-char]")).toBeNull();
     rerender(<Readout size="sm" value="$55.09" />);
     expect(container.querySelector("[data-char]")).not.toBeNull();
