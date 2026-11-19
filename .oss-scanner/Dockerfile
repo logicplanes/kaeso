@@ -1,7 +1,7 @@
 # The build environment for Anthropic's OSS Scanner (https://github.com/anthropics/oss-scanner). The scanner builds
 # this file with the repository as its context and then audits the image with no network, so every toolchain,
 # dependency and database the tests need is installed here. threat_model.md says how to use the image.
-FROM rust:1.99.0-slim-trixie@sha256:2752b332db73fdbb7dc576f06c82ed1f312005784ef913d7e04a28f5f55dc581
+FROM rust:1.99.1-slim-trixie@sha256:f6c4a35d21dbb3c89d7a8d056c193e94fc09037f2b58dd858b09c39a47dd02d7
 
 ARG DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
