@@ -809,3 +809,91 @@ async fn org_log_settings_need_a_recent_sign_in_in_the_console() {
     );
     s.cleanup().await;
 }
+
+async fn without_2fa(app: &App, owner: &Owner) -> Vec<String> {
+    let r = app
+        .get(
+            &format!("{}/members-without-2fa", security(owner)),
+            &owner.cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| m["email"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn the_members_requiring_two_factor_would_lock_out_are_listed_for_whoever_may_require_it() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let owner_email = app.get("/auth/session", &owner.cookie).await.body["user"]["email"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let member = |email: &str| json!({ "email": email, "role": "member", "project_roles": [] });
+    let (grace_cookie, _) = common::join(&app, &owner, member("grace@example.com"), "Grace").await;
+    let (_, lin) = common::join(&app, &owner, member("lin@example.com"), "Lin").await;
+    common::join(&app, &owner, member("ada@acme.example"), "Ada").await;
+    let mut all = vec![
+        "ada@acme.example".to_owned(),
+        "grace@example.com".to_owned(),
+        "lin@example.com".to_owned(),
+        owner_email.clone(),
+    ];
+    let mut listed = without_2fa(&app, &owner).await;
+    listed.sort();
+    all.sort();
+    assert_eq!(listed, all);
+
+    // A member without the right to require it can't read the list.
+    let r = app
+        .get(
+            &format!("{}/members-without-2fa", security(&owner)),
+            &grace_cookie,
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::FORBIDDEN, "{:?}", r.body);
+
+    // Deactivated users, members with an authenticator app, and accounts the org manages while
+    // it requires single sign-on are left out.
+    app.post(
+        &format!("/instance/users/{lin}/deactivate"),
+        json!({}),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let begin = app
+        .post("/me/totp", json!({}), Some(&grace_cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    let secret = begin.body["secret"].as_str().unwrap().to_owned();
+    app.post(
+        "/me/totp/confirm",
+        json!({ "code": common::totp_code(&secret, &app) }),
+        Some(&grace_cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    common::manage_domain(&app, &owner.org_id, "acme.example").await;
+    let mut listed = without_2fa(&app, &owner).await;
+    listed.sort();
+    let mut expected = vec!["ada@acme.example".to_owned(), owner_email.clone()];
+    expected.sort();
+    assert_eq!(
+        listed, expected,
+        "a managed account counts until SSO is required"
+    );
+    sqlx::query("UPDATE organizations SET require_sso = true WHERE id = $1")
+        .bind(common::uuid(&owner.org_id))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(without_2fa(&app, &owner).await, [owner_email]);
+    s.cleanup().await;
+}

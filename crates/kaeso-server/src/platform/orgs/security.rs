@@ -19,6 +19,7 @@ use crate::platform::auth::oidc::secret_aad;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{RoleBook, RoleRef, check_org, org_to_store};
 use crate::platform::json::Body;
+use crate::platform::pagination::List;
 use crate::platform::params::Path;
 use crate::services::dns;
 use crate::state::AppState;
@@ -601,6 +602,61 @@ pub async fn require_2fa(
         o.require_2fa = req.enabled
     })
     .await
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[schema(description = "A member whom requiring two-factor authentication would lock out.")]
+pub struct MemberWithout2fa {
+    #[doc = "The user."]
+    pub id: kaeso_core::id::UserId,
+    #[doc = "Their name."]
+    pub name: String,
+    #[doc = "Their address."]
+    pub email: Option<String>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/orgs/{org}/security/members-without-2fa",
+    summary = "The active members without an authenticator app, whom requiring two-factor\n\
+    authentication locks out until they set one up.",
+    description = "Accounts the org manages are left out while it requires single sign-on:\n\
+    they always sign in through it. Sorted by name.",
+    tag = "orgs",
+    params(("org" = OrgId, Path)),
+    responses((status = 200, body = List<MemberWithout2fa>))
+)]
+pub async fn members_without_2fa(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(_org): Path<String>,
+) -> ApiResult<Json<List<MemberWithout2fa>>> {
+    let org = &ctx.org()?.org;
+    let members: Vec<_> = kaeso_store::pg::members::all_org(&state.pg, org.id)
+        .await?
+        .into_iter()
+        .filter(|m| m.user_state == "active")
+        .collect();
+    let ids: Vec<uuid::Uuid> = members.iter().map(|m| m.user_id).collect();
+    let with_totp = kaeso_store::pg::totp::enabled_among(&state.pg, &ids).await?;
+    let domains = super::members::domains(&state, org.id).await?;
+    let mut left: Vec<MemberWithout2fa> = members
+        .into_iter()
+        .filter(|m| !with_totp.contains(&m.user_id))
+        .filter(|m| {
+            !(org.require_sso
+                && domains
+                    .manager(m.email.as_deref())
+                    .is_some_and(|(manager, _)| manager == org.id))
+        })
+        .map(|m| MemberWithout2fa {
+            id: kaeso_core::id::UserId::from_uuid(m.user_id),
+            name: crate::platform::views::display_name(m.name.as_deref()),
+            email: m.email,
+        })
+        .collect();
+    left.sort_by_key(|m| m.name.to_lowercase());
+    Ok(Json(List::complete(left)))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

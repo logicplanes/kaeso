@@ -21,13 +21,14 @@ import {
 } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { SecurityView, SsoView } from "~/api/generated/types";
-import { orgViewKey, securityQuery } from "~/api/queries/orgs";
+import { membersWithout2faQuery, orgViewKey, securityQuery } from "~/api/queries/orgs";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { common } from "~/i18n/common";
 import { useCatalogue } from "~/kaeso/catalogue";
+import { listOf } from "~/kaeso/agent-grant";
 import { roleOptions, rolesOfScope, useRoles } from "~/kaeso/roles";
 import { toast } from "~/shell/toast";
 import { LoadFailed } from "./load-failed";
@@ -483,7 +484,6 @@ function SsoDialog({
 function Requirements({ org, security }: { org: string; security: SecurityView }) {
   const needs = useNeedsRight(org);
   const rights = useOrgRights(org);
-  const session = useSession();
   const [confirming, setConfirming] = useState<"sso" | "2fa" | null>(null);
   const requireSso = useRequireSso(org);
   const require2fa = useRequire2fa(org);
@@ -524,7 +524,7 @@ function Requirements({ org, security }: { org: string; security: SecurityView }
               disabled={!!tfaReason}
               {...(tfaReason ? { disabledReason: tfaReason } : {})}
               loading={require2fa.isPending}
-              onCheckedChange={(on) => (on && !session.totp_enabled ? setConfirming("2fa") : require2fa.mutate(on))}
+              onCheckedChange={(on) => (on ? setConfirming("2fa") : require2fa.mutate(false))}
             />
           }
         />
@@ -585,15 +585,34 @@ function RequireSsoDialog({ org, open, onOpenChange }: { org: string; open: bool
   );
 }
 
+// The members named in the confirmation; the rest are counted.
+const NAMED = 3;
+
 function Require2faDialog({ org, open, onOpenChange }: { org: string; open: boolean; onOpenChange: (open: boolean) => void }) {
   const require2fa = useRequire2fa(org, () => onOpenChange(false));
+  const session = useSession();
+  const locked = useQuery({ ...membersWithout2faQuery(org), enabled: open });
+  const description = () => {
+    if (locked.isPending) return t("org.twoFactor.checking", "Checking who would be locked out…");
+    if (locked.isError) return t("org.twoFactor.checkFailed", "Kaeso couldn't check who would be locked out; members without it can't open the organization.");
+    const others = locked.data.filter((m) => m.id !== session.user.id);
+    const self = others.length < locked.data.length;
+    const you = self
+      ? ` ${t("org.twoFactor.requireConfirmHint", "You don't use it yet; the organization closes to you and members without it until you set it up.")}`
+      : "";
+    if (others.length === 0) return `${t("org.twoFactor.nobodyLockedOut", "Every other active member has it or signs in through single sign-on.")}${you}`;
+    const named = others.slice(0, NAMED).map((m) => m.name);
+    const rest = others.length - named.length;
+    const names = rest > 0 ? listOf([...named, t("org.twoFactor.andMore", "{count, plural, other {# more}}", { count: rest })]) : listOf(named);
+    return `${t("org.twoFactor.lockedOut", "{count, plural, one {# member} other {# members}} without it can't open the organization until they set it up: {names}.", { count: others.length, names })}${you}`;
+  };
   return (
     <AlertDialog
       open={open}
       onOpenChange={onOpenChange}
       tone="warning"
       title={t("org.twoFactor.requireConfirm", "Require two-factor authentication?")}
-      description={t("org.twoFactor.requireConfirmHint", "You don't use it yet; the organization closes to you and members without it until you set it up.")}
+      description={description()}
       confirmLabel={t("org.twoFactor.require", "Require two-factor authentication")}
       loading={require2fa.isPending}
       onConfirm={() => require2fa.mutateAsync(true)}

@@ -26394,6 +26394,73 @@
         "x-kaeso-access": "right:security.key_policy.manage"
       }
     },
+    "/platform/v1/orgs/{org}/security/members-without-2fa": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The active members without an authenticator app, whom requiring two-factor\nauthentication locks out until they set one up.",
+        "description": "Accounts the org manages are left out while it requires single sign-on:\nthey always sign in through it. Sorted by name.\n\n**Right:** `security.2fa.require` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "getOrgsOrgSecurityMembersWithout2fa",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_MemberWithout2fa"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:security.2fa.require"
+      }
+    },
     "/platform/v1/orgs/{org}/security/require-2fa": {
       "put": {
         "tags": [
@@ -37788,6 +37855,56 @@
           }
         }
       },
+      "List_MemberWithout2fa": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A member whom requiring two-factor authentication would lock out.",
+              "required": [
+                "id",
+                "name"
+              ],
+              "properties": {
+                "email": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Their address."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/UserId",
+                  "description": "The user."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Their name."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_OrgAgentView": {
         "type": "object",
         "description": "A page of results.",
@@ -41862,6 +41979,31 @@
           "user": {
             "$ref": "#/components/schemas/MemberUser",
             "description": "The user."
+          }
+        }
+      },
+      "MemberWithout2fa": {
+        "type": "object",
+        "description": "A member whom requiring two-factor authentication would lock out.",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Their address."
+          },
+          "id": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "The user."
+          },
+          "name": {
+            "type": "string",
+            "description": "Their name."
           }
         }
       },
