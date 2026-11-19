@@ -90,17 +90,11 @@ pub async fn env_hooked(
     extra: Option<&[(&str, &str)]>,
 ) -> Env {
     let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
-    env_with(capture, limits, sink, extra, false, None).await
+    env_with(capture, limits, sink, extra, false).await
 }
 
 pub async fn env_sunk(sink: Arc<dyn Sink>, extra: Option<&[(&str, &str)]>) -> Env {
-    env_with(None, None, Some(sink), extra, false, None).await
-}
-
-// Linked billing's authorization server and service account exchange answered by `billing`.
-pub async fn env_linked(capture: Option<Arc<Capture>>, billing: &str) -> Env {
-    let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
-    env_with(capture, None, sink, None, false, Some(billing)).await
+    env_with(None, None, Some(sink), extra, false).await
 }
 
 // Google's token endpoint answered by the mock provider, which the token exchange reaches as an
@@ -113,7 +107,6 @@ pub async fn env_with_google_token(capture: Option<Arc<Capture>>) -> Env {
         sink,
         Some(&[("KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS", "127.0.0.0/8")]),
         true,
-        None,
     )
     .await
 }
@@ -124,11 +117,10 @@ async fn env_with(
     sink: Option<Arc<dyn Sink>>,
     extra: Option<&[(&str, &str)]>,
     google_token_at_mock: bool,
-    billing: Option<&str>,
 ) -> Env {
     let s = TestServices::start().await;
     let mock = MockProvider::start().await;
-    let mut accounts =
+    let accounts =
         google_token_at_mock.then(|| kaeso_server::services::provider_accounts::Endpoints {
             google_token: format!(
                 "{}{}",
@@ -138,14 +130,6 @@ async fn env_with(
             azure_login: mock.base_url.clone(),
             ..Default::default()
         });
-    if let Some(base) = billing {
-        let mut endpoints = accounts.unwrap_or_default();
-        endpoints.anthropic_billing = kaeso_server::services::provider_accounts::Hosts {
-            auth: base.to_owned(),
-            api: base.to_owned(),
-        };
-        accounts = Some(endpoints);
-    }
     let names: Vec<String> = PROVIDERS
         .iter()
         .map(|p| format!("KAESO_PROVIDERS_{}_BASE_URL", p.provider_id().env_segment()))

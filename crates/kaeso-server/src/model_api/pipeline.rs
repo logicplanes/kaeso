@@ -19,7 +19,6 @@ use kaeso_core::id::{
     ApiKeyId, CatalogueModelId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
 };
 use kaeso_core::limits::WorstCase;
-use kaeso_core::linked_billing::Refusal;
 use kaeso_core::provider::AuthMethod;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{
@@ -396,8 +395,6 @@ pub enum Stage {
     PlanLimit,
     /// `Cache-Control: only-if-cached` and nothing in the cache answers.
     NotCached,
-    /// A linked key couldn't pay: its organization's spend limit, its link or the install's app.
-    Linked(kaeso_core::linked_billing::Refusal),
 }
 
 #[derive(Clone, Debug)]
@@ -783,69 +780,6 @@ fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppE
         }
         _ => err,
     }
-}
-
-fn linked_offer(provider: &ProviderRef) -> (&'static str, &'static str) {
-    provider
-        .built_in()
-        .and_then(|p| p.linked_billing())
-        .map_or(("organization", "the provider's console"), |l| {
-            (l.organization, l.console)
-        })
-}
-
-// What an app hears when a linked key can't pay; one place, so the request log and the console
-// say the same.
-pub(super) fn linked_refusal(
-    refusal: kaeso_core::linked_billing::Refusal,
-    provider: &ProviderRef,
-) -> KppError {
-    use kaeso_core::linked_billing::Refusal;
-    let (organization, console) = linked_offer(provider);
-    let name = provider.name();
-    match refusal {
-        Refusal::SpendLimit => error(
-            ErrorKind::Billing,
-            402,
-            format!(
-                "The linked {organization} of this project's {name} key reached its spend limit. Its admins can raise it in {console}."
-            ),
-        ),
-        Refusal::BillingUnavailable => error(
-            ErrorKind::Billing,
-            402,
-            format!(
-                "{name} can't bill the linked {organization} of this project's key right now. Its admins can check its billing in {console}."
-            ),
-        ),
-        Refusal::Unlinked => error(
-            ErrorKind::ProviderError,
-            502,
-            format!(
-                "The {organization} of this project's {name} key is no longer linked. Ask an organization admin to link it again under Providers."
-            ),
-        ),
-        Refusal::NeedsSetup => error(
-            ErrorKind::ProviderError,
-            502,
-            format!(
-                "Linked billing for this project's {name} key needs the install's OAuth app. Ask an instance admin to set it up again."
-            ),
-        ),
-    }
-}
-
-fn linked_uncovered(provider: &ProviderRef) -> KppError {
-    let (organization, _) = linked_offer(provider);
-    KppError::unsupported(
-        "linked billing",
-        format!(
-            "A linked {organization} pays only for messages and token counting. Use an API key for {} in this project for this request.",
-            provider.name()
-        ),
-    )
-    .with_status(400)
-    .with_param("model")
 }
 
 pub(super) const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
@@ -1927,7 +1861,7 @@ async fn attempt_pool(
         }
         _ => {
             return (
-                attempt_paying(state, rec, sh, entry, app_req, at, None).await,
+                attempt_with(state, rec, sh, entry, app_req, at, None).await,
                 1,
             );
         }
@@ -1947,7 +1881,7 @@ async fn attempt_pool(
     let order: Vec<Uuid> = ready.into_iter().chain(waiting).map(|(k, _)| *k).collect();
     let Some((last, before)) = order.split_last() else {
         return (
-            attempt_paying(state, rec, sh, entry, app_req, at, None).await,
+            attempt_with(state, rec, sh, entry, app_req, at, None).await,
             1,
         );
     };
@@ -1955,7 +1889,7 @@ async fn attempt_pool(
     let mut keys = 0;
     for key in before {
         keys += 1;
-        match attempt_paying(state, rec, sh, entry, app_req, at, Some(*key)).await {
+        match attempt_with(state, rec, sh, entry, app_req, at, Some(*key)).await {
             Err(f) => {
                 if !hold_pool_key(state, caller.project_id, *key, &f, now).await {
                     return (Err(f), keys);
@@ -1977,54 +1911,11 @@ async fn attempt_pool(
             done => return (done, keys),
         }
     }
-    let tried = attempt_paying(state, rec, sh, entry, app_req, at, Some(*last)).await;
+    let tried = attempt_with(state, rec, sh, entry, app_req, at, Some(*last)).await;
     if let Err(f) = &tried {
         hold_pool_key(state, caller.project_id, *last, f, now).await;
     }
     (tried, keys + 1)
-}
-
-// A linked key that can't pay, as its organization's spend limit refused the request or its link
-// is gone, gives way to the key the project chose to pay instead, if it chose one.
-async fn attempt_paying(
-    state: &AppState,
-    rec: &mut Recording,
-    sh: &Shared<'_>,
-    entry: &Entry,
-    app_req: &Arc<Request>,
-    at: TryAt,
-    key: Option<Uuid>,
-) -> Result<Done, Failure> {
-    let tried = attempt_with(state, rec, sh, entry, app_req, at, key).await;
-    let Err(f) = &tried else {
-        return tried;
-    };
-    if !matches!(f.stage, Stage::Linked(_)) {
-        return tried;
-    }
-    let caller = sh.caller;
-    let provider = entry.provider.to_string();
-    let fallback = match kaeso_store::pg::linked_billing::fallback(
-        &state.pg,
-        caller.org_id,
-        caller.project_id,
-        &provider,
-    )
-    .await
-    {
-        Ok(Some(fallback)) => fallback,
-        Ok(None) => return tried,
-        Err(e) => {
-            tracing::warn!(error = %e, "cannot read the project's fallback for its linked key");
-            return tried;
-        }
-    };
-    rec.attempt_failed(Instant::now());
-    tracing::info!(
-        provider,
-        "a linked key that can't pay gave way to the project's fallback key"
-    );
-    attempt_with(state, rec, sh, entry, app_req, at, Some(fallback)).await
 }
 
 // One try with one key of the pool, or the project's own key for `None`.
@@ -2283,22 +2174,9 @@ async fn attempt(
             503,
             format!("Kaeso cannot renew the {product} account's access right now. Try again shortly."),
         )),
-        CredentialError::Unlinked { .. } => fail(Stage::Linked(Refusal::Unlinked))(
-            linked_refusal(Refusal::Unlinked, &eff.provider),
-        ),
-        CredentialError::NeedsSetup { .. } => fail(Stage::Linked(Refusal::NeedsSetup))(
-            linked_refusal(Refusal::NeedsSetup, &eff.provider),
-        ),
     })?;
     if !credential.is_keyless() {
         rec.outcome().credential_id = Some(credential.id.uuid());
-    }
-    let linked = credential
-        .linked
-        .as_ref()
-        .filter(|_| credential.method == AuthMethod::LinkedBilling);
-    if linked.is_some() && !kaeso_core::linked_billing::covers(kind) {
-        return Err(fail(Stage::Capability)(linked_uncovered(&eff.provider)));
     }
     let account = eff
         .provider
@@ -2464,9 +2342,6 @@ async fn attempt(
     })?;
     if let Some(r) = &regional {
         ectx = r.apply(ectx);
-    }
-    if let Some(l) = linked.filter(|l| l.send_policy) {
-        ectx = ectx.with_billed_profile(l.user_profile_id.clone());
     }
     let dialect = plan.dialect;
     let (req, mut ectx, encoded) = off_thread(request_bytes, move || {
@@ -2649,9 +2524,8 @@ async fn attempt(
         (None, None, Some(auth)) => Some(auth),
         (None, None, None) => eff.provider.auth(),
     };
-    // An Entra ID token goes as a bearer in place of the resource key's `api-key`, and so does a
-    // link's access token in place of Anthropic's `x-api-key`.
-    let auth = if entra.is_some() || linked.is_some() {
+    // An Entra ID token goes as a bearer in place of the resource key's `api-key`.
+    let auth = if entra.is_some() {
         Some(kaeso_core::provider::AuthStyle::Bearer)
     } else {
         auth
@@ -2767,12 +2641,6 @@ async fn attempt(
     }
     if success {
         crate::services::notifications::system::key_answered(credential.id.uuid());
-        if linked.is_some_and(|l| l.spend_limited) {
-            let (st, org, key) = (state.clone(), caller.org_id, credential.id.uuid());
-            state.in_flight.finish(async move {
-                crate::services::linked_billing_keys::paid(&st, org, key).await;
-            });
-        }
     }
 
     let started_req = Arc::clone(&app_req);
@@ -3034,51 +2902,6 @@ async fn attempt(
                         Probe::Inconclusive(_) | Probe::Failed(_) => {}
                     }
                 }
-                if linked.is_some() {
-                    let code = kaeso_codecs::anthropic_messages::error_code(&err);
-                    if let Some(refusal) =
-                        kaeso_core::linked_billing::anthropic_refusal(status, code)
-                    {
-                        let said = redacted(err);
-                        tracing::warn!(provider, status, upstream = %said.message, "the linked organization of the project's provider key can't pay");
-                        let (st, org, key, now) = (
-                            state.clone(),
-                            caller.org_id,
-                            credential.id.uuid(),
-                            state.clock.now(),
-                        );
-                        state.in_flight.finish(async move {
-                            crate::services::linked_billing_keys::refused(
-                                &st, org, key, refusal, now,
-                            )
-                            .await;
-                        });
-                        let mut failure =
-                            fail(Stage::Linked(refusal))(linked_refusal(refusal, &eff.provider));
-                        failure.provider_said = Some(said);
-                        return Err(failure);
-                    }
-                    if err.kind == ErrorKind::Authentication {
-                        // The connection's access token expired early, a refresh replaced it or
-                        // its link ended: renewing now tells which, off this request's path.
-                        let (st, org, key) = (state.clone(), caller.org_id, credential.id);
-                        let product = eff
-                            .provider
-                            .built_in()
-                            .and_then(|p| p.linked_billing())
-                            .map_or("provider", |l| l.organization);
-                        state.in_flight.finish(async move {
-                            let _ = crate::services::linked_billing_keys::renew(
-                                &st,
-                                OrgId::from_uuid(org),
-                                key,
-                                product,
-                                time::Duration::hours(2),
-                            )
-                            .await;
-                        });
-                    }
-                }
                 if let Some(refused) =
                     refused_custom_key(&err, &eff.provider, credential.is_keyless())
                         .or_else(|| refused_key(&err))
@@ -3330,8 +3153,6 @@ fn classify(f: &Failure) -> Next {
         Stage::Provider if f.not_found_in_request => Next::Fall(RouteFailure::Rejected),
         Stage::Provider => Next::Fall(provider_failure(&f.err)),
         Stage::PlanLimit => Next::Fall(RouteFailure::Limited),
-        Stage::Linked(Refusal::SpendLimit) => Next::Fall(RouteFailure::Limited),
-        Stage::Linked(_) => Next::Fall(RouteFailure::Unavailable),
         Stage::Caller
         | Stage::Request
         | Stage::Catalogue

@@ -767,7 +767,7 @@ SELECT day, org_id, project_id, user_id, service_account_id, api_key_id, model_i
 FROM jsonb_to_recordset('${json}'::jsonb) AS r(day date, org_id uuid, project_id uuid, user_id uuid, service_account_id uuid, api_key_id uuid,
   model_id text, provider text, ingress_dialect text, egress_dialect text, requests bigint, errors bigint, input_tokens bigint, output_tokens bigint,
   cache_read_tokens bigint, cache_write_tokens bigint, reasoning_tokens bigint, cost numeric)
-ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, egress_dialect) DO UPDATE SET
+ON CONFLICT (project_id, day, api_key_id, user_id, service_account_id, provider, model_id, ingress_dialect, egress_dialect, credential_id) DO UPDATE SET
   requests = u.requests + excluded.requests, errors = u.errors + excluded.errors, input_tokens = u.input_tokens + excluded.input_tokens,
   output_tokens = u.output_tokens + excluded.output_tokens, cache_read_tokens = u.cache_read_tokens + excluded.cache_read_tokens,
   cache_write_tokens = u.cache_write_tokens + excluded.cache_write_tokens, reasoning_tokens = u.reasoning_tokens + excluded.reasoning_tokens,

@@ -28,7 +28,7 @@ import {
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { CredentialView } from "~/api/generated/types";
-import { linkedCostsQuery, orgCredentialsQuery } from "~/api/queries/credentials";
+import { orgCredentialsQuery } from "~/api/queries/credentials";
 import { customProvidersQuery } from "~/api/queries/custom-providers";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
@@ -46,8 +46,6 @@ import { OrgHeader } from "~/shell/org-header";
 import { CustomProvidersTab } from "./custom-providers";
 import { toast } from "~/shell/toast";
 import { t } from "~/i18n";
-
-import { FallbackDialog, LinkedStatus, linkedCost, links } from "./linked-keys";
 
 type Row = { id: string; provider: string; key: CredentialView; first: boolean };
 
@@ -133,12 +131,9 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
   const [assigning, setAssigning] = useState<CredentialView | null>(null);
   const [deleting, setDeleting] = useState<CredentialView | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [fallbackFor, setFallbackFor] = useState<CredentialView | null>(null);
   const [query, setQuery] = useState("");
   const [hidden, setHidden] = useState<string[]>([]);
   const keys = useMemo(() => credentials.data ?? [], [credentials.data]);
-  const linkedCosts = useQuery({ ...linkedCostsQuery(org), enabled: rights.has("costs.org.view") && keys.some(links) });
-  const costs = linkedCosts.data;
   const searchable = keys.length > SEARCH_ABOVE;
   const accounts = keys.some((k) => !!k.account);
   if (!searchable && query) setQuery("");
@@ -212,11 +207,9 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
   });
   const runTest = testKey.mutate;
   const columns = useMemo(() => {
-    const costOf = (k: CredentialView) => costs?.keys.find((c) => c.credential === k.id)?.cost ?? (costs ? "0" : undefined);
     const menu = (k: CredentialView) => {
       const signIn = signsIn(k) ? providers.get(k.provider)?.account : undefined;
-      const offer = links(k) ? providers.get(k.provider)?.linked_billing : undefined;
-      const usage = signIn?.usage_url ?? offer?.spend_limit_url;
+      const usage = signIn?.usage_url;
       if (!canChange && !canDelete && !usage) return null;
       return (
         <Menu>
@@ -245,11 +238,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
               </Menu.Item>
             )}
             {canChange &&
-              (links(k) ? (
-                <Menu.Item icon={icons.session} onClick={() => setReplacing(k)}>
-                  {t("orgHome.linkAgain", "Link again")}
-                </Menu.Item>
-              ) : !signsIn(k) ? (
+              (!signsIn(k) ? (
                 <Menu.Item icon={icons.providerKey} onClick={() => setReplacing(k)}>
                   {t("orgHome.replace", "Replace")}
                 </Menu.Item>
@@ -258,14 +247,9 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
                   {t("orgHome.signInAgain", "Sign in again")}
                 </Menu.Item>
               ))}
-            {canChange && links(k) && (
-              <Menu.Item icon={icons.route} onClick={() => setFallbackFor(k)}>
-                {t("orgHome.whoPays", "Who pays when it can't")}
-              </Menu.Item>
-            )}
             {usage && (
               <Menu.LinkItem icon={icons.usage} href={usage} external>
-                {offer ? t("orgHome.setSpendLimit", "Set spend limit in {console}", { console: offer.console }) : t("orgHome.manageUsage", "Manage usage")}
+                {t("orgHome.manageUsage", "Manage usage")}
               </Menu.LinkItem>
             )}
             {canChange && (
@@ -282,7 +266,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
                   setDeleteOpen(true);
                 }}
               >
-                {links(k) ? t("orgHome.unlink", "Unlink") : t("common.delete", "Delete")}
+                {t("common.delete", "Delete")}
               </Menu.Item>
             )}
           </Menu.Content>
@@ -310,18 +294,13 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
         (r: Row) => r,
         (r: Row) => {
           const defaultBelow = r.key.is_default && hidden.includes("projects");
-          const cost = links(r.key) ? linkedCost(costOf(r.key)) : null;
           const under = [
             defaultBelow ? { id: "default", label: null, value: t("orgHome.default", "Default") } : null,
             signsIn(r.key) && providers.get(r.provider)?.account?.experimental
               ? { id: "stage", label: t("orgHome.stage", "Stage"), value: t("orgHome.experimental", "Experimental") }
               : null,
             r.key.account && signsIn(r.key) ? { id: "account", label: t("orgHome.account", "Account"), value: r.key.account } : null,
-            r.key.account && links(r.key)
-              ? { id: "connection", label: providers.get(r.provider)?.linked_billing?.organization ?? providers.name(r.provider), value: r.key.account }
-              : null,
-            cost ? { id: "cost", label: t("common.cost", "Cost"), value: cost } : null,
-            r.key.account && !signsIn(r.key) && !links(r.key) ? { id: "service-account", label: signedAs(r.key), value: r.key.account } : null,
+            r.key.account && !signsIn(r.key) ? { id: "service-account", label: signedAs(r.key), value: r.key.account } : null,
             r.key.project ? { id: "project", label: t("orgHome.project", "Project"), value: r.key.project } : null,
             r.key.location
               ? {
@@ -343,11 +322,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
             <span className="flex min-w-0 flex-col">
               <span className="flex min-w-0 items-center gap-8">
                 <Text truncate>{r.key.name}</Text>
-                {links(r.key) ? (
-                  <Badge tone="outline" className="hidden sm:inline-flex">
-                    {t("orgHome.linkedBilling", "Linked billing")}
-                  </Badge>
-                ) : signsIn(r.key) ? (
+                {signsIn(r.key) ? (
                   <Badge tone="outline" className="hidden sm:inline-flex">
                     {providers.product(r.provider)}
                   </Badge>
@@ -357,7 +332,6 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
                   </Tooltip>
                 )}
                 {r.key.auth_error === "signed_out" && <Badge tone="warning">{t("orgHome.signedOut", "Signed out")}</Badge>}
-                {links(r.key) && <LinkedStatus k={r.key} offer={providers.get(r.provider)?.linked_billing} />}
                 {r.key.auth_error === "no_api_access" && (
                   <Tooltip content={t("orgHome.noApiAccessHint", "This {product} plan has no API access.", { product: providers.product(r.provider) })}>
                     <Badge tone="warning">{t("orgHome.noApiAccess", "No API access")}</Badge>
@@ -424,7 +398,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
         { align: "end" },
       ),
     ].map((c) => ({ ...c, enableSorting: false }));
-  }, [accounts, canChange, canDelete, costs, hidden, partyName, providers, runTest, setDefault]);
+  }, [accounts, canChange, canDelete, hidden, partyName, providers, runTest, setDefault]);
 
   return (
     <>
@@ -535,7 +509,6 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
       {replacing && <ProviderKeyDialog org={org} keys={keys} replace={replacing} onClose={() => setReplacing(null)} />}
       {renaming && <RenameKeyDialog org={org} credential={renaming} onClose={() => setRenaming(null)} />}
       {assigning && <AssignKeyDialog org={org} credential={assigning} keys={keys} onClose={() => setAssigning(null)} />}
-      {fallbackFor && <FallbackDialog org={org} credential={fallbackFor} keys={keys} onClose={() => setFallbackFor(null)} />}
       {deleting && (
         <DialogScope open={deleteOpen}>
           <DeleteKeyDialog org={org} credential={deleting} keys={keys} open={deleteOpen} onOpenChange={setDeleteOpen} />
@@ -570,11 +543,7 @@ function DeleteKeyDialog({
     invalidates: [["orgs", org, "credentials"]],
     onSuccess: () => {
       onOpenChange(false);
-      toast(
-        credential.auth_method === "linked_billing"
-          ? t("orgHome.keyUnlinked", "{title} unlinked", { title: keyTitle(credential, providers) })
-          : t("orgHome.keyDeleted", "{title} deleted", { title: keyTitle(credential, providers) }),
-      );
+      toast(t("orgHome.keyDeleted", "{title} deleted", { title: keyTitle(credential, providers) }));
     },
     onError: () => onOpenChange(false),
   });
@@ -583,23 +552,17 @@ function DeleteKeyDialog({
       open={open}
       onOpenChange={onOpenChange}
       tone="danger"
-      title={
-        credential.auth_method === "linked_billing"
-          ? t("orgHome.unlinkQuestion", "Unlink {title}?", { title: keyTitle(credential, providers) })
-          : t("orgHome.deleteKeyQuestion", "Delete {title}?", { title: keyTitle(credential, providers) })
-      }
+      title={t("orgHome.deleteKeyQuestion", "Delete {title}?", { title: keyTitle(credential, providers) })}
       description={
-        credential.auth_method === "linked_billing"
-          ? t("orgHome.unlinkHint", "{provider} stops billing the linked organization for this install's requests.", { provider })
-          : !credential.is_default
-            ? credential.projects.length
-              ? t("orgHome.deleteKeyProjectsSwitch", "Its projects without another {provider} key switch to the default.", { provider })
-              : t("orgHome.deleteKeyUnused", "No project uses it; requests are not affected.")
-            : successor
-              ? t("orgHome.deleteKeySuccessor", "{name} becomes the {provider} default.", { name: successor.name, provider })
-              : t("orgHome.deleteKeyLast", "Requests to {provider} fail until the organization adds another key.", { provider })
+        !credential.is_default
+          ? credential.projects.length
+            ? t("orgHome.deleteKeyProjectsSwitch", "Its projects without another {provider} key switch to the default.", { provider })
+            : t("orgHome.deleteKeyUnused", "No project uses it; requests are not affected.")
+          : successor
+            ? t("orgHome.deleteKeySuccessor", "{name} becomes the {provider} default.", { name: successor.name, provider })
+            : t("orgHome.deleteKeyLast", "Requests to {provider} fail until the organization adds another key.", { provider })
       }
-      confirmLabel={credential.auth_method === "linked_billing" ? t("orgHome.unlink", "Unlink") : t("orgHome.deleteKey", "Delete key")}
+      confirmLabel={t("orgHome.deleteKey", "Delete key")}
       loading={remove.isPending}
       onConfirm={() => remove.mutateAsync()}
     />

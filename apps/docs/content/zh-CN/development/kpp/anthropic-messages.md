@@ -74,7 +74,6 @@ Schema `CreateMessageParams` 和 `CountMessageTokensParams`。
 | `cache_control`（顶层，自动缓存） | extras `cache_control` | 只是提示字段；KPP 没有请求级别的缓存提示。它在[允许列表](cross-format.md#extras)中，因此发往其他方言时会被丢弃。来自其他方言的请求会改为得到块级断点（[缓存提示](cross-format.md#缓存提示)）。 |
 | `container`、`inference_geo`、`service_tier`、SDK `diagnostics`、`user_profile_id`、`workspace_id`、未知键 | `extras.fields` | |
 | 请求头 `anthropic-beta` | `extras` 请求头 `header:anthropic-beta` | 出站时只转发给 Anthropic。 |
-| `billing_policy`、请求头 `anthropic-user-profile-id` | 由 `EgressCtx::billed_profile` 写入 | 用于关联计费，在安装的应用要求时：`billing_policy: {type: billing_policy, bill_to: user_profile}` 替换应用发送的值，请求头写明用户资料，`anthropic-beta` 加上 `user-profiles-billing-2026-10-01`（[关联计费](https://platform.claude.com/docs/en/manage-claude/oauth-apps/organization-billing-connections#your-customer-pays)）。为 `None` 时两者都不发送。 |
 | 请求头 `anthropic-version` | 不为 `2023-06-01` 时存为 `extras` 请求头 | 总是发送固定的版本，除非转发了更新的版本（[Anthropic 版本](#anthropic-版本)）。 |
 
 ### 内容块
@@ -265,7 +264,6 @@ Schema `ErrorResponse`。解码错误（无论是请求还是服务商的响应�
 - OpenAI 错误结构的响应体 `{"error": {"message", "type"}}`（Vercel AI Gateway 和 Z.ai 在 `/v1/messages` 上发送的就是这种）会保留其消息。若 `error.type` 是 Anthropic 的类型之一或 [Z.ai 的错误码](anthropic-messages-providers.md#zai)之一，类别由它决定，否则由状态码决定；Anthropic 应用收到的是 Anthropic 结构的错误（`fixtures/anthropic_messages/providers/vercel/errors/`）。这样的响应体只有在状态码得出相同类别时才保留其状态码；否则 Anthropic 应用收到该类别的状态码，因此 Z.ai 因余额不足返回的 429 以 402 `billing_error` 送达。
 - 从 Anthropic 解码的错误会以其状态码从 `raw` 重新编码，因此 Anthropic 应用看到的错误不变；其他错误则构建为 `{"type":"error","error":{"type","message"},"request_id":null}`。
 - `request_id` 在 `ErrorResponse` 中是必需字段，值为字符串或 `null`。`encode_error_for_request`（`dispatch::encode_error_for_request`）在其中写入给定的 ID，也写入从 `raw` 重新编码的响应体，替换 Anthropic 的 ID。网关传入它在 `kaeso-request-id` 中发送的 ID，并在请求日志中保留 Anthropic 的 `request-id` 响应头。`encode_error` 在它构建的响应体中写入 `null`。
-- `anthropic_messages::error_code` 读取此编解码器解码的错误中的 `error.details.error_code`，例如 `linked_organization_spend_limit_reached`；网关据此区分关联密钥被拒绝的原因（`fixtures/anthropic_messages/errors/linked-*.json`）。
 - 其他响应头（例如 `anthropic-ratelimit-*` 和 `request-id`）不属于 `KppError`。
 
 ## 模型
