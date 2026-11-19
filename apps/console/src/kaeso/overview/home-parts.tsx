@@ -9,7 +9,7 @@ import { dayFormat, dayLabel, shiftDay, utcDay } from "~/format/period";
 import { t } from "~/i18n";
 import { useOrgMoney } from "~/kaeso/org-money";
 import { byBucket, totals } from "~/kaeso/usage-panels";
-import { cacheHit, change, forecast, forecastFrom, METRICS, metricTotal, type MetricId } from "./metrics";
+import { cacheHit, change, forecast, forecastFrom, formatWith, METRICS, metricTotal, type MetricId } from "./metrics";
 import { fill, iso, useMinute, utcTimeFormat } from "./timeline";
 
 // The trends draw only once their numbers arrive, so their chart code loads beside the data instead of with the page.
@@ -152,7 +152,7 @@ export function HomeMetrics({
           detail={ch("requests") ? vs : undefined}
           trend={series((r) => r?.requests ?? 0)}
           labels={labels}
-          format={(v) => METRICS.requests.format(v, money)}
+          format={formatWith("requests", money)}
           color={METRICS.requests.color}
           loading={loading}
         />
@@ -164,7 +164,7 @@ export function HomeMetrics({
           detail={ch("tokens") ? vs : undefined}
           trend={series(METRICS.tokens.of)}
           labels={labels}
-          format={(v) => METRICS.tokens.format(v, money)}
+          format={formatWith("tokens", money)}
           color={METRICS.tokens.color}
           loading={loading}
         />
@@ -176,7 +176,7 @@ export function HomeMetrics({
           detail={ch("cache") ? vs : undefined}
           trend={series(METRICS.cache.of)}
           labels={labels}
-          format={(v) => METRICS.cache.format(v, money)}
+          format={formatWith("cache", money)}
           color={METRICS.cache.color}
           loading={loading}
         />
@@ -211,7 +211,7 @@ export function HomeMetrics({
             }
             trend={series(METRICS.cost.of)}
             labels={labels}
-            format={(v) => METRICS.cost.format(v, money)}
+            format={formatWith("cost", money)}
             color={METRICS.cost.color}
             loading={loading}
           />
@@ -224,7 +224,7 @@ export function HomeMetrics({
           detail={t("kaeso.overview.ofRequests", "{rate} of requests", { rate: formatPercent(s.requests ? s.errors / s.requests : 0) })}
           trend={series((r) => r?.errors ?? 0)}
           labels={labels}
-          format={(v) => METRICS.requests.format(v, money)}
+          format={formatWith("requests", money)}
           color={METRICS.errors.color}
           loading={loading}
         />

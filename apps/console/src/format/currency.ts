@@ -41,7 +41,7 @@ function numberFormat(code: string, decimals: number): Intl.NumberFormat {
 }
 
 export function currencyDigits(code: string): number {
-  return new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits ?? 2;
+  return new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits as number;
 }
 
 // Rounds as the dollar formatter does, then writes the digits it kept with the currency's own symbol and
@@ -101,14 +101,20 @@ function money(code: string): Money {
 
 const kept = new Map<string, Money>();
 
-/** The formatters for amounts in `code`. */
-export function moneyIn(code: string): Money {
-  let m = kept.get(code);
+/** The formatters for amounts in `code`; an amount without a currency is in US dollars. */
+export function moneyIn(code: string | null | undefined): Money {
+  const c = code ?? USD;
+  let m = kept.get(c);
   if (!m) {
-    m = money(code);
-    kept.set(code, m);
+    m = money(c);
+    kept.set(c, m);
   }
   return m;
+}
+
+/** A cost as the gateway gave it: in the organization's currency, or in US dollars when there was no rate to convert it. */
+export function shownCost(c: { cost: string; converted_cost?: string | null | undefined; currency: string }): { money: Money; amount: string } {
+  return c.converted_cost == null ? { money: moneyIn(USD), amount: c.cost } : { money: moneyIn(c.currency), amount: c.converted_cost };
 }
 
 /** Adds decimal amounts in millionths, so sums never drift. */

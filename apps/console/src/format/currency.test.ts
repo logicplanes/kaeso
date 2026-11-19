@@ -1,6 +1,6 @@
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { afterEach, describe, expect, it } from "vitest";
-import { currencyDigits, moneyIn, sumAmounts } from "./currency";
+import { currencyDigits, moneyIn, shownCost, sumAmounts } from "./currency";
 import { currencyName, currencySymbol, pricesIn } from "./prices";
 
 const nbsp = (s: string) => s.replace(/[\u00a0\u202f]/g, " ");
@@ -135,6 +135,22 @@ describe("prices", () => {
   it("keep one set per currency and rate", () => {
     expect(pricesIn(eur, "0.9")).toBe(pricesIn(eur, "0.9"));
     expect(moneyIn("EUR")).toBe(eur);
+  });
+});
+
+describe("a logged cost", () => {
+  it("is in the organization's currency, or in US dollars when it couldn't be converted", () => {
+    const shown = (c: Parameters<typeof shownCost>[0]) => {
+      const s = shownCost(c);
+      return s.money.request(s.amount);
+    };
+    expect(shown({ cost: "0.00042", converted_cost: "0.000378", currency: "EUR" })).toBe("€0.000378");
+    expect(shown({ cost: "0.00042", converted_cost: null, currency: "EUR" })).toBe("$0.000420");
+  });
+
+  it("writes amounts without a currency in US dollars, and leaves text that isn't an amount as it is", () => {
+    expect(moneyIn(null).period("1.5")).toBe("$1.50");
+    expect(moneyIn("EUR").format("abc")).toBe("abc");
   });
 });
 

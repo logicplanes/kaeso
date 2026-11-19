@@ -3,7 +3,7 @@ import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip,
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
-import { moneyIn } from "~/format/currency";
+import { shownCost } from "~/format/currency";
 import { locale, t, type Locale } from "~/i18n";
 import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
@@ -229,8 +229,8 @@ export function logColumns({
     ),
     cost: col.custom(
       { id: "cost", header: columnLabel("cost"), size: KEPT_WIDTHS.cost, priority: 2 },
-      (r: LogView) => r.converted_cost ?? r.cost,
-      (v, r) => (r.cost_known ? moneyIn(r.currency).request(v) : <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text>),
+      (r: LogView) => shownCost(r).amount,
+      (v, r) => (r.cost_known ? shownCost(r).money.request(v) : <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text>),
       { align: "end" },
     ),
     key: col.custom(

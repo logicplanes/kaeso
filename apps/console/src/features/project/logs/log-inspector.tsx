@@ -35,7 +35,7 @@ import { logEntryQuery, type LogFilters } from "~/api/queries/logs";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
-import { moneyIn } from "~/format/currency";
+import { shownCost } from "~/format/currency";
 import { curlCommand } from "./curl";
 import { describeUserAgent } from "~/format/user-agent";
 import { clientLabel } from "~/format/clients";
@@ -472,7 +472,7 @@ function Overview({
         <Stat
           variant="tile"
           label={common.cost()}
-          value={e.cost_known ? moneyIn(e.currency).cost(e.converted_cost ?? e.cost) : t("kaeso.usage.costUnknown", "Unknown")}
+          value={e.cost_known ? shownCost(e).money.cost(shownCost(e).amount) : t("kaeso.usage.costUnknown", "Unknown")}
           detail={
             e.cost_basis === "none"
               ? t("logs.inspector.notBilled", "Not billed")

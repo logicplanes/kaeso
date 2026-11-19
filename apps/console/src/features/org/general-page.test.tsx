@@ -117,6 +117,14 @@ describe("organization general settings", () => {
     await hoverReason(user, only, "No exchange rates yet: Kaeso fetches the ECB's once a working day");
   });
 
+  it("says when the install has exchange rates turned off", async () => {
+    signedIn();
+    on("GET", "me/exchange-rates", exchangeRates({ fetching: false }, true));
+    const { user } = await renderApp(PATH);
+
+    await hoverReason(user, await screen.findByRole("button", { name: "USD" }), "Exchange rates are off on this install");
+  });
+
   it("shows the currency without a choice to people without Edit organization", async () => {
     withRights(["org.view"], { role: "admin" });
     on("GET", "orgs/:org", org({ currency: "EUR" }));

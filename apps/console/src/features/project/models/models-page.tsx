@@ -155,7 +155,9 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               {...(m.effective.display_name && m.effective.display_name !== m.model_id ? { name: m.effective.display_name } : {})}
             />
           ),
-          ...(phone && !MODEL_STATUSES.some((status) => hasStatus(m, status)) ? {} : { meta: <ModelMeta m={m} prices={prices} shutdown={retiringById.get(m.id)} /> }),
+          ...(phone && !MODEL_STATUSES.some((status) => hasStatus(m, status))
+            ? {}
+            : { meta: <ModelMeta m={m} prices={prices} shutdown={retiringById.get(m.id)} /> }),
           date: m.effective.release_date ? monthLabel(m.effective.release_date) : undefined,
         })),
       };

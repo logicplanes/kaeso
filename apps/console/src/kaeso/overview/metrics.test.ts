@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { usageRow } from "~/test/fixtures/org";
-import { forecast, forecastFrom } from "./metrics";
+import { moneyIn } from "~/format/currency";
+import { forecast, forecastFrom, formatWith } from "./metrics";
 
 describe("the month's spend forecast", () => {
   it("adds the month so far and projects the last seven days' pace, counting a day without a known cost as nothing", () => {
@@ -43,5 +44,12 @@ describe("the month's spend forecast", () => {
     expect(forecastFrom("2026-11-03")).toBe("2026-10-27");
     expect(forecastFrom("2026-11-08")).toBe("2026-11-01");
     expect(forecastFrom("2026-11-20")).toBe("2026-11-01");
+  });
+});
+
+describe("a chart's formatter", () => {
+  it("writes spend in the organization's currency and counts as numbers", () => {
+    expect(formatWith("cost", moneyIn("EUR"))(12.4)).toBe("€12.40");
+    expect(formatWith("requests", moneyIn("EUR"))(1200)).toBe("1,200");
   });
 });

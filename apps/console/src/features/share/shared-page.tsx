@@ -313,7 +313,9 @@ function Budgets({ v }: { v: SharedView }) {
                 valueText={use.exact}
                 caption={
                   ahead !== undefined
-                    ? t("kaeso.share.forecast", "Heading for {amount} at this pace", { amount: limitAmount(l.kind, ahead.toFixed(6), { ...CENTS, currency: l.currency }).short })
+                    ? t("kaeso.share.forecast", "Heading for {amount} at this pace", {
+                        amount: limitAmount(l.kind, ahead.toFixed(6), { ...CENTS, currency: l.currency }).short,
+                      })
                     : l.hard
                       ? t("kaeso.share.hard", "Requests stop once it's used up")
                       : t("kaeso.share.soft", "Only alerts once it's used up")

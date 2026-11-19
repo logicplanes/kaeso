@@ -159,7 +159,6 @@ function CurrencyRow({ org, currency, canUpdate }: { org: string; currency: stri
     invalidates: [["orgs", org], ["me", "memberships"], ["session"]],
     onSuccess: (o) => toast.success(t("org.general.currencySaved", "Amounts now show in {currency}", { currency: o.currency })),
   });
-  const shown = save.isPending && save.variables ? save.variables : currency;
   return (
     <SettingsRow
       title={t("org.general.currency", "Currency")}
@@ -167,7 +166,7 @@ function CurrencyRow({ org, currency, canUpdate }: { org: string; currency: stri
       control={
         canUpdate ? (
           <div className="w-240 min-w-0">
-            <CurrencySelect value={shown} disabled={save.isPending} onChange={(code) => code !== currency && save.mutate(code)} />
+            <CurrencySelect value={currency} disabled={save.isPending} onChange={(code) => code !== currency && save.mutate(code)} />
           </div>
         ) : (
           <Text tone="secondary">{t("org.general.currencyValue", "{code} · {name}", { code: currency, name: currencyName(currency) })}</Text>

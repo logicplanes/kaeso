@@ -95,6 +95,9 @@ export const METRICS: Record<MetricId, Metric> = {
   },
 };
 
+/** A metric's formatter for a chart, with amounts of spend in `money`. */
+export const formatWith = (id: MetricId, money: Money) => (v: number) => METRICS[id].format(v, money);
+
 export const change = (now: number, before: number | undefined) => (before ? (now - before) / before : undefined);
 
 export function metricTotal(id: MetricId, rows: UsageRow[]): number {

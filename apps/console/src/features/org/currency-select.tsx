@@ -24,7 +24,7 @@ export function CurrencySelect({ value, onChange, disabled }: { value: string; o
       </Button>
     );
   const listed = (rates.data?.rates ?? []).map((r) => r.currency);
-  const codes = [USD, ...listed.filter((c) => c !== USD), ...(listed.includes(value) || value === USD ? [] : [value])];
+  const codes = [...new Set([USD, ...listed, value])];
   return (
     <Select
       aria-label={t("kaeso.currency.label", "Currency")}
