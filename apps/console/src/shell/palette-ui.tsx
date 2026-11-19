@@ -60,9 +60,7 @@ export default function PaletteUI({
       hotkey={false}
       groups={groups}
       placeholder={
-        orgContext
-          ? t("shell.palette.orgPlaceholder", "Search pages, actions, projects, members and keys")
-          : t("shell.palette.placeholder", "Search pages, actions, keys, models and members")
+        orgContext ? t("shell.palette.orgPlaceholder", "Search pages, projects and members") : t("shell.palette.placeholder", "Search pages, keys and models")
       }
       emptyText={t("shell.palette.empty", "Nothing matches. Try another word.")}
     />
@@ -80,6 +78,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
   const on = enabled && !!project && query.length > 0;
   const requestId = on && requestLogs && rights.has("logs.metadata.view") && REQUEST_ID.test(query.trim()) ? query.trim() : null;
   const named = useQuery({ ...projectQuery(org, project), enabled: !!requestId });
+  const projects = useQuery({ ...orgProjectsQuery(org), enabled: on });
   const keys = useQuery({ ...keysPageQuery(org, project, {}), enabled: on && rights.has("keys.all.view") });
   const models = useQuery({ ...catalogueQuery(org, project), enabled: on && rights.has("models.view") });
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: on && rights.has("project.members.view") });
@@ -107,6 +106,16 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
     : [];
   const items: CommandItem[] = [
     ...opened,
+    ...(projects.data ?? [])
+      .filter((p) => p.id !== project && has(p.name))
+      .map((p) => ({
+        id: `find:project:${p.id}`,
+        label: p.name,
+        icon: icons.project,
+        hint: t("common.project", "Project"),
+        keywords: [query],
+        onSelect: go(projectPath(org, p.id)),
+      })),
     ...(keys.data?.data ?? [])
       .filter((k) => has(k.name, k.redacted))
       .map((k) => ({
@@ -151,7 +160,7 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
   return {
     label: t("shell.palette.find", "Find (in the first 100 of each list)"),
     items,
-    loading: keys.isFetching || models.isFetching || members.isFetching || accounts.isFetching,
+    loading: projects.isFetching || keys.isFetching || models.isFetching || members.isFetching || accounts.isFetching,
   };
 }
 
