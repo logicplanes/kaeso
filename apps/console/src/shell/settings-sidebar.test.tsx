@@ -35,6 +35,20 @@ describe("the settings sidebar", () => {
     expect(within(nav).getAllByRole("link", { name: "Audit log" })).toHaveLength(2);
   });
 
+  it("draws a different icon beside every page of a group, Guardrails apart from Security", async () => {
+    signedIn();
+    on("GET", "me", me());
+    await renderApp(PROFILE);
+    const nav = await sidebar();
+    const org = await within(nav).findByRole("group", { name: "Northwind Labs" });
+    const drawing = (link: HTMLElement) => link.querySelector("svg")?.innerHTML ?? "";
+    expect(drawing(within(org).getByRole("link", { name: "Guardrails" }))).not.toBe(drawing(within(org).getByRole("link", { name: "Security" })));
+    for (const group of within(nav).getAllByRole("group")) {
+      const drawings = within(group).getAllByRole("link").map(drawing);
+      expect(new Set(drawings).size, group.textContent ?? "").toBe(drawings.length);
+    }
+  });
+
   it("shows only the organization pages the person may see and no instance pages to members", async () => {
     signedIn({ session: whoAmI({ user: person({ is_instance_admin: false }), memberships: [membership({ rights: ["org.view"] })] }) });
     on("GET", "me", me());
