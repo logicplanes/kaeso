@@ -39,3 +39,5 @@ export function applyChanges(roleRights: ReadonlySet<string>, g: Grant, changes:
 export function grantLabel(g: Pick<GrantView, "role" | "rights_added" | "rights_removed">): string {
   return g.rights_added.length || g.rights_removed.length ? t("kaeso.rights.customized", "{role} · customized", { role: g.role.name }) : g.role.name;
 }
+
+export const grantUnchanged = () => t("kaeso.grant.unchanged", "Choose another role or change a right first.");

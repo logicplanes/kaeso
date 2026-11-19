@@ -82,6 +82,7 @@
   "kaeso.expiry.onDate": "指定日期",
   "kaeso.expiry.orgMax": "{count, plural, other {此组织允许的密钥有效期最长为 # 天。}}",
   "kaeso.expiry.projectMax": "{count, plural, other {此项目允许的密钥有效期最长为 # 天。}}",
+  "kaeso.grant.unchanged": "请先选择其他角色或更改某项权限。",
   "kaeso.home.activity": "活动",
   "kaeso.home.addModel": "添加到 {project}",
   "kaeso.home.change": "{actor} · {action}",

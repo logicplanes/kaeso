@@ -144,6 +144,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
     return rows(items ?? []);
   }, [items, groups, collapsed]);
   const firstRow = flat.findIndex((f) => f.kind === "row");
+  const dated = flat.some((f) => f.kind === "row" && f.item.date !== undefined);
   const none = groups ? groups.every((g) => g.items.length === 0) : (items ?? []).length === 0;
 
   const virtual = flat.length > virtualizeAbove;
@@ -314,6 +315,7 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
         density={density}
         wrapSubtitle={wrapSubtitle}
         narrow={narrow}
+        dated={dated}
         active={i === tabStop}
         selected={selected.has(f.item.id)}
         selectable={!!selectable}
@@ -462,6 +464,7 @@ export interface ListRowProps {
   density?: keyof typeof KAESO_LIST_VARIANTS.density | undefined;
   wrapSubtitle?: boolean | undefined;
   narrow?: boolean | undefined;
+  dated?: boolean | undefined;
   active?: boolean | undefined;
   selected?: boolean | undefined;
   selectable?: boolean | undefined;
@@ -482,6 +485,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
     density = "default",
     wrapSubtitle = false,
     narrow = false,
+    dated = false,
     active,
     selected,
     selectable,
@@ -619,7 +623,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
             )}
           </span>
         )}
-        {!lines && item.date && (
+        {!lines && (item.date || dated) && (
           <span className={cn("min-w-80 shrink-0 text-right text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>
             {item.date}
           </span>
