@@ -174,6 +174,11 @@ describe("CommandList", () => {
     await user.keyboard("{Escape}");
     expect(onEscape).toHaveBeenCalledTimes(1);
   });
+
+  it("ends a search placeholder too long for a phone in an ellipsis", () => {
+    render(<CommandList groups={groups} aria-label="Models" placeholder="Search pages, actions, keys, models and members" />);
+    expect(screen.getByRole("combobox", { name: "Search pages, actions, keys, models and members" })).toHaveClass("text-ellipsis");
+  });
 });
 
 describe("PickerPopover", () => {

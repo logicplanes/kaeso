@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { membership, myMembership, signedIn, whoAmI } from "~/test/fixtures";
 import { notifications } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
+import { insidePageGutter } from "~/test/layout";
 import { renderApp } from "~/test/render";
 
 function noOrgs(canCreate = true) {
@@ -23,7 +24,7 @@ describe("the welcome page for people outside every organization", () => {
     const { user, router } = await renderApp("/");
     expect(await screen.findByRole("heading", { name: "Welcome to Kaeso", level: 1 })).toBeInTheDocument();
     expect(document.title).toBe("Welcome · Kaeso");
-    expect(screen.getByText("Create one to start, or ask an owner or admin to invite you to theirs.")).toBeInTheDocument();
+    expect(insidePageGutter(screen.getByText("Create one to start, or ask an owner or admin to invite you to theirs."))).toBe(true);
     expect(screen.getByRole("button", { name: "Ada Okafor", description: "Account and sign out" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Create organization" }));
     const dialog = await screen.findByRole("dialog", { name: "Create organization" });

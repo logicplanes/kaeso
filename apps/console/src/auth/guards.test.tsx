@@ -4,6 +4,7 @@ import { ALL_ORG_RIGHTS, ORG, membership, myMembership, org, signedIn, whoAmI } 
 import { member, paged } from "~/test/fixtures/org";
 import { ssoStart } from "~/test/fixtures/public";
 import { apiError, on, requests } from "~/test/network";
+import { insidePageGutter } from "~/test/layout";
 import { renderApp } from "~/test/render";
 import { queryClient } from "~/query";
 import { atFixtureTime } from "~/test/clock";
@@ -26,7 +27,7 @@ describe("an organization that requires two-factor authentication", () => {
   it("asks the person to set it up instead of showing the organization", async () => {
     inOrg({ access: "needs_2fa" });
     await renderApp(`/orgs/${ORG}`);
-    expect(await screen.findByText("Northwind Labs requires two-factor authentication; set it up, then sign in again.")).toBeInTheDocument();
+    expect(insidePageGutter(await screen.findByText("Northwind Labs requires two-factor authentication; set it up, then sign in again."))).toBe(true);
     expect(screen.getByRole("link", { name: "Set up two-factor authentication" })).toHaveAttribute("href", "/settings/account/security");
   });
 });
@@ -38,7 +39,7 @@ describe("an organization that requires single sign-on", () => {
     const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
     const { user } = await renderApp(`/orgs/${ORG}`);
     expect(await screen.findByText("Sign in through Northwind Labs's identity provider")).toBeInTheDocument();
-    expect(screen.getByText("Northwind Labs requires single sign-on; you stay signed in to your other organizations.")).toBeInTheDocument();
+    expect(insidePageGutter(screen.getByText("Northwind Labs requires single sign-on; you stay signed in to your other organizations."))).toBe(true);
     await user.click(screen.getByRole("button", { name: "Continue with SSO" }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://idp.northwind.test/authorize"));
     expect(requests("POST", "auth/oidc/start").map((r) => r.body)).toEqual([{ org: ORG, next: `/orgs/${ORG}` }]);

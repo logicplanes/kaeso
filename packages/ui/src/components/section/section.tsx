@@ -56,8 +56,8 @@ export const AuthLayout = forwardRef<
         <NavWordmark />
       </div>
       <div className="flex w-full max-w-auth flex-1 flex-col justify-center">
-        <h1 className="text-center text-title-lg font-semibold text-fg text-balance">{title}</h1>
-        {description && <p className="mt-8 text-center text-body-lg font-regular text-fg-secondary text-pretty">{description}</p>}
+        <h1 className="text-center text-title-lg font-semibold text-fg text-balance wrap-break-word">{title}</h1>
+        {description && <p className="mt-8 text-center text-body-lg font-regular text-fg-secondary text-pretty wrap-break-word">{description}</p>}
         <div className="mt-24 flex flex-col gap-16">{children}</div>
       </div>
       {footer && <div className="mt-48 text-small text-fg-secondary">{footer}</div>}
