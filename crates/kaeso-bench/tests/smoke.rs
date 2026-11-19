@@ -83,6 +83,17 @@ fn every_scenario_runs_at_small_sizes_without_leaks_or_unbounded_memory() {
     assert!(table.contains("### MCP portal: warm tool calls"), "{table}");
     assert!(results["portal"]["overhead_ms"]["count"].as_u64().unwrap() > 0);
     assert!(table.contains("### Agent session"), "{table}");
+    assert!(
+        table.contains("### Built-in rules: every detector masking"),
+        "{table}"
+    );
+    assert!(
+        checks
+            .iter()
+            .filter(|c| c["scenario"] == "masking")
+            .all(|c| !c["name"].as_str().unwrap_or_default().contains("second")),
+        "the masking checks are about what was found, never speed"
+    );
     let agent = &results["agent"];
     assert!(agent["request_bytes"].as_u64().unwrap() > 45_000);
     for (sent, requests) in [("back_to_back", 20), ("paced", 10), ("after_a_pause", 2)] {
