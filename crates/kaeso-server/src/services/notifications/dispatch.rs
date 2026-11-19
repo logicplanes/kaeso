@@ -148,6 +148,8 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::CatalogueModelCheck
         | A::CatalogueModelCreate
         | A::CatalogueModelDelete
+        | A::CatalogueModelLineMove
+        | A::CatalogueModelLineUpdate
         | A::CatalogueModelMove
         | A::CatalogueModelUpdate
         | A::CredentialAssign

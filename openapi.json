@@ -17217,6 +17217,596 @@
         "x-kaeso-access": "right:limits.manage"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/lines": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "The project's model lines, where each points and how the project follows it.",
+        "description": "**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectLines",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLines"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      },
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Adds a model line to the catalogue; apps then call it as `provider/line`.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectLines",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/offered": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "The model lines KPMR offers for the organization's providers.",
+        "description": "**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectLinesOffered",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "Only this provider's lines.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferedLines"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/{model}": {
+      "patch": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Sets how the project follows a model line.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "patchOrgsOrgProjectsProjectLinesModel",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/{model}/back": {
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Moves a model line back to its previous model and pins it there.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectLinesModelBack",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/{model}/keep": {
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Keeps a model line where it is instead of a move that waits for approval.",
+        "description": "The line asks again only when KPMR moves it to yet another model.\n\n**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectLinesModelKeep",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/{model}/move": {
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Moves a model line to where KPMR points it now, such as a move that waits\nfor approval or for its delay.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectLinesModelMove",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/logs": {
       "get": {
         "tags": [
@@ -29147,6 +29737,14 @@
             "$ref": "#/components/schemas/CatalogueModelId",
             "description": "Id."
           },
+          "line_target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a model line such as `claude-opus-latest`: the model requests go to\nnow, whose values `effective` holds. See `/lines` for how it moves.",
+            "example": "claude-opus-5-5"
+          },
           "listed": {
             "type": "boolean",
             "description": "Whether KPMR lists it. An unlisted entry keeps its last known values."
@@ -34368,6 +34966,77 @@
           }
         }
       },
+      "LineCreate": {
+        "type": "object",
+        "description": "A model line to add to the catalogue.",
+        "required": [
+          "provider",
+          "line"
+        ],
+        "properties": {
+          "delay_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "With `delay`: the days a move waits, 1 to 30."
+          },
+          "line": {
+            "type": "string",
+            "description": "The line's name, as KPMR lists it.",
+            "example": "claude-opus-latest"
+          },
+          "policy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LinePolicy",
+                "description": "How to follow it; `follow` when absent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider."
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinePolicy": {
+        "type": "string",
+        "description": "How a project follows a model line when KPMR moves it.",
+        "enum": [
+          "follow",
+          "ask",
+          "delay",
+          "pin"
+        ]
+      },
+      "LineUpdate": {
+        "type": "object",
+        "description": "How to follow a model line.",
+        "required": [
+          "policy"
+        ],
+        "properties": {
+          "delay_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "With `delay`: the days a move waits, 1 to 30."
+          },
+          "policy": {
+            "$ref": "#/components/schemas/LinePolicy",
+            "description": "The policy."
+          }
+        },
+        "additionalProperties": false
+      },
       "LinkAccount": {
         "type": "object",
         "description": "Whom a sign-in link signs in.",
@@ -35233,6 +35902,14 @@
                 "id": {
                   "$ref": "#/components/schemas/CatalogueModelId",
                   "description": "Id."
+                },
+                "line_target": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "For a model line such as `claude-opus-latest`: the model requests go to\nnow, whose values `effective` holds. See `/lines` for how it moves.",
+                  "example": "claude-opus-5-5"
                 },
                 "listed": {
                   "type": "boolean",
@@ -36613,6 +37290,14 @@
                       "type": "null"
                     }
                   ]
+                },
+                "line": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The model line the request named, such as `claude-opus-latest`, whose\ntarget answered as `model`; `null` when it named no line.",
+                  "example": "claude-opus-latest"
                 },
                 "media": {
                   "oneOf": [
@@ -39759,6 +40444,14 @@
               }
             ]
           },
+          "line": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model line the request named, such as `claude-opus-latest`, whose\ntarget answered as `model`; `null` when it named no line.",
+            "example": "claude-opus-latest"
+          },
           "media": {
             "oneOf": [
               {
@@ -41496,6 +42189,110 @@
         },
         "additionalProperties": false
       },
+      "ModelLineView": {
+        "type": "object",
+        "description": "A model line the project follows: a name such as `claude-opus-latest` that\npoints at a provider's newest stable model.",
+        "required": [
+          "id",
+          "provider",
+          "line",
+          "model",
+          "since",
+          "policy"
+        ],
+        "properties": {
+          "delay_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "With `delay`: the days a move waits, 1 to 30."
+          },
+          "held": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the line couldn't move to `kpmr_model`, such as a missing provider key."
+          },
+          "id": {
+            "$ref": "#/components/schemas/CatalogueModelId",
+            "description": "Its catalogue model: apps call it as `provider/line`, and aliases, model\naccess and limits name it like any model."
+          },
+          "kept": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A model an owner chose not to move to; the line asks again only for a newer one."
+          },
+          "kpmr_model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where KPMR points the line now; `null` when KPMR no longer lists it."
+          },
+          "line": {
+            "type": "string",
+            "description": "The line's name.",
+            "example": "claude-opus-latest"
+          },
+          "model": {
+            "type": "string",
+            "description": "The model requests go to now.",
+            "example": "claude-opus-5-5"
+          },
+          "pending": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PendingMove",
+                "description": "A move that waits, if one does."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "policy": {
+            "$ref": "#/components/schemas/LinePolicy",
+            "description": "How the project follows the line."
+          },
+          "previous": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model before it, for Move back; `null` when there was none."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider."
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Since when the line points at `model` in this project."
+          }
+        }
+      },
+      "ModelLines": {
+        "type": "object",
+        "description": "The project's model lines.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelLineView"
+            },
+            "description": "The lines, by provider and name."
+          }
+        }
+      },
       "ModelRouteView": {
         "type": "object",
         "description": "A pattern of model ids and the format they are sent in.",
@@ -41825,6 +42622,72 @@
           }
         },
         "additionalProperties": false
+      },
+      "OfferedLine": {
+        "type": "object",
+        "description": "A line KPMR offers for a provider of the organization.",
+        "required": [
+          "provider",
+          "line",
+          "model"
+        ],
+        "properties": {
+          "added": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CatalogueModelId",
+                "description": "The project's catalogue model for the line, when it has added it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "line": {
+            "type": "string",
+            "description": "The line's name.",
+            "example": "claude-opus-latest"
+          },
+          "model": {
+            "type": "string",
+            "description": "The model it points at now.",
+            "example": "claude-opus-5-5"
+          },
+          "previous": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model before it."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider."
+          },
+          "since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Since when, as KPMR has it."
+          }
+        }
+      },
+      "OfferedLines": {
+        "type": "object",
+        "description": "The lines a project can add.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferedLine"
+            },
+            "description": "The lines, by provider and name."
+          }
+        }
       },
       "OfferedModel": {
         "type": "object",
@@ -42539,6 +43402,34 @@
           }
         },
         "additionalProperties": false
+      },
+      "PendingMove": {
+        "type": "object",
+        "description": "A move KPMR made that waits: for approval, or for the delay.",
+        "required": [
+          "model",
+          "since"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "The model the line would point at.",
+            "example": "claude-opus-5-5"
+          },
+          "moves_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the delay ends and the line moves; `null` when it waits for approval."
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Since when it waits."
+          }
+        }
       },
       "PersonConnectionAnswer": {
         "type": "object",
@@ -49733,7 +50624,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The notices to receive: `budget_alerts`, `limit_reached`, `key_expiry`,\n`model_deprecated`, `model_shutdown_soon`, `content_logging`, `mcp_servers`,\n`org_security`, `org_members`, `provider_keys`, `model_changes`.",
+            "description": "The notices to receive: `budget_alerts`, `limit_reached`, `key_expiry`,\n`model_deprecated`, `model_shutdown_soon`, `model_lines`, `content_logging`,\n`mcp_servers`, `org_security`, `org_members`, `provider_keys`, `model_changes`.",
             "example": [
               "budget_alerts",
               "provider_keys"

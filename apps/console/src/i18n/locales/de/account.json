@@ -289,5 +289,7 @@
   "account.notify.modelDeprecated": "Modell abgekündigt",
   "account.notify.modelDeprecatedHint": "Wenn ein Anbieter einen Abschalttag für ein Modell eines Projekts nennt.",
   "account.notify.modelShutdownSoon": "Modell wird bald abgeschaltet",
-  "account.notify.modelShutdownSoonHint": "30, 7 und 1 Tag bevor ein Modell abgeschaltet wird, das ein Projekt noch aufruft."
+  "account.notify.modelShutdownSoonHint": "30, 7 und 1 Tag bevor ein Modell abgeschaltet wird, das ein Projekt noch aufruft.",
+  "account.notify.modelLines": "Wechsel von Modelllinien",
+  "account.notify.modelLinesHint": "Wenn eine Modelllinie wechselt oder ein Wechsel auf Sie wartet."
 }

@@ -47,6 +47,8 @@ const ACTION_LABELS: Record<string, () => string> = {
   "audit_log.export": () => t("format.audit.action.auditLogExport", "Audit log exported"),
   "catalogue_model.create": () => t("format.audit.action.catalogueModelCreate", "Model added"),
   "catalogue_model.update": () => t("format.audit.action.catalogueModelUpdate", "Model values changed"),
+  "catalogue_model.line_move": () => t("format.audit.action.catalogueModelLineMove", "Model line moved"),
+  "catalogue_model.line_update": () => t("format.audit.action.catalogueModelLineUpdate", "Model line settings changed"),
   "catalogue_model.move": () => t("format.audit.action.catalogueModelMove", "Model moved to its replacement"),
   "catalogue_model.price_change": () => t("format.audit.action.catalogueModelPriceChange", "Model price changed"),
   "catalogue_model.check": () => t("format.audit.action.catalogueModelCheck", "Models checked with the provider"),

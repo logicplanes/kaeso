@@ -41,6 +41,8 @@ actions! {
         CatalogueModelCheck = "catalogue_model.check",
         CatalogueModelCreate = "catalogue_model.create",
         CatalogueModelDelete = "catalogue_model.delete",
+        CatalogueModelLineMove = "catalogue_model.line_move",
+        CatalogueModelLineUpdate = "catalogue_model.line_update",
         CatalogueModelMove = "catalogue_model.move",
         CatalogueModelPriceChange = "catalogue_model.price_change",
         CatalogueModelUpdate = "catalogue_model.update",

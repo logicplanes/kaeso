@@ -334,5 +334,6 @@
   "logs.inspector.guardrailCategory": "类别 {category}",
   "logs.inspector.guardrailRun": "{phase}：{action}，耗时 {duration}",
   "logs.inspector.guardrails": "防护规则",
-  "logs.inspector.guardrailFound": "找到：{what}"
+  "logs.inspector.guardrailFound": "找到：{what}",
+  "logs.inspector.line": "模型系列"
 }

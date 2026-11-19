@@ -334,5 +334,6 @@
   "logs.inspector.guardrailCategory": "Kategorie {category}",
   "logs.inspector.guardrailRun": "{phase}: {action} in {duration}",
   "logs.inspector.guardrails": "Guardrails",
-  "logs.inspector.guardrailFound": "Gefunden: {what}"
+  "logs.inspector.guardrailFound": "Gefunden: {what}",
+  "logs.inspector.line": "Modelllinie"
 }

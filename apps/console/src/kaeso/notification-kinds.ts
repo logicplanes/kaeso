@@ -52,6 +52,10 @@ const kinds: Readonly<Record<string, Words>> = {
     name: t("account.notify.modelShutdownSoon", "Model shuts down soon"),
     description: t("account.notify.modelShutdownSoonHint", "30, 7 and 1 days before a model a project still calls shuts down."),
   }),
+  model_lines: () => ({
+    name: t("account.notify.modelLines", "Model line moves"),
+    description: t("account.notify.modelLinesHint", "When a model line moves, or a move waits for you."),
+  }),
   content_logging: () => ({
     name: t("account.notify.contentLogging", "Content logging changed"),
     description: t("account.notify.contentLoggingHint", "When a project starts or stops keeping prompts."),

@@ -5,6 +5,7 @@ pub mod bounds;
 pub mod keys;
 pub mod lifecycle;
 pub mod limits;
+pub mod lines;
 pub mod members;
 pub mod model_check;
 pub mod models;
@@ -94,6 +95,13 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ModelsManage), routes!(lifecycle::apply)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(lifecycle::get_settings)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(lifecycle::set_settings)))
+        .routes(s.route(Access::Project(R::ModelsView), routes!(lines::list)))
+        .routes(s.route(Access::Project(R::ModelsView), routes!(lines::offered)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::create)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::update)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::move_now)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::keep)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::back)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::list)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(aliases::create)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::trace)))

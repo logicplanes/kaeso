@@ -1,16 +1,16 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models WHERE project_id = $1 AND id = $2",
+  "query": "SELECT l.catalogue_model_id, l.org_id, l.project_id, l.provider, l.line, c.line_target AS \"target!\", l.previous, l.since, l.policy, l.delay_days, l.pending, l.pending_since, l.kept, l.held, l.updated_at FROM catalogue_lines l JOIN catalogue_models c ON c.id = l.catalogue_model_id WHERE l.project_id = $1 AND l.catalogue_model_id = $2 FOR UPDATE OF l, c",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "id",
+        "name": "catalogue_model_id",
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "id"
+            "table": "catalogue_lines",
+            "name": "catalogue_model_id"
           }
         }
       },
@@ -20,7 +20,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
+            "table": "catalogue_lines",
             "name": "org_id"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
+            "table": "catalogue_lines",
             "name": "project_id"
           }
         }
@@ -42,118 +42,118 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
+            "table": "catalogue_lines",
             "name": "provider"
           }
         }
       },
       {
         "ordinal": 4,
-        "name": "model_id",
+        "name": "line",
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "model_id"
+            "table": "catalogue_lines",
+            "name": "line"
           }
         }
       },
       {
         "ordinal": 5,
-        "name": "overrides",
-        "type_info": "Jsonb",
+        "name": "target!",
+        "type_info": "Text",
         "origin": {
           "Table": {
             "table": "catalogue_models",
-            "name": "overrides"
+            "name": "line_target"
           }
         }
       },
       {
         "ordinal": 6,
-        "name": "custom",
-        "type_info": "Bool",
+        "name": "previous",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "custom"
+            "table": "catalogue_lines",
+            "name": "previous"
           }
         }
       },
       {
         "ordinal": 7,
-        "name": "delisted_at",
+        "name": "since",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "delisted_at"
+            "table": "catalogue_lines",
+            "name": "since"
           }
         }
       },
       {
         "ordinal": 8,
-        "name": "last_known",
-        "type_info": "Jsonb",
+        "name": "policy",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "last_known"
+            "table": "catalogue_lines",
+            "name": "policy"
           }
         }
       },
       {
         "ordinal": 9,
-        "name": "availability",
-        "type_info": "Text",
+        "name": "delay_days",
+        "type_info": "Int4",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "availability"
+            "table": "catalogue_lines",
+            "name": "delay_days"
           }
         }
       },
       {
         "ordinal": 10,
-        "name": "availability_checked_at",
-        "type_info": "Timestamptz",
+        "name": "pending",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "availability_checked_at"
+            "table": "catalogue_lines",
+            "name": "pending"
           }
         }
       },
       {
         "ordinal": 11,
-        "name": "created_by_kind",
-        "type_info": "Text",
+        "name": "pending_since",
+        "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "created_by_kind"
+            "table": "catalogue_lines",
+            "name": "pending_since"
           }
         }
       },
       {
         "ordinal": 12,
-        "name": "created_by_id",
-        "type_info": "Uuid",
+        "name": "kept",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "created_by_id"
+            "table": "catalogue_lines",
+            "name": "kept"
           }
         }
       },
       {
         "ordinal": 13,
-        "name": "created_at",
-        "type_info": "Timestamptz",
+        "name": "held",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
-            "name": "created_at"
+            "table": "catalogue_lines",
+            "name": "held"
           }
         }
       },
@@ -163,19 +163,8 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "catalogue_models",
+            "table": "catalogue_lines",
             "name": "updated_at"
-          }
-        }
-      },
-      {
-        "ordinal": 15,
-        "name": "revision",
-        "type_info": "Int8",
-        "origin": {
-          "Table": {
-            "table": "catalogue_models",
-            "name": "revision"
           }
         }
       }
@@ -192,18 +181,17 @@
       false,
       false,
       false,
+      true,
+      true,
       false,
       false,
+      true,
       true,
       true,
       true,
       true,
-      false,
-      true,
-      false,
-      false,
       false
     ]
   },
-  "hash": "ab8e920b408f569f9b56a7327134c5227315be4e2b9a90b27e58580e0fbd24f9"
+  "hash": "4df777a3695af974b196b974e900f72c1027d0883818d3342f1b12025ded58a7"
 }

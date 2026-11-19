@@ -29,6 +29,7 @@ Webhook 的菜单中有**发送测试**、**关闭**或**开启**、**轮换密�
 | 您的密钥即将过期 | `key.expiring` |
 | 模型已弃用 | `model.deprecated` |
 | 模型即将停用 | `model.shutdown_soon`、`model.moved` |
+| 模型系列切换 | `line.moved`、`line.move_available` |
 | 内容记录已变更 | `project.content_logging_changed` |
 | MCP 服务器需要处理 | `mcp_server.signed_out`、`mcp_server.tool_held` |
 | 安全设置已变更 | `organization.security_changed`, `share.created` |
@@ -92,6 +93,8 @@ JSON 投递是一个 `POST` 请求，带有 `content-type: application/json`，�
 | `model.deprecated` | `catalogue_model_id`、`provider_id`、`provider`、`model`、`shutdown_on`（没有日期时为 `null`）、`replacement`（[模型生命周期](../concepts/model-lifecycle.md)） |
 | `model.shutdown_soon` | `catalogue_model_id`、`provider_id`、`provider`、`model`、`shutdown_on`、`days_left`、`replacement`、`requests_7d`（项目最近 7 天对该模型的请求数） |
 | `model.moved` | `catalogue_model_id`、`provider_id`、`provider`、`model`、`replacement`、`aliases`（切换的别名数） |
+| `line.moved` | `catalogue_model_id`（该系列的）、`provider_id`、`provider`、`line`、`from`、`to`、`prices`：变化的输入和输出价格，每百万 token 的 `from` 和 `to`，以及 `policy`：`follow`、`delay`、`approved`（有人选择了**切换**）或 `back`（[模型系列](models-and-aliases.md#模型系列)） |
+| `line.move_available` | `catalogue_model_id`、`provider_id`、`provider`、`line`、`from`、`to`、`prices`：KPMR 切换了项目需要先询问的系列 |
 | `model.price_changed` | `catalogue_model_id`、`provider_id`、`provider`、`model`、`prices`：每项变更的价格（`input`、`output`、`cache_read`、`cache_write`、`cache_write_1h`）及其每百万 token 的新旧美元价格 `from` 和 `to`，无价格时为 `null` |
 | `webhook.test` | `webhook_id`、`name` |
 

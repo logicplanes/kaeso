@@ -13,6 +13,8 @@
   "format.audit.action.catalogueModelUpdate": "Modellwerte geändert",
   "format.audit.action.catalogueModelMove": "Modell auf Nachfolger umgestellt",
   "format.audit.action.projectModelLifecycle": "Abschalt-Einstellungen eines Projekts geändert",
+  "format.audit.action.catalogueModelLineMove": "Modelllinie gewechselt",
+  "format.audit.action.catalogueModelLineUpdate": "Einstellungen einer Modelllinie geändert",
   "format.audit.action.credentialAssign": "Anbieter-Schlüssel Projekten zugewiesen",
   "format.audit.action.credentialCreate": "Anbieter-Schlüssel hinzugefügt",
   "format.audit.action.credentialDefault": "Anbieter-Schlüssel zum Standard gemacht",

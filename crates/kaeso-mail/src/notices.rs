@@ -269,6 +269,50 @@ impl ModelChange {
     }
 }
 
+/// A price per million tokens that changes when a model line moves.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LinePrice {
+    pub price: &'static str,
+    pub from: Option<String>,
+    pub to: Option<String>,
+}
+
+impl LinePrice {
+    fn detail(&self, lang: Locale) -> Detail {
+        let label = if self.price == "output" {
+            Label::OutputPrice
+        } else {
+            Label::InputPrice
+        };
+        let n = |v: &Option<String>| v.as_deref().map_or("—".to_owned(), |v| lang.number(v));
+        let (from, to) = (n(&self.from), n(&self.to));
+        let value = match lang {
+            Locale::En => format!("{from} → {to} USD per million tokens"),
+            Locale::De => format!("{from} → {to} USD pro Million Token"),
+            Locale::ZhCn => format!("每百万 Token {from} → {to} USD"),
+        };
+        label.of(lang, value)
+    }
+}
+
+/// A model line moved, or a move waits for an owner.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LineChange {
+    /// The line points at `to` now; `how` is the policy or action that moved it.
+    Moved {
+        from: String,
+        to: String,
+        prices: Vec<LinePrice>,
+        how: &'static str,
+    },
+    /// KPMR moved the line, and the project asks first.
+    Available {
+        from: String,
+        to: String,
+        prices: Vec<LinePrice>,
+    },
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Install<'a> {
     Window {
@@ -608,6 +652,12 @@ pub enum Fact<'a> {
         model: &'a str,
         change: ModelChange,
     },
+    Line {
+        provider: &'a str,
+        project: &'a str,
+        line: &'a str,
+        change: LineChange,
+    },
     CostReport {
         month: Date,
         total: &'a str,
@@ -652,6 +702,7 @@ impl Fact<'_> {
             Fact::ProviderKey { .. } => EmailKind::ProviderKeys,
             Fact::WebhookDisabled { .. } => EmailKind::Webhooks,
             Fact::Model { change, .. } => change.email(),
+            Fact::Line { .. } => EmailKind::ModelLines,
             Fact::CostReport { .. } => EmailKind::CostReport,
             Fact::InstanceUpdate { .. } => EmailKind::InstanceUpdates,
             Fact::SignedUp { .. } => EmailKind::InstancePeople,
@@ -826,6 +877,28 @@ impl Fact<'_> {
                     }
                     ModelChange::Delisted => {}
                 }
+                out
+            }
+            Fact::Line {
+                provider,
+                project,
+                line,
+                change,
+            } => {
+                let (from, to, prices) = match change {
+                    LineChange::Moved {
+                        from, to, prices, ..
+                    }
+                    | LineChange::Available { from, to, prices } => (from, to, prices),
+                };
+                let mut out = vec![
+                    Label::Project.of(lang, *project),
+                    Label::Provider.of(lang, *provider),
+                    Label::Line.of(lang, *line),
+                    Label::Before.of(lang, from.as_str()),
+                    Label::After.of(lang, to.as_str()),
+                ];
+                out.extend(prices.iter().map(|p| p.detail(lang)));
                 out
             }
             _ => Vec::new(),
@@ -1175,6 +1248,23 @@ impl Fact<'_> {
                         "{model} shut down, so Kaeso moved {aliases} aliases of {project} to {replacement}."
                     ),
                     "Open models",
+                ),
+            },
+            Fact::Line {
+                project,
+                line,
+                change,
+                ..
+            } => match change {
+                LineChange::Moved { to, .. } => w(
+                    format!("{line} moved to {to}"),
+                    format!("Requests of {project} to {line} go to {to} from now on."),
+                    "Open the line",
+                ),
+                LineChange::Available { to, .. } => w(
+                    format!("{line} can move to {to}"),
+                    format!("{project} asks before {line} moves; move it or keep it as it is."),
+                    "Open the line",
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
@@ -1603,6 +1693,23 @@ impl Fact<'_> {
                         "{model} ist abgeschaltet, daher hat Kaeso {aliases} Aliasse von {project} auf {replacement} umgestellt."
                     ),
                     "Modelle öffnen",
+                ),
+            },
+            Fact::Line {
+                project,
+                line,
+                change,
+                ..
+            } => match change {
+                LineChange::Moved { to, .. } => w(
+                    format!("{line} zeigt jetzt auf {to}"),
+                    format!("Anfragen von {project} an {line} gehen ab jetzt an {to}."),
+                    "Linie öffnen",
+                ),
+                LineChange::Available { to, .. } => w(
+                    format!("{line} kann auf {to} wechseln"),
+                    format!("{project} fragt, bevor {line} wechselt; wechseln Sie oder behalten Sie den Stand."),
+                    "Linie öffnen",
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
@@ -2067,6 +2174,28 @@ impl Fact<'_> {
                         "。",
                     ]),
                     "打开模型",
+                ),
+            },
+            Fact::Line {
+                project,
+                line,
+                change,
+                ..
+            } => match change {
+                LineChange::Moved { to, .. } => w(
+                    zh(&[line, "已切换到", to]),
+                    zh(&[project, "对", line, "的请求此后将发送到", to, "。"]),
+                    "打开系列",
+                ),
+                LineChange::Available { to, .. } => w(
+                    zh(&[line, "可以切换到", to]),
+                    zh(&[
+                        project,
+                        "会在",
+                        line,
+                        "切换前征求您的同意；请选择切换或保持不变。",
+                    ]),
+                    "打开系列",
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
