@@ -125,11 +125,15 @@ describe("Project › Tools", () => {
     expect(await screen.findByText("No tools match")).toBeInTheDocument();
   });
 
-  it("explains a project without tools", async () => {
+  it("explains a project without tools, with no filters to narrow nothing down", async () => {
     signedIn();
     tools({ list: [], servers: [] });
-    const { user } = await renderApp(projectPath("tools"));
-    expect(await screen.findByText("No tools yet")).toBeInTheDocument();
+    const { user } = await renderApp(`${projectPath("tools")}?state=on`);
+    expect(await screen.findByRole("heading", { name: "No tools yet" })).toBeInTheDocument();
+    expect(screen.getByText("Use one of your organization's MCP servers to offer its tools here.")).toBeInTheDocument();
+    expect(screen.queryByRole("toolbar", { name: "Filter tools" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("searchbox", { name: "Search tools" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clear filters" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Use a server" }));
     await waitFor(() => expect(window.location.search).toContain("tab=servers"));
     expect(await screen.findByText("No servers yet")).toBeInTheDocument();
