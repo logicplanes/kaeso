@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { signedIn, whoAmI } from "~/test/fixtures";
+import { hoverReason } from "~/test/fixtures/org";
 import { me } from "~/test/fixtures/instance-account";
 import { emailSent, signedInReply } from "~/test/fixtures/public";
 import { apiError, noContent, on, requests } from "~/test/network";
@@ -27,7 +28,8 @@ describe("password", () => {
     await user.click(screen.getByRole("button", { name: "Change password" }));
     const dialog = await screen.findByRole("dialog", { name: "Change password" });
     const save = within(dialog).getByRole("button", { name: "Change password" });
-    expect(save).toBeDisabled();
+    expect(save).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, save, "Enter your current password");
     await user.type(within(dialog).getByLabelText("New password"), "correct horse battery");
     expect(within(dialog).getByLabelText("New password")).toHaveAccessibleDescription("Long enough.");
     expect(dialog.querySelector('input[autocomplete="username"]')).toHaveValue(me().email);
@@ -162,7 +164,7 @@ describe("turning on two-factor authentication", () => {
     const app = within(dialog).getByRole("link", { name: "Open in an authenticator app on this device" });
     expect(app).toHaveAttribute("href", SETUP.otpauth_uri);
     expect(app).not.toHaveAttribute("target");
-    expect(within(dialog).getByRole("button", { name: "Turn on" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Turn on" })).toHaveAttribute("aria-disabled", "true");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(requests("POST", "me/totp/confirm")).toHaveLength(0);
     await user.type(within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement, "123456");
@@ -179,7 +181,8 @@ describe("turning on two-factor authentication", () => {
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:codes");
     const done = within(codes).getByRole("button", { name: "Finish" });
-    expect(done).toBeDisabled();
+    expect(done).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, done, "Tick “I stored these codes” first");
     await user.keyboard("{Escape}");
     expect(screen.getByRole("dialog", { name: "Store your recovery codes" })).toBeInTheDocument();
     await user.click(within(codes).getByRole("checkbox", { name: "I stored these codes" }));
@@ -221,7 +224,7 @@ describe("turning on two-factor authentication", () => {
     const field = within(dialog).getAllByLabelText("Code from the app")[0] as HTMLElement;
     await user.type(field, "000000");
     expect((await (await notifications()).findAllByText("That code didn't work.")).length).toBeGreaterThan(0);
-    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Turn on" })).toBeDisabled());
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: "Turn on" })).toHaveAttribute("aria-disabled", "true"));
     expect(screen.queryByRole("dialog", { name: "Store your recovery codes" })).not.toBeInTheDocument();
   });
 
@@ -306,7 +309,7 @@ describe("turning on two-factor authentication", () => {
     expect(await within(again).findByText("KRSX G5CT MVRX EZLU")).toBeInTheDocument();
     expect(screen.queryByText("JBSW Y3DP EHPK 3PXP")).not.toBeInTheDocument();
     expect((within(again).getAllByLabelText("Code from the app")[0] as HTMLInputElement).value).toBe("");
-    expect(within(again).getByRole("button", { name: "Turn on" })).toBeDisabled();
+    expect(within(again).getByRole("button", { name: "Turn on" })).toHaveAttribute("aria-disabled", "true");
     expect(requests("POST", "me/totp/confirm")).toHaveLength(0);
   });
 
@@ -372,7 +375,7 @@ describe("with two-factor authentication on", () => {
     await user.click(screen.getByRole("button", { name: "Turn off" }));
     const confirm = await screen.findByRole("dialog", { name: "Turn off two-factor authentication?" });
     const turnOff = within(confirm).getByRole("button", { name: "Turn off" });
-    expect(turnOff).toBeDisabled();
+    expect(turnOff).toHaveAttribute("aria-disabled", "true");
     await user.type(within(confirm).getByLabelText("Code from the app"), "123456");
     await user.click(turnOff);
     expect(await (await notifications()).findByText("Two-factor authentication turned off")).toBeInTheDocument();
@@ -430,7 +433,8 @@ describe("with two-factor authentication on", () => {
     await user.click(await screen.findByRole("button", { name: "Regenerate" }));
     const confirm = await screen.findByRole("dialog", { name: "Regenerate recovery codes?" });
     const regenerate = within(confirm).getByRole("button", { name: "Regenerate" });
-    expect(regenerate).toBeDisabled();
+    expect(regenerate).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, regenerate, "Enter the 6-digit code from the app");
     await user.type(within(confirm).getByLabelText("Code from the app"), code);
     await user.click(regenerate);
     return confirm;

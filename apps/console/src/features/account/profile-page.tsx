@@ -14,7 +14,7 @@ import { forgetUserData } from "~/auth/user-data";
 import { PictureControl, toPictureUpload } from "~/kaeso/picture";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
 import { t } from "~/i18n";
-import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorReady, type SecondFactorValue } from "./second-factor";
+import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorMissing, type SecondFactorValue } from "./second-factor";
 
 export function ProfilePage() {
   const me = useQuery(meQuery);
@@ -91,7 +91,8 @@ function NameRow({ name }: { name: string }) {
     invalidates: [["me"], ["session"]],
     onSuccess: () => toast.success(t("account.nameSaved", "Name saved")),
   });
-  const ready = draft.trim().length > 0 && draft.trim() !== name;
+  const reason = !draft.trim() ? t("account.enterName", "Enter a name") : draft.trim() === name ? t("account.noChange", "No change to save") : undefined;
+  const ready = !reason;
   return (
     <SettingsRow
       title={t("common.name", "Name")}
@@ -108,7 +109,13 @@ function NameRow({ name }: { name: string }) {
               onKeyDown={(e) => e.key === "Enter" && ready && !save.isPending && save.mutate(draft.trim())}
             />
           </div>
-          <Button size="sm" disabled={!ready} loading={save.isPending} onClick={() => save.mutate(draft.trim())}>
+          <Button
+            size="sm"
+            disabled={!ready}
+            {...(reason ? { disabledReason: reason } : {})}
+            loading={save.isPending}
+            onClick={() => save.mutate(draft.trim())}
+          >
             {t("common.save", "Save")}
           </Button>
         </div>
@@ -163,7 +170,8 @@ function ChangeEmailDialog({
 }) {
   const [next, setNext] = useState("");
   const [factor, setFactor] = useState<SecondFactorValue>(NO_SECOND_FACTOR);
-  const ready = !!next.trim() && (!twoFactor || secondFactorReady(factor));
+  const reason = !next.trim() ? t("account.enterNewEmail", "Enter the new address") : twoFactor ? secondFactorMissing(factor) : undefined;
+  const ready = !reason;
   const change = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/me/email", { body: { email: next.trim(), ...(twoFactor ? secondFactorBody(factor) : {}) } })),
     onError: () => setFactor((f) => ({ ...f, code: "" })),
@@ -186,7 +194,13 @@ function ChangeEmailDialog({
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" disabled={!ready} loading={change.isPending} onClick={() => change.mutate()}>
+          <Button
+            variant="primary"
+            disabled={!ready}
+            {...(reason ? { disabledReason: reason } : {})}
+            loading={change.isPending}
+            onClick={() => change.mutate()}
+          >
             {t("account.sendConfirmation", "Send confirmation link")}
           </Button>
         </>

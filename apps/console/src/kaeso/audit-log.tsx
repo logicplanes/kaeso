@@ -44,6 +44,10 @@ const shortTime = (v: string) =>
   dateFormatter({ day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }, locale())(v);
 const FILTER_FIELD = "min-w-0 flex-1 basis-120 sm:w-160 sm:flex-none sm:basis-auto";
 const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
+const PHONE_TIME_MIN = 88;
+const PHONE_TIME_MAX = 128;
+// The first column keeps the 20px gutter on its start instead of a cell's 12px.
+const FIRST_COLUMN_GUTTER = 8;
 const ACTION_MIN = 152;
 const ACTION_MAX = 264;
 const eventTime = (v: string) => (yearOf(new Date(v)) === yearOf(new Date()) ? shortTime(v) : formatDate(v, { time: true }));
@@ -112,6 +116,10 @@ export function AuditLog({
   const lang = locale();
   const phone = usePhone();
   const actionWidth = cellWidth(new Set(rows.map((r) => auditActionLabel(r.action))), { min: ACTION_MIN, max: ACTION_MAX });
+  const phoneTimeWidth = Math.max(
+    PHONE_TIME_MIN,
+    cellWidth(new Set(rows.map((r) => compactTime(r.at))), { min: 0, max: PHONE_TIME_MAX - FIRST_COLUMN_GUTTER }) + FIRST_COLUMN_GUTTER,
+  );
   const columns = useMemo(
     () =>
       [
@@ -119,7 +127,7 @@ export function AuditLog({
           {
             id: "time",
             header: phone ? zoneName(new Date()) : t("kaeso.audit.timeIn", "Time ({zone})", { zone: zoneName(new Date()) }),
-            size: phone ? 88 : TIME_WIDTH[lang],
+            size: phone ? phoneTimeWidth : TIME_WIDTH[lang],
             priority: 1,
           },
           (r: AuditEventView) => r.at,
@@ -177,7 +185,7 @@ export function AuditLog({
             ) : null,
         ),
       ].map((c) => ({ ...c, enableSorting: false })),
-    [lang, phone, actionWidth, partyLabel, targetHref, nameOf, about],
+    [lang, phone, actionWidth, phoneTimeWidth, partyLabel, targetHref, nameOf, about],
   );
 
   return (

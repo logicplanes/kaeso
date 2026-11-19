@@ -170,6 +170,33 @@ describe("AuditLog", () => {
     }
   });
 
+  it("on a phone, widens the time to hold a Chinese date with its year", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    try {
+      vi.setSystemTime(new Date("2026-10-15T12:00:00Z"));
+      orgLog([
+        auditEvent({ id: "evt_today", action: "key.create", at: "2026-10-15T00:05:00Z", target_kind: "key", target_id: "key_web" }),
+        auditEvent({ id: "evt_old", action: "key.create", at: "2025-12-28T10:00:00Z", target_kind: "key", target_id: "key_web" }),
+      ]);
+      await renderApp(PATH, { locale: "zh-CN" });
+      const rows = within(await screen.findByRole("grid"))
+        .getAllByRole("row")
+        .slice(1);
+      expect(rows.map((r) => r.querySelector("time")?.textContent)).toEqual(["00:05", "25年12月28日"]);
+      expect((rows[0] as HTMLElement).style.gridTemplateColumns.split(" ")[0]).toBe("120px");
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    }
+  });
+
   it("shows each actor's picture, or their initial without one", async () => {
     const pictured = member({ user: { id: OTHER_USER, name: "Grace Hopper", email: "grace@example.com", avatar_url: "/avatars/grace.webp" } });
     signedIn({ session: whoAmI({ user: { ...whoAmI().user, avatar_url: "/avatars/ada.webp" }, memberships: [membership({ rights: ALL_ORG_RIGHTS })] }) });

@@ -175,7 +175,7 @@
   "format.limitUnit.tokens": "Token",
   "format.limitUnit.tokensPerMinute": "Token / 分钟",
   "format.listSeparator": "、",
-  "format.model.unknown": "未知",
+  "format.model.unknown": "未知模型",
   "format.period.allTime": "全部时间",
   "format.period.last12Months": "最近 12 个月",
   "format.period.last30Days": "最近 30 天",

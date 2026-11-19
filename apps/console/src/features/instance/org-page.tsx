@@ -62,7 +62,15 @@ export function InstanceOrgPage({ org }: { org: string }) {
     <InstancePage
       title={o?.name ?? t("common.organization", "Organization")}
       description={t("instance.orgPageHint", "You see its metadata, not its content; changes go in its audit log.")}
-      {...(member && o?.state === "active" ? { actions: <Button href={`/orgs/${org}`}>{t("instance.openOrg", "Open organization")}</Button> } : {})}
+      {...(member && o?.state === "active"
+        ? {
+            actions: (
+              <Button size="sm" href={`/orgs/${org}`}>
+                {t("instance.openOrg", "Open organization")}
+              </Button>
+            ),
+          }
+        : {})}
     >
       <Usage org={org} />
       {!o ? (

@@ -39,7 +39,12 @@ export function SessionsPage() {
       context={t("account.title", "Account")}
       description={t("account.sessionsHint", "Browsers signed in to your account.")}
       actions={
-        <Button size="sm" disabled={!others} onClick={() => setAll(true)}>
+        <Button
+          size="sm"
+          disabled={!others}
+          {...(others || sessions.isPending ? {} : { disabledReason: t("account.noOtherSessions", "No other browser is signed in") })}
+          onClick={() => setAll(true)}
+        >
           {t("account.signOutEverywhere", "Sign out everywhere")}
         </Button>
       }

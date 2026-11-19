@@ -41,6 +41,7 @@ export function NotificationsPage() {
       actions={
         settings && (
           <Button
+            size="sm"
             disabled={!sends || test.isPending}
             disabledReason={sends ? undefined : t("account.noEmailTitle", "This install doesn't send email")}
             onClick={() => test.mutate()}

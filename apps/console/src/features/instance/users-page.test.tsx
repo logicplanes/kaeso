@@ -93,6 +93,16 @@ describe("instance users list", () => {
     expect(row?.style.gridTemplateColumns.split(" ").at(-1)).toBe("160px");
   });
 
+  it("gives the last sign-in room for its German heading", async () => {
+    signedIn();
+    users();
+    await renderApp(PATH, { locale: "de" });
+    const grid = await screen.findByRole("grid", { name: "Benutzer" });
+    const row = (await within(grid).findByText("Grace Hopper")).closest<HTMLElement>("[role=row]");
+    expect(within(grid).getByText("Letzte Anmeldung")).toBeInTheDocument();
+    expect(row?.style.gridTemplateColumns.split(" ").at(-2)).toBe("144px");
+  });
+
   it("searches by name or email through the URL", async () => {
     signedIn();
     users();

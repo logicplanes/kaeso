@@ -4,6 +4,7 @@ import { ORG, OTHER_PROJECT, PROJECT, signedIn } from "~/test/fixtures";
 import { AGENT, agentView, agents, grantable } from "~/test/fixtures/agents";
 import { apiError, noContent, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { hoverReason } from "~/test/fixtures/org";
 
 function agentApi(view = agentView()) {
   on("GET", "me/agents/:agent", view);
@@ -86,6 +87,19 @@ describe("the agents tab", () => {
     const vscode = within(dialog).getByRole("link", { name: "Add to VS Code" }).getAttribute("href") ?? "";
     expect(JSON.parse(decodeURIComponent(vscode.slice("vscode:mcp/install?".length)))).toEqual({ name: "kaeso", type: "http", url });
     expect(within(dialog).getByRole("link", { name: "Read the documentation" })).toHaveAttribute("href", "https://docs.kaeso.app/api/mcp");
+  });
+
+  it("names an agent's model as unknown until its first call, not the agent itself", async () => {
+    signedIn();
+    agentApi(agentView({ model: "unknown" }));
+    const { user } = await renderApp("/settings/account/agents");
+    expect(await screen.findByText("Unknown model")).toBeInTheDocument();
+    await user.click(screen.getByText("Release helper"));
+    expect(await screen.findByText(/^Unknown model · Added .* · used .+$/)).toBeInTheDocument();
+    const save = screen.getByRole("button", { name: "Save" });
+    await hoverReason(user, save, "No change to save");
+    await user.clear(screen.getByLabelText("Name"));
+    await hoverReason(user, save, "Enter a name");
   });
 
   it("says how to connect one when there are none", async () => {
@@ -214,7 +228,10 @@ describe("the agents tab", () => {
     expect(screen.getByText("Ask an admin for it first; an agent never gets more than you hold.")).toBeInTheDocument();
     await user.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(screen.getByRole("button", { name: "Save rights" })).toBeDisabled();
+    const save = screen.getByRole("button", { name: "Save rights" });
+    expect(save).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, save, "No change to save");
+    await hoverReason(user, screen.getByRole("button", { name: "Discard" }), "No change to discard");
   });
 
   it("pages through the activity", async () => {

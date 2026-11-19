@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import { signedIn } from "~/test/fixtures";
+import { hoverReason } from "~/test/fixtures/org";
 import { sessionItem } from "~/test/fixtures/instance-account";
 import { apiError, noContent, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -69,12 +70,14 @@ describe("sessions", () => {
     expect(await screen.findByText("Your sessions couldn't load")).toBeInTheDocument();
   });
 
-  it("can't sign out everywhere else with only this session", async () => {
+  it("can't sign out everywhere else with only this session, and says why", async () => {
     signedIn();
     sessions([sessionItem()]);
-    await renderApp(PATH);
+    const { user } = await renderApp(PATH);
     await screen.findByText("This device");
-    expect(screen.getByRole("button", { name: "Sign out everywhere" })).toBeDisabled();
+    const everywhere = screen.getByRole("button", { name: "Sign out everywhere" });
+    expect(everywhere).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, everywhere, "No other browser is signed in");
     expect(screen.queryByRole("button", { name: "End session" })).not.toBeInTheDocument();
   });
 
