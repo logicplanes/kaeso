@@ -1,0 +1,10 @@
+{
+  "input": {
+    "prompt": "a lighthouse at dusk",
+    "aspect_ratio": "16:9",
+    "num_outputs": 2,
+    "seed": 42,
+    "output_format": "png",
+    "output_quality": 90
+  }
+}

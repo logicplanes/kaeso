@@ -105,6 +105,7 @@ sequenceDiagram
 | `cohere_rerank` | Cohere 的重排序格式（`/v1/rerank`、`/v2/rerank`）（[Cohere Rerank](cohere-rerank.md)） |
 | `jina_rerank` | Jina AI 的重排序格式，作为服务商的格式（[Jina Rerank](jina-rerank.md)） |
 | `voyage_rerank` | Voyage AI 的重排序格式，作为服务商的格式（[Voyage Rerank](voyage-rerank.md)） |
+| `replicate` | Replicate 的 prediction：Kaeso 所映射模型的图片和视频任务（[Replicate](replicate.md)） |
 | `multipart` | 图片、音频和视频上传以及 System One 图片部分使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |
@@ -312,6 +313,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [Gemini Interactions](gemini-interactions.md)：了解 Gemini Omni 视频任务如何映射到 Interactions API。
 - [DashScope](dashscope.md)：了解图片、语音、转写和视频任务如何映射到 QwenCloud 的 DashScope API。
 - [fal](fal.md)：了解图片请求和视频任务如何逐个模型映射到 fal 的队列。
+- [Replicate](replicate.md)：逐个模型查看图片请求和视频任务如何映射到 Replicate 的 prediction。
 - [System One](system-one.md)：查找 TypeSafe 决策格式的每个字段在 KPP 中的位置，以及各服务商如何接收它。
 - [OpenAI Decisions](openai-decisions.md)：查找 OpenAI Decisions API 的每个字段在 KPP 中的位置。
 - [Gemini Decisions](gemini-decisions.md)：查找 Gemini Decisions API 的每个字段在 KPP 中的位置。

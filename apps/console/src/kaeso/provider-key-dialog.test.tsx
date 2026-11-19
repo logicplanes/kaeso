@@ -1364,6 +1364,27 @@ describe("ProviderKeyDialog", () => {
     expect(requests("POST", `${CREDENTIALS}/:credential/replace`).map((r) => r.body)).toEqual([{ secret: '{"type":"service_account"}', location: "eu" }]);
   });
 
+  it("adds a Replicate API token, which starts with r8_, with Replicate's token page as its hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "replicate", name: "Replicate prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Replicate");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Replicate API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "replicate.com (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://replicate.com/account/api-tokens");
+    expect(readable(link.closest("p"))).toBe("Create one at replicate.com under API tokens; it starts with r8_.");
+    const secret = within(dialog).getByLabelText("Replicate API key");
+    await user.type(secret, "r8_0123456789abcdef0123456789abcdef01234");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Replicate prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Replicate prod is the Replicate default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "replicate", name: "Replicate prod", secret: "r8_0123456789abcdef0123456789abcdef01234", make_default: false },
+    ]);
+  });
+
   it("adds a Cohere key, which has no fixed prefix, with Cohere's dashboard as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "cohere", name: "Cohere prod", is_default: true }));
     const { user, dialog } = await open();

@@ -3720,3 +3720,33 @@ fn fal_models_are_priced_per_megapixel_image_and_second_at_their_defaults() {
         dec!(0.4)
     );
 }
+
+#[test]
+fn replicate_models_are_priced_per_output_image_and_second() {
+    use crate::cost::{MediaUnits, media_cost};
+    assert_eq!(snapshot().providers["replicate"].models.len(), 7);
+    let images = |n: u64, resolution: Option<&str>| MediaUnits {
+        output_images: n,
+        resolution: resolution.map(str::to_owned),
+        ..MediaUnits::default()
+    };
+    let schnell = eff(&entry("replicate", "black-forest-labs/flux-schnell"));
+    assert_eq!(schnell.dialect, DialectId::Replicate);
+    assert_eq!(media_cost(&images(4, None), &schnell.fields), dec!(0.012));
+    let nano = eff(&entry("replicate", "google/nano-banana-pro"));
+    assert_eq!(media_cost(&images(1, None), &nano.fields), dec!(0.15));
+    assert_eq!(media_cost(&images(1, Some("2K")), &nano.fields), dec!(0.15));
+    assert_eq!(media_cost(&images(1, Some("4K")), &nano.fields), dec!(0.3));
+    let clip = |audio: Option<bool>| MediaUnits {
+        output_videos: 1,
+        output_ms: 8000,
+        audio,
+        ..MediaUnits::default()
+    };
+    let veo = eff(&entry("replicate", "google/veo-3.1"));
+    assert_eq!(veo.dialect, DialectId::Replicate);
+    assert_eq!(media_cost(&clip(None), &veo.fields), dec!(3.2));
+    assert_eq!(media_cost(&clip(Some(false)), &veo.fields), dec!(1.6));
+    let kling = eff(&entry("replicate", "kwaivgi/kling-v2.5-turbo-pro"));
+    assert_eq!(media_cost(&clip(None), &kling.fields), dec!(0.56));
+}

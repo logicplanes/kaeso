@@ -94,6 +94,7 @@ describe("unitPriceLabels", () => {
     expect(dialectPill("elevenlabs")).toBe("elevenlabs");
     expect(dialectPill("bedrock_converse")).toBe("converse");
     expect(dialectPill("fal")).toBe("fal");
+    expect(dialectPill("replicate")).toBe("replicate");
   });
 
   it("names prices per video by their length", () => {

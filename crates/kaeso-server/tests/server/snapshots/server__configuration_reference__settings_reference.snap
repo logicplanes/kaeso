@@ -97,6 +97,7 @@ expression: settings_reference()
 | `KAESO_PROVIDERS_VOYAGE_BASE_URL` | `providers.voyage.base_url` | text | `https://ai.mongodb.com` | Base URL of the Voyage AI API. |
 | `KAESO_PROVIDERS_JINA_BASE_URL` | `providers.jina.base_url` | text | `https://api.jina.ai` | Base URL of the Jina AI API. |
 | `KAESO_PROVIDERS_FAL_BASE_URL` | `providers.fal.base_url` | text | `https://queue.fal.run` | Base URL of the fal API. |
+| `KAESO_PROVIDERS_REPLICATE_BASE_URL` | `providers.replicate.base_url` | text | `https://api.replicate.com` | Base URL of the Replicate API. |
 | `KAESO_CUSTOM_PROVIDERS_ENABLED` | `custom_providers.enabled` | bool | `true` | Let organization admins add their own providers, such as a self-hosted vLLM or an internal proxy, on an API format Kaeso speaks. Off refuses requests to the ones they added. |
 | `KAESO_CUSTOM_PROVIDERS_ALLOWED_NETWORKS` | `custom_providers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks custom providers may reach, such as `10.0.0.0/8` or `127.0.0.1/32`; plain `http` reaches only these. Kaeso checks every connection after DNS resolution; link-local and cloud metadata addresses stay refused. |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS` | `mcp_servers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks MCP servers may be reached on, such as `10.0.0.0/8`; plain `http` reaches only these. Kaeso checks every connection after DNS resolution, sign-in and metadata requests included; link-local and cloud metadata addresses stay refused. |

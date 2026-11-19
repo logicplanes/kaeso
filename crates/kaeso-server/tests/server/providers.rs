@@ -486,6 +486,21 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         volcengine["key_page"],
         json!({ "url": "https://ark.volcengine.com/region:cn-beijing/apiKey", "label": "API Key 管理" })
     );
+    let replicate = listed.iter().find(|p| p["id"] == "replicate").unwrap();
+    assert_eq!(replicate["name"], "Replicate");
+    assert_eq!(replicate["dialects"], json!(["replicate"]));
+    assert_eq!(
+        (
+            &replicate["count_tokens"],
+            &replicate["embeddings"],
+            &replicate["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &json!("r8_"))
+    );
+    assert_eq!(
+        replicate["key_page"],
+        json!({ "url": "https://replicate.com/account/api-tokens", "label": "API tokens" })
+    );
     let ovhcloud = listed.iter().find(|p| p["id"] == "ovhcloud").unwrap();
     assert_eq!(ovhcloud["name"], "OVHcloud AI Endpoints");
     assert_eq!(

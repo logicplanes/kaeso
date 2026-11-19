@@ -1,9 +1,12 @@
 //! Video jobs and image generations at the mock provider, built from KPP's fixtures: each job
-//! answers as running the first time it is asked and as finished after, with its file served by
-//! the mock. An ElevenLabs image generation whose prompt carries `[mock:generation=failed]`
-//! ends as failed. fal's queue, told apart by its `Authorization: Key …`, answers images at once
-//! and videos after one status call; a prompt with `[mock:fal=failed]` ends as failed and one
-//! with `[mock:fal=nsfw]` as FLUX's black safety image.
+//! answers as running the first time it is asked and as finished after, with its file served by the
+//! mock. An ElevenLabs image generation whose prompt carries `[mock:generation=failed]` ends as
+//! failed. fal's queue, told apart by its `Authorization: Key …`, answers images at once and videos
+//! after one status call; a prompt with `[mock:fal=failed]` ends as failed and one with
+//! `[mock:fal=nsfw]` as FLUX's black safety image. Replicate's predictions answer images at once
+//! and videos after one poll; a prompt with `[mock:replicate=failed]` ends as failed, one with
+//! `[mock:replicate=wait]` makes an image only on the first poll, and one with
+//! `[mock:replicate=foreign]` names an image off Replicate's hosts.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -107,6 +110,9 @@ pub(crate) fn answer(
         path.strip_prefix(prefix)
             .filter(|t| !t.is_empty() && !t.contains('/'))
     };
+    if let Some(resp) = replicate(polls, fixtures, method, path, body, &link) {
+        return Some(resp);
+    }
     let get = method == Method::GET;
     let post = method == Method::POST;
     let fal_key = headers
@@ -403,6 +409,108 @@ fn fal(
         "fal/results/images/queue-doc.json"
     };
     let mut v = read(fixtures, rel);
+    local_links(&mut v, link);
+    Some(json(v))
+}
+
+/// The prediction id the mock's Replicate gives every prediction, followed by what the request
+/// asked the mock to answer.
+pub const REPLICATE_PREDICTION: &str = "ab12cd34ef56gh78ij90kl12mn";
+
+fn prediction(fixtures: &Path, rel: &str, id: &str, link: &str) -> Response {
+    let mut v = read(fixtures, rel);
+    v["id"] = Value::from(id);
+    local_links(&mut v, link);
+    json(v)
+}
+
+fn replicate(
+    polls: &Polls,
+    fixtures: &Path,
+    method: &Method,
+    path: &str,
+    body: &str,
+    link: &str,
+) -> Option<Response> {
+    if *method == Method::GET && path == "/v1/collections/official" {
+        return Some(json(read(
+            fixtures,
+            "replicate/models/official-collection-built.json",
+        )));
+    }
+    if *method == Method::POST {
+        let model = path
+            .strip_prefix("/v1/models/")?
+            .strip_suffix("/predictions")?;
+        let video = matches!(model, "google/veo-3.1" | "kwaivgi/kling-v2.5-turbo-pro");
+        let tag = if body.contains("[mock:replicate=failed]") {
+            "-failed"
+        } else if body.contains("[mock:replicate=wait]") {
+            "-wait"
+        } else {
+            ""
+        };
+        let id = format!(
+            "{REPLICATE_PREDICTION}-{}{tag}",
+            model.split('/').nth(1).unwrap_or("model")
+        );
+        if video || tag == "-wait" {
+            let rel = if video {
+                "replicate/predictions/videos/starting-built.json"
+            } else {
+                "replicate/predictions/images/starting-built.json"
+            };
+            return Some(prediction(fixtures, rel, &id, link));
+        }
+        if tag == "-failed" {
+            return Some(prediction(
+                fixtures,
+                "replicate/predictions/images/failed-built.json",
+                &id,
+                link,
+            ));
+        }
+        let rel = match model {
+            "black-forest-labs/flux-1.1-pro" => "replicate/predictions/images/flux-pro-built.json",
+            "google/nano-banana-pro" => "replicate/predictions/images/nano-banana-pro-built.json",
+            "bytedance/seedream-4.5" => "replicate/predictions/images/seedream-4.5-published.json",
+            _ => "replicate/predictions/images/flux-schnell-published.json",
+        };
+        let mut v = read(fixtures, rel);
+        v["id"] = Value::from(id);
+        if body.contains("[mock:replicate=foreign]") {
+            v["output"] = Value::from(vec!["https://example.com/out.png"]);
+        }
+        return Some(json(v));
+    }
+    if *method != Method::GET {
+        return None;
+    }
+    let id = path.strip_prefix("/v1/predictions/")?;
+    if id.ends_with("-wait") {
+        return Some(prediction(
+            fixtures,
+            "replicate/predictions/images/flux-schnell-published.json",
+            id,
+            link,
+        ));
+    }
+    let rel = if polls.next(path) <= 1 {
+        "replicate/predictions/videos/processing-built.json"
+    } else if id.ends_with("-failed") {
+        "replicate/predictions/videos/failed-built.json"
+    } else if id.contains("-kling") {
+        "replicate/predictions/videos/kling-published.json"
+    } else {
+        "replicate/predictions/videos/veo-3.1-published.json"
+    };
+    let mut v = read(fixtures, rel);
+    v["id"] = Value::from(id);
+    // Replicate deletes a video an hour after it ends, and the published predictions ended
+    // long ago: the mock's videos end far ahead, so they are never past their hour.
+    if v.get("completed_at").is_some() && v["status"] == "succeeded" {
+        v["completed_at"] = Value::from("2099-01-01T00:00:00.000Z");
+    }
     local_links(&mut v, link);
     Some(json(v))
 }

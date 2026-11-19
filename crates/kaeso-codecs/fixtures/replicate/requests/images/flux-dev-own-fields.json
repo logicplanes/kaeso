@@ -1,0 +1,11 @@
+{
+  "input": {
+    "prompt": "a lighthouse at dusk",
+    "aspect_ratio": "3:2",
+    "guidance": 3.5,
+    "num_inference_steps": 28,
+    "go_fast": false,
+    "megapixels": "1",
+    "disable_safety_checker": false
+  }
+}

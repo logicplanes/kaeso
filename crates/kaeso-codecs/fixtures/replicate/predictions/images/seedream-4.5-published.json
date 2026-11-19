@@ -1,0 +1,33 @@
+{
+  "completed_at": "2025-12-04T17:28:04.837997Z",
+  "created_at": "2025-12-04T17:27:49.635000Z",
+  "data_removed": false,
+  "error": null,
+  "id": "gajz93f8gdrmc0ctx9kt03372r",
+  "input": {
+    "size": "4K",
+    "width": 2048,
+    "height": 2048,
+    "prompt": "A warm, nostalgic film-style interior of a cozy café, shot on 35mm-inspired digital photography with soft afternoon sunlight filtering through the front windows. Wooden shelves display neatly arranged ceramics, pastries, and coffee beans. Hand-painted signage on the main interior window reads ‘Seedream 4.5’ in clean, classic lettering, similar to boutique branding. A vintage bicycle with a wicker basket is visible outside the entrance, casting soft shadows on the floor. Rich textures, natural light, warm tones, subtle grain, and calm neighborhood-café ambiance.",
+    "max_images": 1,
+    "image_input": [],
+    "aspect_ratio": "16:9",
+    "sequential_image_generation": "disabled"
+  },
+  "logs": "Generating 4096x2304 image with aspect ratio 16:9 at 4K resolution\nGenerating...\nGenerated in 14.0sec",
+  "metrics": {
+    "predict_time": 15.190624255,
+    "total_time": 15.202997649
+  },
+  "output": [
+    "https://replicate.delivery/xezq/lSRiDsXJnC5HD9gOSrb2HTgAYRMRSmyd0UcbvzMhVSEp29bF/tmpq47k3q7q.jpg"
+  ],
+  "started_at": "2025-12-04T17:27:49.647373Z",
+  "status": "succeeded",
+  "urls": {
+    "stream": "https://stream.replicate.com/v1/files/bcwr-7c6irrv7hna3iakdarnlg6puv235icu6d42yqnm2df3p52oijccq",
+    "get": "https://api.replicate.com/v1/predictions/gajz93f8gdrmc0ctx9kt03372r",
+    "cancel": "https://api.replicate.com/v1/predictions/gajz93f8gdrmc0ctx9kt03372r/cancel"
+  },
+  "version": "hidden"
+}

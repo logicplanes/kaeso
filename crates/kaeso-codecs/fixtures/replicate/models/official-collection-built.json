@@ -1,0 +1,38 @@
+{
+  "name": "Official models",
+  "slug": "official",
+  "description": "Official models are always on, maintained, and have predictable pricing.",
+  "full_description": null,
+  "models": [
+    {
+      "url": "https://replicate.com/black-forest-labs/flux-schnell",
+      "owner": "black-forest-labs",
+      "name": "flux-schnell",
+      "description": "The fastest image generation model tailored for local development and personal use",
+      "visibility": "public",
+      "github_url": null,
+      "paper_url": null,
+      "license_url": null,
+      "run_count": 0,
+      "cover_image_url": null,
+      "default_example": null,
+      "latest_version": null,
+      "is_official": true
+    },
+    {
+      "url": "https://replicate.com/google/veo-3.1",
+      "owner": "google",
+      "name": "veo-3.1",
+      "description": "New and improved version of Veo 3, with higher-fidelity video, context-aware audio, reference image and last frame support",
+      "visibility": "public",
+      "github_url": null,
+      "paper_url": null,
+      "license_url": null,
+      "run_count": 0,
+      "cover_image_url": null,
+      "default_example": null,
+      "latest_version": null,
+      "is_official": true
+    }
+  ]
+}

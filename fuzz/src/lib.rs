@@ -124,6 +124,18 @@ pub fn decoders(dialect: DialectId, data: &[u8]) {
     if dialect == DialectId::GeminiDecisions {
         gemini_decisions(data, &headers);
     }
+    if dialect == DialectId::Replicate {
+        let ctx = EgressCtx::for_kind(RequestKind::Image, StreamMode::Off);
+        if let Some(task) = dispatch::pending_task(dialect, RequestKind::Image, data) {
+            let poll = dispatch::encode_task_poll(dialect, &task, &ctx)
+                .unwrap_or_else(|e| panic!("a prediction Replicate named is asked: {e:?}"));
+            let id = poll
+                .path
+                .strip_prefix("/v1/predictions/")
+                .unwrap_or_default();
+            assert!(!id.is_empty() && !id.contains('/') && id != "." && id != "..");
+        }
+    }
     if dialect == DialectId::ElevenLabs {
         for path in ELEVENLABS_PATHS {
             let query = if salt.is_multiple_of(2) {

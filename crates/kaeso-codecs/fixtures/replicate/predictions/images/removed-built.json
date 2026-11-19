@@ -1,0 +1,20 @@
+{
+  "id": "ab12cd34ef56gh78ij90kl12mn",
+  "model": "black-forest-labs/flux-schnell",
+  "version": "hidden",
+  "input": {
+    "prompt": "a lighthouse at dusk"
+  },
+  "output": null,
+  "logs": "",
+  "error": null,
+  "status": "succeeded",
+  "created_at": "2026-11-14T10:00:00.000Z",
+  "urls": {
+    "web": "https://replicate.com/p/ab12cd34ef56gh78ij90kl12mn",
+    "get": "https://api.replicate.com/v1/predictions/ab12cd34ef56gh78ij90kl12mn",
+    "cancel": "https://api.replicate.com/v1/predictions/ab12cd34ef56gh78ij90kl12mn/cancel"
+  },
+  "data_removed": true,
+  "completed_at": "2026-11-14T10:00:02.000Z"
+}
