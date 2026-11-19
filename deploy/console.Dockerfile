@@ -6,7 +6,7 @@ RUN go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.4.7 \
   && xcaddy build v2.11.7 --output /caddy --replace golang.org/x/net=golang.org/x/net@v0.60.0 \
   && go version -m /caddy | grep -qE '^\s+(dep|=>)\s+golang\.org/x/net\s+v0\.60\.0\s'
 
-FROM node:24.22.2-alpine@sha256:a34ab6d7f6f4813f4d0c5469d74685604b962fbdbf5793a7bc7b4998ecb867c8 AS build
+FROM node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5 AS build
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -18,7 +18,7 @@ RUN pnpm --filter kaeso-console... build \
   && rm -rf apps/console/dist/.vite \
   && find apps/console/dist -name '*.map' -delete
 
-FROM alpine:3.24.3@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+FROM alpine:3.24.4@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 ARG VERSION=dev
 LABEL org.opencontainers.image.title="Kaeso console" \
       org.opencontainers.image.description="The web console for the Kaeso gateway." \
