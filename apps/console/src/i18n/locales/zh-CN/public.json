@@ -150,12 +150,5 @@
   "public.unsubscribeFromHint": "Kaeso 将不再向 {email} 发送这类邮件；安全邮件仍会送达。",
   "public.unsubscribeAction": "退订",
   "public.portalServerTools": "{count, plural, other {# 个工具}}",
-  "public.portalToolsUntil": "{org} › {project} 中的 {count, plural, other {# 个工具}}，直到您或项目管理员断开连接",
-  "public.linking": "正在关联您的组织",
-  "public.linked": "已关联 {name}",
-  "public.linkUnusable": "此关联无法在这里完成",
-  "public.linkUnusableHint": "请在“服务商”中重新开始关联，并使用同一个浏览器标签页。",
-  "public.linkFailed": "关联未完成",
-  "public.backToProviders": "返回服务商",
-  "public.finishingLink": "正在完成关联"
+  "public.portalToolsUntil": "{org} › {project} 中的 {count, plural, other {# 个工具}}，直到您或项目管理员断开连接"
 }

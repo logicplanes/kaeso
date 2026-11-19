@@ -167,10 +167,7 @@ describe("organization analytics", () => {
     on(
       "GET",
       "orgs/:org/credentials",
-      page([
-        credential({ id: "cred_link", provider: "anthropic", name: "Acme Claude", auth_method: "linked_billing" }),
-        credential({ id: "cred_openai", name: "OpenAI production" }),
-      ]),
+      page([credential({ id: "cred_link", provider: "anthropic", name: "Acme Claude" }), credential({ id: "cred_openai", name: "OpenAI production" })]),
     );
     const { user } = await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
     await breakdown();
@@ -178,7 +175,7 @@ describe("organization analytics", () => {
     const table = await breakdown();
     expect(await within(table).findByRole("columnheader", { name: "Billed to" })).toBeInTheDocument();
     const rows = within(table).getAllByRole("row").slice(1);
-    await waitFor(() => expect(rows[0]).toHaveTextContent(/Acme Claude.*Linked billing/));
+    await waitFor(() => expect(rows[0]).toHaveTextContent("Acme Claude"));
     expect(rows[1]).toHaveTextContent("OpenAI production");
     expect(rows[2]).toHaveTextContent("Removed key");
     expect(rows[3]).toHaveTextContent("No provider");

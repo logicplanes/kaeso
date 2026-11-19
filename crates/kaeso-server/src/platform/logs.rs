@@ -1072,9 +1072,9 @@ pub struct LogView {
     pub client_version: Option<String>,
     #[doc = "The guardrails that checked the request and its reply, in the order they ran."]
     pub guardrails: Vec<GuardrailRunView>,
-    #[doc = "The provider key that paid for the request, the last one it was sent with;\n\
-        for a linked key, the organization it links paid. `null` when no provider was\n\
-        sent the request, and for requests logged before Kaeso recorded it."]
+    #[doc = "The provider key that paid for the request, the last one it was sent with.\n\
+        `null` when no provider was sent the request, and for requests logged before\n\
+        Kaeso recorded it."]
     pub billed_to: Option<kaeso_core::id::CredentialId>,
 }
 

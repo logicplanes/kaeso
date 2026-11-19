@@ -194,17 +194,6 @@ fn failed(raw: Option<&Value>) -> Option<(String, &str)> {
     Some((code, message))
 }
 
-/// The code an Anthropic error names in `error.details.error_code`, such as
-/// `linked_organization_spend_limit_reached`, for an error this codec decoded; `None` for any
-/// other error.
-pub fn error_code(err: &KppError) -> Option<&str> {
-    own_body(err)?
-        .get("error")?
-        .get("details")?
-        .get("error_code")?
-        .as_str()
-}
-
 pub(crate) fn is_failure_envelope(body: &[u8]) -> bool {
     let raw: Option<Value> = serde_json::from_slice(body).ok();
     failed(raw.as_ref()).is_some()
