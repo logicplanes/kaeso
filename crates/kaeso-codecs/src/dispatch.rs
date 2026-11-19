@@ -7,6 +7,7 @@ use crate::anthropic_messages::AnthropicMessages;
 use crate::bedrock_converse::BedrockConverse;
 use crate::cohere_rerank::CohereRerank;
 use crate::dashscope::DashScope;
+use crate::deepgram::Deepgram;
 use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
 use crate::fal::Fal;
 use crate::gemini::{Gemini, GeminiAction};
@@ -70,6 +71,7 @@ macro_rules! dispatch {
             DialectId::BedrockConverse => Ok(BedrockConverse::$f($($arg),*)),
             DialectId::Fal => Ok(Fal::$f($($arg),*)),
             DialectId::Replicate => Ok(Replicate::$f($($arg),*)),
+            DialectId::Deepgram => Ok(Deepgram::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -136,6 +138,7 @@ pub fn decode_checked_request<B: RequestBody>(
         DialectId::MinimaxVideos => MinimaxVideos::decode_request(kind, body, headers),
         DialectId::ZaiVideos => ZaiVideos::decode_request(kind, body, headers),
         DialectId::Fal => Fal::decode_request(kind, body, headers),
+        DialectId::Deepgram => Deepgram::decode_request(kind, body, headers),
         DialectId::OpenAiTranscriptions => OpenAiTranscriptions::decode_upload(
             kaeso_kpp::TranscriptionOperation::Transcribe,
             upload,

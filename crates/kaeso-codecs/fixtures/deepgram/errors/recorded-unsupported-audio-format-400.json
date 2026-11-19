@@ -1,0 +1,5 @@
+{
+  "err_code": "UNSUPPORTED_AUDIO_FORMAT",
+  "err_msg": "Unsupported audio format: `sample_rate` is not applicable when `encoding=mp3`.",
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

@@ -22,6 +22,7 @@ order: 10
 | `openai_speech/` | OpenAI 语音（`/v1/audio/speech`）；音频回复为 `responses/<name>.mp3`，content type 写在 `<name>.mp3.meta.json` 中 |
 | `openai_transcriptions/` | OpenAI 转写和翻译（`/v1/audio/transcriptions`、`/v1/audio/translations`）；上传文件为 `requests/<name>.multipart`，文本形式为 `.txt`、`.srt` 和 `.vtt` |
 | `minimax_speech/` | MiniMax 文本转语音（`/v1/t2a_v2`） |
+| `deepgram/` | Deepgram（`/v1/listen`、`/v1/speak`）；每个请求的查询和内容类型在 `<name>.meta.json` 中，上传为 `.wav`，语音回复为 `.mp3`，纯文本错误为 `.txt` |
 | `elevenlabs/` | ElevenLabs；每个请求的路径和查询写在 `<name>.meta.json` 中，音频回复为 `.mp3` 和 `.pcm`，带时间戳的流为 `.ndjson`；视频生成在 `video/` 中 |
 | `openai_videos/` | OpenAI 的 Videos API；上传为 `requests/<name>.multipart`，列表和删除在 `lists/` 中，生成的视频文件在 `content/` 中 |
 | `system_one/` | TypeSafe 的 System One API（`/v1/systemone`）；需要请求头的请求带有 `<name>.headers.json`，每个回复都有同名的请求，`requests/multipart/` 存放上传的 JSON 部分 |

@@ -601,6 +601,8 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "gemini"
     } else if anthropic {
         "anthropic_messages"
+    } else if path == "/v1/listen" || path == "/v1/speak" {
+        "deepgram"
     } else if path.starts_with("/v1/responses") {
         "openai_responses"
     } else if path.starts_with("/v1/embeddings") {
@@ -636,7 +638,14 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         });
     // Anthropic takes `x-api-key`; Anthropic-compatible servers such as Vercel AI Gateway
     // also take a Bearer token.
-    let authed = if dialect.starts_with("gemini") {
+    // Deepgram takes its key as `Authorization: Token …`.
+    let token = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.starts_with("Token ") && v.len() > 6);
+    let authed = if dialect == "deepgram" {
+        token
+    } else if dialect.starts_with("gemini") {
         headers.get("x-goog-api-key").is_some_and(|v| !v.is_empty())
             && !headers.contains_key("authorization")
     } else {
@@ -975,7 +984,7 @@ fn form_value<'a>(form: &'a str, name: &str) -> Option<&'a str> {
 }
 
 // Speech and transcription paths of every provider form Kaeso speaks, answered from the
-// `openai_speech`, `openai_transcriptions` and `minimax_speech` fixtures.
+// `openai_speech`, `openai_transcriptions`, `minimax_speech` and `deepgram` fixtures.
 /// The mock's link for files a DashScope reply names, which is not one of the hosts Kaeso
 /// fetches QwenCloud's results from.
 pub const DASHSCOPE_LINK: &str = "https://files.example.com/dashscope/result.png";
@@ -1084,6 +1093,16 @@ fn audio(fixtures: &Path, path: &str, text: &str) -> Option<Response> {
         return el_audio("recorded-voice-change.mp3", "audio/mpeg");
     }
     match path {
+        "/v1/listen" => json(
+            &fixtures.join("deepgram/responses"),
+            "listen-utterances-schema",
+        ),
+        "/v1/speak" => {
+            let mut r = bytes_file(&fixtures.join("deepgram/responses/speak.mp3"), "audio/mpeg");
+            r.headers_mut()
+                .insert("dg-char-count", axum::http::HeaderValue::from_static("32"));
+            Some(r)
+        }
         "/v1/sound-generation" => el_audio("recorded-sound.mp3", "audio/mpeg"),
         "/v1/music" | "/v1/music/stream" => Some(error_response(
             &fixtures.join("elevenlabs"),
@@ -1629,6 +1648,7 @@ fn key_refused(dialect: &str) -> &'static str {
         "gemini_decisions" => "invalid-api-key-400",
         "system_one" => "unauthorized-401",
         "openai_chat" => "invalid-api-key",
+        "deepgram" => "recorded-invalid-auth-401",
         _ => "invalid-api-key-401",
     }
 }

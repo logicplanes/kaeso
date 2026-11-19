@@ -67,6 +67,7 @@ export const providers = [
   { id: "amazon-bedrock", name: "Amazon Bedrock" },
   { id: "azure", name: "Azure" },
   { id: "replicate", name: "Replicate" },
+  { id: "deepgram", name: "Deepgram" },
 ];
 export const providerNames: Record<string, string> = Object.fromEntries(providers.map((p) => [p.id, p.name]));
 

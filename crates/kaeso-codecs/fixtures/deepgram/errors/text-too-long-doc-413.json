@@ -1,0 +1,5 @@
+{
+  "err_code": "Payload Too Large",
+  "err_msg": "Input text exceeds maximum character limit of 2000.",
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

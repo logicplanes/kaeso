@@ -211,6 +211,9 @@ base_url = "https://queue.fal.run"
 [providers.replicate]
 base_url = "https://api.replicate.com"
 
+[providers.deepgram]
+base_url = "https://api.deepgram.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

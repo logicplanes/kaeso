@@ -817,6 +817,7 @@ mod tests {
             AuthStyle::XiApiKey,
             AuthStyle::ApiKey,
             AuthStyle::Key,
+            AuthStyle::Token,
         ] {
             let name = style.header_name();
             let req = secret_header(

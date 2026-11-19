@@ -767,6 +767,7 @@ pub fn request_shape(dialect: DialectId, body: &[u8]) -> Result<RequestShape, Kp
             | DialectId::ElevenLabs
             | DialectId::OpenAiVideos
             | DialectId::SystemOne
+            | DialectId::Deepgram
     );
     if uploads && !looks_like_json(body) {
         return Ok(RequestShape {

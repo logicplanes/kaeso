@@ -244,6 +244,7 @@ The gateway fetches the European Central Bank's reference rates for [currencies]
 | `KAESO_PROVIDERS_JINA_BASE_URL`<br>`providers.jina.base_url` | text | `https://api.jina.ai` | Base URL of the Jina AI API. |
 | `KAESO_PROVIDERS_FAL_BASE_URL`<br>`providers.fal.base_url` | text | `https://queue.fal.run` | Base URL of the fal API. |
 | `KAESO_PROVIDERS_REPLICATE_BASE_URL`<br>`providers.replicate.base_url` | text | `https://api.replicate.com` | Base URL of the Replicate API. |
+| `KAESO_PROVIDERS_DEEPGRAM_BASE_URL`<br>`providers.deepgram.base_url` | text | `https://api.deepgram.com` | Base URL of the Deepgram API. |
 | `KAESO_AWS_AMBIENT_CREDENTIALS`<br>`aws.ambient_credentials` | bool | `false` | Let instance admins add Amazon Bedrock keys that sign in as the gateway's own AWS identity: its `AWS_*` environment, web identity token, ECS or EKS container role or EC2 instance role, optionally assuming another role. Off by default, since such a key lets an organization use the gateway's role. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |

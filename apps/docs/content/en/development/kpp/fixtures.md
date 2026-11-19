@@ -22,6 +22,7 @@ Every codec change starts with a fixture: a real request body, reply, stream or 
 | `openai_speech/` | OpenAI speech (`/v1/audio/speech`); the audio reply as `responses/<name>.mp3` with its content type in `<name>.mp3.meta.json` |
 | `openai_transcriptions/` | OpenAI transcriptions and translations (`/v1/audio/transcriptions`, `/v1/audio/translations`); uploads as `requests/<name>.multipart`, text forms as `.txt`, `.srt` and `.vtt` |
 | `minimax_speech/` | MiniMax text to speech (`/v1/t2a_v2`) |
+| `deepgram/` | Deepgram (`/v1/listen`, `/v1/speak`); each request's query and content type in `<name>.meta.json`, an upload as `.wav`, the speech reply as `.mp3`, a plain-text error as `.txt` |
 | `elevenlabs/` | ElevenLabs; each request's path and query in `<name>.meta.json`, audio replies as `.mp3` and `.pcm`, the timestamped stream as `.ndjson`; video generations in `video/` |
 | `openai_videos/` | OpenAI's Videos API; uploads as `requests/<name>.multipart`, listings and deletions in `lists/`, a made video's file in `content/` |
 | `system_one/` | TypeSafe's System One API (`/v1/systemone`); a request that needs a header has `<name>.headers.json`, every reply a request of the same name, and `requests/multipart/` the JSON part of an upload |

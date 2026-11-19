@@ -105,3 +105,19 @@ def test_elevenlabs_and_minimax_replies_reach_an_openai_app(base_url):
         assert response.read().startswith(b"ID3")
     t = transcribe(base_url, "elevenlabs:recorded-transcribe", response_format="verbose_json")
     assert t.text and t.words
+
+
+def test_deepgram_transcripts_and_speech_reach_an_openai_app(base_url):
+    c = client(base_url)
+    with c.audio.speech.with_streaming_response.create(
+        model="deepgram:speak", voice="thalia", input="Hi"
+    ) as response:
+        assert response.headers["content-type"] == "audio/mpeg"
+        assert response.read().startswith(b"ID3")
+    v = transcribe(base_url, "deepgram:listen-utterances-schema", response_format="verbose_json")
+    assert v.text == "Four score and seven years ago. Yes."
+    assert v.language == "en" and v.segments[1].text == "Yes."
+    srt = transcribe(base_url, "deepgram:listen-utterances-schema", response_format="srt")
+    assert srt.startswith("1\n00:00:00,419 --> 00:00:02,914\nFour score")
+    j = transcribe(base_url, "deepgram:listen-nova3-doc")
+    assert j.text.startswith("Yeah. As as much as")

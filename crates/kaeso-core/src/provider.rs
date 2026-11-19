@@ -148,12 +148,15 @@ pub enum AuthStyle {
     /// fal's `Authorization: Key …`; fal reads `Bearer` as one of its own short-lived tokens
     /// (https://fal.ai/docs/documentation/model-apis/authentication/key-based).
     Key,
+    /// `Authorization: Token <key>`, as Deepgram takes its API keys
+    /// (https://developers.deepgram.com/reference/authentication).
+    Token,
 }
 
 impl AuthStyle {
     pub const fn header_name(self) -> &'static str {
         match self {
-            AuthStyle::Bearer | AuthStyle::Key => "authorization",
+            AuthStyle::Bearer | AuthStyle::Key | AuthStyle::Token => "authorization",
             AuthStyle::XApiKey => "x-api-key",
             AuthStyle::XGoogApiKey => "x-goog-api-key",
             AuthStyle::XiApiKey => "xi-api-key",
@@ -169,6 +172,7 @@ impl AuthStyle {
             | AuthStyle::XiApiKey
             | AuthStyle::ApiKey => key.to_owned(),
             AuthStyle::Key => format!("Key {key}"),
+            AuthStyle::Token => format!("Token {key}"),
         }
     }
 }
@@ -3624,6 +3628,58 @@ pub const PROVIDERS: &[Provider] = &[
         regional: None,
         key_endpoint: None,
     },
+    Provider {
+        id: "deepgram",
+        name: "Deepgram",
+        // Keys are made in the Deepgram Console under a project's API Keys and work on every
+        // regional host (https://developers.deepgram.com/reference/authentication,
+        // https://developers.deepgram.com/reference/regional-endpoints).
+        key_page: KeyPage {
+            url: "https://console.deepgram.com",
+            label: "API Keys",
+        },
+        key_prefix: None,
+        default_base_url: "https://api.deepgram.com",
+        auth: AuthStyle::Token,
+        // Deepgram transcribes and speaks; it writes no text, so a generation request never
+        // reaches it past the catalogue's checks.
+        generation: DialectId::Deepgram,
+        count_tokens: None,
+        embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
+        images: &[],
+        speech: &[SpeechEgress {
+            dialect: DialectId::Deepgram,
+            ..SpeechEgress::ANY
+        }],
+        transcriptions: &[TranscriptionsEgress {
+            dialect: DialectId::Deepgram,
+            ..TranscriptionsEgress::ANY
+        }],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::Deepgram],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        // `GET /v1/models` lists each voice and model variant (`aura-2-thalia-en`,
+        // `nova-3-general`), not the families Kaeso offers (`aura-2`, `nova-3`), and answers
+        // without a key.
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("Deepgram"),
+        responses: ResponsesProfile::compatible("Deepgram"),
+        messages: MessagesProfile::compatible("Deepgram"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+        regional: None,
+        key_endpoint: None,
+    },
 ];
 
 const _: () = {
@@ -3926,7 +3982,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate, deepgram"
         );
     }
 
@@ -4018,7 +4074,8 @@ mod tests {
                 "amazon-bedrock",
                 "voyage",
                 "jina",
-                "replicate"
+                "replicate",
+                "deepgram"
             ]
         );
     }
@@ -4051,6 +4108,44 @@ mod tests {
         assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
         let listed = ["perplexity/sonar".to_owned()];
         assert_eq!(p.listing.serves(&listed, "sonar-pro"), None);
+    }
+
+    #[test]
+    fn deepgram_transcribes_and_speaks_in_its_own_api_with_a_token_key() {
+        let p = provider("deepgram").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Deepgram",
+                AuthStyle::Token,
+                DialectId::Deepgram,
+                &[DialectId::Deepgram][..]
+            )
+        );
+        assert_eq!(p.default_base_url, "https://api.deepgram.com");
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, None, None)
+        );
+        assert_eq!(p.key_page.url, "https://console.deepgram.com");
+        assert_eq!(p.listing, ModelListing::Partial);
+        let r = crate::providers::ProviderRef::BuiltIn(p);
+        for model in ["nova-3", "whisper-large", "anything"] {
+            let t = r.transcriptions(model).unwrap();
+            assert_eq!(
+                (t.dialect, t.from_root, t.auth),
+                (DialectId::Deepgram, false, None)
+            );
+        }
+        for model in ["aura-2", "aura"] {
+            let s = r.speech(model).unwrap();
+            assert_eq!(
+                (s.dialect, s.from_root, s.auth),
+                (DialectId::Deepgram, false, None)
+            );
+            assert!(s.fetch_hosts.is_empty());
+        }
+        assert!(p.images.is_empty() && p.videos.is_empty() && p.decisions.is_empty());
     }
 
     #[test]
@@ -4869,7 +4964,8 @@ mod tests {
                 AuthStyle::XApiKey,
                 AuthStyle::XGoogApiKey,
                 AuthStyle::XiApiKey,
-                AuthStyle::ApiKey
+                AuthStyle::ApiKey,
+                AuthStyle::Token
             ]
             .map(|s| (s.header_name(), s.header_value("k-1"))),
             [
@@ -4878,6 +4974,7 @@ mod tests {
                 ("x-goog-api-key", "k-1".to_owned()),
                 ("xi-api-key", "k-1".to_owned()),
                 ("api-key", "k-1".to_owned()),
+                ("authorization", "Token k-1".to_owned()),
             ]
         );
     }
@@ -5786,7 +5883,8 @@ mod tests {
                 "voyage",
                 "jina",
                 "fal",
-                "replicate"
+                "replicate",
+                "deepgram"
             ]
         );
         assert_eq!(

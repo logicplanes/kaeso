@@ -170,6 +170,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decode_deepgram"
+path = "fuzz_targets/decode_deepgram.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "decode_zai_videos"
 path = "fuzz_targets/decode_zai_videos.rs"
 test = false

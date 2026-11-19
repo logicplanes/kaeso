@@ -452,6 +452,21 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         fal["key_page"],
         json!({ "url": "https://fal.ai/dashboard/keys", "label": "API keys" })
     );
+    let deepgram = listed.iter().find(|p| p["id"] == "deepgram").unwrap();
+    assert_eq!(deepgram["name"], "Deepgram");
+    assert_eq!(deepgram["dialects"], json!(["deepgram"]));
+    assert_eq!(
+        (
+            &deepgram["count_tokens"],
+            &deepgram["embeddings"],
+            &deepgram["key_prefix"]
+        ),
+        (&Value::Null, &Value::Null, &Value::Null)
+    );
+    assert_eq!(
+        deepgram["key_page"],
+        json!({ "url": "https://console.deepgram.com", "label": "API Keys" })
+    );
 
     let novita = listed.iter().find(|p| p["id"] == "novita-ai").unwrap();
     assert_eq!(novita["name"], "Novita AI");

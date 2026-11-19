@@ -2716,6 +2716,7 @@ async fn attempt(
         .or_else(|| resp.headers.get("x-request-id"))
         // Cloudflare AI Gateway's log entry for the request.
         .or_else(|| resp.headers.get("cf-aig-log-id"))
+        .or_else(|| kaeso_codecs::deepgram::request_id(&resp.headers))
         .map(str::to_owned);
     // Replies and errors from here on carry the provider's id for its support.
     let served = Served {
@@ -2733,8 +2734,12 @@ async fn attempt(
             not_found_in_request: false,
         }
     };
-    if plan.dialect == DialectId::ElevenLabs
-        && let Some(billed) = kaeso_codecs::elevenlabs::billed_characters(&resp.headers)
+    let billed = match plan.dialect {
+        DialectId::ElevenLabs => kaeso_codecs::elevenlabs::billed_characters(&resp.headers),
+        DialectId::Deepgram => kaeso_codecs::deepgram::billed_characters(&resp.headers),
+        _ => None,
+    };
+    if let Some(billed) = billed
         && let Some(media) = rec.outcome().media.as_mut()
         && kind == RequestKind::Speech
     {
