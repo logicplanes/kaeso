@@ -13,7 +13,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { cn } from "../../utils/cn.js";
 import { observeResize } from "../../utils/observe-resize.js";
-import { useGutterPadded, useInset, useRaised } from "../../utils/inset.js";
+import { GutterContent, useGutterPadded, useInset, useRaised } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { CheckboxBox } from "../checkbox/checkbox.js";
@@ -724,18 +724,20 @@ function DataTableInner<T>(
             <div role="row">
               <div role={cellRole} aria-colspan={cols.length} className="block">
                 <div role="alert">
-                  <Empty
-                    size="compact"
-                    title={t("dataTable.loadFailed", "Couldn't load these rows")}
-                    {...(onRetry ? {} : { description: t("dataTable.reloadToRetry", "Reload the page to try again.") })}
-                    actions={
-                      onRetry && (
-                        <Button size="sm" onClick={onRetry}>
-                          {t("dataTable.tryAgain", "Try again")}
-                        </Button>
-                      )
-                    }
-                  />
+                  <GutterContent>
+                    <Empty
+                      size="compact"
+                      title={t("dataTable.loadFailed", "Couldn't load these rows")}
+                      {...(onRetry ? {} : { description: t("dataTable.reloadToRetry", "Reload the page to try again.") })}
+                      actions={
+                        onRetry && (
+                          <Button size="sm" onClick={onRetry}>
+                            {t("dataTable.tryAgain", "Try again")}
+                          </Button>
+                        )
+                      }
+                    />
+                  </GutterContent>
                 </div>
               </div>
             </div>
@@ -752,7 +754,7 @@ function DataTableInner<T>(
           ) : rows.length === 0 ? (
             <div role="row">
               <div role={cellRole} aria-colspan={cols.length} className="block">
-                {empty ?? <Empty size="compact" title={t("dataTable.noRows", "No rows")} />}
+                <GutterContent>{empty ?? <Empty size="compact" title={t("dataTable.noRows", "No rows")} />}</GutterContent>
               </div>
             </div>
           ) : virtual ? (

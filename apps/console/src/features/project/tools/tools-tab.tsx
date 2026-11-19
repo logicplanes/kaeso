@@ -126,11 +126,11 @@ export function ToolsTab({
           : {}),
         title: (
           <span className="flex min-w-0 items-center gap-12">
-            <Text weight="medium" truncate>
+            <Text weight="medium" truncate className="min-w-48">
               {s.name}
             </Text>
             <Status tone={word.tone}>{word.label}</Status>
-            <Text variant="small" tone="secondary">
+            <Text variant="small" tone="secondary" truncate className="shrink-4">
               {t("project.tools.onCount", "{on} of {total} on", { on: s.tools_on, total: s.tools })}
             </Text>
           </span>

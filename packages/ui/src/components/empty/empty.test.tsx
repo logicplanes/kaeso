@@ -16,11 +16,18 @@ describe("Empty", () => {
   it("hangs a page's and a section's empty state from the edge, and centers a row's", () => {
     const { container, rerender } = render(<Empty title="No keys yet" />);
     expect(container.firstElementChild).toHaveClass("items-start", "text-start");
-    expect(screen.getByRole("heading")).toHaveClass("text-title-lg");
     rerender(<Empty size="md" title="No members" />);
     expect(container.firstElementChild).toHaveClass("items-start", "text-start");
     rerender(<Empty size="compact" title="No rows" />);
     expect(container.firstElementChild).toHaveClass("items-center", "text-center");
+  });
+
+  it("sets a page's title in the empty-state size, not a page title's", () => {
+    const { rerender } = render(<Empty title="No tools yet" />);
+    expect(screen.getByRole("heading", { name: "No tools yet" })).toHaveClass("text-title");
+    expect(screen.getByRole("heading", { name: "No tools yet" })).not.toHaveClass("text-title-lg");
+    rerender(<Empty size="md" title="No members" />);
+    expect(screen.getByRole("heading", { name: "No members" })).toHaveClass("text-title");
   });
 
   it("starts on the gutter: its own 24px under a toolbar, the surface's padding on a padded page, 20px in a card", () => {

@@ -4,14 +4,14 @@ import { useGutterPadded, useInset } from "../../utils/inset.js";
 
 export const KAESO_EMPTY_VARIANTS = {
   size: {
-    lg: { classes: "items-start py-80 gap-24 text-start", description: "A page with nothing in it: a large title, hung from the page's edge (default)" },
-    md: { classes: "items-start py-48 gap-16 text-start", description: "Inside a section: hung from the section's edge" },
+    lg: { classes: "items-start py-80 gap-24 text-start", description: "A page with nothing in it: hung from the page's gutter (default)" },
+    md: { classes: "items-start py-48 gap-16 text-start", description: "Inside a section: hung from the section's gutter" },
     compact: { classes: "items-center py-32 gap-8 text-center", description: "Inside tables and lists: one line, centered in the row" },
   },
 } as const;
 export const KAESO_EMPTY_DEFAULT_VARIANTS = { size: "lg" } as const;
 
-const TITLE = { lg: "text-title-lg", md: "text-title", compact: "text-body" } as const;
+const TITLE = { lg: "text-title", md: "text-title", compact: "text-body" } as const;
 const TEXT = { lg: "gap-8", md: "gap-6", compact: "items-center gap-2" } as const;
 const DESCRIPTION = { lg: "text-body-lg", md: "text-body", compact: "text-small" } as const;
 

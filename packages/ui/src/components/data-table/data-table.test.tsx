@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { DATA_TABLE_GROW_MIN, DataTable, fitColumns } from "./data-table.js";
 import { col } from "./columns.js";
 import { GutterContent } from "../../utils/inset.js";
+import { Empty } from "../empty/empty.js";
 
 type Row = { id: string; key: string; cost: string };
 const rows: Row[] = [
@@ -231,6 +232,15 @@ describe("DataTable on the gutter", () => {
       </GutterContent>,
     );
     expect(container.firstElementChild).not.toHaveClass("px-24");
+  });
+  it("starts its empty state and its load error on its own gutter, not 24px further in", () => {
+    const { container, rerender } = render(
+      <DataTable aria-label="Requests" data={[]} columns={columns} getRowId={(r) => r.id} empty={<Empty title="No requests in this range" />} />,
+    );
+    expect(container.firstElementChild).toHaveClass("px-24");
+    expect(screen.getByRole("heading", { name: "No requests in this range" }).parentElement?.parentElement).not.toHaveClass("px-24");
+    rerender(<DataTable aria-label="Requests" data={[]} columns={columns} getRowId={(r) => r.id} error="Requests couldn't load" />);
+    expect(screen.getByRole("heading", { name: "Couldn't load these rows" }).parentElement?.parentElement).not.toHaveClass("px-24");
   });
   it("fits columns to the width inside the gutter without reserving it twice", () => {
     const c = (id: string, size: number, priority: number) => ({ id, size, priority, grow: false, minWidth: undefined });
