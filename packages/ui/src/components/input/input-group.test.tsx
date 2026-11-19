@@ -49,6 +49,17 @@ describe("InputGroup state", () => {
     expect(screen.getByText("/v1")).not.toHaveClass("-me-8");
   });
 
+  it("ends a value or placeholder too long for the field in an ellipsis", () => {
+    render(
+      <>
+        <Input aria-label="Email" readOnly defaultValue="maximilian.mustermann-schneider@forschungsgesellschaft.example" />
+        <Input aria-label="Search" placeholder="Search pages, actions, keys, models and members" />
+      </>,
+    );
+    expect(screen.getByRole("textbox", { name: "Email" })).toHaveClass("text-ellipsis");
+    expect(screen.getByRole("textbox", { name: "Search" })).toHaveClass("text-ellipsis");
+  });
+
   it("hides a search shortcut while the field has focus, keeping its room", () => {
     render(<Input type="search" size="sm" aria-label="Search logs" shortcut={["mod", "k"]} />);
     expect(screen.getByText("K").closest("span[class*='group-focus-within']")).toHaveClass("group-focus-within/field:invisible");

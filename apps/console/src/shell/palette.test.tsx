@@ -9,19 +9,19 @@ import { credential, member, platformKey } from "~/test/fixtures/org";
 import { renderApp } from "~/test/render";
 
 const LIMITS = `/orgs/${ORG}/projects/${PROJECT}/limits`;
-const PLACEHOLDER = "Search pages, actions, keys, models and members";
+const PLACEHOLDER = "Search pages, keys and models";
 
 async function openPalette(user: UserEvent) {
   await screen.findByRole("navigation", { name: "Console" });
   await user.keyboard("{Meta>}k{/Meta}");
-  await screen.findByPlaceholderText(/^Search pages, actions/);
+  await screen.findByPlaceholderText(/^Search pages, /);
   return screen.getByRole("listbox", { name: "Results" });
 }
 
 async function openPaletteIn(user: UserEvent, navigation: string) {
   await screen.findByRole("navigation", { name: navigation });
   await user.keyboard("{Meta>}k{/Meta}");
-  await screen.findByPlaceholderText(/^Search pages, actions/);
+  await screen.findByPlaceholderText(/^Search pages, /);
   return screen.getByRole("listbox", { name: "Results" });
 }
 
@@ -158,11 +158,11 @@ describe("the command palette", () => {
     on("GET", "orgs/:org/credentials", { data: [credential({ id: "cred_lin", name: "Lindy OpenAI" })] });
     const { user, router } = await renderApp(`/orgs/${ORG}`);
     const list = await openPalette(user);
-    expect(screen.getByPlaceholderText("Search pages, actions, projects, members and keys")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Search pages, projects and members")).toBeInTheDocument();
     const ids = optionIds(list);
     expect(ids).toEqual(expect.arrayContaining(["org:providers", "org-settings:members"]));
     expect(ids.filter((id) => id.startsWith("page:"))).toEqual([]);
-    await user.type(screen.getByPlaceholderText("Search pages, actions, projects, members and keys"), "Lin");
+    await user.type(screen.getByPlaceholderText("Search pages, projects and members"), "Lin");
     const lin = await screen.findByRole("option", { name: /Lin Park/ });
     expect(lin).toHaveTextContent("Member");
     expect(await screen.findByRole("option", { name: /linter-ci/ })).toHaveTextContent("Platform key");
@@ -178,10 +178,22 @@ describe("the command palette", () => {
     window.localStorage.setItem("kaeso:last", JSON.stringify({ org: ORG, project: PROJECT }));
     const { user, router } = await renderApp(`/orgs/${ORG}`);
     await openPalette(user);
-    await user.type(screen.getByPlaceholderText("Search pages, actions, projects, members and keys"), "support");
+    await user.type(screen.getByPlaceholderText("Search pages, projects and members"), "support");
     const triage = await screen.findByRole("option", { name: /Support triage/ });
     expect(screen.queryByRole("option", { name: /support-bot/ })).not.toBeInTheDocument();
     expect(requests("GET", "orgs/:org/projects/:project/keys")).toHaveLength(0);
+    await user.click(triage);
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
+  });
+
+  it("finds another project by its name inside a project", async () => {
+    signedIn();
+    projectData();
+    const { user, router } = await renderApp(LIMITS);
+    await openPalette(user);
+    await user.type(screen.getByPlaceholderText(PLACEHOLDER), "triage");
+    const triage = await screen.findByRole("option", { name: /Support triage/ });
+    expect(triage).toHaveTextContent("Project");
     await user.click(triage);
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });

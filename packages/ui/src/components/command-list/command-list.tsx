@@ -485,7 +485,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          className={cn("min-w-0 flex-1 bg-transparent text-fg outline-none placeholder:text-fg-tertiary", look.input)}
+          className={cn("min-w-0 flex-1 bg-transparent text-ellipsis text-fg outline-none placeholder:text-fg-tertiary", look.input)}
         />
       </div>
       {toolbar && <div className="flex shrink-0 flex-wrap items-center gap-8 px-12 py-8 hairline-b-strong">{toolbar}</div>}

@@ -1,6 +1,7 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, signedIn } from "~/test/fixtures";
+import { insidePageGutter } from "~/test/layout";
 import { renderApp } from "~/test/render";
 
 describe("a page that doesn't exist", () => {
@@ -10,7 +11,7 @@ describe("a page that doesn't exist", () => {
     await renderApp("/no/such/page");
     expect(await screen.findByRole("heading", { name: "Not found", level: 1 })).toBeInTheDocument();
     expect(document.title).toBe("Not found · Kaeso");
-    expect(screen.getByText("This page doesn't exist")).toBeInTheDocument();
+    expect(insidePageGutter(screen.getByText("This page doesn't exist"))).toBe(true);
     expect(screen.getByText("The link may be old, or the page moved.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to the overview" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}`);
   });
