@@ -1,7 +1,9 @@
 //! Video jobs and image generations at the mock provider, built from KPP's fixtures: each job
 //! answers as running the first time it is asked and as finished after, with its file served by
 //! the mock. An ElevenLabs image generation whose prompt carries `[mock:generation=failed]`
-//! ends as failed.
+//! ends as failed. fal's queue, told apart by its `Authorization: Key …`, answers images at once
+//! and videos after one status call; a prompt with `[mock:fal=failed]` ends as failed and one
+//! with `[mock:fal=nsfw]` as FLUX's black safety image.
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -107,6 +109,13 @@ pub(crate) fn answer(
     };
     let get = method == Method::GET;
     let post = method == Method::POST;
+    let fal_key = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.starts_with("Key "));
+    if fal_key {
+        return fal(polls, fixtures, method, path, body, &link);
+    }
     Some(match path {
         "/v1/videos/generations" | "/v1/videos/edits" if post => {
             json(read(fixtures, "xai_videos/responses/started.json"))
@@ -311,4 +320,89 @@ fn sample(fixtures: &Path, headers: &HeaderMap) -> Response {
             .body(Body::from(bytes)),
     }
     .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+/// The request id the mock's fal queue gives every request, followed by what the request asked
+/// the mock to answer.
+pub const FAL_REQUEST: &str = "764cabcf-b745-4b3e-ae38-1200304cf45b";
+
+fn fal_queue(status: &str, base: &str, fixtures: &Path, rel: &str) -> Value {
+    let mut v = read(fixtures, rel);
+    v["status"] = Value::from(status);
+    if let Some(id) = base.rsplit('/').next() {
+        v["request_id"] = Value::from(id);
+    }
+    v["response_url"] = Value::from(format!("https://queue.fal.run{base}"));
+    if v.get("status_url").is_some() {
+        v["status_url"] = Value::from(format!("https://queue.fal.run{base}/status"));
+        v["cancel_url"] = Value::from(format!("https://queue.fal.run{base}/cancel"));
+    }
+    v
+}
+
+// fal's queue keeps a request under its owner and app (`fal-ai/flux` for `fal-ai/flux/dev`), and
+// the mock names in the request id what it will answer.
+fn fal(
+    polls: &Polls,
+    fixtures: &Path,
+    method: &Method,
+    path: &str,
+    body: &str,
+    link: &str,
+) -> Option<Response> {
+    if *method == Method::POST {
+        let mut segments = path.trim_start_matches('/').split('/');
+        let app = format!("{}/{}", segments.next()?, segments.next()?);
+        let tag = if body.contains("[mock:fal=failed]") {
+            "-failed"
+        } else if body.contains("[mock:fal=nsfw]") {
+            "-nsfw"
+        } else if body.contains("\"sync_mode\":true") {
+            "-sync"
+        } else {
+            ""
+        };
+        let base = format!("/{app}/requests/{FAL_REQUEST}{tag}");
+        return Some(json(fal_queue(
+            "IN_QUEUE",
+            &base,
+            fixtures,
+            "fal/queue/submitted-short.json",
+        )));
+    }
+    if *method != Method::GET {
+        return None;
+    }
+    let video = !(path.starts_with("/fal-ai/flux") || path.starts_with("/bytedance/seedream"));
+    if let Some(base) = path.strip_suffix("/status") {
+        let failed = base.ends_with("-failed");
+        if video && polls.next(path) <= 1 {
+            return Some(json(fal_queue(
+                "IN_QUEUE",
+                base,
+                fixtures,
+                "fal/queue/in-queue.json",
+            )));
+        }
+        let rel = if failed {
+            "fal/queue/failed.json"
+        } else {
+            "fal/queue/completed.json"
+        };
+        return Some(json(fal_queue("COMPLETED", base, fixtures, rel)));
+    }
+    let rel = if video {
+        "fal/results/videos/kling.json"
+    } else if path.ends_with("-nsfw") {
+        "fal/moderated/nsfw-black-image.json"
+    } else if path.ends_with("-sync") {
+        "fal/results/images/flux-sync.json"
+    } else if path.starts_with("/bytedance/seedream") {
+        "fal/results/images/seedream.json"
+    } else {
+        "fal/results/images/queue-doc.json"
+    };
+    let mut v = read(fixtures, rel);
+    local_links(&mut v, link);
+    Some(json(v))
 }

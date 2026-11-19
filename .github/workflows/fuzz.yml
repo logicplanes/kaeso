@@ -47,6 +47,7 @@ jobs:
             decode_cohere_rerank,
             decode_dashscope,
             decode_elevenlabs,
+            decode_fal,
             decode_gemini,
             decode_gemini_decisions,
             decode_gemini_embeddings,

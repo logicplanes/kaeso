@@ -1,0 +1,8 @@
+{
+  "request_id": "764cabcf-b745-4b3e-ae38-1200304cf45b",
+  "response_url": "https://queue.fal.run/fal-ai/flux/requests/764cabcf-b745-4b3e-ae38-1200304cf45b",
+  "status_url": "https://queue.fal.run/fal-ai/flux/requests/764cabcf-b745-4b3e-ae38-1200304cf45b/status",
+  "cancel_url": "https://queue.fal.run/fal-ai/flux/requests/764cabcf-b745-4b3e-ae38-1200304cf45b/cancel",
+  "queue_position": 0,
+  "status": "IN_QUEUE"
+}

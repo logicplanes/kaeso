@@ -205,6 +205,9 @@ base_url = "https://ai.mongodb.com"
 [providers.jina]
 base_url = "https://api.jina.ai"
 
+[providers.fal]
+base_url = "https://queue.fal.run"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

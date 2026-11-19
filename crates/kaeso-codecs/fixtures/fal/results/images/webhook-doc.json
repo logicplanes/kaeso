@@ -1,0 +1,13 @@
+{
+  "images": [
+    {
+      "url": "https://url.to/image.png",
+      "content_type": "image/png",
+      "file_name": "image.png",
+      "file_size": 1824075,
+      "width": 1024,
+      "height": 1024
+    }
+  ],
+  "seed": 196619188014358660
+}

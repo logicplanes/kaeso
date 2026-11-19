@@ -111,10 +111,13 @@ for event in stream:
 | MiniMax | 支持 | 不支持 | `image-01` | [Text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i) |
 | Mistral | 不支持：图片只作为其智能体的工具提供 | 不支持 | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
 | ElevenLabs | 支持，每个请求一张图片；Kaeso 等待生成完成（`/v1/flows/image`） | 按模型最多 5、10 或 14 张图片，以上传或素材形式；GPT Image 支持蒙版 | `gpt-image-2.5-sunburst`、`gpt-image-2.5-flare`、`gpt-image-2`、`gpt-image-1.5`、`gpt-image-1`、`gemini-3.1-flash-image`、`gemini-3.1-flash-lite-image`、`gemini-3-pro-image`、`gemini-2.5-flash-image`、`bytedance-seedream-5-pro`、`bytedance-seedream-5-lite` | [图片和视频指南](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video) |
+| fal | 支持，FLUX 每次 1 到 4 张，Seedream 1 到 6 张；Kaeso 等待队列完成 | `bytedance/seedream/v5.5/edit` 最多 10 张图片，上传或链接；不支持蒙版 | `fal-ai/flux/dev`、`fal-ai/flux/schnell`、`fal-ai/flux-pro/v1.1`、`bytedance/seedream/v5.5/text-to-image`、`bytedance/seedream/v5.5/edit` | [Queue API](https://fal.ai/docs/documentation/model-apis/inference/queue)、每个模型的 OpenAPI 文档 |
 | Anthropic、DeepSeek、Groq、Cohere、Ollama Cloud、Moonshot、Cerebras | 服务商不提供 | — | — | 各服务商的 API 参考 |
 | Fireworks AI、Nebius Token Factory、SambaNova、Scaleway、Hugging Face、NVIDIA、Baseten、SiliconFlow | 不通过 Kaeso 提供 | — | — | [支持的服务商](../concepts/supported-providers.md) |
 
 Google 已停用 Imagen，因此 Kaeso 只调用 Gemini 图片模型。只有 Google 尺寸表中列出的尺寸才能传给它们，例如 `1024x1024`（`1K` 下的 `1:1`）。其他尺寸请发送 `aspect_ratio` 和 `resolution`。
+
+fal 以其存储上的链接回答，链接至少保留 7 天；对于 `response_format: "b64_json"`，Kaeso 请求 fal 返回 data URI（`sync_mode`），因此无需下载。FLUX.1 的安全检查器会用一张黑色图片回答被标记的图片，Kaeso 将其转为内容过滤错误。
 
 SpaceX 用 `aspect_ratio` 和 `resolution` 代替 `size`。Z.ai 只返回链接，30 天后过期，因此在那里 `response_format: "b64_json"` 会得到 400。QwenCloud 也返回链接，有效期 24 小时。对于 `b64_json`，Kaeso 只通过 https 从 QwenCloud 的结果主机（`dashscope-*.aliyuncs.com`）下载这些链接，不带服务商密钥，不跟随重定向，并受服务商回复上限和请求超时的限制。Gemini 和 OpenRouter 只返回 base64，因此在它们那里 `response_format: "url"` 会得到 400。
 

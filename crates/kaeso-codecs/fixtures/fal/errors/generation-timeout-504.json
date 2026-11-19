@@ -1,0 +1,15 @@
+{
+  "detail": [
+    {
+      "loc": [
+        "body"
+      ],
+      "msg": "Generation timeout",
+      "type": "generation_timeout",
+      "url": "https://docs.fal.ai/errors#generation_timeout",
+      "input": {
+        "prompt": "a very complex scene taking too long"
+      }
+    }
+  ]
+}

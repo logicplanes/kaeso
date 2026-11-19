@@ -31,6 +31,7 @@ order: 10
 | `jina_rerank/` | Jina AI 的重排序格式（Jina AI 的 `/v1/rerank`） |
 | `voyage_rerank/` | Voyage AI 的重排序格式（Voyage AI 的 `/v1/rerank`） |
 | `xai_videos/`、`minimax_videos/`、`zai_videos/`、`openrouter_videos/`、`veo/`、`gemini_interactions/`、`dashscope/` | 各服务商的视频 API；`responses/` 保存启动任务的回复，`polls/` 保存查询任务时服务商的回答，`minimax_videos/files/` 保存一个变为链接的文件 ID；`dashscope/` 还在 `requests/`、`responses/` 和 `streams/` 下的独立文件夹中保存图片、语音和转写 |
+| `fal/` | fal 的队列；`requests/images/` 和 `requests/videos/`，模型写在 `<name>.meta.json` 中，`queue/` 保存提交和状态的回答，`results/` 保存模型的输出，`moderated/` 保存 FLUX 的黑色安全图片 |
 
 每个方言文件夹都有 `requests/`、`responses/` 和 `errors/`，端点支持流式时还有 `streams/`。
 

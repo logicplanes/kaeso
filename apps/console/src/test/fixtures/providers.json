@@ -1263,6 +1263,32 @@
       "linked_billing": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "fal",
+      "name": "fal",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://fal.ai/dashboard/keys",
+        "label": "API keys"
+      },
+      "key_prefix": null,
+      "dialects": ["fal"],
+      "count_tokens": null,
+      "embeddings": null,
+      "rerank": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "regions": null,
+      "key_endpoint": null,
+      "aws": null,
+      "entra_id": null,
+      "linked_billing": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

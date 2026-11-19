@@ -1,0 +1,6 @@
+{
+  "prompt": "The statue turns its head",
+  "duration": 5,
+  "start_image_url": "https://example.com/statue.png",
+  "end_image_url": "https://example.com/statue-end.png"
+}

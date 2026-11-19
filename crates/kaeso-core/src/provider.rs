@@ -145,12 +145,15 @@ pub enum AuthStyle {
     XiApiKey,
     /// Azure's `api-key` header.
     ApiKey,
+    /// fal's `Authorization: Key …`; fal reads `Bearer` as one of its own short-lived tokens
+    /// (https://fal.ai/docs/documentation/model-apis/authentication/key-based).
+    Key,
 }
 
 impl AuthStyle {
     pub const fn header_name(self) -> &'static str {
         match self {
-            AuthStyle::Bearer => "authorization",
+            AuthStyle::Bearer | AuthStyle::Key => "authorization",
             AuthStyle::XApiKey => "x-api-key",
             AuthStyle::XGoogApiKey => "x-goog-api-key",
             AuthStyle::XiApiKey => "xi-api-key",
@@ -165,6 +168,7 @@ impl AuthStyle {
             | AuthStyle::XGoogApiKey
             | AuthStyle::XiApiKey
             | AuthStyle::ApiKey => key.to_owned(),
+            AuthStyle::Key => format!("Key {key}"),
         }
     }
 }
@@ -3521,6 +3525,53 @@ pub const PROVIDERS: &[Provider] = &[
         key_endpoint: None,
         api_root: None,
     },
+    Provider {
+        id: "fal",
+        name: "fal",
+        // A key with the `API` preset calls models; a team's keys belong to the team
+        // (https://fal.ai/docs/documentation/model-apis/authentication/key-based).
+        key_page: KeyPage {
+            url: "https://fal.ai/dashboard/keys",
+            label: "API keys",
+        },
+        key_prefix: None,
+        // fal's queue (https://fal.ai/docs/documentation/model-apis/inference/queue); its
+        // status and result URLs are followed only on `kaeso_codecs::fal::QUEUE_HOSTS`.
+        default_base_url: "https://queue.fal.run",
+        auth: AuthStyle::Key,
+        // fal hosts image and video models here; it writes no text, so a generation request
+        // never reaches it past the catalogue's checks.
+        generation: DialectId::Fal,
+        count_tokens: None,
+        embeddings: None,
+        embeddings_profile: EmbeddingsProfile::OPENAI,
+        rerank: None,
+        images: &[ImagesEgress {
+            dialect: DialectId::Fal,
+            ..ImagesEgress::ANY
+        }],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[VideosEgress::of(DialectId::Fal)],
+        decisions: &[],
+        dialects: &[DialectId::Fal],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        reasoning_beyond_output_limit: false,
+        listing: ModelListing::Complete,
+        end_user_limit: None,
+        chat: ChatProfile::compatible("fal"),
+        responses: ResponsesProfile::compatible("fal"),
+        messages: MessagesProfile::compatible("fal"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: None,
+        regional: None,
+        key_endpoint: None,
+    },
 ];
 
 const _: () = {
@@ -3823,7 +3874,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal"
         );
     }
 
@@ -4530,6 +4581,35 @@ mod tests {
         let ids = ["gpt-5".to_owned()];
         assert_eq!(ModelListing::Catalogue.serves(&ids, "gpt-5"), None);
         assert_eq!(ModelListing::Catalogue.serves(&ids, "my-gpt"), None);
+    }
+
+    #[test]
+    fn fal_makes_images_and_videos_through_its_queue_with_a_key_header() {
+        let p = provider("fal").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            ("fal", AuthStyle::Key, DialectId::Fal, &[DialectId::Fal][..])
+        );
+        assert_eq!(p.default_base_url, "https://queue.fal.run");
+        assert_eq!(
+            (p.auth.header_name(), p.auth.header_value("k-1").as_str()),
+            ("authorization", "Key k-1")
+        );
+        assert_eq!(
+            (p.count_tokens, p.embeddings, p.key_prefix),
+            (None, None, None)
+        );
+        assert_eq!(p.key_page.url, "https://fal.ai/dashboard/keys");
+        for model in kaeso_codecs::fal::IMAGE_MODELS {
+            let images = p.images.iter().find(|e| e.serves(model)).unwrap();
+            assert_eq!(images.dialect, DialectId::Fal, "{model}");
+            assert!(!images.from_root && images.auth.is_none() && images.fetch_hosts.is_empty());
+        }
+        for model in kaeso_codecs::fal::VIDEO_MODELS {
+            let videos = p.videos.iter().find(|e| e.serves(model)).unwrap();
+            assert_eq!(videos.dialect, DialectId::Fal, "{model}");
+        }
+        assert!(p.speech.is_empty() && p.transcriptions.is_empty() && p.decisions.is_empty());
     }
 
     #[test]
@@ -5610,7 +5690,8 @@ mod tests {
                 "amazon-bedrock",
                 "azure",
                 "voyage",
-                "jina"
+                "jina",
+                "fal"
             ]
         );
         assert_eq!(

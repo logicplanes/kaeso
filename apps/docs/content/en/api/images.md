@@ -111,10 +111,13 @@ Every built-in provider's documentation was read for image generation on 2026-11
 | MiniMax | Yes | No | `image-01` | [Text to image](https://platform.minimax.io/docs/api-reference/image-generation-t2i) |
 | Mistral | No: images only as a tool of its agents | No | — | [Image generation tool](https://docs.mistral.ai/studio/agents/agent-tools/image_generation) |
 | ElevenLabs | Yes, one image per request; Kaeso waits for the generation (`/v1/flows/image`) | Up to 5, 10 or 14 images by upload or asset, as the model takes; a mask on GPT Image | `gpt-image-2.5-sunburst`, `gpt-image-2.5-flare`, `gpt-image-2`, `gpt-image-1.5`, `gpt-image-1`, `gemini-3.1-flash-image`, `gemini-3.1-flash-lite-image`, `gemini-3-pro-image`, `gemini-2.5-flash-image`, `bytedance-seedream-5-pro`, `bytedance-seedream-5-lite` | [Image and video guide](https://elevenlabs.io/docs/eleven-api/guides/cookbooks/image-and-video) |
+| fal | Yes, 1 to 4 images on FLUX, 1 to 6 on Seedream; Kaeso waits for the queue | Up to 10 images, uploaded or linked, on `bytedance/seedream/v5.5/edit`; no mask | `fal-ai/flux/dev`, `fal-ai/flux/schnell`, `fal-ai/flux-pro/v1.1`, `bytedance/seedream/v5.5/text-to-image`, `bytedance/seedream/v5.5/edit` | [Queue API](https://fal.ai/docs/documentation/model-apis/inference/queue), each model's OpenAPI document |
 | Anthropic, DeepSeek, Groq, Cohere, Ollama Cloud, Moonshot, Cerebras | Not offered by the provider | — | — | Each provider's API reference |
 | Fireworks AI, Nebius Token Factory, SambaNova, Scaleway, Hugging Face, NVIDIA, Baseten, SiliconFlow | Not through Kaeso | — | — | [Supported providers](../concepts/supported-providers.md) |
 
 Google retired Imagen, so Kaeso calls the Gemini image models only. A size reaches them only when Google's size tables list it, such as `1024x1024` (`1:1` at `1K`). Send `aspect_ratio` and `resolution` for the others.
+
+fal answers with links on its storage, kept for at least 7 days; for `response_format: "b64_json"` Kaeso asks fal for data URIs (`sync_mode`), so nothing is downloaded. FLUX.1's safety checker answers a flagged image with a black image, which Kaeso turns into a content filter error.
 
 SpaceX takes `aspect_ratio` and `resolution` instead of `size`. Z.ai answers only with links, which expire after 30 days, so `response_format: "b64_json"` answers 400 there. QwenCloud answers with links too, valid for 24 hours. For `b64_json`, Kaeso downloads them over https from QwenCloud's result hosts (`dashscope-*.aliyuncs.com`) only, without the provider key or redirects, within the provider response limit and the request timeout. Gemini and OpenRouter answer only with base64, so `response_format: "url"` answers 400 there.
 

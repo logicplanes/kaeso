@@ -8,6 +8,7 @@ use crate::bedrock_converse::BedrockConverse;
 use crate::cohere_rerank::CohereRerank;
 use crate::dashscope::DashScope;
 use crate::elevenlabs::{ElevenLabs, ElevenLabsCall};
+use crate::fal::Fal;
 use crate::gemini::{Gemini, GeminiAction};
 use crate::gemini_decisions::GeminiDecisions;
 use crate::gemini_embeddings::GeminiEmbeddings;
@@ -66,6 +67,7 @@ macro_rules! dispatch {
             DialectId::VoyageRerank => Ok(VoyageRerank::$f($($arg),*)),
             DialectId::JinaRerank => Ok(JinaRerank::$f($($arg),*)),
             DialectId::BedrockConverse => Ok(BedrockConverse::$f($($arg),*)),
+            DialectId::Fal => Ok(Fal::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -131,6 +133,7 @@ pub fn decode_checked_request<B: RequestBody>(
         DialectId::OpenRouterVideos => OpenRouterVideos::decode_request(kind, body, headers),
         DialectId::MinimaxVideos => MinimaxVideos::decode_request(kind, body, headers),
         DialectId::ZaiVideos => ZaiVideos::decode_request(kind, body, headers),
+        DialectId::Fal => Fal::decode_request(kind, body, headers),
         DialectId::OpenAiTranscriptions => OpenAiTranscriptions::decode_upload(
             kaeso_kpp::TranscriptionOperation::Transcribe,
             upload,
@@ -531,12 +534,14 @@ pub fn encode_video_poll(
 }
 
 /// The task an image reply names while its images are still being made, for providers that
-/// make images as tasks, such as QwenCloud's older Wan text-to-image models. The caller asks
+/// make images as tasks, such as QwenCloud's older Wan text-to-image models and fal's queue,
+/// whose task is the path of the status or result URL to ask next. The caller asks
 /// [`encode_task_poll`] until the task's answer names none, then decodes that answer.
 pub fn pending_task(dialect: DialectId, kind: RequestKind, body: &[u8]) -> Option<String> {
     match (dialect, kind) {
         (DialectId::DashScope, RequestKind::Image) => crate::dashscope::images::pending_task(body),
         (DialectId::ElevenLabs, RequestKind::Image) => crate::elevenlabs::images_pending_task(body),
+        (DialectId::Fal, RequestKind::Image) => crate::fal::pending_task(body),
         _ => None,
     }
 }
@@ -560,6 +565,7 @@ pub fn encode_task_poll(
     match dialect {
         DialectId::DashScope => dispatch!(dialect, encode_video_poll(task, "", ctx))?,
         DialectId::ElevenLabs => Ok(crate::elevenlabs::images_poll_request(task)),
+        DialectId::Fal => crate::fal::poll_request(task),
         other => Err(KppError::unsupported_by(
             "tasks",
             other,

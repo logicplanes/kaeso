@@ -1,0 +1,25 @@
+{
+  "images": [
+    {
+      "url": "data:image/png;base64,iVBORw0KGgo=",
+      "width": 1024,
+      "height": 1024,
+      "content_type": "image/png"
+    },
+    {
+      "url": "data:image/png;base64,iVBORw0KGgo=",
+      "width": 1024,
+      "height": 1024,
+      "content_type": "image/png"
+    }
+  ],
+  "timings": {
+    "inference": 1.2
+  },
+  "seed": 42,
+  "has_nsfw_concepts": [
+    false,
+    false
+  ],
+  "prompt": "a red apple on a table"
+}

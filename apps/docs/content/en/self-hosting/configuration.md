@@ -242,6 +242,7 @@ The gateway fetches the European Central Bank's reference rates for [currencies]
 | `KAESO_PROVIDERS_AZURE_BASE_URL`<br>`providers.azure.base_url` | text | `https://openai.azure.com` | Where Kaeso sends every Azure request instead of each key's resource endpoint, such as an API gateway in front of Azure; unused while it is the default. |
 | `KAESO_PROVIDERS_VOYAGE_BASE_URL`<br>`providers.voyage.base_url` | text | `https://ai.mongodb.com` | Base URL of the Voyage AI API. |
 | `KAESO_PROVIDERS_JINA_BASE_URL`<br>`providers.jina.base_url` | text | `https://api.jina.ai` | Base URL of the Jina AI API. |
+| `KAESO_PROVIDERS_FAL_BASE_URL`<br>`providers.fal.base_url` | text | `https://queue.fal.run` | Base URL of the fal API. |
 | `KAESO_AWS_AMBIENT_CREDENTIALS`<br>`aws.ambient_credentials` | bool | `false` | Let instance admins add Amazon Bedrock keys that sign in as the gateway's own AWS identity: its `AWS_*` environment, web identity token, ECS or EKS container role or EC2 instance role, optionally assuming another role. Off by default, since such a key lets an organization use the gateway's role. |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | text | `10s` | Time to connect to a provider, TCP and TLS; at most 24h. |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | text | `600s` | Total time of a provider request that doesn't stream; at most 24h. |

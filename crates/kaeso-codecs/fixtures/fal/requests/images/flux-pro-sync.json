@@ -1,0 +1,11 @@
+{
+  "prompt": "a red apple on a table",
+  "image_size": {
+    "width": 1024,
+    "height": 1024
+  },
+  "num_images": 2,
+  "seed": 42,
+  "output_format": "png",
+  "sync_mode": true
+}
