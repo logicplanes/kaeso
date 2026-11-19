@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { AlertDialog, Button, Dialog, DialogScope, LimitMeter, Section, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
-import { formatNumber, formatRelative, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
 import type { LimitView } from "~/api/generated/types";
 import { limitsQuery, type LimitFilter } from "~/api/queries/limits";
@@ -10,9 +10,11 @@ import { catalogueQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
 import { limitDescription, limitKindLabel, periodLabel } from "~/format/labels";
 import { alertMarks } from "~/format/alert-marks";
+import { limitUse } from "~/format/limit-use";
 import { modelName } from "~/format/models";
 import { t } from "~/i18n";
 import { parentConflict, parentFilters } from "./limit-checks";
+import { LimitFigure } from "./limit-figure";
 import { LimitEditor, alertThresholds, draftOf, limitBody, limitProblem, newLimit, type LimitDraft } from "./limit-editor";
 
 export type LimitOwner = { kind: "user" | "service_account"; id: string };
@@ -120,11 +122,10 @@ export function LimitsSection({
 export function useLimitText(org: string, project: string, limit: LimitView) {
   const catalogue = useQuery(catalogueQuery(org, project));
   const money = limit.kind === "spend_budget";
-  const fmt = (v: string) => (money ? formatUSD(v) : formatNumber(Number(v)));
   const catalogueModel = limit.model ? catalogue.data?.find((m) => m.id === limit.model) : undefined;
   return {
     kind: (money ? "spend" : limit.kind === "request_rate" || limit.kind === "tool_call_rate" ? "requests" : "tokens") as "spend" | "requests" | "tokens",
-    value: t("kaeso.limits.usedOf", "{used} of {amount}", { used: fmt(limit.used ?? "0"), amount: fmt(limit.amount) }),
+    value: limitUse(limit, (values) => t("kaeso.limits.usedOf", "{used} of {amount}", values)),
     model:
       limit.kind === "tool_call_rate"
         ? t("kaeso.limits.allTools", "All tools")
@@ -155,7 +156,7 @@ function LimitRow({ org, project, limit, canEdit }: { org: string; project: stri
           window={`${periodLabel(limit.period)} · ${text.model}`}
           used={Number(limit.used ?? 0)}
           limit={Number(limit.amount)}
-          valueLabel={text.value}
+          valueLabel={<LimitFigure figure={text.value} />}
           alerts={alertMarks(limit)}
           hard={limit.hard}
           resets={text.resets}
