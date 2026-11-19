@@ -1266,5 +1266,6 @@
   "The button's or the track's height.": "按钮或轨道的高度。",
   "A bar (`bar`), or a half circle with square ends (`gauge`) with the number in its middle and, under its caption, near or over the limit.": "一个条形（`bar`），或一个两端平直的半圆（`gauge`），中间显示数字，并在说明文字下方提示接近或超出限额。",
   "A subtle line inside groups, a clearer one between regions, `strong` for a section head's rule, `marker` for a list item's short hairline, or `ink` in the text colour for a quotation's rule (2px wide when vertical).": "组内使用淡线，区域之间使用更清晰的线；`strong` 用于章节标题下的线；`marker` 用于列表项的短细线；`ink` 使用文字颜色，用于引文的竖线（竖直时宽 2px）。",
-  "Several versions: \"Python · Node · curl\", shown as pill tabs in the title bar, the chosen one raised on the plate as in a segmented control.": "多个版本：“Python · Node · curl”，在标题栏中以胶囊标签页显示，所选版本像分段控件一样在底板上凸起。"
+  "Several versions: \"Python · Node · curl\", shown as pill tabs in the title bar, the chosen one raised on the plate as in a segmented control.": "多个版本：“Python · Node · curl”，在标题栏中以胶囊标签页显示，所选版本像分段控件一样在底板上凸起。",
+  "What screen readers hear as the value when `valueLabel` is not plain text, such as a shortened figure with the exact one in a tooltip: \"10,624,184 of 100,000,000\".": "当 `valueLabel` 不是纯文本时（例如缩写的数字，精确值在提示中），屏幕阅读器读出的值：\"已用 10,624,184，共 100,000,000\"。"
 }
