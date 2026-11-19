@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, project, signedIn } from "~/test/fixtures";
 import { notifications } from "~/test/fixtures/org";
 import { apiError, on, page } from "~/test/network";
+import { insidePageGutter } from "~/test/layout";
 import { renderApp } from "~/test/render";
 
 const LIMITS = `/orgs/${ORG}/projects/${PROJECT}/limits`;
@@ -13,7 +14,7 @@ describe("a page that fails to load", () => {
     on("GET", "orgs/:org/projects/:project", apiError(404, "not_found", "No project proj_checkout in this organization."));
     await renderApp(LIMITS);
     expect(await screen.findByRole("heading", { name: "Not found", level: 1 })).toBeInTheDocument();
-    expect(screen.getByText("This doesn't exist or was removed")).toBeInTheDocument();
+    expect(insidePageGutter(screen.getByText("This doesn't exist or was removed"))).toBe(true);
     expect(screen.getByText("No project proj_checkout in this organization.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to the start page" })).toHaveAttribute("href", "/");
     expect(notifications().queryByText("No project proj_checkout in this organization.")).not.toBeInTheDocument();
@@ -24,7 +25,7 @@ describe("a page that fails to load", () => {
     on("GET", "orgs/:org/projects/:project", apiError(403, "permission_denied", "You are not a member of this project."));
     await renderApp(LIMITS);
     expect(await screen.findByRole("heading", { name: "No access", level: 1 })).toBeInTheDocument();
-    expect(screen.getByText("You don't have access to this page")).toBeInTheDocument();
+    expect(insidePageGutter(screen.getByText("You don't have access to this page"))).toBe(true);
     expect(within(screen.getByRole("main")).getByText("You are not a member of this project.")).toBeInTheDocument();
     expect(notifications().queryByText("You are not a member of this project.")).not.toBeInTheDocument();
   });
@@ -34,7 +35,7 @@ describe("a page that fails to load", () => {
     on("GET", "orgs/:org/projects/:project", apiError(400, "invalid_request", "The project id is malformed."));
     const { user } = await renderApp(LIMITS);
     expect(await screen.findByRole("heading", { name: "Couldn't load this page", level: 1 })).toBeInTheDocument();
-    expect(screen.getByText("Try again in a moment.")).toBeInTheDocument();
+    expect(insidePageGutter(screen.getByText("Try again in a moment."))).toBe(true);
     expect(await notifications().findAllByText("The project id is malformed.")).not.toHaveLength(0);
     on("GET", "orgs/:org/projects/:project", project());
     on("GET", "orgs/:org/projects/:project/limits", page([]));

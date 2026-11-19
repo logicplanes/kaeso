@@ -63,7 +63,7 @@ const Input = forwardRef<HTMLInputElement, InputGroupInputProps>(function InputG
       {...(invalid ? { "aria-invalid": true } : {})}
       {...(disabled ? { disabled: true } : {})}
       className={cn(
-        "min-w-0 flex-1 bg-transparent bidi-plaintext text-inherit text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed disabled:text-fg-disabled read-only:cursor-text data-mono:mono data-mono:text-small",
+        "min-w-0 flex-1 bg-transparent bidi-plaintext text-inherit text-ellipsis text-fg outline-none placeholder:text-fg-tertiary disabled:cursor-not-allowed disabled:text-fg-disabled read-only:cursor-text data-mono:mono data-mono:text-small",
         className,
       )}
       {...props}

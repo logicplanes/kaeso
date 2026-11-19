@@ -149,7 +149,7 @@ describe("the sidebar in an organization", () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
     await user.click(await within(await screen.findByRole("navigation", { name: "Console" })).findByRole("button", { name: "Search" }));
-    expect(await screen.findByPlaceholderText("Search pages, actions, projects, members and keys")).toBeInTheDocument();
+    expect(await screen.findByPlaceholderText("Search pages, projects and members")).toBeInTheDocument();
   });
 });
 
