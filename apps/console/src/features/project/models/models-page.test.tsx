@@ -333,8 +333,53 @@ describe("ModelsPage", () => {
     expect(cells()).toEqual([
       "Anthropic2",
       "Claude Sonnet 4.5claude-3-haikuDeprecatedmessages200K$3 / $15Sep 2025",
-      "Claude Sonnet 4.5claude-sonnet-4-5UnavailableUnavailablemessages200K$3 / $15Sep 2025",
+      "Claude Sonnet 4.5claude-sonnet-4-5Unavailablemessages200K$3 / $15Sep 2025",
     ]);
+  });
+
+  it("on a phone, still says which models are deprecated or unavailable, and gives the others no empty line", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    signedIn();
+    projectData();
+    modelsApi({
+      models: [
+        catalogueModel(),
+        catalogueModel({ id: "cm_old", model_id: "claude-3-haiku", deprecated: true }),
+        catalogueModel({ id: "cm_gone", model_id: "claude-2", availability: "unavailable", availability_checked_at: "2026-10-17T08:00:00Z" }),
+      ],
+    });
+    await renderApp(projectPath("models"));
+
+    await screen.findByText("claude-3-haiku");
+    expect(screen.getByRole("gridcell", { name: /claude-3-haiku/ })).toHaveTextContent("Deprecated");
+    expect(screen.getByRole("gridcell", { name: /claude-2/ })).toHaveTextContent("Unavailable");
+    expect(screen.getByRole("gridcell", { name: /claude-sonnet-4-5/ })).toHaveTextContent(/^Claude Sonnet 4\.5claude-sonnet-4-5Sep 2025$/);
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps the release column for a model without a release date, so the rows line up", async () => {
+    signedIn();
+    projectData();
+    modelsApi({
+      models: [
+        catalogueModel(),
+        catalogueModel({ id: "cm_tts", model_id: "tts-1", effective: { ...catalogueModel().effective, display_name: null, release_date: null } }),
+      ],
+    });
+    await renderApp(projectPath("models"));
+
+    const undated = await screen.findByRole("gridcell", { name: /tts-1/ });
+    const dated = screen.getByRole("gridcell", { name: /claude-sonnet-4-5/ });
+    expect(undated.lastElementChild?.className).toBe(dated.lastElementChild?.className);
+    expect(undated.lastElementChild).toHaveTextContent(/^$/);
+    expect(dated.lastElementChild).toHaveTextContent("Sep 2025");
   });
 
   it("checks every model's availability and says what it found", async () => {

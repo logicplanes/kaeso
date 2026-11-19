@@ -18,6 +18,7 @@ import { LoadFailed } from "~/features/org/load-failed";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { toast } from "~/shell/toast";
+import { usePhone } from "~/shell/use-phone";
 import { usePageTitle } from "~/shell/title";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
@@ -192,6 +193,7 @@ function Editor({
   const [prompt, setPrompt] = useState(() => t("models.route.defaultPrompt", "Say hello in one sentence."));
   const me = useSession().user.id;
   const logs = useRequestLogs();
+  const phone = usePhone();
   const sender = useRouteSend(org, project);
   const [started, setStarted] = useState<{ kind: Template; root: DraftStep } | null>(() => (start ? null : { kind: "single", root: history.present.root }));
   const [json, setJson] = useState(false);
@@ -527,6 +529,20 @@ function Editor({
     />
   );
 
+  const seeRequests =
+    saved && logs && rights.has("logs.metadata.view")
+      ? () => void navigate({ to: "/orgs/$org/projects/$project/logs", params: { org, project }, search: { alias: saved.name } })
+      : undefined;
+  const duplicate =
+    saved && !readOnly
+      ? () =>
+          void navigate({
+            to: "/orgs/$org/projects/$project/models/aliases/$alias",
+            params: { org, project, alias: "new" },
+            search: { from: saved.id },
+          })
+      : undefined;
+
   return (
     <>
       <PageHeader
@@ -563,45 +579,79 @@ function Editor({
                 />
               </>
             )}
-            {saved && logs && rights.has("logs.metadata.view") && (
-              <Button
-                size="sm"
-                variant="ghost"
-                leadingIcon={icons.requestLog}
-                onClick={() => void navigate({ to: "/orgs/$org/projects/$project/logs", params: { org, project }, search: { alias: saved.name } })}
-              >
-                {t("models.route.seeRequests", "See its requests")}
-              </Button>
-            )}
-            {saved && !readOnly && (
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={!dirty}
-                {...(dirty ? {} : { disabledReason: t("models.route.nothingToSave", "Nothing has changed since the last save.") })}
-                onClick={() => setChanges(true)}
-              >
-                {t("models.route.changes", "Changes")}
-              </Button>
-            )}
-            <Button size="sm" icon={icons.code} variant="ghost" aria-label={t("models.route.showJson", "Show as JSON")} onClick={() => setJson(true)} />
-            {saved && !readOnly && (
-              <Button
-                size="sm"
-                icon={icons.copy}
-                variant="ghost"
-                aria-label={t("models.alias.duplicate", "Duplicate")}
-                onClick={() =>
-                  void navigate({
-                    to: "/orgs/$org/projects/$project/models/aliases/$alias",
-                    params: { org, project, alias: "new" },
-                    search: { from: saved.id },
-                  })
-                }
-              />
-            )}
-            {saved && !readOnly && (
-              <Button size="sm" icon={icons.delete} variant="ghost" aria-label={t("models.alias.delete", "Delete alias")} onClick={() => setDeleting(true)} />
+            {phone ? (
+              <Menu>
+                <Menu.Trigger>
+                  <Button
+                    size="sm"
+                    icon={icons.more}
+                    variant="ghost"
+                    aria-label={t("models.alias.actionsFor", "Actions for {name}", {
+                      name: saved?.name ?? (doc.name.trim() || t("models.route.newAlias", "New alias")),
+                    })}
+                  />
+                </Menu.Trigger>
+                <Menu.Content align="end">
+                  {seeRequests && (
+                    <Menu.Item icon={icons.requestLog} onClick={seeRequests}>
+                      {t("models.route.seeRequests", "See its requests")}
+                    </Menu.Item>
+                  )}
+                  {saved && !readOnly && (
+                    <Menu.Item
+                      icon={icons.audit}
+                      disabled={!dirty}
+                      {...(dirty ? {} : { description: t("models.route.nothingToSave", "Nothing has changed since the last save.") })}
+                      onClick={() => setChanges(true)}
+                    >
+                      {t("models.route.changes", "Changes")}
+                    </Menu.Item>
+                  )}
+                  <Menu.Item icon={icons.code} onClick={() => setJson(true)}>
+                    {t("models.route.showJson", "Show as JSON")}
+                  </Menu.Item>
+                  {duplicate && (
+                    <Menu.Item icon={icons.copy} onClick={duplicate}>
+                      {t("models.alias.duplicate", "Duplicate")}
+                    </Menu.Item>
+                  )}
+                  {saved && !readOnly && (
+                    <Menu.Item icon={icons.delete} variant="danger" onClick={() => setDeleting(true)}>
+                      {t("models.alias.delete", "Delete alias")}
+                    </Menu.Item>
+                  )}
+                </Menu.Content>
+              </Menu>
+            ) : (
+              <>
+                {seeRequests && (
+                  <Button size="sm" variant="ghost" leadingIcon={icons.requestLog} onClick={seeRequests}>
+                    {t("models.route.seeRequests", "See its requests")}
+                  </Button>
+                )}
+                {saved && !readOnly && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={!dirty}
+                    {...(dirty ? {} : { disabledReason: t("models.route.nothingToSave", "Nothing has changed since the last save.") })}
+                    onClick={() => setChanges(true)}
+                  >
+                    {t("models.route.changes", "Changes")}
+                  </Button>
+                )}
+                <Button size="sm" icon={icons.code} variant="ghost" aria-label={t("models.route.showJson", "Show as JSON")} onClick={() => setJson(true)} />
+                {duplicate && <Button size="sm" icon={icons.copy} variant="ghost" aria-label={t("models.alias.duplicate", "Duplicate")} onClick={duplicate} />}
+                {saved && !readOnly && (
+                  <Button
+                    size="sm"
+                    icon={icons.delete}
+                    variant="ghost"
+                    aria-label={t("models.alias.delete", "Delete alias")}
+                    onClick={() => setDeleting(true)}
+                  />
+                )}
+              </>
             )}
             {!readOnly && (
               <Button

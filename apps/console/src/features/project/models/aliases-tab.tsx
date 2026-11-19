@@ -63,18 +63,22 @@ export function AliasesTab({ org, project, canManage }: { org: string; project: 
                   {routeSummary(a.route, models)}
                 </Text>
               ),
-              meta: (
-                <span className="flex items-center gap-6">
-                  {removed && <Badge tone="danger">{t("models.alias.modelRemoved", "Model removed")}</Badge>}
-                  {a.shadows_model && (
-                    <Tooltip content={shadowText(a.name)}>
-                      <Badge tone="warning" tabIndex={0}>
-                        {t("models.alias.shadowsModel", "Shadows a model")}
-                      </Badge>
-                    </Tooltip>
-                  )}
-                </span>
-              ),
+              ...(removed || a.shadows_model
+                ? {
+                    meta: (
+                      <span className="flex items-center gap-6">
+                        {removed && <Badge tone="danger">{t("models.alias.modelRemoved", "Model removed")}</Badge>}
+                        {a.shadows_model && (
+                          <Tooltip content={shadowText(a.name)}>
+                            <Badge tone="warning" tabIndex={0}>
+                              {t("models.alias.shadowsModel", "Shadows a model")}
+                            </Badge>
+                          </Tooltip>
+                        )}
+                      </span>
+                    ),
+                  }
+                : {}),
               date: formatRelative(a.updated_at),
               actions: canManage ? (
                 <Menu>

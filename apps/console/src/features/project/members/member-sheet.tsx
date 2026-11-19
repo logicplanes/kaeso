@@ -14,7 +14,7 @@ import { projectMemberRightsQuery } from "~/api/queries/rights";
 import { AccessView } from "~/kaeso/access-view";
 import { AuditLinks } from "~/kaeso/audit-links";
 import { useCatalogue } from "~/kaeso/catalogue";
-import { asGrant, sameGrant, type Grant } from "~/kaeso/grant";
+import { asGrant, grantUnchanged, sameGrant, type Grant } from "~/kaeso/grant";
 import { LimitsSection } from "~/kaeso/limits-section";
 import { ModelAccessSection } from "~/kaeso/model-access-section";
 import { ToolAccessSection } from "~/kaeso/tool-access-section";
@@ -135,10 +135,17 @@ function MemberBody({ org, project, userId, onClose }: { org: string; project: s
         <div className="flex flex-col gap-12">
           <GrantEditor cat={cat} scope="project" roles={rolesOfScope(roles, "project")} value={editing} onChange={setGrant} giver={giver} readOnly={readOnly} />
           <div className="flex gap-8">
-            <Button size="sm" variant="primary" disabled={!changed} loading={save.isPending} onClick={() => grant && save.mutate(grant)}>
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={!changed}
+              {...(changed ? {} : { disabledReason: readOnly ?? grantUnchanged() })}
+              loading={save.isPending}
+              onClick={() => grant && save.mutate(grant)}
+            >
               {t("project.members.saveRole", "Save role")}
             </Button>
-            <Button size="sm" disabled={!changed} onClick={() => setGrant(null)}>
+            <Button size="sm" disabled={!changed} {...(changed ? {} : { disabledReason: readOnly ?? grantUnchanged() })} onClick={() => setGrant(null)}>
               {common.cancel()}
             </Button>
           </div>

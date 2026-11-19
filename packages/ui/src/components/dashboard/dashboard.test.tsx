@@ -146,6 +146,14 @@ describe("Readout", () => {
     rerender(<Readout label="Requests" value="1,205" />);
     expect(screen.getByText("Requests").parentElement).toHaveTextContent("1,205");
   });
+
+  it("writes a name, such as the busiest key, as one kerned word that ends in an ellipsis when it's cut", () => {
+    const { container, rerender } = render(<Readout size="sm" value="checkout-web" />);
+    expect(screen.getByText("checkout-web")).toHaveClass("truncate");
+    expect(container.querySelector("[data-char]")).toBeNull();
+    rerender(<Readout size="sm" value="$55.09" />);
+    expect(container.querySelector("[data-char]")).not.toBeNull();
+  });
 });
 
 describe("RankList", () => {
