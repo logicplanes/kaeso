@@ -184,6 +184,33 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
     onSuccess: (k) => toast(t("orgHome.keyMadeDefault", "{name} is the {provider} default", { name: k.name, provider: providers.name(k.provider) })),
   });
   const setDefault = makeDefault.mutate;
+  const testKey = useApiMutation({
+    mutationFn: async (k: CredentialView) => ({
+      key: k,
+      check: data(await api.POST("/platform/v1/orgs/{org}/credentials/{credential}/check", { params: { path: { org, credential: k.id } } })),
+    }),
+    onSuccess: ({ key, check }) => {
+      const names = { name: key.name, provider: providers.name(key.provider) };
+      const description = check.detail ? { description: check.detail } : undefined;
+      if (check.result === "ok") {
+        toast.success(
+          typeof check.models === "number"
+            ? t("orgHome.keyWorksModels", "{provider} takes {name} and lists {count, plural, one {# model} other {# models}} for it", {
+                ...names,
+                count: check.models,
+              })
+            : t("orgHome.keyWorks", "{provider} takes {name}", names),
+        );
+      } else if (check.result === "refused") {
+        toast.error(t("orgHome.keyRefused", "{provider} refused {name}.", names), description);
+      } else if (check.result === "unreachable") {
+        toast.warning(t("orgHome.keyUnreached", "{provider} couldn't be reached; try again later", names), description);
+      } else {
+        toast(t("orgHome.keyUnknown", "Only a model request to {provider} confirms {name}", names));
+      }
+    },
+  });
+  const runTest = testKey.mutate;
   const columns = useMemo(() => {
     const costOf = (k: CredentialView) => costs?.keys.find((c) => c.credential === k.id)?.cost ?? (costs ? "0" : undefined);
     const menu = (k: CredentialView) => {
@@ -205,6 +232,11 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
             {canChange && !k.is_default && (
               <Menu.Item icon={icons.home} onClick={() => setDefault(k)}>
                 {t("orgHome.makeDefault", "Make default")}
+              </Menu.Item>
+            )}
+            {canChange && (
+              <Menu.Item icon={icons.check} onClick={() => runTest(k)}>
+                {t("orgHome.testKey", "Test key")}
               </Menu.Item>
             )}
             {canChange && (
@@ -392,7 +424,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
         { align: "end" },
       ),
     ].map((c) => ({ ...c, enableSorting: false }));
-  }, [accounts, canChange, canDelete, costs, hidden, partyName, providers, setDefault]);
+  }, [accounts, canChange, canDelete, costs, hidden, partyName, providers, runTest, setDefault]);
 
   return (
     <>

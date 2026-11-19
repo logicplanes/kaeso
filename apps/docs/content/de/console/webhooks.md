@@ -29,9 +29,10 @@ Das Menü eines Webhooks hat **Test senden**, **Ausschalten** oder **Einschalten
 | Ihr Schlüssel läuft ab | `key.expiring` |
 | Modell abgekündigt | `model.deprecated` |
 | Modell wird bald abgeschaltet | `model.shutdown_soon`, `model.moved` |
+| Wechsel von Modelllinien | `line.moved`, `line.move_available` |
 | Inhaltsprotokollierung geändert | `project.content_logging_changed` |
 | MCP-Server brauchen Aufmerksamkeit | `mcp_server.signed_out`, `mcp_server.tool_held` |
-| Sicherheitseinstellungen geändert | `organization.security_changed` |
+| Sicherheitseinstellungen geändert | `organization.security_changed`, `share.created` |
 | Mitgliederänderungen | `organization.member_joined`, `organization.member_left` |
 | Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_key.refused`, `provider_key.signed_out`, `provider_key.spend_limit_reached`, `provider_key.unlinked` |
 | Modelländerungen | `model.delisted`, `model.price_changed` |
@@ -81,6 +82,7 @@ Eine JSON-Zustellung ist ein `POST` mit `content-type: application/json` und ein
 | `mcp_server.signed_out` | `server_id`, `server` (sein Name) |
 | `mcp_server.tool_held` | `server_id`, `server`, `tool`: ein Tool, das sich änderte und auf Freigabe wartet |
 | `organization.security_changed` | `change` (`sign_in_rules`, `single_sign_on`, `agent_policy`, `key_policy`, `platform_key_created` oder `platform_key_rotated`), `platform_key` (sein Name, bei den letzten beiden), `by` |
+| `share.created` | `title` (der des Links), `audience` (`anyone` oder `members`), `by` ([Nutzung teilen](share-usage.md)) |
 | `organization.member_joined` | `person`, `sso` (ob sie über Single Sign-on kam) |
 | `organization.member_left` | `person`, `removed_by` (`null`, wenn sie selbst ging) |
 | `provider_key.refused` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refusal` mit `status` und `message` des Anbieters, `billing` (ein Abrechnungsproblem) sowie `first_at` und `last_at` |
@@ -91,6 +93,8 @@ Eine JSON-Zustellung ist ein `POST` mit `content-type: application/json` und ein
 | `model.deprecated` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `shutdown_on` (`null` ohne Datum), `replacement` ([Modell-Lebenszyklus](../concepts/model-lifecycle.md)) |
 | `model.shutdown_soon` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `shutdown_on`, `days_left`, `replacement`, `requests_7d` (die Anfragen des Projekts an das Modell in den letzten 7 Tagen) |
 | `model.moved` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `replacement`, `aliases` (wie viele umgestellt wurden) |
+| `line.moved` | `catalogue_model_id` (der Linie), `provider_id`, `provider`, `line`, `from`, `to`, `prices`: die geänderten Eingabe- und Ausgabepreise, `from` und `to` je Million Token, und `policy`: `follow`, `delay`, `approved` (jemand wählte **Wechseln**) oder `back` ([Modelllinien](models-and-aliases.md#modelllinien)) |
+| `line.move_available` | `catalogue_model_id`, `provider_id`, `provider`, `line`, `from`, `to`, `prices`: KPMR hat eine Linie gewechselt, bei der das Projekt zuerst fragt |
 | `model.price_changed` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `prices`: jeder geänderte Preis (`input`, `output`, `cache_read`, `cache_write`, `cache_write_1h`) mit seinen alten und neuen US-Dollar je Million Token, `from` und `to`, `null` wo er keinen Preis hatte oder hat |
 | `webhook.test` | `webhook_id`, `name` |
 

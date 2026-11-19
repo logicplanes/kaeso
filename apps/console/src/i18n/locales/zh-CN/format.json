@@ -13,6 +13,8 @@
   "format.audit.action.catalogueModelUpdate": "已更改模型数值",
   "format.audit.action.catalogueModelMove": "已将模型切换到替代模型",
   "format.audit.action.projectModelLifecycle": "已更改项目的模型停用设置",
+  "format.audit.action.catalogueModelLineMove": "已切换模型系列",
+  "format.audit.action.catalogueModelLineUpdate": "已更改模型系列设置",
   "format.audit.action.credentialAssign": "已将提供商密钥分配给项目",
   "format.audit.action.credentialCreate": "已添加提供商密钥",
   "format.audit.action.credentialDefault": "已将提供商密钥设为默认",
@@ -21,6 +23,8 @@
   "format.audit.action.credentialReplace": "已替换提供商密钥",
   "format.audit.action.instanceAdminSsoUpdate": "已更改实例管理员的单点登录",
   "format.audit.action.instanceInvite": "已邀请用户加入实例",
+  "format.audit.action.instanceInviteResend": "已重新发送实例邀请",
+  "format.audit.action.instanceInviteRevoke": "已撤销实例邀请",
   "format.audit.action.instanceSettingsUpdate": "已更改实例设置",
   "format.audit.action.instanceSetup": "已设置 Kaeso",
   "format.audit.action.instanceUpdateCheck": "已检查更新",
@@ -288,5 +292,11 @@
   "format.audit.action.securitySsoGroupsUpdate": "单点登录组规则已更改",
   "format.audit.action.credentialFallback": "关联密钥的备用设置已更改",
   "format.audit.action.instanceLinkedBillingUpdate": "关联计费应用已设置",
-  "format.audit.action.instanceLinkedBillingDelete": "关联计费应用已移除"
+  "format.audit.action.instanceLinkedBillingDelete": "关联计费应用已移除",
+  "format.audit.action.securitySharedLinks": "共享链接策略已更改",
+  "format.audit.action.sharedLinkCreate": "已分享链接",
+  "format.audit.action.sharedLinkOpen": "共享链接已打开",
+  "format.audit.action.sharedLinkRevoke": "共享链接已撤销",
+  "format.audit.kind.sharedLink": "共享链接",
+  "format.targetKind.sharedLink": "共享链接"
 }

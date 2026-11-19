@@ -93,7 +93,7 @@ describe("creating a role", () => {
     expect(await notifications().findByText("Admin lite created")).toBeInTheDocument();
     const body = requests("POST", "orgs/:org/roles")[0]?.body as RoleBody;
     expect(body).toMatchObject({ scope: "org", name: "Admin lite", description: "", project_rights: ["project.view"] });
-    expect([...body.rights].sort()).toEqual(["members.view", "org.update", "org.view"]);
+    expect([...body.rights].sort()).toEqual(["members.view", "org.update", "org.view", "usage.share"]);
   });
 
   it("takes a name before the existing roles have loaded", async () => {

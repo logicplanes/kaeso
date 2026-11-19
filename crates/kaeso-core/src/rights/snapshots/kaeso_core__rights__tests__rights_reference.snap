@@ -44,6 +44,8 @@ expression: rights_reference()
 | `logs.delete` ⚠ | Logs & data | Delete logs | Delete the organization's logs for a time range. | `logs.storage.view` | ✓ |  |
 | `usage.org.view` | Usage & billing | View org usage | See usage across all projects. |  |  |  |
 | `costs.org.view` | Usage & billing | View org costs | See costs across all projects. | `usage.org.view` |  |  |
+| `usage.share` | Usage & billing | Share usage | Share read-only links to the usage, member stats and budgets one can see, and revoke one's own. |  |  |  |
+| `usage.share.manage` ⚠ | Usage & billing | Manage shared links | See and revoke everyone's shared links, and choose who links may reach and for how long. | `usage.share` |  |  |
 | `billing.view` | Usage & billing | View billing | See plan, invoices and payment status (Kaeso Cloud). |  |  | ✓ |
 | `billing.manage` | Usage & billing | Manage billing | Change the plan and payment method (Kaeso Cloud). | `billing.view` |  | ✓ |
 | `audit_log.view` | Audit | View audit log | Read the organization's audit log. |  |  |  |
@@ -148,6 +150,8 @@ expression: rights_reference()
 | `logs.delete` | ✓ | ✓ |  |  |  |  |
 | `usage.org.view` | ✓ | ✓ | ✓ | ✓ | ✓ |  |
 | `costs.org.view` | ✓ | ✓ | ✓ | ✓ | ✓ |  |
+| `usage.share` | ✓ | ✓ | ✓ | ✓ |  | ✓ |
+| `usage.share.manage` | ✓ | ✓ |  |  |  |  |
 | `billing.view` | ✓ | ✓ | ✓ |  | ✓ |  |
 | `billing.manage` | ✓ |  | ✓ |  |  |  |
 | `audit_log.view` | ✓ | ✓ |  |  | ✓ |  |
@@ -307,6 +311,8 @@ expression: rights_reference()
 | `logs.delete` |  |  | ✓ | ✓ |
 | `usage.org.view` | ✓ | ✓ | ✓ | ✓ |
 | `costs.org.view` | ✓ | ✓ | ✓ | ✓ |
+| `usage.share` |  | ✓ | ✓ | ✓ |
+| `usage.share.manage` |  |  | ✓ | ✓ |
 | `billing.view` |  |  | ✓ | ✓ |
 | `billing.manage` |  |  |  | ✓ |
 | `audit_log.view` | ✓ |  | ✓ | ✓ |

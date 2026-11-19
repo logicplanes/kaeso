@@ -366,3 +366,261 @@ async fn an_operator_lists_the_accounts_and_finds_the_instance_admins() {
         ["Ada Lovelace"]
     );
 }
+
+async fn last_sign_in(app: &App, owner: &Owner, user: &str) -> Option<time::OffsetDateTime> {
+    let one = app
+        .get(&format!("/instance/users/{user}"), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let listed = app.get("/instance/users", &owner.cookie).await;
+    let row = listed.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|u| u["id"] == user)
+        .unwrap()
+        .clone();
+    assert_eq!(row["last_signed_in_at"], one.body["last_signed_in_at"]);
+    one.body["last_signed_in_at"].as_str().map(|s| {
+        time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339).unwrap()
+    })
+}
+
+#[tokio::test]
+async fn instance_admins_see_when_each_user_last_signed_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let set_up = last_sign_in(&app, &owner, &owner.user_id).await;
+    assert!(
+        set_up.is_some(),
+        "setting up the install signs its owner in"
+    );
+
+    app.clock.advance(time::Duration::hours(1));
+    let (_, grace) = join(&app, &owner, "grace@example.com", "Grace Hopper").await;
+    let joined = last_sign_in(&app, &owner, &grace).await.unwrap();
+    assert!(joined > set_up.unwrap());
+
+    app.clock.advance(time::Duration::hours(1));
+    let before = app.mail.to("grace@example.com").len();
+    app.post(
+        "/auth/magic-link",
+        json!({ "email": "grace@example.com" }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.wait_for_mail("grace@example.com", before + 1).await;
+    app.post(
+        "/auth/magic-link/verify",
+        json!({ "token": app.last_token("grace@example.com") }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let link = last_sign_in(&app, &owner, &grace).await.unwrap();
+    assert!(link > joined);
+
+    app.clock.advance(time::Duration::hours(1));
+    let cookie = app
+        .post(
+            "/auth/password",
+            json!({ "email": "grace@example.com", "password": PASSWORD }),
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK)
+        .cookie()
+        .unwrap();
+    let password = last_sign_in(&app, &owner, &grace).await.unwrap();
+    assert!(password > link);
+
+    // Turning on two-factor replaces the session with one that carries the earlier sign-in.
+    app.clock.advance(time::Duration::minutes(5));
+    let begin = app
+        .post("/me/totp", json!({}), Some(&cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    let secret = begin.body["secret"].as_str().unwrap().to_owned();
+    app.post(
+        "/me/totp/confirm",
+        json!({ "code": common::totp_code(&secret, &app) }),
+        Some(&cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(last_sign_in(&app, &owner, &grace).await, Some(password));
+    s.cleanup().await;
+}
+
+async fn invite(app: &App, owner: &Owner, email: &str) -> String {
+    app.post(
+        "/instance/users/invites",
+        json!({ "email": email }),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::CREATED)
+    .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
+}
+
+async fn statuses(app: &App, owner: &Owner, query: &str) -> Vec<(String, String)> {
+    let r = app
+        .get(&format!("/instance/users/invites{query}"), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|i| {
+            (
+                i["email"].as_str().unwrap().to_owned(),
+                i["status"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn instance_admins_list_resend_and_revoke_invitations_to_the_install() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let ada = invite(&app, &owner, "ada@example.com").await;
+    let lin = invite(&app, &owner, "lin@example.com").await;
+    // An organization's invitation is not the install's.
+    let org_invite = app
+        .post(
+            &format!("/orgs/{}/invites", owner.org_id),
+            json!({ "email": "org@example.com", "role": "member" }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let mut pending = statuses(&app, &owner, "").await;
+    pending.sort();
+    assert_eq!(
+        pending,
+        [
+            ("ada@example.com".into(), "pending".into()),
+            ("lin@example.com".into(), "pending".into())
+        ]
+    );
+
+    let gone = app
+        .call(
+            Method::DELETE,
+            &format!("/instance/users/invites/{lin}"),
+            None,
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(gone.status, StatusCode::NO_CONTENT, "{:?}", gone.body);
+    assert_eq!(
+        statuses(&app, &owner, "").await,
+        [("ada@example.com".into(), "pending".into())]
+    );
+    let mut all = statuses(&app, &owner, "?pending=false").await;
+    all.sort();
+    assert_eq!(
+        all,
+        [
+            ("ada@example.com".into(), "pending".into()),
+            ("lin@example.com".into(), "revoked".into())
+        ]
+    );
+    for path in [
+        format!("/instance/users/invites/{lin}/resend"),
+        format!("/instance/users/invites/{org_invite}/resend"),
+    ] {
+        let r = app.post(&path, json!({}), Some(&owner.cookie)).await;
+        assert_eq!(r.status, StatusCode::NOT_FOUND, "{path}: {:?}", r.body);
+    }
+    let r = app
+        .call(
+            Method::DELETE,
+            &format!("/instance/users/invites/{org_invite}"),
+            None,
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+
+    // An expired invitation is sent again with a new link; the old one stops working.
+    sqlx::query("UPDATE invites SET expires_at = $2 WHERE id = $1")
+        .bind(common::uuid(&ada))
+        .bind(app.state.clock.now() - time::Duration::hours(1))
+        .execute(&app.state.pg)
+        .await
+        .unwrap();
+    assert_eq!(
+        statuses(&app, &owner, "?pending=false").await.len(),
+        2,
+        "expired invitations stay listed under all"
+    );
+    assert!(statuses(&app, &owner, "").await.is_empty());
+    let old = app.last_token("ada@example.com");
+    let sent = app.mail.to("ada@example.com").len();
+    let again = app
+        .post(
+            &format!("/instance/users/invites/{ada}/resend"),
+            json!({}),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(again.body["status"], "pending");
+    app.wait_for_mail("ada@example.com", sent + 1).await;
+    let new = app.last_token("ada@example.com");
+    assert_ne!(old, new);
+    let stale = app
+        .post(
+            "/auth/invites/accept",
+            json!({ "token": old, "name": "Ada", "password": PASSWORD }),
+            None,
+        )
+        .await;
+    assert_ne!(stale.status, StatusCode::OK, "{:?}", stale.body);
+    app.post(
+        "/auth/invites/accept",
+        json!({ "token": new, "name": "Ada", "password": PASSWORD }),
+        None,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        statuses(&app, &owner, "?pending=false")
+            .await
+            .into_iter()
+            .find(|(e, _)| e == "ada@example.com")
+            .unwrap()
+            .1,
+        "accepted"
+    );
+
+    let log = app
+        .get("/instance/audit-log?action=instance.invite_", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let mut actions: Vec<&str> = log.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["action"].as_str().unwrap())
+        .collect();
+    actions.sort_unstable();
+    assert_eq!(
+        actions,
+        ["instance.invite_resend", "instance.invite_revoke"]
+    );
+    s.cleanup().await;
+}

@@ -520,6 +520,73 @@ pub async fn listed_models(
     Ok(models)
 }
 
+/// What a provider says about one of its keys, asked without a model request.
+#[derive(Debug)]
+pub enum KeyCheck {
+    /// It answered with the key: with the number of models it lists, when its listing names the
+    /// models the key can call.
+    Works(Option<usize>),
+    /// It refused the key.
+    Refused(KppError),
+    /// It couldn't be reached.
+    Unreached(KppError),
+    /// Only a model request can tell: the provider lists no models where the key calls it.
+    Unknown,
+}
+
+/// Asks the provider whether it takes a key, by reading its model listing, or what stands in for
+/// one, with it. Nothing is billed and nothing is recorded.
+pub async fn check_key(
+    state: &AppState,
+    credential: &Resolved,
+    provider: &ProviderRef,
+) -> KeyCheck {
+    if crate::services::agent_platform::is_agent_platform(provider)
+        || crate::services::regional::regional(provider).is_some()
+    {
+        return KeyCheck::Unknown;
+    }
+    let asked = Asked {
+        state,
+        credential,
+        provider,
+        dialect: provider.generation(),
+        unreached: AtomicBool::new(false),
+    };
+    let answered = |e: KppError, asked: &Asked<'_>| {
+        let e = without_key_fragments(e);
+        if asked.unreached.load(Ordering::Relaxed) {
+            KeyCheck::Unreached(e)
+        } else if matches!(
+            e.kind,
+            ErrorKind::Authentication | ErrorKind::PermissionDenied | ErrorKind::Billing
+        ) {
+            KeyCheck::Refused(e)
+        } else {
+            KeyCheck::Unknown
+        }
+    };
+    match crate::services::account_scope::of(provider, credential) {
+        Err(e) => return KeyCheck::Refused(e),
+        // The account's model search answers only with a key that may read the account.
+        Ok(Some(scoped)) => {
+            return match account_probe(&asked, &scoped, "").await {
+                Probe::Failed(e) => answered(e, &asked),
+                _ => KeyCheck::Works(None),
+            };
+        }
+        Ok(None) => {}
+    }
+    match asked.every_page().await {
+        Ok(listed) => KeyCheck::Works(
+            listed
+                .filter(|_| provider.listing() != ModelListing::Catalogue)
+                .map(|models| models.iter().map(|m| &m.id).collect::<HashSet<_>>().len()),
+        ),
+        Err(e) => answered(e, &asked),
+    }
+}
+
 pub async fn record(state: &AppState, answer: &Answer<'_>) {
     match write(state, answer).await {
         Ok(Recorded::Changed) => {
@@ -560,6 +627,7 @@ mod tests {
             last_known: None,
             availability: Some(Availability::Unavailable),
             availability_checked_at: checked,
+            target: None,
         }
     }
 

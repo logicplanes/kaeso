@@ -39,7 +39,9 @@
         "billing.view",
         "billing.manage",
         "audit_log.view",
-        "audit_log.export"
+        "audit_log.export",
+        "usage.share",
+        "usage.share.manage"
       ],
       "project_rights": [
         "project.view",
@@ -114,7 +116,9 @@
         "costs.org.view",
         "billing.view",
         "audit_log.view",
-        "audit_log.export"
+        "audit_log.export",
+        "usage.share",
+        "usage.share.manage"
       ],
       "project_rights": [
         "project.view",
@@ -159,7 +163,17 @@
       "kind": "builtin",
       "name": "Billing",
       "description": "Manages billing and sees usage and costs across all projects.",
-      "rights": ["org.view", "members.view", "projects.view.all", "logs.storage.view", "usage.org.view", "costs.org.view", "billing.view", "billing.manage"],
+      "rights": [
+        "org.view",
+        "members.view",
+        "projects.view.all",
+        "logs.storage.view",
+        "usage.org.view",
+        "costs.org.view",
+        "billing.view",
+        "billing.manage",
+        "usage.share"
+      ],
       "project_rights": [],
       "holders": 0,
       "created_at": null,
@@ -171,7 +185,16 @@
       "kind": "builtin",
       "name": "Developer",
       "description": "Creates projects and sees usage, costs, provider keys and MCP servers; works in the projects they are added to.",
-      "rights": ["org.view", "members.view", "projects.create", "provider_credentials.view", "logs.storage.view", "usage.org.view", "costs.org.view"],
+      "rights": [
+        "org.view",
+        "members.view",
+        "projects.create",
+        "provider_credentials.view",
+        "logs.storage.view",
+        "usage.org.view",
+        "costs.org.view",
+        "usage.share"
+      ],
       "project_rights": [],
       "holders": 2,
       "created_at": null,
@@ -218,7 +241,7 @@
       "kind": "builtin",
       "name": "Member",
       "description": "Sees the organization and its members; works in the projects they are added to.",
-      "rights": ["org.view", "members.view"],
+      "rights": ["org.view", "members.view", "usage.share"],
       "project_rights": [],
       "holders": 2,
       "created_at": null,

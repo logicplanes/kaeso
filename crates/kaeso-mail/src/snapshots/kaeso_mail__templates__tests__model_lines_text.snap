@@ -1,0 +1,27 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] claude-opus-latest moved to claude-opus-5-5
+
+claude-opus-latest moved to claude-opus-5-5
+
+Acme / Checkout
+
+Requests of Checkout to claude-opus-latest go to claude-opus-5-5 from now on.
+
+Project: Checkout
+Provider: Anthropic
+Line: claude-opus-latest
+Before: claude-opus-5
+Now: claude-opus-5-5
+Input price: 15 → 5 USD per million tokens
+
+Open the line:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you hold the right “Manage models”.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

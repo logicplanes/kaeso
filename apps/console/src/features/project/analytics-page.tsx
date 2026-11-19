@@ -17,6 +17,7 @@ import { projectUsageQuery, timelineQuery } from "~/api/queries/usage";
 import { clientUsage } from "~/format/clients";
 import { shiftDay } from "~/format/period";
 import { t } from "~/i18n";
+import { Share } from "~/kaeso/share";
 
 const loadParts = () => import("./analytics-breakdown");
 const Breakdown = lazy(() => loadParts().then((m) => ({ default: m.Breakdown })));
@@ -70,10 +71,13 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
         page={t("project.analytics.title", "Analytics")}
         tabs={tabs}
         actions={
-          <Suspense fallback={null}>
-            {o.showCost && <CurrencyPicker />}
-            <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
-          </Suspense>
+          <>
+            <Suspense fallback={null}>
+              {o.showCost && <CurrencyPicker />}
+              <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
+            </Suspense>
+            <Share org={org} target={{ kind: "analytics", project, from: o.from, to: o.to, costs: o.showCost }} />
+          </>
         }
       />
       <AppFrame.Body padding="page">

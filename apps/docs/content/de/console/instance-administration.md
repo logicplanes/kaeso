@@ -10,7 +10,7 @@ Die Seiten finden Sie unter **Instanz** im Menü am Fuß der Seitenleiste.
 
 ## Benutzer verwalten
 
-**Benutzer** listet jedes Konto der Installation: aktiv, deaktiviert oder gelöscht. **Benutzer einladen** lädt jemanden ohne Organisation in die Installation ein. Einer Organisation tritt die Person bei, wenn eine Organisation sie einlädt.
+**Benutzer** listet jedes Konto der Installation: aktiv, deaktiviert oder gelöscht. **Benutzer einladen** lädt jemanden ohne Organisation in die Installation ein. Einer Organisation tritt die Person bei, wenn eine Organisation sie einlädt. **Letzte Anmeldung** zeigt, wann sich jeder Benutzer zuletzt angemeldet hat, mit welcher Methode auch immer; das Einschalten der Zwei-Faktor-Authentifizierung zählt nicht als Anmeldung. Bei jemandem, der sich nicht mehr angemeldet hat, seit die Installation das festhält, steht **Nie**.
 
 **Zwei-Faktor** zeigt, wer eine Authenticator-App nutzt. Instanz-Admins tragen das Abzeichen **Instanz-Admin**, und **Verwaltet von** nennt die Organisation, die ein Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)). Wählen Sie einen Benutzer, um sein Sheet zu öffnen. Es listet die Organisationen, denen er angehört, mit seiner Rolle in jeder, und hat diese Aktionen:
 
@@ -23,6 +23,8 @@ Die Seiten finden Sie unter **Instanz** im Menü am Fuß der Seitenleiste.
 | Benutzer löschen | Entfernt Namen und E-Mail-Adresse und archiviert die Schlüssel. Der Verlauf zeigt einen gelöschten Benutzer |
 
 Kaeso informiert den Benutzer per E-Mail, wenn Sie seine Sitzungen beenden oder seine Zwei-Faktor-Authentifizierung zurücksetzen.
+
+**Einladungen** neben **Benutzer** listet die noch offenen Einladungen zur Installation, mit wer sie geschickt hat und wann sie ablaufen; **Alle** zeigt auch die angenommenen, widerrufenen und abgelaufenen. **Erneut senden** schickt eine Einladung mit einem neuen Link, der 21 Tage gilt, auch nach ihrem Ablauf, und der alte Link funktioniert nicht mehr. **Widerrufen** nimmt eine zurück. Beides braucht **Benutzer verwalten** und erscheint im Audit-Log.
 
 ## Organisationen verwalten
 
@@ -44,6 +46,7 @@ Unter **Allgemein**:
 | Single Sign-on für Instanz-Admins | **Keine** oder eine Organisation mit Single Sign-on, deren Anbieter ihre verwalteten Instanz-Admins zur Verwaltung der Instanz anmelden darf ([Instanz-Admins](../self-hosting/sign-in.md#instanz-admins)) |
 | Zeitzone | Die Zeitzone der Installation. Die Konsole zeigt jede Zeit darin, für alle, Anfrageprotokoll und Audit-Log filtern nach ihren Tagen, und automatische Updates richten sich nach ihr. **Diese Zone verwenden** wechselt zu der Ihres Browsers |
 | Wechselkurse | Ob die Installation die Referenzkurse der EZB an jedem Arbeitstag holt, der Tag der neuesten und warum der letzte Abruf fehlschlug. Aus behält die vorhandenen Kurse ([Währungen](../concepts/currencies.md)) |
+| Geteilte Links | **Geteilte Links erlauben** lässt Organisationen [Nutzung teilen](share-usage.md); aus, funktioniert kein Link mehr. **Erstellt mit Kaeso** zeigt ein kleines Zeichen am Fuß geteilter Seiten |
 | Löschen von Organisationen | Ob sich Organisationen überhaupt löschen lassen, und die Schonfrist, 1 bis 90 Tage |
 
 Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf. Wird die längste gesenkt, sinkt jede Organisation darüber auf sie, und ihre älteren Einträge werden sofort gelöscht, wie wenn eine Organisation ihre Aufbewahrung verkürzt.

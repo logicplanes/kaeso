@@ -132,6 +132,8 @@ pub struct EntryRow {
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
     pub revision: i64,
+    /// For a model line: the provider's model it calls now.
+    pub line_target: Option<String>,
 }
 
 impl EntryRow {
@@ -166,6 +168,7 @@ impl EntryRow {
             last_known,
             availability,
             availability_checked_at: self.availability_checked_at,
+            target: self.line_target.clone(),
         })
     }
 }
@@ -210,7 +213,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models WHERE project_id = $1 AND id = $2",
         project_id,
         id
@@ -227,7 +230,7 @@ pub async fn in_org(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models WHERE org_id = $1 AND id = $2",
         org_id,
         id
@@ -244,7 +247,7 @@ pub async fn get_for_update(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models \
          WHERE project_id = $1 AND id = $2 FOR UPDATE",
         project_id,
@@ -258,7 +261,7 @@ pub async fn list(db: impl PgExecutor<'_>, project_id: Uuid) -> Result<Vec<Entry
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models WHERE project_id = $1 \
          ORDER BY provider, model_id",
         project_id
@@ -310,9 +313,9 @@ pub async fn of_model(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models \
-         WHERE provider = $1 AND model_id = $2 AND NOT custom",
+         WHERE provider = $1 AND model_id = $2 AND NOT custom AND line_target IS NULL",
         provider,
         model_id
     )
@@ -325,7 +328,7 @@ pub async fn listed_models(
 ) -> Result<Vec<(String, String, bool)>, StoreError> {
     let rows = sqlx::query!(
         "SELECT provider, model_id, bool_or(delisted_at IS NOT NULL) AS \"delisted!\" FROM catalogue_models \
-         WHERE NOT custom GROUP BY provider, model_id"
+         WHERE NOT custom AND line_target IS NULL GROUP BY provider, model_id"
     )
     .fetch_all(db)
     .await?;
@@ -959,6 +962,7 @@ mod tests {
             last_known: None,
             availability: None,
             availability_checked_at: None,
+            target: None,
         }
     }
 

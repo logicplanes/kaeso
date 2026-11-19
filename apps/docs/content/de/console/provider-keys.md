@@ -20,7 +20,7 @@ Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 | Aktion | Recht |
 | --- | --- |
 | Schlüssel hinzufügen | **Anbieter-Schlüssel hinzufügen** |
-| Schlüssel ersetzen, umbenennen, zuweisen oder zum Standard machen | **Anbieter-Schlüssel ändern** |
+| Schlüssel testen, ersetzen, umbenennen, zuweisen oder zum Standard machen | **Anbieter-Schlüssel ändern** |
 | Schlüssel löschen | **Anbieter-Schlüssel löschen** |
 
 Jede Aktion außer dem Löschen erfordert zusätzlich eine kürzliche Anmeldung.
@@ -132,6 +132,7 @@ Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die 
 
 | Aktion | Wirkung |
 | --- | --- |
+| Schlüssel testen | Fragt den Anbieter, ob er den Schlüssel annimmt, indem es seine Modellliste damit liest: Es meldet, dass der Anbieter den Schlüssel annimmt und wie viele Modelle er dafür führt, oder zeigt die Ablehnung des Anbieters. Nichts wird abgerechnet. Ein Anbieter, der dort, wo der Schlüssel ihn aufruft, keine Modelle führt, etwa Amazon Bedrock, kann es nicht sagen; nur eine Modellanfrage bestätigt den Schlüssel |
 | Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem Sie ihn beim Anbieter rotiert haben; bei einem Dienstkonto-Schlüssel eine neue JSON-Schlüsseldatei |
 | Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** oder **Kein API-Zugang** zeigt, und beendet seine vorherige Sitzung bei OpenAI oder xAI |
 | Nutzung verwalten | Für ein ChatGPT-Konto: öffnet die Nutzungseinstellungen von ChatGPT, in denen sein Inhaber prüft und begrenzt, was Kaeso nutzt |

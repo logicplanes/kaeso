@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ORG, OTHER_PROJECT, project, signedIn, withRights } from "~/test/fixtures";
+import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, project, signedIn, withRights } from "~/test/fixtures";
 import { hoverReason, notifications, usageRow } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -158,6 +158,14 @@ describe("organization projects", () => {
     expect(screen.queryByRole("dialog", { name: "Create project" })).not.toBeInTheDocument();
   });
 
+  it("keeps the order in the URL when the create dialog closes", async () => {
+    signedIn();
+    const { user, router } = await renderApp(`${PATH}?create=true&sort=requests`);
+    const dialog = await screen.findByRole("dialog", { name: "Create project" });
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ sort: "requests" }));
+  });
+
   it("opens the projects from their old settings address without the create dialog", async () => {
     signedIn();
     const { router } = await renderApp(`/settings/orgs/${ORG}/projects`);
@@ -193,5 +201,73 @@ describe("organization projects", () => {
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Checkout assistant");
     await user.click(within(dialog).getByRole("button", { name: "Create project" }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/proj_new`));
+  });
+
+  describe("sorted by usage", () => {
+    const FOUR = [
+      project({ id: "proj_a", name: "Alpha" }),
+      project({ id: "proj_b", name: "Bravo" }),
+      project({ id: "proj_c", name: "Charlie" }),
+      project({ id: "proj_d", name: "Delta", archived_at: "2026-09-01T00:00:00Z" }),
+    ];
+    const names = async () => (await titles()).map((t) => t?.replace(/^.|(\d[\d,]* requests?|No requests) in 30 days.*$/g, ""));
+
+    function usage() {
+      on("GET", PROJECTS, page(FOUR));
+      on("GET", "orgs/:org/usage", {
+        data: [
+          usageRow("proj_c", { requests: 5, cost: "0.50" }),
+          usageRow("proj_b", { requests: 5, cost: "9.25" }),
+          usageRow("proj_d", { requests: 40, cost: "1.00" }),
+        ],
+      });
+    }
+
+    it("puts the busiest projects first, ties and projects without requests by name, and keeps the order in the URL", async () => {
+      signedIn();
+      usage();
+      const { user, router } = await renderApp(PATH);
+      expect((await within(await list()).findAllByText("5 requests in 30 days")).length).toBe(2);
+      expect(await names()).toEqual(["Alpha", "Bravo", "Charlie"]);
+      await user.click(screen.getByRole("combobox", { name: "Sort" }));
+      await user.click(await screen.findByRole("option", { name: "Most requests" }));
+      await waitFor(() => expect(router.state.location.search).toEqual({ sort: "requests" }));
+      expect(await names()).toEqual(["Bravo", "Charlie", "Alpha"]);
+      await user.click(screen.getByRole("tab", { name: "All" }));
+      await waitFor(async () => expect(await names()).toEqual(["Delta", "Bravo", "Charlie", "Alpha"]));
+      await user.click(screen.getByRole("combobox", { name: "Sort" }));
+      await user.click(await screen.findByRole("option", { name: "Name" }));
+      await waitFor(() => expect(router.state.location.search).toEqual({}));
+      expect(await names()).toEqual(["Alpha", "Bravo", "Charlie", "Delta"]);
+    });
+
+    it("puts the costliest projects first from ?sort=cost", async () => {
+      signedIn();
+      usage();
+      await renderApp(`${PATH}?sort=cost`);
+      expect((await within(await list()).findAllByText("5 requests in 30 days")).length).toBe(2);
+      expect(await names()).toEqual(["Bravo", "Charlie", "Alpha"]);
+      expect(screen.getByRole("combobox", { name: "Sort" })).toHaveTextContent("Highest cost");
+    });
+
+    it("offers no cost order without View organization costs, and sorts ?sort=cost by name", async () => {
+      withRights(ALL_ORG_RIGHTS.filter((r) => r !== "costs.org.view"));
+      usage();
+      const { user } = await renderApp(`${PATH}?sort=cost`);
+      expect((await within(await list()).findAllByText("5 requests in 30 days")).length).toBe(2);
+      expect(await names()).toEqual(["Alpha", "Bravo", "Charlie"]);
+      await user.click(screen.getByRole("combobox", { name: "Sort" }));
+      expect(await screen.findByRole("option", { name: "Most requests" })).toBeInTheDocument();
+      expect(screen.queryByRole("option", { name: "Highest cost" })).not.toBeInTheDocument();
+    });
+
+    it("offers no order and sorts by name without View organization usage", async () => {
+      withRights(["org.view"]);
+      on("GET", PROJECTS, page(FOUR));
+      await renderApp(`${PATH}?sort=requests`);
+      await within(await list()).findByRole("gridcell", { name: /Charlie/ });
+      expect((await titles()).map((t) => t?.slice(1, 6))).toEqual(["Alpha", "Bravo", "Charl"]);
+      expect(screen.queryByRole("combobox", { name: "Sort" })).not.toBeInTheDocument();
+    });
   });
 });

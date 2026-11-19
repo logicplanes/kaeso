@@ -70,7 +70,7 @@ Oben zeigt **Agenten** die Adresse des MCP-Servers mit den Zeichen von Claude Co
 - ihn umbenennen;
 - seine Rechte im selben Editor wie auf der Zustimmungsseite ändern und dann **Rechte speichern** wählen;
 - ihn **Widerrufen**, was ihn sofort abmeldet;
-- seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, Ziel, Ergebnis, Zeit und IP-Adresse.
+- seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, der Organisation und dem Projekt, in denen er wirkte, Ziel, Ergebnis, Zeit und IP-Adresse.
 
 Ein Agent arbeitet, bis Sie ihn widerrufen, bis er 90 Tage ungenutzt bleibt oder bis alle Ihre Sitzungen enden, etwa wenn Sie Ihr Passwort zurücksetzen. Eine Änderung des Passworts beendet ihn nur, wenn Sie **Auch meine Agenten trennen** wählen. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
 
@@ -127,16 +127,18 @@ Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Z
 | Projekt | Ihr Schlüssel läuft ab, Ihr Schlüssel wurde geändert | Der Inhaber des Schlüssels | Sofort |
 | Projekt | Modell abgekündigt | `models.view` in einem Projekt, das das Modell nutzt | Täglich |
 | Projekt | Modell wird bald abgeschaltet | `models.view` in einem Projekt, das das Modell noch aufruft | Sofort |
+| Projekt | Wechsel von Modelllinien | `models.manage` in einem Projekt mit der Linie | Sofort |
 | Projekt | Inhaltsprotokollierung geändert | Jedes Mitglied des Projekts | Täglich |
 | Tools | MCP-Server brauchen Aufmerksamkeit | `mcp_servers.manage` | Sofort |
 | Tools | Ihre Verbindung ist abgelaufen | Sie, bei einem Server, mit dem Sie Ihr eigenes Konto verbunden haben | Sofort |
 | Tools | Neuer Client an einem Portal | `tools.manage` | Täglich |
-| Organisation | Sicherheitseinstellungen geändert | `security.sso.manage` oder `platform_keys.view` | Sofort |
+| Organisation | Sicherheitseinstellungen geändert, und neue geteilte Links | `security.sso.manage` oder `platform_keys.view`; `usage.share.manage` für geteilte Links | Sofort |
 | Organisation | Inhaberschaft und Löschung | Inhaber | Immer |
 | Organisation | Mitgliederänderungen | `members.invite` | Täglich |
 | Organisation | Ihre Einladung wurde angenommen | Wer sie gesendet hat | Sofort |
 | Organisation | Webhooks brauchen Aufmerksamkeit | `webhooks.manage` | Sofort |
 | Organisation | Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_credentials.replace` | Sofort |
+| Organisation | Ein Plattform-Schlüssel läuft ab | `platform_keys.create` und wer den Schlüssel erstellt hat, solange Mitglied | Sofort |
 | Organisation | Modelländerungen | `models.manage` in einem Projekt, das das Modell nutzt | Täglich |
 | Organisation | Monatlicher Kostenbericht | `costs.org.view` | Ein |
 | Instanz | Updates, Instanzeinstellungen geändert | Instanz-Admins | Sofort |

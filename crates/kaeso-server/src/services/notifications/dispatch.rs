@@ -110,7 +110,8 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::SecurityScimRotate
         | A::SecuritySsoGroupsUpdate
         | A::PlatformKeyCreate
-        | A::PlatformKeyRotate => &[Kind::OrgSecurity],
+        | A::PlatformKeyRotate
+        | A::SharedLinkCreate => &[Kind::OrgSecurity],
         A::InviteAccept => &[Kind::OrgMembers, Kind::InviteAccepted],
         A::MemberJoinBySso | A::MemberProvision => &[Kind::OrgMembers],
         A::MemberRemove | A::MemberDeprovision => &[Kind::OrgMembers, Kind::AccessChanged],
@@ -147,6 +148,8 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::CatalogueModelCheck
         | A::CatalogueModelCreate
         | A::CatalogueModelDelete
+        | A::CatalogueModelLineMove
+        | A::CatalogueModelLineUpdate
         | A::CatalogueModelMove
         | A::CatalogueModelUpdate
         | A::CredentialAssign
@@ -165,6 +168,8 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::GuardrailUpdate
         | A::ProjectGuardrailsUpdate
         | A::InstanceInvite
+        | A::InstanceInviteResend
+        | A::InstanceInviteRevoke
         | A::InstanceSetup
         | A::InstanceUpdateCheck
         | A::InstanceUpdateSettings
@@ -234,7 +239,10 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::WebhookCreate
         | A::WebhookDelete
         | A::WebhookSecretRotate
-        | A::WebhookUpdate => &[],
+        | A::WebhookUpdate
+        | A::SecuritySharedLinks
+        | A::SharedLinkOpen
+        | A::SharedLinkRevoke => &[],
     }
 }
 

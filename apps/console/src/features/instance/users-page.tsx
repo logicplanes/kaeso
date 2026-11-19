@@ -26,7 +26,7 @@ import {
   col,
   icons,
 } from "@logicplanes/kaeso-ui";
-import { formatDate } from "@logicplanes/kaeso-ui/format";
+import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import type { InstanceUserView } from "~/api/generated/types";
@@ -38,6 +38,7 @@ import { usePageCreateAction } from "~/shell/create-action";
 import { usePhone } from "~/shell/use-phone";
 import { toast } from "~/shell/toast";
 import { AuditLinks } from "~/kaeso/audit-links";
+import { InstanceInvitesPanel } from "./invites-panel";
 import { InstancePage } from "./instance-page";
 import { locale, t, type Locale } from "~/i18n";
 import { patchSearch, type SearchPatch } from "~/search";
@@ -45,7 +46,7 @@ import { patchSearch, type SearchPatch } from "~/search";
 const STATES = ["active", "deactivated", "deleted"] as const;
 type UserState = (typeof STATES)[number];
 
-export type UsersSearch = { q?: string; state?: UserState; user?: string; invite?: boolean };
+export type UsersSearch = { q?: string; state?: UserState; user?: string; invite?: boolean; tab?: "invites" };
 
 const STATE_DOT: Record<string, "warning" | "neutral"> = { deactivated: "warning", deleted: "neutral" };
 const CREATED_WIDTH: Record<Locale, number> = { en: 136, de: 144, "zh-CN": 160 };
@@ -88,6 +89,11 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
           u.totp_enabled ? t("common.on", "On") : t("common.off", "Off"),
         ),
         col.custom(
+          { id: "signedIn", header: t("instance.lastSignIn", "Last sign-in"), size: 128, priority: 2 },
+          (u: InstanceUserView) => u.last_signed_in_at ?? "",
+          (v: string) => (v ? <time dateTime={v}>{formatRelative(v)}</time> : <Text tone="tertiary">{t("common.never", "Never")}</Text>),
+        ),
+        col.custom(
           { id: "created", header: t("common.created", "Created"), size: CREATED_WIDTH[lang], priority: 3 },
           (u: InstanceUserView) => u.created_at,
           (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
@@ -106,58 +112,72 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
         </Button>
       }
     >
-      <FilterRow
-        tabs={
-          <Tabs variant="pill" value={search.state ?? "all"} onValueChange={(v) => setSearch({ state: STATES.find((s) => s === v), user: undefined })}>
-            <Tabs.List aria-label={t("instance.state", "State")}>
-              <Tabs.Tab value="all">{t("common.all", "All")}</Tabs.Tab>
-              {STATES.map((id) => (
-                <Tabs.Tab key={id} value={id}>
-                  {userStateLabel(id)}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-          </Tabs>
-        }
+      <Tabs
+        value={search.tab ?? "users"}
+        onValueChange={(next) => void navigate({ to: "/settings/instance/users", search: next === "invites" ? { tab: "invites" } : {}, replace: true })}
       >
-        <div className="w-240">
-          <Input
-            type="search"
-            size="sm"
-            aria-label={t("instance.searchUsers", "Search users")}
-            placeholder={t("instance.nameOrEmail", "Name or email")}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onClear={() => {
-              setQ("");
-              setSearch({ q: undefined });
-            }}
-            onKeyDown={(e) => e.key === "Enter" && setSearch({ q: q.trim() || undefined, user: undefined })}
-            onBlur={() => q.trim() !== (search.q ?? "") && setSearch({ q: q.trim() || undefined })}
+        <Tabs.List aria-label={t("instance.users", "Users")}>
+          <Tabs.Tab value="users">{t("instance.users", "Users")}</Tabs.Tab>
+          <Tabs.Tab value="invites">{t("org.invites.title", "Invitations")}</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="users">
+          <FilterRow
+            tabs={
+              <Tabs variant="pill" value={search.state ?? "all"} onValueChange={(v) => setSearch({ state: STATES.find((s) => s === v), user: undefined })}>
+                <Tabs.List aria-label={t("instance.state", "State")}>
+                  <Tabs.Tab value="all">{t("common.all", "All")}</Tabs.Tab>
+                  {STATES.map((id) => (
+                    <Tabs.Tab key={id} value={id}>
+                      {userStateLabel(id)}
+                    </Tabs.Tab>
+                  ))}
+                </Tabs.List>
+              </Tabs>
+            }
+          >
+            <div className="w-240">
+              <Input
+                type="search"
+                size="sm"
+                aria-label={t("instance.searchUsers", "Search users")}
+                placeholder={t("instance.nameOrEmail", "Name or email")}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onClear={() => {
+                  setQ("");
+                  setSearch({ q: undefined });
+                }}
+                onKeyDown={(e) => e.key === "Enter" && setSearch({ q: q.trim() || undefined, user: undefined })}
+                onBlur={() => q.trim() !== (search.q ?? "") && setSearch({ q: q.trim() || undefined })}
+              />
+            </div>
+          </FilterRow>
+          <DataTable
+            aria-label={t("instance.users", "Users")}
+            data={rows}
+            columns={columns}
+            getRowId={(u) => u.id}
+            loading={users.isPending}
+            error={users.isError && rows.length === 0 ? t("instance.usersFailed", "Users couldn't load") : undefined}
+            onRetry={() => void users.refetch()}
+            empty={
+              <Empty
+                size="md"
+                title={search.q ? t("instance.noUsersMatch", "No users match") : search.state ? noUsersIn(search.state) : t("instance.noUsers", "No users")}
+                {...(search.q ? { description: t("instance.searchAnotherNameOrEmail", "Search by another name or email address.") } : {})}
+              />
+            }
+            hasMore={users.hasNextPage}
+            loadingMore={users.isFetchingNextPage}
+            onLoadMore={() => void users.fetchNextPage()}
+            onRowClick={(u) => setSearch({ user: u.id })}
+            activeRowId={search.user}
           />
-        </div>
-      </FilterRow>
-      <DataTable
-        aria-label={t("instance.users", "Users")}
-        data={rows}
-        columns={columns}
-        getRowId={(u) => u.id}
-        loading={users.isPending}
-        error={users.isError && rows.length === 0 ? t("instance.usersFailed", "Users couldn't load") : undefined}
-        onRetry={() => void users.refetch()}
-        empty={
-          <Empty
-            size="md"
-            title={search.q ? t("instance.noUsersMatch", "No users match") : search.state ? noUsersIn(search.state) : t("instance.noUsers", "No users")}
-            {...(search.q ? { description: t("instance.searchAnotherNameOrEmail", "Search by another name or email address.") } : {})}
-          />
-        }
-        hasMore={users.hasNextPage}
-        loadingMore={users.isFetchingNextPage}
-        onLoadMore={() => void users.fetchNextPage()}
-        onRowClick={(u) => setSearch({ user: u.id })}
-        activeRowId={search.user}
-      />
+        </Tabs.Panel>
+        <Tabs.Panel value="invites">
+          <InstanceInvitesPanel />
+        </Tabs.Panel>
+      </Tabs>
       <UserSheet userId={search.user} onClose={() => setSearch({ user: undefined })} />
       {inviting && (
         <InviteUserDialog
@@ -275,6 +295,7 @@ function UserBody({ userId, onClose }: { userId: string; onClose: () => void }) 
           { label: t("instance.state", "State"), value: userStateLabel(u.state) },
           { label: t("instance.twoFactor", "Two-factor"), value: u.totp_enabled ? t("common.on", "On") : t("common.off", "Off") },
           { label: t("common.created", "Created"), value: formatDate(u.created_at) },
+          { label: t("instance.lastSignIn", "Last sign-in"), value: u.last_signed_in_at ? formatRelative(u.last_signed_in_at) : t("common.never", "Never") },
           { label: t("instance.userId", "User id"), value: u.id, copy: u.id, mono: true },
         ]}
       />

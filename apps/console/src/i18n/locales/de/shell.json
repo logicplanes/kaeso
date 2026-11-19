@@ -156,5 +156,6 @@
   "shell.palette.inProject": "In {project}",
   "shell.settings.webhooks": "Webhooks",
   "shell.settings.guardrails": "Guardrails",
-  "shell.settings.linkedBilling": "Verknüpfte Abrechnung"
+  "shell.settings.linkedBilling": "Verknüpfte Abrechnung",
+  "shell.settings.sharedLinks": "Geteilte Links"
 }

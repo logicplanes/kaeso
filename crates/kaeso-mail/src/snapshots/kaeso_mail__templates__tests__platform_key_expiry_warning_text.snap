@@ -1,0 +1,21 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: The platform key terraform expires on 18 Oct 2026
+
+Platform key terraform expires on 18 Oct 2026
+
+Scripts and tools that manage Acme with this key stop working from 00:00 UTC that day.
+
+Organization: Acme
+Key: terraform
+Expires: 18 Oct 2026, 00:00 UTC
+
+Open platform keys:
+https://kaeso.example.com/auth/magic-link#token=kGq3VbX9yZ2mN7pR4sT8uW1aC5dE6fH0jK
+
+To rotate it, create a new key, deploy it, then disable the old one.
+
+-- 
+Sent by Kaeso at kaeso.example.com; turn alerts off in your account's notification settings.

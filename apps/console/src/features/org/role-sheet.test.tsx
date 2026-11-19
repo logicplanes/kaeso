@@ -50,7 +50,7 @@ describe("a built-in role's sheet", () => {
     const { sheet, user, router } = await openSheet("org:admin", "Admin");
     expect(within(sheet).getByText("Built-in")).toBeInTheDocument();
     expect(within(sheet).getByText("The organization")).toBeInTheDocument();
-    expect(within(sheet).getByText("30 rights, 31 in projects")).toBeInTheDocument();
+    expect(within(sheet).getByText("32 rights, 31 in projects")).toBeInTheDocument();
     expect(within(sheet).getByRole("link", { name: "1 member" })).toHaveAttribute("href", `/settings/orgs/${ORG}/members?role=admin`);
     expect(within(sheet).getByText(/Manages the organization and every project/)).toBeInTheDocument();
     expect(within(sheet).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();

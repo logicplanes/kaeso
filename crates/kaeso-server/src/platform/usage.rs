@@ -370,12 +370,48 @@ async fn usage(
         ));
     }
     let filter = f.parse()?;
-    let (org, project, costs) = (scope.org, scope.project, scope.costs);
     let converter = crate::platform::exchange_rates::converter(state, q.currency.as_deref())?;
-    let rows = store::usage(&state.pg, org, project, from, to, group, &filter)
+    let rows = rows(
+        state,
+        UsageOf {
+            org: scope.org,
+            project: scope.project,
+            costs: scope.costs,
+        },
+        (from, to),
+        group,
+        &filter,
+        converter.as_ref(),
+    )
+    .await?;
+    Ok(Json(List::complete(rows)))
+}
+
+/// Whose usage, and whether with costs.
+pub(crate) struct UsageOf {
+    pub org: Uuid,
+    pub project: Option<Uuid>,
+    pub costs: bool,
+}
+
+/// The usage rows of an org or one of its projects, as the usage endpoints return them;
+/// `costs` false leaves every cost out, and `converter` adds each cost in its currency.
+pub(crate) async fn rows(
+    state: &AppState,
+    UsageOf {
+        org,
+        project,
+        costs,
+    }: UsageOf,
+    (from, to): (Date, Date),
+    group: GroupBy,
+    filter: &store::Filter,
+    converter: Option<&(std::sync::Arc<kaeso_core::currency::RateBook>, String)>,
+) -> ApiResult<Vec<UsageRow>> {
+    let rows = store::usage(&state.pg, org, project, from, to, group, filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
-    let tools = store::tool_usage(&state.pg, org, project, from, to, group, &filter)
+    let tools = store::tool_usage(&state.pg, org, project, from, to, group, filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
     let ids = ids_of(group);
@@ -429,8 +465,8 @@ async fn usage(
         row.tool_calls = count(t.calls);
         row.tool_call_errors = count(t.errors);
     }
-    if let (Some((book, code)), true) = (&converter, costs) {
-        let by_day = store::costs_by_day(&state.pg, org, project, from, to, group, &filter)
+    if let (Some((book, code)), true) = (converter, costs) {
+        let by_day = store::costs_by_day(&state.pg, org, project, from, to, group, filter)
             .await
             .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
         let mut sums: std::collections::BTreeMap<String, rust_decimal::Decimal> =
@@ -450,7 +486,7 @@ async fn usage(
             );
         }
     }
-    Ok(Json(List::complete(merged.into_values().collect())))
+    Ok(merged.into_values().collect())
 }
 
 #[utoipa::path(
@@ -599,8 +635,11 @@ pub struct TimelineQuery {
     pub step: Option<String>,
     #[doc = "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n\
         `error_kind` (the request log's, empty for requests that succeeded),\n\
-        `client` (the client app the user agent names, empty without one), or for\n\
-        orgs `project`; default one bucket per step."]
+        `client` (the client app the user agent names, empty without one), `alias`\n\
+        (empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n\
+        `response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\n\
+        for orgs `project`; default one bucket per step. The request log filters\n\
+        `status` and `response_cache` narrow a bucket down to its requests."]
     pub group_by: Option<String>,
     #[doc = "With `group_by`, only the groups with the most requests in the whole\n\
         range, 1 to 50; the others are left out."]
@@ -721,14 +760,18 @@ async fn timeline(
         Some("route") => Some(TimelineGroup::Route),
         Some("error_kind") => Some(TimelineGroup::ErrorKind),
         Some("client") => Some(TimelineGroup::Client),
+        Some("alias") => Some(TimelineGroup::Alias),
+        Some("endpoint") => Some(TimelineGroup::Endpoint),
+        Some("status") => Some(TimelineGroup::Status),
+        Some("response_cache") => Some(TimelineGroup::ResponseCache),
         Some("project") if scope.org_wide => Some(TimelineGroup::Project),
         Some(_) => {
             return Err(ApiError::invalid(
                 "group_by",
                 if scope.org_wide {
-                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."
+                    "Group by `project` or a field of the request log, such as `model` or `status`."
                 } else {
-                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."
+                    "Group by a field of the request log, such as `model`, `status` or `response_cache`."
                 },
             ));
         }

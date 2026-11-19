@@ -1,0 +1,294 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, org_id, project_id, kind, member_id, title, created_by, created_at, expires_at, revoked_at, live, period_days, from_day, to_day, snapshot, metric, show_costs, hide_members, hide_keys, hide_projects, audience, views, last_opened_at FROM shared_links WHERE org_id = $1 AND ($2::uuid IS NULL OR created_by = $2) AND revoked_at IS NULL AND (expires_at IS NULL OR expires_at > $3) ORDER BY created_at DESC, id DESC",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "kind",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "kind"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "member_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "member_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "title",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "title"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "created_by",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "created_by"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "created_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "revoked_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "revoked_at"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "live",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "live"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "period_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "period_days"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "from_day",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "from_day"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "to_day",
+        "type_info": "Date",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "to_day"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "snapshot",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "snapshot"
+          }
+        }
+      },
+      {
+        "ordinal": 15,
+        "name": "metric",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "metric"
+          }
+        }
+      },
+      {
+        "ordinal": 16,
+        "name": "show_costs",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "show_costs"
+          }
+        }
+      },
+      {
+        "ordinal": 17,
+        "name": "hide_members",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "hide_members"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
+        "name": "hide_keys",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "hide_keys"
+          }
+        }
+      },
+      {
+        "ordinal": 19,
+        "name": "hide_projects",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "hide_projects"
+          }
+        }
+      },
+      {
+        "ordinal": 20,
+        "name": "audience",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "audience"
+          }
+        }
+      },
+      {
+        "ordinal": 21,
+        "name": "views",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "views"
+          }
+        }
+      },
+      {
+        "ordinal": 22,
+        "name": "last_opened_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "shared_links",
+            "name": "last_opened_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "9283f9bb8721ddf4515113827b2035c0e08a0a0d366defb66d1dabd3f2de50e4"
+}

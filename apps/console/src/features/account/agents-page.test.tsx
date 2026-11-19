@@ -129,6 +129,14 @@ describe("the agents tab", () => {
     expect(sent?.orgs.find((o) => o.org === ORG)?.projects.rights).toEqual(expect.arrayContaining(["limits.manage", "limits.view"]));
   });
 
+  it("opens the rights editor from Customize", async () => {
+    signedIn();
+    agentApi();
+    const { user } = await renderApp(`/settings/account/agents/${AGENT}`);
+    await user.click(await screen.findByRole("button", { name: "Customize" }));
+    expect(await screen.findByRole("dialog", { name: "Customize Release helper" })).toBeInTheDocument();
+  });
+
   it("revokes an agent after asking", async () => {
     signedIn();
     agentApi();
@@ -247,6 +255,82 @@ describe("the agents tab", () => {
     const { user } = await renderApp(`/settings/account/agents/${AGENT}`);
     await user.click(await screen.findByRole("button", { name: "Load more" }));
     expect(await screen.findByText(/^not_found · /)).toBeInTheDocument();
+  });
+
+  it("names the organization and project each call acted in", async () => {
+    signedIn();
+    agentApi();
+    on(
+      "GET",
+      "me/agents/:agent/activity",
+      page([
+        {
+          id: "act_p",
+          at: "2026-10-15T11:00:00Z",
+          tool: "get_orgs_org_projects_project_usage",
+          org_id: ORG,
+          project_id: PROJECT,
+          target: null,
+          status: 200,
+          result: "ok",
+          ip: null,
+        },
+        {
+          id: "act_o",
+          at: "2026-10-15T11:00:00Z",
+          tool: "get_orgs_org_usage",
+          org_id: ORG,
+          project_id: null,
+          target: null,
+          status: 200,
+          result: "ok",
+          ip: null,
+        },
+        {
+          id: "act_g",
+          at: "2026-10-15T11:00:00Z",
+          tool: "delete_orgs_org_credentials_credential",
+          org_id: "org_gone",
+          project_id: "prj_gone",
+          target: null,
+          status: 200,
+          result: "ok",
+          ip: null,
+        },
+        { id: "act_m", at: "2026-10-15T11:00:00Z", tool: "get_me", org_id: null, project_id: null, target: null, status: 200, result: "ok", ip: null },
+      ]),
+    );
+    await renderApp(`/settings/account/agents/${AGENT}`);
+    const title = async (tool: string) => (await screen.findByText(tool)).parentElement;
+    expect(await title("get_orgs_org_projects_project_usage")).toHaveTextContent(/^get_orgs_org_projects_project_usageNorthwind › Checkout$/);
+    expect(await title("get_orgs_org_usage")).toHaveTextContent(/^get_orgs_org_usageNorthwind$/);
+    expect(await title("delete_orgs_org_credentials_credential")).toHaveTextContent(/^delete_orgs_org_credentials_credentialorg_gone › prj_gone$/);
+    expect(await title("get_me")).toHaveTextContent(/^get_me$/);
+  });
+
+  it("names an organization the user can no longer open to an agent from their memberships", async () => {
+    signedIn();
+    agentApi();
+    on("GET", "me/agents/grantable", { ...grantable(), orgs: grantable().orgs.filter((o) => o.id !== ORG) });
+    on(
+      "GET",
+      "me/agents/:agent/activity",
+      page([
+        {
+          id: "act_l",
+          at: "2026-10-15T11:00:00Z",
+          tool: "get_orgs_org_projects_project_usage",
+          org_id: ORG,
+          project_id: PROJECT,
+          target: null,
+          status: 200,
+          result: "ok",
+          ip: null,
+        },
+      ]),
+    );
+    await renderApp(`/settings/account/agents/${AGENT}`);
+    expect((await screen.findByText("get_orgs_org_projects_project_usage")).parentElement).toHaveTextContent(/Northwind Labs › proj_\w+$/);
   });
 
   it("says when there are no tool calls yet", async () => {

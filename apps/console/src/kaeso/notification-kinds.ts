@@ -36,6 +36,10 @@ const kinds: Readonly<Record<string, Words>> = {
     name: t("account.notify.keyExpiry", "Your key expires"),
     description: t("account.notify.keyExpiryHint", "Before a key you own expires."),
   }),
+  platform_key_expiry: () => ({
+    name: t("account.notify.platformKeyExpiry", "A platform key expires"),
+    description: t("account.notify.platformKeyExpiryHint", "Before an organization's platform key expires."),
+  }),
   key_changed: () => ({
     name: t("account.notify.keyChanged", "Your key changed"),
     description: t("account.notify.keyChangedHint", "When someone else disables, rotates or archives it."),
@@ -47,6 +51,10 @@ const kinds: Readonly<Record<string, Words>> = {
   model_shutdown_soon: () => ({
     name: t("account.notify.modelShutdownSoon", "Model shuts down soon"),
     description: t("account.notify.modelShutdownSoonHint", "30, 7 and 1 days before a model a project still calls shuts down."),
+  }),
+  model_lines: () => ({
+    name: t("account.notify.modelLines", "Model line moves"),
+    description: t("account.notify.modelLinesHint", "When a model line moves, or a move waits for you."),
   }),
   content_logging: () => ({
     name: t("account.notify.contentLogging", "Content logging changed"),
@@ -66,7 +74,7 @@ const kinds: Readonly<Record<string, Words>> = {
   }),
   org_security: () => ({
     name: t("account.notify.orgSecurity", "Security settings changed"),
-    description: t("account.notify.orgSecurityHint", "When someone changes sign-in rules, SSO or platform keys."),
+    description: t("account.notify.orgSecurityHint", "When someone changes sign-in rules, SSO or platform keys, or shares usage."),
   }),
   org_ownership: () => ({
     name: t("account.notify.orgOwnership", "Ownership and deletion"),

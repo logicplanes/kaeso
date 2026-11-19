@@ -232,5 +232,9 @@
   "rights.guardrailsView.name": "查看防护规则",
   "rights.guardrailsView.description": "查看组织的防护规则以及使用它们的项目（不含其机密）。",
   "rights.guardrailsManage.name": "管理防护规则",
-  "rights.guardrailsManage.description": "添加、更改、测试和删除防护规则，并选择使用它们的项目。"
+  "rights.guardrailsManage.description": "添加、更改、测试和删除防护规则，并选择使用它们的项目。",
+  "rights.usageShare.name": "分享用量",
+  "rights.usageShare.description": "分享自己可见的用量、成员统计和预算的只读链接，并撤销自己的链接。",
+  "rights.usageShareManage.name": "管理共享链接",
+  "rights.usageShareManage.description": "查看并撤销所有人的共享链接，并决定链接可以面向谁、有效多久。"
 }

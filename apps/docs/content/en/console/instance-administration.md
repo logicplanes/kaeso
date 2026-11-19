@@ -10,7 +10,7 @@ The pages are under **Instance**, in the menu at the foot of the sidebar.
 
 ## Manage users
 
-**Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them.
+**Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them. **Last sign-in** shows when each user last signed in, by any method; turning on two-factor authentication doesn't count as one. It shows **Never** for someone who hasn't signed in since the install began recording it.
 
 **Two-factor** shows who uses an authenticator app. Instance admins carry an **Instance admin** badge, and **Managed by** names the organization that manages an account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)). Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
 
@@ -23,6 +23,8 @@ The pages are under **Instance**, in the menu at the foot of the sidebar.
 | Delete user | Removes their name and email address and archives their keys. History shows a deleted user |
 
 Kaeso emails the user when you end their sessions or reset their two-factor authentication.
+
+**Invitations**, next to **Users**, lists the invitations to the install that are still pending, with who sent each and when it expires, and **All** adds the accepted, revoked and expired ones. **Resend** sends an invitation again with a new link that works for 21 days, even after it expired, and the old link stops working. **Revoke** takes one back. Both need **Manage users** and show in the audit log.
 
 ## Manage organizations
 
@@ -44,6 +46,7 @@ Under **General**:
 | Single sign-on for instance admins | **None**, or an organization with single sign-on whose provider may sign its managed instance admins in to administer the instance ([instance admins](../self-hosting/sign-in.md#instance-admins)) |
 | Time zone | The install's time zone. Every time in the console shows in it, for everyone, the request log and audit log filter by its days, and automatic updates follow it. **Use this zone** switches to your browser's |
 | Exchange rates | Whether the install fetches the ECB's reference rates each working day, the day of the latest and why the last fetch failed. Off keeps the rates it has ([currencies](../concepts/currencies.md)) |
+| Shared links | **Allow shared links** lets organizations [share usage](share-usage.md); off, every link stops working. **Made with Kaeso** shows a small mark at the foot of shared pages |
 | Deleting organizations | Whether organizations can be deleted at all, and the grace period, 1 to 90 days |
 
 Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose. Lowering the longest brings every organization above it down to it, and their older entries are deleted at once, as when an organization shortens its retention.

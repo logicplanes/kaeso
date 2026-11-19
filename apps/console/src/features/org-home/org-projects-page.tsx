@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Avatar, Badge, Button, Empty, FilterRow, List, Input, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Avatar, Badge, Button, Empty, FilterRow, List, Input, Select, icons } from "@logicplanes/kaeso-ui";
 import { formatDate, formatNumber } from "@logicplanes/kaeso-ui/format";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { orgUsageQuery } from "~/api/queries/usage";
@@ -17,8 +17,11 @@ import { CreateProjectDialog } from "./create-project-dialog";
 import { t } from "~/i18n";
 import { compareNames } from "~/format/collate";
 
+export type ProjectsSort = "requests" | "cost";
+
 export interface OrgProjectsSearch {
   create?: boolean;
+  sort?: ProjectsSort;
 }
 
 export function OrgProjectsPage({ org, search }: { org: string; search: OrgProjectsSearch }) {
@@ -32,14 +35,29 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
   const [creating, setCreating] = useState(!!search.create && canCreate);
   const projects = useQuery(orgProjectsQuery(org, scope !== "active"));
   const last30 = resolvePeriod({});
-  const usage = useQuery({ ...orgUsageQuery(org, last30.from, last30.to, "project"), enabled: rights.has("usage.org.view") });
+  const seesUsage = rights.has("usage.org.view");
+  const seesCost = seesUsage && rights.has("costs.org.view");
+  const usage = useQuery({ ...orgUsageQuery(org, last30.from, last30.to, "project"), enabled: seesUsage });
+  // Requests or cost in the same 30 days the subtitles show; without the right to see them, by name.
+  const sort = seesUsage && (search.sort !== "cost" || seesCost) ? search.sort : undefined;
   usePageCreateAction({ label: t("orgHome.createProject", "Create project"), run: () => setCreating(true), disabledReason: createReason });
 
   const closeCreate = () => {
     setCreating(false);
-    if (search.create) void navigate({ to: "/orgs/$org/projects", params: { org }, search: {}, replace: true });
+    if (search.create) void navigate({ to: "/orgs/$org/projects", params: { org }, search: search.sort ? { sort: search.sort } : {}, replace: true });
   };
-  const all = [...(projects.data ?? [])].sort((a, b) => compareNames(a.name, b.name));
+  const setSort = (v: string) =>
+    void navigate({
+      to: "/orgs/$org/projects",
+      params: { org },
+      search: v === "requests" || v === "cost" ? { sort: v } : {},
+      replace: true,
+    });
+  const amount = (id: string): number => {
+    const row = usage.data?.find((r) => r.key === id);
+    return sort === "cost" ? Number(row?.cost ?? 0) : (row?.requests ?? 0);
+  };
+  const all = [...(projects.data ?? [])].sort((a, b) => (sort ? amount(b.id) - amount(a.id) : 0) || compareNames(a.name, b.name));
   const words = query.trim().toLocaleLowerCase();
   const list = all.filter((p) => (scope !== "archived" || p.archived_at) && (!words || p.name.toLocaleLowerCase().includes(words)));
   const requests = (id: string) => {
@@ -84,6 +102,20 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
             onClear={() => setQuery("")}
           />
         </div>
+        {seesUsage && (
+          <Select
+            aria-label={t("orgHome.sort", "Sort")}
+            size="sm"
+            icon={icons.sort}
+            value={sort ?? "name"}
+            onValueChange={setSort}
+            options={[
+              { value: "name", label: t("orgHome.sortName", "Name") },
+              { value: "requests", label: t("orgHome.sortRequests", "Most requests") },
+              ...(seesCost ? [{ value: "cost", label: t("orgHome.sortCost", "Highest cost") }] : []),
+            ]}
+          />
+        )}
       </FilterRow>
       <AppFrame.Body padding="list">
         {projects.isError && all.length === 0 ? (

@@ -29,6 +29,7 @@ A list, such as API keys or members, is a single Tab stop. Move between its rows
 - [Request logs](request-logs.md): Find any request, export logs, and choose what is kept.
 - [Response cache](response-cache.md): Answer repeated identical requests from a stored reply.
 - [Webhooks](webhooks.md): Send the organization's notices, signed, to on-call tools, chat and scripts.
+- [Share usage](share-usage.md): Share read-only links to usage, member stats and budgets with people without an account.
 - [Playground](playground.md): Compare up to four models side by side.
 - [Account and language](account.md): Secure your account, and choose your theme and language.
 - [Instance administration](instance-administration.md): Manage the users, organizations, settings and updates of the install.

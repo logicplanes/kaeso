@@ -1283,6 +1283,7 @@ pub(crate) fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogR
             media_detail: String::new(),
             cost_known: true,
             cost_basis: String::new(),
+            line: String::new(),
             tags: Vec::new(),
             guardrails: String::new(),
             guardrail_actions: Vec::new(),
@@ -2394,6 +2395,9 @@ async fn the_timeline_filters_groups_and_measures_latency() {
         ttfb_ms: None,
         status,
         error_kind: error_kind.into(),
+        endpoint: "chat/completions".into(),
+        alias: "fast".into(),
+        response_cache: String::new(),
         ..row(org.uuid(), project.uuid(), five, 1).0
     };
     let rows = [
@@ -2530,6 +2534,49 @@ async fn the_timeline_filters_groups_and_measures_latency() {
             bucket(&at7, json!(user_id), 1),
         ]
     );
+    for (group, expected) in [
+        (
+            "alias",
+            vec![
+                bucket(&at5, json!(""), 3),
+                bucket(&at5, json!("fast"), 2),
+                bucket(&at7, json!(""), 1),
+            ],
+        ),
+        (
+            "endpoint",
+            vec![
+                bucket(&at5, json!("chat/completions"), 2),
+                bucket(&at5, json!("messages"), 3),
+                bucket(&at7, json!("messages"), 1),
+            ],
+        ),
+        (
+            "status",
+            vec![
+                bucket(&at5, json!("200"), 4),
+                bucket(&at5, json!("429"), 1),
+                bucket(&at7, json!("502"), 1),
+            ],
+        ),
+        (
+            "response_cache",
+            vec![
+                bucket(&at5, json!(""), 2),
+                bucket(&at5, json!("hit"), 3),
+                bucket(&at7, json!("hit"), 1),
+            ],
+        ),
+    ] {
+        let data = get(format!("{p}/usage/timeline?{range}&group_by={group}")).await;
+        assert_eq!(summary(&data), expected, "{group}");
+    }
+    let by_alias = get(format!("{p}/usage/timeline?{range}&group_by=alias")).await;
+    assert_eq!(
+        by_alias[1]["duration_p95_ms"].as_u64().map(|ms| ms >= 1000),
+        Some(true),
+        "each alias its own p95"
+    );
     let by_route = get(format!("{p}/usage/timeline?{range}&group_by=route")).await;
     assert_eq!(
         by_route[0]["key"],
@@ -2585,12 +2632,12 @@ async fn the_timeline_filters_groups_and_measures_latency() {
         (
             format!("{p}/usage/timeline?{range}&group_by=project"),
             "group_by",
-            "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`.",
+            "Group by a field of the request log, such as `model`, `status` or `response_cache`.",
         ),
         (
             format!("{o}/usage/timeline?{range}&group_by=day"),
             "group_by",
-            "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`.",
+            "Group by `project` or a field of the request log, such as `model` or `status`.",
         ),
         (
             format!("{p}/usage/timeline?{range}&group_by=model&top=0"),

@@ -32,6 +32,7 @@ export function model(overrides: Partial<CatalogueModelView> = {}): CatalogueMod
     custom: false,
     listed: true,
     deprecated: false,
+    line_target: null,
     availability: "unchecked",
     egress_dialect: "openai",
     effective: { display_name: "GPT-5 mini" },

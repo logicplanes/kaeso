@@ -213,6 +213,8 @@ pub struct Outcome {
     pub cache_breakpoints: Option<usize>,
     pub response_cache: Option<crate::services::response_cache::Verdict>,
     pub alias: Option<String>,
+    /// The model line the request reached its model through, such as `claude-opus-latest`.
+    pub line: Option<String>,
     pub fallbacks: Vec<FellBack>,
     pub gemini: Option<kaeso_codecs::gemini::GeminiAction>,
     pub image: Option<kaeso_kpp::ImageOperation>,

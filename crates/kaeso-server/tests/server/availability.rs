@@ -1100,3 +1100,67 @@ async fn the_playground_refuses_a_model_the_provider_does_not_serve_as_v1_does()
         "The provider did not find something the request names; check the model and its ids."
     );
 }
+
+async fn test_key(env: &Env, provider: &str) -> Value {
+    let id = credential(env, provider).await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/credentials/{id}/check", env.owner.org_id),
+            json!({}),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body
+}
+
+#[tokio::test]
+async fn testing_a_key_reads_the_providers_listing_and_bills_nothing() {
+    let env = env().await;
+    let body = test_key(&env, "openai").await;
+    assert_eq!(
+        (&body["result"], &body["detail"]),
+        (&json!("ok"), &Value::Null)
+    );
+    assert!(body["models"].as_u64().unwrap() > 0, "{body}");
+    assert_eq!(posts(&env), 0, "no model request");
+    assert_eq!(entry(&env, UNSERVED_GPT).await["availability"], "unchecked");
+
+    replace_key(&env, "openai", "sk-[mock:models=list-refuses-key]-0004").await;
+    let body = test_key(&env, "openai").await;
+    assert_eq!(body["result"], "refused", "{body}");
+    let detail = body["detail"].as_str().unwrap();
+    assert!(!detail.is_empty() && !detail.contains("0004"), "{detail}");
+
+    // A provider that lists no models can't tell whether it takes the key.
+    replace_key(&env, "openai", "sk-[mock:models=absent]-0001").await;
+    assert_eq!(
+        test_key(&env, "openai").await,
+        json!({ "result": "unknown", "models": null, "detail": null })
+    );
+
+    // A listing that never ends still answered with the key.
+    replace_key(&env, "anthropic", "sk-ant-[mock:models=endless]-0003").await;
+    assert_eq!(
+        test_key(&env, "anthropic").await,
+        json!({ "result": "ok", "models": null, "detail": null })
+    );
+    assert_eq!(posts(&env), 0, "no model request");
+}
+
+#[tokio::test]
+async fn testing_a_deleted_key_is_not_found() {
+    let env = env().await;
+    let id = credential(&env, "anthropic").await;
+    let path = format!("/orgs/{}/credentials/{id}", env.owner.org_id);
+    env.app
+        .call(Method::DELETE, &path, None, Some(&env.owner.cookie))
+        .await
+        .expect_status(StatusCode::NO_CONTENT);
+    let r = env
+        .app
+        .post(&format!("{path}/check"), json!({}), Some(&env.owner.cookie))
+        .await;
+    assert_eq!(r.status, StatusCode::NOT_FOUND, "{:?}", r.body);
+}

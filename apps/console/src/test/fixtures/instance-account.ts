@@ -48,6 +48,8 @@ export function instanceSettings(overrides: Partial<SettingsView> = {}): Setting
     sign_in: { password: true, magic_link: true },
     admin_sso: null,
     exchange_rates: { fetch: true, day: "2026-11-13", checked_at: "2026-11-13T15:10:00Z", error: null },
+    shared_links: true,
+    share_mark: true,
     ...overrides,
   };
 }
@@ -86,6 +88,7 @@ export function instanceUser(overrides: Partial<InstanceUserView> = {}): Instanc
     created_at: NOW,
     totp_enabled: false,
     managed_by: null,
+    last_signed_in_at: null,
     ...overrides,
   };
 }

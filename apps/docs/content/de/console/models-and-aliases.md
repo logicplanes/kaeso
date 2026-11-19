@@ -70,6 +70,21 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 
 Ein Entscheidungsmodell beantwortet typisierte Fragen an `/v1/decisions`, `/v1/systemone` und `/v1beta/decisions` ([Decisions-API](../api/decisions.md)). Der Dialog zum Hinzufügen kennzeichnet solche Modelle mit **Entscheidungen**, und das Hinzufügen jedes aktuellen Modells lässt Modelle aus, die nur Entscheidungen treffen; fügen Sie diese einzeln hinzu. Das Blatt eines Modells nennt unter **Entscheidungen**, ob es nur Entscheidungen trifft, welche Fragetypen es beantwortet und seine Limits. Wählen Sie für ein eigenes Modell bei einem Anbieter mit Decisions-API unter **Ausgaben** die Option **Entscheidungen**; dann braucht es nur seine Eingaben und seinen Eingabepreis. Der Playground listet Modelle, die nur Entscheidungen treffen, noch nicht.
 
+## Modelllinien
+
+Eine Modelllinie ist ein Name wie `claude-opus-latest`, den [KPMR](../concepts/kpmr.md) auf das neueste stabile Modell einer Familie eines Anbieters zeigen lässt. Fügen Sie eine hinzu, und Apps, die sie aufrufen, erhalten das neueste Modell, ohne dass jemand einen Alias ändert.
+
+Wählen Sie in **Modelle hinzufügen** unter den Suchergebnissen **Eine …-Modelllinie hinzufügen**: Die Liste zeigt jede Linie des Anbieters mit dem Modell, auf das sie jetzt zeigt. Wählen Sie, wie das Projekt ihr folgt, dann **Linie hinzufügen**. Die Linie erscheint im Katalog als `anthropic/claude-opus-latest`, markiert als **Linie** mit ihrem Modell, und Apps, Aliasse, Modellzugriff und Limits nutzen sie wie jedes Modell; ein Limit, das sie nennt, zählt jedes Modell, das sie erreicht. Ihre Werte sind die des Modells, auf das sie zeigt.
+
+| Richtlinie | Wenn KPMR die Linie wechselt |
+| --- | --- |
+| Automatisch folgen | Die Linie wechselt innerhalb einer Stunde. Standard |
+| Zuerst fragen | Die Linie wartet, und Mitglieder mit `models.manage` erhalten eine Benachrichtigung. **Wechseln** wechselt sie, **Behalten** bleibt und fragt erst bei einem neueren Modell wieder |
+| Verzögern | Die Linie wechselt 1 bis 30 Tage nach KPMR, sodass sich ein Modell nach seinem Start einspielen kann. **Wechseln** wechselt sie früher |
+| Festlegen | Die Linie bleibt, bis Sie eine andere Richtlinie wählen |
+
+Eine Linie wechselt nie zu einem Modell, das sie nicht aufrufen kann: Fehlt dem Projekt der Anbieter-Schlüssel, oder darf ein Schlüssel, Mitglied oder Dienstkonto, das die Linie aufrufen darf, das neue Modell nicht aufrufen, bleibt sie, und ihr Panel sagt warum. **Zurück zu …** führt die Linie zu dem Modell zurück, auf das sie vorher zeigte, und legt sie fest. Jeder Wechsel steht im [Audit-Log](organizations-and-projects.md#audit-log-lesen), und die Benachrichtigung **Wechsel von Modelllinien** und die [Webhook-Ereignisse](webhooks.md) `line.moved` und `line.move_available` melden ihn. Das [Anfrageprotokoll](request-logs.md) zeigt das Modell, das geantwortet hat, und die Linie, die die App nannte.
+
 ## Modell entfernen
 
 Wählen Sie **Aus dem Katalog entfernen** im Sheet eines Modells. Kaeso lehnt Anfragen nach dem Modell ab sofort ab, und Modelllisten, die es nennen, verlieren es. Aliasse, die nur zu ihm führen, werden gelöscht; Routen, die auch andere Modelle nutzen, überspringen es.

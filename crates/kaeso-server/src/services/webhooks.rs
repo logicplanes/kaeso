@@ -32,12 +32,13 @@ use crate::services::notifications::dispatch::{Send, deliver, org_holders, setti
 use crate::state::AppState;
 
 /// The notices a webhook can take: those about an organization, never one person's.
-pub const KINDS: [Kind; 11] = [
+pub const KINDS: [Kind; 12] = [
     Kind::BudgetAlerts,
     Kind::LimitReached,
     Kind::KeyExpiry,
     Kind::ModelDeprecated,
     Kind::ModelShutdownSoon,
+    Kind::ModelLines,
     Kind::ContentLogging,
     Kind::McpServers,
     Kind::OrgSecurity,
@@ -431,6 +432,49 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                 }),
             ),
         },
+        Fact::OrgSecurity {
+            change: Security::SharedLinkCreated { name, public },
+            by,
+        } => (
+            "share.created",
+            json!({
+                "title": name,
+                "audience": if *public { "anyone" } else { "members" },
+                "by": actor(by),
+            }),
+        ),
+        Fact::Line {
+            provider,
+            line,
+            change,
+            ..
+        } => {
+            let prices = |prices: &[kaeso_mail::notices::LinePrice]| {
+                prices
+                    .iter()
+                    .map(|p| json!({ "price": p.price, "from": p.from, "to": p.to }))
+                    .collect::<Vec<_>>()
+            };
+            match change {
+                kaeso_mail::notices::LineChange::Moved {
+                    from,
+                    to,
+                    prices: changed,
+                    how,
+                } => (
+                    "line.moved",
+                    json!({ "provider": provider, "line": line, "from": from, "to": to, "prices": prices(changed), "policy": how }),
+                ),
+                kaeso_mail::notices::LineChange::Available {
+                    from,
+                    to,
+                    prices: changed,
+                } => (
+                    "line.move_available",
+                    json!({ "provider": provider, "line": line, "from": from, "to": to, "prices": prices(changed) }),
+                ),
+            }
+        }
         Fact::OrgSecurity { change, by } => {
             let (what, key) = match change {
                 Security::SignInRules => ("sign_in_rules", None),
@@ -439,6 +483,7 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                 Security::KeyPolicy => ("key_policy", None),
                 Security::PlatformKeyCreated(name) => ("platform_key_created", Some(*name)),
                 Security::PlatformKeyRotated(name) => ("platform_key_rotated", Some(*name)),
+                Security::SharedLinkCreated { .. } => ("shared_link_created", None),
             };
             (
                 "organization.security_changed",

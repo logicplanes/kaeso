@@ -17,9 +17,14 @@ import { LoadFailed } from "./load-failed";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
-const STATE_TONE: Record<string, "neutral" | "success" | "warning"> = { pending: "neutral", accepted: "success", expired: "warning", revoked: "neutral" };
+export const STATE_TONE: Record<string, "neutral" | "success" | "warning"> = {
+  pending: "neutral",
+  accepted: "success",
+  expired: "warning",
+  revoked: "neutral",
+};
 
-function expiresIn(expiresAt: string, now: number): { text: string; soon: boolean } {
+export function expiresIn(expiresAt: string, now: number): { text: string; soon: boolean } {
   const ms = Date.parse(expiresAt) - now;
   if (ms <= 0) return { text: t("org.invites.expired", "expired"), soon: true };
   const soon = ms < 2 * DAY;

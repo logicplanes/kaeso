@@ -175,6 +175,7 @@
   "account.agentCall": "{result} · {when} · {address}",
   "account.agentCallNoRight": "Ein Recht fehlt",
   "account.agentCallOk": "Erledigt",
+  "account.agentCallPlace": "{org} › {project}",
   "account.agentDetails": "Details",
   "account.agentFailed": "Dieser Agent konnte nicht geladen werden",
   "account.agentGone": "Dieser Agent wurde widerrufen oder existiert nicht.",
@@ -255,7 +256,9 @@
   "account.notify.portalClients": "Neuer Client an einem Portal",
   "account.notify.portalClientsHint": "Wenn jemand einen neuen Client mit einem Portal verbindet.",
   "account.notify.orgSecurity": "Sicherheitseinstellungen geändert",
-  "account.notify.orgSecurityHint": "Wenn sich Anmelderegeln, SSO oder Plattformschlüssel ändern.",
+  "account.notify.orgSecurityHint": "Wenn sich Anmelderegeln, SSO oder Plattformschlüssel ändern oder jemand Nutzung teilt.",
+  "account.notify.platformKeyExpiry": "Ein Plattform-Schlüssel läuft ab",
+  "account.notify.platformKeyExpiryHint": "Bevor ein Plattform-Schlüssel einer Organisation abläuft.",
   "account.notify.orgOwnership": "Inhaberschaft und Löschung",
   "account.notify.orgOwnershipHint": "Bei Inhaberwechsel oder Löschung einer Organisation.",
   "account.notify.orgMembers": "Mitgliederänderungen",
@@ -286,5 +289,7 @@
   "account.notify.modelDeprecated": "Modell abgekündigt",
   "account.notify.modelDeprecatedHint": "Wenn ein Anbieter einen Abschalttag für ein Modell eines Projekts nennt.",
   "account.notify.modelShutdownSoon": "Modell wird bald abgeschaltet",
-  "account.notify.modelShutdownSoonHint": "30, 7 und 1 Tag bevor ein Modell abgeschaltet wird, das ein Projekt noch aufruft."
+  "account.notify.modelShutdownSoonHint": "30, 7 und 1 Tag bevor ein Modell abgeschaltet wird, das ein Projekt noch aufruft.",
+  "account.notify.modelLines": "Wechsel von Modelllinien",
+  "account.notify.modelLinesHint": "Wenn eine Modelllinie wechselt oder ein Wechsel auf Sie wartet."
 }

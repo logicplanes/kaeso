@@ -13,6 +13,8 @@
   "format.audit.action.catalogueModelUpdate": "Modellwerte geändert",
   "format.audit.action.catalogueModelMove": "Modell auf Nachfolger umgestellt",
   "format.audit.action.projectModelLifecycle": "Abschalt-Einstellungen eines Projekts geändert",
+  "format.audit.action.catalogueModelLineMove": "Modelllinie gewechselt",
+  "format.audit.action.catalogueModelLineUpdate": "Einstellungen einer Modelllinie geändert",
   "format.audit.action.credentialAssign": "Anbieter-Schlüssel Projekten zugewiesen",
   "format.audit.action.credentialCreate": "Anbieter-Schlüssel hinzugefügt",
   "format.audit.action.credentialDefault": "Anbieter-Schlüssel zum Standard gemacht",
@@ -21,6 +23,8 @@
   "format.audit.action.credentialReplace": "Anbieter-Schlüssel ersetzt",
   "format.audit.action.instanceAdminSsoUpdate": "Single Sign-on für Instanz-Admins geändert",
   "format.audit.action.instanceInvite": "Benutzer zur Installation eingeladen",
+  "format.audit.action.instanceInviteResend": "Einladung zur Installation erneut gesendet",
+  "format.audit.action.instanceInviteRevoke": "Einladung zur Installation widerrufen",
   "format.audit.action.instanceSettingsUpdate": "Instanzeinstellungen geändert",
   "format.audit.action.instanceSetup": "Kaeso eingerichtet",
   "format.audit.action.instanceUpdateCheck": "Nach Updates gesucht",
@@ -288,5 +292,11 @@
   "format.audit.action.securitySsoGroupsUpdate": "Gruppenregeln von Single Sign-on geändert",
   "format.audit.action.credentialFallback": "Ersatz für einen verknüpften Schlüssel geändert",
   "format.audit.action.instanceLinkedBillingUpdate": "App für verknüpfte Abrechnung eingerichtet",
-  "format.audit.action.instanceLinkedBillingDelete": "App für verknüpfte Abrechnung entfernt"
+  "format.audit.action.instanceLinkedBillingDelete": "App für verknüpfte Abrechnung entfernt",
+  "format.audit.action.securitySharedLinks": "Richtlinie für geteilte Links geändert",
+  "format.audit.action.sharedLinkCreate": "Link geteilt",
+  "format.audit.action.sharedLinkOpen": "Geteilter Link geöffnet",
+  "format.audit.action.sharedLinkRevoke": "Geteilter Link widerrufen",
+  "format.audit.kind.sharedLink": "Geteilte Links",
+  "format.targetKind.sharedLink": "Geteilter Link"
 }

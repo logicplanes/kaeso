@@ -175,6 +175,7 @@
   "account.agentCall": "{result} · {when} · {address}",
   "account.agentCallNoRight": "缺少权限",
   "account.agentCallOk": "完成",
+  "account.agentCallPlace": "{org} › {project}",
   "account.agentDetails": "详情",
   "account.agentFailed": "无法加载此智能体",
   "account.agentGone": "此智能体已被撤销或不存在。",
@@ -255,7 +256,9 @@
   "account.notify.portalClients": "门户上的新客户端",
   "account.notify.portalClientsHint": "当有人把新客户端连接到门户时。",
   "account.notify.orgSecurity": "安全设置已变更",
-  "account.notify.orgSecurityHint": "当有人更改登录规则、SSO 或平台密钥时。",
+  "account.notify.orgSecurityHint": "当有人更改登录规则、SSO 或平台密钥，或分享用量时。",
+  "account.notify.platformKeyExpiry": "平台密钥即将过期",
+  "account.notify.platformKeyExpiryHint": "组织的平台密钥过期之前。",
   "account.notify.orgOwnership": "所有权和删除",
   "account.notify.orgOwnershipHint": "当组织更换所有者或被删除时。",
   "account.notify.orgMembers": "成员变动",
@@ -286,5 +289,7 @@
   "account.notify.modelDeprecated": "模型已弃用",
   "account.notify.modelDeprecatedHint": "服务商为项目使用的模型指定停用日期时。",
   "account.notify.modelShutdownSoon": "模型即将停用",
-  "account.notify.modelShutdownSoonHint": "项目仍在调用的模型停用前 30 天、7 天和 1 天。"
+  "account.notify.modelShutdownSoonHint": "项目仍在调用的模型停用前 30 天、7 天和 1 天。",
+  "account.notify.modelLines": "模型系列切换",
+  "account.notify.modelLinesHint": "模型系列切换或有切换等待您处理时。"
 }

@@ -30,6 +30,16 @@
 		file_server
 	}
 
+	# A shared link's page, with the link's preview image in its Open Graph tags.
+	@share path_regexp share ^/share/([A-Za-z0-9_-]{43})$
+	handle @share {
+		header Cache-Control "no-store"
+		header X-Robots-Tag "noindex, nofollow"
+		rewrite * /share.html
+		templates
+		file_server
+	}
+
 	handle {
 		header Cache-Control "no-cache"
 		try_files {path} /index.html

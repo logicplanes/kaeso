@@ -70,7 +70,7 @@ At the top, **Agents** shows the MCP server's address with the marks of Claude C
 - rename it;
 - change its rights in the same editor as the consent page, then choose **Save rights**;
 - **Revoke** it, which signs it out at once;
-- read its **Activity**: every tool call of the last 90 days, with the tool, its target, the result, the time and the IP address.
+- read its **Activity**: every tool call of the last 90 days, with the tool, the organization and project it acted in, its target, the result, the time and the IP address.
 
 An agent keeps working until you revoke it, until it goes 90 days unused, or until all your sessions end, such as when you reset your password. Changing your password ends it only when you choose **Also disconnect my agents**. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
 
@@ -127,16 +127,18 @@ The weekly summary and the monthly cost report go out on their own schedule, so 
 | Project | Your key expires, Your key changed | The key's owner | Now |
 | Project | Model deprecated | `models.view` in a project that uses the model | Daily |
 | Project | Model shuts down soon | `models.view` in a project that still calls the model | Now |
+| Project | Model line moves | `models.manage` in a project with the line | Now |
 | Project | Content logging changed | Every member of the project | Daily |
 | Tools | MCP servers need attention | `mcp_servers.manage` | Now |
 | Tools | Your connection expired | You, for a server you connected your own account to | Now |
 | Tools | New client on a portal | `tools.manage` | Daily |
-| Organization | Security settings changed | `security.sso.manage` or `platform_keys.view` | Now |
+| Organization | Security settings changed, and new shared links | `security.sso.manage` or `platform_keys.view`; `usage.share.manage` for shared links | Now |
 | Organization | Ownership and deletion | Owners | Always |
 | Organization | Member changes | `members.invite` | Daily |
 | Organization | Your invitation was accepted | Whoever sent it | Now |
 | Organization | Webhooks need attention | `webhooks.manage` | Now |
 | Organization | Provider keys need attention | `provider_credentials.replace` | Now |
+| Organization | A platform key expires | `platform_keys.create`, and the key's creator while a member | Now |
 | Organization | Model changes | `models.manage` in a project that uses the model | Daily |
 | Organization | Monthly cost report | `costs.org.view` | On |
 | Instance | Updates, Instance settings changed | Instance admins | Now |

@@ -1,0 +1,72 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT k.id, k.name, k.org_id, CASE WHEN k.created_by_kind = 'user' THEN k.created_by_id END AS created_by, k.expires_at AS \"expires_at!\" FROM org_platform_keys k JOIN organizations o ON o.id = k.org_id WHERE k.archived_at IS NULL AND k.disabled_at IS NULL AND k.replaced_by IS NULL AND o.state = 'active' AND k.expires_at > $1 AND k.expires_at <= $1 + make_interval(days => $2) AND NOT EXISTS (SELECT 1 FROM platform_key_expiry_warnings w WHERE w.key_id = k.id AND w.days_before = $2)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "org_platform_keys",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "org_platform_keys",
+            "name": "name"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "org_platform_keys",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "created_by",
+        "type_info": "Uuid",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 4,
+        "name": "expires_at!",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "org_platform_keys",
+            "name": "expires_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Timestamptz",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "6056108de34c48ca8c056eb04240ee2c42e65631b922b0935e4b5a4acc44733a"
+}

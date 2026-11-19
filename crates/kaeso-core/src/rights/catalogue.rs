@@ -211,6 +211,8 @@ rights!(
         LogsDelete = "logs.delete", Logs, "Delete logs", true, true, false, [LogsStorageView], "Delete the organization's logs for a time range.";
         UsageOrgView = "usage.org.view", UsageBilling, "View org usage", false, false, false, [], "See usage across all projects.";
         CostsOrgView = "costs.org.view", UsageBilling, "View org costs", false, false, false, [UsageOrgView], "See costs across all projects.";
+        UsageShare = "usage.share", UsageBilling, "Share usage", false, false, false, [], "Share read-only links to the usage, member stats and budgets one can see, and revoke one's own.";
+        UsageShareManage = "usage.share.manage", UsageBilling, "Manage shared links", true, false, false, [UsageShare], "See and revoke everyone's shared links, and choose who links may reach and for how long.";
         BillingView = "billing.view", UsageBilling, "View billing", false, false, true, [], "See plan, invoices and payment status (Kaeso Cloud).";
         BillingManage = "billing.manage", UsageBilling, "Manage billing", false, false, true, [BillingView], "Change the plan and payment method (Kaeso Cloud).";
         AuditLogView = "audit_log.view", Audit, "View audit log", false, false, false, [], "Read the organization's audit log.";
