@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Button, Code, CopyButton, Dialog, DialogScope, SettingsGroup, SettingsRow, Section } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Code, CopyButton, Dialog, DialogScope, SecretReveal, SettingsGroup, SettingsRow, Section } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { ScimStatus } from "~/api/generated/types";
@@ -47,8 +47,8 @@ export function Provisioning({ org, connected }: { org: string; connected: boole
       <SettingsGroup>
         <SettingsRow
           title={t("org.scim.baseUrl", "SCIM base URL")}
+          description={t("org.scim.baseUrlHint", "Enter it at the provider with the token below.")}
           control={s ? <CopyButton display="inline" value={s.base_url} label={t("org.scim.copyBaseUrl", "Copy SCIM base URL")} /> : undefined}
-          description={s?.base_url}
         />
         <SettingsRow
           title={t("org.scim.token", "Token")}
@@ -104,15 +104,11 @@ export function Provisioning({ org, connected }: { org: string; connected: boole
         <Dialog
           open={!!token}
           onOpenChange={(o) => !o && setToken(null)}
-          size="sm"
           title={t("org.scim.created", "SCIM token created")}
-          description={t("org.scim.createdHint", "Copy it into your identity provider now; it's shown once, and a replaced token works 24 more hours.")}
+          description={t("org.scim.createdHint", "Copy it into your identity provider; a replaced token works 24 more hours.")}
           footer={<Button onClick={() => setToken(null)}>{common.finish()}</Button>}
         >
-          <div className="flex items-center gap-8">
-            <Code>{token}</Code>
-            {token && <CopyButton value={token} label={t("org.scim.copyToken", "Copy token")} />}
-          </div>
+          {token && <SecretReveal secret={token} snippets={false} baseUrl={window.location.origin} />}
         </Dialog>
       </DialogScope>
       <AlertDialog

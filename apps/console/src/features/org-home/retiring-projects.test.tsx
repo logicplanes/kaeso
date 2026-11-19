@@ -23,6 +23,19 @@ describe("the overview's retiring models", () => {
     expect(screen.getByText(/1 model, 1 already retired/)).toBeInTheDocument();
   });
 
+  it("says when no shutdown date is known yet, and counts the projects past the first five", async () => {
+    signedIn();
+    on("GET", "orgs/:org/deprecations", {
+      data: Array.from({ length: 7 }, (_, i) => ({ project_id: `proj_${i}`, name: `Project ${i}`, models: 2, retired: 0, next_shutdown_on: null })),
+    });
+    await renderApp(`/orgs/${ORG}`);
+    const banner = (await screen.findByText("7 projects use retiring models")).closest("[role]") as HTMLElement;
+    expect(within(banner).getAllByText(/2 models, no shutdown date yet/)).toHaveLength(5);
+    expect(within(banner).queryByText(/already retired/)).not.toBeInTheDocument();
+    expect(within(banner).queryByRole("link", { name: "Project 5" })).not.toBeInTheDocument();
+    expect(within(banner).getByText("2 more projects")).toBeInTheDocument();
+  });
+
   it("stays away while no project uses one", async () => {
     signedIn();
     await renderApp(`/orgs/${ORG}`);

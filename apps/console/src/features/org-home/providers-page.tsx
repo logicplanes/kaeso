@@ -400,7 +400,7 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
           ),
       ),
       col.custom(
-        { id: "added", header: t("orgHome.added", "Added"), size: 216, priority: 3 },
+        { id: "added", header: t("orgHome.added", "Added"), size: 240, priority: 3 },
         (r: Row) => r.key,
         (k: CredentialView) => (
           <Text variant="small" tone="secondary" truncate>

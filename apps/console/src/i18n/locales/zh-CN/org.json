@@ -677,8 +677,7 @@
   "org.scim.neverUsed": "尚无请求",
   "org.scim.lastError": "最近错误",
   "org.scim.created": "已创建 SCIM 令牌",
-  "org.scim.createdHint": "请立即复制到身份提供方；令牌只显示一次，被替换的令牌还可使用 24 小时。",
-  "org.scim.copyToken": "复制令牌",
+  "org.scim.createdHint": "请复制到身份提供方；被替换的令牌还可使用 24 小时。",
   "org.scim.deleteConfirm": "删除 SCIM 令牌？",
   "org.scim.deleteConfirmHint": "身份提供方会立即停止添加和移除成员。现有成员保留。",
   "org.ssoGroups.saved": "组规则已保存",
@@ -741,5 +740,8 @@
   "org.sharedPolicy.anyone": "任何持有链接的人",
   "org.sharedPolicy.maxExpiry": "最长有效期",
   "org.sharedPolicy.maxExpiryHint": "之前创建的链接保留其过期时间。",
-  "org.sharedPolicy.noLimit": "不限"
+  "org.sharedPolicy.noLimit": "不限",
+  "org.scim.baseUrlHint": "请在身份提供方中填写它和下方的令牌。",
+  "org.shared.lastDays": "{count, plural, other {最近 # 天}}",
+  "org.shared.snapshot": "{from} 至 {to}"
 }

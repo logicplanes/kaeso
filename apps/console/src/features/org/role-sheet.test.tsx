@@ -219,6 +219,7 @@ describe("a custom role's sheet", () => {
     expect(within(sheet).getByText("2 rights, 1 in projects")).toBeInTheDocument();
     expect(within(sheet).getAllByText("Nobody yet").length).toBeGreaterThan(0);
     const description = within(sheet).getByRole("textbox", { name: /Description/ });
+    expect(description.tagName).toBe("TEXTAREA");
     await fill(user, description, "Throwaway");
     await user.click(within(sheet).getByRole("button", { name: "Cancel" }));
     expect(description).toHaveValue("");

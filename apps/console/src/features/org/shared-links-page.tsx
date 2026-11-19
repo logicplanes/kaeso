@@ -8,6 +8,7 @@ import { orgProjectsQuery } from "~/api/queries/projects";
 import { sharedLinksKey, sharedLinksQuery } from "~/api/queries/shared-links";
 import { useApiMutation } from "~/auth/mutation";
 import { useOrgRights, useSession } from "~/auth/session";
+import { fullDayLabel } from "~/format/period";
 import { t } from "~/i18n";
 import { LastUsed } from "~/kaeso/last-used";
 import { toast } from "~/shell/toast";
@@ -26,6 +27,13 @@ export function kindLabel(kind: string): string {
     default:
       return t("org.shared.kindAnalytics", "Analytics");
   }
+}
+
+// Budgets and summaries show the present; usage links show a window of days, live or frozen.
+function periodLabel(l: SharedLinkView): string | null {
+  if (l.kind !== "analytics" && l.kind !== "member") return null;
+  if (l.live) return l.days ? t("org.shared.lastDays", "{count, plural, one {Last day} other {Last # days}}", { count: l.days }) : null;
+  return l.from && l.to ? t("org.shared.snapshot", "{from} to {to}", { from: fullDayLabel(l.from), to: fullDayLabel(l.to) }) : null;
 }
 
 export function SharedLinksPage({ org }: { org: string }) {
@@ -50,7 +58,9 @@ export function SharedLinksPage({ org }: { org: string }) {
           </Badge>
         </span>
       ),
-      subtitle: [kindLabel(l.kind), project ?? t("org.shared.wholeOrg", "Whole organization"), party({ kind: "user", id: l.created_by })].join(" · "),
+      subtitle: [kindLabel(l.kind), periodLabel(l), project ?? t("org.shared.wholeOrg", "Whole organization"), party({ kind: "user", id: l.created_by })]
+        .filter(Boolean)
+        .join(" · "),
       meta: (
         <Text variant="small" tone="secondary">
           {t("org.shared.views", "{count, plural, one {# view} other {# views}}", { count: l.views })}
@@ -82,6 +92,7 @@ export function SharedLinksPage({ org }: { org: string }) {
       <List
         aria-label={t("org.shared.title", "Shared links")}
         items={items}
+        wrapSubtitle
         loading={links.isPending}
         empty={
           links.isError ? (

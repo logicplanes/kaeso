@@ -106,7 +106,11 @@ export function WebhooksPage({ org }: { org: string }) {
     id: w.id,
     textValue: w.name,
     title: w.name,
-    subtitle: <Code>{w.url}</Code>,
+    subtitle: (
+      <Text variant="small" tone="secondary" mono truncate>
+        {w.url}
+      </Text>
+    ),
     meta: stateBadge(w),
     date: (
       <Text variant="small" tone={w.last_error ? "danger" : "secondary"}>

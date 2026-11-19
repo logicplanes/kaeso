@@ -677,8 +677,7 @@
   "org.scim.neverUsed": "Noch keine Anfrage",
   "org.scim.lastError": "Letzter Fehler",
   "org.scim.created": "SCIM-Token erstellt",
-  "org.scim.createdHint": "Kopieren Sie es jetzt in Ihren Identitätsanbieter; es wird einmal gezeigt, ein ersetztes gilt 24 Stunden.",
-  "org.scim.copyToken": "Token kopieren",
+  "org.scim.createdHint": "Kopieren Sie es in Ihren Identitätsanbieter; ein ersetztes Token gilt noch 24 Stunden.",
   "org.scim.deleteConfirm": "SCIM-Token löschen?",
   "org.scim.deleteConfirmHint": "Der Identitätsanbieter fügt sofort keine Mitglieder mehr hinzu und entfernt keine. Mitglieder bleiben.",
   "org.ssoGroups.saved": "Gruppenregeln gespeichert",
@@ -741,5 +740,8 @@
   "org.sharedPolicy.anyone": "Alle mit dem Link",
   "org.sharedPolicy.maxExpiry": "Längste Gültigkeit",
   "org.sharedPolicy.maxExpiryHint": "Frühere Links behalten ihren Ablauf.",
-  "org.sharedPolicy.noLimit": "Keine Grenze"
+  "org.sharedPolicy.noLimit": "Keine Grenze",
+  "org.scim.baseUrlHint": "Beim Anbieter zusammen mit dem Token unten eintragen.",
+  "org.shared.lastDays": "{count, plural, one {Letzter Tag} other {Letzte # Tage}}",
+  "org.shared.snapshot": "{from} bis {to}"
 }

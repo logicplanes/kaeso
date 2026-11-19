@@ -11,6 +11,8 @@ export const orgRetirementsQuery = (org: string) => ({
   staleTime: 300_000,
 });
 
+const SHOWN = 5;
+
 /** The org's projects that use models their providers retire, on the overview. */
 export function RetiringProjects({ org }: { org: string }) {
   const retiring = useQuery(orgRetirementsQuery(org));
@@ -25,7 +27,7 @@ export function RetiringProjects({ org }: { org: string }) {
       })}
     >
       <ul className="flex flex-col gap-4">
-        {list.slice(0, 5).map((p) => (
+        {list.slice(0, SHOWN).map((p) => (
           <li key={p.project_id}>
             <Link href={`/orgs/${org}/projects/${p.project_id}/models?tab=retiring`}>{p.name}</Link>
             {" · "}
@@ -34,12 +36,17 @@ export function RetiringProjects({ org }: { org: string }) {
                   count: p.models,
                   date: fullDayLabel(p.next_shutdown_on),
                 })
-              : t("orgHome.retiring.retired", "{count, plural, one {# model} other {# models}}, {retired} already retired", {
-                  count: p.models,
-                  retired: p.retired,
-                })}
+              : p.retired > 0
+                ? t("orgHome.retiring.retired", "{count, plural, one {# model} other {# models}}, {retired} already retired", {
+                    count: p.models,
+                    retired: p.retired,
+                  })
+                : t("orgHome.retiring.noDate", "{count, plural, one {# model} other {# models}}, no shutdown date yet", { count: p.models })}
           </li>
         ))}
+        {list.length > SHOWN && (
+          <li>{t("orgHome.retiring.more", "{count, plural, one {# more project} other {# more projects}}", { count: list.length - SHOWN })}</li>
+        )}
       </ul>
     </Banner>
   );

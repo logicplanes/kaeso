@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Input, Radio, RadioGroup, RightsMatrix, Select, StepDialog, type RightChange } from "@logicplanes/kaeso-ui";
+import { Input, Radio, RadioGroup, RightsMatrix, Select, StepDialog, Textarea, type RightChange } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import type { RoleView } from "~/api/generated/types";
 import { useApiMutation } from "~/auth/mutation";
@@ -94,9 +94,10 @@ export function RoleDialog({ org, draft, onClose, onCreated }: { org: string; dr
             onChange={(e) => setRole({ ...role, name: e.target.value })}
             autoFocus
           />
-          <Input
+          <Textarea
             label={t("org.role.description", "Description")}
             optional
+            rows={2}
             placeholder={t("org.role.descriptionPlaceholder", "Reads usage and costs to check invoices")}
             value={role.description}
             maxLength={200}

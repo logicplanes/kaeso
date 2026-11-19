@@ -408,5 +408,7 @@
   "orgHome.unlinkHint": "{provider} rechnet Anfragen dieser Installation nicht mehr mit der verknüpften Organisation ab.",
   "orgHome.retiring.title": "{count, plural, one {# Projekt nutzt auslaufende Modelle} other {# Projekte nutzen auslaufende Modelle}}",
   "orgHome.retiring.next": "{count, plural, one {# Modell} other {# Modelle}}, das erste wird am {date} abgeschaltet",
-  "orgHome.retiring.retired": "{count, plural, one {# Modell} other {# Modelle}}, {retired} bereits abgeschaltet"
+  "orgHome.retiring.retired": "{count, plural, one {# Modell} other {# Modelle}}, {retired} bereits abgeschaltet",
+  "orgHome.retiring.noDate": "{count, plural, one {# Modell} other {# Modelle}}, noch ohne Abschaltdatum",
+  "orgHome.retiring.more": "{count, plural, one {# weiteres Projekt} other {# weitere Projekte}}"
 }
