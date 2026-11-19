@@ -293,5 +293,15 @@
   "account.notify.modelShutdownSoon": "Modell wird bald abgeschaltet",
   "account.notify.modelShutdownSoonHint": "30, 7 und 1 Tag bevor ein Modell abgeschaltet wird, das ein Projekt noch aufruft.",
   "account.notify.modelLines": "Wechsel von Modelllinien",
-  "account.notify.modelLinesHint": "Wenn eine Modelllinie wechselt oder ein Wechsel auf Sie wartet."
+  "account.notify.modelLinesHint": "Wenn eine Modelllinie wechselt oder ein Wechsel auf Sie wartet.",
+  "account.enterName": "Namen eingeben",
+  "account.noChange": "Keine Änderung zu speichern",
+  "account.nothingToDiscard": "Keine Änderung zu verwerfen",
+  "account.enterNewEmail": "Neue Adresse eingeben",
+  "account.enterRecoveryCode": "Wiederherstellungscode eingeben",
+  "account.enterAppCode": "6-stelligen Code aus der App eingeben",
+  "account.enterCurrentPassword": "Aktuelles Passwort eingeben",
+  "account.enterNewPassword": "Neues Passwort mit 12 bis 128 Zeichen eingeben",
+  "account.confirmCodesStored": "Zuerst „Ich habe diese Codes sicher aufbewahrt“ ankreuzen",
+  "account.noOtherSessions": "Kein anderer Browser ist angemeldet"
 }

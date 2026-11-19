@@ -99,6 +99,12 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
   });
 
   const changedRights = JSON.stringify(toGrant(draft)) !== JSON.stringify(toGrant(saved));
+  const nameReason = !name.trim()
+    ? t("account.enterName", "Enter a name")
+    : name.trim() === agent.name
+      ? t("account.noChange", "No change to save")
+      : undefined;
+  const unchanged = changedRights ? {} : { disabledReason: t("account.noChange", "No change to save") };
   const saveRights = () => {
     const sensitive = gainedSensitive(cat, saved, draft);
     if (sensitive.length) setConfirming(sensitive);
@@ -144,7 +150,8 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
               variant="primary"
               size="sm"
               loading={details.isPending}
-              disabled={!name.trim() || name.trim() === agent.name}
+              disabled={!!nameReason}
+              {...(nameReason ? { disabledReason: nameReason } : {})}
               onClick={() => void details.mutateAsync()}
             >
               {t("common.save", "Save")}
@@ -176,10 +183,15 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
             {...(requested ? { start: "organizations" as const } : {})}
           />
           <div className="flex gap-8">
-            <Button variant="primary" size="sm" loading={rights.isPending} disabled={!changedRights} onClick={saveRights}>
+            <Button variant="primary" size="sm" loading={rights.isPending} disabled={!changedRights} {...unchanged} onClick={saveRights}>
               {t("account.saveAgentRights", "Save rights")}
             </Button>
-            <Button size="sm" disabled={!changedRights || rights.isPending} onClick={() => setDraft(saved)}>
+            <Button
+              size="sm"
+              disabled={!changedRights || rights.isPending}
+              {...(changedRights ? {} : { disabledReason: t("account.nothingToDiscard", "No change to discard") })}
+              onClick={() => setDraft(saved)}
+            >
               {t("common.discard", "Discard")}
             </Button>
           </div>

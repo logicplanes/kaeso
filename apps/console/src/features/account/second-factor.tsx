@@ -16,6 +16,11 @@ export function secondFactorReady(v: SecondFactorValue): boolean {
   return v.recovery ? v.code.trim().length > 0 : v.code.length === 6;
 }
 
+export function secondFactorMissing(v: SecondFactorValue): string | undefined {
+  if (secondFactorReady(v)) return undefined;
+  return v.recovery ? t("account.enterRecoveryCode", "Enter a recovery code") : t("account.enterAppCode", "Enter the 6-digit code from the app");
+}
+
 export function SecondFactorField({
   value,
   onChange,

@@ -33,6 +33,12 @@ describe("AppFrame.Settings", () => {
     expect(actions.compareDocumentPosition(description) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(description).toHaveClass("basis-full");
   });
+  it("lets a long title take the room beside the actions instead of wrapping onto a line of its own above them", () => {
+    render(<Page />);
+    const title = screen.getByRole("heading", { level: 1, name: "Members" });
+    expect(title).toHaveClass("sm:flex-1", "min-w-0");
+    expect(title).not.toHaveClass("flex-1");
+  });
   it("keeps the actions on the title's line without a description", () => {
     render(<Page />);
     const line = screen.getByRole("heading", { level: 1, name: "Members" }).parentElement!;

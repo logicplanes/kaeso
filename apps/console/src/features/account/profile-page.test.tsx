@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
-import { notifications } from "~/test/fixtures/org";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 import { renderApp } from "~/test/render";
 import { ORG, signedIn, whoAmI } from "~/test/fixtures";
 import { me } from "~/test/fixtures/instance-account";
@@ -57,10 +57,11 @@ describe("profile page", () => {
     const { user } = await renderApp("/settings/account/profile");
     const name = await screen.findByRole("textbox", { name: "Name" });
     const save = screen.getByRole("button", { name: "Save" });
-    expect(save).toBeDisabled();
+    expect(save).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, save, "No change to save");
     await user.clear(name);
     await user.type(name, "   ");
-    expect(save).toBeDisabled();
+    await hoverReason(user, save, "Enter a name");
     await user.keyboard("{Enter}");
     expect(requests("PATCH", "me")).toHaveLength(0);
     await user.clear(name);
@@ -94,7 +95,8 @@ describe("profile page", () => {
     await user.click(await screen.findByRole("button", { name: "Change email" }));
     const dialog = await screen.findByRole("dialog", { name: "Change email" });
     const send = within(dialog).getByRole("button", { name: "Send confirmation link" });
-    expect(send).toBeDisabled();
+    expect(send).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, send, "Enter the new address");
     await user.type(within(dialog).getByLabelText("New email"), " ada@example.org ");
     await user.keyboard("{Meta>}{Enter}{/Meta}");
     expect(await notifications().findByText("Confirmation link sent; your old address was notified")).toBeInTheDocument();
@@ -134,7 +136,8 @@ describe("profile page", () => {
     const dialog = await screen.findByRole("dialog", { name: "Change email" });
     const send = within(dialog).getByRole("button", { name: "Send confirmation link" });
     await user.type(within(dialog).getByLabelText("New email"), "ada@example.org");
-    expect(send).toBeDisabled();
+    expect(send).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, send, "Enter the 6-digit code from the app");
     await user.type(within(dialog).getByLabelText("Code from the app"), "654321");
     await user.click(send);
     expect(await notifications().findByText("Confirmation link sent; your old address was notified")).toBeInTheDocument();
@@ -170,7 +173,7 @@ describe("profile page", () => {
     const again = await screen.findByRole("dialog", { name: "Change email" });
     expect(within(again).getByLabelText("New email")).toHaveValue("");
     expect(within(again).getByLabelText("New email")).not.toHaveAccessibleDescription("Another account uses this address.");
-    expect(within(again).getByRole("button", { name: "Send confirmation link" })).toBeDisabled();
+    expect(within(again).getByRole("button", { name: "Send confirmation link" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("marks the address the gateway refused", async () => {

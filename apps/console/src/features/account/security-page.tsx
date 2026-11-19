@@ -26,7 +26,7 @@ import { meQuery, ssoLinksQuery } from "~/api/queries/me";
 import { useApiMutation, withSignInAgain } from "~/auth/mutation";
 import { useSession } from "~/auth/session";
 import { confirmWaysQuery, emailPasswordLink } from "~/auth/sign-in-api";
-import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorReady, type SecondFactorValue } from "./second-factor";
+import { NO_SECOND_FACTOR, SecondFactorField, secondFactorBody, secondFactorMissing, secondFactorReady, type SecondFactorValue } from "./second-factor";
 import { LoadFailed } from "~/features/org/load-failed";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk } from "~/features/public/form";
@@ -140,7 +140,13 @@ function PasswordDialog({
       );
     },
   });
-  const ready = passwordOk(next) && (!hasPassword || current.length > 0);
+  const reason =
+    hasPassword && !current
+      ? t("account.enterCurrentPassword", "Enter your current password")
+      : passwordOk(next)
+        ? undefined
+        : t("account.enterNewPassword", "Enter a new password of 12 to 128 characters");
+  const ready = !reason;
   return (
     <Dialog
       busy={save.isPending}
@@ -154,7 +160,7 @@ function PasswordDialog({
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" disabled={!ready} loading={save.isPending} onClick={() => save.mutate()}>
+          <Button variant="primary" disabled={!ready} {...(reason ? { disabledReason: reason } : {})} loading={save.isPending} onClick={() => save.mutate()}>
             {hasPassword ? t("account.changePassword", "Change password") : t("account.setPassword", "Set password")}
           </Button>
         </>
@@ -302,7 +308,13 @@ function RegenerateDialog({
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" disabled={!secondFactorReady(factor)} loading={regenerate.isPending} onClick={run}>
+          <Button
+            variant="primary"
+            disabled={!secondFactorReady(factor)}
+            {...(secondFactorReady(factor) ? {} : { disabledReason: secondFactorMissing(factor) })}
+            loading={regenerate.isPending}
+            onClick={run}
+          >
             {t("account.regenerate", "Regenerate")}
           </Button>
         </>
@@ -341,7 +353,13 @@ function TurnOffDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="danger" disabled={!secondFactorReady(factor)} loading={off.isPending} onClick={turnOff}>
+          <Button
+            variant="danger"
+            disabled={!secondFactorReady(factor)}
+            {...(secondFactorReady(factor) ? {} : { disabledReason: secondFactorMissing(factor) })}
+            loading={off.isPending}
+            onClick={turnOff}
+          >
             {t("account.turnOff", "Turn off")}
           </Button>
         </>
@@ -415,7 +433,12 @@ function TwoFactorDialog({
         description={t("account.storeCodesHint", "Each code signs you in once without your authenticator; they're shown only now.")}
         hideClose
         footer={
-          <Button variant="primary" disabled={!stored} onClick={onClose}>
+          <Button
+            variant="primary"
+            disabled={!stored}
+            {...(stored ? {} : { disabledReason: t("account.confirmCodesStored", "Tick “I stored these codes” first") })}
+            onClick={onClose}
+          >
             {t("common.finish", "Finish")}
           </Button>
         }
@@ -447,7 +470,13 @@ function TwoFactorDialog({
           <Dialog.Close>
             <Button>{t("common.cancel", "Cancel")}</Button>
           </Dialog.Close>
-          <Button variant="primary" disabled={code.length < 6} loading={confirm.isPending} onClick={() => turnOn(code)}>
+          <Button
+            variant="primary"
+            disabled={code.length < 6}
+            {...(code.length < 6 ? { disabledReason: t("account.enterAppCode", "Enter the 6-digit code from the app") } : {})}
+            loading={confirm.isPending}
+            onClick={() => turnOn(code)}
+          >
             {t("account.turnOn", "Turn on")}
           </Button>
         </>
