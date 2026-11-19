@@ -139,6 +139,7 @@ export function dialectPill(d: string, decisionsOnly = false): string {
       fal: "fal",
       replicate: "replicate",
       cartesia: "cartesia",
+      assemblyai: "assemblyai",
     }[d] ?? d
   );
 }

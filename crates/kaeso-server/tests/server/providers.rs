@@ -541,6 +541,13 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         qianfan["key_page"],
         json!({ "url": "https://console.bce.baidu.com/iam/#/iam/apikey/list", "label": "API Key" })
     );
+    let assemblyai = listed.iter().find(|p| p["id"] == "assemblyai").unwrap();
+    assert_eq!(assemblyai["name"], "AssemblyAI");
+    assert_eq!(assemblyai["dialects"], json!(["assemblyai"]));
+    assert_eq!(
+        (&assemblyai["embeddings"], &assemblyai["key_prefix"]),
+        (&Value::Null, &Value::Null)
+    );
     let ovhcloud = listed.iter().find(|p| p["id"] == "ovhcloud").unwrap();
     assert_eq!(ovhcloud["name"], "OVHcloud AI Endpoints");
     assert_eq!(

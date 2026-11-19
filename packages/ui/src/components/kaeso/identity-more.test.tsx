@@ -229,6 +229,7 @@ const MARKED_PROVIDERS = {
   replicate: "Replicate",
   deepgram: "Deepgram",
   cartesia: "Cartesia",
+  assemblyai: "AssemblyAI",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

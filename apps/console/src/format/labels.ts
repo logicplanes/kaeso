@@ -59,6 +59,7 @@ export const DIALECTS: Record<string, string> = {
   fal: "fal",
   replicate: "Replicate",
   cartesia: "Cartesia",
+  assemblyai: "AssemblyAI",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

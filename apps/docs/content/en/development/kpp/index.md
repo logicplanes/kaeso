@@ -105,6 +105,7 @@ Both crates are published to crates.io. Their library code may depend only on `s
 | `gemini_decisions` | Gemini's Decisions API (`/v1beta/decisions`) ([Gemini Decisions](gemini-decisions.md)) |
 | `cohere_rerank` | Cohere's rerank format (`/v1/rerank`, `/v2/rerank`) ([Cohere Rerank](cohere-rerank.md)) |
 | `jina_rerank` | Jina AI's rerank format, as a provider's ([Jina Rerank](jina-rerank.md)) |
+| `assemblyai` | AssemblyAI's Sync API transcription ([AssemblyAI](assemblyai.md)) |
 | `voyage_rerank` | Voyage AI's rerank format, as a provider's ([Voyage Rerank](voyage-rerank.md)) |
 | `replicate` | Replicate's predictions: images and video jobs of the models Kaeso maps ([Replicate](replicate.md)) |
 | `cartesia` | Cartesia's Sonic text to speech and Ink batch speech to text ([Cartesia](cartesia.md)) |
@@ -318,6 +319,7 @@ When a change alters cross-dialect output, review the snapshot diff: run `INSTA_
 - [Replicate](replicate.md): See how image requests and video jobs map to Replicate's predictions, model by model.
 - [Deepgram](deepgram.md): See how transcriptions and speech map to Deepgram's speech-to-text and Aura APIs.
 - [Cartesia](cartesia.md): See how speech and transcription requests map to Cartesia's API.
+- [AssemblyAI](assemblyai.md): See how transcription requests map to AssemblyAI's Sync API.
 - [System One](system-one.md): Find where every field of TypeSafe's decision format goes in KPP, and how each provider takes it.
 - [OpenAI Decisions](openai-decisions.md): Find where every field of OpenAI's Decisions API goes in KPP.
 - [Gemini Decisions](gemini-decisions.md): Find where every field of Gemini's Decisions API goes in KPP.

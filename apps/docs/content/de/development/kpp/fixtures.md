@@ -30,6 +30,7 @@ Jede Codec-Änderung beginnt mit einer Fixture: einem echten Anfrage-Body, einer
 | `gemini_decisions/` | Die Decisions-API von Gemini (`/v1beta/decisions`); jede Antwort hat eine Anfrage gleichen Namens |
 | `cohere_rerank/` | Das Rerank-Format von Cohere (`/v1/rerank`, `/v2/rerank`); `requests/object-documents.json` ist die einzige Anfrage, die Kaeso an Cohere in anderer Form schreibt |
 | `jina_rerank/` | Das Rerank-Format von Jina AI (`/v1/rerank` bei Jina AI) |
+| `assemblyai/` | Die Sync API von AssemblyAI; `responses/` die Transkripte von `/v1/transcribe`, `plain/` ein Fehler als reiner Text |
 | `voyage_rerank/` | Das Rerank-Format von Voyage AI (`/v1/rerank` bei Voyage AI) |
 | `replicate/` | Die Predictions von Replicate; `requests/images/` und `requests/videos/` mit dem Modell in `<name>.meta.json`, `predictions/` die Predictions, mit denen Replicate antwortet, `models/` die Sammlung der offiziellen Modelle |
 | `cartesia/` | Die API von Cartesia; `requests/speech/` die Bodys von `/tts/bytes`, `responses/stt/` die Transkripte von `/stt`, `plain/` ein Fehler als reiner Text |

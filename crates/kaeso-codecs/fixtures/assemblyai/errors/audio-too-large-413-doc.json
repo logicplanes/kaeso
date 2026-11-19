@@ -1,0 +1,5 @@
+{
+  "status": 413,
+  "title": "Audio Too Large",
+  "detail": "Audio exceeds the 20 minute duration or 256 MB size limit."
+}

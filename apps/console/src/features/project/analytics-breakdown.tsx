@@ -329,6 +329,7 @@ const SHORT_DIALECTS: Record<string, string> = {
   fal: "fal",
   replicate: "Replicate",
   cartesia: "Cartesia",
+  assemblyai: "AssemblyAI",
 };
 const shortDialectLabel = (d: string) => SHORT_DIALECTS[d] ?? d;
 

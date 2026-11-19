@@ -605,6 +605,8 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "deepgram"
     } else if matches!(path.as_str(), "/tts/bytes" | "/stt" | "/voices") {
         "cartesia"
+    } else if path == "/v1/transcribe" {
+        "assemblyai"
     } else if path.starts_with("/v1/responses") {
         "openai_responses"
     } else if path.starts_with("/v1/embeddings") || path == "/embeddings" {
@@ -1124,6 +1126,11 @@ fn audio(fixtures: &Path, path: &str, text: &str) -> Option<Response> {
             "audio/mpeg",
         )),
         "/stt" => json(&fixtures.join("cartesia/responses/stt"), "words-built"),
+        // AssemblyAI's Sync API times words only when the config asks for it.
+        "/v1/transcribe" if text.contains("\"timestamps\":true") => {
+            json(&fixtures.join("assemblyai/responses"), "timestamps-built")
+        }
+        "/v1/transcribe" => json(&fixtures.join("assemblyai/responses"), "doc"),
         "/v1/music" | "/v1/music/stream" => Some(error_response(
             &fixtures.join("elevenlabs"),
             "recorded-music-402",
@@ -1668,6 +1675,7 @@ fn key_refused(dialect: &str) -> &'static str {
         "gemini_decisions" => "invalid-api-key-400",
         "system_one" => "unauthorized-401",
         "cartesia" => "recorded-invalid-credentials-401",
+        "assemblyai" => "recorded-invalid-key-404",
         "openai_chat" => "invalid-api-key",
         "deepgram" => "recorded-invalid-auth-401",
         _ => "invalid-api-key-401",

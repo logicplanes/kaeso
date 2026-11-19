@@ -220,6 +220,9 @@ base_url = "https://api.cartesia.ai"
 [providers.qianfan]
 base_url = "https://qianfan.baidubce.com/v2"
 
+[providers.assemblyai]
+base_url = "https://sync.assemblyai.com"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

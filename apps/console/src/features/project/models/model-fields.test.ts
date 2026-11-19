@@ -97,6 +97,7 @@ describe("unitPriceLabels", () => {
     expect(dialectPill("replicate")).toBe("replicate");
     expect(dialectPill("deepgram")).toBe("deepgram");
     expect(dialectPill("cartesia")).toBe("cartesia");
+    expect(dialectPill("assemblyai")).toBe("assemblyai");
   });
 
   it("names prices per video by their length", () => {

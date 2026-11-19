@@ -1,0 +1,5 @@
+{
+  "status": 504,
+  "title": "Inference Timeout",
+  "detail": "Request exceeded the 30 s per-request deadline."
+}

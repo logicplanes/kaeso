@@ -32,6 +32,7 @@ mod web_search;
 mod wire;
 
 pub mod anthropic_messages;
+pub mod assemblyai;
 pub mod bedrock_converse;
 pub mod cartesia;
 pub mod cohere_rerank;
