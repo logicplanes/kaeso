@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { USER, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, limit, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
@@ -70,14 +70,14 @@ describe("LimitsPage", () => {
       expect.stringMatching(/^Spend budgetHardPer month · All models\$12\.50 of \$50\.00Resets /),
       "Members and service accounts2",
       "Grace HopperHardRequest rate · Per minute · All models3 of 60Last minute",
-      "ci-deploy (service account)SoftToken budget · In total · All models0 of 100,000Never resets",
+      "ci-deploy (service account)SoftToken budget · In total · All models0 of 100K0 of 100,000Never resets",
       "Keys2",
-      "checkout-webHardToken rate · Per minute · Claude Sonnet 4.50 of 1,000Last minute",
+      "checkout-webHardToken rate · Per minute · Claude Sonnet 4.50 of 1K0 of 1,000Last minute",
       expect.stringMatching(/^key_goneHardSpend budget · Per month · All models\$12\.50 of \$0\.00Resets /),
     ]);
   });
 
-  it("gives every limit the same columns, so the meters start and end on one line", async () => {
+  it("lines the meters up on one edge and lets a longer figure or reset text grow away from its meter", async () => {
     signedIn();
     stubProject();
     await renderApp(projectPath("limits"));
@@ -86,12 +86,18 @@ describe("LimitsPage", () => {
     const rows = screen.getAllByRole("gridcell").filter((c) => c.querySelector('[role="meter"], [role="progressbar"]'));
     expect(rows).toHaveLength(5);
     for (const row of rows) {
-      expect(within(row).getByText(/ of /)).toHaveClass("md:w-160", "md:text-right");
+      const figure = within(row)
+        .getAllByText(/ of /)
+        .map((el) => el.closest(".tabular"))
+        .find(Boolean);
+      expect(figure).toHaveClass("md:text-right", "md:whitespace-nowrap");
+      expect(figure?.className).not.toMatch(/(^|\s)(md:)?w-\d/);
+      expect(within(row).getByRole("meter").parentElement).toHaveClass("w-120");
       expect(
         within(row)
           .getByText(/^(Last minute|Never resets|Resets )/)
           .closest("span.flex"),
-      ).toHaveClass("md:w-120", "justify-end");
+      ).toHaveClass("md:min-w-120", "justify-end");
     }
   });
 
@@ -102,7 +108,45 @@ describe("LimitsPage", () => {
 
     const reset = await screen.findAllByText(/zurückgesetzt$/);
     expect(reset.length).toBeGreaterThan(0);
-    for (const text of reset) expect(text).toHaveClass("md:w-180");
+    for (const text of reset) expect(text).toHaveClass("md:min-w-180");
+  });
+
+  it("writes large counts short, with the exact count in a tooltip and for screen readers, and keeps money exact", async () => {
+    signedIn();
+    stubProject({
+      limits: [
+        limit({ id: "lim_tokens", kind: "token_budget", period: "day", amount: "100000000", used: "10624184" }),
+        limit({ id: "lim_spend", kind: "spend_budget", period: "total", amount: "1000000000", used: "123456789.12", resets_at: null }),
+        limit({ id: "lim_rate", kind: "request_rate", period: "minute", amount: "30", used: "0", resets_at: null, alert_thresholds: [] }),
+      ],
+    });
+    const { user } = await renderApp(projectPath("limits"));
+
+    const short = await screen.findByText("10.6M of 100M");
+    expect(short).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("10,624,184 of 100,000,000")).toBeInTheDocument();
+    expect(screen.getByText("$123,456,789.12 of $1,000,000,000.00")).toBeInTheDocument();
+    expect(screen.getByText("0 of 30")).toBeInTheDocument();
+    await user.hover(short);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("10,624,184 of 100,000,000");
+  });
+
+  it("cuts a long name short and shows it whole on hover", async () => {
+    const width = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(400);
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(120);
+    try {
+      signedIn();
+      const name = "Checkout production, EU region, primary storefront";
+      stubProject({ keys: [apiKey({ name })], limits: [limit({ id: "lim_key", level: "key", subject: { type: "key", id: "key_web" } })] });
+      const { user } = await renderApp(projectPath("limits?level=key"));
+
+      const title = await screen.findByText(name, { selector: ".truncate" });
+      await user.hover(title);
+      expect(await screen.findByRole("tooltip")).toHaveTextContent(name);
+    } finally {
+      width.mockRestore();
+      vi.restoreAllMocks();
+    }
   });
 
   it("lists a limit on an archived key last, marked as no longer applying", async () => {

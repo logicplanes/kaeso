@@ -17,14 +17,16 @@ import {
   Text,
   TimeseriesChart,
 } from "@logicplanes/kaeso-ui";
-import { formatDate, formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { isApiError } from "~/api/errors";
 import type { SharedBreakdown, SharedLimit, SharedRow, SharedView, UsageRow } from "~/api/generated/types";
 import { sharedViewQuery } from "~/api/queries/shared-links";
 import { clientLabel } from "~/format/clients";
 import { fullDayLabel, utcDay } from "~/format/period";
 import { dialectLabel, limitKindLabel, periodLabel } from "~/format/labels";
+import { limitAmount, limitUse } from "~/format/limit-use";
 import { t } from "~/i18n";
+import { LimitFigure } from "~/kaeso/limit-figure";
 import { change, METRICS, metricTotal, type MetricId } from "~/kaeso/overview/metrics";
 import { PREVIOUS } from "~/kaeso/overview/parts";
 import { useMinute } from "~/kaeso/overview/timeline";
@@ -265,9 +267,7 @@ function Breakdown({ b, metric }: { b: SharedBreakdown; metric: MetricId }) {
   );
 }
 
-function amountText(l: SharedLimit, amount: string): string {
-  return l.kind === "spend_budget" ? formatUSD(amount, { decimals: 2 }) : formatNumber(Number(amount));
-}
+const CENTS = { decimals: 2 };
 
 /** Where a budget is heading at its pace so far: its use scaled to the whole period. */
 export function forecast(l: SharedLimit, now: number): number | undefined {
@@ -298,17 +298,18 @@ function Budgets({ v }: { v: SharedView }) {
       {v.limits.map((l, i) => {
         const amount = Number(l.amount);
         const ahead = forecast(l, now);
-        const used = amountText(l, l.used ?? "0");
+        const use = limitUse(l, (values) => t("kaeso.share.usedOf", "{used} of {amount}", values), CENTS);
         return (
           <DashboardCell key={i} className="lg:col-span-1" title={`${limitName(l)} · ${limitKindLabel(l.kind)}`}>
             <CellInset>
               <Meter
                 value={Number(l.used) / amount}
                 label={[periodLabel(l.period), l.model].filter(Boolean).join(" · ")}
-                valueLabel={t("kaeso.share.usedOf", "{used} of {amount}", { used, amount: amountText(l, l.amount) })}
+                valueLabel={<LimitFigure figure={use} />}
+                valueText={use.exact}
                 caption={
                   ahead !== undefined
-                    ? t("kaeso.share.forecast", "Heading for {amount} at this pace", { amount: amountText(l, ahead.toFixed(6)) })
+                    ? t("kaeso.share.forecast", "Heading for {amount} at this pace", { amount: limitAmount(l.kind, ahead.toFixed(6), CENTS).short })
                     : l.hard
                       ? t("kaeso.share.hard", "Requests stop once it's used up")
                       : t("kaeso.share.soft", "Only alerts once it's used up")

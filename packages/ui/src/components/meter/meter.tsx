@@ -24,6 +24,7 @@ export interface MeterProps {
   value: number;
   label?: ReactNode | undefined;
   valueLabel?: ReactNode | undefined;
+  valueText?: string | undefined;
   caption?: ReactNode | undefined;
   thresholds?: number[] | undefined;
   tone?: keyof typeof KAESO_METER_VARIANTS.tone | undefined;
@@ -58,7 +59,7 @@ function thresholdMask(thresholds: number[]): CSSProperties | undefined {
 }
 
 export const Meter = forwardRef<HTMLDivElement, MeterProps>(function Meter(
-  { value, label, valueLabel, caption, thresholds: given, tone = "auto", shape = "bar", leading, trailing, className, "aria-label": ariaLabel },
+  { value, label, valueLabel, valueText, caption, thresholds: given, tone = "auto", shape = "bar", leading, trailing, className, "aria-label": ariaLabel },
   ref,
 ) {
   const t = useUiText();
@@ -69,6 +70,7 @@ export const Meter = forwardRef<HTMLDivElement, MeterProps>(function Meter(
         value={value}
         label={label}
         valueLabel={valueLabel}
+        valueText={valueText}
         className={className}
         {...(given ? { thresholds: given } : {})}
         {...((ariaLabel ?? (typeof label === "string" ? label : undefined)) ? { "aria-label": ariaLabel ?? (label as string) } : {})}
@@ -80,7 +82,7 @@ export const Meter = forwardRef<HTMLDivElement, MeterProps>(function Meter(
   const now = Math.round(value * 100);
   const state = tone === "auto" ? meterState(value, thresholds) : "under";
   const stateWord = state === "over" ? t("meter.overLimit", "over the limit") : state === "near" ? t("meter.nearLimit", "near the limit") : "";
-  const valueText = typeof valueLabel === "string" ? valueLabel : `${now}%`;
+  const spokenValue = valueText ?? (typeof valueLabel === "string" ? valueLabel : `${now}%`);
   return (
     <div ref={ref} className={cn("flex flex-col gap-8", className)}>
       {(label || valueLabel) && (
@@ -99,7 +101,9 @@ export const Meter = forwardRef<HTMLDivElement, MeterProps>(function Meter(
         aria-valuemax={Math.max(100, now)}
         aria-valuenow={now}
         aria-label={ariaLabel ?? (typeof label === "string" ? label : undefined)}
-        {...(typeof valueLabel === "string" || stateWord ? { "aria-valuetext": stateWord ? `${valueText}, ${stateWord}` : valueText } : {})}
+        {...(valueText !== undefined || typeof valueLabel === "string" || stateWord
+          ? { "aria-valuetext": stateWord ? `${spokenValue}, ${stateWord}` : spokenValue }
+          : {})}
         style={thresholdMask(thresholds)}
         className="relative h-6 overflow-hidden rounded-bar bg-fill-2 forced-colors:outline forced-colors:-outline-offset-1"
       >
