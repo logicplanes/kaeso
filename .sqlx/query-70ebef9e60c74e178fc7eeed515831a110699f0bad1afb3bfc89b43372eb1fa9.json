@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE catalogue_lines SET previous = $2, since = $3, pending = NULL, pending_since = NULL, held = NULL, updated_at = $3 WHERE catalogue_model_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "70ebef9e60c74e178fc7eeed515831a110699f0bad1afb3bfc89b43372eb1fa9"
+}

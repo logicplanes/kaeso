@@ -499,3 +499,56 @@ describe("single sign-on for instance admins", () => {
     expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
   });
 });
+
+describe("exchange rates", () => {
+  it("shows the day of the latest rates and turns the daily fetch off", async () => {
+    signedIn();
+    settingsApi();
+    const { user } = await renderApp(PATH);
+
+    const fetch = await screen.findByRole("switch", { name: "Fetch exchange rates" });
+    expect(fetch).toBeChecked();
+    expect(screen.getByText("13 Nov 2026")).toBeInTheDocument();
+    await user.click(fetch);
+    expect(await notifications().findByText("Kaeso no longer fetches exchange rates")).toBeInTheDocument();
+    expect(patches()).toEqual([{ exchange_rates: false }]);
+  });
+
+  it("says why the last fetch failed, and when there are no rates yet", async () => {
+    signedIn();
+    settingsApi({ exchange_rates: { fetch: true, day: null, checked_at: "2026-11-13T15:10:00Z", error: "the ECB answered 503" } });
+    await renderApp(PATH);
+
+    expect(await screen.findByText("The last fetch failed: the ECB answered 503")).toBeInTheDocument();
+    expect(screen.getByText("None yet")).toBeInTheDocument();
+  });
+
+  it("turns the fetch on again", async () => {
+    signedIn();
+    on("GET", "instance/system", system());
+    on("GET", "instance/settings", instanceSettings({ exchange_rates: { fetch: false, day: "2026-11-13", checked_at: null, error: null } }));
+    on("PATCH", "instance/settings", instanceSettings());
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("switch", { name: "Fetch exchange rates" }));
+    expect(await notifications().findByText("Kaeso fetches the exchange rates daily")).toBeInTheDocument();
+  });
+});
+
+describe("shared links", () => {
+  it("turns shared links and the Made with Kaeso mark off", async () => {
+    signedIn();
+    settingsApi();
+    const { user } = await renderApp(PATH);
+
+    const allow = await screen.findByRole("switch", { name: "Allow shared links" });
+    expect(allow).toBeChecked();
+    await user.click(allow);
+    expect(await notifications().findByText("Shared links are off")).toBeInTheDocument();
+    await user.click(screen.getByRole("switch", { name: "Made with Kaeso" }));
+    expect(await notifications().findByText("Shared pages updated")).toBeInTheDocument();
+    await user.click(screen.getByRole("switch", { name: "Allow shared links" }));
+    expect(await notifications().findByText("Organizations can share links")).toBeInTheDocument();
+    expect(patches()).toEqual([{ shared_links: false }, { share_mark: false }, { shared_links: true }]);
+  });
+});

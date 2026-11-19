@@ -13,7 +13,14 @@ import { useCatalogue } from "~/kaeso/catalogue";
 import { roleOptions, rolesOfScope, useRoles } from "~/kaeso/roles";
 import { toast } from "~/shell/toast";
 
-type ProjectRole = { project_id: string; role: string };
+export type ProjectRole = { project_id: string; role: string };
+
+/** An invitation to send again: its address, org role and project roles. */
+export interface InviteDraft {
+  email: string;
+  role: string;
+  projectRoles: ProjectRole[];
+}
 
 type Batch = { emails: string[]; sent: string[]; refused: string[] };
 
@@ -21,17 +28,17 @@ const looksLikeEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 const refusedAddress = (error: unknown): error is ApiError =>
   isApiError(error) && (error.type === "conflict" || (error.type === "invalid_request" && error.param === "email"));
 
-export function InviteDialog({ org, onClose }: { org: string; onClose: () => void }) {
+export function InviteDialog({ org, onClose, from }: { org: string; onClose: () => void; from?: InviteDraft | undefined }) {
   const projects = useQuery(orgProjectsQuery(org));
   const session = useSession();
   const cat = useCatalogue(org);
   const allRoles = useRoles(org);
   const giver = useOrgGiver(org);
   const queryClient = useQueryClient();
-  const [emails, setEmails] = useState<string[]>([]);
+  const [emails, setEmails] = useState<string[]>(from ? [from.email] : []);
   const [draft, setDraft] = useState("");
-  const [role, setRole] = useState("member");
-  const [roles, setRoles] = useState<ProjectRole[]>([]);
+  const [role, setRole] = useState(from?.role ?? "member");
+  const [roles, setRoles] = useState<ProjectRole[]>(from?.projectRoles ?? []);
   const held = useQueries({ queries: roles.map((r) => projectRightsQuery(session, org, r.project_id)) });
   const orgRoles = rolesOfScope(allRoles, "org");
   const projectRoles = rolesOfScope(allRoles, "project");

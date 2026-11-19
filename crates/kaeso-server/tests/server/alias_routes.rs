@@ -1206,3 +1206,27 @@ async fn a_stream_that_fails_before_any_output_answers_with_its_status_without_a
     assert_eq!(o.status, 529);
     assert_eq!(o.error_kind.as_deref(), Some("overloaded"));
 }
+
+#[tokio::test]
+async fn only_if_cached_stops_at_the_first_step_without_falling_back_or_holding_it() {
+    let env = env().await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    alias(&env, "sturdy", with_fallback(&claude, model_step(&gpt))).await;
+    let before = env.mock.received().len();
+    let r = ask_with(&env, "sturdy", &[("cache-control", "only-if-cached")]).await;
+    assert_eq!(r.status, StatusCode::GATEWAY_TIMEOUT, "{}", r.text());
+    assert_eq!(
+        walked(&r),
+        ["\"route\";model=\"anthropic/claude-haiku-4-5\";status=504"],
+        "no fallback"
+    );
+    assert_eq!(env.mock.received().len(), before, "no provider was called");
+    let r = ask_with(&env, "sturdy", &[]).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-model"),
+        Some("claude-haiku-4-5"),
+        "the step isn't held as failed"
+    );
+}

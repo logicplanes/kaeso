@@ -24,6 +24,7 @@ pub enum EmailKind {
     OrgScheduledForDeletion,
     OwnershipTransferred,
     KeyExpiryWarning,
+    PlatformKeyExpiryWarning,
     BudgetAlert,
     NewApp,
     ExportReady,
@@ -41,6 +42,9 @@ pub enum EmailKind {
     InviteAccepted,
     ProviderKeys,
     ModelChanges,
+    ModelDeprecated,
+    ModelShutdownSoon,
+    ModelLines,
     CostReport,
     InstanceUpdates,
     InstancePeople,
@@ -71,6 +75,7 @@ impl EmailKind {
             EmailKind::OrgScheduledForDeletion => "org_scheduled_for_deletion",
             EmailKind::OwnershipTransferred => "ownership_transferred",
             EmailKind::KeyExpiryWarning => "key_expiry_warning",
+            EmailKind::PlatformKeyExpiryWarning => "platform_key_expiry_warning",
             EmailKind::BudgetAlert => "budget_alert",
             EmailKind::NewApp => "new_app",
             EmailKind::ExportReady => "export_ready",
@@ -88,6 +93,9 @@ impl EmailKind {
             EmailKind::InviteAccepted => "invite_accepted",
             EmailKind::ProviderKeys => "provider_keys",
             EmailKind::ModelChanges => "model_changes",
+            EmailKind::ModelDeprecated => "model_deprecated",
+            EmailKind::ModelShutdownSoon => "model_shutdown_soon",
+            EmailKind::ModelLines => "model_lines",
             EmailKind::CostReport => "cost_report",
             EmailKind::InstanceUpdates => "instance_updates",
             EmailKind::InstancePeople => "instance_people",
@@ -1160,6 +1168,79 @@ pub fn ownership_transferred<'a>(
     )
 }
 
+pub fn platform_key_expiry_warning(
+    lang: Locale,
+    to: &str,
+    key: &str,
+    organization: &str,
+    expires: PrimitiveDateTime,
+    zone: &str,
+    url: &str,
+) -> Email {
+    // As for an API key: the moment on the install's clock, as the console shows it.
+    let at = format!("{:02}:{:02} {zone}", expires.hour(), expires.minute());
+    let (hour, minute) = (
+        expires.hour().to_string(),
+        format!("{:02}", expires.minute()),
+    );
+    let details = vec![
+        Label::Organization.of(lang, organization),
+        Label::Key.of(lang, key),
+        Label::Expires.of(lang, lang.moment(expires, zone)),
+    ];
+    let expires = lang.date(expires.date());
+    let (subject, heading, sentence, action, note) = match lang {
+        Locale::En => (
+            format!("The platform key {key} expires on {expires}"),
+            format!("Platform key {key} expires on {expires}"),
+            format!(
+                "Scripts and tools that manage {organization} with this key stop working from {at} that day."
+            ),
+            "Open platform keys",
+            "To rotate it, create a new key, deploy it, then disable the old one.",
+        ),
+        Locale::De => (
+            format!("Der Plattform-Schlüssel {key} läuft am {expires} ab"),
+            format!("Plattform-Schlüssel {key} läuft am {expires} ab"),
+            format!(
+                "Skripte, die {organization} mit diesem Schlüssel verwalten, funktionieren an diesem Tag ab {at} nicht mehr."
+            ),
+            "Plattform-Schlüssel öffnen",
+            "Zum Rotieren erstellen Sie einen neuen Schlüssel, setzen ihn ein und deaktivieren den alten.",
+        ),
+        Locale::ZhCn => {
+            let heading = zh(&["平台密钥", key, "将于", &expires, "过期"]);
+            (
+                heading.clone(),
+                heading,
+                zh(&[
+                    "使用此密钥管理",
+                    organization,
+                    "的脚本和工具，将从当天",
+                    zone,
+                    "时间",
+                    &hour,
+                    "时",
+                    &minute,
+                    "分起停止工作。",
+                ]),
+                "打开平台密钥",
+                "如需轮换，请创建并部署新密钥，再停用旧密钥。",
+            )
+        }
+    };
+    Email::new(
+        to,
+        EmailKind::PlatformKeyExpiryWarning,
+        subject,
+        Content::new(lang, heading, Reason::Alert)
+            .sentence(sentence)
+            .details(details)
+            .action(action, url)
+            .note(note),
+    )
+}
+
 pub fn key_expiry_warning(
     lang: Locale,
     to: &str,
@@ -1303,22 +1384,43 @@ pub fn budget_alert(lang: Locale, to: &str, alert: &BudgetAlert<'_>, url: &str) 
 }
 
 pub fn test(lang: Locale, to: &str) -> Email {
-    let (subject, heading, sentence) = match lang {
-        Locale::En => (
-            "Kaeso test email",
-            "Email works",
-            "This test from the instance settings arrived, so Kaeso can send email.",
-        ),
-        Locale::De => (
-            "Kaeso-Test-E-Mail",
-            "E-Mail funktioniert",
-            "Dieser Test aus den Instanzeinstellungen ist angekommen, also kann Kaeso E-Mails senden.",
-        ),
-        Locale::ZhCn => (
-            "Kaeso 测试邮件",
-            "邮件发送正常",
-            "这封来自实例设置的测试邮件已送达，说明 Kaeso 可以发送邮件。",
-        ),
+    test_from(lang, to, TestFrom::Settings)
+}
+
+/// Where a test email was asked for, which its sentence names.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TestFrom {
+    /// The instance settings or one's own notification settings in the console.
+    Settings,
+    /// `kaeso mail test` on the gateway's server.
+    Command,
+}
+
+pub fn test_from(lang: Locale, to: &str, from: TestFrom) -> Email {
+    let (subject, heading) = match lang {
+        Locale::En => ("Kaeso test email", "Email works"),
+        Locale::De => ("Kaeso-Test-E-Mail", "E-Mail funktioniert"),
+        Locale::ZhCn => ("Kaeso 测试邮件", "邮件发送正常"),
+    };
+    let sentence = match (lang, from) {
+        (Locale::En, TestFrom::Settings) => {
+            "This test from the instance settings arrived, so Kaeso can send email."
+        }
+        (Locale::En, TestFrom::Command) => {
+            "This test from the kaeso mail test command arrived, so Kaeso can send email."
+        }
+        (Locale::De, TestFrom::Settings) => {
+            "Dieser Test aus den Instanzeinstellungen ist angekommen, also kann Kaeso E-Mails senden."
+        }
+        (Locale::De, TestFrom::Command) => {
+            "Dieser Test vom Befehl kaeso mail test ist angekommen, also kann Kaeso E-Mails senden."
+        }
+        (Locale::ZhCn, TestFrom::Settings) => {
+            "这封来自实例设置的测试邮件已送达，说明 Kaeso 可以发送邮件。"
+        }
+        (Locale::ZhCn, TestFrom::Command) => {
+            "这封来自 kaeso mail test 命令的测试邮件已送达，说明 Kaeso 可以发送邮件。"
+        }
     };
     Email::new(
         to,
@@ -1409,6 +1511,15 @@ mod tests {
                     organization: "Acme",
                     project: Some("Default project"),
                 },
+                datetime!(2026 - 10 - 18 0:00),
+                "UTC",
+                URL,
+            ),
+            platform_key_expiry_warning(
+                l,
+                TO,
+                "terraform",
+                "Acme",
                 datetime!(2026 - 10 - 18 0:00),
                 "UTC",
                 URL,
@@ -1601,6 +1712,80 @@ mod tests {
                 Because::Right("models.manage"),
             ),
             one(
+                Some("Checkout"),
+                Fact::Model {
+                    provider: "OpenAI",
+                    project: "Checkout",
+                    model: "gpt-4o",
+                    change: ModelChange::Deprecated {
+                        shutdown_on: Some(date!(2026 - 11 - 30)),
+                        replacement: Some("gpt-5.5".to_owned()),
+                    },
+                },
+                Because::Right("models.view"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::Model {
+                    provider: "OpenAI",
+                    project: "Checkout",
+                    model: "gpt-4o",
+                    change: ModelChange::ShutdownSoon {
+                        shutdown_on: date!(2026 - 11 - 30),
+                        days: 7,
+                        replacement: Some("gpt-5.5".to_owned()),
+                        requests: 1234,
+                    },
+                },
+                Because::Right("models.view"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::Model {
+                    provider: "OpenAI",
+                    project: "Checkout",
+                    model: "gpt-4o",
+                    change: ModelChange::Moved {
+                        replacement: "gpt-5.5".to_owned(),
+                        aliases: 3,
+                    },
+                },
+                Because::Right("models.view"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::Line {
+                    provider: "Anthropic",
+                    project: "Checkout",
+                    line: "claude-opus-latest",
+                    change: LineChange::Moved {
+                        from: "claude-opus-5".to_owned(),
+                        to: "claude-opus-5-5".to_owned(),
+                        prices: vec![LinePrice {
+                            price: "input",
+                            from: Some("15".to_owned()),
+                            to: Some("5".to_owned()),
+                        }],
+                        how: "follow",
+                    },
+                },
+                Because::Right("models.manage"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::Line {
+                    provider: "Anthropic",
+                    project: "Checkout",
+                    line: "claude-opus-latest",
+                    change: LineChange::Available {
+                        from: "claude-opus-5".to_owned(),
+                        to: "claude-opus-5-5".to_owned(),
+                        prices: Vec::new(),
+                    },
+                },
+                Because::Right("models.manage"),
+            ),
+            one(
                 Some("Acme"),
                 Fact::CostReport {
                     month: date!(2026 - 10 - 01),
@@ -1736,15 +1921,46 @@ mod tests {
         text
     }
 
+    fn snapshot_names(emails: &[Email]) -> Vec<String> {
+        let mut seen = std::collections::HashMap::<&str, usize>::new();
+        emails
+            .iter()
+            .map(|email| {
+                let kind = email.kind.as_str();
+                let n = seen.entry(kind).or_default();
+                *n += 1;
+                if *n == 1 {
+                    kind.to_owned()
+                } else {
+                    format!("{kind}_{n}")
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_test_email_from_the_command_names_it() {
+        for lang in [Locale::En, Locale::De, Locale::ZhCn] {
+            let r = test_from(lang, TO, TestFrom::Command).render(&instance());
+            let name = match lang {
+                Locale::En => "test_command_text",
+                Locale::De => "test_command_de_text",
+                Locale::ZhCn => "test_command_zh-CN_text",
+            };
+            insta::assert_snapshot!(name, format!("Subject: {}\n\n{}", r.subject, r.text));
+        }
+    }
+
     #[test]
     fn every_email_renders() {
-        for email in all() {
+        let emails = all();
+        for (email, name) in emails.iter().zip(snapshot_names(&emails)) {
             let r = email.render(&instance());
             insta::assert_snapshot!(
-                format!("{}_text", email.kind.as_str()),
+                format!("{name}_text"),
                 format!("Subject: {}\n\n{}", r.subject, r.text)
             );
-            insta::assert_snapshot!(format!("{}_html", email.kind.as_str()), r.html);
+            insta::assert_snapshot!(format!("{name}_html"), r.html);
         }
     }
 
@@ -1771,6 +1987,7 @@ mod tests {
             EmailKind::OrgScheduledForDeletion,
             EmailKind::OwnershipTransferred,
             EmailKind::KeyExpiryWarning,
+            EmailKind::PlatformKeyExpiryWarning,
             EmailKind::BudgetAlert,
             EmailKind::NewApp,
             EmailKind::ExportReady,
@@ -1788,6 +2005,9 @@ mod tests {
             EmailKind::InviteAccepted,
             EmailKind::ProviderKeys,
             EmailKind::ModelChanges,
+            EmailKind::ModelDeprecated,
+            EmailKind::ModelShutdownSoon,
+            EmailKind::ModelLines,
             EmailKind::CostReport,
             EmailKind::InstanceUpdates,
             EmailKind::InstancePeople,
@@ -2275,6 +2495,7 @@ mod tests {
                     "UTC",
                     URL,
                 ),
+                platform_key_expiry_warning(l, TO, evil, evil, day.midnight(), "UTC", URL),
                 budget_alert(
                     l,
                     TO,
@@ -2350,7 +2571,9 @@ mod tests {
             assert_eq!(
                 matches!(
                     email.kind,
-                    EmailKind::BudgetAlert | EmailKind::KeyExpiryWarning
+                    EmailKind::BudgetAlert
+                        | EmailKind::KeyExpiryWarning
+                        | EmailKind::PlatformKeyExpiryWarning
                 ),
                 email.content.reason == Reason::Alert,
                 "{}",
@@ -2362,11 +2585,12 @@ mod tests {
     #[test]
     fn german_and_chinese_render() {
         for lang in [Locale::De, Locale::ZhCn] {
-            for email in all_in(lang) {
+            let emails = all_in(lang);
+            for (email, name) in emails.iter().zip(snapshot_names(&emails)) {
                 let r = email.render(&instance());
                 assert_eq!(r.lang, lang);
                 insta::assert_snapshot!(
-                    format!("{}_{}_text", email.kind.as_str(), lang.tag()),
+                    format!("{name}_{}_text", lang.tag()),
                     format!("Subject: {}\n\n{}", r.subject, r.text)
                 );
             }
@@ -2375,7 +2599,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 42] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 48] = [
             (
                 EmailKind::Invitation,
                 [
@@ -2517,6 +2741,17 @@ mod tests {
                 [
                     "API 密钥 ci-deploy 将于 2026年10月18日过期",
                     "API 密钥 ci-deploy 将于 2026年10月18日过期",
+                ],
+            ),
+            (
+                EmailKind::PlatformKeyExpiryWarning,
+                [
+                    "Der Plattform-Schlüssel terraform läuft am 18. Okt. 2026 ab",
+                    "Plattform-Schlüssel terraform läuft am 18. Okt. 2026 ab",
+                ],
+                [
+                    "平台密钥 terraform 将于 2026年10月18日过期",
+                    "平台密钥 terraform 将于 2026年10月18日过期",
                 ],
             ),
             (
@@ -2665,6 +2900,58 @@ mod tests {
                     "gpt-4o wird eingestellt",
                 ],
                 ["[Checkout] gpt-4o 已下架", "gpt-4o 已下架"],
+            ),
+            (
+                EmailKind::ModelDeprecated,
+                [
+                    "[Checkout] gpt-4o wird abgekündigt",
+                    "gpt-4o wird abgekündigt",
+                ],
+                ["[Checkout] gpt-4o 已弃用", "gpt-4o 已弃用"],
+            ),
+            (
+                EmailKind::ModelShutdownSoon,
+                [
+                    "[Checkout] gpt-4o wird in 7 Tagen abgeschaltet",
+                    "gpt-4o wird in 7 Tagen abgeschaltet",
+                ],
+                [
+                    "[Checkout] gpt-4o 将在 7 天后停用",
+                    "gpt-4o 将在 7 天后停用",
+                ],
+            ),
+            (
+                EmailKind::ModelShutdownSoon,
+                [
+                    "[Checkout] gpt-4o wurde durch gpt-5.5 ersetzt",
+                    "gpt-4o wurde durch gpt-5.5 ersetzt",
+                ],
+                [
+                    "[Checkout] gpt-4o 已切换到 gpt-5.5",
+                    "gpt-4o 已切换到 gpt-5.5",
+                ],
+            ),
+            (
+                EmailKind::ModelLines,
+                [
+                    "[Checkout] claude-opus-latest zeigt jetzt auf claude-opus-5-5",
+                    "claude-opus-latest zeigt jetzt auf claude-opus-5-5",
+                ],
+                [
+                    "[Checkout] claude-opus-latest 已切换到 claude-opus-5-5",
+                    "claude-opus-latest 已切换到 claude-opus-5-5",
+                ],
+            ),
+            (
+                EmailKind::ModelLines,
+                [
+                    "[Checkout] claude-opus-latest kann auf claude-opus-5-5 wechseln",
+                    "claude-opus-latest kann auf claude-opus-5-5 wechseln",
+                ],
+                [
+                    "[Checkout] claude-opus-latest 可以切换到 claude-opus-5-5",
+                    "claude-opus-latest 可以切换到 claude-opus-5-5",
+                ],
             ),
             (
                 EmailKind::CostReport,
@@ -3182,6 +3469,101 @@ mod tests {
     }
 
     #[test]
+    fn linked_key_notices_say_who_stopped_paying_and_what_to_do() {
+        use crate::notices::*;
+        let links = Links {
+            settings: "https://kaeso.example.com/settings/account/notifications".to_owned(),
+            unsubscribe: None,
+        };
+        let projects = ["Checkout".to_owned()];
+        let key = Credential {
+            organization: "Acme",
+            provider: "Anthropic",
+            name: "Acme Claude",
+            last4: None,
+            account: Some("ocon_01EXAMPLE"),
+            default: true,
+            projects: &projects,
+            last_used: None,
+            zone: "Europe/Berlin",
+        };
+        let mail = |lang, change| {
+            notice(
+                lang,
+                TO,
+                Some(at("Acme")),
+                &Fact::ProviderKey { key: &key, change },
+                Because::Right("provider_credentials.replace"),
+                URL,
+                &links,
+            )
+        };
+        let limit = ProviderKey::SpendLimitReached {
+            at: datetime!(2026 - 11 - 17 21:00),
+            resets: datetime!(2026 - 12 - 01 01:00),
+        };
+        let ended = ProviderKey::Unlinked {
+            at: datetime!(2026 - 11 - 17 21:00),
+        };
+        let en = mail(Locale::En, limit);
+        assert_eq!(en.subject, "[Acme] Acme Claude reached its spend limit");
+        assert_eq!(
+            en.content.sentence.as_deref(),
+            Some(
+                "Anthropic refused requests billed to Acme Claude (ocon_01EXAMPLE); its admins can raise the limit there."
+            )
+        );
+        let text = en.render(&instance()).text;
+        assert!(
+            text.contains("Resets: 1 Dec 2026, 01:00 Europe/Berlin\n"),
+            "{text}"
+        );
+        let en = mail(Locale::En, ended);
+        assert_eq!(en.subject, "[Acme] Anthropic link Acme Claude ended");
+        let text = en.render(&instance()).text;
+        assert!(
+            text.contains("Unlinked: 17 Nov 2026, 21:00 Europe/Berlin\n"),
+            "{text}"
+        );
+        for lang in Locale::ALL {
+            for email in [mail(lang, limit), mail(lang, ended)] {
+                let c = &email.content;
+                let most = if lang == Locale::En { 115 } else { 125 };
+                let sentence = c.sentence.as_deref().unwrap_or_default();
+                assert!(sentence.chars().count() <= most, "{sentence}");
+                assert!(c.heading.chars().count() <= 55, "{}", c.heading);
+            }
+        }
+        let setup = |lang| {
+            notice(
+                lang,
+                TO,
+                None,
+                &Fact::InstanceChanged {
+                    change: Instance::LinkedBillingSetup("Anthropic"),
+                    by: Actor::Operator,
+                },
+                Because::Right("instance.settings.manage"),
+                URL,
+                &links,
+            )
+        };
+        assert_eq!(
+            setup(Locale::En).content.heading,
+            "Linked billing for Anthropic needs setup"
+        );
+        for lang in Locale::ALL {
+            let c = setup(lang).content;
+            assert!(c.heading.chars().count() <= 55, "{}", c.heading);
+            assert!(
+                c.sentence.as_deref().unwrap_or_default().chars().count() <= 115,
+                "{:?}",
+                c.sentence
+            );
+        }
+    }
+
+    #[test]
     fn price_changes_list_each_price_that_moved() {
         use crate::notices::*;
         let links = Links {
@@ -3282,6 +3664,7 @@ mod tests {
             Label::LastRefused,
             Label::LastUsed,
             Label::SignedOut,
+            Label::Unlinked,
             Label::Model,
             Label::InputPrice,
             Label::OutputPrice,

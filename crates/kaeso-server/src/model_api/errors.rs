@@ -15,6 +15,8 @@ pub const ADAPTED_HEADER: &str = "kaeso-adapted";
 pub const ROUTE_HEADER: &str = "kaeso-route";
 pub const TIMING_HEADER: &str = "server-timing";
 pub const UPSTREAM_REQUEST_ID_HEADER: &str = "kaeso-upstream-request-id";
+pub const DEPRECATION_HEADER: &str = "deprecation";
+pub const SUNSET_HEADER: &str = "sunset";
 
 #[derive(Clone, Debug, Default)]
 pub struct Served {
@@ -26,6 +28,61 @@ pub struct Served {
     /// The id the provider gave its answer, for its support: `request-id`, `x-request-id` or
     /// Cloudflare AI Gateway's `cf-aig-log-id`. Absent on a cache hit and before any answer.
     pub upstream_request_id: Option<String>,
+    /// For a model its provider retires: the dates and links its replies carry.
+    pub lifecycle: Option<LifecycleHeaders>,
+}
+
+/// What a reply of a deprecated model says about its retirement.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LifecycleHeaders {
+    pub deprecated_on: Option<time::Date>,
+    pub shutdown_on: Option<time::Date>,
+    /// The replacement's page.
+    pub successor: Option<String>,
+    /// The provider's announcement.
+    pub announcement: Option<String>,
+}
+
+impl LifecycleHeaders {
+    /// `Deprecation` as an RFC 9651 date (`@` and Unix seconds), `Sunset` as an HTTP date and
+    /// `Link` with `successor-version` and `deprecation` relations.
+    pub fn stamp(&self, resp: &mut Response) {
+        if let Some(d) = self.deprecated_on {
+            let at = d.midnight().assume_utc().unix_timestamp();
+            if let Ok(v) = HeaderValue::from_str(&format!("@{at}")) {
+                resp.headers_mut().insert(DEPRECATION_HEADER, v);
+            }
+        }
+        if let Some(d) = self.shutdown_on
+            && let Ok(v) = HeaderValue::from_str(&http_date(d))
+        {
+            resp.headers_mut().insert(SUNSET_HEADER, v);
+        }
+        let links: Vec<String> = [
+            self.successor
+                .as_ref()
+                .map(|u| format!("<{u}>; rel=\"successor-version\"")),
+            self.announcement
+                .as_ref()
+                .map(|u| format!("<{u}>; rel=\"deprecation\"; type=\"text/html\"")),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+        if !links.is_empty()
+            && let Ok(v) = HeaderValue::from_str(&links.join(", "))
+        {
+            resp.headers_mut().append(axum::http::header::LINK, v);
+        }
+    }
+}
+
+/// An IMF-fixdate at midnight UTC, as `Sunset` takes it.
+pub fn http_date(d: time::Date) -> String {
+    d.format(time::macros::format_description!(
+        "[weekday repr:short], [day] [month repr:short] [year] 00:00:00 GMT"
+    ))
+    .unwrap_or_default()
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -69,7 +126,49 @@ pub fn stamp(resp: &mut Response, served: &Served) {
     {
         resp.headers_mut().insert(UPSTREAM_REQUEST_ID_HEADER, v);
     }
+    if let Some(l) = &served.lifecycle {
+        l.stamp(resp);
+    }
     stamp_route(resp, &served.route);
+}
+
+/// How much of each enforced rate limit and hard budget the app has left, as an RFC 9651 list:
+/// `"key.requests.minute";limit=60;remaining=41;reset=17`. Spend is a USD string.
+pub const LIMITS_HEADER: &str = "kaeso-limits";
+
+/// The `kaeso-limits` value for what admission found; spend only for someone who may see costs.
+pub fn limits_header(left: &[super::hooks::Left], with_spend: bool) -> Option<HeaderValue> {
+    let usd = |nano: i64| {
+        let d = rust_decimal::Decimal::new(nano, 9).normalize();
+        format!("\"{d}\"")
+    };
+    let items: Vec<String> = left
+        .iter()
+        .filter(|l| with_spend || !l.spend)
+        .map(|l| {
+            let mut item = format!("\"{}\"", l.name);
+            if l.model {
+                item.push_str(";model");
+            }
+            if l.spend {
+                item.push_str(&format!(
+                    ";limit={};remaining={}",
+                    usd(l.limit),
+                    usd(l.remaining)
+                ));
+            } else {
+                item.push_str(&format!(";limit={};remaining={}", l.limit, l.remaining));
+            }
+            if let Some(reset) = l.reset {
+                item.push_str(&format!(";reset={reset}"));
+            }
+            item
+        })
+        .collect();
+    if items.is_empty() {
+        return None;
+    }
+    HeaderValue::from_str(&items.join(", ")).ok()
 }
 
 pub fn stamp_route(resp: &mut Response, route: &[Walked]) {
@@ -145,9 +244,11 @@ pub fn respond(dialect: DialectId, err: &KppError, served: &Served) -> Response 
     };
     let mut resp = Response::new(Body::from(encoded.body));
     // The codecs choose a status by the error's kind, and no kind means 415: the gateway's own
-    // refusal of a content encoding keeps it, as a refused method keeps 405.
+    // refusal of a content encoding keeps it, as a refused method keeps 405, and its refusal of
+    // a retired model keeps 410.
     *resp.status_mut() = match err.status {
         Some(415) if err.origin.is_none() => StatusCode::UNSUPPORTED_MEDIA_TYPE,
+        Some(410) if err.origin.is_none() => StatusCode::GONE,
         _ => StatusCode::from_u16(encoded.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
     };
     for (name, value) in encoded.headers.iter() {

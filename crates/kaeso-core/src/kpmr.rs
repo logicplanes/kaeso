@@ -9,7 +9,8 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use serde_json::value::RawValue;
-use time::OffsetDateTime;
+use time::macros::format_description;
+use time::{Date, OffsetDateTime};
 
 use crate::decimal;
 use crate::provider::{ProviderId, known_ids};
@@ -259,6 +260,90 @@ fn tolerant_decisions<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Decision
         .and_then(|v| serde_json::from_value(v).ok()))
 }
 
+/// When a provider retires a model and what it recommends instead, as KPMR publishes it from
+/// the provider's announcement. A day this gateway cannot read is left out.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Lifecycle {
+    #[serde(default, with = "day")]
+    pub announced_on: Option<Date>,
+    #[serde(default, with = "day")]
+    pub deprecated_on: Option<Date>,
+    #[serde(default, with = "day")]
+    pub shutdown_on: Option<Date>,
+    #[serde(default, deserialize_with = "text")]
+    pub replacement: Option<String>,
+    #[serde(default, deserialize_with = "text")]
+    pub source: Option<String>,
+}
+
+impl Lifecycle {
+    /// Whether KPMR names any date or a replacement.
+    pub fn is_announced(&self) -> bool {
+        self.announced_on.is_some()
+            || self.deprecated_on.is_some()
+            || self.shutdown_on.is_some()
+            || self.replacement.is_some()
+    }
+
+    /// The day the deprecation was made known: the announcement, else the deprecation.
+    pub fn announced(&self) -> Option<Date> {
+        self.announced_on.or(self.deprecated_on)
+    }
+
+    /// Whether the model has stopped working by `today`.
+    pub fn is_shut_down(&self, today: Date) -> bool {
+        self.shutdown_on.is_some_and(|d| d <= today)
+    }
+
+    /// Whole days from `today` until the shutdown; negative once it has passed.
+    pub fn days_left(&self, today: Date) -> Option<i64> {
+        self.shutdown_on.map(|d| (d - today).whole_days())
+    }
+}
+
+/// A `YYYY-MM-DD` day, written back the same way.
+pub mod day {
+    use super::*;
+
+    const FORMAT: &[time::format_description::BorrowedFormatItem<'static>] =
+        format_description!("[year]-[month]-[day]");
+
+    pub fn parse(s: &str) -> Option<Date> {
+        Date::parse(s, FORMAT).ok()
+    }
+
+    pub fn format(d: Date) -> String {
+        d.format(FORMAT).unwrap_or_default()
+    }
+
+    pub fn serialize<S: serde::Serializer>(d: &Option<Date>, s: S) -> Result<S::Ok, S::Error> {
+        match d {
+            Some(d) => s.serialize_str(&format(*d)),
+            None => s.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Date>, D::Error> {
+        Ok(Option::<Value>::deserialize(d)?
+            .as_ref()
+            .and_then(Value::as_str)
+            .and_then(parse))
+    }
+}
+
+fn text<'de, D: Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
+    Ok(Option::<Value>::deserialize(d)?
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .filter(|s| !s.trim().is_empty()))
+}
+
+fn tolerant_lifecycle<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Lifecycle>, D::Error> {
+    Ok(Option::<Value>::deserialize(d)?
+        .filter(Value::is_object)
+        .and_then(|v| serde_json::from_value::<Lifecycle>(v).ok())
+        .filter(Lifecycle::is_announced))
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Model {
     pub id: String,
@@ -286,11 +371,23 @@ pub struct Model {
     pub gateway: Option<Gateway>,
     #[serde(default, deserialize_with = "tolerant_decisions")]
     pub decisions: Option<Decisions>,
+    #[serde(default, deserialize_with = "tolerant_lifecycle")]
+    pub lifecycle: Option<Lifecycle>,
 }
 
 impl Model {
+    /// Deprecated or already retired: either way the provider wants apps to move.
     pub fn is_deprecated(&self) -> bool {
-        self.status.as_deref() == Some("deprecated")
+        matches!(self.status.as_deref(), Some("deprecated" | "retired"))
+    }
+
+    /// Past its shutdown day: KPMR says `retired`, or the day has come since it said otherwise.
+    pub fn is_retired(&self, today: Date) -> bool {
+        self.status.as_deref() == Some("retired")
+            || self
+                .lifecycle
+                .as_ref()
+                .is_some_and(|l| l.is_shut_down(today))
     }
 
     pub fn egress_dialect(&self) -> Option<DialectId> {
@@ -307,12 +404,34 @@ impl Model {
     }
 }
 
+/// A name such as `claude-opus-latest` that KPMR keeps pointed at the newest stable model of
+/// a family: the model it points at now, since when, and the one before.
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Line {
+    pub model: String,
+    #[serde(default)]
+    pub since: Option<String>,
+    #[serde(default)]
+    pub previous: Option<String>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Provider {
     pub id: String,
     #[serde(default)]
     pub name: Option<String>,
     pub models: BTreeMap<String, Model>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub lines: BTreeMap<String, Line>,
+}
+
+impl Provider {
+    /// The line's current target, when KPMR lists both the line and the model.
+    pub fn line(&self, name: &str) -> Option<&Line> {
+        self.lines
+            .get(name)
+            .filter(|l| self.models.contains_key(&l.model))
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -365,6 +484,19 @@ struct ProviderDoc<'a> {
     name: Option<Value>,
     #[serde(default, borrow)]
     models: Option<&'a RawValue>,
+    #[serde(default)]
+    lines: Option<Value>,
+}
+
+// A line this gateway cannot read is left out, never the provider.
+fn lines_of(raw: Option<Value>) -> BTreeMap<String, Line> {
+    let Some(Value::Object(lines)) = raw else {
+        return BTreeMap::new();
+    };
+    lines
+        .into_iter()
+        .filter_map(|(name, v)| Some((name, serde_json::from_value::<Line>(v).ok()?)))
+        .collect()
 }
 
 fn readable(model: &Model) -> bool {
@@ -414,12 +546,14 @@ pub fn parse(json: &[u8], providers: &[ProviderId]) -> Result<Parsed, ParseError
                 _ => skipped.push(format!("{id}/{model_id}")),
             }
         }
+        let lines = lines_of(provider.lines);
         catalogue.providers.insert(
             id.to_string(),
             Provider {
                 id: id.to_string(),
                 name,
                 models: parsed,
+                lines,
             },
         );
     }
@@ -606,6 +740,42 @@ mod tests {
                 "{odd}"
             );
         }
+    }
+
+    #[test]
+    fn a_lifecycle_carries_its_days_and_replacement_and_odd_values_are_left_out() {
+        let m: Model = serde_json::from_str(
+            r#"{"id": "m", "status": "deprecated", "lifecycle": {"announced_on": null,
+            "deprecated_on": "2026-11-04", "shutdown_on": "2027-02-04", "replacement": "m2",
+            "source": "https://example.com/deprecations", "later": 1}}"#,
+        )
+        .unwrap();
+        let l = m.lifecycle.as_ref().unwrap();
+        let d = |s: &str| day::parse(s).unwrap();
+        assert_eq!(l.announced(), Some(d("2026-11-04")));
+        assert_eq!(l.replacement.as_deref(), Some("m2"));
+        assert_eq!(l.days_left(d("2027-02-01")), Some(3));
+        assert!(!l.is_shut_down(d("2027-02-03")) && l.is_shut_down(d("2027-02-04")));
+        assert!(m.is_deprecated() && !m.is_retired(d("2027-02-03")));
+        assert!(m.is_retired(d("2027-02-04")));
+        assert_eq!(
+            serde_json::to_value(l).unwrap()["shutdown_on"],
+            serde_json::json!("2027-02-04")
+        );
+        let retired: Model = serde_json::from_str(r#"{"id": "m", "status": "retired"}"#).unwrap();
+        assert!(retired.is_deprecated() && retired.is_retired(d("2000-01-01")));
+        for odd in [
+            r#""soon""#,
+            "[]",
+            "null",
+            r#"{"announced_on": null, "deprecated_on": null, "shutdown_on": null, "replacement": null, "source": null}"#,
+            r#"{"shutdown_on": "next year", "replacement": " ", "source": 3}"#,
+        ] {
+            let m: Model =
+                serde_json::from_str(&format!(r#"{{"id": "m", "lifecycle": {odd}}}"#)).unwrap();
+            assert!(m.lifecycle.is_none(), "{odd}");
+        }
+        assert_eq!(day::format(d("2027-02-04")), "2027-02-04");
     }
 
     #[test]

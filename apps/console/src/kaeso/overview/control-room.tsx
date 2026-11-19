@@ -9,6 +9,8 @@ import type { Overview } from "./data";
 import { change, METRICS, metricTotal, type MetricId } from "./metrics";
 import { DayContext, hourLabel, MetricChart, PREVIOUS, rank, tabRange, useOpenRow, type Ranked } from "./parts";
 import { Efficiency, Reliability, Spend } from "./sections";
+import { approxMoney } from "~/format/currency";
+import { RatesNote } from "~/kaeso/currency";
 
 const TOP = 5;
 // German nouns keep their capital inside a sentence.
@@ -133,16 +135,23 @@ export function ControlRoom({ o, initial = "requests" }: { o: Overview; initial?
               detail:
                 id === "cost" && o.now.unpriced
                   ? t("kaeso.usage.unpriced", "{count, plural, one {# request} other {# requests}} unknown", { count: o.now.unpriced })
-                  : c
-                    ? o.compare
-                    : o.single && o.live
-                      ? t("kaeso.overview.soFarToday", "So far today")
-                      : undefined,
+                  : id === "cost" && o.display && o.now.converted
+                    ? approxMoney(o.now.converted, o.display.code)
+                    : c
+                      ? o.compare
+                      : o.single && o.live
+                        ? t("kaeso.overview.soFarToday", "So far today")
+                        : undefined,
             };
           })}
         />
         <ChartCell o={o} metric={metric} />
       </Dashboard>
+      {o.display && (
+        <div className="mt-8">
+          <RatesNote display={o.display} from={o.from} />
+        </div>
+      )}
       <Section title={t("kaeso.overview.top", "Top usage")} description={t("kaeso.overview.topHint", "The five with the most of the total chosen above")}>
         <Dashboard aria-label={t("kaeso.overview.top", "Top usage")} busy={o.refreshing} columns={2}>
           {top.map((d) => (

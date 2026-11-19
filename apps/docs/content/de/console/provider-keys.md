@@ -20,7 +20,7 @@ Jede Aktion an Anbieter-Schlüsseln braucht ihr eigenes Recht:
 | Aktion | Recht |
 | --- | --- |
 | Schlüssel hinzufügen | **Anbieter-Schlüssel hinzufügen** |
-| Schlüssel ersetzen, umbenennen, zuweisen oder zum Standard machen | **Anbieter-Schlüssel ändern** |
+| Schlüssel testen, ersetzen, umbenennen, zuweisen oder zum Standard machen | **Anbieter-Schlüssel ändern** |
 | Schlüssel löschen | **Anbieter-Schlüssel löschen** |
 
 Jede Aktion außer dem Löschen erfordert zusätzlich eine kürzliche Anmeldung.
@@ -73,6 +73,10 @@ Für Azure gehört ein Anbieter-Schlüssel zu einer Azure-OpenAI- oder Foundry-R
 Kaeso ruft die OpenAI-v1-API der Ressource auf, `{endpoint}/openai/v1`. Eine Anfrage nennt ein Deployment der Ressource: Kaeso sendet die ID des Modells oder seine **Modell-ID beim Anbieter**, wenn das Deployment anders heißt ([Werte eines Modells ändern](models-and-aliases.md#werte-eines-modells-ändern)).
 
 Die Liste zeigt den Host des Endpunkts neben dem Schlüssel, bei einem Service Principal auch den Mandanten und die letzten vier Zeichen der Client-ID. Um den Schlüssel auf eine andere Ressource umzustellen, wählen Sie **Bearbeiten** in seinem Menü und geben den Endpunkt der anderen Ressource an; ein neuer Schlüssel derselben Ressource behält den Endpunkt.
+
+## Ihre Organisation statt eines Schlüssels verknüpfen
+
+Bei einem Anbieter mit [verknüpfter Abrechnung](linked-billing.md), etwa Anthropic, kann ein Anbieter-Schlüssel eine Verknüpfung zum eigenen Konto Ihrer Organisation beim Anbieter sein. Der Anbieter rechnet Ihre Anfragen dann mit diesem Konto ab, und kein API-Schlüssel verlässt es. Wählen Sie unter **Anbieter-Schlüssel hinzufügen** **Claude organization** statt eines API-Schlüssels; [Verknüpfte Abrechnung](linked-billing.md) beschreibt jeden Schritt und was ein Instanz-Admin vorher einrichtet.
 
 ## Mit einem ChatGPT-Konto anmelden
 
@@ -128,11 +132,13 @@ Die Liste zeigt zu jedem Schlüssel seinen Namen, die letzten vier Zeichen, die 
 
 | Aktion | Wirkung |
 | --- | --- |
+| Schlüssel testen | Fragt den Anbieter, ob er den Schlüssel annimmt, indem es seine Modellliste damit liest: Es meldet, dass der Anbieter den Schlüssel annimmt und wie viele Modelle er dafür führt, oder zeigt die Ablehnung des Anbieters. Nichts wird abgerechnet. Ein Anbieter, der dort, wo der Schlüssel ihn aufruft, keine Modelle führt, etwa Amazon Bedrock, kann es nicht sagen; nur eine Modellanfrage bestätigt den Schlüssel |
 | Ersetzen | Nimmt ein neues Secret für denselben Schlüssel an, etwa nachdem Sie ihn beim Anbieter rotiert haben; bei einem Dienstkonto-Schlüssel eine neue JSON-Schlüsseldatei |
 | Erneut anmelden | Für ein Konto: meldet dasselbe Konto erneut an, etwa nachdem es **Abgemeldet** oder **Kein API-Zugang** zeigt, und beendet seine vorherige Sitzung bei OpenAI oder xAI |
 | Nutzung verwalten | Für ein ChatGPT-Konto: öffnet die Nutzungseinstellungen von ChatGPT, in denen sein Inhaber prüft und begrenzt, was Kaeso nutzt |
+| Erneut verknüpfen, Wer zahlt ersatzweise, Ausgabenlimit festlegen | Für einen verknüpften Schlüssel: siehe [Verknüpfte Abrechnung](linked-billing.md) |
 | Umbenennen | Ändert den Namen, den die Konsole zeigt. Bei einem Dienstkonto-Schlüssel heißt es **Bearbeiten** und ändert auch den Standort, bei einem Schlüssel für Cloudflare AI Gateway das Konto und das Gateway, bei einem Schlüssel für Amazon Bedrock die Region |
-| Löschen | Entfernt den Schlüssel. Seine Projekte ohne weiteren Schlüssel des Anbieters nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI oder xAI |
+| Löschen | Entfernt den Schlüssel. Seine Projekte ohne weiteren Schlüssel des Anbieters nutzen wieder den Standard. Bei einem Konto beendet Kaeso außerdem seine Sitzung bei OpenAI oder xAI. Bei einem verknüpften Schlüssel heißt es **Verknüpfung trennen** und beendet zuerst die Verknüpfung beim Anbieter |
 
 Ein Konto zeigt **Abgemeldet**, wenn der Anbieter seine Sitzung beendet hat, etwa nachdem sein Inhaber Kaeso in ChatGPT getrennt hat. Ein Grok-Konto zeigt **Kein API-Zugang**, wenn xAI sein Abo ablehnt. In beiden Fällen schlagen seine Anfragen fehl, bis jemand mit **Anbieter-Schlüssel ändern** **Erneut anmelden** wählt.
 
@@ -145,5 +151,6 @@ Wenn Sie den Standard löschen, wird der zuletzt hinzugefügte andere Schlüssel
 
 ## Nächste Schritte
 
+- [Verknüpfte Abrechnung](linked-billing.md): Lassen Sie Ihre Organisation einen Anbieter über ihr eigenes Konto dort bezahlen.
 - [Modelle und Aliasse](models-and-aliases.md): Fügen Sie die Modelle hinzu, die ein Projekt aufrufen darf.
 - [API-Schlüssel](api-keys.md): Erstellen Sie die Schlüssel, mit denen Ihre Apps Kaeso aufrufen.

@@ -1283,9 +1283,11 @@ pub(crate) fn row(org: Uuid, project: Uuid, at: OffsetDateTime, i: u64) -> (LogR
             media_detail: String::new(),
             cost_known: true,
             cost_basis: String::new(),
+            line: String::new(),
             tags: Vec::new(),
             guardrails: String::new(),
             guardrail_actions: Vec::new(),
+            credential_id: Uuid::nil(),
         },
         ContentRow {
             request_id: id,
@@ -2393,6 +2395,9 @@ async fn the_timeline_filters_groups_and_measures_latency() {
         ttfb_ms: None,
         status,
         error_kind: error_kind.into(),
+        endpoint: "chat/completions".into(),
+        alias: "fast".into(),
+        response_cache: String::new(),
         ..row(org.uuid(), project.uuid(), five, 1).0
     };
     let rows = [
@@ -2529,6 +2534,49 @@ async fn the_timeline_filters_groups_and_measures_latency() {
             bucket(&at7, json!(user_id), 1),
         ]
     );
+    for (group, expected) in [
+        (
+            "alias",
+            vec![
+                bucket(&at5, json!(""), 3),
+                bucket(&at5, json!("fast"), 2),
+                bucket(&at7, json!(""), 1),
+            ],
+        ),
+        (
+            "endpoint",
+            vec![
+                bucket(&at5, json!("chat/completions"), 2),
+                bucket(&at5, json!("messages"), 3),
+                bucket(&at7, json!("messages"), 1),
+            ],
+        ),
+        (
+            "status",
+            vec![
+                bucket(&at5, json!("200"), 4),
+                bucket(&at5, json!("429"), 1),
+                bucket(&at7, json!("502"), 1),
+            ],
+        ),
+        (
+            "response_cache",
+            vec![
+                bucket(&at5, json!(""), 2),
+                bucket(&at5, json!("hit"), 3),
+                bucket(&at7, json!("hit"), 1),
+            ],
+        ),
+    ] {
+        let data = get(format!("{p}/usage/timeline?{range}&group_by={group}")).await;
+        assert_eq!(summary(&data), expected, "{group}");
+    }
+    let by_alias = get(format!("{p}/usage/timeline?{range}&group_by=alias")).await;
+    assert_eq!(
+        by_alias[1]["duration_p95_ms"].as_u64().map(|ms| ms >= 1000),
+        Some(true),
+        "each alias its own p95"
+    );
     let by_route = get(format!("{p}/usage/timeline?{range}&group_by=route")).await;
     assert_eq!(
         by_route[0]["key"],
@@ -2584,12 +2632,12 @@ async fn the_timeline_filters_groups_and_measures_latency() {
         (
             format!("{p}/usage/timeline?{range}&group_by=project"),
             "group_by",
-            "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`.",
+            "Group by a field of the request log, such as `model`, `status` or `response_cache`.",
         ),
         (
             format!("{o}/usage/timeline?{range}&group_by=day"),
             "group_by",
-            "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`.",
+            "Group by `project` or a field of the request log, such as `model` or `status`.",
         ),
         (
             format!("{p}/usage/timeline?{range}&group_by=model&top=0"),
@@ -3291,5 +3339,94 @@ async fn the_request_log_names_the_client_app_filters_and_groups_by_it() {
             ("openai-python".to_owned(), 1),
             ("other".to_owned(), 1)
         ]
+    );
+}
+
+#[tokio::test]
+async fn the_log_and_its_export_say_what_each_cost_rests_on() {
+    let env = env(&[]).await;
+    let now = env.app.clock.now().replace_nanosecond(0).unwrap();
+    let org: kaeso_core::id::OrgId = env.owner.org_id.parse().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    let rows: Vec<LogRow> = ["", "none", "estimated", "measured"]
+        .into_iter()
+        .enumerate()
+        .map(|(i, basis)| LogRow {
+            cost_basis: basis.into(),
+            endpoint: format!("e{i}"),
+            ..row(
+                org.uuid(),
+                project.uuid(),
+                now - time::Duration::minutes(1),
+                1,
+            )
+            .0
+        })
+        .collect();
+    ch::insert_logs(env.app.state.clickhouse.as_ref().unwrap(), &rows)
+        .await
+        .unwrap();
+    let mut listed: Vec<(String, String)> = logs(&env, "").await["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|l| {
+            (
+                l["endpoint"].as_str().unwrap().to_owned(),
+                l["cost_basis"].as_str().unwrap().to_owned(),
+            )
+        })
+        .collect();
+    listed.sort();
+    assert_eq!(
+        listed,
+        [
+            ("e0".to_owned(), "reported".to_owned()),
+            ("e1".to_owned(), "none".to_owned()),
+            ("e2".to_owned(), "estimated".to_owned()),
+            ("e3".to_owned(), "measured".to_owned()),
+        ]
+    );
+
+    let req = axum::http::Request::builder()
+        .uri(format!("/platform/v1{}/logs/export?format=csv", base(&env)))
+        .header(
+            "cookie",
+            format!("__Host-kaeso_session={}", env.owner.cookie),
+        )
+        .body(axum::body::Body::empty())
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let csv = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    let csv = std::str::from_utf8(&csv).unwrap();
+    // The fields of one CSV line, quotes removed; the export quotes text that holds commas.
+    let fields = |line: &str| -> Vec<String> {
+        let (mut out, mut field, mut quoted) = (Vec::new(), String::new(), false);
+        for c in line.chars() {
+            match c {
+                '"' => quoted = !quoted,
+                ',' if !quoted => out.push(std::mem::take(&mut field)),
+                c => field.push(c),
+            }
+        }
+        out.push(field);
+        out
+    };
+    let mut lines = csv.lines();
+    let column = fields(lines.next().unwrap())
+        .iter()
+        .position(|h| h == "cost_basis")
+        .unwrap();
+    let mut exported: Vec<String> = lines.map(|l| fields(l)[column].clone()).collect();
+    exported.sort();
+    assert_eq!(
+        exported,
+        ["estimated", "measured", "none", "reported"],
+        "{csv}"
     );
 }

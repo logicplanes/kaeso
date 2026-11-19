@@ -61,6 +61,7 @@ pub struct LogRow {
     pub request_upload_us: Option<u32>,
     pub response_cache: String,
     pub alias: String,
+    pub line: String,
     pub fallbacks: String,
     pub media_unit: String,
     pub media_input: u64,
@@ -74,6 +75,9 @@ pub struct LogRow {
     pub guardrails: String,
     /// The actions of those guardrails, so the log can filter by them.
     pub guardrail_actions: Vec<String>,
+    /// The provider key that paid; the nil id when no provider was sent the request.
+    #[serde(with = "clickhouse::serde::uuid")]
+    pub credential_id: Uuid,
 }
 
 #[derive(Clone, Debug, PartialEq, Row, Serialize, Deserialize)]
@@ -724,6 +728,12 @@ pub enum TimelineGroup {
     ErrorKind,
     /// The client app the user agent names; empty without one.
     Client,
+    /// Empty for requests that named a model.
+    Alias,
+    Endpoint,
+    Status,
+    /// `hit`, `miss` or `bypass`; empty where the response cache was off.
+    ResponseCache,
 }
 
 impl TimelineGroup {
@@ -737,6 +747,10 @@ impl TimelineGroup {
             TimelineGroup::Member => "concat(principal_kind, ':', toString(principal_id))",
             TimelineGroup::Route => "concat(ingress_dialect, ':', egress_dialect, ':', provider)",
             TimelineGroup::ErrorKind => "error_kind",
+            TimelineGroup::Alias => "alias",
+            TimelineGroup::Endpoint => "endpoint",
+            TimelineGroup::Status => "toString(status)",
+            TimelineGroup::ResponseCache => "response_cache",
         }
     }
 }

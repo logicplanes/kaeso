@@ -90,7 +90,7 @@ describe("organization audit log", () => {
     expect(await link("test.invite")).toHaveTextContent("inv_1");
     expect(await link("test.credential")).toHaveAttribute("href", `/orgs/${ORG}/providers`);
     expect(await link("test.credential")).toHaveTextContent("OpenAI production");
-    expect(await link("test.platformkey")).toHaveAttribute("href", `${BASE}/platform-keys`);
+    expect(await link("test.platformkey")).toHaveAttribute("href", expect.stringMatching(new RegExp(`^${BASE}/platform-keys\\?key=`)));
     expect(await link("test.platformkey")).toHaveTextContent("Terraform");
     expect(await link("test.org")).toHaveAttribute("href", `${BASE}/general`);
     expect(await link("test.org")).toHaveTextContent("Northwind Labs");

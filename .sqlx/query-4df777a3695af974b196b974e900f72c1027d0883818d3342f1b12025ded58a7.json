@@ -1,0 +1,197 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT l.catalogue_model_id, l.org_id, l.project_id, l.provider, l.line, c.line_target AS \"target!\", l.previous, l.since, l.policy, l.delay_days, l.pending, l.pending_since, l.kept, l.held, l.updated_at FROM catalogue_lines l JOIN catalogue_models c ON c.id = l.catalogue_model_id WHERE l.project_id = $1 AND l.catalogue_model_id = $2 FOR UPDATE OF l, c",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "catalogue_model_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "catalogue_model_id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "org_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "org_id"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "project_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "project_id"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "provider",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "provider"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "line",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "line"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "target!",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_models",
+            "name": "line_target"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "previous",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "previous"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "since",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "since"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "policy",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "policy"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "delay_days",
+        "type_info": "Int4",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "delay_days"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "pending",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "pending"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "pending_since",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "pending_since"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "kept",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "kept"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "held",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "held"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "catalogue_lines",
+            "name": "updated_at"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "4df777a3695af974b196b974e900f72c1027d0883818d3342f1b12025ded58a7"
+}

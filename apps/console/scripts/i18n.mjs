@@ -129,6 +129,7 @@ export const SAME_AS_ENGLISH = new Set([
   "org.webhooks.formatSlack",
   "orgHome.defaultGateway",
   "orgHome.mcp.headerValuePlaceholder",
+  "playground.exportMarkdown",
   "project.tools.claudeCode",
 ]);
 

@@ -55,7 +55,8 @@ pub fn config_result(
         .set("KAESO_KPMR_PUBLIC_KEYS", kpmr::PUBLIC_KEYS.as_str())
         .set("KAESO_AUTH_OIDC_ALLOW_PRIVATE_NETWORKS", "true")
         .set("KAESO_UPDATES_CHECK", "false")
-        .set("KAESO_UPDATES_RELEASES_URL", "http://127.0.0.1:9/releases");
+        .set("KAESO_UPDATES_RELEASES_URL", "http://127.0.0.1:9/releases")
+        .set("KAESO_EXCHANGE_RATES_URL", "http://127.0.0.1:9/ecb/");
     for (k, v) in extra {
         source = source.set(k, *v);
     }
@@ -553,9 +554,11 @@ pub fn accounts_at(base: &str) -> kaeso_server::services::provider_accounts::End
     };
     kaeso_server::services::provider_accounts::Endpoints {
         chatgpt: hosts.clone(),
-        grok: hosts,
+        grok: hosts.clone(),
         google_token: kaeso_core::google::TOKEN_URI.to_owned(),
         azure_login: kaeso_core::azure::LOGIN.to_owned(),
+        anthropic_billing: hosts,
+        entra: kaeso_server::auth::entra::clouds(),
     }
 }
 

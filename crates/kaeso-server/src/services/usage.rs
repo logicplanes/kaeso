@@ -33,6 +33,7 @@ type BatchKey = (
     String,
     String,
     String,
+    Option<Uuid>,
 );
 
 // Rows a flush took stay counted until PostgreSQL has them: a limit counter rebuilt while the
@@ -72,6 +73,7 @@ fn key_of(row: &UsageRow) -> BatchKey {
         row.model_id.clone(),
         row.ingress_dialect.clone(),
         row.egress_dialect.clone(),
+        row.credential_id,
     )
 }
 
@@ -176,6 +178,7 @@ type UniqueKey<'a> = (
     &'a str,
     &'a str,
     &'a str,
+    Option<Uuid>,
 );
 
 fn unique_key(r: &UsageRow) -> UniqueKey<'_> {
@@ -189,6 +192,7 @@ fn unique_key(r: &UsageRow) -> UniqueKey<'_> {
         &r.model_id,
         &r.ingress_dialect,
         &r.egress_dialect,
+        r.credential_id,
     )
 }
 
@@ -478,6 +482,7 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
             .egress
             .map(|d| d.as_str().to_owned())
             .unwrap_or_default(),
+        credential_id: outcome.credential_id,
         requests: i64::from(!completes_job(outcome)),
         errors: i64::from(outcome.is_error() && !completes_job(outcome)),
         input_tokens: i(usage.input_tokens),
@@ -797,6 +802,7 @@ mod tests {
             provider: "anthropic".into(),
             ingress_dialect: "anthropic_messages".into(),
             egress_dialect: "anthropic_messages".into(),
+            credential_id: None,
             requests: 1,
             errors: 0,
             input_tokens: 1,

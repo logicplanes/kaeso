@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, DialogScope, Empty, FilterRow, Button, List, Menu, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, DialogScope, Empty, FilterRow, Button, List, Menu, SelectionAction, Text, icons } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { ScopeTabs, type Scope } from "~/kaeso/scope-tabs";
 import { api, data } from "~/api/client";
@@ -12,13 +12,19 @@ import { useOrgRights } from "~/auth/session";
 import { inviteStateLabel } from "~/format/labels";
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
+import { InviteDialog, type InviteDraft } from "./invite-dialog";
 import { LoadFailed } from "./load-failed";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
-const STATE_TONE: Record<string, "neutral" | "success" | "warning"> = { pending: "neutral", accepted: "success", expired: "warning", revoked: "neutral" };
+export const STATE_TONE: Record<string, "neutral" | "success" | "warning"> = {
+  pending: "neutral",
+  accepted: "success",
+  expired: "warning",
+  revoked: "neutral",
+};
 
-function expiresIn(expiresAt: string, now: number): { text: string; soon: boolean } {
+export function expiresIn(expiresAt: string, now: number): { text: string; soon: boolean } {
   const ms = Date.parse(expiresAt) - now;
   if (ms <= 0) return { text: t("org.invites.expired", "expired"), soon: true };
   const soon = ms < 2 * DAY;
@@ -37,6 +43,9 @@ export function InvitesPanel({ org }: { org: string }) {
   const projects = useQuery(orgProjectsQuery(org, true));
   const [revoking, setRevoking] = useState<InviteView | null>(null);
   const [revokeOpen, setRevokeOpen] = useState(false);
+  const [again, setAgain] = useState<InviteDraft | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [now] = useState(Date.now);
   const canInvite = rights.has("members.invite");
   const canRevoke = rights.has("members.invites.revoke");
@@ -56,6 +65,14 @@ export function InvitesPanel({ org }: { org: string }) {
     const name = members.data?.find((m) => m.user.id === user)?.user.name;
     return name ? t("org.invites.by", "Invited by {name}", { name }) : t("org.invites.byFormerMember", "Invited by a former member");
   };
+  // A revoked invitation sent again, without the projects archived or deleted since.
+  const draftOf = (i: InviteView): InviteDraft => ({
+    email: i.email,
+    role: i.role?.id ?? "member",
+    projectRoles: i.project_roles
+      .filter((r) => projects.data?.some((p) => p.id === r.project_id && !p.archived_at))
+      .map((r) => ({ project_id: r.project_id, role: r.role.id })),
+  });
   const projectName = (id: string) => projects.data?.find((p) => p.id === id)?.name ?? t("org.invites.aProject", "A project");
   const list = [...(invites.data ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at));
   const items = list.map((i) => {
@@ -96,7 +113,7 @@ export function InvitesPanel({ org }: { org: string }) {
       ),
       date: t("org.invites.sentOn", "Sent {date}", { date: formatDate(i.created_at) }),
       actions:
-        pending && (canInvite || canRevoke) ? (
+        (pending || i.status === "expired") && (canInvite || canRevoke) ? (
           <Menu>
             <Menu.Trigger>
               <Button
@@ -119,6 +136,10 @@ export function InvitesPanel({ org }: { org: string }) {
               )}
             </Menu.Content>
           </Menu>
+        ) : i.status === "revoked" && canInvite ? (
+          <Button size="xs" variant="ghost" leadingIcon={icons.mail} onClick={() => setAgain(draftOf(i))}>
+            {t("org.invites.inviteAgain", "Invite again")}
+          </Button>
         ) : undefined,
     };
   });
@@ -139,6 +160,14 @@ export function InvitesPanel({ org }: { org: string }) {
       <List
         aria-label={t("org.invites.title", "Invitations")}
         items={items}
+        selectable={!all && canRevoke}
+        selected={selected}
+        onSelectedChange={setSelected}
+        selectionActions={
+          <SelectionAction icon={icons.delete} danger onClick={() => setBulkOpen(true)}>
+            {t("org.invites.revoke", "Revoke")}
+          </SelectionAction>
+        }
         wrapSubtitle
         loading={invites.isPending}
         empty={
@@ -164,7 +193,71 @@ export function InvitesPanel({ org }: { org: string }) {
           <RevokeDialog org={org} invite={revoking} open={revokeOpen} onOpenChange={setRevokeOpen} />
         </DialogScope>
       )}
+      <DialogScope open={bulkOpen}>
+        <RevokeManyDialog
+          org={org}
+          invites={list.filter((i) => selected.has(i.id))}
+          open={bulkOpen}
+          onOpenChange={setBulkOpen}
+          onDone={() => setSelected(new Set())}
+        />
+      </DialogScope>
+      {again && <InviteDialog org={org} from={again} onClose={() => setAgain(null)} />}
     </>
+  );
+}
+
+// Revokes each selected invitation in turn, and says which couldn't be.
+function RevokeManyDialog({
+  org,
+  invites,
+  open,
+  onOpenChange,
+  onDone,
+}: {
+  org: string;
+  invites: InviteView[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDone: () => void;
+}) {
+  const revoke = useApiMutation({
+    mutationFn: async (list: InviteView[]) => {
+      const failed: string[] = [];
+      for (const i of list) {
+        try {
+          await api.DELETE("/platform/v1/orgs/{org}/invites/{invite}", { params: { path: { org, invite: i.id } } });
+        } catch {
+          failed.push(i.email);
+        }
+      }
+      return { revoked: list.length - failed.length, failed };
+    },
+    invalidates: [["orgs", org, "invites"]],
+    onSuccess: ({ revoked, failed }) => {
+      onOpenChange(false);
+      onDone();
+      if (revoked) toast(t("org.invites.revokedMany", "{count, plural, one {# invitation revoked} other {# invitations revoked}}", { count: revoked }));
+      if (failed.length)
+        toast.error(
+          t("org.invites.revokeFailed", "{count, plural, one {# invitation couldn't be revoked} other {# invitations couldn't be revoked}}: {emails}.", {
+            count: failed.length,
+            emails: failed.join(", "),
+          }),
+        );
+    },
+  });
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      tone="danger"
+      title={t("org.invites.revokeManyConfirm", "{count, plural, one {Revoke # invitation?} other {Revoke # invitations?}}", { count: invites.length })}
+      description={t("org.invites.revokeManyHint", "Their links stop working; you can invite the addresses again later.")}
+      confirmLabel={t("org.invites.revokeMany", "{count, plural, one {Revoke # invitation} other {Revoke # invitations}}", { count: invites.length })}
+      loading={revoke.isPending}
+      onConfirm={() => revoke.mutateAsync(invites)}
+    />
   );
 }
 

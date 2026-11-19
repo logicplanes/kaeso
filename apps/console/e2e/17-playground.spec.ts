@@ -29,7 +29,8 @@ async function setUp(page: Page) {
 
 const column = (page: Page, name: RegExp) => page.getByRole("region", { name });
 const reply = (page: Page, name: RegExp) => column(page, name).getByRole("article").last();
-const lastPrompt = (page: Page, name: RegExp) => column(page, name).getByRole("group", { name: "Prompt" }).last();
+// The prompt's text, without the actions (Edit, Show all) that sit in its group.
+const lastPrompt = (page: Page, name: RegExp) => column(page, name).getByRole("group", { name: "Prompt" }).last().getByRole("paragraph");
 
 test("one prompt streams from two models side by side, with metrics; Stop ends both", async ({ page }) => {
   await signInAsOwner(page);

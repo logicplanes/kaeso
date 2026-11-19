@@ -3,9 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRights } from "~/test/fixtures";
-import { member, notifications, serviceAccount, usageRow } from "~/test/fixtures/org";
+import { credential, member, notifications, serviceAccount, usageRow } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { me as account } from "~/test/fixtures/instance-account";
 
 const PERIOD = "from=2026-10-01&to=2026-10-07";
 const USAGE = "orgs/:org/usage";
@@ -62,6 +63,20 @@ describe("organization analytics", () => {
     ).toEqual(["Project", "Requests", "Cost"]);
     expect(link.closest("[role=cell]")?.textContent).toBe("Checkout assistant");
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("$2.00");
+  });
+
+  it("shows the organization's cost in the currency picked, next to the dollars", async () => {
+    signedIn();
+    on("GET", "me", account({ display_currency: "GBP" }));
+    usage({ day: wrap([usageRow("2026-10-02", { cost: "2.75", converted_cost: "2.06" })]) });
+    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
+
+    expect(await screen.findByText("≈ £2.06")).toBeInTheDocument();
+    expect(
+      usageQueries()
+        .filter((q) => q["group_by"] === "day")
+        .every((q) => q["currency"] === "GBP"),
+    ).toBe(true);
   });
 
   it("shows the period's usage, the cost by project and the projects ordered by requests", async () => {
@@ -137,6 +152,48 @@ describe("organization analytics", () => {
     expect(await within(table).findByText("No model")).toBeInTheDocument();
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("gpt-5-mini");
     expect(usageQueries()).toContainEqual({ from: "2026-10-01", to: "2026-10-07", group_by: "model" });
+  });
+
+  it("names the key that paid each request in the breakdown by who was billed", async () => {
+    signedIn();
+    usage({
+      billed_to: wrap([
+        usageRow("cred_link", { requests: 9 }),
+        usageRow("cred_openai", { requests: 4 }),
+        usageRow("cred_gone", { requests: 2 }),
+        usageRow("none", { requests: 1 }),
+      ]),
+    });
+    on(
+      "GET",
+      "orgs/:org/credentials",
+      page([
+        credential({ id: "cred_link", provider: "anthropic", name: "Acme Claude", auth_method: "linked_billing" }),
+        credential({ id: "cred_openai", name: "OpenAI production" }),
+      ]),
+    );
+    const { user } = await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
+    await breakdown();
+    await user.click(screen.getByRole("radio", { name: "By key that paid" }));
+    const table = await breakdown();
+    expect(await within(table).findByRole("columnheader", { name: "Billed to" })).toBeInTheDocument();
+    const rows = within(table).getAllByRole("row").slice(1);
+    await waitFor(() => expect(rows[0]).toHaveTextContent(/Acme Claude.*Linked billing/));
+    expect(rows[1]).toHaveTextContent("OpenAI production");
+    expect(rows[2]).toHaveTextContent("Removed key");
+    expect(rows[3]).toHaveTextContent("No provider");
+    expect(usageQueries()).toContainEqual({ from: "2026-10-01", to: "2026-10-07", group_by: "billed_to" });
+    const files: Blob[] = [];
+    vi.spyOn(URL, "createObjectURL").mockImplementation((b) => (files.push(b as Blob), "blob:csv"));
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    await user.click(screen.getByRole("button", { name: "Download CSV" }));
+    await waitFor(() => expect(files).toHaveLength(1));
+    const names = (await (files[0] as Blob).text())
+      .trimEnd()
+      .split("\r\n")
+      .slice(1)
+      .map((l) => l.split(",")[0]);
+    expect(names).toEqual(["Acme Claude", "OpenAI production", "Removed key", "No provider"]);
   });
 
   it("names members, former members and service accounts in the breakdown by member", async () => {

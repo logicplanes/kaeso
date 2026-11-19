@@ -31,6 +31,7 @@ import { GuardrailsSection } from "./guardrails-section";
 import { ResponseCacheSection } from "./response-cache-section";
 import { RetriesSection } from "./retries-section";
 import { StoredResponsesSection } from "./stored-responses-section";
+import { ModelLifecycleSection } from "./model-lifecycle-section";
 import { useProjectRights } from "~/auth/rights";
 import { useRequestLogs } from "~/auth/session";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -75,6 +76,9 @@ export function ProjectSettingsPage({ org, project }: { org: string; project: st
               <ResponseCacheSection org={org} project={project} canChange={rights.has("project.update")} archived={!!p.archived_at} />
               <GuardrailsSection org={org} project={project} />
               <StoredResponsesSection org={org} project={project} canChange={rights.has("project.update")} archived={!!p.archived_at} />
+              {rights.has("models.view") && (
+                <ModelLifecycleSection org={org} project={project} canChange={rights.has("models.manage")} archived={!!p.archived_at} />
+              )}
               {p.archived_at ? <ArchivedOn date={p.archived_at} /> : rights.has("project.archive") && <Archive org={org} project={project} name={p.name} />}
             </>
           )}

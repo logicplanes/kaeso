@@ -25,6 +25,7 @@ use crate::codec::{
 pub(crate) use blocks::{
     ToolChange, ToolHandle, ToolReferent, block_form, block_form_of, tool_change, tool_reference,
 };
+pub use error::error_code;
 pub(crate) use profile::apply as apply_profile;
 pub use profile::{FixedValue, MINIMAX_VIDEO_MEDIA_TYPES, MessagesProfile};
 pub(crate) use request::decode_tool;

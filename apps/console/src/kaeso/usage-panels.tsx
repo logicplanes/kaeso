@@ -21,6 +21,8 @@ export interface UsageTotals {
   errors: number;
   tokens: number;
   cost: string | null;
+  /** `cost` in the display currency, when the rows were asked for one. */
+  converted: string | null;
   toolCalls: number;
   /** Requests whose cost is unknown, which `cost` leaves out. */
   unpriced: number;
@@ -33,6 +35,7 @@ export function totals(rows: UsageRow[]): UsageTotals {
     errors: rows.reduce((a, r) => a + r.errors, 0),
     tokens: rows.reduce((a, r) => a + totalTokens(r), 0),
     cost: withCost ? sumUSD(rows.map((r) => r.cost)) : null,
+    converted: rows.some((r) => r.converted_cost) ? sumUSD(rows.map((r) => r.converted_cost)) : null,
     toolCalls: rows.reduce((a, r) => a + r.tool_calls, 0),
     unpriced: rows.reduce((a, r) => a + r.unpriced, 0),
   };

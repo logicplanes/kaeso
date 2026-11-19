@@ -5,6 +5,8 @@ import type {
   InstanceOrgView,
   InstanceUserOrg,
   InstanceUserView,
+  InviteView,
+  LinkedBillingView,
   MemberView,
   ProjectView,
   SettingsView,
@@ -24,6 +26,15 @@ export const instanceUserOrgsQuery = (user: string) =>
   queryOptions({
     queryKey: ["instance", "users", "one", user, "orgs"],
     queryFn: async (): Promise<InstanceUserOrg[]> => data(await api.GET("/platform/v1/instance/users/{user}/orgs", { params: { path: { user } } })).data,
+  });
+
+export const instanceInvitesQuery = (pendingOnly: boolean) =>
+  queryOptions({
+    queryKey: ["instance", "users", "invites", { pendingOnly }],
+    queryFn: (): Promise<InviteView[]> =>
+      allPages(async (after) =>
+        data(await api.GET("/platform/v1/instance/users/invites", { params: { query: { limit: 100, pending: pendingOnly, ...(after ? { after } : {}) } } })),
+      ),
   });
 
 export const instanceUsersQuery = (search: string, state: string | undefined) =>
@@ -50,15 +61,21 @@ export const instanceOrgQuery = (org: string) =>
     queryFn: async (): Promise<InstanceOrgView> => data(await api.GET("/platform/v1/instance/orgs/{org}", { params: { path: { org } } })),
   });
 
-export const instanceOrgsQuery = (search: string, sort: "created" | "deletion" = "created") =>
+export const instanceOrgsQuery = (search: string, sort: "created" | "deletion" = "created", sso?: boolean) =>
   infiniteQueryOptions({
-    queryKey: ["instance", "orgs", { search, sort }],
+    queryKey: ["instance", "orgs", { search, sort, sso }],
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam, signal, client }) => {
       const page = data(
         await api.GET("/platform/v1/instance/orgs", {
           params: {
-            query: { limit: 100, ...(search ? { search } : {}), ...(sort === "deletion" ? { sort } : {}), ...(pageParam ? { after: pageParam } : {}) },
+            query: {
+              limit: 100,
+              ...(search ? { search } : {}),
+              ...(sort === "deletion" ? { sort } : {}),
+              ...(sso === undefined ? {} : { sso }),
+              ...(pageParam ? { after: pageParam } : {}),
+            },
           },
           signal,
         }),
@@ -130,3 +147,8 @@ export const updateJobQuery = (update: string) =>
     queryKey: ["instance", "updates", "jobs", update],
     queryFn: async (): Promise<UpdateJobView> => data(await api.GET("/platform/v1/instance/updates/jobs/{update}", { params: { path: { update } } })),
   });
+
+export const linkedBillingQuery = queryOptions({
+  queryKey: ["instance", "linked-billing"],
+  queryFn: async (): Promise<LinkedBillingView[]> => data(await api.GET("/platform/v1/instance/linked-billing")),
+});

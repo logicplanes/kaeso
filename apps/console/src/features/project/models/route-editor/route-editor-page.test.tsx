@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
-import { notifications } from "~/test/fixtures/org";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, apiKey, catalogueModel, modelRoute, modelsApi, projectData, projectMember, projectPath } from "~/test/fixtures/project";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -96,6 +96,33 @@ describe("RouteEditorPage", () => {
     expect(body?.route.fallback.model).toBe("cm_haiku");
   });
 
+  it("shows the unsaved changes against the saved alias before saving", async () => {
+    setUp();
+    const { user } = await renderApp(projectPath("models/aliases/al_fast"));
+    const changes = await screen.findByRole("button", { name: "Changes" });
+    await hoverReason(user, changes, "Nothing has changed since the last save.");
+
+    await user.click(await step(/Claude Sonnet 4\.5/));
+    const panel = await screen.findByRole("complementary", { name: "Step settings" });
+    await user.click(within(panel).getByRole("checkbox", { name: /The provider refuses the request/ }));
+    await user.click(screen.getByRole("button", { name: "Changes" }));
+    const dialog = await screen.findByRole("dialog", { name: "Unsaved changes" });
+    const diff = within(dialog).getByRole("group", { name: "Saved → draft" });
+    const rows = (kind: string) => [...diff.querySelectorAll(`[data-diff=${kind}]`)].map((row) => row.textContent?.replace(/\s+/g, " ").trim());
+    // The one new condition, and the comma the line before it needs.
+    expect({ added: rows("added"), removed: rows("removed") }).toEqual({
+      added: ['+Added "unsupported",', '+Added "rejected"'],
+      removed: ['\u2212Removed "unsupported"'],
+    });
+  });
+
+  it("offers no changes for a new alias", async () => {
+    setUp();
+    await renderApp(projectPath("models/aliases/new"));
+    expect(await screen.findByRole("heading", { name: "New alias" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Changes" })).not.toBeInTheDocument();
+  });
+
   it("adds a fallback on the canvas and asks for its model before saving", async () => {
     setUp({ one: alias() });
     on("PATCH", ONE_ALIAS, ({ body }: { body: { route: unknown } }) => ({ ...alias(), route: body.route }));
@@ -117,6 +144,53 @@ describe("RouteEditorPage", () => {
     const [body] = requests("PATCH", ONE_ALIAS).map((r) => r.body as { route: { model: string; fallback: { model: string } } });
     expect(body?.route.model).toBe("cm_sonnet");
     expect(body?.route.fallback.model).toBe("cm_haiku");
+  });
+
+  it("duplicates an alias into a new one with the same route and a free name", async () => {
+    signedIn();
+    projectData({ aliases: [sturdy(), alias({ id: "al_copy", name: "fast-copy" })], models: models() });
+    modelsApi({ models: models() });
+    on("GET", ONE_ALIAS, ({ params }: { params: Record<string, string> }) =>
+      params.alias === "al_fast" ? sturdy() : alias({ id: "al_copy", name: "fast-copy" }),
+    );
+    on("POST", ALIASES, ({ body }: { body: { name: string; route: unknown } }) => ({ ...alias({ id: "al_new", name: body.name }), route: body.route }));
+    const { user, router } = await renderApp(projectPath("models/aliases/al_fast"));
+
+    await user.click(await screen.findByRole("button", { name: "Duplicate" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/models/aliases/new`));
+    expect(router.state.location.search).toEqual({ from: "al_fast" });
+    expect(await screen.findByRole("textbox", { name: "Name" })).toHaveValue("fast-copy-2");
+    expect(await step(/Claude Haiku 4\.5/)).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Start from" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Create alias" }));
+
+    expect(await notifications().findByText("Alias fast-copy-2 created")).toBeInTheDocument();
+    const [created] = requests("POST", ALIASES).map((r) => r.body as { name: string; route: unknown });
+    expect(created?.name).toBe("fast-copy-2");
+    expect(created?.route).toEqual(sturdy().route);
+    expect(requests("PATCH", ONE_ALIAS)).toHaveLength(0);
+  });
+
+  it("names a copy without the list of aliases when the list can't load", async () => {
+    signedIn();
+    projectData({ aliases: [], models: models() });
+    modelsApi({ models: models() });
+    on("GET", ONE_ALIAS, sturdy());
+    on("GET", ALIASES, apiError(503, "unavailable", "Kaeso can't reach its database right now; try again shortly."));
+    await renderApp(projectPath("models/aliases/new?from=al_fast"));
+    expect(await screen.findByRole("textbox", { name: "Name" })).toHaveValue("fast-copy");
+  });
+
+  it("starts an empty new alias when the one to duplicate is gone", async () => {
+    signedIn();
+    projectData({ aliases: [], models: models() });
+    modelsApi({ models: models() });
+    on("GET", ONE_ALIAS, apiError(404, "not_found", "No such alias."));
+    await renderApp(projectPath("models/aliases/new?from=al_gone"));
+
+    expect(await notifications().findByText("That alias no longer exists; start a new one instead")).toBeInTheDocument();
+    expect(await screen.findByRole("textbox", { name: "Name" })).toHaveValue("");
+    expect(await step(/No model yet/)).toBeInTheDocument();
   });
 
   it("creates an alias with a split and opens its page", async () => {

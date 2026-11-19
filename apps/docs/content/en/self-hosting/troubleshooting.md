@@ -18,6 +18,8 @@ The gateway stops when a setting is missing or invalid, and its container restar
 2. Correct the setting in `compose.override.yaml`, or in `.env` if it is one of the [settings in .env](configuration.md#settings-in-env).
 3. Run `docker compose up -d --wait` again.
 
+`docker compose run --rm --no-deps gateway kaeso config check` checks the settings without starting the gateway or reaching a database: it prints the same error, lists `KAESO_*` variables that name no setting, and exits with 1 on an error.
+
 ## Compose says to set a variable in .env
 
 A required variable of `.env` is missing, so Compose refuses to start and names it, such as `set KAESO_DOMAIN in .env`.
@@ -79,7 +81,7 @@ If Kaeso is already set up, the command says so. The setup page says the same, w
 The gateway can't reach the SMTP server, or the server refuses the email.
 
 1. Choose **Send test email** under **Instance** › **System**.
-2. Read the SMTP server's answer in the gateway's log.
+2. Read the SMTP server's answer in the gateway's log. Without the console, `docker compose exec gateway kaeso mail test you@example.com` sends one and prints the answer.
 3. Check `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS` and the credentials in `.env`, and that the server may send from `KAESO_SMTP_FROM`.
 
 With `KAESO_MAIL_TRANSPORT=log`, the gateway only logs emails and never sends them ([email](email.md)).
@@ -144,7 +146,7 @@ Kaeso then signs neither in by that address, sends neither a link, and logs `acc
 
 ## Nobody can sign in through single sign-on
 
-On an install without passwords, a broken identity provider leaves no way in. Don't turn passwords back on: print a one-time sign-in link for an instance admin, as [get back in](sign-in.md#get-back-in) shows.
+On an install without passwords, a broken identity provider leaves no way in. Don't turn passwords back on: find an instance admin's address with `kaeso user list --instance-admins` and print a one-time sign-in link for them, as [get back in](sign-in.md#get-back-in) shows.
 
 ## Someone reports a request id
 

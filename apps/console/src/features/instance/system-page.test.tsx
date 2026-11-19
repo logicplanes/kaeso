@@ -4,6 +4,7 @@ import { signedIn, whoAmI, user as account } from "~/test/fixtures";
 import { instanceSettings, system } from "~/test/fixtures/instance-account";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { hoverReason, notifications } from "~/test/fixtures/org";
 
 const PATH = "/settings/instance/system";
 
@@ -49,7 +50,7 @@ describe("instance system page", () => {
     on("GET", "instance/system", system());
     await renderApp(PATH);
     expect(await screen.findByRole("heading", { name: "Model data", level: 2 })).toBeInTheDocument();
-    expect(screen.getByText("Model names, limits and prices from KPMR, the Kaeso Provider & Model Registry.")).toBeInTheDocument();
+    expect(screen.getByText("Model names, limits and prices from KPMR, Kaeso's model registry.")).toBeInTheDocument();
     expect(screen.getByText("1,060 models")).toBeInTheDocument();
     expect(screen.getByText(/^Fetched /)).toBeInTheDocument();
     expect(screen.getByText("https://kpmr.kaeso.app/v1/catalogue")).toBeInTheDocument();
@@ -67,6 +68,39 @@ describe("instance system page", () => {
     expect(screen.getByText("Off")).toBeInTheDocument();
     await user.hover(screen.getByText("Failed"));
     expect(await screen.findByRole("tooltip")).toHaveTextContent("the catalogue is not signed");
+  });
+
+  it("fetches the model data now and refreshes the card", async () => {
+    signedIn();
+    on("GET", "instance/system", system());
+    let answer: unknown = { status: "applied", price_changes: 3, delisted: 0, relisted: 0 };
+    on("POST", "instance/kpmr/sync", () => answer);
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Sync now" }));
+    expect(await notifications().findByText("New model data applied: 3 price changes")).toBeInTheDocument();
+    expect(requests("POST", "instance/kpmr/sync")).toHaveLength(1);
+    await waitFor(() => expect(requests("GET", "instance/system").length).toBeGreaterThan(1));
+    answer = { status: "unchanged", price_changes: 0, delisted: 0, relisted: 0 };
+    await user.click(screen.getByRole("button", { name: "Sync now" }));
+    expect(await notifications().findByText("The model data is current")).toBeInTheDocument();
+  });
+
+  it("refreshes the card when fetching the model data failed, and offers no sync while it is off", async () => {
+    signedIn();
+    on("GET", "instance/system", system());
+    on("POST", "instance/kpmr/sync", apiError(503, "unavailable", "Kaeso could not fetch the model data; the System page says why."));
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Sync now" }));
+    expect(await notifications().findByText("Kaeso could not fetch the model data; the System page says why.")).toBeInTheDocument();
+    await waitFor(() => expect(requests("GET", "instance/system").length).toBeGreaterThan(1));
+  });
+
+  it("explains why it can't sync while sync is off", async () => {
+    signedIn();
+    const base = system().model_data;
+    on("GET", "instance/system", system({ model_data: { ...base, sync_enabled: false } }));
+    const { user } = await renderApp(PATH);
+    await hoverReason(user, await screen.findByRole("button", { name: "Sync now" }), "Sync is off; set KAESO_KPMR_SYNC=true to fetch model data");
   });
 
   it("says when the gateway hasn't asked KPMR yet", async () => {

@@ -89,6 +89,12 @@ const NAMES: &[(&str, &str, &str, &str)] = &[
         "查看防护规则",
     ),
     (
+        "instance.audit_log.export",
+        "Export instance audit log",
+        "Instanz-Audit-Log exportieren",
+        "导出实例审计日志",
+    ),
+    (
         "instance.audit_log.view",
         "View instance audit log",
         "Instanz-Audit-Log ansehen",
@@ -499,6 +505,13 @@ const NAMES: &[(&str, &str, &str, &str)] = &[
         "View org usage",
         "Gesamtnutzung ansehen",
         "查看组织用量",
+    ),
+    ("usage.share", "Share usage", "Nutzung teilen", "分享用量"),
+    (
+        "usage.share.manage",
+        "Manage shared links",
+        "Geteilte Links verwalten",
+        "管理共享链接",
     ),
     ("usage.view", "View usage", "Nutzung ansehen", "查看用量"),
     (

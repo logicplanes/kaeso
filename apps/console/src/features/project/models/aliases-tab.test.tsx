@@ -170,6 +170,17 @@ describe("AliasesTab", () => {
     expect(await screen.findByRole("heading", { name: "fast" })).toBeInTheDocument();
   });
 
+  it("duplicates an alias from its row", async () => {
+    setUp();
+    on("GET", ONE_ALIAS, alias());
+    const { user } = await renderApp(projectPath("models?tab=aliases"));
+
+    await user.click(await screen.findByRole("button", { name: "Actions for fast" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Duplicate" }));
+    expect(await screen.findByRole("textbox", { name: "Name" })).toHaveValue("fast-copy");
+    expect(window.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/models/aliases/new`);
+  });
+
   it("deletes an alias after confirming", async () => {
     setUp();
     queryClient.setQueryData(PLAYGROUND_MODELS, []);

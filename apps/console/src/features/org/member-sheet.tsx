@@ -14,8 +14,10 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { everyProjectRights, useMembership, useOrgRights, useSession } from "~/auth/session";
 import { userStateLabel } from "~/format/labels";
 import { t } from "~/i18n";
+import { Share, lastDays } from "~/kaeso/share";
 import { common } from "~/i18n/common";
 import { AccessView } from "~/kaeso/access-view";
+import { AuditLinks } from "~/kaeso/audit-links";
 import { useCatalogue } from "~/kaeso/catalogue";
 import { asGrant, sameGrant, type Grant } from "~/kaeso/grant";
 import { GrantEditor } from "~/kaeso/rights-editor";
@@ -191,6 +193,22 @@ function MemberBody({ org, userId, onClose }: { org: string; userId: string; onC
           />
         </Section>
       )}
+      {(self || rights.has("usage.org.view")) && (
+        <Section
+          title={t("org.member.usage", "Usage")}
+          description={
+            self
+              ? t("org.member.shareOwnHint", "Share your last 30 days of usage as a read-only link.")
+              : t("org.member.shareHint", "Share their last 30 days of usage as a read-only link.")
+          }
+          spacing="none"
+        >
+          <div className="flex">
+            <Share org={org} target={{ kind: "member", member: m.user.id, scope: m.user.name, ...lastDays(30), costs: rights.has("costs.org.view") }} />
+          </div>
+        </Section>
+      )}
+      {rights.has("audit_log.view") && <AuditLinks log={`/settings/orgs/${org}/audit-log`} user={m.user.id} />}
       {canTransfer && (
         <Section
           title={t("org.ownership.title", "Ownership")}

@@ -274,6 +274,8 @@
   "project.settings.mediaNeedsContent": "Medien bleiben nur, wo Anfrageinhalte protokolliert werden.",
   "project.settings.mediaKept": "Bilder, Audio und Dateien bleiben bei den Inhalten.",
   "project.settings.mediaLeftOut": "Von Medien bleiben nur Typ und Größe.",
+  "project.members.noneMatch": "Keine Mitglieder passen",
+  "project.members.clearFilters": "Suche und Rolle leeren",
   "project.members.theirKeys": "Ihre Schlüssel",
   "project.overview.downloadCsv": "CSV herunterladen",
   "project.overview.id": "ID",
@@ -306,5 +308,14 @@
   "project.storedResponses.use": "Beim Anbieter gespeicherte Antworten erlauben",
   "project.storedResponses.orgOffHint": "Für die Organisation aus; hier nicht einschaltbar.",
   "project.storedResponses.onHint": "Apps dürfen store und previous_response_id nutzen.",
-  "project.storedResponses.offHint": "Apps senden jede Unterhaltung vollständig."
+  "project.storedResponses.offHint": "Apps senden jede Unterhaltung vollständig.",
+  "project.lifecycle.saved": "Einstellungen zur Modellabschaltung gespeichert",
+  "project.lifecycle.title": "Modellabschaltung",
+  "project.lifecycle.hint": "Was passiert, wenn ein Anbieter ein Modell dieses Projekts abschaltet.",
+  "project.lifecycle.move": "Aliasse bei Abschaltung umstellen",
+  "project.lifecycle.moveOn": "Am Abschalttag zeigen Aliasse auf den Nachfolger.",
+  "project.lifecycle.moveOff": "Aliasse behalten das Modell; stellen Sie sie selbst um.",
+  "project.lifecycle.serve": "Abgeschaltete Modelle mit dem Nachfolger beantworten",
+  "project.lifecycle.serveOn": "Apps, die ein abgeschaltetes Modell nennen, erhalten den Nachfolger.",
+  "project.lifecycle.serveOff": "Anfragen an ein abgeschaltetes Modell scheitern mit 410."
 }

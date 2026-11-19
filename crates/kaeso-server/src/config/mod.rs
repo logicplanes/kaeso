@@ -15,6 +15,14 @@ use url::Url;
 pub use crate::http::cors::AllowedOrigins;
 
 pub use load::{ConfigError, MapSource, ProcessSource, Source, load, unknown_variables};
+
+/// `kaeso config check`: the settings load and the master keys parse, without a database. Gives
+/// the variables that name no setting, or the error the gateway would stop with.
+pub fn check(source: &dyn Source) -> Result<Vec<String>, String> {
+    let config = load(source).map_err(|e| format!("configuration: {e}"))?;
+    kaeso_crypto::KeyRing::parse(&config.master_keys).map_err(|e| e.to_string())?;
+    Ok(unknown_variables(source))
+}
 pub use settings::{
     Kind, PROVIDER_ENV_PREFIX, PROVIDER_FIELDS, ProviderField, ProviderVarError, REQUIRED, Setting,
     parse_provider_env, provider_env, provider_key, setting, settings,
@@ -51,6 +59,7 @@ pub struct Config {
     pub legal: LegalConfig,
     pub key_failures: KeyFailuresConfig,
     pub kpmr: KpmrConfig,
+    pub exchange_rates: ExchangeRatesConfig,
     pub updates: UpdatesConfig,
     pub updater: UpdaterConfig,
     pub providers: ProvidersConfig,
@@ -233,6 +242,12 @@ pub struct KpmrConfig {
     pub interval: KpmrInterval,
     #[serde(default, deserialize_with = "kpmr_keys")]
     pub public_keys: Vec<kaeso_core::kpmr::TrustedKey>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExchangeRatesConfig {
+    pub url: Url,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -605,6 +620,22 @@ impl Config {
                 );
             }
         }
+        match self.exchange_rates.url.scheme() {
+            "https" => {}
+            "http" if is_loopback_host(&self.exchange_rates.url) => {}
+            _ => {
+                return invalid(
+                    "exchange_rates.url",
+                    "must be an https URL (http is only allowed for localhost)".into(),
+                );
+            }
+        }
+        if !self.exchange_rates.url.path().ends_with('/') {
+            return invalid(
+                "exchange_rates.url",
+                "must end with `/`: the folder that holds the ECB's files".into(),
+            );
+        }
         if self.public_url.path() != "/"
             || self.public_url.query().is_some()
             || self.public_url.fragment().is_some()
@@ -952,5 +983,31 @@ pub(crate) fn is_loopback_host(url: &Url) -> bool {
         Some(url::Host::Ipv4(ip)) => ip.is_loopback(),
         Some(url::Host::Ipv6(ip)) => ip.is_loopback(),
         None => false,
+    }
+}
+
+#[cfg(test)]
+mod check_tests {
+    use super::*;
+
+    fn settings(master_keys: &str) -> MapSource {
+        MapSource::new()
+            .set("KAESO_PUBLIC_URL", "https://kaeso.example.com")
+            .set("KAESO_POSTGRES_URL", "postgres://kaeso@db/kaeso")
+            .set("KAESO_VALKEY_URL", "redis://valkey:6379")
+            .set("KAESO_MASTER_KEYS", master_keys)
+            .set("KAESO_MAIL_TRANSPORT", "log")
+    }
+
+    #[test]
+    fn the_check_loads_the_settings_and_parses_the_master_keys_without_a_database() {
+        use secrecy::ExposeSecret as _;
+        let key = kaeso_crypto::generate_master_key();
+        let valid = settings(key.expose_secret()).set("KAESO_LISTN", "0.0.0.0:8080");
+        assert_eq!(check(&valid), Ok(vec!["KAESO_LISTN".to_owned()]));
+        let bad_key = check(&settings("k1:AAAA")).unwrap_err();
+        assert!(!bad_key.is_empty());
+        let missing = check(&MapSource::new()).unwrap_err();
+        assert!(missing.starts_with("configuration: "), "{missing}");
     }
 }

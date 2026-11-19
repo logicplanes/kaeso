@@ -27,11 +27,14 @@ A webhook's menu has **Send test**, **Turn off** or **Turn on**, **Rotate secret
 | Budget alerts | `budget.alert` |
 | Limit reached | `limit.reached` |
 | Your key expires | `key.expiring` |
+| Model deprecated | `model.deprecated` |
+| Model shuts down soon | `model.shutdown_soon`, `model.moved` |
+| Model line moves | `line.moved`, `line.move_available` |
 | Content logging changed | `project.content_logging_changed` |
 | MCP servers need attention | `mcp_server.signed_out`, `mcp_server.tool_held` |
-| Security settings changed | `organization.security_changed` |
+| Security settings changed | `organization.security_changed`, `share.created` |
 | Member changes | `organization.member_joined`, `organization.member_left` |
-| Provider keys need attention | `provider_key.refused`, `provider_key.signed_out` |
+| Provider keys need attention | `provider_key.refused`, `provider_key.signed_out`, `provider_key.spend_limit_reached`, `provider_key.unlinked` |
 | Model changes | `model.delisted`, `model.price_changed` |
 
 These are the notices about the organization and its projects ([emails](account.md#choose-your-emails)). A person's own notices, such as their account's security or an export they started, never go to a webhook. A webhook with a project gets that project's events only; one without gets every event of the organization and its projects. Key expiry is told for every key that expires, not only to its owner.
@@ -79,11 +82,19 @@ A JSON delivery is a `POST` with `content-type: application/json` and a body lik
 | `mcp_server.signed_out` | `server_id`, `server` (its name) |
 | `mcp_server.tool_held` | `server_id`, `server`, `tool`: a tool that changed and waits for approval |
 | `organization.security_changed` | `change` (`sign_in_rules`, `single_sign_on`, `agent_policy`, `key_policy`, `platform_key_created` or `platform_key_rotated`), `platform_key` (its name, for the last two), `by` |
+| `share.created` | `title` (the link's), `audience` (`anyone` or `members`), `by` ([share usage](share-usage.md)) |
 | `organization.member_joined` | `person`, `sso` (whether they arrived through single sign-on) |
 | `organization.member_left` | `person`, `removed_by` (`null` when they left) |
 | `provider_key.refused` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refusal` with the provider's `status` and `message`, `billing` (a billing problem) and `first_at` and `last_at` |
 | `provider_key.signed_out` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `signed_out_at` |
+| `provider_key.spend_limit_reached` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `refused_at`, `resets_at` (when the provider lets requests through again at the latest) |
+| `provider_key.unlinked` | `provider_key_id`, `provider`, `name`, `default`, `projects`, `unlinked_at` |
 | `model.delisted` | `catalogue_model_id`, `provider_id`, `provider`, `model` |
+| `model.deprecated` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `shutdown_on` (`null` without a date), `replacement` ([model lifecycle](../concepts/model-lifecycle.md)) |
+| `model.shutdown_soon` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `shutdown_on`, `days_left`, `replacement`, `requests_7d` (the project's requests to the model in the last 7 days) |
+| `model.moved` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `replacement`, `aliases` (how many moved) |
+| `line.moved` | `catalogue_model_id` (the line's), `provider_id`, `provider`, `line`, `from`, `to`, `prices`: the input and output prices that changed, `from` and `to` per million tokens, and `policy`: `follow`, `delay`, `approved` (someone chose **Move**) or `back` ([model lines](models-and-aliases.md#model-lines)) |
+| `line.move_available` | `catalogue_model_id`, `provider_id`, `provider`, `line`, `from`, `to`, `prices`: KPMR moved a line the project asks about first |
 | `model.price_changed` | `catalogue_model_id`, `provider_id`, `provider`, `model`, `prices`: each changed price (`input`, `output`, `cache_read`, `cache_write`, `cache_write_1h`) with its old and new US dollars per million tokens, `from` and `to`, `null` where it had or has no price |
 | `webhook.test` | `webhook_id`, `name` |
 

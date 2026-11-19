@@ -281,6 +281,8 @@
   "logs.decision.state": "Worum es in den Fragen geht",
   "logs.decision.questions": "Fragen",
   "logs.decision.replyHint": "Jede Antwort mit ihren Wahrscheinlichkeiten, in der Reihenfolge der Fragen.",
+  "logs.inspector.copyCurl": "Als curl kopieren",
+  "logs.inspector.notBilled": "Nicht abgerechnet",
   "logs.filter.alias": "Alias",
   "logs.filter.fellBack": "Zurückgefallen",
   "logs.filter.endpoint": "Endpunkt",
@@ -332,5 +334,6 @@
   "logs.inspector.guardrailCategory": "Kategorie {category}",
   "logs.inspector.guardrailRun": "{phase}: {action} in {duration}",
   "logs.inspector.guardrails": "Guardrails",
-  "logs.inspector.guardrailFound": "Gefunden: {what}"
+  "logs.inspector.guardrailFound": "Gefunden: {what}",
+  "logs.inspector.line": "Modelllinie"
 }

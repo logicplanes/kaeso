@@ -527,3 +527,44 @@ fn foreign_documents_and_images_map_to_anthropic_sources() {
         json!({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "AAAA"}, "cache_control": {"type": "ephemeral"}})
     );
 }
+
+#[test]
+fn a_billed_profile_sets_the_billing_policy_its_header_and_the_beta() {
+    let body = br#"{"model":"m","max_tokens":5,"messages":[{"role":"user","content":"x"}],"billing_policy":{"type":"billing_policy","bill_to":"self"}}"#;
+    for kind in [RequestKind::Generate, RequestKind::CountTokens] {
+        let req = AnthropicMessages::decode_request(
+            kind,
+            body,
+            &HeaderList::new().with("anthropic-beta", "a"),
+        )
+        .unwrap();
+        let mut ctx = EgressCtx::new(&req).with_billed_profile("uprof_01EXAMPLE");
+        let enc = AnthropicMessages::encode_request(&req, &mut ctx).unwrap();
+        let sent: Value = serde_json::from_slice(&enc.body).unwrap();
+        assert_eq!(
+            sent["billing_policy"],
+            serde_json::json!({"type": "billing_policy", "bill_to": "user_profile"}),
+            "the install decides who pays, whatever the app sent"
+        );
+        assert_eq!(
+            enc.headers.get("anthropic-user-profile-id"),
+            Some("uprof_01EXAMPLE")
+        );
+        assert_eq!(
+            enc.headers.get("anthropic-beta"),
+            Some("a,user-profiles-billing-2026-10-01")
+        );
+    }
+    let req = AnthropicMessages::decode_request(
+        RequestKind::Generate,
+        br#"{"model":"m","max_tokens":5,"messages":[{"role":"user","content":"x"}]}"#,
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let mut ctx = EgressCtx::new(&req);
+    let enc = AnthropicMessages::encode_request(&req, &mut ctx).unwrap();
+    let sent: Value = serde_json::from_slice(&enc.body).unwrap();
+    assert!(sent.get("billing_policy").is_none());
+    assert_eq!(enc.headers.get("anthropic-user-profile-id"), None);
+    assert_eq!(enc.headers.get("anthropic-beta"), None);
+}

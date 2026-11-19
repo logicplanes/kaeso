@@ -320,6 +320,26 @@ pub async fn disabled_by(
     .await?)
 }
 
+/// Renames a key that isn't archived; its secret and everything else stay.
+pub async fn rename(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    id: Uuid,
+    name: &str,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE api_keys SET name = $3, updated_at = now() \
+         WHERE project_id = $1 AND id = $2 AND archived_at IS NULL",
+        project_id,
+        id,
+        name
+    )
+    .execute(db)
+    .await?
+    .rows_affected()
+        == 1)
+}
+
 pub async fn archive(
     db: impl PgExecutor<'_>,
     project_id: Uuid,
@@ -413,6 +433,55 @@ pub async fn claim_warnings(
 ) -> Result<Vec<Uuid>, StoreError> {
     Ok(sqlx::query_scalar!(
         "INSERT INTO key_expiry_warnings (key_id, days_before) SELECT unnest($1::uuid[]), $2 \
+         ON CONFLICT DO NOTHING RETURNING key_id",
+        ids,
+        days
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+#[derive(Clone, Debug)]
+pub struct ExpiringPlatform {
+    pub id: Uuid,
+    pub name: String,
+    pub org_id: Uuid,
+    /// The user who created it, when a user did.
+    pub created_by: Option<Uuid>,
+    pub expires_at: OffsetDateTime,
+}
+
+/// An org's platform keys that expire within `days` and haven't been warned about at that many
+/// days yet; disabled, archived and rotated keys are left out, as `expiring` leaves them out.
+pub async fn expiring_platform(
+    db: impl PgExecutor<'_>,
+    now: OffsetDateTime,
+    days: i32,
+) -> Result<Vec<ExpiringPlatform>, StoreError> {
+    Ok(sqlx::query_as!(
+        ExpiringPlatform,
+        "SELECT k.id, k.name, k.org_id, \
+         CASE WHEN k.created_by_kind = 'user' THEN k.created_by_id END AS created_by, \
+         k.expires_at AS \"expires_at!\" \
+         FROM org_platform_keys k JOIN organizations o ON o.id = k.org_id \
+         WHERE k.archived_at IS NULL AND k.disabled_at IS NULL AND k.replaced_by IS NULL \
+         AND o.state = 'active' AND k.expires_at > $1 \
+         AND k.expires_at <= $1 + make_interval(days => $2) \
+         AND NOT EXISTS (SELECT 1 FROM platform_key_expiry_warnings w WHERE w.key_id = k.id AND w.days_before = $2)",
+        now,
+        days
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+pub async fn claim_platform_warnings(
+    db: impl PgExecutor<'_>,
+    ids: &[Uuid],
+    days: i32,
+) -> Result<Vec<Uuid>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "INSERT INTO platform_key_expiry_warnings (key_id, days_before) SELECT unnest($1::uuid[]), $2 \
          ON CONFLICT DO NOTHING RETURNING key_id",
         ids,
         days

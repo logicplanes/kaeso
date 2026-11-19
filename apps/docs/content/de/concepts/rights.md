@@ -46,10 +46,10 @@ Eine Organisationsrolle enthält auch Rechte in jedem Projekt, zusätzlich zur e
 | --- | --- | --- |
 | Inhaber | Alle, auch die künftiger Versionen | Alle |
 | Admin | Alle außer `org.delete`, `org.ownership.transfer` und `billing.manage` | Alle |
-| Abrechnung | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | Keine |
-| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | Keine |
+| Abrechnung | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `usage.share`, `billing.view`, `billing.manage` | Keine |
+| Entwickler | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `usage.share` | Keine |
 | Prüfer | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `platform_keys.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | Die des Betrachters ohne `tools.use` und `project.audit_log.view` |
-| Mitglied | `org.view`, `members.view` | Keine |
+| Mitglied | `org.view`, `members.view`, `usage.share` | Keine |
 
 | Projektrolle | Rechte |
 | --- | --- |
@@ -169,6 +169,8 @@ Die [Platform API](../api/platform-api.md) beschreibt die Routen für Rechte, Ro
 | --- | --- | --- | --- |
 | `usage.org.view` | Gesamtnutzung ansehen | Die Nutzung aller Projekte sehen. |  |
 | `costs.org.view` | Gesamtkosten ansehen | Die Kosten aller Projekte sehen. | erfordert `usage.org.view` |
+| `usage.share` | Nutzung teilen | Schreibgeschützte Links zu sichtbarer Nutzung, Mitgliedsstatistiken und Budgets teilen und die eigenen widerrufen. |  |
+| `usage.share.manage` | Geteilte Links verwalten | Alle geteilten Links sehen und widerrufen und festlegen, wen Links erreichen dürfen und wie lange. | sensibel; erfordert `usage.share` |
 | `billing.view` | Abrechnung ansehen | Tarif, Rechnungen und Zahlungsstatus sehen (Kaeso Cloud). | nur Kaeso Cloud |
 | `billing.manage` | Abrechnung verwalten | Tarif und Zahlungsmethode ändern (Kaeso Cloud). | nur Kaeso Cloud; erfordert `billing.view` |
 
@@ -272,7 +274,7 @@ Jede Route unter `instance/*` prüft eines dieser Rechte. Die Konsolensitzung ei
 | Recht | Name | Was es erlaubt | Hinweise |
 | --- | --- | --- | --- |
 | `instance.system.view` | System ansehen | Das System und seine Modelldaten, die Instanzeinstellungen und den Update-Status sehen. |  |
-| `instance.settings.manage` | Instanzeinstellungen ändern | Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern und eine Test-E-Mail senden. | sensibel |
+| `instance.settings.manage` | Instanzeinstellungen ändern | Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern, eine Test-E-Mail senden und Modelldaten sofort abrufen. | sensibel |
 | `instance.updates.manage` | Updates verwalten | Nach Updates suchen und die Update-Einstellungen ändern. | sensibel |
 | `instance.updates.apply` | Updates installieren | Eine neue Version von Kaeso installieren. | sensibel; erfordert `instance.updates.manage` |
 | `instance.users.view` | Benutzer ansehen | Jedes Konto der Instanz und seine Organisationen sehen. |  |
@@ -280,6 +282,7 @@ Jede Route unter `instance/*` prüft eines dieser Rechte. Die Konsolensitzung ei
 | `instance.orgs.view` | Organisationen ansehen | Jede Organisation mit ihren Mitgliedern, Projekten und ihrer Nutzung sehen. |  |
 | `instance.orgs.manage` | Organisationen verwalten | Organisationen erstellen und umbenennen, Inhaber ernennen und ihre Löschung planen oder abbrechen. | sensibel; erfordert `instance.orgs.view` |
 | `instance.audit_log.view` | Instanz-Audit-Log ansehen | Das Audit-Log der Instanz lesen. |  |
+| `instance.audit_log.export` | Instanz-Audit-Log exportieren | Das Audit-Log der Instanz exportieren. | erfordert `instance.audit_log.view` |
 
 ## Kontorechte
 

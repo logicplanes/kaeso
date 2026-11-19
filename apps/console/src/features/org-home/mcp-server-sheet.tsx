@@ -37,6 +37,7 @@ import { useOrgRights } from "~/auth/session";
 import { useOrgPartyName } from "~/features/org/party";
 import { t } from "~/i18n";
 import { HANDLE, MAX_HANDLE, toolPrefix, connectionWord, hostOf, serverInfoText, statusWord, toolStateWord } from "~/kaeso/mcp-servers";
+import { McpConnectionFacts } from "~/kaeso/mcp-connection-facts";
 import { HeaderFields } from "~/kaeso/mcp-header-fields";
 import { useMcpSignIn } from "~/kaeso/mcp-sign-in";
 import { toast } from "~/shell/toast";
@@ -183,21 +184,7 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
               {t("orgHome.mcp.perUserHint", "Each person connects their own account under Account › Connections.")}
             </Text>
           )}
-          {shared && s.connection && (
-            <KeyValue
-              items={[
-                ...(s.connection.header_name
-                  ? [{ label: t("orgHome.mcp.header", "Header"), value: `${s.connection.header_name}: …${s.connection.last4}`, mono: true }]
-                  : []),
-                { label: t("orgHome.mcp.signedIn", "Signed in"), value: formatRelative(s.connection.updated_at) },
-                ...(s.connection.expires_at ? [{ label: t("orgHome.mcp.renews", "Renews"), value: formatRelative(s.connection.expires_at) }] : []),
-                {
-                  label: t("common.lastUsed", "Last used"),
-                  value: s.connection.last_used_at ? formatRelative(s.connection.last_used_at) : t("common.never", "Never"),
-                },
-              ]}
-            />
-          )}
+          {shared && s.connection && <McpConnectionFacts connection={s.connection} />}
           {signIn.waiting && (
             <Text variant="small" tone="secondary">
               {t("orgHome.mcp.finishInTab", "Finish the sign-in in the new tab.")}

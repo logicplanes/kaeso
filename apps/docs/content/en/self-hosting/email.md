@@ -27,6 +27,8 @@ Apply it with `docker compose up -d --wait`. Without `KAESO_SMTP_FROM`, Kaeso se
 2. Choose **Send test email**. It goes to you, or to the address you enter.
 3. If it fails or doesn't arrive, read the SMTP server's answer in the gateway's log with `docker compose logs gateway`.
 
+On the server, `docker compose exec gateway kaeso mail test you@example.com` sends the same test with the gateway's settings, without signing in, and prints what the SMTP server answered.
+
 [Troubleshooting](troubleshooting.md#email-doesnt-arrive) has the usual causes.
 
 ## Try Kaeso without a mail server

@@ -6,6 +6,7 @@ pub mod azure;
 pub mod catalogue;
 pub mod clock;
 pub mod cost;
+pub mod currency;
 pub mod decimal;
 #[cfg(feature = "openapi")]
 pub mod decimal_input;
@@ -16,6 +17,7 @@ pub mod id;
 pub mod keys;
 pub mod kpmr;
 pub mod limits;
+pub mod linked_billing;
 pub mod masking;
 pub mod net;
 pub mod notifications;

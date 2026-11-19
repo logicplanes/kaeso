@@ -634,6 +634,8 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
         .await?
         .ok_or_else(expired)?;
     let scheduled = org_row.state != "active";
+    let groups =
+        crate::services::sso_groups::read(state, org.uuid(), &connection.issuer, &identity).await?;
 
     let mut tx = state.pg.begin().await?;
     still_connected(&mut tx, &connection).await?;
@@ -757,7 +759,7 @@ async fn complete(state: &AppState, ctx: &Ctx, flow: &Flow, code: &str) -> ApiRe
         &mut tx,
         org.uuid(),
         user.id,
-        &identity,
+        groups.as_ref(),
         default,
         ctx.now,
     )
@@ -1070,6 +1072,7 @@ mod tests {
             auth_time,
             issued_at: Some(datetime!(2026-10-21 12:00 UTC)),
             claims: serde_json::Value::Null,
+            access_token: secrecy::SecretString::from("token"),
         }
     }
 

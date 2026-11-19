@@ -10,9 +10,9 @@ The pages are under **Instance**, in the menu at the foot of the sidebar.
 
 ## Manage users
 
-**Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them.
+**Users** lists every account on the install: active, deactivated or deleted. **Invite user** invites someone to the install without an organization. They join one when an organization invites them. **Last sign-in** shows when each user last signed in, by any method; turning on two-factor authentication doesn't count as one. It shows **Never** for someone who hasn't signed in since the install began recording it.
 
-Instance admins carry an **Instance admin** badge, and **Managed by** names the organization that manages an account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)). Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
+**Two-factor** shows who uses an authenticator app. Instance admins carry an **Instance admin** badge, and **Managed by** names the organization that manages an account ([managed accounts](../self-hosting/sign-in.md#managed-accounts)). Choose a user to open their sheet, which lists the organizations they belong to, with their role in each, and has these actions:
 
 | Action | What it does |
 | --- | --- |
@@ -24,9 +24,11 @@ Instance admins carry an **Instance admin** badge, and **Managed by** names the 
 
 Kaeso emails the user when you end their sessions or reset their two-factor authentication.
 
+**Invitations**, next to **Users**, lists the invitations to the install that are still pending, with who sent each and when it expires, and **All** adds the accepted, revoked and expired ones. **Resend** sends an invitation again with a new link that works for 21 days, even after it expired, and the old link stops working. **Revoke** takes one back. Both need **Manage users** and show in the audit log.
+
 ## Manage organizations
 
-**Organizations** lists every organization with its members, projects and state. **Create organization** creates one with the owner you choose, or with you as its owner when you choose none.
+**Organizations** lists every organization with its members, projects and state. **Create organization** creates one with the owner you choose, or with you as its owner when you choose none. **Sign-in** says whether each requires single sign-on, two-factor authentication or both, and **Single sign-on** filters the list to the organizations with or without an SSO connection.
 
 An organization's page shows its metadata, owners, members and projects. It also shows its requests, tokens, cost and stored logs for the last 30 days. On it, you can rename, delete and restore the organization.
 
@@ -43,6 +45,8 @@ Under **General**:
 | Allowed domains | The domains for the two settings above. `*.example.com` covers subdomains |
 | Single sign-on for instance admins | **None**, or an organization with single sign-on whose provider may sign its managed instance admins in to administer the instance ([instance admins](../self-hosting/sign-in.md#instance-admins)) |
 | Time zone | The install's time zone. Every time in the console shows in it, for everyone, the request log and audit log filter by its days, and automatic updates follow it. **Use this zone** switches to your browser's |
+| Exchange rates | Whether the install fetches the ECB's reference rates each working day, the day of the latest and why the last fetch failed. Off keeps the rates it has ([currencies](../concepts/currencies.md)) |
+| Shared links | **Allow shared links** lets organizations [share usage](share-usage.md); off, every link stops working. **Made with Kaeso** shows a small mark at the foot of shared pages |
 | Deleting organizations | Whether organizations can be deleted at all, and the grace period, 1 to 90 days |
 
 Under **Logging**, **Request log retention** sets the defaults for new organizations, and the longest an organization may choose. Lowering the longest brings every organization above it down to it, and their older entries are deleted at once, as when an organization shortens its retention.
@@ -50,6 +54,10 @@ Under **Logging**, **Request log retention** sets the defaults for new organizat
 Changing account creation, organization creation or the allowed domains needs a recent sign-in. Changing single sign-on for instance admins needs one with a password or a sign-in link; without one, an operator changes it on the server with `kaeso instance admin-sso` ([run Kaeso's commands](../self-hosting/installation.md#run-kaesos-commands)). The setup page starts the time zone at the first user's, and usage charts keep counting by UTC day.
 
 Passwords, sign-in links and email are set in the gateway's [configuration](../self-hosting/configuration.md). **General** shows whether passwords and sign-in links are on and **System** shows email, both read-only. Single sign-on is set up per organization, on its **Security** page. **Send test email** on **System** checks that the gateway can send mail.
+
+## Set up linked billing
+
+Under **Linked billing**, an instance admin sets up the install's OAuth app at each provider that offers [linked billing](linked-billing.md), so organizations can pay that provider through their own account there. The page shows the redirect URI, issuer and subject to register, built from the install's public URL, takes the app's client ID and the rest, and **Check** tests the app before anyone links. Until an app is set, organizations see the option with a note to ask an instance admin. Removing or replacing the app holds every linked key, which then shows **Needs instance setup**; instance admins get one email when the provider refuses the app.
 
 ## Let agents in
 
@@ -83,7 +91,9 @@ After an update, everyone who opens the console sees **What's new in Kaeso** onc
 
 ## Read the audit log
 
-The instance's **Audit log** records changes to users, organizations and the install's settings, with who made each change and when. It marks changes by agents as an organization's audit log does, and the **Agents** filter shows only those ([read the audit log](organizations-and-projects.md#read-the-audit-log)).
+The instance's **Audit log** records changes to users, organizations and the install's settings, with who made each change and when. It marks changes by agents as an organization's audit log does, and the **Agents** filter shows only those ([read the audit log](organizations-and-projects.md#read-the-audit-log)). **Export JSON Lines** downloads the events the filters show, one per line, newest first, and the log records the export. The Platform API's `instance/audit-log/export` does the same with the right `instance.audit_log.export`.
+
+A user's sheet under **Users** opens it at their changes with **Their changes**, and at the changes made to them with **Changes to them**.
 
 ## Next steps
 

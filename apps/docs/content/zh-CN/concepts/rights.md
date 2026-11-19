@@ -46,10 +46,10 @@ order: 4
 | --- | --- | --- |
 | 所有者 | 全部，包括未来版本新增的权限 | 全部 |
 | 管理员 | 除 `org.delete`、`org.ownership.transfer` 和 `billing.manage` 之外的全部 | 全部 |
-| 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`billing.manage` | 无 |
-| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`guardrails.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view` | 无 |
+| 财务 | `org.view`、`members.view`、`projects.view.all`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`usage.share`、`billing.view`、`billing.manage` | 无 |
+| 开发者 | `org.view`、`members.view`、`projects.create`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`guardrails.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`usage.share` | 无 |
 | 审计员 | `org.view`、`members.view`、`projects.view.all`、`provider_credentials.view`、`providers.custom.view`、`mcp_servers.view`、`guardrails.view`、`platform_keys.view`、`webhooks.view`、`logs.storage.view`、`usage.org.view`、`costs.org.view`、`billing.view`、`audit_log.view`、`audit_log.export` | 查看者的权限去掉 `tools.use`，以及 `project.audit_log.view` |
-| 成员 | `org.view`、`members.view` | 无 |
+| 成员 | `org.view`、`members.view`、`usage.share` | 无 |
 
 | 项目角色 | 权限 |
 | --- | --- |
@@ -169,6 +169,8 @@ order: 4
 | --- | --- | --- | --- |
 | `usage.org.view` | 查看组织用量 | 查看所有项目的用量。 |  |
 | `costs.org.view` | 查看组织费用 | 查看所有项目的费用。 | 需要 `usage.org.view` |
+| `usage.share` | 分享用量 | 分享自己可见的用量、成员统计和预算的只读链接，并撤销自己的链接。 |  |
+| `usage.share.manage` | 管理共享链接 | 查看并撤销所有人的共享链接，并决定链接可以面向谁、有效多久。 | 敏感；需要 `usage.share` |
 | `billing.view` | 查看账单 | 查看套餐、发票和付款状态（Kaeso Cloud）。 | 仅限 Kaeso Cloud |
 | `billing.manage` | 管理账单 | 更改套餐和付款方式（Kaeso Cloud）。 | 仅限 Kaeso Cloud；需要 `billing.view` |
 
@@ -272,7 +274,7 @@ order: 4
 | 权限 | 名称 | 允许的操作 | 备注 |
 | --- | --- | --- | --- |
 | `instance.system.view` | 查看系统 | 查看系统及其模型数据、实例设置和更新状态。 |  |
-| `instance.settings.manage` | 更改实例设置 | 更改常规、邮件、日志、时区和账户设置，并发送测试邮件。 | 敏感 |
+| `instance.settings.manage` | 更改实例设置 | 更改常规、邮件、日志、时区和账户设置，发送测试邮件，并立即获取模型数据。 | 敏感 |
 | `instance.updates.manage` | 管理更新 | 检查更新并更改更新设置。 | 敏感 |
 | `instance.updates.apply` | 安装更新 | 安装新版本的 Kaeso。 | 敏感；需要 `instance.updates.manage` |
 | `instance.users.view` | 查看用户 | 查看实例的每个账户及其所在组织。 |  |
@@ -280,6 +282,7 @@ order: 4
 | `instance.orgs.view` | 查看组织 | 查看每个组织及其成员、项目和用量。 |  |
 | `instance.orgs.manage` | 管理组织 | 创建和重命名组织、任命所有者，以及计划或取消其删除。 | 敏感；需要 `instance.orgs.view` |
 | `instance.audit_log.view` | 查看实例审计日志 | 查看实例的审计日志。 |  |
+| `instance.audit_log.export` | 导出实例审计日志 | 导出实例的审计日志。 | 需要 `instance.audit_log.view` |
 
 ## 账户权限
 

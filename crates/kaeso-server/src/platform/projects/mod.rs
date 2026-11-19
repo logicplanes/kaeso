@@ -3,7 +3,9 @@ pub mod aliases;
 pub mod audit;
 pub mod bounds;
 pub mod keys;
+pub mod lifecycle;
 pub mod limits;
+pub mod lines;
 pub mod members;
 pub mod model_check;
 pub mod models;
@@ -38,6 +40,7 @@ pub(crate) fn ensure_active(ctx: &Ctx, archived: &str) -> ApiResult<Uuid> {
 pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(s.route(Access::Org(OrgRight::OrgView), routes!(project::list)))
+        .routes(s.route(Access::Org(OrgRight::OrgView), routes!(lifecycle::org_summary)))
         .routes(s.route(Access::Org(OrgRight::ProjectsCreate), routes!(project::create)))
         .routes(s.route(Access::Project(R::ProjectView), routes!(project::get)))
         .routes(s.route(Access::Project(R::ProjectUpdate), routes!(project::update)))
@@ -58,6 +61,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Project(R::ServiceAccountsKeysCreate), routes!(keys::create_for_service_account)))
         .routes(s.route(Access::Project(R::KeysAllView), routes!(keys::list)))
         .routes(s.route(Access::Project(R::KeysAllView), routes!(keys::get)))
+        .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::rename)))
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::disable)))
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::enable)))
         .routes(s.route(Access::Project(R::KeysAllManage), routes!(keys::archive)))
@@ -86,6 +90,18 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::ProjectSession(R::PlaygroundUse), routes!(playground_media::video_get, playground_media::video_delete)))
         .routes(s.route(Access::ProjectSession(R::PlaygroundUse), routes!(playground_media::video_content)))
         .routes(s.route(Access::ProjectSession(R::PlaygroundUse), routes!(playground_media::decisions)))
+        .routes(s.route(Access::Project(R::ModelsView), routes!(lifecycle::list)))
+        .routes(s.route(Access::Project(R::ModelsView), routes!(lifecycle::preview)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lifecycle::apply)))
+        .routes(s.route(Access::Project(R::ModelsView), routes!(lifecycle::get_settings)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lifecycle::set_settings)))
+        .routes(s.route(Access::Project(R::ModelsView), routes!(lines::list)))
+        .routes(s.route(Access::Project(R::ModelsView), routes!(lines::offered)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::create)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::update)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::move_now)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::keep)))
+        .routes(s.route(Access::Project(R::ModelsManage), routes!(lines::back)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::list)))
         .routes(s.route(Access::Project(R::ModelsManage), routes!(aliases::create)))
         .routes(s.route(Access::Project(R::ModelsView), routes!(aliases::trace)))

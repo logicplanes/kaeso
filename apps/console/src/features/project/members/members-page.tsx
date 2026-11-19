@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Avatar, Badge, Button, Combobox, Dialog, Empty, List, Text, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Avatar, Badge, Button, Combobox, Dialog, Empty, FilterRow, Input, List, Select, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -28,7 +28,7 @@ import { common } from "~/i18n/common";
 import { partyText } from "~/kaeso/party";
 import { patchSearch, type SearchPatch } from "~/search";
 
-export type MembersSearch = { member?: string; add?: boolean };
+export type MembersSearch = { member?: string; role?: string; add?: boolean };
 
 export function MembersPage({ org, project, search }: { org: string; project: string; search: MembersSearch }) {
   const needs = useNeedsRight(org, project);
@@ -45,8 +45,16 @@ export function MembersPage({ org, project, search }: { org: string; project: st
     void navigate({ to: "/orgs/$org/projects/$project/members", params: { org, project }, search: patchSearch(search, patch, ["add"]), replace: true });
   };
 
+  const roles = rolesOfScope(useRoles(org), "project");
+  const [query, setQuery] = useState("");
+  const words = query.trim().toLocaleLowerCase();
   const list = useMemo(() => [...(members.data ?? [])].sort((a, b) => compareNames(a.user.name, b.user.name)), [members.data]);
-  const items = list.map((m: ProjectMemberView) => ({
+  const shown = list.filter(
+    (m) =>
+      (!search.role || m.grant.role.id === search.role) &&
+      (!words || m.user.name.toLocaleLowerCase().includes(words) || !!m.user.email?.toLocaleLowerCase().includes(words)),
+  );
+  const items = shown.map((m: ProjectMemberView) => ({
     id: m.user.id,
     textValue: m.user.name,
     title: partyText({ name: m.user.name, you: m.user.id === session.user.id }),
@@ -82,6 +90,30 @@ export function MembersPage({ org, project, search }: { org: string; project: st
         }
       />
       <AppFrame.Body padding="list">
+        <FilterRow>
+          <Select
+            aria-label={common.role()}
+            size="sm"
+            value={search.role ?? "all"}
+            onValueChange={(v) => setSearch({ role: v === "all" ? undefined : v })}
+            options={[
+              { value: "all", label: t("org.members.everyRole", "Every role") },
+              ...roles.map((r) => ({ value: r.id, label: r.name, textValue: r.name })),
+              ...(search.role && !roles.some((r) => r.id === search.role) ? [{ value: search.role, label: search.role }] : []),
+            ]}
+          />
+          <div className="w-240">
+            <Input
+              type="search"
+              size="sm"
+              aria-label={t("org.members.search", "Search members")}
+              placeholder={t("org.members.nameOrEmail", "Name or email")}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
+            />
+          </div>
+        </FilterRow>
         {members.isPending ? (
           <List aria-label={common.members()} items={[]} loading />
         ) : members.isError ? (
@@ -91,6 +123,21 @@ export function MembersPage({ org, project, search }: { org: string; project: st
             size="lg"
             title={t("project.members.none", "No members")}
             description={t("project.members.noneHint", "Add organization members to give them rights in this project.")}
+          />
+        ) : shown.length === 0 ? (
+          <Empty
+            size="lg"
+            title={t("project.members.noneMatch", "No members match")}
+            actions={
+              <Button
+                onClick={() => {
+                  setQuery("");
+                  setSearch({ role: undefined });
+                }}
+              >
+                {t("project.members.clearFilters", "Clear search and role")}
+              </Button>
+            }
           />
         ) : (
           <List aria-label={common.members()} items={items} onOpen={(item) => setSearch({ member: item.id })} />

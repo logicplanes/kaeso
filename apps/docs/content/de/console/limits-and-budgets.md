@@ -56,6 +56,10 @@ Beim Bearbeiten ändern Sie den Betrag eines Limits und, bei einem Budget, seine
 
 Hat jemand anderes das Limit geändert, nachdem die Seite geladen wurde, meldet das Speichern dies und lädt das aktuelle Limit. Nehmen Sie Ihre Änderung dann erneut vor.
 
+**Kopieren nach …** im Menü des Limits eines Mitglieds oder Schlüssels legt dasselbe Limit für ein anderes Mitglied, Dienstkonto oder einen anderen Schlüssel an: Sie wählen nur, für wen, und Art, Betrag, Zeitraum, Modell und Warnungen kommen vom kopierten Limit. Wer schon ein Limit dieser Art, dieses Zeitraums und Modells hat, wird nicht angeboten, weil jeder nur eines haben kann.
+
+**Sortieren** ordnet jede Ebene nach **Ebene**, der Vorgabe, oder nach **Am meisten genutzt**: das vollste Limit zuerst, Limits mit unbekannter Nutzung zuletzt. Die Adresse der Seite behält die Reihenfolge.
+
 ## Was eine App sieht
 
 Kaeso beantwortet eine abgelehnte Anfrage mit Status 429, im API-Format der App, mit einer Meldung, die das Limit nennt:
@@ -63,6 +67,8 @@ Kaeso beantwortet eine abgelehnte Anfrage mit Status 429, im API-Format der App,
 - Über einer Rate sagt die Meldung, wann ein neuer Versuch möglich ist, und der Header `Retry-After` nennt die Sekunden.
 - Bei einem aufgebrauchten Budget sagt die Meldung, wann das Budget neu beginnt.
 - Über einer Tool-Aufrufrate erhält ein MCP-Client Status 429 mit `Retry-After` und einen JSON-RPC-Fehler, der sagt, wann ein neuer Versuch möglich ist.
+
+Apps müssen nicht auf eine 429 warten. Jede Antwort der Model API trägt `kaeso-limits` mit dem, was von jeder Rate und jedem harten Budget übrig ist und wann es frei wird, damit ein Batch-Job nahe einer Token-Rate langsamer werden und ein Agent vor dem Ende eines Budgets aufhören kann, etwa `"key.requests.minute";limit=60;remaining=41;reset=17`. Eine 429 von Kaeso trägt das Limit, das sie abgelehnt hat, mit `remaining=0`. Der Header kommt nur, wenn der Inhaber des Schlüssels die Limits des Projekts sehen darf, Ausgaben nur mit dem Recht, Kosten zu sehen ([Antwort-Header](../api/model-api.md)).
 
 Solange noch laufende Anfragen ein hartes Budget oder eine Token-Rate aufbrauchen könnten, lehnt Kaeso die nächste Anfrage mit `Retry-After: 1` ab, bis sie fertig sind. Jede laufende Anfrage hält, was sie höchstens kosten kann, zu den Preisen des Modells. Das sind ihre Eingabe, aus ihrer Größe geschätzt, und ihr Ausgabelimit (`max_tokens` oder `max_output_tokens`, sonst das des Modells). Ein Stream hält es, solange er läuft.
 

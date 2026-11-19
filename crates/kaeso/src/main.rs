@@ -35,6 +35,15 @@ enum Command {
     Sso(SsoCommand),
     #[command(subcommand, about = "Operator actions on the instance settings")]
     Instance(InstanceCommand),
+    #[command(subcommand, about = "Check the settings without starting the gateway")]
+    Config(ConfigCommand),
+    #[command(subcommand, about = "Test sending email")]
+    Mail(MailCommand),
+    #[command(
+        subcommand,
+        about = "Model data from KPMR, the Kaeso Provider & Model Registry"
+    )]
+    Kpmr(KpmrCommand),
     #[command(
         hide = true,
         about = "Exit 0 when the local gateway answers `GET /healthz`, or with --ready `GET /readyz` (for container health checks)"
@@ -54,6 +63,15 @@ enum Command {
 
 #[derive(Subcommand)]
 enum UserCommand {
+    #[command(
+        about = "List the accounts with their address, name, state, whether they are instance admins and use two-factor authentication, and when they were created"
+    )]
+    List {
+        #[arg(long, help = "Only instance admins")]
+        instance_admins: bool,
+        #[arg(long, help = "Only accounts whose address or name contains this text")]
+        search: Option<String>,
+    },
     #[command(
         name = "reset-2fa",
         about = "Remove a user's TOTP and recovery codes and end their sessions, as a last resort when they lost their device"
@@ -99,6 +117,31 @@ enum InstanceCommand {
 }
 
 #[derive(Subcommand)]
+enum ConfigCommand {
+    #[command(
+        about = "Load the settings and parse the master keys, without a database; exit 1 with the error the gateway would stop with"
+    )]
+    Check,
+}
+
+#[derive(Subcommand)]
+enum MailCommand {
+    #[command(
+        about = "Send a test email with the configured mail settings and print what the mail server answered"
+    )]
+    Test {
+        #[arg(help = "The address to send it to")]
+        address: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum KpmrCommand {
+    #[command(about = "Fetch the model data from KPMR now, as the scheduled sync does")]
+    Sync,
+}
+
+#[derive(Subcommand)]
 enum MasterKeyCommand {
     #[command(about = "Print a new master key as `id:base64` for KAESO_MASTER_KEYS")]
     Generate,
@@ -134,6 +177,15 @@ fn main() -> Result<()> {
             .build()
             .context("cannot start the async runtime")?
             .block_on(healthcheck(&ProcessSource, ready)),
+        // Before the logs and without a database: a bad setting is what it is there to find.
+        Command::Config(ConfigCommand::Check) => {
+            let unknown = config::check(&ProcessSource).map_err(anyhow::Error::msg)?;
+            for variable in &unknown {
+                say!("{variable} names no setting and is ignored.");
+            }
+            say!("The configuration is valid.");
+            Ok(())
+        }
         Command::Openapi => {
             let doc = kaeso_server::platform::openapi();
             say!(
@@ -238,6 +290,19 @@ async fn run(command: Command) -> Result<()> {
                 ),
                 None => say!("Kaeso is already set up: a user exists. Sign in instead."),
             }
+        }
+        Command::User(UserCommand::List {
+            instance_admins,
+            search,
+        }) => {
+            let state = kaeso_server::serve::prepare(config).await?;
+            let listed = kaeso_server::services::users::operator_list(
+                &state,
+                instance_admins,
+                search.as_deref(),
+            )
+            .await?;
+            say!("{}", user_table(&listed));
         }
         Command::User(UserCommand::Reset2fa { email }) => {
             let state = kaeso_server::serve::prepare(config).await?;
@@ -358,11 +423,65 @@ async fn run(command: Command) -> Result<()> {
                 );
             }
         }
+        Command::Mail(MailCommand::Test { address }) => {
+            let logged =
+                config.mail.transport == config::MailTransport::Log || config.smtp.host.is_none();
+            kaeso_server::serve::send_test_email(&config, &address)
+                .await
+                .map_err(|e| anyhow::anyhow!("the email was not sent: {e}"))?;
+            if logged {
+                say!(
+                    "No SMTP server is set, so the email went to the gateway's log instead of {address}; see KAESO_MAIL_TRANSPORT and KAESO_SMTP_HOST."
+                );
+            } else {
+                say!("The mail server took the email for {address}.");
+            }
+        }
+        Command::Kpmr(KpmrCommand::Sync) => {
+            anyhow::ensure!(
+                config.kpmr.sync,
+                "model data sync is off; set KAESO_KPMR_SYNC=true to fetch model data"
+            );
+            let state = kaeso_server::serve::prepare(config).await?;
+            match kaeso_server::services::kpmr::sync(&state).await? {
+                kaeso_server::services::kpmr::Synced::Unchanged => {
+                    say!("The model data is current: KPMR has nothing new.");
+                }
+                kaeso_server::services::kpmr::Synced::Applied(a) => say!(
+                    "Applied new model data: {} price changes, {} models no longer listed, {} listed again. Every gateway reloads it.",
+                    a.price_changes,
+                    a.delisted,
+                    a.relisted
+                ),
+            }
+        }
         Command::MasterKey(MasterKeyCommand::Generate)
+        | Command::Config(_)
         | Command::Healthcheck { .. }
         | Command::Openapi => {}
     }
     Ok(())
+}
+
+// Tab-separated, so it reads in a terminal and splits with `cut -f`.
+fn user_table(listed: &[kaeso_server::services::users::Listed]) -> String {
+    if listed.is_empty() {
+        return "No account matches.".to_owned();
+    }
+    let yes = |b: bool| if b { "yes" } else { "no" };
+    let mut lines = vec!["EMAIL\tNAME\tSTATE\tINSTANCE ADMIN\tTWO-FACTOR\tCREATED".to_owned()];
+    lines.extend(listed.iter().map(|u| {
+        format!(
+            "{}\t{}\t{}\t{}\t{}\t{}",
+            u.email,
+            u.name,
+            u.state,
+            yes(u.instance_admin),
+            yes(u.two_factor),
+            u.created_at.date()
+        )
+    }));
+    lines.join("\n")
 }
 
 fn probe_address(config: &Config) -> SocketAddr {
@@ -471,6 +590,37 @@ mod tests {
 
     fn probe(listen: &str) -> SocketAddr {
         probe_address(&load_config(&source(listen)).unwrap())
+    }
+
+    #[test]
+    fn the_user_list_is_one_tab_separated_line_per_account() {
+        use kaeso_server::services::users::Listed;
+        let at = time::macros::datetime!(2026-10-01 08:00 UTC);
+        let listed = [
+            Listed {
+                email: "ada@example.com".into(),
+                name: "Ada Lovelace".into(),
+                state: "active".into(),
+                instance_admin: true,
+                two_factor: true,
+                created_at: at,
+            },
+            Listed {
+                email: "grace@example.com".into(),
+                name: "Grace Hopper".into(),
+                state: "deactivated".into(),
+                instance_admin: false,
+                two_factor: false,
+                created_at: at,
+            },
+        ];
+        assert_eq!(
+            user_table(&listed),
+            "EMAIL\tNAME\tSTATE\tINSTANCE ADMIN\tTWO-FACTOR\tCREATED\n\
+             ada@example.com\tAda Lovelace\tactive\tyes\tyes\t2026-10-01\n\
+             grace@example.com\tGrace Hopper\tdeactivated\tno\tno\t2026-10-01"
+        );
+        assert_eq!(user_table(&[]), "No account matches.");
     }
 
     #[test]

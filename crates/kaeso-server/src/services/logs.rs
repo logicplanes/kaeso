@@ -653,14 +653,26 @@ pub fn endpoint(o: &Outcome) -> &'static str {
     }
 }
 
-/// `measured` when the cost rests on the audio length Kaeso read from the file because the
-/// provider reported none; empty when the units are the provider's or counted from the request.
+/// What a request's cost rests on, first match wins: `none` when nothing was billed (a
+/// request Kaeso or the provider refused or failed, a response cache hit, or the start of a job
+/// billed when it ends), `measured` when Kaeso read the audio's length from the file because
+/// the provider reported none, `estimated` when Kaeso estimated the tokens, and empty (read as
+/// `reported`) when the units are the provider's or counted from the request.
 pub fn cost_basis(o: &Outcome) -> &'static str {
-    if o.media
+    use crate::services::usage;
+    if !usage::served(o)
+        || o.response_cache == Some(crate::services::response_cache::Verdict::Hit)
+        || usage::billed_when_done(o)
+    {
+        "none"
+    } else if o
+        .media
         .as_ref()
         .is_some_and(|m| m.measured && m.input_ms > 0)
     {
         "measured"
+    } else if o.usage_estimated {
+        "estimated"
     } else {
         ""
     }
@@ -919,6 +931,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
             }
             actions
         },
+        credential_id: o.credential_id.unwrap_or_default(),
         client_ip: o.client_ip.map(|i| i.to_string()).unwrap_or_default(),
         upstream_request_id: o.upstream_request_id.clone().unwrap_or_default(),
         has_content: content,
@@ -941,6 +954,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
             .map(|v| v.as_str().to_owned())
             .unwrap_or_default(),
         alias: o.alias.clone().unwrap_or_default(),
+        line: o.line.clone().unwrap_or_default(),
         fallbacks: if o.fallbacks.is_empty() {
             String::new()
         } else {
@@ -1541,6 +1555,58 @@ mod tests {
         reply.usage = kaeso_kpp::Usage::new(1200, 0);
         reply.usage.cache_read_tokens = 1024;
         reply
+    }
+
+    #[test]
+    fn the_cost_basis_says_none_measured_estimated_or_reported_in_that_order() {
+        use crate::model_api::hooks::VideoCall;
+        use crate::services::response_cache::Verdict;
+        let answered = || {
+            let mut o = crate::model_api::pipeline::blank_outcome(kaeso_core::id::RequestId::new());
+            o.status = 200;
+            o
+        };
+        assert_eq!(cost_basis(&answered()), "", "read as reported");
+
+        let mut unknown_model = answered();
+        unknown_model.status = 404;
+        assert_eq!(cost_basis(&unknown_model), "none");
+        let mut hit = answered();
+        hit.response_cache = Some(Verdict::Hit);
+        hit.usage_estimated = true;
+        assert_eq!(cost_basis(&hit), "none", "a hit costs nothing");
+        let mut job = answered();
+        job.video = Some(VideoCall::Create);
+        assert_eq!(cost_basis(&job), "none", "billed when it ends");
+
+        let mut gone = answered();
+        gone.status = 499;
+        gone.usage_estimated = true;
+        assert_eq!(
+            cost_basis(&gone),
+            "estimated",
+            "a disconnect with estimated tokens"
+        );
+        let mut left_early = gone.clone();
+        left_early.usage_estimated = false;
+        assert_eq!(
+            cost_basis(&left_early),
+            "none",
+            "nothing reached the provider"
+        );
+
+        let mut heard = answered();
+        heard.usage_estimated = true;
+        heard.media = Some(kaeso_core::cost::MediaUnits {
+            input_ms: 3000,
+            measured: true,
+            ..Default::default()
+        });
+        assert_eq!(
+            cost_basis(&heard),
+            "measured",
+            "measured comes before estimated"
+        );
     }
 
     #[test]

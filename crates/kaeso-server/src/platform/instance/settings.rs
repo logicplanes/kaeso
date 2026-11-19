@@ -3,6 +3,7 @@ use axum::extract::State;
 use kaeso_core::accounts::{AccountCreation, DomainRule, MAX_DOMAINS, OrgCreation};
 use kaeso_core::id::OrgId;
 use kaeso_store::pg::instance::{self, AdminSso, InstanceSettings};
+use kaeso_store::pg::shared_links::{self, InstanceSwitches};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -74,6 +75,45 @@ pub struct SettingsView {
     pub admin_sso: Option<AdminSsoView>,
     #[doc = "Mail (read-only)."]
     pub mail: MailSettings,
+    #[doc = "The exchange rates the console converts prices and spend with."]
+    pub exchange_rates: ExchangeRatesSetting,
+    #[doc = "Whether organizations may make shared links; off, every link stops working\n\
+        and none can be made."]
+    pub shared_links: bool,
+    #[doc = "Whether the pages of shared links show a small *Made with Kaeso* mark."]
+    pub share_mark: bool,
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "The daily fetch of the ECB's euro reference rates.")]
+pub struct ExchangeRatesSetting {
+    #[doc = "Whether the install fetches the rates each working day. Off keeps the rates\n\
+        it has; without any, only US dollars can be used."]
+    pub fetch: bool,
+    #[doc = "The day of the latest rates the install has."]
+    #[schema(example = "2026-11-16")]
+    pub day: Option<String>,
+    #[doc = "When the install last fetched the rates."]
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub checked_at: Option<time::OffsetDateTime>,
+    #[doc = "Why the last fetch failed; `null` when it worked. Kaeso tries again in 15\n\
+        minutes."]
+    pub error: Option<String>,
+}
+
+async fn rates_setting(
+    state: &AppState,
+    db: impl sqlx::PgExecutor<'_>,
+) -> ApiResult<ExchangeRatesSetting> {
+    let status = kaeso_store::pg::exchange_rates::status(db).await?;
+    Ok(ExchangeRatesSetting {
+        fetch: status.enabled,
+        day: crate::services::exchange_rates::book(state)
+            .latest_day()
+            .map(|d| d.to_string()),
+        checked_at: status.checked_at,
+        error: status.error,
+    })
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -90,7 +130,13 @@ pub struct AdminSsoView {
     pub connected: bool,
 }
 
-fn view(state: &AppState, s: &InstanceSettings, admin_sso: Option<&AdminSso>) -> SettingsView {
+fn view(
+    state: &AppState,
+    s: &InstanceSettings,
+    admin_sso: Option<&AdminSso>,
+    rates: &ExchangeRatesSetting,
+    shares: InstanceSwitches,
+) -> SettingsView {
     let c = &state.config;
     let policy = accounts::policy(s);
     SettingsView {
@@ -126,6 +172,9 @@ fn view(state: &AppState, s: &InstanceSettings, admin_sso: Option<&AdminSso>) ->
             port: c.smtp.port,
             from: c.smtp.from.clone(),
         },
+        exchange_rates: rates.clone(),
+        shared_links: shares.shared_links,
+        share_mark: shares.share_mark,
     }
 }
 
@@ -138,10 +187,13 @@ fn view(state: &AppState, s: &InstanceSettings, admin_sso: Option<&AdminSso>) ->
 )]
 pub async fn get(State(state): State<AppState>) -> ApiResult<Json<SettingsView>> {
     let admin_sso = instance::admin_sso(&state.pg).await?;
+    let rates = rates_setting(&state, &state.pg).await?;
     Ok(Json(view(
         &state,
         &instance::get(&state.pg).await?,
         admin_sso.as_ref(),
+        &rates,
+        shared_links::instance(&state.pg).await?,
     )))
 }
 
@@ -184,10 +236,13 @@ pub async fn set_admin_sso(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
+    let rates = rates_setting(&state, &state.pg).await?;
     Ok(Json(view(
         &state,
         &changed.settings,
         changed.after.as_ref(),
+        &rates,
+        shared_links::instance(&state.pg).await?,
     )))
 }
 
@@ -219,6 +274,12 @@ pub struct SettingsUpdate {
     #[doc = "The install's IANA time zone, such as `Europe/Berlin` or `UTC`."]
     #[schema(example = "Europe/Berlin")]
     pub timezone: Option<String>,
+    #[doc = "Whether the install fetches the ECB's exchange rates each working day."]
+    pub exchange_rates: Option<bool>,
+    #[doc = "Whether organizations may make shared links."]
+    pub shared_links: Option<bool>,
+    #[doc = "Whether shared links' pages show *Made with Kaeso*."]
+    pub share_mark: Option<bool>,
 }
 
 #[utoipa::path(
@@ -242,6 +303,13 @@ pub async fn update(
     }
     let mut tx = state.pg.begin().await?;
     let before = instance::get_for_update(&mut tx).await?;
+    let rates_before = rates_setting(&state, &mut *tx).await?;
+    let shares_before = shared_links::instance(&mut *tx).await?;
+    let shares = InstanceSwitches {
+        shared_links: req.shared_links.unwrap_or(shares_before.shared_links),
+        share_mark: req.share_mark.unwrap_or(shares_before.share_mark),
+    };
+    shared_links::set_instance(&mut *tx, shares).await?;
     let mut after = before.clone();
     if let Some(a) = req.account_creation {
         after.account_creation = a.as_str().to_owned();
@@ -339,10 +407,26 @@ pub async fn update(
         };
         crate::platform::logs::shrink(&mut tx, &shrunk, ctx.now, by).await?;
     }
+    if let Some(on) = req.exchange_rates {
+        kaeso_store::pg::exchange_rates::set_enabled(&mut *tx, on).await?;
+    }
+    let rates_after = rates_setting(&state, &mut *tx).await?;
     let admin_sso = instance::admin_sso(&mut *tx).await?;
     ctx.audit(None, Action::InstanceSettingsUpdate)
-        .before(view(&state, &before, admin_sso.as_ref()))
-        .after(view(&state, &after, admin_sso.as_ref()))
+        .before(view(
+            &state,
+            &before,
+            admin_sso.as_ref(),
+            &rates_before,
+            shares_before,
+        ))
+        .after(view(
+            &state,
+            &after,
+            admin_sso.as_ref(),
+            &rates_after,
+            shares,
+        ))
         .write(&mut tx)
         .await?;
     tx.commit().await?;
@@ -352,7 +436,13 @@ pub async fn update(
     if after.timezone != before.timezone {
         state.caches.time_zone.invalidate_all();
     }
-    Ok(Json(view(&state, &after, admin_sso.as_ref())))
+    Ok(Json(view(
+        &state,
+        &after,
+        admin_sso.as_ref(),
+        &rates_after,
+        shares,
+    )))
 }
 
 fn allowed_domains(domains: &[String]) -> ApiResult<Vec<String>> {

@@ -18,6 +18,8 @@ Das Gateway hält an, wenn eine Einstellung fehlt oder ungültig ist, und sein C
 2. Korrigieren Sie die Einstellung in der `compose.override.yaml` oder in der `.env`, wenn sie zu den [Einstellungen in der .env](configuration.md#einstellungen-in-der-env) gehört.
 3. Führen Sie `docker compose up -d --wait` erneut aus.
 
+`docker compose run --rm --no-deps gateway kaeso config check` prüft die Einstellungen, ohne das Gateway zu starten oder eine Datenbank zu erreichen: Es gibt denselben Fehler aus, listet `KAESO_*`-Variablen, die keine Einstellung nennen, und endet bei einem Fehler mit 1.
+
 ## Compose verlangt eine Variable in der .env
 
 Eine erforderliche Variable der `.env` fehlt, deshalb verweigert Compose den Start und nennt sie, etwa `set KAESO_DOMAIN in .env`.
@@ -79,7 +81,7 @@ Ist Kaeso schon eingerichtet, sagt der Befehl das. Die Einrichtungsseite meldet 
 Das Gateway erreicht den SMTP-Server nicht, oder der Server lehnt die E-Mail ab.
 
 1. Wählen Sie **Test-E-Mail senden** unter **Instanz** › **System**.
-2. Lesen Sie die Antwort des SMTP-Servers im Protokoll des Gateways.
+2. Lesen Sie die Antwort des SMTP-Servers im Protokoll des Gateways. Ohne Konsole sendet `docker compose exec gateway kaeso mail test you@example.com` eine und gibt die Antwort aus.
 3. Prüfen Sie `KAESO_SMTP_HOST`, `KAESO_SMTP_PORT`, `KAESO_SMTP_TLS` und die Zugangsdaten in der `.env`, und ob der Server von `KAESO_SMTP_FROM` senden darf.
 
 Mit `KAESO_MAIL_TRANSPORT=log` protokolliert das Gateway E-Mails nur und sendet sie nie ([E-Mail](email.md)).
@@ -144,7 +146,7 @@ Kaeso meldet dann keines der beiden über diese Adresse an, schickt keinem einen
 
 ## Niemand kann sich über Single Sign-on anmelden
 
-Auf einer Installation ohne Passwörter lässt ein defekter Identitätsanbieter keinen Weg hinein. Schalten Sie Passwörter nicht wieder ein: Geben Sie einen einmaligen Anmeldelink für einen Instanz-Admin aus, wie [Wieder hineinkommen](sign-in.md#wieder-hineinkommen) zeigt.
+Auf einer Installation ohne Passwörter lässt ein defekter Identitätsanbieter keinen Weg hinein. Schalten Sie Passwörter nicht wieder ein: Finden Sie die Adresse eines Instanz-Admins mit `kaeso user list --instance-admins` und geben Sie einen einmaligen Anmeldelink für ihn aus, wie [Wieder hineinkommen](sign-in.md#wieder-hineinkommen) zeigt.
 
 ## Jemand meldet eine Anfrage-ID
 

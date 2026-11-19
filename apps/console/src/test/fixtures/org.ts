@@ -128,6 +128,7 @@ export function security(overrides: Partial<SecurityView> = {}): SecurityView {
     sso_default_role: null,
     sso_redirect_url: "https://console.northwind.test/sso/callback",
     max_key_lifetime_days: null,
+    shared_links: { allow: "members", max_days: 90 },
     ...overrides,
   };
 }

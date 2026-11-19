@@ -5,6 +5,7 @@ import { ORG, signedIn } from "~/test/fixtures";
 import { notifications } from "~/test/fixtures/org";
 import { mcpConnection } from "~/test/fixtures/mcp";
 import { apiError, noContent, on, page, requests } from "~/test/network";
+import { atFixtureTime } from "~/test/clock";
 import { renderApp } from "~/test/render";
 
 const MINE = "me/mcp-connections";
@@ -44,7 +45,7 @@ describe("Account › Connections", () => {
     expect(screen.getByText("Signed out")).toBeInTheDocument();
     expect(screen.getByText("Connected as @kaesoapp")).toBeInTheDocument();
     expect(screen.getAllByText("Northwind Labs").length).toBeGreaterThan(0);
-    expect(screen.getByText("org_gone")).toBeInTheDocument();
+    expect(screen.getByText("org_gone · never used")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Replace secret" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Sign in again" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Disconnect" })).toHaveLength(3);
@@ -135,5 +136,54 @@ describe("Account › Connections", () => {
     on("GET", MINE, apiError(403, "permission_denied", "You can't see these connections."));
     await renderApp(PATH);
     expect(await screen.findByText("Your connections couldn't load")).toBeInTheDocument();
+  });
+
+  describe("at the fixture time", () => {
+    atFixtureTime();
+
+    it("says when each connection was last used, and shows when it was signed in and renews", async () => {
+      signedIn();
+      on(
+        "GET",
+        MINE,
+        page([
+          person({ connection: mcpConnection({ last_used_at: "2026-10-15T09:00:00Z" }) }),
+          person({
+            server: "mcp_github",
+            server_name: "GitHub",
+            auth_method: "header",
+            connection: mcpConnection({ kind: "header", header_name: "X-Api-Key", account: null, expires_at: null }),
+          }),
+        ]),
+      );
+      const { user } = await renderApp(PATH);
+      expect(await screen.findByText("Northwind Labs · last used 3 h ago")).toBeInTheDocument();
+      expect(screen.getByText("Northwind Labs · never used")).toBeInTheDocument();
+
+      const details = (i: number) => screen.getAllByRole("button", { name: "Details" })[i] as HTMLElement;
+      await user.click(details(0));
+      let dialog = await screen.findByRole("dialog", { name: "X" });
+      expect(within(dialog).getByText("Signed in").nextSibling).toHaveTextContent("1 h ago");
+      expect(within(dialog).getByText("Renews").nextSibling).toHaveTextContent("in 1 h");
+      expect(within(dialog).getByText("Last used").nextSibling).toHaveTextContent("3 h ago");
+      expect(within(dialog).queryByText("Header")).not.toBeInTheDocument();
+      await user.click(within(dialog).getByRole("button", { name: "Close" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+      await user.click(details(1));
+      dialog = await screen.findByRole("dialog", { name: "GitHub" });
+      expect(within(dialog).getByText("Header").nextSibling).toHaveTextContent("X-Api-Key: …a1b2");
+      expect(within(dialog).queryByText("Renews")).not.toBeInTheDocument();
+      expect(within(dialog).getByText("Last used").nextSibling).toHaveTextContent("Never");
+    });
+  });
+
+  it("offers no details for a server you haven't connected", async () => {
+    signedIn();
+    on("GET", MINE, page([person()]));
+    await renderApp(PATH);
+    expect(await screen.findByRole("button", { name: "Connect" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Details" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/· never used/)).not.toBeInTheDocument();
   });
 });

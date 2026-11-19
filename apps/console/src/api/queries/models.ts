@@ -1,13 +1,36 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
 import { isApiError } from "../errors";
-import type { AliasView, CatalogueModelView, ModelSearch, Preview } from "../generated/types";
+import type { AliasView, CatalogueModelView, ModelLines, ModelSearch, OfferedLines, Preview, RetiringModels } from "../generated/types";
 
 export const catalogueQuery = (org: string, project: string) =>
   queryOptions({
     queryKey: ["orgs", org, "projects", project, "models"],
     queryFn: async (): Promise<CatalogueModelView[]> =>
       data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/models", { params: { path: { org, project } } })).data,
+    staleTime: 60_000,
+  });
+
+export const retiringQuery = (org: string, project: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "deprecations"],
+    queryFn: async (): Promise<RetiringModels> =>
+      data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/deprecations", { params: { path: { org, project } } })),
+    staleTime: 60_000,
+  });
+
+export const linesQuery = (org: string, project: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "lines"],
+    queryFn: async (): Promise<ModelLines> => data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/lines", { params: { path: { org, project } } })),
+    staleTime: 60_000,
+  });
+
+export const offeredLinesQuery = (org: string, project: string, provider: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "projects", project, "lines", "offered", provider],
+    queryFn: async (): Promise<OfferedLines> =>
+      data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/lines/offered", { params: { path: { org, project }, query: { provider } } })),
     staleTime: 60_000,
   });
 

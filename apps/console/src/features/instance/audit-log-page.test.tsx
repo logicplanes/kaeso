@@ -3,7 +3,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import type { AuditEventView, InstanceUserView } from "~/api/generated/types";
 import { USER, signedIn, whoAmI } from "~/test/fixtures";
 import { instanceOrg, instanceUser } from "~/test/fixtures/instance-account";
-import { paged } from "~/test/fixtures/org";
+import { notifications, paged } from "~/test/fixtures/org";
 import { auditEvent } from "~/test/fixtures/shell";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -78,6 +78,17 @@ describe("instance audit log", () => {
     expect(within(row("198.51.100.9")).getByText("service_account")).toBeInTheDocument();
     const self = within(table()).getByText("Ada Okafor (you)").closest('[role="row"]') as HTMLElement;
     expect(within(self).getByRole("link", { name: "Grace Hopper" })).toHaveAttribute("href", "/settings/instance/users?user=usr_grace");
+  });
+
+  it("exports the filtered instance audit log through the browser", async () => {
+    signedIn();
+    instanceAudit();
+    on("GET", "instance/audit-log/export", "");
+    const { user } = await renderApp(`${PATH}?actor=usr_grace`);
+    await waitFor(() => expect(within(table()).getAllByRole("row").length).toBeGreaterThan(1));
+    await user.click(screen.getByRole("button", { name: "Export JSON Lines" }));
+    expect(await notifications().findByText("Export started")).toBeInTheDocument();
+    expect(requests("GET", "instance/audit-log").map((r) => Object.fromEntries(r.query))).toContainEqual({ actor: "usr_grace", limit: "1" });
   });
 
   it("looks up only the people and organizations the user list doesn't already name", async () => {

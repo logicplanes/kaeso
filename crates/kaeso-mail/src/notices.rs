@@ -55,6 +55,7 @@ pub enum Security<'a> {
     KeyPolicy,
     PlatformKeyCreated(&'a str),
     PlatformKeyRotated(&'a str),
+    SharedLinkCreated { name: &'a str, public: bool },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -80,6 +81,16 @@ pub enum ProviderKey<'a> {
         last: PrimitiveDateTime,
     },
     SignedOut {
+        at: PrimitiveDateTime,
+    },
+    /// A linked organization reached a spend limit it set; refusals last until `resets` at the
+    /// latest.
+    SpendLimitReached {
+        at: PrimitiveDateTime,
+        resets: PrimitiveDateTime,
+    },
+    /// A link to the customer's own organization at the provider ended.
+    Unlinked {
         at: PrimitiveDateTime,
     },
 }
@@ -168,6 +179,13 @@ impl Credential<'_> {
             ProviderKey::SignedOut { at } => {
                 out.push(Label::SignedOut.of(lang, lang.moment(*at, self.zone)));
             }
+            ProviderKey::SpendLimitReached { at, resets } => {
+                out.push(Label::LastRefused.of(lang, lang.moment(*at, self.zone)));
+                out.push(Label::Resets.of(lang, lang.moment(*resets, self.zone)));
+            }
+            ProviderKey::Unlinked { at } => {
+                out.push(Label::Unlinked.of(lang, lang.moment(*at, self.zone)));
+            }
         }
         out.push(
             Label::LastUsed.of(
@@ -220,6 +238,79 @@ impl PriceChange {
 pub enum ModelChange {
     Delisted,
     Price(Vec<PriceChange>),
+    /// The provider announced that it retires the model, on a day if it named one.
+    Deprecated {
+        shutdown_on: Option<Date>,
+        replacement: Option<String>,
+    },
+    /// The project still calls a model that stops working in `days` days.
+    ShutdownSoon {
+        shutdown_on: Date,
+        days: i64,
+        replacement: Option<String>,
+        requests: u64,
+    },
+    /// The model shut down and Kaeso moved the project's aliases to its replacement.
+    Moved {
+        replacement: String,
+        aliases: usize,
+    },
+}
+
+impl ModelChange {
+    fn email(&self) -> EmailKind {
+        match self {
+            ModelChange::Delisted | ModelChange::Price(_) => EmailKind::ModelChanges,
+            ModelChange::Deprecated { .. } => EmailKind::ModelDeprecated,
+            ModelChange::ShutdownSoon { .. } | ModelChange::Moved { .. } => {
+                EmailKind::ModelShutdownSoon
+            }
+        }
+    }
+}
+
+/// A price per million tokens that changes when a model line moves.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LinePrice {
+    pub price: &'static str,
+    pub from: Option<String>,
+    pub to: Option<String>,
+}
+
+impl LinePrice {
+    fn detail(&self, lang: Locale) -> Detail {
+        let label = if self.price == "output" {
+            Label::OutputPrice
+        } else {
+            Label::InputPrice
+        };
+        let n = |v: &Option<String>| v.as_deref().map_or("—".to_owned(), |v| lang.number(v));
+        let (from, to) = (n(&self.from), n(&self.to));
+        let value = match lang {
+            Locale::En => format!("{from} → {to} USD per million tokens"),
+            Locale::De => format!("{from} → {to} USD pro Million Token"),
+            Locale::ZhCn => format!("每百万 Token {from} → {to} USD"),
+        };
+        label.of(lang, value)
+    }
+}
+
+/// A model line moved, or a move waits for an owner.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum LineChange {
+    /// The line points at `to` now; `how` is the policy or action that moved it.
+    Moved {
+        from: String,
+        to: String,
+        prices: Vec<LinePrice>,
+        how: &'static str,
+    },
+    /// KPMR moved the line, and the project asks first.
+    Available {
+        from: String,
+        to: String,
+        prices: Vec<LinePrice>,
+    },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -321,6 +412,9 @@ pub enum Instance<'a> {
     AdminSso,
     AgentPolicy,
     OrgCreated(&'a str),
+    /// The provider refused the install's app for linked billing, or it was removed: every
+    /// linked key of the provider waits for it.
+    LinkedBillingSetup(&'a str),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -558,6 +652,12 @@ pub enum Fact<'a> {
         model: &'a str,
         change: ModelChange,
     },
+    Line {
+        provider: &'a str,
+        project: &'a str,
+        line: &'a str,
+        change: LineChange,
+    },
     CostReport {
         month: Date,
         total: &'a str,
@@ -601,7 +701,8 @@ impl Fact<'_> {
             Fact::InviteAccepted { .. } => EmailKind::InviteAccepted,
             Fact::ProviderKey { .. } => EmailKind::ProviderKeys,
             Fact::WebhookDisabled { .. } => EmailKind::Webhooks,
-            Fact::Model { .. } => EmailKind::ModelChanges,
+            Fact::Model { change, .. } => change.email(),
+            Fact::Line { .. } => EmailKind::ModelLines,
             Fact::CostReport { .. } => EmailKind::CostReport,
             Fact::InstanceUpdate { .. } => EmailKind::InstanceUpdates,
             Fact::SignedUp { .. } => EmailKind::InstancePeople,
@@ -740,9 +841,64 @@ impl Fact<'_> {
                     Label::Provider.of(lang, *provider),
                     Label::Model.of(lang, *model),
                 ];
-                if let ModelChange::Price(changes) = change {
-                    out.extend(changes.iter().map(|c| c.detail(lang)));
+                match change {
+                    ModelChange::Price(changes) => {
+                        out.extend(changes.iter().map(|c| c.detail(lang)));
+                    }
+                    ModelChange::Deprecated {
+                        shutdown_on,
+                        replacement,
+                    } => {
+                        out.extend(shutdown_on.map(|d| Label::ShutsDown.of(lang, lang.date(d))));
+                        out.extend(
+                            replacement
+                                .as_deref()
+                                .map(|r| Label::Replacement.of(lang, r)),
+                        );
+                    }
+                    ModelChange::ShutdownSoon {
+                        shutdown_on,
+                        replacement,
+                        requests,
+                        ..
+                    } => {
+                        out.push(Label::ShutsDown.of(lang, lang.date(*shutdown_on)));
+                        out.extend(
+                            replacement
+                                .as_deref()
+                                .map(|r| Label::Replacement.of(lang, r)),
+                        );
+                        out.push(
+                            Label::RequestsThisWeek.of(lang, lang.number(&requests.to_string())),
+                        );
+                    }
+                    ModelChange::Moved { replacement, .. } => {
+                        out.push(Label::Replacement.of(lang, replacement.as_str()));
+                    }
+                    ModelChange::Delisted => {}
                 }
+                out
+            }
+            Fact::Line {
+                provider,
+                project,
+                line,
+                change,
+            } => {
+                let (from, to, prices) = match change {
+                    LineChange::Moved {
+                        from, to, prices, ..
+                    }
+                    | LineChange::Available { from, to, prices } => (from, to, prices),
+                };
+                let mut out = vec![
+                    Label::Project.of(lang, *project),
+                    Label::Provider.of(lang, *provider),
+                    Label::Line.of(lang, *line),
+                    Label::Before.of(lang, from.as_str()),
+                    Label::After.of(lang, to.as_str()),
+                ];
+                out.extend(prices.iter().map(|p| p.detail(lang)));
                 out
             }
             _ => Vec::new(),
@@ -933,8 +1089,21 @@ impl Fact<'_> {
                         "A platform key was rotated".to_owned(),
                         format!("rotated the platform key {name}"),
                     ),
+                    Security::SharedLinkCreated { name, public: true } => (
+                        "Usage was shared with anyone who has the link".to_owned(),
+                        format!("shared {name} with anyone who has the link"),
+                    ),
+                    Security::SharedLinkCreated { name, public: false } => (
+                        "Usage was shared with the organization".to_owned(),
+                        format!("shared {name} with the organization's members"),
+                    ),
                 };
-                w(heading, format!("{} {what}.", who(by)), "Open security")
+                let open = if matches!(change, Security::SharedLinkCreated { .. }) {
+                    "Open shared links"
+                } else {
+                    "Open security"
+                };
+                w(heading, format!("{} {what}.", who(by)), open)
             }
             Fact::Member { person, change } => {
                 let (heading, sentence) = match change {
@@ -1001,6 +1170,20 @@ impl Fact<'_> {
                         ),
                         "Open provider keys",
                     ),
+                    ProviderKey::SpendLimitReached { .. } => w(
+                        format!("{name} reached its spend limit"),
+                        format!(
+                            "{provider} refused requests billed to {shown}; its admins can raise the limit there."
+                        ),
+                        "Open provider keys",
+                    ),
+                    ProviderKey::Unlinked { .. } => w(
+                        format!("{provider} link {name} ended"),
+                        format!(
+                            "{provider} no longer bills {shown}; link the organization again under Providers."
+                        ),
+                        "Open provider keys",
+                    ),
                 }
             }
             Fact::Model {
@@ -1018,6 +1201,70 @@ impl Fact<'_> {
                     format!("{model} changed its price"),
                     format!("{provider} changed the price of {model}; costs from now on use it."),
                     "Open models",
+                ),
+                ModelChange::Deprecated {
+                    shutdown_on,
+                    replacement,
+                } => {
+                    let to = replacement.as_deref().unwrap_or("another model");
+                    let sentence = match shutdown_on {
+                        Some(d) => format!(
+                            "{provider} shuts {model} down on {}; move {project} to {to} before then.",
+                            Locale::En.date(*d)
+                        ),
+                        None => format!(
+                            "{provider} deprecated {model}; requests from {project} keep working for now."
+                        ),
+                    };
+                    w(format!("{model} is deprecated"), sentence, "Open models")
+                }
+                ModelChange::ShutdownSoon {
+                    days,
+                    replacement,
+                    requests,
+                    ..
+                } => {
+                    let to = replacement.as_deref().unwrap_or("another model");
+                    let heading = match days {
+                        ..=0 => format!("{model} shuts down today"),
+                        1 => format!("{model} shuts down tomorrow"),
+                        n => format!("{model} shuts down in {n} days"),
+                    };
+                    w(
+                        heading,
+                        format!(
+                            "{project} called {model} {} times in the last 7 days; move it to {to}.",
+                            Locale::En.number(&requests.to_string())
+                        ),
+                        "Open models",
+                    )
+                }
+                ModelChange::Moved {
+                    replacement,
+                    aliases,
+                } => w(
+                    format!("{model} was moved to {replacement}"),
+                    format!(
+                        "{model} shut down, so Kaeso moved {aliases} aliases of {project} to {replacement}."
+                    ),
+                    "Open models",
+                ),
+            },
+            Fact::Line {
+                project,
+                line,
+                change,
+                ..
+            } => match change {
+                LineChange::Moved { to, .. } => w(
+                    format!("{line} moved to {to}"),
+                    format!("Requests of {project} to {line} go to {to} from now on."),
+                    "Open the line",
+                ),
+                LineChange::Available { to, .. } => w(
+                    format!("{line} can move to {to}"),
+                    format!("{project} asks before {line} moves; move it or keep it as it is."),
+                    "Open the line",
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
@@ -1086,6 +1333,12 @@ impl Fact<'_> {
                     Instance::OrgCreated(name) => (
                         format!("{name} was created"),
                         format!("{} created the organization {name}.", who(by)),
+                    ),
+                    Instance::LinkedBillingSetup(provider) => (
+                        format!("Linked billing for {provider} needs setup"),
+                        format!(
+                            "Linked keys of {provider} can't pay until its OAuth app works again; check it."
+                        ),
                     ),
                 };
                 w(heading, sentence, "Open instance")
@@ -1277,8 +1530,21 @@ impl Fact<'_> {
                         "Plattformschlüssel rotiert".to_owned(),
                         format!("hat den Plattformschlüssel {name} rotiert"),
                     ),
+                    Security::SharedLinkCreated { name, public: true } => (
+                        "Nutzung für alle mit dem Link geteilt".to_owned(),
+                        format!("hat {name} mit allen geteilt, die den Link haben"),
+                    ),
+                    Security::SharedLinkCreated { name, public: false } => (
+                        "Nutzung mit der Organisation geteilt".to_owned(),
+                        format!("hat {name} mit den Mitgliedern der Organisation geteilt"),
+                    ),
                 };
-                w(heading, format!("{} {what}.", who(by)), "Sicherheit öffnen")
+                let open = if matches!(change, Security::SharedLinkCreated { .. }) {
+                    "Geteilte Links öffnen"
+                } else {
+                    "Sicherheit öffnen"
+                };
+                w(heading, format!("{} {what}.", who(by)), open)
             }
             Fact::Member { person, change } => {
                 let (heading, sentence) = match change {
@@ -1345,6 +1611,20 @@ impl Fact<'_> {
                         ),
                         "Anbieter-Schlüssel öffnen",
                     ),
+                    ProviderKey::SpendLimitReached { .. } => w(
+                        format!("{name} hat das Ausgabenlimit erreicht"),
+                        format!(
+                            "{provider} lehnt über {shown} abgerechnete Anfragen ab; dessen Admins können das Limit dort erhöhen."
+                        ),
+                        "Anbieter-Schlüssel öffnen",
+                    ),
+                    ProviderKey::Unlinked { .. } => w(
+                        format!("{provider}-Verknüpfung {name} ist beendet"),
+                        format!(
+                            "{provider} rechnet nicht mehr über {shown} ab; verknüpfen Sie die Organisation unter Anbieter erneut."
+                        ),
+                        "Anbieter-Schlüssel öffnen",
+                    ),
                 }
             }
             Fact::Model {
@@ -1366,6 +1646,70 @@ impl Fact<'_> {
                         "{provider} hat den Preis von {model} geändert; Kosten ab jetzt nutzen ihn."
                     ),
                     "Modelle öffnen",
+                ),
+                ModelChange::Deprecated {
+                    shutdown_on,
+                    replacement,
+                } => {
+                    let to = replacement.as_deref().unwrap_or("ein anderes Modell");
+                    let sentence = match shutdown_on {
+                        Some(d) => format!(
+                            "{provider} schaltet {model} am {} ab; stellen Sie {project} bis dahin auf {to} um.",
+                            Locale::De.date(*d)
+                        ),
+                        None => format!(
+                            "{provider} hat {model} abgekündigt; Anfragen aus {project} funktionieren vorerst weiter."
+                        ),
+                    };
+                    w(format!("{model} wird abgekündigt"), sentence, "Modelle öffnen")
+                }
+                ModelChange::ShutdownSoon {
+                    days,
+                    replacement,
+                    requests,
+                    ..
+                } => {
+                    let to = replacement.as_deref().unwrap_or("ein anderes Modell");
+                    let heading = match days {
+                        ..=0 => format!("{model} wird heute abgeschaltet"),
+                        1 => format!("{model} wird morgen abgeschaltet"),
+                        n => format!("{model} wird in {n} Tagen abgeschaltet"),
+                    };
+                    w(
+                        heading,
+                        format!(
+                            "{project} hat {model} in 7 Tagen {}-mal aufgerufen; stellen Sie auf {to} um.",
+                            Locale::De.number(&requests.to_string())
+                        ),
+                        "Modelle öffnen",
+                    )
+                }
+                ModelChange::Moved {
+                    replacement,
+                    aliases,
+                } => w(
+                    format!("{model} wurde durch {replacement} ersetzt"),
+                    format!(
+                        "{model} ist abgeschaltet, daher hat Kaeso {aliases} Aliasse von {project} auf {replacement} umgestellt."
+                    ),
+                    "Modelle öffnen",
+                ),
+            },
+            Fact::Line {
+                project,
+                line,
+                change,
+                ..
+            } => match change {
+                LineChange::Moved { to, .. } => w(
+                    format!("{line} zeigt jetzt auf {to}"),
+                    format!("Anfragen von {project} an {line} gehen ab jetzt an {to}."),
+                    "Linie öffnen",
+                ),
+                LineChange::Available { to, .. } => w(
+                    format!("{line} kann auf {to} wechseln"),
+                    format!("{project} fragt, bevor {line} wechselt; wechseln Sie oder behalten Sie den Stand."),
+                    "Linie öffnen",
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
@@ -1444,6 +1788,12 @@ impl Fact<'_> {
                     Instance::OrgCreated(name) => (
                         format!("{name} wurde erstellt"),
                         format!("{} hat die Organisation {name} erstellt.", who(by)),
+                    ),
+                    Instance::LinkedBillingSetup(provider) => (
+                        format!("Verknüpfte Abrechnung für {provider} einrichten"),
+                        format!(
+                            "Verknüpfte Schlüssel von {provider} zahlen erst wieder, wenn die OAuth-App funktioniert; prüfen Sie sie."
+                        ),
                     ),
                 };
                 w(heading, sentence, "Instanz öffnen")
@@ -1624,8 +1974,24 @@ impl Fact<'_> {
                     Security::PlatformKeyRotated(name) => {
                         ("已轮换平台密钥".to_owned(), zh(&["轮换了平台密钥 ", name]))
                     }
+                    Security::SharedLinkCreated { name, public: true } => (
+                        "用量已分享给所有持有链接的人".to_owned(),
+                        zh(&["将 ", name, " 分享给了所有持有链接的人"]),
+                    ),
+                    Security::SharedLinkCreated {
+                        name,
+                        public: false,
+                    } => (
+                        "用量已分享给组织".to_owned(),
+                        zh(&["将 ", name, " 分享给了组织成员"]),
+                    ),
                 };
-                w(heading, zh(&[&who(by), &what, "。"]), "打开安全设置")
+                let open = if matches!(change, Security::SharedLinkCreated { .. }) {
+                    "打开共享链接"
+                } else {
+                    "打开安全设置"
+                };
+                w(heading, zh(&[&who(by), &what, "。"]), open)
             }
             Fact::Member { person, change } => {
                 let (heading, sentence) = match change {
@@ -1686,6 +2052,26 @@ impl Fact<'_> {
                         zh(&[provider, "结束了账户", &shown, "的会话；请重新登录。"]),
                         "打开服务商密钥",
                     ),
+                    ProviderKey::SpendLimitReached { .. } => w(
+                        zh(&[name, "已达到支出上限"]),
+                        zh(&[
+                            provider,
+                            "拒绝了由",
+                            &shown,
+                            "付费的请求；其管理员可以在那里提高上限。",
+                        ]),
+                        "打开服务商密钥",
+                    ),
+                    ProviderKey::Unlinked { .. } => w(
+                        zh(&[provider, "关联", name, "已结束"]),
+                        zh(&[
+                            provider,
+                            "不再向",
+                            &shown,
+                            "计费；请在“服务商”中重新关联该组织。",
+                        ]),
+                        "打开服务商密钥",
+                    ),
                 }
             }
             Fact::Model {
@@ -1715,6 +2101,101 @@ impl Fact<'_> {
                         "的价格；此后的成本按新价格计算。",
                     ]),
                     "打开模型",
+                ),
+                ModelChange::Deprecated {
+                    shutdown_on,
+                    replacement,
+                } => {
+                    let to = replacement.as_deref().unwrap_or("其他模型");
+                    let sentence = match shutdown_on {
+                        Some(d) => zh(&[
+                            provider,
+                            "将于",
+                            &Locale::ZhCn.date(*d),
+                            "停用",
+                            model,
+                            "；请在此之前将",
+                            project,
+                            "切换到",
+                            to,
+                            "。",
+                        ]),
+                        None => zh(&[
+                            provider,
+                            "已弃用",
+                            model,
+                            "；",
+                            project,
+                            "的请求暂时仍可正常使用。",
+                        ]),
+                    };
+                    w(zh(&[model, "已弃用"]), sentence, "打开模型")
+                }
+                ModelChange::ShutdownSoon {
+                    days,
+                    replacement,
+                    requests,
+                    ..
+                } => {
+                    let to = replacement.as_deref().unwrap_or("其他模型");
+                    let heading = match days {
+                        ..=0 => zh(&[model, "今天停用"]),
+                        1 => zh(&[model, "明天停用"]),
+                        n => zh(&[model, "将在", &n.to_string(), "天后停用"]),
+                    };
+                    w(
+                        heading,
+                        zh(&[
+                            project,
+                            "在最近 7 天内调用了",
+                            model,
+                            "共",
+                            &requests.to_string(),
+                            "次；请切换到",
+                            to,
+                            "。",
+                        ]),
+                        "打开模型",
+                    )
+                }
+                ModelChange::Moved {
+                    replacement,
+                    aliases,
+                } => w(
+                    zh(&[model, "已切换到", replacement]),
+                    zh(&[
+                        model,
+                        "已停用，Kaeso 已将",
+                        project,
+                        "的",
+                        &aliases.to_string(),
+                        "个别名切换到",
+                        replacement,
+                        "。",
+                    ]),
+                    "打开模型",
+                ),
+            },
+            Fact::Line {
+                project,
+                line,
+                change,
+                ..
+            } => match change {
+                LineChange::Moved { to, .. } => w(
+                    zh(&[line, "已切换到", to]),
+                    zh(&[project, "对", line, "的请求此后将发送到", to, "。"]),
+                    "打开系列",
+                ),
+                LineChange::Available { to, .. } => w(
+                    zh(&[line, "可以切换到", to]),
+                    zh(&[
+                        project,
+                        "会在",
+                        line,
+                        "切换前征求您的同意；请选择切换或保持不变。",
+                    ]),
+                    "打开系列",
                 ),
             },
             Fact::CostReport { month, total, .. } => w(
@@ -1781,6 +2262,13 @@ impl Fact<'_> {
                     Instance::OrgCreated(name) => {
                         (zh(&["已创建", name]), zh(&[&by, "创建了组织 ", name, "。"]))
                     }
+                    Instance::LinkedBillingSetup(provider) => (
+                        zh(&[provider, "的关联计费需要设置"]),
+                        zh(&[
+                            provider,
+                            "的关联密钥在其 OAuth 应用恢复正常前无法付费；请检查该应用。",
+                        ]),
+                    ),
                 };
                 w(heading, sentence, "打开实例")
             }
@@ -1970,4 +2458,47 @@ pub fn digest(lang: Locale, to: &str, items: &[DigestItem], open: &str, links: &
             .action(button, open)
             .footnote(footnote(lang, Because::Daily, links)),
     )
+}
+
+#[cfg(test)]
+mod shared_link_tests {
+    use super::*;
+
+    #[test]
+    fn a_shared_link_says_who_it_reaches_in_every_language() {
+        let fact = |public| Fact::OrgSecurity {
+            change: Security::SharedLinkCreated {
+                name: "October spend",
+                public,
+            },
+            by: Actor::Person("Ada"),
+        };
+        let words = fact(true).words(Locale::En);
+        assert_eq!(
+            words.heading,
+            "Usage was shared with anyone who has the link"
+        );
+        assert_eq!(
+            words.sentence,
+            "Ada shared October spend with anyone who has the link."
+        );
+        assert_eq!(words.button, "Open shared links");
+        assert_eq!(
+            fact(false).words(Locale::En).sentence,
+            "Ada shared October spend with the organization's members."
+        );
+        let de = fact(true).words(Locale::De);
+        assert_eq!(
+            de.sentence,
+            "Ada hat October spend mit allen geteilt, die den Link haben."
+        );
+        assert_eq!(de.button, "Geteilte Links öffnen");
+        let zh = fact(false).words(Locale::ZhCn);
+        assert_eq!(zh.heading, "用量已分享给组织");
+        assert_eq!(zh.button, "打开共享链接");
+        assert_eq!(
+            line(Locale::En, &fact(false)),
+            "Usage was shared with the organization"
+        );
+    }
 }

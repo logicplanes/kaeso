@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT credential_id FROM linked_billing_fallbacks WHERE org_id = $1 AND project_id = $2 AND provider = $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "credential_id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "linked_billing_fallbacks",
+            "name": "credential_id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "7cae99cffb395c36902d355dd2ba77b227416925de26c2487ae07720fe0084d9"
+}

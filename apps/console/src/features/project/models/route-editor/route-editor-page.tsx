@@ -8,7 +8,7 @@ import { api, data } from "~/api/client";
 import type { AliasView, CatalogueModelView, RouteStep } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
-import { aliasQuery, catalogueQuery } from "~/api/queries/models";
+import { aliasQuery, aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { useRequestLogs, useSession } from "~/auth/session";
@@ -51,7 +51,7 @@ import {
 import { useHistory } from "./history";
 import { AliasPanel, ConditionPanel, ModelPanel, SplitPanel, type FieldErrors, type InspectorContext } from "./inspector";
 import { moveLabel, type Names } from "./labels";
-import { RouteJsonDialog } from "./route-json";
+import { RouteChangesDialog, RouteJsonDialog } from "./route-json";
 import { pathIds, toneOf, useRouteSend, type Walked } from "./send";
 import { TestPanel, asSent, firstRequest, sentHeaders, useTrace, type TestMode, type TestRequest } from "./test-panel";
 import { START, canvasTree, stepName, type Outcome } from "./tree";
@@ -83,9 +83,25 @@ function outcomes(root: DraftStep, walked: readonly Walked[]): Map<string, Outco
   return out;
 }
 
-export function RouteEditorPage({ org, project, alias }: { org: string; project: string; alias?: string | undefined }) {
+/** The first free name for a copy of `name`: `name-copy`, then `name-copy-2` and on, within the
+ * 200 characters an alias name may have; alias names have no spaces. */
+export function copyName(name: string, taken: ReadonlySet<string>): string {
+  for (let n = 1; ; n++) {
+    const suffix = n === 1 ? "-copy" : `-copy-${n}`;
+    const candidate = `${name.slice(0, 200 - suffix.length)}${suffix}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+}
+
+export function RouteEditorPage({ org, project, alias, from }: { org: string; project: string; alias?: string | undefined; from?: string | undefined }) {
   const catalogue = useQuery(catalogueQuery(org, project));
   const one = useQuery({ ...aliasQuery(org, project, alias ?? ""), enabled: !!alias });
+  const source = useQuery({ ...aliasQuery(org, project, from ?? ""), enabled: !!from, meta: { quiet: true } });
+  const all = useQuery({ ...aliasesQuery(org, project), enabled: !!from });
+  const lost = !!from && source.isError;
+  useEffect(() => {
+    if (lost) toast.warning(t("models.route.copyGone", "That alias no longer exists; start a new one instead"));
+  }, [lost]);
   const title = alias ? (one.data?.name ?? t("models.aliases", "Aliases")) : t("models.route.newAlias", "New alias");
   usePageTitle(title, common.models());
   if (catalogue.isError || one.isError)
@@ -96,7 +112,7 @@ export function RouteEditorPage({ org, project, alias }: { org: string; project:
         />
       </Frame>
     );
-  if (catalogue.isPending || (alias && one.isPending))
+  if (catalogue.isPending || (alias && one.isPending) || (from && !lost && (source.isPending || all.isPending)))
     return (
       <Frame org={org} project={project} title={title}>
         <div className="flex flex-1 items-center justify-center">
@@ -105,7 +121,9 @@ export function RouteEditorPage({ org, project, alias }: { org: string; project:
       </Frame>
     );
   const saved = one.data ? { id: one.data.id, name: one.data.name, route: one.data.route } : null;
-  return <Editor key={saved?.id ?? "new"} org={org} project={project} catalogue={catalogue.data} initial={saved} view={one.data} />;
+  // Without the list of aliases, the copy takes the first name and saving says if it is taken.
+  const copy = source.data ? { name: copyName(source.data.name, new Set((all.data ?? []).map((a) => a.name))), route: source.data.route } : null;
+  return <Editor key={saved?.id ?? "new"} org={org} project={project} catalogue={catalogue.data} initial={saved} copy={copy} view={one.data} />;
 }
 
 function Frame({ org, project, title, children }: { org: string; project: string; title: string; children: React.ReactNode }) {
@@ -145,12 +163,15 @@ function Editor({
   project,
   catalogue,
   initial,
+  copy,
   view,
 }: {
   org: string;
   project: string;
   catalogue: CatalogueModelView[];
   initial: Saved | null;
+  /** A new alias that starts with another's route, unsaved, without the template picker. */
+  copy: { name: string; route: RouteStep } | null;
   view: AliasView | undefined;
 }) {
   const navigate = useNavigate();
@@ -158,7 +179,8 @@ function Editor({
   const needs = useNeedsRight(org, project);
   const readOnly = !rights.has("models.manage");
   const canSeeAudit = rights.has("project.audit_log.view");
-  const history = useHistory<Doc>(() => ({ name: initial?.name ?? "", root: initial ? fromRoute(initial.route) : emptyModel() }));
+  const start = initial ?? copy;
+  const history = useHistory<Doc>(() => ({ name: start?.name ?? "", root: start ? fromRoute(start.route) : emptyModel() }));
   const doc = history.present;
   const [saved, setSaved] = useState<Saved | null>(initial);
   const route = useMemo(() => toRoute(doc.root), [doc.root]);
@@ -171,8 +193,9 @@ function Editor({
   const me = useSession().user.id;
   const logs = useRequestLogs();
   const sender = useRouteSend(org, project);
-  const [started, setStarted] = useState<{ kind: Template; root: DraftStep } | null>(() => (initial ? null : { kind: "single", root: history.present.root }));
+  const [started, setStarted] = useState<{ kind: Template; root: DraftStep } | null>(() => (start ? null : { kind: "single", root: history.present.root }));
   const [json, setJson] = useState(false);
+  const [changes, setChanges] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [nameError, setNameError] = useState<string>();
   const [stepErrors, setStepErrors] = useState<FieldErrors>(new Map());
@@ -485,7 +508,7 @@ function Editor({
       readOnly={readOnly}
       shadows={shadows}
       problems={blockingProblems}
-      {...(!saved && !readOnly
+      {...(!saved && !copy && !readOnly
         ? {
             templates: {
               value: started && started.root === doc.root ? started.kind : null,
@@ -550,7 +573,33 @@ function Editor({
                 {t("models.route.seeRequests", "See its requests")}
               </Button>
             )}
+            {saved && !readOnly && (
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!dirty}
+                {...(dirty ? {} : { disabledReason: t("models.route.nothingToSave", "Nothing has changed since the last save.") })}
+                onClick={() => setChanges(true)}
+              >
+                {t("models.route.changes", "Changes")}
+              </Button>
+            )}
             <Button size="sm" icon={icons.code} variant="ghost" aria-label={t("models.route.showJson", "Show as JSON")} onClick={() => setJson(true)} />
+            {saved && !readOnly && (
+              <Button
+                size="sm"
+                icon={icons.copy}
+                variant="ghost"
+                aria-label={t("models.alias.duplicate", "Duplicate")}
+                onClick={() =>
+                  void navigate({
+                    to: "/orgs/$org/projects/$project/models/aliases/$alias",
+                    params: { org, project, alias: "new" },
+                    search: { from: saved.id },
+                  })
+                }
+              />
+            )}
             {saved && !readOnly && (
               <Button size="sm" icon={icons.delete} variant="ghost" aria-label={t("models.alias.delete", "Delete alias")} onClick={() => setDeleting(true)} />
             )}
@@ -599,6 +648,14 @@ function Editor({
         </FlowWorkspace>
       )}
       <RouteJsonDialog open={json} onOpenChange={setJson} name={doc.name.trim()} route={route} />
+      {saved && (
+        <RouteChangesDialog
+          open={changes}
+          onOpenChange={setChanges}
+          saved={{ name: saved.name, route: saved.route }}
+          draft={{ name: doc.name.trim(), route }}
+        />
+      )}
       {saved && view && (
         <DialogScope open={deleting}>
           <DeleteAliasDialog

@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { OrgProjectsPage, type OrgProjectsSearch } from "~/features/org-home/org-projects-page";
 
-const projectsSearch = (s: Record<string, unknown>): OrgProjectsSearch => (s.create === true || s.create === "true" ? { create: true } : {});
+const projectsSearch = (s: Record<string, unknown>): OrgProjectsSearch => ({
+  ...(s.create === true || s.create === "true" ? { create: true } : {}),
+  ...(s.sort === "requests" || s.sort === "cost" ? { sort: s.sort } : {}),
+});
 
 export const Route = createFileRoute("/_app/orgs/$org/projects/")({ validateSearch: projectsSearch, component: Projects });
 

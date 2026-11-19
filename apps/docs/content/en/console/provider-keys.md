@@ -20,7 +20,7 @@ Each action on provider keys needs its own right:
 | Action | Right |
 | --- | --- |
 | Add a key | **Add provider keys** |
-| Replace, rename or assign a key, or make it the default | **Change provider keys** |
+| Test, replace, rename or assign a key, or make it the default | **Change provider keys** |
 | Delete a key | **Delete provider keys** |
 
 Every action except deleting also needs a recent sign-in.
@@ -73,6 +73,10 @@ For Azure, a provider key belongs to one Azure OpenAI or Foundry resource and na
 Kaeso calls the resource's OpenAI v1 API, `{endpoint}/openai/v1`. A request names a deployment of the resource: Kaeso sends the model's id, or its **Provider model ID** when the deployment has another name ([change a model's values](models-and-aliases.md#change-a-models-values)).
 
 The list shows the endpoint's host beside the key, and for a service principal its tenant and the client ID's last four characters. To move the key to another resource, choose **Edit** in its menu and give the other resource's endpoint; a new key of the same resource keeps the endpoint.
+
+## Link your organization instead of a key
+
+For a provider that offers [linked billing](linked-billing.md), such as Anthropic, a provider key can be a link to your organization's own account at the provider. The provider then bills that account for your requests, and no API key leaves it. Choose **Claude organization** instead of an API key under **Add provider key**; [linked billing](linked-billing.md) has every step, and what an instance admin sets up first.
 
 ## Sign in with a ChatGPT account
 
@@ -128,11 +132,13 @@ The list shows each key's name, its last four characters, the projects that use 
 
 | Action | What it does |
 | --- | --- |
+| Test key | Asks the provider whether it takes the key, by reading its model list with it: it says the provider takes the key, and how many models it lists for it, or shows the provider's refusal. Nothing is billed. A provider that lists no models where the key calls it, such as Amazon Bedrock, can't tell; only a model request confirms the key |
 | Replace | Takes a new secret for the same key, for example after you rotated it at the provider; for a service account key, a new JSON key file |
 | Sign in again | For an account: signs the same account in again, for example after it shows **Signed out** or **No API access**, and ends its previous session at OpenAI or xAI |
 | Manage usage | For a ChatGPT account: opens ChatGPT's usage settings, where its owner reviews and limits what Kaeso uses |
+| Link again, Who pays when it can't, Set spend limit | For a linked key: see [linked billing](linked-billing.md) |
 | Rename | Changes the name the console shows. For a service account key it's **Edit**, which also changes the location; for a Cloudflare AI Gateway key, **Edit** also changes the account and the gateway, and for an Amazon Bedrock key the region |
-| Delete | Removes the key. Its projects without another key of the provider use the default again. For an account, Kaeso also ends its session at OpenAI or xAI |
+| Delete | Removes the key. Its projects without another key of the provider use the default again. For an account, Kaeso also ends its session at OpenAI or xAI. For a linked key it's **Unlink**, which ends the link at the provider first |
 
 An account shows **Signed out** when the provider has ended its session, for example after its owner disconnected Kaeso in ChatGPT. A Grok account shows **No API access** when xAI refuses its plan. In both cases, its requests fail until someone with **Change provider keys** chooses **Sign in again**.
 
@@ -145,5 +151,6 @@ When you delete the default, the provider's most recently added other key become
 
 ## Next steps
 
+- [Linked billing](linked-billing.md): Let your organization pay a provider through its own account there.
 - [Models and aliases](models-and-aliases.md): Add the models a project may call.
 - [API keys](api-keys.md): Create the keys your apps call Kaeso with.

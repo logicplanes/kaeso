@@ -72,7 +72,7 @@ function ProjectArea({ org, project }: { org: string; project: string }) {
             const href = p.path ? `${base}/${p.path}` : base;
             const active = p.path ? pathname === href || pathname.startsWith(`${href}/`) : pathname === base;
             return (
-              <Sidebar.Item key={p.id} icon={p.icon} href={href} active={active} {...(p.shortcut ? { shortcut: p.shortcut } : {})}>
+              <Sidebar.Item key={p.id} icon={p.icon} href={href} active={active} shortcut={[["g"], [p.key]]}>
                 {p.label()}
               </Sidebar.Item>
             );

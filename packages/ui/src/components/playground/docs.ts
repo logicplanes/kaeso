@@ -256,6 +256,7 @@ export const docs = {
       'A person\'s turn: their prompt in a bubble on a quiet fill at the end of the line, so it reads apart from the response that starts at the other edge. A long prompt shows its first lines until "Show all", a disclosure button under them.',
     props: {
       "aria-label": "The message's accessible name. Defaults to \"Prompt\" in the provider's language.",
+      actions: 'Actions on the prompt, such as Edit, in a row under its bubble after "Show all".',
       attachments: "The files sent with the prompt, above its bubble: images as thumbnails, other files by name.",
       children: "The prompt as it was written: plain text, line breaks kept.",
       maxLines: 'Lines shown before "Show all" (4 by default; 0 shows everything).',

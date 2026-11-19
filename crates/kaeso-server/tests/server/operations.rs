@@ -704,3 +704,33 @@ async fn http2_clients_with_prior_knowledge_are_served() {
     assert_eq!(reply.text().await.unwrap(), "hi");
     shutdown.cancel();
 }
+
+#[tokio::test]
+async fn the_operator_sends_a_test_email_and_reads_the_mail_servers_answer() {
+    let s = TestServices::start().await;
+    let config = common::config(&s, &[]);
+    let mail = kaeso_mail::MemorySink::new();
+    kaeso_server::serve::send_test_email_with(
+        &config,
+        kaeso_mail::Transport::Memory(mail.clone()),
+        "ops@example.com",
+    )
+    .await
+    .unwrap();
+    let sent = mail.to("ops@example.com");
+    assert_eq!(sent.len(), 1);
+    assert!(
+        sent[0].text.contains("kaeso mail test command"),
+        "{}",
+        sent[0].text
+    );
+    mail.fail_next("down@example.com", 1);
+    let refused = kaeso_server::serve::send_test_email_with(
+        &config,
+        kaeso_mail::Transport::Memory(mail.clone()),
+        "down@example.com",
+    )
+    .await;
+    assert!(refused.is_err());
+    s.cleanup().await;
+}

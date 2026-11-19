@@ -132,6 +132,8 @@ pub struct EntryRow {
     pub created_at: OffsetDateTime,
     pub updated_at: OffsetDateTime,
     pub revision: i64,
+    /// For a model line: the provider's model it calls now.
+    pub line_target: Option<String>,
 }
 
 impl EntryRow {
@@ -166,6 +168,7 @@ impl EntryRow {
             last_known,
             availability,
             availability_checked_at: self.availability_checked_at,
+            target: self.line_target.clone(),
         })
     }
 }
@@ -210,7 +213,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models WHERE project_id = $1 AND id = $2",
         project_id,
         id
@@ -227,7 +230,7 @@ pub async fn in_org(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models WHERE org_id = $1 AND id = $2",
         org_id,
         id
@@ -244,7 +247,7 @@ pub async fn get_for_update(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models \
          WHERE project_id = $1 AND id = $2 FOR UPDATE",
         project_id,
@@ -258,7 +261,7 @@ pub async fn list(db: impl PgExecutor<'_>, project_id: Uuid) -> Result<Vec<Entry
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models WHERE project_id = $1 \
          ORDER BY provider, model_id",
         project_id
@@ -310,9 +313,9 @@ pub async fn of_model(
     Ok(sqlx::query_as!(
         EntryRow,
         "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, \
-         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision \
+         availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target \
          FROM catalogue_models \
-         WHERE provider = $1 AND model_id = $2 AND NOT custom",
+         WHERE provider = $1 AND model_id = $2 AND NOT custom AND line_target IS NULL",
         provider,
         model_id
     )
@@ -325,7 +328,7 @@ pub async fn listed_models(
 ) -> Result<Vec<(String, String, bool)>, StoreError> {
     let rows = sqlx::query!(
         "SELECT provider, model_id, bool_or(delisted_at IS NOT NULL) AS \"delisted!\" FROM catalogue_models \
-         WHERE NOT custom GROUP BY provider, model_id"
+         WHERE NOT custom AND line_target IS NULL GROUP BY provider, model_id"
     )
     .fetch_all(db)
     .await?;
@@ -765,6 +768,8 @@ pub struct ProjectModels {
     /// The project's retries: how many times a request that names a model, or an alias step
     /// that sets none, tries the model again after a short-lived failure.
     pub retries: u8,
+    /// Whether requests that name a retired model are answered by its replacement.
+    pub serve_replacement: bool,
 }
 
 #[derive(Deserialize)]
@@ -780,6 +785,8 @@ struct Stored {
     providers: OrgProviders,
     #[serde(default)]
     retries: u8,
+    #[serde(default)]
+    serve_replacement: bool,
 }
 
 impl From<Stored> for ProjectModels {
@@ -792,13 +799,14 @@ impl From<Stored> for ProjectModels {
             keys: s.keys,
             open: s.open,
             retries: s.retries,
+            serve_replacement: s.serve_replacement,
         }
     }
 }
 
 impl Serialize for ProjectModels {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut out = serializer.serialize_struct("ProjectModels", 8)?;
+        let mut out = serializer.serialize_struct("ProjectModels", 9)?;
         out.serialize_field("entries", self.catalogue.entries())?;
         out.serialize_field("aliases", self.catalogue.aliases())?;
         out.serialize_field("users", &self.users)?;
@@ -807,6 +815,7 @@ impl Serialize for ProjectModels {
         out.serialize_field("open", &self.open)?;
         out.serialize_field("providers", &self.providers)?;
         out.serialize_field("retries", &self.retries)?;
+        out.serialize_field("serve_replacement", &self.serve_replacement)?;
         out.end()
     }
 }
@@ -840,10 +849,14 @@ pub async fn project_models(
         .fetch_optional(&mut *db)
         .await?
         .unwrap_or(0);
+    let serve_replacement = super::model_lifecycle::settings(&mut *db, project_id)
+        .await?
+        .serve_replacement;
     let mut out = ProjectModels {
         catalogue: Catalogue::new(entries, aliases),
         providers: OrgProviders::new(providers),
         retries: u8::try_from(retries).unwrap_or(0),
+        serve_replacement,
         ..ProjectModels::default()
     };
     let users = sqlx::query!(
@@ -949,6 +962,7 @@ mod tests {
             last_known: None,
             availability: None,
             availability_checked_at: None,
+            target: None,
         }
     }
 
@@ -986,6 +1000,7 @@ mod tests {
                 "open",
                 "providers",
                 "retries",
+                "serve_replacement",
                 "service_accounts",
                 "users"
             ]

@@ -211,6 +211,8 @@ rights!(
         LogsDelete = "logs.delete", Logs, "Delete logs", true, true, false, [LogsStorageView], "Delete the organization's logs for a time range.";
         UsageOrgView = "usage.org.view", UsageBilling, "View org usage", false, false, false, [], "See usage across all projects.";
         CostsOrgView = "costs.org.view", UsageBilling, "View org costs", false, false, false, [UsageOrgView], "See costs across all projects.";
+        UsageShare = "usage.share", UsageBilling, "Share usage", false, false, false, [], "Share read-only links to the usage, member stats and budgets one can see, and revoke one's own.";
+        UsageShareManage = "usage.share.manage", UsageBilling, "Manage shared links", true, false, false, [UsageShare], "See and revoke everyone's shared links, and choose who links may reach and for how long.";
         BillingView = "billing.view", UsageBilling, "View billing", false, false, true, [], "See plan, invoices and payment status (Kaeso Cloud).";
         BillingManage = "billing.manage", UsageBilling, "Manage billing", false, false, true, [BillingView], "Change the plan and payment method (Kaeso Cloud).";
         AuditLogView = "audit_log.view", Audit, "View audit log", false, false, false, [], "Read the organization's audit log.";
@@ -260,7 +262,7 @@ rights!(
 rights!(
     InstanceRight, view = InstanceSystemView {
         InstanceSystemView = "instance.system.view", Instance, "View the system", false, false, false, [], "See the system and its model data, the instance settings and the update status.";
-        InstanceSettingsManage = "instance.settings.manage", Instance, "Change instance settings", true, false, false, [], "Change general, mail, logging, time zone and account settings, and send a test email.";
+        InstanceSettingsManage = "instance.settings.manage", Instance, "Change instance settings", true, false, false, [], "Change general, mail, logging, time zone and account settings, send a test email, and fetch model data now.";
         InstanceUpdatesManage = "instance.updates.manage", Instance, "Manage updates", true, false, false, [], "Check for updates and change the update settings.";
         InstanceUpdatesApply = "instance.updates.apply", Instance, "Apply updates", true, false, false, [InstanceUpdatesManage], "Install a new version of Kaeso.";
         InstanceUsersView = "instance.users.view", Instance, "View users", false, false, false, [], "See every account of the instance and its organizations.";
@@ -268,6 +270,7 @@ rights!(
         InstanceOrgsView = "instance.orgs.view", Instance, "View organizations", false, false, false, [], "See every organization with its members, projects and usage.";
         InstanceOrgsManage = "instance.orgs.manage", Instance, "Manage organizations", true, false, false, [InstanceOrgsView], "Create and rename organizations, appoint owners and schedule or cancel their deletion.";
         InstanceAuditLogView = "instance.audit_log.view", Instance, "View instance audit log", false, false, false, [], "Read the instance audit log.";
+        InstanceAuditLogExport = "instance.audit_log.export", Instance, "Export instance audit log", false, false, false, [InstanceAuditLogView], "Export the instance audit log.";
     }
 );
 

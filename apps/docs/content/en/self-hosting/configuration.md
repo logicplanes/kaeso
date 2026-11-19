@@ -172,6 +172,14 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | text | `auto` | How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration of at least 5 minutes, such as `6h`. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | text | — | Comma-separated keys to trust besides KPMR's built-in one, each `<key id>:<base64 Ed25519 public key>`, for a registry of your own; a catalogue whose signature no trusted key verifies is refused. |
 
+### Exchange rates
+
+The gateway fetches the European Central Bank's reference rates for [currencies](../concepts/currencies.md) other than US dollars. Instance admins turn the fetch off in the console.
+
+| Variable<br>TOML key | Type | Default | What it does |
+| --- | --- | --- | --- |
+| `KAESO_EXCHANGE_RATES_URL`<br>`exchange_rates.url` | text | `https://www.ecb.europa.eu/stats/eurofxref/` | The folder the ECB's euro reference rates are fetched from, the ECB's own or a mirror holding `eurofxref-daily.xml` and `eurofxref-hist-90d.xml`: `https`, or `http` on localhost, ending in `/`. |
+
 ### Updates
 
 `updates.channel` and `updates.mode` only seed a new install. After that, instance admins change them under **Instance** › **Updates** ([upgrades](upgrades.md)). `updates.check` is read on every check.

@@ -1,4 +1,5 @@
 pub mod agents;
+pub mod linked_billing;
 pub mod orgs;
 pub mod settings;
 pub mod system;
@@ -28,7 +29,10 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(i(InstanceUsersView), routes!(users::list)))
         .routes(s.route(i(InstanceUsersView), routes!(users::get)))
         .routes(s.route(i(InstanceUsersView), routes!(users::orgs)))
+        .routes(s.route(i(InstanceUsersView), routes!(users::invites)))
         .routes(s.route(i(InstanceUsersManage), routes!(users::invite)))
+        .routes(s.route(i(InstanceUsersManage), routes!(users::resend_invite)))
+        .routes(s.route(i(InstanceUsersManage), routes!(users::revoke_invite)))
         .routes(s.route(i(InstanceUsersManage), routes!(users::deactivate)))
         .routes(s.route(i(InstanceUsersManage), routes!(users::reactivate)))
         .routes(s.route(a, routes!(users::delete)))
@@ -51,6 +55,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(a, routes!(agents::set)))
         .routes(s.route(i(InstanceSettingsManage), routes!(settings::test_email)))
         .routes(s.route(i(InstanceSystemView), routes!(system::get)))
+        .routes(s.route(i(InstanceSettingsManage), routes!(system::kpmr_sync)))
         .routes(s.route(i(InstanceSystemView), routes!(updates::get)))
         .routes(s.route(i(InstanceUpdatesManage), routes!(updates::check)))
         .routes(s.route(i(InstanceUpdatesManage), routes!(updates::settings)))
@@ -59,8 +64,36 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(i(InstanceSystemView), routes!(updates::job)))
         .routes(s.route(i(InstanceAuditLogView), routes!(audit_list)))
         .routes(s.route(i(InstanceAuditLogView), routes!(audit_get)))
+        .routes(s.route(i(InstanceAuditLogExport), routes!(audit_export)))
         .routes(s.route(i(InstanceOrgsView), routes!(orgs::projects_list)))
         .routes(s.route(i(InstanceOrgsView), routes!(orgs::usage)))
+        .routes(s.route(i(InstanceSystemView), routes!(linked_billing::list)))
+        .routes(s.route(i(InstanceSettingsManage), routes!(linked_billing::set, linked_billing::delete)))
+        .routes(s.route(i(InstanceSettingsManage), routes!(linked_billing::check)))
+        .routes(s.route(Access::Public, routes!(linked_billing::discovery)))
+        .routes(s.route(Access::Public, routes!(linked_billing::jwks)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/instance/audit-log/export",
+    summary = "The instance audit log as JSON Lines (one event per line, newest first).",
+    tag = "instance",
+    params(AuditFilter),
+    responses((status = 200, description = "JSON Lines of audit events.", content_type = "application/x-ndjson", body = AuditEventView))
+)]
+pub async fn audit_export(
+    State(state): State<AppState>,
+    ctx: super::access::Ctx,
+    Query(filter): Query<AuditFilter>,
+) -> ApiResult<axum::response::Response> {
+    audit_log::check_range(&filter)?;
+    ctx.audit(None, super::audit::Action::AuditLogExport)
+        .write(&mut *state.pg.acquire().await?)
+        .await?;
+    // No email when it finishes: the export-finished notice belongs to an organization, and
+    // the console downloads the file while the admin waits.
+    audit_log::export(state.pg.clone(), None, filter, async {})
 }
 
 #[utoipa::path(

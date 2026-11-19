@@ -31,5 +31,10 @@
   "limits.whatHint": "速率限制会拒绝超出的请求；预算用尽后拒绝请求或发出提醒。",
   "limits.whatTitle": "设置什么限额？",
   "limits.whoHint": "请求须通过其密钥、成员和项目的限额。",
-  "limits.whoTitle": "适用于谁？"
+  "limits.whoTitle": "适用于谁？",
+  "limits.copyTo": "复制到…",
+  "limits.copyTitle": "复制限额",
+  "limits.sort": "排序",
+  "limits.sortLevel": "层级",
+  "limits.sortUsed": "用量最高"
 }

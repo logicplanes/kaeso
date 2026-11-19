@@ -1,0 +1,26 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] gpt-4o is deprecated
+
+gpt-4o is deprecated
+
+Acme / Checkout
+
+OpenAI shuts gpt-4o down on 30 Nov 2026; move Checkout to gpt-5.5 before then.
+
+Project: Checkout
+Provider: OpenAI
+Model: gpt-4o
+Shuts down: 30 Nov 2026
+Replacement: gpt-5.5
+
+Open models:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you hold the right “View models”.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

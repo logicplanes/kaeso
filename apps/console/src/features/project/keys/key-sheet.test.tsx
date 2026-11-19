@@ -22,6 +22,9 @@ function keyApi(key: KeyView): void {
   on("POST", "me/keys/:key/disable", act("disabled"));
   on("POST", "me/keys/:key/enable", act("active"));
   on("POST", "me/keys/:key/archive", act("archived"));
+  const rename = ({ body }: { body: { name: string } }) => (current = { ...current, name: body.name });
+  on("PATCH", KEY, rename);
+  on("PATCH", "me/keys/:key", rename);
 }
 
 describe("KeySheet", () => {
@@ -190,6 +193,47 @@ describe("KeySheet", () => {
     expect(await notifications().findByText("Key archived")).toBeInTheDocument();
     expect(requests("POST", `${KEY}/archive`)).toHaveLength(1);
     await waitFor(() => expect(router.state.location.search).toEqual({}));
+  });
+
+  it("renames a key, through the person's own endpoint for their own key", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet();
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rename" }));
+    const dialog = await screen.findByRole("dialog", { name: "Rename checkout-web" });
+    expect(dialog).toHaveTextContent("Its secret keeps working; only the name changes.");
+    const save = within(dialog).getByRole("button", { name: "Rename" });
+    await hoverReason(user, save, "Enter a new name");
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await user.clear(name);
+    await hoverReason(user, save, "Give the key a name");
+    await user.type(name, "  support-bot ");
+    await user.click(save);
+    expect(await notifications().findByText("Renamed to support-bot")).toBeInTheDocument();
+    expect(requests("PATCH", KEY).map((r) => r.body)).toEqual([{ name: "support-bot" }]);
+    expect(await sheet("support-bot")).toBeInTheDocument();
+  });
+
+  it("renames an own key through /me when the person may manage only their own keys", async () => {
+    signedIn({ projectRights: without("keys.all.manage") });
+    projectData({ keys: [apiKey()] });
+    keyApi(apiKey());
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    await sheet();
+    await user.click(await screen.findByRole("button", { name: "Key actions" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Rename" }));
+    const dialog = await screen.findByRole("dialog", { name: "Rename checkout-web" });
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await user.clear(name);
+    await user.type(name, "mine{Enter}");
+    expect(await notifications().findByText("Renamed to mine")).toBeInTheDocument();
+    expect(requests("PATCH", "me/keys/:key").map((r) => r.body)).toEqual([{ name: "mine" }]);
+    expect(requests("PATCH", KEY)).toHaveLength(0);
   });
 
   it("manages an own key through the person's own endpoints", async () => {

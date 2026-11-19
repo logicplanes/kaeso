@@ -55,6 +55,31 @@ function themeInit(): Plugin {
   };
 }
 
+// A shared link's page names its preview image in Open Graph tags, so chats and posts show it. The console's
+// Caddy fills in the address from the request when it serves share.html (deploy/console/Caddyfile).
+const SHARE_META =
+  '<meta name="robots" content="noindex, nofollow" /><meta property="og:type" content="website" /><meta property="og:site_name" content="Kaeso" />' +
+  '<meta property="og:title" content="Usage shared from Kaeso" /><meta name="twitter:card" content="summary_large_image" />' +
+  '{{$proto := .Req.Header.Get "X-Forwarded-Proto"}}{{if not $proto}}{{$proto = "https"}}{{end}}' +
+  '{{$image := printf "%s://%s/platform/v1/share/%s/image.png" $proto .Req.Host (placeholder "http.regexp.share.1")}}' +
+  '<meta property="og:image" content="{{html $image}}" /><meta name="twitter:image" content="{{html $image}}" />';
+
+function sharePreview(): Plugin {
+  return {
+    name: "kaeso-share-preview",
+    apply: "build",
+    enforce: "post",
+    generateBundle: {
+      order: "post",
+      handler(_options, bundle) {
+        const index = bundle["index.html"];
+        if (index?.type !== "asset") throw new Error("kaeso-share-preview: the build has no index.html to copy for shared links");
+        this.emitFile({ type: "asset", fileName: "share.html", source: String(index.source).replace("</head>", `${SHARE_META}</head>`) });
+      },
+    },
+  };
+}
+
 function fontPreload(): Plugin {
   const name = "inter-latin-opsz-normal";
   let root = process.cwd();
@@ -203,6 +228,7 @@ export default defineConfig({
     routePreloads(),
     themeInit(),
     fontPreload(),
+    sharePreview(),
     tanstackRouter({
       target: "react",
       autoCodeSplitting: true,

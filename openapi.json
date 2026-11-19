@@ -1487,6 +1487,126 @@
         "x-kaeso-access": "right:instance.audit_log.view"
       }
     },
+    "/platform/v1/instance/audit-log/export": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The instance audit log as JSON Lines (one event per line, newest first).",
+        "description": "**Right:** `instance.audit_log.export`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "getInstanceAuditLogExport",
+        "parameters": [
+          {
+            "name": "actor",
+            "in": "query",
+            "description": "Only events by this user (`usr_…`).",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UserId"
+            }
+          },
+          {
+            "name": "action",
+            "in": "query",
+            "description": "Only actions starting with this, e.g. `project.` or `member.remove`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "target",
+            "in": "query",
+            "description": "Only events about this target id.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "project",
+            "in": "query",
+            "description": "Only events about this project (`proj_…`); always the project of the\npath in a project's audit log.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "by_agents",
+            "in": "query",
+            "description": "Only events done by agents (`true`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "description": "Not before this time (RFC 3339).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "description": "Before this time (RFC 3339).",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JSON Lines of audit events.",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditEventView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.audit_log.export"
+      }
+    },
     "/platform/v1/instance/audit-log/{event}": {
       "get": {
         "tags": [
@@ -1549,6 +1669,312 @@
           }
         ],
         "x-kaeso-access": "right:instance.audit_log.view"
+      }
+    },
+    "/platform/v1/instance/kpmr/sync": {
+      "post": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Fetch the model data from KPMR now, as the scheduled sync does.",
+        "description": "**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "postInstanceKpmrSync",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KpmrSyncView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.settings.manage"
+      }
+    },
+    "/platform/v1/instance/linked-billing": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The providers whose organizations can pay through linked billing, and the\ninstall's app at each.",
+        "description": "**Right:** `instance.system.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "getInstanceLinkedBilling",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LinkedBillingView"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.system.view"
+      }
+    },
+    "/platform/v1/instance/linked-billing/{provider}": {
+      "put": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Sets up or replaces the install's OAuth app for linked billing.",
+        "description": "Linked keys keep working while the client id stays the same. A new\nclient id is a new app, whose links the earlier keys don't have: they show\n`needs_setup` until they are linked again or the earlier app is set back.\n\n**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "putInstanceLinkedBillingProvider",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedBillingAppSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedBillingView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.settings.manage"
+      },
+      "delete": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Removes the install's OAuth app for linked billing.",
+        "description": "Every linked key of the provider shows `needs_setup` and stops paying\nuntil an app is set up again; the links themselves stay at the provider.\n\n**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "deleteInstanceLinkedBillingProvider",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.settings.manage"
+      }
+    },
+    "/platform/v1/instance/linked-billing/{provider}/check": {
+      "post": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Checks the install's OAuth app against the provider before anyone links.",
+        "description": "Gets a token for the app's operator service account, keeps one user\nprofile of its own for checks, and makes a link request with the install's\nredirect URI, which nobody approves: a wrong client id, audience or issuer, a\nredirect URI the app doesn't list, or a missing scope shows as `check_problem`.\n\n**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "postInstanceLinkedBillingProviderCheck",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProviderId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedBillingView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.settings.manage"
       }
     },
     "/platform/v1/instance/orgs": {
@@ -3263,6 +3689,91 @@
       }
     },
     "/platform/v1/instance/users/invites": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The invitations to the install, without an org.",
+        "description": "**Right:** `instance.users.view`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "getInstanceUsersInvites",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items to return, 1 to 100. Default 20.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The `next_cursor` of the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pending",
+            "in": "query",
+            "description": "Only pending invites (default true).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_InviteView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.users.view"
+      },
       "post": {
         "tags": [
           "instance"
@@ -3307,6 +3818,128 @@
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.users.manage"
+      }
+    },
+    "/platform/v1/instance/users/invites/{invite}": {
+      "delete": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Revokes a pending invitation to the install; its link stops working.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "deleteInstanceUsersInvitesInvite",
+        "parameters": [
+          {
+            "name": "invite",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InviteId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:instance.users.manage"
+      }
+    },
+    "/platform/v1/instance/users/invites/{invite}/resend": {
+      "post": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "Sends an invitation to the install again, with a new link valid 21 days;\nthe old link stops working.",
+        "description": "**Right:** `instance.users.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "operationId": "postInstanceUsersInvitesInviteResend",
+        "parameters": [
+          {
+            "name": "invite",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/InviteId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -3828,6 +4461,98 @@
         "x-kaeso-access": "right:instance.users.manage"
       }
     },
+    "/platform/v1/linked-billing/oidc/.well-known/openid-configuration": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The OpenID discovery document of the issuer that signs the install's client\nassertions for linked billing.",
+        "description": "**Access:** public; no authentication.",
+        "operationId": "getLinkedBillingOidcWellKnownOpenidConfiguration",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
+    },
+    "/platform/v1/linked-billing/oidc/jwks.json": {
+      "get": {
+        "tags": [
+          "instance"
+        ],
+        "summary": "The public keys of the issuer that signs the install's client assertions for\nlinked billing.",
+        "description": "**Access:** public; no authentication.",
+        "operationId": "getLinkedBillingOidcJwksJson",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
+    },
     "/platform/v1/me": {
       "get": {
         "tags": [
@@ -3928,7 +4653,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Changes the user's display name or language.",
+        "summary": "Changes the user's display name, language or display currency.",
         "description": "**Access:** a signed-in console session, or an agent granted `account.update`.",
         "operationId": "patchMe",
         "requestBody": {
@@ -5099,6 +5824,60 @@
         "x-kaeso-access": "public"
       }
     },
+    "/platform/v1/me/exchange-rates": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "The exchange rates spend can be read in and prices entered in.",
+        "description": "The European Central Bank's euro reference rates of the latest working day the install has, as units per US dollar. Kaeso stores and calculates in US dollars; the rates convert prices entered in another currency and spend shown in one.\n\n**Access:** a signed-in console session, or an agent granted `account.view`.",
+        "operationId": "getMeExchangeRates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExchangeRates"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:account.view"
+      }
+    },
     "/platform/v1/me/keys": {
       "get": {
         "tags": [
@@ -5248,6 +6027,81 @@
           }
         ],
         "x-kaeso-access": "right:account.keys.view"
+      },
+      "patch": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Renames one of the user's keys; its secret keeps working.",
+        "description": "**Access:** a signed-in console session, or an agent granted `account.keys.manage`.",
+        "operationId": "patchMeKeysKey",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:account.keys.manage"
       }
     },
     "/platform/v1/me/keys/{key}/archive": {
@@ -8242,7 +9096,7 @@
           "orgs"
         ],
         "summary": "Deletes a provider key. Its projects use the default again; when it was\nthe default, the most recently added remaining key of its provider\nbecomes the default, and without one, projects can no longer call that\nprovider's models.",
-        "description": "For an account, Kaeso also asks the provider to end the account's\nsession once the key is deleted. The key is deleted even when the\nprovider can't be reached.\n\n**Right:** `provider_credentials.delete` on the organization in the path.",
+        "description": "For an account, Kaeso also asks the provider to end the account's\nsession once the key is deleted. The key is deleted even when the\nprovider can't be reached. A link (linked billing) is unlinked at the provider\nfirst, and stays while the provider can't be reached.\n\n**Right:** `provider_credentials.delete` on the organization in the path.",
         "operationId": "deleteOrgsOrgCredentialsCredential",
         "parameters": [
           {
@@ -8364,6 +9218,81 @@
           },
           "413": {
             "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:provider_credentials.replace"
+      }
+    },
+    "/platform/v1/orgs/{org}/credentials/{credential}/check": {
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Asks the provider whether it takes a key, without a model request.",
+        "description": "Kaeso reads the provider's model listing with the key, or what stands in\nfor one. Nothing is billed and no model's availability is recorded. A provider that\nlists no models where the key calls it answers `unknown`: only a model request can\ntell.\n\n**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "postOrgsOrgCredentialsCredentialCheck",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "credential",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CredentialId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CredentialCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/RateLimited"
@@ -9392,6 +10321,73 @@
           }
         ],
         "x-kaeso-access": "right:providers.custom.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/deprecations": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "The organization's projects that use models their providers retire.",
+        "description": "Lists the projects the caller can see, as the project list does.\n\n**Right:** `org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgDeprecations",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgRetirements"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:org.view"
       }
     },
     "/platform/v1/orgs/{org}/guardrails": {
@@ -10541,6 +11537,224 @@
           }
         ],
         "x-kaeso-access": "right:members.invite"
+      }
+    },
+    "/platform/v1/orgs/{org}/linked-billing/costs": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "This month's cost the org's linked keys paid, to match with the provider's\nown figures for the install's app.",
+        "description": "**Right:** `costs.org.view` on the organization in the path.",
+        "operationId": "getOrgsOrgLinkedBillingCosts",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkedCosts"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:costs.org.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/linked-billing/fallbacks": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The projects that fall back to another key when their linked key can't pay.",
+        "description": "**Right:** `provider_credentials.view` on the organization in the path.",
+        "operationId": "getOrgsOrgLinkedBillingFallbacks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LinkedFallback"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:provider_credentials.view"
+      },
+      "put": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Sets who pays for a project's requests when its linked key can't.",
+        "description": "By default only the linked organization pays: a request its spend limit\nrefuses, or that finds the link gone, fails. With a fallback, the other key pays\nfor such a request instead, and the request log shows which key paid.\n\n**Right:** `provider_credentials.replace` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "operationId": "putOrgsOrgLinkedBillingFallbacks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkedFallbackSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LinkedFallback"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:provider_credentials.replace"
       }
     },
     "/platform/v1/orgs/{org}/logs/deletions": {
@@ -14191,6 +15405,245 @@
         "x-kaeso-access": "right:project.update"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/deprecations": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "The project's models that their providers retire: dates, replacement,\nthe aliases and route steps that call them, and who still calls them.",
+        "description": "`usage` is `null` without `usage.view`.\n\n**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectDeprecations",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetiringModels"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/deprecations/{model}/move": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Shows what moving a retiring model to its replacement would change.",
+        "description": "**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectDeprecationsModelMove",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      },
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Moves every alias and route step that calls a retiring model to its\nreplacement, adding the replacement to the catalogue when it's missing.",
+        "description": "The catalogue model itself stays, so apps that name it directly keep\nworking until the shutdown.\n\n**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectDeprecationsModelMove",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/guardrails": {
       "get": {
         "tags": [
@@ -14645,6 +16098,100 @@
           }
         ],
         "x-kaeso-access": "right:keys.all.view"
+      },
+      "patch": {
+        "tags": [
+          "projects"
+        ],
+        "summary": "Renames a key; its secret keeps working.",
+        "description": "**Right:** `keys.all.manage` on the project in the path.",
+        "operationId": "patchOrgsOrgProjectsProjectKeysKey",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ApiKeyId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeyRename"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KeyView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:keys.all.manage"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/keys/{key}/archive": {
@@ -15670,6 +17217,596 @@
         "x-kaeso-access": "right:limits.manage"
       }
     },
+    "/platform/v1/orgs/{org}/projects/{project}/lines": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "The project's model lines, where each points and how the project follows it.",
+        "description": "**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectLines",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLines"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      },
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Adds a model line to the catalogue; apps then call it as `provider/line`.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectLines",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/offered": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "The model lines KPMR offers for the organization's providers.",
+        "description": "**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectLinesOffered",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "description": "Only this provider's lines.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferedLines"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/{model}": {
+      "patch": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Sets how the project follows a model line.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "patchOrgsOrgProjectsProjectLinesModel",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/{model}/back": {
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Moves a model line back to its previous model and pins it there.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectLinesModelBack",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/{model}/keep": {
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Keeps a model line where it is instead of a move that waits for approval.",
+        "description": "The line asks again only when KPMR moves it to yet another model.\n\n**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectLinesModelKeep",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/lines/{model}/move": {
+      "post": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Moves a model line to where KPMR points it now, such as a move that waits\nfor approval or for its delay.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "postOrgsOrgProjectsProjectLinesModelMove",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          },
+          {
+            "name": "model",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/CatalogueModelId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLineView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/projects/{project}/logs": {
       "get": {
         "tags": [
@@ -15945,6 +18082,16 @@
             "schema": {
               "$ref": "#/components/schemas/GuardrailAction"
             }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "Also give each cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: at the rate of the day it was spent, or\nthe latest rate for days before the install's first rates.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "EUR"
           }
         ],
         "responses": {
@@ -17255,6 +19402,16 @@
             "schema": {
               "$ref": "#/components/schemas/RequestId"
             }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "Also give each cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: at the rate of the day it was spent, or\nthe latest rate for days before the install's first rates.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "example": "EUR"
           }
         ],
         "responses": {
@@ -18160,6 +20317,167 @@
           }
         ],
         "x-kaeso-access": "right:project.members.view"
+      }
+    },
+    "/platform/v1/orgs/{org}/projects/{project}/model-lifecycle": {
+      "get": {
+        "tags": [
+          "models"
+        ],
+        "summary": "What the project does when a model it uses shuts down.",
+        "description": "**Right:** `models.view` on the project in the path.",
+        "operationId": "getOrgsOrgProjectsProjectModelLifecycle",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLifecycleSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.view"
+      },
+      "put": {
+        "tags": [
+          "models"
+        ],
+        "summary": "Sets what the project does when a model it uses shuts down.",
+        "description": "**Right:** `models.manage` on the project in the path.",
+        "operationId": "putOrgsOrgProjectsProjectModelLifecycle",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "project",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ProjectId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelLifecycleSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelLifecycleSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:models.manage"
       }
     },
     "/platform/v1/orgs/{org}/projects/{project}/models": {
@@ -22413,7 +24731,16 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, or for orgs `project`. A week or month that starts before `from`\nor ends after `to` counts only the days in the period.",
+            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, `billed_to` (the provider key that paid, `none` for requests no\nprovider was sent), or for orgs `project`. A week or month that starts\nbefore `from` or ends after `to` counts only the days in the period.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "Also give each row's cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\nrate, and days before the install's first rates at the latest rate.",
             "required": false,
             "schema": {
               "type": "string"
@@ -22459,6 +24786,15 @@
             "name": "route",
             "in": "query",
             "description": "Only this route, `<app format>:<provider format>:<provider>` as\ngrouping by `route` names it, such as\n`openai_responses:anthropic_messages:anthropic`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "billed_to",
+            "in": "query",
+            "description": "Only the requests this provider key paid for, as grouping by `billed_to`\nnames it: a provider key id, or `none`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -22644,7 +24980,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), or for\norgs `project`; default one bucket per step.",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), `alias`\n(empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n`response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\nfor orgs `project`; default one bucket per step. The request log filters\n`status` and `response_cache` narrow a bucket down to its requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -22711,6 +25047,15 @@
             "name": "route",
             "in": "query",
             "description": "Only this route, `<app format>:<provider format>:<provider>` as\ngrouping by `route` names it, such as\n`openai_responses:anthropic_messages:anthropic`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "billed_to",
+            "in": "query",
+            "description": "Only the requests this provider key paid for, as grouping by `billed_to`\nnames it: a provider key id, or `none`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24203,6 +26548,86 @@
         "x-kaeso-access": "right:security.sso.require"
       }
     },
+    "/platform/v1/orgs/{org}/security/shared-links": {
+      "put": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Sets who the organization's shared links may reach and how long they may last.",
+        "description": "Links made before keep their audience and expiry, but none reaches\nfurther than the policy now allows: with `off` they stop working, with `members` they\nneed a member's sign-in.\n\n**Right:** `usage.share.manage` on the organization in the path.",
+        "operationId": "putOrgsOrgSecuritySharedLinks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedLinksPolicy"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedLinksPolicy"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.share.manage"
+      }
+    },
     "/platform/v1/orgs/{org}/security/sso": {
       "put": {
         "tags": [
@@ -24530,6 +26955,218 @@
         "x-kaeso-access": "right:security.sso.manage"
       }
     },
+    "/platform/v1/orgs/{org}/shared-links": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The organization's shared links that still work, newest first.",
+        "description": "Every link with `usage.share.manage`, else one's own. The addresses\naren't listed; they were shown once.\n\n**Right:** `usage.share` on the organization in the path.",
+        "operationId": "getOrgsOrgSharedLinks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_SharedLinkView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.share"
+      },
+      "post": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Makes a read-only link to usage, a member's stats, a project's budgets or a project's summary.",
+        "description": "Anyone with the address, or the organization's members signed in to Kaeso,\ncan open the link without other rights. It shows only what its maker can see, and stops\nworking when they no longer can, leave the organization, it expires or is revoked. The\naddress is returned this once. Request logs are never shared.\n\n**Right:** `usage.share` on the organization in the path.",
+        "operationId": "postOrgsOrgSharedLinks",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharedLinkCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedLinkSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "413": {
+            "$ref": "#/components/responses/TooLarge"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.share"
+      }
+    },
+    "/platform/v1/orgs/{org}/shared-links/{link}": {
+      "delete": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "Revokes a shared link; it stops working at once.",
+        "description": "One's own link, or any with `usage.share.manage`.\n\n**Right:** `usage.share` on the organization in the path.",
+        "operationId": "deleteOrgsOrgSharedLinksLink",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "link",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/SharedLinkId"
+            }
+          }
+        ],
+        "responses": {
+          "204": {},
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:usage.share"
+      }
+    },
     "/platform/v1/orgs/{org}/stored-responses": {
       "get": {
         "tags": [
@@ -24713,7 +27350,16 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, or for orgs `project`. A week or month that starts before `from`\nor ends after `to` counts only the days in the period.",
+            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, `billed_to` (the provider key that paid, `none` for requests no\nprovider was sent), or for orgs `project`. A week or month that starts\nbefore `from` or ends after `to` counts only the days in the period.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "description": "Also give each row's cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\nrate, and days before the install's first rates at the latest rate.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24759,6 +27405,15 @@
             "name": "route",
             "in": "query",
             "description": "Only this route, `<app format>:<provider format>:<provider>` as\ngrouping by `route` names it, such as\n`openai_responses:anthropic_messages:anthropic`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "billed_to",
+            "in": "query",
+            "description": "Only the requests this provider key paid for, as grouping by `billed_to`\nnames it: a provider key id, or `none`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24937,7 +27592,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), or for\norgs `project`; default one bucket per step.",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), `alias`\n(empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n`response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\nfor orgs `project`; default one bucket per step. The request log filters\n`status` and `response_cache` narrow a bucket down to its requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -25004,6 +27659,15 @@
             "name": "route",
             "in": "query",
             "description": "Only this route, `<app format>:<provider format>:<provider>` as\ngrouping by `route` names it, such as\n`openai_responses:anthropic_messages:anthropic`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "billed_to",
+            "in": "query",
+            "description": "Only the requests this provider key paid for, as grouping by `billed_to`\nnames it: a provider key id, or `none`.",
             "required": false,
             "schema": {
               "type": "string"
@@ -25663,6 +28327,117 @@
         ],
         "x-kaeso-access": "right:webhooks.manage"
       }
+    },
+    "/platform/v1/share/{token}": {
+      "get": {
+        "tags": [
+          "share"
+        ],
+        "summary": "What a shared link shows.",
+        "description": "Opens a shared link by the token in its address: no sign-in for a link\nfor anyone, a session of one of the organization's members otherwise. Each open is\ncounted and written to the organization's audit log. Answers carry\n`X-Robots-Tag: noindex`.\n\n**Access:** public; no authentication.",
+        "operationId": "getShareToken",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "The token after `/share/` in the link's address.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedView"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
+    },
+    "/platform/v1/share/{token}/image.png": {
+      "get": {
+        "tags": [
+          "share"
+        ],
+        "summary": "The preview image of a shared link, for chats and social posts.",
+        "description": "A 1200×630 PNG with the chart of the link's metric over its period; a\nlink for members only gets an image without numbers. Not counted as an open.\n\n**Access:** public; no authentication.",
+        "operationId": "getShareTokenImagePng",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "The token after `/share/` in the link's address.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/png": {}
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {}
+        ],
+        "x-kaeso-access": "public"
+      }
     }
   },
   "components": {
@@ -25743,7 +28518,7 @@
               "string",
               "null"
             ],
-            "description": "For a ChatGPT account, the provider's sign-in page: open it in a browser\nwhere the account's owner can sign in; `null` for a device sign-in."
+            "description": "For a ChatGPT account, the provider's sign-in page: open it in a browser\nwhere the account's owner can sign in; for a link, the provider's approval\npage, which sends the browser back to the install's callback; `null` for a\ndevice sign-in."
           },
           "device": {
             "oneOf": [
@@ -25809,7 +28584,7 @@
               "string",
               "null"
             ],
-            "description": "For a ChatGPT account, the address the provider sent the browser to\nafter the sign-in, as the address bar shows it:\n`http://127.0.0.1:<port>/auth/callback?…`. The page doesn't load, because\nnothing listens there. Leave it out for a Grok account.",
+            "description": "For a ChatGPT account, the address the provider sent the browser to\nafter the sign-in, as the address bar shows it:\n`http://127.0.0.1:<port>/auth/callback?…`. The page doesn't load, because\nnothing listens there. For a link, the address of the install's callback the\nprovider sent the browser to. Leave it out for a Grok account.",
             "example": "http://127.0.0.1:51234/auth/callback?code=…&state=…"
           }
         },
@@ -25902,6 +28677,10 @@
           "name"
         ],
         "properties": {
+          "linked_billing": {
+            "type": "boolean",
+            "description": "Link the organization's own account at a provider whose `linked_billing`\nisn't `null`, such as a Claude organization at `anthropic`, which the provider\nthen bills, instead of signing in to a person's account."
+          },
           "make_default": {
             "type": "boolean",
             "description": "Make it the default for its provider. The first key of a provider\nbecomes the default either way."
@@ -26529,6 +29308,37 @@
         },
         "additionalProperties": false
       },
+      "AliasUseView": {
+        "type": "object",
+        "description": "An alias whose route calls the model.",
+        "required": [
+          "alias_id",
+          "name",
+          "steps"
+        ],
+        "properties": {
+          "alias_id": {
+            "$ref": "#/components/schemas/AliasId",
+            "description": "The alias."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name.",
+            "example": "chat"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The steps that call the model, as a trace names them, fallbacks and the\nbranches of conditions and splits included.",
+            "example": [
+              "route",
+              "route.fallback"
+            ]
+          }
+        }
+      },
       "AliasView": {
         "type": "object",
         "description": "An alias: a name apps send as `model`, and the route requests take.",
@@ -26731,7 +29541,9 @@
         "description": "Why an account can't make requests.",
         "enum": [
           "signed_out",
-          "no_api_access"
+          "no_api_access",
+          "unlinked",
+          "needs_setup"
         ]
       },
       "AuthMethodView": {
@@ -26744,7 +29556,8 @@
           "google_service_account",
           "aws_access_key",
           "aws_role",
-          "azure_service_principal"
+          "azure_service_principal",
+          "linked_billing"
         ]
       },
       "AvailabilityState": {
@@ -26815,6 +29628,27 @@
               "type": "string"
             },
             "description": "Model ids the catalogue already had."
+          }
+        }
+      },
+      "CallerCount": {
+        "type": "object",
+        "description": "A caller and how many requests it sent.",
+        "required": [
+          "id",
+          "requests"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The key, member or service account id, or the client app's name.",
+            "example": "key_01J9Z8W5D6Q4X7G2R1V3N5M8KT"
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests.",
+            "minimum": 0
           }
         }
       },
@@ -26902,6 +29736,14 @@
           "id": {
             "$ref": "#/components/schemas/CatalogueModelId",
             "description": "Id."
+          },
+          "line_target": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For a model line such as `claude-opus-latest`: the model requests go to\nnow, whose values `effective` holds. See `/lines` for how it moves.",
+            "example": "claude-opus-5-5"
           },
           "listed": {
             "type": "boolean",
@@ -27153,7 +29995,9 @@
         "description": "What a request's cost is based on.",
         "enum": [
           "reported",
-          "measured"
+          "measured",
+          "estimated",
+          "none"
         ]
       },
       "CreatedKey_KeyView": {
@@ -27423,6 +30267,44 @@
         },
         "additionalProperties": false
       },
+      "CredentialCheck": {
+        "type": "object",
+        "description": "A key's check against its provider.",
+        "required": [
+          "result"
+        ],
+        "properties": {
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "With `refused` or `unreachable`, what the provider or the connection to it\nanswered, as it came and without any part of the key."
+          },
+          "models": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "With `ok`, how many models the provider lists for the key; `null` when its\nlisting names what it offers rather than what the key can call.",
+            "minimum": 0
+          },
+          "result": {
+            "$ref": "#/components/schemas/CredentialCheckResult",
+            "description": "What the provider said."
+          }
+        }
+      },
+      "CredentialCheckResult": {
+        "type": "string",
+        "description": "What the provider said about a key.",
+        "enum": [
+          "ok",
+          "refused",
+          "unreachable",
+          "unknown"
+        ]
+      },
       "CredentialCreate": {
         "type": "object",
         "description": "A new provider key.",
@@ -27660,7 +30542,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/AuthErrorView",
-                "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; `null` while it works."
+                "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; for a link, `unlinked` when it ended and\n`needs_setup` while the install's app is missing; `null` while it works."
               },
               {
                 "type": "null"
@@ -27755,10 +30637,38 @@
             "description": "The provider it authenticates to.",
             "example": "openai"
           },
+          "spend_limited_until": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "For a link, until when at the latest the linked organization's spend limit\nrefuses its requests; `null` while it pays. It clears as soon as a request\ngoes through again."
+          },
           "updated_at": {
             "type": "string",
             "format": "date-time",
             "description": "Last replaced."
+          }
+        }
+      },
+      "CurrencyRate": {
+        "type": "object",
+        "description": "A currency spend can be read in, and what one US dollar buys of it.",
+        "required": [
+          "currency",
+          "per_usd"
+        ],
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "The ISO 4217 code.",
+            "example": "EUR"
+          },
+          "per_usd": {
+            "type": "string",
+            "description": "Units of the currency one US dollar buys at the latest rates: the ECB's\neuro rate of the currency divided by its euro rate of the dollar.",
+            "example": "0.907935355003"
           }
         }
       },
@@ -28277,6 +31187,28 @@
           }
         }
       },
+      "DayCount": {
+        "type": "object",
+        "description": "Requests on one day.",
+        "required": [
+          "day",
+          "requests"
+        ],
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "The day, UTC.",
+            "example": "2026-11-04"
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests.",
+            "minimum": 0
+          }
+        }
+      },
       "DecisionFields": {
         "type": "object",
         "description": "What a decision model answers at `/v1/decisions`, `/v1/systemone` and\n`/v1beta/decisions`: its question types and its limits.",
@@ -28719,6 +31651,93 @@
           }
         }
       },
+      "ExchangeRates": {
+        "type": "object",
+        "description": "The exchange rates the install holds.",
+        "required": [
+          "source",
+          "fetching",
+          "rates"
+        ],
+        "properties": {
+          "checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the install last fetched the rates."
+          },
+          "day": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day of the latest rates; `null` while the install has none, when only\nUS dollars can be used.",
+            "example": "2026-11-16"
+          },
+          "fetching": {
+            "type": "boolean",
+            "description": "Whether the install fetches the rates each day; instance admins turn it off."
+          },
+          "first_day": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day of the oldest rates. Spend on earlier days is converted at the\nlatest rates.",
+            "example": "2026-08-20"
+          },
+          "rates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CurrencyRate"
+            },
+            "description": "The currencies of the latest rates, US dollar and euro included, by code;\njust the US dollar without rates."
+          },
+          "source": {
+            "type": "string",
+            "description": "Where the rates come from: `ecb`, the European Central Bank's euro foreign\nexchange reference rates.",
+            "example": "ecb"
+          }
+        }
+      },
+      "ExchangeRatesSetting": {
+        "type": "object",
+        "description": "The daily fetch of the ECB's euro reference rates.",
+        "required": [
+          "fetch"
+        ],
+        "properties": {
+          "checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the install last fetched the rates."
+          },
+          "day": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day of the latest rates the install has.",
+            "example": "2026-11-16"
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the last fetch failed; `null` when it worked. Kaeso tries again in 15\nminutes."
+          },
+          "fetch": {
+            "type": "boolean",
+            "description": "Whether the install fetches the rates each working day. Off keeps the rates\nit has; without any, only US dollars can be used."
+          }
+        }
+      },
       "ExpiryRequest": {
         "type": "object",
         "description": "When a new key expires: `expires_in_days` (1, 7, 30 or 90), or\n`expires_on` (a date, UTC), or neither for never.",
@@ -28852,6 +31871,14 @@
             "format": "int64",
             "description": "The context window in tokens.",
             "minimum": 0
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The currency of the prices this entry sets, an ISO 4217 code such as `EUR`;\nabsent means `USD`. Kaeso keeps them as entered and costs requests in USD at\nthe latest ECB reference rate, so the effective fields are always in USD.",
+            "example": "EUR"
           },
           "decisions": {
             "oneOf": [
@@ -29118,6 +32145,14 @@
             "format": "int64",
             "description": "The context window in tokens.",
             "minimum": 0
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The currency of the prices this entry sets, an ISO 4217 code such as `EUR`;\nabsent means `USD`. Kaeso keeps them as entered and costs requests in USD at\nthe latest ECB reference rate, so the effective fields are always in USD.",
+            "example": "EUR"
           },
           "decisions": {
             "oneOf": [
@@ -30965,6 +34000,14 @@
               "totp_enabled"
             ],
             "properties": {
+              "last_signed_in_at": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "description": "When the user last signed in; `null` when they haven't since the install\nbegan recording it."
+              },
               "managed_by": {
                 "oneOf": [
                   {
@@ -31422,6 +34465,21 @@
         },
         "additionalProperties": false
       },
+      "KeyRename": {
+        "type": "object",
+        "description": "A key's new name.",
+        "required": [
+          "name"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A name to recognise it by.",
+            "example": "support-bot"
+          }
+        },
+        "additionalProperties": false
+      },
       "KeyRotate": {
         "allOf": [
           {
@@ -31546,6 +34604,37 @@
           }
         }
       },
+      "KpmrSyncView": {
+        "type": "object",
+        "description": "What fetching the model data from KPMR did.",
+        "required": [
+          "status",
+          "price_changes",
+          "delisted",
+          "relisted"
+        ],
+        "properties": {
+          "delisted": {
+            "type": "integer",
+            "description": "Models KPMR no longer lists.",
+            "minimum": 0
+          },
+          "price_changes": {
+            "type": "integer",
+            "description": "Model prices that changed.",
+            "minimum": 0
+          },
+          "relisted": {
+            "type": "integer",
+            "description": "Models KPMR lists again.",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "description": "`applied` when Kaeso took new data, `unchanged` when KPMR had none."
+          }
+        }
+      },
       "LegalLinksView": {
         "type": "object",
         "description": "The operator's legal pages, as set in `legal.imprint_url` and\n`legal.privacy_url`; `null` where the install sets none.",
@@ -31565,6 +34654,54 @@
             ],
             "description": "The privacy policy.",
             "example": "https://example.com/privacy"
+          }
+        }
+      },
+      "LifecycleView": {
+        "type": "object",
+        "description": "When the provider retires a model and what it recommends instead, as\nKPMR publishes it. Each field is `null` while unknown.",
+        "properties": {
+          "announced_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the provider announced the deprecation.",
+            "example": "2026-11-04"
+          },
+          "deprecated_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the model became deprecated.",
+            "example": "2026-11-04"
+          },
+          "replacement": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The provider's model id it recommends instead.",
+            "example": "claude-sonnet-5-5"
+          },
+          "shutdown_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "When the provider stops serving the model.",
+            "example": "2027-02-04"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The page where the provider announced it."
           }
         }
       },
@@ -31829,6 +34966,77 @@
           }
         }
       },
+      "LineCreate": {
+        "type": "object",
+        "description": "A model line to add to the catalogue.",
+        "required": [
+          "provider",
+          "line"
+        ],
+        "properties": {
+          "delay_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "With `delay`: the days a move waits, 1 to 30."
+          },
+          "line": {
+            "type": "string",
+            "description": "The line's name, as KPMR lists it.",
+            "example": "claude-opus-latest"
+          },
+          "policy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LinePolicy",
+                "description": "How to follow it; `follow` when absent."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider."
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinePolicy": {
+        "type": "string",
+        "description": "How a project follows a model line when KPMR moves it.",
+        "enum": [
+          "follow",
+          "ask",
+          "delay",
+          "pin"
+        ]
+      },
+      "LineUpdate": {
+        "type": "object",
+        "description": "How to follow a model line.",
+        "required": [
+          "policy"
+        ],
+        "properties": {
+          "delay_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "With `delay`: the days a move waits, 1 to 30."
+          },
+          "policy": {
+            "$ref": "#/components/schemas/LinePolicy",
+            "description": "The policy."
+          }
+        },
+        "additionalProperties": false
+      },
       "LinkAccount": {
         "type": "object",
         "description": "Whom a sign-in link signs in.",
@@ -31867,6 +35075,360 @@
           "org": {
             "$ref": "#/components/schemas/OrgId",
             "description": "The org; the user must be a member and the org must have an SSO\nconnection."
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkedBillingApp": {
+        "type": "object",
+        "description": "The install's OAuth app at the provider.",
+        "required": [
+          "client_id",
+          "audience",
+          "organization_id",
+          "federation_rule_id",
+          "send_billing_policy",
+          "updated_at"
+        ],
+        "properties": {
+          "audience": {
+            "type": "string",
+            "description": "The audience the app's client authentication expects."
+          },
+          "check_problem": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the last check found wrong: `federation` (the service account token was\nrefused), `client` (the client id or assertion was refused), `request` (the\nlink request was refused, such as a redirect URI that isn't registered),\n`scope`, `unauthorized` (no operator service account or workspace) or\n`unreachable`; `null` when it passed."
+          },
+          "checked_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When **Check** last ran; `null` since the app changed."
+          },
+          "client_id": {
+            "type": "string",
+            "description": "The app's client id.",
+            "example": "oaapp_01EXAMPLE"
+          },
+          "federation_rule_id": {
+            "type": "string",
+            "description": "The federation rule that maps the install's assertions to the app's operator\nservice account.",
+            "example": "fdrl_01EXAMPLE"
+          },
+          "organization_id": {
+            "type": "string",
+            "description": "The UUID of the install's organization at the provider."
+          },
+          "send_billing_policy": {
+            "type": "boolean",
+            "description": "Whether each request also names the linked user profile and sets\n`billing_policy`, which the provider's beta may require of some installs."
+          },
+          "service_account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The operator service account, when set."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last changed."
+          },
+          "workspace_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The workspace the rule's tokens run in, when the rule covers several."
+          }
+        }
+      },
+      "LinkedBillingAppSet": {
+        "type": "object",
+        "description": "The install's OAuth app at the provider.",
+        "required": [
+          "client_id",
+          "audience",
+          "organization_id",
+          "federation_rule_id"
+        ],
+        "properties": {
+          "audience": {
+            "type": "string",
+            "description": "The audience the app's client authentication tab shows."
+          },
+          "client_id": {
+            "type": "string",
+            "description": "The app's client id, from the app's page."
+          },
+          "federation_rule_id": {
+            "type": "string",
+            "description": "The federation rule for the operator service account, `fdrl_…`."
+          },
+          "organization_id": {
+            "type": "string",
+            "description": "The UUID of the install's organization at the provider."
+          },
+          "send_billing_policy": {
+            "type": "boolean",
+            "description": "Send the linked user profile and `billing_policy` with each request; turn it\non only when the provider says the install needs them."
+          },
+          "service_account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The operator service account, `svac_…`."
+          },
+          "workspace_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The workspace for the rule's tokens, `wrkspc_…`; needed when the rule covers\nmore than one."
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkedBillingOfferView": {
+        "type": "object",
+        "description": "How an organization links its own account at a provider to pay for its requests.",
+        "required": [
+          "organization",
+          "console",
+          "spend_limit_url",
+          "roles",
+          "ready"
+        ],
+        "properties": {
+          "console": {
+            "type": "string",
+            "description": "Where the linked organization's admins manage it.",
+            "example": "Claude Console"
+          },
+          "organization": {
+            "type": "string",
+            "description": "What is linked.",
+            "example": "Claude organization"
+          },
+          "ready": {
+            "type": "boolean",
+            "description": "Whether an instance admin set up the install's app, so links can be made."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The roles one of whom approves the link.",
+            "example": [
+              "Admin",
+              "Billing"
+            ]
+          },
+          "spend_limit_url": {
+            "type": "string",
+            "description": "Where the linked organization sets its spend limit for the install and unlinks it.",
+            "example": "https://platform.claude.com/linked-platforms"
+          }
+        }
+      },
+      "LinkedBillingView": {
+        "type": "object",
+        "description": "How the install pays a provider through its customers' own organizations.",
+        "required": [
+          "provider",
+          "provider_name",
+          "organization",
+          "apps_url",
+          "docs_url",
+          "redirect_uri",
+          "issuer",
+          "jwks_url",
+          "jwks",
+          "subject",
+          "linked_keys"
+        ],
+        "properties": {
+          "app": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LinkedBillingApp",
+                "description": "The app, once an instance admin set it up; `null` before."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "apps_url": {
+            "type": "string",
+            "description": "Where the provider's admins register the install's OAuth app.",
+            "example": "https://platform.claude.com/settings/oauth-apps"
+          },
+          "docs_url": {
+            "type": "string",
+            "description": "The provider's guide to setting up the app."
+          },
+          "issuer": {
+            "type": "string",
+            "description": "The issuer to register as the app's identity provider: the install signs its\nclient assertions itself.",
+            "example": "https://kaeso.example.com/platform/v1/linked-billing/oidc"
+          },
+          "jwks": {
+            "type": "object",
+            "description": "The issuer's public keys, to paste for an identity provider registered with\nits key set, as an install the provider can't reach needs."
+          },
+          "jwks_url": {
+            "type": "string",
+            "description": "Where the issuer's public keys are, for an identity provider registered by\nits JWKS URL.",
+            "example": "https://kaeso.example.com/platform/v1/linked-billing/oidc/jwks.json"
+          },
+          "linked_keys": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How many provider keys of organizations are links through the app."
+          },
+          "organization": {
+            "type": "string",
+            "description": "What an organization links, such as `Claude organization`.",
+            "example": "Claude organization"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider, such as `anthropic`."
+          },
+          "provider_name": {
+            "type": "string",
+            "description": "The provider's name.",
+            "example": "Anthropic"
+          },
+          "redirect_uri": {
+            "type": "string",
+            "description": "The redirect URI to register on the app, built from the install's public URL.",
+            "example": "https://kaeso.example.com/linked-billing/callback"
+          },
+          "subject": {
+            "type": "string",
+            "description": "The subject of every assertion, for the app's subject pattern.",
+            "example": "kaeso:linked-billing:anthropic"
+          }
+        }
+      },
+      "LinkedCost": {
+        "type": "object",
+        "description": "What a linked key's organization paid through Kaeso this month.",
+        "required": [
+          "credential",
+          "cost",
+          "requests"
+        ],
+        "properties": {
+          "cost": {
+            "type": "string",
+            "description": "The cost in USD, at the prices Kaeso knows, from the first of the month (UTC).",
+            "example": "12.5"
+          },
+          "credential": {
+            "$ref": "#/components/schemas/CredentialId",
+            "description": "The linked key."
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "The requests it paid for."
+          }
+        }
+      },
+      "LinkedCosts": {
+        "type": "object",
+        "description": "This month's cost the org's linked keys paid, by key.",
+        "required": [
+          "from",
+          "to",
+          "keys",
+          "total"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "The first day counted (UTC, `YYYY-MM-DD`).",
+            "example": "2026-11-01"
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkedCost"
+            },
+            "description": "Each linked key with requests this month."
+          },
+          "to": {
+            "type": "string",
+            "description": "The last day counted, today (UTC).",
+            "example": "2026-11-17"
+          },
+          "total": {
+            "type": "string",
+            "description": "Their total.",
+            "example": "12.5"
+          }
+        }
+      },
+      "LinkedFallback": {
+        "type": "object",
+        "description": "Who pays for a project's requests when its linked key can't.",
+        "required": [
+          "project",
+          "provider",
+          "credential"
+        ],
+        "properties": {
+          "credential": {
+            "$ref": "#/components/schemas/CredentialId",
+            "description": "The key that pays instead when the linked organization's spend limit is\nreached or the link is gone."
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider whose linked key the project uses."
+          }
+        }
+      },
+      "LinkedFallbackSet": {
+        "type": "object",
+        "description": "A project's fallback for its linked key, or `null` to pay only through the link.",
+        "required": [
+          "project",
+          "provider"
+        ],
+        "properties": {
+          "credential": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CredentialId",
+                "description": "Another key of the provider that isn't a link; `null` for none."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider, one whose `linked_billing` isn't `null`."
           }
         },
         "additionalProperties": false
@@ -32341,6 +35903,14 @@
                   "$ref": "#/components/schemas/CatalogueModelId",
                   "description": "Id."
                 },
+                "line_target": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "For a model line such as `claude-opus-latest`: the model requests go to\nnow, whose values `effective` holds. See `/lines` for how it moves.",
+                  "example": "claude-opus-5-5"
+                },
                 "listed": {
                   "type": "boolean",
                   "description": "Whether KPMR lists it. An unlisted entry keeps its last known values."
@@ -32434,7 +36004,7 @@
                   "oneOf": [
                     {
                       "$ref": "#/components/schemas/AuthErrorView",
-                      "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; `null` while it works."
+                      "description": "Why the account can't make requests until someone signs in again:\n`signed_out` when the provider ended its session, `no_api_access` when its\nplan doesn't include API access; for a link, `unlinked` when it ended and\n`needs_setup` while the install's app is missing; `null` while it works."
                     },
                     {
                       "type": "null"
@@ -32528,6 +36098,14 @@
                   "type": "string",
                   "description": "The provider it authenticates to.",
                   "example": "openai"
+                },
+                "spend_limited_until": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "For a link, until when at the latest the linked organization's spend limit\nrefuses its requests; `null` while it pays. It clears as soon as a request\ngoes through again."
                 },
                 "updated_at": {
                   "type": "string",
@@ -33047,6 +36625,14 @@
                     "totp_enabled"
                   ],
                   "properties": {
+                    "last_signed_in_at": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "format": "date-time",
+                      "description": "When the user last signed in; `null` when they haven't since the install\nbegan recording it."
+                    },
                     "managed_by": {
                       "oneOf": [
                         {
@@ -33578,6 +37164,17 @@
                   "description": "The alias the app named, whose route chose the model; `null` when the\napp named a model.",
                   "example": "chat-default"
                 },
+                "billed_to": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/CredentialId",
+                      "description": "The provider key that paid for the request, the last one it was sent with;\nfor a linked key, the organization it links paid. `null` when no provider was\nsent the request, and for requests logged before Kaeso recorded it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "cache_breakpoints": {
                   "type": [
                     "integer",
@@ -33610,13 +37207,20 @@
                   "description": "The version the user agent gives after a known client's name, such as `0.59.0`.",
                   "example": "0.59.0"
                 },
+                "converted_cost": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\nlatest for days before the install's first rates), an estimate; absent when no\ncurrency was asked or the cost is unknown."
+                },
                 "cost": {
                   "type": "string",
                   "description": "Cost in USD at the prices of request time."
                 },
                 "cost_basis": {
                   "$ref": "#/components/schemas/CostBasis",
-                  "description": "What the cost's units come from: `reported` by the provider, or `measured`\nby Kaeso when the provider bills by the length of audio it was sent but\nreported none, and Kaeso read the length from the file's header."
+                  "description": "What the cost rests on: `none` when nothing was billed, `measured` by Kaeso\nwhen the provider bills by the length of audio it was sent but reported none\nand Kaeso read the length from the file's header, `estimated` when Kaeso\nestimated the tokens, or `reported` by the provider. Entries logged before\n`none` and `estimated` existed say `reported`."
                 },
                 "cost_known": {
                   "type": "boolean",
@@ -33686,6 +37290,14 @@
                       "type": "null"
                     }
                   ]
+                },
+                "line": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The model line the request named, such as `claude-opus-latest`, whose\ntarget answered as `model`; `null` when it named no line.",
+                  "example": "claude-opus-latest"
                 },
                 "media": {
                   "oneOf": [
@@ -35292,6 +38904,17 @@
                   "description": "How the provider's API keys start; `null` when they have no fixed prefix.",
                   "example": "gsk_"
                 },
+                "linked_billing": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LinkedBillingOfferView",
+                      "description": "For a provider whose customers can pay through their own organization\n(linked billing), such as Anthropic: a key may be a link instead of a secret,\nmade with `linked_billing` in `POST /orgs/{org}/credentials/oauth`. `null` for\nother providers."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "model_routes": {
                   "type": "array",
                   "items": {
@@ -35602,6 +39225,168 @@
                 "project_id": {
                   "$ref": "#/components/schemas/ProjectId",
                   "description": "The project."
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_SharedLinkView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A read-only link to an org's usage, a member's stats, a project's budgets or a project's summary.",
+              "required": [
+                "id",
+                "kind",
+                "title",
+                "live",
+                "metric",
+                "show_costs",
+                "hide_members",
+                "hide_keys",
+                "hide_projects",
+                "audience",
+                "created_by",
+                "created_at",
+                "views"
+              ],
+              "properties": {
+                "audience": {
+                  "type": "string",
+                  "description": "Who can open it: `anyone` with the link, or `members` of the organization\nsigned in to Kaeso."
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Created."
+                },
+                "created_by": {
+                  "$ref": "#/components/schemas/UserId",
+                  "description": "Who made it."
+                },
+                "days": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "format": "int32",
+                  "description": "The days a live link shows, today included."
+                },
+                "expires_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it stops working; `null` for never."
+                },
+                "from": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "The first day of a snapshot (UTC)."
+                },
+                "hide_keys": {
+                  "type": "boolean",
+                  "description": "Whether keys show as *Key 1*, *Key 2* and so on."
+                },
+                "hide_members": {
+                  "type": "boolean",
+                  "description": "Whether members show as *Member 1*, *Member 2* and so on."
+                },
+                "hide_projects": {
+                  "type": "boolean",
+                  "description": "Whether projects show as *Project 1*, *Project 2* and so on, and the\nproject's own name is left out."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/SharedLinkId",
+                  "description": "Id."
+                },
+                "kind": {
+                  "type": "string",
+                  "description": "`analytics`, `member`, `budget` or `project_card`."
+                },
+                "last_opened_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it was last opened."
+                },
+                "live": {
+                  "type": "boolean",
+                  "description": "Whether it shows the last `days` days whenever it is opened (`true`), or\nthe numbers of `from` to `to` as they were when it was made."
+                },
+                "member": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/UserId",
+                      "description": "The member whose stats it shows, for `member`."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "metric": {
+                  "type": "string",
+                  "description": "The metric its chart shows: `requests`, `tokens`, `cost`, `errors`, `tools`\nor `cache`."
+                },
+                "project": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ProjectId",
+                      "description": "The project it shows; `null` for the whole organization."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "show_costs": {
+                  "type": "boolean",
+                  "description": "Whether it shows costs."
+                },
+                "title": {
+                  "type": "string",
+                  "description": "The title the page shows."
+                },
+                "to": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date",
+                  "description": "The last day of a snapshot (UTC)."
+                },
+                "views": {
+                  "type": "integer",
+                  "format": "int64",
+                  "description": "How often it was opened."
                 }
               }
             },
@@ -36069,6 +39854,13 @@
                   "description": "Cache writes.",
                   "minimum": 0
                 },
+                "converted_cost": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "`cost` in the `currency` asked for, an estimate; `null` when none was\nasked or `cost` is."
+                },
                 "cost": {
                   "type": [
                     "string",
@@ -36525,6 +40317,17 @@
             "description": "The alias the app named, whose route chose the model; `null` when the\napp named a model.",
             "example": "chat-default"
           },
+          "billed_to": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CredentialId",
+                "description": "The provider key that paid for the request, the last one it was sent with;\nfor a linked key, the organization it links paid. `null` when no provider was\nsent the request, and for requests logged before Kaeso recorded it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "cache_breakpoints": {
             "type": [
               "integer",
@@ -36557,13 +40360,20 @@
             "description": "The version the user agent gives after a known client's name, such as `0.59.0`.",
             "example": "0.59.0"
           },
+          "converted_cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\nlatest for days before the install's first rates), an estimate; absent when no\ncurrency was asked or the cost is unknown."
+          },
           "cost": {
             "type": "string",
             "description": "Cost in USD at the prices of request time."
           },
           "cost_basis": {
             "$ref": "#/components/schemas/CostBasis",
-            "description": "What the cost's units come from: `reported` by the provider, or `measured`\nby Kaeso when the provider bills by the length of audio it was sent but\nreported none, and Kaeso read the length from the file's header."
+            "description": "What the cost rests on: `none` when nothing was billed, `measured` by Kaeso\nwhen the provider bills by the length of audio it was sent but reported none\nand Kaeso read the length from the file's header, `estimated` when Kaeso\nestimated the tokens, or `reported` by the provider. Entries logged before\n`none` and `estimated` existed say `reported`."
           },
           "cost_known": {
             "type": "boolean",
@@ -36633,6 +40443,14 @@
                 "type": "null"
               }
             ]
+          },
+          "line": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model line the request named, such as `claude-opus-latest`, whose\ntarget answered as `model`; `null` when it named no line.",
+            "example": "claude-opus-latest"
           },
           "media": {
             "oneOf": [
@@ -37865,9 +41683,15 @@
               "totp_enabled",
               "has_password",
               "recovery_codes_left",
-              "locale"
+              "locale",
+              "display_currency"
             ],
             "properties": {
+              "display_currency": {
+                "type": "string",
+                "description": "The currency the console shows spend in next to US dollars, an ISO 4217\ncode from `exchange-rates`; `USD` for dollars only.",
+                "example": "EUR"
+              },
               "has_password": {
                 "type": "boolean",
                 "description": "Whether a password is set."
@@ -38346,6 +42170,129 @@
           }
         }
       },
+      "ModelLifecycleSettings": {
+        "type": "object",
+        "description": "What a project does when a model it uses shuts down.",
+        "required": [
+          "move_on_shutdown",
+          "serve_replacement"
+        ],
+        "properties": {
+          "move_on_shutdown": {
+            "type": "boolean",
+            "description": "On a model's shutdown day, move the aliases and route steps that call it\nto its replacement, adding the replacement when it's missing. Off by default."
+          },
+          "serve_replacement": {
+            "type": "boolean",
+            "description": "After a model's shutdown, answer requests that name it with its\nreplacement instead of failing. The reply names the model that answered and\nthe request log marks it. Off by default: price and behaviour change."
+          }
+        },
+        "additionalProperties": false
+      },
+      "ModelLineView": {
+        "type": "object",
+        "description": "A model line the project follows: a name such as `claude-opus-latest` that\npoints at a provider's newest stable model.",
+        "required": [
+          "id",
+          "provider",
+          "line",
+          "model",
+          "since",
+          "policy"
+        ],
+        "properties": {
+          "delay_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "With `delay`: the days a move waits, 1 to 30."
+          },
+          "held": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why the line couldn't move to `kpmr_model`, such as a missing provider key."
+          },
+          "id": {
+            "$ref": "#/components/schemas/CatalogueModelId",
+            "description": "Its catalogue model: apps call it as `provider/line`, and aliases, model\naccess and limits name it like any model."
+          },
+          "kept": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A model an owner chose not to move to; the line asks again only for a newer one."
+          },
+          "kpmr_model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Where KPMR points the line now; `null` when KPMR no longer lists it."
+          },
+          "line": {
+            "type": "string",
+            "description": "The line's name.",
+            "example": "claude-opus-latest"
+          },
+          "model": {
+            "type": "string",
+            "description": "The model requests go to now.",
+            "example": "claude-opus-5-5"
+          },
+          "pending": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PendingMove",
+                "description": "A move that waits, if one does."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "policy": {
+            "$ref": "#/components/schemas/LinePolicy",
+            "description": "How the project follows the line."
+          },
+          "previous": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model before it, for Move back; `null` when there was none."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider."
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Since when the line points at `model` in this project."
+          }
+        }
+      },
+      "ModelLines": {
+        "type": "object",
+        "description": "The project's model lines.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModelLineView"
+            },
+            "description": "The lines, by provider and name."
+          }
+        }
+      },
       "ModelRouteView": {
         "type": "object",
         "description": "A pattern of model ids and the format they are sent in.",
@@ -38414,6 +42361,30 @@
           }
         },
         "additionalProperties": false
+      },
+      "MoveView": {
+        "type": "object",
+        "description": "What moving a model to its replacement changes, or changed.",
+        "required": [
+          "model",
+          "adds_replacement",
+          "steps"
+        ],
+        "properties": {
+          "adds_replacement": {
+            "type": "boolean",
+            "description": "Whether the replacement is (or was) added to the catalogue first."
+          },
+          "model": {
+            "$ref": "#/components/schemas/RetiringModelView",
+            "description": "The retiring model."
+          },
+          "steps": {
+            "type": "integer",
+            "description": "How many route steps point at the replacement afterwards.",
+            "minimum": 0
+          }
+        }
       },
       "MyMembership": {
         "type": "object",
@@ -38651,6 +42622,72 @@
           }
         },
         "additionalProperties": false
+      },
+      "OfferedLine": {
+        "type": "object",
+        "description": "A line KPMR offers for a provider of the organization.",
+        "required": [
+          "provider",
+          "line",
+          "model"
+        ],
+        "properties": {
+          "added": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CatalogueModelId",
+                "description": "The project's catalogue model for the line, when it has added it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "line": {
+            "type": "string",
+            "description": "The line's name.",
+            "example": "claude-opus-latest"
+          },
+          "model": {
+            "type": "string",
+            "description": "The model it points at now.",
+            "example": "claude-opus-5-5"
+          },
+          "previous": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The model before it."
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ProviderId",
+            "description": "The provider."
+          },
+          "since": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Since when, as KPMR has it."
+          }
+        }
+      },
+      "OfferedLines": {
+        "type": "object",
+        "description": "The lines a project can add.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferedLine"
+            },
+            "description": "The lines, by provider and name."
+          }
+        }
       },
       "OfferedModel": {
         "type": "object",
@@ -39090,6 +43127,22 @@
         },
         "additionalProperties": false
       },
+      "OrgRetirements": {
+        "type": "object",
+        "description": "The organization's projects that use retiring models, soonest shutdown first.",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProjectRetirements"
+            },
+            "description": "The projects, only those the caller can see and that use one."
+          }
+        }
+      },
       "OrgRightsDetail": {
         "type": "object",
         "description": "A member's org rights.",
@@ -39349,6 +43402,34 @@
           }
         },
         "additionalProperties": false
+      },
+      "PendingMove": {
+        "type": "object",
+        "description": "A move KPMR made that waits: for approval, or for the delay.",
+        "required": [
+          "model",
+          "since"
+        ],
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "The model the line would point at.",
+            "example": "claude-opus-5-5"
+          },
+          "moves_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the delay ends and the line moves; `null` when it waits for approval."
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Since when it waits."
+          }
+        }
       },
       "PersonConnectionAnswer": {
         "type": "object",
@@ -40149,6 +44230,28 @@
           }
         }
       },
+      "PriceChange": {
+        "type": "object",
+        "description": "A price per million tokens before and after a move.",
+        "properties": {
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The retiring model's price in USD; `null` when unknown.",
+            "example": "3"
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The replacement's price in USD; `null` when unknown.",
+            "example": "3"
+          }
+        }
+      },
       "PriceTier": {
         "type": "object",
         "description": "The prices for every token of a request whose prompt is longer than\n`context_above` tokens, output included. An absent price is the model's own\nprice.",
@@ -40207,6 +44310,14 @@
         "type": "object",
         "description": "Profile changes.",
         "properties": {
+          "display_currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The currency to show spend in next to US dollars: `USD` for dollars only,\nor a code from `exchange-rates`.",
+            "example": "EUR"
+          },
           "locale": {
             "oneOf": [
               {
@@ -40615,6 +44726,45 @@
           }
         },
         "additionalProperties": false
+      },
+      "ProjectRetirements": {
+        "type": "object",
+        "description": "A project's retiring models, in short.",
+        "required": [
+          "project_id",
+          "name",
+          "models",
+          "retired"
+        ],
+        "properties": {
+          "models": {
+            "type": "integer",
+            "description": "How many of its models their providers retire or will retire.",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name."
+          },
+          "next_shutdown_on": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The soonest shutdown still ahead; `null` without one.",
+            "example": "2027-02-04"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project."
+          },
+          "retired": {
+            "type": "integer",
+            "description": "How many of them are past their shutdown day.",
+            "minimum": 0
+          }
+        }
       },
       "ProjectRightsDetail": {
         "type": "object",
@@ -41178,6 +45328,17 @@
             "description": "How the provider's API keys start; `null` when they have no fixed prefix.",
             "example": "gsk_"
           },
+          "linked_billing": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LinkedBillingOfferView",
+                "description": "For a provider whose customers can pay through their own organization\n(linked billing), such as Anthropic: a key may be a link instead of a secret,\nmade with `linked_billing` in `POST /orgs/{org}/credentials/oauth`. `null` for\nother providers."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "model_routes": {
             "type": "array",
             "items": {
@@ -41368,6 +45529,46 @@
           }
         }
       },
+      "ReplacementView": {
+        "type": "object",
+        "description": "The model the provider recommends instead.",
+        "required": [
+          "model_id",
+          "listed",
+          "input_price",
+          "output_price"
+        ],
+        "properties": {
+          "catalogue_model_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CatalogueModelId",
+                "description": "The project's catalogue model for it; `null` when the project doesn't have\nit yet, and a move adds it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "input_price": {
+            "$ref": "#/components/schemas/PriceChange",
+            "description": "The input price per million tokens."
+          },
+          "listed": {
+            "type": "boolean",
+            "description": "Whether KPMR lists it for the provider; one it doesn't can't be added."
+          },
+          "model_id": {
+            "type": "string",
+            "description": "The provider's model id.",
+            "example": "claude-sonnet-5-5"
+          },
+          "output_price": {
+            "$ref": "#/components/schemas/PriceChange",
+            "description": "The output price per million tokens."
+          }
+        }
+      },
       "RequestFormat": {
         "type": "string",
         "description": "A request format, as the request log names it: the format an app sent or the one Kaeso sent to the provider.",
@@ -41491,6 +45692,165 @@
           "miss",
           "bypass"
         ]
+      },
+      "RetirementState": {
+        "type": "string",
+        "description": "Where a model is in its retirement.",
+        "enum": [
+          "announced",
+          "deprecated",
+          "retired"
+        ]
+      },
+      "RetiringModelView": {
+        "type": "object",
+        "description": "A model of the project that its provider retires or will retire.",
+        "required": [
+          "id",
+          "provider",
+          "model_id",
+          "state",
+          "lifecycle",
+          "aliases"
+        ],
+        "properties": {
+          "aliases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AliasUseView"
+            },
+            "description": "The aliases and route steps that call it."
+          },
+          "days_left": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "description": "Days until the shutdown, negative once it passed; `null` without a date."
+          },
+          "id": {
+            "$ref": "#/components/schemas/CatalogueModelId",
+            "description": "The catalogue model."
+          },
+          "lifecycle": {
+            "$ref": "#/components/schemas/LifecycleView",
+            "description": "The dates, the replacement and the source."
+          },
+          "model_id": {
+            "type": "string",
+            "description": "The provider's model id.",
+            "example": "claude-sonnet-4-5-20250929"
+          },
+          "provider": {
+            "type": "string",
+            "description": "The provider.",
+            "example": "anthropic"
+          },
+          "replacement": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReplacementView",
+                "description": "The replacement and how the project stands with it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/RetirementState",
+            "description": "Where it is in its retirement."
+          },
+          "usage": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RetiringUsage",
+                "description": "Who calls it; `null` without the right to see the project's usage."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "RetiringModels": {
+        "type": "object",
+        "description": "The project's models that their providers retire, soonest shutdown first.",
+        "required": [
+          "data",
+          "soon"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RetiringModelView"
+            },
+            "description": "The models."
+          },
+          "soon": {
+            "type": "integer",
+            "description": "How many of them shut down within 90 days or have already.",
+            "minimum": 0
+          }
+        }
+      },
+      "RetiringUsage": {
+        "type": "object",
+        "description": "Who still calls a retiring model, and whether the calls go down.",
+        "required": [
+          "requests",
+          "keys",
+          "members",
+          "service_accounts",
+          "clients",
+          "daily"
+        ],
+        "properties": {
+          "clients": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CallerCount"
+            },
+            "description": "Client apps, by the user agent they send, that called it in the last 30\ndays; empty without the request log store."
+          },
+          "daily": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DayCount"
+            },
+            "description": "Requests per day from the announcement (at most a year back) until today."
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CallerCount"
+            },
+            "description": "Keys that called it in the last 30 days, most requests first."
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CallerCount"
+            },
+            "description": "Members that called it in the last 30 days."
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests in the last 30 days.",
+            "minimum": 0
+          },
+          "service_accounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CallerCount"
+            },
+            "description": "Service accounts that called it in the last 30 days."
+          }
+        }
       },
       "Revoked": {
         "type": "object",
@@ -42690,7 +47050,8 @@
         "required": [
           "require_2fa",
           "require_sso",
-          "sso_redirect_url"
+          "sso_redirect_url",
+          "shared_links"
         ],
         "properties": {
           "max_key_lifetime_days": {
@@ -42708,6 +47069,10 @@
           "require_sso": {
             "type": "boolean",
             "description": "Whether the accounts the org manages sign in only through its SSO,\neverywhere on the install; guests keep their own sign-in."
+          },
+          "shared_links": {
+            "$ref": "#/components/schemas/SharedLinksPolicy",
+            "description": "Who the organization's shared links may reach, and for how long."
           },
           "sso": {
             "oneOf": [
@@ -43062,6 +47427,13 @@
             "format": "int32",
             "description": "Default content retention, in days."
           },
+          "exchange_rates": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether the install fetches the ECB's exchange rates each working day."
+          },
           "max_content_retention_days": {
             "type": [
               "integer",
@@ -43112,6 +47484,20 @@
             "format": "int32",
             "description": "Days a new deletion waits, 1 to 90. Dates already set don't move."
           },
+          "share_mark": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether shared links' pages show *Made with Kaeso*."
+          },
+          "shared_links": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether organizations may make shared links."
+          },
           "timezone": {
             "type": [
               "string",
@@ -43138,7 +47524,10 @@
           "org_deletion_grace_days",
           "timezone",
           "sign_in",
-          "mail"
+          "mail",
+          "exchange_rates",
+          "shared_links",
+          "share_mark"
         ],
         "properties": {
           "account_creation": {
@@ -43171,6 +47560,10 @@
             "type": "integer",
             "format": "int32",
             "description": "Log content retention of new orgs, in days."
+          },
+          "exchange_rates": {
+            "$ref": "#/components/schemas/ExchangeRatesSetting",
+            "description": "The exchange rates the console converts prices and spend with."
           },
           "mail": {
             "$ref": "#/components/schemas/MailSettings",
@@ -43206,6 +47599,14 @@
             "example": 7,
             "maximum": 90,
             "minimum": 1
+          },
+          "share_mark": {
+            "type": "boolean",
+            "description": "Whether the pages of shared links show a small *Made with Kaeso* mark."
+          },
+          "shared_links": {
+            "type": "boolean",
+            "description": "Whether organizations may make shared links; off, every link stops working\nand none can be made."
           },
           "sign_in": {
             "$ref": "#/components/schemas/SignInMethods",
@@ -43267,6 +47668,621 @@
           }
         },
         "additionalProperties": false
+      },
+      "SharedBreakdown": {
+        "type": "object",
+        "description": "Usage split one way.",
+        "required": [
+          "by",
+          "rows"
+        ],
+        "properties": {
+          "by": {
+            "type": "string",
+            "description": "`model`, `key`, `member`, `route`, `project` or `client`."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedRow"
+            },
+            "description": "Its groups, the most requests first."
+          }
+        }
+      },
+      "SharedLimit": {
+        "type": "object",
+        "description": "A limit or budget of a shared project, with what it used.",
+        "required": [
+          "level",
+          "kind",
+          "period",
+          "amount",
+          "hard"
+        ],
+        "properties": {
+          "amount": {
+            "type": "string",
+            "description": "Requests, tool calls, tokens or USD."
+          },
+          "hard": {
+            "type": "boolean",
+            "description": "Whether it refuses requests once used up."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`request_rate`, `token_rate`, `tool_call_rate`, `token_budget` or\n`spend_budget`."
+          },
+          "level": {
+            "type": "string",
+            "description": "`project`, `member` or `key`."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The one model it counts, as `provider/model`; `null` for every model."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The member's or key's name; `null` for the project or when the link hides it."
+          },
+          "number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The place of a hidden member or key, as in a breakdown.",
+            "minimum": 0
+          },
+          "period": {
+            "type": "string",
+            "description": "`minute`, `day`, `month` or `total`."
+          },
+          "resets_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the current period ends; `null` for `total` and rates."
+          },
+          "used": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Used in the current period, in the unit of `amount`, when known."
+          }
+        }
+      },
+      "SharedLinkCreate": {
+        "type": "object",
+        "description": "A shared link to make.",
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "audience": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`members` (default): people signed in to an account in the organization.\n`anyone` with the link, where the organization allows it."
+          },
+          "days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The days a live link shows, today included, 1 to 400; default 30.",
+            "example": 30
+          },
+          "expires_in_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "1, 7, 30 or 90 days; absent for a link that never expires, where the\norganization allows it.",
+            "example": 30
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The first day of a snapshot (UTC)."
+          },
+          "hide_keys": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Show keys as *Key 1*, *Key 2* and so on."
+          },
+          "hide_members": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Show members as *Member 1*, *Member 2* and so on."
+          },
+          "hide_projects": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Show projects as *Project 1*, *Project 2* and so on."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`analytics` (the org's usage, or a project's with `project`), `member` (one\nmember's usage across the org), `budget` (a project's limits and budgets) or\n`project_card` (a project's summary).",
+            "example": "analytics"
+          },
+          "live": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Live (default): the last `days` days whenever it is opened. `false`: a\nsnapshot of `from` to `to` as the numbers are now."
+          },
+          "member": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member, for `member`: oneself, or anyone with `usage.org.view`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metric": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The metric its chart shows; default `requests`."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "The project; needed for `budget` and `project_card`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "show_costs": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Show costs; needs the right to see them. Off by default."
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The title the page shows, 1 to 100 characters; one that names what it\nshows when absent.",
+            "example": "October spend"
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The last day of a snapshot (UTC), at most 400 days after `from`."
+          }
+        },
+        "additionalProperties": false
+      },
+      "SharedLinkId": {
+        "type": "string",
+        "examples": [
+          "shl_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^shl_[0-9a-hjkmnp-tv-z]{26}$"
+      },
+      "SharedLinkSecret": {
+        "type": "object",
+        "description": "A new shared link, with its address shown this once.",
+        "required": [
+          "link",
+          "url"
+        ],
+        "properties": {
+          "link": {
+            "$ref": "#/components/schemas/SharedLinkView",
+            "description": "The link."
+          },
+          "url": {
+            "type": "string",
+            "description": "The address to share; it holds the link's token, which Kaeso keeps only\nas a hash.",
+            "example": "https://kaeso.example.com/share/9fQ2kX7mVb3pL8rT1wZ5yH4uJ6sD0gA2cE7nM1qR3tU"
+          }
+        }
+      },
+      "SharedLinkView": {
+        "type": "object",
+        "description": "A read-only link to an org's usage, a member's stats, a project's budgets or a project's summary.",
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "live",
+          "metric",
+          "show_costs",
+          "hide_members",
+          "hide_keys",
+          "hide_projects",
+          "audience",
+          "created_by",
+          "created_at",
+          "views"
+        ],
+        "properties": {
+          "audience": {
+            "type": "string",
+            "description": "Who can open it: `anyone` with the link, or `members` of the organization\nsigned in to Kaeso."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created."
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/UserId",
+            "description": "Who made it."
+          },
+          "days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The days a live link shows, today included."
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it stops working; `null` for never."
+          },
+          "from": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The first day of a snapshot (UTC)."
+          },
+          "hide_keys": {
+            "type": "boolean",
+            "description": "Whether keys show as *Key 1*, *Key 2* and so on."
+          },
+          "hide_members": {
+            "type": "boolean",
+            "description": "Whether members show as *Member 1*, *Member 2* and so on."
+          },
+          "hide_projects": {
+            "type": "boolean",
+            "description": "Whether projects show as *Project 1*, *Project 2* and so on, and the\nproject's own name is left out."
+          },
+          "id": {
+            "$ref": "#/components/schemas/SharedLinkId",
+            "description": "Id."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`analytics`, `member`, `budget` or `project_card`."
+          },
+          "last_opened_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was last opened."
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Whether it shows the last `days` days whenever it is opened (`true`), or\nthe numbers of `from` to `to` as they were when it was made."
+          },
+          "member": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member whose stats it shows, for `member`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metric": {
+            "type": "string",
+            "description": "The metric its chart shows: `requests`, `tokens`, `cost`, `errors`, `tools`\nor `cache`."
+          },
+          "project": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProjectId",
+                "description": "The project it shows; `null` for the whole organization."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "show_costs": {
+            "type": "boolean",
+            "description": "Whether it shows costs."
+          },
+          "title": {
+            "type": "string",
+            "description": "The title the page shows."
+          },
+          "to": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "The last day of a snapshot (UTC)."
+          },
+          "views": {
+            "type": "integer",
+            "format": "int64",
+            "description": "How often it was opened."
+          }
+        }
+      },
+      "SharedLinksPolicy": {
+        "type": "object",
+        "description": "Who an organization's shared links may reach, and for how long.",
+        "required": [
+          "allow"
+        ],
+        "properties": {
+          "allow": {
+            "type": "string",
+            "description": "`off`: no links; `members`: links only for people signed in to the\norganization; `anyone`: links anyone with the address can open.",
+            "example": "members"
+          },
+          "max_days": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The longest a link may last: 1, 7, 30 or 90 days; `null` lets links never\nexpire.",
+            "example": 90
+          }
+        }
+      },
+      "SharedRow": {
+        "type": "object",
+        "description": "One row of a shared view: a day, or one group of a breakdown.",
+        "required": [
+          "requests",
+          "errors",
+          "input_tokens",
+          "output_tokens",
+          "cache_read_tokens",
+          "cache_write_tokens",
+          "reasoning_tokens",
+          "tool_calls"
+        ],
+        "properties": {
+          "cache_read_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Cache reads.",
+            "minimum": 0
+          },
+          "cache_write_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Cache writes.",
+            "minimum": 0
+          },
+          "cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Cost in USD; `null` when the link hides costs."
+          },
+          "errors": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests answered with a status of 400 or above.",
+            "minimum": 0
+          },
+          "input_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Uncached input tokens.",
+            "minimum": 0
+          },
+          "key": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The day (`YYYY-MM-DD`), model (`provider/model`), route or client; `playground`\nfor requests from the Playground. `null` for projects, keys and members, which\ngo by `name` or `number`."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The project's, key's or member's name; `null` when the link hides it or the\nrow is a day, model, route or client."
+          },
+          "number": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "The place of a hidden project, key or member, 1 for the one with the most\nrequests, shown as *Member 1* and the like; `null` when its name shows.",
+            "minimum": 0
+          },
+          "output_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Output tokens.",
+            "minimum": 0
+          },
+          "reasoning_tokens": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Reasoning tokens.",
+            "minimum": 0
+          },
+          "requests": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Requests, refusals included.",
+            "minimum": 0
+          },
+          "tool_calls": {
+            "type": "integer",
+            "format": "int64",
+            "description": "MCP tool calls.",
+            "minimum": 0
+          }
+        }
+      },
+      "SharedView": {
+        "type": "object",
+        "description": "What a shared link shows.",
+        "required": [
+          "kind",
+          "title",
+          "organization",
+          "live",
+          "from",
+          "to",
+          "metric",
+          "costs",
+          "created_at",
+          "made_with_kaeso",
+          "days",
+          "previous_days",
+          "breakdowns",
+          "limits"
+        ],
+        "properties": {
+          "breakdowns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedBreakdown"
+            },
+            "description": "The period's usage split by model, key, member, route, project or client,\nas the kind of link shows it."
+          },
+          "costs": {
+            "type": "boolean",
+            "description": "Whether costs show; without them every `cost` is `null` and spend budgets\nare left out."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the link was made."
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedRow"
+            },
+            "description": "Usage by day in the period, days without usage left out."
+          },
+          "expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the link stops working; `null` for never."
+          },
+          "from": {
+            "type": "string",
+            "format": "date",
+            "description": "The first day shown (UTC)."
+          },
+          "kind": {
+            "type": "string",
+            "description": "`analytics`, `member`, `budget` or `project_card`."
+          },
+          "limits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedLimit"
+            },
+            "description": "The project's limits and budgets, for `budget`."
+          },
+          "live": {
+            "type": "boolean",
+            "description": "Whether the numbers are of the last days up to today, worked out as the\npage is opened; `false` for numbers kept from when the link was made."
+          },
+          "made_with_kaeso": {
+            "type": "boolean",
+            "description": "Whether the page shows a small *Made with Kaeso* mark."
+          },
+          "member": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The member's name, for `member`; `null` when the link hides member names."
+          },
+          "metric": {
+            "type": "string",
+            "description": "The metric its chart shows."
+          },
+          "organization": {
+            "type": "string",
+            "description": "The organization's name."
+          },
+          "previous_days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedRow"
+            },
+            "description": "Usage by day in the period of the same length before it, for comparison."
+          },
+          "project": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The project's name; `null` for the whole organization or when the link\nhides project names."
+          },
+          "title": {
+            "type": "string",
+            "description": "The title its maker gave it."
+          },
+          "to": {
+            "type": "string",
+            "format": "date",
+            "description": "The last day shown (UTC)."
+          }
+        }
       },
       "SignInMethods": {
         "type": "object",
@@ -45359,6 +50375,13 @@
             "description": "Cache writes.",
             "minimum": 0
           },
+          "converted_cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`cost` in the `currency` asked for, an estimate; `null` when none was\nasked or `cost` is."
+          },
           "cost": {
             "type": [
               "string",
@@ -45601,7 +50624,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The notices to receive: `budget_alerts`, `limit_reached`, `key_expiry`,\n`content_logging`, `mcp_servers`, `org_security`, `org_members`, `provider_keys`,\n`model_changes`.",
+            "description": "The notices to receive: `budget_alerts`, `limit_reached`, `key_expiry`,\n`model_deprecated`, `model_shutdown_soon`, `model_lines`, `content_logging`,\n`mcp_servers`, `org_security`, `org_members`, `provider_keys`, `model_changes`.",
             "example": [
               "budget_alerts",
               "provider_keys"

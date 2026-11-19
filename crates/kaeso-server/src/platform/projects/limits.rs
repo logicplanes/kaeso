@@ -101,7 +101,7 @@ fn amount_text(l: &Limit) -> String {
     l.amount.normalize().to_string()
 }
 
-async fn view(
+pub(crate) async fn view(
     state: &AppState,
     project: Uuid,
     row: &store::LimitRow,

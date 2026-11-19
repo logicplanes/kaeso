@@ -407,6 +407,14 @@ describe("ResponseView", () => {
     expect(screen.getByRole("group", { name: "Prompt" }).textContent).toBe("Why did errors spike?\nAt 14:05.");
     expect(screen.getByLabelText("Metrics")).toHaveTextContent("Total1.20 s");
   });
+
+  it("puts a prompt's actions under its bubble", async () => {
+    const edit = vi.fn();
+    render(<UserMessage actions={<button onClick={edit}>Edit</button>}>Shorter, please.</UserMessage>);
+    const prompt = screen.getByRole("group", { name: "Prompt" });
+    await userEvent.click(within(prompt).getByRole("button", { name: "Edit" }));
+    expect(edit).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("ResponseMetrics", () => {

@@ -12,6 +12,7 @@ import { guardrailActionLabel } from "~/format/guardrails";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
 import { formatDuration, formatPrice } from "@logicplanes/kaeso-ui/format";
 import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
+import { CurrencyPicker, useDisplayChoice } from "~/kaeso/currency";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviderFilterOptions, useProviders } from "~/kaeso/providers";
 import { showExportProgress } from "~/shell/export-job";
@@ -188,7 +189,10 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
   const { log, live, kind: _kind, call: _call, call_status: _status, call_tool: _tool, call_server: _server, call_error: _error, ...filters } = search;
-  const logs = useInfiniteQuery(logsInfiniteQuery(org, project, filters));
+  const { display, settled } = useDisplayChoice();
+  // The rows also carry each cost in the person's display currency.
+  const listed = useMemo(() => (display ? { ...filters, currency: display.code } : filters), [filters, display]);
+  const logs = useInfiniteQuery({ ...logsInfiniteQuery(org, project, listed), enabled: settled });
   const { keyName, keyOptions, memberOptions } = usePartyFilters(org, project);
   const catalogue = useQuery(catalogueQuery(org, project));
   // Someone who reads the log may not see the aliases; the chip then offers none.
@@ -208,7 +212,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   };
 
   const base = useMemo(() => logs.data?.pages.flatMap((p) => p.data) ?? [], [logs.data]);
-  const { rows, pending, fresh, cut, showPending } = useLiveLogs({ org, project, filters, live: !!live, base, scroller });
+  const { rows, pending, fresh, cut, showPending } = useLiveLogs({ org, project, filters: listed, live: !!live, base, scroller });
   // Shown above the failures, and the message filter's choices; the same query either way.
   const commonErrors = useQuery({ ...logErrorsQuery(org, project, filters), enabled: filters.failed === true });
   const hasNextPage = logs.hasNextPage && !cut;
@@ -220,7 +224,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const errors = useGatewayErrors();
   const layout = logsLayout(width, phone, spansDays, columns);
   const withProvider = providerInModel(layout, columns);
-  const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, errors });
+  const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, errors, currency: display?.code });
   const shownColumns = COLUMNS.filter((c) => columns.includes(c) && !(withProvider && c === "provider")).map((c) => all[c]);
 
   const modelGroups = useModelGroups(
@@ -344,15 +348,18 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
         page={t("logs.title", "Request logs")}
         path="logs"
         actions={
-          <Button
-            size="sm"
-            leadingIcon={icons.download}
-            disabled={!canExport || nothingToExport}
-            disabledReason={!canExport ? needs("logs.export") : nothingToExport ? t("logs.noMatch", "No requests match these filters") : undefined}
-            onClick={() => showExportProgress() || setExporting(true)}
-          >
-            {common.export()}
-          </Button>
+          <>
+            <CurrencyPicker />
+            <Button
+              size="sm"
+              leadingIcon={icons.download}
+              disabled={!canExport || nothingToExport}
+              disabledReason={!canExport ? needs("logs.export") : nothingToExport ? t("logs.noMatch", "No requests match these filters") : undefined}
+              onClick={() => showExportProgress() || setExporting(true)}
+            >
+              {common.export()}
+            </Button>
+          </>
         }
       />
       {canExport && (

@@ -5,10 +5,10 @@ import { CommandPalette, icons, useTheme, type CommandGroup, type CommandItem } 
 import { keysPageQuery } from "~/api/queries/keys";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
-import { orgProjectsQuery } from "~/api/queries/projects";
+import { orgProjectsQuery, projectQuery } from "~/api/queries/projects";
 import { orgMembersQuery, platformKeysQuery } from "~/api/queries/orgs";
 import { orgCredentialsQuery } from "~/api/queries/credentials";
-import { useMemberships, useOrgRights, useSession } from "~/auth/session";
+import { useMemberships, useOrgRights, useRequestLogs, useSession } from "~/auth/session";
 import { t } from "~/i18n";
 import { useCreateAction } from "./create-action";
 import { readLast } from "./last";
@@ -69,10 +69,17 @@ export default function PaletteUI({
   );
 }
 
+// A request's id as the gateway gives it in `kaeso-request-id`: `req_` and 26 characters of
+// Kaeso's base32 alphabet.
+const REQUEST_ID = /^req_[0-9a-hjkmnp-tv-z]{26}$/;
+
 function useFindGroup(org: string, project: string, query: string, enabled: boolean, close: () => void): CommandGroup | null {
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
+  const requestLogs = useRequestLogs();
   const on = enabled && !!project && query.length > 0;
+  const requestId = on && requestLogs && rights.has("logs.metadata.view") && REQUEST_ID.test(query.trim()) ? query.trim() : null;
+  const named = useQuery({ ...projectQuery(org, project), enabled: !!requestId });
   const keys = useQuery({ ...keysPageQuery(org, project, {}), enabled: on && rights.has("keys.all.view") });
   const models = useQuery({ ...catalogueQuery(org, project), enabled: on && rights.has("models.view") });
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: on && rights.has("project.members.view") });
@@ -85,7 +92,21 @@ function useFindGroup(org: string, project: string, query: string, enabled: bool
     close();
     void navigate({ href });
   };
+  // The log is per project, so the hint says which project the id is looked up in.
+  const opened: CommandItem[] = requestId
+    ? [
+        {
+          id: `find:request:${requestId}`,
+          label: t("shell.palette.openRequest", "Open request {id}", { id: requestId }),
+          icon: icons.requestLog,
+          hint: t("shell.palette.inProject", "In {project}", { project: named.data?.name ?? project }),
+          keywords: [query],
+          onSelect: go(`${base}/logs?log=${requestId}`),
+        },
+      ]
+    : [];
   const items: CommandItem[] = [
+    ...opened,
     ...(keys.data?.data ?? [])
       .filter((k) => has(k.name, k.redacted))
       .map((k) => ({
@@ -230,7 +251,7 @@ function usePaletteGroups(close: () => void, open: boolean, query: string): { gr
           label: p.label(),
           icon: p.icon,
           hint: t("common.project", "Project"),
-          ...(p.shortcut ? { shortcut: p.shortcut } : {}),
+          shortcut: [["g"], [p.key]],
           onSelect: go(p.path ? `${projectPath(org, project)}/${p.path}` : projectPath(org, project)),
         })),
       ...ORG_AREA_PAGES.filter((p) => org && orgRights.has(p.right)).map((p) => ({

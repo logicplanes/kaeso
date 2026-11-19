@@ -113,6 +113,19 @@ const MIGRATIONS: &[Migration] = &[
         name: "content_parts",
         sql: include_str!("../../migrations/clickhouse/0017_content_parts.sql"),
     },
+    // Which provider key paid for each request, so a log entry names the organization a linked
+    // key bills; the nil id for requests no provider was sent and for those logged before.
+    Migration {
+        version: 18,
+        name: "billed_to",
+        sql: include_str!("../../migrations/clickhouse/0018_billed_to.sql"),
+    },
+    // The model line a request named, such as `claude-opus-latest`, beside the model it reached.
+    Migration {
+        version: 19,
+        name: "model_lines",
+        sql: include_str!("../../migrations/clickhouse/0019_model_lines.sql"),
+    },
 ];
 
 #[derive(Clone)]
@@ -265,7 +278,7 @@ mod tests {
     #[test]
     fn migration_files_split_into_statements() {
         let all: Vec<String> = MIGRATIONS.iter().flat_map(|m| statements(m.sql)).collect();
-        assert_eq!(all.len(), 34);
+        assert_eq!(all.len(), 36);
         assert!(all.iter().all(|s| s.starts_with("CREATE ")
             || s.starts_with("ALTER TABLE ")
             || s.starts_with("DROP ")));

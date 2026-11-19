@@ -15,7 +15,7 @@ const rows = [...catalogue.matchAll(/^\| `([a-z_]+)` \| ([A-Za-z]+) \| ([^|]+) \
 
 describe("notification words", () => {
   it("has its own words for every kind in the gateway's catalogue", () => {
-    expect(rows).toHaveLength(24);
+    expect(rows).toHaveLength(28);
     for (const row of rows) {
       const words = kindWords({ kind: row.kind, name: "From the gateway", description: "From the gateway." });
       expect(words.name, row.kind).toBe(row.name);

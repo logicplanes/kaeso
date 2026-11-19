@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { AlertDialog, Button, Dialog, DialogScope, Empty, Section, SettingsGroup, SettingsRow, Status } from "@logicplanes/kaeso-ui";
+import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import type { PersonConnectionView } from "~/api/generated/types";
 import { myConnectionsQuery } from "~/api/queries/connections";
@@ -10,6 +11,7 @@ import { useSession } from "~/auth/session";
 import { LoadFailed } from "~/features/org/load-failed";
 import { signInToast, type SignInResult } from "~/features/org-home/mcp-servers-page";
 import { t } from "~/i18n";
+import { McpConnectionFacts } from "~/kaeso/mcp-connection-facts";
 import { HeaderFields } from "~/kaeso/mcp-header-fields";
 import type { Word } from "~/kaeso/mcp-servers";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
@@ -35,6 +37,7 @@ export function ConnectionsPage({ search = {} }: { search?: ConnectionsSearch })
   const session = useSession();
   const connections = useQuery(myConnectionsQuery);
   const [header, setHeader] = useState<PersonConnectionView | null>(null);
+  const [details, setDetails] = useState<PersonConnectionView | null>(null);
   const [leaving, setLeaving] = useState<PersonConnectionView | null>(null);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const list = useMemo(() => connections.data ?? [], [connections.data]);
@@ -84,7 +87,13 @@ export function ConnectionsPage({ search = {} }: { search?: ConnectionsSearch })
                       <Status tone={word.tone}>{word.label}</Status>
                     </span>
                   }
-                  description={orgName(c.org)}
+                  description={
+                    own
+                      ? own.last_used_at
+                        ? t("account.connections.lastUsed", "{org} · last used {when}", { org: orgName(c.org), when: formatRelative(own.last_used_at) })
+                        : t("account.connections.neverUsed", "{org} · never used", { org: orgName(c.org) })
+                      : orgName(c.org)
+                  }
                   control={
                     <span className="flex gap-8">
                       {(!own || own.signed_out || c.auth_method === "header") && (
@@ -94,6 +103,11 @@ export function ConnectionsPage({ search = {} }: { search?: ConnectionsSearch })
                             : c.auth_method === "header"
                               ? t("orgHome.mcp.replaceSecret", "Replace secret")
                               : t("orgHome.mcp.signInAgain", "Sign in again")}
+                        </Button>
+                      )}
+                      {own && (
+                        <Button size="sm" variant="ghost" onClick={() => setDetails(c)}>
+                          {t("account.connections.details", "Details")}
                         </Button>
                       )}
                       {own && (
@@ -116,6 +130,7 @@ export function ConnectionsPage({ search = {} }: { search?: ConnectionsSearch })
           </SettingsGroup>
         </Section>
       )}
+      <DialogScope open={!!details}>{details && <DetailsDialog connection={details} onClose={() => setDetails(null)} />}</DialogScope>
       <DialogScope open={!!header}>{header && <HeaderDialog connection={header} onClose={() => setHeader(null)} />}</DialogScope>
       {leaving && (
         <DialogScope open={leaveOpen}>
@@ -123,6 +138,14 @@ export function ConnectionsPage({ search = {} }: { search?: ConnectionsSearch })
         </DialogScope>
       )}
     </SettingsPage>
+  );
+}
+
+function DetailsDialog({ connection, onClose }: { connection: PersonConnectionView; onClose: () => void }) {
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()} size="sm" title={connection.server_name}>
+      {connection.connection && <McpConnectionFacts connection={connection.connection} />}
+    </Dialog>
   );
 }
 

@@ -29,9 +29,14 @@ pub struct UsageQuery {
     pub to: Option<String>,
     #[doc = "`day` (default), `week` (Monday to Sunday, named by its Monday),\n\
         `month` (named by its first day), `model`, `provider`, `key`, `member`,\n\
-        `route`, or for orgs `project`. A week or month that starts before `from`\n\
-        or ends after `to` counts only the days in the period."]
+        `route`, `billed_to` (the provider key that paid, `none` for requests no\n\
+        provider was sent), or for orgs `project`. A week or month that starts\n\
+        before `from` or ends after `to` counts only the days in the period."]
     pub group_by: Option<String>,
+    #[doc = "Also give each row's cost in this currency, an ISO 4217 code from\n\
+        `exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\n\
+        rate, and days before the install's first rates at the latest rate."]
+    pub currency: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, IntoParams)]
@@ -57,6 +62,9 @@ pub struct UsageFilter {
         `openai_responses:anthropic_messages:anthropic`."]
     #[serde(default, deserialize_with = "crate::platform::params::text")]
     pub route: Option<String>,
+    #[doc = "Only the requests this provider key paid for, as grouping by `billed_to`\n\
+        names it: a provider key id, or `none`."]
+    pub billed_to: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, IntoParams)]
@@ -115,7 +123,17 @@ impl UsageFilter {
                 _ => return Err(not_a_key("route")),
             },
         };
+        let billed_to = match self.billed_to.as_deref() {
+            None => None,
+            Some("none") => Some(Uuid::nil()),
+            Some(k) => Some(
+                k.parse::<kaeso_core::id::CredentialId>()
+                    .map_err(|_| not_a_key("billed_to"))?
+                    .uuid(),
+            ),
+        };
         Ok(store::Filter {
+            billed_to,
             provider: self
                 .provider
                 .as_deref()
@@ -167,6 +185,9 @@ pub struct UsageRow {
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
     pub cost: Option<String>,
+    #[doc = "`cost` in the `currency` asked for, an estimate; `null` when none was\n\
+        asked or `cost` is."]
+    pub converted_cost: Option<String>,
     #[doc = "Tool calls through the project's MCP portals, refusals included. Counted by\n\
         day and project, so 0 when grouped or filtered by model, provider, key,\n\
         member or route."]
@@ -202,6 +223,7 @@ enum Ids {
     Project,
     Key,
     Member,
+    Credential,
 }
 
 fn ids_of(group: GroupBy) -> Ids {
@@ -215,6 +237,7 @@ fn ids_of(group: GroupBy) -> Ids {
         GroupBy::Project => Ids::Project,
         GroupBy::Key => Ids::Key,
         GroupBy::Member => Ids::Member,
+        GroupBy::BilledTo => Ids::Credential,
     }
 }
 
@@ -226,6 +249,11 @@ fn public_key(ids: Ids, key: String) -> String {
         Ids::Key => match id(&key) {
             Some(u) if u.is_nil() => "playground".to_owned(),
             Some(u) => ApiKeyId::from_uuid(u).to_string(),
+            None => key,
+        },
+        Ids::Credential => match id(&key) {
+            Some(u) if u.is_nil() => "none".to_owned(),
+            Some(u) => kaeso_core::id::CredentialId::from_uuid(u).to_string(),
             None => key,
         },
         Ids::Member => match key.split_once(':') {
@@ -322,14 +350,15 @@ async fn usage(
         "key" => GroupBy::Key,
         "member" => GroupBy::Member,
         "route" => GroupBy::Route,
+        "billed_to" => GroupBy::BilledTo,
         "project" if scope.org_wide => GroupBy::Project,
         _ => {
             return Err(ApiError::invalid(
                 "group_by",
                 if scope.org_wide {
-                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`."
+                    "Use `project`, `billed_to` or what a project's usage groups by, such as `day`."
                 } else {
-                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`."
+                    "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."
                 },
             ));
         }
@@ -341,11 +370,48 @@ async fn usage(
         ));
     }
     let filter = f.parse()?;
-    let (org, project, costs) = (scope.org, scope.project, scope.costs);
-    let rows = store::usage(&state.pg, org, project, from, to, group, &filter)
+    let converter = crate::platform::exchange_rates::converter(state, q.currency.as_deref())?;
+    let rows = rows(
+        state,
+        UsageOf {
+            org: scope.org,
+            project: scope.project,
+            costs: scope.costs,
+        },
+        (from, to),
+        group,
+        &filter,
+        converter.as_ref(),
+    )
+    .await?;
+    Ok(Json(List::complete(rows)))
+}
+
+/// Whose usage, and whether with costs.
+pub(crate) struct UsageOf {
+    pub org: Uuid,
+    pub project: Option<Uuid>,
+    pub costs: bool,
+}
+
+/// The usage rows of an org or one of its projects, as the usage endpoints return them;
+/// `costs` false leaves every cost out, and `converter` adds each cost in its currency.
+pub(crate) async fn rows(
+    state: &AppState,
+    UsageOf {
+        org,
+        project,
+        costs,
+    }: UsageOf,
+    (from, to): (Date, Date),
+    group: GroupBy,
+    filter: &store::Filter,
+    converter: Option<&(std::sync::Arc<kaeso_core::currency::RateBook>, String)>,
+) -> ApiResult<Vec<UsageRow>> {
+    let rows = store::usage(&state.pg, org, project, from, to, group, filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
-    let tools = store::tool_usage(&state.pg, org, project, from, to, group, &filter)
+    let tools = store::tool_usage(&state.pg, org, project, from, to, group, filter)
         .await
         .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
     let ids = ids_of(group);
@@ -363,6 +429,7 @@ async fn usage(
                 cache_write_tokens: count(r.cache_write_tokens),
                 reasoning_tokens: count(r.reasoning_tokens),
                 cost: costs.then(|| r.cost.normalize().to_string()),
+                converted_cost: None,
                 tool_calls: 0,
                 tool_call_errors: 0,
                 unpriced: count(r.media.unpriced),
@@ -389,6 +456,7 @@ async fn usage(
             reasoning_tokens: 0,
             cache_hit_rate: None,
             cost: costs.then(|| "0".to_owned()),
+            converted_cost: None,
             tool_calls: 0,
             tool_call_errors: 0,
             unpriced: 0,
@@ -397,7 +465,28 @@ async fn usage(
         row.tool_calls = count(t.calls);
         row.tool_call_errors = count(t.errors);
     }
-    Ok(Json(List::complete(merged.into_values().collect())))
+    if let (Some((book, code)), true) = (converter, costs) {
+        let by_day = store::costs_by_day(&state.pg, org, project, from, to, group, filter)
+            .await
+            .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
+        let mut sums: std::collections::BTreeMap<String, rust_decimal::Decimal> =
+            std::collections::BTreeMap::new();
+        for (key, day, cost) in by_day {
+            let converted = book.convert(cost, code, day).unwrap_or_default();
+            *sums.entry(key).or_default() += converted;
+        }
+        for (key, row) in &mut merged {
+            row.converted_cost = Some(
+                sums.get(key)
+                    .copied()
+                    .unwrap_or_default()
+                    .round_dp(6)
+                    .normalize()
+                    .to_string(),
+            );
+        }
+    }
+    Ok(merged.into_values().collect())
 }
 
 #[utoipa::path(
@@ -546,8 +635,11 @@ pub struct TimelineQuery {
     pub step: Option<String>,
     #[doc = "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n\
         `error_kind` (the request log's, empty for requests that succeeded),\n\
-        `client` (the client app the user agent names, empty without one), or for\n\
-        orgs `project`; default one bucket per step."]
+        `client` (the client app the user agent names, empty without one), `alias`\n\
+        (empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n\
+        `response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\n\
+        for orgs `project`; default one bucket per step. The request log filters\n\
+        `status` and `response_cache` narrow a bucket down to its requests."]
     pub group_by: Option<String>,
     #[doc = "With `group_by`, only the groups with the most requests in the whole\n\
         range, 1 to 50; the others are left out."]
@@ -668,14 +760,18 @@ async fn timeline(
         Some("route") => Some(TimelineGroup::Route),
         Some("error_kind") => Some(TimelineGroup::ErrorKind),
         Some("client") => Some(TimelineGroup::Client),
+        Some("alias") => Some(TimelineGroup::Alias),
+        Some("endpoint") => Some(TimelineGroup::Endpoint),
+        Some("status") => Some(TimelineGroup::Status),
+        Some("response_cache") => Some(TimelineGroup::ResponseCache),
         Some("project") if scope.org_wide => Some(TimelineGroup::Project),
         Some(_) => {
             return Err(ApiError::invalid(
                 "group_by",
                 if scope.org_wide {
-                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."
+                    "Group by `project` or a field of the request log, such as `model` or `status`."
                 } else {
-                    "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."
+                    "Group by a field of the request log, such as `model`, `status` or `response_cache`."
                 },
             ));
         }

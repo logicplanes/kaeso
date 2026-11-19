@@ -15,6 +15,7 @@ pub const LIMIT_REFUSALS: &str = "kaeso_limit_refusals_total";
 pub const UPSTREAM_ERRORS: &str = "kaeso_upstream_errors_total";
 pub const ALIAS_FALLBACKS: &str = "kaeso_alias_fallbacks_total";
 pub const UPSTREAM_RETRIES: &str = "kaeso_upstream_retries_total";
+pub const RETIRED_MODEL_REQUESTS: &str = "kaeso_retired_model_requests_total";
 pub const STREAM_FAILURES: &str = "kaeso_stream_failures_total";
 pub const USAGE_ESTIMATES: &str = "kaeso_usage_estimates_total";
 pub const REASONING_CONTINUITY: &str = "kaeso_reasoning_continuity_total";
@@ -88,6 +89,10 @@ pub fn describe() {
     describe_counter!(
         UPSTREAM_RETRIES,
         "Requests a step sent its model again after a short-lived failure, by provider and outcome (answered, gave_up)."
+    );
+    describe_counter!(
+        RETIRED_MODEL_REQUESTS,
+        "Steps that named a model past its shutdown day, by outcome (refused, replaced)."
     );
     describe_counter!(
         STREAM_FAILURES,

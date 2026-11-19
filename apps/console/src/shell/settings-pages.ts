@@ -27,6 +27,7 @@ export const ORG_SETTINGS_PAGES: SettingsPage[] = [
   { id: "guardrails", label: () => t("shell.settings.guardrails", "Guardrails"), icon: icons.security, path: "guardrails", right: "guardrails.view" },
   { id: "platform-keys", label: () => t("shell.settings.platformKeys", "Platform keys"), icon: icons.key, path: "platform-keys", right: "platform_keys.view" },
   { id: "webhooks", label: () => t("shell.settings.webhooks", "Webhooks"), icon: icons.send, path: "webhooks", right: "webhooks.view" },
+  { id: "shared-links", label: () => t("shell.settings.sharedLinks", "Shared links"), icon: icons.alias, path: "shared-links", right: "usage.share" },
   { id: "logging", label: () => t("shell.settings.logging", "Logging"), icon: icons.requestLog, path: "logging", right: "org.view" },
   { id: "audit-log", label: () => t("shell.page.auditLog", "Audit log"), icon: icons.audit, path: "audit-log", right: "audit_log.view" },
 ];
@@ -35,6 +36,7 @@ export const INSTANCE_PAGES: SettingsPage[] = [
   { id: "users", label: () => t("shell.settings.users", "Users"), icon: icons.members, path: "users" },
   { id: "orgs", label: () => t("shell.organizations", "Organizations"), icon: icons.organization, path: "orgs" },
   { id: "logging", label: () => t("shell.settings.logging", "Logging"), icon: icons.requestLog, path: "logging" },
+  { id: "linked-billing", label: () => t("shell.settings.linkedBilling", "Linked billing"), icon: icons.providerKey, path: "linked-billing" },
   { id: "updates", label: () => t("shell.settings.updates", "Updates"), icon: icons.update, path: "updates" },
   { id: "system", label: () => t("shell.settings.system", "System"), icon: icons.gateway, path: "system" },
   { id: "audit-log", label: () => t("shell.page.auditLog", "Audit log"), icon: icons.audit, path: "audit-log" },

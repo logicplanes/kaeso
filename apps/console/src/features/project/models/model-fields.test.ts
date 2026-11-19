@@ -1,7 +1,8 @@
 import { setFormatLocale } from "@logicplanes/kaeso-ui/format";
 import { afterEach, describe, expect, it } from "vitest";
 import { contextLabel, decisionLabels, dialectPill, tierLabels, unitPriceLabels } from "./model-fields";
-import { changedFields, decisionsOf, draftFrom, draftProblem } from "./model-form";
+import { changedFields, decisionsOf, draftFrom, draftProblem, editBase, inCurrency, inDollars } from "./model-form";
+import { exchangeRates } from "~/test/fixtures";
 
 const limits = [8192, 128_000, 200_000, 1_048_576, 2_000_000];
 
@@ -146,5 +147,55 @@ describe("decisions", () => {
     expect(draftProblem(custom, true)).toBe("A custom model needs its inputs and outputs.");
     expect(draftProblem({ ...custom, input_modalities: ["text"] }, true)).toBe("A custom decision model needs its input price.");
     expect(draftProblem({ ...custom, input_modalities: ["text"], input_price: "0.042" }, true)).toBeNull();
+  });
+});
+
+describe("prices in another currency", () => {
+  const rates = exchangeRates();
+  const inUse = { input_price: "2.777777778", output_price: "15", cache_read_price: "0.3" };
+
+  it("edits prices entered in euros as entered, and KPMR's in dollars as they are", () => {
+    const base = editBase(inUse, { currency: "EUR", input_price: "2.5" });
+    expect(base).toEqual({
+      ...inUse,
+      currency: "EUR",
+      input_price: "2.5",
+      output_price: null,
+      cache_read_price: null,
+      cache_write_price: null,
+      cache_write_1h_price: null,
+    });
+    expect(editBase(inUse, { input_price: "2.777777778" })).toBe(inUse);
+    const draft = draftFrom(base);
+    expect([draft.currency, draft.input_price, draft.output_price]).toEqual(["EUR", "2.5", ""]);
+    expect(changedFields({ ...draft, output_price: "10" }, base, [])).toEqual({ output_price: "10" });
+  });
+
+  it("sends every price again when the currency changes, turned into the new one", () => {
+    const draft = draftFrom(inUse);
+    expect(draft.currency).toBe("USD");
+    const euros = inCurrency(draft, "EUR", rates);
+    expect([euros.input_price, euros.output_price, euros.cache_read_price, euros.cache_write_price]).toEqual(["2.5", "13.5", "0.27", ""]);
+    expect(changedFields(euros, inUse, [])).toEqual({
+      currency: "EUR",
+      input_price: "2.5",
+      output_price: "13.5",
+      cache_read_price: "0.27",
+      cache_write_price: null,
+      cache_write_1h_price: null,
+    });
+    expect(inCurrency(euros, "USD", rates).output_price).toBe("15");
+    expect(changedFields(inCurrency(euros, "USD", rates), { ...inUse, currency: "EUR" }, [])).toMatchObject({ currency: null, output_price: "15" });
+    expect(inCurrency(draft, "CHF", rates).input_price).toBe("2.777777778");
+  });
+
+  it("shows the dollars a price is costed at and the rate's day, or that the currency has no rate", () => {
+    expect(inDollars("2.5", "0.9", "2026-11-13")).toBe("≈ $2.777778 at the ECB rate of 13 Nov 2026");
+    expect(inDollars("", "0.9", "2026-11-13")).toBeUndefined();
+    expect(inDollars("2.5", undefined, "2026-11-13")).toBe("No exchange rate for this currency yet; requests at these prices show an unknown cost.");
+  });
+
+  it("takes prices in any currency, still as decimal amounts", () => {
+    expect(draftProblem({ ...draftFrom({}), currency: "EUR", input_price: "2,5" }, false)).toBe("Prices are decimal amounts, like 3.00.");
   });
 });

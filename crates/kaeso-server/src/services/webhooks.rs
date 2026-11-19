@@ -32,10 +32,13 @@ use crate::services::notifications::dispatch::{Send, deliver, org_holders, setti
 use crate::state::AppState;
 
 /// The notices a webhook can take: those about an organization, never one person's.
-pub const KINDS: [Kind; 9] = [
+pub const KINDS: [Kind; 12] = [
     Kind::BudgetAlerts,
     Kind::LimitReached,
     Kind::KeyExpiry,
+    Kind::ModelDeprecated,
+    Kind::ModelShutdownSoon,
+    Kind::ModelLines,
     Kind::ContentLogging,
     Kind::McpServers,
     Kind::OrgSecurity,
@@ -348,6 +351,17 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                     "provider_key.signed_out",
                     with(base, json!({ "signed_out_at": at(*when) })),
                 ),
+                ProviderKey::SpendLimitReached { at: when, resets } => (
+                    "provider_key.spend_limit_reached",
+                    with(
+                        base,
+                        json!({ "refused_at": at(*when), "resets_at": at(*resets) }),
+                    ),
+                ),
+                ProviderKey::Unlinked { at: when } => (
+                    "provider_key.unlinked",
+                    with(base, json!({ "unlinked_at": at(*when) })),
+                ),
             }
         }
         Fact::ServerSignedOut { server } => ("mcp_server.signed_out", json!({ "server": server })),
@@ -365,6 +379,46 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                 "model.delisted",
                 json!({ "provider": provider, "model": model }),
             ),
+            ModelChange::Deprecated {
+                shutdown_on,
+                replacement,
+            } => (
+                "model.deprecated",
+                json!({
+                    "provider": provider,
+                    "model": model,
+                    "shutdown_on": shutdown_on.map(kaeso_core::kpmr::day::format),
+                    "replacement": replacement,
+                }),
+            ),
+            ModelChange::ShutdownSoon {
+                shutdown_on,
+                days,
+                replacement,
+                requests,
+            } => (
+                "model.shutdown_soon",
+                json!({
+                    "provider": provider,
+                    "model": model,
+                    "shutdown_on": kaeso_core::kpmr::day::format(*shutdown_on),
+                    "days_left": days,
+                    "replacement": replacement,
+                    "requests_7d": requests,
+                }),
+            ),
+            ModelChange::Moved {
+                replacement,
+                aliases,
+            } => (
+                "model.moved",
+                json!({
+                    "provider": provider,
+                    "model": model,
+                    "replacement": replacement,
+                    "aliases": aliases,
+                }),
+            ),
             ModelChange::Price(prices) => (
                 "model.price_changed",
                 json!({
@@ -378,6 +432,49 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                 }),
             ),
         },
+        Fact::OrgSecurity {
+            change: Security::SharedLinkCreated { name, public },
+            by,
+        } => (
+            "share.created",
+            json!({
+                "title": name,
+                "audience": if *public { "anyone" } else { "members" },
+                "by": actor(by),
+            }),
+        ),
+        Fact::Line {
+            provider,
+            line,
+            change,
+            ..
+        } => {
+            let prices = |prices: &[kaeso_mail::notices::LinePrice]| {
+                prices
+                    .iter()
+                    .map(|p| json!({ "price": p.price, "from": p.from, "to": p.to }))
+                    .collect::<Vec<_>>()
+            };
+            match change {
+                kaeso_mail::notices::LineChange::Moved {
+                    from,
+                    to,
+                    prices: changed,
+                    how,
+                } => (
+                    "line.moved",
+                    json!({ "provider": provider, "line": line, "from": from, "to": to, "prices": prices(changed), "policy": how }),
+                ),
+                kaeso_mail::notices::LineChange::Available {
+                    from,
+                    to,
+                    prices: changed,
+                } => (
+                    "line.move_available",
+                    json!({ "provider": provider, "line": line, "from": from, "to": to, "prices": prices(changed) }),
+                ),
+            }
+        }
         Fact::OrgSecurity { change, by } => {
             let (what, key) = match change {
                 Security::SignInRules => ("sign_in_rules", None),
@@ -386,6 +483,7 @@ fn typed(fact: &Fact<'_>) -> Option<(&'static str, Value)> {
                 Security::KeyPolicy => ("key_policy", None),
                 Security::PlatformKeyCreated(name) => ("platform_key_created", Some(*name)),
                 Security::PlatformKeyRotated(name) => ("platform_key_rotated", Some(*name)),
+                Security::SharedLinkCreated { .. } => ("shared_link_created", None),
             };
             (
                 "organization.security_changed",

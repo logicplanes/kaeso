@@ -4,6 +4,7 @@ import { providers as providerList, signedIn, whoAmI, without } from "~/test/fix
 import { credential, hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, apiKey, catalogueModel, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { errorGroup, listPage, logEntry, logRow, logsData } from "~/test/fixtures/project-logs";
+import { me as account } from "~/test/fixtures/instance-account";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -62,6 +63,28 @@ describe("LogsPage", () => {
     expect(lastQuery()).toMatchObject({ limit: "100" });
     expect(lastQuery().from).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(lastQuery().to).toBeUndefined();
+  });
+
+  it("shows each cost in the currency picked under the dollars, and in the request's details", async () => {
+    signedIn();
+    on("GET", "me", account({ display_currency: "EUR" }));
+    projectData({ keys: [apiKey()] });
+    logsData({
+      rows: [logRow({ converted_cost: "0.000378" }), logRow({ id: "req_0002", cost: "0", cost_known: false })],
+      entries: [logEntry({ converted_cost: "0.000378" })],
+    });
+    const { user } = await renderApp(projectPath("logs"));
+
+    const table = await screen.findByRole("grid", { name: "Requests" });
+    await waitFor(() => expect(within(table).getByText("≈ €0.0004")).toBeInTheDocument());
+    expect(within(table).getAllByText(/≈/)).toHaveLength(1);
+    expect(lastQuery()).toMatchObject({ currency: "EUR" });
+    expect(screen.getByRole("combobox", { name: "Currency" })).toHaveTextContent("EUR");
+
+    await user.click(within(table).getAllByRole("row")[1] as HTMLElement);
+    const details = await screen.findByRole("dialog", { name: /^\d{3}/ });
+    await waitFor(() => expect(within(details).getByText("≈ €0.0004")).toBeInTheDocument());
+    expect(requests("GET", `${LOGS}/:log`).map((r) => r.query.get("currency"))).toContain("EUR");
   });
 
   it("says a decision's output tokens cost nothing", async () => {

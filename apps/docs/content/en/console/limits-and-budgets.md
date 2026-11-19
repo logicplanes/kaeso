@@ -56,6 +56,10 @@ Editing a limit changes its amount and, for a budget, its alerts and whether it'
 
 If someone else changed the limit after the page loaded, saving says so and loads the current limit. Make your change again on top of it.
 
+**Copy to…** in the menu of a member's or key's limit makes the same limit for another member, service account or key: you only choose whom, and the kind, amount, period, model and alerts come from the limit you copy. Those that already have a limit of that kind, period and model aren't offered, because each may have only one.
+
+**Sort** orders each level by **Level**, the default, or by **Most used**, the fullest limit first and those whose use isn't known last. The page's address keeps the order.
+
 ## What an app sees
 
 Kaeso answers a refused request with status 429, in the app's own API format, with a message that names the limit:
@@ -63,6 +67,8 @@ Kaeso answers a refused request with status 429, in the app's own API format, wi
 - Over a rate, the message says when to retry, and the `Retry-After` header gives the seconds.
 - With a budget used up, the message says when the budget resets.
 - Over a tool call rate, an MCP client gets status 429 with `Retry-After` and a JSON-RPC error that says when to retry.
+
+Apps don't have to wait for a 429. Every model API answer carries `kaeso-limits` with how much of each rate and hard budget is left and when it frees up, so a batch job can slow down near a token rate and an agent can stop before a budget runs out, such as `"key.requests.minute";limit=60;remaining=41;reset=17`. A 429 from Kaeso carries the limit that refused it with `remaining=0`. It is sent only when the key's owner may see the project's limits, and spend only with the right to see costs ([response headers](../api/model-api.md)).
 
 While requests still running could use up a hard budget or a token rate, Kaeso refuses the next request with `Retry-After: 1` until they finish. Each running request holds what it can cost at most, at the model's prices. That is its input, estimated from its size, and its output limit (`max_tokens` or `max_output_tokens`, or else the model's own). A stream holds it for as long as it runs.
 

@@ -65,6 +65,8 @@ The catalogue is a JSON document in Kaeso's own format, versioned by a format nu
 - **Every key is present.** An unknown value is `null`, so Kaeso can tell "unknown" from "no".
 - **Prices are exact decimal strings** in US dollars per million tokens, never floating-point numbers. `cache_write_1h` is the price of a cache write kept for an hour, where the provider documents one.
 - **`pricing.tiers`** lists a model's long-context prices, lowest `context_above` first, or is empty. A tier's prices apply to every token of a request whose prompt is longer than `context_above` tokens; a `null` price is the base price.
+- **`lifecycle`** has the days the provider announced, deprecates and shuts down the model and the `replacement` it recommends, each `null` until announced. `status` is `deprecated` and then `retired` on those days ([model lifecycle](model-lifecycle.md)).
+- **`lines`** on each provider names its model lines, such as `claude-opus-latest`, with the `model` each points at, `since` and the `previous` model. KPMR builds one per family at its newest active model ([model lines](../console/models-and-aliases.md#model-lines)).
 - **`gateway.egress_dialect`** names the API format Kaeso sends the model in, when it isn't the provider's default.
 - **Unknown keys are ignored.** A new field in format 1 doesn't break an older gateway; a change that would break it becomes format 2.
 
@@ -80,6 +82,8 @@ Decision models cost their input tokens; their output price is `0`.
 ## How the gateway fetches it
 
 A job checks every five minutes whether the gateway is due to ask KPMR again. With `kpmr.interval` at `auto`, it follows the catalogue's `refresh_seconds`, kept between 5 minutes and 24 hours; a duration such as `6h` replaces it. After a failed attempt, the gateway tries again within an hour.
+
+**Sync now** on the **Model data** card under **Instance** › **System**, or `docker compose exec gateway kaeso kpmr sync` on the server, fetches it at once, and every gateway of the install takes the new data. Both need `kpmr.sync` on.
 
 ```mermaid
 sequenceDiagram

@@ -13,6 +13,7 @@ import {
   Meter,
   Tabs,
   Segmented,
+  Select,
   StepDialog,
   Text,
   Tooltip,
@@ -29,7 +30,7 @@ import { limitsQuery } from "~/api/queries/limits";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
-import { LimitEditor, limitBody, newLimit, type LimitDraft } from "~/kaeso/limit-editor";
+import { LimitEditor, draftOf, limitBody, newLimit, type LimitDraft } from "~/kaeso/limit-editor";
 import { EditLimitDialog, RemoveLimitDialog, limitBlocker, useLimitText, useParentLimits, type LimitOwner, type LimitTarget } from "~/kaeso/limits-section";
 import { usePageCreateAction } from "~/shell/create-action";
 import { ProjectHeader } from "~/shell/project-header";
@@ -39,9 +40,26 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { locale, t, type Locale } from "~/i18n";
 import { LoadFailed } from "~/features/org/load-failed";
 import { common } from "~/i18n/common";
+import { Share, lastDays } from "~/kaeso/share";
 
 type Level = "project" | "member" | "key";
-export type LimitsSearch = { level?: Level; add?: boolean };
+export type LimitsSearch = { level?: Level; sort?: "used"; add?: boolean };
+
+// How full a limit is, or null when its use isn't known.
+const share = (l: LimitView): number | null => {
+  const amount = Number(l.amount);
+  return l.used == null || !(amount > 0) ? null : Number(l.used) / amount;
+};
+
+const byUse = (a: LimitView, b: LimitView): number => {
+  const x = share(a);
+  const y = share(b);
+  return x === y ? 0 : x === null ? 1 : y === null ? -1 : y - x;
+};
+
+// The member, service account or key a limit applies to, as the add dialog's picker names it.
+const subjectValue = (l: LimitView): string =>
+  l.subject.type === "user" ? `user:${l.subject.id}` : l.subject.type === "service_account" ? `sa:${l.subject.id}` : l.subject.id;
 
 const LEVEL_IDS: Level[] = ["project", "member", "key"];
 
@@ -80,12 +98,19 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
   const [editing, setEditing] = useState<LimitView>();
   const [removing, setRemoving] = useState<LimitView | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [copying, setCopying] = useState<LimitView>();
   const canManage = rights.has("limits.manage");
   const reason = canManage ? undefined : needs("limits.manage");
   usePageCreateAction({ label: t("limits.add", "Add limit"), run: () => setAdding(true), disabledReason: reason });
 
-  const setLevel = (level: Level | undefined) =>
-    void navigate({ to: "/orgs/$org/projects/$project/limits", params: { org, project }, search: level ? { level } : {}, replace: true });
+  const go = (next: { level?: Level | undefined; sort?: "used" | undefined }) =>
+    void navigate({
+      to: "/orgs/$org/projects/$project/limits",
+      params: { org, project },
+      search: { ...(next.level ? { level: next.level } : {}), ...(next.sort ? { sort: next.sort } : {}) },
+      replace: true,
+    });
+  const setLevel = (level: Level | undefined) => go({ level, sort: search.sort });
 
   const all = useMemo(() => limits.data ?? [], [limits.data]);
   const levelList = levels();
@@ -93,7 +118,9 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
   const groups: ListGroup[] = levelList
     .filter((l) => !level || l === level)
     .map((l) => {
-      const list = all.filter((x) => x.level === l.value).sort((a, b) => Number(archivedKey(a)) - Number(archivedKey(b)));
+      const list = all
+        .filter((x) => x.level === l.value)
+        .sort((a, b) => (search.sort === "used" ? byUse(a, b) : 0) || Number(archivedKey(a)) - Number(archivedKey(b)));
       return {
         id: l.value,
         title: l.title,
@@ -120,6 +147,11 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
                 <Menu.Item icon={icons.edit} onClick={() => setEditing(x)}>
                   {common.edit()}
                 </Menu.Item>
+                {x.level !== "project" && (
+                  <Menu.Item icon={icons.copy} onClick={() => setCopying(x)}>
+                    {t("limits.copyTo", "Copy to…")}
+                  </Menu.Item>
+                )}
                 <Menu.Item icon={icons.delete} variant="danger" onClick={() => remove(x)}>
                   {common.remove()}
                 </Menu.Item>
@@ -155,16 +187,30 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
           </Tabs>
         }
         actions={
-          <Button
-            size="sm"
-            variant="primary"
-            leadingIcon={icons.add}
-            disabled={!canManage}
-            {...(reason ? { disabledReason: reason } : {})}
-            onClick={() => setAdding(true)}
-          >
-            {t("limits.add", "Add limit")}
-          </Button>
+          <span className="flex items-center gap-8">
+            <Select
+              aria-label={t("limits.sort", "Sort")}
+              size="sm"
+              icon={icons.sort}
+              value={search.sort ?? "level"}
+              onValueChange={(v) => go({ level: search.level, sort: v === "used" ? "used" : undefined })}
+              options={[
+                { value: "level", label: t("limits.sortLevel", "Level") },
+                { value: "used", label: t("limits.sortUsed", "Most used") },
+              ]}
+            />
+            <Share org={org} target={{ kind: "budget", project, ...lastDays(1), costs: rights.has("costs.view") }} />
+            <Button
+              size="sm"
+              variant="primary"
+              leadingIcon={icons.add}
+              disabled={!canManage}
+              {...(reason ? { disabledReason: reason } : {})}
+              onClick={() => setAdding(true)}
+            >
+              {t("limits.add", "Add limit")}
+            </Button>
+          </span>
         }
       />
       <AppFrame.Body padding="list">
@@ -207,6 +253,23 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
       )}
       {removing && <RemoveLimitDialog org={org} project={project} limit={removing} open={removeOpen} onOpenChange={setRemoveOpen} />}
       {adding && <AddLimitDialog org={org} project={project} initialLevel={search.level ?? "project"} onClose={() => setAdding(false)} />}
+      {copying && (
+        <AddLimitDialog
+          org={org}
+          project={project}
+          initialLevel={copying.level as Level}
+          copy={{
+            draft: draftOf(copying),
+            // The gateway allows one limit of a kind, model and period per subject.
+            taken: new Set(
+              all
+                .filter((x) => x.level === copying.level && x.kind === copying.kind && x.model === copying.model && x.period === copying.period)
+                .map(subjectValue),
+            ),
+          }}
+          onClose={() => setCopying(undefined)}
+        />
+      )}
     </>
   );
 }
@@ -285,7 +348,20 @@ function useSubjectName(org: string, project: string) {
   };
 }
 
-function AddLimitDialog({ org, project, initialLevel, onClose }: { org: string; project: string; initialLevel: Level; onClose: () => void }) {
+function AddLimitDialog({
+  org,
+  project,
+  initialLevel,
+  copy,
+  onClose,
+}: {
+  org: string;
+  project: string;
+  initialLevel: Level;
+  /** Making an existing limit for someone else: its settings, and the subjects that have one like it. */
+  copy?: { draft: LimitDraft; taken: ReadonlySet<string> } | undefined;
+  onClose: () => void;
+}) {
   const rights = useProjectRights(org, project);
   const members = useQuery({ ...projectMembersQuery(org, project), enabled: rights.has("project.members.view") });
   const accounts = useQuery({ ...serviceAccountsQuery(org, project), enabled: rights.has("service_accounts.view") });
@@ -293,13 +369,17 @@ function AddLimitDialog({ org, project, initialLevel, onClose }: { org: string; 
   const catalogue = useQuery(catalogueQuery(org, project));
   const [level, setLevel] = useState<Level>(initialLevel);
   const [subject, setSubject] = useState<string | null>(null);
-  const [draft, setDraft] = useState<LimitDraft>(newLimit());
+  const [draft, setDraft] = useState<LimitDraft>(copy?.draft ?? newLimit());
+  const free = (o: { value: string }) => !copy?.taken.has(o.value);
 
   const memberOptions = [
     ...(members.data ?? []).map((m) => ({ value: `user:${m.user.id}`, label: m.user.name, description: m.user.email ?? undefined })),
     ...(accounts.data ?? []).map((a) => ({ value: `sa:${a.id}`, label: a.name, description: t("limits.serviceAccount", "Service account") })),
-  ];
-  const keyOptions = (keys.data ?? []).filter((k) => k.state !== "archived").map((k) => ({ value: k.id, label: k.name, description: k.redacted }));
+  ].filter(free);
+  const keyOptions = (keys.data ?? [])
+    .filter((k) => k.state !== "archived")
+    .map((k) => ({ value: k.id, label: k.name, description: k.redacted }))
+    .filter(free);
 
   const target: LimitTarget | null =
     level === "project"
@@ -335,7 +415,7 @@ function AddLimitDialog({ org, project, initialLevel, onClose }: { org: string; 
     <StepDialog
       open
       onOpenChange={(o) => !o && onClose()}
-      title={t("limits.add", "Add limit")}
+      title={copy ? t("limits.copyTitle", "Copy limit") : t("limits.add", "Add limit")}
       submitLabel={t("limits.add", "Add limit")}
       submitting={add.isPending}
       onSubmit={() => target && !limitBlocker(draft, parents) && add.mutate(target)}
@@ -352,19 +432,21 @@ function AddLimitDialog({ org, project, initialLevel, onClose }: { org: string; 
               : t("limits.chooseKey", "Choose a key"),
           content: (
             <div className="flex flex-col gap-12">
-              <Segmented
-                aria-label={t("limits.appliesTo", "Applies to")}
-                value={level}
-                onValueChange={(v) => {
-                  setLevel(v as Level);
-                  setSubject(null);
-                }}
-                options={LEVEL_IDS.map((l) => ({
-                  value: l,
-                  label: l === "member" ? t("limits.member", "Member") : l === "key" ? t("limits.key", "Key") : common.project(),
-                }))}
-                fullWidth
-              />
+              {!copy && (
+                <Segmented
+                  aria-label={t("limits.appliesTo", "Applies to")}
+                  value={level}
+                  onValueChange={(v) => {
+                    setLevel(v as Level);
+                    setSubject(null);
+                  }}
+                  options={LEVEL_IDS.map((l) => ({
+                    value: l,
+                    label: l === "member" ? t("limits.member", "Member") : l === "key" ? t("limits.key", "Key") : common.project(),
+                  }))}
+                  fullWidth
+                />
+              )}
               {level !== "project" && (
                 <Combobox
                   aria-label={level === "member" ? t("limits.memberOrAccount", "Member or service account") : t("limits.key", "Key")}

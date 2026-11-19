@@ -119,10 +119,22 @@ struct Setup {
 }
 
 async fn setup(mode: &str) -> Setup {
+    setup_with(mode, false).await
+}
+
+/// With `entra`, the mock provider counts as a Microsoft Entra ID cloud with its mock Graph.
+async fn setup_with(mode: &str, entra: bool) -> Setup {
     let s = TestServices::start().await;
-    let app = App::start(&s).await;
-    let owner = app.setup().await;
     let idp = MockIdp::start("kaeso", "client-secret").await;
+    let accounts = entra.then(|| kaeso_server::services::provider_accounts::Endpoints {
+        entra: vec![kaeso_server::auth::entra::Cloud {
+            login: idp.issuer().to_owned(),
+            graph: idp.graph(),
+        }],
+        ..Default::default()
+    });
+    let app = App::start_full(&s, &[], None, None, accounts).await;
+    let owner = app.setup().await;
     connect(&app, &owner, &idp).await;
     let mapped = common::create_project(&app, &owner.org_id, &owner.cookie, "Checkout").await;
     let by_hand = common::create_project(&app, &owner.org_id, &owner.cookie, "Support").await;
@@ -271,6 +283,90 @@ async fn add_only_keeps_what_a_rule_gave_and_a_missing_claim_changes_nothing() {
         )
         .await;
     assert!(r.body["claim_missing_at"].is_string(), "{:?}", r.body);
+    t.s.cleanup().await;
+}
+
+async fn last_groups(app: &App, owner: &Owner, cookie: &str) -> Value {
+    app.get(
+        &format!("/orgs/{}/security/sso/groups", owner.org_id),
+        cookie,
+    )
+    .await
+    .body
+}
+
+#[tokio::test]
+async fn too_many_entra_groups_for_the_token_are_read_from_graph_and_a_refused_read_changes_nothing()
+ {
+    let t = setup_with("sync", true).await;
+    let (app, owner, idp) = (&t.app, &t.owner, &t.idp);
+    idp.set_groups_overage("dee@acme.example", &["g-1", "kaeso-admins", "g-3"]);
+    let (cookie, dee) = sign_in(app, idp, "dee@acme.example").await;
+    assert_eq!(role(app, owner, &dee).await, "admin");
+    assert_eq!(
+        in_project(app, owner, &t.mapped, &dee).await.as_deref(),
+        Some("developer")
+    );
+    let read = last_groups(app, owner, &cookie).await;
+    assert_eq!(
+        read["your_last_groups"],
+        json!(["g-1", "a-directory-role", "kaeso-admins", "g-3"]),
+        "every page, groups and directory roles, as the token would list them"
+    );
+    assert_eq!(read["claim_missing_at"], Value::Null);
+
+    idp.set_graph_refuses(true);
+    sign_in(app, idp, "dee@acme.example").await;
+    assert_eq!(
+        role(app, owner, &dee).await,
+        "admin",
+        "a refused read keeps the role"
+    );
+    assert!(in_project(app, owner, &t.mapped, &dee).await.is_some());
+    assert!(
+        last_groups(app, owner, &owner.cookie).await["claim_missing_at"].is_string(),
+        "and shows as a sign-in without the claim"
+    );
+    t.s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_overage_from_a_provider_other_than_entra_changes_nothing() {
+    let t = setup("sync").await;
+    let (app, owner, idp) = (&t.app, &t.owner, &t.idp);
+    idp.set_groups("eve@acme.example", Some(&["kaeso-admins"]));
+    let (_, eve) = sign_in(app, idp, "eve@acme.example").await;
+    assert_eq!(role(app, owner, &eve).await, "admin");
+    idp.set_groups_overage("eve@acme.example", &["everyone"]);
+    sign_in(app, idp, "eve@acme.example").await;
+    assert_eq!(role(app, owner, &eve).await, "admin");
+    assert!(in_project(app, owner, &t.mapped, &eve).await.is_some());
+    assert!(last_groups(app, owner, &owner.cookie).await["claim_missing_at"].is_string());
+    t.s.cleanup().await;
+}
+
+#[tokio::test]
+async fn rules_can_match_app_roles_in_the_roles_claim() {
+    let t = setup("sync").await;
+    let (app, owner, idp) = (&t.app, &t.owner, &t.idp);
+    let r = rules(
+        app,
+        owner,
+        json!({ "claim": "roles", "mode": "sync", "rules": [{ "group": "Kaeso.Admin", "role": "admin" }] }),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    idp.set_groups("fay@acme.example", Some(&["kaeso-admins"]));
+    idp.set_claim("fay@acme.example", "roles", Some(&["Kaeso.Admin"]));
+    let (_, fay) = sign_in(app, idp, "fay@acme.example").await;
+    assert_eq!(role(app, owner, &fay).await, "admin");
+    idp.set_claim("fay@acme.example", "roles", Some(&[]));
+    sign_in(app, idp, "fay@acme.example").await;
+    assert_eq!(
+        role(app, owner, &fay).await,
+        "member",
+        "the role assignment is gone"
+    );
     t.s.cleanup().await;
 }
 

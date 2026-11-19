@@ -1,0 +1,27 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] gpt-4o shuts down in 7 days
+
+gpt-4o shuts down in 7 days
+
+Acme / Checkout
+
+Checkout called gpt-4o 1,234 times in the last 7 days; move it to gpt-5.5.
+
+Project: Checkout
+Provider: OpenAI
+Model: gpt-4o
+Shuts down: 30 Nov 2026
+Replacement: gpt-5.5
+Requests in the last 7 days: 1,234
+
+Open models:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you hold the right “View models”.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

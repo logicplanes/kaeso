@@ -1,0 +1,26 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] claude-opus-latest 可以切换到 claude-opus-5-5
+
+claude-opus-latest 可以切换到 claude-opus-5-5
+
+Acme / Checkout
+
+Checkout 会在 claude-opus-latest 切换前征求您的同意；请选择切换或保持不变。
+
+项目： Checkout
+服务商： Anthropic
+系列： claude-opus-latest
+之前： claude-opus-5
+现在： claude-opus-5-5
+
+打开系列：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有“管理模型”权限。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

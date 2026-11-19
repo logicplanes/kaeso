@@ -5,6 +5,7 @@ import { me } from "~/test/fixtures/instance-account";
 import { listed, projectData } from "~/test/fixtures/project";
 import { on, page } from "~/test/network";
 import { renderApp, type RenderedApp } from "~/test/render";
+import { PROJECT_PAGES } from "./pages";
 
 const PROJECT_BASE = `/orgs/${ORG}/projects/${PROJECT}`;
 
@@ -12,6 +13,11 @@ function visits(router: RenderedApp["router"]): string[] {
   const seen: string[] = [];
   router.history.subscribe(({ location }) => seen.push(location.pathname));
   return seen;
+}
+
+function rows(sheet: HTMLElement, group: string): string[] {
+  const region = within(sheet).getByRole("region", { name: group });
+  return Array.from(region.querySelectorAll("dt"), (dt) => dt.textContent ?? "");
 }
 
 async function ready() {
@@ -161,27 +167,100 @@ describe("keyboard shortcuts", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("shows every shortcut with a question mark", async () => {
+  it("shows every shortcut with a question mark, with only the go-to keys that work outside a project", async () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
     await ready();
     await user.keyboard("?");
     const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
-    expect(within(sheet).getByText("Search and commands")).toBeInTheDocument();
-    expect(within(sheet).getByText("Go to the audit log")).toBeInTheDocument();
+    expect(rows(sheet, "Anywhere")).toEqual([
+      "Search and commands",
+      "Create on this page",
+      "Search this page",
+      "Collapse or expand the sidebar",
+      "Close a dialog or panel",
+      "This list",
+    ]);
+    expect(within(sheet).queryByRole("region", { name: "Go to a project page" })).not.toBeInTheDocument();
+    expect(rows(sheet, "Go to")).toEqual(["Organization overview", "Organization audit log", "Organization settings"]);
+    expect(rows(sheet, "On some pages")).toEqual([
+      "Next entry in request logs and tool calls",
+      "Previous entry in request logs and tool calls",
+      "Save a route",
+      "Undo in the route editor",
+      "Redo in the route editor",
+    ]);
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Keyboard shortcuts" })).not.toBeInTheDocument());
     await user.keyboard("?");
     expect(await screen.findByRole("dialog", { name: "Keyboard shortcuts" })).toBeInTheDocument();
   });
 
-  it("leaves the request logs out of the shortcuts when request logs are off", async () => {
-    signedIn({ session: whoAmI({ request_logs: false }) });
-    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+  it("lists a project's go-to keys from its pages, leaving out the ones the person can't open", async () => {
+    signedIn({ projectRights: ALL_PROJECT_RIGHTS.filter((r) => r !== "keys.all.view") });
+    projectData();
+    const { user } = await renderApp(`${PROJECT_BASE}/limits`);
     await ready();
     await user.keyboard("?");
     const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
-    expect(within(sheet).getByText("Go to analytics")).toBeInTheDocument();
-    expect(within(sheet).queryByText("Go to request logs")).not.toBeInTheDocument();
+    const project = within(sheet).getByRole("region", { name: "Go to a project page" });
+    expect(rows(sheet, "Go to a project page")).toEqual(PROJECT_PAGES.filter((p) => p.id !== "keys").map((p) => p.label()));
+    expect(within(project).getByText("Playground").closest("div")).toHaveTextContent(/G\s*then\s*Y/);
+    expect(rows(sheet, "Go to")).toEqual(["Organization settings"]);
+  });
+
+  it("goes to the remaining project pages with g and a letter", async () => {
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/projects/:project/members", page([]));
+    on("GET", "orgs/:org/projects/:project/service-accounts", page([]));
+    on("GET", "orgs/:org/projects/:project/audit-log", page([]));
+    const { user, router } = await renderApp(`${PROJECT_BASE}/settings`);
+    await ready();
+    for (const [key, path] of [
+      ["i", "limits"],
+      ["e", "members"],
+      ["v", "service-accounts"],
+      ["a", "audit-log"],
+      ["y", "playground"],
+    ]) {
+      await user.keyboard(`g${key}`);
+      await waitFor(() => expect(router.state.location.pathname).toBe(`${PROJECT_BASE}/${path}`));
+    }
+  });
+
+  it("opens the organization's audit log from a project whose audit log the person can't see", async () => {
+    signedIn({ projectRights: ALL_PROJECT_RIGHTS.filter((r) => r !== "project.audit_log.view") });
+    projectData();
+    const { user, router } = await renderApp(`${PROJECT_BASE}/limits`);
+    await ready();
+    await user.keyboard("?");
+    const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(rows(sheet, "Go to")).toEqual(["Organization audit log", "Organization settings"]);
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await user.keyboard("ga");
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/settings/orgs/${ORG}/audit-log`));
+  });
+
+  it("leaves the request logs out of the shortcuts when request logs are off", async () => {
+    signedIn({ session: whoAmI({ request_logs: false }) });
+    projectData();
+    const { user } = await renderApp(`${PROJECT_BASE}/limits`);
+    await ready();
+    await user.keyboard("?");
+    const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(rows(sheet, "Go to a project page")).toContain("Analytics");
+    expect(rows(sheet, "Go to a project page")).not.toContain("Request logs");
+  });
+
+  it("shows only the account's settings away from any organization", async () => {
+    signedIn({ session: whoAmI({ memberships: [] }), memberships: [] });
+    on("GET", "me", me());
+    const { user } = await renderApp("/settings/account/appearance");
+    await screen.findByRole("heading", { name: "Appearance" });
+    await user.keyboard("?");
+    const sheet = await screen.findByRole("dialog", { name: "Keyboard shortcuts" });
+    expect(rows(sheet, "Go to")).toEqual(["Account settings"]);
   });
 });

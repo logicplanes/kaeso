@@ -113,9 +113,10 @@ Eine Anmeldung über Single Sign-on verwaltet die Instanz erst, wenn ein Instanz
 
 ## Wieder hineinkommen
 
-Wenn kein Weg hinein funktioniert, geben Sie auf dem Server einen einmaligen Anmeldelink für ein bestehendes Konto aus. Das hilft, wenn der Identitätsanbieter ausgefallen oder falsch eingerichtet ist oder die Einrichtungssitzung endete, bevor Single Sign-on funktionierte:
+Wenn kein Weg hinein funktioniert, geben Sie auf dem Server einen einmaligen Anmeldelink für ein bestehendes Konto aus. Das hilft, wenn der Identitätsanbieter ausgefallen oder falsch eingerichtet ist oder die Einrichtungssitzung endete, bevor Single Sign-on funktionierte. Um die Adresse eines Instanz-Admins zu finden, listen Sie die Instanz-Admins zuerst auf; `kaeso user list` ohne `--instance-admins` listet jedes Konto, und `--search` grenzt nach Adresse oder Name ein. Jede Zeile nennt Adresse, Name, Zustand, ob das Konto Instanz-Admin ist und Zwei-Faktor-Authentifizierung nutzt, und wann es erstellt wurde:
 
 ```bash
+docker compose exec gateway kaeso user list --instance-admins
 docker compose exec gateway kaeso user sign-in-link owner@example.com
 ```
 

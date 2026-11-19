@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM linked_billing_fallbacks WHERE org_id = $1 AND project_id = $2 AND provider = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2893580a521618ac380d68a3d29e8b476699ce0ba98b172fb89843c55fb452fe"
+}

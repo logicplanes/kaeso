@@ -27,6 +27,8 @@ KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 2. Wählen Sie **Test-E-Mail senden**. Sie geht an Sie oder an die Adresse, die Sie eingeben.
 3. Scheitert sie oder kommt sie nicht an, lesen Sie die Antwort des SMTP-Servers im Protokoll des Gateways mit `docker compose logs gateway`.
 
+Auf dem Server sendet `docker compose exec gateway kaeso mail test you@example.com` denselben Test mit den Einstellungen des Gateways, ohne Anmeldung, und gibt aus, was der SMTP-Server geantwortet hat.
+
 Die [Fehlerbehebung](troubleshooting.md#e-mails-kommen-nicht-an) nennt die üblichen Ursachen.
 
 ## Kaeso ohne Mailserver ausprobieren
