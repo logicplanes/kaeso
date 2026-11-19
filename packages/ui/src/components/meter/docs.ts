@@ -15,6 +15,8 @@ export const docs = {
       trailing: "Content at the end of the label row, such as the value.",
       value: "0–1 (or more when over the limit).",
       valueLabel: '"$32.10 of $50.00"',
+      valueText:
+        'What screen readers hear as the value when `valueLabel` is not plain text, such as a shortened figure with the exact one in a tooltip: "10,624,184 of 100,000,000".',
     },
   },
   Progress: {

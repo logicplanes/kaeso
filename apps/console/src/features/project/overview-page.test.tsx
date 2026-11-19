@@ -136,7 +136,8 @@ describe("the project overview", () => {
     const limits = (await screen.findByRole("heading", { name: "Limits" })).closest("section") as HTMLElement;
     await waitFor(() => expect(limits).toHaveTextContent("Over the last minute"));
     expect(limits).toHaveTextContent("12 of 600");
-    expect(limits).toHaveTextContent("0 of 1,000,000");
+    expect(within(limits).getByText("0 of 1M")).toHaveAttribute("aria-hidden", "true");
+    expect(within(limits).getByText("0 of 1,000,000")).toBeInTheDocument();
     expect(limits).toHaveTextContent("Never resets");
   });
 
