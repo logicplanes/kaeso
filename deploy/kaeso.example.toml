@@ -214,6 +214,9 @@ base_url = "https://api.replicate.com"
 [providers.deepgram]
 base_url = "https://api.deepgram.com"
 
+[providers.cartesia]
+base_url = "https://api.cartesia.ai"
+
 [custom_providers]
 enabled = true
 allowed_networks = ""

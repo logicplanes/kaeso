@@ -149,6 +149,13 @@ doc = false
 bench = false
 
 [[bin]]
+name = "decode_cartesia"
+path = "fuzz_targets/decode_cartesia.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "decode_dashscope"
 path = "fuzz_targets/decode_dashscope.rs"
 test = false

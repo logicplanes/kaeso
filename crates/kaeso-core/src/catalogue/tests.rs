@@ -3750,3 +3750,23 @@ fn replicate_models_are_priced_per_output_image_and_second() {
     let kling = eff(&entry("replicate", "kwaivgi/kling-v2.5-turbo-pro"));
     assert_eq!(media_cost(&clip(None), &kling.fields), dec!(0.56));
 }
+
+#[test]
+fn cartesia_models_are_priced_per_character_and_per_minute_of_audio() {
+    use crate::cost::{MediaUnits, media_cost};
+    assert_eq!(snapshot().providers["cartesia"].models.len(), 4);
+    let sonic = eff(&entry("cartesia", "sonic-3.6"));
+    assert_eq!(sonic.dialect, DialectId::Cartesia);
+    let spoken = MediaUnits {
+        characters: 1000,
+        ..MediaUnits::default()
+    };
+    assert_eq!(media_cost(&spoken, &sonic.fields), dec!(0.065));
+    let ink = eff(&entry("cartesia", "ink-whisper"));
+    assert_eq!(ink.dialect, DialectId::Cartesia);
+    let heard = MediaUnits {
+        input_ms: 120_000,
+        ..MediaUnits::default()
+    };
+    assert_eq!(media_cost(&heard, &ink.fields), dec!(0.0039));
+}

@@ -5,6 +5,7 @@ use kaeso_kpp::{
 
 use crate::anthropic_messages::AnthropicMessages;
 use crate::bedrock_converse::BedrockConverse;
+use crate::cartesia::Cartesia;
 use crate::cohere_rerank::CohereRerank;
 use crate::dashscope::DashScope;
 use crate::deepgram::Deepgram;
@@ -72,6 +73,7 @@ macro_rules! dispatch {
             DialectId::Fal => Ok(Fal::$f($($arg),*)),
             DialectId::Replicate => Ok(Replicate::$f($($arg),*)),
             DialectId::Deepgram => Ok(Deepgram::$f($($arg),*)),
+            DialectId::Cartesia => Ok(Cartesia::$f($($arg),*)),
             other => Err(no_codec(other)),
         }
     };
@@ -152,6 +154,7 @@ pub fn decode_checked_request<B: RequestBody>(
         DialectId::JinaRerank => JinaRerank::decode_checked(kind, body, headers),
         DialectId::BedrockConverse => BedrockConverse::decode_request(kind, body, headers),
         DialectId::Replicate => Replicate::decode_request(kind, body, headers),
+        DialectId::Cartesia => Cartesia::decode_request(kind, body, headers),
         other @ (DialectId::Gemini | DialectId::GeminiEmbeddings) => Err(gemini_needs_path(other)),
         other => Err(no_codec(other)),
     }

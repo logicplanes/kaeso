@@ -44,6 +44,7 @@ jobs:
             audio_length,
             decode_anthropic_messages,
             decode_bedrock_converse,
+            decode_cartesia,
             decode_cohere_rerank,
             decode_dashscope,
             decode_deepgram,

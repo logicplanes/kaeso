@@ -72,6 +72,7 @@ mod provider_alibaba;
 mod provider_amazon_bedrock;
 mod provider_azure;
 mod provider_baseten;
+mod provider_cartesia;
 mod provider_cerebras;
 mod provider_chatgpt;
 mod provider_cloudflare_ai_gateway;

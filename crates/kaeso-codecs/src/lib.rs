@@ -33,6 +33,7 @@ mod wire;
 
 pub mod anthropic_messages;
 pub mod bedrock_converse;
+pub mod cartesia;
 pub mod cohere_rerank;
 pub mod dashscope;
 pub mod deepgram;

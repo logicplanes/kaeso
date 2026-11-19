@@ -516,6 +516,17 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         replicate["key_page"],
         json!({ "url": "https://replicate.com/account/api-tokens", "label": "API tokens" })
     );
+    let cartesia = listed.iter().find(|p| p["id"] == "cartesia").unwrap();
+    assert_eq!(cartesia["name"], "Cartesia");
+    assert_eq!(cartesia["dialects"], json!(["cartesia"]));
+    assert_eq!(
+        (&cartesia["embeddings"], &cartesia["key_prefix"]),
+        (&Value::Null, &json!("sk_car_"))
+    );
+    assert_eq!(
+        cartesia["key_page"],
+        json!({ "url": "https://play.cartesia.ai/keys", "label": "API Keys" })
+    );
     let ovhcloud = listed.iter().find(|p| p["id"] == "ovhcloud").unwrap();
     assert_eq!(ovhcloud["name"], "OVHcloud AI Endpoints");
     assert_eq!(

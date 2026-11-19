@@ -35,6 +35,7 @@ const providers: ProviderPickerOption[] = [
   { id: "azure", name: "Azure" },
   { id: "replicate", name: "Replicate" },
   { id: "deepgram", name: "Deepgram" },
+  { id: "cartesia", name: "Cartesia" },
   { id: "sambanova", name: "SambaNova" },
   { id: "scaleway", name: "Scaleway" },
   { id: "siliconflow", name: "SiliconFlow" },

@@ -245,6 +245,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_PROVIDERS_FAL_BASE_URL`<br>`providers.fal.base_url` | 文本 | `https://queue.fal.run` | fal API 的基础 URL。 |
 | `KAESO_PROVIDERS_REPLICATE_BASE_URL`<br>`providers.replicate.base_url` | 文本 | `https://api.replicate.com` | Replicate API 的基础 URL。 |
 | `KAESO_PROVIDERS_DEEPGRAM_BASE_URL`<br>`providers.deepgram.base_url` | 文本 | `https://api.deepgram.com` | Deepgram API 的基础 URL。 |
+| `KAESO_PROVIDERS_CARTESIA_BASE_URL`<br>`providers.cartesia.base_url` | 文本 | `https://api.cartesia.ai` | Cartesia API 的基础 URL。 |
 | `KAESO_AWS_AMBIENT_CREDENTIALS`<br>`aws.ambient_credentials` | 布尔 | `false` | 允许实例管理员添加以网关自身 AWS 身份登录的 Amazon Bedrock 密钥：其 `AWS_*` 环境、Web 身份令牌、ECS 或 EKS 容器角色或 EC2 实例角色，可选再代入另一个角色。默认关闭，因为这样的密钥会让组织使用网关的角色。 |
 | `KAESO_UPSTREAM_CONNECT_TIMEOUT`<br>`upstream.connect_timeout` | 文本 | `10s` | 连接服务商的时间，含 TCP 和 TLS；最多 24h。 |
 | `KAESO_UPSTREAM_REQUEST_TIMEOUT`<br>`upstream.request_timeout` | 文本 | `600s` | 非流式服务商请求的总时间；最多 24h。 |

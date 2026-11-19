@@ -58,6 +58,7 @@ export const DIALECTS: Record<string, string> = {
   bedrock_converse: "Amazon Bedrock Converse",
   fal: "fal",
   replicate: "Replicate",
+  cartesia: "Cartesia",
 };
 export const dialectLabel = (d: string) => DIALECTS[d] ?? d;
 

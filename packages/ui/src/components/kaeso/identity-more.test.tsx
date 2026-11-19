@@ -224,6 +224,7 @@ const MARKED_PROVIDERS = {
   jina: "Jina AI",
   replicate: "Replicate",
   deepgram: "Deepgram",
+  cartesia: "Cartesia",
   vllm: "vLLM",
   ollama: "Ollama",
   "lm-studio": "LM Studio",

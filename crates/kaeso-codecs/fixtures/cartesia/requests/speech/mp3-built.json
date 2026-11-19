@@ -1,0 +1,11 @@
+{
+  "model_id": "sonic-3.6",
+  "transcript": "Hello, world! I'm generating audio on Cartesia.",
+  "voice": "db6b0ed5-d5d3-463d-ae85-518a07d3c2b4",
+  "output_format": {
+    "container": "mp3",
+    "sample_rate": 44100,
+    "bit_rate": 128000
+  },
+  "language": "en"
+}

@@ -177,6 +177,8 @@ export const providerMark = {
   venice: mode("#0e2942", "#f7f5ed"),
   // Fluent's themeSecondary, the next step of Azure's blue, so the mark reads on the dark tile.
   azure: mode("#0078d4", "#2b88d8"),
+  // Cartesia's Verdant, which its brand page forbids recolouring; it reads on both tiles.
+  cartesia: mode("#309d4b", "#309d4b"),
   huggingface: mode("#b49000", "#ffd21e"),
   nvidia: mode("#69a500", "#76b900"),
   siliconflow: mode("#6e29f6", "#9163fe"),

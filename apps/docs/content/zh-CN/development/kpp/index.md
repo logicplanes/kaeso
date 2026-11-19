@@ -107,6 +107,7 @@ sequenceDiagram
 | `jina_rerank` | Jina AI 的重排序格式，作为服务商的格式（[Jina Rerank](jina-rerank.md)） |
 | `voyage_rerank` | Voyage AI 的重排序格式，作为服务商的格式（[Voyage Rerank](voyage-rerank.md)） |
 | `replicate` | Replicate 的 prediction：Kaeso 所映射模型的图片和视频任务（[Replicate](replicate.md)） |
+| `cartesia` | Cartesia 的 Sonic 语音合成和 Ink 批量语音识别（[Cartesia](cartesia.md)） |
 | `multipart` | 图片、音频和视频上传以及 System One 图片部分使用的有上限的 `multipart/form-data` 读取器和写入器 |
 
 | 共享模块 | 职责 |
@@ -316,6 +317,7 @@ OpenAI Responses 把不同的写法记录为形式覆盖项，只在值未改变
 - [fal](fal.md)：了解图片请求和视频任务如何逐个模型映射到 fal 的队列。
 - [Replicate](replicate.md)：逐个模型查看图片请求和视频任务如何映射到 Replicate 的 prediction。
 - [Deepgram](deepgram.md)：了解转写和语音如何映射到 Deepgram 的语音转文本和 Aura API。
+- [Cartesia](cartesia.md)：查看语音和转写请求如何映射到 Cartesia 的 API。
 - [System One](system-one.md)：查找 TypeSafe 决策格式的每个字段在 KPP 中的位置，以及各服务商如何接收它。
 - [OpenAI Decisions](openai-decisions.md)：查找 OpenAI Decisions API 的每个字段在 KPP 中的位置。
 - [Gemini Decisions](gemini-decisions.md)：查找 Gemini Decisions API 的每个字段在 KPP 中的位置。

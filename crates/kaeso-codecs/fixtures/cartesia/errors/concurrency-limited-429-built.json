@@ -1,0 +1,6 @@
+{
+  "error_code": "concurrency_limited",
+  "title": "Too Many Requests",
+  "message": "Concurrency limit reached.",
+  "request_id": "00000000-0000-0000-0000-000000000000"
+}

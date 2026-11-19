@@ -1407,6 +1407,26 @@ describe("ProviderKeyDialog", () => {
     ]);
   });
 
+  it("adds a Cartesia API key, which starts with sk_car_, with Cartesia's playground as its hint", async () => {
+    on("POST", CREDENTIALS, credential({ provider: "cartesia", name: "Cartesia prod", is_default: true }));
+    const { user, dialog } = await open();
+
+    await choose(user, dialog, "Cartesia");
+
+    expect(await within(dialog).findByRole("heading", { name: "Paste your Cartesia API key" })).toBeVisible();
+    const link = within(dialog).getByRole("link", { name: "play.cartesia.ai (opens in a new tab)" });
+    expect(link).toHaveAttribute("href", "https://play.cartesia.ai/keys");
+    expect(readable(link.closest("p"))).toBe("Create one at play.cartesia.ai under API Keys; it starts with sk_car_.");
+    await user.type(within(dialog).getByLabelText("Cartesia API key"), "sk_car_0123456789abcdef");
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Cartesia prod");
+    await user.click(within(dialog).getByRole("button", { name: "Add key" }));
+
+    expect(await notifications().findByText("Cartesia prod is the Cartesia default")).toBeInTheDocument();
+    expect(requests("POST", CREDENTIALS).map((r) => r.body)).toEqual([
+      { provider: "cartesia", name: "Cartesia prod", secret: "sk_car_0123456789abcdef", make_default: false },
+    ]);
+  });
+
   it("adds a Cohere key, which has no fixed prefix, with Cohere's dashboard as its key hint", async () => {
     on("POST", CREDENTIALS, credential({ provider: "cohere", name: "Cohere prod", is_default: true }));
     const { user, dialog } = await open();

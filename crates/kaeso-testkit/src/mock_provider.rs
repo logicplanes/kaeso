@@ -603,6 +603,8 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "anthropic_messages"
     } else if path == "/v1/listen" || path == "/v1/speak" {
         "deepgram"
+    } else if matches!(path.as_str(), "/tts/bytes" | "/stt" | "/voices") {
+        "cartesia"
     } else if path.starts_with("/v1/responses") {
         "openai_responses"
     } else if path.starts_with("/v1/embeddings") {
@@ -643,8 +645,12 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         .get("authorization")
         .and_then(|v| v.to_str().ok())
         .is_some_and(|v| v.starts_with("Token ") && v.len() > 6);
+    // Cartesia takes its key as `X-API-Key` and answers 400 without `Cartesia-Version`.
     let authed = if dialect == "deepgram" {
         token
+    } else if dialect == "cartesia" {
+        headers.get("x-api-key").is_some_and(|v| !v.is_empty())
+            && headers.contains_key("cartesia-version")
     } else if dialect.starts_with("gemini") {
         headers.get("x-goog-api-key").is_some_and(|v| !v.is_empty())
             && !headers.contains_key("authorization")
@@ -700,6 +706,14 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         && let Some(resp) = audio(&ctx.fixtures, &path, &text)
     {
         return resp;
+    }
+    if method == Method::GET && path == "/voices" {
+        return Response::builder()
+            .header("content-type", "application/json")
+            .body(Body::from(
+                r#"{"data":[],"has_more":false,"next_page":null}"#,
+            ))
+            .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
     }
     if method == Method::GET && (path == "/v1/voices" || path == "/v2/voices") {
         return json_file(&ctx.fixtures.join("elevenlabs/voices/recorded-search.json"));
@@ -984,7 +998,7 @@ fn form_value<'a>(form: &'a str, name: &str) -> Option<&'a str> {
 }
 
 // Speech and transcription paths of every provider form Kaeso speaks, answered from the
-// `openai_speech`, `openai_transcriptions`, `minimax_speech` and `deepgram` fixtures.
+// `openai_speech`, `openai_transcriptions`, `minimax_speech`, `deepgram` and `cartesia` fixtures.
 /// The mock's link for files a DashScope reply names, which is not one of the hosts Kaeso
 /// fetches QwenCloud's results from.
 pub const DASHSCOPE_LINK: &str = "https://files.example.com/dashscope/result.png";
@@ -1104,6 +1118,11 @@ fn audio(fixtures: &Path, path: &str, text: &str) -> Option<Response> {
             Some(r)
         }
         "/v1/sound-generation" => el_audio("recorded-sound.mp3", "audio/mpeg"),
+        "/tts/bytes" => Some(bytes_file(
+            &speech.join("responses/speech.mp3"),
+            "audio/mpeg",
+        )),
+        "/stt" => json(&fixtures.join("cartesia/responses/stt"), "words-built"),
         "/v1/music" | "/v1/music/stream" => Some(error_response(
             &fixtures.join("elevenlabs"),
             "recorded-music-402",
@@ -1647,6 +1666,7 @@ fn key_refused(dialect: &str) -> &'static str {
         "gemini" | "gemini_embeddings" => "recorded-error-invalid-key",
         "gemini_decisions" => "invalid-api-key-400",
         "system_one" => "unauthorized-401",
+        "cartesia" => "recorded-invalid-credentials-401",
         "openai_chat" => "invalid-api-key",
         "deepgram" => "recorded-invalid-auth-401",
         _ => "invalid-api-key-401",
