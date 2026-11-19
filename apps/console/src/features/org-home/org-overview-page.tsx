@@ -61,7 +61,7 @@ export function OrgOverviewPage({ org }: { org: string }) {
           </div>
           <Suspense fallback={null}>
             <OrgGlance org={org} />
-            {first && <NewModels org={org} project={first.id} />}
+            {first && <NewModels org={org} project={first.id} projectName={first.name} />}
           </Suspense>
         </div>
       </AppFrame.Body>

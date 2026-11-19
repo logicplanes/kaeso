@@ -16,6 +16,7 @@ import {
   Sheet,
   Skeleton,
   Text,
+  Textarea,
 } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
@@ -158,9 +159,10 @@ function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: Role
         <Section title={t("org.role.nameAndDescription", "Name and description")} spacing="none">
           <div className="flex flex-col gap-16">
             <Input label={common.name()} value={editing.name} maxLength={50} onChange={(e) => edit({ name: e.target.value })} />
-            <Input
+            <Textarea
               label={t("org.role.description", "Description")}
               optional
+              rows={2}
               value={editing.description}
               maxLength={200}
               onChange={(e) => edit({ description: e.target.value })}

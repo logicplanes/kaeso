@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Button, Segmented, SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Button, Select, SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { modelLabel } from "~/format/model";
 import { api, data } from "~/api/client";
@@ -69,11 +69,11 @@ export function OrgAgents({ org }: { org: string }) {
                 title={t("org.agents.max", "Most an agent may do")}
                 description={cat.data.presets.find((x) => x.id === p.max)?.description}
                 control={
-                  <Segmented
+                  <Select
                     aria-label={t("org.agents.max", "Most an agent may do")}
                     size="sm"
                     disabled={!canManage || save.isPending}
-                    options={cat.data.presets.map((x) => ({ value: x.id, label: x.name }))}
+                    options={cat.data.presets.map((x) => ({ value: x.id, label: x.name, textValue: x.name, description: x.description }))}
                     value={p.max}
                     onValueChange={(max) => save.mutate({ allowed: p.allowed, max })}
                   />

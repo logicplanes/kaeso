@@ -78,7 +78,7 @@ export function ReleaseBanner() {
   );
 }
 
-function NewModelCards({ org, project, className }: { org: string; project: string; className: string }) {
+function NewModelCards({ org, project, projectName, className }: { org: string; project: string; projectName: string; className: string }) {
   const providers = useProviders(org);
   const models = useQuery({ ...newestModelsQuery(org, project), retry: false });
   const base = projectPath(org, project);
@@ -120,7 +120,9 @@ function NewModelCards({ org, project, className }: { org: string; project: stri
             ]}
             action={
               <Button size="sm" href={`${base}/models`}>
-                {m.catalogue_model_id ? t("kaeso.home.openModel", "Open in models") : t("kaeso.home.addModel", "Add to this project")}
+                {m.catalogue_model_id
+                  ? t("kaeso.home.openModel", "Open in {project}", { project: projectName })
+                  : t("kaeso.home.addModel", "Add to {project}", { project: projectName })}
               </Button>
             }
           />
@@ -198,12 +200,12 @@ function SectionTitles({ titles }: { titles: { id: string; title: string; span: 
   );
 }
 
-export function NewModels({ org, project }: { org: string; project: string }) {
+export function NewModels({ org, project, projectName }: { org: string; project: string; projectName: string }) {
   return (
     <>
       <SectionTitles titles={[{ id: "models", title: t("kaeso.home.newModels", "New models"), span: "lg:col-span-3" }]} />
       <Dashboard aria-label={t("kaeso.home.newModels", "New models")} columns={3}>
-        <NewModelCards org={org} project={project} className="lg:col-span-1" />
+        <NewModelCards org={org} project={project} projectName={projectName} className="lg:col-span-1" />
       </Dashboard>
     </>
   );

@@ -408,5 +408,7 @@
   "orgHome.unlinkHint": "{provider} 将不再把此安装的请求计入关联的组织。",
   "orgHome.retiring.title": "{count, plural, other {# 个项目使用即将停用的模型}}",
   "orgHome.retiring.next": "{count, plural, other {# 个模型}}，最早于 {date} 停用",
-  "orgHome.retiring.retired": "{count, plural, other {# 个模型}}，其中 {retired} 个已停用"
+  "orgHome.retiring.retired": "{count, plural, other {# 个模型}}，其中 {retired} 个已停用",
+  "orgHome.retiring.noDate": "{count, plural, other {# 个模型}}，尚无停用日期",
+  "orgHome.retiring.more": "{count, plural, other {另有 # 个项目}}"
 }

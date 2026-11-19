@@ -54,7 +54,9 @@ describe("creating a role", () => {
     await hoverReason(user, next(), "There is a project role named viewer already");
     await user.clear(name);
     await fill(user, name, " Support agent ");
-    await fill(user, within(dialog).getByRole("textbox", { name: /Description/ }), " Answers tickets ");
+    const description = within(dialog).getByRole("textbox", { name: /Description/ });
+    expect(description.tagName).toBe("TEXTAREA");
+    await fill(user, description, " Answers tickets ");
     await user.click(next());
     expect(await within(dialog).findByText("What can it do in a project?")).toBeInTheDocument();
     const create = within(dialog).getByRole("button", { name: "Create role" });
