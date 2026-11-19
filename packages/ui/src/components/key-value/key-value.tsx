@@ -6,12 +6,12 @@ import { TruncatedText } from "../text/truncated.js";
 export const KAESO_KEY_VALUE_VARIANTS = {
   layout: {
     columns: {
-      classes: "grid grid-cols-kv content-start self-start",
+      classes: "grid h-fit grid-cols-kv content-start",
       description: "Label and value side by side, each pair a row with a hairline at its foot (default)",
     },
     stacked: { classes: "flex flex-col", description: "Label above value, each pair over a hairline, for narrow sheets" },
     grid: {
-      classes: "grid content-start self-start gap-x-32",
+      classes: "grid h-fit content-start gap-x-32",
       description: "Label above value, in columns, each pair over its own hairline: a wide sheet's details, two or more to a row",
     },
   },

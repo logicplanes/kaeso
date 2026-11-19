@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, apiKey, catalogueModel, modelRoute, modelsApi, projectData, projectMember, projectPath } from "~/test/fixtures/project";
@@ -114,6 +114,32 @@ describe("RouteEditorPage", () => {
       added: ['+Added "unsupported",', '+Added "rejected"'],
       removed: ['\u2212Removed "unsupported"'],
     });
+  });
+
+  it("on a phone, keeps Save in reach and moves the other actions into a menu", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    setUp();
+    const { user } = await renderApp(projectPath("models/aliases/al_fast"));
+
+    expect(await screen.findByRole("button", { name: "Save" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete alias" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Actions for fast" }));
+    const menu = await screen.findByRole("menu");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((item) => item.textContent),
+    ).toEqual(["See its requests", "ChangesNothing has changed since the last save.", "Show as JSON", "Duplicate", "Delete alias"]);
+    await user.click(within(menu).getByRole("menuitem", { name: "Show as JSON" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    vi.unstubAllGlobals();
   });
 
   it("offers no changes for a new alias", async () => {

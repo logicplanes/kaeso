@@ -33,4 +33,20 @@ describe("PageHeader on a phone", () => {
     expect(screen.getByText(/^Anfrageprotokolle/)).toHaveClass("truncate");
     expect(screen.getByRole("button", { name: "Exportieren" }).parentElement).toHaveClass("ml-auto", "shrink-0");
   });
+
+  it("wraps actions wider than the page onto another line instead of running them off the edge", () => {
+    render(
+      <PageHeader
+        title="Analysen"
+        actions={
+          <>
+            <button type="button">USD</button>
+            <button type="button">Letzte 30 Tage</button>
+            <button type="button">Teilen</button>
+          </>
+        }
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Teilen" }).parentElement).toHaveClass("max-w-full", "flex-wrap", "justify-end");
+  });
 });

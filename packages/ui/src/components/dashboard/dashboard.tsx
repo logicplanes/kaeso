@@ -5,7 +5,7 @@ import { Icon } from "../icon/icon.js";
 import { cn } from "../../utils/cn.js";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Delta } from "../stat/delta.js";
-import { SwapValue, textOf } from "./swap-value.js";
+import { SwapValue, isNumber, textOf } from "./swap-value.js";
 
 export const KAESO_DASHBOARD_VARIANTS = {
   surface: {
@@ -131,6 +131,7 @@ export const KAESO_READOUT_DEFAULT_VARIANTS = { size: "md" } as const;
 
 export const Readout = forwardRef<HTMLDivElement, ReadoutProps>(function Readout({ label, value, unit, change, detail, size = "md", loading }, ref) {
   const md = size === "md";
+  const text = textOf(value);
   return (
     <div ref={ref} className="flex min-w-0 flex-col px-12">
       {label && <span className="truncate text-small text-fg-tertiary">{label}</span>}
@@ -139,7 +140,15 @@ export const Readout = forwardRef<HTMLDivElement, ReadoutProps>(function Readout
           <Skeleton shape="line" className={md ? "h-20 w-96" : "w-64"} />
         ) : (
           <span className="flex min-w-0 items-baseline gap-6">
-            <SwapValue text={textOf(value)} className={cn("truncate font-medium text-fg tabular", KAESO_READOUT_VARIANTS.size[size].classes)}>
+            <SwapValue
+              text={text}
+              className={cn(
+                "truncate font-medium text-fg",
+                // Inter's tabular figures give a hyphen a figure's width, which spaces out a name like checkout-web.
+                (!text || isNumber(text)) && "tabular",
+                KAESO_READOUT_VARIANTS.size[size].classes,
+              )}
+            >
               {value}
             </SwapValue>
             {unit && <span className="truncate text-small text-fg-secondary">{unit}</span>}

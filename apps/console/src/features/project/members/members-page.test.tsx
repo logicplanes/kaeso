@@ -262,7 +262,7 @@ describe("MemberSheet", () => {
 
     const sheet = await screen.findByRole("dialog", { name: "Grace Hopper" });
     const role = await within(sheet).findByRole("combobox", { name: "Role" });
-    expect(within(sheet).getByRole("button", { name: "Save role" })).toBeDisabled();
+    await hoverReason(user, within(sheet).getByRole("button", { name: "Save role" }), "Choose another role or change a right first.");
     await user.click(role);
     await user.click(await screen.findByRole("option", { name: /Viewer/ }));
     await user.click(within(sheet).getByRole("button", { name: "Cancel" }));

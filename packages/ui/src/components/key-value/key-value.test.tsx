@@ -57,7 +57,12 @@ describe("KeyValue", () => {
 
   it("keeps its rows at their own height beside a taller neighbour instead of stretching to fill", () => {
     const { container } = render(<KeyValue items={items} />);
-    expect(container.querySelector("dl")).toHaveClass("content-start", "self-start");
+    expect(container.querySelector("dl")).toHaveClass("content-start", "h-fit");
+  });
+
+  it("spans the column it sits in, so its hairlines reach the same edge as the sections around it", () => {
+    const { container } = render(<KeyValue items={items} />);
+    expect(container.querySelector("dl")).not.toHaveClass("self-start");
   });
 
   it("lets a cut value of any kind, and a cut grid label, be read in full from the keyboard", () => {

@@ -39,6 +39,9 @@ describe("KeySheet", () => {
     expect(dialog).toHaveTextContent("Ada Okafor (you)");
     expect(dialog).toHaveTextContent(/by Ada Okafor \(you\)/);
     expect(dialog).toHaveTextContent(/1 Jan 2099 \(expires in [\d,]+ days\)/);
+    // Sentences wrap on a narrow sheet instead of ending in an ellipsis.
+    expect(within(dialog).getByText(/by Ada Okafor \(you\)/)).not.toHaveClass("truncate");
+    expect(within(dialog).getByText(/1 Jan 2099/)).not.toHaveClass("truncate");
     expect(dialog).toHaveTextContent("Inference + platform");
     expect(dialog).toHaveTextContent("key_web");
     expect(within(dialog).getByText("Limits")).toBeInTheDocument();
