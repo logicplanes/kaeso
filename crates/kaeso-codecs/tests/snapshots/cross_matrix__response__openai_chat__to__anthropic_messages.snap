@@ -4046,6 +4046,175 @@ expression: outcomes
       "output_tokens": 14
     }
   },
+  "providers/qianfan/after-tool-results-doc": {
+    "content": [
+      {
+        "text": "根据查询结果，上海和北京2025年8月21日的天气情况如下：\n\n**上海市**：\n- 温度：25摄氏度\n- 天气描述：上海\n\n**北京市**：\n- 温度：20摄氏度  \n- 天气描述：北京\n\n看起来北京的天气相对凉爽一些，比上海低5摄氏度。如果您需要更详细的天气信息（如湿度、风向等），请告诉我。",
+        "type": "text"
+      }
+    ],
+    "id": "as-pkzw67m1ti",
+    "model": "deepseek-v3.1-250821",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 495,
+      "output_tokens": 83
+    }
+  },
+  "providers/qianfan/greeting-doc": {
+    "content": [
+      {
+        "text": "你好！很高兴和你交流。请问有什么我可以帮助你的吗？",
+        "type": "text"
+      }
+    ],
+    "id": "as-qsp8w7ppnv",
+    "model": "deepseek-v3.1-250821",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 11,
+      "output_tokens": 15
+    }
+  },
+  "providers/qianfan/greeting-published": {
+    "content": [
+      {
+        "text": "您好！有什么需要我帮助的吗？",
+        "type": "text"
+      }
+    ],
+    "id": "as-9y0uz0ckfk",
+    "model": "ernie-speed-128k",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 1,
+      "output_tokens": 7
+    }
+  },
+  "providers/qianfan/reasoning-tool-calls-doc": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "68e892c388e44c83a06867f44ecee6f3",
+        "input": {
+          "location": "杭州市"
+        },
+        "name": "get_current_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "8de2c4c50bf0440995e7a496767d13d2",
+        "input": {
+          "timezone": "Asia/Shanghai"
+        },
+        "name": "get_current_time",
+        "type": "tool_use"
+      }
+    ],
+    "id": "as-unkecbb1ap",
+    "model": "deepseek-r1",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 1,
+      "input_tokens": 663,
+      "output_tokens": 258,
+      "output_tokens_details": {
+        "thinking_tokens": 179
+      }
+    }
+  },
+  "providers/qianfan/tool-calls-doc": {
+    "content": [
+      {
+        "text": "",
+        "type": "text"
+      },
+      {
+        "id": "04fed17840d34b1e99bf3cd6dc94150d",
+        "input": {
+          "location": "上海市",
+          "time": "2025-08-21"
+        },
+        "name": "get_current_weather",
+        "type": "tool_use"
+      },
+      {
+        "id": "a37ee51b99a64723bcb7f2f4d8081770",
+        "input": {
+          "location": "北京市",
+          "time": "2025-08-21"
+        },
+        "name": "get_current_weather",
+        "type": "tool_use"
+      }
+    ],
+    "id": "as-32tdstad6t",
+    "model": "deepseek-v3.1-250821",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 356,
+      "output_tokens": 87
+    }
+  },
+  "providers/qianfan/vision-doc": {
+    "content": [
+      {
+        "text": "第一张图片：一个蓝色圆形，中间有一个黑色的比特币符号。\n第二张图片：一个蓝色圆形，中间有一个黑色的比特币符号。\n第三张图片：一个蓝色圆形，中间有一个黑色的比特币符号。",
+        "type": "text"
+      }
+    ],
+    "id": "as-7u9f6065tq",
+    "model": "deepseek-vl2",
+    "role": "assistant",
+    "stop_details": null,
+    "stop_reason": "end_turn",
+    "stop_sequence": null,
+    "type": "message",
+    "usage": {
+      "cache_creation": null,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "input_tokens": 10,
+      "output_tokens": 41
+    }
+  },
   "providers/sambanova/palindrome-poem-doc": {
     "content": [
       {

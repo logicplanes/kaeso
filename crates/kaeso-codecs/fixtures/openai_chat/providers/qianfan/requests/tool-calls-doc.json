@@ -1,0 +1,33 @@
+{
+  "model": "deepseek-v3.1-250821",
+  "messages": [
+    {
+      "role": "user",
+      "content": "查一下上海和北京2025-8-21的天气"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_weather",
+        "description": "天气查询工具",
+        "parameters": {
+          "properties": {
+            "location": {
+              "description": "地理位置，精确到区县级别",
+              "type": "string"
+            },
+            "time": {
+              "description": "时间，格式为YYYY-MM-DD",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    }
+  ],
+  "stream": false,
+  "tool_choice": "auto"
+}

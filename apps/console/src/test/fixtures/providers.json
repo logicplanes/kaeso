@@ -1367,6 +1367,32 @@
       "linked_billing": null,
       "model_routes": [],
       "server": null
+    },
+    {
+      "id": "qianfan",
+      "name": "Baidu Qianfan",
+      "custom": false,
+      "takes_key": true,
+      "hides_built_in": null,
+      "key_page": {
+        "url": "https://console.bce.baidu.com/iam/#/iam/apikey/list",
+        "label": "API Key"
+      },
+      "key_prefix": null,
+      "dialects": ["openai_chat", "openai_embeddings"],
+      "count_tokens": null,
+      "embeddings": "openai_embeddings",
+      "rerank": null,
+      "account": null,
+      "service_account": null,
+      "account_scope": null,
+      "regions": null,
+      "key_endpoint": null,
+      "aws": null,
+      "entra_id": null,
+      "linked_billing": null,
+      "model_routes": [],
+      "server": null
     }
   ],
   "has_more": false,

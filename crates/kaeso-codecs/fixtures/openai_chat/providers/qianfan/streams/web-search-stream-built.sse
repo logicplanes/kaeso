@@ -1,0 +1,19 @@
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"正在搜索","role":"assistant"},"delta_tag":"search_status"}]}
+
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"今天是2","role":"assistant"},"flag":0}],"search_results":[{"index":1,"url":"https://live.nowscore.com/analysis/2607195.html","title":"2025年04月24日足球让球分析:都灵 VS 乌迪内斯 - 捷报比分网"},{"index":2,"url":"https://sports.163.com/world/?_=1498278879","title":"国际足球"},{"index":3,"url":"https://live.500.com/index.php图片","title":"足球比分直播_竞彩足球比分直播_足彩即时比分直播网-500彩票网"},{"index":4,"url":"https://sports.sohu.com/a/888368570_120693275","title":"4月24日足球赛前比分预测 进球数 半全场 二串一 竞彩足球赛事赛前分析预测"},{"index":5,"url":"https://m.titan007.com/indexnew.shtml\u0026wd=\u0026eqid=9761e11200059a7e0000000464709b01","title":"即时比分_比分直播_足球比分直播-新球体育-球探体育"},{"index":6,"url":"https://live.500.com/zucai.php","title":"【足彩比分直播】_足球彩票比分直播_胜负彩即时比分直播网-500彩票网"},{"index":7,"url":"https://m.sports.ydniu.com/news/detail/927441964","title":"2025年04月24日法女甲南特女足vs里昂女足历史战绩,交战记录,比分预测"},{"index":8,"url":"https://m.titan007.com/odds.htm","title":"即时比分_比分直播_足球比分直播-新球体育-球探体育"},{"index":9,"url":"https://www.vipc.cn/results/jczq?in=lotteryInfo","title":"竞彩足球开奖"},{"index":10,"url":"https://live.nowscore.com/analysis/2718294cn.html","title":"2025年04月24日足球让球分析:塞那乔其 VS 奥卢 - 捷报比分网"}]}
+
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"02"},"flag":0}]}
+
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"5年"},"flag":0}]}
+
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"4月"},"flag":0}]}
+
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"。"},"flag":0}]}
+
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"\n"},"flag":0}]}
+
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"\n"},"flag":0}]}
+
+data: {"id":"as-yufms3fs7m","object":"chat.completion.chunk","created":1745507336,"model":"ernie-4.5-turbo-32k","choices":[{"index":0,"delta":{"content":"---"},"finish_reason":"stop","flag":0}],"search_results":[{"index":1,"url":"https://live.nowscore.com/analysis/2607195.html","title":"2025年04月24日足球让球分析:都灵 VS 乌迪内斯 - 捷报比分网"},{"index":2,"url":"https://sports.163.com/world/?_=1498278879","title":"国际足球"},{"index":3,"url":"https://live.500.com/index.php图片","title":"足球比分直播_竞彩足球比分直播_足彩即时比分直播网-500彩票网"},{"index":4,"url":"https://sports.sohu.com/a/888368570_120693275","title":"4月24日足球赛前比分预测 进球数 半全场 二串一 竞彩足球赛事赛前分析预测"},{"index":5,"url":"https://m.titan007.com/indexnew.shtml\u0026wd=\u0026eqid=9761e11200059a7e0000000464709b01","title":"即时比分_比分直播_足球比分直播-新球体育-球探体育"},{"index":6,"url":"https://live.500.com/zucai.php","title":"【足彩比分直播】_足球彩票比分直播_胜负彩即时比分直播网-500彩票网"},{"index":7,"url":"https://m.sports.ydniu.com/news/detail/927441964","title":"2025年04月24日法女甲南特女足vs里昂女足历史战绩,交战记录,比分预测"},{"index":8,"url":"https://m.titan007.com/odds.htm","title":"即时比分_比分直播_足球比分直播-新球体育-球探体育"},{"index":9,"url":"https://www.vipc.cn/results/jczq?in=lotteryInfo","title":"竞彩足球开奖"},{"index":10,"url":"https://live.nowscore.com/analysis/2718294cn.html","title":"2025年04月24日足球让球分析:塞那乔其 VS 奥卢 - 捷报比分网"}]}
+
+data: [DONE]

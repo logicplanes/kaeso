@@ -407,3 +407,21 @@ Quellen: das [OpenAPI document](https://docs.venice.ai/swagger.yaml) von Venice 
 | `GET /v1/models` | `ModelList` | Listet nur Textmodelle (`models/list-recorded`), daher ist die Liste unvollständig. |
 
 Die Responses API von Venice ist in der Beta und wird nicht genutzt: Responses- und Messages-Apps erreichen Venice über Chat Completions, und Kaeso lehnt Token-Zählungen ab, die Venice nicht anbietet.
+
+## Baidu Qianfan
+
+Quellen: Qianfans Referenzen für [Chat](https://cloud.baidu.com/doc/qianfan-api/s/wmwbl48n4) und [Bildverständnis](https://cloud.baidu.com/doc/qianfan-api/s/ymwbl48ky), seine [gemeinsamen Header](https://cloud.baidu.com/doc/qianfan-api/s/Nmwbl43w1), [Fehlercodes](https://cloud.baidu.com/doc/qianfan-api/s/rmwbl43x7) und die Anleitungen zu [Denken](https://cloud.baidu.com/doc/qianfan-docs/s/Wm95lyynv) und [Websuche](https://cloud.baidu.com/doc/qianfan-docs/s/Wm8r4sw29), gelesen am 14.11.2026, und `fixtures/openai_chat/providers/qianfan/`: Anfragen und Antworten der Referenz, eine veröffentlichte Antwort, der Stream der Websuche-Anleitung (ohne ihre ausgelassene Mitte) und Fehler zu abgelehnten Schlüsseln und des Gateways, live ohne gültigen Schlüssel beantwortet.
+
+| Feld von Qianfan | KPP | Anmerkungen |
+|---|---|---|
+| `<base>/chat/completions`, `<base>/embeddings`, `<base>/models` | API-Wurzel des Anbieters | Qianfans API liegt unter `/v2`; die Basis-URL endet dort, und die Wurzel ist leer ([API-Wurzeln](#api-wurzeln)). |
+| Rolle `system`, kein `developer` | `Role::System` | `system_role()`. |
+| `user` | Endnutzer | `end_user_as_user()`. |
+| `thinking: {"type": "enabled" \| "disabled"}`, `reasoning_effort` | `reasoning` | `thinking_type()`; `low` und `medium` wirken als `high`, `xhigh` als `max`. |
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | `reasoning_fields`. |
+| `max_completion_tokens`, `max_tokens` | `max_output_tokens` | Beide zählen Denken und Antwort. |
+| `choices[].flag`, `ban_round`, `search_results`, `delta_tag` | Extras | Qianfans Sicherheitsmarken und Quellen der Websuche; Rundreise für Chat-Apps. |
+| `web_search`, `penalty_score`, `enable_thinking`, `thinking_budget`, `metadata` | Extras | Wie von einer Chat-App geschrieben gesendet. |
+| `logprobs`, `top_logprobs`, `logit_bias`, `store`, `service_tier`, `prompt_cache_key`, `prompt_cache_retention`, `verbosity`, `modalities`, `audio`, `prediction`, `web_search_options`, `functions`, `function_call` | abgelehnt | Nicht in der Referenz, und Qianfan dokumentiert nicht, ob es nicht deklarierte Felder ablehnt. |
+| Fehler im Umschlag von OpenAI mit Qianfans `code`; BCE-Gateway-Fehler als `{"requestId", "code", "message"}` | `KppError` | `tokens_too_long` und `characters_too_long` sind ein zu langer Kontext, `account_overdue` ein Abrechnungsfehler, `model_offline` nicht gefunden. Ein falscher Schlüssel bekommt beim Chat 401 `invalid_iam_token` und bei der Modellliste 429 `OverRateLimit` (`errors/recorded-*`). |
+| `GET /models` mit Qianfans `status`, `pricing`, `features` und `endpoints` | `ModelList` | Braucht einen Schlüssel; unvollständig, da bereitgestellte Dienste fehlen (`models/list-doc`). |

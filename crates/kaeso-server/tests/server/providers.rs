@@ -527,6 +527,20 @@ async fn every_member_reads_each_provider_with_its_name_key_page_and_formats() {
         cartesia["key_page"],
         json!({ "url": "https://play.cartesia.ai/keys", "label": "API Keys" })
     );
+    let qianfan = listed.iter().find(|p| p["id"] == "qianfan").unwrap();
+    assert_eq!(qianfan["name"], "Baidu Qianfan");
+    assert_eq!(
+        qianfan["dialects"],
+        json!(["openai_chat", "openai_embeddings"])
+    );
+    assert_eq!(
+        (&qianfan["embeddings"], &qianfan["key_prefix"]),
+        (&json!("openai_embeddings"), &Value::Null)
+    );
+    assert_eq!(
+        qianfan["key_page"],
+        json!({ "url": "https://console.bce.baidu.com/iam/#/iam/apikey/list", "label": "API Key" })
+    );
     let ovhcloud = listed.iter().find(|p| p["id"] == "ovhcloud").unwrap();
     assert_eq!(ovhcloud["name"], "OVHcloud AI Endpoints");
     assert_eq!(

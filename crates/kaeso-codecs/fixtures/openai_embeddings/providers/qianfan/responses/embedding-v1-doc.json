@@ -1,0 +1,22 @@
+{
+  "id": "as-xz2r36ena8",
+  "object": "list",
+  "created": 1737030777,
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [
+        0.018346669152379036,
+        0.009424751624464989,
+        -0.009573426097631454,
+        -0.3628600239753723
+      ],
+      "index": 0
+    }
+  ],
+  "model": "embedding-v1",
+  "usage": {
+    "prompt_tokens": 3,
+    "total_tokens": 3
+  }
+}

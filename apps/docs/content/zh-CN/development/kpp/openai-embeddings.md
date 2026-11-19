@@ -162,3 +162,7 @@ order: 8
 ### Voyage AI
 
 来源：MongoDB 关于 Atlas Embedding and Reranking API 的 [OpenAPI 文档](https://www.mongodb.com/docs/api/doc/atlas-embedding-and-reranking-api.json)（版本 1.1，`/embeddings`）和 Voyage AI 的[错误码](https://docs.voyageai.com/docs/error-codes)（2026-11-14 阅读），以及 `fixtures/openai_embeddings/providers/voyage/`：Anthropic [嵌入指南](https://platform.claude.com/docs/en/build-with-claude/embeddings)公开的请求和回复（向量截取为所示的两个值）、根据 schema 构建的 base64 回复，以及在没有有效密钥时实际返回的错误。Voyage AI 会以 400 拒绝它不认识的任何字段，因此它的配置（`EmbeddingsProfile::VOYAGE`）将 `dimensions` 写为 `output_dimension`，并拒绝 256、512、1024 和 2048 以外的尺寸（`with_dimensions_as`），拒绝 `user`（`without_user()`）和作为输入的 token ID（`without_token_inputs()`），并且不发送 `encoding_format: "float"`，因为 Voyage AI 只接受 `base64`，默认返回浮点数（`without_float_encoding()`）。`input_type`、`truncation` 和 `output_dtype` 是 extras，按原样发送。回复只包含 `usage.total_tokens`，编解码器将其读作输入 token，OpenAI 应用同时以 `prompt_tokens` 收到它。错误以 `{"detail": "<文本>"}` 返回，并以 OpenAI 的格式和该文本到达应用。Voyage AI base64 向量的字节序没有记载；它们按 Voyage AI 发送的原样传递。
+
+### Baidu Qianfan
+
+来源：千帆的[向量](https://cloud.baidu.com/doc/qianfan-api/s/qmwbl45cf)参考（2026-11-14 阅读），以及 `fixtures/openai_embeddings/providers/qianfan/`：参考文档中的请求和回复（省略其中被删节的向量值）以及实际返回的密钥被拒绝错误。千帆在服务商的 API 根路径下提供 `/v2/embeddings`，只返回 `float` 向量；其模型尺寸固定，因此该配置拒绝 `dimensions`（`without_dimensions()`）。回复额外带有 `id` 和 `created`，作为 extras 往返。

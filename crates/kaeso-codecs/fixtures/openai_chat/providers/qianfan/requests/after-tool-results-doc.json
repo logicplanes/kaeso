@@ -1,0 +1,67 @@
+{
+  "model": "deepseek-v3.1-250821",
+  "messages": [
+    {
+      "role": "user",
+      "content": "查一下上海和北京2025-8-21的天气"
+    },
+    {
+      "role": "assistant",
+      "content": "",
+      "tool_calls": [
+        {
+          "id": "04fed17840d34b1e99bf3cd6dc94150d",
+          "type": "function",
+          "function": {
+            "name": "get_current_weather",
+            "arguments": "{\"location\": \"上海市\", \"time\": \"2025-08-21\"}"
+          }
+        },
+        {
+          "id": "a37ee51b99a64723bcb7f2f4d8081770",
+          "type": "function",
+          "function": {
+            "name": "get_current_weather",
+            "arguments": "{\"location\": \"北京市\", \"time\": \"2025-08-21\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "04fed17840d34b1e99bf3cd6dc94150d",
+      "name": "get_current_weather",
+      "content": "{\"temperature\": \"25\", \"unit\": \"摄氏度\", \"description\": \"上海\"}"
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "a37ee51b99a64723bcb7f2f4d8081770",
+      "name": "get_current_weather",
+      "content": "{\"temperature\": \"20\", \"unit\": \"摄氏度\", \"description\": \"北京\"}"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_current_weather",
+        "description": "天气查询工具",
+        "parameters": {
+          "properties": {
+            "location": {
+              "description": "地理位置，精确到区县级别",
+              "type": "string"
+            },
+            "time": {
+              "description": "时间，格式为YYYY-MM-DD",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      }
+    }
+  ],
+  "stream": false,
+  "tool_choice": "auto"
+}

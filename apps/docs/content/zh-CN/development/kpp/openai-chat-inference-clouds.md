@@ -407,3 +407,21 @@ TokenHub 的 Responses 和 Anthropic Messages 端点只支持部分模型，不�
 | `GET /v1/models` | `ModelList` | 只列出文本模型（`models/list-recorded`），因此列表不完整。 |
 
 Venice 的 Responses API 处于测试阶段，未被使用：Responses 和 Messages 应用通过 Chat Completions 访问 Venice，Kaeso 拒绝 Token 计数，因为 Venice 不提供。
+
+## Baidu Qianfan
+
+来源：千帆的[文本生成](https://cloud.baidu.com/doc/qianfan-api/s/wmwbl48n4)和[视觉理解](https://cloud.baidu.com/doc/qianfan-api/s/ymwbl48ky)参考、[公共请求头](https://cloud.baidu.com/doc/qianfan-api/s/Nmwbl43w1)、[错误码](https://cloud.baidu.com/doc/qianfan-api/s/rmwbl43x7)，以及[深度思考](https://cloud.baidu.com/doc/qianfan-docs/s/Wm95lyynv)和[联网搜索](https://cloud.baidu.com/doc/qianfan-docs/s/Wm8r4sw29)指南（2026-11-14 阅读），以及 `fixtures/openai_chat/providers/qianfan/`：参考文档中的请求和回复、一个公开的回复、联网搜索指南中的流（省略其中被删节的部分），以及在没有有效密钥时实际返回的密钥错误和网关错误。
+
+| 千帆字段 | KPP | 说明 |
+|---|---|---|
+| `<base>/chat/completions`、`<base>/embeddings`、`<base>/models` | 服务商的 API 根路径 | 千帆的 API 位于 `/v2`；基础 URL 止于此处，根路径为空（[API 根路径](#api-根路径)）。 |
+| `system` 角色，无 `developer` | `Role::System` | `system_role()`。 |
+| `user` | 最终用户 | `end_user_as_user()`。 |
+| `thinking: {"type": "enabled" \| "disabled"}`、`reasoning_effort` | `reasoning` | `thinking_type()`；`low` 和 `medium` 按 `high` 处理，`xhigh` 按 `max` 处理。 |
+| `message.reasoning_content`、`delta.reasoning_content` | `Block::Reasoning` | `reasoning_fields`。 |
+| `max_completion_tokens`、`max_tokens` | `max_output_tokens` | 两者都计入思考和回答。 |
+| `choices[].flag`、`ban_round`、`search_results`、`delta_tag` | extras | 千帆的安全标记和联网搜索来源；对 Chat 应用可往返。 |
+| `web_search`、`penalty_score`、`enable_thinking`、`thinking_budget`、`metadata` | extras | 按 Chat 应用写入的原样发送。 |
+| `logprobs`、`top_logprobs`、`logit_bias`、`store`、`service_tier`、`prompt_cache_key`、`prompt_cache_retention`、`verbosity`、`modalities`、`audio`、`prediction`、`web_search_options`、`functions`、`function_call` | 拒绝 | 不在参考文档中，且千帆没有说明是否拒绝未声明的字段。 |
+| OpenAI 格式的错误，带千帆的 `code`；BCE 网关错误为 `{"requestId", "code", "message"}` | `KppError` | `tokens_too_long` 和 `characters_too_long` 为上下文过长，`account_overdue` 为计费错误，`model_offline` 为未找到。错误的密钥在聊天时得到 401 `invalid_iam_token`，在模型列表上得到 429 `OverRateLimit`（`errors/recorded-*`）。 |
+| `GET /models`，带千帆的 `status`、`pricing`、`features` 和 `endpoints` | `ModelList` | 需要密钥；不完整，已部署的服务不在其中（`models/list-doc`）。 |

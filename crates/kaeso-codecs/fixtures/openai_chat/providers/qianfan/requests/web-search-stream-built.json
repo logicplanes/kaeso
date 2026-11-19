@@ -1,0 +1,15 @@
+{
+  "model": "ernie-4.5-turbo-32k",
+  "messages": [
+    {
+      "role": "user",
+      "content": "今天有哪些足球比赛"
+    }
+  ],
+  "stream": true,
+  "web_search": {
+    "enable": true,
+    "enable_trace": true,
+    "enable_status": true
+  }
+}

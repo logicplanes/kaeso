@@ -1,0 +1,22 @@
+{
+  "id": "as-9y0uz0ckfk",
+  "object": "chat.completion",
+  "created": 1753159733,
+  "model": "ernie-speed-128k",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "您好！有什么需要我帮助的吗？"
+      },
+      "finish_reason": "stop",
+      "flag": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 1,
+    "completion_tokens": 7,
+    "total_tokens": 8
+  }
+}

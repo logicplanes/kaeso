@@ -71,6 +71,12 @@ pub(crate) fn kind_for_code(code: &str) -> Option<ErrorKind> {
         "AUTHZ_INSUFFICIENT_BALANCE" => ErrorKind::Billing,
         "INPUT_TOKEN_LIMIT_EXCEEDED" => ErrorKind::ContextTooLong,
         "INPUT_MODEL_NOT_FOUND" => ErrorKind::NotFound,
+        // Baidu Qianfan's codes, where its status says less: too long an input answers 400, an
+        // account in arrears and a withdrawn model 403
+        // (https://cloud.baidu.com/doc/qianfan-api/s/rmwbl43x7).
+        "tokens_too_long" | "characters_too_long" => ErrorKind::ContextTooLong,
+        "account_overdue" => ErrorKind::Billing,
+        "model_offline" => ErrorKind::NotFound,
         _ => return None,
     })
 }

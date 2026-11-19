@@ -407,3 +407,21 @@ Sources: Venice's [OpenAPI document](https://docs.venice.ai/swagger.yaml) (versi
 | `GET /v1/models` | `ModelList` | Lists text models only (`models/list-recorded`), so the listing is partial. |
 
 Venice's Responses API is in beta and isn't used: Responses and Messages apps reach Venice through Chat Completions, and Kaeso refuses token counts, which Venice doesn't serve.
+
+## Baidu Qianfan
+
+Sources: Qianfan's [chat](https://cloud.baidu.com/doc/qianfan-api/s/wmwbl48n4) and [vision](https://cloud.baidu.com/doc/qianfan-api/s/ymwbl48ky) references, its [common headers](https://cloud.baidu.com/doc/qianfan-api/s/Nmwbl43w1), [error codes](https://cloud.baidu.com/doc/qianfan-api/s/rmwbl43x7), [deep thinking](https://cloud.baidu.com/doc/qianfan-docs/s/Wm95lyynv) and [web search](https://cloud.baidu.com/doc/qianfan-docs/s/Wm8r4sw29) guides, read 2026-11-14, and `fixtures/openai_chat/providers/qianfan/`: the reference's requests and replies, a published reply, the web-search guide's stream (its elided middle left out), and refused-key and gateway errors answered live without a valid key.
+
+| Qianfan field | KPP | Notes |
+|---|---|---|
+| `<base>/chat/completions`, `<base>/embeddings`, `<base>/models` | the provider's API root | Qianfan's API sits at `/v2`; the base URL ends there and the root is empty ([API roots](#api-roots)). |
+| `system` role, no `developer` | `Role::System` | `system_role()`. |
+| `user` | end user | `end_user_as_user()`. |
+| `thinking: {"type": "enabled" \| "disabled"}`, `reasoning_effort` | `reasoning` | `thinking_type()`; `low` and `medium` act as `high`, `xhigh` as `max`. |
+| `message.reasoning_content`, `delta.reasoning_content` | `Block::Reasoning` | `reasoning_fields`. |
+| `max_completion_tokens`, `max_tokens` | `max_output_tokens` | Both count thinking and answer. |
+| `choices[].flag`, `ban_round`, `search_results`, `delta_tag` | extras | Qianfan's safety marks and web-search sources; round-trip for Chat apps. |
+| `web_search`, `penalty_score`, `enable_thinking`, `thinking_budget`, `metadata` | extras | Sent as a Chat app wrote them. |
+| `logprobs`, `top_logprobs`, `logit_bias`, `store`, `service_tier`, `prompt_cache_key`, `prompt_cache_retention`, `verbosity`, `modalities`, `audio`, `prediction`, `web_search_options`, `functions`, `function_call` | refused | Not in the reference, and Qianfan doesn't document whether it refuses undeclared fields. |
+| errors in OpenAI's envelope with Qianfan's `code`; BCE gateway errors as `{"requestId", "code", "message"}` | `KppError` | `tokens_too_long` and `characters_too_long` are a context too long, `account_overdue` a billing error, `model_offline` not found. A fake key gets 401 `invalid_iam_token` on chat and 429 `OverRateLimit` on the listing (`errors/recorded-*`). |
+| `GET /models` with Qianfan's `status`, `pricing`, `features` and `endpoints` | `ModelList` | Needs a key; partial, as deployed services aren't listed (`models/list-doc`). |

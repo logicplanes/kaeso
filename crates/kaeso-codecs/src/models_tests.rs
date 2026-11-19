@@ -1833,3 +1833,29 @@ fn a_jina_listing_and_model_decode_from_openrouters_shape_with_prefixed_ids() {
         &body,
     );
 }
+
+#[test]
+fn a_qianfan_listing_decodes_and_its_codes_give_their_kinds() {
+    let body = fixture("openai_chat", "providers/qianfan/list-doc");
+    let l = list(DialectId::OpenAiChat, &body);
+    assert_eq!(l.models[0].id, "deepseek-v3.2");
+    assert_json_eq(
+        "providers/qianfan/list-doc",
+        &body,
+        &dispatch::encode_models(DialectId::OpenAiChat, &l).unwrap(),
+    );
+    for (status, code, kind) in [
+        (400, "tokens_too_long", ErrorKind::ContextTooLong),
+        (400, "characters_too_long", ErrorKind::ContextTooLong),
+        (403, "account_overdue", ErrorKind::Billing),
+        (403, "model_offline", ErrorKind::NotFound),
+        (401, "invalid_iam_token", ErrorKind::Authentication),
+    ] {
+        let body = format!(
+            r#"{{"error":{{"code":"{code}","message":"m","type":"invalid_request_error"}},"id":"as-0"}}"#
+        );
+        let e = dispatch::decode_models(DialectId::OpenAiChat, status, &h(), body.as_bytes())
+            .unwrap_err();
+        assert_eq!(e.kind, kind, "{code}");
+    }
+}

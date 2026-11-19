@@ -607,7 +607,8 @@ async fn answer(ctx: Ctx, method: Method, uri: Uri, headers: HeaderMap, body: By
         "cartesia"
     } else if path.starts_with("/v1/responses") {
         "openai_responses"
-    } else if path.starts_with("/v1/embeddings") {
+    } else if path.starts_with("/v1/embeddings") || path == "/embeddings" {
+        // `/embeddings` is a provider's whose API root isn't `/v1`, such as Baidu Qianfan's.
         "openai_embeddings"
     } else if path == "/v2/rerank" {
         "cohere_rerank"

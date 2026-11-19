@@ -1,0 +1,22 @@
+{
+  "id": "as-7u9f6065tq",
+  "object": "chat.completion",
+  "created": 1736413890,
+  "model": "deepseek-vl2",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "第一张图片：一个蓝色圆形，中间有一个黑色的比特币符号。\n第二张图片：一个蓝色圆形，中间有一个黑色的比特币符号。\n第三张图片：一个蓝色圆形，中间有一个黑色的比特币符号。"
+      },
+      "finish_reason": "stop",
+      "flag": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 41,
+    "total_tokens": 51
+  }
+}

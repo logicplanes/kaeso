@@ -3732,6 +3732,89 @@ pub const PROVIDERS: &[Provider] = &[
         regional: None,
         key_endpoint: None,
     },
+    Provider {
+        id: "qianfan",
+        name: "Baidu Qianfan",
+        // API keys (`bce-v3/ALTAK-…/…`) are made in the Baidu AI Cloud console under 安全认证 →
+        // API Key (https://cloud.baidu.com/doc/qianfan-api/s/vmwbl43ut). No key prefix: the `/`
+        // inside the key would leave its secret part out of redaction.
+        key_page: KeyPage {
+            url: "https://console.bce.baidu.com/iam/#/iam/apikey/list",
+            label: "API Key",
+        },
+        key_prefix: None,
+        // Qianfan's API sits at `/v2`, not `/v1`: `…/v2/chat/completions`, `…/v2/embeddings`,
+        // `…/v2/models` (https://cloud.baidu.com/doc/qianfan-api/s/wmwbl48n4); `/v1/…` and
+        // `/v2/v1/…` answer 404 (recorded 2026-11-14). The base URL ends at that root, so the
+        // international service's `https://api.baiduqianfan.ai/v1` works as a base-URL override.
+        default_base_url: "https://qianfan.baidubce.com/v2",
+        auth: AuthStyle::Bearer,
+        generation: DialectId::OpenAiChat,
+        count_tokens: None,
+        // `/v2/embeddings` takes no `dimensions`; its models' sizes are fixed
+        // (https://cloud.baidu.com/doc/qianfan-api/s/qmwbl45cf).
+        embeddings: Some(DialectId::OpenAiEmbeddings),
+        embeddings_profile: EmbeddingsProfile::compatible("Baidu Qianfan").without_dimensions(),
+        rerank: None,
+        images: &[],
+        speech: &[],
+        transcriptions: &[],
+        videos: &[],
+        decisions: &[],
+        dialects: &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings],
+        refused_key_messages: &[],
+        context_window_messages: &[],
+        // `max_tokens` and `max_completion_tokens` both count the answer and the chain of thought
+        // (https://cloud.baidu.com/doc/qianfan-api/s/wmwbl48n4).
+        reasoning_beyond_output_limit: false,
+        // `GET /v2/models` needs a key and lists the account's models in Qianfan's own shape, not
+        // the services an account deploys under names of its own
+        // (https://cloud.baidu.com/doc/qianfan-api/s/Amwbl43sp).
+        listing: ModelListing::Partial,
+        end_user_limit: None,
+        // From Qianfan's chat reference (https://cloud.baidu.com/doc/qianfan-api/s/wmwbl48n4 and
+        // the vision page https://cloud.baidu.com/doc/qianfan-api/s/ymwbl48ky, updated
+        // 2026-11-11):
+        // - roles `system`, `user`, `assistant` and `tool`; no `developer`;
+        // - `user` names the end user;
+        // - thinking is switched with `thinking: {"type": "enabled" | "disabled"}` and graded by
+        //   `reasoning_effort` (https://cloud.baidu.com/doc/qianfan-docs/s/Wm95lyynv);
+        // - `video_url` parts and `reasoning_content` in replies and deltas;
+        // - none of the refused fields. Whether Qianfan refuses fields it doesn't know isn't
+        //   documented, so Kaeso refuses them rather than risk Qianfan dropping them.
+        chat: ChatProfile::compatible("Baidu Qianfan")
+            .system_role()
+            .end_user_as_user()
+            .thinking_type()
+            .with_video_url()
+            .reasoning_fields(&["reasoning_content"])
+            .refusing(&[
+                "audio",
+                "function_call",
+                "functions",
+                "logit_bias",
+                "logprobs",
+                "modalities",
+                "prediction",
+                "prompt_cache_key",
+                "prompt_cache_retention",
+                "service_tier",
+                "store",
+                "top_logprobs",
+                "verbosity",
+                "web_search_options",
+            ]),
+        responses: ResponsesProfile::compatible("Baidu Qianfan"),
+        messages: MessagesProfile::compatible("Baidu Qianfan"),
+        gemini: GeminiProfile::GOOGLE_AI_STUDIO,
+        account: None,
+        routes: &[],
+        service_account: None,
+        account_scope: None,
+        api_root: Some(""),
+        regional: None,
+        key_endpoint: None,
+    },
 ];
 
 const _: () = {
@@ -4034,7 +4117,7 @@ mod tests {
         assert!(provider("gemini").is_none());
         assert_eq!(
             ids(),
-            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate, deepgram, cartesia"
+            "openai, anthropic, deepseek, xai, togetherai, groq, openrouter, mistral, vercel, cohere, ollama-cloud, moonshotai, alibaba, cerebras, zai, minimax, elevenlabs, google, gemini-agent-platform, fireworks-ai, nebius, sambanova, scaleway, huggingface, nvidia, baseten, siliconflow, standardcompute, cloudflare-ai-gateway, perplexity, typesafe, deepinfra, upstage, ionos, novita-ai, volcengine, ovhcloud, stepfun-ai, tencent-tokenhub, venice, amazon-bedrock, azure, voyage, jina, fal, replicate, deepgram, cartesia, qianfan"
         );
     }
 
@@ -4127,7 +4210,8 @@ mod tests {
                 "voyage",
                 "jina",
                 "replicate",
-                "deepgram"
+                "deepgram",
+                "qianfan"
             ]
         );
     }
@@ -4491,11 +4575,15 @@ mod tests {
             p.chat.request.refused_values,
             [("service_tier", &["priority", "scale"][..])]
         );
-        // Every other provider sends its dialects' usual `/v1` paths.
-        assert!(
+        // Every other provider but Baidu Qianfan, whose API sits at `/v2`, sends its dialects'
+        // usual `/v1` paths.
+        assert_eq!(
             PROVIDERS
                 .iter()
-                .all(|o| o.id == "volcengine" || o.api_root.is_none())
+                .filter(|o| o.api_root.is_some())
+                .map(|o| o.id)
+                .collect::<Vec<_>>(),
+            ["volcengine", "qianfan"]
         );
 
         let req = Request::Generate(
@@ -4954,6 +5042,34 @@ mod tests {
     }
 
     #[test]
+    fn qianfan_speaks_chat_completions_at_v2_with_its_own_roles_and_thinking_switch() {
+        let p = provider("qianfan").unwrap();
+        assert_eq!(
+            (p.name, p.auth, p.generation, p.dialects),
+            (
+                "Baidu Qianfan",
+                AuthStyle::Bearer,
+                DialectId::OpenAiChat,
+                &[DialectId::OpenAiChat, DialectId::OpenAiEmbeddings][..]
+            )
+        );
+        assert_eq!(
+            (p.default_base_url, p.api_root, p.key_prefix),
+            ("https://qianfan.baidubce.com/v2", Some(""), None)
+        );
+        assert_eq!(
+            (p.count_tokens, p.embeddings),
+            (None, Some(DialectId::OpenAiEmbeddings))
+        );
+        assert!(!p.embeddings_profile.dimensions);
+        assert_eq!(p.listing, ModelListing::Partial);
+        assert_eq!(p.chat.provider, "Baidu Qianfan");
+        assert_eq!(p.chat.reply.reasoning_fields, ["reasoning_content"]);
+        assert!(!p.chat.request.developer_role && p.chat.request.end_user);
+        assert!(p.images.is_empty() && p.speech.is_empty() && p.videos.is_empty());
+    }
+
+    #[test]
     fn a_partial_listing_matches_ids_without_case_or_dots_and_says_nothing_of_a_model_it_leaves_out()
      {
         let ids = ["StandardCompute".to_owned(), "z-ai/glm-5.3".to_owned()];
@@ -5035,7 +5151,8 @@ mod tests {
                 "novita-ai",
                 "tencent-tokenhub",
                 "voyage",
-                "jina"
+                "jina",
+                "qianfan"
             ]
         );
     }
@@ -5969,7 +6086,8 @@ mod tests {
                 "fal",
                 "replicate",
                 "deepgram",
-                "cartesia"
+                "cartesia",
+                "qianfan"
             ]
         );
         assert_eq!(

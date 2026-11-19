@@ -1,0 +1,47 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "deepseek-v3.2",
+      "object": "model",
+      "owned_by": "DeepSeek",
+      "model_name": "DeepSeek-V3.2",
+      "model_description": "DeepSeek 通用对话模型",
+      "status": "active",
+      "features": [
+        "function_call",
+        "structured_output",
+        "prompt_caching",
+        "fim_completion"
+      ],
+      "created": 1717000000,
+      "shutdown_time": null,
+      "type": "chat",
+      "context_length": 131072,
+      "max_completions_tokens": 8192,
+      "max_tokens": 4096,
+      "prompt_tokens": 126976,
+      "tpm": 50000,
+      "rpm": 165,
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "pricing": {
+        "prompt": "0.002",
+        "completion": "0.008",
+        "cache": "0.0005"
+      },
+      "endpoints": [
+        "/v2/chat/completions",
+        "/v2/responses",
+        "/anthropic/v1/messages"
+      ]
+    }
+  ]
+}
