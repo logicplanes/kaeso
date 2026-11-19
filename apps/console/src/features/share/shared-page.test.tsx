@@ -174,8 +174,8 @@ describe("a shared link's page", () => {
             kind: "token_budget",
             model: null,
             period: "day",
-            amount: "1000",
-            used: "100",
+            amount: "100000000",
+            used: "10624184",
             hard: true,
             resets_at: tomorrow(),
           },
@@ -191,7 +191,10 @@ describe("a shared link's page", () => {
     expect(screen.getByText("checkout-web · Token budget")).toBeInTheDocument();
     expect(screen.getByText("Only alerts once it's used up")).toBeInTheDocument();
     expect(screen.getByText("Key 2 · Token budget")).toBeInTheDocument();
-    expect(screen.getByText(/^Heading for .+ at this pace$/)).toBeInTheDocument();
+    expect(screen.getByText("10.6M of 100M")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText("10,624,184 of 100,000,000")).toBeInTheDocument();
+    expect(screen.getAllByRole("meter").map((m) => m.getAttribute("aria-valuetext"))).toContain("10,624,184 of 100,000,000");
+    expect(screen.getByText(/^Heading for \d+(\.\d+)?[MB] at this pace$/)).toBeInTheDocument();
   });
 
   it("says when the project has nothing to show", async () => {

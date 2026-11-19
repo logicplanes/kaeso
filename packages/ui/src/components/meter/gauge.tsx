@@ -11,10 +11,11 @@ export const MeterGauge = forwardRef<
     thresholds?: number[] | undefined;
     label?: ReactNode | undefined;
     valueLabel?: ReactNode | undefined;
+    valueText?: string | undefined;
     "aria-label"?: string | undefined;
     className?: string | undefined;
   }
->(function MeterGauge({ value, thresholds = [0.8], label, valueLabel, className, "aria-label": ariaLabel }, ref) {
+>(function MeterGauge({ value, thresholds = [0.8], label, valueLabel, valueText, className, "aria-label": ariaLabel }, ref) {
   const t = useUiText();
   const { formatPercent } = useFormatters();
   const W = 180;
@@ -34,7 +35,7 @@ export const MeterGauge = forwardRef<
   const tone = over ? "var(--k-danger)" : near ? "var(--k-warning)" : "var(--k-viz-1)";
   const status = over ? t("gauge.over", "Over the limit") : near ? t("gauge.near", "Near the limit") : null;
   const shown = valueLabel ?? (known ? formatPercent(value, 0) : "–");
-  const spokenValue = typeof valueLabel === "string" ? valueLabel : known ? formatPercent(value, 0) : t("gauge.noData", "No data");
+  const spokenValue = valueText ?? (typeof valueLabel === "string" ? valueLabel : known ? formatPercent(value, 0) : t("gauge.noData", "No data"));
   const spoken = [spokenValue, typeof label === "string" ? label : null, status].filter(Boolean).join(", ");
   return (
     <div

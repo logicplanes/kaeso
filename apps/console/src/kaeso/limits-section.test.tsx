@@ -81,7 +81,9 @@ describe("LimitsSection", () => {
     expect(section).toHaveTextContent("Resets 1 Nov");
     expect(section).toHaveTextContent("3 of 60 · Per minute · Sonnet 4.5");
     expect(section).toHaveTextContent("Over the last minute");
-    expect(section).toHaveTextContent("0 of 1,000,000 · In total · cm_retired");
+    expect(within(section).getByText("0 of 1M")).toHaveAttribute("aria-hidden", "true");
+    expect(within(section).getByText("0 of 1,000,000")).toBeInTheDocument();
+    expect(section).toHaveTextContent("· In total · cm_retired");
     expect(section).toHaveTextContent("Never resets");
     expect(requests("GET", LIMITS).map((r) => Object.fromEntries(r.query))).toEqual(expect.arrayContaining([{ user: "usr_grace" }, { level: "project" }]));
   });

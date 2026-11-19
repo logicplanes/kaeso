@@ -24,6 +24,16 @@ describe("Meter", () => {
     expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "$55.00 of $50.00, over the limit");
     expect(screen.getByText("Over the limit: requests are refused")).toHaveClass("text-fg");
   });
+  it("reads out the value it is given in words when the value shown is not plain text", () => {
+    const shown = <span aria-hidden>10.6M of 100M</span>;
+    const { rerender } = render(<Meter label="Per day" value={0.106} valueLabel={shown} valueText="10,624,184 of 100,000,000" />);
+    expect(screen.getByText("10.6M of 100M")).toBeInTheDocument();
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "10,624,184 of 100,000,000");
+    rerender(<Meter label="Per day" value={0.9} valueLabel={shown} valueText="90,000,000 of 100,000,000" thresholds={[0.8]} />);
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "90,000,000 of 100,000,000, near the limit");
+    rerender(<Meter label="Per day" value={0.106} shape="gauge" valueLabel={shown} valueText="10,624,184 of 100,000,000" />);
+    expect(screen.getByRole("meter")).toHaveAttribute("aria-valuetext", "10,624,184 of 100,000,000, Per day");
+  });
   it("cuts each threshold out of the bar exactly at its value, so the tick shows the surface below", () => {
     render(<Meter label="Requests" value={0.4} thresholds={[0.8, 0.5]} />);
     const mask = screen.getByRole("meter").style.maskImage;

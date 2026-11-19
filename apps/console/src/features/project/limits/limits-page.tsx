@@ -41,6 +41,7 @@ import { locale, t, type Locale } from "~/i18n";
 import { LoadFailed } from "~/features/org/load-failed";
 import { common } from "~/i18n/common";
 import { Share, lastDays } from "~/kaeso/share";
+import { LimitFigure } from "~/kaeso/limit-figure";
 
 type Level = "project" | "member" | "key";
 export type LimitsSearch = { level?: Level; sort?: "used"; add?: boolean };
@@ -274,7 +275,8 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
   );
 }
 
-const RESETS_WIDTH: Record<Locale, string> = { en: "md:w-120", de: "md:w-180", "zh-CN": "md:w-120" };
+// Floors, not widths: the meters line up across rows, and a longer text pushes its meter over instead of running into it.
+const RESETS_WIDTH: Record<Locale, string> = { en: "md:min-w-120", de: "md:min-w-180", "zh-CN": "md:min-w-120" };
 
 const KIND_ICON = { spend: icons.budget, requests: icons.requestLog, tokens: icons.stack } as const;
 
@@ -285,7 +287,9 @@ function LimitGlyph({ org, project, limit }: { org: string; project: string; lim
 function LimitTitle({ limit, subject, archivedKey }: { limit: LimitView; subject: string | undefined; archivedKey: boolean }) {
   return (
     <span className="flex min-w-0 items-center gap-8">
-      <span className="truncate">{subject ?? limitKindLabel(limit.kind)}</span>
+      <Text truncate tone="inherit">
+        {subject ?? limitKindLabel(limit.kind)}
+      </Text>
       <Badge tone={limit.hard ? "neutral" : "outline"} className="hidden sm:inline-flex">
         {limit.hard ? t("limits.hard", "Hard") : t("limits.soft", "Soft")}
       </Badge>
@@ -308,8 +312,8 @@ function LimitUse({ org, project, limit }: { org: string; project: string; limit
   const amount = Number(limit.amount);
   return (
     <span className="flex items-center gap-12">
-      <Text variant="small" tone="secondary" tabular className="whitespace-nowrap md:w-160 md:text-right">
-        {text.value}
+      <Text variant="small" tone="secondary" tabular className="md:text-right md:whitespace-nowrap">
+        <LimitFigure figure={text.value} />
       </Text>
       <Meter
         className="hidden w-120 md:flex"

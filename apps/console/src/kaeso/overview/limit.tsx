@@ -1,13 +1,14 @@
 import { LimitMeter } from "@logicplanes/kaeso-ui";
-import { formatNumber, formatRelative, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import type { LimitView } from "~/api/generated/types";
 import { alertMarks } from "~/format/alert-marks";
+import { limitUse } from "~/format/limit-use";
 import { limitKindLabel, periodLabel } from "~/format/labels";
 import { t } from "~/i18n";
+import { LimitFigure } from "../limit-figure";
 
 export function Limit({ limit }: { limit: LimitView }) {
   const money = limit.kind === "spend_budget";
-  const fmt = (v: string | number) => (money ? formatUSD(String(v)) : formatNumber(Number(v)));
   return (
     <LimitMeter
       kind={money ? "spend" : limit.kind === "request_rate" || limit.kind === "tool_call_rate" ? "requests" : "tokens"}
@@ -15,7 +16,7 @@ export function Limit({ limit }: { limit: LimitView }) {
       window={periodLabel(limit.period)}
       used={Number(limit.used ?? 0)}
       limit={Number(limit.amount)}
-      valueLabel={t("project.overview.limitUse", "{used} of {limit}", { used: fmt(limit.used ?? 0), limit: fmt(limit.amount) })}
+      valueLabel={<LimitFigure figure={limitUse(limit, ({ used, amount }) => t("project.overview.limitUse", "{used} of {limit}", { used, limit: amount }))} />}
       alerts={alertMarks(limit)}
       hard={limit.hard}
       resets={
