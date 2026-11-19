@@ -184,6 +184,20 @@ describe("List", () => {
     await userEvent.click(screen.getByText("checkout-worker"));
     expect(opened).toEqual(["checkout-worker"]);
   });
+  it("wide, keeps the dates in a column that holds a full date in every language, so the metadata before it lines up", () => {
+    const spy = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(900);
+    render(
+      <List
+        aria-label="Members"
+        items={[
+          { id: "a", title: "Ada Okafor", meta: <span>Inhaber</span>, date: "2. Juli 2026" },
+          { id: "b", title: "Lin Park", meta: <span>Entwickler</span>, date: "20. Sept. 2026" },
+        ]}
+      />,
+    );
+    for (const date of ["2. Juli 2026", "20. Sept. 2026"]) expect(screen.getByText(date)).toHaveClass("min-w-112", "text-right", "shrink-0");
+    spy.mockRestore();
+  });
   it("narrow (a phone), puts a row's metadata and date on a line under its title, and grows to hold them", () => {
     const rows = [{ id: "a", title: "shell-invitee@example.com", subtitle: "Invited by Ada", meta: <span>Accepted</span>, date: "Sent 13 Oct 2026" }];
     const spy = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(360);

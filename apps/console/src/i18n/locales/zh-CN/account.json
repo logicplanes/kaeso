@@ -293,5 +293,15 @@
   "account.notify.modelShutdownSoon": "模型即将停用",
   "account.notify.modelShutdownSoonHint": "项目仍在调用的模型停用前 30 天、7 天和 1 天。",
   "account.notify.modelLines": "模型系列切换",
-  "account.notify.modelLinesHint": "模型系列切换或有切换等待您处理时。"
+  "account.notify.modelLinesHint": "模型系列切换或有切换等待您处理时。",
+  "account.enterName": "请输入名称",
+  "account.noChange": "没有要保存的更改",
+  "account.nothingToDiscard": "没有要放弃的更改",
+  "account.enterNewEmail": "请输入新邮箱",
+  "account.enterRecoveryCode": "请输入恢复码",
+  "account.enterAppCode": "请输入应用中的 6 位验证码",
+  "account.enterCurrentPassword": "请输入您的当前密码",
+  "account.enterNewPassword": "请输入 12 到 128 个字符的新密码",
+  "account.confirmCodesStored": "请先勾选“我已妥善保存这些恢复码”",
+  "account.noOtherSessions": "没有其他浏览器已登录"
 }

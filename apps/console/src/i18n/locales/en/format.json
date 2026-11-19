@@ -260,7 +260,7 @@
   "format.limitUnit.tokensPerMinute": "tokens / min",
   "format.limitUnit.toolCallsPerMinute": "tool calls / min",
   "format.listSeparator": ", ",
-  "format.model.unknown": "Unknown",
+  "format.model.unknown": "Unknown model",
   "format.period.allTime": "All time",
   "format.period.last12Months": "Last 12 months",
   "format.period.last30Days": "Last 30 days",

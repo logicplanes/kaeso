@@ -50,6 +50,7 @@ export type UsersSearch = { q?: string; state?: UserState; user?: string; invite
 
 const STATE_DOT: Record<string, "warning" | "neutral"> = { deactivated: "warning", deleted: "neutral" };
 const CREATED_WIDTH: Record<Locale, number> = { en: 136, de: 144, "zh-CN": 160 };
+const SIGNED_IN_WIDTH: Record<Locale, number> = { en: 128, de: 144, "zh-CN": 128 };
 
 export function InstanceUsersPage({ search }: { search: UsersSearch }) {
   const navigate = useNavigate();
@@ -68,7 +69,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
     () =>
       [
         col.custom(
-          { id: "name", header: t("common.name", "Name"), size: 232, priority: 1, grow: true },
+          { id: "name", header: t("common.name", "Name"), size: 216, priority: 1, grow: true },
           (u: InstanceUserView) => u.name,
           (_v, u) => (
             <span className="flex min-w-0 items-center gap-8">
@@ -89,7 +90,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
           u.totp_enabled ? t("common.on", "On") : t("common.off", "Off"),
         ),
         col.custom(
-          { id: "signedIn", header: t("instance.lastSignIn", "Last sign-in"), size: 128, priority: 2 },
+          { id: "signedIn", header: t("instance.lastSignIn", "Last sign-in"), size: SIGNED_IN_WIDTH[lang], priority: 2 },
           (u: InstanceUserView) => u.last_signed_in_at ?? "",
           (v: string) => (v ? <time dateTime={v}>{formatRelative(v)}</time> : <Text tone="tertiary">{t("common.never", "Never")}</Text>),
         ),

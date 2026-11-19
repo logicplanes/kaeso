@@ -67,7 +67,7 @@ describe("instance organizations list", () => {
     orgs([NORTHWIND, CONTOSO]);
     await renderApp(PATH);
     const row = (await within(table()).findByText("Contoso")).closest<HTMLElement>("[role=row]");
-    expect(row?.style.gridTemplateColumns.split(" ")[2]).toBe("168px");
+    expect(row?.style.gridTemplateColumns.split(" ")[2]).toBe("184px");
   });
 
   it("searches by name through the URL", async () => {
@@ -298,7 +298,7 @@ describe("creating an organization", () => {
     on("POST", "instance/orgs", ({ body }: { body: { name: string } }) => instanceOrg({ id: "org_new", name: body.name }));
     on("GET", "instance/orgs/:org", instanceOrg({ id: "org_new", name: "Initech" }));
     const { user } = await renderApp(PATH);
-    await user.click(screen.getAllByRole("button", { name: "Create organization" })[0] as HTMLElement);
+    await user.click(screen.getByRole("button", { name: "Create organization" }));
     const dialog = await screen.findByRole("dialog", { name: "Create organization" });
     await hoverReason(user, within(dialog).getByRole("button", { name: "Create organization" }), "Give the organization a name");
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "  Initech ");
@@ -337,7 +337,7 @@ describe("creating an organization", () => {
     on("GET", "instance/users", paged([]));
     on("POST", "instance/orgs", json({ error: { type: "conflict", message: "That name is taken.", param: "name", right: null } }, { status: 409 }));
     const { user } = await renderApp(PATH);
-    await user.click(screen.getAllByRole("button", { name: "Create organization" })[0] as HTMLElement);
+    await user.click(screen.getByRole("button", { name: "Create organization" }));
     const dialog = await screen.findByRole("dialog", { name: "Create organization" });
     await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "Northwind Labs");
     await user.click(within(dialog).getByRole("button", { name: "Create organization" }));
@@ -360,7 +360,7 @@ describe("creating an organization", () => {
     expect(option.querySelector('img[src="/avatars/grace.webp"]')).not.toBeNull();
   });
 
-  it("closes with Escape and opens again from the narrow button", async () => {
+  it("closes with Escape and opens again from its one labelled button", async () => {
     signedIn();
     orgs();
     on("GET", "instance/users", paged([]));
@@ -368,7 +368,9 @@ describe("creating an organization", () => {
     await screen.findByRole("dialog", { name: "Create organization" });
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Create organization" })).not.toBeInTheDocument());
-    await user.click(screen.getAllByRole("button", { name: "Create organization" })[1] as HTMLElement);
+    const create = screen.getByRole("button", { name: "Create organization" });
+    expect(create).toHaveTextContent("Create organization");
+    await user.click(create);
     expect(await screen.findByRole("dialog", { name: "Create organization" })).toBeInTheDocument();
     expect(requests("POST", "instance/orgs")).toHaveLength(0);
   });

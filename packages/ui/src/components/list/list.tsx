@@ -620,7 +620,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
           </span>
         )}
         {!lines && item.date && (
-          <span className={cn("min-w-80 shrink-0 text-right text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>
+          <span className={cn("min-w-112 shrink-0 text-right text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>
             {item.date}
           </span>
         )}

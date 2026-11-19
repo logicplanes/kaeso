@@ -34,7 +34,7 @@ import { t } from "~/i18n";
 import { dayWithinYear } from "~/format/short-date";
 
 const STATE_WIDTH = 128;
-const DELETION_STATE_WIDTH = 168;
+const DELETION_STATE_WIDTH = 184;
 
 export type InstanceOrgsSearch = { q?: string; sort?: "deletion"; sso?: "with" | "without"; create?: boolean };
 
@@ -124,19 +124,9 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
       title={t("instance.orgs", "Organizations")}
       description={t("instance.orgsHint", "Every organization on this install: metadata only, not keys or logs.")}
       actions={
-        <>
-          <Button size="sm" variant="primary" leadingIcon={icons.add} className="hidden sm:inline-flex" onClick={() => setCreating(true)}>
-            {t("instance.createOrg", "Create organization")}
-          </Button>
-          <Button
-            size="sm"
-            variant="primary"
-            icon={icons.add}
-            aria-label={t("instance.createOrg", "Create organization")}
-            className="sm:hidden"
-            onClick={() => setCreating(true)}
-          />
-        </>
+        <Button size="sm" variant="primary" leadingIcon={icons.add} onClick={() => setCreating(true)}>
+          {t("instance.createOrg", "Create organization")}
+        </Button>
       }
     >
       <FilterRow

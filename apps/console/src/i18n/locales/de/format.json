@@ -175,7 +175,7 @@
   "format.limitUnit.tokens": "Token",
   "format.limitUnit.tokensPerMinute": "Token / Min.",
   "format.listSeparator": ", ",
-  "format.model.unknown": "Unbekannt",
+  "format.model.unknown": "Unbekanntes Modell",
   "format.period.allTime": "Seit Beginn",
   "format.period.last12Months": "Letzte 12 Monate",
   "format.period.last30Days": "Letzte 30 Tage",
