@@ -23,8 +23,6 @@ pub mod kpmr;
 pub mod lifecycle;
 pub mod limits;
 pub mod lines;
-pub mod linked_billing;
-pub mod linked_billing_keys;
 pub mod log_media;
 pub mod log_parts;
 pub mod logs;

@@ -144,7 +144,6 @@ export function OrgUsageBreakdown({
         <span className="flex min-w-0 items-center gap-8">
           <ProviderBadge provider={k.provider} name={providers.name(k.provider)} />
           <Text truncate>{k.name}</Text>
-          {k.auth_method === "linked_billing" && <Badge tone="outline">{t("orgHome.linkedBilling", "Linked billing")}</Badge>}
         </span>
       );
     }

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT key_id AS \"key_id!\", count(*) AS \"n!\" FROM ( SELECT key_id FROM provider_credentials UNION ALL SELECT key_id FROM user_totp UNION ALL SELECT key_id FROM org_oidc UNION ALL SELECT key_id FROM mcp_connections UNION ALL SELECT oauth_client_secret_key_id FROM mcp_servers WHERE oauth_client_secret_key_id IS NOT NULL UNION ALL SELECT secret_key_id FROM guardrails WHERE secret_key_id IS NOT NULL) k GROUP BY key_id ORDER BY key_id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "key_id!",
+        "type_info": "Text",
+        "origin": "Expression"
+      },
+      {
+        "ordinal": 1,
+        "name": "n!",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null,
+      null
+    ]
+  },
+  "hash": "fded7cb7c58abe06ec73a0fb75184d960c994c3f780a5ee211bd9c576f5f3c44"
+}
