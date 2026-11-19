@@ -4,8 +4,8 @@ use super::*;
 use crate::rights::Right;
 
 #[test]
-fn there_are_28_kinds_grouped_by_area_in_page_order() {
-    assert_eq!(Kind::ALL.len(), 28);
+fn there_are_29_kinds_grouped_by_area_in_page_order() {
+    assert_eq!(Kind::ALL.len(), 29);
     let areas: Vec<Area> = Kind::ALL.iter().map(|k| k.area()).collect();
     let mut sorted = areas.clone();
     sorted.sort();
@@ -88,7 +88,15 @@ fn only_kinds_about_yourself_name_no_right() {
         .filter(|k| k.rights().is_empty())
         .map(|k| k.as_str())
         .collect();
-    assert_eq!(about_you, ["account_security", "new_app", "access_changed"]);
+    assert_eq!(
+        about_you,
+        [
+            "account_security",
+            "new_app",
+            "access_changed",
+            "sign_in_required"
+        ]
+    );
     for k in Kind::ALL {
         for r in k.rights() {
             assert!(

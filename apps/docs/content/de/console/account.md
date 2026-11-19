@@ -137,6 +137,7 @@ Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Z
 | Organisation | Mitgliederänderungen | `members.invite` | Täglich |
 | Organisation | Ihre Einladung wurde angenommen | Wer sie gesendet hat | Sofort |
 | Organisation | Webhooks brauchen Aufmerksamkeit | `webhooks.manage` | Sofort |
+| Organisation | Eine Anmelderegel betrifft Sie | Sie, wenn eine Organisation von Ihnen Zwei-Faktor-Authentifizierung oder Single Sign-on verlangt | Sofort |
 | Organisation | Anbieter-Schlüssel brauchen Aufmerksamkeit | `provider_credentials.replace` | Sofort |
 | Organisation | Ein Plattform-Schlüssel läuft ab | `platform_keys.create` und wer den Schlüssel erstellt hat, solange Mitglied | Sofort |
 | Organisation | Modelländerungen | `models.manage` in einem Projekt, das das Modell nutzt | Täglich |

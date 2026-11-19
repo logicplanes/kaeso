@@ -232,9 +232,12 @@ async fn requiring_sso_takes_password_reset_from_managed_accounts_too() {
     let app = App::start(&s).await;
     let team = team(&app).await;
     let link = reset_link(&app, "ada@acme.example").await;
+    let notified = app.mail.to("ada@acme.example").len();
     require_sso(&app, &team, true)
         .await
         .expect_status(StatusCode::OK);
+    // The managed account first hears that it signs in only through the provider from now on.
+    app.wait_for_mail("ada@acme.example", notified + 1).await;
     let ada = operator_session(&app, "ada@acme.example").await;
 
     let sent = app.mail.to("ada@acme.example").len();

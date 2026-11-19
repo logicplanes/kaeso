@@ -1,0 +1,20 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Acme] Richten Sie Zwei-Faktor-Authentifizierung ein
+
+Richten Sie Zwei-Faktor-Authentifizierung ein
+
+Acme
+
+Ada Lovelace verlangt jetzt Zwei-Faktor-Authentifizierung; richten Sie sie ein, um die Organisation zu öffnen.
+
+Zwei-Faktor einrichten:
+https://kaeso.example.com/orgs/org_1
+
+-- 
+Gesendet von Kaeso unter kaeso.example.com.
+Sie erhalten diese E-Mail, weil sie Ihr Konto betrifft.
+E-Mails wählen: https://kaeso.example.com/settings/account/notifications
+Abmelden: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

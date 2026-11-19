@@ -267,6 +267,8 @@
   "account.notify.inviteAcceptedHint": "当您邀请的人加入时。",
   "account.notify.providerKeys": "服务商密钥需要处理",
   "account.notify.providerKeysHint": "当服务商反复拒绝某个密钥或账户时。",
+  "account.notify.signInRequired": "登录规则影响到您",
+  "account.notify.signInRequiredHint": "当某个组织开始要求您使用双重验证或单点登录时。",
   "account.notify.modelChanges": "模型变更",
   "account.notify.modelChangesHint": "当正在使用的模型下架或价格变化时。",
   "account.notify.costReport": "每月成本报告",

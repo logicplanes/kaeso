@@ -109,6 +109,8 @@ Wer **Zwei-Faktor-Authentifizierung verlangen** einschaltet, wird zuerst gefragt
 
 Wenn Sie eine Anforderung einschalten, die Sie selbst nicht erfüllen, ist die Organisation auch für Sie gesperrt. Das gilt, bis Sie sich über den Anbieter anmelden oder die Zwei-Faktor-Authentifizierung einrichten. Die Konsole fragt vor dem Speichern nach. Wenn Sie Single Sign-on verlangen, bleibt Ihre eigene Sitzung bestehen; ein [Anmeldelink vom Server](../self-hosting/sign-in.md#wieder-hineinkommen) ist also nie Ihr einziger Weg zurück. Wenn Sie den Identitätsanbieter trennen, schaltet das auch **Single Sign-on verlangen** aus.
 
+Kaeso schickt den Mitgliedern, die eine neue Anforderung betrifft, eine E-Mail, außer sie haben **Eine Anmelderegel betrifft Sie** abgeschaltet: bei Zwei-Faktor-Authentifizierung den aktiven Mitgliedern ohne Authenticator-App, außer den Konten, die die Organisation verwaltet, während sie Single Sign-on verlangt; bei Single Sign-on den Konten, die sie verwaltet, und wer noch nicht mit ihrem Anbieter verknüpft ist, wird gebeten, einen Admin um Hilfe zu fragen.
+
 ## Agenten von Mitgliedern zulassen
 
 Mitglieder können Agenten wie Claude Code oder Codex verbinden, die über den [MCP-Server](../api/mcp.md) für sie handeln. Unter **Sicherheit** enthält der Abschnitt **Agenten** die Agenten-Richtlinie der Organisation. Sie entscheidet, ob diese Agenten in der Organisation handeln dürfen und wie weit:

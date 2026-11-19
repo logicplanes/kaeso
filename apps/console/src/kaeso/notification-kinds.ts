@@ -28,6 +28,10 @@ const kinds: Readonly<Record<string, Words>> = {
     name: t("account.notify.budgetAlerts", "Budget alerts"),
     description: t("account.notify.budgetAlertsHint", "When a budget you're responsible for crosses a threshold."),
   }),
+  sign_in_required: () => ({
+    name: t("account.notify.signInRequired", "A sign-in rule affects you"),
+    description: t("account.notify.signInRequiredHint", "When an organization starts requiring two-factor or single sign-on of you."),
+  }),
   limit_reached: () => ({
     name: t("account.notify.limitReached", "Limit reached"),
     description: t("account.notify.limitReachedHint", "When a limit starts blocking requests."),

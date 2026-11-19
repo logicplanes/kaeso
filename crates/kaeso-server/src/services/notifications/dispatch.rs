@@ -99,10 +99,9 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::InstanceAgentsPolicy
         | A::InstanceLinkedBillingUpdate
         | A::InstanceLinkedBillingDelete => &[Kind::InstanceSettings],
+        A::SecurityRequireSso | A::SecurityRequire2fa => &[Kind::OrgSecurity, Kind::SignInRequired],
         A::SecurityAgentsPolicy
         | A::SecurityKeyPolicy
-        | A::SecurityRequireSso
-        | A::SecurityRequire2fa
         | A::SecuritySsoDelete
         | A::SecuritySsoDomainVerify
         | A::SecuritySsoUpdate

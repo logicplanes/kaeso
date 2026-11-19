@@ -124,3 +124,19 @@ pub async fn linkable(db: impl PgExecutor<'_>, user_id: Uuid) -> Result<Vec<Link
     .fetch_all(db)
     .await?)
 }
+
+/// Which of these users can sign in through the org's single sign-on: their account is linked
+/// to its provider, or will be at their first sign-in through it.
+pub async fn among(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    user_ids: &[Uuid],
+) -> Result<Vec<Uuid>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT user_id FROM sso_identities WHERE org_id = $1 AND user_id = ANY($2)",
+        org_id,
+        user_ids
+    )
+    .fetch_all(db)
+    .await?)
+}

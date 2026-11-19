@@ -40,6 +40,16 @@ pub enum Access<'a> {
     InstanceAdmin(bool),
 }
 
+/// A sign-in rule an organization started requiring, as it affects the reader.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Requirement {
+    /// Two-factor authentication, which the reader hasn't set up.
+    TwoFactor,
+    /// Single sign-on for the accounts the organization manages; `linked` when the reader's
+    /// account can already sign in through its provider.
+    SingleSignOn { linked: bool },
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum KeyChange {
     Disabled,
@@ -597,6 +607,10 @@ pub enum Fact<'a> {
         change: Access<'a>,
         by: Actor<'a>,
     },
+    SignInRequired {
+        rule: Requirement,
+        by: Actor<'a>,
+    },
     LimitReached {
         organization: &'a str,
         project: &'a str,
@@ -690,6 +704,7 @@ impl Fact<'_> {
             Fact::ExportReady(_) => EmailKind::ExportReady,
             Fact::WeeklySummary { .. } => EmailKind::WeeklySummary,
             Fact::AccessChanged { .. } => EmailKind::AccessChanged,
+            Fact::SignInRequired { .. } => EmailKind::SignInRequired,
             Fact::LimitReached { .. } => EmailKind::LimitReached,
             Fact::KeyChanged { .. } => EmailKind::KeyChanged,
             Fact::ContentLogging { .. } => EmailKind::ContentLogging,
@@ -977,6 +992,35 @@ impl Fact<'_> {
                     ),
                 };
                 w(heading, sentence, "Open Kaeso")
+            }
+            Fact::SignInRequired { rule, by } => {
+                let (heading, sentence, button) = match rule {
+                    Requirement::TwoFactor => (
+                        "Set up two-factor authentication",
+                        format!(
+                            "{} now requires two-factor authentication; set it up to open the organization again.",
+                            who(by)
+                        ),
+                        "Set up two-factor",
+                    ),
+                    Requirement::SingleSignOn { linked: true } => (
+                        "Sign in through single sign-on",
+                        format!(
+                            "{} now requires single sign-on; from now on you sign in only through its provider.",
+                            who(by)
+                        ),
+                        "Open Kaeso",
+                    ),
+                    Requirement::SingleSignOn { linked: false } => (
+                        "Ask an admin to link your account",
+                        format!(
+                            "{} now requires single sign-on, which your account isn't linked to; ask an admin to help you sign in.",
+                            who(by)
+                        ),
+                        "Open Kaeso",
+                    ),
+                };
+                w(heading.to_owned(), sentence, button)
             }
             Fact::LimitReached {
                 project,
@@ -1420,6 +1464,35 @@ impl Fact<'_> {
                     ),
                 };
                 w(heading, sentence, "Kaeso öffnen")
+            }
+            Fact::SignInRequired { rule, by } => {
+                let (heading, sentence, button) = match rule {
+                    Requirement::TwoFactor => (
+                        "Richten Sie Zwei-Faktor-Authentifizierung ein",
+                        format!(
+                            "{} verlangt jetzt Zwei-Faktor-Authentifizierung; richten Sie sie ein, um die Organisation zu öffnen.",
+                            who(by)
+                        ),
+                        "Zwei-Faktor einrichten",
+                    ),
+                    Requirement::SingleSignOn { linked: true } => (
+                        "Melden Sie sich über Single Sign-on an",
+                        format!(
+                            "{} verlangt jetzt Single Sign-on; Sie melden sich ab jetzt nur über dessen Anbieter an.",
+                            who(by)
+                        ),
+                        "Kaeso öffnen",
+                    ),
+                    Requirement::SingleSignOn { linked: false } => (
+                        "Lassen Sie Ihr Konto von einem Admin verknüpfen",
+                        format!(
+                            "{} verlangt jetzt Single Sign-on, mit dem Ihr Konto nicht verknüpft ist; ein Admin hilft Ihnen.",
+                            who(by)
+                        ),
+                        "Kaeso öffnen",
+                    ),
+                };
+                w(heading.to_owned(), sentence, button)
             }
             Fact::LimitReached {
                 project,
@@ -1873,6 +1946,30 @@ impl Fact<'_> {
                     ),
                 };
                 w(heading, sentence, "打开 Kaeso")
+            }
+            Fact::SignInRequired { rule, by } => {
+                let by = who(by);
+                let (heading, sentence, button) = match rule {
+                    Requirement::TwoFactor => (
+                        "请设置双重验证",
+                        zh(&[&by, "现在要求双重验证；请设置后再打开该组织。"]),
+                        "设置双重验证",
+                    ),
+                    Requirement::SingleSignOn { linked: true } => (
+                        "请通过单点登录登录",
+                        zh(&[&by, "现在要求单点登录；今后您只能通过其身份提供方登录。"]),
+                        "打开 Kaeso",
+                    ),
+                    Requirement::SingleSignOn { linked: false } => (
+                        "请联系管理员关联您的账户",
+                        zh(&[
+                            &by,
+                            "现在要求单点登录，而您的账户尚未与其关联；请联系管理员帮助您登录。",
+                        ]),
+                        "打开 Kaeso",
+                    ),
+                };
+                w(heading.to_owned(), sentence, button)
             }
             Fact::LimitReached {
                 project,

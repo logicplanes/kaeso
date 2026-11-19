@@ -109,6 +109,8 @@ Turning on **Require two-factor authentication** asks first and names the active
 
 Turning on a requirement you don't meet yourself closes the organization to you too, until you sign in through the provider or set up two-factor authentication. The console asks before it saves. Requiring single sign-on keeps your own session, so a [sign-in link from the server](../self-hosting/sign-in.md#get-back-in) is never your only way back. Disconnecting the identity provider turns off **Require single sign-on** as well.
 
+Kaeso emails the members a new requirement affects, unless they turned off **A sign-in rule affects you**: for two-factor authentication, the active members without an authenticator app, apart from the accounts the organization manages while it requires single sign-on; for single sign-on, the accounts it manages, and those not linked to its provider yet are told to ask an admin for help.
+
 ## Let members' agents in
 
 Members can connect agents, such as Claude Code or Codex, that act for them through the [MCP server](../api/mcp.md). Under **Security**, the **Agents** section holds the organization's agent policy. It decides whether those agents may act in the organization, and how far:
