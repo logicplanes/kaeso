@@ -67,7 +67,7 @@ export function RulesFields({ org, rules, set }: { org: string; rules: FullRules
         {DETECTORS.map((d) => (
           <div key={d} className="flex items-center justify-between gap-16">
             <Text>{detectorLabel(d)}</Text>
-            <div className="w-160">
+            <div className="w-160 shrink-0">
               <Select
                 aria-label={detectorLabel(d)}
                 size="sm"
@@ -81,38 +81,42 @@ export function RulesFields({ org, rules, set }: { org: string; rules: FullRules
         ))}
       </div>
       {custom.map((c, i) => (
-        <div key={i} className="flex items-end gap-8">
-          <Input
-            label={t("org.guardrails.patternName", "Pattern name")}
-            placeholder={t("org.guardrails.patternNameExample", "order_id")}
-            value={c.name}
-            onChange={(e) => setCustom(i, { name: e.target.value })}
-            maxLength={32}
-          />
-          <Input
-            label={t("org.guardrails.pattern", "Regular expression")}
-            placeholder={t("org.guardrails.patternExample", "ORD-\\d{6}")}
-            value={c.pattern}
-            onChange={(e) => setCustom(i, { pattern: e.target.value })}
-            maxLength={500}
-          />
-          <div className="w-160 shrink-0">
-            <Select
-              aria-label={t("org.guardrails.patternAction", "What {name} does", { name: c.name || String(i + 1) })}
-              size="sm"
-              fullWidth
-              value={c.action}
-              onValueChange={(v) => setCustom(i, { action: v as RuleAction })}
-              options={actionOptions()}
+        <div key={i} className="flex flex-wrap items-end gap-8 sm:flex-nowrap">
+          <div className="min-w-0 flex-1">
+            <Input
+              label={t("org.guardrails.patternName", "Pattern name")}
+              placeholder={t("org.guardrails.patternNameExample", "order_id")}
+              value={c.name}
+              onChange={(e) => setCustom(i, { name: e.target.value })}
+              maxLength={32}
             />
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={icons.delete}
-            aria-label={t("org.guardrails.removePattern", "Remove pattern {n}", { n: i + 1 })}
-            onClick={() => set({ ...rules, custom: custom.filter((_, j) => j !== i) })}
-          />
+          <div className="min-w-0 flex-1">
+            <Input
+              label={t("org.guardrails.pattern", "Regular expression")}
+              placeholder={t("org.guardrails.patternExample", "ORD-\\d{6}")}
+              value={c.pattern}
+              onChange={(e) => setCustom(i, { pattern: e.target.value })}
+              maxLength={500}
+            />
+          </div>
+          <div className="flex w-full items-end gap-8 sm:w-auto">
+            <div className="min-w-0 flex-1 sm:w-160 sm:flex-none">
+              <Select
+                aria-label={t("org.guardrails.patternAction", "What {name} does", { name: c.name || String(i + 1) })}
+                fullWidth
+                value={c.action}
+                onValueChange={(v) => setCustom(i, { action: v as RuleAction })}
+                options={actionOptions()}
+              />
+            </div>
+            <Button
+              variant="ghost"
+              icon={icons.delete}
+              aria-label={t("org.guardrails.removePattern", "Remove pattern {n}", { n: i + 1 })}
+              onClick={() => set({ ...rules, custom: custom.filter((_, j) => j !== i) })}
+            />
+          </div>
         </div>
       ))}
       <div>

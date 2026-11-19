@@ -76,7 +76,12 @@ describe("built-in rules", () => {
     await user.click(within(dialog).getByRole("switch", { name: /Mask in the request log/ }));
     await user.click(within(dialog).getByRole("switch", { name: /Restore in the reply/ }));
 
-    await fill(user, within(dialog).getByLabelText("Sample text"), "Mail ada@example.com");
+    const sample = within(dialog).getByRole("textbox", { name: "Sample text" });
+    expect(sample.tagName).toBe("TEXTAREA");
+    expect(sample).toHaveAttribute("placeholder", "Paste a prompt to see what the rules find");
+    expect(sample).toHaveAttribute("rows", "3");
+    expect(sample.style.height).not.toBe("0px");
+    await fill(user, sample, "Mail ada@example.com");
     await user.click(within(dialog).getByRole("button", { name: "Try rules" }));
     expect(await within(dialog).findByText("Mail [EMAIL_1]")).toBeInTheDocument();
     expect(within(dialog).getByText("1 email address, 2 API keys")).toBeInTheDocument();

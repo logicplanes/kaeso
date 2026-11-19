@@ -1,6 +1,7 @@
-import { forwardRef, useCallback, useLayoutEffect, useRef, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, type TextareaHTMLAttributes } from "react";
 import { cn } from "../../utils/cn.js";
 import { warnStylingClassName } from "../../utils/dev.js";
+import { observeResize } from "../../utils/observe-resize.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
 
 export const KAESO_TEXTAREA_VARIANTS = {
@@ -49,9 +50,16 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
     const line = parseFloat(style.lineHeight) || 20;
     const pad = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
     el.style.height = "auto";
+    // A hidden textarea (a later step of a StepDialog, a closed tab) measures 0; keep its rows until it shows.
+    if (!el.scrollHeight) return;
     el.style.height = `${Math.min(el.scrollHeight, maxRows * line + pad)}px`;
   }, [maxRows, resize]);
   useLayoutEffect(grow, [grow, rest.value]);
+  useEffect(() => {
+    const el = inner.current;
+    if (!el || resize !== "auto") return;
+    return observeResize([el], grow);
+  }, [grow, resize]);
   const control = (
     <textarea
       ref={(el) => {
