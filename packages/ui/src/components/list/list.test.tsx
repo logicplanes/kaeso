@@ -44,6 +44,26 @@ describe("List", () => {
     expect(screen.getByText("Builds with the project's models, keys and logs.")).toHaveClass("truncate");
     expect(screen.getByRole("gridcell")).toHaveClass("min-h-56", "py-8");
   });
+  it("keeps the date column on a row without a date, so every row's metadata ends on the same line", () => {
+    render(
+      <List
+        aria-label="Models"
+        items={[
+          { id: "a", title: "Claude Haiku 5.5", meta: <span>messages</span>, date: "Oct 2026" },
+          { id: "b", title: "TTS-1", meta: <span>responses</span> },
+        ]}
+      />,
+    );
+    const [dated, undated] = screen.getAllByRole("gridcell");
+    expect(undated!.lastElementChild!.className).toBe(dated!.lastElementChild!.className);
+    expect(undated!.lastElementChild).toHaveTextContent(/^$/);
+  });
+
+  it("leaves the date column out of a list where no row has a date", () => {
+    render(<List aria-label="Keys" items={[{ id: "a", title: "checkout-web", meta: <span>Expires in 30 days</span> }]} />);
+    expect(screen.getByRole("gridcell").lastElementChild).toHaveTextContent("Expires in 30 days");
+  });
+
   it("puts a leading avatar before the title", () => {
     render(<List aria-label="Members" items={[{ id: "ada", title: "Ada", leading: <span data-testid="avatar" /> }]} />);
     const cell = screen.getByRole("gridcell");
