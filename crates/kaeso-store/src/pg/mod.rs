@@ -22,6 +22,7 @@ pub mod invites;
 pub mod key_lifecycle;
 pub mod keys;
 pub mod limits;
+pub mod lines;
 pub mod linked_billing;
 pub mod log_jobs;
 pub mod mcp_connections;

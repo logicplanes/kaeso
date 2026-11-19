@@ -172,6 +172,8 @@
   "account.notify.modelChangesHint": "When a model in use is delisted or changes its price.",
   "account.notify.modelDeprecated": "Model deprecated",
   "account.notify.modelDeprecatedHint": "When a provider names a shutdown day for a model a project uses.",
+  "account.notify.modelLines": "Model line moves",
+  "account.notify.modelLinesHint": "When a model line moves, or a move waits for you.",
   "account.notify.modelShutdownSoon": "Model shuts down soon",
   "account.notify.modelShutdownSoonHint": "30, 7 and 1 days before a model a project still calls shuts down.",
   "account.notify.newApp": "A new app can act as you",

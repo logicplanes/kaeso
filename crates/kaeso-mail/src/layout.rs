@@ -89,6 +89,9 @@ pub(crate) enum Label {
     ShutsDown,
     Replacement,
     RequestsThisWeek,
+    Line,
+    Before,
+    After,
 }
 
 impl Label {
@@ -124,6 +127,9 @@ impl Label {
             (Locale::En, Label::ShutsDown) => "Shuts down",
             (Locale::En, Label::Replacement) => "Replacement",
             (Locale::En, Label::RequestsThisWeek) => "Requests in the last 7 days",
+            (Locale::En, Label::Line) => "Line",
+            (Locale::En, Label::Before) => "Before",
+            (Locale::En, Label::After) => "Now",
             (Locale::De, Label::Organization) => "Organisation",
             (Locale::De, Label::Project) => "Projekt",
             (Locale::De, Label::AppliesTo) => "Gilt für",
@@ -154,6 +160,9 @@ impl Label {
             (Locale::De, Label::ShutsDown) => "Abschaltung",
             (Locale::De, Label::Replacement) => "Nachfolger",
             (Locale::De, Label::RequestsThisWeek) => "Anfragen der letzten 7 Tage",
+            (Locale::De, Label::Line) => "Linie",
+            (Locale::De, Label::Before) => "Vorher",
+            (Locale::De, Label::After) => "Jetzt",
             (Locale::ZhCn, Label::Organization) => "组织",
             (Locale::ZhCn, Label::Project) => "项目",
             (Locale::ZhCn, Label::AppliesTo) => "适用于",
@@ -184,6 +193,9 @@ impl Label {
             (Locale::ZhCn, Label::ShutsDown) => "停用日期",
             (Locale::ZhCn, Label::Replacement) => "替代模型",
             (Locale::ZhCn, Label::RequestsThisWeek) => "最近 7 天的请求",
+            (Locale::ZhCn, Label::Line) => "系列",
+            (Locale::ZhCn, Label::Before) => "之前",
+            (Locale::ZhCn, Label::After) => "现在",
         }
     }
 

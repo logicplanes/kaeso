@@ -90,6 +90,7 @@ mod tests {
             last_known: None,
             availability: None,
             availability_checked_at: None,
+            target: None,
         }
     }
 

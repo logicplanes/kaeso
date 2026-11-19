@@ -127,6 +127,7 @@ Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Z
 | Projekt | Ihr Schlüssel läuft ab, Ihr Schlüssel wurde geändert | Der Inhaber des Schlüssels | Sofort |
 | Projekt | Modell abgekündigt | `models.view` in einem Projekt, das das Modell nutzt | Täglich |
 | Projekt | Modell wird bald abgeschaltet | `models.view` in einem Projekt, das das Modell noch aufruft | Sofort |
+| Projekt | Wechsel von Modelllinien | `models.manage` in einem Projekt mit der Linie | Sofort |
 | Projekt | Inhaltsprotokollierung geändert | Jedes Mitglied des Projekts | Täglich |
 | Tools | MCP-Server brauchen Aufmerksamkeit | `mcp_servers.manage` | Sofort |
 | Tools | Ihre Verbindung ist abgelaufen | Sie, bei einem Server, mit dem Sie Ihr eigenes Konto verbunden haben | Sofort |

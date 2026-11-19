@@ -61,6 +61,7 @@ pub struct LogRow {
     pub request_upload_us: Option<u32>,
     pub response_cache: String,
     pub alias: String,
+    pub line: String,
     pub fallbacks: String,
     pub media_unit: String,
     pub media_input: u64,

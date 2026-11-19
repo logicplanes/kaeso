@@ -365,6 +365,11 @@ function ModelMeta({ m, shutdown }: { m: CatalogueModelView; shutdown?: Retiring
       {unavailable && <span className="md:hidden">{unavailable}</span>}
       <span className="hidden items-center gap-8 md:flex">
         {unavailable}
+        {m.line_target && (
+          <Tooltip content={t("models.lines.badgeHint", "A model line; requests go to {model}", { model: m.line_target })}>
+            <Badge tabIndex={0}>{t("models.lines.badge", "Line → {model}", { model: m.line_target })}</Badge>
+          </Tooltip>
+        )}
         {shutdown && shutdownLabel(shutdown) ? (
           <Tooltip
             content={

@@ -21,6 +21,7 @@ import { ModelForm, changedFields, draftFrom, draftProblem, editBase, modalityLa
 import { modelName } from "~/format/models";
 import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
+import { LinePanel } from "./lines";
 import { useNeedsRight } from "~/auth/needs-right";
 import { SheetLinks } from "~/kaeso/sheet-links";
 import { t } from "~/i18n";
@@ -181,7 +182,8 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           },
         ]}
       />
-      <SheetLinks org={org} project={project} requests={{ model: m.model_id, provider: m.provider }} target={m.id} />
+      <SheetLinks org={org} project={project} requests={{ model: m.line_target ?? m.model_id, provider: m.provider }} target={m.id} />
+      {m.line_target && <LinePanel org={org} project={project} id={m.id} canManage={canManage} reason={reason} />}
       <div className="flex flex-col gap-12">
         <div className="flex items-center justify-between gap-12">
           <Text weight="medium">{t("models.valuesInUse", "Values in use")}</Text>

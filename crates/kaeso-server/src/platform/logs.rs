@@ -1049,6 +1049,10 @@ pub struct LogView {
         app named a model."]
     #[schema(example = "chat-default")]
     pub alias: Option<String>,
+    #[doc = "The model line the request named, such as `claude-opus-latest`, whose\n\
+        target answered as `model`; `null` when it named no line."]
+    #[schema(example = "claude-opus-latest")]
+    pub line: Option<String>,
     #[doc = "The tries that failed before the one that answered, or before the last\n\
         one, in the order they were made: the steps of the alias's route that fell\n\
         back, and the tries a step made again after a short-lived failure\n\
@@ -1285,6 +1289,7 @@ fn view(r: &LogRow) -> LogView {
         cache_breakpoints: r.cache_breakpoints,
         response_cache: ResponseCacheResult::parse(&r.response_cache),
         alias: none(&r.alias),
+        line: none(&r.line),
         fallbacks: fallbacks(&r.fallbacks),
         media: (!r.media_unit.is_empty()).then(|| MediaView {
             unit: r.media_unit.clone(),

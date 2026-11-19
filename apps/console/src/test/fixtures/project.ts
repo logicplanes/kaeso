@@ -112,6 +112,7 @@ export function catalogueModel(overrides: Partial<CatalogueModelView> = {}): Cat
     custom: false,
     delisted_at: null,
     deprecated: false,
+    line_target: null,
     availability: "unchecked",
     availability_checked_at: null,
     aliases: [],
