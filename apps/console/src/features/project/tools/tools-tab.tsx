@@ -176,49 +176,52 @@ export function ToolsTab({
     .filter((g) => g.items.length > 0);
 
   const serverName = (id: string) => servers.data?.find((s) => s.id === id)?.name ?? id;
-  const filtering = !!(query || search.server || search.state || search.hint);
+  const none = tools.isSuccess && all.length === 0;
+  const filtering = !none && !!(query || search.server || search.state || search.hint);
   return (
     <>
-      <Toolbar aria-label={t("project.tools.filter", "Filter tools")}>
-        <div className="w-240">
-          <Input
-            type="search"
-            size="sm"
-            aria-label={t("project.tools.search", "Search tools")}
-            placeholder={t("project.tools.searchPlaceholder", "Tool or description")}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onClear={() => setQuery("")}
+      {!none && (
+        <Toolbar aria-label={t("project.tools.filter", "Filter tools")}>
+          <div className="w-240">
+            <Input
+              type="search"
+              size="sm"
+              aria-label={t("project.tools.search", "Search tools")}
+              placeholder={t("project.tools.searchPlaceholder", "Tool or description")}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
+            />
+          </div>
+          <FilterChip
+            property={t("project.tools.server", "Server")}
+            operator={t("logs.filter.is", "is")}
+            value={search.server ? serverName(search.server) : t("logs.filter.any", "any")}
+            values={(servers.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
+            selected={search.server ? [search.server] : []}
+            onSelectedChange={(v) => setSearch({ server: v[0] })}
+            {...(search.server ? { onRemove: () => setSearch({ server: undefined }) } : {})}
           />
-        </div>
-        <FilterChip
-          property={t("project.tools.server", "Server")}
-          operator={t("logs.filter.is", "is")}
-          value={search.server ? serverName(search.server) : t("logs.filter.any", "any")}
-          values={(servers.data ?? []).map((s) => ({ value: s.id, label: s.name }))}
-          selected={search.server ? [search.server] : []}
-          onSelectedChange={(v) => setSearch({ server: v[0] })}
-          {...(search.server ? { onRemove: () => setSearch({ server: undefined }) } : {})}
-        />
-        <FilterChip
-          property={t("project.tools.state", "State")}
-          operator={t("logs.filter.is", "is")}
-          value={search.state ? stateWord(search.state).label : t("logs.filter.any", "any")}
-          values={STATES.map((s) => ({ value: s, label: stateWord(s).label }))}
-          selected={search.state ? [search.state] : []}
-          onSelectedChange={(v) => setSearch({ state: STATES.find((s) => s === v[0]) })}
-          {...(search.state ? { onRemove: () => setSearch({ state: undefined }) } : {})}
-        />
-        <FilterChip
-          property={t("project.tools.hint", "Hint")}
-          operator={t("logs.filter.is", "is")}
-          value={search.hint ? hintLabel(search.hint) : t("logs.filter.any", "any")}
-          values={HINTS.map((h) => ({ value: h, label: hintLabel(h) }))}
-          selected={search.hint ? [search.hint] : []}
-          onSelectedChange={(v) => setSearch({ hint: HINTS.find((h) => h === v[0]) })}
-          {...(search.hint ? { onRemove: () => setSearch({ hint: undefined }) } : {})}
-        />
-      </Toolbar>
+          <FilterChip
+            property={t("project.tools.state", "State")}
+            operator={t("logs.filter.is", "is")}
+            value={search.state ? stateWord(search.state).label : t("logs.filter.any", "any")}
+            values={STATES.map((s) => ({ value: s, label: stateWord(s).label }))}
+            selected={search.state ? [search.state] : []}
+            onSelectedChange={(v) => setSearch({ state: STATES.find((s) => s === v[0]) })}
+            {...(search.state ? { onRemove: () => setSearch({ state: undefined }) } : {})}
+          />
+          <FilterChip
+            property={t("project.tools.hint", "Hint")}
+            operator={t("logs.filter.is", "is")}
+            value={search.hint ? hintLabel(search.hint) : t("logs.filter.any", "any")}
+            values={HINTS.map((h) => ({ value: h, label: hintLabel(h) }))}
+            selected={search.hint ? [search.hint] : []}
+            onSelectedChange={(v) => setSearch({ hint: HINTS.find((h) => h === v[0]) })}
+            {...(search.hint ? { onRemove: () => setSearch({ hint: undefined }) } : {})}
+          />
+        </Toolbar>
+      )}
       <AppFrame.Body padding="list">
         {held > 0 && (
           <Banner tone="warning" title={t("project.tools.heldTitle", "{count, plural, one {# tool waits} other {# tools wait}} for review", { count: held })}>

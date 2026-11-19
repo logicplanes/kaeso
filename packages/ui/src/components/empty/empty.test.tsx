@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { GutterContent, InsetContent } from "../../utils/inset.js";
 import { Empty } from "./empty.js";
 
 describe("Empty", () => {
@@ -20,5 +21,27 @@ describe("Empty", () => {
     expect(container.firstElementChild).toHaveClass("items-start", "text-start");
     rerender(<Empty size="compact" title="No rows" />);
     expect(container.firstElementChild).toHaveClass("items-center", "text-center");
+  });
+
+  it("starts on the gutter: its own 24px under a toolbar, the surface's padding on a padded page, 20px in a card", () => {
+    const { container, rerender } = render(
+      <GutterContent padded={false}>
+        <Empty title="No tools yet" />
+      </GutterContent>,
+    );
+    expect(container.firstElementChild).toHaveClass("px-24");
+    rerender(
+      <GutterContent>
+        <Empty title="No tools yet" />
+      </GutterContent>,
+    );
+    expect(container.firstElementChild).not.toHaveClass("px-24");
+    rerender(
+      <InsetContent>
+        <Empty size="md" title="No members" />
+      </InsetContent>,
+    );
+    expect(container.firstElementChild).toHaveClass("px-20");
+    expect(container.firstElementChild).not.toHaveClass("px-24");
   });
 });
