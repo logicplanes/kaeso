@@ -82,6 +82,7 @@
   "kaeso.expiry.onDate": "An einem Datum",
   "kaeso.expiry.orgMax": "{count, plural, one {Diese Organisation erlaubt Schlüssel für höchstens # Tag.} other {Diese Organisation erlaubt Schlüssel für höchstens # Tage.}}",
   "kaeso.expiry.projectMax": "{count, plural, one {Dieses Projekt erlaubt Schlüssel für höchstens # Tag.} other {Dieses Projekt erlaubt Schlüssel für höchstens # Tage.}}",
+  "kaeso.grant.unchanged": "Wählen Sie zuerst eine andere Rolle oder ändern Sie ein Recht.",
   "kaeso.home.activity": "Aktivität",
   "kaeso.home.addModel": "Zu {project} hinzufügen",
   "kaeso.home.change": "{actor} · {action}",

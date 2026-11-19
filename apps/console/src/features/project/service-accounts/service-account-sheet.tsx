@@ -26,7 +26,7 @@ import type { ServiceAccountView } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { useApiMutation } from "~/auth/mutation";
 import { CreateKeyDialog } from "~/kaeso/create-key-flow";
-import { asGrant, sameGrant, type Grant } from "~/kaeso/grant";
+import { asGrant, grantUnchanged, sameGrant, type Grant } from "~/kaeso/grant";
 import { LimitsSection } from "~/kaeso/limits-section";
 import { ModelAccessSection } from "~/kaeso/model-access-section";
 import { ToolAccessSection } from "~/kaeso/tool-access-section";
@@ -193,6 +193,7 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
                     name: partyName({ kind: "user", id: a.created_by }),
                   })
                 : formatDate(a.created_at),
+              wrap: true,
             },
             { label: t("project.serviceAccounts.id", "Id"), value: a.id, mono: true, copy: a.id },
           ]}
@@ -208,12 +209,13 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
                 size="sm"
                 variant="primary"
                 disabled={!changed}
+                {...(changed ? {} : { disabledReason: readOnly ?? grantUnchanged() })}
                 loading={update.isPending && update.variables?.grant !== undefined}
                 onClick={() => update.mutate({ grant: editing })}
               >
                 {t("project.serviceAccounts.saveRole", "Save role")}
               </Button>
-              <Button size="sm" disabled={!changed} onClick={() => setGrant(null)}>
+              <Button size="sm" disabled={!changed} {...(changed ? {} : { disabledReason: readOnly ?? grantUnchanged() })} onClick={() => setGrant(null)}>
                 {common.cancel()}
               </Button>
             </div>

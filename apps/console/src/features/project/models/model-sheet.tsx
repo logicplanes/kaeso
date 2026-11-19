@@ -179,6 +179,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           {
             label: t("models.addedAt", "Added"),
             value: t("models.addedBy", "{date} by {name}", { date: formatDate(m.created_at), name: partyName(m.created_by) }),
+            wrap: true,
           },
         ]}
       />

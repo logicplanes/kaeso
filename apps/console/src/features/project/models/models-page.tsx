@@ -152,12 +152,12 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               {...(m.effective.display_name && m.effective.display_name !== m.model_id ? { name: m.effective.display_name } : {})}
             />
           ),
-          meta: <ModelMeta m={m} shutdown={retiringById.get(m.id)} />,
+          ...(phone && !MODEL_STATUSES.some((status) => hasStatus(m, status)) ? {} : { meta: <ModelMeta m={m} shutdown={retiringById.get(m.id)} /> }),
           date: m.effective.release_date ? monthLabel(m.effective.release_date) : undefined,
         })),
       };
     });
-  }, [filtered, sort, catalog, retiringById]);
+  }, [filtered, sort, catalog, retiringById, phone]);
 
   const check = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/models/check", { params: { path: { org, project } } })),
@@ -361,31 +361,32 @@ function ModelMeta({ m, shutdown }: { m: CatalogueModelView; shutdown?: Retiring
           : null;
   const unavailable = m.availability === "unavailable" && <Badge tone="danger">{t("models.unavailable", "Unavailable")}</Badge>;
   return (
-    <>
-      {unavailable && <span className="md:hidden">{unavailable}</span>}
-      <span className="hidden items-center gap-8 md:flex">
-        {unavailable}
-        {m.line_target && (
+    <span className="flex items-center gap-8">
+      {unavailable}
+      {m.line_target && (
+        <span className="hidden md:contents">
           <Tooltip content={t("models.lines.badgeHint", "A model line; requests go to {model}", { model: m.line_target })}>
             <Badge tabIndex={0}>{t("models.lines.badge", "Line → {model}", { model: m.line_target })}</Badge>
           </Tooltip>
-        )}
-        {shutdown && shutdownLabel(shutdown) ? (
-          <Tooltip
-            content={
-              shutdown.lifecycle.replacement
-                ? t("models.retiring.replaceWith", "Replace with {model}", { model: shutdown.lifecycle.replacement })
-                : t("models.retiring.noReplacement", "No replacement named")
-            }
-          >
-            <Badge tone={shutdown.state === "retired" ? "danger" : "warning"} tabIndex={0}>
-              {shutdownLabel(shutdown)}
-            </Badge>
-          </Tooltip>
-        ) : (
-          m.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
-        )}
-        {!m.listed && !m.custom && <Badge tone="warning">{t("models.delisted", "No longer listed")}</Badge>}
+        </span>
+      )}
+      {shutdown && shutdownLabel(shutdown) ? (
+        <Tooltip
+          content={
+            shutdown.lifecycle.replacement
+              ? t("models.retiring.replaceWith", "Replace with {model}", { model: shutdown.lifecycle.replacement })
+              : t("models.retiring.noReplacement", "No replacement named")
+          }
+        >
+          <Badge tone={shutdown.state === "retired" ? "danger" : "warning"} tabIndex={0}>
+            {shutdownLabel(shutdown)}
+          </Badge>
+        </Tooltip>
+      ) : (
+        m.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
+      )}
+      {!m.listed && !m.custom && <Badge tone="warning">{t("models.delisted", "No longer listed")}</Badge>}
+      <span className="hidden md:contents">
         {m.custom ? (
           <Badge>{t("models.custom", "Custom")}</Badge>
         ) : (
@@ -421,6 +422,6 @@ function ModelMeta({ m, shutdown }: { m: CatalogueModelView; shutdown?: Retiring
           </Text>
         </Tooltip>
       </span>
-    </>
+    </span>
   );
 }

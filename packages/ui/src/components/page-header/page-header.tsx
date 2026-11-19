@@ -9,7 +9,7 @@ export const KAESO_PAGE_HEADER_VARIANTS = {
     md: {
       classes: "min-h-52 flex-wrap gap-x-12 gap-y-8 px-24 py-10 sm:h-52 sm:flex-nowrap sm:py-0",
       description:
-        "52px, the title alone at 17/600; a hairline at its foot only while the page scrolls under it (default); on a phone the title and actions keep the first row and the tabs take a second",
+        "52px, the title alone at 17/600; a hairline at its foot only while the page scrolls under it (default); on a phone the title and actions keep the first row, actions wrap rather than run off the edge, and the tabs take a second",
     },
   },
 } as const;
@@ -38,7 +38,7 @@ export const PageHeader = forwardRef<HTMLElement, PageHeaderProps>(function Page
         </Heading>
       )}
       {tabs && <div className="order-last min-w-0 basis-full sm:order-none sm:ml-8 sm:basis-auto">{tabs}</div>}
-      <div className="ml-auto flex shrink-0 items-center gap-8">{actions}</div>
+      <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-8">{actions}</div>
     </header>
   );
 });

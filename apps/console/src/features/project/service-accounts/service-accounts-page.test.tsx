@@ -282,7 +282,9 @@ describe("ServiceAccountSheet", () => {
     const { user } = await renderApp(projectPath("service-accounts?account=sa_deploy"));
 
     const sheet = await screen.findByRole("dialog", { name: "ci-deploy" });
-    await user.click(await within(sheet).findByRole("combobox", { name: "Role" }));
+    const role = await within(sheet).findByRole("combobox", { name: "Role" });
+    await hoverReason(user, within(sheet).getByRole("button", { name: "Cancel" }), "Choose another role or change a right first.");
+    await user.click(role);
     await user.click(await screen.findByRole("option", { name: /Viewer/ }));
     await user.click(within(sheet).getByRole("button", { name: "Cancel" }));
     expect(within(sheet).getByRole("combobox", { name: "Role" })).toHaveTextContent("Developer");
