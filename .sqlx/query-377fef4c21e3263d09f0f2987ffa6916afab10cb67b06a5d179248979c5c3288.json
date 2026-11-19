@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision FROM catalogue_models WHERE project_id = $1 ORDER BY provider, model_id",
+  "query": "SELECT id, org_id, project_id, provider, model_id, overrides, custom, delisted_at, last_known, availability, availability_checked_at, created_by_kind, created_by_id, created_at, updated_at, revision, line_target FROM catalogue_models WHERE project_id = $1 AND id = $2 FOR UPDATE",
   "describe": {
     "columns": [
       {
@@ -178,10 +178,22 @@
             "name": "revision"
           }
         }
+      },
+      {
+        "ordinal": 16,
+        "name": "line_target",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "catalogue_models",
+            "name": "line_target"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         "Uuid"
       ]
     },
@@ -201,8 +213,9 @@
       true,
       false,
       false,
-      false
+      false,
+      true
     ]
   },
-  "hash": "f12c2c3dcc66a2e183a3ad823372e822414b17f91381043053c67aa885770305"
+  "hash": "377fef4c21e3263d09f0f2987ffa6916afab10cb67b06a5d179248979c5c3288"
 }

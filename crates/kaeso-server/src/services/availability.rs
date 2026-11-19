@@ -627,6 +627,7 @@ mod tests {
             last_known: None,
             availability: Some(Availability::Unavailable),
             availability_checked_at: checked,
+            target: None,
         }
     }
 

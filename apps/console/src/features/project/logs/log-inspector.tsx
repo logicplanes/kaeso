@@ -569,6 +569,14 @@ function Overview({
                   },
                 ]
               : []),
+            ...(e.line
+              ? [
+                  {
+                    label: t("logs.inspector.line", "Model line"),
+                    value: <Long mono>{e.line}</Long>,
+                  },
+                ]
+              : []),
             ...(e.fallbacks.length > 0
               ? [
                   {

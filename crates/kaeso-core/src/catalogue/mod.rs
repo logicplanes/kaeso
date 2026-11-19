@@ -1073,16 +1073,28 @@ pub struct Entry {
     pub availability: Option<Availability>,
     #[serde(default)]
     pub availability_checked_at: Option<time::OffsetDateTime>,
+    /// For a model line such as `claude-opus-latest`: the provider's model it calls now.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
 }
 
 impl Entry {
+    /// The provider's model a request to this entry goes to: a line's target, else the model.
+    pub fn called(&self) -> &str {
+        self.target.as_deref().unwrap_or(&self.model_id)
+    }
+
+    pub fn is_line(&self) -> bool {
+        self.target.is_some()
+    }
+
     pub fn is_unavailable(&self) -> bool {
         self.availability == Some(Availability::Unavailable)
     }
 
     pub fn is_deprecated(&self, snapshot: &kpmr::Catalogue) -> bool {
         snapshot
-            .model(&self.provider, &self.model_id)
+            .model(&self.provider, self.called())
             .or(self.last_known.as_ref())
             .is_some_and(kpmr::Model::is_deprecated)
     }
@@ -1182,7 +1194,7 @@ pub fn effective(
         entry.overrides.clone().over_kpmr(Fields::default())
     } else {
         let mut upstream = snapshot
-            .model(&entry.provider, &entry.model_id)
+            .model(&entry.provider, entry.called())
             .or(entry.last_known.as_ref())
             .map(Fields::from_kpmr)
             .unwrap_or_default();
@@ -1207,11 +1219,11 @@ pub fn effective(
     };
     let dialect = fields
         .egress_dialect
-        .unwrap_or_else(|| provider.dialect_for(&entry.model_id));
+        .unwrap_or_else(|| provider.dialect_for(entry.called()));
     Some(Effective {
         id: entry.id,
         provider,
-        model_id: entry.model_id.clone(),
+        model_id: entry.called().to_owned(),
         fields,
         dialect,
     })

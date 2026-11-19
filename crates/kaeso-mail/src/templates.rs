@@ -44,6 +44,7 @@ pub enum EmailKind {
     ModelChanges,
     ModelDeprecated,
     ModelShutdownSoon,
+    ModelLines,
     CostReport,
     InstanceUpdates,
     InstancePeople,
@@ -94,6 +95,7 @@ impl EmailKind {
             EmailKind::ModelChanges => "model_changes",
             EmailKind::ModelDeprecated => "model_deprecated",
             EmailKind::ModelShutdownSoon => "model_shutdown_soon",
+            EmailKind::ModelLines => "model_lines",
             EmailKind::CostReport => "cost_report",
             EmailKind::InstanceUpdates => "instance_updates",
             EmailKind::InstancePeople => "instance_people",
@@ -1751,6 +1753,39 @@ mod tests {
                 Because::Right("models.view"),
             ),
             one(
+                Some("Checkout"),
+                Fact::Line {
+                    provider: "Anthropic",
+                    project: "Checkout",
+                    line: "claude-opus-latest",
+                    change: LineChange::Moved {
+                        from: "claude-opus-5".to_owned(),
+                        to: "claude-opus-5-5".to_owned(),
+                        prices: vec![LinePrice {
+                            price: "input",
+                            from: Some("15".to_owned()),
+                            to: Some("5".to_owned()),
+                        }],
+                        how: "follow",
+                    },
+                },
+                Because::Right("models.manage"),
+            ),
+            one(
+                Some("Checkout"),
+                Fact::Line {
+                    provider: "Anthropic",
+                    project: "Checkout",
+                    line: "claude-opus-latest",
+                    change: LineChange::Available {
+                        from: "claude-opus-5".to_owned(),
+                        to: "claude-opus-5-5".to_owned(),
+                        prices: Vec::new(),
+                    },
+                },
+                Because::Right("models.manage"),
+            ),
+            one(
                 Some("Acme"),
                 Fact::CostReport {
                     month: date!(2026 - 10 - 01),
@@ -1972,6 +2007,7 @@ mod tests {
             EmailKind::ModelChanges,
             EmailKind::ModelDeprecated,
             EmailKind::ModelShutdownSoon,
+            EmailKind::ModelLines,
             EmailKind::CostReport,
             EmailKind::InstanceUpdates,
             EmailKind::InstancePeople,
@@ -2563,7 +2599,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 46] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 48] = [
             (
                 EmailKind::Invitation,
                 [
@@ -2893,6 +2929,28 @@ mod tests {
                 [
                     "[Checkout] gpt-4o 已切换到 gpt-5.5",
                     "gpt-4o 已切换到 gpt-5.5",
+                ],
+            ),
+            (
+                EmailKind::ModelLines,
+                [
+                    "[Checkout] claude-opus-latest zeigt jetzt auf claude-opus-5-5",
+                    "claude-opus-latest zeigt jetzt auf claude-opus-5-5",
+                ],
+                [
+                    "[Checkout] claude-opus-latest 已切换到 claude-opus-5-5",
+                    "claude-opus-latest 已切换到 claude-opus-5-5",
+                ],
+            ),
+            (
+                EmailKind::ModelLines,
+                [
+                    "[Checkout] claude-opus-latest kann auf claude-opus-5-5 wechseln",
+                    "claude-opus-latest kann auf claude-opus-5-5 wechseln",
+                ],
+                [
+                    "[Checkout] claude-opus-latest 可以切换到 claude-opus-5-5",
+                    "claude-opus-latest 可以切换到 claude-opus-5-5",
                 ],
             ),
             (

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT provider, model_id, bool_or(delisted_at IS NOT NULL) AS \"delisted!\" FROM catalogue_models WHERE NOT custom GROUP BY provider, model_id",
+  "query": "SELECT provider, model_id, bool_or(delisted_at IS NOT NULL) AS \"delisted!\" FROM catalogue_models WHERE NOT custom AND line_target IS NULL GROUP BY provider, model_id",
   "describe": {
     "columns": [
       {
@@ -41,5 +41,5 @@
       null
     ]
   },
-  "hash": "5eec324ae04bc360c4d79bd596380a76cce67a8a90aaa84f14e271daf0928952"
+  "hash": "d3808efd84e22c8c61f546311aea143cb7fcfc8131f6cd8969b610633c3c3afa"
 }

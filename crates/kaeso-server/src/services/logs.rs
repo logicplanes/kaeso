@@ -954,6 +954,7 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
             .map(|v| v.as_str().to_owned())
             .unwrap_or_default(),
         alias: o.alias.clone().unwrap_or_default(),
+        line: o.line.clone().unwrap_or_default(),
         fallbacks: if o.fallbacks.is_empty() {
             String::new()
         } else {

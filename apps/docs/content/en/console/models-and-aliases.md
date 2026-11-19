@@ -70,6 +70,21 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 
 A decision model answers typed questions at `/v1/decisions`, `/v1/systemone` and `/v1beta/decisions` ([Decisions API](../api/decisions.md)). The add dialog marks such models **Decisions**, and **Add every current** model leaves out models that only make decisions; add them one by one. A model's sheet lists under **Decisions** whether it only makes decisions, the question types it answers and its limits. For a custom model on a provider with a decisions API, choose **Decisions** under **Outputs**; it then needs only its inputs and its input price. The Playground doesn't list models that only make decisions yet.
 
+## Model lines
+
+A model line is a name such as `claude-opus-latest` that [KPMR](../concepts/kpmr.md) keeps pointed at a provider's newest stable model of a family. Add one, and apps that call it get the newest model without anyone changing an alias.
+
+In **Add models**, choose **Add a … model line** under the search results: the list shows each line of the provider with the model it points at now. Choose how the project follows it, then **Add line**. The line appears in the catalogue as `anthropic/claude-opus-latest`, marked **Line** with its model, and apps, aliases, model access and limits use it like any model; a limit that names it counts every model it reaches. Its values are those of the model it points at.
+
+| Policy | When KPMR moves the line |
+| --- | --- |
+| Follow automatically | The line moves within the hour. The default |
+| Ask first | The line waits, and members with `models.manage` get a notice. **Move** moves it, **Keep** stays and asks again only for a newer model |
+| Delay | The line moves 1 to 30 days after KPMR moved, so a launch-day release has time to settle. **Move** moves it sooner |
+| Pin | The line stays until you choose another policy |
+
+A line never moves to a model it can't call: when the project has no provider key for the provider, or when a key, member or service account that may call the line may not call the new model, it stays and its sheet says why. **Move back** returns the line to the model it pointed at before and pins it. Each move is in the [audit log](organizations-and-projects.md#read-the-audit-log), and the **Model line moves** notice and the `line.moved` and `line.move_available` [webhook events](webhooks.md) report it. The [request log](request-logs.md) shows the model that answered and the line the app named.
+
 ## Remove a model
 
 Choose **Remove from catalogue** in a model's sheet. Kaeso refuses requests for the model from then on, and model lists that name it lose it. Aliases that route only to it are deleted; routes that also use other models skip it.
