@@ -419,7 +419,101 @@ describe("PlaygroundPage", () => {
     await screen.findByText("gpt-5.4-mini");
     await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
     await user.click(screen.getByRole("button", { name: "Send" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("The gateway failed. Request req_01abc");
+    expect(await screen.findByRole("alert")).toHaveTextContent("The gateway failed.");
+    expect(screen.getByRole("alert")).not.toHaveTextContent("req_01abc");
+    expect(screen.getByRole("link", { name: "View in request log" })).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}/logs?log=req_01abc`);
+  });
+
+  it("edits the last prompt of the columns that answered it, leaving a column added since alone", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () => reply("Hello there"));
+    const { user } = await renderApp(PLAYGROUND);
+    const prompt = await screen.findByRole("textbox", { name: "Prompt" });
+    await user.type(prompt, "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByText("Hello there");
+    await user.click(addColumn());
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(1);
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    expect(prompt).toHaveValue("Hi");
+    expect(screen.queryByRole("list", { name: "Attachments" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Hello there")).not.toBeInTheDocument();
+    await user.click(notifications().getByRole("button", { name: "Undo" }));
+    expect(await screen.findByText("Hello there")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(1);
+  });
+
+  it("exports the conversation as Markdown or JSON in the browser, without asking the gateway", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () => reply("Hello there"));
+    const { user } = await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    expect(screen.queryByRole("button", { name: "Export" })).not.toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByText("Hello there");
+
+    const saved: { name: string; type: string }[] = [];
+    const created = vi.spyOn(URL, "createObjectURL").mockImplementation((blob) => {
+      saved.push({ name: "", type: (blob as Blob).type });
+      return "blob:export";
+    });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      const last = saved.at(-1);
+      if (last) last.name = this.download;
+    });
+    for (const format of ["Markdown", "JSON"]) {
+      await user.click(screen.getByRole("button", { name: "Export" }));
+      await user.click(await screen.findByRole("menuitem", { name: format }));
+    }
+    expect(saved.map((f) => f.type)).toEqual(["text/markdown", "application/json"]);
+    expect(saved[0]?.name).toMatch(/^playground-.*\.md$/);
+    expect(saved[1]?.name).toMatch(/^playground-.*\.json$/);
+    expect(requests("POST", RESPONSES)).toHaveLength(1);
+    created.mockRestore();
+    click.mockRestore();
+  });
+
+  it("links every finished reply to its entry in the request log", async () => {
+    signedIn();
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () =>
+      eventStream(
+        sse([
+          { type: "response.created" },
+          { type: "response.output_text.delta", item_id: "m", delta: "Hello" },
+          { type: "response.completed", response: { usage: { input_tokens: 3, output_tokens: 2 } } },
+        ]),
+        { "kaeso-request-id": "req_01done" },
+      ),
+    );
+    const { user, router } = await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    const link = await screen.findByRole("link", { name: "View in request log" });
+    expect(link).toHaveAttribute("href", `/orgs/${ORG}/projects/${PROJECT}/logs?log=req_01done`);
+    await user.click(link);
+    await waitFor(() => expect(router.state.location.search).toEqual({ log: "req_01done" }));
+  });
+
+  it("names the request as text for someone who can't read the request log", async () => {
+    signedIn({ projectRights: without("logs.metadata.view") });
+    on("GET", MODELS, page([playgroundModel()]));
+    on("POST", RESPONSES, () => {
+      const refused = apiError(429, "rate_limit", "Rate limit reached.");
+      refused.headers.set("kaeso-request-id", "req_01rate");
+      return refused;
+    });
+    const { user } = await renderApp(PLAYGROUND);
+    await screen.findByText("gpt-5.4-mini");
+    await user.type(screen.getByRole("textbox", { name: "Prompt" }), "Hi");
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Rate limit reached. Request req_01rate");
+    expect(screen.queryByRole("link", { name: "View in request log" })).not.toBeInTheDocument();
   });
 
   it("says when the model cut a reply off at the output limit", async () => {

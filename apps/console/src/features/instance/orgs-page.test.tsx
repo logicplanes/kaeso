@@ -103,6 +103,41 @@ describe("instance organizations list", () => {
     expect(await screen.findByText("No organizations")).toBeInTheDocument();
   });
 
+  it("says what each organization requires at sign-in", async () => {
+    signedIn();
+    orgs([
+      NORTHWIND,
+      instanceOrg({ id: "org_a", name: "Both", require_sso: true, require_2fa: true }),
+      instanceOrg({ id: "org_b", name: "Sso", require_sso: true }),
+      instanceOrg({ id: "org_c", name: "Tfa", require_2fa: true }),
+    ]);
+    await renderApp(PATH);
+    const row = async (name: string) => (await within(table()).findByText(name)).closest('[role="row"]') as HTMLElement;
+    expect(await row("Both")).toHaveTextContent("Single sign-on and two-factor");
+    expect(await row("Sso")).toHaveTextContent(/Single sign-on(?! and)/);
+    expect(await row("Tfa")).toHaveTextContent("Two-factor authentication");
+    expect(await row("Northwind Labs")).toHaveTextContent("None");
+  });
+
+  it("filters by single sign-on through the URL, keeping the search and the order", async () => {
+    signedIn();
+    orgs();
+    const { user } = await renderApp(`${PATH}?q=North&sort=deletion`);
+    await within(table()).findByText("Northwind Labs");
+    await user.click(screen.getByRole("combobox", { name: "Single sign-on" }));
+    await user.click(await screen.findByRole("option", { name: "With single sign-on" }));
+    await waitFor(() => expect(orgQueries().at(-1)).toEqual({ limit: "100", search: "North", sort: "deletion", sso: "true" }));
+    expect(Object.fromEntries(new URLSearchParams(window.location.search))).toEqual({ q: "North", sort: "deletion", sso: "with" });
+    await user.click(screen.getByRole("combobox", { name: "Single sign-on" }));
+    await user.click(await screen.findByRole("option", { name: "Without single sign-on" }));
+    await waitFor(() => expect(orgQueries().at(-1)).toEqual({ limit: "100", search: "North", sort: "deletion", sso: "false" }));
+    await user.click(screen.getByRole("combobox", { name: "Single sign-on" }));
+    await user.click(await screen.findByRole("option", { name: "All sign-in" }));
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get("sso")).toBeNull());
+    // The unfiltered list is the one the page opened with, so it comes from the cache.
+    expect(orgQueries()[0]).toEqual({ limit: "100", search: "North", sort: "deletion" });
+  });
+
   it("sorts by deletion date through the URL", async () => {
     signedIn();
     orgs();

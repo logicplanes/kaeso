@@ -633,6 +633,57 @@ impl Step {
         found
     }
 
+    /// The paths of every step that calls `model`, in every branch and fallback, as a trace
+    /// names them (`route`, `route.fallback`, `route.then`, `route.branches.0.step`).
+    pub fn paths_of(&self, model: CatalogueModelId) -> Vec<String> {
+        let mut out = Vec::new();
+        self.collect_paths("route", model, &mut out);
+        out
+    }
+
+    fn collect_paths(&self, path: &str, model: CatalogueModelId, out: &mut Vec<String>) {
+        match self {
+            Step::Model(m) => {
+                if m.model == model {
+                    out.push(path.to_owned());
+                }
+                if let Some(next) = &m.fallback {
+                    next.collect_paths(&format!("{path}.fallback"), model, out);
+                }
+            }
+            Step::Condition(c) => {
+                c.then.collect_paths(&format!("{path}.then"), model, out);
+                c.otherwise
+                    .collect_paths(&format!("{path}.else"), model, out);
+            }
+            Step::Split(s) => {
+                for (i, b) in s.branches.iter().enumerate() {
+                    b.step
+                        .collect_paths(&format!("{path}.branches.{i}.step"), model, out);
+                }
+            }
+        }
+    }
+
+    /// Points every step that calls `from` at `to`; how many it changed.
+    pub fn replace(&mut self, from: CatalogueModelId, to: CatalogueModelId) -> usize {
+        match self {
+            Step::Model(m) => {
+                let here = usize::from(m.model == from);
+                if here == 1 {
+                    m.model = to;
+                }
+                here + m.fallback.as_mut().map_or(0, |f| f.replace(from, to))
+            }
+            Step::Condition(c) => c.then.replace(from, to) + c.otherwise.replace(from, to),
+            Step::Split(s) => s
+                .branches
+                .iter_mut()
+                .map(|b| b.step.replace(from, to))
+                .sum(),
+        }
+    }
+
     fn visit(&self, f: &mut dyn FnMut(&ModelStep)) {
         match self {
             Step::Model(m) => {

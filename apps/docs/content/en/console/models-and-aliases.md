@@ -19,11 +19,11 @@ Each model brings its prices, limits and capabilities from [KPMR](../concepts/kp
 
 For one of your organization's [custom providers](custom-providers.md#add-its-models), the dialog lists the model ids the provider's own listing names instead. It fills in the limits and capabilities it finds, and you enter the prices.
 
-The install keeps KPMR's data current by itself, about every hour by default, and instance admins see its state under [System](instance-administration.md#check-the-system). A model that KPMR stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that KPMR marks deprecated is marked **Deprecated**.
+The install keeps KPMR's data current by itself, about every hour by default, and instance admins see its state under [System](instance-administration.md#check-the-system). A model that KPMR stops listing stays in the catalogue with its last known values, marked **No longer listed**. A model that KPMR marks deprecated is marked **Deprecated**, and one with a shutdown date **Shuts down** with the day; the **Retiring** tab shows who still calls them and moves them to their replacements ([model lifecycle](../concepts/model-lifecycle.md)).
 
 ## Find a model
 
-The **Catalogue** tab groups models by provider. Narrow it to one provider, to a capability such as **Tool calling** or **Image input**, or with **Only overridden** to models with values changed in this project. On a phone, these filters sit under **Filters**. The sort menu orders each provider's models by **Model id**, **Input price** or **Newest release**.
+The **Catalogue** tab groups models by provider. Narrow it to one provider, to a capability such as **Tool calling** or **Image input**, by **Status** to the models the provider doesn't serve (**Unavailable**) or KPMR deprecated or no longer lists, or with **Only overridden** to models with values changed in this project. After **Check availability** finds unavailable models, **Show them** in its notice lists them. On a phone, these filters sit under **Filters**. The sort menu orders each provider's models by **Model id**, **Input price** or **Newest release**.
 
 ## Availability
 
@@ -52,7 +52,7 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 | Display name | The name the console shows |
 | Inputs, outputs | Inputs: text, images, PDF, audio and video. Outputs: text, images, audio and embeddings |
 | Context, output limit | The model's token limits |
-| Input, output, cache read, cache write and one-hour cache write prices | US dollars per million tokens. Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one. Writes to Anthropic's one-hour cache cost the one-hour cache write price, which KPMR sets where the provider documents one, such as twice the input price for Anthropic's models. Without it, or when you override the input price, they cost twice the input price |
+| Input, output, cache read, cache write and one-hour cache write prices | US dollars per million tokens, or another currency chosen under **Currency**, which Kaeso costs in US dollars at the latest ECB rate and shows the US dollar equivalent of ([currencies](../concepts/currencies.md)). Usage and budgets use the prices in force when a request is made. The cache write price is the five-minute one. Writes to Anthropic's one-hour cache cost the one-hour cache write price, which KPMR sets where the provider documents one, such as twice the input price for Anthropic's models. Without it, or when you override the input price, they cost twice the input price |
 | Long-context prices | The prices KPMR lists for long prompts, such as **Above 272K: $20.00 / $75.00** for input and output. When a request's prompt, cached tokens included, is longer than that many tokens, all of the request's tokens cost these prices, output included, in usage and budgets alike. A price a tier leaves out is the model's own. Overriding the input, output, cache read or cache write price turns KPMR's long-context prices off, so your price holds for every prompt |
 | Audio input and audio output prices | The prices KPMR lists for audio tokens, such as a transcribe model's audio input. |
 | Image input, image output and image cache read prices; prices per unit | The prices KPMR lists for image tokens, and per image, megapixel, character, second, minute, hour or video, such as **$0.04 per image of output (low, 1K)** or **$0.143 per video of output (720p, 5 s long)**. Image tokens a provider reports cost the image prices, and images cost the prices per unit, in usage and budgets alike; a price the provider publishes only as an estimate says so. Overriding a token price without them turns KPMR's off. A custom image model, whose outputs are images and not text, needs its inputs, outputs and a price per unit or an output price |
@@ -70,6 +70,21 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 
 A decision model answers typed questions at `/v1/decisions`, `/v1/systemone` and `/v1beta/decisions` ([Decisions API](../api/decisions.md)). The add dialog marks such models **Decisions**, and **Add every current** model leaves out models that only make decisions; add them one by one. A model's sheet lists under **Decisions** whether it only makes decisions, the question types it answers and its limits. For a custom model on a provider with a decisions API, choose **Decisions** under **Outputs**; it then needs only its inputs and its input price. The Playground doesn't list models that only make decisions yet.
 
+## Model lines
+
+A model line is a name such as `claude-opus-latest` that [KPMR](../concepts/kpmr.md) keeps pointed at a provider's newest stable model of a family. Add one, and apps that call it get the newest model without anyone changing an alias.
+
+In **Add models**, choose **Add a … model line** under the search results: the list shows each line of the provider with the model it points at now. Choose how the project follows it, then **Add line**. The line appears in the catalogue as `anthropic/claude-opus-latest`, marked **Line** with its model, and apps, aliases, model access and limits use it like any model; a limit that names it counts every model it reaches. Its values are those of the model it points at.
+
+| Policy | When KPMR moves the line |
+| --- | --- |
+| Follow automatically | The line moves within the hour. The default |
+| Ask first | The line waits, and members with `models.manage` get a notice. **Move** moves it, **Keep** stays and asks again only for a newer model |
+| Delay | The line moves 1 to 30 days after KPMR moved, so a launch-day release has time to settle. **Move** moves it sooner |
+| Pin | The line stays until you choose another policy |
+
+A line never moves to a model it can't call: when the project has no provider key for the provider, or when a key, member or service account that may call the line may not call the new model, it stays and its sheet says why. **Move back** returns the line to the model it pointed at before and pins it. Each move is in the [audit log](organizations-and-projects.md#read-the-audit-log), and the **Model line moves** notice and the `line.moved` and `line.move_available` [webhook events](webhooks.md) report it. The [request log](request-logs.md) shows the model that answered and the line the app named.
+
 ## Remove a model
 
 Choose **Remove from catalogue** in a model's sheet. Kaeso refuses requests for the model from then on, and model lists that name it lose it. Aliases that route only to it are deleted; routes that also use other models skip it.
@@ -80,9 +95,11 @@ An alias is the project's own name for a model, such as `fast`. Apps send it as 
 
 On the **Aliases** tab, choose **Create alias**. The route editor fills the page: name the alias, then pick a shape under **Start from** (one model, a fallback chain, a route by a header, long prompts to another model, or an A/B test), or choose the first step's model and add fallbacks, conditions and splits with **+** ([alias routes](../concepts/alias-routes.md)). A name has 1 to 200 characters, without spaces or `/`. An alias wins over a model with the same name, and the list marks it **Shadows a model**.
 
+To start from an existing alias, choose **Duplicate** in its row's menu or in the route editor's header. The editor opens with its route, unsaved, under the first free name such as `fast-copy`; saving creates a second alias and leaves the first as it was.
+
 Conditions and splits branch downward, their branches side by side; a model's fallbacks hang under it on a dashed line, in the order they are tried, so the route stays as narrow as its widest row of steps. A step's menu, from its **⋯** or with Shift F10, puts a step before it, moves a model to be tried earlier or later, swaps a condition's **Then** and **Else**, or removes it. ⌘Z undoes, ⌘⇧Z redoes and ⌘S saves. A model step's panel sets its timeout and **Try again**: how many times it tries its model again after a short-lived failure, or **The project's setting**.
 
-Requests take the route once you choose **Save**. **Audit log** is the [audit log](organizations-and-projects.md#read-the-audit-log) of this alias alone: who created, changed or deleted it, and when, filtered by actor and days. Choose an entry to see the alias before and after; **Restore this version** puts that route back in the editor, and it takes effect once you save it. **See its requests** opens the [request log](request-logs.md) filtered to this alias, for someone who may read it.
+Requests take the route once you choose **Save**. Before that, **Changes** shows what saving would change, the saved alias against the draft, line by line. **Audit log** is the [audit log](organizations-and-projects.md#read-the-audit-log) of this alias alone: who created, changed or deleted it, and when, filtered by actor and days. Choose an entry to see the alias before and after; **Restore this version** puts that route back in the editor, and it takes effect once you save it. **See its requests** opens the [request log](request-logs.md) filtered to this alias, for someone who may read it.
 
 ### Test a route
 

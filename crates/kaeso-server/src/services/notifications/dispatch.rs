@@ -94,9 +94,11 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         A::PortalGrantCreate => &[Kind::NewApp, Kind::PortalClients],
         A::InstanceUpdateFinish => &[Kind::InstanceUpdates],
         A::OrgCreate | A::UserCreateBySso | A::UserSignup => &[Kind::InstancePeople],
-        A::InstanceSettingsUpdate | A::InstanceAdminSsoUpdate | A::InstanceAgentsPolicy => {
-            &[Kind::InstanceSettings]
-        }
+        A::InstanceSettingsUpdate
+        | A::InstanceAdminSsoUpdate
+        | A::InstanceAgentsPolicy
+        | A::InstanceLinkedBillingUpdate
+        | A::InstanceLinkedBillingDelete => &[Kind::InstanceSettings],
         A::SecurityAgentsPolicy
         | A::SecurityKeyPolicy
         | A::SecurityRequireSso
@@ -108,7 +110,8 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::SecurityScimRotate
         | A::SecuritySsoGroupsUpdate
         | A::PlatformKeyCreate
-        | A::PlatformKeyRotate => &[Kind::OrgSecurity],
+        | A::PlatformKeyRotate
+        | A::SharedLinkCreate => &[Kind::OrgSecurity],
         A::InviteAccept => &[Kind::OrgMembers, Kind::InviteAccepted],
         A::MemberJoinBySso | A::MemberProvision => &[Kind::OrgMembers],
         A::MemberRemove | A::MemberDeprovision => &[Kind::OrgMembers, Kind::AccessChanged],
@@ -145,11 +148,15 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::CatalogueModelCheck
         | A::CatalogueModelCreate
         | A::CatalogueModelDelete
+        | A::CatalogueModelLineMove
+        | A::CatalogueModelLineUpdate
+        | A::CatalogueModelMove
         | A::CatalogueModelUpdate
         | A::CredentialAssign
         | A::CredentialCreate
         | A::CredentialDefault
         | A::CredentialDelete
+        | A::CredentialFallback
         | A::CredentialRename
         | A::CredentialReplace
         | A::CustomProviderCreate
@@ -161,6 +168,8 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::GuardrailUpdate
         | A::ProjectGuardrailsUpdate
         | A::InstanceInvite
+        | A::InstanceInviteResend
+        | A::InstanceInviteRevoke
         | A::InstanceSetup
         | A::InstanceUpdateCheck
         | A::InstanceUpdateSettings
@@ -170,6 +179,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::InviteRevoke
         | A::KeyCreate
         | A::KeyEnable
+        | A::KeyRename
         | A::KpmrPriceChange
         | A::LimitCreate
         | A::LimitDelete
@@ -197,6 +207,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::ProjectArchive
         | A::ProjectCreate
         | A::ProjectKeyPolicy
+        | A::ProjectModelLifecycle
         | A::ProjectMcpServersUpdate
         | A::ProjectToolsUpdate
         | A::ProjectUpdate
@@ -228,7 +239,10 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::WebhookCreate
         | A::WebhookDelete
         | A::WebhookSecretRotate
-        | A::WebhookUpdate => &[],
+        | A::WebhookUpdate
+        | A::SecuritySharedLinks
+        | A::SharedLinkOpen
+        | A::SharedLinkRevoke => &[],
     }
 }
 

@@ -55,6 +55,8 @@ async fn provider_columns_accept_exactly_the_provider_id_rule() {
             "catalogue_models",
             "custom_providers",
             "image_generations",
+            "linked_billing_apps",
+            "linked_billing_profiles",
             "provider_credentials",
             "usage_daily",
             "videos"

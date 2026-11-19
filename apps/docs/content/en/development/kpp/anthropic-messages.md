@@ -74,6 +74,7 @@ Schemas `CreateMessageParams` and `CountMessageTokensParams`.
 | `cache_control` (top level, automatic caching) | fields `cache_control` | Only a hint; KPP has no request-level cache hint. On the [allowlist](cross-format.md#extras), so it is dropped for other dialects. Requests from other dialects get block breakpoints instead ([cache hints](cross-format.md#cache-hints)). |
 | `container`, `inference_geo`, `service_tier`, SDK `diagnostics`, `user_profile_id`, `workspace_id`, unknown keys | `extras.fields` | |
 | header `anthropic-beta` | `extras` header `header:anthropic-beta` | Forwarded on egress to Anthropic only. |
+| `billing_policy`, header `anthropic-user-profile-id` | written from `EgressCtx::billed_profile` | With linked billing, when the install's app asks for it: `billing_policy: {type: billing_policy, bill_to: user_profile}` replaces any the app sent, the header names the profile, and `anthropic-beta` gains `user-profiles-billing-2026-10-01` ([linked billing](https://platform.claude.com/docs/en/manage-claude/oauth-apps/organization-billing-connections#your-customer-pays)). `None` sends neither. |
 | header `anthropic-version` | `extras` header when it is not `2023-06-01` | The pinned version is always sent unless a newer one was forwarded ([the Anthropic version](#the-anthropic-version)). |
 
 ### Content blocks
@@ -264,6 +265,7 @@ Schema `ErrorResponse`. Decode errors, for requests and provider bodies alike, n
 - A body in OpenAI's error shape, `{"error": {"message", "type"}}`, as Vercel AI Gateway and Z.ai send on `/v1/messages`, keeps its message. Its kind comes from `error.type` when that is one of Anthropic's types or one of [Z.ai's codes](anthropic-messages-providers.md#zai), else from the status, and Anthropic apps get it in Anthropic's shape (`fixtures/anthropic_messages/providers/vercel/errors/`). Such a body keeps its status only while the status gives the same kind; otherwise Anthropic apps get the kind's status, so Z.ai's 429 for an empty balance reaches them as 402 `billing_error`.
 - Errors decoded from Anthropic are encoded again from `raw` with their status, so Anthropic apps see them unchanged; others are built as `{"type":"error","error":{"type","message"},"request_id":null}`.
 - `request_id` is required in `ErrorResponse`, a string or `null`. `encode_error_for_request` (`dispatch::encode_error_for_request`) writes the given id there, including into a body encoded again from `raw`, where it replaces Anthropic's id. The gateway passes the id it sends in `kaeso-request-id` and keeps Anthropic's `request-id` header in its request log. `encode_error` writes `null` into the bodies it builds.
+- `anthropic_messages::error_code` reads `error.details.error_code` of an error this codec decoded, such as `linked_organization_spend_limit_reached`; the gateway uses it to tell a linked key's refusals apart (`fixtures/anthropic_messages/errors/linked-*.json`).
 - Other response headers (such as `anthropic-ratelimit-*` and `request-id`) are not part of `KppError`.
 
 ## Models

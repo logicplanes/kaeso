@@ -41,12 +41,16 @@ actions! {
         CatalogueModelCheck = "catalogue_model.check",
         CatalogueModelCreate = "catalogue_model.create",
         CatalogueModelDelete = "catalogue_model.delete",
+        CatalogueModelLineMove = "catalogue_model.line_move",
+        CatalogueModelLineUpdate = "catalogue_model.line_update",
+        CatalogueModelMove = "catalogue_model.move",
         CatalogueModelPriceChange = "catalogue_model.price_change",
         CatalogueModelUpdate = "catalogue_model.update",
         CredentialAssign = "credential.assign",
         CredentialCreate = "credential.create",
         CredentialDefault = "credential.default",
         CredentialDelete = "credential.delete",
+        CredentialFallback = "credential.fallback",
         CredentialRename = "credential.rename",
         CredentialReplace = "credential.replace",
         CustomProviderCreate = "custom_provider.create",
@@ -59,6 +63,10 @@ actions! {
         InstanceAdminSsoUpdate = "instance.admin_sso_update",
         InstanceAgentsPolicy = "instance.agents_policy",
         InstanceInvite = "instance.invite",
+        InstanceInviteResend = "instance.invite_resend",
+        InstanceInviteRevoke = "instance.invite_revoke",
+        InstanceLinkedBillingDelete = "instance.linked_billing_delete",
+        InstanceLinkedBillingUpdate = "instance.linked_billing_update",
         InstanceSettingsUpdate = "instance.settings_update",
         InstanceSetup = "instance.setup",
         InstanceUpdateCheck = "instance.update_check",
@@ -73,6 +81,7 @@ actions! {
         KeyCreate = "key.create",
         KeyDisable = "key.disable",
         KeyEnable = "key.enable",
+        KeyRename = "key.rename",
         KeyRotate = "key.rotate",
         KpmrModelDelisted = "kpmr.model_delisted",
         KpmrPriceChange = "kpmr.price_change",
@@ -120,6 +129,7 @@ actions! {
         ProjectMemberAdd = "project.member_add",
         ProjectMemberRemove = "project.member_remove",
         ProjectMemberRightsUpdate = "project.member_rights_update",
+        ProjectModelLifecycle = "project.model_lifecycle",
         ProjectToolsUpdate = "project.tools_update",
         ProjectUpdate = "project.update",
         ResponseCacheClear = "response_cache.clear",
@@ -134,6 +144,7 @@ actions! {
         SecurityRequireSso = "security.require_sso",
         SecurityScimDelete = "security.scim_delete",
         SecurityScimRotate = "security.scim_rotate",
+        SecuritySharedLinks = "security.shared_links",
         SecuritySsoDelete = "security.sso_delete",
         SecuritySsoDomainVerify = "security.sso_domain_verify",
         SecuritySsoGroupsUpdate = "security.sso_groups_update",
@@ -141,6 +152,9 @@ actions! {
         ServiceAccountArchive = "service_account.archive",
         ServiceAccountCreate = "service_account.create",
         ServiceAccountUpdate = "service_account.update",
+        SharedLinkCreate = "shared_link.create",
+        SharedLinkOpen = "shared_link.open",
+        SharedLinkRevoke = "shared_link.revoke",
         StoredResponsesOrgUpdate = "stored_responses.org_update",
         StoredResponsesProjectUpdate = "stored_responses.project_update",
         ToolApprove = "tool.approve",
@@ -375,10 +389,43 @@ pub async fn system_event(
     after: Option<Value>,
     at: time::OffsetDateTime,
 ) -> Result<(), kaeso_store::StoreError> {
+    system_event_in(db, (org, None), action, target, before, after, at).await
+}
+
+pub async fn system_project_event(
+    db: &mut sqlx::PgConnection,
+    (org, project): (OrgId, ProjectId),
+    action: Action,
+    target: Option<(&'static str, String)>,
+    before: Option<Value>,
+    after: Option<Value>,
+    at: time::OffsetDateTime,
+) -> Result<(), kaeso_store::StoreError> {
+    system_event_in(
+        db,
+        (Some(org), Some(project)),
+        action,
+        target,
+        before,
+        after,
+        at,
+    )
+    .await
+}
+
+async fn system_event_in(
+    db: &mut sqlx::PgConnection,
+    (org, project): (Option<OrgId>, Option<ProjectId>),
+    action: Action,
+    target: Option<(&'static str, String)>,
+    before: Option<Value>,
+    after: Option<Value>,
+    at: time::OffsetDateTime,
+) -> Result<(), kaeso_store::StoreError> {
     let notice = notices(action).then(|| Notice {
         action,
         org: org.map(|o| o.uuid()),
-        project: None,
+        project: project.map(|p| p.uuid()),
         actor: None,
         target: target.as_ref().map(|(_, id)| id.clone()),
         before: before.clone(),
@@ -389,7 +436,7 @@ pub async fn system_event(
         &NewEvent {
             id: AuditEventId::new().uuid(),
             org_id: org.map(|o| o.uuid()),
-            project_id: None,
+            project_id: project.map(|p| p.uuid()),
             actor_kind: "system",
             actor_id: None,
             agent_id: None,

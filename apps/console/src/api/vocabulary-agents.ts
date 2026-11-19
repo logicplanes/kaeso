@@ -8,7 +8,10 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   ],
   "instance.settings.manage": () => [
     t("rights.instanceSettingsManage.name", "Change instance settings"),
-    t("rights.instanceSettingsManage.description", "Change general, mail, logging, time zone and account settings, and send a test email."),
+    t(
+      "rights.instanceSettingsManage.description",
+      "Change general, mail, logging, time zone and account settings, send a test email, and fetch model data now.",
+    ),
   ],
   "instance.updates.manage": () => [
     t("rights.instanceUpdatesManage.name", "Manage updates"),
@@ -37,6 +40,10 @@ const rights: Readonly<Record<string, () => [string, string]>> = {
   "instance.audit_log.view": () => [
     t("rights.instanceAuditLogView.name", "View instance audit log"),
     t("rights.instanceAuditLogView.description", "Read the instance audit log."),
+  ],
+  "instance.audit_log.export": () => [
+    t("rights.instanceAuditLogExport.name", "Export instance audit log"),
+    t("rights.instanceAuditLogExport.description", "Export the instance audit log."),
   ],
   "account.view": () => [
     t("rights.accountView.name", "View the account"),

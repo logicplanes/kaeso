@@ -32,12 +32,13 @@ import { orgPath } from "~/shell/pages";
 import { recall, remember } from "~/shell/session-memory";
 import { monthLabel } from "~/format/period";
 import { ModelForm, allFields, changedFields, draftFrom, draftProblem, type FieldDraft } from "./model-form";
+import { OfferedLines } from "./lines";
 import { contextLabel, priceLabel } from "./model-fields";
 import { t } from "~/i18n";
 import { tRich } from "~/i18n/rich";
 import { common } from "~/i18n/common";
 
-type View = "search" | "review" | "custom" | "all";
+type View = "search" | "review" | "custom" | "all" | "lines";
 
 const LAST_PROVIDER = ["add-models", "provider"];
 const MANY_MODELS = 50;
@@ -355,6 +356,17 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
             })}
           </Text>
         )}
+        {hits.isSuccess && (
+          <Text variant="small" tone="secondary">
+            {tRich("models.lines.want", "Always the newest? {lines}", {
+              lines: (
+                <Button variant="link" size="sm" onClick={() => setView("lines")}>
+                  {t("models.lines.open", "Add a {provider} model line", { provider: name })}
+                </Button>
+              ),
+            })}
+          </Text>
+        )}
       </div>
     ),
     footerStart: (
@@ -514,8 +526,21 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
     ),
   };
 
-  const layers = { review: reviewLayer, custom: customLayer, all: allLayer };
-  const submit = { search: ownProvider ? () => typeOwn("") : addSelected, review: addReviewed, custom: addCustom, all: addAll };
+  const linesLayer = {
+    title: t("models.lines.title", "Model lines"),
+    description: t("models.lines.hint", "Names like claude-opus-latest that always call {provider}'s newest stable model.", {
+      provider: name,
+    }),
+    content: <OfferedLines org={org} project={project} provider={provider} name={name} />,
+  };
+
+  const layers = { review: reviewLayer, custom: customLayer, all: allLayer, lines: linesLayer };
+  const submit: Partial<Record<View, () => void>> = {
+    search: ownProvider ? () => typeOwn("") : addSelected,
+    review: addReviewed,
+    custom: addCustom,
+    all: addAll,
+  };
 
   return (
     <LayerDialog

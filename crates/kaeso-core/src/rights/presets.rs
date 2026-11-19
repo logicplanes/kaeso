@@ -80,6 +80,7 @@ impl OrgPreset {
                 R::LogsStorageView,
                 R::UsageOrgView,
                 R::CostsOrgView,
+                R::UsageShare,
                 R::BillingView,
                 R::BillingManage,
             ]
@@ -96,6 +97,7 @@ impl OrgPreset {
                 R::LogsStorageView,
                 R::UsageOrgView,
                 R::CostsOrgView,
+                R::UsageShare,
             ]
             .into_iter()
             .collect(),
@@ -118,7 +120,9 @@ impl OrgPreset {
             ]
             .into_iter()
             .collect(),
-            OrgPreset::Member => [R::OrgView, R::MembersView].into_iter().collect(),
+            OrgPreset::Member => [R::OrgView, R::MembersView, R::UsageShare]
+                .into_iter()
+                .collect(),
         }
     }
 }

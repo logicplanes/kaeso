@@ -46,10 +46,10 @@ An organization role also holds rights in every project, on top of the member's 
 | --- | --- | --- |
 | Owner | All, including those of future releases | All |
 | Admin | All except `org.delete`, `org.ownership.transfer` and `billing.manage` | All |
-| Billing | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `billing.manage` | None |
-| Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view` | None |
+| Billing | `org.view`, `members.view`, `projects.view.all`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `usage.share`, `billing.view`, `billing.manage` | None |
+| Developer | `org.view`, `members.view`, `projects.create`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `usage.share` | None |
 | Auditor | `org.view`, `members.view`, `projects.view.all`, `provider_credentials.view`, `providers.custom.view`, `mcp_servers.view`, `guardrails.view`, `platform_keys.view`, `webhooks.view`, `logs.storage.view`, `usage.org.view`, `costs.org.view`, `billing.view`, `audit_log.view`, `audit_log.export` | The Viewer's without `tools.use`, and `project.audit_log.view` |
-| Member | `org.view`, `members.view` | None |
+| Member | `org.view`, `members.view`, `usage.share` | None |
 
 | Project role | Rights |
 | --- | --- |
@@ -169,6 +169,8 @@ Every change of roles and rights follows these rules:
 | --- | --- | --- | --- |
 | `usage.org.view` | View org usage | See usage across all projects. |  |
 | `costs.org.view` | View org costs | See costs across all projects. | needs `usage.org.view` |
+| `usage.share` | Share usage | Share read-only links to the usage, member stats and budgets one can see, and revoke one's own. |  |
+| `usage.share.manage` | Manage shared links | See and revoke everyone's shared links, and choose who links may reach and for how long. | sensitive; needs `usage.share` |
 | `billing.view` | View billing | See plan, invoices and payment status (Kaeso Cloud). | Kaeso Cloud only |
 | `billing.manage` | Manage billing | Change the plan and payment method (Kaeso Cloud). | Kaeso Cloud only; needs `billing.view` |
 
@@ -272,7 +274,7 @@ Every route under `instance/*` checks one of these rights. An instance admin's c
 | Right | Name | What it allows | Notes |
 | --- | --- | --- | --- |
 | `instance.system.view` | View the system | See the system and its model data, the instance settings and the update status. |  |
-| `instance.settings.manage` | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. | sensitive |
+| `instance.settings.manage` | Change instance settings | Change general, mail, logging, time zone and account settings, send a test email, and fetch model data now. | sensitive |
 | `instance.updates.manage` | Manage updates | Check for updates and change the update settings. | sensitive |
 | `instance.updates.apply` | Apply updates | Install a new version of Kaeso. | sensitive; needs `instance.updates.manage` |
 | `instance.users.view` | View users | See every account of the instance and its organizations. |  |
@@ -280,6 +282,7 @@ Every route under `instance/*` checks one of these rights. An instance admin's c
 | `instance.orgs.view` | View organizations | See every organization with its members, projects and usage. |  |
 | `instance.orgs.manage` | Manage organizations | Create and rename organizations, appoint owners and schedule or cancel their deletion. | sensitive; needs `instance.orgs.view` |
 | `instance.audit_log.view` | View instance audit log | Read the instance audit log. |  |
+| `instance.audit_log.export` | Export instance audit log | Export the instance audit log. | needs `instance.audit_log.view` |
 
 ## Account rights
 

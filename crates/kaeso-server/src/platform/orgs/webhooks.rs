@@ -201,8 +201,8 @@ pub struct WebhookCreate {
     #[serde(default)]
     pub format: Option<WebhookFormat>,
     #[doc = "The notices to receive: `budget_alerts`, `limit_reached`, `key_expiry`,\n\
-        `content_logging`, `mcp_servers`, `org_security`, `org_members`, `provider_keys`,\n\
-        `model_changes`."]
+        `model_deprecated`, `model_shutdown_soon`, `model_lines`, `content_logging`,\n\
+        `mcp_servers`, `org_security`, `org_members`, `provider_keys`, `model_changes`."]
     #[schema(example = json!(["budget_alerts", "provider_keys"]))]
     pub kinds: Vec<String>,
     #[doc = "Only this project's events; absent or `null` for the whole organization."]

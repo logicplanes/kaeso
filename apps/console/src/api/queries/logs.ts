@@ -42,6 +42,8 @@ export interface LogFilters {
   client?: string;
   /** An action a guardrail took on the request. */
   guardrail_action?: "allow" | "block" | "replace";
+  /** Not a filter: the currency each cost is also given in, as `converted_cost`. */
+  currency?: string;
 }
 
 /** Every endpoint the request log names, as the gateway's `endpoint` filter takes them. */
@@ -90,6 +92,7 @@ export function logsParams(f: LogFilters, now = Date.now()) {
   const from = custom ? start(custom.from) : new Date(now - RANGE_MS[f.range ?? "24h"]).toISOString();
   const to = custom ? start(shiftDay(custom.to, 1)) : undefined;
   return {
+    ...(f.currency ? { currency: f.currency } : {}),
     from,
     ...(to ? { to } : {}),
     ...(f.key ? { key: f.key } : {}),
@@ -192,11 +195,15 @@ export const newestLogsQuery = (org: string, project: string, filters: LogFilter
     gcTime: 0,
   });
 
-export const logEntryQuery = (org: string, project: string, log: string) =>
+export const logEntryQuery = (org: string, project: string, log: string, currency?: string) =>
   queryOptions({
-    queryKey: ["orgs", org, "projects", project, "logs", "one", log],
+    queryKey: ["orgs", org, "projects", project, "logs", "one", log, ...(currency ? [currency] : [])],
     queryFn: async (): Promise<LogEntryView> =>
-      data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/{log}", { params: { path: { org, project, log } } })),
+      data(
+        await api.GET("/platform/v1/orgs/{org}/projects/{project}/logs/{log}", {
+          params: { path: { org, project, log }, ...(currency ? { query: { currency } } : {}) },
+        }),
+      ),
     staleTime: 5 * 60_000,
   });
 

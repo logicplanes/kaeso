@@ -13,7 +13,7 @@ import { alertMarks } from "~/format/alert-marks";
 import { modelName } from "~/format/models";
 import { t } from "~/i18n";
 import { parentConflict, parentFilters } from "./limit-checks";
-import { LimitEditor, alertThresholds, limitBody, limitProblem, newLimit, type LimitDraft } from "./limit-editor";
+import { LimitEditor, alertThresholds, draftOf, limitBody, limitProblem, newLimit, type LimitDraft } from "./limit-editor";
 
 export type LimitOwner = { kind: "user" | "service_account"; id: string };
 
@@ -199,14 +199,7 @@ export function EditLimitDialog({
   onRemove?: (() => void) | undefined;
 }) {
   const catalogue = useQuery(catalogueQuery(org, project));
-  const [editing, setEditing] = useState<LimitDraft>(() => ({
-    kind: limit.kind as LimitDraft["kind"],
-    amount: limit.amount,
-    period: limit.period as LimitDraft["period"],
-    model: limit.model ?? null,
-    hard: limit.hard,
-    alert_thresholds: limit.alert_thresholds,
-  }));
+  const [editing, setEditing] = useState<LimitDraft>(() => draftOf(limit));
   const update = useApiMutation({
     mutationFn: async (d: LimitDraft) =>
       data(

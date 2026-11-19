@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Avatar, Button, Combobox, Empty, KeyDisplay, List, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
+import { AppFrame, Avatar, Button, Combobox, Empty, FilterRow, Input, KeyDisplay, List, Select, Text, icons, type ListGroup } from "@logicplanes/kaeso-ui";
 import { allKeysQuery, keyFilter } from "~/api/queries/keys";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { keyStateLabel } from "~/format/labels";
@@ -18,8 +18,9 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { t } from "~/i18n";
 import { patchSearch, type SearchPatch } from "~/search";
 import { LastUsed } from "~/kaeso/last-used";
+import { findKeys, isKeySort, keySortOptions, type KeySort } from "~/kaeso/key-list";
 
-export type KeysSearch = { key?: string; owner?: string; scope?: "archived" | "all"; create?: boolean };
+export type KeysSearch = { key?: string; owner?: string; scope?: "archived" | "all"; sort?: KeySort; create?: boolean };
 
 const STATES = ["active", "disabled", "expired", "archived"] as const;
 
@@ -46,7 +47,9 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
     void navigate({ to: "/orgs/$org/projects/$project/keys", params: { org, project }, search: patchSearch(search, patch, ["create"]), replace: true });
   };
 
-  const list = useMemo(() => keys.data ?? [], [keys.data]);
+  const [query, setQuery] = useState("");
+  const list = useMemo(() => findKeys(keys.data ?? [], query, search.sort), [keys.data, query, search.sort]);
+  const narrowed = !!owner || !!query.trim();
   const groups: ListGroup[] = useMemo(
     () =>
       (scope === "all" ? STATES : ([scope] as const))
@@ -101,18 +104,6 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
         tabs={<ScopeTabs label={t("keys.keys", "Keys")} value={scope} onChange={(v) => setSearch({ scope: v === "active" ? undefined : v })} />}
         actions={
           <>
-            {ownerOptions.length > 0 && (
-              <div className="hidden w-200 md:block">
-                <Combobox
-                  aria-label={t("keys.whose", "Whose keys")}
-                  size="sm"
-                  placeholder={t("keys.everyones", "Everyone's keys")}
-                  options={ownerOptions}
-                  value={owner ?? null}
-                  onValueChange={(v: string | null) => setSearch({ owner: v ?? undefined })}
-                />
-              </div>
-            )}
             <Button
               size="sm"
               variant="primary"
@@ -127,10 +118,59 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
         }
       />
       <AppFrame.Body padding="list">
+        <FilterRow>
+          {ownerOptions.length > 0 && (
+            <div className="w-200">
+              <Combobox
+                aria-label={t("keys.whose", "Whose keys")}
+                size="sm"
+                placeholder={t("keys.everyones", "Everyone's keys")}
+                options={ownerOptions}
+                value={owner ?? null}
+                onValueChange={(v: string | null) => setSearch({ owner: v ?? undefined })}
+              />
+            </div>
+          )}
+          <Select
+            aria-label={t("keys.sort", "Sort")}
+            size="sm"
+            icon={icons.sort}
+            value={search.sort ?? "name"}
+            onValueChange={(v) => setSearch({ sort: isKeySort(v) ? v : undefined })}
+            options={keySortOptions()}
+          />
+          <div className="w-240">
+            <Input
+              type="search"
+              size="sm"
+              aria-label={t("keys.search", "Search keys")}
+              placeholder={t("keys.nameOrKey", "Name or key")}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onClear={() => setQuery("")}
+            />
+          </div>
+        </FilterRow>
         {keys.isPending ? (
           <List aria-label={t("keys.keys", "Keys")} items={[]} loading />
         ) : keys.isError ? (
           <LoadFailed title={t("keys.listFailed", "The keys couldn't load")} size="md" />
+        ) : narrowed && groups.length === 0 ? (
+          <Empty
+            size="lg"
+            title={t("keys.noneForFilter", "No keys for this filter")}
+            description={t("keys.clearFiltersHint", "Clear the search and the filter to see every key.")}
+            actions={
+              <Button
+                onClick={() => {
+                  setQuery("");
+                  setSearch({ owner: undefined });
+                }}
+              >
+                {t("keys.clearFilter", "Clear filter")}
+              </Button>
+            }
+          />
         ) : scope === "archived" && groups.length === 0 ? (
           <Empty size="lg" title={t("keys.noneArchived", "No archived keys")} />
         ) : list.length > 0 && groups.length === 0 ? (
@@ -143,16 +183,10 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
         ) : groups.length === 0 ? (
           <Empty
             size="lg"
-            title={owner ? t("keys.noneForFilter", "No keys for this filter") : t("keys.none", "No keys yet")}
-            description={
-              owner
-                ? t("keys.clearFilterHint", "Clear the filter to see everyone's keys.")
-                : t("keys.noneHint", "Create a key, then send it with every request to the gateway.")
-            }
+            title={t("keys.none", "No keys yet")}
+            description={t("keys.noneHint", "Create a key, then send it with every request to the gateway.")}
             actions={
-              owner ? (
-                <Button onClick={() => setSearch({ owner: undefined })}>{t("keys.clearFilter", "Clear filter")}</Button>
-              ) : canCreate ? (
+              canCreate ? (
                 <Button variant="primary" onClick={() => setCreating(true)}>
                   {t("keys.create", "Create key")}
                 </Button>

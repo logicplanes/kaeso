@@ -34,6 +34,7 @@ import { toast } from "~/shell/toast";
 import { InstancePage } from "./instance-page";
 import { DeleteNowDialog, useRestoreOrg } from "./org-deletion";
 import { t } from "~/i18n";
+import { orgSignIn } from "./sign-in";
 
 const TOUCHED = [["instance", "orgs"], ["session"], ["me", "memberships"]];
 
@@ -135,13 +136,6 @@ const loadingTiles = () =>
     <Stat variant="tile" key={label} label={label} value={<Skeleton shape="line" className="w-64" />} />
   ));
 
-function signIn(o: InstanceOrgView): string {
-  if (o.require_sso && o.require_2fa) return t("instance.ssoAnd2fa", "Single sign-on and two-factor");
-  if (o.require_sso) return t("instance.sso", "Single sign-on");
-  if (o.require_2fa) return t("instance.twoFactorAuth", "Two-factor authentication");
-  return t("common.none", "None");
-}
-
 function Facts({ org, o }: { org: string; o: InstanceOrgView }) {
   return (
     <Section spacing="settings" title={t("common.organization", "Organization")}>
@@ -155,7 +149,7 @@ function Facts({ org, o }: { org: string; o: InstanceOrgView }) {
         <SettingsRow
           title={t("instance.signIn", "Sign-in")}
           description={t("instance.signInHint", "What the organization requires of its members.")}
-          control={<Text tone="secondary">{signIn(o)}</Text>}
+          control={<Text tone="secondary">{orgSignIn(o)}</Text>}
         />
         <SettingsRow
           title={t("instance.requestLogs", "Request logs")}

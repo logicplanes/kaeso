@@ -10,9 +10,9 @@ Die Seiten finden Sie unter **Instanz** im Menü am Fuß der Seitenleiste.
 
 ## Benutzer verwalten
 
-**Benutzer** listet jedes Konto der Installation: aktiv, deaktiviert oder gelöscht. **Benutzer einladen** lädt jemanden ohne Organisation in die Installation ein. Einer Organisation tritt die Person bei, wenn eine Organisation sie einlädt.
+**Benutzer** listet jedes Konto der Installation: aktiv, deaktiviert oder gelöscht. **Benutzer einladen** lädt jemanden ohne Organisation in die Installation ein. Einer Organisation tritt die Person bei, wenn eine Organisation sie einlädt. **Letzte Anmeldung** zeigt, wann sich jeder Benutzer zuletzt angemeldet hat, mit welcher Methode auch immer; das Einschalten der Zwei-Faktor-Authentifizierung zählt nicht als Anmeldung. Bei jemandem, der sich nicht mehr angemeldet hat, seit die Installation das festhält, steht **Nie**.
 
-Instanz-Admins tragen das Abzeichen **Instanz-Admin**, und **Verwaltet von** nennt die Organisation, die ein Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)). Wählen Sie einen Benutzer, um sein Sheet zu öffnen. Es listet die Organisationen, denen er angehört, mit seiner Rolle in jeder, und hat diese Aktionen:
+**Zwei-Faktor** zeigt, wer eine Authenticator-App nutzt. Instanz-Admins tragen das Abzeichen **Instanz-Admin**, und **Verwaltet von** nennt die Organisation, die ein Konto verwaltet ([verwaltete Konten](../self-hosting/sign-in.md#verwaltete-konten)). Wählen Sie einen Benutzer, um sein Sheet zu öffnen. Es listet die Organisationen, denen er angehört, mit seiner Rolle in jeder, und hat diese Aktionen:
 
 | Aktion | Wirkung |
 | --- | --- |
@@ -24,9 +24,11 @@ Instanz-Admins tragen das Abzeichen **Instanz-Admin**, und **Verwaltet von** nen
 
 Kaeso informiert den Benutzer per E-Mail, wenn Sie seine Sitzungen beenden oder seine Zwei-Faktor-Authentifizierung zurücksetzen.
 
+**Einladungen** neben **Benutzer** listet die noch offenen Einladungen zur Installation, mit wer sie geschickt hat und wann sie ablaufen; **Alle** zeigt auch die angenommenen, widerrufenen und abgelaufenen. **Erneut senden** schickt eine Einladung mit einem neuen Link, der 21 Tage gilt, auch nach ihrem Ablauf, und der alte Link funktioniert nicht mehr. **Widerrufen** nimmt eine zurück. Beides braucht **Benutzer verwalten** und erscheint im Audit-Log.
+
 ## Organisationen verwalten
 
-**Organisationen** listet jede Organisation mit ihren Mitgliedern, Projekten und ihrem Zustand. **Organisation erstellen** legt eine mit dem Inhaber an, den Sie wählen, oder mit Ihnen als Inhaber, wenn Sie niemanden wählen.
+**Organisationen** listet jede Organisation mit ihren Mitgliedern, Projekten und ihrem Zustand. **Organisation erstellen** legt eine mit dem Inhaber an, den Sie wählen, oder mit Ihnen als Inhaber, wenn Sie niemanden wählen. **Anmeldung** sagt, ob eine Organisation Single Sign-on, Zwei-Faktor-Authentifizierung oder beides verlangt, und **Single Sign-on** filtert die Liste nach Organisationen mit oder ohne SSO-Verbindung.
 
 Die Seite einer Organisation zeigt ihre Metadaten, Inhaber, Mitglieder und Projekte. Sie zeigt außerdem ihre Anfragen, Token, Kosten und gespeicherten Protokolle der letzten 30 Tage. Dort können Sie die Organisation umbenennen, löschen und wiederherstellen.
 
@@ -43,6 +45,8 @@ Unter **Allgemein**:
 | Erlaubte Domains | Die Domains für die beiden Einstellungen darüber. `*.example.com` umfasst Subdomains |
 | Single Sign-on für Instanz-Admins | **Keine** oder eine Organisation mit Single Sign-on, deren Anbieter ihre verwalteten Instanz-Admins zur Verwaltung der Instanz anmelden darf ([Instanz-Admins](../self-hosting/sign-in.md#instanz-admins)) |
 | Zeitzone | Die Zeitzone der Installation. Die Konsole zeigt jede Zeit darin, für alle, Anfrageprotokoll und Audit-Log filtern nach ihren Tagen, und automatische Updates richten sich nach ihr. **Diese Zone verwenden** wechselt zu der Ihres Browsers |
+| Wechselkurse | Ob die Installation die Referenzkurse der EZB an jedem Arbeitstag holt, der Tag der neuesten und warum der letzte Abruf fehlschlug. Aus behält die vorhandenen Kurse ([Währungen](../concepts/currencies.md)) |
+| Geteilte Links | **Geteilte Links erlauben** lässt Organisationen [Nutzung teilen](share-usage.md); aus, funktioniert kein Link mehr. **Erstellt mit Kaeso** zeigt ein kleines Zeichen am Fuß geteilter Seiten |
 | Löschen von Organisationen | Ob sich Organisationen überhaupt löschen lassen, und die Schonfrist, 1 bis 90 Tage |
 
 Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standards für neue Organisationen fest und die längste Aufbewahrung, die eine Organisation wählen darf. Wird die längste gesenkt, sinkt jede Organisation darüber auf sie, und ihre älteren Einträge werden sofort gelöscht, wie wenn eine Organisation ihre Aufbewahrung verkürzt.
@@ -50,6 +54,10 @@ Unter **Protokollierung** legt **Aufbewahrung der Anfrageprotokolle** die Standa
 Kontoerstellung, Organisationserstellung oder die erlaubten Domains zu ändern erfordert eine kürzliche Anmeldung. Single Sign-on für Instanz-Admins zu ändern erfordert eine mit Passwort oder Anmeldelink; ohne sie ändert ein Operator es auf dem Server mit `kaeso instance admin-sso` ([Kaeso-Befehle ausführen](../self-hosting/installation.md#kaeso-befehle-ausführen)). Die Einrichtungsseite setzt die Zeitzone anfangs auf die des ersten Benutzers, und Nutzungsdiagramme zählen weiter nach UTC-Tagen.
 
 Passwörter, Anmeldelinks und E-Mail legt die [Konfiguration](../self-hosting/configuration.md) des Gateways fest. **Allgemein** zeigt, ob Passwörter und Anmeldelinks eingeschaltet sind, und **System** die E-Mail, beide nur zur Ansicht. Single Sign-on richtet jede Organisation auf ihrer Seite **Sicherheit** ein. **Test-E-Mail senden** auf **System** prüft, ob das Gateway E-Mails senden kann.
+
+## Verknüpfte Abrechnung einrichten
+
+Unter **Verknüpfte Abrechnung** richtet ein Instanz-Admin die OAuth-App der Installation bei jedem Anbieter mit [verknüpfter Abrechnung](linked-billing.md) ein, damit Organisationen diesen Anbieter über ihr eigenes Konto dort bezahlen können. Die Seite zeigt die zu registrierende Weiterleitungs-URI, den Aussteller und das Subject, gebildet aus der öffentlichen URL der Installation, nimmt die Client-ID der App und die übrigen Werte entgegen, und **Prüfen** testet die App, bevor jemand verknüpft. Solange keine App eingerichtet ist, sehen Organisationen die Option mit dem Hinweis, einen Instanz-Admin zu fragen. Wird die App entfernt oder ersetzt, hält das jeden verknüpften Schlüssel an, der dann **Instanz muss eingerichtet werden** zeigt; lehnt der Anbieter die App ab, bekommen Instanz-Admins eine E-Mail.
 
 ## Agenten zulassen
 
@@ -83,7 +91,9 @@ Nach einem Update sieht jeder, der die Konsole öffnet, einmal **Neu in Kaeso**.
 
 ## Audit-Log lesen
 
-Das **Audit-Log** der Instanz verzeichnet Änderungen an Benutzern, Organisationen und den Einstellungen der Installation, jeweils mit Urheber und Zeitpunkt. Es kennzeichnet Änderungen von Agenten wie das Audit-Log einer Organisation, und der Filter **Agenten** zeigt nur diese ([Audit-Log lesen](organizations-and-projects.md#audit-log-lesen)).
+Das **Audit-Log** der Instanz verzeichnet Änderungen an Benutzern, Organisationen und den Einstellungen der Installation, jeweils mit Urheber und Zeitpunkt. Es kennzeichnet Änderungen von Agenten wie das Audit-Log einer Organisation, und der Filter **Agenten** zeigt nur diese ([Audit-Log lesen](organizations-and-projects.md#audit-log-lesen)). **JSON Lines exportieren** lädt die Ereignisse herunter, die die Filter zeigen, eines pro Zeile, das neueste zuerst, und das Log verzeichnet den Export. `instance/audit-log/export` der Platform API tut dasselbe mit dem Recht `instance.audit_log.export`.
+
+Das Blatt eines Benutzers unter **Benutzer** öffnet es mit **Änderungen dieser Person** bei seinen Änderungen und mit **Änderungen an dieser Person** bei den Änderungen an ihm.
 
 ## Nächste Schritte
 

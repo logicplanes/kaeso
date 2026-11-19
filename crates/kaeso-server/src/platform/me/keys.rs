@@ -159,6 +159,38 @@ async fn own(state: &AppState, ctx: &Ctx, id: &str, using: Use) -> ApiResult<key
 }
 
 #[utoipa::path(
+    patch,
+    path = "/me/keys/{key}",
+    summary = "Renames one of the user's keys; its secret keeps working.",
+    tag = "me",
+    params(("key" = ApiKeyId, Path)),
+    request_body = crate::platform::projects::keys::KeyRename,
+    responses((status = 200, body = KeyView))
+)]
+pub async fn rename(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path(id): Path<String>,
+    crate::platform::json::Body(req): crate::platform::json::Body<
+        crate::platform::projects::keys::KeyRename,
+    >,
+) -> ApiResult<Json<KeyView>> {
+    let row = own(&state, &ctx, &id, Use::Change).await?;
+    let name = crate::platform::keys::validate_name(&req.name)?;
+    Ok(Json(
+        change(
+            &state,
+            &ctx,
+            OrgId::from_uuid(row.org_id),
+            &row,
+            Change::Rename(name),
+            Holder::Owner,
+        )
+        .await?,
+    ))
+}
+
+#[utoipa::path(
     post,
     path = "/me/keys/{key}/disable",
     summary = "Disables one of the user's keys.",

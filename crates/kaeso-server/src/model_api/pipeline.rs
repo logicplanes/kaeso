@@ -19,6 +19,7 @@ use kaeso_core::id::{
     ApiKeyId, CatalogueModelId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
 };
 use kaeso_core::limits::WorstCase;
+use kaeso_core::linked_billing::Refusal;
 use kaeso_core::provider::AuthMethod;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{
@@ -104,9 +105,26 @@ pub(super) struct Recording {
     serving: Option<crate::metrics::Serving>,
     // How long the current step may take, from its first try: its retries share it.
     step_wait: Option<Duration>,
+    // `kaeso-limits` for the attempt that answered, or for the limit that refused it.
+    limits: Option<HeaderValue>,
 }
 
 impl Recording {
+    fn stamp_limits(&self, resp: &mut Response) {
+        if let Some(v) = &self.limits {
+            resp.headers_mut()
+                .insert(super::errors::LIMITS_HEADER, v.clone());
+        }
+    }
+
+    fn found_limits(&mut self, left: &[super::hooks::Left]) {
+        let o = self.outcome();
+        if o.sees_limits {
+            let with_spend = o.sees_cost;
+            self.limits = super::errors::limits_header(left, with_spend);
+        }
+    }
+
     pub(super) fn outcome(&mut self) -> &mut Outcome {
         self.outcome
             .get_or_insert_with(|| blank_outcome(RequestId::new()))
@@ -285,12 +303,14 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         request_id,
         caller: None,
         sees_cost: false,
+        sees_limits: false,
         source: Source::Api,
         ingress: DialectId::OpenAiChat,
         kind: RequestKind::Generate,
         egress: None,
         provider: None,
         custom_provider: None,
+        credential_id: None,
         requested_model: None,
         catalogue_model_id: None,
         model_id: None,
@@ -325,6 +345,7 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         cache_breakpoints: None,
         response_cache: None,
         alias: None,
+        line: None,
         fallbacks: Vec::new(),
         gemini: None,
         image: None,
@@ -368,9 +389,15 @@ pub enum Stage {
     Reply,
     Guardrail,
     Shutdown,
+    /// The model is past its shutdown day and the project doesn't answer with its replacement.
+    Retired(String),
     /// An account's plan reached its usage limit: like a provider refusal, but it holds every
     /// model of the account.
     PlanLimit,
+    /// `Cache-Control: only-if-cached` and nothing in the cache answers.
+    NotCached,
+    /// A linked key couldn't pay: its organization's spend limit, its link or the install's app.
+    Linked(kaeso_core::linked_billing::Refusal),
 }
 
 #[derive(Clone, Debug)]
@@ -453,6 +480,7 @@ pub async fn serve_with(
         logging: None,
         serving: Some(crate::metrics::Serving::start()),
         step_wait: None,
+        limits: None,
     };
     let cut = state.in_flight.cut();
     let done = tokio::select! {
@@ -470,6 +498,7 @@ pub async fn serve_with(
         Ok(Done::Complete(mut resp, status)) => {
             rec.time(&mut resp);
             stamp_guardrails(&mut resp, &rec.outcome().guardrails);
+            rec.stamp_limits(&mut resp);
             let outcome = rec.outcome();
             // The start of a video job or an image generation is billed when the job ends.
             if (outcome.source == super::hooks::Source::Playground || outcome.sees_cost)
@@ -481,16 +510,20 @@ pub async fn serve_with(
             rec.finish(status).await;
             resp
         }
-        Ok(Done::Streaming(resp)) => {
+        Ok(Done::Streaming(mut resp)) => {
             rec.outcome = None;
+            rec.stamp_limits(&mut resp);
             resp
         }
         Ok(Done::Refused(failure)) => {
             rec.outcome = None;
-            answer(&failure)
+            let mut resp = answer(&failure);
+            rec.stamp_limits(&mut resp);
+            resp
         }
         Err(failure) => {
             let mut resp = answer(&failure);
+            rec.stamp_limits(&mut resp);
             if let Some(v) = rec.outcome().response_cache {
                 resp.headers_mut()
                     .insert(response_cache::HEADER, v.header());
@@ -752,6 +785,69 @@ fn unreadable(err: KppError, provider: &ProviderRef, dialect: DialectId) -> KppE
     }
 }
 
+fn linked_offer(provider: &ProviderRef) -> (&'static str, &'static str) {
+    provider
+        .built_in()
+        .and_then(|p| p.linked_billing())
+        .map_or(("organization", "the provider's console"), |l| {
+            (l.organization, l.console)
+        })
+}
+
+// What an app hears when a linked key can't pay; one place, so the request log and the console
+// say the same.
+pub(super) fn linked_refusal(
+    refusal: kaeso_core::linked_billing::Refusal,
+    provider: &ProviderRef,
+) -> KppError {
+    use kaeso_core::linked_billing::Refusal;
+    let (organization, console) = linked_offer(provider);
+    let name = provider.name();
+    match refusal {
+        Refusal::SpendLimit => error(
+            ErrorKind::Billing,
+            402,
+            format!(
+                "The linked {organization} of this project's {name} key reached its spend limit. Its admins can raise it in {console}."
+            ),
+        ),
+        Refusal::BillingUnavailable => error(
+            ErrorKind::Billing,
+            402,
+            format!(
+                "{name} can't bill the linked {organization} of this project's key right now. Its admins can check its billing in {console}."
+            ),
+        ),
+        Refusal::Unlinked => error(
+            ErrorKind::ProviderError,
+            502,
+            format!(
+                "The {organization} of this project's {name} key is no longer linked. Ask an organization admin to link it again under Providers."
+            ),
+        ),
+        Refusal::NeedsSetup => error(
+            ErrorKind::ProviderError,
+            502,
+            format!(
+                "Linked billing for this project's {name} key needs the install's OAuth app. Ask an instance admin to set it up again."
+            ),
+        ),
+    }
+}
+
+fn linked_uncovered(provider: &ProviderRef) -> KppError {
+    let (organization, _) = linked_offer(provider);
+    KppError::unsupported(
+        "linked billing",
+        format!(
+            "A linked {organization} pays only for messages and token counting. Use an API key for {} in this project for this request.",
+            provider.name()
+        ),
+    )
+    .with_status(400)
+    .with_param("model")
+}
+
 pub(super) const KEY_REFUSED: &str = "The provider refused this project's provider key. Ask an organization admin to check it under Providers.";
 
 const PERMISSION_REFUSED: &str = "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.";
@@ -990,8 +1086,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
             let key = auth::authenticate(state, &headers, client_ip)
                 .await
                 .map_err(|e| Failure::new(e, Stage::Caller))?;
-            rec.outcome().sees_cost = crate::auth::keys::project_rights(&key)
-                .contains(kaeso_core::rights::ProjectRight::CostsView);
+            let rights = crate::auth::keys::project_rights(&key);
+            rec.outcome().sees_cost = rights.contains(kaeso_core::rights::ProjectRight::CostsView);
+            rec.outcome().sees_limits =
+                rights.contains(kaeso_core::rights::ProjectRight::LimitsView);
             Caller {
                 org_id: key.org_id,
                 project_id: key.project_id,
@@ -1606,6 +1704,48 @@ async fn tries(
     step: StepTry<'_>,
     fell: &mut Vec<FellBack>,
 ) -> (Result<Done, Failure>, u32) {
+    let entry = match instead_of_retired(state, sh, entry) {
+        Retirement::Serves => entry,
+        Retirement::Replaced(replacement, said) => {
+            tracing::info!(model = step.model, replacement = %replacement.model_id, "a retired model's request goes to its replacement");
+            metrics::counter!(crate::metrics::RETIRED_MODEL_REQUESTS, "outcome" => "replaced")
+                .increment(1);
+            fell.push(FellBack {
+                catalogue_model_id: entry.id,
+                path: step.path.to_owned(),
+                model: step.model.to_owned(),
+                status: 410,
+                error_kind: said.kind.as_str().to_owned(),
+                error_message: said.message.clone(),
+                duration_ms: 0,
+                skipped: true,
+                retried: false,
+            });
+            rec.outcome().fallbacks.clone_from(fell);
+            replacement
+        }
+        Retirement::Refused(err) => {
+            metrics::counter!(crate::metrics::RETIRED_MODEL_REQUESTS, "outcome" => "refused")
+                .increment(1);
+            let served = Served {
+                model: Some(entry.model_id.clone()),
+                provider: Some(entry.provider.clone()),
+                lifecycle: lifecycle_headers(state, entry),
+                ..Served::default()
+            };
+            return (
+                Err(Failure {
+                    err,
+                    served,
+                    stage: Stage::Retired(format!("{}/{}", entry.provider, entry.model_id)),
+                    provider_said: None,
+                    dropped: false,
+                    not_found_in_request: false,
+                }),
+                0,
+            );
+        }
+    };
     let began = tokio::time::Instant::now();
     rec.step_wait = None;
     let mut again: Option<Duration> = None;
@@ -1677,6 +1817,85 @@ async fn tries(
     }
 }
 
+enum Retirement<'a> {
+    Serves,
+    Replaced(&'a Entry, KppError),
+    Refused(KppError),
+}
+
+// A step whose model is past its shutdown day fails with a clear error, so a route falls back,
+// unless the project answers with the replacement and the caller may use it: the step then
+// calls the replacement, and the request log keeps the retired model as a skipped try.
+fn instead_of_retired<'a>(state: &AppState, sh: &Shared<'a>, entry: &Entry) -> Retirement<'a> {
+    let loaded = state.kpmr.current();
+    let today = state.clock.now().date();
+    if !entry.is_retired(&loaded.snapshot, today) {
+        return Retirement::Serves;
+    }
+    let lifecycle = entry
+        .lifecycle(&loaded.snapshot)
+        .cloned()
+        .unwrap_or_default();
+    let err = retired_model(entry, &lifecycle);
+    if !sh.models.serve_replacement {
+        return Retirement::Refused(err);
+    }
+    let caller = sh.caller;
+    let replacement = lifecycle.replacement.as_deref().and_then(|to| {
+        sh.models.catalogue.entries().iter().find(|e| {
+            e.provider == entry.provider
+                && e.model_id == to
+                && !e.is_retired(&loaded.snapshot, today)
+                && sh
+                    .models
+                    .access(caller.key_id, caller.user_id, caller.service_account_id)
+                    .allows(e.id)
+        })
+    });
+    match replacement {
+        Some(r) => Retirement::Replaced(r, err),
+        None => Retirement::Refused(err),
+    }
+}
+
+fn retired_model(entry: &Entry, lifecycle: &kaeso_core::kpmr::Lifecycle) -> KppError {
+    let name = format!("{}/{}", entry.provider, entry.model_id);
+    let day = lifecycle.shutdown_on.map(kaeso_core::kpmr::day::format);
+    let message = match (day, lifecycle.replacement.as_deref()) {
+        (Some(d), Some(r)) => {
+            format!("The model `{name}` was retired on {d}; its provider recommends `{r}`.")
+        }
+        (Some(d), None) => format!("The model `{name}` was retired on {d}."),
+        (None, Some(r)) => format!("The model `{name}` is retired; its provider recommends `{r}`."),
+        (None, None) => format!("The model `{name}` is retired."),
+    };
+    error(ErrorKind::NotFound, 410, message).with_param("model")
+}
+
+// RFC 9745's `Deprecation` and RFC 8594's `Sunset` for a reply of a deprecated model, with a
+// `Link` to the replacement's KPMR page and to the provider's announcement.
+fn lifecycle_headers(state: &AppState, entry: &Entry) -> Option<super::errors::LifecycleHeaders> {
+    let loaded = state.kpmr.current();
+    let model = entry.kpmr_model(&loaded.snapshot)?;
+    let lifecycle = model.lifecycle.clone().unwrap_or_default();
+    let headers = super::errors::LifecycleHeaders {
+        deprecated_on: lifecycle.deprecated_on.or(lifecycle.announced_on),
+        shutdown_on: lifecycle.shutdown_on,
+        successor: lifecycle.replacement.as_ref().map(|r| {
+            format!(
+                "https://kpmr.kaeso.app/models/{}/{}",
+                entry.provider,
+                r.split('/')
+                    .map(|p| url::form_urlencoded::byte_serialize(p.as_bytes()).collect::<String>())
+                    .collect::<Vec<_>>()
+                    .join("/")
+            )
+        }),
+        announcement: lifecycle.source.clone(),
+    };
+    (headers.deprecated_on.is_some() || headers.shutdown_on.is_some()).then_some(headers)
+}
+
 // One try of a step through the keys of the project's pool for its provider, in the order this
 // request tries them: a weighted draw that keeps each caller (its API key, service account or
 // member) on one key, so the provider's prompt cache keeps working, with the keys held moments
@@ -1708,7 +1927,7 @@ async fn attempt_pool(
         }
         _ => {
             return (
-                attempt_with(state, rec, sh, entry, app_req, at, None).await,
+                attempt_paying(state, rec, sh, entry, app_req, at, None).await,
                 1,
             );
         }
@@ -1728,7 +1947,7 @@ async fn attempt_pool(
     let order: Vec<Uuid> = ready.into_iter().chain(waiting).map(|(k, _)| *k).collect();
     let Some((last, before)) = order.split_last() else {
         return (
-            attempt_with(state, rec, sh, entry, app_req, at, None).await,
+            attempt_paying(state, rec, sh, entry, app_req, at, None).await,
             1,
         );
     };
@@ -1736,7 +1955,7 @@ async fn attempt_pool(
     let mut keys = 0;
     for key in before {
         keys += 1;
-        match attempt_with(state, rec, sh, entry, app_req, at, Some(*key)).await {
+        match attempt_paying(state, rec, sh, entry, app_req, at, Some(*key)).await {
             Err(f) => {
                 if !hold_pool_key(state, caller.project_id, *key, &f, now).await {
                     return (Err(f), keys);
@@ -1758,11 +1977,54 @@ async fn attempt_pool(
             done => return (done, keys),
         }
     }
-    let tried = attempt_with(state, rec, sh, entry, app_req, at, Some(*last)).await;
+    let tried = attempt_paying(state, rec, sh, entry, app_req, at, Some(*last)).await;
     if let Err(f) = &tried {
         hold_pool_key(state, caller.project_id, *last, f, now).await;
     }
     (tried, keys + 1)
+}
+
+// A linked key that can't pay, as its organization's spend limit refused the request or its link
+// is gone, gives way to the key the project chose to pay instead, if it chose one.
+async fn attempt_paying(
+    state: &AppState,
+    rec: &mut Recording,
+    sh: &Shared<'_>,
+    entry: &Entry,
+    app_req: &Arc<Request>,
+    at: TryAt,
+    key: Option<Uuid>,
+) -> Result<Done, Failure> {
+    let tried = attempt_with(state, rec, sh, entry, app_req, at, key).await;
+    let Err(f) = &tried else {
+        return tried;
+    };
+    if !matches!(f.stage, Stage::Linked(_)) {
+        return tried;
+    }
+    let caller = sh.caller;
+    let provider = entry.provider.to_string();
+    let fallback = match kaeso_store::pg::linked_billing::fallback(
+        &state.pg,
+        caller.org_id,
+        caller.project_id,
+        &provider,
+    )
+    .await
+    {
+        Ok(Some(fallback)) => fallback,
+        Ok(None) => return tried,
+        Err(e) => {
+            tracing::warn!(error = %e, "cannot read the project's fallback for its linked key");
+            return tried;
+        }
+    };
+    rec.attempt_failed(Instant::now());
+    tracing::info!(
+        provider,
+        "a linked key that can't pay gave way to the project's fallback key"
+    );
+    attempt_with(state, rec, sh, entry, app_req, at, Some(fallback)).await
 }
 
 // One try with one key of the pool, or the project's own key for `None`.
@@ -1882,6 +2144,7 @@ async fn attempt(
         adapted: Vec::new(),
         route: Vec::new(),
         upstream_request_id: None,
+        lifecycle: lifecycle_headers(state, entry),
     };
     let fail = |stage: Stage| {
         let served = served.clone();
@@ -1898,6 +2161,7 @@ async fn attempt(
         let o = rec.outcome();
         o.catalogue_model_id = Some(entry.id);
         o.model_id = Some(eff.model_id.clone());
+        o.line = entry.is_line().then(|| entry.model_id.clone());
         o.provider = Some(eff.provider.metric_label());
         o.custom_provider = eff.provider.custom().map(|c| c.id().to_string());
         o.prices = Some(if kind == RequestKind::Decide {
@@ -2019,7 +2283,23 @@ async fn attempt(
             503,
             format!("Kaeso cannot renew the {product} account's access right now. Try again shortly."),
         )),
+        CredentialError::Unlinked { .. } => fail(Stage::Linked(Refusal::Unlinked))(
+            linked_refusal(Refusal::Unlinked, &eff.provider),
+        ),
+        CredentialError::NeedsSetup { .. } => fail(Stage::Linked(Refusal::NeedsSetup))(
+            linked_refusal(Refusal::NeedsSetup, &eff.provider),
+        ),
     })?;
+    if !credential.is_keyless() {
+        rec.outcome().credential_id = Some(credential.id.uuid());
+    }
+    let linked = credential
+        .linked
+        .as_ref()
+        .filter(|_| credential.method == AuthMethod::LinkedBilling);
+    if linked.is_some() && !kaeso_core::linked_billing::covers(kind) {
+        return Err(fail(Stage::Capability)(linked_uncovered(&eff.provider)));
+    }
     let account = eff
         .provider
         .account()
@@ -2091,11 +2371,15 @@ async fn attempt(
         .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect, eff.provider.responses())),
     };
     if again.is_none() {
-        rec.reservation = state
-            .limits
-            .admit(state, &admission)
-            .await
-            .map_err(|refusal| fail(Stage::Limits)(limited(refusal)))?;
+        rec.reservation = match state.limits.admit(state, &admission).await {
+            Ok(held) => held,
+            Err(refusal) => {
+                rec.found_limits(refusal.left.as_slice());
+                return Err(fail(Stage::Limits)(limited(refusal)));
+            }
+        };
+        let left = std::mem::take(&mut rec.reservation.left);
+        rec.found_limits(&left);
     }
 
     if entry.is_unavailable()
@@ -2180,6 +2464,9 @@ async fn attempt(
     })?;
     if let Some(r) = &regional {
         ectx = r.apply(ectx);
+    }
+    if let Some(l) = linked.filter(|l| l.send_policy) {
+        ectx = ectx.with_billed_profile(l.user_profile_id.clone());
     }
     let dialect = plan.dialect;
     let (req, mut ectx, encoded) = off_thread(request_bytes, move || {
@@ -2279,6 +2566,7 @@ async fn attempt(
         }
         Consulted::Store(slot) => Some(slot),
         Consulted::Skip => None,
+        Consulted::NotCached => return Err(fail(Stage::NotCached)(not_cached())),
     };
     let sent_req = counted_at_provider(account, &eff.provider, plan.dialect).then_some(req);
     let kept = retained(1 + u64::from(sent_req.is_some()));
@@ -2361,8 +2649,9 @@ async fn attempt(
         (None, None, Some(auth)) => Some(auth),
         (None, None, None) => eff.provider.auth(),
     };
-    // An Entra ID token goes as a bearer in place of the resource key's `api-key`.
-    let auth = if entra.is_some() {
+    // An Entra ID token goes as a bearer in place of the resource key's `api-key`, and so does a
+    // link's access token in place of Anthropic's `x-api-key`.
+    let auth = if entra.is_some() || linked.is_some() {
         Some(kaeso_core::provider::AuthStyle::Bearer)
     } else {
         auth
@@ -2473,6 +2762,12 @@ async fn attempt(
     }
     if success {
         crate::services::notifications::system::key_answered(credential.id.uuid());
+        if linked.is_some_and(|l| l.spend_limited) {
+            let (st, org, key) = (state.clone(), caller.org_id, credential.id.uuid());
+            state.in_flight.finish(async move {
+                crate::services::linked_billing_keys::paid(&st, org, key).await;
+            });
+        }
     }
 
     let started_req = Arc::clone(&app_req);
@@ -2606,6 +2901,7 @@ async fn attempt(
                 logging: rec.logging.take(),
                 serving: rec.serving.take(),
                 step_wait: None,
+                limits: None,
             };
             let keepalive = state.config.streams.keepalive_interval;
             let carry = carry.map(|key_id| continuity::StreamCarry::new(state.clone(), key_id));
@@ -2731,6 +3027,51 @@ async fn attempt(
                             return Err(failure);
                         }
                         Probe::Inconclusive(_) | Probe::Failed(_) => {}
+                    }
+                }
+                if linked.is_some() {
+                    let code = kaeso_codecs::anthropic_messages::error_code(&err);
+                    if let Some(refusal) =
+                        kaeso_core::linked_billing::anthropic_refusal(status, code)
+                    {
+                        let said = redacted(err);
+                        tracing::warn!(provider, status, upstream = %said.message, "the linked organization of the project's provider key can't pay");
+                        let (st, org, key, now) = (
+                            state.clone(),
+                            caller.org_id,
+                            credential.id.uuid(),
+                            state.clock.now(),
+                        );
+                        state.in_flight.finish(async move {
+                            crate::services::linked_billing_keys::refused(
+                                &st, org, key, refusal, now,
+                            )
+                            .await;
+                        });
+                        let mut failure =
+                            fail(Stage::Linked(refusal))(linked_refusal(refusal, &eff.provider));
+                        failure.provider_said = Some(said);
+                        return Err(failure);
+                    }
+                    if err.kind == ErrorKind::Authentication {
+                        // The connection's access token expired early, a refresh replaced it or
+                        // its link ended: renewing now tells which, off this request's path.
+                        let (st, org, key) = (state.clone(), caller.org_id, credential.id);
+                        let product = eff
+                            .provider
+                            .built_in()
+                            .and_then(|p| p.linked_billing())
+                            .map_or("provider", |l| l.organization);
+                        state.in_flight.finish(async move {
+                            let _ = crate::services::linked_billing_keys::renew(
+                                &st,
+                                OrgId::from_uuid(org),
+                                key,
+                                product,
+                                time::Duration::hours(2),
+                            )
+                            .await;
+                        });
                     }
                 }
                 if let Some(refused) =
@@ -2975,6 +3316,7 @@ fn classify(f: &Failure) -> Next {
         | Stage::Credential
         | Stage::Upstream
         | Stage::KeyRefused
+        | Stage::Retired(_)
         | Stage::Unserved(_) => Next::Fall(RouteFailure::Unavailable),
         Stage::Capability | Stage::NeedsApiKey { .. } => Next::Fall(RouteFailure::Unsupported),
         // Kaeso can't read the counters: every other step would be refused the same way.
@@ -2983,6 +3325,8 @@ fn classify(f: &Failure) -> Next {
         Stage::Provider if f.not_found_in_request => Next::Fall(RouteFailure::Rejected),
         Stage::Provider => Next::Fall(provider_failure(&f.err)),
         Stage::PlanLimit => Next::Fall(RouteFailure::Limited),
+        Stage::Linked(Refusal::SpendLimit) => Next::Fall(RouteFailure::Limited),
+        Stage::Linked(_) => Next::Fall(RouteFailure::Unavailable),
         Stage::Caller
         | Stage::Request
         | Stage::Catalogue
@@ -2991,7 +3335,9 @@ fn classify(f: &Failure) -> Next {
         | Stage::ModelAccess(_)
         | Stage::Reply
         | Stage::Guardrail
-        | Stage::Shutdown => Next::Stop,
+        | Stage::Shutdown
+        // The app asked for no provider; another step would be refused the same way.
+        | Stage::NotCached => Next::Stop,
     }
 }
 
@@ -3342,6 +3688,8 @@ enum Consulted {
     Skip,
     Store(response_cache::Slot),
     Hit(Box<response_cache::Stored>),
+    /// `only-if-cached` and no stored reply answers: the provider isn't called.
+    NotCached,
 }
 
 async fn consult_cache(
@@ -3351,33 +3699,50 @@ async fn consult_cache(
     request: response_cache::Request<'_>,
     stream: bool,
 ) -> Consulted {
-    let Some(active) = response_cache::active(state, request.project).await else {
-        return Consulted::Skip;
-    };
     let directive = response_cache::directive(headers);
+    let skip = if directive.only_if_cached {
+        Consulted::NotCached
+    } else {
+        Consulted::Skip
+    };
+    let Some(active) = response_cache::active(state, request.project).await else {
+        return skip;
+    };
     let decided = |rec: &mut Recording, v: Verdict| {
         rec.outcome().response_cache = Some(v);
         response_cache::count_lookup(v);
     };
     if !response_cache::cacheable(request.kind, stream) || !directive.write && !directive.read {
         decided(rec, Verdict::Bypass);
-        return Consulted::Skip;
+        return skip;
     }
     let slot = in_place(request.encoded.body.len(), || {
         response_cache::slot(state, active, &request)
     });
     if directive.read
         && let Some(stored) = response_cache::get(state, &slot).await
+        && directive.takes(stored.age(state.clock.now()))
     {
         decided(rec, Verdict::Hit);
         return Consulted::Hit(Box::new(stored));
     }
+    // A reply older than `max-age` is a miss too, and the new one replaces it.
     decided(rec, Verdict::Miss);
-    if directive.write {
+    if directive.only_if_cached {
+        Consulted::NotCached
+    } else if directive.write {
         Consulted::Store(slot)
     } else {
         Consulted::Skip
     }
+}
+
+fn not_cached() -> KppError {
+    error(
+        ErrorKind::Timeout,
+        504,
+        "No cached reply answers this request, and `only-if-cached` keeps it from the provider.",
+    )
 }
 
 async fn replay(

@@ -113,9 +113,10 @@ services:
 
 ## 重新登录
 
-当所有登录方式都失效时，在服务器上为已有账户打印一个一次性登录链接。身份提供商宕机或配置错误，或设置会话在单点登录生效前就已结束时，这个方法都能派上用场：
+当所有登录方式都失效时，在服务器上为已有账户打印一个一次性登录链接。身份提供商宕机或配置错误，或设置会话在单点登录生效前就已结束时，这个方法都能派上用场。如需找到实例管理员的地址，请先列出实例管理员；不带 `--instance-admins` 的 `kaeso user list` 会列出所有账户，`--search` 可按地址或名称筛选。每行给出地址、名称、状态、该账户是否为实例管理员、是否使用双因素认证，以及创建时间：
 
 ```bash
+docker compose exec gateway kaeso user list --instance-admins
 docker compose exec gateway kaeso user sign-in-link owner@example.com
 ```
 

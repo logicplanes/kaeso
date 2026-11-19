@@ -8,8 +8,10 @@ use openidconnect::core::{
 };
 use openidconnect::{
     AuthorizationCode, ClientId, ClientSecret, CsrfToken, HttpRequest, HttpResponse, IssuerUrl,
-    Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
+    Nonce, OAuth2TokenResponse, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope,
+    TokenResponse,
 };
+use secrecy::SecretString;
 
 use crate::state::AppState;
 
@@ -88,6 +90,12 @@ fn provider_error(e: &dyn std::error::Error) -> OidcError {
 #[derive(Debug, thiserror::Error)]
 #[error("{0}")]
 pub struct FetchError(String);
+
+impl FetchError {
+    pub fn new(message: impl Into<String>) -> FetchError {
+        FetchError(message.into())
+    }
+}
 
 const MAX_ANSWER: usize = 1 << 20;
 
@@ -307,6 +315,7 @@ impl Provider {
             auth_time,
             issued_at,
             claims: payload(&id_token.to_string()),
+            access_token: SecretString::from(response.access_token().secret().clone()),
         })
     }
 }
@@ -333,23 +342,47 @@ pub struct Identity {
     pub issued_at: Option<time::OffsetDateTime>,
     /// Every claim of the ID token, once its signature, issuer, audience and nonce are checked.
     pub claims: serde_json::Value,
+    pub access_token: SecretString,
+}
+
+/// What an ID token says about a groups claim.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Claimed {
+    /// A list of strings, or one string; an empty list is a list.
+    Listed(Vec<String>),
+    /// Too many values to fit: the token points elsewhere instead of listing them.
+    TooMany,
+    /// No such claim.
+    Missing,
 }
 
 impl Identity {
-    /// The values of a groups claim: a list of strings, or one string. `None` when the token
-    /// carries no such claim, which is not the same as an empty list.
-    pub fn groups(&self, claim: &str) -> Option<Vec<String>> {
-        match self.claims.get(claim)? {
-            serde_json::Value::Array(values) => Some(
+    pub fn groups(&self, claim: &str) -> Claimed {
+        match self.claims.get(claim) {
+            Some(serde_json::Value::Array(values)) => Claimed::Listed(
                 values
                     .iter()
                     .filter_map(serde_json::Value::as_str)
                     .map(str::to_owned)
                     .collect(),
             ),
-            serde_json::Value::String(s) => Some(vec![s.clone()]),
-            _ => None,
+            Some(serde_json::Value::String(s)) => Claimed::Listed(vec![s.clone()]),
+            Some(_) => Claimed::Missing,
+            None if self.overage(claim) => Claimed::TooMany,
+            None => Claimed::Missing,
         }
+    }
+
+    // A distributed claim (OpenID Connect Core 1.0 §5.6.2) names the claim in `_claim_names`;
+    // Entra ID sends one for more than 200 groups, and `hasgroups` in the implicit flow:
+    // https://learn.microsoft.com/en-us/security/zero-trust/develop/configure-tokens-group-claims-app-roles#group-overages
+    fn overage(&self, claim: &str) -> bool {
+        self.claims
+            .get("_claim_names")
+            .and_then(|names| names.get(claim))
+            .is_some()
+            || (claim == "groups"
+                && self.claims.get("hasgroups") == Some(&serde_json::Value::Bool(true)))
     }
 }
 
@@ -372,6 +405,51 @@ fn payload(token: &str) -> serde_json::Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn with(claims: serde_json::Value) -> Identity {
+        Identity {
+            subject: "sub".into(),
+            email: "ada@acme.example".into(),
+            name: None,
+            auth_time: None,
+            issued_at: None,
+            claims,
+            access_token: SecretString::from("token"),
+        }
+    }
+
+    #[test]
+    fn a_reference_instead_of_the_list_is_an_overage_not_a_missing_claim() {
+        let listed = with(serde_json::json!({ "groups": ["a", "b"], "roles": "Admin" }));
+        assert_eq!(
+            listed.groups("groups"),
+            Claimed::Listed(vec!["a".into(), "b".into()])
+        );
+        assert_eq!(
+            listed.groups("roles"),
+            Claimed::Listed(vec!["Admin".into()])
+        );
+        assert_eq!(listed.groups("wids"), Claimed::Missing);
+        assert_eq!(
+            with(serde_json::json!({ "groups": [] })).groups("groups"),
+            Claimed::Listed(Vec::new())
+        );
+
+        let overage = with(serde_json::json!({
+            "_claim_names": { "groups": "src1" },
+            "_claim_sources": { "src1": { "endpoint": "https://graph.windows.net/x/users/y/getMemberObjects" } },
+        }));
+        assert_eq!(overage.groups("groups"), Claimed::TooMany);
+        assert_eq!(overage.groups("roles"), Claimed::Missing);
+        assert_eq!(
+            with(serde_json::json!({ "hasgroups": true })).groups("groups"),
+            Claimed::TooMany
+        );
+        assert_eq!(
+            with(serde_json::json!({ "groups": 3 })).groups("groups"),
+            Claimed::Missing
+        );
+    }
 
     fn check(issuer: &str, page: &str) -> Result<(), OidcError> {
         check_sign_in_page(

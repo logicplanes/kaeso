@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE catalogue_lines SET policy = $2, delay_days = $3, updated_at = $4 WHERE catalogue_model_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Int4",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "281f67c8e0f7db88fc2d4e18c957503e9a68605ef7a974fff5a88d8291cf53c8"
+}

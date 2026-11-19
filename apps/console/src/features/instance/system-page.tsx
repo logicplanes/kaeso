@@ -1,5 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { Code, SettingsGroup, SettingsRow, Section, Status, Text, Tooltip } from "@logicplanes/kaeso-ui";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button, Code, SettingsGroup, SettingsRow, Section, Status, Text, Tooltip, icons } from "@logicplanes/kaeso-ui";
+import { api, data as body } from "~/api/client";
+import { useApiMutation } from "~/auth/mutation";
+import { toast } from "~/shell/toast";
 import { formatBytes, formatNumber, formatRelative } from "@logicplanes/kaeso-ui/format";
 import type { ModelDataView } from "~/api/generated/types";
 import { instanceSettingsQuery, systemQuery } from "~/api/queries/instance";
@@ -18,6 +21,18 @@ const statuses = (): Record<string, { tone: "success" | "warning" | "danger"; la
 const SERVICE = { postgres: "PostgreSQL", clickhouse: "ClickHouse", valkey: "Valkey" };
 
 function ModelData({ data }: { data: ModelDataView }) {
+  const queryClient = useQueryClient();
+  // A failed fetch is recorded too, so the card refreshes either way to show its result.
+  const sync = useApiMutation({
+    mutationFn: async () => body(await api.POST("/platform/v1/instance/kpmr/sync")),
+    onSuccess: (r) =>
+      void toast.success(
+        r.status === "applied"
+          ? t("instance.syncApplied", "New model data applied: {count, plural, one {# price change} other {# price changes}}", { count: r.price_changes })
+          : t("instance.syncUnchanged", "The model data is current"),
+      ),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: systemQuery.queryKey }),
+  });
   const lastSync = data.last_attempt_at ? (
     data.last_error ? (
       <Tooltip content={data.last_error}>
@@ -35,7 +50,19 @@ function ModelData({ data }: { data: ModelDataView }) {
     <Section
       spacing="settings"
       title={t("instance.modelData", "Model data")}
-      description={t("instance.modelDataHint", "Model names, limits and prices from KPMR, the Kaeso Provider & Model Registry.")}
+      description={t("instance.modelDataHint", "Model names, limits and prices from KPMR, Kaeso's model registry.")}
+      actions={
+        <Button
+          size="sm"
+          leadingIcon={icons.refresh}
+          loading={sync.isPending}
+          disabled={!data.sync_enabled}
+          {...(data.sync_enabled ? {} : { disabledReason: t("instance.syncOff", "Sync is off; set KAESO_KPMR_SYNC=true to fetch model data") })}
+          onClick={() => sync.mutate()}
+        >
+          {t("instance.syncNow", "Sync now")}
+        </Button>
+      }
     >
       <SettingsGroup>
         <SettingsRow

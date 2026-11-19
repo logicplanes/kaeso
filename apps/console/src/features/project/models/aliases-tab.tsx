@@ -86,6 +86,18 @@ export function AliasesTab({ org, project, canManage }: { org: string; project: 
                       {t("models.alias.editRoute", "Edit route")}
                     </Menu.Item>
                     <Menu.Item
+                      icon={icons.copy}
+                      onClick={() =>
+                        void navigate({
+                          to: "/orgs/$org/projects/$project/models/aliases/$alias",
+                          params: { org, project, alias: "new" },
+                          search: { from: a.id },
+                        })
+                      }
+                    >
+                      {t("models.alias.duplicate", "Duplicate")}
+                    </Menu.Item>
+                    <Menu.Item
                       icon={icons.delete}
                       variant="danger"
                       onClick={() => {

@@ -1,3 +1,4 @@
+use crate::platform::exchange_rates::CurrencyParam;
 use axum::Json;
 use axum::body::Body;
 use axum::extract::State;
@@ -713,12 +714,22 @@ pub enum CostBasis {
     #[doc = "The length of the audio the request sent, read by Kaeso from the file's header\n\
         because the provider reported none."]
     Measured,
+    #[doc = "Tokens Kaeso estimated, because the app went away or the provider reported no\n\
+        usage."]
+    Estimated,
+    #[doc = "Nothing was billed: Kaeso or the provider refused or failed the request, the\n\
+        response cache answered it, or it started a job that is billed when it ends."]
+    #[serde(rename = "none")]
+    NotBilled,
 }
 
 impl CostBasis {
+    // Entries logged before `none` and `estimated` existed read as `reported`.
     fn of(stored: &str) -> CostBasis {
         match stored {
             "measured" => CostBasis::Measured,
+            "estimated" => CostBasis::Estimated,
+            "none" => CostBasis::NotBilled,
             _ => CostBasis::Reported,
         }
     }
@@ -727,6 +738,8 @@ impl CostBasis {
         match self {
             CostBasis::Reported => "reported",
             CostBasis::Measured => "measured",
+            CostBasis::Estimated => "estimated",
+            CostBasis::NotBilled => "none",
         }
     }
 }
@@ -997,9 +1010,16 @@ pub struct LogView {
         request made or heard, such as a video model without a price per clip; `cost`\n\
         is then 0 and means unknown."]
     pub cost_known: bool,
-    #[doc = "What the cost's units come from: `reported` by the provider, or `measured`\n\
-        by Kaeso when the provider bills by the length of audio it was sent but\n\
-        reported none, and Kaeso read the length from the file's header."]
+    #[doc = "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\n\
+        latest for days before the install's first rates), an estimate; absent when no\n\
+        currency was asked or the cost is unknown."]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub converted_cost: Option<String>,
+    #[doc = "What the cost rests on: `none` when nothing was billed, `measured` by Kaeso\n\
+        when the provider bills by the length of audio it was sent but reported none\n\
+        and Kaeso read the length from the file's header, `estimated` when Kaeso\n\
+        estimated the tokens, or `reported` by the provider. Entries logged before\n\
+        `none` and `estimated` existed say `reported`."]
     pub cost_basis: CostBasis,
     #[doc = "User agent."]
     pub user_agent: String,
@@ -1029,6 +1049,10 @@ pub struct LogView {
         app named a model."]
     #[schema(example = "chat-default")]
     pub alias: Option<String>,
+    #[doc = "The model line the request named, such as `claude-opus-latest`, whose\n\
+        target answered as `model`; `null` when it named no line."]
+    #[schema(example = "claude-opus-latest")]
+    pub line: Option<String>,
     #[doc = "The tries that failed before the one that answered, or before the last\n\
         one, in the order they were made: the steps of the alias's route that fell\n\
         back, and the tries a step made again after a short-lived failure\n\
@@ -1048,6 +1072,10 @@ pub struct LogView {
     pub client_version: Option<String>,
     #[doc = "The guardrails that checked the request and its reply, in the order they ran."]
     pub guardrails: Vec<GuardrailRunView>,
+    #[doc = "The provider key that paid for the request, the last one it was sent with;\n\
+        for a linked key, the organization it links paid. `null` when no provider was\n\
+        sent the request, and for requests logged before Kaeso recorded it."]
+    pub billed_to: Option<kaeso_core::id::CredentialId>,
 }
 
 #[derive(Clone, Debug, Serialize, ToSchema)]
@@ -1193,6 +1221,20 @@ pub struct StreamProgressView {
     pub processing_us: Option<u32>,
 }
 
+fn converted(
+    mut v: LogView,
+    converter: Option<&(std::sync::Arc<kaeso_core::currency::RateBook>, String)>,
+) -> LogView {
+    if let Some((book, code)) = converter
+        && v.cost_known
+        && let Ok(cost) = v.cost.parse::<rust_decimal::Decimal>()
+    {
+        v.converted_cost =
+            crate::platform::exchange_rates::convert(book, code, cost, v.started_at.date());
+    }
+    v
+}
+
 fn view(r: &LogRow) -> LogView {
     let principal_id = if r.principal_kind == "user" {
         UserId::from_uuid(r.principal_id).to_string()
@@ -1231,6 +1273,7 @@ fn view(r: &LogRow) -> LogView {
         },
         cost: cost_from_raw(r.cost).to_string(),
         cost_known: r.cost_known,
+        converted_cost: None,
         cost_basis: CostBasis::of(&r.cost_basis),
         user_agent: r.user_agent.clone(),
         client_ip: r.client_ip.clone(),
@@ -1246,6 +1289,7 @@ fn view(r: &LogRow) -> LogView {
         cache_breakpoints: r.cache_breakpoints,
         response_cache: ResponseCacheResult::parse(&r.response_cache),
         alias: none(&r.alias),
+        line: none(&r.line),
         fallbacks: fallbacks(&r.fallbacks),
         media: (!r.media_unit.is_empty()).then(|| MediaView {
             unit: r.media_unit.clone(),
@@ -1257,6 +1301,8 @@ fn view(r: &LogRow) -> LogView {
         client: none(ch::client_of(&r.user_agent)),
         client_version: ch::client_version(&r.user_agent).map(str::to_owned),
         guardrails: guardrail_runs(&r.guardrails),
+        billed_to: (!r.credential_id.is_nil())
+            .then(|| kaeso_core::id::CredentialId::from_uuid(r.credential_id)),
     }
 }
 
@@ -1286,7 +1332,7 @@ pub(crate) fn decode_cursor(c: &str) -> Option<(OffsetDateTime, Uuid)> {
     to the bucket's `duration_p95_ms`. Pages hold up to 100 entries; pass\n\
     `next_cursor` as `after` for the next.",
     tag = "logs",
-    params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, LogFilter),
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, LogFilter, CurrencyParam),
     responses((status = 200, body = List<LogView>))
 )]
 pub async fn list(
@@ -1295,7 +1341,9 @@ pub async fn list(
     Path(_p): Path<(String, String)>,
     Query(page): Query<PageParams>,
     Query(f): Query<LogFilter>,
+    Query(c): Query<CurrencyParam>,
 ) -> ApiResult<Json<List<LogView>>> {
+    let converter = crate::platform::exchange_rates::converter(&state, c.currency.as_deref())?;
     let page = page.page_by(decode_cursor)?;
     let p = &ctx.project()?.project;
     let rows = ch::search(
@@ -1309,7 +1357,7 @@ pub async fn list(
     .await
     .map_err(unavailable)?;
     Ok(Json(List::from_page(&page, rows, encode_cursor, |r| {
-        view(&r)
+        converted(view(&r), converter.as_ref())
     })))
 }
 
@@ -1444,14 +1492,16 @@ pub async fn errors(
     `kaeso-request-id` header), plus the request and reply bodies when content\n\
     was logged and the caller holds `logs.content.view`.",
     tag = "logs",
-    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("log" = RequestId, Path)),
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("log" = RequestId, Path), CurrencyParam),
     responses((status = 200, body = LogEntryView))
 )]
 pub async fn get(
     State(state): State<AppState>,
     ctx: Ctx,
     Path((_o, _p, id)): Path<(String, String, String)>,
+    Query(c): Query<CurrencyParam>,
 ) -> ApiResult<Json<LogEntryView>> {
+    let converter = crate::platform::exchange_rates::converter(&state, c.currency.as_deref())?;
     let id: RequestId = id.parse().map_err(|_| ApiError::not_found("log entry"))?;
     let scope = ctx.project()?;
     let p = &scope.project;
@@ -1470,7 +1520,7 @@ pub async fn get(
         None
     };
     Ok(Json(LogEntryView {
-        log: view(&row),
+        log: converted(view(&row), converter.as_ref()),
         content,
     }))
 }

@@ -10,7 +10,7 @@ Die Konsole läuft unter der Domain Ihrer Installation, etwa `https://kaeso.exam
 
 Die Seitenleiste zeigt die Seiten der Organisation, oder die eines Projekts, wenn Sie darin arbeiten. Das Menü an ihrem Fuß wechselt die Organisation und öffnet die **Organisationseinstellungen**, Ihr **Konto** und, für Instanz-Admins, die **Instanz**. Was die Seitenleiste zeigt, hängt von Ihren [Rechten](members-and-roles.md) ab.
 
-Drücken Sie ⌘K oder Strg+K, um Seiten, Schlüssel, Modelle und Mitglieder zu suchen, etwas zu erstellen oder Organisation oder Projekt zu wechseln. Hat kein Feld den Fokus, wirken auch einzelne Tasten, etwa `c` zum Erstellen auf der aktuellen Seite oder `g` `k` für die API-Schlüssel. Drücken Sie `?`, um alle Tastenkürzel zu sehen.
+Drücken Sie ⌘K oder Strg+K, um Seiten, Schlüssel, Modelle und Mitglieder zu suchen, etwas zu erstellen oder Organisation oder Projekt zu wechseln. Fügen Sie die ID einer Anfrage ein, `req_…` aus ihrem Header `kaeso-request-id`, um sie im Anfrageprotokoll des aktuellen Projekts zu öffnen. Hat kein Feld den Fokus, wirken auch einzelne Tasten, etwa `c` zum Erstellen auf der aktuellen Seite oder `g` `k` für die API-Schlüssel. Jede Seite eines Projekts hat ihre eigene `g`-Taste, etwa `g` `y` für den Playground. Drücken Sie `?`, um alle Tastenkürzel zu sehen, die dort wirken, wo Sie gerade sind, mit den Tasten der Anfrageprotokolle, Tool-Aufrufe und des Routen-Editors.
 
 Eine Liste, etwa der API-Schlüssel oder Mitglieder, ist ein einziger Tab-Stopp. Wechseln Sie die Zeile mit den Pfeiltasten oder `j` und `k`, und öffnen Sie sie mit Enter.
 
@@ -29,6 +29,7 @@ Eine Liste, etwa der API-Schlüssel oder Mitglieder, ist ein einziger Tab-Stopp.
 - [Anfrageprotokolle](request-logs.md): Finden Sie jede Anfrage, exportieren Sie Protokolle und wählen Sie, was bleibt.
 - [Antwort-Cache](response-cache.md): Beantworten Sie wiederholte, gleiche Anfragen aus einer gespeicherten Antwort.
 - [Webhooks](webhooks.md): Senden Sie die Benachrichtigungen der Organisation signiert an Bereitschaftstools, Chat und Skripte.
+- [Nutzung teilen](share-usage.md): Teilen Sie schreibgeschützte Links zu Nutzung, Mitgliedsstatistiken und Budgets mit Personen ohne Konto.
 - [Playground](playground.md): Vergleichen Sie bis zu vier Modelle nebeneinander.
 - [Konto und Sprache](account.md): Schützen Sie Ihr Konto und wählen Sie Design und Sprache.
 - [Instanzverwaltung](instance-administration.md): Verwalten Sie Benutzer, Organisationen, Einstellungen und Updates der Installation.

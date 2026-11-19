@@ -46,8 +46,20 @@ pub struct Resolved {
     /// The keys the project draws from for the provider, with their weights; set on the key a
     /// project resolves first, empty on the others.
     pub pool: Vec<kaeso_store::pg::credentials::PoolMember>,
+    /// For a billing connection: the user profile it bills and whether the linked
+    /// organization's spend limit refused its last request.
+    pub linked: Option<Linked>,
     keyless: bool,
     last_touched: AtomicI64,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Linked {
+    pub user_profile_id: String,
+    pub spend_limited: bool,
+    /// Whether each request names the linked profile and sets `billing_policy`, as the
+    /// install's app asks.
+    pub send_policy: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -67,12 +79,19 @@ pub struct Account {
 pub enum Stopped {
     SignedOut,
     NoApiAccess,
+    /// A billing connection that ended, or whose refresh may have used its refresh token.
+    Unlinked,
+    /// A billing connection whose install's app is missing or was replaced.
+    NeedsSetup,
 }
 
 impl Stopped {
     fn read(auth_error: Option<&str>) -> Option<Stopped> {
+        use crate::services::linked_billing::{NEEDS_SETUP, ON_HOLD, UNLINKED};
         auth_error.map(|e| match e {
             NO_API_ACCESS => Stopped::NoApiAccess,
+            UNLINKED | ON_HOLD => Stopped::Unlinked,
+            NEEDS_SETUP => Stopped::NeedsSetup,
             _ => Stopped::SignedOut,
         })
     }
@@ -81,6 +100,8 @@ impl Stopped {
         match self {
             Stopped::SignedOut => ResolveError::SignedOut { product },
             Stopped::NoApiAccess => ResolveError::NoApiAccess { product },
+            Stopped::Unlinked => ResolveError::Unlinked { product },
+            Stopped::NeedsSetup => ResolveError::NeedsSetup { product },
         }
     }
 }
@@ -100,6 +121,7 @@ impl Resolved {
             region: None,
             endpoint: None,
             pool: Vec::new(),
+            linked: None,
             keyless: true,
             last_touched: AtomicI64::new(0),
         }
@@ -143,6 +165,10 @@ pub enum ResolveError {
     NoApiAccess { product: &'static str },
     #[error("the {product} account's access token expired and cannot be renewed right now")]
     Unrenewed { product: &'static str },
+    #[error("the {product} of the provider key is no longer linked")]
+    Unlinked { product: &'static str },
+    #[error("linked billing for the {product} of the provider key needs the install's app")]
+    NeedsSetup { product: &'static str },
 }
 
 // Renew near expiry, so a request never starts with a token that lapses before the
@@ -234,7 +260,7 @@ async fn resolve_member(
         touch(state, &resolved);
         return Ok(resolved);
     };
-    let product = product_of(provider);
+    let product = product_of(provider, resolved.method);
     if let Some(stopped) = account.stopped {
         return Err(stopped.error(product));
     }
@@ -273,7 +299,69 @@ async fn resolve_member(
     }
 }
 
-fn product_of(provider: &str) -> &'static str {
+/// One of an org's keys by its id, whichever projects use it, with an account's access renewed
+/// when it is due; `None` when the org has no such key.
+pub async fn by_id(
+    state: &AppState,
+    org: OrgId,
+    id: CredentialId,
+    provider: &str,
+) -> Result<Option<Resolved>, ResolveError> {
+    let read = || async {
+        match credentials::sealed(&state.pg, org.uuid(), id.uuid()).await? {
+            Some(row) => Ok::<_, ResolveError>(Some(open(&state.keyring, org.uuid(), &row)?)),
+            None => Ok(None),
+        }
+    };
+    let Some(resolved) = read().await? else {
+        return Ok(None);
+    };
+    if let Some(stopped) = resolved.stopped {
+        return Err(stopped.error(ENTRA_ID));
+    }
+    let Some(account) = resolved.account else {
+        return Ok(Some(resolved));
+    };
+    let product = product_of(provider, resolved.method);
+    if let Some(stopped) = account.stopped {
+        return Err(stopped.error(product));
+    }
+    let now = state.clock.now();
+    if !due(
+        resolved.method,
+        account.expires_at,
+        account.earliest_refresh_at,
+        now,
+    ) {
+        return Ok(Some(resolved));
+    }
+    let hosts = state.accounts.hosts(resolved.method);
+    if hosts.is_none() && resolved.method != AuthMethod::LinkedBilling {
+        return Err(ResolveError::Unrenewed { product });
+    }
+    let locked = Locked {
+        org,
+        id,
+        method: resolved.method,
+        product,
+        cached: Some(account),
+    };
+    renew_locked(state, hosts, &locked, time::Duration::ZERO).await?;
+    let renewed = read().await?;
+    match renewed.as_ref().and_then(|r| r.account) {
+        Some(Account {
+            stopped: Some(stopped),
+            ..
+        }) => Err(stopped.error(product)),
+        Some(a) if state.clock.now() >= a.expires_at => Err(ResolveError::Unrenewed { product }),
+        _ => Ok(renewed),
+    }
+}
+
+fn product_of(provider: &str, method: AuthMethod) -> &'static str {
+    if method == AuthMethod::LinkedBilling {
+        return kaeso_core::linked_billing::of(provider).map_or("provider", |l| l.organization);
+    }
     kaeso_core::provider::provider(provider)
         .and_then(|p| p.account)
         .map_or("provider", |a| a.product)
@@ -316,9 +404,10 @@ fn current(method: AuthMethod, account: Option<Account>, now: OffsetDateTime) ->
 // queueing on the database, and the advisory lock with the re-read row keeps other
 // replicas from spending a rotating refresh token twice, which signs the account out.
 async fn renewed(state: &AppState, r: Renewal) -> Result<(), ResolveError> {
-    let Some(hosts) = state.accounts.hosts(r.stale.method) else {
+    let hosts = state.accounts.hosts(r.stale.method);
+    if hosts.is_none() && r.stale.method != AuthMethod::LinkedBilling {
         return Ok(());
-    };
+    }
     let org = r.org;
     let id = r.stale.id.uuid();
     let _flight = state.caches.refreshes.board(&id.to_string()).await;
@@ -350,10 +439,17 @@ struct Locked {
 // rotating refresh token twice. Returns whether it renewed.
 async fn renew_locked(
     state: &AppState,
-    hosts: &crate::services::provider_accounts::Hosts,
+    hosts: Option<&crate::services::provider_accounts::Hosts>,
     a: &Locked,
     ahead: time::Duration,
 ) -> Result<bool, ResolveError> {
+    if a.method == AuthMethod::LinkedBilling {
+        return crate::services::linked_billing_keys::renew(state, a.org, a.id, a.product, ahead)
+            .await;
+    }
+    let Some(hosts) = hosts else {
+        return Ok(false);
+    };
     let (org, id) = (a.org, a.id.uuid());
     let mut tx = state.pg.begin().await.map_err(StoreError::from)?;
     credentials::lock_refresh(&mut tx, id).await?;
@@ -479,6 +575,7 @@ fn open(
     let method = AuthMethod::parse(&row.auth_method).ok_or(CryptoError::Malformed)?;
     let mut google = None;
     let mut azure = None;
+    let mut linked = None;
     let (secret, account) = if method.is_account() {
         let tokens = tokens(keyring, row)?;
         let account = Account {
@@ -486,6 +583,14 @@ fn open(
             earliest_refresh_at: tokens.earliest_refresh_at,
             stopped: Stopped::read(row.auth_error.as_deref()),
         };
+        if method == AuthMethod::LinkedBilling {
+            let connection = tokens.connection.as_ref().ok_or(CryptoError::Malformed)?;
+            linked = Some(Linked {
+                user_profile_id: connection.user_profile_id.clone(),
+                spend_limited: row.spend_limited_until.is_some(),
+                send_policy: row.billing_policy.unwrap_or(false),
+            });
+        }
         (tokens.access_token, Some(account))
     } else if method == AuthMethod::GoogleServiceAccount {
         let json = SecretString::from(plain(keyring, row)?);
@@ -528,6 +633,7 @@ fn open(
             .filter(|_| method == AuthMethod::ApiKey || method.is_aws()),
         endpoint: row.endpoint.clone(),
         pool: Vec::new(),
+        linked,
         keyless: false,
         last_touched: AtomicI64::new(0),
     })
@@ -559,7 +665,9 @@ fn touch(state: &AppState, resolved: &Resolved) {
 // summary for the job's log line.
 pub async fn renew_ahead(state: &AppState) -> Result<String, StoreError> {
     let now = state.clock.now();
-    let longest = renew_before(AuthMethod::ChatGpt).max(renew_before(AuthMethod::Grok));
+    let longest = renew_before(AuthMethod::ChatGpt)
+        .max(renew_before(AuthMethod::Grok))
+        .max(renew_before(AuthMethod::LinkedBilling));
     let soon = credentials::renewable(
         &state.pg,
         now + longest + RENEW_AHEAD,
@@ -571,9 +679,10 @@ pub async fn renew_ahead(state: &AppState) -> Result<String, StoreError> {
         let Some(method) = AuthMethod::parse(&row.auth_method).filter(|m| m.is_account()) else {
             continue;
         };
-        let Some(hosts) = state.accounts.hosts(method) else {
+        let hosts = state.accounts.hosts(method);
+        if hosts.is_none() && method != AuthMethod::LinkedBilling {
             continue;
-        };
+        }
         if row.expires_at - renew_before(method) > now + RENEW_AHEAD {
             continue;
         }
@@ -581,7 +690,7 @@ pub async fn renew_ahead(state: &AppState) -> Result<String, StoreError> {
             org: OrgId::from_uuid(row.org_id),
             id: CredentialId::from_uuid(row.id),
             method,
-            product: product_of(&row.provider),
+            product: product_of(&row.provider, method),
             cached: None,
         };
         let _flight = state.caches.refreshes.board(&row.id.to_string()).await;
@@ -628,6 +737,8 @@ mod tests {
             account_id: None,
             gateway_id: None,
             endpoint: None,
+            spend_limited_until: None,
+            billing_policy: None,
         }
     }
 

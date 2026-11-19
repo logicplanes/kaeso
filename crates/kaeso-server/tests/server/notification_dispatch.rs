@@ -690,6 +690,7 @@ fn usage(day: time::Date, org: Uuid, project: Uuid, requests: i64, cost: &str) -
         provider: "anthropic".into(),
         ingress_dialect: "anthropic_messages".into(),
         egress_dialect: "anthropic_messages".into(),
+        credential_id: None,
         requests,
         errors: 0,
         input_tokens: 10,

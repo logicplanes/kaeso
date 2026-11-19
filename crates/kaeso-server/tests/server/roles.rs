@@ -958,7 +958,7 @@ async fn nobody_grants_what_they_lack_or_changes_someone_above_them() {
             json!({
                 "scope": "org",
                 "name": "People manager",
-                "rights": ["org.view", "members.view", "members.rights.update", "members.remove", "roles.manage"],
+                "rights": ["org.view", "members.view", "members.rights.update", "members.remove", "roles.manage", "usage.share"],
             }),
             Some(&owner.cookie),
         )

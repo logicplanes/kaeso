@@ -44,6 +44,8 @@ expression: rights_reference()
 | `logs.delete` ⚠ | Logs & data | Delete logs | Delete the organization's logs for a time range. | `logs.storage.view` | ✓ |  |
 | `usage.org.view` | Usage & billing | View org usage | See usage across all projects. |  |  |  |
 | `costs.org.view` | Usage & billing | View org costs | See costs across all projects. | `usage.org.view` |  |  |
+| `usage.share` | Usage & billing | Share usage | Share read-only links to the usage, member stats and budgets one can see, and revoke one's own. |  |  |  |
+| `usage.share.manage` ⚠ | Usage & billing | Manage shared links | See and revoke everyone's shared links, and choose who links may reach and for how long. | `usage.share` |  |  |
 | `billing.view` | Usage & billing | View billing | See plan, invoices and payment status (Kaeso Cloud). |  |  | ✓ |
 | `billing.manage` | Usage & billing | Manage billing | Change the plan and payment method (Kaeso Cloud). | `billing.view` |  | ✓ |
 | `audit_log.view` | Audit | View audit log | Read the organization's audit log. |  |  |  |
@@ -148,6 +150,8 @@ expression: rights_reference()
 | `logs.delete` | ✓ | ✓ |  |  |  |  |
 | `usage.org.view` | ✓ | ✓ | ✓ | ✓ | ✓ |  |
 | `costs.org.view` | ✓ | ✓ | ✓ | ✓ | ✓ |  |
+| `usage.share` | ✓ | ✓ | ✓ | ✓ |  | ✓ |
+| `usage.share.manage` | ✓ | ✓ |  |  |  |  |
 | `billing.view` | ✓ | ✓ | ✓ |  | ✓ |  |
 | `billing.manage` | ✓ |  | ✓ |  |  |  |
 | `audit_log.view` | ✓ | ✓ |  |  | ✓ |  |
@@ -236,7 +240,7 @@ expression: rights_reference()
 | Right | Category | Name | Allows | Needs (beyond `instance.system.view`) | Recent sign-in | Kaeso Cloud only |
 |---|---|---|---|---|:-:|:-:|
 | `instance.system.view` | Instance | View the system | See the system and its model data, the instance settings and the update status. |  |  |  |
-| `instance.settings.manage` ⚠ | Instance | Change instance settings | Change general, mail, logging, time zone and account settings, and send a test email. |  |  |  |
+| `instance.settings.manage` ⚠ | Instance | Change instance settings | Change general, mail, logging, time zone and account settings, send a test email, and fetch model data now. |  |  |  |
 | `instance.updates.manage` ⚠ | Instance | Manage updates | Check for updates and change the update settings. |  |  |  |
 | `instance.updates.apply` ⚠ | Instance | Apply updates | Install a new version of Kaeso. | `instance.updates.manage` |  |  |
 | `instance.users.view` | Instance | View users | See every account of the instance and its organizations. |  |  |  |
@@ -244,6 +248,7 @@ expression: rights_reference()
 | `instance.orgs.view` | Instance | View organizations | See every organization with its members, projects and usage. |  |  |  |
 | `instance.orgs.manage` ⚠ | Instance | Manage organizations | Create and rename organizations, appoint owners and schedule or cancel their deletion. | `instance.orgs.view` |  |  |
 | `instance.audit_log.view` | Instance | View instance audit log | Read the instance audit log. |  |  |  |
+| `instance.audit_log.export` | Instance | Export instance audit log | Export the instance audit log. | `instance.audit_log.view` |  |  |
 
 ## Account rights
 
@@ -306,6 +311,8 @@ expression: rights_reference()
 | `logs.delete` |  |  | ✓ | ✓ |
 | `usage.org.view` | ✓ | ✓ | ✓ | ✓ |
 | `costs.org.view` | ✓ | ✓ | ✓ | ✓ |
+| `usage.share` |  | ✓ | ✓ | ✓ |
+| `usage.share.manage` |  |  | ✓ | ✓ |
 | `billing.view` |  |  | ✓ | ✓ |
 | `billing.manage` |  |  |  | ✓ |
 | `audit_log.view` | ✓ |  | ✓ | ✓ |
@@ -374,6 +381,7 @@ expression: rights_reference()
 | `instance.orgs.view` |  | ✓ | ✓ | ✓ |
 | `instance.orgs.manage` |  |  |  | ✓ |
 | `instance.audit_log.view` |  | ✓ | ✓ | ✓ |
+| `instance.audit_log.export` |  |  |  | ✓ |
 
 ## Never given to agents
 

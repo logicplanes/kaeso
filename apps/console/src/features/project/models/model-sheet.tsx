@@ -10,16 +10,18 @@ import { aliasesQuery, catalogueModelQuery } from "~/api/queries/models";
 import { playgroundModelsQuery } from "~/api/queries/playground";
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
+import { formatMoney } from "~/format/currency";
 import { dialectLabel } from "~/format/labels";
 import { useProviders } from "~/kaeso/providers";
 import { fullDayLabel } from "~/format/period";
 import { usePartyName } from "../keys/party";
 import { availabilityLabel, unavailableHint } from "./availability";
 import { capabilities, decisionLabels, fieldRows, tierLabels, unitPriceLabels, type FieldKind } from "./model-fields";
-import { ModelForm, changedFields, draftFrom, draftProblem, modalityLabel, type FieldDraft } from "./model-form";
+import { ModelForm, changedFields, draftFrom, draftProblem, editBase, modalityLabel, type FieldDraft } from "./model-form";
 import { modelName } from "~/format/models";
 import { useRememberRecent } from "~/shell/recent";
 import { useProjectRights } from "~/auth/rights";
+import { LinePanel } from "./lines";
 import { useNeedsRight } from "~/auth/needs-right";
 import { SheetLinks } from "~/kaeso/sheet-links";
 import { t } from "~/i18n";
@@ -87,13 +89,14 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
   }
   const m = model.data;
   const shown = inUse(m);
+  const base = editBase(shown, m.overrides);
   const provider = providers.name(m.provider);
   const dialects = providers.get(m.provider) ? providers.dialects(m.provider) : shown.egress_dialect ? [shown.egress_dialect] : [];
   const reason = canManage ? undefined : needs("models.manage");
 
   if (editing) {
     const problem = draftProblem(editing, m.custom);
-    const changes = changedFields(editing, shown, dialects);
+    const changes = changedFields(editing, base, dialects);
     const save = () =>
       patch.mutate(changes, {
         onSuccess: () => {
@@ -179,7 +182,8 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           },
         ]}
       />
-      <SheetLinks org={org} project={project} requests={{ model: m.model_id, provider: m.provider }} target={m.id} />
+      <SheetLinks org={org} project={project} requests={{ model: m.line_target ?? m.model_id, provider: m.provider }} target={m.id} />
+      {m.line_target && <LinePanel org={org} project={project} id={m.id} canManage={canManage} reason={reason} />}
       <div className="flex flex-col gap-12">
         <div className="flex items-center justify-between gap-12">
           <Text weight="medium">{t("models.valuesInUse", "Values in use")}</Text>
@@ -188,7 +192,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
             leadingIcon={icons.edit}
             disabled={!canManage}
             {...(reason ? { disabledReason: reason } : {})}
-            onClick={() => setEditing(draftFrom(shown))}
+            onClick={() => setEditing(draftFrom(base))}
           >
             {t("models.editOverrides", "Edit overrides")}
           </Button>
@@ -219,7 +223,9 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
                     </span>
                   ) : (
                     <Text tone={overridden ? "default" : "secondary"} truncate>
-                      {show(row.kind, row.key, value)}
+                      {row.kind === "price" && overridden && m.overrides.currency
+                        ? entered(m.overrides[row.key] as string, m.overrides.currency, value as string | null | undefined)
+                        : show(row.kind, row.key, value)}
                     </Text>
                   )}
                   <Text variant="caption" tone="tertiary">
@@ -361,6 +367,13 @@ function sourceOf(m: CatalogueModelView, overridden: boolean, key: keyof Fields,
 
 function inUse(m: Pick<CatalogueModelView, "effective" | "egress_dialect">): Fields {
   return { ...m.effective, egress_dialect: m.effective.egress_dialect ?? m.egress_dialect };
+}
+
+function entered(price: string, code: string, usd: string | null | undefined): string {
+  const values = { price: formatMoney(price, code), usd: usd ? formatUSD(usd) : "" };
+  return usd
+    ? t("models.pricePerMillionIn", "{price} / M tokens (≈ {usd})", values)
+    : t("models.pricePerMillionNoRate", "{price} / M tokens (no exchange rate)", values);
 }
 
 function show(kind: FieldKind, key: keyof Fields, v: unknown): string {

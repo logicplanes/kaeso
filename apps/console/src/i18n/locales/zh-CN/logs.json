@@ -281,6 +281,8 @@
   "logs.decision.state": "问题针对的内容",
   "logs.decision.questions": "问题",
   "logs.decision.replyHint": "每个回答及其概率，按提问顺序排列。",
+  "logs.inspector.copyCurl": "复制为 curl",
+  "logs.inspector.notBilled": "未计费",
   "logs.filter.alias": "别名",
   "logs.filter.fellBack": "已回退",
   "logs.filter.endpoint": "端点",
@@ -332,5 +334,6 @@
   "logs.inspector.guardrailCategory": "类别 {category}",
   "logs.inspector.guardrailRun": "{phase}：{action}，耗时 {duration}",
   "logs.inspector.guardrails": "防护规则",
-  "logs.inspector.guardrailFound": "找到：{what}"
+  "logs.inspector.guardrailFound": "找到：{what}",
+  "logs.inspector.line": "模型系列"
 }

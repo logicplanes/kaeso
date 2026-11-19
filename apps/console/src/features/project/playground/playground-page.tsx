@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AppFrame, Button, Empty, Sheet, Text, icons } from "@logicplanes/kaeso-ui";
+import { AppFrame, Button, Empty, Menu, Sheet, Text, icons } from "@logicplanes/kaeso-ui";
 import { CompareGrid, Composer, ModelPicker, ParameterPanel, QuestionEditor, type DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
 import { playgroundModelsQuery, type PlaygroundModel } from "~/api/queries/playground";
+import { projectQuery } from "~/api/queries/projects";
 import { useProjectRights } from "~/auth/rights";
+import { useRequestLogs } from "~/auth/session";
 import { playgroundModelOption, recentModels, rememberModel } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { usePageCreateAction } from "~/shell/create-action";
@@ -13,7 +15,8 @@ import { modelRef } from "./request";
 import { parametersOf, searchOf } from "./search";
 import { MAX_COLUMNS, parseModels, validatePlaygroundSearch, type PlaygroundSearch } from "~/format/playground-search";
 import Thread from "./thread";
-import { isLive } from "./responses";
+import { isLive, type Turn } from "./responses";
+import { columnsOf, conversationJson, conversationMarkdown, exportName, saveText, type Conversation as Exported } from "./export";
 import { useThreads, type Thread as ThreadState } from "./use-threads";
 import { locale, t } from "~/i18n";
 import { common } from "~/i18n/common";
@@ -39,10 +42,16 @@ const conversationKey = (project: string) => [...PLAYGROUND_CONVERSATION, projec
 const questionsKey = (project: string) => [...PLAYGROUND_CONVERSATION, project, "questions"];
 const warnOnLeave = (e: BeforeUnloadEvent) => e.preventDefault();
 const CLEARED = "playground:cleared";
+const EDITED = "playground:edited";
 
 export function PlaygroundPage({ org, project, search }: { org: string; project: string; search: PlaygroundSearch }) {
   const navigate = useNavigate();
   const rights = useProjectRights(org, project);
+  const requestLogs = useRequestLogs();
+  const logHref = useMemo(
+    () => (requestLogs && rights.has("logs.metadata.view") ? (id: string) => `/orgs/${org}/projects/${project}/logs?log=${id}` : null),
+    [requestLogs, rights, org, project],
+  );
   const catalogue = useQuery(playgroundModelsQuery(org, project));
   const providers = useProviders(org);
   const chat = useMemo(
@@ -108,7 +117,7 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
   useEffect(() => {
     shownRefs.current = refs;
   });
-  const { threads, busy, send, retry, stop, cancel, add, remove, clear, restore } = useThreads(org, project, refs.length, {
+  const { threads, busy, editable, send, retry, stop, cancel, add, remove, clear, restore, takeLast, putBack } = useThreads(org, project, refs.length, {
     initial: saved && same(saved.refs, refs) ? saved.threads : undefined,
     onLeave: (left) => {
       if (left.some((x) => x.turns.length)) remember<Conversation>(conversationKey(project), { refs: shownRefs.current, threads: left });
@@ -190,6 +199,38 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
     window.addEventListener("beforeunload", warnOnLeave);
     return () => window.removeEventListener("beforeunload", warnOnLeave);
   }, [empty]);
+  const named = useQuery(projectQuery(org, project));
+  // Built from the page's own state: exporting sends nothing to the gateway.
+  const conversation = (): Exported => ({
+    project: named.data?.name,
+    parameters: searchOf(parameters),
+    columns: columnsOf(refs, models, threads),
+    at: new Date(),
+  });
+  const exportAs = (format: "md" | "json") => {
+    const c = conversation();
+    if (format === "md") saveText(exportName(c, "md"), conversationMarkdown(c), "text/markdown");
+    else saveText(exportName(c, "json"), conversationJson(c), "application/json");
+  };
+  // The last prompt goes back into the composer, its turns out of every column; sending it
+  // again answers with the earlier turns as context, like any prompt.
+  const editLast = (turn: Turn) => {
+    const before = takeLast();
+    changePrompt(turn.prompt);
+    setFiles(turn.files ?? []);
+    toast(t("playground.edited", "The last prompt is back in the composer"), {
+      id: EDITED,
+      action: {
+        label: t("playground.undoClear", "Undo"),
+        onClick: () => {
+          putBack(before);
+          changePrompt("");
+          setFiles([]);
+          toast.dismiss(EDITED);
+        },
+      },
+    });
+  };
   const clearAll = () => {
     const before = clear();
     toast(t("playground.cleared", "Conversation cleared"), {
@@ -292,9 +333,22 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
         path="playground"
         actions={
           !empty ? (
-            <Button size="sm" variant="ghost" onClick={clearAll}>
-              {common.clear()}
-            </Button>
+            <span className="flex items-center gap-8">
+              <Menu>
+                <Menu.Trigger>
+                  <Button size="sm" variant="ghost" leadingIcon={icons.download}>
+                    {t("playground.export", "Export")}
+                  </Button>
+                </Menu.Trigger>
+                <Menu.Content align="end">
+                  <Menu.Item onClick={() => exportAs("md")}>{t("playground.exportMarkdown", "Markdown")}</Menu.Item>
+                  <Menu.Item onClick={() => exportAs("json")}>JSON</Menu.Item>
+                </Menu.Content>
+              </Menu>
+              <Button size="sm" variant="ghost" onClick={clearAll}>
+                {common.clear()}
+              </Button>
+            </span>
           ) : undefined
         }
       />
@@ -362,6 +416,8 @@ export function PlaygroundPage({ org, project, search }: { org: string; project:
                           expected={imagesExpected(m, parameters)}
                           onRetry={m && !isLive(lastTurn.response) ? retryThread : null}
                           onCancel={cancel}
+                          onEdit={editable.has(lastTurn.id) ? () => editLast(lastTurn) : null}
+                          logHref={logHref}
                         />
                       ) : empty ? (
                         i === 0 && (

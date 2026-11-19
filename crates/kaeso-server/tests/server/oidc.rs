@@ -155,6 +155,15 @@ async fn a_first_sso_sign_in_creates_the_user_with_the_default_role() {
     assert_eq!(who.body["user"]["name"], "Ada Lovelace");
     assert_eq!(who.body["session"]["method"], "oidc");
     assert_eq!(who.body["memberships"][0]["preset"], "developer");
+    let user = who.body["user"]["id"].as_str().unwrap();
+    let listed = app
+        .get(&format!("/instance/users/{user}"), &owner.cookie)
+        .await;
+    assert!(
+        listed.body["last_signed_in_at"].is_string(),
+        "{:?}",
+        listed.body
+    );
     sqlx::query("UPDATE organizations SET require_sso = true")
         .execute(&app.state.pg)
         .await

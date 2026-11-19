@@ -92,6 +92,53 @@ impl std::fmt::Debug for OperatorSignIn {
     }
 }
 
+/// An account as `kaeso user list` prints it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Listed {
+    pub email: String,
+    pub name: String,
+    pub state: String,
+    pub instance_admin: bool,
+    pub two_factor: bool,
+    pub created_at: time::OffsetDateTime,
+}
+
+/// The accounts an operator can sign in as, for `kaeso user list`: deleted ones have no
+/// address and are left out. `search` matches the address or name, as on the Users page.
+pub async fn operator_list(
+    state: &AppState,
+    instance_admins: bool,
+    search: Option<&str>,
+) -> Result<Vec<Listed>, kaeso_store::StoreError> {
+    const PAGE: i64 = 500;
+    let mut found = Vec::new();
+    let mut after = None;
+    loop {
+        let page = users::list(&state.pg, after, PAGE, search, None).await?;
+        after = page.last().map(|u| u.id);
+        let full = page.len() == usize::try_from(PAGE).unwrap_or(usize::MAX);
+        found.extend(page.into_iter().filter(|u| {
+            u.state != "deleted" && u.email.is_some() && (!instance_admins || u.is_instance_admin)
+        }));
+        if !full {
+            break;
+        }
+    }
+    let ids: Vec<_> = found.iter().map(|u| u.id).collect();
+    let with_totp = kaeso_store::pg::totp::enabled_among(&state.pg, &ids).await?;
+    Ok(found
+        .into_iter()
+        .map(|u| Listed {
+            two_factor: with_totp.contains(&u.id),
+            email: u.email.unwrap_or_default(),
+            name: u.name.unwrap_or_default(),
+            state: u.state,
+            instance_admin: u.is_instance_admin,
+            created_at: u.created_at,
+        })
+        .collect())
+}
+
 pub async fn operator_sign_in_link(
     state: &AppState,
     email: &str,

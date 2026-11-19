@@ -25,6 +25,7 @@ export function me(overrides: Partial<Me> = {}): Me {
     created_at: NOW,
     has_password: true,
     locale: "auto",
+    display_currency: "USD",
     recovery_codes_left: 10,
     totp_enabled: false,
     ...overrides,
@@ -46,6 +47,9 @@ export function instanceSettings(overrides: Partial<SettingsView> = {}): Setting
     mail: { transport: "smtp", host: "mail.example.com", port: 587, from: "kaeso@example.com" },
     sign_in: { password: true, magic_link: true },
     admin_sso: null,
+    exchange_rates: { fetch: true, day: "2026-11-13", checked_at: "2026-11-13T15:10:00Z", error: null },
+    shared_links: true,
+    share_mark: true,
     ...overrides,
   };
 }
@@ -84,6 +88,7 @@ export function instanceUser(overrides: Partial<InstanceUserView> = {}): Instanc
     created_at: NOW,
     totp_enabled: false,
     managed_by: null,
+    last_signed_in_at: null,
     ...overrides,
   };
 }

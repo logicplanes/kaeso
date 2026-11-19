@@ -16,7 +16,7 @@ Was Sie in der Konsole sehen, hängt von Ihren Rechten ab. Eine Seite, für die 
 2. **Was dürfen sie in der Organisation?** Wählen Sie ihre Organisationsrolle.
 3. **Welche Projekte?** Fügen Sie die Projekte hinzu, denen sie beitreten, jeweils mit einer Rolle. Anderen Projekten treten sie nicht bei; weitere können Sie später hinzufügen.
 
-**Einladung senden** schickt jeder Person einen Link, der 21 Tage gilt. **Einladungen** listet die offenen Einladungen, die Sie mit **Erneut senden** oder **Widerrufen** bearbeiten. Angenommene, widerrufene und abgelaufene Einladungen stehen unter **Alle**.
+**Einladung senden** schickt jeder Person einen Link, der 21 Tage gilt. **Einladungen** listet die offenen Einladungen, die Sie mit **Erneut senden** oder **Widerrufen** bearbeiten. Angenommene, widerrufene und abgelaufene Einladungen stehen unter **Alle**. Dort schickt **Erneut senden** eine abgelaufene Einladung mit einem neuen Link, und **Erneut einladen** öffnet für eine widerrufene **Mitglieder einladen** mit ihrer Adresse und ihren Rollen, ohne seither archivierte Projekte. Um mehrere offene Einladungen auf einmal zu widerrufen, wählen Sie sie aus und wählen **Widerrufen** in der Auswahlleiste; es fragt einmal und nennt alle, die nicht widerrufen werden konnten.
 
 Sobald jemand eine Einladung annimmt, widerruft Kaeso seine anderen offenen Einladungen in die Organisation. Eine Einladung ändert nie die Rollen von jemandem, der schon Mitglied ist. Unter **Mitglieder** suchen Sie nach Name oder E-Mail-Adresse oder wählen eine Rolle, um zu sehen, wer sie hat.
 
@@ -57,7 +57,7 @@ Mit Gruppenregeln kann auch eine Anmeldung über Ihren Identitätsanbieter Rolle
 
 ## Personen zu einem Projekt hinzufügen
 
-Wählen Sie auf der Seite **Mitglieder** eines Projekts **Mitglied hinzufügen** und wählen Sie jemanden aus der Organisation mit einer Projektrolle. Laden Sie Personen außerhalb der Organisation zuerst in die Organisation ein.
+Wählen Sie auf der Seite **Mitglieder** eines Projekts **Mitglied hinzufügen** und wählen Sie jemanden aus der Organisation mit einer Projektrolle. Laden Sie Personen außerhalb der Organisation zuerst in die Organisation ein. Über der Liste findet das Suchfeld Mitglieder nach Name oder E-Mail, und die Rollenauswahl zeigt nur die Mitglieder einer Rolle.
 
 Das Sheet eines Projektmitglieds enthält auch seinen [Modellzugriff](#modelle-einschränken-die-jemand-aufrufen-darf) und seine [Limits](limits-and-budgets.md) sowie Links zu seinen Anfragen (**Anfragen ansehen**) und seinen Schlüsseln (**Ihre Schlüssel**), jeweils für alle, die sie sehen dürfen. **Aus Projekt entfernen** archiviert seine Schlüssel im Projekt, und in der Organisation bleibt es. In Ihrem eigenen Sheet heißt das **Projekt verlassen**. Rechte aus der Organisationsrolle eines Mitglieds zählen mit: Sie können es nur ändern oder entfernen, wenn Sie alle seine Rechte im Projekt haben. Nur Inhaber ändern oder entfernen Inhaber.
 

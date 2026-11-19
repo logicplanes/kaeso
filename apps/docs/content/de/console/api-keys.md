@@ -33,7 +33,7 @@ Geben Sie jeder App und jeder Umgebung einen eigenen Schlüssel. Dann sind ihre 
 
 ## Schlüssel finden und ändern
 
-**Aktiv** listet die Schlüssel, die funktionieren, **Archiviert** die archivierten und **Alle** jeden Schlüssel, auch deaktivierte und abgelaufene. **Inhaber der Schlüssel** über der Liste zeigt die Schlüssel eines Mitglieds oder Dienstkontos.
+**Aktiv** listet die Schlüssel, die funktionieren, **Archiviert** die archivierten und **Alle** jeden Schlüssel, auch deaktivierte und abgelaufene. **Inhaber der Schlüssel** über der Liste zeigt die Schlüssel eines Mitglieds oder Dienstkontos. Das Suchfeld findet Schlüssel nach Name oder nach dem Teil des Schlüssels, den die Liste zeigt, und **Sortieren** ordnet sie nach **Name**, **Zuletzt verwendet** oder **Läuft zuerst ab**; `/` springt zur Suche. Ihre eigenen Schlüssel unter **Konto** › **API-Schlüssel** haben dieselbe Suche und Sortierung.
 
 Wählen Sie einen Schlüssel, um sein Sheet zu öffnen. Es zeigt, wem der Schlüssel gehört, seinen Zugriff, wer ihn wann erstellt hat, seinen Ablauf, seine letzte Nutzung und seine ID. Mit dem Recht **Limits verwalten** können Sie dort jederzeit seine **Modelle** und **Limits** ändern. **Anfragen ansehen** öffnet die [Anfrageprotokolle](request-logs.md) gefiltert auf den Schlüssel und **Verlauf** das [Audit-Log](organizations-and-projects.md#audit-log-lesen) des Projekts gefiltert auf ihn, jeweils für alle, die es lesen dürfen.
 
@@ -69,7 +69,7 @@ Neben **Rotieren** hat das Menü im Sheet eines Schlüssels drei Aktionen:
 | Aktivieren   | Ein deaktivierter Schlüssel funktioniert wieder. Hat eine Person ihn deaktiviert, aktiviert ihn nur eine Person, und unter **API-Schlüssel** im Konto lässt sich nur das eigene Deaktivieren rückgängig machen |
 | Archivieren  | Der Schlüssel hört endgültig auf zu funktionieren. Sein Verlauf bleibt erhalten                                                                                                                                |
 
-Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller Personen zu ändern erfordert **Alle Schlüssel verwalten**.
+**Umbenennen** im selben Menü ändert den Namen des Schlüssels, etwa wenn er zu einer anderen App wechselt; sein Secret funktioniert weiter, und das Audit-Protokoll hält den alten und den neuen Namen fest. Die eigenen Schlüssel zu ändern erfordert das Recht **Eigene Schlüssel verwalten**, die Schlüssel aller Personen zu ändern erfordert **Alle Schlüssel verwalten**.
 
 Ein Schlüssel hört auch auf zu funktionieren, wenn er abläuft, wenn sein Projekt archiviert wird und wenn sein Mitglied das Projekt oder die Organisation verlässt. Kaeso schickt 7 Tage und 1 Tag vor dem Ablauf eine E-Mail. Sie geht an den Inhaber des Schlüssels, beim Schlüssel eines Dienstkontos an die Admins des Projekts. Jede Person kann diese E-Mails unter **Ihr Schlüssel läuft ab** in den **Benachrichtigungen** ihres Kontos abschalten.
 
@@ -85,6 +85,10 @@ Plattform-Schlüssel sind für Skripte und Infrastruktur, die die ganze Organisa
 Einen Plattform-Schlüssel zu erstellen erfordert das Recht **Plattform-Schlüssel erstellen**, eine Konsolensitzung und eine kürzliche Anmeldung. Plattform-Schlüssel deaktivieren, aktivieren und archivieren Sie wie API-Schlüssel, mit dem Recht **Plattform-Schlüssel deaktivieren**; hat eine Person einen Plattform-Schlüssel deaktiviert, aktiviert ihn nur eine Person.
 
 **Rotieren** im Menü eines Plattform-Schlüssels funktioniert wie das [Rotieren eines API-Schlüssels](#schlüssel-rotieren) und behält den Namen des Schlüssels. Es erfordert beide Rechte, eine Konsolensitzung und eine kürzliche Anmeldung.
+
+Wählen Sie einen Plattform-Schlüssel, um seine Details zu öffnen: wer ihn wann erstellt hat, wann er abläuft, wann er zuletzt verwendet wurde, seine ID und die Aktionen seines Menüs. Nach einer Rotation verbinden **Ersetzt durch** und **Rotiert aus** den alten und den neuen Schlüssel, die denselben Namen tragen. Ein Plattform-Schlüssel, den das Audit-Log der Organisation nennt, öffnet dieselben Details.
+
+Kaeso schickt 7 Tage und 1 Tag vor dem Ablauf eines Plattform-Schlüssels eine E-Mail, außer er ist deaktiviert, archiviert oder rotiert. Sie geht an alle in der Organisation mit **Plattform-Schlüssel erstellen** und an die Person, die den Schlüssel erstellt hat, solange sie noch Mitglied ist. Jede Person kann diese E-Mails unter **Ein Plattform-Schlüssel läuft ab** in den **Benachrichtigungen** ihres Kontos abschalten.
 
 ## Nächste Schritte
 

@@ -487,6 +487,7 @@ fn usage_row(
         provider: "anthropic".into(),
         ingress_dialect: "anthropic_messages".into(),
         egress_dialect: "anthropic_messages".into(),
+        credential_id: None,
         requests: 1,
         errors: 0,
         input_tokens,
@@ -807,6 +808,11 @@ async fn usage_filters_take_the_keys_groupings_return_and_combine_with_any_group
             "`route` must be a `key` that grouping by `route` returns.",
         ),
         (
+            format!("{p}/usage?billed_to=nope"),
+            "billed_to",
+            "`billed_to` must be a `key` that grouping by `billed_to` returns.",
+        ),
+        (
             format!("{p}/usage?provider=Open%20AI"),
             "provider",
             "`provider` must be a provider id, such as `openai`.",
@@ -814,12 +820,12 @@ async fn usage_filters_take_the_keys_groupings_return_and_combine_with_any_group
         (
             format!("{p}/usage?group_by=project"),
             "group_by",
-            "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`.",
+            "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`.",
         ),
         (
             format!("{o}/usage?group_by=hour"),
             "group_by",
-            "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`.",
+            "Use `project`, `billed_to` or what a project's usage groups by, such as `day`.",
         ),
     ] {
         let r = env.app.get(&path, &env.owner.cookie).await;

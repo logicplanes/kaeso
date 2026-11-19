@@ -23,9 +23,9 @@ import {
   type ListGroup,
 } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
-import type { CatalogueModelView } from "~/api/generated/types";
+import type { CatalogueModelView, RetiringModelView } from "~/api/generated/types";
 import { api, data } from "~/api/client";
-import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
+import { aliasesQuery, catalogueQuery, retiringQuery } from "~/api/queries/models";
 import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
@@ -38,6 +38,7 @@ import { AddModelsDialog } from "./add-models-dialog";
 import { AliasesTab } from "./aliases-tab";
 import { capabilities, capabilityOptions, contextLabel, dialectPill, overriddenFields, priceLabel } from "./model-fields";
 import { ModelSheet } from "./model-sheet";
+import { RetiringBanner, RetiringTab, shutdownLabel } from "./retiring";
 import { checkFailureLabel } from "./availability";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -46,15 +47,31 @@ import { common } from "~/i18n/common";
 import { patchSearch, type SearchPatch } from "~/search";
 
 export type ModelsSort = "model" | "price" | "release";
+/** What a catalogue model's badges say: the provider doesn't serve it, KPMR deprecated it, or
+ * KPMR no longer lists it (never a custom model). */
+export type ModelStatus = "unavailable" | "deprecated" | "delisted";
+const MODEL_STATUSES: readonly ModelStatus[] = ["unavailable", "deprecated", "delisted"];
+
+const hasStatus = (m: CatalogueModelView, status: ModelStatus): boolean =>
+  status === "unavailable" ? m.availability === "unavailable" : status === "deprecated" ? m.deprecated : !m.listed && !m.custom;
+
 export type ModelsSearch = {
-  tab?: "aliases";
+  tab?: "aliases" | "retiring";
   model?: string;
   provider?: string;
   cap?: Capability;
+  status?: ModelStatus;
   overridden?: boolean;
   sort?: ModelsSort;
   add?: boolean;
 };
+
+// The same words as the badges.
+const statusOptions = () => [
+  { value: "unavailable", label: t("models.unavailable", "Unavailable") },
+  { value: "deprecated", label: t("models.deprecated", "Deprecated") },
+  { value: "delisted", label: t("models.delisted", "No longer listed") },
+];
 
 function sorted(list: CatalogueModelView[], sort: ModelsSort): CatalogueModelView[] {
   const by = {
@@ -76,6 +93,8 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   const [adding, setAdding] = useState(!!search.add && tab === "catalogue");
   const catalogue = useQuery(catalogueQuery(org, project));
   const aliases = useQuery(aliasesQuery(org, project));
+  const retiring = useQuery(retiringQuery(org, project));
+  const retiringById = useMemo(() => new Map((retiring.data?.data ?? []).map((m) => [m.id, m])), [retiring.data]);
   const sort = search.sort ?? "model";
   const reason = canManage ? undefined : needs("models.manage");
 
@@ -103,9 +122,10 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         (m) =>
           (!search.provider || m.provider === search.provider) &&
           (!search.cap || capabilities(m.effective).includes(search.cap)) &&
+          (!search.status || hasStatus(m, search.status)) &&
           (!search.overridden || overriddenFields(m).length > 0),
       ),
-    [all, search.provider, search.cap, search.overridden],
+    [all, search.provider, search.cap, search.status, search.overridden],
   );
   const groups: ListGroup[] = useMemo(() => {
     const providers = [...new Set(filtered.map((m) => m.provider))].sort();
@@ -132,12 +152,12 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               {...(m.effective.display_name && m.effective.display_name !== m.model_id ? { name: m.effective.display_name } : {})}
             />
           ),
-          meta: <ModelMeta m={m} />,
+          meta: <ModelMeta m={m} shutdown={retiringById.get(m.id)} />,
           date: m.effective.release_date ? monthLabel(m.effective.release_date) : undefined,
         })),
       };
     });
-  }, [filtered, sort, catalog]);
+  }, [filtered, sort, catalog, retiringById]);
 
   const check = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/models/check", { params: { path: { org, project } } })),
@@ -153,18 +173,21 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         return;
       }
       const unavailable = result.models.filter((m) => m.availability === "unavailable").length;
+      if (!unavailable) {
+        toast.success(t("models.checkedAll", "Checked {count, plural, one {# model} other {# models}}; all available", { count: result.models.length }));
+        return;
+      }
       toast.success(
-        unavailable
-          ? t("models.checkedSome", "Checked {count, plural, one {# model} other {# models}}; {unavailable} unavailable", {
-              count: result.models.length,
-              unavailable,
-            })
-          : t("models.checkedAll", "Checked {count, plural, one {# model} other {# models}}; all available", { count: result.models.length }),
+        t("models.checkedSome", "Checked {count, plural, one {# model} other {# models}}; {unavailable} unavailable", {
+          count: result.models.length,
+          unavailable,
+        }),
+        { action: { label: t("models.showThem", "Show them"), onClick: () => setSearch({ status: "unavailable", model: undefined }) } },
       );
     },
   });
 
-  const filtering = !!(search.provider || search.cap || search.overridden);
+  const filtering = !!(search.provider || search.cap || search.status || search.overridden);
   const addButton = (
     <Button size="sm" variant="primary" leadingIcon={icons.add} disabled={!canManage} {...(reason ? { disabledReason: reason } : {})} onClick={create.run}>
       {create.label}
@@ -191,12 +214,20 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         onValueChange={(v) => setSearch({ cap: capabilityOptions().find((c) => c.value === v)?.value })}
         options={[{ value: "any", label: t("models.anyCapability", "Any capability") }, ...capabilityOptions()]}
       />
+      <Select
+        aria-label={t("models.status", "Status")}
+        size="sm"
+        {...(stacked ? { fullWidth: true } : {})}
+        value={search.status ?? "any"}
+        onValueChange={(v) => setSearch({ status: MODEL_STATUSES.find((s) => s === v) })}
+        options={[{ value: "any", label: t("models.anyStatus", "Any status") }, ...statusOptions()]}
+      />
       <Button variant="selector" size="sm" pressed={!!search.overridden} onPressedChange={(v) => setSearch({ overridden: v || undefined })}>
         {t("models.onlyOverridden", "Only overridden")}
       </Button>
     </>
   );
-  const activeFilters = [search.provider, search.cap, search.overridden].filter(Boolean).length;
+  const activeFilters = [search.provider, search.cap, search.status, search.overridden].filter(Boolean).length;
   return (
     <>
       <ProjectHeader
@@ -205,7 +236,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
         page={common.models()}
         path="models"
         tabs={
-          <Tabs variant="pill" value={tab} onValueChange={(v) => setSearch({ tab: v === "aliases" ? "aliases" : undefined, model: undefined })}>
+          <Tabs variant="pill" value={tab} onValueChange={(v) => setSearch({ tab: v === "aliases" || v === "retiring" ? v : undefined, model: undefined })}>
             <Tabs.List aria-label={common.models()}>
               <Tabs.Tab value="catalogue" {...(catalogue.data ? { count: catalogue.data.length } : {})}>
                 {t("models.catalogue", "Catalogue")}
@@ -213,6 +244,11 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               <Tabs.Tab value="aliases" {...(aliases.data ? { count: aliases.data.length } : {})}>
                 {t("models.aliases", "Aliases")}
               </Tabs.Tab>
+              {(retiring.data?.data.length ?? 0) > 0 && (
+                <Tabs.Tab value="retiring" count={retiring.data?.data.length}>
+                  {t("models.retiring.title", "Retiring")}
+                </Tabs.Tab>
+              )}
             </Tabs.List>
           </Tabs>
         }
@@ -260,6 +296,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
             />
           </Toolbar>
           <AppFrame.Body padding="list">
+            <RetiringBanner count={retiring.data?.soon ?? 0} onShow={() => setSearch({ tab: "retiring", model: undefined })} />
             {catalogue.isPending ? (
               <List aria-label={common.models()} items={[]} loading />
             ) : catalogue.isError ? (
@@ -275,7 +312,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
                 }
                 actions={
                   filtering ? (
-                    <Button onClick={() => setSearch({ provider: undefined, cap: undefined, overridden: undefined })}>
+                    <Button onClick={() => setSearch({ provider: undefined, cap: undefined, status: undefined, overridden: undefined })}>
                       {t("models.clearFilters", "Clear filters")}
                     </Button>
                   ) : canManage ? (
@@ -290,9 +327,13 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
             )}
           </AppFrame.Body>
         </>
-      ) : (
+      ) : tab === "aliases" ? (
         <AppFrame.Body padding="list">
           <AliasesTab org={org} project={project} canManage={canManage} />
+        </AppFrame.Body>
+      ) : (
+        <AppFrame.Body padding="list">
+          <RetiringTab org={org} project={project} canManage={canManage} />
         </AppFrame.Body>
       )}
       <ModelSheet org={org} project={project} modelId={search.model} onClose={() => setSearch({ model: undefined })} />
@@ -301,7 +342,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   );
 }
 
-function ModelMeta({ m }: { m: CatalogueModelView }) {
+function ModelMeta({ m, shutdown }: { m: CatalogueModelView; shutdown?: RetiringModelView | undefined }) {
   const f = m.effective;
   const overridden = overriddenFields(m).length;
   const unit =
@@ -324,7 +365,26 @@ function ModelMeta({ m }: { m: CatalogueModelView }) {
       {unavailable && <span className="md:hidden">{unavailable}</span>}
       <span className="hidden items-center gap-8 md:flex">
         {unavailable}
-        {m.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>}
+        {m.line_target && (
+          <Tooltip content={t("models.lines.badgeHint", "A model line; requests go to {model}", { model: m.line_target })}>
+            <Badge tabIndex={0}>{t("models.lines.badge", "Line → {model}", { model: m.line_target })}</Badge>
+          </Tooltip>
+        )}
+        {shutdown && shutdownLabel(shutdown) ? (
+          <Tooltip
+            content={
+              shutdown.lifecycle.replacement
+                ? t("models.retiring.replaceWith", "Replace with {model}", { model: shutdown.lifecycle.replacement })
+                : t("models.retiring.noReplacement", "No replacement named")
+            }
+          >
+            <Badge tone={shutdown.state === "retired" ? "danger" : "warning"} tabIndex={0}>
+              {shutdownLabel(shutdown)}
+            </Badge>
+          </Tooltip>
+        ) : (
+          m.deprecated && <Badge tone="warning">{t("models.deprecated", "Deprecated")}</Badge>
+        )}
         {!m.listed && !m.custom && <Badge tone="warning">{t("models.delisted", "No longer listed")}</Badge>}
         {m.custom ? (
           <Badge>{t("models.custom", "Custom")}</Badge>

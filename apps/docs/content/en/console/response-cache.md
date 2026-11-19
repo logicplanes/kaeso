@@ -84,6 +84,8 @@ Apps decide per request with the standard `Cache-Control` request header:
 | None | Answers from the cache when it can, and stores new replies |
 | `no-cache` | Asks the provider again and stores the new reply in place of the old one |
 | `no-store` | Skips the cache: no lookup, nothing stored |
+| `max-age=60` | Answers from the cache only with a reply stored at most 60 seconds ago. An older one counts as a miss, and the new reply replaces it. `max-age=0` acts as `no-cache` |
+| `only-if-cached` | Answers from the cache or with 504, and never calls the provider, such as for a test run that replays earlier calls. It answers 504 too when the project has the cache off, the request can't be cached, such as a stream, or `no-cache` or `no-store` keep the stored reply out. The 504 costs nothing and starts no [alias fallback](../concepts/alias-routes.md) |
 
 Every answer of a project with the cache on carries `kaeso-cache`: `hit`, `miss` or `bypass` (not cacheable, or skipped with `no-store`). A hit also carries `age`, the seconds since the reply was stored. The [request log](request-logs.md)'s **Response cache** filter lists the hits, the misses or the requests that passed the cache by.
 

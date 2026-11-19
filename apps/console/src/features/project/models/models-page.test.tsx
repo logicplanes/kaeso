@@ -177,6 +177,10 @@ describe("ModelsPage", () => {
     await user.click(within(panel).getByRole("button", { name: "Only overridden" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ overridden: true }));
     expect(screen.getByRole("button", { name: "Filters · 1" })).toBeInTheDocument();
+    await user.click(within(panel).getByRole("combobox", { name: "Status" }));
+    await user.click(await screen.findByRole("option", { name: "Deprecated" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ overridden: true, status: "deprecated" }));
+    expect(screen.getByRole("button", { name: "Filters · 2" })).toBeInTheDocument();
     expect(within(panel).getByRole("button", { description: "Provider" })).toHaveTextContent("All providers");
     vi.unstubAllGlobals();
   });
@@ -213,9 +217,40 @@ describe("ModelsPage", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
 
+  it("narrows the catalogue to the models with each badge", async () => {
+    signedIn();
+    projectData();
+    modelsApi({
+      models: [
+        catalogueModel({ availability: "unavailable" }),
+        catalogueModel({ id: "cm_old", model_id: "claude-3-haiku", deprecated: true }),
+        catalogueModel({ id: "cm_gone", model_id: "claude-2", listed: false }),
+        catalogueModel({ id: "cm_own", model_id: "house-model", listed: false, custom: true }),
+      ],
+    });
+    const { user, router } = await renderApp(projectPath("models"));
+
+    await screen.findByText("claude-2");
+    const status = screen.getByRole("combobox", { name: "Status" });
+    for (const [option, value, models] of [
+      ["Unavailable", "unavailable", ["claude-sonnet-4-5"]],
+      ["Deprecated", "deprecated", ["claude-3-haiku"]],
+      ["No longer listed", "delisted", ["claude-2"]],
+    ] as const) {
+      await user.click(status);
+      await user.click(await screen.findByRole("option", { name: option }));
+      await waitFor(() => expect(router.state.location.search).toEqual({ status: value }));
+      await waitFor(() => expect(["claude-sonnet-4-5", "claude-3-haiku", "claude-2"].filter((m) => screen.queryByText(m))).toEqual(models));
+    }
+    expect(screen.queryByText("house-model"), "a custom model is never no longer listed").not.toBeInTheDocument();
+    await user.click(status);
+    await user.click(await screen.findByRole("option", { name: "Any status" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+  });
+
   it("says when no model matches the filters and clears them", async () => {
     setUp();
-    const { user, router } = await renderApp(projectPath("models?provider=openai&cap=vision&overridden=true"));
+    const { user, router } = await renderApp(projectPath("models?provider=openai&cap=vision&status=deprecated&overridden=true"));
 
     expect(await screen.findByText("No models match these filters")).toBeInTheDocument();
     expect(screen.getByText("Clear the filters to see the whole catalogue.")).toBeInTheDocument();
@@ -309,12 +344,14 @@ describe("ModelsPage", () => {
     on("POST", CHECK, { models: found, failed: [] });
     const playground = ["orgs", ORG, "projects", PROJECT, "playground", "models"];
     queryClient.setQueryData(playground, []);
-    const { user } = await renderApp(projectPath("models"));
+    const { user, router } = await renderApp(projectPath("models"));
 
     await screen.findByText("gpt-5");
     await user.click(screen.getByRole("button", { name: "Check availability" }));
     expect(await notifications().findByText("Checked 4 models; 1 unavailable")).toBeInTheDocument();
     expect(requests("POST", CHECK)).toHaveLength(1);
+    await user.click(notifications().getByRole("button", { name: "Show them" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ status: "unavailable" }));
     expect(queryClient.getQueryState(playground)?.isInvalidated).toBe(true);
 
     on("POST", CHECK, { models: found.map((m) => ({ ...m, availability: "available" })), failed: [] });

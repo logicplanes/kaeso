@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM linked_billing_apps WHERE provider = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c1d71f64bc661a366a088b74acf4c1477e78a04e7b2a5b0f087ad7a1135abb1b"
+}

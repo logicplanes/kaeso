@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { auditLogQuery, type AuditSearch } from "~/api/queries/audit";
 import { instanceOrgQuery, instanceUserQuery, instanceUsersQuery } from "~/api/queries/instance";
 import { useSession } from "~/auth/session";
-import { AuditLog } from "~/kaeso/audit-log";
+import { AuditExportButton, AuditLog } from "~/kaeso/audit-log";
 import { userLabel, type PartyLabel, type PartyRef } from "~/kaeso/party";
 import { InstancePage } from "./instance-page";
 import { t } from "~/i18n";
@@ -55,6 +55,8 @@ export function InstanceAuditLogPage({ search }: { search: AuditSearch }) {
     <InstancePage
       title={t("instance.auditLog", "Audit log")}
       description={t("instance.auditLogHint", "Changes to users, organizations and the install's settings.")}
+      // Instance admins hold every instance right, `instance.audit_log.export` included.
+      actions={<AuditExportButton scope={{ instance: true }} filters={filters} />}
     >
       <AuditLog
         scope={{ instance: true }}

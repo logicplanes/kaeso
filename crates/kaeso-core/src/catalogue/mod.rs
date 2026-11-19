@@ -151,6 +151,12 @@ pub struct Fields {
         models a provider bills by unit; they add to the token prices."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unit_prices: Option<Vec<UnitPrice>>,
+    #[doc = "The currency of the prices this entry sets, an ISO 4217 code such as `EUR`;\n\
+        absent means `USD`. Kaeso keeps them as entered and costs requests in USD at\n\
+        the latest ECB reference rate, so the effective fields are always in USD."]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "openapi", schema(example = "EUR"))]
+    pub currency: Option<String>,
     #[doc = "The kpp dialect Kaeso sends: `anthropic_messages`, `openai_responses`,\n\
         `openai_chat`, `openai_embeddings` or a rerank format such as `cohere_rerank`."]
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -446,6 +452,7 @@ macro_rules! each_field {
             output_audio_price,
             reasoning_price,
             unit_prices,
+            currency,
             egress_dialect,
             adaptive_thinking,
             thinking_binding,
@@ -482,6 +489,7 @@ pub const FIELD_NAMES: &[&str] = &[
     "output_audio_price",
     "reasoning_price",
     "unit_prices",
+    "currency",
     "egress_dialect",
     "adaptive_thinking",
     "thinking_binding",
@@ -600,6 +608,7 @@ impl Fields {
             reasoning_price: pricing.reasoning,
             unit_prices: (!pricing.per_unit.is_empty())
                 .then(|| pricing.per_unit.iter().map(UnitPrice::from_kpmr).collect()),
+            currency: None,
             egress_dialect: m.egress_dialect().or(match m.kind.as_deref() {
                 Some("embedding") => Some(DialectId::OpenAiEmbeddings),
                 // KPMR names no format for rerank models; Cohere's is Kaeso's default, and a
@@ -657,7 +666,61 @@ impl Fields {
         Ok(())
     }
 
+    // A price without a rate for its currency is left out, so its cost is unknown, not wrong.
+    #[must_use]
+    pub fn in_usd(mut self, book: &crate::currency::RateBook) -> Fields {
+        let Some(code) = self.currency.take() else {
+            return self;
+        };
+        let convert = |p: &mut Option<Decimal>| *p = p.and_then(|v| book.to_usd(v, &code));
+        for p in [
+            &mut self.input_price,
+            &mut self.output_price,
+            &mut self.cache_read_price,
+            &mut self.cache_write_price,
+            &mut self.cache_write_1h_price,
+            &mut self.input_image_price,
+            &mut self.output_image_price,
+            &mut self.cache_read_image_price,
+            &mut self.input_audio_price,
+            &mut self.output_audio_price,
+            &mut self.reasoning_price,
+        ] {
+            convert(p);
+        }
+        for tier in self.price_tiers.iter_mut().flatten() {
+            for p in [
+                &mut tier.input_price,
+                &mut tier.output_price,
+                &mut tier.cache_read_price,
+                &mut tier.cache_write_price,
+                &mut tier.cache_write_1h_price,
+            ] {
+                convert(p);
+            }
+        }
+        if let Some(units) = self.unit_prices.take() {
+            let kept: Vec<UnitPrice> = units
+                .into_iter()
+                .filter_map(|mut u| {
+                    u.usd = book.to_usd(u.usd, &code)?;
+                    Some(u)
+                })
+                .collect();
+            self.unit_prices = (!kept.is_empty()).then_some(kept);
+        }
+        self
+    }
+
     pub fn validate(&self, provider: &ProviderRef) -> Result<(), FieldError> {
+        if let Some(code) = &self.currency
+            && !crate::currency::is_code(code)
+        {
+            return Err(FieldError::new(
+                "currency",
+                "`currency` must be a three-letter ISO 4217 code, such as `EUR`.",
+            ));
+        }
         if let Some(n) = &self.display_name
             && (n.trim().is_empty() || n.chars().count() > 200)
         {
@@ -1010,18 +1073,51 @@ pub struct Entry {
     pub availability: Option<Availability>,
     #[serde(default)]
     pub availability_checked_at: Option<time::OffsetDateTime>,
+    /// For a model line such as `claude-opus-latest`: the provider's model it calls now.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<String>,
 }
 
 impl Entry {
+    /// The provider's model a request to this entry goes to: a line's target, else the model.
+    pub fn called(&self) -> &str {
+        self.target.as_deref().unwrap_or(&self.model_id)
+    }
+
+    pub fn is_line(&self) -> bool {
+        self.target.is_some()
+    }
+
     pub fn is_unavailable(&self) -> bool {
         self.availability == Some(Availability::Unavailable)
     }
 
     pub fn is_deprecated(&self, snapshot: &kpmr::Catalogue) -> bool {
         snapshot
-            .model(&self.provider, &self.model_id)
+            .model(&self.provider, self.called())
             .or(self.last_known.as_ref())
             .is_some_and(kpmr::Model::is_deprecated)
+    }
+
+    /// The KPMR model behind a built-in entry: the current one, else the last one KPMR listed.
+    pub fn kpmr_model<'a>(&'a self, snapshot: &'a kpmr::Catalogue) -> Option<&'a kpmr::Model> {
+        if self.custom {
+            return None;
+        }
+        snapshot
+            .model(&self.provider, &self.model_id)
+            .or(self.last_known.as_ref())
+    }
+
+    /// When its provider retires the model and what it recommends instead, if KPMR says.
+    pub fn lifecycle<'a>(&'a self, snapshot: &'a kpmr::Catalogue) -> Option<&'a kpmr::Lifecycle> {
+        self.kpmr_model(snapshot)?.lifecycle.as_ref()
+    }
+
+    /// Whether the model has stopped working by `today`.
+    pub fn is_retired(&self, snapshot: &kpmr::Catalogue, today: time::Date) -> bool {
+        self.kpmr_model(snapshot)
+            .is_some_and(|m| m.is_retired(today))
     }
 }
 
@@ -1098,7 +1194,7 @@ pub fn effective(
         entry.overrides.clone().over_kpmr(Fields::default())
     } else {
         let mut upstream = snapshot
-            .model(&entry.provider, &entry.model_id)
+            .model(&entry.provider, entry.called())
             .or(entry.last_known.as_ref())
             .map(Fields::from_kpmr)
             .unwrap_or_default();
@@ -1123,11 +1219,11 @@ pub fn effective(
     };
     let dialect = fields
         .egress_dialect
-        .unwrap_or_else(|| provider.dialect_for(&entry.model_id));
+        .unwrap_or_else(|| provider.dialect_for(entry.called()));
     Some(Effective {
         id: entry.id,
         provider,
-        model_id: entry.model_id.clone(),
+        model_id: entry.called().to_owned(),
         fields,
         dialect,
     })

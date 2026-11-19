@@ -12,6 +12,7 @@ import { useMembership, useSession } from "~/auth/session";
 import { userStateLabel } from "~/format/labels";
 import { projectMemberRightsQuery } from "~/api/queries/rights";
 import { AccessView } from "~/kaeso/access-view";
+import { AuditLinks } from "~/kaeso/audit-links";
 import { useCatalogue } from "~/kaeso/catalogue";
 import { asGrant, sameGrant, type Grant } from "~/kaeso/grant";
 import { LimitsSection } from "~/kaeso/limits-section";
@@ -169,6 +170,7 @@ function MemberBody({ org, project, userId, onClose }: { org: string; project: s
           empty={t("project.members.noLimits", "No limits on this member; the project's limits apply.")}
         />
       )}
+      {rights.has("project.audit_log.view") && <AuditLinks log={`/orgs/${org}/projects/${project}/audit-log`} user={m.user.id} />}
       <Section title={self ? t("project.members.leaveThis", "Leave this project") : t("project.members.remove", "Remove from project")} spacing="none">
         <div className="flex">
           <Button

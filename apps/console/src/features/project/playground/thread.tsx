@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Button, Link, icons } from "@logicplanes/kaeso-ui";
 import type { PlaygroundModel } from "~/api/queries/playground";
 import {
   DecisionResponse,
@@ -15,7 +16,7 @@ import {
 import { metricsOf } from "./metrics";
 import { t } from "~/i18n";
 import { shown } from "./attachments";
-import { replyView, type Mode, type ResponseState, type Turn } from "./responses";
+import { isLive, replyView, type Mode, type ResponseState, type Turn } from "./responses";
 
 const KIND: Partial<Record<Mode, MediaKind>> = { image: "image", speech: "audio", sound_effects: "audio", music: "audio", video: "video" };
 
@@ -52,8 +53,9 @@ const imageOf = (turn: Turn): DecisionImage | undefined => {
   return file ? { src: file.data, alt: file.name } : undefined;
 };
 
-const errorOf = (r: ResponseState) =>
-  r.error ? (r.requestId ? t("playground.errorWithRequest", "{error} Request {id}", { error: r.error, id: r.requestId }) : r.error) : undefined;
+// Someone who can open the request log gets a link instead of the id in the message.
+const errorOf = (r: ResponseState, linked: boolean) =>
+  r.error ? (r.requestId && !linked ? t("playground.errorWithRequest", "{error} Request {id}", { error: r.error, id: r.requestId }) : r.error) : undefined;
 
 // A turn that finished keeps its object while the newest one streams, so only the newest renders
 // again on each frame of a reply.
@@ -65,6 +67,8 @@ const TurnView = memo(function TurnView({
   expected,
   onRetry,
   onCancel,
+  onEdit,
+  logHref,
 }: {
   turn: Turn;
   model: PlaygroundModel | null;
@@ -73,16 +77,44 @@ const TurnView = memo(function TurnView({
   expected: number;
   onRetry: ((thread: string) => void) | null;
   onCancel: ((turn: string) => void) | null;
+  onEdit: (() => void) | null;
+  logHref: ((id: string) => string) | null;
 }) {
   const r = turn.response;
   const mode = turn.mode ?? "text";
   const kind = KIND[mode];
-  const metrics = r.status === "failed" && !r.usage ? null : <ResponseMetrics {...metricsOf(r, model, mode)} />;
+  // A reply reaches the log once it ended, so the link waits for that.
+  const log = logHref && r.requestId && !isLive(r) ? logHref(r.requestId) : null;
+  const shownMetrics = r.status === "failed" && !r.usage ? null : <ResponseMetrics {...metricsOf(r, model, mode)} />;
+  const metrics =
+    shownMetrics || log ? (
+      <span className="flex flex-wrap items-center gap-x-16 gap-y-4">
+        {shownMetrics}
+        {log && (
+          <Link href={log} variant="quiet">
+            {t("playground.viewInLog", "View in request log")}
+          </Link>
+        )}
+      </span>
+    ) : null;
   const name = t("playground.response", "{model} response", { model: label });
-  const error = errorOf(r);
+  const error = errorOf(r, !!logHref);
   return (
     <div className="flex min-w-0 flex-col gap-12">
-      <UserMessage attachments={shown(turn.files)}>{turn.prompt}</UserMessage>
+      <UserMessage
+        attachments={shown(turn.files)}
+        {...(onEdit
+          ? {
+              actions: (
+                <Button size="sm" variant="quiet" leadingIcon={icons.edit} onClick={onEdit}>
+                  {t("playground.edit", "Edit")}
+                </Button>
+              ),
+            }
+          : {})}
+      >
+        {turn.prompt}
+      </UserMessage>
       {mode === "decision" ? (
         <DecisionResponse
           aria-label={name}
@@ -110,7 +142,7 @@ const TurnView = memo(function TurnView({
       ) : (
         <ResponseView
           aria-label={name}
-          {...replyView(r)}
+          {...replyView(r, !!logHref)}
           {...(onRetry ? { onRetry: () => onRetry(threadKey) } : {})}
           {...(metrics ? { footer: metrics } : {})}
         />
@@ -127,6 +159,8 @@ export default function Thread({
   expected = 1,
   onRetry,
   onCancel = null,
+  onEdit = null,
+  logHref = null,
   className,
 }: {
   turns: Turn[];
@@ -136,6 +170,10 @@ export default function Thread({
   expected?: number | undefined;
   onRetry: ((thread: string) => void) | null;
   onCancel?: ((turn: string) => void) | null | undefined;
+  /** Takes the last prompt back into the composer, from every column. */
+  onEdit?: (() => void) | null | undefined;
+  /** Where a reply's entry in the request log opens, for someone who may read the log. */
+  logHref?: ((id: string) => string) | null | undefined;
   className?: string | undefined;
 }) {
   const last = turns.at(-1);
@@ -151,6 +189,8 @@ export default function Thread({
           expected={expected}
           onRetry={turn === last ? onRetry : null}
           onCancel={turn === last ? onCancel : null}
+          onEdit={turn === last ? onEdit : null}
+          logHref={logHref}
         />
       ))}
     </Turns>

@@ -1,0 +1,194 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT c.id, c.ciphertext, c.nonce, c.wrapped_key, c.key_id, c.revision, c.auth_method, c.expires_at, c.auth_error, c.location, c.account_id, c.gateway_id, c.endpoint, c.spend_limited_until, (SELECT a.send_billing_policy FROM linked_billing_apps a WHERE a.provider = c.provider) AS billing_policy FROM provider_credentials c WHERE c.org_id = $1 AND c.provider = $3 AND c.id = $4 AND ( EXISTS (SELECT 1 FROM project_provider_keys a WHERE a.credential_id = c.id AND a.project_id = $2) OR (c.is_default AND NOT EXISTS ( SELECT 1 FROM project_provider_keys a WHERE a.project_id = $2 AND a.provider = $3)) OR EXISTS (SELECT 1 FROM linked_billing_fallbacks f WHERE f.project_id = $2 AND f.provider = $3 AND f.credential_id = c.id))",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "id"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "ciphertext",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "ciphertext"
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "nonce",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "nonce"
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "wrapped_key",
+        "type_info": "Bytea",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "wrapped_key"
+          }
+        }
+      },
+      {
+        "ordinal": 4,
+        "name": "key_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "key_id"
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "revision",
+        "type_info": "Int8",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "revision"
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "auth_method",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "auth_method"
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "expires_at",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "expires_at"
+          }
+        }
+      },
+      {
+        "ordinal": 8,
+        "name": "auth_error",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "auth_error"
+          }
+        }
+      },
+      {
+        "ordinal": 9,
+        "name": "location",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "location"
+          }
+        }
+      },
+      {
+        "ordinal": 10,
+        "name": "account_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "account_id"
+          }
+        }
+      },
+      {
+        "ordinal": 11,
+        "name": "gateway_id",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "gateway_id"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
+        "name": "endpoint",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "endpoint"
+          }
+        }
+      },
+      {
+        "ordinal": 13,
+        "name": "spend_limited_until",
+        "type_info": "Timestamptz",
+        "origin": {
+          "Table": {
+            "table": "provider_credentials",
+            "name": "spend_limited_until"
+          }
+        }
+      },
+      {
+        "ordinal": 14,
+        "name": "billing_policy",
+        "type_info": "Bool",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      null
+    ]
+  },
+  "hash": "8c21dd477f9d7b91eec8b6dd11d0f96dcc63aba4d3fe0827cafb53d32fb01d30"
+}

@@ -8,10 +8,12 @@ import type { PeriodSearch } from "~/format/period";
 import { presetDays } from "~/format/presets";
 import { ControlRoom } from "~/kaeso/overview/control-room";
 import { useOverview } from "~/kaeso/overview/data";
+import { CurrencyPicker } from "~/kaeso/currency";
 import type { Dimension } from "~/kaeso/overview/metrics";
 import { ORG_VIEWS, type OrgAnalyticsSearch, type OrgView } from "~/kaeso/overview/views";
 import { DimensionView, dimensionTitle } from "~/kaeso/overview/dimension";
 import { OrgHeader } from "~/shell/org-header";
+import { Share } from "~/kaeso/share";
 import { t } from "~/i18n";
 
 const OrgUsageBreakdown = lazy(() => import("./org-usage-breakdown").then((m) => ({ default: m.OrgUsageBreakdown })));
@@ -58,9 +60,13 @@ export function OrgAnalyticsPage({ org, search, view }: { org: string; search: O
         page={t("orgHome.analytics", "Analytics")}
         {...(tabs ? { tabs } : {})}
         actions={
-          <Suspense fallback={null}>
-            <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
-          </Suspense>
+          <>
+            <Suspense fallback={null}>
+              {o.showCost && <CurrencyPicker />}
+              <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
+            </Suspense>
+            <Share org={org} target={{ kind: "analytics", from: o.from, to: o.to, costs: o.showCost }} />
+          </>
         }
       />
       <AppFrame.Body padding="page">

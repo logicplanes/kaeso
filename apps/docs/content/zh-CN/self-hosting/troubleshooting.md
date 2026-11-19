@@ -18,6 +18,8 @@ docker compose logs --tail 100 gateway
 2. 在 `compose.override.yaml` 中更正该设置；如果它属于 [.env 中的设置](configuration.md#env-中的设置)，就在 `.env` 中更正。
 3. 再次运行 `docker compose up -d --wait`。
 
+`docker compose run --rm --no-deps gateway kaeso config check` 会在不启动网关、不连接数据库的情况下检查设置：它输出相同的错误，列出不对应任何设置的 `KAESO_*` 变量，出错时以 1 退出。
+
 ## Compose 要求在 .env 中设置变量
 
 `.env` 缺少必需的变量，Compose 拒绝启动并指明该变量，例如 `set KAESO_DOMAIN in .env`。
@@ -79,7 +81,7 @@ docker compose exec gateway kaeso setup-link
 网关无法连接 SMTP 服务器，或服务器拒绝了邮件。
 
 1. 在**实例** › **系统**中选择**发送测试邮件**。
-2. 在网关日志中查看 SMTP 服务器的回应。
+2. 在网关日志中查看 SMTP 服务器的回应。没有控制台时，`docker compose exec gateway kaeso mail test you@example.com` 会发送一封测试邮件并输出回应。
 3. 检查 `.env` 中的 `KAESO_SMTP_HOST`、`KAESO_SMTP_PORT`、`KAESO_SMTP_TLS` 和凭据，并确认服务器允许以 `KAESO_SMTP_FROM` 发信。
 
 设置 `KAESO_MAIL_TRANSPORT=log` 时，网关只记录邮件，从不发送（[邮件](email.md)）。
@@ -144,7 +146,7 @@ Kaeso 将仅在写法上不同的邮箱地址视为同一个地址，包括大�
 
 ## 无人能通过单点登录登录
 
-在没有密码的实例上，身份提供商出故障后就没有任何登录途径。不要重新开启密码登录：请为一名实例管理员打印一次性登录链接，见[重新登录](sign-in.md#重新登录)。
+在没有密码的实例上，身份提供商出故障后就没有任何登录途径。不要重新开启密码登录：请用 `kaeso user list --instance-admins` 找到实例管理员的地址，再为其打印一次性登录链接，见[重新登录](sign-in.md#重新登录)。
 
 ## 有人报告了请求 ID
 

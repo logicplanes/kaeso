@@ -1,0 +1,40 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT move_on_shutdown, serve_replacement FROM project_model_lifecycle WHERE project_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "move_on_shutdown",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "project_model_lifecycle",
+            "name": "move_on_shutdown"
+          }
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "serve_replacement",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "project_model_lifecycle",
+            "name": "serve_replacement"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "b89b0c4f7afa5f9161accc4fa02a1685d329d374f3844025eefc34e37d77d83b"
+}

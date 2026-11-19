@@ -2,25 +2,33 @@ import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
 import type { TimelineBucket, UsageRow, UsageSpan } from "../generated/types";
 
-export type GroupBy = "day" | "week" | "month" | "model" | "key" | "member" | "route" | "project";
+export type GroupBy = "day" | "week" | "month" | "model" | "key" | "member" | "route" | "project" | "billed_to";
 
 const CHARTED = { refetchOnWindowFocus: false } as const;
 
-export const projectUsageQuery = (org: string, project: string, from: string, to: string, groupBy: GroupBy) =>
+/** `currency` also gives each row's cost in it, as `converted_cost`. */
+export const projectUsageQuery = (org: string, project: string, from: string, to: string, groupBy: GroupBy, currency?: string) =>
   queryOptions({
     ...CHARTED,
-    queryKey: ["orgs", org, "projects", project, "usage", { from, to, groupBy }],
+    queryKey: ["orgs", org, "projects", project, "usage", { from, to, groupBy, ...(currency ? { currency } : {}) }],
     queryFn: async (): Promise<UsageRow[]> =>
-      data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/usage", { params: { path: { org, project }, query: { from, to, group_by: groupBy } } }))
-        .data,
+      data(
+        await api.GET("/platform/v1/orgs/{org}/projects/{project}/usage", {
+          params: { path: { org, project }, query: { from, to, group_by: groupBy, ...(currency ? { currency } : {}) } },
+        }),
+      ).data,
   });
 
-export const orgUsageQuery = (org: string, from: string, to: string, groupBy: GroupBy) =>
+export const orgUsageQuery = (org: string, from: string, to: string, groupBy: GroupBy, currency?: string) =>
   queryOptions({
     ...CHARTED,
-    queryKey: ["orgs", org, "usage", { from, to, groupBy }],
+    queryKey: ["orgs", org, "usage", { from, to, groupBy, ...(currency ? { currency } : {}) }],
     queryFn: async (): Promise<UsageRow[]> =>
-      data(await api.GET("/platform/v1/orgs/{org}/usage", { params: { path: { org }, query: { from, to, group_by: groupBy } } })).data,
+      data(
+        await api.GET("/platform/v1/orgs/{org}/usage", {
+          params: { path: { org }, query: { from, to, group_by: groupBy, ...(currency ? { currency } : {}) } },
+        }),
+      ).data,
   });
 
 export const usageSpanQuery = (org: string, project?: string) =>

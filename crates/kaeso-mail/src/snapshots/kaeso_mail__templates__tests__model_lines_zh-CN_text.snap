@@ -1,0 +1,27 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: [Checkout] claude-opus-latest 已切换到 claude-opus-5-5
+
+claude-opus-latest 已切换到 claude-opus-5-5
+
+Acme / Checkout
+
+Checkout 对 claude-opus-latest 的请求此后将发送到 claude-opus-5-5。
+
+项目： Checkout
+服务商： Anthropic
+系列： claude-opus-latest
+之前： claude-opus-5
+现在： claude-opus-5-5
+输入价格： 每百万 Token 15 → 5 USD
+
+打开系列：
+https://kaeso.example.com/orgs/org_1
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有“管理模型”权限。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

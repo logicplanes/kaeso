@@ -305,6 +305,12 @@ pub struct EgressCtx {
     /// Whether the speech reply is JSON with the audio inside, read whole, as ElevenLabs'
     /// `with-timestamps` replies are. The encoder sets it.
     pub speech_reply_json: bool,
+    /// The user profile in the sender's own Claude organization that a request bills, with
+    /// Anthropic's linked billing: an Anthropic Messages request or token count then names it
+    /// in `anthropic-user-profile-id`, sets `billing_policy` to bill it, and adds the billing
+    /// beta header (<https://platform.claude.com/docs/en/manage-claude/oauth-apps/organization-billing-connections#your-customer-pays>).
+    /// `None` sends neither, which a connection's own access token doesn't need.
+    pub billed_profile: Option<String>,
 }
 
 impl EgressCtx {
@@ -352,6 +358,7 @@ impl EgressCtx {
             audio_format: None,
             transcript_format: None,
             speech_reply_json: false,
+            billed_profile: None,
         }
     }
 
@@ -473,6 +480,14 @@ impl EgressCtx {
     pub fn with_api_root(mut self, root: impl Into<String>) -> Self {
         let root: String = root.into();
         self.api_root = Some(root.trim_end_matches('/').to_owned());
+        self
+    }
+
+    /// Bills a request to a user profile with Anthropic's linked billing; see
+    /// [`EgressCtx::billed_profile`].
+    #[must_use]
+    pub fn with_billed_profile(mut self, profile: impl Into<String>) -> Self {
+        self.billed_profile = Some(profile.into());
         self
     }
 

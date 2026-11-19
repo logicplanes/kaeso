@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE linked_billing_apps SET checked_at = $3, check_problem = $4, check_profile_id = coalesce($5, check_profile_id) WHERE provider = $1 AND client_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "61998d52aabc2a84baddb997a966da592e20b901cc8553f53dd0c2c071ebdbe9"
+}

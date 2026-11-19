@@ -375,6 +375,7 @@ The message names the cause and what to do. These are the causes behind each sta
 | 503 | A guardrail that refuses requests when it fails didn't answer in time, couldn't be reached or gave no verdict, or Kaeso can't load the project's guardrails. The OpenAI formats answer these with 500. |
 | 503 | The provider is overloaded, in the OpenAI and Gemini formats. |
 | 504 | The provider didn't answer in time. |
+| 504 | The request sent `Cache-Control: only-if-cached`, and no stored reply answers it ([response cache](../console/response-cache.md#control-a-single-request)). |
 | 529 | The provider is overloaded, in the Anthropic format. |
 
 Once a stream has started, its status can't change. If the provider fails or ends the stream early, the stream ends with an error event in your app's format.

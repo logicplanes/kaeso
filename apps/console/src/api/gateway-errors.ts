@@ -328,11 +328,9 @@ const messages = (): Rule[] => [
   rule("errors.exportFormat", () => t("errors.exportFormat", "Use `jsonl` or `csv`.")),
   rule("errors.csvMetadataOnly", () => t("errors.csvMetadataOnly", "CSV exports carry metadata only.")),
   rule("errors.exportContentRight", () => t("errors.exportContentRight", "Exporting content needs the right `logs.content.view`.")),
-  rule("errors.usageGroupValues", () =>
-    t("errors.usageGroupValues", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `project`."),
-  ),
+  rule("errors.usageGroupValues", () => t("errors.usageGroupValues", "Use `project`, `billed_to` or what a project's usage groups by, such as `day`.")),
   rule("errors.usageGroupValuesProject", () =>
-    t("errors.usageGroupValuesProject", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member` or `route`."),
+    t("errors.usageGroupValuesProject", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."),
   ),
   rule("errors.usageFilterKey", (v) => t("errors.usageFilterKey", "`{name}` must be a `key` that grouping by `{name}` returns.", v)),
   rule("errors.usageByDayRange", () => t("errors.usageByDayRange", "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.")),
@@ -342,13 +340,13 @@ const messages = (): Rule[] => [
   rule("errors.logErrorMessage", () => t("errors.logErrorMessage", "`error_message` must be 1 to 200 characters.")),
   rule("errors.limitOneToFifty", () => t("errors.limitOneToFifty", "`limit` must be 1 to 50.")),
   rule("errors.logTag", () => t("errors.logTag", "`tag` must be 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.")),
-  rule("errors.timelineGroupValues", () =>
-    t("errors.timelineGroupValues", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind`, `client` or `project`."),
-  ),
+  rule("errors.timelineGroupValues", () => t("errors.timelineGroupValues", "Group by `project` or a field of the request log, such as `model` or `status`.")),
   rule("errors.timelineGroupValuesProject", () =>
-    t("errors.timelineGroupValuesProject", "Use `model`, `provider`, `key`, `member`, `route`, `error_kind` or `client`."),
+    t("errors.timelineGroupValuesProject", "Group by a field of the request log, such as `model`, `status` or `response_cache`."),
   ),
   rule("errors.logClient", () => t("errors.logClient", "`client` must be a client app, such as `codex` or `other`.")),
+  rule("errors.kpmrSyncOff", () => t("errors.kpmrSyncOff", "Model data sync is off on this install; set `KAESO_KPMR_SYNC=true` to use it.")),
+  rule("errors.kpmrSyncFailed", () => t("errors.kpmrSyncFailed", "Kaeso could not fetch the model data; the System page says why.")),
   rule("errors.timelineMinuteRange", () => t("errors.timelineMinuteRange", "By minute, `from` and `to` are at most 2 days apart; use `hour`.")),
   rule("errors.timelineHourRange", () => t("errors.timelineHourRange", "By hour, `from` and `to` are at most 62 days apart; use the daily usage.")),
   rule("errors.projectArchived", () => t("errors.projectArchived", "The project is archived and cannot be changed.")),
@@ -506,6 +504,20 @@ const messages = (): Rule[] => [
   rule("errors.ssoGroups.group", () => t("errors.ssoGroups.group", "Name each rule's group, at most 256 characters.")),
   rule("errors.ssoGroups.duplicate", (v) => t("errors.ssoGroups.duplicate", "The group `{group}` has two rules.", v)),
   rule("errors.ssoGroups.project", (v) => t("errors.ssoGroups.project", "`{project}` isn't an open project of the organization, or is named twice.", v)),
+  rule("errors.currency.noRatePrices", (v) => t("errors.currency.noRatePrices", "Kaeso has no exchange rate for {code}; enter the prices in USD.", v)),
+  rule("errors.currency.noRate", (v) => t("errors.currency.noRate", "Kaeso has no exchange rate for {code}; use a currency from `exchange-rates`.", v)),
+  rule("errors.currency.code", () => t("errors.currency.code", "`currency` must be a three-letter ISO 4217 code, such as `EUR`.")),
+  rule("errors.share.gone", () => t("errors.share.gone", "This shared link doesn't exist, has expired or was revoked.")),
+  rule("errors.share.membersOnly", () => t("errors.share.membersOnly", "This link is for the organization's members; sign in to see it.")),
+  rule("errors.share.personOnly", () => t("errors.share.personOnly", "Shared links are made by a person; sign in, or use an agent.")),
+  rule("errors.share.off", () => t("errors.share.off", "This organization doesn't allow shared links; ask one of its admins.")),
+  rule("errors.share.needsProject", () => t("errors.share.needsProject", "This kind of link needs a `project`.")),
+  rule("errors.share.needsMember", () => t("errors.share.needsMember", "A member's stats need a `member`.")),
+  rule("errors.share.membersOnlyPolicy", () => t("errors.share.membersOnlyPolicy", "This organization allows links only for its members.")),
+  rule("errors.share.days", () => t("errors.share.days", "`days` must be 1 to 400.")),
+  rule("errors.share.snapshot", () => t("errors.share.snapshot", "A snapshot needs `from` and `to`, at most 400 days apart and not after today.")),
+  rule("errors.share.onlyWhatYouSee", () => t("errors.share.onlyWhatYouSee", "You can share only what you can see; ask an admin for the right to see it.")),
+  rule("errors.share.costs", () => t("errors.share.costs", "Showing costs needs the right to see them.")),
   rule("errors.serviceAccount.notJson", () => t("errors.serviceAccount.notJson", "Paste the service account's whole JSON key file.")),
   rule("errors.keyWeight", () => t("errors.keyWeight", "A weight is 1 to 100.")),
   rule("errors.scimNeedsSso", () => t("errors.scimNeedsSso", "Connect single sign-on first; SCIM manages the accounts it signs in.")),
@@ -677,6 +689,20 @@ const messages = (): Rule[] => [
   rule("errors.accountUnverified", (v) => t("errors.accountUnverified", "The answer from {product} could not be verified; start again.", v)),
   rule("errors.accountNoPlan", (v) => t("errors.accountNoPlan", "The account didn't allow using its {product} plan; start again and allow it.", v)),
   rule("errors.accountOther", (v) => t("errors.accountOther", "You signed in to another {product} account; sign in as {account}.", v)),
+  rule("errors.linkedNotSetUp", (v) => t("errors.linkedNotSetUp", "Linked billing for {provider} isn't set up on this install; ask an instance admin.", v)),
+  rule("errors.linkedOneLink", (v) => t("errors.linkedOneLink", "This organization already has a linked {provider} key; link it again or unlink it.", v)),
+  rule("errors.linkedAlready", (v) => t("errors.linkedAlready", "That {organization} is already linked to another organization on this install.", v)),
+  rule("errors.linkedAppRefused", (v) => t("errors.linkedAppRefused", "{provider} refused the install's OAuth app; ask an instance admin to check it.", v)),
+  rule("errors.linkedNoRefresh", (v) => t("errors.linkedNoRefresh", "{provider} issued no refresh token; ask an instance admin to turn on Offline access.", v)),
+  rule("errors.linkedNotCallback", () => t("errors.linkedNotCallback", "The address isn't this install's linked billing callback; start again.")),
+  rule("errors.linkedDeclined", () => t("errors.linkedDeclined", "Linking didn't complete; sign in with an account that has the Admin or Billing role.")),
+  rule("errors.noLinkedBilling", (v) => t("errors.noLinkedBilling", "{provider} offers no linked billing; add an API key for it.", v)),
+  rule("errors.linkedFallbackKey", () => t("errors.linkedFallbackKey", "`credential` must be another key of the provider that isn't a link.")),
+  rule("errors.linkedField", (v) => t("errors.linkedField", "`{name}` must be 1 to {max} characters without spaces.", v)),
+  rule("errors.linkedSpendLimit", () => t("errors.linkedSpendLimit", "This project's linked key reached its organization's spend limit; raise it there.")),
+  rule("errors.linkedUnavailable", () => t("errors.linkedUnavailable", "The provider can't bill this project's linked organization now; check its billing.")),
+  rule("errors.linkedUnlinked", () => t("errors.linkedUnlinked", "This project's linked key is no longer linked; link it again under Providers.")),
+  rule("errors.linkedNeedsSetup", () => t("errors.linkedNeedsSetup", "Linked billing needs the install's OAuth app again; ask an instance admin.")),
   rule("errors.accountNeedsApiKey", (v) =>
     t("errors.accountNeedsApiKey", "{provider}'s {api} needs an API key; this project's key for it is a {product} account.", v),
   ),
@@ -956,6 +982,9 @@ const messages = (): Rule[] => [
   rule("errors.modelApi.timeoutHeader", () =>
     t("errors.modelApi.timeoutHeader", "The header `kaeso-timeout` must be a whole number of seconds from 1 to 3600."),
   ),
+  rule("errors.modelApi.notCached", () =>
+    t("errors.modelApi.notCached", "No cached reply answers this request, and `only-if-cached` keeps it from the provider."),
+  ),
   rule("errors.modelApi.ambiguous", (v) =>
     t(
       "errors.modelApi.ambiguous",
@@ -1029,6 +1058,33 @@ const messages = (): Rule[] => [
   rule("errors.guardrails.noSecret", () => t("errors.guardrails.noSecret", "Built-in rules have no signing secret.")),
   rule("errors.guardrails.sampleTooLong", () => t("errors.guardrails.sampleTooLong", "`text` takes at most 100000 characters.")),
   rule("errors.notFound.guardrail", () => t("errors.notFound.guardrail", "No such guardrail, or you cannot see it.")),
+  rule("errors.modelApi.retiredFor", (v) =>
+    t("errors.modelApi.retiredFor", "The model `{model}` was retired on {date}; its provider recommends `{replacement}`.", v),
+  ),
+  rule("errors.modelApi.retiredOn", (v) => t("errors.modelApi.retiredOn", "The model `{model}` was retired on {date}.", v)),
+  rule("errors.modelApi.retiredRecommends", (v) =>
+    t("errors.modelApi.retiredRecommends", "The model `{model}` is retired; its provider recommends `{replacement}`.", v),
+  ),
+  rule("errors.modelApi.retired", (v) => t("errors.modelApi.retired", "The model `{model}` is retired.", v)),
+  rule("errors.lifecycle.noReplacement", (v) => t("errors.lifecycle.noReplacement", "KPMR names no replacement for `{model}`, so it can't be moved.", v)),
+  rule("errors.lifecycle.replacementNotListed", (v) =>
+    t("errors.lifecycle.replacementNotListed", "The replacement `{model}` isn't in KPMR, so it can't be added.", v),
+  ),
+  rule("errors.lifecycle.addedMeanwhile", (v) => t("errors.lifecycle.addedMeanwhile", "The catalogue got `{model}` meanwhile; try again.", v)),
+  rule("errors.lifecycle.notRetiring", () => t("errors.lifecycle.notRetiring", "No model of this project is retired or has a shutdown date with that id.")),
+  rule("errors.lines.delayDays", () => t("errors.lines.delayDays", "`delay_days` must be 1 to 30 with the `delay` policy, and absent otherwise.")),
+  rule("errors.lines.noProvider", () => t("errors.lines.noProvider", "This organization has no built-in provider by that name; add one under Providers.")),
+  rule("errors.lines.unknown", (v) => t("errors.lines.unknown", "KPMR has no line `{line}` for `{provider}`.", v)),
+  rule("errors.lines.nothingToMove", () => t("errors.lines.nothingToMove", "The line points where KPMR does; there is nothing to move to.")),
+  rule("errors.lines.nothingWaits", () => t("errors.lines.nothingWaits", "No move waits for this line.")),
+  rule("errors.lines.noPrevious", () => t("errors.lines.noPrevious", "The line has no earlier model to go back to.")),
+  rule("errors.lines.heldNoKey", (v) =>
+    t("errors.lines.heldNoKey", "No provider key for `{provider}` is set up for this project, so the line stays on `{model}`.", v),
+  ),
+  rule("errors.lines.heldAccess", (v) =>
+    t("errors.lines.heldAccess", "Some keys or members may call `{line}` but not `{to}`, so the line stays on `{model}`.", v),
+  ),
+  rule("errors.notFound.modelLine", () => t("errors.notFound.modelLine", "No such model line, or you cannot see it.")),
   rule("errors.modelApi.noSuchModel", (v) => t("errors.modelApi.noSuchModel", "The model `{model}` does not exist or this key may not use it.", v)),
   rule("errors.modelApi.noRoute", (v) => t("errors.modelApi.noRoute", "Kaeso does not serve `{path}`.", v)),
   rule("errors.modelApi.method", (v) => t("errors.modelApi.method", "`{path}` does not accept `{method}` requests.", v)),
@@ -1102,6 +1158,41 @@ const messages = (): Rule[] => [
     t(
       "errors.modelApi.accountRefused",
       "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.",
+    ),
+  ),
+  rule("errors.modelApi.linkedSpendLimit", (v) =>
+    t(
+      "errors.modelApi.linkedSpendLimit",
+      "The linked {organization} of this project's {provider} key reached its spend limit. Its admins can raise it in {console}.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.linkedUnavailable", (v) =>
+    t(
+      "errors.modelApi.linkedUnavailable",
+      "{provider} can't bill the linked {organization} of this project's key right now. Its admins can check its billing in {console}.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.linkedUnlinked", (v) =>
+    t(
+      "errors.modelApi.linkedUnlinked",
+      "The {organization} of this project's {provider} key is no longer linked. Ask an organization admin to link it again under Providers.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.linkedNeedsSetup", (v) =>
+    t(
+      "errors.modelApi.linkedNeedsSetup",
+      "Linked billing for this project's {provider} key needs the install's OAuth app. Ask an instance admin to set it up again.",
+      v,
+    ),
+  ),
+  rule("errors.modelApi.linkedUncovered", (v) =>
+    t(
+      "errors.modelApi.linkedUncovered",
+      "A linked {organization} pays only for messages and token counting. Use an API key for {provider} in this project for this request.",
+      v,
     ),
   ),
   rule("errors.modelApi.accountSignedOut", (v) =>

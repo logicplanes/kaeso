@@ -211,7 +211,7 @@
   "rights.instancePreset.none.name": "Keine",
   "rights.instancePreset.read.description": "Liest System, Benutzer, Organisationen und das Audit-Log der Instanz.",
   "rights.instancePreset.read.name": "Lesen",
-  "rights.instanceSettingsManage.description": "Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern und eine Test-E-Mail senden.",
+  "rights.instanceSettingsManage.description": "Allgemeine, Mail-, Protokoll-, Zeitzonen- und Kontoeinstellungen ändern, eine Test-E-Mail senden und Modelldaten sofort abrufen.",
   "rights.instanceSettingsManage.name": "Instanzeinstellungen ändern",
   "rights.instanceSystemView.description": "Das System und seine Modelldaten, die Instanzeinstellungen und den Update-Status sehen.",
   "rights.instanceSystemView.name": "System ansehen",
@@ -223,6 +223,8 @@
   "rights.instanceUsersManage.name": "Benutzer verwalten",
   "rights.instanceUsersView.description": "Jedes Konto der Instanz und seine Organisationen sehen.",
   "rights.instanceUsersView.name": "Benutzer ansehen",
+  "rights.instanceAuditLogExport.description": "Das Audit-Log der Instanz exportieren.",
+  "rights.instanceAuditLogExport.name": "Instanz-Audit-Log exportieren",
   "rights.webhooksView.name": "Webhooks ansehen",
   "rights.webhooksView.description": "Die Webhooks der Organisation sehen, was sie empfangen und ihre letzten Zustellungen (nie Geheimnisse).",
   "rights.webhooksManage.name": "Webhooks verwalten",
@@ -230,5 +232,9 @@
   "rights.guardrailsView.name": "Guardrails ansehen",
   "rights.guardrailsView.description": "Die Guardrails der Organisation und die Projekte, die sie nutzen, sehen (nie ihre Secrets).",
   "rights.guardrailsManage.name": "Guardrails verwalten",
-  "rights.guardrailsManage.description": "Guardrails hinzufügen, ändern, testen und löschen und die Projekte wählen, die sie nutzen."
+  "rights.guardrailsManage.description": "Guardrails hinzufügen, ändern, testen und löschen und die Projekte wählen, die sie nutzen.",
+  "rights.usageShare.name": "Nutzung teilen",
+  "rights.usageShare.description": "Schreibgeschützte Links zu sichtbarer Nutzung, Mitgliedsstatistiken und Budgets teilen und die eigenen widerrufen.",
+  "rights.usageShareManage.name": "Geteilte Links verwalten",
+  "rights.usageShareManage.description": "Alle geteilten Links sehen und widerrufen und festlegen, wen Links erreichen dürfen und wie lange."
 }

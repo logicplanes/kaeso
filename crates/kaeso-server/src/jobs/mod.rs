@@ -86,6 +86,21 @@ pub fn all() -> Vec<Job> {
             lock: 4,
             run: |s| Box::pin(kpmr::run(s)),
         },
+        // Often enough to retry a failed fetch within 15 minutes; `due` waits six hours after one
+        // that worked.
+        Job {
+            name: "exchange_rates",
+            every: Duration::from_secs(300),
+            lock: 12,
+            run: |s| {
+                Box::pin(async move {
+                    if !crate::services::exchange_rates::due(&s).await? {
+                        return Ok("not due".into());
+                    }
+                    Ok(crate::services::exchange_rates::sync(&s).await?)
+                })
+            },
+        },
         Job {
             name: "update_check",
             every: Duration::from_secs(60),
@@ -110,6 +125,36 @@ pub fn all() -> Vec<Job> {
             every: Duration::from_secs(5),
             lock: 10,
             run: |s| Box::pin(crate::services::webhooks::run(s)),
+        },
+        // Hourly, so a warning goes out on its day and a move soon after a shutdown.
+        Job {
+            name: "model_lifecycle",
+            every: Duration::from_secs(3600),
+            lock: 11,
+            run: |s| {
+                Box::pin(async move {
+                    let r = crate::services::lifecycle::run(&s).await?;
+                    Ok(format!(
+                        "{} announced, {} warned, {} moved, {} replacements added",
+                        r.announced, r.warned, r.moved, r.added
+                    ))
+                })
+            },
+        },
+        // Often enough that a line follows KPMR soon after a sync.
+        Job {
+            name: "model_lines",
+            every: Duration::from_secs(600),
+            lock: 13,
+            run: |s| {
+                Box::pin(async move {
+                    let r = crate::services::lines::run(&s).await?;
+                    Ok(format!(
+                        "{} moved, {} waiting, {} held",
+                        r.moved, r.waiting, r.held
+                    ))
+                })
+            },
         },
         // Shorter than `RENEW_AHEAD`, so an account in use never waits for its renewal.
         Job {

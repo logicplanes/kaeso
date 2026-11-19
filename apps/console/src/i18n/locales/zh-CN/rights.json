@@ -211,7 +211,7 @@
   "rights.instancePreset.none.name": "无",
   "rights.instancePreset.read.description": "读取系统、用户、组织和实例审计日志。",
   "rights.instancePreset.read.name": "只读",
-  "rights.instanceSettingsManage.description": "更改常规、邮件、日志、时区和账户设置，并发送测试邮件。",
+  "rights.instanceSettingsManage.description": "更改常规、邮件、日志、时区和账户设置，发送测试邮件，并立即获取模型数据。",
   "rights.instanceSettingsManage.name": "更改实例设置",
   "rights.instanceSystemView.description": "查看系统及其模型数据、实例设置和更新状态。",
   "rights.instanceSystemView.name": "查看系统",
@@ -223,6 +223,8 @@
   "rights.instanceUsersManage.name": "管理用户",
   "rights.instanceUsersView.description": "查看实例的每个账户及其所在组织。",
   "rights.instanceUsersView.name": "查看用户",
+  "rights.instanceAuditLogExport.description": "导出实例的审计日志。",
+  "rights.instanceAuditLogExport.name": "导出实例审计日志",
   "rights.webhooksView.name": "查看 Webhook",
   "rights.webhooksView.description": "查看组织的 Webhook、它们接收的内容以及最近的投递（从不显示机密）。",
   "rights.webhooksManage.name": "管理 Webhook",
@@ -230,5 +232,9 @@
   "rights.guardrailsView.name": "查看防护规则",
   "rights.guardrailsView.description": "查看组织的防护规则以及使用它们的项目（不含其机密）。",
   "rights.guardrailsManage.name": "管理防护规则",
-  "rights.guardrailsManage.description": "添加、更改、测试和删除防护规则，并选择使用它们的项目。"
+  "rights.guardrailsManage.description": "添加、更改、测试和删除防护规则，并选择使用它们的项目。",
+  "rights.usageShare.name": "分享用量",
+  "rights.usageShare.description": "分享自己可见的用量、成员统计和预算的只读链接，并撤销自己的链接。",
+  "rights.usageShareManage.name": "管理共享链接",
+  "rights.usageShareManage.description": "查看并撤销所有人的共享链接，并决定链接可以面向谁、有效多久。"
 }

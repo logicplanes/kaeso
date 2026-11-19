@@ -10,6 +10,7 @@ import { projectPath } from "~/shell/pages";
 
 // Split from the page so the overview's first load stays within its bundle budget (scripts/budget.mjs); the route preloads it.
 const ProjectGlance = lazy(() => import("./overview-glance").then((m) => ({ default: m.ProjectGlance })));
+const ShareCard = lazy(() => import("./overview-glance").then((m) => ({ default: m.ShareCard })));
 const Limit = lazy(() => import("~/kaeso/overview/limit").then((m) => ({ default: m.Limit })));
 
 export function OverviewPage({ org, project }: { org: string; project: string }) {
@@ -24,9 +25,14 @@ export function OverviewPage({ org, project }: { org: string; project: string })
         project={project}
         page={t("project.overview.title", "Overview")}
         actions={
-          <Button size="sm" href={`${base}/analytics`}>
-            {t("project.home.openAnalytics", "Open analytics")}
-          </Button>
+          <>
+            <Suspense fallback={null}>
+              <ShareCard org={org} project={project} />
+            </Suspense>
+            <Button size="sm" href={`${base}/analytics`}>
+              {t("project.home.openAnalytics", "Open analytics")}
+            </Button>
+          </>
         }
       />
       <AppFrame.Body padding="page">

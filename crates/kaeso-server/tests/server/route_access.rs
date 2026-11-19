@@ -31,6 +31,16 @@ fn every_route_declares_exactly_one_access() {
                 access, "public",
                 "{route}: the signed link is its only check"
             );
+        } else if rest.starts_with("linked-billing/oidc/") {
+            assert!(
+                method == "GET" && access == "public",
+                "{route}: the provider reads the install's issuer and its public keys without a session"
+            );
+        } else if rest.starts_with("share/") {
+            assert_eq!(
+                access, "public",
+                "{route}: the link's token is its only check"
+            );
         } else if rest.starts_with("auth/") {
             assert!(
                 access == "public" || access == "session",

@@ -117,6 +117,39 @@ pub async fn set_password(db: impl PgExecutor<'_>, id: Uuid, hash: &str) -> Resu
     Ok(())
 }
 
+/// Records a sign-in at `at`, unless the user signed in later already: a session that replaces
+/// another one carries the sign-in it replaces.
+pub async fn signed_in(
+    db: impl PgExecutor<'_>,
+    id: Uuid,
+    at: OffsetDateTime,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE users SET last_signed_in_at = $2 \
+         WHERE id = $1 AND (last_signed_in_at IS NULL OR last_signed_in_at < $2)",
+        id,
+        at
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+/// When each of these users last signed in; a user who hasn't is left out.
+pub async fn last_sign_ins(
+    db: impl PgExecutor<'_>,
+    ids: &[Uuid],
+) -> Result<std::collections::HashMap<Uuid, OffsetDateTime>, StoreError> {
+    let rows = sqlx::query!(
+        "SELECT id, last_signed_in_at AS \"at!\" FROM users \
+         WHERE id = ANY($1) AND last_signed_in_at IS NOT NULL",
+        ids
+    )
+    .fetch_all(db)
+    .await?;
+    Ok(rows.into_iter().map(|r| (r.id, r.at)).collect())
+}
+
 pub async fn set_name(db: impl PgExecutor<'_>, id: Uuid, name: &str) -> Result<(), StoreError> {
     sqlx::query!(
         "UPDATE users SET name = $2, updated_at = now() WHERE id = $1",

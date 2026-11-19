@@ -1,11 +1,27 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Avatar, Badge, Button, DataTable, Empty, Link, ModelLabel, Section, Segmented, Text, col, icons, type SortingState } from "@logicplanes/kaeso-ui";
+import {
+  Avatar,
+  Badge,
+  Button,
+  DataTable,
+  Empty,
+  Link,
+  ModelLabel,
+  ProviderBadge,
+  Section,
+  Segmented,
+  Text,
+  col,
+  icons,
+  type SortingState,
+} from "@logicplanes/kaeso-ui";
 import { formatNumber, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { ProjectView, UsageRow } from "~/api/generated/types";
 import { serviceAccountLookupQuery } from "~/api/queries/members";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { orgUsageQuery } from "~/api/queries/usage";
+import { orgCredentialsQuery } from "~/api/queries/credentials";
 import { everyProjectRights, useOrgRights, useSession } from "~/auth/session";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
@@ -15,15 +31,22 @@ import { costWidth, UsageCost } from "~/kaeso/media-usage";
 import { saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
 import { t } from "~/i18n";
 
-export type OrgBreakdown = "project" | "model" | "member";
+export type OrgBreakdown = "project" | "model" | "member" | "billed_to";
 
 const options = (): { value: OrgBreakdown; label: string }[] => [
   { value: "project", label: t("orgHome.byProject", "By project") },
   { value: "model", label: t("orgHome.byModel", "By model") },
   { value: "member", label: t("orgHome.byMember", "By member") },
+  { value: "billed_to", label: t("orgHome.byBilledTo", "By key that paid") },
 ];
 const heading = (by: OrgBreakdown) =>
-  by === "project" ? t("common.project", "Project") : by === "model" ? t("common.model", "Model") : t("orgHome.member", "Member");
+  by === "project"
+    ? t("common.project", "Project")
+    : by === "model"
+      ? t("common.model", "Model")
+      : by === "billed_to"
+        ? t("orgHome.billedTo", "Billed to")
+        : t("orgHome.member", "Member");
 
 const NOTABLE_ERROR_RATE = 0.05;
 const LABEL_WIDTH = 200;
@@ -57,6 +80,8 @@ export function OrgUsageBreakdown({
   const providers = useProviders(org);
   const usage = useQuery({ ...orgUsageQuery(org, from, to, by), enabled: ready });
   const members = useQuery({ ...orgMembersQuery(org), enabled: by === "member" && rights.has("members.view") });
+  const keys = useQuery({ ...orgCredentialsQuery(org), enabled: by === "billed_to" && rights.has("provider_credentials.view") });
+  const paidBy = (id: string) => keys.data?.find((k) => k.id === id);
   const everyProject = everyProjectRights(session, org).has("service_accounts.view");
   const accountIds = by === "member" ? (usage.data ?? []).flatMap((r) => (r.key.startsWith("service_account:") ? [r.key.slice(16)] : [])).sort() : [];
   const accounts = useQuery({
@@ -68,13 +93,19 @@ export function OrgUsageBreakdown({
     enabled: everyProject && !!projects && accountIds.length > 0,
   });
   const named = accounts.data ?? [];
-  const loading = usage.isPending || (by === "project" && !projects) || (by === "member" && (members.isLoading || accounts.isLoading));
+  const loading =
+    usage.isPending ||
+    (by === "project" && !projects) ||
+    (by === "member" && (members.isLoading || accounts.isLoading)) ||
+    (by === "billed_to" && keys.isLoading);
   const [sorting, setSorting] = useState<SortingState>([]);
   const rows = sortUsage(loading ? [] : [...(usage.data ?? [])].sort((a, b) => b.requests - a.requests || a.key.localeCompare(b.key)), sorting);
   // A row as text, for the download.
   const labelText = (r: UsageRow): string => {
     if (by === "project") return projects?.find((x) => x.id === r.key)?.name ?? r.key;
     if (by === "model") return r.key.includes("/") ? r.key : t("orgHome.noModel", "No model");
+    if (by === "billed_to")
+      return r.key === "none" ? t("orgHome.noProviderSent", "No provider") : (paidBy(r.key)?.name ?? t("orgHome.removedKey", "Removed key"));
     const [kind, id = r.key] = r.key.split(":");
     if (kind === "service_account") return named.find((n) => n.account.id === id)?.account.name ?? t("orgHome.serviceAccount", "Service account");
     return members.data?.find((x) => x.user.id === id)?.user.name ?? t("orgHome.formerMember", "Former member");
@@ -98,6 +129,24 @@ export function OrgUsageBreakdown({
       const [provider, ...model] = r.key.split("/");
       if (!provider || !model.join("/")) return <Text tone="secondary">{t("orgHome.noModel", "No model")}</Text>;
       return <ModelLabel provider={provider} providerName={providers.name(provider)} model={model.join("/")} />;
+    }
+    if (by === "billed_to") {
+      if (r.key === "none") return <Text tone="secondary">{t("orgHome.noProviderSent", "No provider")}</Text>;
+      const k = paidBy(r.key);
+      if (!k)
+        return (
+          <span className="flex min-w-0 items-center gap-8">
+            <Text tone="secondary">{t("orgHome.removedKey", "Removed key")}</Text>
+            <Id value={r.key} />
+          </span>
+        );
+      return (
+        <span className="flex min-w-0 items-center gap-8">
+          <ProviderBadge provider={k.provider} name={providers.name(k.provider)} />
+          <Text truncate>{k.name}</Text>
+          {k.auth_method === "linked_billing" && <Badge tone="outline">{t("orgHome.linkedBilling", "Linked billing")}</Badge>}
+        </span>
+      );
     }
     const [kind, id = r.key] = r.key.split(":");
     if (kind === "service_account") {

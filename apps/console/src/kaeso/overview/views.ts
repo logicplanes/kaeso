@@ -8,11 +8,11 @@ export type ProjectView = (typeof PROJECT_VIEWS)[number];
 export const ORG_VIEWS = ["projects", "models", "members"] as const;
 export type OrgView = (typeof ORG_VIEWS)[number];
 
-export type AnalyticsSearch = PeriodSearch & { by?: Exclude<GroupBy, "project" | "week" | "month"> | "client"; metric?: MetricId };
+export type AnalyticsSearch = PeriodSearch & { by?: Exclude<GroupBy, "project" | "week" | "month" | "billed_to"> | "client"; metric?: MetricId };
 export type OrgAnalyticsSearch = PeriodSearch & { by?: OrgBreakdown; metric?: MetricId };
 
 const PROJECT_BY = ["day", "model", "key", "member", "route", "client"] as const;
-const ORG_BY = ["project", "model", "member"] as const;
+const ORG_BY = ["project", "model", "member", "billed_to"] as const;
 const SEARCHED = ["requests", "tokens", "cost", "errors", "tools"] as const;
 
 export function analyticsSearch(s: Record<string, unknown>): AnalyticsSearch {

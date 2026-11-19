@@ -59,6 +59,7 @@ services:
 | `kaeso_upstream_errors_total{kind, provider}` | `overloaded`、`timeout` 或 `connect`：服务商故障。`authentication` 或 `billing`：某个服务商密钥需要处理 |
 | `kaeso_alias_fallbacks_total{provider, reason}` | [别名路由](../concepts/alias-routes.md)中失败并回退、或因刚刚失败而被跳过的步骤，按步骤的服务商统计。某个服务商的数值上升，说明您的路由正在兜住一次故障 |
 | `kaeso_upstream_retries_total{provider, outcome}` | 步骤在连接中断、返回 5xx 或过载后重新发送给模型的请求（[别名路由](../concepts/alias-routes.md#回退)），按某次尝试得到应答（`answered`）或每次尝试都失败（`gave_up`）区分。`gave_up` 很多说明重试只是推迟了失败 |
+| `kaeso_retired_model_requests_total{outcome}` | 指定了已过停用日期的模型的步骤（[模型生命周期](../concepts/model-lifecycle.md)），按被拒绝（`refused`）或由替代模型应答（`replaced`）区分。出现 `refused` 说明仍有应用或别名在使用已停用的模型 |
 | `kaeso_stream_failures_total{kind, provider}` | 在响应头发出后失败的流。`kaeso_requests_total` 把它们计为 200，请求日志则计为失败。`client_stalled`：应用不再读取其流 |
 | `kaeso_usage_estimates_total{reason, provider}` | Kaeso 不得不估算的用量。`unreported`：服务商结束回复时没有报告用量。`cancelled` 和 `failed`：断开连接的应用和中途中断的流 |
 | `kaeso_limit_refusals_total{kind, level}` | 预算即将用完 |

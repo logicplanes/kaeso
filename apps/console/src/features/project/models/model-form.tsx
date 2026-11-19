@@ -1,7 +1,11 @@
+import { useQuery } from "@tanstack/react-query";
 import { Checkbox, CheckboxGroup, Field, Input, NumberInput, Select, Switch, Text } from "@logicplanes/kaeso-ui";
-import type { DecisionFields, Fields } from "~/api/generated/types";
+import { formatDate, formatPrice } from "@logicplanes/kaeso-ui/format";
+import type { DecisionFields, ExchangeRates, Fields } from "~/api/generated/types";
+import { currencyName, currencySymbol } from "~/format/currency";
 import { dialectLabel } from "~/format/labels";
 import { t } from "~/i18n";
+import { exchangeRatesQuery, USD } from "~/api/queries/exchange-rates";
 
 export interface FieldDraft {
   display_name: string;
@@ -14,6 +18,7 @@ export interface FieldDraft {
   cache_read_price: string;
   cache_write_price: string;
   cache_write_1h_price: string;
+  currency: string;
   egress_dialect: string;
   tool_call: boolean;
   reasoning: boolean;
@@ -48,6 +53,7 @@ export function draftFrom(f: Fields): FieldDraft {
     cache_read_price: f.cache_read_price ?? "",
     cache_write_price: f.cache_write_price ?? "",
     cache_write_1h_price: f.cache_write_1h_price ?? "",
+    currency: f.currency ?? USD,
     egress_dialect: f.egress_dialect ?? "",
     tool_call: !!f.tool_call,
     reasoning: !!f.reasoning,
@@ -93,6 +99,7 @@ function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
     cache_read_price: text(d.cache_read_price),
     cache_write_price: text(d.cache_write_price),
     cache_write_1h_price: text(d.cache_write_1h_price),
+    currency: d.currency === USD ? null : d.currency,
     egress_dialect: text(d.egress_dialect),
     tool_call: d.tool_call,
     reasoning: d.reasoning,
@@ -110,7 +117,8 @@ function fieldsOf(d: FieldDraft, dialects: readonly string[]): Fields {
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 const samePrice = (a: string | null | undefined, b: string | null | undefined) => (a && b ? Number(a) === Number(b) : same(a || null, b || null));
-const PRICES = new Set(["input_price", "output_price", "cache_read_price", "cache_write_price", "cache_write_1h_price"]);
+const EDITED_PRICES = ["input_price", "output_price", "cache_read_price", "cache_write_price", "cache_write_1h_price"] as const;
+const PRICES = new Set<string>(EDITED_PRICES);
 const asBool = (v: unknown) => !!v;
 const BOOLS = new Set(["tool_call", "reasoning", "structured_output", "temperature", "adaptive_thinking", "thinking_binding"]);
 const accepts = (v: unknown) => v !== false;
@@ -129,9 +137,11 @@ function sameValue(key: string, v: unknown, b: unknown): boolean {
 
 export function changedFields(d: FieldDraft, base: Fields, dialects: readonly string[]): Partial<Fields> {
   const next = fieldsOf(d, dialects);
+  // Prices in another currency than the saved ones are all sent again, in the new currency.
+  const recurrency = d.currency !== (base.currency ?? USD);
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(next)) {
-    if (!sameValue(k, v, base[k as keyof Fields])) out[k] = v;
+    if ((recurrency && (k === "currency" || PRICES.has(k))) || !sameValue(k, v, base[k as keyof Fields])) out[k] = v;
   }
   return out as Partial<Fields>;
 }
@@ -141,11 +151,18 @@ export function allFields(d: FieldDraft, dialects: readonly string[]): Partial<F
   return Object.fromEntries(Object.entries(fieldsOf(d, dialects)).filter(([k, v]) => !unset(k, v))) as Partial<Fields>;
 }
 
+/** What the editor starts from: the values in use, and the prices as entered when they are in another currency. */
+export function editBase(inUse: Fields, overrides: Fields): Fields {
+  const code = overrides.currency;
+  if (!code) return inUse;
+  return { ...inUse, ...Object.fromEntries(EDITED_PRICES.map((k) => [k, overrides[k] ?? null])), currency: code };
+}
+
 export function draftProblem(d: FieldDraft, custom: boolean): string | null {
   const price = (v: string) => v.trim() === "" || (/^\d+(\.\d+)?$/.test(v.trim()) && Number.isFinite(Number(v)));
   const whole = (v: string) => v.trim() === "" || /^\d+$/.test(v.trim());
   if (![d.input_price, d.output_price, d.cache_read_price, d.cache_write_price, d.cache_write_1h_price].every(price))
-    return t("models.problem.price", "Prices are decimal amounts in USD, like 3.00.");
+    return t("models.problem.price", "Prices are decimal amounts, like 3.00.");
   if (![d.context_limit, d.output_limit, d.timeout_seconds].every(whole)) return t("models.problem.whole", "Limits and the timeout are whole numbers.");
   if (/\s/.test(d.upstream_model.trim())) return t("models.problem.upstreamModel", "The provider model ID can't contain spaces.");
   if (custom && decidesOnly(d)) {
@@ -172,6 +189,8 @@ export function ModelForm({
   overrideNote?: boolean;
 }) {
   const set = (patch: Partial<FieldDraft>) => onChange({ ...value, ...patch });
+  const rates = useQuery(exchangeRatesQuery).data;
+  const perUsd = rates?.rates.find((r) => r.currency === value.currency)?.per_usd;
   const price = (key: "input_price" | "output_price" | "cache_read_price" | "cache_write_price" | "cache_write_1h_price", label: string) => (
     <NumberInput
       label={label}
@@ -179,8 +198,9 @@ export function ModelForm({
       onValueChange={(v) => set({ [key]: v })}
       min="0"
       step="0.01"
-      prefix="$"
+      prefix={currencySymbol(value.currency)}
       unit={t("models.unit.perMillionTokens", "per M tokens")}
+      description={value.currency === USD ? undefined : inDollars(value[key], perUsd, rates?.day)}
     />
   );
   return (
@@ -225,6 +245,7 @@ export function ModelForm({
           unit={t("models.unit.tokens", "tokens")}
         />
       </div>
+      <CurrencyField value={value.currency} rates={rates} onChange={(currency) => onChange(inCurrency(value, currency, rates))} />
       <div className="grid grid-cols-1 gap-16 sm:grid-cols-2">
         {price("input_price", t("models.field.inputPrice", "Input price"))}
         {price("output_price", t("models.field.outputPrice", "Output price"))}
@@ -312,6 +333,42 @@ export function ModelForm({
         </Text>
       )}
     </div>
+  );
+}
+
+/** The draft with its prices turned into `to` at the latest rates, so a switch doesn't save dollars as euros. */
+export function inCurrency(d: FieldDraft, to: string, rates: ExchangeRates | undefined): FieldDraft {
+  const per = (code: string) => (code === USD ? 1 : Number(rates?.rates.find((r) => r.currency === code)?.per_usd ?? NaN));
+  const factor = per(to) / per(d.currency);
+  const next: FieldDraft = { ...d, currency: to };
+  for (const key of EDITED_PRICES) {
+    const v = d[key].trim();
+    if (!Number.isFinite(factor) || !/^\d+(\.\d+)?$/.test(v)) continue;
+    next[key] = (Number(v) * factor).toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+  }
+  return next;
+}
+
+export function inDollars(amount: string, perUsd: string | undefined, day: string | null | undefined): string | undefined {
+  if (!perUsd || !day) return t("models.noRate", "No exchange rate for this currency yet; requests at these prices show an unknown cost.");
+  if (!/^\d+(\.\d+)?$/.test(amount.trim())) return undefined;
+  const usd = (Number(amount) / Number(perUsd)).toFixed(9).replace(/0+$/, "").replace(/\.$/, "");
+  return t("models.inDollars", "≈ {price} at the ECB rate of {day}", { price: formatPrice(usd), day: formatDate(day) });
+}
+
+function CurrencyField({ value, rates, onChange }: { value: string; rates: ExchangeRates | undefined; onChange: (code: string) => void }) {
+  const codes = [USD, ...(rates?.rates ?? []).map((r) => r.currency).filter((c) => c !== USD)];
+  if (!codes.includes(value)) codes.push(value);
+  if (codes.length < 2) return null;
+  return (
+    <Select
+      label={t("models.field.currency", "Currency")}
+      description={t("models.currencyHint", "The prices below are in it; Kaeso costs requests in USD.")}
+      fullWidth
+      value={value}
+      onValueChange={onChange}
+      options={codes.map((code) => ({ value: code, label: code, description: currencyName(code) }))}
+    />
   );
 }
 

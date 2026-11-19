@@ -7,7 +7,6 @@
   "keys.archived": "Schlüssel archiviert",
   "keys.backToKeys": "Zurück zu den Schlüsseln",
   "keys.clearFilter": "Filter zurücksetzen",
-  "keys.clearFilterHint": "Filter zurücksetzen, um alle Schlüssel zu sehen.",
   "keys.create": "Schlüssel erstellen",
   "keys.createdBy": "{date} von {name}",
   "keys.disable": "Deaktivieren",
@@ -57,5 +56,19 @@
   "keys.undo": "Rückgängig",
   "keys.used": "Verwendet {when}",
   "keys.whose": "Inhaber der Schlüssel",
-  "keys.accessWithTools": "{access} und Tools"
+  "keys.accessWithTools": "{access} und Tools",
+  "keys.sortName": "Name",
+  "keys.sortUsed": "Zuletzt verwendet",
+  "keys.sortExpiry": "Läuft zuerst ab",
+  "keys.sort": "Sortieren",
+  "keys.search": "Schlüssel suchen",
+  "keys.nameOrKey": "Name oder Schlüssel",
+  "keys.clearFiltersHint": "Leeren Sie Suche und Filter, um alle Schlüssel zu sehen.",
+  "keys.noneMatch": "Keine Schlüssel passen zu Ihrer Suche",
+  "keys.showEveryKey": "Alle Schlüssel zeigen",
+  "keys.renamed": "Umbenannt in {name}",
+  "keys.nameNeeded": "Geben Sie dem Schlüssel einen Namen",
+  "keys.newNameNeeded": "Geben Sie einen neuen Namen ein",
+  "keys.renameTitle": "{name} umbenennen",
+  "keys.renameHint": "Sein Secret funktioniert weiter; nur der Name ändert sich."
 }

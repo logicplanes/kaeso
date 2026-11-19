@@ -65,6 +65,8 @@ Der Katalog ist ein JSON-Dokument in Kaesos eigenem Format, versioniert durch ei
 - **Jeder Schlüssel ist vorhanden.** Ein unbekannter Wert ist `null`, sodass Kaeso „unbekannt“ von „nein“ unterscheiden kann.
 - **Preise sind exakte Dezimalzahlen als Strings** in US-Dollar je Million Token, nie Gleitkommazahlen. `cache_write_1h` ist der Preis eines Cache-Schreibvorgangs, der eine Stunde gilt, wo der Anbieter einen dokumentiert.
 - **`pricing.tiers`** listet die Preise eines Modells für lange Kontexte, das niedrigste `context_above` zuerst, oder ist leer. Die Preise einer Stufe gelten für jedes Token einer Anfrage, deren Prompt länger als `context_above` Token ist; ein Preis `null` ist der Grundpreis.
+- **`lifecycle`** enthält die Tage, an denen der Anbieter die Abschaltung angekündigt hat, das Modell abkündigt und abschaltet, und den empfohlenen Nachfolger `replacement`, jeweils `null` bis zur Ankündigung. `status` wird an diesen Tagen `deprecated` und dann `retired` ([Modell-Lebenszyklus](model-lifecycle.md)).
+- **`lines`** nennt bei jedem Anbieter seine Modelllinien wie `claude-opus-latest`, mit dem `model`, auf das jede zeigt, `since` und dem vorherigen Modell `previous`. KPMR bildet eine pro Familie beim neuesten aktiven Modell ([Modelllinien](../console/models-and-aliases.md#modelllinien)).
 - **`gateway.egress_dialect`** nennt das API-Format, in dem Kaeso das Modell aufruft, wenn es nicht das Standardformat des Anbieters ist.
 - **Unbekannte Schlüssel werden ignoriert.** Ein neues Feld im Format 1 stört ein älteres Gateway nicht; eine Änderung, die es stören würde, wird Format 2.
 
@@ -80,6 +82,8 @@ Entscheidungsmodelle kosten ihre Eingabe-Tokens; ihr Ausgabepreis ist `0`.
 ## Wie das Gateway ihn abruft
 
 Ein Job prüft alle fünf Minuten, ob das Gateway KPMR wieder fragen muss. Steht `kpmr.interval` auf `auto`, folgt es `refresh_seconds` des Katalogs, gehalten zwischen 5 Minuten und 24 Stunden; eine Dauer wie `6h` ersetzt es. Nach einem fehlgeschlagenen Versuch fragt das Gateway innerhalb einer Stunde erneut.
+
+**Jetzt synchronisieren** auf der Karte **Modelldaten** unter **Instanz** › **System** oder `docker compose exec gateway kaeso kpmr sync` auf dem Server ruft sie sofort ab, und jedes Gateway der Installation übernimmt die neuen Daten. Beides braucht `kpmr.sync` an.
 
 ```mermaid
 sequenceDiagram

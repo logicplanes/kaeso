@@ -5,6 +5,7 @@ import { USER, signedIn } from "~/test/fixtures";
 import { instanceUser } from "~/test/fixtures/instance-account";
 import { hoverReason, notifications, paged } from "~/test/fixtures/org";
 import { apiError, on, requests } from "~/test/network";
+import { atFixtureTime } from "~/test/clock";
 import { renderApp } from "~/test/render";
 
 const PATH = "/settings/instance/users";
@@ -44,6 +45,15 @@ describe("instance users list", () => {
     expect(within(table()).getAllByText("Active")).toHaveLength(2);
     expect(within(table()).getAllByText("15 Oct 2026")).toHaveLength(3);
     expect(userQueries()[0]).toEqual({ limit: "100" });
+  });
+
+  it("says whether each user has two-factor authentication", async () => {
+    signedIn();
+    users([ADA, instanceUser({ totp_enabled: true })]);
+    await renderApp(PATH);
+    const row = async (name: string) => (await within(table()).findByText(name)).closest('[role="row"]') as HTMLElement;
+    expect(within(await row("Grace Hopper")).getByText("On")).toBeInTheDocument();
+    expect(within(await row("Ada Okafor")).getByText("Off")).toBeInTheDocument();
   });
 
   it("marks an instance admin with a short badge on a phone, so the name keeps its room", async () => {
@@ -467,5 +477,37 @@ describe("a user's sheet", () => {
     on("GET", "instance/users/usr_grace", apiError(403, "permission_denied", "Not allowed."));
     await renderApp(`${PATH}?user=usr_grace`);
     expect(await screen.findByText("This user can't be shown right now.")).toBeInTheDocument();
+  });
+
+  it("opens the instance audit log at the user's changes and the changes to them", async () => {
+    signedIn();
+    const { sheet } = await openUser(GRACE);
+    expect(within(sheet).getByRole("link", { name: "Their changes" })).toHaveAttribute("href", `/settings/instance/audit-log?actor=${GRACE.id}`);
+    expect(within(sheet).getByRole("link", { name: "Changes to them" })).toHaveAttribute("href", `/settings/instance/audit-log?target=${GRACE.id}`);
+  });
+});
+
+describe("last sign-in", () => {
+  atFixtureTime();
+
+  it("says when each user last signed in, or that they never did", async () => {
+    signedIn();
+    users([ADA, instanceUser({ last_signed_in_at: "2026-10-15T09:00:00Z" })]);
+    await renderApp(PATH);
+    const row = async (name: string) => (await within(table()).findByText(name)).closest('[role="row"]') as HTMLElement;
+    expect(within(await row("Grace Hopper")).getByText("3 h ago")).toBeInTheDocument();
+    expect(within(await row("Ada Okafor")).getByText("Never")).toBeInTheDocument();
+  });
+
+  it("shows the last sign-in in the user's sheet", async () => {
+    signedIn();
+    const { sheet } = await openUser(instanceUser({ last_signed_in_at: "2026-10-15T09:00:00Z" }));
+    expect(within(sheet).getByText("Last sign-in").nextSibling).toHaveTextContent("3 h ago");
+  });
+
+  it("says in the sheet when a user never signed in", async () => {
+    signedIn();
+    const { sheet } = await openUser(GRACE);
+    expect(within(sheet).getByText("Last sign-in").nextSibling).toHaveTextContent("Never");
   });
 });

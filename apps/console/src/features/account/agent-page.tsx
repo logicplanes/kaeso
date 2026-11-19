@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { AlertDialog, Banner, Button, Code, Empty, GrantSummary, Input, SettingsGroup, SettingsRow, Section } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Banner, Button, Code, Empty, GrantSummary, Input, SettingsGroup, SettingsRow, Section, Text } from "@logicplanes/kaeso-ui";
 import { formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { fieldError } from "~/api/field-error";
-import type { AgentCatalogue, AgentView, Grantable } from "~/api/generated/types";
+import type { AgentActivityView, AgentCatalogue, AgentView, Grantable } from "~/api/generated/types";
 import { agentActivityQuery, agentCatalogueQuery, agentQuery, grantableQuery } from "~/api/queries/agents";
 import { useApiMutation } from "~/auth/mutation";
+import { useSession } from "~/auth/session";
 import { LoadFailed } from "~/features/org/load-failed";
 import { modelLabel } from "~/format/model";
 import { t } from "~/i18n";
@@ -184,7 +185,7 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
           </div>
         </div>
       </Section>
-      <Activity agent={agent.id} />
+      <Activity agent={agent.id} grantable={grantable} />
       <AlertDialog
         open={confirming !== null}
         onOpenChange={(o) => !o && setConfirming(null)}
@@ -218,9 +219,20 @@ const RESULTS: Readonly<Record<string, () => string>> = {
   insufficient_rights: () => t("account.agentCallNoRight", "Missing a right"),
 };
 
-function Activity({ agent }: { agent: string }) {
+function Activity({ agent, grantable }: { agent: string; grantable: Grantable }) {
   const activity = useInfiniteQuery(agentActivityQuery(agent));
+  const session = useSession();
   const calls = activity.data?.pages.flatMap((p) => p.data) ?? [];
+  // Where a call acted, by the names the user could open to an agent; an organization they can't any more falls back
+  // to their memberships, then to its id. Account and instance tools act nowhere in particular.
+  const place = (c: AgentActivityView): string | undefined => {
+    if (!c.org_id) return undefined;
+    const org = grantable.orgs.find((o) => o.id === c.org_id);
+    const orgName = org?.name ?? session.memberships.find((m) => m.org_id === c.org_id)?.org_name ?? c.org_id;
+    if (!c.project_id) return orgName;
+    const project = org?.projects.find((p) => p.id === c.project_id)?.name ?? c.project_id;
+    return t("account.agentCallPlace", "{org} › {project}", { org: orgName, project });
+  };
   return (
     <Section
       spacing="settings"
@@ -235,18 +247,30 @@ function Activity({ agent }: { agent: string }) {
         <Empty title={t("account.agentNoActivity", "No tool calls yet")} />
       ) : (
         <SettingsGroup>
-          {calls.map((c) => (
-            <SettingsRow
-              key={c.id}
-              title={<Code>{c.tool}</Code>}
-              description={t("account.agentCall", "{result} · {when} · {address}", {
-                result: RESULTS[c.result]?.() ?? c.result,
-                when: formatRelative(c.at),
-                address: c.ip ?? t("account.unknownAddress", "Unknown address"),
-              })}
-              value={c.target ?? undefined}
-            />
-          ))}
+          {calls.map((c) => {
+            const where = place(c);
+            return (
+              <SettingsRow
+                key={c.id}
+                title={
+                  <span className="flex flex-wrap items-center gap-8">
+                    <Code>{c.tool}</Code>
+                    {where && (
+                      <Text variant="small" tone="secondary">
+                        {where}
+                      </Text>
+                    )}
+                  </span>
+                }
+                description={t("account.agentCall", "{result} · {when} · {address}", {
+                  result: RESULTS[c.result]?.() ?? c.result,
+                  when: formatRelative(c.at),
+                  address: c.ip ?? t("account.unknownAddress", "Unknown address"),
+                })}
+                value={c.target ?? undefined}
+              />
+            );
+          })}
         </SettingsGroup>
       )}
       {activity.hasNextPage && (

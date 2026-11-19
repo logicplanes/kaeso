@@ -524,4 +524,112 @@ describe("LimitsPage", () => {
     expect(await screen.findByText("No limits yet")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Add limit" })).toHaveLength(1);
   });
+
+  it("copies a key's budget to another key, asking only for the key and leaving out keys that have one like it", async () => {
+    signedIn();
+    stubProject({
+      keys: [apiKey(), apiKey({ id: "key_ci", name: "ci-deploy" }), apiKey({ id: "key_taken", name: "taken-key" })],
+      limits: [
+        limit({
+          id: "lim_web",
+          level: "key",
+          amount: "100",
+          alert_thresholds: [50, 90],
+          subject: { type: "key", id: "key_web" },
+          description: "monthly spend budget of 100 USD",
+        }),
+        limit({ id: "lim_taken", level: "key", amount: "5", subject: { type: "key", id: "key_taken" }, description: "monthly spend budget of 5 USD" }),
+      ],
+    });
+    on("POST", LIMITS, ({ body }: { body: Record<string, unknown> }) =>
+      limit({ ...body, id: "lim_new", level: "key", description: "monthly spend budget of 100 USD" } as never),
+    );
+    const { user } = await renderApp(projectPath("limits"));
+
+    await user.click(await screen.findByRole("button", { name: "Actions for the monthly spend budget of 100 USD" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Copy to…" }));
+    const dialog = await screen.findByRole("dialog", { name: /Copy limit/ });
+    expect(within(dialog).queryByRole("radiogroup", { name: "Applies to" })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole("combobox", { name: "Key" }));
+    expect(await screen.findByRole("option", { name: /ci-deploy/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /checkout-web/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /taken-key/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("option", { name: /ci-deploy/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    expect(await within(dialog).findByRole("spinbutton", { name: "Amount" })).toHaveValue("100");
+    await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
+
+    expect(await notifications().findByText("Added the monthly spend budget of 100 USD")).toBeInTheDocument();
+    expect(requests("POST", LIMITS).map((r) => r.body)).toEqual([
+      { level: "key", key: "key_ci", kind: "spend_budget", amount: "100", period: "month", hard: true, alert_thresholds: [50, 90] },
+    ]);
+  });
+
+  it("copies a member's rate to a service account, and offers no copy of a project limit", async () => {
+    signedIn();
+    stubProject({
+      accounts: [serviceAccount(), serviceAccount({ id: "sa_bot", name: "triage-bot" })],
+      limits: [
+        ...everyLevel(),
+        limit({ id: "lim_bot", level: "member", kind: "request_rate", period: "minute", amount: "5", subject: { type: "service_account", id: "sa_bot" } }),
+      ],
+    });
+    on("POST", LIMITS, ({ body }: { body: Record<string, unknown> }) => limit({ ...body, id: "lim_new", level: "member" } as never));
+    const { user } = await renderApp(projectPath("limits"));
+
+    await user.click(await screen.findByRole("button", { name: "Actions for the monthly spend budget of 50 USD" }));
+    expect(await screen.findByRole("menuitem", { name: "Edit" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Copy to…" })).not.toBeInTheDocument();
+    await user.keyboard("{Escape}");
+
+    await user.click(screen.getByRole("button", { name: "Actions for the request rate of 60 requests per minute" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Copy to…" }));
+    const dialog = await screen.findByRole("dialog", { name: /Copy limit/ });
+    await user.click(within(dialog).getByRole("combobox", { name: "Member or service account" }));
+    expect(screen.queryByRole("option", { name: /Grace Hopper/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /triage-bot/ })).not.toBeInTheDocument();
+    await user.click(await screen.findByRole("option", { name: /ci-deploy/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await within(dialog).findByText("What's the limit?");
+    await user.click(within(dialog).getByRole("button", { name: "Add limit" }));
+    await waitFor(() =>
+      expect(requests("POST", LIMITS).map((r) => r.body)).toEqual([
+        { level: "member", service_account: "sa_deploy", kind: "request_rate", amount: "60", period: "minute", hard: true, alert_thresholds: [] },
+      ]),
+    );
+  });
+
+  it("puts the fullest limit of each level first under Most used, kept in the address and across levels", async () => {
+    signedIn();
+    stubProject({
+      keys: [apiKey(), apiKey({ id: "key_ci", name: "ci-deploy" }), apiKey({ id: "key_new", name: "new-key" })],
+      limits: [
+        limit({ id: "lim_a", level: "key", amount: "100", used: "10", subject: { type: "key", id: "key_web" }, description: "a" }),
+        limit({ id: "lim_b", level: "key", amount: "100", used: null, subject: { type: "key", id: "key_new" }, description: "b" }),
+        limit({ id: "lim_c", level: "key", amount: "100", used: "90", subject: { type: "key", id: "key_ci" }, description: "c" }),
+        limit({ id: "lim_d", level: "key", amount: "0", used: "5", kind: "token_budget", subject: { type: "key", id: "key_web" }, description: "d" }),
+      ],
+    });
+    const { user, router } = await renderApp(projectPath("limits?level=key&sort=used"));
+    const titles = async () => {
+      const grid = await screen.findByRole("grid", { name: "Limits" });
+      return within(grid)
+        .getAllByRole("gridcell")
+        .map((r) => r.textContent ?? "")
+        .filter((x) => x.includes("Resets"))
+        .map((t) => (t.includes("ci-deploy") ? "ci" : t.includes("new-key") ? "new" : t.includes("Token budget") ? "tokens" : "web"));
+    };
+    expect(await titles()).toEqual(["ci", "web", "new", "tokens"]);
+    expect(screen.getByRole("combobox", { name: "Sort" })).toHaveTextContent("Most used");
+
+    await user.click(screen.getByRole("tab", { name: "All" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ sort: "used" }));
+    await user.click(screen.getByRole("combobox", { name: "Sort" }));
+    await user.click(await screen.findByRole("option", { name: "Level" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(await titles()).toEqual(["web", "new", "ci", "tokens"]);
+    await user.click(screen.getByRole("combobox", { name: "Sort" }));
+    await user.click(await screen.findByRole("option", { name: "Most used" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ sort: "used" }));
+  });
 });

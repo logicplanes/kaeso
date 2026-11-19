@@ -2,7 +2,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use kaeso_core::id::{OrgId, ProjectId};
 use kaeso_core::notifications::Kind;
-use kaeso_core::rights::ProjectRight;
+use kaeso_core::rights::{OrgRight, ProjectRight};
 use kaeso_mail::Locale;
 use kaeso_store::StoreError;
 use kaeso_store::pg::{keys, members, notifications, users};
@@ -135,7 +135,112 @@ pub async fn run(state: AppState) -> Result<String, JobError> {
             }
         }
     }
+    sent += platform_keys(&state, now, &zone, zone_name).await?;
     Ok(format!("sent {sent} key expiry warnings"))
+}
+
+// An org's platform keys: their warnings go to the members who may create and rotate platform
+// keys, and to the key's creator while they are still a member.
+async fn platform_keys(
+    state: &AppState,
+    now: time::OffsetDateTime,
+    zone: &jiff::tz::TimeZone,
+    zone_name: &str,
+) -> Result<usize, JobError> {
+    let mut sent = 0;
+    for days in [1, 7] {
+        let expiring = keys::expiring_platform(&state.pg, now, days).await?;
+        if expiring.is_empty() {
+            continue;
+        }
+        let ids: Vec<Uuid> = expiring.iter().map(|k| k.id).collect();
+        let claimed: BTreeSet<Uuid> = keys::claim_platform_warnings(&state.pg, &ids, days)
+            .await?
+            .into_iter()
+            .collect();
+        if days == 1 {
+            let claimed_ids: Vec<Uuid> = claimed.iter().copied().collect();
+            keys::claim_platform_warnings(&state.pg, &claimed_ids, 7).await?;
+        }
+        let expiring: Vec<keys::ExpiringPlatform> = expiring
+            .into_iter()
+            .filter(|k| claimed.contains(&k.id))
+            .collect();
+        let orgs: BTreeSet<Uuid> = expiring.iter().map(|k| k.org_id).collect();
+        let mut members_of: HashMap<Uuid, (String, Vec<Uuid>, BTreeSet<Uuid>)> = HashMap::new();
+        for org in orgs {
+            let all = members::all_org(&state.pg, org).await?;
+            let creators: Vec<Uuid> = all
+                .iter()
+                .filter(|m| {
+                    crate::platform::grants::org_from_store(&m.grant())
+                        .is_ok_and(|g| g.effective().contains(OrgRight::PlatformKeysCreate))
+                })
+                .map(|m| m.user_id)
+                .collect();
+            let everyone = all.iter().map(|m| m.user_id).collect();
+            let name = crate::services::notifications::triggers::org_name(state, org).await?;
+            members_of.insert(org, (name, creators, everyone));
+        }
+        let mut wanted: BTreeSet<Uuid> = members_of
+            .values()
+            .flat_map(|(_, c, _)| c)
+            .copied()
+            .collect();
+        wanted.extend(expiring.iter().filter_map(|k| k.created_by));
+        let wanted: Vec<Uuid> = wanted.into_iter().collect();
+        let people: HashMap<Uuid, users::Recipient> = users::recipients(&state.pg, &wanted)
+            .await?
+            .into_iter()
+            .map(|r| (r.id, r))
+            .collect();
+        let off: BTreeSet<Uuid> =
+            notifications::turned_off(&state.pg, &wanted, Kind::PlatformKeyExpiry.as_str())
+                .await?
+                .into_iter()
+                .collect();
+        let muted: BTreeSet<(Uuid, Uuid)> = notifications::mutes_of(&state.pg, &wanted)
+            .await?
+            .into_iter()
+            .collect();
+        for key in &expiring {
+            let Some((organization, creators, everyone)) = members_of.get(&key.org_id) else {
+                continue;
+            };
+            let mut to: BTreeSet<Uuid> = creators.iter().copied().collect();
+            to.extend(key.created_by.filter(|u| everyone.contains(u)));
+            let url = format!(
+                "{}settings/orgs/{}/platform-keys",
+                state.config.public_url,
+                OrgId::from_uuid(key.org_id)
+            );
+            for person in to.iter().filter_map(|id| people.get(id)) {
+                if person.state != "active"
+                    || off.contains(&person.id)
+                    || muted.contains(&(person.id, key.org_id))
+                {
+                    continue;
+                }
+                let Some(email) = &person.email else {
+                    continue;
+                };
+                let lang = Locale::choose(person.locale.as_deref(), None);
+                state
+                    .mailer
+                    .send(kaeso_mail::templates::platform_key_expiry_warning(
+                        lang,
+                        email,
+                        &key.name,
+                        organization,
+                        crate::time_zone::local(key.expires_at, zone),
+                        zone_name,
+                        &url,
+                    ));
+                sent += 1;
+            }
+        }
+    }
+    Ok(sent)
 }
 
 async fn project_admins(

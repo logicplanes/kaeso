@@ -241,8 +241,8 @@ describe("the gateway's words in its answers", () => {
       expect(name, id).toBeTruthy();
       expect(description, id).toBeTruthy();
     }
-    expect(knownRights()).toHaveLength(75);
+    expect(knownRights()).toHaveLength(77);
     for (const id of agentRightIds()) expect(rightEnglish(id)[0], id).toBeTruthy();
-    expect(agentRightIds()).toHaveLength(15);
+    expect(agentRightIds()).toHaveLength(16);
   });
 });

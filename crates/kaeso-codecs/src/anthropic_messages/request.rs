@@ -28,6 +28,9 @@ use crate::wire::{
 
 const OBJECTS_FORM: &str = "objects";
 const THINKING_BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
+// The beta header a request that sets `billing_policy` must send
+// (https://platform.claude.com/docs/en/manage-claude/oauth-apps/organization-billing-connections#update-calls-to-claude).
+const BILLING_BETA: &str = "user-profiles-billing-2026-10-01";
 const SYSTEM_FORM: &str = "system";
 const MAX_BREAKPOINTS: usize = 4;
 
@@ -371,6 +374,7 @@ pub(crate) fn encode_request(
         }
     };
     let own = r.extras.is_from(D);
+    let mut billed: Option<String> = None;
     let adjusted;
     let r = if !own && cache_hints(r) > 0 {
         adjusted = app_hints_for_anthropic(r);
@@ -644,6 +648,15 @@ pub(crate) fn encode_request(
             ext.extra.insert("anthropic_version".to_owned(), version);
         }
     }
+    if let Some(profile) = &ctx.billed_profile {
+        let policy = RawJson::from_serialize(&serde_json::json!({
+            "type": "billing_policy",
+            "bill_to": "user_profile",
+        }))
+        .map_err(|e| KppError::provider(e.to_string()))?;
+        ext.extra.insert("billing_policy".to_owned(), policy);
+        billed = Some(profile.clone());
+    }
     let media = std::mem::replace(&mut enc.media, Media::inline());
     let body = media.finish(to_body(&ext)?)?;
     if matches!(req, Request::Generate(_)) {
@@ -656,15 +669,18 @@ pub(crate) fn encode_request(
     }
     ctx.tool_ids.extend(enc.rewrites.ids);
     ctx.tool_names.extend(enc.rewrites.names);
-    let betas: &[&str] = match rebuilt {
-        Rebuilt::Bound => &[THINKING_BINDING_BETA],
-        _ => &[],
+    let mut betas: Vec<&str> = match rebuilt {
+        Rebuilt::Bound => vec![THINKING_BINDING_BETA],
+        _ => Vec::new(),
     };
-    Ok(EncodedRequest::post_json(
-        path,
-        request_headers(&r.extras, betas),
-        body,
-    ))
+    if billed.is_some() {
+        betas.push(BILLING_BETA);
+    }
+    let mut headers = request_headers(&r.extras, &betas);
+    if let Some(profile) = billed {
+        headers.push("anthropic-user-profile-id", profile);
+    }
+    Ok(EncodedRequest::post_json(path, headers, body))
 }
 
 // The platform serves Claude at `…/publishers/anthropic/models/{model}:rawPredict` and

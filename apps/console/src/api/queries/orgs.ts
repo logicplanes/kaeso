@@ -41,6 +41,12 @@ export const invitesQuery = (org: string, pendingOnly: boolean) =>
       ),
   });
 
+export const platformKeyQuery = (org: string, key: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "platform-keys", "one", key],
+    queryFn: async (): Promise<OrgKeyView> => data(await api.GET("/platform/v1/orgs/{org}/platform-keys/{key}", { params: { path: { org, key } } })),
+  });
+
 export const platformKeysQuery = (org: string, includeArchived: boolean) =>
   queryOptions({
     queryKey: ["orgs", org, "platform-keys", { includeArchived }],

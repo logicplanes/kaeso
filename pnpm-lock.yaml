@@ -10,6 +10,8 @@ overrides:
 
 patchedDependencies:
   '@tanstack/react-router@1.170.46': 0e6c925c4ddad96453957359bd5f12146649ef96bad03f47b8f0f4bbd373c4e1
+  picomatch@2.3.2: f93cb724d56dcd73602238bf5c909967efcafea19248453ce751261726863533
+  picomatch@4.0.7: 669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806
 
 importers:
 
@@ -5387,7 +5389,7 @@ snapshots:
     dependencies:
       '@types/hast': 3.0.5
       '@types/mdast': 4.0.4
-      picomatch: 4.0.7
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
       retext-smartypants: 6.2.0
       shiki: 4.6.0
       smol-toml: 1.9.1
@@ -7124,7 +7126,7 @@ snapshots:
   anymatch@3.1.3:
     dependencies:
       normalize-path: 3.0.0
-      picomatch: 2.3.2
+      picomatch: 2.3.2(patch_hash=f93cb724d56dcd73602238bf5c909967efcafea19248453ce751261726863533)
 
   argparse@2.0.1: {}
 
@@ -7224,7 +7226,7 @@ snapshots:
       p-queue: 10.0.0
       package-manager-detector: 1.9.0
       piccolore: 0.1.3
-      picomatch: 4.0.7
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
       rolldown: 1.3.2
       shiki: 4.6.0
       smol-toml: 1.9.1
@@ -8094,9 +8096,9 @@ snapshots:
     dependencies:
       walk-up-path: 4.0.0
 
-  fdir@6.5.0(picomatch@4.0.7):
+  fdir@6.5.0(picomatch@4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)):
     optionalDependencies:
-      picomatch: 4.0.7
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
 
   file-entry-cache@11.1.5:
     dependencies:
@@ -8617,7 +8619,7 @@ snapshots:
       jiti: 2.7.0
       oxc-parser: 0.155.0
       oxc-resolver: 11.24.2
-      picomatch: 4.0.7
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
       smol-toml: 1.9.1
       strip-json-comments: 5.0.3
       tinyglobby: 0.2.17
@@ -9450,9 +9452,9 @@ snapshots:
 
   picocolors@1.1.1: {}
 
-  picomatch@2.3.2: {}
+  picomatch@2.3.2(patch_hash=f93cb724d56dcd73602238bf5c909967efcafea19248453ce751261726863533): {}
 
-  picomatch@4.0.7: {}
+  picomatch@4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806): {}
 
   pkce-challenge@5.0.1: {}
 
@@ -10048,8 +10050,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.7)
-      picomatch: 4.0.7
+      fdir: 6.5.0(picomatch@4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806))
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
 
   tinyps@0.5.1: {}
 
@@ -10218,7 +10220,7 @@ snapshots:
   unplugin@3.4.0(esbuild@0.28.2)(rolldown@1.3.2)(vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@jridgewell/remapping': 2.3.5
-      picomatch: 4.0.7
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
       webpack-virtual-modules: 0.6.2
     optionalDependencies:
       esbuild: 0.28.2
@@ -10274,7 +10276,7 @@ snapshots:
   vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
-      picomatch: 4.0.7
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
       postcss: 8.5.30
       rolldown: 1.2.14
       tinyglobby: 0.2.17
@@ -10289,7 +10291,7 @@ snapshots:
   vite@8.3.6(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1):
     dependencies:
       lightningcss: 1.33.0
-      picomatch: 4.0.7
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
       postcss: 8.5.32
       rolldown: 1.2.19
       tinyglobby: 0.2.17
@@ -10314,7 +10316,7 @@ snapshots:
       expect-type: 1.4.0
       magic-string: 1.4.3
       obug: 3.0.0
-      picomatch: 4.0.7
+      picomatch: 4.0.7(patch_hash=669d30c8f3c2e2a9949db42cd0f7208990358b334226e4d848e1d3abd30d9806)
       std-env: 4.3.0
       tinybench: 6.2.2
       tinyexec: 1.3.1

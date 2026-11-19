@@ -12,6 +12,7 @@ import {
   FilterRow,
   Input,
   Menu,
+  Select,
   Tabs,
   Text,
   col,
@@ -27,6 +28,7 @@ import { useSession } from "~/auth/session";
 import { usePageCreateAction } from "~/shell/create-action";
 import { toast } from "~/shell/toast";
 import { InstancePage } from "./instance-page";
+import { orgSignIn } from "./sign-in";
 import { DeleteNowDialog, useRestoreOrg } from "./org-deletion";
 import { t } from "~/i18n";
 import { dayWithinYear } from "~/format/short-date";
@@ -34,7 +36,7 @@ import { dayWithinYear } from "~/format/short-date";
 const STATE_WIDTH = 128;
 const DELETION_STATE_WIDTH = 168;
 
-export type InstanceOrgsSearch = { q?: string; sort?: "deletion"; create?: boolean };
+export type InstanceOrgsSearch = { q?: string; sort?: "deletion"; sso?: "with" | "without"; create?: boolean };
 
 export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
   const navigate = useNavigate();
@@ -42,23 +44,27 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
   const session = useSession();
   const byDeletion = search.sort === "deletion";
   const sorting: SortingState = byDeletion ? [{ id: "state", desc: false }] : [];
-  const orgs = useInfiniteQuery(instanceOrgsQuery(search.q ?? "", byDeletion ? "deletion" : "created"));
+  const sso = search.sso === undefined ? undefined : search.sso === "with";
+  const orgs = useInfiniteQuery(instanceOrgsQuery(search.q ?? "", byDeletion ? "deletion" : "created", sso));
   const [creating, setCreating] = useState(!!search.create);
   const [deleting, setDeleting] = useState<InstanceOrgView | null>(null);
   const restore = useRestoreOrg();
   usePageCreateAction({ label: t("instance.createOrg", "Create organization"), run: () => setCreating(true) });
   const rows = useMemo(() => orgs.data?.pages.flatMap((p) => p.data) ?? [], [orgs.data]);
-  const show = (next: { q?: string | undefined; sort?: "deletion" | undefined }) =>
+  type Shown = { q?: string | undefined; sort?: "deletion" | undefined; sso?: "with" | "without" | undefined };
+  const show = (patch: Shown) => {
+    const next: Shown = { q: search.q, sort: search.sort, sso: search.sso, ...patch };
     void navigate({
       to: "/settings/instance/orgs",
-      search: { ...(next.q ? { q: next.q } : {}), ...(next.sort ? { sort: next.sort } : {}) },
+      search: { ...(next.q ? { q: next.q } : {}), ...(next.sort ? { sort: next.sort } : {}), ...(next.sso ? { sso: next.sso } : {}) },
       replace: true,
     });
-  const searchFor = (value: string) => show({ q: value.trim(), sort: search.sort });
+  };
+  const searchFor = (value: string) => show({ q: value.trim() });
   const sortBy = (next: SortingState) => {
     const state = next.find((s) => s.id === "state");
     const deletion = !!state && !state.desc;
-    if (deletion !== byDeletion) show({ q: search.q, sort: deletion ? "deletion" : undefined });
+    if (deletion !== byDeletion) show({ sort: deletion ? "deletion" : undefined });
   };
 
   const deletions = rows.some((o) => o.state === "scheduled_for_deletion");
@@ -91,6 +97,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
               <Text>{t("common.active", "Active")}</Text>
             ),
         ),
+        col.text({ id: "signIn", header: t("instance.signIn", "Sign-in"), size: 176, priority: 3 }, (o: InstanceOrgView) => orgSignIn(o)),
         col.custom(
           { id: "members", header: t("common.members", "Members"), size: 104, priority: 2 },
           (o: InstanceOrgView) => o.members,
@@ -134,11 +141,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
     >
       <FilterRow
         tabs={
-          <Tabs
-            variant="pill"
-            value={byDeletion ? "deletion" : "created"}
-            onValueChange={(v) => show({ q: search.q, sort: v === "deletion" ? "deletion" : undefined })}
-          >
+          <Tabs variant="pill" value={byDeletion ? "deletion" : "created"} onValueChange={(v) => show({ sort: v === "deletion" ? "deletion" : undefined })}>
             <Tabs.List aria-label={t("instance.orgOrder", "Order")}>
               <Tabs.Tab value="created">{t("instance.newestFirst", "Newest first")}</Tabs.Tab>
               <Tabs.Tab value="deletion">{t("instance.deletionFirst", "Deletion due first")}</Tabs.Tab>
@@ -162,6 +165,18 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
             onBlur={() => q.trim() !== (search.q ?? "") && searchFor(q)}
           />
         </div>
+        <Select
+          aria-label={t("instance.ssoFilter", "Single sign-on")}
+          size="sm"
+          icon={icons.filter}
+          value={search.sso ?? "all"}
+          onValueChange={(v) => show({ sso: v === "with" || v === "without" ? v : undefined })}
+          options={[
+            { value: "all", label: t("instance.ssoAll", "All sign-in") },
+            { value: "with", label: t("instance.ssoWith", "With single sign-on") },
+            { value: "without", label: t("instance.ssoWithout", "Without single sign-on") },
+          ]}
+        />
       </FilterRow>
       <DataTable
         aria-label={t("instance.orgs", "Organizations")}

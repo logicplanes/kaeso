@@ -84,6 +84,8 @@ Apps entscheiden je Anfrage mit dem Standard-Header `Cache-Control` der Anfrage:
 | Keiner | Antwortet aus dem Cache, wenn möglich, und speichert neue Antworten |
 | `no-cache` | Fragt den Anbieter erneut und speichert die neue Antwort anstelle der alten |
 | `no-store` | Umgeht den Cache: kein Nachschlagen, nichts gespeichert |
+| `max-age=60` | Antwortet aus dem Cache nur mit einer Antwort, die vor höchstens 60 Sekunden gespeichert wurde. Eine ältere zählt als Fehlschlag, und die neue Antwort ersetzt sie. `max-age=0` wirkt wie `no-cache` |
+| `only-if-cached` | Antwortet aus dem Cache oder mit 504 und ruft den Anbieter nie auf, etwa für einen Testlauf, der frühere Aufrufe wiederholt. Es antwortet auch mit 504, wenn das Projekt den Cache aus hat, die Anfrage nicht cachebar ist, etwa ein Stream, oder `no-cache` oder `no-store` die gespeicherte Antwort ausschließen. Die 504 kostet nichts und startet keinen [Alias-Fallback](../concepts/alias-routes.md) |
 
 Jede Antwort eines Projekts mit eingeschaltetem Cache trägt `kaeso-cache`: `hit`, `miss` oder `bypass` (nicht cachebar oder mit `no-store` übersprungen). Ein Treffer trägt außerdem `age`, die Sekunden seit dem Speichern der Antwort. Der Filter **Antwort-Cache** im [Anfrageprotokoll](request-logs.md) zeigt die Treffer, die Fehlschläge oder die Anfragen, die am Cache vorbeigingen.
 

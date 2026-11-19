@@ -44,32 +44,64 @@ impl Verdict {
     }
 }
 
+/// What the app's `Cache-Control` asks of the cache, of RFC 9111's request directives
+/// (section 5.2.1): `no-store`, `no-cache`, `max-age` and `only-if-cached`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Directive {
     pub read: bool,
     pub write: bool,
+    /// The oldest stored reply the app takes; an older one counts as a miss and is replaced.
+    pub max_age: Option<Duration>,
+    /// Answer from the cache or not at all: the provider is never called.
+    pub only_if_cached: bool,
 }
 
 pub fn directive(headers: &HeaderMap) -> Directive {
     let mut d = Directive {
         read: true,
         write: true,
+        max_age: None,
+        only_if_cached: false,
     };
     for value in headers.get_all(header::CACHE_CONTROL) {
         let Ok(value) = value.to_str() else {
             continue;
         };
         for token in value.split(',') {
-            let name = token.split('=').next().unwrap_or_default().trim();
+            let mut parts = token.splitn(2, '=');
+            let name = parts.next().unwrap_or_default().trim();
             if name.eq_ignore_ascii_case("no-store") {
                 d.read = false;
                 d.write = false;
             } else if name.eq_ignore_ascii_case("no-cache") {
                 d.read = false;
+            } else if name.eq_ignore_ascii_case("only-if-cached") {
+                d.only_if_cached = true;
+            } else if name.eq_ignore_ascii_case("max-age")
+                // A malformed value is ignored, as RFC 9111 lets a cache do.
+                && let Some(seconds) = parts
+                    .next()
+                    .map(|v| v.trim().trim_matches('"'))
+                    .filter(|v| !v.is_empty() && v.bytes().all(|b| b.is_ascii_digit()))
+                    .map(|v| v.parse::<u64>().unwrap_or(u64::MAX))
+            {
+                let age = Duration::from_secs(seconds);
+                d.max_age = Some(d.max_age.map_or(age, |m| m.min(age)));
             }
         }
     }
+    // `max-age=0` takes no stored reply, as `no-cache`.
+    if d.max_age == Some(Duration::ZERO) {
+        d.read = false;
+    }
     d
+}
+
+impl Directive {
+    /// Whether a stored reply this old may answer.
+    pub fn takes(&self, age: Duration) -> bool {
+        self.read && self.max_age.is_none_or(|most| age <= most)
+    }
 }
 
 #[derive(Debug)]
@@ -524,23 +556,59 @@ mod tests {
         let both = Directive {
             read: true,
             write: true,
+            max_age: None,
+            only_if_cached: false,
         };
         assert_eq!(directive(&HeaderMap::new()), both);
-        assert_eq!(directive(&headers(&["max-age=60"])), both);
+        assert_eq!(directive(&headers(&["max-age=soon", "max-age="])), both);
         assert_eq!(
             directive(&headers(&["no-cache"])),
             Directive {
                 read: false,
-                write: true
+                ..both
             }
         );
         let neither = Directive {
             read: false,
             write: false,
+            ..both
         };
         assert_eq!(directive(&headers(&["No-Store"])), neither);
-        assert_eq!(directive(&headers(&["max-age=0, no-store"])), neither);
+        assert_eq!(
+            directive(&headers(&["max-age=0, no-store"])),
+            Directive {
+                max_age: Some(Duration::ZERO),
+                ..neither
+            }
+        );
         assert_eq!(directive(&headers(&["no-cache", "no-store"])), neither);
+        assert_eq!(
+            directive(&headers(&["Max-Age=60, only-if-cached", "max-age=\"120\""])),
+            Directive {
+                max_age: Some(Duration::from_secs(60)),
+                only_if_cached: true,
+                ..both
+            },
+            "the smallest max-age"
+        );
+        assert_eq!(
+            directive(&headers(&["max-age=0"])),
+            Directive {
+                read: false,
+                max_age: Some(Duration::ZERO),
+                ..both
+            },
+            "as no-cache"
+        );
+    }
+
+    #[test]
+    fn max_age_takes_only_replies_as_young_as_it_says() {
+        let fresh = directive(&headers(&["max-age=60"]));
+        assert!(fresh.takes(Duration::from_secs(60)));
+        assert!(!fresh.takes(Duration::from_secs(61)));
+        assert!(directive(&HeaderMap::new()).takes(Duration::from_secs(86_400)));
+        assert!(!directive(&headers(&["no-cache, max-age=60"])).takes(Duration::ZERO));
     }
 
     #[test]

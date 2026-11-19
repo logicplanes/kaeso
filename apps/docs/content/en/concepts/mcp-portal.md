@@ -35,6 +35,8 @@ Kaeso signs in to a server in one of three ways:
 
 A connection is shared, so every caller uses one account, or each person signs in with their own under **Account** › **Connections**. Kaeso seals secrets and tokens with the master key and renews OAuth tokens before they run out. When a server refuses a connection, Kaeso marks it signed out once and stops using it until someone signs in again.
 
+Under **Account** › **Connections**, each of your connections says when you last used it. **Details** shows when you signed in, when Kaeso renews the access, when you last used it and, for a secret header, its name and last four characters. A shared connection shows the same on the server's sheet.
+
 ## Changed tools
 
 Kaeso keeps a hash of each tool's definition: its name, title, description, schemas and hints. It asks every server for its tools at the interval `mcp_servers.sync_interval`, 15 minutes by default, and when someone checks the server in the console.
