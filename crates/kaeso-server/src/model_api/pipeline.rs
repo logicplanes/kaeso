@@ -271,17 +271,6 @@ impl Drop for Recording {
     }
 }
 
-pub(crate) fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
-    let mut cause = Some(error);
-    while let Some(e) = cause {
-        if e.is::<http_body_util::LengthLimitError>() {
-            return true;
-        }
-        cause = e.source();
-    }
-    false
-}
-
 pub(super) fn shutting_down() -> KppError {
     error(
         ErrorKind::ProviderError,
@@ -1064,7 +1053,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 400,
                 "The request body did not arrive in time; send it again.",
             )
-        } else if over_limit(&e) {
+        } else if crate::http::body::over_limit(&e) {
             error(
                 ErrorKind::RequestTooLarge,
                 413,

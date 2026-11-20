@@ -93,7 +93,7 @@ fn upload_share(body: &axum::body::Body, max_body: usize) -> u64 {
 pub(super) fn body_error(e: &axum::Error, too_large: &str) -> ApiError {
     if crate::http::body_timeout::timed_out(e) {
         ApiError::bad_request("The request body did not arrive in time; send it again.")
-    } else if pipeline::over_limit(e) {
+    } else if crate::http::body::over_limit(e) {
         ApiError::TooLarge(too_large.to_owned())
     } else {
         ApiError::bad_request("The request body broke off before it was complete; send it again.")

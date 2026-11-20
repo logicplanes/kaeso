@@ -1,11 +1,23 @@
 use axum::body::Body;
 use axum::body::HttpBody as _;
 use bytes::{Bytes, BytesMut};
-use http_body_util::{BodyExt as _, Limited};
+use http_body_util::{BodyExt as _, LengthLimitError, Limited};
+
+// What an oversized body may still send before the gateway stops reading it. Beyond this, and
+// past the body's read deadline, the connection closes.
+const DRAIN_LIMIT: u64 = 1 << 30;
 
 // Collecting the frames and joining them at the end holds a large upload twice; copying each
 // frame into a buffer sized from the body's length as it arrives holds it once.
-pub async fn read(body: Body, limit: usize) -> Result<Bytes, axum::Error> {
+pub async fn read(mut body: Body, limit: usize) -> Result<Bytes, axum::Error> {
+    let read = collect(&mut body, limit).await;
+    if read.as_ref().is_err_and(|e| over_limit(e)) {
+        drain(&mut body).await;
+    }
+    read
+}
+
+async fn collect(body: &mut Body, limit: usize) -> Result<Bytes, axum::Error> {
     let hint = body.size_hint();
     let expected = hint.exact().or(hint.upper()).unwrap_or(hint.lower());
     let mut body = Limited::new(body, limit);
@@ -42,6 +54,34 @@ pub async fn read(body: Body, limit: usize) -> Result<Bytes, axum::Error> {
     })
 }
 
+// A proxy that streams the body to the gateway, such as Traefik, answers the app with its own
+// 502 when the gateway closes the connection while the body is still arriving, so the 413 never
+// reaches the app. Reading the rest first lets the proxy finish and pass the 413 on.
+async fn drain(body: &mut Body) {
+    let mut drained: u64 = 0;
+    while drained <= DRAIN_LIMIT {
+        match body.frame().await {
+            Some(Ok(frame)) => {
+                if let Some(data) = frame.data_ref() {
+                    drained = drained.saturating_add(u64::try_from(data.len()).unwrap_or(u64::MAX));
+                }
+            }
+            Some(Err(_)) | None => return,
+        }
+    }
+}
+
+pub(crate) fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
+    let mut cause = Some(error);
+    while let Some(e) = cause {
+        if e.is::<LengthLimitError>() {
+            return true;
+        }
+        cause = e.source();
+    }
+    false
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -76,5 +116,39 @@ mod tests {
             cause = c.source();
         }
         assert!(found, "{e}");
+    }
+
+    fn counted(
+        frames: usize,
+        size: usize,
+        polled: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    ) -> Body {
+        use futures::StreamExt as _;
+        let data = Bytes::from(vec![b'a'; size]);
+        let stream = futures::stream::iter(0..frames).map(move |_| {
+            polled.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            Ok::<_, std::io::Error>(hyper::body::Frame::data(data.clone()))
+        });
+        Body::new(http_body_util::StreamBody::new(stream))
+    }
+
+    #[tokio::test]
+    async fn an_oversized_body_is_read_to_its_end_before_the_refusal() {
+        let polled = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let e = read(counted(10, 4, polled.clone()), 5).await.unwrap_err();
+        assert!(over_limit(&e), "{e}");
+        assert_eq!(polled.load(std::sync::atomic::Ordering::Relaxed), 10);
+    }
+
+    #[tokio::test]
+    async fn draining_stops_after_a_gibibyte() {
+        let polled = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let frame = 64 << 20;
+        let e = read(counted(usize::MAX, frame, polled.clone()), 5)
+            .await
+            .unwrap_err();
+        assert!(over_limit(&e), "{e}");
+        let read = polled.load(std::sync::atomic::Ordering::Relaxed);
+        assert_eq!(read, 1 + usize::try_from(DRAIN_LIMIT).unwrap() / frame + 1);
     }
 }

@@ -237,6 +237,8 @@ Kaeso liest einen Anfragekörper, der mit `Content-Encoding: gzip`, `x-gzip` ode
 
 Ein Body trägt eine Kodierung. Jede andere, etwa `br`, und zwei auf einmal, etwa `gzip, zstd`, erhalten 415 im Format der App. Ein Body, der sich nicht entpacken lässt, erhält 400.
 
+Ein Body über der Grenze erhält 413 im Format der App, sobald Kaeso ihn bis zu seinem Ende gelesen hat, höchstens 1 GiB. So gibt ein Proxy vor Kaeso, etwa Traefik, die 413 weiter, statt selbst mit 502 zu antworten.
+
 ## Streaming
 
 Fordern Sie einen Stream so an, wie es das Format vorsieht, mit `"stream": true`. Die Antwort ist ein Server-Sent-Events-Stream im Format der App.

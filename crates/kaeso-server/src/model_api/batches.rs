@@ -461,7 +461,7 @@ async fn upload(
     body: Body,
 ) -> Result<Value, KppError> {
     let limit = state.config.body_limits.model_api.as_usize();
-    let bytes = axum::body::to_bytes(body, limit).await.map_err(|_| {
+    let bytes = crate::http::body::read(body, limit).await.map_err(|_| {
         error(
             ErrorKind::RequestTooLarge,
             413,
