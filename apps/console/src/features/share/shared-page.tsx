@@ -142,7 +142,7 @@ function SharedBody({ v }: { v: SharedView }) {
     <Frame>
       <header className="flex flex-col gap-8">
         <div className="flex items-baseline gap-8">
-          <Heading level={1} className="min-w-0 wrap-break-word">
+          <Heading level={1} className="min-w-0">
             {v.title}
           </Heading>
           <Badge tone="outline" className="shrink-0">
@@ -252,7 +252,7 @@ function Usage({ v }: { v: SharedView }) {
   );
 }
 
-/** The last of an odd number of cells takes the whole row, so no empty slot shows the grid's hairline colour. */
+// The last of an odd number of cells takes the whole row, or its empty neighbour shows the grid's hairline colour.
 const rowAlone = (i: number, count: number) => count % 2 === 1 && i === count - 1;
 
 function Breakdown({ b, metric, money, wide }: { b: SharedBreakdown; metric: MetricId; money: Money; wide: boolean }) {

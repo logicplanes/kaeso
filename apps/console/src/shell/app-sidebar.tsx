@@ -29,6 +29,7 @@ export function AppSidebar() {
           icon={icons.search}
           aria-label={t("common.search", "Search")}
           aria-haspopup="dialog"
+          data-leaves-navigation=""
           shortcut={["mod", "k"]}
           onClick={openPalette}
         />

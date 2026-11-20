@@ -8,15 +8,9 @@ import { useUiText } from "../../i18n/context.js";
 
 const PEEK_LEAVE = 160;
 
-// A menu the sheet opened (a switcher's) bubbles its clicks here through the portal: a chosen
-// item acts like a link and leaves the navigation, and so does a button that opens a dialog (search);
-// a submenu's trigger or a checkbox doesn't.
-const LEAVES_NAVIGATION = [
-  "a[href]",
-  'button[aria-haspopup="dialog"]',
-  '[role="menuitem"]:not([aria-haspopup]):not([aria-disabled="true"])',
-  '[role="menuitemradio"]:not([aria-disabled="true"])',
-].join(", ");
+// Clicks from a switcher's menu bubble here through the portal too, so its links leave the
+// navigation like the sidebar's own; its other items close it through the menu (`item-press`).
+const LEAVES_NAVIGATION = "a[href], [data-leaves-navigation]";
 
 export interface NavSheetProps {
   open: boolean;

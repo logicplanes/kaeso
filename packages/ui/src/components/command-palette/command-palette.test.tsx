@@ -33,7 +33,7 @@ describe("CommandPalette", () => {
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([expect.stringContaining("Request logs")]);
   });
 
-  it("keeps a hint whole and ends a long name in an ellipsis, and leaves shortcuts out of a palette as narrow as a phone", () => {
+  it("ends a long name in an ellipsis before its hint, which keeps up to half the row, and leaves shortcuts out of a palette as narrow as a phone", () => {
     render(
       <CommandPalette
         inline
@@ -49,7 +49,7 @@ describe("CommandPalette", () => {
     );
     const option = screen.getByRole("option", { name: /Customer-facing/ });
     const hint = Array.from(option.querySelectorAll("span")).find((s) => s.textContent === ", Project");
-    expect(hint).toHaveClass("shrink-0", "truncate");
+    expect(hint).toHaveClass("shrink-0", "max-w-1/2", "truncate");
     const keys = option.querySelector("kbd");
     expect(keys).not.toBeNull();
     expect(keys?.closest(".dialog-narrow\\:hidden")).toBeInstanceOf(HTMLElement);

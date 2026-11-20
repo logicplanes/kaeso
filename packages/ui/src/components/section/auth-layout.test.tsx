@@ -28,4 +28,14 @@ describe("AuthLayout", () => {
     );
     expect(screen.getByText("Signed in as owner@example.com · returns to app.example.com").parentElement).toHaveClass("w-full", "max-w-auth", "text-center");
   });
+
+  it("holds no form slot for children that render nothing", () => {
+    render(
+      <AuthLayout title="Signed in again" description="You can close this window and continue in Kaeso.">
+        {false}
+        {null}
+      </AuthLayout>,
+    );
+    expect(screen.getByRole("heading", { level: 1 }).parentElement?.lastElementChild).toHaveTextContent("You can close this window and continue in Kaeso.");
+  });
 });

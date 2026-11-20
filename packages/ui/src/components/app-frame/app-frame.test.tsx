@@ -1,5 +1,4 @@
 import { createRef, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -9,6 +8,8 @@ import { PageHeader } from "../page-header/page-header.js";
 import { Sidebar } from "../sidebar/sidebar.js";
 import { Button } from "../button/button.js";
 import { Banner } from "../banner/banner.js";
+import { Menu } from "../menu/menu.js";
+import { Dialog } from "../dialog/dialog.js";
 import { icons } from "../../icons/vocabulary.js";
 import { LocaleProvider, type UiMessages } from "../../i18n/index.js";
 import de from "../../i18n/locales/de.js";
@@ -240,39 +241,43 @@ describe("AppFrame's refs", () => {
     expect(ref.current).toHaveAttribute("data-sidebar-expand");
     expect(ref.current).toHaveAccessibleName("Open navigation");
   });
-  it("closes when an item of a menu it opened is chosen or a button opens a dialog, as a link does, but not for a submenu or a disabled item", async () => {
+  it("closes when a switcher's item is chosen, a link followed or a marked control pressed, and stays for a kept-open item, a checkbox or a dialog it opens", async () => {
+    const user = userEvent.setup();
     const changes: boolean[] = [];
     render(
-      <NavSheet open onOpenChange={(o) => changes.push(o)}>
-        {createPortal(
-          <div role="menu">
-            <div role="menuitem" aria-haspopup="menu">
-              Theme
-            </div>
-            <div role="menuitem" aria-disabled="true">
-              Instance
-            </div>
-            <div role="menuitemradio" aria-checked="false">
-              Globex
-            </div>
-            <div role="menuitem">Create organization</div>
-          </div>,
-          document.body,
-        )}
-        <button type="button" aria-haspopup="dialog">
-          Search
-        </button>
-      </NavSheet>,
+      <Sidebar.Provider shortcut={false}>
+        <NavSheet open onOpenChange={(o) => changes.push(o)}>
+          <Sidebar aria-label="Console">
+            <Sidebar.Content>
+              <Sidebar.Switcher avatar={null} label="Northwind Labs">
+                <Menu.CheckboxItem checked={false}>Compact rows</Menu.CheckboxItem>
+                <Menu.Item closeOnClick={false}>Copy id</Menu.Item>
+                <Menu.Item>Create organization</Menu.Item>
+              </Sidebar.Switcher>
+              <Dialog trigger={<button type="button">Rename</button>} title="Rename" />
+              <button type="button" data-leaves-navigation="">
+                Search
+              </button>
+            </Sidebar.Content>
+          </Sidebar>
+        </NavSheet>
+      </Sidebar.Provider>,
     );
-    await screen.findByRole("dialog", { name: "Navigation" });
-    fireEvent.click(screen.getByText("Theme"));
-    fireEvent.click(screen.getByText("Instance"));
+    const nav = await screen.findByRole("dialog", { name: "Navigation" });
+    changes.length = 0;
+    await user.click(within(nav).getByRole("button", { name: "Northwind Labs" }));
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: "Compact rows" }));
+    await user.click(screen.getByRole("menuitem", { name: "Copy id" }));
     expect(changes).toEqual([]);
-    fireEvent.click(screen.getByText("Globex"));
-    fireEvent.click(screen.getByText("Create organization"));
-    expect(changes).toEqual([false, false]);
-    fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(changes).toEqual([false, false, false]);
+    await user.click(screen.getByRole("menuitem", { name: "Create organization" }));
+    expect(changes).toEqual([false]);
+    changes.length = 0;
+    await user.click(within(nav).getByRole("button", { name: "Rename" }));
+    expect(await screen.findByRole("dialog", { name: "Rename" })).toBeInTheDocument();
+    expect(changes).toEqual([]);
+    await user.keyboard("{Escape}");
+    await user.click(within(nav).getByRole("button", { name: "Search" }));
+    expect(changes).toEqual([false]);
   });
 
   it("forwards NavSheet's ref to the open sheet", async () => {

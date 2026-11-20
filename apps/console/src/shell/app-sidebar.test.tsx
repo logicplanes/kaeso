@@ -118,6 +118,23 @@ describe("the sidebar in a project", () => {
     expect(within(sidebar()).queryByRole("link", { name: "Playground" })).not.toBeInTheDocument();
   });
 
+  it("shows the organization's pages on a project the person can't open", async () => {
+    signedIn();
+    on("GET", "orgs/:org/projects/:project", apiError(403, "permission_denied", "You are not a member of this project."));
+    await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
+    expect(await screen.findByText("You don't have access to this page")).toBeInTheDocument();
+    expect(await within(sidebar()).findByRole("link", { name: "Overview" })).toHaveAttribute("href", `/orgs/${ORG}`);
+    expect(within(sidebar()).queryByRole("link", { name: "Playground" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the project's pages when the project fails to load for a passing reason", async () => {
+    signedIn();
+    on("GET", "orgs/:org/projects/:project", apiError(500, "internal", "The gateway hit an error."));
+    await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
+    expect(await screen.findByText("This page couldn't load")).toBeInTheDocument();
+    expect(await within(sidebar()).findByRole("link", { name: "Playground" })).toBeInTheDocument();
+  });
+
   it("names the project it is in even when the organization's list leaves it out", async () => {
     signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage" })] });
     on("GET", "orgs/:org/projects/:project", project());
@@ -160,6 +177,7 @@ describe("the sidebar in an organization", () => {
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
     const search = await within(await screen.findByRole("navigation", { name: "Console" })).findByRole("button", { name: "Search" });
     expect(search).toHaveAttribute("aria-haspopup", "dialog");
+    expect(search).toHaveAttribute("data-leaves-navigation");
     await user.click(search);
     expect(await screen.findByPlaceholderText("Search pages, projects and members")).toBeInTheDocument();
   });

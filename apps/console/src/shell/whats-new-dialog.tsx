@@ -48,6 +48,7 @@ function WhatsNewDialog({ releases, open, onOpenChange }: { releases: WhatsNewRe
       }
       footer={
         <>
+          {/* Not footerStart: in a phone-width footer only the footer's own children fill their row. */}
           {hasNotes ? (
             <Button className="mr-auto" trailingIcon={details ? icons.chevronUp : icons.chevronDown} onClick={() => setDetails((d) => !d)}>
               {details ? t("shell.whatsNew.hide", "Hide improvements") : t("shell.whatsNew.show", "Show improvements")}

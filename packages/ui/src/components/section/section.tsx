@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from "react";
+import { Children, forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { NavWordmark } from "../logo/nav-wordmark.js";
 import { SectionHeader } from "./section-header.js";
@@ -58,7 +58,7 @@ export const AuthLayout = forwardRef<
       <div className="flex w-full max-w-auth flex-1 flex-col justify-center">
         <h1 className="text-center text-title-lg font-semibold text-fg text-balance wrap-break-word">{title}</h1>
         {description && <p className="mt-8 text-center text-body-lg font-regular text-fg-secondary text-pretty wrap-break-word">{description}</p>}
-        {children && <div className="mt-24 flex flex-col gap-16">{children}</div>}
+        {Children.toArray(children).length > 0 && <div className="mt-24 flex flex-col gap-16">{children}</div>}
       </div>
       {footer && <div className="mt-48 w-full max-w-auth text-center text-small text-fg-secondary text-pretty">{footer}</div>}
     </div>

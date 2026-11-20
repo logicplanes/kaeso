@@ -1268,5 +1268,6 @@
   "A subtle line inside groups, a clearer one between regions, `strong` for a section head's rule, `marker` for a list item's short hairline, or `ink` in the text colour for a quotation's rule (2px wide when vertical).": "组内使用淡线，区域之间使用更清晰的线；`strong` 用于章节标题下的线；`marker` 用于列表项的短细线；`ink` 使用文字颜色，用于引文的竖线（竖直时宽 2px）。",
   "Several versions: \"Python · Node · curl\", shown as pill tabs in the title bar, the chosen one raised on the plate as in a segmented control.": "多个版本：“Python · Node · curl”，在标题栏中以胶囊标签页显示，所选版本像分段控件一样在底板上凸起。",
   "What screen readers hear as the value when `valueLabel` is not plain text, such as a shortened figure with the exact one in a tooltip: \"10,624,184 of 100,000,000\".": "当 `valueLabel` 不是纯文本时（例如缩写的数字，精确值在提示中），屏幕阅读器读出的值：\"已用 10,624,184，共 100,000,000\"。",
-  "Writes `cost` in place of the dollar format, such as in another currency at the day's rate.": "以此写出 `cost`，取代美元格式，例如按当日汇率换算为其他货币。"
+  "Writes `cost` in place of the dollar format, such as in another currency at the day's rate.": "以此写出 `cost`，取代美元格式，例如按当日汇率换算为其他货币。",
+  "Called when it opens or closes, with why: `item-press` when a chosen item closed it, `escape-key`, `outside-press` or `trigger-press` otherwise.": "打开或关闭时调用，并说明原因：选中某一项而关闭时为 `item-press`，否则为 `escape-key`、`outside-press` 或 `trigger-press`。"
 }
