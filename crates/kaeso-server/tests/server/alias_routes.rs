@@ -1223,9 +1223,11 @@ async fn a_responses_stream_that_ends_on_an_error_event_before_any_output_falls_
         true,
     )
     .await;
-    assert!(r.status.is_server_error(), "{}: {}", r.status, r.text());
+    assert_eq!(r.status.as_u16(), 500, "{}", r.text());
     assert_eq!(r.json()["type"], "error", "{}", r.text());
+    assert_eq!(r.json()["error"]["type"], "api_error", "{}", r.text());
     let o = env.outcomes().await.pop().unwrap();
+    assert_eq!(o.status, 500);
     assert_eq!(o.error_kind.as_deref(), Some("provider_error"));
 }
 

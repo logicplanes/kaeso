@@ -1123,10 +1123,8 @@ mod tests {
     }
 
     fn responses_stream(name: &str) -> Vec<u8> {
-        let path = format!(
-            "{}/../kaeso-codecs/fixtures/openai_responses/streams/{name}.sse",
-            env!("CARGO_MANIFEST_DIR")
-        );
+        let path = kaeso_testkit::mock_provider::kpp_fixtures()
+            .join(format!("openai_responses/streams/{name}.sse"));
         std::fs::read(path).unwrap()
     }
 
@@ -1174,9 +1172,10 @@ mod tests {
         }
         // A stream cut off after its start is the pump's to report, as it would be later on.
         let stream = responses_stream("error-at-start");
+        let error = b"event: error\n";
         let cut = stream
-            .windows(13)
-            .position(|w| w == b"event: error\n")
+            .windows(error.len())
+            .position(|w| w == error)
             .unwrap();
         let (found, replayed) = peek_at(&stream[..cut]).await;
         assert!(found.is_none(), "{found:?}");
