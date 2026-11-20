@@ -1220,7 +1220,7 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 admitted = Some(
                     state
                         .translating
-                        .hold_until(holder, needed, deadline)
+                        .hold_until(holder, needed.saturating_add(window), deadline)
                         .await
                         .map_err(busy)?,
                 );
