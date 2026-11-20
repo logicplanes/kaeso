@@ -1,10 +1,10 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
-import { hoverReason, notifications } from "~/test/fixtures/org";
+import { hoverReason, member, notifications } from "~/test/fixtures/org";
 import { apiKey, grant, listed, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { createdKey } from "~/test/fixtures/shell";
-import { apiError, on, requests } from "~/test/network";
+import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 const ACCOUNTS = "orgs/:org/projects/:project/service-accounts";
@@ -59,6 +59,20 @@ describe("ServiceAccountsPage", () => {
     expect(rows[1]).toHaveTextContent("Viewer · customized");
     for (const row of rows) expect(row.querySelector("svg")).toBeNull();
     expect(requests("GET", ACCOUNTS).map((r) => r.query.get("include_archived"))).toEqual(["true"]);
+  });
+
+  it("names who created an account when they reach the project through the organization, not as a member", async () => {
+    signedIn();
+    projectData({
+      members: [projectMember({ user: { id: "usr_ada", name: "Ada Okafor" } })],
+      accounts: [serviceAccount({ created_by: "usr_grace" })],
+    });
+    on("GET", "orgs/:org/members", page([member({ user: { id: "usr_grace", name: "Grace Hopper" } })]));
+    await renderApp(projectPath("service-accounts"));
+
+    const grid = await screen.findByRole("grid", { name: "Service accounts" });
+    await waitFor(() => expect(within(grid).getAllByRole("gridcell")[0]).toHaveTextContent("Created by Grace Hopper"));
+    expect(grid).not.toHaveTextContent("usr_grace");
   });
 
   it("shows archived service accounts on the All tab", async () => {
