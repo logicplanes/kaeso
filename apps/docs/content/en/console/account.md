@@ -14,7 +14,7 @@ Your account is under **Account**, in the menu at the foot of the sidebar. It ha
 | Agents | The agents you connected through the [MCP server](../api/mcp.md), with their rights and activity |
 | API keys | Your own keys in every project ([API keys](api-keys.md)) |
 | Memberships | Your organizations and their projects, with your roles, and leaving an organization |
-| Connections | Your own accounts at MCP servers that each person signs in to ([MCP portal](../concepts/mcp-portal.md#connections)) |
+| Connections | Your own accounts at MCP servers that each person signs in to, and when each was last used ([MCP portal](../concepts/mcp-portal.md#connections)) |
 | Notifications | Which emails you receive, and when |
 | Appearance | Theme and language |
 
@@ -65,7 +65,7 @@ A session ends after 7 days without use, and after 30 days at most.
 
 ## Manage your agents
 
-At the top, **Agents** shows the MCP server's address with the marks of Claude Code, Cursor and GitHub Copilot; each opens how to add the server to that client. Below, it lists every agent you authorized: its name and model family, a summary of its rights, the organizations it can reach, and when it was created and last used. Choose an agent to open its page, where you can:
+At the top, **Agents** shows the MCP server's address with the marks of Claude, Cursor and GitHub Copilot; each opens how to add the server to that client. For Claude, **Add to Claude** adds it as a custom connector to claude.ai, the desktop and mobile apps and Cowork, and a command adds it to Claude Code. Below, it lists every agent you authorized: its name and model family, a summary of its rights, the organizations it can reach, and when it was created and last used. Choose an agent to open its page, where you can:
 
 - rename it;
 - change its rights in the same editor as the consent page, then choose **Save rights**;

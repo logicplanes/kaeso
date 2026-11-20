@@ -37,7 +37,7 @@ SCIM 只管理组织已验证域名下的账户。地址位于其他域名的访
 
 ## 端点
 
-每个请求都以 `Authorization: Bearer …` 携带组织的令牌。错误的令牌或其他组织的令牌会得到 `401`，同一地址的重复失败会像未知 API 密钥一样被限流。回复为 `application/scim+json`；错误遵循 RFC 7644，例如 `{"schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"], "status": "409", "scimType": "uniqueness", "detail": "…"}`。
+每个请求都以 `Authorization: Bearer …` 携带组织的令牌。错误的令牌或其他组织的令牌会得到 `401`，同一地址的重复失败会像未知 API 密钥一样被限流。组织没有单点登录连接时，每个请求都会得到 `403`。回复为 `application/scim+json`；错误遵循 RFC 7644，例如 `{"schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"], "status": "409", "scimType": "uniqueness", "detail": "…"}`。
 
 | 方法和路径 | 作用 |
 | --- | --- |

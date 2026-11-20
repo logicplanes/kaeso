@@ -63,14 +63,18 @@ These are never translated:
 | master key | Hauptschlüssel | 主密钥 |
 | provider | Anbieter | 服务商 |
 | model | Modell | 模型 |
+| model line | Modelllinie | 模型系列 |
 | alias | Alias | 别名 |
 | route (of an alias) | Route | 路由 |
 | fallback | Fallback | 回退 |
+| retries (of a step or project) | Wiederholungen | 重试 |
 | condition (of a route) | Bedingung | 条件 |
 | split (of a route) | Aufteilung | 分流 |
 | limit | Limit | 限额 |
 | budget | Budget | 预算 |
 | rate limit | Ratenlimit | 速率限制 |
+| guardrail | Guardrail | 防护规则 |
+| webhook | Webhook | Webhook |
 | usage | Nutzung | 用量 |
 | cost | Kosten | 费用 |
 | request | Anfrage | 请求 |

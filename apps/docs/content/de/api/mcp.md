@@ -230,6 +230,7 @@ Diese Aktionen brauchen eine Konsolensitzung, daher hat kein Agent ein Tool daf�
 - Ihre Sitzungen, E-Mail-Adresse, Ihr Passwort, die Zwei-Faktor-Authentifizierung, Wiederherstellungscodes und Verknüpfungen mit Single Sign-on, eine Organisation erstellen und Ihr Konto löschen.
 - Jemanden zum Instanz-Admin machen, Single Sign-on für Instanz-Admins, die Agenten-Richtlinie der Instanz und einen Benutzer oder eine Organisation sofort löschen.
 - Die Agenten-Richtlinie einer Organisation und eine Organisation für einen Agenten schließen.
+- Das Single Sign-on einer Organisation: seine Verbindung, die Prüfung seiner Domains, Gruppenregeln und Pflicht sowie das SCIM-Token.
 - Plattform-Schlüssel erstellen oder rotieren, Schlüssel mit Plattformzugriff erstellen und der Playground.
 
 Ein Agent kann API-Schlüssel, die Modelle aufrufen, nur in Projekten erstellen, in denen er `api.request` hat.

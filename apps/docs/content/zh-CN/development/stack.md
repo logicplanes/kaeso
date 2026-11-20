@@ -25,7 +25,7 @@ flowchart TD
   gateway --> mail
 ```
 
-控制台的开发服务器把 `/platform` 和 `/v1` 转发给网关，所以浏览器只看到一个地址。会话 Cookie 因此是第一方 Cookie，与生产环境中位于反向代理之后时一样。
+控制台的开发服务器把 `/platform`、`/v1`、`/mcp`、`/oauth` 以及 `/.well-known` 下的 OAuth 发现地址转发给网关，所以浏览器只看到一个地址。会话 Cookie 因此是第一方 Cookie，与生产环境中位于反向代理之后时一样。
 
 ## 查看运行的服务
 

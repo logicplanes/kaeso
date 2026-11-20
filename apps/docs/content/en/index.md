@@ -49,7 +49,7 @@ This documentation describes Kaeso {{version}}.
 
 ## What Kaeso gives you
 
-- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, Anthropic Messages, the Gemini API and the ElevenLabs API. Each chat format can call every chat model in your catalogue, whichever [provider](concepts/providers.md) serves it, so an OpenAI SDK can talk to Claude.
+- **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, Anthropic Messages, the Gemini API and the ElevenLabs API, and Cohere's format for [reranking](api/rerank.md) and three formats for [decisions](api/decisions.md). Each chat format can call every chat model in your catalogue, whichever [provider](concepts/providers.md) serves it, so an OpenAI SDK can talk to Claude.
 - **Media.** Images, video, speech, transcription, sound effects and music through OpenAI's [Images](api/images.md), [Audio](api/audio.md) and [Videos](api/videos.md) APIs and the [ElevenLabs API](api/elevenlabs.md), on every provider that offers them.
 - **Provider keys that stay with you.** Apps get Kaeso API keys (`sk-kso-…`) that you can limit, expire and disable. Your provider keys are encrypted under a master key that only your install holds.
 - **Organizations and projects.** Members, roles, rights and service accounts, and a model catalogue in each project, with prices and capabilities from [KPMR](concepts/kpmr.md).

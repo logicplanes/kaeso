@@ -64,7 +64,7 @@ In beiden Fällen läuft ein Aufruf als Person oder Dienstkonto: als Inhaber des
 
 ## Versionen und Methoden
 
-Das Portal spricht MCP über Streamable HTTP in den Versionen `2025-03-26`, `2025-06-18`, `2025-11-25` und `2026-07-28`. Version `2026-07-28` ist zustandslos: Senden Sie `MCP-Protocol-Version` bei jeder Anfrage, und `server/discover` listet die Versionen, die das Portal spricht. Ältere Versionen beginnen mit `initialize`, und eine Anfrage ohne den Header gilt als `2025-03-26`.
+Das Portal spricht MCP über Streamable HTTP in den Versionen `2025-03-26`, `2025-06-18`, `2025-11-25` und `2026-07-28`. Version `2026-07-28` ist zustandslos: Senden Sie bei jeder Anfrage `MCP-Protocol-Version`, `Mcp-Method` und bei `tools/call` und `resources/read` auch `Mcp-Name`, und tragen Sie die Version in `_meta` ein, wie beim [MCP-Server](mcp.md#protokoll). `server/discover` listet die Versionen, die das Portal spricht. Ältere Versionen beginnen mit `initialize`, und eine Anfrage ohne den Header gilt als `2025-03-26`.
 
 | Methode | Was sie tut |
 | --- | --- |
@@ -75,7 +75,7 @@ Das Portal spricht MCP über Streamable HTTP in den Versionen `2025-03-26`, `202
 | `resources/list`, `resources/read` | Die [Ansichten von MCP Apps](#ansichten-von-mcp-apps) der Tools, die Sie aufrufen dürfen, und das HTML einer Ansicht |
 | `resources/templates/list` | Immer leer |
 
-Benachrichtigungen bekommen 202 ohne Inhalt. Andere Methoden bekommen `-32601`.
+Benachrichtigungen bekommen 202 ohne Inhalt. Andere Methoden bekommen `-32601`, in Version `2026-07-28` mit HTTP 404. Ein Header, der fehlt oder nicht zur Anfrage passt, bekommt HTTP 400 mit `-32020`, und eine Version, die das Portal nicht spricht, `-32022`.
 
 ## Ansichten von MCP Apps
 

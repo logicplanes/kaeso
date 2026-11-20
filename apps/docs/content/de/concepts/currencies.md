@@ -9,7 +9,7 @@ Jede Organisation hat eine Währung, US-Dollar, solange ein Owner oder Admin kei
 ```mermaid
 flowchart LR
   accTitle: Wo die Währung der Organisation hinzukommt
-  accDescr: Das Gateway holt die Referenzkurse der EZB einmal pro Arbeitstag. Anfragen werden in US-Dollar berechnet und gespeichert, und die Organisation liest Ausgaben, Preise und Budgets in ihrer eigenen Währung.
+  accDescr: Das Gateway holt die Referenzkurse, die die EZB einmal pro Arbeitstag veröffentlicht. Anfragen werden in US-Dollar berechnet und gespeichert, und die Organisation liest Ausgaben, Preise und Budgets in ihrer eigenen Währung.
   ecb[Referenzkurse der EZB]:::outside --> gateway[Gateway]:::accent
   gateway --> stored[Ausgaben in USD gespeichert]
   stored --> shown[Ausgaben, Preise und Budgets in der Währung der Organisation]

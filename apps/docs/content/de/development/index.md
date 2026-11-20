@@ -12,10 +12,12 @@ Diese Seiten richten sich an alle, die Kaeso selbst ändern. Alles liegt in eine
 | `apps/console` | Die Web-Konsole | TypeScript, React |
 | `apps/docs` | Diese Dokumentation | Markdown, TypeScript |
 | `apps/showcase` | Der Showcase der UI-Bibliothek unter ui.kaeso.app | Astro, React |
+| `apps/mcp-views` | Die interaktiven Ansichten, die der MCP-Server von Kaeso in Clients mit MCP Apps zeigt, ins Gateway eingebaut | TypeScript, React |
 | `packages/ui`, `packages/tokens` | Die Komponentenbibliothek und die Design-Tokens, aus denen jede Oberfläche gebaut ist | TypeScript, React |
-| `e2e/` | Die offiziellen Python-SDKs von OpenAI und Anthropic gegen KPP, das Gateway und eine frische Installation | Python |
+| `e2e/` | Die offiziellen Python-SDKs gegen KPP, das Gateway, sein MCP-Portal, eine frische Installation und das Helm-Chart | Python |
 | `fuzz/` | Fuzz-Targets für jeden KPP-Decoder | Rust |
-| `deploy/` | Die Dockerfiles, die `compose.yaml` für den Selbstbetrieb und den Entwicklungs-Stack | Docker |
+| `deploy/` | Die Dockerfiles, die `compose.yaml` für den Selbstbetrieb, das Helm-Chart, die Plattformvorlagen und den Entwicklungs-Stack | Docker, Helm |
+| `plugins/` | Die Plugins für Claude Code und Cursor zum MCP-Server von Kaeso | JSON, Markdown |
 | `openapi.json` | Das Dokument der Platform API, aus dem Code des Gateways erzeugt | |
 
 Cargo baut den Rust-Workspace und pnpm den TypeScript-Workspace, beide vom Wurzelverzeichnis des Repositorys aus.

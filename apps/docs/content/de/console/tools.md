@@ -12,11 +12,11 @@ order: 6
 2. Finden Sie ein Tool über seinen Namen oder seine Beschreibung, oder filtern Sie nach **Server**, **Zustand** und **Hinweis**. Hinweise wie **Nur lesend** und **Destruktiv** sind Angaben des Servers, keine Garantien.
 3. Schalten Sie ein Tool mit seinem Schalter ein, oder alle Tools eines Servers mit **Alle einschalten** in der Kopfzeile des Servers; **Alle ausschalten** schaltet sie wieder aus. Der Zustand eines Tools wechselt zu **An**, und das Portal bietet es sofort an.
 
-Ein Tool mit **Geändert** wartet darauf, dass ein Admin seine neue Definition unter [MCP-Server der Organisation](mcp-servers.md#ein-geändertes-tool-prüfen) prüft, und lässt sich bis dahin nicht einschalten. Wählen Sie ein Tool, um seine Details, sein Eingabeschema, seine Aufrufe der letzten 7 Tage und **Aufrufe ansehen** zu sehen, das die [Anfrageprotokolle](request-logs.md) gefiltert auf das Tool öffnet.
+Ein Tool mit **Geändert** wartet darauf, dass ein Admin seine neue Definition unter [MCP-Server der Organisation](mcp-servers.md#ein-geändertes-tool-prüfen) prüft, und lässt sich bis dahin nicht einschalten. Wählen Sie ein Tool, um seine Details, sein Eingabeschema, seine Aufrufe der letzten 7 Tage, **Wer es nutzen darf** und **Aufrufe ansehen** zu sehen, das die [Anfrageprotokolle](request-logs.md) gefiltert auf das Tool öffnet.
 
 ## Einen Server nutzen
 
-Der Tab **Server** listet die Server, die das Projekt nutzt, mit ihrer Verbindung, dem Anteil eingeschalteter Tools und ihren Aufrufen der letzten 7 Tage.
+Der Tab **Server** listet die Server, die das Projekt nutzt, mit ihrer Verbindung, dem Anteil eingeschalteter Tools und ihren Aufrufen der letzten 7 Tage. **Sortieren** ordnet sie nach **Name**, **Tools an**, **Aufrufe in 7 Tagen** oder **Zuletzt genutzt**.
 
 - **Einen Server nutzen** fügt einen Server der Organisation hinzu. Seine Tools sind zunächst aus. Sie brauchen dafür auch `mcp_servers.view`.
 - **Nicht mehr nutzen** nimmt die Tools des Servers aus dem Portal. Nutzen Sie ihn wieder, sind alle Tools aus.
