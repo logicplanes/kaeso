@@ -1,4 +1,5 @@
 import { createRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -239,6 +240,41 @@ describe("AppFrame's refs", () => {
     expect(ref.current).toHaveAttribute("data-sidebar-expand");
     expect(ref.current).toHaveAccessibleName("Open navigation");
   });
+  it("closes when an item of a menu it opened is chosen or a button opens a dialog, as a link does, but not for a submenu or a disabled item", async () => {
+    const changes: boolean[] = [];
+    render(
+      <NavSheet open onOpenChange={(o) => changes.push(o)}>
+        {createPortal(
+          <div role="menu">
+            <div role="menuitem" aria-haspopup="menu">
+              Theme
+            </div>
+            <div role="menuitem" aria-disabled="true">
+              Instance
+            </div>
+            <div role="menuitemradio" aria-checked="false">
+              Globex
+            </div>
+            <div role="menuitem">Create organization</div>
+          </div>,
+          document.body,
+        )}
+        <button type="button" aria-haspopup="dialog">
+          Search
+        </button>
+      </NavSheet>,
+    );
+    await screen.findByRole("dialog", { name: "Navigation" });
+    fireEvent.click(screen.getByText("Theme"));
+    fireEvent.click(screen.getByText("Instance"));
+    expect(changes).toEqual([]);
+    fireEvent.click(screen.getByText("Globex"));
+    fireEvent.click(screen.getByText("Create organization"));
+    expect(changes).toEqual([false, false]);
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(changes).toEqual([false, false, false]);
+  });
+
   it("forwards NavSheet's ref to the open sheet", async () => {
     const ref = createRef<HTMLDivElement>();
     render(

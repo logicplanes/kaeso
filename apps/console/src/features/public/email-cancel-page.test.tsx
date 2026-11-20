@@ -24,7 +24,7 @@ describe("cancelling an email change", () => {
   it("says when the link no longer works", async () => {
     on("POST", "me/email/cancel", apiError(401, "authentication", "This link is invalid, used or expired; the change may already be done."));
     await renderApp("/me/email/confirm#cancel=ecc_1");
-    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(await screen.findByText("This link has expired or was already used")).toBeInTheDocument();
     expect((await (await notifications()).findAllByText("This link is invalid, used or expired; the change may already be done.")).length).toBeGreaterThan(0);
   });
 });

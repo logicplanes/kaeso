@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { Menu, icons } from "@logicplanes/kaeso-ui";
+import { Avatar, Menu, icons } from "@logicplanes/kaeso-ui";
 import { api } from "~/api/client";
 import { isApiError } from "~/api/errors";
 import { toastApiError } from "~/api/toast-error";
@@ -97,7 +97,7 @@ export function OrgMenu({ org, onCreate }: { org: string | undefined; onCreate: 
                   key={m.org_id}
                   value={m.org_id}
                   closeOnClick
-                  icon={icons.organization}
+                  leading={<Avatar name={m.org_name} {...(m.org_avatar_url ? { src: m.org_avatar_url } : {})} kind="org" size={20} decorative />}
                   {...(m.org_state === "scheduled_for_deletion"
                     ? { description: deletionCaption(m.org_deletion_due_at), descriptionTone: "danger" as const }
                     : {})}

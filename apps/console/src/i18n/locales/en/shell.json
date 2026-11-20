@@ -91,7 +91,6 @@
   "shell.routeError.header": "Couldn't load this page",
   "shell.routeError.noAccess": "No access",
   "shell.routeError.noAccessTitle": "You don't have access to this page",
-  "shell.routeError.start": "Go to the start page",
   "shell.routeError.title": "This page couldn't load",
   "shell.routeError.unexpected": "This page hit an unexpected error; reload to try again.",
   "shell.searchSettings": "Search settings",

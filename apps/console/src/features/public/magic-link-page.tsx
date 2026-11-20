@@ -116,7 +116,7 @@ export function MagicLinkPage({ next }: { next?: string | undefined }) {
   if (failed || account.isError) {
     return (
       <PublicPage
-        title={t("public.linkUsed", "This link has expired or was already used.")}
+        title={t("public.linkUsed", "This link has expired or was already used")}
         description={t("public.signInLinkOnce", "A sign-in link works once, for 15 minutes.")}
       >
         <Button variant="primary" size="xl" fullWidth href="/sign-in">

@@ -9,14 +9,14 @@ import { renderApp } from "~/test/render";
 const LIMITS = `/orgs/${ORG}/projects/${PROJECT}/limits`;
 
 describe("a page that fails to load", () => {
-  it("says what doesn't exist and links to the start", async () => {
+  it("says what doesn't exist and links to the overview", async () => {
     signedIn();
     on("GET", "orgs/:org/projects/:project", apiError(404, "not_found", "No project proj_checkout in this organization."));
     await renderApp(LIMITS);
     expect(await screen.findByRole("heading", { name: "Not found", level: 1 })).toBeInTheDocument();
     expect(insidePageGutter(screen.getByText("This doesn't exist or was removed"))).toBe(true);
     expect(screen.getByText("No project proj_checkout in this organization.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Go to the start page" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Go to the overview" })).toHaveAttribute("href", "/");
     expect(notifications().queryByText("No project proj_checkout in this organization.")).not.toBeInTheDocument();
   });
 
@@ -27,6 +27,7 @@ describe("a page that fails to load", () => {
     expect(await screen.findByRole("heading", { name: "No access", level: 1 })).toBeInTheDocument();
     expect(insidePageGutter(screen.getByText("You don't have access to this page"))).toBe(true);
     expect(within(screen.getByRole("main")).getByText("You are not a member of this project.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Go to the overview" })).toHaveAttribute("href", "/");
     expect(notifications().queryByText("You are not a member of this project.")).not.toBeInTheDocument();
   });
 

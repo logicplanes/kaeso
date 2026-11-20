@@ -65,7 +65,7 @@ export default function ShortcutSheet({ open, onOpenChange }: { open: boolean; o
                   <dt>
                     <Text>{s.label}</Text>
                   </dt>
-                  <dd>
+                  <dd className="flex justify-end">
                     <Kbd keys={s.keys} />
                   </dd>
                 </div>

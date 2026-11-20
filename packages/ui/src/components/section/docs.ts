@@ -5,9 +5,9 @@ export const docs = {
     description:
       "Sign-in and setup: no chrome, a centered 400px column on the panel with the title and description centered above the form. The wordmark sits top left exactly where the sidebar header puts it in every other layout: as far in as it is down (28px; centered in a 52px row 8px from the top).",
     props: {
-      children: "The form.",
+      children: "The form or the page's one action; leave it out when the title and description say everything.",
       description: "One sentence under the heading.",
-      footer: "Content under the form, such as a link to sign up.",
+      footer: "Content under the form, such as a link to sign up; centered in the column, also when it wraps.",
       title: "The page's heading.",
     },
   },

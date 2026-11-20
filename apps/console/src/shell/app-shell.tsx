@@ -8,6 +8,7 @@ import { t } from "~/i18n";
 import { AppSidebar } from "./app-sidebar";
 import { CommandPaletteHost } from "./palette";
 import { CreateActionProvider } from "./create-action";
+import { CreateOrgHost } from "./create-org-host";
 import "./early-keys";
 import { readLast } from "./last";
 import { WhatsNewHost } from "./whats-new-host";
@@ -61,6 +62,7 @@ export function AppShell() {
         <RecentSignInHost />
         <SsoErrorHost />
         <WhatsNewHost />
+        <CreateOrgHost />
       </CreateActionProvider>
     </TooltipProvider>
   );

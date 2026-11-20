@@ -34,7 +34,7 @@ describe("confirming a new email address", () => {
   it("offers to change the address again when the link is used up", async () => {
     on("POST", "me/email/confirm", apiError(401, "authentication", "This confirmation link has expired."));
     await renderApp("/me/email/confirm#token=eml_1");
-    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(await screen.findByText("This link has expired or was already used")).toBeInTheDocument();
     expect(screen.getByText("A confirmation link works once; change the address again for a new one.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Change the address again" })).toHaveAttribute("href", "/settings/account/profile");
     expect((await (await notifications()).findAllByText("This confirmation link has expired.")).length).toBeGreaterThan(0);

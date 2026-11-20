@@ -13,4 +13,19 @@ describe("AuthLayout", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveClass("wrap-break-word");
     expect(screen.getByText(address)).toHaveClass("wrap-break-word");
   });
+
+  it("ends at its description when there is no form, without space held for one", () => {
+    render(<AuthLayout title="This link doesn't work" description="Ask whoever shared it for a new one." />);
+    const column = screen.getByRole("heading", { level: 1 }).parentElement;
+    expect(column?.lastElementChild).toBe(screen.getByText("Ask whoever shared it for a new one."));
+  });
+
+  it("centers its footer across the column, so a footer that wraps on a phone stays centered", () => {
+    render(
+      <AuthLayout title="Connect Claude Code" footer={<span>Signed in as owner@example.com · returns to app.example.com</span>}>
+        fields
+      </AuthLayout>,
+    );
+    expect(screen.getByText("Signed in as owner@example.com · returns to app.example.com").parentElement).toHaveClass("w-full", "max-w-auth", "text-center");
+  });
 });

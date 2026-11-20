@@ -8,6 +8,16 @@ import { useUiText } from "../../i18n/context.js";
 
 const PEEK_LEAVE = 160;
 
+// A menu the sheet opened (a switcher's) bubbles its clicks here through the portal: a chosen
+// item acts like a link and leaves the navigation, and so does a button that opens a dialog (search);
+// a submenu's trigger or a checkbox doesn't.
+const LEAVES_NAVIGATION = [
+  "a[href]",
+  'button[aria-haspopup="dialog"]',
+  '[role="menuitem"]:not([aria-haspopup]):not([aria-disabled="true"])',
+  '[role="menuitemradio"]:not([aria-disabled="true"])',
+].join(", ");
+
 export interface NavSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -52,7 +62,7 @@ export const NavSheet = forwardRef<HTMLDivElement, NavSheetProps>(function NavSh
           {...(returnFocus ? { finalFocus: returnFocus } : {})}
           className={cn(place, "top-0 bottom-0 left-0 z-40 flex overflow-hidden bg-panel shadow-dialog outline-none safe-area-sheet sheet-motion")}
           onClick={(e) => {
-            if ((e.target as HTMLElement).closest("a[href]")) onOpenChange(false);
+            if ((e.target as HTMLElement).closest(LEAVES_NAVIGATION)) onOpenChange(false);
           }}
           onPointerEnter={() => clearTimeout(leave.current)}
           onPointerLeave={() => {

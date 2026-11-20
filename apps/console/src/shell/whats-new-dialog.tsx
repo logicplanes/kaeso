@@ -48,19 +48,17 @@ function WhatsNewDialog({ releases, open, onOpenChange }: { releases: WhatsNewRe
       }
       footer={
         <>
-          <div className="mr-auto">
-            {hasNotes ? (
-              <Button trailingIcon={details ? icons.chevronUp : icons.chevronDown} onClick={() => setDetails((d) => !d)}>
-                {details ? t("shell.whatsNew.hide", "Hide improvements") : t("shell.whatsNew.show", "Show improvements")}
+          {hasNotes ? (
+            <Button className="mr-auto" trailingIcon={details ? icons.chevronUp : icons.chevronDown} onClick={() => setDetails((d) => !d)}>
+              {details ? t("shell.whatsNew.hide", "Hide improvements") : t("shell.whatsNew.show", "Show improvements")}
+            </Button>
+          ) : (
+            url && (
+              <Button className="mr-auto" href={url} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
+                {t("shell.whatsNew.onGitHub", "Release notes on GitHub")}
               </Button>
-            ) : (
-              url && (
-                <Button href={url} target="_blank" rel="noopener noreferrer" trailingIcon={icons.externalLink}>
-                  {t("shell.whatsNew.onGitHub", "Release notes on GitHub")}
-                </Button>
-              )
-            )}
-          </div>
+            )
+          )}
           {last ? (
             <Button variant="primary" onClick={onOpenChange}>
               {t("shell.whatsNew.continue", "Continue")}

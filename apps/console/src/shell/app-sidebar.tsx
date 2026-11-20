@@ -20,7 +20,15 @@ export function AppSidebar() {
   return (
     <Sidebar aria-label={t("shell.sidebar", "Console")}>
       <Sidebar.Brand href={org ? orgPath(org) : "/"} label={t("shell.home", "Kaeso home")}>
-        <Button variant="ghost" size="sm" icon={icons.search} aria-label={t("common.search", "Search")} shortcut={["mod", "k"]} onClick={openPalette} />
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={icons.search}
+          aria-label={t("common.search", "Search")}
+          aria-haspopup="dialog"
+          shortcut={["mod", "k"]}
+          onClick={openPalette}
+        />
         <Sidebar.CollapseToggle />
       </Sidebar.Brand>
       <Sidebar.Content>{org && project ? <ProjectArea org={org} project={project} /> : org && <OrgArea org={org} />}</Sidebar.Content>

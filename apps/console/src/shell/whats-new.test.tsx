@@ -72,7 +72,7 @@ describe("what's new", () => {
     await waitFor(() => expect(requests("POST", "me/whats-new/seen")).toHaveLength(1));
   });
 
-  it("links to GitHub when the install doesn't know a release's notes", async () => {
+  it("links to GitHub when the install doesn't know a release's notes, the link a footer button of its own like Continue", async () => {
     signedIn();
     on("GET", "me/whats-new", {
       current: "40.5.0",
@@ -86,6 +86,9 @@ describe("what's new", () => {
     expect(within(dialog).getByRole("link", { name: /Release notes on GitHub/ })).toHaveAttribute(
       "href",
       "https://github.com/logicplanes/kaeso/releases/tag/v40.5.0",
+    );
+    expect(within(dialog).getByRole("link", { name: /Release notes on GitHub/ }).parentElement).toBe(
+      within(dialog).getByRole("button", { name: "Continue" }).parentElement,
     );
   });
 

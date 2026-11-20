@@ -33,6 +33,28 @@ describe("CommandPalette", () => {
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual([expect.stringContaining("Request logs")]);
   });
 
+  it("keeps a hint whole and ends a long name in an ellipsis, and leaves shortcuts out of a palette as narrow as a phone", () => {
+    render(
+      <CommandPalette
+        inline
+        groups={[
+          {
+            label: "Find",
+            items: [
+              { id: "long", label: "Customer-facing retrieval-augmented generation platform for enterprise accounts", hint: "Project", shortcut: ["g", "o"] },
+            ],
+          },
+        ]}
+      />,
+    );
+    const option = screen.getByRole("option", { name: /Customer-facing/ });
+    const hint = Array.from(option.querySelectorAll("span")).find((s) => s.textContent === ", Project");
+    expect(hint).toHaveClass("shrink-0", "truncate");
+    const keys = option.querySelector("kbd");
+    expect(keys).not.toBeNull();
+    expect(keys?.closest(".dialog-narrow\\:hidden")).toBeInstanceOf(HTMLElement);
+  });
+
   it("moves with the arrows, wraps around, and runs the active command with Enter", async () => {
     const onSelect = vi.fn();
     render(<CommandPalette inline groups={groups(onSelect)} />);

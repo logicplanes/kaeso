@@ -20,17 +20,17 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
     reset();
     await router.invalidate();
   };
+  const home = (
+    <Button variant="primary" href="/">
+      {t("shell.goToOverview", "Go to the overview")}
+    </Button>
+  );
   if (isApiError(error) && error.type === "not_found") {
     return (
       <>
         <PageHeader start={<AppFrame.MenuButton />} title={t("shell.notFound", "Not found")} />
         <AppFrame.Body>
-          <Empty
-            size="lg"
-            title={t("shell.routeError.gone", "This doesn't exist or was removed")}
-            description={error.message}
-            actions={<Button href="/">{t("shell.routeError.start", "Go to the start page")}</Button>}
-          />
+          <Empty size="lg" title={t("shell.routeError.gone", "This doesn't exist or was removed")} description={error.message} actions={home} />
         </AppFrame.Body>
       </>
     );
@@ -40,7 +40,7 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
       <>
         <PageHeader start={<AppFrame.MenuButton />} title={t("shell.routeError.noAccess", "No access")} />
         <AppFrame.Body>
-          <Empty size="lg" title={t("shell.routeError.noAccessTitle", "You don't have access to this page")} description={error.message} />
+          <Empty size="lg" title={t("shell.routeError.noAccessTitle", "You don't have access to this page")} description={error.message} actions={home} />
         </AppFrame.Body>
       </>
     );
@@ -53,7 +53,11 @@ export function RouteError({ error, reset }: ErrorComponentProps) {
           size="lg"
           title={t("shell.routeError.title", "This page couldn't load")}
           description={t("shell.routeError.description", "Try again in a moment.")}
-          actions={<Button onClick={() => void retry()}>{t("common.tryAgain", "Try again")}</Button>}
+          actions={
+            <Button variant="primary" onClick={() => void retry()}>
+              {t("common.tryAgain", "Try again")}
+            </Button>
+          }
         />
       </AppFrame.Body>
     </>

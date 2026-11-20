@@ -148,13 +148,15 @@ describe("the sidebar in an organization", () => {
   it("opens the command palette from the search button", async () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await within(await screen.findByRole("navigation", { name: "Console" })).findByRole("button", { name: "Search" }));
+    const search = await within(await screen.findByRole("navigation", { name: "Console" })).findByRole("button", { name: "Search" });
+    expect(search).toHaveAttribute("aria-haspopup", "dialog");
+    await user.click(search);
     expect(await screen.findByPlaceholderText("Search pages, projects and members")).toBeInTheDocument();
   });
 });
 
 describe("the organization switcher", () => {
-  it("switches organization and links to settings, the account and the instance", async () => {
+  it("switches organization by each one's picture and name, and links to settings, the account and the instance", async () => {
     const second = membership({ org_id: "org_globex", org_name: "Globex" });
     signedIn({
       session: whoAmI({ memberships: [membership(), second] }),
@@ -168,6 +170,7 @@ describe("the organization switcher", () => {
     expect(within(menu).getByRole("menuitem", { name: "Organization settings" })).toHaveAttribute("href", `/settings/orgs/${ORG}/general`);
     expect(within(menu).getByRole("menuitem", { name: "Account" })).toHaveAttribute("href", "/settings/account/profile");
     expect(within(menu).getByRole("menuitem", { name: "Instance" })).toHaveAttribute("href", "/settings/instance/general");
+    expect(within(menu).getByRole("menuitemradio", { name: "Globex" })).toHaveTextContent(/^GGlobex$/);
     await user.click(within(menu).getByRole("menuitemradio", { name: "Globex" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/orgs/org_globex"));
   });

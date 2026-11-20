@@ -48,7 +48,7 @@ SplitView.displayName = "SplitView";
 
 export const AuthLayout = forwardRef<
   HTMLDivElement,
-  { title: ReactNode; description?: ReactNode | undefined; children: ReactNode; footer?: ReactNode | undefined; className?: string | undefined }
+  { title: ReactNode; description?: ReactNode | undefined; children?: ReactNode | undefined; footer?: ReactNode | undefined; className?: string | undefined }
 >(function AuthLayout({ title, description, children, footer, className }, ref) {
   return (
     <div ref={ref} className={cn("relative flex min-h-dvh flex-col items-center bg-panel px-16 py-64 text-fg", className)}>
@@ -58,9 +58,9 @@ export const AuthLayout = forwardRef<
       <div className="flex w-full max-w-auth flex-1 flex-col justify-center">
         <h1 className="text-center text-title-lg font-semibold text-fg text-balance wrap-break-word">{title}</h1>
         {description && <p className="mt-8 text-center text-body-lg font-regular text-fg-secondary text-pretty wrap-break-word">{description}</p>}
-        <div className="mt-24 flex flex-col gap-16">{children}</div>
+        {children && <div className="mt-24 flex flex-col gap-16">{children}</div>}
       </div>
-      {footer && <div className="mt-48 text-small text-fg-secondary">{footer}</div>}
+      {footer && <div className="mt-48 w-full max-w-auth text-center text-small text-fg-secondary text-pretty">{footer}</div>}
     </div>
   );
 });

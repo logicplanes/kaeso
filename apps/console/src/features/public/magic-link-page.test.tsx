@@ -114,7 +114,7 @@ describe("signing in with an emailed link", () => {
     await waitFor(() => expect(field).toHaveValue(""));
     on("POST", "auth/totp", apiError(401, "authentication", "Too many wrong codes for this sign-in; start signing in again."));
     await user.type(field, "111111");
-    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(await screen.findByText("This link has expired or was already used")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Request a new link" })).toHaveAttribute("href", "/sign-in");
   });
 
@@ -152,7 +152,7 @@ describe("signing in with an emailed link", () => {
     signedOut();
     on("POST", LOOKUP, apiError(401, "authentication", "This sign-in link has expired."));
     await renderApp("/auth/magic-link#token=mgl_1");
-    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(await screen.findByText("This link has expired or was already used")).toBeInTheDocument();
     expect(screen.getByText("A sign-in link works once, for 15 minutes.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Request a new link" })).toHaveAttribute("href", "/sign-in");
     expect((await (await notifications()).findAllByText("This sign-in link has expired.")).length).toBeGreaterThan(0);
@@ -165,7 +165,7 @@ describe("signing in with an emailed link", () => {
     on("POST", VERIFY, apiError(401, "authentication", "This sign-in link has expired."));
     const { user } = await renderApp("/auth/magic-link#token=mgl_1");
     await user.click(await screen.findByRole("button", { name: "Sign in" }));
-    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(await screen.findByText("This link has expired or was already used")).toBeInTheDocument();
   });
 
   it("says when the gateway can't be reached", async () => {
@@ -175,6 +175,6 @@ describe("signing in with an emailed link", () => {
     });
     await renderApp("/auth/magic-link#token=mgl_1");
     expect((await (await notifications()).findAllByText("Can't reach the gateway; try again.")).length).toBeGreaterThan(0);
-    expect(screen.getByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(screen.getByText("This link has expired or was already used")).toBeInTheDocument();
   });
 });
