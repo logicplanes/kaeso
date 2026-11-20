@@ -34,7 +34,7 @@ Everything else reads the version instead of stating it. A page writes `\{{versi
 
 `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and pull requests never change it. The Release workflow writes each version's section from the pull requests merged since the last release. Each pull request's title as merged becomes its line, with a link to the pull request, and its labels choose where the line goes.
 
-The title as merged is the subject of the pull request's squash commit on `prod`, so editing a pull request after its merge changes nothing. For a pull request merged another way, it is the title at the moment of the merge.
+The title as merged is the subject of the pull request's squash commit on `prod`, so editing a pull request after its merge changes nothing. For a pull request merged another way, it is the title at the moment of the merge. GitHub stops serving the pull requests of a suspended or deleted account; such a pull request's line comes from its squash commit alone, with no labels, so its title's first word chooses the section and it has no topic. A line under `[Unreleased]` that links it puts it where it belongs.
 
 Pull requests labelled `internal` are left out. Dependabot's updates become one line, "Dependencies updated". A pull request labelled `breaking` is also named at the top of the section.
 

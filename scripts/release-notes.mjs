@@ -72,7 +72,7 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
     const own = /\s*\(#(\d+)\)$/.exec(subject);
     if (own) {
       const number = Number(own[1]);
-      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, title: subject.slice(0, own.index), body: uncommented(message) });
+      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, sha, title: subject.slice(0, own.index), body: uncommented(message) });
       continue;
     }
     for (const pull of json("api", `repos/${repository}/commits/${sha}/pulls`)) {
@@ -105,12 +105,50 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
     if (!permissions.has(login)) permissions.set(login, permissionOf(login));
     return ["admin", "write"].includes(permissions.get(login));
   };
+  const pullOf = (number) => {
+    try {
+      return json("api", `repos/${repository}/pulls/${number}`);
+    } catch (error) {
+      if (/\(HTTP 404\)/.test(error.message)) return null;
+      throw error;
+    }
+  };
+  const filesOf = (sha) =>
+    git(["show", "--numstat", "--format=", sha])
+      .split("\n")
+      .filter((line) => line.trim())
+      .map((line) => {
+        const [additions, deletions, ...path] = line.split("\t");
+        return { path: path.join("\t"), additions: Number(additions) || 0, deletions: Number(deletions) || 0 };
+      });
+  // GitHub stops serving the pull requests of a suspended or deleted account, but their squash commits still say what was merged.
+  const unserved = (number, merged) => {
+    const files = filesOf(merged.sha);
+    return {
+      number,
+      title: merged.title,
+      url: `https://github.com/${repository}/pull/${number}`,
+      labels: [],
+      author: "",
+      bot: true,
+      merged_at: git(["log", "-1", "--format=%cI", merged.sha]).trim(),
+      body: truncated(merged.body, BODY_LIMIT),
+      files: files.slice(0, FILE_LIMIT),
+      files_total: files.length,
+      linked_issues: [],
+      coauthors: [],
+    };
+  };
   const [owner, name] = repository.split("/");
   const pulls = [];
   for (const number of [...landed.keys()].sort(byNumber)) {
-    const pull = json("api", `repos/${repository}/pulls/${number}`);
-    if (!pull.merged_at) continue;
     const merged = landed.get(number);
+    const pull = pullOf(number);
+    if (!pull) {
+      if (merged.squashed) pulls.push(unserved(number, merged));
+      continue;
+    }
+    if (!pull.merged_at) continue;
     const files = each("api", "--paginate", `repos/${repository}/pulls/${number}/files`, "--jq", ".[] | {path: .filename, additions, deletions}");
     const commits = each(
       "api",

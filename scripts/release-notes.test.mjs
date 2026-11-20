@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import * as prettier from "prettier";
-import { notes, release } from "./changelog.mjs";
+import { draft, notes, release } from "./changelog.mjs";
 import {
   CHANGELOG_URL,
   MODEL,
@@ -570,6 +570,69 @@ test("without --since, collecting takes every commit no release tag contains and
     pulls: [],
     contributors: [],
   });
+});
+
+test("a merged pull request GitHub no longer serves goes to the notes from its squash commit, without labels or credit", () => {
+  const gh = (args) => {
+    const key = args.join(" ");
+    if (key === "api repos/logicplanes/kaeso/pulls/8") throw new Error("Command failed: gh api repos/logicplanes/kaeso/pulls/8\ngh: Not Found (HTTP 404)");
+    if (key === "api repos/logicplanes/kaeso/pulls/9")
+      return JSON.stringify({
+        number: 9,
+        title: "Keep streams open",
+        html_url: `${repo}/pull/9`,
+        labels: [{ name: "fixed" }],
+        user: { login: "ada", type: "User" },
+        merged_at: "2026-10-01T10:00:00Z",
+      });
+    if (key.includes("/issues/9/events") || key.includes("/files") || key.includes("/commits ")) return "";
+    if (key.startsWith("api graphql")) return JSON.stringify({ data: { repository: { pullRequest: { closingIssuesReferences: { nodes: [] } } } } });
+    if (key === "api repos/logicplanes/kaeso/collaborators/ada/permission --jq .permission") return "write\n";
+    if (key.startsWith("api -X GET search/")) return "1\n";
+    throw new Error(`unexpected gh ${key}`);
+  };
+  const git = fakeGit({
+    "log -1 --format=%cI v1.0.0": "2026-09-01T12:00:00Z\n",
+    [`${LOG_FORMAT} v1.0.0..HEAD`]: log(["ddd", "Fix cached tokens billed twice (#8)", "Gemini counts them once."], ["eee", "Keep streams open (#9)"]),
+    "show --numstat --format= ddd": "12\t3\tcrates/a.rs\n-\t-\tlogo.png\n",
+    "log -1 --format=%cI ddd": "2026-09-15T08:00:00Z\n",
+  });
+  const { pulls, contributors } = collect({ repository: "logicplanes/kaeso", since: "v1.0.0", git, gh });
+  assert.deepEqual(pulls[0], {
+    number: 8,
+    title: "Fix cached tokens billed twice",
+    url: "https://github.com/logicplanes/kaeso/pull/8",
+    labels: [],
+    author: "",
+    bot: true,
+    merged_at: "2026-09-15T08:00:00Z",
+    body: "Gemini counts them once.",
+    files: [
+      { path: "crates/a.rs", additions: 12, deletions: 3 },
+      { path: "logo.png", additions: 0, deletions: 0 },
+    ],
+    files_total: 2,
+    linked_issues: [],
+    coauthors: [],
+  });
+  assert.equal(pulls[1].number, 9);
+  assert.deepEqual(contributors, [{ login: "ada", first_time: false }]);
+  assert.match(
+    draft(changelog(), "1.1.0", pulls).join("\n"),
+    /### Fixed\n\n- Fix cached tokens billed twice \(\[#8\]\(https:\/\/github\.com\/logicplanes\/kaeso\/pull\/8\)\)/,
+  );
+});
+
+test("collecting stops when GitHub refuses a pull request for any reason but a missing one", () => {
+  const gh = (args) => {
+    if (args.join(" ") === "api repos/logicplanes/kaeso/pulls/8") throw new Error("gh: Bad credentials (HTTP 401)");
+    throw new Error(`unexpected gh ${args.join(" ")}`);
+  };
+  const git = fakeGit({
+    "log -1 --format=%cI v1.0.0": "2026-09-01T12:00:00Z\n",
+    [`${LOG_FORMAT} v1.0.0..HEAD`]: log(["ddd", "Add a batch page (#8)"]),
+  });
+  assert.throws(() => collect({ repository: "logicplanes/kaeso", since: "v1.0.0", git, gh }), /HTTP 401/);
 });
 
 test("a pull request edited after its merge goes to the notes as it was merged, never with its live title or body", () => {
