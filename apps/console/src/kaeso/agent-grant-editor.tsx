@@ -1,7 +1,20 @@
 import { useState, type ReactNode } from "react";
-import { Button, Checkbox, Collapsible, Dialog, RightsMatrix, Segmented, Switch, Tabs, type RightChange, type RightsGroup } from "@logicplanes/kaeso-ui";
+import {
+  Button,
+  Checkbox,
+  Collapsible,
+  Dialog,
+  RightsMatrix,
+  Segmented,
+  Select,
+  Switch,
+  Tabs,
+  type RightChange,
+  type RightsGroup,
+} from "@logicplanes/kaeso-ui";
 import type { AgentCatalogue, Grantable, GrantableOrg } from "~/api/generated/types";
 import { t } from "~/i18n";
+import { usePhone } from "~/shell/use-phone";
 import { heldInProjects, presetDraft, presetPart, sorted, type AgentDraft, type OrgDraft, type PresetId } from "./agent-grant";
 
 type Scope = "instance" | "account" | "org" | "project";
@@ -42,6 +55,8 @@ function applied(cat: AgentCatalogue, scope: Scope, current: readonly string[], 
   return sorted(cat, scope, next);
 }
 
+const CUSTOMIZED = "customized";
+
 export function PresetPicker({
   cat,
   grantable,
@@ -53,6 +68,26 @@ export function PresetPicker({
   value: AgentDraft;
   onChange: (d: AgentDraft) => void;
 }) {
+  const phone = usePhone();
+  const pick = (id: string) => {
+    const next = presetDraft(cat, grantable, id as PresetId);
+    onChange({ ...next, future: { ...next.future, on: value.future.on } });
+  };
+  // Four presets don't fit a phone's width as segments, and a segmented control that scrolls hides the last one.
+  if (phone)
+    return (
+      <Select
+        aria-label={t("kaeso.agents.preset", "Preset")}
+        fullWidth
+        size="sm"
+        options={[
+          ...cat.presets.map((p) => ({ value: p.id, label: p.name, description: p.description })),
+          ...(value.customized ? [{ value: CUSTOMIZED, label: t("kaeso.agents.customized", "Customized"), disabled: true }] : []),
+        ]}
+        value={value.customized ? CUSTOMIZED : value.preset}
+        onValueChange={pick}
+      />
+    );
   return (
     <Segmented
       aria-label={t("kaeso.agents.preset", "Preset")}
@@ -60,10 +95,7 @@ export function PresetPicker({
       size="sm"
       options={cat.presets.map((p) => ({ value: p.id, label: p.name }))}
       value={value.customized ? "" : value.preset}
-      onValueChange={(id) => {
-        const next = presetDraft(cat, grantable, id as PresetId);
-        onChange({ ...next, future: { ...next.future, on: value.future.on } });
-      }}
+      onValueChange={pick}
     />
   );
 }

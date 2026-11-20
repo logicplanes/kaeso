@@ -11,6 +11,14 @@ const PEOPLE = [
 ];
 
 describe("Combobox", () => {
+  it("never opens wider than the room the screen leaves it, so a long option can't push it past a phone's edge", async () => {
+    render(<Combobox aria-label="Member" options={PEOPLE} />);
+    await userEvent.click(screen.getByRole("combobox", { name: "Member" }));
+    const popup = (await screen.findByRole("option", { name: "Ada Okafor" })).closest<HTMLElement>(".min-w-anchor");
+    expect(popup).toHaveClass("max-w-menu");
+    expect(popup).not.toHaveClass("max-w-360");
+  });
+
   it("takes the first match with Enter while typing", async () => {
     const onChange = vi.fn();
     render(
