@@ -342,7 +342,8 @@ export function OrgProvidersPage({ org, search = {} }: { org: string; search?: P
               {under.length > 0 &&
                 withProjectNames(
                   r.key,
-                  <Text variant="small" tone="secondary" truncate>
+                  // Relative, so the hidden labels inside (absolutely placed) are clipped with the line instead of widening the page.
+                  <Text variant="small" tone="secondary" truncate className="relative">
                     {under.map((part, i) => (
                       <span key={part.id}>
                         {i > 0 && t("orgHome.partSeparator", " · ")}
