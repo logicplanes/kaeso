@@ -166,7 +166,13 @@ theme.push("  --text-*: initial;");
 for (const [name, s] of Object.entries(t.type)) {
   theme.push(`  --text-${name}: ${s.size}px;`, `  --text-${name}--line-height: ${s.lineHeight}px;`, `  --text-${name}--letter-spacing: ${s.tracking}em;`);
 }
-theme.push("  --tracking-*: initial;", "  --leading-*: initial;", "  --leading-none: 1;", "  --leading-code: 20px;");
+theme.push(
+  "  --tracking-*: initial;",
+  "  --leading-*: initial;",
+  "  --leading-none: 1;",
+  "  --leading-code: 20px;",
+  `  --leading-body: ${t.type.body.lineHeight}px;`,
+);
 theme.push("  --radius-*: initial;");
 for (const [name, v] of Object.entries(t.radius)) theme.push(`  --radius-${name}: ${v};`);
 theme.push("  --ease-*: initial;");

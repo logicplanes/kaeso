@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { atFixtureTime } from "~/test/clock";
 import { signedIn, whoAmI, without } from "~/test/fixtures";
@@ -23,6 +23,8 @@ function usage(byFrom: Record<string, UsageRow[]>, byGroup: Partial<Record<strin
 const cell = (title: string) => screen.getByRole("link", { name: title }).closest("section") as HTMLElement;
 
 describe("the project overview", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   atFixtureTime();
 
   it("counts only the month's own days in its spend early in a month, and paces it by the last seven days", async () => {
@@ -92,6 +94,25 @@ describe("the project overview", () => {
     await user.click(row);
     await waitFor(() => expect(router.state.location.searchStr).toBe("?log=req_0001"));
     expect(router.state.location.pathname).toBe(projectPath("logs"));
+  });
+
+  it("on a phone, gives the latest requests' models the room their keys took", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    usage({});
+    on("GET", "orgs/:org/projects/:project/logs", listed([logRow()]));
+    await renderApp(projectPath());
+
+    const latest = await screen.findByRole("list", { name: "Latest requests" });
+    const row = await within(latest).findByRole("button", { name: /gpt-5\.4-mini/ });
+    expect(row).toHaveTextContent("1.3 s");
+    expect(row).not.toHaveTextContent("checkout-web");
   });
 
   it("shows the project's limits, its models by use, its keys by last use and its members", async () => {

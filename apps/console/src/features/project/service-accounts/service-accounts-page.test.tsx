@@ -245,7 +245,8 @@ describe("ServiceAccountSheet", () => {
     const sheet = await screen.findByRole("dialog", { name: "ci-deploy" });
     await user.click(await within(sheet).findByRole("button", { name: "Rename" }));
     const input = within(sheet).getByRole("textbox", { name: "Name" });
-    expect(within(sheet).getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(within(sheet).getByRole("button", { name: "Save" })).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, within(sheet).getByRole("button", { name: "Save" }), "Type a new name first.");
     await user.click(within(sheet).getAllByRole("button", { name: "Cancel" })[0] as HTMLElement);
     expect(within(sheet).queryByRole("textbox", { name: "Name" })).not.toBeInTheDocument();
 

@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { usePhone } from "./use-phone";
+import { useBelowDesktop, usePhone } from "./use-phone";
 
 function Width() {
   return <output>{usePhone() ? "phone" : "wider"}</output>;
@@ -26,6 +26,19 @@ describe("usePhone", () => {
     expect(screen.getByRole("status")).toHaveTextContent("wider");
     unmount();
     expect(listeners.size).toBe(0);
+  });
+  it("tells a screen below 1280px from a phone", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(max-width: 1279px)", addEventListener() {}, removeEventListener() {} }));
+    function Narrow() {
+      return <output>{useBelowDesktop() ? "narrow" : "wide"}</output>;
+    }
+    render(
+      <>
+        <Narrow />
+        <Width />
+      </>,
+    );
+    expect(screen.getAllByRole("status").map((s) => s.textContent)).toEqual(["narrow", "wider"]);
   });
   it("is not a phone where the browser can't answer media queries", () => {
     vi.stubGlobal("matchMedia", undefined);

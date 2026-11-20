@@ -35,9 +35,26 @@ const list = () => screen.findByRole("grid", { name: "Tools" });
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("Project › Tools", () => {
+  it("on a phone, keeps a server's name and state in its group header and leaves out how many tools are on", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    signedIn();
+    tools();
+    await renderApp(projectPath("tools"));
+    const grid = await list();
+    expect(within(grid).getByText("X")).toBeInTheDocument();
+    expect(within(grid).getByText("Connected")).toBeInTheDocument();
+    expect(within(grid).queryByText("1 of 2 on")).not.toBeInTheDocument();
+  });
+
   it("lists each server's tools with their switch, hints, state and calls", async () => {
     signedIn();
     tools({ list: [post, getMe, changed, projectTool({ name: "old", state: "removed" })] });

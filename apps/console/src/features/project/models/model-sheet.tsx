@@ -1,6 +1,6 @@
 import { Fragment, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Button, DialogScope, Empty, KeyValue, Link, Menu, ModelLabel, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Button, DialogScope, Empty, KeyValue, Link, Menu, ModelLabel, Section, Sheet, Skeleton, Text, icons } from "@logicplanes/kaeso-ui";
 import { toast } from "~/shell/toast";
 import { formatDate, formatNumber } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
@@ -29,6 +29,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { SheetLinks } from "~/kaeso/sheet-links";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
+import { usePhone } from "~/shell/use-phone";
 
 export function ModelSheet({ org, project, modelId, onClose }: { org: string; project: string; modelId: string | undefined; onClose: () => void }) {
   return (
@@ -66,6 +67,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
   const [removing, setRemoving] = useState(false);
   const prices = useOrgPrices(org);
   const rates = useQuery(exchangeRatesQuery);
+  const phone = usePhone();
 
   const patch = useApiMutation({
     mutationFn: async (overrides: Partial<Fields> | Record<string, null>) =>
@@ -143,14 +145,8 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
 
   return (
     <div className="flex flex-col gap-24">
-      <div className="flex items-center justify-between gap-12">
-        <ModelLabel
-          provider={m.provider}
-          providerName={provider}
-          model={m.model_id}
-          capabilities={capabilities(m.effective)}
-          {...(m.effective.display_name ? { name: m.effective.display_name } : {})}
-        />
+      <div className="flex flex-wrap items-center justify-between gap-x-12 gap-y-4">
+        <ModelLabel className="max-w-full shrink-0" provider={m.provider} providerName={provider} model={m.model_id} capabilities={capabilities(m.effective)} />
         <span className="flex items-center gap-4">
           {playground.data?.some((p) => p.id === m.id) && (
             <Button
@@ -197,11 +193,13 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
       />
       <SheetLinks org={org} project={project} requests={{ model: m.line_target ?? m.model_id, provider: m.provider }} target={m.id} />
       {m.line_target && <LinePanel org={org} project={project} id={m.id} canManage={canManage} reason={reason} />}
-      <div className="flex flex-col gap-12">
-        <div className="flex items-center justify-between gap-12">
-          <Text weight="medium">{t("models.valuesInUse", "Values in use")}</Text>
+      <Section
+        title={t("models.valuesInUse", "Values in use")}
+        spacing="none"
+        actions={
           <Button
             size="sm"
+            variant="ghost"
             leadingIcon={icons.edit}
             disabled={!canManage}
             {...(reason ? { disabledReason: reason } : {})}
@@ -213,8 +211,10 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
           >
             {t("models.editOverrides", "Edit overrides")}
           </Button>
-        </div>
+        }
+      >
         <KeyValue
+          layout={phone ? "stacked" : "columns"}
           items={fieldRows().map((row) => {
             const overridden = m.overrides[row.key] !== null && m.overrides[row.key] !== undefined;
             const value = shown[row.key];
@@ -265,7 +265,7 @@ function ModelBody({ org, project, modelId, onClose }: { org: string; project: s
             };
           })}
         />
-      </div>
+      </Section>
       <DialogScope open={removing}>
         <RemoveModelDialog org={org} project={project} model={m} onRemoved={onClose} open={removing} onOpenChange={setRemoving} />
       </DialogScope>

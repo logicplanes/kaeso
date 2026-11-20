@@ -31,39 +31,38 @@ export function GuardrailsSection({ org, project }: { org: string; project: stri
         </Button>
       }
     >
-      <List
-        aria-label={t("project.guardrails.title", "Guardrails")}
-        loading={used.isPending}
-        items={list.map((g: ProjectGuardrailView, i) => ({
-          id: g.id,
-          textValue: g.name,
-          title: g.name,
-          subtitle: (
-            <Text variant="small" tone="secondary">
-              {phaseWords(g)}
-            </Text>
-          ),
-          meta: (
-            <Text variant="small" tone="secondary">
-              {g.on_error === "allow"
-                ? t("project.guardrails.allowsOnError", "Lets requests through when it fails")
-                : t("project.guardrails.blocksOnError", "Refuses requests when it fails")}
-            </Text>
-          ),
-          date: (
-            <Text variant="small" tone="secondary">
-              {t("project.guardrails.position", "{n} of {count}", { n: i + 1, count: list.length })}
-            </Text>
-          ),
-        }))}
-        empty={
-          <Empty
-            size="compact"
-            title={t("project.guardrails.none", "No guardrails")}
-            description={t("project.guardrails.noneHint", "Requests go to models unchecked.")}
-          />
-        }
-      />
+      {used.isError ? (
+        <Text tone="secondary">{t("project.guardrails.loadFailed", "The guardrails couldn't load; the notification says why.")}</Text>
+      ) : used.isSuccess && list.length === 0 ? (
+        <Text tone="secondary">{t("project.guardrails.none", "No guardrails; requests go to models unchecked.")}</Text>
+      ) : (
+        <List
+          aria-label={t("project.guardrails.title", "Guardrails")}
+          loading={used.isPending}
+          items={list.map((g: ProjectGuardrailView, i) => ({
+            id: g.id,
+            textValue: g.name,
+            title: g.name,
+            subtitle: (
+              <Text variant="small" tone="secondary">
+                {phaseWords(g)}
+              </Text>
+            ),
+            meta: (
+              <Text variant="small" tone="secondary">
+                {g.on_error === "allow"
+                  ? t("project.guardrails.allowsOnError", "Lets requests through when it fails")
+                  : t("project.guardrails.blocksOnError", "Refuses requests when it fails")}
+              </Text>
+            ),
+            date: (
+              <Text variant="small" tone="secondary">
+                {t("project.guardrails.position", "{n} of {count}", { n: i + 1, count: list.length })}
+              </Text>
+            ),
+          }))}
+        />
+      )}
       {choosing && <ChooseDialog org={org} project={project} current={list} onClose={() => setChoosing(false)} />}
     </Section>
   );

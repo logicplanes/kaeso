@@ -198,6 +198,7 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
   };
   const isCustom = custom.checked && !custom.preview;
   const customProblem = custom.checked ? draftProblem(custom.draft, isCustom) : null;
+  const enterId = t("models.enterIdFirst", "Enter the model id first.");
   const addCustom = () => {
     const modelId = custom.modelId.trim();
     if (!custom.checked) return void checkCustom();
@@ -396,7 +397,13 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
           </Button>
         )}
         {only && <Button onClick={() => void startReview(only)}>{t("models.reviewValues", "Review values")}</Button>}
-        <Button variant="primary" disabled={!ids.length} loading={batch.isPending} onClick={addSelected}>
+        <Button
+          variant="primary"
+          disabled={!ids.length}
+          {...(ids.length ? {} : { disabledReason: t("models.chooseFirst", "Choose the models to add first.") })}
+          loading={batch.isPending}
+          onClick={addSelected}
+        >
           {t("models.addCount", "{count, plural, =0 {Add models} one {Add # model} other {Add # models}}", { count: ids.length })}
         </Button>
       </>
@@ -494,14 +501,14 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       <Button
         variant="primary"
         disabled={!custom.modelId.trim() || !!customProblem}
-        {...(customProblem ? { disabledReason: customProblem } : {})}
+        {...(customProblem || !custom.modelId.trim() ? { disabledReason: customProblem ?? enterId } : {})}
         loading={addOne.isPending}
         onClick={addCustom}
       >
         {t("models.addModel", "Add model")}
       </Button>
     ) : (
-      <Button variant="primary" disabled={!custom.modelId.trim()} onClick={addCustom}>
+      <Button variant="primary" disabled={!custom.modelId.trim()} {...(custom.modelId.trim() ? {} : { disabledReason: enterId })} onClick={addCustom}>
         {common.continue()}
       </Button>
     ),
@@ -540,7 +547,15 @@ function AddModels({ org, project, open, onClose: close }: AddModelsProps) {
       </div>
     ),
     footer: (
-      <Button variant="primary" loading={batch.isPending} disabled={current.isSuccess && addable === 0} onClick={addAll}>
+      <Button
+        variant="primary"
+        loading={batch.isPending}
+        disabled={current.isSuccess && addable === 0}
+        {...(current.isSuccess && addable === 0
+          ? { disabledReason: t("models.addAllNone", "Every current {provider} model is in the catalogue already.", { provider: name }) }
+          : {})}
+        onClick={addAll}
+      >
         {t("models.addAllCurrent", "Add every current {provider} model", { provider: name })}
       </Button>
     ),

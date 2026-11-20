@@ -60,7 +60,8 @@ describe("AddModelsDialog", () => {
     expect(within(dialog).queryByRole("img", { name: "OpenAI" })).not.toBeInTheDocument();
     expect(within(dialog).queryByText("Showing", { exact: false })).not.toBeInTheDocument();
     expect(within(dialog).queryByText("gpt-3.5-turbo")).not.toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Add models" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Add models" })).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, within(dialog).getByRole("button", { name: "Add models" }), "Choose the models to add first.");
     await user.click(within(dialog).getByRole("checkbox", { name: "Select gpt-5" }));
     expect(within(dialog).getByRole("button", { name: "Review values" })).toBeInTheDocument();
     await user.click(within(dialog).getByText("GPT-5 mini"));
@@ -140,7 +141,7 @@ describe("AddModelsDialog", () => {
     expect(within(reviewing).getByRole("textbox", { name: "Display name" })).toHaveFocus();
     expect(requests("POST", BATCH)).toEqual([]);
     await user.click(screen.getByRole("button", { name: "Back" }));
-    expect(await within(dialog).findByRole("button", { name: "Add models" })).toBeDisabled();
+    expect(await within(dialog).findByRole("button", { name: "Add models" })).toHaveAttribute("aria-disabled", "true");
     expect(within(dialog).getByRole("button", { name: "Review gpt-5" })).toHaveFocus();
 
     await user.click(within(dialog).getByRole("button", { name: "Review gpt-5" }));
@@ -182,7 +183,7 @@ describe("AddModelsDialog", () => {
     const again = await screen.findByRole("dialog", { name: /Add models/ });
     expect(within(again).getByRole("searchbox", { name: "Search models" })).toHaveValue("");
     expect(await within(again).findByRole("checkbox", { name: "Select gpt-5" })).not.toBeChecked();
-    expect(within(again).getByRole("button", { name: "Add models" })).toBeDisabled();
+    expect(within(again).getByRole("button", { name: "Add models" })).toHaveAttribute("aria-disabled", "true");
     expect(within(again).queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue("acme-internal-1")).not.toBeInTheDocument();
   });
@@ -310,7 +311,8 @@ describe("AddModelsDialog", () => {
     const custom = await screen.findByRole("dialog", { name: /Add a custom model/ });
     expect(within(custom).getByRole("textbox", { name: "Model id" })).toHaveFocus();
     const continueButton = within(custom).getByRole("button", { name: "Continue" });
-    expect(continueButton).toBeDisabled();
+    expect(continueButton).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, continueButton, "Enter the model id first.");
     await fill(user, within(custom).getByRole("textbox", { name: "Model id" }), " my-model ");
     await user.click(within(custom).getByRole("button", { name: "Continue" }));
     expect(
@@ -493,7 +495,10 @@ describe("AddModelsDialog", () => {
     await user.click(await within(dialog).findByRole("button", { name: "Add every current Groq model" }));
     const none = await screen.findByRole("dialog", { name: /Add every current Groq model/ });
     expect(await within(none).findByText("Every current Groq model is in the catalogue already.")).toBeInTheDocument();
-    expect(within(none).getByRole("button", { name: "Add every current Groq model" })).toBeDisabled();
+    const addAll = within(none).getByRole("button", { name: "Add every current Groq model" });
+    expect(addAll).toHaveAttribute("aria-disabled", "true");
+    // The reason is the sentence the layer already shows, so it's read from the button rather than found on screen twice.
+    expect(addAll).toHaveAccessibleDescription("Every current Groq model is in the catalogue already.");
   });
 
   it("says when the organization has no key for the chosen provider", async () => {

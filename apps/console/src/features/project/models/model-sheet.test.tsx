@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { exchangeRates, myMembership, ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
@@ -36,12 +36,16 @@ function setUp(models = [sonnet()], rights?: string[], currency = "USD") {
 const sheet = (name: string | RegExp) => screen.findByRole("dialog", { name });
 
 describe("ModelSheet", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it("shows the model's details and where each value in use comes from", async () => {
     setUp();
     await renderApp(projectPath("models?model=cm_sonnet"));
 
     const s = await sheet("Sonnet");
-    await within(s).findByText("Values in use");
+    expect(await within(s).findByRole("heading", { name: "Values in use" })).toBeInTheDocument();
+    expect(within(s).getAllByText("Sonnet", { exact: true })).toHaveLength(2);
+    expect(within(s).getAllByText("claude-sonnet-4-5")[0]).toBeInTheDocument();
     expect(within(s).getByText("Overridden 2")).toBeInTheDocument();
     expect(s).toHaveTextContent("Aliasesfast, default");
     expect(s).toHaveTextContent("Added15 Oct 2026 by Ada Okafor (you)");
@@ -55,6 +59,18 @@ describe("ModelSheet", () => {
     expect(s).toHaveTextContent("Effortslow, highKPMR");
     expect(s).toHaveTextContent("Timeout120 sKPMR");
     expect(s).toHaveTextContent("Released29 Sep 2025KPMR");
+  });
+
+  it("on a phone, puts each value in use under its label so long prices stay readable", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(max-width: 639px)", addEventListener() {}, removeEventListener() {} }));
+    setUp();
+    await renderApp(projectPath("models?model=cm_sonnet"));
+
+    const s = await sheet("Sonnet");
+    await within(s).findByRole("heading", { name: "Values in use" });
+    const label = within(s).getByText("Long-context prices");
+    expect(label.parentElement).toHaveClass("flex-col");
+    expect(within(s).getByText("Provider").parentElement).not.toHaveClass("flex-col");
   });
 
   it("tries a model the Playground can call there, and offers nothing for one it can't", async () => {

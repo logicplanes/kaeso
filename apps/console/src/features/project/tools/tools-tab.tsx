@@ -13,6 +13,7 @@ import { t } from "~/i18n";
 import { HINTS, hintLabel, hintsOf, projectServerWord } from "~/kaeso/mcp-servers";
 import type { SearchPatch } from "~/search";
 import { toast } from "~/shell/toast";
+import { usePhone } from "~/shell/use-phone";
 import type { ToolState, ToolsSearch } from "./tools-page";
 
 const STATES: ToolState[] = ["on", "off", "changed"];
@@ -45,6 +46,7 @@ export function ToolsTab({
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
   const canManage = rights.has("tools.manage");
+  const phone = usePhone();
   const reason = canManage ? undefined : needs("tools.manage");
   const tools = useQuery(projectToolsQuery(org, project));
   const servers = useQuery(projectServersQuery(org, project));
@@ -130,9 +132,11 @@ export function ToolsTab({
               {s.name}
             </Text>
             <Status tone={word.tone}>{word.label}</Status>
-            <Text variant="small" tone="secondary" truncate className="shrink-4">
-              {t("project.tools.onCount", "{on} of {total} on", { on: s.tools_on, total: s.tools })}
-            </Text>
+            {!phone && (
+              <Text variant="small" tone="secondary" truncate className="shrink-4">
+                {t("project.tools.onCount", "{on} of {total} on", { on: s.tools_on, total: s.tools })}
+              </Text>
+            )}
           </span>
         ),
         count: items.length,

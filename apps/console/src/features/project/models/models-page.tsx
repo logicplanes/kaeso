@@ -282,7 +282,11 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               leadingIcon={icons.refresh}
               loading={check.isPending}
               disabled={!canManage || all.length === 0}
-              {...(reason ? { disabledReason: reason } : {})}
+              {...(reason
+                ? { disabledReason: reason }
+                : all.length === 0
+                  ? { disabledReason: t("models.checkNothing", "Add a model first; there is nothing to check yet.") }
+                  : {})}
               onClick={() => check.mutate()}
             >
               {t("models.checkAvailability", "Check availability")}

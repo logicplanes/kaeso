@@ -440,6 +440,18 @@ describe("ModelsPage", () => {
     await hoverReason(user, check, /You need Manage models/);
   });
 
+  it("explains why an empty catalogue has nothing to check", async () => {
+    signedIn();
+    projectData();
+    modelsApi();
+    const { user } = await renderApp(projectPath("models"));
+
+    expect(await screen.findByText("No models yet")).toBeInTheDocument();
+    const check = screen.getByRole("button", { name: "Check availability" });
+    expect(check).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, check, "Add a model first; there is nothing to check yet.");
+  });
+
   it("explains why models can't be added without Manage models", async () => {
     signedIn({ projectRights: without("models.manage") });
     projectData();

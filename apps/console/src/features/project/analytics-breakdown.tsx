@@ -18,6 +18,7 @@ import { useProjectRights } from "~/auth/rights";
 import { clientLabel } from "~/format/clients";
 import { t } from "~/i18n";
 import { usePhone } from "~/shell/use-phone";
+import { columnWidth } from "~/format/text-width";
 import { common } from "~/i18n/common";
 
 const byOptions = (g: Granularity, clients: boolean) => [
@@ -34,6 +35,9 @@ const LABEL_WIDTH = 200;
 const LABEL_MIN_WIDTH = 120;
 const NUMBER_WIDTH = 88;
 const COST_WIDTH = 96;
+const VALUE_MAX = 168;
+
+const fit = (header: string, values: string[], min: number) => columnWidth(header, values, { min, max: VALUE_MAX });
 
 const NOTABLE_ERROR_RATE = 0.05;
 
@@ -162,8 +166,19 @@ export function Breakdown({
             : by === "client"
               ? t("project.overview.client", "Client")
               : t("project.overview.member", "Member");
+  const cacheHeader = t("project.overview.cacheHit", "Cache hit");
+  const errorsHeader = t("project.overview.errors", "Errors");
   const cache = col.custom(
-    { id: "cache", header: t("project.overview.cacheHit", "Cache hit"), size: NUMBER_WIDTH, priority: by === "route" ? 1 : 3 },
+    {
+      id: "cache",
+      header: cacheHeader,
+      size: fit(
+        cacheHeader,
+        sorted.map((r) => (r.cache_hit_rate == null ? "—" : formatPercent(r.cache_hit_rate, 0))),
+        NUMBER_WIDTH,
+      ),
+      priority: by === "route" ? 1 : 3,
+    },
     (r: UsageRow) => r.cache_hit_rate ?? null,
     (v: number | null) => (v === null ? "—" : formatPercent(v, 0)),
     { align: "end" },
@@ -175,7 +190,16 @@ export function Breakdown({
       (_v, r) => label(r),
     ),
     col.custom(
-      { id: "requests", header: common.requests(), size: NUMBER_WIDTH, priority: 1 },
+      {
+        id: "requests",
+        header: common.requests(),
+        size: fit(
+          common.requests(),
+          sorted.map((r) => formatNumber(r.requests)),
+          NUMBER_WIDTH,
+        ),
+        priority: 1,
+      },
       (r: UsageRow) => r.requests,
       (v: number) => formatNumber(v),
       {
@@ -185,8 +209,12 @@ export function Breakdown({
     col.custom(
       {
         id: "errors",
-        header: t("project.overview.errors", "Errors"),
-        size: NUMBER_WIDTH,
+        header: errorsHeader,
+        size: fit(
+          errorsHeader,
+          sorted.map((r) => formatNumber(r.errors)),
+          NUMBER_WIDTH,
+        ),
         priority: 2,
         tone: (r: UsageRow) => (r.errors > 0 && r.errors / r.requests >= NOTABLE_ERROR_RATE ? "danger" : undefined),
       },
@@ -204,7 +232,16 @@ export function Breakdown({
       { align: "end" },
     ),
     col.custom(
-      { id: "tokens", header: common.tokens(), size: NUMBER_WIDTH, priority: 2 },
+      {
+        id: "tokens",
+        header: common.tokens(),
+        size: fit(
+          common.tokens(),
+          sorted.map((r) => formatTokens(totalTokens(r))),
+          NUMBER_WIDTH,
+        ),
+        priority: 2,
+      },
       (r: UsageRow) => totalTokens(r),
       (v: number) => formatTokens(v),
       {
@@ -215,7 +252,16 @@ export function Breakdown({
     ...(showCost
       ? [
           col.custom(
-            { id: "cost", header: common.cost(), size: costWidth(sorted, COST_WIDTH, phone), priority: 1 },
+            {
+              id: "cost",
+              header: common.cost(),
+              size: fit(
+                common.cost(),
+                sorted.map((r) => money.period(r.converted_cost)),
+                costWidth(sorted, COST_WIDTH, phone),
+              ),
+              priority: 1,
+            },
             (r: UsageRow) => r.converted_cost ?? "",
             (_v: string, r: UsageRow) => <UsageCost row={r} money={money} />,
             { align: "end" },
@@ -259,7 +305,7 @@ export function Breakdown({
           : t("project.overview.breakdownHint", "Requests, errors, tokens and cache hits in the period")
       }
       actions={
-        <span className="flex flex-wrap items-center gap-8">
+        <span className="flex max-w-full min-w-0 flex-wrap items-center gap-8">
           <Segmented
             aria-label={t("project.overview.groupBy", "Group by")}
             size="sm"

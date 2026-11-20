@@ -180,6 +180,10 @@ describe("RankList", () => {
       expect(shown).toHaveClass("inline-flex", "justify-end", "min-w-64");
     }
   });
+  it("ends a value that is a word on the row's right edge too", () => {
+    render(<RankList aria-label="Latest requests" items={[{ id: "b", label: "GPT-6 Sol", value: "—" }]} />);
+    expect(screen.getByText("—")).toHaveClass("justify-end", "text-right", "min-w-64");
+  });
   it("gives every row's change a column of its own: neutral, better or worse, or a word", () => {
     render(
       <RankList

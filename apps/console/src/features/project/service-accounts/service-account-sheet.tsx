@@ -161,6 +161,7 @@ function AccountBody({ org, project, accountId, onClose }: { org: string; projec
             <Button
               variant="primary"
               disabled={!name.trim() || name.trim() === a.name}
+              {...(!name.trim() || name.trim() === a.name ? { disabledReason: t("project.serviceAccounts.renameFirst", "Type a new name first.") } : {})}
               loading={update.isPending && update.variables?.name !== undefined}
               onClick={() => update.mutate({ name: name.trim() })}
             >

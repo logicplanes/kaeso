@@ -71,7 +71,8 @@ describe("MembersPage", () => {
     const dialog = await screen.findByRole("dialog", { name: "Add member" });
     expect(within(dialog).getByText("Add someone who is already in the organization; invite others to the organization first.")).toBeInTheDocument();
     const add = within(dialog).getByRole("button", { name: "Add member" });
-    expect(add).toBeDisabled();
+    expect(add).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, add, "Choose someone to add first.");
     await user.click(within(dialog).getByRole("combobox", { name: "Member" }));
     expect(await screen.findByRole("option", { name: /Grace Hopper/ })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: /Linus Park/ })).not.toBeInTheDocument();

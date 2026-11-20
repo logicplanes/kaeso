@@ -77,6 +77,15 @@ describe("LimitsPage", () => {
     ]);
   });
 
+  it("wraps its header's sort, share and add actions on a narrow screen instead of pushing them past the edge", async () => {
+    signedIn();
+    stubProject();
+    await renderApp(projectPath("limits"), { locale: "de" });
+
+    const add = await screen.findByRole("button", { name: "Limit hinzufügen" });
+    expect(add.parentElement).toHaveClass("flex-wrap", "justify-end");
+  });
+
   it("lines the meters up on one edge and lets a longer figure or reset text grow away from its meter", async () => {
     signedIn();
     stubProject();
