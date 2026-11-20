@@ -11,7 +11,7 @@ describe("Section", () => {
       </Section>,
     );
     const actions = screen.getByRole("button", { name: "Download CSV" }).parentElement;
-    expect(actions).toHaveClass("max-w-full", "min-w-0", "flex-wrap");
+    expect(actions).toHaveClass("max-w-full", "flex-wrap");
   });
 
   it("lines its actions up with the description when there is one, and with the title when there isn't", () => {

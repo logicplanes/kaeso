@@ -35,6 +35,7 @@ const list = () => screen.findByRole("grid", { name: "Tools" });
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("Project › Tools", () => {
@@ -52,7 +53,6 @@ describe("Project › Tools", () => {
     expect(within(grid).getByText("X")).toBeInTheDocument();
     expect(within(grid).getByText("Connected")).toBeInTheDocument();
     expect(within(grid).queryByText("1 of 2 on")).not.toBeInTheDocument();
-    vi.unstubAllGlobals();
   });
 
   it("lists each server's tools with their switch, hints, state and calls", async () => {

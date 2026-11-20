@@ -19,7 +19,7 @@ import { catalogueModelOption } from "~/kaeso/model-options";
 import { useOrgPrices } from "~/kaeso/org-prices";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { toast } from "~/shell/toast";
-import { useMediaQuery } from "~/shell/use-phone";
+import { useBelowDesktop } from "~/shell/use-phone";
 import { usePageTitle } from "~/shell/title";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
@@ -194,8 +194,8 @@ function Editor({
   const [prompt, setPrompt] = useState(() => t("models.route.defaultPrompt", "Say hello in one sentence."));
   const me = useSession().user.id;
   const logs = useRequestLogs();
-  // Below 1280px, with the sidebar open, the header can't hold the name, the tabs and every action in one row.
-  const narrow = useMediaQuery("(max-width: 1279px)");
+  // Below 1280px the header can't hold the name, the tabs and every action in one row.
+  const narrow = useBelowDesktop();
   const sender = useRouteSend(org, project);
   const [started, setStarted] = useState<{ kind: Template; root: DraftStep } | null>(() => (start ? null : { kind: "single", root: history.present.root }));
   const [json, setJson] = useState(false);

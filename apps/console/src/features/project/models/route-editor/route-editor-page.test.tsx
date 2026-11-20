@@ -135,6 +135,7 @@ describe("RouteEditorPage", () => {
     const { user } = await renderApp(projectPath("models/aliases/al_fast"));
 
     expect(await screen.findByRole("button", { name: "Save" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Audit log" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Delete alias" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Actions for fast" }));
     const menu = await screen.findByRole("menu");

@@ -52,7 +52,7 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
           <dt
             className={cn(
               "text-small font-medium text-fg-secondary",
-              layout === "columns" && "flex min-h-36 min-w-120 items-start pt-8 pb-8 pe-24 leading-code hairline-b",
+              layout === "columns" && "flex min-h-36 min-w-120 items-start pt-8 pb-8 pe-24 leading-body hairline-b",
               grid && "flex min-w-0",
             )}
           >
@@ -62,7 +62,7 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
             className={cn(
               "group/kv flex min-w-0 gap-4 text-body text-fg",
               grid ? "min-h-24" : "min-h-36",
-              layout === "columns" ? cn("items-start pt-8 pb-8 hairline-b", it.mono && "leading-code") : it.wrap ? "items-start" : "items-center",
+              layout === "columns" ? cn("items-start pt-8 pb-8 hairline-b", it.mono && "leading-body") : it.wrap ? "items-start" : "items-center",
               layout === "stacked" && it.wrap && "py-8",
               it.mono && "mono text-small",
             )}

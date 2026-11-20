@@ -138,6 +138,16 @@ describe("retiring models", () => {
     await hoverReason(user, within(sheet).getByRole("button", { name: "Move to replacement" }), "KPMR doesn't list the replacement, so it can't be added.");
   });
 
+  it("say why there's nothing to move when no alias calls the model", async () => {
+    setUp([retiringModel({ aliases: [] })], { rights: ["models.view", "models.manage"] });
+    const { user } = await renderApp(projectPath("models?tab=retiring"));
+    await user.click(await screen.findByText("openai/gpt-4o"));
+    const sheet = await screen.findByRole("dialog", { name: "gpt-4o" });
+    const move = within(sheet).getByRole("button", { name: "Move to replacement" });
+    expect(move).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, move, "Nothing to move; no alias calls it.");
+  });
+
   it("move to a replacement already in the catalogue", async () => {
     setUp([retiringModel({ replacement: retiringReplacement({ catalogue_model_id: "model_gpt55" }) })]);
     on("GET", MOVE, { model: retiringModel(), adds_replacement: false, steps: 1 });

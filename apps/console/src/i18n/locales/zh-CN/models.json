@@ -509,7 +509,7 @@
   "models.retiring.move": "切换到替代模型",
   "models.retiring.noAliases": "没有别名调用它；直接指定它的应用仍在调用。",
   "models.retiring.replacementUnlisted": "KPMR 未收录该替代模型，因此无法添加。",
-  "models.retiring.nothingToMove": "没有别名调用它，因此无需切换。",
+  "models.retiring.nothingToMove": "无需切换；没有别名调用它。",
   "models.retiring.callers": "最近 30 天仍在调用的调用方",
   "models.retiring.chart": "自公告以来每天的请求数",
   "models.retiring.noCalls": "最近 30 天没有请求。",

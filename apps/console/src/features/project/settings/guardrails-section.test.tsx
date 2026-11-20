@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ADMIN_ORG_RIGHTS, PROJECT, asAdmin, project, signedIn } from "~/test/fixtures";
 import { hoverReason, notifications, paged } from "~/test/fixtures/org";
 import { logSettings, projectData, projectPath } from "~/test/fixtures/project";
-import { on, requests } from "~/test/network";
+import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import type { GuardrailView, ProjectGuardrailView } from "~/api/generated/types";
 
@@ -63,6 +63,14 @@ describe("project guardrails", () => {
     setUp([]);
     await renderApp(projectPath("settings"));
     expect(await screen.findByText("No guardrails; requests go to models unchecked.")).toBeInTheDocument();
+  });
+
+  it("says when the project's guardrails couldn't load instead of claiming it has none", async () => {
+    setUp([]);
+    on("GET", USED, apiError(500, "internal_error", "Down."));
+    await renderApp(projectPath("settings"));
+    expect(await screen.findByText("The guardrails couldn't load; the notification says why.")).toBeInTheDocument();
+    expect(screen.queryByText("No guardrails; requests go to models unchecked.")).not.toBeInTheDocument();
   });
 
   it("is hidden from people who can't choose guardrails while the project has none", async () => {

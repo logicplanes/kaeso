@@ -495,11 +495,10 @@ describe("AddModelsDialog", () => {
     await user.click(await within(dialog).findByRole("button", { name: "Add every current Groq model" }));
     const none = await screen.findByRole("dialog", { name: /Add every current Groq model/ });
     expect(await within(none).findByText("Every current Groq model is in the catalogue already.")).toBeInTheDocument();
-    expect(within(none).getByRole("button", { name: "Add every current Groq model" })).toHaveAttribute("aria-disabled", "true");
-    expect(within(none).getByRole("button", { name: "Add every current Groq model" })).toHaveAttribute(
-      "aria-description",
-      "Every current Groq model is in the catalogue already.",
-    );
+    const addAll = within(none).getByRole("button", { name: "Add every current Groq model" });
+    expect(addAll).toHaveAttribute("aria-disabled", "true");
+    // The reason is the sentence the layer already shows, so it's read from the button rather than found on screen twice.
+    expect(addAll).toHaveAccessibleDescription("Every current Groq model is in the catalogue already.");
   });
 
   it("says when the organization has no key for the chosen provider", async () => {

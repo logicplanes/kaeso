@@ -10,6 +10,7 @@
   "project.guardrails.chooseHint": "Requests pass the chosen guardrails from top to bottom.",
   "project.guardrails.down": "Move {name} down",
   "project.guardrails.hint": "The organization's checks on this project's chat requests, in order.",
+  "project.guardrails.loadFailed": "The guardrails couldn't load; the notification says why.",
   "project.guardrails.none": "No guardrails; requests go to models unchecked.",
   "project.guardrails.position": "{n} of {count}",
   "project.guardrails.saved": "Guardrails saved",

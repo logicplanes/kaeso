@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 const PHONE = "(max-width: 639px)";
+const BELOW_DESKTOP = "(max-width: 1279px)";
 
 function list(query: string): MediaQueryList | null {
   return typeof window.matchMedia === "function" ? window.matchMedia(query) : null;
@@ -27,4 +28,8 @@ export function useMediaQuery(query: string): boolean {
 
 export function usePhone(): boolean {
   return useMediaQuery(PHONE);
+}
+
+export function useBelowDesktop(): boolean {
+  return useMediaQuery(BELOW_DESKTOP);
 }

@@ -41,3 +41,7 @@ export function cellWidth(texts: Iterable<string>, { min, max }: { min: number; 
 export function headerWidth(header: string, min: number): number {
   return Math.max(min, onGrid(measure(header, HEADER) + SORT_ARROW + CELL_PADDING));
 }
+
+export function columnWidth(header: string, values: Iterable<string>, { min, max }: { min: number; max: number }): number {
+  return Math.max(headerWidth(header, min), cellWidth(values, { min, max }));
+}

@@ -254,7 +254,7 @@
   "models.retiring.noAliases": "No alias calls it; apps that name it directly still do.",
   "models.retiring.noCalls": "No requests in the last 30 days.",
   "models.retiring.noReplacement": "No replacement named",
-  "models.retiring.nothingToMove": "No alias calls it, so there is nothing to move.",
+  "models.retiring.nothingToMove": "Nothing to move; no alias calls it.",
   "models.retiring.outputPrice": "Output price",
   "models.retiring.priceChange": "{from} → {to}",
   "models.retiring.replaceWith": "Replace with {model}",

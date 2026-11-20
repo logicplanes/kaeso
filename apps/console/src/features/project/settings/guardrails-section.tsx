@@ -31,7 +31,9 @@ export function GuardrailsSection({ org, project }: { org: string; project: stri
         </Button>
       }
     >
-      {used.isSuccess && list.length === 0 ? (
+      {used.isError ? (
+        <Text tone="secondary">{t("project.guardrails.loadFailed", "The guardrails couldn't load; the notification says why.")}</Text>
+      ) : used.isSuccess && list.length === 0 ? (
         <Text tone="secondary">{t("project.guardrails.none", "No guardrails; requests go to models unchecked.")}</Text>
       ) : (
         <List

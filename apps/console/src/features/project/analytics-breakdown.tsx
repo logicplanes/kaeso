@@ -18,7 +18,7 @@ import { useProjectRights } from "~/auth/rights";
 import { clientLabel } from "~/format/clients";
 import { t } from "~/i18n";
 import { usePhone } from "~/shell/use-phone";
-import { cellWidth, headerWidth } from "~/format/text-width";
+import { columnWidth } from "~/format/text-width";
 import { common } from "~/i18n/common";
 
 const byOptions = (g: Granularity, clients: boolean) => [
@@ -37,7 +37,7 @@ const NUMBER_WIDTH = 88;
 const COST_WIDTH = 96;
 const VALUE_MAX = 168;
 
-const fit = (header: string, values: string[], min: number) => Math.max(headerWidth(header, min), cellWidth(values, { min, max: VALUE_MAX }));
+const fit = (header: string, values: string[], min: number) => columnWidth(header, values, { min, max: VALUE_MAX });
 
 const NOTABLE_ERROR_RATE = 0.05;
 
@@ -305,7 +305,7 @@ export function Breakdown({
           : t("project.overview.breakdownHint", "Requests, errors, tokens and cache hits in the period")
       }
       actions={
-        <span className="flex flex-wrap items-center gap-8">
+        <span className="flex max-w-full min-w-0 flex-wrap items-center gap-8">
           <Segmented
             aria-label={t("project.overview.groupBy", "Group by")}
             size="sm"

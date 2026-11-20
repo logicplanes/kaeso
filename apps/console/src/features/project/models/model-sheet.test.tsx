@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { exchangeRates, myMembership, ORG, PROJECT, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, catalogueModel, modelsApi, projectData, projectPath } from "~/test/fixtures/project";
@@ -36,6 +36,8 @@ function setUp(models = [sonnet()], rights?: string[], currency = "USD") {
 const sheet = (name: string | RegExp) => screen.findByRole("dialog", { name });
 
 describe("ModelSheet", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it("shows the model's details and where each value in use comes from", async () => {
     setUp();
     await renderApp(projectPath("models?model=cm_sonnet"));
@@ -69,7 +71,6 @@ describe("ModelSheet", () => {
     const label = within(s).getByText("Long-context prices");
     expect(label.parentElement).toHaveClass("flex-col");
     expect(within(s).getByText("Provider").parentElement).not.toHaveClass("flex-col");
-    vi.unstubAllGlobals();
   });
 
   it("tries a model the Playground can call there, and offers nothing for one it can't", async () => {

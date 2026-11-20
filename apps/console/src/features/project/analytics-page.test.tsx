@@ -112,6 +112,9 @@ describe("AnalyticsPage", () => {
         .map((h) => h.textContent),
     ).toEqual(["Model", "Requests", "Cost"]);
     expect(bodyRows(table)[0]).toHaveTextContent("+3 unknown");
+    const actions = screen.getByRole("button", { name: "Download CSV" }).parentElement;
+    expect(actions).toHaveClass("max-w-full", "min-w-0", "flex-wrap");
+    expect(within(actions as HTMLElement).getByRole("radiogroup", { name: "Group by" })).toBeInTheDocument();
   });
 
   it("breaks usage down by model with names from the catalogue", async () => {
@@ -657,6 +660,18 @@ describe("the analytics views", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(projectPath("logs")));
     // The model with its provider, in the period's days.
     expect(router.state.location.searchStr).toBe("?model=gpt-5.4-mini&provider=openai&from=2026-10-01&to=2026-10-14&utc=true");
+  });
+
+  it("sizes the Models view's columns for German headers and values", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", input_tokens: 129_400, output_tokens: 500 })] });
+    await renderApp(projectPath(`analytics/models?${PERIOD}`), { locale: "de" });
+
+    const table = await screen.findByRole("grid", { name: "Modelle im Zeitraum" });
+    await waitFor(() => expect(bodyRows(table)[0]).toHaveTextContent("129,9 Tsd."));
+    const header = within(table).getAllByRole("row")[0] as HTMLElement;
+    expect(header.style.gridTemplateColumns).toBe("minmax(220px, 1fr) 96px 96px 84px 112px 104px 112px 128px 96px 112px");
   });
 
   it("keeps the period when it moves between views", async () => {

@@ -131,11 +131,13 @@ function Callers({ title, list, name, href }: { title: string; list: CallerCount
                 return (
                   <li key={c.id} className="flex items-center justify-between gap-12">
                     {to ? (
-                      <Link href={to} className="truncate">
+                      <Link href={to} className={name(c.id) === c.id ? "mono truncate" : "truncate"}>
                         {name(c.id)}
                       </Link>
                     ) : (
-                      <Text truncate>{name(c.id)}</Text>
+                      <Text truncate mono={name(c.id) === c.id}>
+                        {name(c.id)}
+                      </Text>
                     )}
                     <Text tabular tone="secondary">
                       {formatNumber(c.requests)}
@@ -184,7 +186,7 @@ function RetiringBody({
   const moveBlocked = movable
     ? undefined
     : m.aliases.length === 0
-      ? t("models.retiring.nothingToMove", "No alias calls it, so there is nothing to move.")
+      ? t("models.retiring.nothingToMove", "Nothing to move; no alias calls it.")
       : t("models.retiring.replacementUnlisted", "KPMR doesn't list the replacement, so it can't be added.");
   return (
     <div className="flex flex-col gap-24">
