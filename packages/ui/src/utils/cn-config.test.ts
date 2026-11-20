@@ -85,6 +85,7 @@ const fullConfig = (): Config<string, string> =>
         focus: ["focus-ring", "focus-ring-inset"],
         motion: ["popup-motion", "dialog-motion", "sheet-motion", "backdrop-motion", "indicator-motion"],
         "min-w": [{ "min-w": ["anchor"] }],
+        "max-w": [{ "max-w": ["menu"] }],
         w: [{ w: ["anchor"] }],
       },
     },

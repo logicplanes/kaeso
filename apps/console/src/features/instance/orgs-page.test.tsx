@@ -54,20 +54,20 @@ describe("instance organizations list", () => {
     expect(orgQueries()[0]).toEqual({ limit: "100" });
   });
 
-  it("keeps the state narrow, leaving the names room, until an organization is scheduled for deletion", async () => {
+  it("keeps the state as narrow as its words, leaving the names room, until an organization is scheduled for deletion", async () => {
     signedIn();
     orgs([NORTHWIND, ORPHAN]);
     await renderApp(PATH);
     const row = (await within(table()).findByText("Northwind Labs")).closest<HTMLElement>("[role=row]");
-    expect(row?.style.gridTemplateColumns.split(" ").slice(0, 3)).toEqual(["minmax(192px,", "1fr)", "128px"]);
+    expect(row?.style.gridTemplateColumns.split(" ").slice(0, 3)).toEqual(["minmax(192px,", "1fr)", "104px"]);
   });
 
-  it("widens the state for a deletion date", async () => {
+  it("widens the state for a deletion date, only as far as the date needs", async () => {
     signedIn();
     orgs([NORTHWIND, CONTOSO]);
     await renderApp(PATH);
     const row = (await within(table()).findByText("Contoso")).closest<HTMLElement>("[role=row]");
-    expect(row?.style.gridTemplateColumns.split(" ")[2]).toBe("184px");
+    expect(row?.style.gridTemplateColumns.split(" ")[2]).toBe("176px");
   });
 
   it("searches by name through the URL", async () => {
