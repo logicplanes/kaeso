@@ -54,7 +54,7 @@ export const uncommented = (text) =>
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
-export function collect({ repository, since = null, head = "HEAD", git, gh }) {
+export function collect({ repository, since = null, head = "HEAD", curated = [], git, gh }) {
   const json = (...args) => JSON.parse(gh(args));
   const each = (...args) =>
     gh(args)
@@ -72,7 +72,7 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
     const own = /\s*\(#(\d+)\)$/.exec(subject);
     if (own) {
       const number = Number(own[1]);
-      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, title: subject.slice(0, own.index), body: uncommented(message) });
+      if (!landed.get(number)?.squashed) landed.set(number, { squashed: true, sha, title: subject.slice(0, own.index), body: uncommented(message) });
       continue;
     }
     for (const pull of json("api", `repos/${repository}/commits/${sha}/pulls`)) {
@@ -105,12 +105,73 @@ export function collect({ repository, since = null, head = "HEAD", git, gh }) {
     if (!permissions.has(login)) permissions.set(login, permissionOf(login));
     return ["admin", "write"].includes(permissions.get(login));
   };
+  const missing = (error) => /\(HTTP 404\)/.test(error.message);
+  const pullOf = (number) => {
+    try {
+      return json("api", `repos/${repository}/pulls/${number}`);
+    } catch (error) {
+      if (missing(error)) return null;
+      throw error;
+    }
+  };
+  const isIssue = (number) => {
+    try {
+      json("api", `repos/${repository}/issues/${number}`);
+      return true;
+    } catch (error) {
+      if (missing(error)) return false;
+      throw error;
+    }
+  };
+  const filesOf = (sha) =>
+    git(["show", "--numstat", "--no-renames", "-z", "--format=", sha])
+      .split("\0")
+      .filter((record) => record.trim())
+      .map((record) => {
+        const [additions, deletions, ...path] = record.replace(/^\n/, "").split("\t");
+        return { path: path.join("\t"), additions: Number(additions) || 0, deletions: Number(deletions) || 0 };
+      });
+  // GitHub stops serving the pull requests of a suspended or flagged account, but their squash commits still say what was merged.
+  const unserved = (number, merged) => {
+    const trusted = () => {
+      if (!merged.squashed) return null;
+      const [committer, date] = git(["log", "-1", "--format=%ce%x1f%cI", merged.sha]).trim().split("\x1f");
+      return committer === "noreply@github.com" && !isIssue(number) ? date : null;
+    };
+    const date = trusted();
+    if (!date) {
+      if (curated.includes(number)) return null;
+      throw new Error(
+        `GitHub doesn't serve #${number}, so its changelog line can't be checked; write its line under [Unreleased] in CHANGELOG.md, linking #${number}.`,
+      );
+    }
+    const files = filesOf(merged.sha);
+    return {
+      number,
+      title: merged.title,
+      url: `https://github.com/${repository}/pull/${number}`,
+      labels: [],
+      author: "",
+      bot: true,
+      merged_at: date,
+      body: truncated(merged.body, BODY_LIMIT),
+      files: files.slice(0, FILE_LIMIT),
+      files_total: files.length,
+      linked_issues: [],
+      coauthors: [],
+    };
+  };
   const [owner, name] = repository.split("/");
   const pulls = [];
   for (const number of [...landed.keys()].sort(byNumber)) {
-    const pull = json("api", `repos/${repository}/pulls/${number}`);
-    if (!pull.merged_at) continue;
     const merged = landed.get(number);
+    const pull = pullOf(number);
+    if (!pull) {
+      const kept = unserved(number, merged);
+      if (kept) pulls.push(kept);
+      continue;
+    }
+    if (!pull.merged_at) continue;
     const files = each("api", "--paginate", `repos/${repository}/pulls/${number}/files`, "--jq", ".[] | {path: .filename, additions, deletions}");
     const commits = each(
       "api",
@@ -658,7 +719,15 @@ const repositoryOf = (changelog) => {
 async function main(args) {
   const opts = options(args);
   const changelog = readFileSync(changelogFile, "utf8");
-  const gather = () => collect({ repository: repositoryOf(changelog), since: opts.since ?? null, head: opts.head ?? "HEAD", git: run("git"), gh: run("gh") });
+  const gather = () =>
+    collect({
+      repository: repositoryOf(changelog),
+      since: opts.since ?? null,
+      head: opts.head ?? "HEAD",
+      curated: linked(context(changelog, "next").curated),
+      git: run("git"),
+      gh: run("gh"),
+    });
   const model = process.env.RELEASE_NOTES_MODEL || MODEL;
   if (opts.command === "collect" && opts.out) {
     mkdirSync(dirname(opts.out), { recursive: true });
