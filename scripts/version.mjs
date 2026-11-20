@@ -43,6 +43,8 @@ export const ALLOWED = [
     why: "the llama.cpp release that changed its default port, which only shares the number",
   },
   { path: ".github/workflows/ci.yml", version: "0.8.0", why: "kubeconform's version, which only shares the number" },
+  { path: "deny.toml", version: "0.9.0", why: "sqlx-sqlite's version in an advisory's reason, which only shares the number" },
+  { path: "osv-scanner.toml", version: "0.9.0", why: "as above" },
 ];
 
 const lineAt = (text, index) => text.slice(0, index).split("\n").length;
