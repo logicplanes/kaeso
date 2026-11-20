@@ -330,7 +330,7 @@ const Settings = forwardRef<HTMLDivElement, SettingsPageProps>(function AppFrame
       <div className={cn("w-full px-24 pt-16 pb-96 lg:mx-auto lg:max-w-settings lg:pt-64", className)} {...props}>
         <header className="flex flex-wrap items-start justify-between gap-x-16 gap-y-8 pb-24 rule-b">
           <h1 className="min-w-0 text-title-lg font-semibold text-fg text-balance sm:flex-1">{title}</h1>
-          {actions && <div className="order-last flex h-34 shrink-0 items-center gap-8 sm:order-none sm:ml-auto">{actions}</div>}
+          {actions && <div className="order-last flex min-h-32 shrink-0 items-center gap-8 sm:order-none sm:ml-auto">{actions}</div>}
           {description && <p className="basis-full text-body-lg font-regular text-fg-secondary">{description}</p>}
         </header>
         <div className="mt-8">

@@ -34,6 +34,10 @@ describe("FilterRow", () => {
     expect(toolbar).not.toContainElement(screen.getByRole("tablist"));
     expect(screen.getByRole("tablist").compareDocumentPosition(toolbar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+  it("on a phone, gives the filters the whole line under the tabs, so a search can fill what the other filters leave", () => {
+    render(<Row />);
+    expect(screen.getByRole("toolbar", { name: "Filters" })).toHaveClass("max-sm:w-full", "max-w-full");
+  });
   it("moves across the filters with Left and Right, and leaves the tabs' arrows to the tabs", async () => {
     render(<Row />);
     screen.getByRole("button", { name: "Every preset" }).focus();

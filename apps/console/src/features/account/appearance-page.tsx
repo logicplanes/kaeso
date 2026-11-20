@@ -28,7 +28,7 @@ export function AppearancePage() {
     <SettingsPage
       title={t("account.appearance", "Appearance")}
       context={t("account.title", "Account")}
-      description={t("account.appearanceHint", "How the console looks in this browser, its language and its currency.")}
+      description={t("account.appearanceHint", "The console's theme in this browser, and its language.")}
     >
       <Section spacing="settings">
         <SettingsGroup>

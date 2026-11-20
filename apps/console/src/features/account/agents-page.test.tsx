@@ -124,6 +124,19 @@ describe("the agents tab", () => {
     await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops" }]));
   });
 
+  it("keeps the name in a settings row with its Save beside it, like the profile's name", async () => {
+    signedIn();
+    agentApi();
+    on("PATCH", "me/agents/:agent", agentView({ name: "Ops" }));
+    const { user } = await renderApp(`/settings/account/agents/${AGENT}`);
+    const name = await screen.findByLabelText("Name");
+    expect(screen.getByText("Shown in your agents and the audit log.")).toBeInTheDocument();
+    expect(name.closest("[data-row-control]")).toContainElement(screen.getByRole("button", { name: "Save" }));
+    await user.clear(name);
+    await user.type(name, "Ops{Enter}");
+    await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops" }]));
+  });
+
   it("adds the right an agent asked for once the person saves", async () => {
     signedIn();
     agentApi();
@@ -350,12 +363,14 @@ describe("the agents tab", () => {
     expect((await screen.findByText("get_orgs_org_projects_project_usage")).parentElement).toHaveTextContent(/Northwind Labs › proj_\w+$/);
   });
 
-  it("says when there are no tool calls yet", async () => {
+  it("says when there are no tool calls yet, at a section's size rather than a page's", async () => {
     signedIn();
     agentApi();
     on("GET", "me/agents/:agent/activity", page([]));
     await renderApp(`/settings/account/agents/${AGENT}`);
-    expect(await screen.findByText("No tool calls yet")).toBeInTheDocument();
+    const empty = (await screen.findByRole("heading", { name: "No tool calls yet" })).parentElement?.parentElement;
+    expect(empty).toHaveClass("py-48");
+    expect(empty).not.toHaveClass("py-80");
   });
 
   it("says when the activity couldn't load", async () => {

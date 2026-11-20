@@ -53,7 +53,9 @@ describe("instance updates page", () => {
     expect(screen.getByText("Kaeso 40.4.2")).toBeInTheDocument();
     expect(screen.queryByText(/Checked|twice a day|Not checked/)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Check now" })).not.toBeInTheDocument();
-    expect(await screen.findByText("No updates yet")).toBeInTheDocument();
+    const empty = (await screen.findByRole("heading", { name: "No updates yet" })).parentElement?.parentElement;
+    expect(empty).toHaveClass("py-48");
+    expect(empty).not.toHaveClass("py-80");
     expect(screen.queryByRole("button", { name: /Update to/ })).not.toBeInTheDocument();
   });
 
@@ -73,7 +75,9 @@ describe("instance updates page", () => {
     expect(screen.getByRole("heading", { name: "Kaeso 40.4.3" })).toBeInTheDocument();
     const notes = screen.getByRole("region", { name: "Release notes of 40.4.3" });
     expect(within(notes).getByText("Streams keep their last chunk when a provider closes early.")).toBeInTheDocument();
-    expect(within(notes).getByRole("link", { name: /On GitHub/ })).toHaveAttribute("href", "https://github.com/logicplanes/kaeso/releases/tag/v40.4.3");
+    expect(within(notes).queryByText("40.4.3"), "the section's title already names the one release").not.toBeInTheDocument();
+    const header = screen.getByRole("heading", { name: "Kaeso 40.4.3" }).closest("header") as HTMLElement;
+    expect(within(header).getByRole("link", { name: /On GitHub/ })).toHaveAttribute("href", "https://github.com/logicplanes/kaeso/releases/tag/v40.4.3");
 
     await user.click(screen.getByRole("button", { name: "Update to 40.4.3" }));
     const confirm = await screen.findByRole("dialog", { name: "Update to Kaeso 40.4.3?" });
@@ -327,6 +331,21 @@ describe("instance updates page", () => {
     expect(
       await screen.findByText("A release on the way asks for steps of its own: follow the upgrade guide, then update with the installer."),
     ).toBeInTheDocument();
+  });
+
+  it("names each release's notes when several are on the way, each with its own link", async () => {
+    signedIn();
+    const newer = release({ version: "40.5.0", url: "https://github.com/logicplanes/kaeso/releases/tag/v40.5.0" });
+    on("GET", "instance/updates", available({ latest: newer, releases: [newer, release()] }));
+    history();
+    await renderApp(PATH);
+    const header = (await screen.findByRole("heading", { name: "Kaeso 40.5.0" })).closest("header") as HTMLElement;
+    expect(within(header).queryByRole("link")).not.toBeInTheDocument();
+    for (const version of ["40.5.0", "40.4.3"]) {
+      const notes = screen.getByRole("region", { name: `Release notes of ${version}` });
+      expect(within(notes).getByText(version)).toBeInTheDocument();
+      expect(within(notes).getByRole("link", { name: /On GitHub/ })).toHaveAttribute("href", `https://github.com/logicplanes/kaeso/releases/tag/v${version}`);
+    }
   });
 
   it("names releases without a manifest", async () => {

@@ -41,7 +41,7 @@ export const FilterRow = forwardRef<HTMLDivElement, FilterRowProps>(function Fil
           role="toolbar"
           aria-label={filtersLabel ?? t("filterRow.filters", "Filters")}
           aria-orientation="horizontal"
-          className="flex max-w-full min-w-0 flex-wrap items-center gap-8"
+          className="flex max-w-full min-w-0 flex-wrap items-center gap-8 max-sm:w-full"
           onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => arrowFocus(e, { byItem: true })}
         >
           {children}

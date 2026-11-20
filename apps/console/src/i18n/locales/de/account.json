@@ -8,7 +8,7 @@
   "account.apiKeysHint": "Ihre eigenen Schlüssel in allen Projekten; jeder öffnet sich in seinem Projekt.",
   "account.appCode": "Code aus der App",
   "account.appearance": "Darstellung",
-  "account.appearanceHint": "Wie die Konsole in diesem Browser aussieht, ihre Sprache und ihre Währung.",
+  "account.appearanceHint": "Das Design der Konsole in diesem Browser und ihre Sprache.",
   "account.archiveKey": "Schlüssel archivieren",
   "account.archiveKeyConfirm": "{name} archivieren?",
   "account.archiveKeyConfirmHint": "Anwendungen damit werden vom Gateway abgewiesen; das lässt sich nicht rückgängig machen, der Verlauf bleibt.",
@@ -301,5 +301,6 @@
   "account.enterCurrentPassword": "Aktuelles Passwort eingeben",
   "account.enterNewPassword": "Neues Passwort mit 12 bis 128 Zeichen eingeben",
   "account.confirmCodesStored": "Zuerst „Ich habe diese Codes sicher aufbewahrt“ ankreuzen",
-  "account.noOtherSessions": "Kein anderer Browser ist angemeldet"
+  "account.noOtherSessions": "Kein anderer Browser ist angemeldet",
+  "account.agentNameHint": "Erscheint in Ihren Agenten und im Audit-Log."
 }

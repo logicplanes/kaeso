@@ -139,7 +139,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
           </Tabs>
         }
       >
-        <div className="w-240">
+        <div className="min-w-0 flex-1 sm:w-240 sm:flex-none">
           <Input
             type="search"
             size="sm"
@@ -186,7 +186,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
         hasMore={orgs.hasNextPage}
         loadingMore={orgs.isFetchingNextPage}
         onLoadMore={() => void orgs.fetchNextPage()}
-        onRowClick={(o) => void navigate({ to: "/settings/instance/orgs/$org", params: { org: o.id } })}
+        onRowClick={(o) => void navigate({ to: "/settings/instance/orgs/$instanceOrg", params: { instanceOrg: o.id } })}
         sorting={sorting}
         onSortingChange={sortBy}
         rowMenu={(o) =>
@@ -235,7 +235,7 @@ function CreateOrgDialog({ onClose }: { onClose: () => void }) {
     onSuccess: (o) => {
       toast.success(t("instance.orgCreated", "{name} created", { name: o.name }));
       onClose();
-      void navigate({ to: "/settings/instance/orgs/$org", params: { org: o.id } });
+      void navigate({ to: "/settings/instance/orgs/$instanceOrg", params: { instanceOrg: o.id } });
     },
   });
   const reason = name.trim() ? undefined : t("instance.orgNameNeeded", "Give the organization a name");

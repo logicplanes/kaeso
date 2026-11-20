@@ -17,8 +17,12 @@ describe("the instance's agent policy", () => {
     on("PUT", "instance/settings/agents", ({ body }: { body: typeof current }) => (current = body));
     const { user } = await renderApp("/settings/instance/general");
     expect(await screen.findByRole("switch", { name: "Allow agents" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Configure" })).toBeChecked();
-    await user.click(screen.getByRole("radio", { name: "Read" }));
+    const max = screen.getByRole("combobox", { name: "Most on the instance" });
+    expect(max).toHaveTextContent("Configure");
+    expect(screen.getByText("The most any agent may do on this instance.")).toBeInTheDocument();
+    await user.click(max);
+    expect(await screen.findByRole("option", { name: /^Read.*Reads the system, users, organizations and the instance audit log\.$/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("option", { name: /^Read/ }));
     await waitFor(() => expect(requests("PUT", "instance/settings/agents").map((r) => r.body)).toEqual([{ allowed: true, max: "read" }]));
     await user.click(screen.getByRole("switch", { name: "Allow agents" }));
     await waitFor(() => expect(requests("PUT", "instance/settings/agents").at(-1)?.body).toEqual({ allowed: false, max: "read" }));

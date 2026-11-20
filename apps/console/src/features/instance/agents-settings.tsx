@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Segmented, SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
+import { Select, SettingsGroup, SettingsRow, Section, Switch } from "@logicplanes/kaeso-ui";
 import { api, data } from "~/api/client";
 import { agentCatalogueQuery, instanceAgentPolicyQuery } from "~/api/queries/agents";
 import { useApiMutation } from "~/auth/mutation";
@@ -38,13 +38,13 @@ export function AgentsSettings() {
         {p.allowed && cat.data && (
           <SettingsRow
             title={t("instance.agents.max", "Most on the instance")}
-            description={cat.data.instance_presets.find((x) => x.id === p.max)?.description}
+            description={t("instance.agents.maxHint", "The most any agent may do on this instance.")}
             control={
-              <Segmented
+              <Select
                 aria-label={t("instance.agents.max", "Most on the instance")}
                 size="sm"
                 disabled={save.isPending}
-                options={cat.data.instance_presets.map((x) => ({ value: x.id, label: x.name }))}
+                options={cat.data.instance_presets.map((x) => ({ value: x.id, label: x.name, description: x.description }))}
                 value={p.max}
                 onValueChange={(max) => save.mutate({ allowed: p.allowed, max })}
               />

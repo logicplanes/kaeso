@@ -103,6 +103,16 @@ describe("instance users list", () => {
     expect(row?.style.gridTemplateColumns.split(" ").at(-2)).toBe("144px");
   });
 
+  it("lets the search fill the line on a phone and keeps it 240px wide beside the tabs", async () => {
+    signedIn();
+    users();
+    await renderApp(PATH);
+    await within(table()).findByText("Grace Hopper");
+    const field = screen.getByRole("searchbox", { name: "Search users" }).closest(".sm\\:w-240");
+    expect(field).toHaveClass("min-w-0", "flex-1", "sm:flex-none");
+    expect(field).not.toHaveClass("w-240");
+  });
+
   it("searches by name or email through the URL", async () => {
     signedIn();
     users();

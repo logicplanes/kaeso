@@ -137,27 +137,36 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
         </Banner>
       )}
       <Section spacing="settings" title={t("account.agentDetails", "Details")}>
-        <div className="flex flex-col gap-16">
-          <Input
-            label={t("common.name", "Name")}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={100}
-            error={fieldError(details.error, "name")}
+        <SettingsGroup>
+          <SettingsRow
+            title={t("common.name", "Name")}
+            description={t("account.agentNameHint", "Shown in your agents and the audit log.")}
+            control={
+              <div className="flex min-w-0 items-start gap-8">
+                <div className="w-240 min-w-0">
+                  <Input
+                    aria-label={t("common.name", "Name")}
+                    size="sm"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && !nameReason && !details.isPending && void details.mutateAsync()}
+                    maxLength={100}
+                    error={fieldError(details.error, "name")}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  loading={details.isPending}
+                  disabled={!!nameReason}
+                  {...(nameReason ? { disabledReason: nameReason } : {})}
+                  onClick={() => void details.mutateAsync()}
+                >
+                  {t("common.save", "Save")}
+                </Button>
+              </div>
+            }
           />
-          <div>
-            <Button
-              variant="primary"
-              size="sm"
-              loading={details.isPending}
-              disabled={!!nameReason}
-              {...(nameReason ? { disabledReason: nameReason } : {})}
-              onClick={() => void details.mutateAsync()}
-            >
-              {t("common.save", "Save")}
-            </Button>
-          </div>
-        </div>
+        </SettingsGroup>
       </Section>
       <Section spacing="settings" title={t("account.agentRights", "Rights")}>
         <div className="flex flex-col gap-16">
@@ -256,7 +265,7 @@ function Activity({ agent, grantable }: { agent: string; grantable: Grantable })
       ) : activity.isPending ? (
         <SettingsLoading rows={3} />
       ) : calls.length === 0 ? (
-        <Empty title={t("account.agentNoActivity", "No tool calls yet")} />
+        <Empty size="md" title={t("account.agentNoActivity", "No tool calls yet")} />
       ) : (
         <SettingsGroup>
           {calls.map((c) => {

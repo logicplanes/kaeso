@@ -7,9 +7,9 @@ export const SectionHeader = forwardRef<HTMLElement, { title: ReactNode; descrip
 ) {
   return (
     <header ref={ref} className={cn("mb-16 flex flex-wrap justify-between gap-x-16 gap-y-12 pb-12 rule-b", description ? "items-end" : "items-center")}>
-      <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-1">
         {title && <h2 className="text-title-sm font-semibold text-balance text-fg">{title}</h2>}
-        {description && <p className="max-w-prose text-small text-pretty text-fg-secondary">{description}</p>}
+        {description && <p className="text-small text-pretty text-fg-secondary">{description}</p>}
       </div>
       {actions && <div className="flex max-w-full shrink-0 flex-wrap items-center gap-8">{actions}</div>}
     </header>
