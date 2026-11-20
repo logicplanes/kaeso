@@ -910,6 +910,21 @@ fn capabilities_are_checked_before_sending() {
             "generationConfig.topK"
         ]
     );
+    let bedrock = eff(&entry("amazon-bedrock", "us.anthropic.claude-sonnet-5"));
+    assert_eq!(
+        left_out(sampled.clone(), DialectId::OpenAiChat, &bedrock).1,
+        ["temperature", "top_p", "top_k"]
+    );
+    let mut without_k = sampled.clone();
+    without_k.sampling.top_k = None;
+    let (req, names) = left_out(without_k, DialectId::OpenAiChat, &gpt5);
+    assert_eq!(
+        names,
+        ["temperature"],
+        "a model other than Claude that takes only its default temperature keeps `top_p`"
+    );
+    let Request::Generate(g) = &req else { panic!() };
+    assert_eq!(g.sampling.top_p, Some(0.9));
     let haiku45 = eff(&entry("anthropic", "claude-haiku-4-5"));
     assert!(
         left_out(sampled, DialectId::AnthropicMessages, &haiku45)

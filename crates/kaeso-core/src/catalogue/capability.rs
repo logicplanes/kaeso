@@ -696,8 +696,7 @@ fn adaptive_to_budget(g: &mut GenerateRequest, ingress: DialectId, eff: &Effecti
 }
 
 // Apps send a temperature and `top_p` with no switch per model; Claude 5 models take only their
-// defaults and refuse `top_p` and `top_k` outright, so the model answers at its defaults instead
-// of refusing every such app.
+// defaults, so the model answers at its defaults instead of refusing every such app.
 fn leave_out_sampling(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
     if eff.fields.temperature != Some(false) || kpp_turns_thinking_on(g, ingress, eff) {
         return Vec::new();
@@ -710,6 +709,9 @@ fn leave_out_sampling(g: &mut GenerateRequest, ingress: DialectId, eff: &Effecti
         s.temperature = None;
         left_out.push(app_param(ingress, "temperature").to_owned());
     }
+    if !is_claude(eff) {
+        return left_out;
+    }
     if s.top_p.take().is_some() {
         left_out.push(app_param(ingress, "top_p").to_owned());
     }
@@ -717,6 +719,15 @@ fn leave_out_sampling(g: &mut GenerateRequest, ingress: DialectId, eff: &Effecti
         left_out.push(app_param(ingress, "top_k").to_owned());
     }
     left_out
+}
+
+// Claude models that take only their default temperature also refuse `top_p` and `top_k`.
+// Other models the catalogue marks that way, such as Gemini 4 on some platforms, take them.
+fn is_claude(eff: &Effective) -> bool {
+    matches!(
+        eff.dialect,
+        DialectId::AnthropicMessages | DialectId::BedrockConverse
+    ) && eff.model_id.contains("claude")
 }
 
 const EFFORT_ORDER: [&str; 7] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
