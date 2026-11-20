@@ -344,16 +344,23 @@ async fn a_compressed_body_waits_for_translation_memory_before_it_is_decoded() {
             "gzip",
             b"not gzip at all".to_vec(),
         ));
-        let mut polls = 0;
-        while state.translating.waiting() == 0 {
-            assert!(
-                futures::poll!(zipped.as_mut()).is_pending(),
-                "a compressed body was decoded before the key had room for what it may decode to"
-            );
-            tokio::task::yield_now().await;
-            polls += 1;
-            assert!(polls < 10_000, "the compressed request never waited");
-        }
+        let waits = async {
+            while state.translating.waiting() == 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            }
+        };
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            tokio::select! {
+                biased;
+                r = &mut zipped => panic!(
+                    "a compressed body was decoded before the key had room for what it may decode to: {}",
+                    r.status
+                ),
+                () = waits => {}
+            }
+        })
+        .await
+        .expect("the compressed request waits for the key's share");
         gate.open();
         zipped.await
     };
@@ -370,5 +377,32 @@ async fn a_compressed_body_waits_for_translation_memory_before_it_is_decoded() {
     assert_eq!(
         (state.translating.free(), state.translating.waiting()),
         (128 << 10, 0)
+    );
+}
+
+#[tokio::test]
+async fn compressed_requests_of_one_key_that_each_need_most_of_its_share_all_get_through() {
+    let env = env(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "4MiB")]).await;
+    let state = &env.app.state;
+    let text = "Where is my parcel? ".repeat(5_000);
+    let body = gzip(&serde_json::to_vec(&chat("gpt-4o", &text)).unwrap());
+    let answers = futures::future::join_all((0..4).map(|_| {
+        send(
+            &env,
+            "/v1/chat/completions",
+            App::OpenAi,
+            "gzip",
+            body.clone(),
+        )
+    }))
+    .await;
+    for r in &answers {
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    }
+    assert_eq!(env.mock.received().len(), 4);
+    state.in_flight.settled().await;
+    assert_eq!(
+        (state.translating.free(), state.translating.waiting()),
+        (4 << 20, 0)
     );
 }

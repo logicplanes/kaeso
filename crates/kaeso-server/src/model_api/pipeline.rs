@@ -54,6 +54,10 @@ use crate::state::AppState;
 const MAX_ERROR_BODY: usize = 1 << 20;
 
 pub const OFF_THREAD_BYTES: usize = 256 * 1024;
+// A first guess at what a compressed body decodes to; JSON rarely shrinks more than this.
+// A body that decodes to more is decoded again under a hold of the whole limit.
+const GUESSED_RATIO: usize = 32;
+const GUESS_FLOOR: usize = 1024 * 1024;
 
 #[derive(Debug)]
 pub struct Incoming {
@@ -909,29 +913,35 @@ fn unread_encoding(refused: Refused) -> KppError {
     error(ErrorKind::InvalidRequest, 415, message)
 }
 
-async fn decoded_body(encoding: Encoding, raw: Bytes, limit: usize) -> Result<Bytes, KppError> {
+async fn decompressed(
+    encoding: Encoding,
+    raw: Bytes,
+    cap: usize,
+) -> Result<Result<Bytes, Failed>, KppError> {
     if encoding == Encoding::Identity {
-        return Ok(raw);
+        return Ok(Ok(raw));
     }
     // A small compressed body can decode to the whole limit, so it is never decoded inline.
     let bytes = raw.len().max(OFF_THREAD_BYTES);
-    off_thread(bytes, move || decompress::decode(encoding, raw, limit))
-        .await?
-        .map_err(|failed| match failed {
-            Failed::TooLarge => error(
-                ErrorKind::RequestTooLarge,
-                413,
-                format!("The request body is larger than {limit} bytes once decoded."),
+    off_thread(bytes, move || decompress::decode(encoding, raw, cap)).await
+}
+
+fn undecodable(failed: Failed, encoding: Encoding, limit: usize) -> KppError {
+    match failed {
+        Failed::TooLarge => error(
+            ErrorKind::RequestTooLarge,
+            413,
+            format!("The request body is larger than {limit} bytes once decoded."),
+        ),
+        Failed::Corrupt => error(
+            ErrorKind::InvalidRequest,
+            400,
+            format!(
+                "The request body is not valid `{}`; check its `Content-Encoding`.",
+                encoding.name()
             ),
-            Failed::Corrupt => error(
-                ErrorKind::InvalidRequest,
-                400,
-                format!(
-                    "The request body is not valid `{}`; check its `Content-Encoding`.",
-                    encoding.name()
-                ),
-            ),
-        })
+        ),
+    }
 }
 
 pub(crate) async fn off_thread<T, F>(bytes: usize, work: F) -> Result<T, KppError>
@@ -1084,22 +1094,6 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         .or(caller.user_id)
         .or(caller.service_account_id)
         .unwrap_or(caller.project_id);
-    // A few kilobytes of gzip or zstd decode to the whole limit, so a compressed body is
-    // admitted at that size before it is decoded, and the hold is resized once it is measured.
-    let admitted = if encoding == Encoding::Identity {
-        None
-    } else {
-        Some(
-            state
-                .translating
-                .hold(holder, u64::try_from(limit).unwrap_or(u64::MAX))
-                .await
-                .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
-        )
-    };
-    let body = decoded_body(encoding, body, limit)
-        .await
-        .map_err(at(Stage::Request))?;
     let kept = crate::services::logs::keeps(state, caller.project_id).await;
     // `kaeso-log-content: off` keeps one request's content out of a project that logs it; it
     // never turns content on.
@@ -1108,53 +1102,123 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     } else {
         (kept.content, kept.media)
     };
-    if keep_content {
-        let o = rec.outcome();
-        o.content_kept = true;
-        o.media_kept = keep_media;
-        let uploads = transcription.is_some()
-            || elevenlabs
-                .as_ref()
-                .is_some_and(|c| c.kind() == RequestKind::Transcription)
-            || decision_upload;
-        if image.is_none() && video.is_none() && generation.is_none() && !uploads {
-            if body.len() < OFF_THREAD_BYTES {
-                o.request_body = Some(body.clone());
-            } else {
-                rec.logging = Some(logged_early(body.clone(), keep_media));
-            }
-        }
-    }
-    let request_bytes = body.len();
-    let checked = off_thread(request_bytes, move || {
-        kaeso_codecs::limits::Checked::new(ingress, body)
-    })
-    .await
-    .and_then(|r| r)
-    .map_err(at(Stage::Request))?;
-    let shape = *checked.shape();
+    let uploads = transcription.is_some()
+        || elevenlabs
+            .as_ref()
+            .is_some_and(|c| c.kind() == RequestKind::Transcription)
+        || decision_upload;
+    let logs_body =
+        keep_content && image.is_none() && video.is_none() && generation.is_none() && !uploads;
     // Held for the whole call, after the translation's share is returned: the app's
     // decoded request, kept to encode the reply, the request sent while the input
     // counter may still need it, and the body's size again for its log entry, raw or written.
-    let logged = u64::try_from(if keep_content { request_bytes } else { 0 }).unwrap_or(u64::MAX);
-    let decoded = super::memory::decoded(&shape);
-    let retained = |copies: u64| decoded.saturating_mul(copies).saturating_add(logged);
-    let needed = super::memory::estimate(kind, request_bytes, &shape).saturating_add(retained(2));
-    rec.held = Some(match admitted {
-        Some(mut held) => {
-            state
-                .translating
-                .grow(&mut held, needed)
-                .await
-                .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?;
-            held
+    let logged = |request_bytes: usize| {
+        u64::try_from(if keep_content { request_bytes } else { 0 }).unwrap_or(u64::MAX)
+    };
+    let needs = |request_bytes: usize, shape: &kaeso_codecs::limits::RequestShape| {
+        super::memory::estimate(kind, request_bytes, shape).saturating_add(
+            super::memory::decoded(shape)
+                .saturating_mul(2)
+                .saturating_add(logged(request_bytes)),
+        )
+    };
+    let busy = |_| Failure::new(translating_busy(), Stage::Limits);
+    let deadline = tokio::time::Instant::now() + super::memory::WAIT;
+    // A few kilobytes of gzip or zstd decode to the whole body limit, so a compressed body is
+    // decoded only under a hold that covers what it decodes to. It is never kept decoded while
+    // its request waits for room: requests of one key would then hold each other's share.
+    let compressed = encoding != Encoding::Identity;
+    let mut cap = if compressed {
+        body.len()
+            .saturating_mul(GUESSED_RATIO)
+            .clamp(GUESS_FLOOR.min(limit), limit)
+    } else {
+        limit
+    };
+    let mut admitted: Option<super::memory::Held> = None;
+    let mut measured = false;
+    let (checked, request_bytes, held) = loop {
+        if compressed && admitted.is_none() {
+            admitted = Some(
+                state
+                    .translating
+                    .hold_until(holder, u64::try_from(cap).unwrap_or(u64::MAX), deadline)
+                    .await
+                    .map_err(busy)?,
+            );
         }
-        None => state
-            .translating
-            .hold(holder, needed)
+        let decoded = match decompressed(encoding, body.clone(), cap)
             .await
-            .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
-    });
+            .map_err(at(Stage::Request))?
+        {
+            Ok(decoded) => decoded,
+            Err(Failed::TooLarge) if cap < limit => {
+                cap = limit;
+                if let Some(held) = admitted.as_mut()
+                    && !state
+                        .translating
+                        .try_grow(held, u64::try_from(cap).unwrap_or(u64::MAX))
+                {
+                    admitted = None;
+                }
+                continue;
+            }
+            Err(failed) => {
+                return Err(Failure::new(
+                    undecodable(failed, encoding, limit),
+                    Stage::Request,
+                ));
+            }
+        };
+        if !measured && let Some(held) = admitted.as_mut() {
+            held.keep(u64::try_from(decoded.len()).unwrap_or(u64::MAX).max(1));
+        }
+        if keep_content {
+            let o = rec.outcome();
+            o.content_kept = true;
+            o.media_kept = keep_media;
+        }
+        if logs_body {
+            if decoded.len() < OFF_THREAD_BYTES {
+                rec.outcome().request_body = Some(decoded.clone());
+            } else {
+                rec.logging = Some(logged_early(decoded.clone(), keep_media));
+            }
+        }
+        let request_bytes = decoded.len();
+        let checked = off_thread(request_bytes, move || {
+            kaeso_codecs::limits::Checked::new(ingress, decoded)
+        })
+        .await
+        .and_then(|r| r)
+        .map_err(at(Stage::Request))?;
+        let needed = needs(request_bytes, checked.shape());
+        match admitted.take() {
+            None => {
+                let held = state.translating.hold(holder, needed).await.map_err(busy)?;
+                break (checked, request_bytes, held);
+            }
+            Some(mut held) => {
+                if state.translating.try_grow(&mut held, needed) {
+                    break (checked, request_bytes, held);
+                }
+                drop((held, checked));
+                rec.outcome().request_body = None;
+                rec.logging = None;
+                admitted = Some(
+                    state
+                        .translating
+                        .hold_until(holder, needed, deadline)
+                        .await
+                        .map_err(busy)?,
+                );
+                measured = true;
+            }
+        }
+    };
+    let logged = logged(request_bytes);
+    let decoded = super::memory::decoded(checked.shape());
+    rec.held = Some(held);
     let listed = header_list(&headers);
     let remix = video.as_ref().and_then(|v| v.remix.clone());
     let req = off_thread(request_bytes, move || {
