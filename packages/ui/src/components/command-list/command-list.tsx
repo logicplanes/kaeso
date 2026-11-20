@@ -261,6 +261,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
     enabled: virtual,
     count: rows.length,
     getScrollElement: () => scroller.current,
+    initialOffset: () => scroller.current?.scrollTop ?? 0,
     estimateSize: (i) => sizeOf(rows[i], rowHeight) + gapAfter(rows, i),
     overscan: 8,
     useFlushSync: false,

@@ -14,7 +14,16 @@ export interface VirtualRowsProps {
 export function VirtualRows({ count, estimateSize, getScrollElement, scrollTo, row, measure }: VirtualRowsProps) {
   const body = useRef<HTMLDivElement | null>(null);
   const scrollMargin = useScrollMargin(body, getScrollElement, count);
-  const virtualizer = useVirtualizer({ count, getScrollElement, estimateSize, overscan: 12, scrollMargin, indexAttribute: "data-v-index" });
+  const virtualizer = useVirtualizer({
+    count,
+    getScrollElement,
+    estimateSize,
+    overscan: 12,
+    scrollMargin,
+    indexAttribute: "data-v-index",
+    // A list that grows past virtualizeAbove is often scrolled already: start from there, not from the top.
+    initialOffset: () => getScrollElement()?.scrollTop ?? 0,
+  });
   useLayoutEffect(() => {
     scrollTo.current = (index) => virtualizer.scrollToIndex(index, { align: "auto" });
     return () => {

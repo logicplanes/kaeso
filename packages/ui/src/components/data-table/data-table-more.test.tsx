@@ -161,16 +161,24 @@ describe("DataTable growing past the rows it draws whole", () => {
     const size = vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
       return this === page ? 800 : 0;
     });
+    // The table starts at the top of the page: its rows' box moves up as the page scrolls.
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const body = this.getAttribute("role") === "rowgroup" && this.previousElementSibling?.getAttribute("role") === "rowgroup";
+      const top = body ? -page.scrollTop : 0;
+      return { top, bottom: top, left: 0, right: 0, width: 0, height: 0, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+    });
     try {
       const many = (n: number) => Array.from({ length: n }, (_, i) => ({ id: String(i), key: `key-${i}`, requests: i }));
       const { rerender } = render(<DataTable aria-label="Keys" data={many(40)} columns={columns} getRowId={(r) => r.id} virtualizeAbove={50} />);
-      page.scrollTop = 1200;
+      page.scrollTop = 30 * 40;
       fireEvent.scroll(page);
       rerender(<DataTable aria-label="Keys" data={many(80)} columns={columns} getRowId={(r) => r.id} virtualizeAbove={50} />);
       expect(page.scrollTop).toBe(1200);
-      expect(screen.getByText("key-30")).toBeInTheDocument();
+      expect(screen.getByText("key-40")).toBeInTheDocument();
+      expect(screen.queryByText("key-0")).not.toBeInTheDocument();
     } finally {
       size.mockRestore();
+      rect.mockRestore();
       page.scrollTop = 0;
     }
   });
