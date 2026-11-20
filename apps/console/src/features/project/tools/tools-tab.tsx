@@ -190,7 +190,7 @@ export function ToolsTab({
     <>
       {!none && (
         <Toolbar aria-label={t("project.tools.filter", "Filter tools")}>
-          <div className="min-w-0 flex-1 basis-160 sm:w-240 sm:flex-none">
+          <div className="w-full sm:w-240">
             <Input
               type="search"
               size="sm"
