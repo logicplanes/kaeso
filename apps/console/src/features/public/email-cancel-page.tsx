@@ -46,7 +46,7 @@ export function EmailCancelPage() {
   }
   return (
     <PublicPage
-      title={t("public.linkUsed", "This link has expired or was already used.")}
+      title={t("public.linkUsed", "This link has expired or was already used")}
       description={t("public.cancelLinkOnce", "The change may be done or cancelled already; check your account's address after signing in.")}
     >
       <Button variant="primary" size="xl" fullWidth href="/sign-in">

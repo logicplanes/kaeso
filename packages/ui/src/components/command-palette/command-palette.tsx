@@ -116,7 +116,7 @@ function Palette({
               {item.hint && (
                 <span
                   className={cn(
-                    "min-w-0 truncate font-regular dialog-narrow:hidden",
+                    "max-w-1/2 shrink-0 truncate font-regular dialog-narrow:hidden",
                     ID.test(item.hint) ? "mono text-small" : "text-body",
                     active ? "text-fg-secondary" : "text-fg-tertiary",
                     "forced-colors:text-current",
@@ -128,10 +128,10 @@ function Palette({
               )}
               <span className="ml-auto flex shrink-0 items-center gap-8">
                 {item.shortcut && (
-                  <>
+                  <span className="flex items-center dialog-narrow:hidden">
                     <span className="sr-only">, </span>
                     <Kbd keys={item.shortcut} />
-                  </>
+                  </span>
                 )}
                 {item.children && <Icon icon={icons.chevronRight} size="sm" className="text-fg-tertiary" />}
               </span>

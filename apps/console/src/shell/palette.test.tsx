@@ -1,10 +1,10 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { ALL_PROJECT_RIGHTS, ORG, OTHER_PROJECT, PROJECT, membership, myMembership, signedIn, user as person, whoAmI } from "~/test/fixtures";
+import { ALL_PROJECT_RIGHTS, ORG, OTHER_PROJECT, PROJECT, membership, myMembership, project, signedIn, user as person, whoAmI } from "~/test/fixtures";
 import { apiKey, catalogueModel, projectData, projectMember, serviceAccount } from "~/test/fixtures/project";
 import { me } from "~/test/fixtures/instance-account";
-import { on, page as paged, requests } from "~/test/network";
+import { apiError, on, page as paged, requests } from "~/test/network";
 import { credential, member, platformKey } from "~/test/fixtures/org";
 import { renderApp } from "~/test/render";
 
@@ -137,6 +137,16 @@ describe("the command palette", () => {
     await user.click(opened);
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}/logs`));
     expect(router.state.location.search).toMatchObject({ log: id });
+  });
+
+  it("names the project a pasted request id is looked up in by its id while the project's name is unknown", async () => {
+    signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage" })] });
+    on("GET", "orgs/:org/projects/:project", apiError(500, "internal", "The gateway hit an error."));
+    const { user } = await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
+    expect(await screen.findByText("This page couldn't load")).toBeInTheDocument();
+    await openPalette(user);
+    await user.paste("req_01m7g2tr3hegy8qg6fav4nea97");
+    expect(await screen.findByRole("option", { name: /Open request req_01m7g2tr3hegy8qg6fav4nea97/ })).toHaveTextContent(`In ${PROJECT}`);
   });
 
   it("offers no request to open without the right to read the request log", async () => {

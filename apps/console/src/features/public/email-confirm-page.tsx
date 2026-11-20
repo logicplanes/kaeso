@@ -49,7 +49,7 @@ function EmailConfirm() {
   }
   return (
     <PublicPage
-      title={t("public.linkUsed", "This link has expired or was already used.")}
+      title={t("public.linkUsed", "This link has expired or was already used")}
       description={t("public.confirmationLinkOnce", "A confirmation link works once; change the address again for a new one.")}
     >
       <Button variant="primary" size="xl" fullWidth href="/settings/account/profile">

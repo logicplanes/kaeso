@@ -47,7 +47,7 @@ export interface MenuProps {
   children: ReactNode;
   open?: boolean | undefined;
   defaultOpen?: boolean | undefined;
-  onOpenChange?: ((open: boolean) => void) | undefined;
+  onOpenChange?: ((open: boolean, reason?: string) => void) | undefined;
   modal?: boolean | undefined;
 }
 
@@ -60,7 +60,7 @@ function Root({ open, defaultOpen, onOpenChange, modal = false, children }: Menu
     <BaseMenu.Root
       {...(open !== undefined ? { open } : {})}
       {...(defaultOpen !== undefined ? { defaultOpen } : {})}
-      {...(onOpenChange ? { onOpenChange: (o: boolean) => onOpenChange(o) } : {})}
+      {...(onOpenChange ? { onOpenChange: (o: boolean, details: BaseMenu.Root.ChangeEventDetails) => onOpenChange(o, details.reason) } : {})}
       modal={modal}
     >
       <TriggerContext.Provider value={trigger}>{children}</TriggerContext.Provider>

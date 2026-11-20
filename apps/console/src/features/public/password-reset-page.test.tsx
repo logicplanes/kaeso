@@ -93,7 +93,7 @@ describe("setting a new password", () => {
   it("says a used link has expired before anyone types a password", async () => {
     on("POST", "auth/password-reset/lookup", apiError(401, "authentication", "This reset link is invalid, used or expired; request a new one."));
     await renderApp("/auth/password-reset#token=rst_1");
-    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(await screen.findByText("This link has expired or was already used")).toBeInTheDocument();
     expect(screen.queryByLabelText("New password")).not.toBeInTheDocument();
   });
 
@@ -101,7 +101,7 @@ describe("setting a new password", () => {
     on("POST", "auth/password-reset/verify", apiError(401, "authentication", "This reset link has expired."));
     const { user } = await renderApp("/auth/password-reset#token=rst_1");
     await user.type(await screen.findByLabelText("New password"), "correct horse battery{Enter}");
-    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(await screen.findByText("This link has expired or was already used")).toBeInTheDocument();
     expect(screen.getByText("A reset link works once, for 15 minutes.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Request a new link" })).toHaveAttribute("href", "/auth/password-reset");
   });

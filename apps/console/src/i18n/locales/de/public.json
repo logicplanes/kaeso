@@ -65,7 +65,7 @@
   "public.joinOrg": "{org} beitreten",
   "public.keepGoing": "Diese Sitzung behalten",
   "public.linkInstead": "Stattdessen mit Anmeldelink fortfahren",
-  "public.linkUsed": "Dieser Link ist abgelaufen oder wurde bereits verwendet.",
+  "public.linkUsed": "Dieser Link ist abgelaufen oder wurde bereits verwendet",
   "public.lookingUpAgentRequest": "Die Anfrage des Agenten wird gesucht",
   "public.lookingUpInvitation": "Einladung wird abgerufen",
   "public.needsCancelLink": "Diese Seite braucht den Abbruch-Link",

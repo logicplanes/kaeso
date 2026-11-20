@@ -104,7 +104,7 @@ describe("finishing an account", () => {
     const { user } = await renderApp("/auth/signup#token=sgn_1");
     await user.type(await screen.findByRole("textbox", { name: "Name" }), "Grace Hopper{Enter}");
     expect((await (await notifications()).findAllByText("This sign-up link has expired.")).length).toBeGreaterThan(0);
-    expect(await screen.findByText("This link has expired or was already used.")).toBeInTheDocument();
+    expect(await screen.findByText("This link has expired or was already used")).toBeInTheDocument();
     expect(screen.getByText("A sign-up link works once; start again for a new one.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Start again" })).toHaveAttribute("href", "/sign-up");
     expect(window.location.pathname).toBe("/auth/signup");

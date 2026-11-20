@@ -65,7 +65,7 @@
   "public.joinOrg": "加入 {org}",
   "public.keepGoing": "保留此会话",
   "public.linkInstead": "改用登录链接继续",
-  "public.linkUsed": "此链接已过期或已被使用。",
+  "public.linkUsed": "此链接已过期或已被使用",
   "public.lookingUpAgentRequest": "正在查找智能体的请求",
   "public.lookingUpInvitation": "正在查询邀请",
   "public.needsCancelLink": "此页面需要取消链接",

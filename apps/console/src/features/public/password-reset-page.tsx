@@ -87,7 +87,7 @@ function NewPassword({ token }: { token: string }) {
   if (expired) {
     return (
       <PublicPage
-        title={t("public.linkUsed", "This link has expired or was already used.")}
+        title={t("public.linkUsed", "This link has expired or was already used")}
         description={t("public.resetLinkOnce", "A reset link works once, for 15 minutes.")}
       >
         <Button variant="primary" size="xl" fullWidth href="/auth/password-reset">
