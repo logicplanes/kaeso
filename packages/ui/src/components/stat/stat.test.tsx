@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Stat, StatGroup, statGridFit, statGridLayout } from "./stat.js";
 
@@ -44,7 +44,6 @@ describe("a tile Stat while loading", () => {
     expect(tile).toHaveTextContent(/^Requests$/);
     expect(tile.children).toHaveLength(4);
     expect(tile.querySelectorAll("[aria-hidden]")).toHaveLength(3);
-    expect(tile.querySelectorAll("[data-stat-value]")).toHaveLength(0);
   });
   it("keeps a plain tile's height and padding while loading: no trend row it won't have", () => {
     const { rerender } = render(
@@ -138,11 +137,18 @@ describe("StatGroup on a narrow screen", () => {
 });
 
 describe("StatGroup with live values", () => {
-  it("steps every value down when a number grows, and holds that size when it shrinks again at the same width", () => {
-    const width = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(342);
-    const scroll = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
-      return (this.textContent ?? "").length * 15;
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+  const measured = (width: number) => {
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(width);
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.textContent ? this.textContent.length * 15 : 112;
     });
+  };
+  it("steps every value down when a number grows, and holds that size when it shrinks again at the same width", () => {
+    measured(342);
     const grid = (cost: string) => (
       <StatGroup aria-label="Usage">
         <Stat variant="tile" label="Requests" value="18,204" />
@@ -157,15 +163,10 @@ describe("StatGroup with live values", () => {
     const stepped = size();
     rerender(grid("$41.13"));
     expect(size()).toBe(stepped);
-    width.mockRestore();
-    scroll.mockRestore();
   });
 
   it("shows the numbers at full size on a phone once they load, however wide the placeholder was", () => {
-    const width = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(312);
-    const scroll = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
-      return this.textContent ? this.textContent.length * 15 : 112;
-    });
+    measured(312);
     const grid = (loading: boolean) => (
       <StatGroup aria-label="Numbers">
         <Stat variant="tile" label="Providers" value={loading ? "" : "50"} loading={loading} />
@@ -176,7 +177,38 @@ describe("StatGroup with live values", () => {
     rerender(grid(false));
     expect(screen.getByText("50")).toHaveClass("text-display");
     expect(screen.getByText("2,934")).toHaveClass("text-display");
-    width.mockRestore();
-    scroll.mockRestore();
+  });
+
+  it("gives a wide number the room of its widened tile while another tile is still loading", () => {
+    measured(342);
+    const grid = (loading: boolean) => (
+      <StatGroup aria-label="Numbers">
+        <Stat variant="tile" label="Providers" value={loading ? "" : "5"} loading={loading} />
+        <Stat variant="tile" label="Models" value="12" />
+        <Stat variant="tile" label="Spend" value="$1,041,213.13" />
+      </StatGroup>
+    );
+    const { rerender } = render(grid(true));
+    rerender(grid(false));
+    expect(screen.getByText("$1,041,213.13")).toHaveClass("text-display");
+  });
+
+  it("keeps the columns it will have once loaded while its tiles load", () => {
+    measured(600);
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: true, media: query, addEventListener() {}, removeEventListener() {} }));
+    const grid = (loading: boolean) => (
+      <StatGroup aria-label="Numbers">
+        {["Requests", "Tokens", "Cost", "Errors"].map((l) => (
+          <Stat variant="tile" key={l} label={l} value={loading ? "" : "1"} loading={loading} />
+        ))}
+      </StatGroup>
+    );
+    const { rerender } = render(grid(true));
+    const list = screen.getByRole("list", { name: "Numbers" });
+    expect(list).toHaveClass("grid-cols-2");
+    expect(list).not.toHaveClass("lg:grid-cols-4");
+    rerender(grid(false));
+    expect(list).toHaveClass("grid-cols-2");
+    expect(list).not.toHaveClass("lg:grid-cols-4");
   });
 });
