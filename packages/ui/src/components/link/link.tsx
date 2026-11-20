@@ -5,15 +5,17 @@ import { Icon } from "../icon/icon.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useUiText } from "../../i18n/context.js";
 
+const UNDERLINED = "text-inherit underline decoration-fg-tertiary decoration-1 underline-offset-3 hover:decoration-current";
+
 export const KAESO_LINK_VARIANTS = {
   variant: {
     inline: {
-      classes: "text-inherit underline decoration-fg-tertiary decoration-1 underline-offset-3 hover:decoration-current",
+      classes: UNDERLINED,
       description: "Inside prose: text color with a grey underline that turns to the text color on hover",
     },
     action: {
-      classes: "text-inherit underline decoration-fg-tertiary decoration-1 underline-offset-3 hover:decoration-current",
-      description: "On a line of its own under a form (“Forgot your password?”): inline's underline, with a touch target a finger can hit",
+      classes: UNDERLINED,
+      description: "Under a form, on its own line or ending its sentence (“Forgot your password?”): inline's underline, with a touch target a finger can hit",
     },
     quiet: {
       classes: "text-fg-secondary no-underline hover:text-fg",

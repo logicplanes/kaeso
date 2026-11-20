@@ -13,11 +13,11 @@ function sources(dir: string): string[] {
 }
 
 describe("what scrolls on a phone", () => {
-  it("puts hidden text at its containing block's corner, so text cut off in a cell can't widen the page", () => {
+  it("starts hidden text at its containing block's edge, so text cut off in a cell can't widen the page", () => {
     const base = css.slice(css.indexOf("@layer base {"));
     const rule = base.slice(base.indexOf(".sr-only {"), base.indexOf("}", base.indexOf(".sr-only {")));
-    expect(rule).toContain("top: 0;");
     expect(rule).toContain("inset-inline-start: 0;");
+    expect(rule).not.toContain("top:");
   });
 
   it("keeps a swipe past the end of a sideways scroller from moving the page or going back a page", () => {

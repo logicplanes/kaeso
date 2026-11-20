@@ -2,19 +2,27 @@ import { readFileSync } from "node:fs";
 import { devices, type Cookie, type Page } from "@playwright/test";
 import { expect, test, firstProjectOf, NEW_PASSWORD, OWNER } from "./support";
 
-// The routes come from the generated route tree, so a new page is checked without being listed here.
+// Without its WebKit default: a device's browser can't change inside a file, and CI runs Chromium.
 const { defaultBrowserType: _browser, ...phone } = devices["iPhone 15"];
 test.use({ ...phone, viewport: { width: 390, height: 844 } });
 
+// Read from the generated route tree and the views' list, so a new page or view is checked without being listed here.
 const tree = readFileSync(new URL("../src/routeTree.gen.ts", import.meta.url), "utf8");
 const byFullPath = tree.slice(tree.indexOf("export interface FileRoutesByFullPath {"));
-const ROUTES = [...byFullPath.slice(0, byFullPath.indexOf("\n}")).matchAll(/^ {2}'(\/[^']*)': typeof /gm)].map((m) => m[1] ?? "");
+const ROUTES = [
+  ...new Set([...byFullPath.slice(0, byFullPath.indexOf("\n}")).matchAll(/^ {2}'(\/[^']*)': typeof /gm)].map((m) => (m[1] ?? "").replace(/(.)\/$/, "$1"))),
+];
 const PUBLIC = /^\/(authorize|invite|setup|sign-in|sign-up|signed-in-again|unsubscribe|auth\/|me\/email\/|share\/)/;
-const VIEWS = { org: ["projects", "models", "members"], project: ["models", "keys", "members"] };
+const viewsSource = readFileSync(new URL("../src/kaeso/overview/views.ts", import.meta.url), "utf8");
+const views = (name: string) => [...(new RegExp(`${name} = \\[([^\\]]*)\\]`).exec(viewsSource)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1] ?? "");
+const VIEWS = { org: views("ORG_VIEWS"), project: views("PROJECT_VIEWS") };
 const TABS: Record<string, string[]> = {
   "/orgs/$org/projects/$project/models": ["?tab=aliases", "?tab=retiring"],
   "/settings/orgs/$org/members": ["?tab=invites", "?tab=roles"],
   "/settings/orgs/$org/logging": ["?tab=storage", "?tab=deletions"],
+  "/orgs/$org/providers": ["?tab=custom"],
+  "/orgs/$org/projects/$project/tools": ["?tab=servers", "?tab=connect"],
+  "/settings/instance/users": ["?tab=invites"],
 };
 
 interface Ids {
@@ -70,12 +78,11 @@ function urls(route: string, { org, project, share }: Ids): string[] {
       .replace("$agent", "agt_00000000000000000000000000")
       .replace("$token", share)
       .replace(/\/\$$/, "/no-such-page");
-  const views = route.includes("$view") ? (route.includes("$project") ? VIEWS.project : VIEWS.org) : [""];
-  return views.flatMap((view) => [filled(view), ...(TABS[route] ?? []).map((tab) => filled(view) + tab)]);
+  const each = route.includes("$view") ? (route.includes("$project") ? VIEWS.project : VIEWS.org) : [""];
+  return each.flatMap((view) => [filled(view), ...(TABS[route] ?? []).map((tab) => filled(view) + tab)]);
 }
 
-// In the page: what scrolls sideways, and the outermost elements that reach past the scroller's edge.
-const SIDEWAYS = `(() => {
+const SIDEWAYS_SCROLLERS_AND_WHAT_STICKS_OUT = `(() => {
   const describe = (el) => {
     const text = (el.textContent ?? "").trim().replace(/\\s+/g, " ").slice(0, 40);
     return "<" + el.tagName.toLowerCase() + ' class="' + (el.getAttribute("class") ?? "").slice(0, 60) + '">' + (text ? ' "' + text + '"' : "");
@@ -102,10 +109,10 @@ const SIDEWAYS = `(() => {
   return problems;
 })()`;
 
-// Scrolls the page to its end, a screen at a time, so lazy content gets drawn.
-const TO_THE_END = `(async () => {
+// A screen at a time, so lazy content gets drawn.
+const SCROLL_TO_THE_END = `(async () => {
   for (const el of [document.scrollingElement, ...document.querySelectorAll("[data-frame-body]")]) {
-    if (!el) continue;
+    if (!el || !el.clientHeight) continue;
     for (let y = 0; y < el.scrollHeight; y += el.clientHeight) {
       el.scrollTop = y;
       await new Promise((r) => requestAnimationFrame(r));
@@ -133,10 +140,12 @@ async function settled(page: Page): Promise<void> {
 
 async function check(page: Page, url: string): Promise<void> {
   await page.goto(url);
+  // Counts the route's code too, which a development server compiles on its first visit.
+  await page.waitForLoadState("networkidle");
   await settled(page);
-  await page.evaluate(TO_THE_END);
+  await page.evaluate(SCROLL_TO_THE_END);
   await settled(page);
-  expect(await page.evaluate<string[]>(SIDEWAYS), url).toEqual([]);
+  expect(await page.evaluate<string[]>(SIDEWAYS_SCROLLERS_AND_WHAT_STICKS_OUT), url).toEqual([]);
 }
 
 test("the route list holds every page of the console", () => {
