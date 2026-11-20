@@ -895,6 +895,30 @@ async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_wor
         "low",
         "the nearest level Claude lists"
     );
+    let mut sampled = chat("claude-opus-5-5", "Hi");
+    sampled["temperature"] = json!(0.2);
+    sampled["top_p"] = json!(0.9);
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(sampled),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("temperature, top_p"));
+    let sent = env.mock.last().unwrap().json();
+    assert!(
+        sent.get("temperature").is_none() && sent.get("top_p").is_none(),
+        "Claude 5 takes only its default sampling: {sent}"
+    );
+    let mut top_k = messages("claude-opus-5-5", "Hi");
+    top_k["top_k"] = json!(5);
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(top_k)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-left-out"), Some("top_k"));
+    assert!(env.mock.last().unwrap().json().get("top_k").is_none());
     let turbo =
         json!({"model": "claude-opus-5-5", "input": "Hi", "reasoning": {"effort": "turbo"}});
     let r = call(&env, "/v1/responses", Some(&env.key), false, Some(turbo)).await;
