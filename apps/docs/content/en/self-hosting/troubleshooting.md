@@ -18,7 +18,7 @@ The gateway stops when a setting is missing or invalid, and its container restar
 2. Correct the setting in `compose.override.yaml`, or in `.env` if it is one of the [settings in .env](configuration.md#settings-in-env).
 3. Run `docker compose up -d --wait` again.
 
-`docker compose run --rm --no-deps gateway kaeso config check` checks the settings without starting the gateway or reaching a database: it prints the same error, lists `KAESO_*` variables that name no setting and the warnings the gateway starts with, and exits with 1 on an error.
+`docker compose run --rm --no-deps gateway kaeso config check` checks the settings without starting the gateway or reaching a database: it prints the same error, lists `KAESO_*` variables that name no setting, and exits with 1 on an error.
 
 ## Compose says to set a variable in .env
 

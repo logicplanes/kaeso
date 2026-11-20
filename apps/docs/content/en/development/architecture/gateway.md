@@ -59,7 +59,7 @@ A Platform API request authenticates with a session cookie, an API key with plat
 | `kaeso-upstream` | Provider transport: HTTP clients, auth headers, base URLs, timeouts, streaming bodies and cancellation |
 | `kaeso-crypto` | Envelope encryption (AES-256-GCM), the master key ring, passwords, TOTP and the redacting secret types |
 | `kaeso-mail` | SMTP delivery and every email, in three languages ([emails](emails.md)) |
-| `kaeso-update` | Updates without I/O: the release manifest, the update policy and the updater's protocol ([updates](updates.md)) |
+| `kaeso-update` | Updates without I/O: the release manifest, the update policy, the updater's protocol and the gateway settings a release refuses that an earlier one took ([updates](updates.md)) |
 | `kaeso-mcp` | MCP messages without I/O: the JSON-RPC envelope that keeps every member as written, protocol versions, request metadata, header checks, error codes and the names tools get outside Kaeso |
 | `kaeso-updater` | The optional updater, the only part of Kaeso that talks to Docker ([updates](updates.md)) |
 | `kaeso-testkit` | Test-only: development and test databases, the mock provider built from KPP's fixtures, and a mock identity provider |

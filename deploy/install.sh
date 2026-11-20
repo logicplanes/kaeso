@@ -153,6 +153,8 @@ main() {
     fi
   fi
 
+  check_settings
+
   say "Starting Kaeso"
   log="$(mktemp)"
   if ! docker compose up -d --wait --wait-timeout 900 </dev/null >"$log" 2>&1; then
@@ -557,6 +559,16 @@ update_compose() {
   rm -f compose.yaml.part
   updated="${running:-the previous release}"
   say "Updating Kaeso in $here from ${running:-its release} to $target"
+}
+
+# The new gateway checks the install's settings before anything stops: once it has started on a release
+# that migrates the databases, the previous release can't run on them.
+check_settings() {
+  [ -n "$updated" ] || return 0
+  checked="$(docker compose run --rm --no-deps -T gateway config check </dev/null 2>&1)" && return 0
+  cat compose.yaml.previous >compose.yaml
+  printf '%s\n' "$checked" | tail -n 5 >&2
+  fail "Kaeso $target would stop at startup with these settings, so this install keeps running $updated. Correct them in .env or compose.override.yaml, then run the installer again; the release notes and https://docs.kaeso.app/self-hosting/upgrades say what changed."
 }
 
 is_install() {

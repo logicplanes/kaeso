@@ -54,13 +54,24 @@ When the updater can't install a release, the console shows the installer's comm
 
 ## Upgrading to 0.7.0
 
-0.7.0 warns about three settings that 0.6.0 took without a word, and Kaeso 0.8.0 will refuse them. A gateway with one of them still starts, does what 0.6.0 did and logs a warning at startup that names the setting; `kaeso config check` shows the same warnings. Correct them before 0.8.0: the updater can't roll back once the new gateway has started on a release that migrates the databases, so an update that stops at startup ends with **Needs attention**. Check these settings in `.env`, `compose.override.yaml`, the file `KAESO_CONFIG` names, or your platform's variables:
+> [!IMPORTANT]
+> **Before you upgrade**, check three settings that 0.6.0 took and 0.7.0 refuses at startup. Look in `.env`, `compose.override.yaml`, the file `KAESO_CONFIG` names, or your platform's variables:
+>
+> - `KAESO_KPMR_INTERVAL` (`kpmr.interval`) below `5m`: set it to `5m` or longer, or remove it for `auto`.
+> - `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) below `1m`: set it to `1m` or longer, or remove it.
+> - `KAESO_SMTP_USER` (`smtp.user`) without `KAESO_SMTP_PASSWORD` (`smtp.password`): add the password, or remove the user for a server without authentication.
 
-| Setting | 0.6.0 | 0.7.0 | From 0.8.0 |
-| --- | --- | --- | --- |
-| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Took any duration above zero, and synced at most every 5 minutes | Raises a duration under 5 minutes to `5m`, with a warning | `auto`, or at least `5m` |
-| `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Raised a shorter interval to a minute | Raises a shorter interval to `1m`, with a warning | At least `1m` |
-| `KAESO_SMTP_USER` (`smtp.user`) | Sent mail without authentication when no password was set | Sends without authentication, with a warning | Needs `KAESO_SMTP_PASSWORD`; for a server without authentication, remove the user |
+| Setting | 0.6.0 | 0.7.0 |
+| --- | --- | --- |
+| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Took any duration above zero, and synced at most every 5 minutes | `auto`, or at least `5m` |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Raised a shorter interval to a minute | At least `1m` |
+| `KAESO_SMTP_USER` (`smtp.user`) | Sent mail without authentication when no password was set | Needs `KAESO_SMTP_PASSWORD`; for a server without authentication, remove the user |
+
+A gateway with one of these settings stops at startup, before it touches the databases, and its error names the setting, the value and how to fix it. `kaeso config check` prints the same error ([the gateway keeps restarting](troubleshooting.md#the-gateway-keeps-restarting)). How an update with such a setting ends:
+
+- **From the console or in the update window:** the update stops before it switches anything, puts `compose.yaml` back, and 0.6.0 keeps running. **Instance** › **Updates** lists it as **Not installed**, with the reason that your Compose files have changes the updater can't apply. The setting is named in the update's detail, which `GET /platform/v1/instance/updates/jobs` returns and `docker compose logs updater` shows. Correct the setting, apply it with `docker compose up -d --wait`, and update again; an automatic update tries again in the next window.
+- **With the installer:** it checks the settings with the new gateway before it stops the old one, prints the error, puts `compose.yaml` back and leaves 0.6.0 running.
+- **By hand or on a platform:** the new gateway stops at startup. Correct the setting and run `docker compose up -d --wait`, or deploy again.
 
 In 0.7.0, an empty `KAESO_CONFIG` counts as unset, like every other variable, where 0.6.0 stopped.
 
@@ -167,7 +178,7 @@ Most releases change only the image versions in `compose.yaml`. A release that c
 Choose **Update to …** and confirm. The console follows the update step by step, and it takes about a minute:
 
 1. **Check the release's signatures.** The updater checks that the release and every image were built by Kaeso's Release workflow. When any check fails, nothing is installed and Kaeso keeps running.
-2. **Download the images.** It pulls the new gateway, console and updater images. When the release changes `compose.yaml`, it writes the new file, keeps the old one, and has Docker Compose pull the release's other images.
+2. **Download the images.** It pulls the new gateway, console and updater images. When the release changes `compose.yaml`, it writes the new file, keeps the old one, and has Docker Compose pull the release's other images. First it checks that the new gateway takes the install's settings: when the gateway would refuse one at startup, the update stops here with the setting named, puts the old `compose.yaml` back and ends **Not installed**.
 3. **Switch to the new version.** It replaces the console, then the gateway, with containers from the new images, keeping their settings. When the release changes `compose.yaml`, Docker Compose stops both and then starts every service of the new file instead. Meanwhile, Caddy answers in their place ([while Kaeso updates](#while-kaeso-updates)).
 4. **Migrate the database.** The new gateway migrates the databases as it starts. The updater gives it up to 10 minutes to become healthy.
 5. **Back online.** The updater writes the new versions into `compose.yaml`, so a later `docker compose up -d --wait` starts the same images.

@@ -4,6 +4,10 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+- **Breaking:** The gateway stops at startup when `kpmr.interval` is below 5 minutes, which 0.6.0 took and synced at most every 5 minutes; set it to `5m` or longer, or remove it for `auto`. ([#1120](https://github.com/logicplanes/kaeso/pull/1120), [#PRNUM](https://github.com/logicplanes/kaeso/pull/PRNUM))
+- **Breaking:** The gateway stops at startup when `mcp_servers.sync_interval` is below a minute, which 0.6.0 raised to a minute; set it to `1m` or longer, or remove it. ([#1120](https://github.com/logicplanes/kaeso/pull/1120), [#PRNUM](https://github.com/logicplanes/kaeso/pull/PRNUM))
+- **Breaking:** The gateway stops at startup when `smtp.user` is set without `smtp.password`, where 0.6.0 sent email without authentication; add the password, or remove the user for a server without authentication. ([#1121](https://github.com/logicplanes/kaeso/pull/1121), [#PRNUM](https://github.com/logicplanes/kaeso/pull/PRNUM))
+
 ### Added
 
 #### Console
@@ -11,11 +15,11 @@ All notable changes to Kaeso are documented in this file. The format is based on
 - The Kaeso plugin asks for the install's MCP address when it is installed in Claude Code. For Claude on the web, desktop and mobile and for Cowork, Account › Agents has an Add to Claude button, and the plugin's skill a link, that opens Claude's custom connector form with the install's MCP address filled in. ([#1006](https://github.com/logicplanes/kaeso/pull/1006))
 - Decision answers line their bars up under each question without repeating the answer, and the request log lists each question with what its answers mean. ([#1004](https://github.com/logicplanes/kaeso/pull/1004))
 
-### Deprecated
+### Changed
 
-#### Gateway
+#### Self-hosting
 
-- The gateway warns at startup, and `kaeso config check` shows it, when `kpmr.interval` is below 5 minutes, `mcp_servers.sync_interval` is below a minute or `smtp.user` is set without `smtp.password`. It still starts and does what 0.6.0 did: it asks KPMR every 5 minutes, asks each MCP server every minute and sends email without authentication. Kaeso 0.8.0 will refuse to start with these settings. ([#1121](https://github.com/logicplanes/kaeso/pull/1121), [#1405](https://github.com/logicplanes/kaeso/pull/1405))
+- An update from the console or the update window checks first that the new gateway takes the install's settings, and when it would refuse one at startup, stops before it switches anything: the running release keeps serving, `compose.yaml` is put back and the update's detail names the setting. The installer's `--update` does the same check. ([#PRNUM](https://github.com/logicplanes/kaeso/pull/PRNUM))
 
 ### Fixed
 

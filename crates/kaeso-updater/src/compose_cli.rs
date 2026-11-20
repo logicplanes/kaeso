@@ -4,6 +4,8 @@ use std::process::{Command, Stdio};
 
 use serde_json::Value;
 
+use crate::gateway_settings::Check;
+
 pub const COMPOSE_BIN: &str = "/usr/local/bin/docker-compose";
 pub const DONE: u8 = 0;
 pub const FAILED: u8 = 1;
@@ -39,7 +41,10 @@ pub struct Service {
 }
 
 pub fn services(config: &[u8]) -> Option<Vec<Service>> {
-    let value: Value = serde_json::from_slice(config).ok()?;
+    listed(&serde_json::from_slice(config).ok()?)
+}
+
+fn listed(value: &Value) -> Option<Vec<Service>> {
     let mut list: Vec<Service> = value
         .get("services")?
         .as_object()?
@@ -103,7 +108,7 @@ fn compose(bin: &Path, args: &[String]) -> u8 {
     }
 }
 
-fn config(bin: &Path) -> Result<Vec<Service>, u8> {
+fn config(bin: &Path) -> Result<(Vec<Service>, Value), u8> {
     let out = Command::new(bin)
         .args(["config", "--format", "json"])
         .stdin(Stdio::null())
@@ -117,10 +122,37 @@ fn config(bin: &Path) -> Result<Vec<Service>, u8> {
         say("the install's Compose files do not load");
         return Err(FAILED);
     }
-    services(&out.stdout).ok_or_else(|| {
+    let value: Value = serde_json::from_slice(&out.stdout).unwrap_or(Value::Null);
+    let services = listed(&value).ok_or_else(|| {
         say("docker compose config printed no services");
         FAILED
-    })
+    })?;
+    Ok((services, value))
+}
+
+// Pull is the last step before the switch, and the only one the release's own runner takes
+// while the running gateway still serves: a gateway that would refuse its settings at startup
+// stops the update here, since an update that migrates can't roll back once it has started.
+fn gateway_starts(config: &Value) -> Result<(), u8> {
+    let read = |path: &Path| std::fs::read_to_string(path);
+    match crate::gateway_settings::check(config, &read) {
+        Check::Fine => Ok(()),
+        Check::Refused(found) => {
+            for refusal in &found {
+                say(refusal);
+            }
+            say(
+                "The new gateway would stop at startup with these settings, so the update stops before it switches; change them in .env, compose.override.yaml or the configuration file, then update again",
+            );
+            Err(REFUSED)
+        }
+        Check::Unreadable(why) => {
+            say(&format!(
+                "{why}; check the settings the upgrade guide lists, then update with the installer"
+            ));
+            Err(REFUSED)
+        }
+    }
 }
 
 fn seconds(arg: Option<&String>) -> Option<String> {
@@ -139,34 +171,41 @@ pub fn run(bin: &Path, args: &[String]) -> u8 {
         (Some("stop"), None) if args.len() == 1 => {
             compose(bin, &owned(&["stop", "gateway", "console"]))
         }
-        (Some("pull"), None) if args.len() == 1 => match config(bin).map(|s| applied(&s)) {
+        (Some("pull"), None) if args.len() == 1 => match config(bin) {
             Err(code) => code,
-            Ok(Err(why)) => {
-                say(&why);
-                REFUSED
-            }
-            Ok(Ok(names)) => {
-                let mut call = owned(&["pull", "--quiet", "--policy", "missing"]);
-                call.extend(names);
-                compose(bin, &call)
-            }
+            Ok((services, value)) => match applied(&services) {
+                Err(why) => {
+                    say(&why);
+                    REFUSED
+                }
+                Ok(names) => {
+                    if let Err(code) = gateway_starts(&value) {
+                        return code;
+                    }
+                    let mut call = owned(&["pull", "--quiet", "--policy", "missing"]);
+                    call.extend(names);
+                    compose(bin, &call)
+                }
+            },
         },
-        (Some("up"), Some(wait)) if args.len() == 2 => match config(bin).map(|s| applied(&s)) {
-            Err(code) => code,
-            Ok(Err(why)) => {
-                say(&why);
-                REFUSED
+        (Some("up"), Some(wait)) if args.len() == 2 => {
+            match config(bin).map(|(s, _)| applied(&s)) {
+                Err(code) => code,
+                Ok(Err(why)) => {
+                    say(&why);
+                    REFUSED
+                }
+                Ok(Ok(names)) => {
+                    let mut call = owned(&["up", "--detach", "--wait", "--wait-timeout"]);
+                    call.push(wait);
+                    call.extend(names);
+                    compose(bin, &call)
+                }
             }
-            Ok(Ok(names)) => {
-                let mut call = owned(&["up", "--detach", "--wait", "--wait-timeout"]);
-                call.push(wait);
-                call.extend(names);
-                compose(bin, &call)
-            }
-        },
+        }
         (Some("replace"), Some(wait)) if args.len() == 2 => match config(bin) {
             Err(code) => code,
-            Ok(services) => {
+            Ok((services, _)) => {
                 let names = replaced(&services);
                 if names.is_empty() {
                     say("no service runs a Kaeso image the update hasn't replaced");
@@ -345,6 +384,28 @@ mod tests {
             assert_eq!(fake.run(&["pull"]), REFUSED);
             assert_eq!(fake.run(&["up", "600"]), REFUSED);
             assert!(fake.calls().is_empty());
+        }
+
+        #[test]
+        fn a_gateway_setting_the_release_refuses_stops_the_pull_but_never_a_rollback() {
+            let image = format!("ghcr.io/logicplanes/kaeso-gateway:40.2.1@sha256:{D}");
+            let refusing = format!(
+                r#"{{"services":{{"gateway":{{"image":"{image}","environment":{{"KAESO_KPMR_INTERVAL":"1m","KAESO_SMTP_USER":""}}}}}}}}"#
+            );
+            let fake = Fake::new("refusing", &refusing, 0);
+            assert_eq!(fake.run(&["pull"]), REFUSED);
+            assert!(fake.calls().is_empty(), "nothing is pulled");
+            assert_eq!(
+                fake.run(&["up", "600"]),
+                DONE,
+                "a rollback starts the previous release, which took the setting"
+            );
+            assert_eq!(
+                fake.calls(),
+                ["up --detach --wait --wait-timeout 600 gateway"]
+            );
+            let fine = Fake::new("fine", &refusing.replace("\"1m\"", "\"5m\""), 0);
+            assert_eq!(fine.run(&["pull"]), DONE);
         }
 
         #[test]

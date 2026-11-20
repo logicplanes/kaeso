@@ -598,3 +598,29 @@ def test_update_that_cannot_download_changes_nothing(tmp_path):
     assert result.returncode == 1
     assert "Couldn't download" in result.stderr
     assert sorted(p.name for p in install.iterdir()) == ["compose.yaml"]
+
+
+def check_settings_in(tmp_path: Path, answer: str, code: int) -> subprocess.CompletedProcess:
+    (tmp_path / "answer").write_text(answer + "\n")
+    fake = f'docker() {{ echo "docker $*" >>"{tmp_path}/calls"; cat "{tmp_path}/answer"; return {code}; }}'
+    return run_part(f'{fake}; cd "{tmp_path / "kaeso"}"; target=40.7.0; updated=40.6.0; check_settings; echo checked', tmp_path)
+
+
+def test_an_update_whose_gateway_refuses_the_settings_keeps_the_running_release(tmp_path):
+    install = an_install(tmp_path, "40.7.0")
+    (install / "compose.yaml.previous").write_text(compose_of("40.6.0"))
+    refusal = "Error: configuration: KAESO_KPMR_INTERVAL (kpmr.interval) is 1m, and it must be `auto` or at least 5m"
+    result = check_settings_in(tmp_path, refusal, 1)
+    assert result.returncode == 1
+    assert refusal in result.stderr
+    assert "Kaeso 40.7.0 would stop at startup with these settings, so this install keeps running 40.6.0" in result.stderr
+    assert (install / "compose.yaml").read_text() == compose_of("40.6.0")
+    assert (tmp_path / "calls").read_text() == "docker compose run --rm --no-deps -T gateway config check\n"
+
+
+def test_an_update_whose_gateway_takes_the_settings_goes_on(tmp_path):
+    install = an_install(tmp_path, "40.7.0")
+    result = check_settings_in(tmp_path, "The configuration is valid.", 0)
+    assert result.returncode == 0, result.stderr
+    assert "checked" in result.stdout
+    assert (install / "compose.yaml").read_text() == compose_of("40.7.0")
