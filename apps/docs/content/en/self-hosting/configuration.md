@@ -66,13 +66,13 @@ Docker rotates each service's log at 10 MB and keeps five files.
 ## How the gateway reads settings
 
 - **Environment variables.** Each setting has one, such as `KAESO_LOG_LEVEL`. An empty variable counts as unset.
-- **A TOML file.** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` reads settings from a file, with the TOML keys below. An environment variable wins over the file, and a key that isn't a setting is an error. [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) sets every setting but the secrets.
+- **A TOML file.** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` reads settings from a file, with the TOML keys below; an empty `KAESO_CONFIG` reads none. An environment variable wins over the file, and a key that isn't a setting is an error. [`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) sets every setting but the secrets.
 - **Secrets from files.** Every secret can instead come from the file named in `<VARIABLE>_FILE`, such as `KAESO_MASTER_KEYS_FILE=/run/secrets/master_keys`. A trailing newline is ignored, and setting both is an error.
-- **Checked at startup.** The gateway doesn't start when a setting is missing or invalid. Its message names the setting and never prints a secret.
+- **Checked at startup.** The gateway doesn't start when a setting is missing or invalid. Its message names the setting and never prints a secret. `kaeso config check` runs the same checks without starting it ([the gateway keeps restarting](troubleshooting.md#the-gateway-keeps-restarting)). A `KAESO_` variable that names no setting is ignored, with a warning in the log.
 
 | Type | Values |
 | --- | --- |
-| text | Text, URLs, addresses (`0.0.0.0:8080`), durations (`10s`, `5m`, `24h`), sizes (`32MiB`, `1MB`, or a number of bytes) and the listed choices |
+| text | Text, URLs, addresses (`0.0.0.0:8080`), durations of whole numbers with units (`250ms`, `10s`, `5m`, `24h`, `2d`, or `1h 30m` combined), sizes (`32MiB`, `1MB`, or a number of bytes) and the listed choices |
 | bool | `true` or `false`; also `1` and `0`, `yes` and `no`, `on` and `off` |
 | integer | A whole number, zero or more |
 
@@ -129,7 +129,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | `KAESO_SMTP_HOST`<br>`smtp.host` | text | — | SMTP server. Required unless `mail.transport` is `log`. |
 | `KAESO_SMTP_PORT`<br>`smtp.port` | integer | `587` | SMTP port. |
 | `KAESO_SMTP_TLS`<br>`smtp.tls` | text | `starttls` | `starttls`, `tls` for implicit TLS (usually port 465), or `none` for a local mail catcher only. |
-| `KAESO_SMTP_USER`<br>`smtp.user` | text | — | SMTP user name, if the server needs one. Required with a password, and needs one. |
+| `KAESO_SMTP_USER`<br>`smtp.user` | text | — | SMTP user name, if the server needs one. The user and the password go together: either one alone stops the gateway at startup. |
 | `KAESO_SMTP_PASSWORD`<br>`smtp.password` | text, secret | — | SMTP password. |
 | `KAESO_SMTP_FROM`<br>`smtp.from` | text | `Kaeso <kaeso@localhost>` | Sender of every email. `compose.yaml` sets `Kaeso <kaeso@` and your domain. |
 | `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | text | `smtp` | `smtp`, or `log` to only log the kind of each email, never its recipient or content. |

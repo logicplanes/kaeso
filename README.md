@@ -9,7 +9,7 @@
   <br>
   <br>
   <h3>The open-source AI gateway you run yourself</h3>
-  <p>One OpenAI-, Anthropic-, Gemini- and ElevenLabs-compatible API in front of every provider, for chat, embeddings, images, video, speech, transcription and music, with single sign-on, roles, budgets, alias routes, request logs, a playground and an MCP portal, in one Rust process.</p>
+  <p>One OpenAI-, Anthropic-, Gemini- and ElevenLabs-compatible API in front of every provider, for chat, embeddings, reranking, decisions, images, video, speech, transcription and music, with single sign-on, roles, budgets, guardrails, alias routes, request logs, a playground and an MCP portal, in one Rust process.</p>
   <p>
     <a href="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml/badge.svg?branch=dev"></a>
     <a href="https://scorecard.dev/viewer/?uri=github.com/logicplanes/kaeso"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/logicplanes/kaeso/badge"></a>
@@ -195,14 +195,14 @@ Checked on 6 November 2026 against each project's repository and documentation. 
 
 ## In this repository
 
-| Part                                                                                         | What it is                                                                                                                                                     |
-| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`crates/`](crates)                                                                          | The gateway, the updater and KPP, the protocol every request is decoded to; `kaeso-kpp` and `kaeso-codecs` are on crates.io                                    |
-| [`apps/console`](apps/console)                                                               | The web console                                                                                                                                                |
-| [`packages/ui`](packages/ui) and [`packages/tokens`](packages/tokens)                        | The UI library and design tokens behind it, on npm, with a [showcase](https://ui.kaeso.app)                                                                    |
-| [`apps/docs`](apps/docs)                                                                     | The documentation at [docs.kaeso.app](https://docs.kaeso.app), in English, German and Chinese                                                                  |
-| [`deploy/`](deploy), [`render.yaml`](render.yaml), [`.railway/`](.railway) and [`.do/`](.do) | The Compose package, the container images and the templates for Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy and CapRover |
-| [`plugins/`](plugins)                                                                        | The Claude Code and Cursor plugins for Kaeso's MCP server                                                                                                      |
+| Part                                                                                         | What it is                                                                                                                                                                     |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`crates/`](crates)                                                                          | The gateway, the updater and KPP, the protocol every request is decoded to; `kaeso-kpp` and `kaeso-codecs` are on crates.io                                                    |
+| [`apps/console`](apps/console)                                                               | The web console                                                                                                                                                                |
+| [`packages/ui`](packages/ui) and [`packages/tokens`](packages/tokens)                        | The UI library and design tokens behind it, on npm, with a [showcase](https://ui.kaeso.app)                                                                                    |
+| [`apps/docs`](apps/docs)                                                                     | The documentation at [docs.kaeso.app](https://docs.kaeso.app), in English, German and Chinese                                                                                  |
+| [`deploy/`](deploy), [`render.yaml`](render.yaml), [`.railway/`](.railway) and [`.do/`](.do) | The Compose package, the Helm chart, the container images and the templates for Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy and CapRover |
+| [`plugins/`](plugins)                                                                        | The Claude Code and Cursor plugins for Kaeso's MCP server                                                                                                                      |
 
 [Architecture](https://docs.kaeso.app/development/architecture) explains how the parts fit, and [contributing](https://docs.kaeso.app/development/contributing) how to work in them.
 

@@ -195,12 +195,16 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | Befehl | Bewirkt |
 | --- | --- |
 | `kaeso setup-link` | Gibt den Einrichtungslink aus, solange die Installation keine Benutzer hat. Der Link funktioniert einmal, 24 Stunden lang, und ein neuer macht die älteren ungültig |
+| `kaeso user list` | Listet die Konten mit Adresse, Name, Status, ob sie Instanz-Admins sind und Zwei-Faktor-Authentifizierung nutzen, und wann sie angelegt wurden. `--instance-admins` listet nur Instanz-Admins, `--search <text>` nur Konten, deren Adresse oder Name den Text enthält |
 | `kaeso user sign-in-link <email>` | Gibt einen einmaligen Anmeldelink für einen aktiven Benutzer aus, 15 Minuten gültig ([Wieder hineinkommen](sign-in.md#wieder-hineinkommen)) |
 | `kaeso user reset-2fa <email>` | Entfernt die Zwei-Faktor-Authentifizierung und die Wiederherstellungscodes eines Benutzers, beendet seine Sitzungen und benachrichtigt ihn per E-Mail. Das Audit-Log der Instanz hält es fest |
 | `kaeso sso verify-domain <domain>` | Markiert eine E-Mail-Domain der SSO ohne ihren TXT-Eintrag als bestätigt, für eine Domain, für die das öffentliche DNS nicht antwortet. `--org <org>` nennt die Organisation, wenn mehrere die Domain führen. Das Audit-Log der Organisation verzeichnet es |
 | `kaeso instance admin-sso <org\|none>` | Wählt die Organisation, deren Single Sign-on die Instanz verwalten darf, über eine ID wie `org_…`, oder mit `none` keine, wenn kein Instanz-Admin es in der Konsole ändern kann ([Instanz-Admins](sign-in.md#instanz-admins)). Die Organisation braucht eine SSO-Verbindung. Das Audit-Log der Instanz hält es fest |
 | `kaeso master-key generate` | Gibt einen neuen Hauptschlüssel als `id:base64` aus |
 | `kaeso master-key rewrap` | Verschlüsselt gespeicherte Secrets mit dem ersten Hauptschlüssel neu und meldet, welche Schlüssel-IDs noch verwendet werden ([Hauptschlüssel rotieren](backups.md#hauptschlüssel-rotieren)) |
+| `kaeso config check` | Prüft die Einstellungen und die Hauptschlüssel ohne Datenbank, gibt den Fehler aus, mit dem das Gateway anhalten würde, und endet mit 1, oder nennt die `KAESO_`-Variablen, die keine Einstellung benennen ([Fehlerbehebung](troubleshooting.md#das-gateway-startet-immer-wieder-neu)) |
+| `kaeso mail test <email>` | Sendet eine Test-E-Mail mit den Mail-Einstellungen des Gateways und gibt aus, was der SMTP-Server geantwortet hat ([Test-E-Mail senden](email.md#test-e-mail-senden)) |
+| `kaeso kpmr sync` | Ruft die Modelldaten sofort von KPMR ab, wie es die geplante Synchronisierung tut, und jedes Gateway übernimmt sie. Braucht eingeschaltetes `kpmr.sync` ([KPMR](../concepts/kpmr.md#wie-das-gateway-ihn-abruft)) |
 | `kaeso migrate` | Führt die Migrationen von PostgreSQL aus, bei eingeschalteten Anfrageprotokollen auch die von ClickHouse, und beendet sich |
 | `kaeso serve` | Startet das Gateway. Das ist der Standardbefehl des Images |
 

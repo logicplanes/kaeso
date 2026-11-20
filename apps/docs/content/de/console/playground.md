@@ -62,7 +62,7 @@ Ein Chatmodell im selben Vergleich erhält denselben Text und dieselben Bilder a
 | Systemanweisungen | Anweisungen, die vor dem Gespräch gesendet werden |
 | Temperatur, Top P | Sampling, nur an Modelle gesendet, die Temperatur unterstützen |
 | Max. Ausgabe-Token | Die längste Antwort |
-| Reasoning-Aufwand | Wie viel ein Reasoning-Modell nachdenkt, von **Ohne** bis **Maximal** |
+| Reasoning-Aufwand | Wie viel ein Reasoning-Modell nachdenkt, von **Keiner** bis **Maximal** |
 | Reasoning-Zusammenfassung | Ob das Reasoning eines Modells zusammengefasst wird: **Auto**, **Knapp**, **Detailliert** oder **Aus** |
 
 Für Medienmodelle zeigt **Parameter** nur, was die gewählten Modelle annehmen:

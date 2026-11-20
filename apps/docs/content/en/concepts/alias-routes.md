@@ -11,7 +11,7 @@ flowchart TD
   accTitle: An alias route
   accDescr: Requests to the alias fast whose x-plan header is paid go to Claude Sonnet, which falls back to GPT-5 when it fails. Every other request is split by caller, 90 percent to Claude Haiku and 10 percent to GPT-5 mini.
   start([fast]) --> plan{x-plan is paid}
-  plan -->|Then| sonnet[anthropic/claude-sonnet-4-5]
+  plan -->|Then| sonnet[anthropic/claude-sonnet-5-5]
   sonnet -.->|Fallback| gpt[openai/gpt-5]
   plan -->|Else| split{Split by caller}
   split -->|90%| haiku[anthropic/claude-haiku-4-5]
@@ -86,7 +86,7 @@ A stream counts as answered once it carries output. One that fails before, such 
 ## What apps and logs see
 
 - `kaeso-model` and `kaeso-provider` name the step that answered, or the one that failed last.
-- `kaeso-route` names every step the request reached, in order, by its path in the route as a trace names it, with its model and status, and its time in milliseconds when it failed: `"route";model="anthropic/claude-sonnet-4-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. A step the key may not use carries `skipped` and no model; a step skipped because it failed moments ago carries `skipped` and its model ([response headers](../api/model-api.md#response-headers)). A step that sent the request more than once, because it tried its model again or tried more than one of the project's keys of its provider ([choose which key a project uses](../console/provider-keys.md#choose-which-key-a-project-uses)), carries `tries` with how many times it sent the request, such as `status=200;tries=2`.
+- `kaeso-route` names every step the request reached, in order, by its path in the route as a trace names it, with its model and status, and its time in milliseconds when it failed: `"route";model="anthropic/claude-sonnet-5-5";status=529;dur=1204, "route.fallback";model="openai/gpt-5";status=200`. A step the key may not use carries `skipped` and no model; a step skipped because it failed moments ago carries `skipped` and its model ([response headers](../api/model-api.md#response-headers)). A step that sent the request more than once, because it tried its model again or tried more than one of the project's keys of its provider ([choose which key a project uses](../console/provider-keys.md#choose-which-key-a-project-uses)), carries `tries` with how many times it sent the request, such as `status=200;tries=2`.
 - The [request log](../console/request-logs.md) keeps the alias as the requested model and lists the steps it tried or skipped first, each with its status, error and time. A try a step made again is listed too, marked as tried again, and doesn't count as a fallback in its filter.
 - `/v1/models` lists the alias with the details of its main model: the `then` side of conditions and the heaviest branch of splits. When the key may not use that model, the alias shows the first other model it may use.
 - `kaeso_alias_fallbacks_total{provider, reason}` counts the steps that fell back or were skipped ([health and metrics](../self-hosting/monitoring.md)).

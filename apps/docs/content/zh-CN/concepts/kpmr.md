@@ -81,7 +81,7 @@ KPMR 是 Logicplanes 在 [kpmr.kaeso.app](https://kpmr.kaeso.app) 运行的服�
 
 ## 网关如何获取目录
 
-一个任务每五分钟检查一次网关是否该再次询问 KPMR。`kpmr.interval` 为 `auto` 时，它跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；设为 `6h` 这样的时长则以该时长为准。尝试失败后，网关会在一小时内再次尝试。
+一个任务每五分钟检查一次网关是否该再次询问 KPMR。`kpmr.interval` 为 `auto` 时，它跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；设为至少 5 分钟的时长（如 `6h`）则以该时长为准。尝试失败后，网关会在一小时内再次尝试。
 
 **实例** › **系统**中**模型数据**卡片上的**立即同步**，或在服务器上运行 `docker compose exec gateway kaeso kpmr sync`，会立即获取数据，实例中的每个网关都会采用新数据。两者都需要开启 `kpmr.sync`。
 

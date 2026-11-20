@@ -227,6 +227,8 @@ const MOSTLY_SHORT = 0.75;
 function StackedTable({ b, label, ctx }: { b: Extract<Block, { t: "table" }>; label: string; ctx: Ctx }) {
   const fits = (c: Inline[]) => width(plainText(c)) <= BESIDE_LABEL;
   const beside = Array.from({ length: b.head.length }, (_, j) => {
+    // A long label takes the label column's whole width, and the values beside it get too little room.
+    if (width(plainText(b.head[j] ?? [])) > LONG_HEADER) return false;
     const cells = b.rows.map((row) => row[j] ?? []).filter((c) => c.length > 0);
     return cells.filter(fits).length >= cells.length * MOSTLY_SHORT;
   });

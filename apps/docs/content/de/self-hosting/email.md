@@ -19,7 +19,7 @@ KAESO_SMTP_PASSWORD=…
 KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 ```
 
-Übernehmen Sie die Werte mit `docker compose up -d --wait`. Ohne `KAESO_SMTP_FROM` sendet Kaeso von `kaeso@` unter Ihrer Domain; setzen Sie also eine Adresse, von der Ihr SMTP-Server senden darf. Für einen Server ohne Anmeldung lassen Sie Benutzer und Passwort weg. Die [Konfiguration](configuration.md#e-mail) listet jede E-Mail-Einstellung und ihre Werte.
+Übernehmen Sie die Werte mit `docker compose up -d --wait`. Ohne `KAESO_SMTP_FROM` sendet Kaeso von `kaeso@` unter Ihrer Domain; setzen Sie also eine Adresse, von der Ihr SMTP-Server senden darf. Für einen Server ohne Anmeldung lassen Sie Benutzer und Passwort weg; setzen Sie beide oder keines, denn eines allein hält das Gateway beim Start an. Die [Konfiguration](configuration.md#e-mail) listet jede E-Mail-Einstellung und ihre Werte.
 
 ## Test-E-Mail senden
 

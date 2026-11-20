@@ -155,7 +155,7 @@ cargo install cargo-deny cargo-llvm-cov cargo-nextest sqlx-cli --locked
 
 ## 端到端测试
 
-`e2e/` 中的套件用 `e2e/requirements.txt` 中固定版本的 OpenAI、Anthropic、Google Gen AI、TypeSafe 和 MCP 官方 Python SDK，测试 KPP 的编码器、网关、其 MCP 门户和全新实例。先设置一次它们的虚拟环境：
+`e2e/` 中的套件用 `e2e/requirements.txt` 中固定版本的 OpenAI、Anthropic、Google Gen AI、ElevenLabs、TypeSafe 和 MCP 官方 Python SDK，测试 KPP 的编码器、网关、其 MCP 门户、全新实例和 Helm chart。先设置一次它们的虚拟环境：
 
 ```bash
 python3 -m venv e2e/.venv
@@ -226,6 +226,10 @@ e2e/.venv/bin/pytest -q e2e/sdk
 | 提示中的 `[mock:endless]` 与 `[mock:gen=N]` | 无限重复编造的流中的文本增量，每个增量在发送时才编码。速率超过每毫秒一个增量时，每毫秒的增量合为一个数据块发送 |
 | 提示中的 `[mock:delta=C]` 与 `[mock:gen=N]` | 让编造的回复中每个文本增量至少有 C 个字符，而不是 16 个 |
 | 提示中的 `[mock:tag=NAME]` | 为流命名，使 `MockProvider::closed_at(NAME)` 返回它在结束前被关闭的时间 |
+| 提示中的 `[mock:fail=MODEL FIXTURE]` | 用该错误 fixture 回答发往该模型的请求；`stall` 永不回答，第三部分以毫秒为单位时会延迟这么久再回答 |
+| 提示中的 `[mock:flaky=NAME N FIXTURE]` | 让携带它的前 N 个请求以该错误 fixture 失败（`drop` 表示连接中断），之后的请求正常回答 |
+| 提示中的 `[mock:key-fail=PART FIXTURE]` | 让服务商密钥包含 PART 的请求失败，使密钥池中的一个密钥失败而另一个正常回答 |
+| 批处理文件中的 `[mock:batch-running]`、`[mock:batch-fail]` | 让批处理保持运行，或用 400 回答该行 |
 | 以 `unserved-` 开头的模型 ID | 该格式的“模型不存在”错误 |
 | 服务商密钥中的 `[mock:gate=NAME]` | 挂起 `GET /v1/models` 和 `GET /v1/models/{id}` |
 | 服务商密钥中的 `[mock:models=absent]` | 两个模型端点都只返回一个裸 404 |
@@ -256,9 +260,17 @@ e2e/.venv/bin/pytest -q e2e/install
 
 和真实实例一样，控制台镜像同时运行 Caddy。`KAESO_TEST_GATEWAY_IMAGE`、`KAESO_TEST_MOCK_IMAGE`、`KAESO_TEST_CONSOLE_IMAGE` 和 `KAESO_TEST_UPDATER_IMAGE` 使用已经构建好的镜像。
 
+### Kubernetes 测试
+
+```bash
+e2e/.venv/bin/pytest -q e2e/kubernetes
+```
+
+这个套件检查 `deploy/helm/kaeso` 中的 Helm chart。`test_chart.py` 用 `helm template` 渲染它，与它所对应的 Compose 安装进行比较，并用 `kubeconform` 检查每个清单；它需要 `helm`，其中那一项测试还需要 `kubeconform`。`test_kind.py` 在 `kubectl` 当前上下文的集群中安装带内置数据存储的 chart，例如已加载镜像的 [kind](https://kind.sigs.k8s.io) 集群。它获取设置链接，向模拟服务商发送一个由请求日志记录的请求，并在实例持续提供服务的同时升级它。只有设置 `KAESO_TEST_KIND=1` 时才运行。
+
 ## 模糊测试
 
-`fuzz/` 为每个 KPP 解码器提供一个 [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) 目标 `decode_<dialect>`，为 SSE 解析器提供目标 `sse`，为 MCP 消息提供目标 `mcp`，并为音频时长探测提供目标 `audio_length`。解码器目标检查每个解码器接受任意字节都不会 panic，并且把结果编码为每种方言时也不会 panic。`sse` 目标检查无论输入如何切分，解析器都产生相同的条目。`mcp` 目标检查 Kaeso 读取的每条消息都能完整写回（重命名其工具之后也是如此），并且请求头的值解码后与编码前一致；它的种子语料是 `crates/kaeso-mcp/fixtures`。`audio_length` 目标检查任意字节要么得出不超过一天的时长，要么没有结果，且读取从不超出其上限。`fuzz/` 是一个独立的 Cargo 工作区，因此 `libfuzzer-sys` 永远不会进入库 crate。
+`fuzz/` 为每个 KPP 解码器提供一个 [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) 目标 `decode_<dialect>`，为 SSE 解析器提供目标 `sse`，为 MCP 消息提供目标 `mcp`，为音频时长探测提供目标 `audio_length`，并为图片尺寸探测提供目标 `image_size`。解码器目标检查每个解码器接受任意字节都不会 panic，并且把结果编码为每种方言时也不会 panic。`sse` 目标检查无论输入如何切分，解析器都产生相同的条目。`mcp` 目标检查 Kaeso 读取的每条消息都能完整写回（重命名其工具之后也是如此），并且请求头的值解码后与编码前一致；它的种子语料是 `crates/kaeso-mcp/fixtures`。`audio_length` 目标检查任意字节要么得出不超过一天的时长，要么没有结果，且读取从不超出其上限。`image_size` 目标检查读出的尺寸从不为零，且再次读取时保持不变。`fuzz/` 是一个独立的 Cargo 工作区，因此 `libfuzzer-sys` 永远不会进入库 crate。
 
 每项变更都会检查这些目标能够构建，并且通过格式和 lint 检查：
 
@@ -308,6 +320,7 @@ CI 工作流 `.github/workflows/ci.yml` 在每个拉取请求、每次推送到 
 | SDK end-to-end and OpenAPI document | 构建一次网关，检查 `openapi.json` 是最新的，然后运行 `pytest -q e2e/sdk` 和 `pytest -q e2e/mcp` |
 | Images（gateway、mock provider、updater、console） | 构建四个镜像；控制台的作业还检查其镜像以内容安全策略提供控制台。拉取请求用 `Cargo.toml` 中的 `pr` 配置构建三个 Rust 镜像，它像 `dev` 一样编译，只需一小部分时间；`dev`、`prod` 和发布用 `release` 构建它们，在 `dev` 上 **Images (pull request cache)** 还会用 `pr` 再构建一次，以填充拉取请求读取的缓存 |
 | Install test | 用这些镜像运行 `pytest -q e2e/install` |
+| Kubernetes test | 在 kind 集群上用网关、模拟服务商和控制台的镜像运行 `pytest -q e2e/kubernetes` |
 | TypeScript checks | 先运行 `pnpm knip`，再同时运行 `pnpm format:check`、`pnpm lint`、`pnpm i18n` 和 `pnpm audit --prod --audit-level high`，最后运行 `pnpm typecheck` |
 | TypeScript test | `pnpm test`：UI 库在一个作业中，令牌、文档站点、展示站点、脚本和 MCP 视图在另一个作业中，控制台分六个分片，其覆盖率由另一个作业合并并检查 |
 | TypeScript build | `pnpm build`、`pnpm licenses:check` 和 `pnpm release:check` |

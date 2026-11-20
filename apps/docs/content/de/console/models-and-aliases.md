@@ -68,7 +68,7 @@ Das Sheet eines Modells zeigt unter **Verwendete Werte** jeden Wert mit seiner H
 
 ## Entscheidungsmodelle
 
-Ein Entscheidungsmodell beantwortet typisierte Fragen an `/v1/decisions`, `/v1/systemone` und `/v1beta/decisions` ([Decisions-API](../api/decisions.md)). Der Dialog zum Hinzufügen kennzeichnet solche Modelle mit **Entscheidungen**, und das Hinzufügen jedes aktuellen Modells lässt Modelle aus, die nur Entscheidungen treffen; fügen Sie diese einzeln hinzu. Das Blatt eines Modells nennt unter **Entscheidungen**, ob es nur Entscheidungen trifft, welche Fragetypen es beantwortet und seine Limits. Wählen Sie für ein eigenes Modell bei einem Anbieter mit Decisions-API unter **Ausgaben** die Option **Entscheidungen**; dann braucht es nur seine Eingaben und seinen Eingabepreis. Der Playground listet Modelle, die nur Entscheidungen treffen, noch nicht.
+Ein Entscheidungsmodell beantwortet typisierte Fragen an `/v1/decisions`, `/v1/systemone` und `/v1beta/decisions` ([Decisions-API](../api/decisions.md)). Der Dialog zum Hinzufügen kennzeichnet solche Modelle mit **Entscheidungen**, und das Hinzufügen jedes aktuellen Modells lässt Modelle aus, die nur Entscheidungen treffen; fügen Sie diese einzeln hinzu. Das Blatt eines Modells nennt unter **Entscheidungen**, ob es nur Entscheidungen trifft, welche Fragetypen es beantwortet und seine Limits. Wählen Sie für ein eigenes Modell bei einem Anbieter mit Decisions-API unter **Ausgaben** die Option **Entscheidungen**; dann braucht es nur seine Eingaben und seinen Eingabepreis. Auch der [Playground](playground.md#entscheidungsmodelle-befragen) stellt ihnen typisierte Fragen.
 
 ## Modelllinien
 

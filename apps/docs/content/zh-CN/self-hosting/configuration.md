@@ -66,13 +66,13 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 ## 网关读取设置的方式
 
 - **环境变量。** 每项设置都有一个，例如 `KAESO_LOG_LEVEL`。空变量视为未设置。
-- **TOML 文件。** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` 从文件读取设置，使用下表中的 TOML 键。环境变量优先于文件，不是设置的键会报错。[`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) 设置了除机密以外的每项设置。
+- **TOML 文件。** `KAESO_CONFIG=/etc/kaeso/kaeso.toml` 从文件读取设置，使用下表中的 TOML 键；`KAESO_CONFIG` 为空时不读取文件。环境变量优先于文件，不是设置的键会报错。[`kaeso.example.toml`](https://github.com/logicplanes/kaeso/releases/latest/download/kaeso.example.toml) 设置了除机密以外的每项设置。
 - **从文件读取机密。** 每个机密都可以改从 `<VARIABLE>_FILE` 指定的文件读取，例如 `KAESO_MASTER_KEYS_FILE=/run/secrets/master_keys`。末尾的换行符会被忽略，两者同时设置会报错。
-- **启动时检查。** 设置缺失或无效时，网关不会启动。错误消息会指明该设置，但从不打印机密。
+- **启动时检查。** 设置缺失或无效时，网关不会启动。错误消息会指明该设置，但从不打印机密。`kaeso config check` 在不启动网关的情况下执行同样的检查（[网关不断重启](troubleshooting.md#网关不断重启)）。不对应任何设置的 `KAESO_` 变量会被忽略，并在日志中留下警告。
 
 | 类型 | 取值 |
 | --- | --- |
-| 文本 | 文本、URL、地址（`0.0.0.0:8080`）、时长（`10s`、`5m`、`24h`）、大小（`32MiB`、`1MB` 或字节数）以及列出的选项 |
+| 文本 | 文本、URL、地址（`0.0.0.0:8080`）、由整数和单位组成的时长（`250ms`、`10s`、`5m`、`24h`、`2d`，或组合成 `1h 30m`）、大小（`32MiB`、`1MB` 或字节数）以及列出的选项 |
 | 布尔 | `true` 或 `false`；也接受 `1` 和 `0`、`yes` 和 `no`、`on` 和 `off` |
 | 整数 | 零或正整数 |
 
@@ -129,7 +129,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_SMTP_HOST`<br>`smtp.host` | 文本 | — | SMTP 服务器。除非 `mail.transport` 为 `log`，否则必填。 |
 | `KAESO_SMTP_PORT`<br>`smtp.port` | 整数 | `587` | SMTP 端口。 |
 | `KAESO_SMTP_TLS`<br>`smtp.tls` | 文本 | `starttls` | `starttls`，隐式 TLS 用 `tls`（通常是端口 465），`none` 仅用于本地邮件捕获工具。 |
-| `KAESO_SMTP_USER`<br>`smtp.user` | 文本 | — | SMTP 用户名，服务器需要时填写。设置密码时必填，设置用户名时也必须设置密码。 |
+| `KAESO_SMTP_USER`<br>`smtp.user` | 文本 | — | SMTP 用户名，服务器需要时填写。用户名和密码必须同时设置：只设置其中一个，网关会在启动时停止。 |
 | `KAESO_SMTP_PASSWORD`<br>`smtp.password` | 文本，机密 | — | SMTP 密码。 |
 | `KAESO_SMTP_FROM`<br>`smtp.from` | 文本 | `Kaeso <kaeso@localhost>` | 每封邮件的发件人。`compose.yaml` 设为 `Kaeso <kaeso@` 加您的域名。 |
 | `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | 文本 | `smtp` | `smtp`，或 `log`：只记录每封邮件的类型，从不记录收件人或内容。 |

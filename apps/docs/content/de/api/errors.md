@@ -74,7 +74,7 @@ Chat Completions, Responses und Embeddings teilen einen Fehler-Body:
 | 400 | `invalid_request_error` | `context_length_exceeded` oder `content_policy_violation`, wo zutreffend |
 | 401 | `invalid_request_error` | |
 | 403 | `request_forbidden` | |
-| 404 | `invalid_request_error` | |
+| 404, 410 | `invalid_request_error` | |
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
 | 415 | `invalid_request_error` | |
@@ -164,7 +164,7 @@ Der Fehler-Body trägt die ID der Anfrage in `request_id`, auch wenn der Fehler 
 | 400 | `invalid_request_error` |
 | 401 | `authentication_error` |
 | 403 | `permission_error` |
-| 404 | `not_found_error` |
+| 404, 410 | `not_found_error` |
 | 405, 415 | `invalid_request_error` |
 | 413 | `request_too_large` |
 | 429 | `rate_limit_error` |
@@ -245,7 +245,7 @@ Der Fehler-Body folgt Googles Form. Er hat kein Feld für die ID der Anfrage. Le
 | 400 | `INVALID_ARGUMENT` |
 | 401 | `UNAUTHENTICATED` |
 | 403 | `PERMISSION_DENIED` |
-| 404 | `NOT_FOUND` |
+| 404, 410 | `NOT_FOUND` |
 | 405, 413, 415 | `INVALID_ARGUMENT` |
 | 429 | `RESOURCE_EXHAUSTED` |
 | 500, 502 | `INTERNAL` |
@@ -325,7 +325,7 @@ Der Fehler-Body folgt der dokumentierten Form von ElevenLabs, mit demselben Wert
 | 401 | `authentication_error` | `invalid_api_key` |
 | 402 | `payment_required` | `insufficient_credits` |
 | 403 | `authorization_error` | `permission_denied` |
-| 404 | `not_found` | `not_found` |
+| 404, 410 | `not_found` | `not_found` |
 | 413 | `invalid_request` | `request_too_large` |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
 | 503 | `service_unavailable` | `system_busy` |
@@ -361,7 +361,8 @@ Die Meldung nennt die Ursache und was zu tun ist. Diese Ursachen stehen hinter j
 | 404 | Das Modell steht nicht im Katalog des Projekts, der Schlüssel oder sein Mitglied darf es nicht verwenden, oder der Anbieter stellt es dem Anbieter-Schlüssel des Projekts nicht bereit. Ein Modell, das der Schlüssel nicht verwenden darf, antwortet wie eines, das es nicht gibt, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. |
 | 404 | Den Pfad gibt es nicht. |
 | 405 | Der Pfad nimmt diese Methode nicht an. |
-| 413 | Der Body ist größer als `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB, oder wird zu mehr entpackt. |
+| 410 | Der Anbieter hat das Modell abgeschaltet. Die Meldung nennt den Tag und den Nachfolger, den der Anbieter empfiehlt ([Modell-Lebenszyklus](../concepts/model-lifecycle.md#nach-der-abschaltung)). |
+| 413 | Der Body ist größer als das Limit seines Endpunkts oder wird zu mehr entpackt: `KAESO_BODY_LIMITS_MODEL_API`, standardmäßig 32 MiB, oder die Limits für Bilder, Audio und Entscheidungen ([Body-Limits](../self-hosting/configuration.md#anfrage--und-antwortkörper)). |
 | 415 | Das `Content-Encoding` des Bodys ist weder `gzip`, `x-gzip` noch `zstd`, oder es nennt mehr als eine Kodierung ([Anfragekörper](model-api.md#anfragekörper)). |
 | 429 | Ein Ratenlimit oder Budget ist erreicht, oder die Anfrage könnte mehr kosten, als davon übrig ist, und die Meldung nennt es. Bei einem aufgebrauchten Budget nennt sie, wann es zurückgesetzt wird. |
 | 429 | Von Ihrer Adresse kamen zu viele Anfragen mit unbekannten Schlüsseln. |
@@ -391,7 +392,7 @@ Andernfalls schreibt Kaeso den Fehler im Format Ihrer App und behält seine Bede
 | Lehnt den Anbieter-Schlüssel ab | 502, in jedem Format |
 | Erlaubt die Anfrage mit dem Schlüssel nicht, etwa für ein Modell, das sein Tarif ausschließt | 502, in jedem Format |
 | Lehnt die Anfrage wegen seines Ratenlimits ab | 429 |
-| Lehnt aus Abrechnungs- oder Kontingentgründen ab | 502, in jedem Format |
+| Lehnt aus Abrechnungs- oder Kontingentgründen ab, etwa mit Googles 402 für aufgebrauchtes Prepaid-Guthaben | 502, in jedem Format |
 | Ist überlastet | 529 im Anthropic-Format, 503 in den OpenAI-Formaten und im Gemini-Format |
 | Scheitert mit einem anderen Serverfehler | Seinen eigenen 5xx-Status. Eine Gemini-App erhält 500, bei einer Zeitüberschreitung 504 |
 
@@ -399,7 +400,7 @@ Ein abgelehnter Anbieter-Schlüssel ist ein Problem der Installation, nicht Ihre
 
 Stattdessen erhält Ihre App einen Anbieterfehler mit der Meldung „The provider refused this project's provider key. Ask an organization admin to check it under Providers.“, oder derselben mit „for billing or quota reasons“. Beim 403 des Anbieters, das mit einem funktionierenden Schlüssel kommt, der diese Anfrage nicht stellen darf, lautet die Meldung „The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.“ Ein Organisations-Admin prüft den Schlüssel unter **Anbieter**.
 
-Das Anfrageprotokoll behält die eigene Meldung des Anbieters, wobei alles, was wie ein Schlüssel, eine Projekt- oder Organisations-ID aussieht, durch `[redacted]` ersetzt ist. Kaeso sendet jede Anfrage einmal und wiederholt sie nie, weder an dieses noch an ein anderes Modell. Die SDKs wiederholen selbst, wo der Fehler es zulässt.
+Das Anfrageprotokoll behält die eigene Meldung des Anbieters, wobei alles, was wie ein Schlüssel, eine Projekt- oder Organisations-ID aussieht, durch `[redacted]` ersetzt ist. Kaeso sendet eine Anfrage nur dann erneut an ihr Modell, wenn das Projekt oder ein Schritt eines Alias Wiederholungen festlegt, und geht zum nächsten Schlüssel des Anbieters im Projekt über, wenn einer abgelehnt wird, kein Guthaben mehr hat oder ein Ratenlimit erreicht ([Fallbacks](../concepts/alias-routes.md#fallbacks), [Anbieter-Schlüssel](../console/provider-keys.md#schlüssel-eines-projekts-wählen)). Die SDKs wiederholen selbst, wo der Fehler es zulässt.
 
 ### Eigene Anbieter
 

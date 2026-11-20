@@ -195,12 +195,16 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | 命令 | 作用 |
 | --- | --- |
 | `kaeso setup-link` | 在实例还没有用户时打印设置链接。链接仅可使用一次，24 小时内有效，新链接会让旧链接失效 |
+| `kaeso user list` | 列出各个账户的地址、姓名、状态、是否为实例管理员、是否使用双重验证以及创建时间。`--instance-admins` 只列出实例管理员，`--search <text>` 只列出地址或姓名包含该文本的账户 |
 | `kaeso user sign-in-link <email>` | 为有效用户打印一次性登录链接，15 分钟内有效（[重新登录](sign-in.md#重新登录)） |
 | `kaeso user reset-2fa <email>` | 移除用户的双重验证和恢复码，结束其会话并发邮件通知。实例审计日志会记录此操作 |
 | `kaeso sso verify-domain <domain>` | 无需 TXT 记录即可将单点登录的邮箱域名标记为已验证，适用于公共 DNS 无法解析的域名。有多个组织列出该域名时，用 `--org <org>` 指定组织。组织的审计日志会记录此操作 |
 | `kaeso instance admin-sso <org\|none>` | 按 `org_…` 这样的 ID 选择其单点登录可管理实例的组织，或用 `none` 不选，适用于没有实例管理员能在控制台中更改它的情况（见[实例管理员](sign-in.md#实例管理员)）。该组织需要已连接单点登录。实例审计日志会记录此操作 |
 | `kaeso master-key generate` | 以 `id:base64` 格式打印一个新主密钥 |
 | `kaeso master-key rewrap` | 用第一个主密钥重新加密已保存的机密，并报告哪些密钥 ID 仍在使用（[轮换主密钥](backups.md#轮换主密钥)） |
+| `kaeso config check` | 不连接数据库，检查设置和主密钥：有错误时打印网关会因此停止的错误并以 1 退出，否则列出不对应任何设置的 `KAESO_` 变量（[故障排除](troubleshooting.md#网关不断重启)） |
+| `kaeso mail test <email>` | 用网关的邮件设置发送一封测试邮件，并打印 SMTP 服务器的回复（[发送测试邮件](email.md#发送测试邮件)） |
+| `kaeso kpmr sync` | 像定时同步一样立即从 KPMR 获取模型数据，每个网关都会采用。需要开启 `kpmr.sync`（[KPMR](../concepts/kpmr.md#网关如何获取目录)） |
 | `kaeso migrate` | 运行 PostgreSQL 迁移，请求日志开启时也运行 ClickHouse 迁移，然后退出 |
 | `kaeso serve` | 运行网关。这是镜像的默认命令 |
 
