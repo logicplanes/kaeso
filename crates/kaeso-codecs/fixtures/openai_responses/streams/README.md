@@ -2,6 +2,7 @@
 
 | file | what it covers | provenance |
 |---|---|---|
+| `error-at-start.sse` | `error-mid-stream.sse` cut after its `response.in_progress`, then the same `error` event (`sequence_number` 2) and the end of the stream: a stream that fails before any output, with no terminal `response.*` event | schema: ResponseErrorEvent (flat code/message/param) (openapi.yaml@e95c0fe615f4), constructed from `error-mid-stream.sse` |
 | `error-mid-stream.sse` | `error` event after some text deltas; no terminal response.* event | schema: ResponseErrorEvent (flat code/message/param) (openapi.yaml@e95c0fe615f4) |
 | `failed-stream.sse` | stream ending in `response.failed` | schema: ResponseFailedEvent (message from its example) (openapi.yaml@e95c0fe615f4) |
 | `function-call-added-arguments.sse` | `function-call-item-only.sse` with the whole `arguments` already in `response.output_item.added`. Decoded as one arguments delta, not two; replayed as it came | schema: ResponseOutputItemAddedEvent (`item` is an OutputItem; a FunctionToolCall's `arguments` is any string, so it may be complete when the item is added) (openapi.yaml@e95c0fe615f4), constructed from `function-call-stream.sse` |
