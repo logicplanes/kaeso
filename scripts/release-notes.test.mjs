@@ -572,10 +572,15 @@ test("without --since, collecting takes every commit no release tag contains and
   });
 });
 
-test("a merged pull request GitHub no longer serves goes to the notes from its squash commit, without labels or credit", () => {
-  const gh = (args) => {
+const hiddenGh =
+  ({ issue = false } = {}) =>
+  (args) => {
     const key = args.join(" ");
     if (key === "api repos/logicplanes/kaeso/pulls/8") throw new Error("Command failed: gh api repos/logicplanes/kaeso/pulls/8\ngh: Not Found (HTTP 404)");
+    if (key === "api repos/logicplanes/kaeso/issues/8") {
+      if (issue) return JSON.stringify({ number: 8, title: "Streams drop" });
+      throw new Error("gh: Not Found (HTTP 404)");
+    }
     if (key === "api repos/logicplanes/kaeso/pulls/9")
       return JSON.stringify({
         number: 9,
@@ -585,19 +590,27 @@ test("a merged pull request GitHub no longer serves goes to the notes from its s
         user: { login: "ada", type: "User" },
         merged_at: "2026-10-01T10:00:00Z",
       });
+    if (key === "api repos/logicplanes/kaeso/commits/eee/pulls") return JSON.stringify([{ number: 8, merged_at: "2026-10-01T10:00:00Z" }]);
     if (key.includes("/issues/9/events") || key.includes("/files") || key.includes("/commits ")) return "";
     if (key.startsWith("api graphql")) return JSON.stringify({ data: { repository: { pullRequest: { closingIssuesReferences: { nodes: [] } } } } });
     if (key === "api repos/logicplanes/kaeso/collaborators/ada/permission --jq .permission") return "write\n";
     if (key.startsWith("api -X GET search/")) return "1\n";
     throw new Error(`unexpected gh ${key}`);
   };
-  const git = fakeGit({
+
+const hiddenGit = ({ committer = "noreply@github.com", squashed = true } = {}) =>
+  fakeGit({
     "log -1 --format=%cI v1.0.0": "2026-09-01T12:00:00Z\n",
-    [`${LOG_FORMAT} v1.0.0..HEAD`]: log(["ddd", "Fix cached tokens billed twice (#8)", "Gemini counts them once."], ["eee", "Keep streams open (#9)"]),
-    "show --numstat --format= ddd": "12\t3\tcrates/a.rs\n-\t-\tlogo.png\n",
-    "log -1 --format=%cI ddd": "2026-09-15T08:00:00Z\n",
+    [`${LOG_FORMAT} v1.0.0..HEAD`]: log(
+      squashed ? ["ddd", "Fix cached tokens billed twice (#8)", "Gemini counts them once."] : ["eee", "Fix cached tokens billed twice"],
+      ["fff", "Keep streams open (#9)"],
+    ),
+    "show --numstat --no-renames -z --format= ddd": "12\t3\tcrates/a.rs\0-\t-\tlogo.png\0",
+    "log -1 --format=%ce%x1f%cI ddd": `${committer}\x1f2026-09-15T08:00:00Z\n`,
   });
-  const { pulls, contributors } = collect({ repository: "logicplanes/kaeso", since: "v1.0.0", git, gh });
+
+test("a merged pull request GitHub no longer serves goes to the notes from its squash commit, without labels or credit", () => {
+  const { pulls, contributors } = collect({ repository: "logicplanes/kaeso", since: "v1.0.0", git: hiddenGit(), gh: hiddenGh() });
   assert.deepEqual(pulls[0], {
     number: 8,
     title: "Fix cached tokens billed twice",
@@ -621,6 +634,22 @@ test("a merged pull request GitHub no longer serves goes to the notes from its s
     draft(changelog(), "1.1.0", pulls).join("\n"),
     /### Fixed\n\n- Fix cached tokens billed twice \(\[#8\]\(https:\/\/github\.com\/logicplanes\/kaeso\/pull\/8\)\)/,
   );
+});
+
+test("a missing pull request that GitHub didn't squash, that is an issue or that wasn't merged on GitHub stops collecting unless [Unreleased] links it", () => {
+  const unlisted = /GitHub doesn't serve #8, so its changelog line can't be checked; write its line under \[Unreleased\] in CHANGELOG\.md, linking #8\./;
+  for (const [git, gh] of [
+    [hiddenGit({ committer: "ada@example.com" }), hiddenGh()],
+    [hiddenGit(), hiddenGh({ issue: true })],
+    [hiddenGit({ squashed: false }), hiddenGh()],
+  ]) {
+    assert.throws(() => collect({ repository: "logicplanes/kaeso", since: "v1.0.0", git, gh }), unlisted);
+    const { pulls } = collect({ repository: "logicplanes/kaeso", since: "v1.0.0", curated: [8], git, gh });
+    assert.deepEqual(
+      pulls.map(({ number }) => number),
+      [9],
+    );
+  }
 });
 
 test("collecting stops when GitHub refuses a pull request for any reason but a missing one", () => {
