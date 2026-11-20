@@ -202,7 +202,7 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | `kaeso instance admin-sso <org\|none>` | Chooses the organization whose single sign-on may administer the instance, by an id such as `org_…`, or `none` for none, when no instance admin can change it in the console ([instance admins](sign-in.md#instance-admins)). The organization needs an SSO connection. The instance audit log records it |
 | `kaeso master-key generate` | Prints a new master key as `id:base64` |
 | `kaeso master-key rewrap` | Re-encrypts stored secrets with the first master key and reports which key ids are still in use ([rotate the master key](backups.md#rotate-the-master-key)) |
-| `kaeso config check` | Checks the settings and the master keys without a database, prints the error the gateway would stop with and exits with 1, or names the `KAESO_` variables that name no setting ([troubleshooting](troubleshooting.md#the-gateway-keeps-restarting)) |
+| `kaeso config check` | Checks the settings and the master keys without a database, prints the error the gateway would stop with and exits with 1, or names the `KAESO_` variables that name no setting and the warnings the gateway starts with ([troubleshooting](troubleshooting.md#the-gateway-keeps-restarting)) |
 | `kaeso mail test <email>` | Sends a test email with the gateway's mail settings and prints what the SMTP server answered ([send a test email](email.md#send-a-test-email)) |
 | `kaeso kpmr sync` | Fetches the model data from KPMR now, as the scheduled sync does, and every gateway takes it. Needs `kpmr.sync` on ([KPMR](../concepts/kpmr.md#how-the-gateway-fetches-it)) |
 | `kaeso migrate` | Runs the PostgreSQL migrations, and the ClickHouse ones while request logs are on, then exits |
