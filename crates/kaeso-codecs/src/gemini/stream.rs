@@ -233,13 +233,13 @@ impl Decoder {
                 return;
             }
         };
-        if value.get("error").is_some() {
-            let mut err = decode_error(0, &HeaderList::new(), ev.data.as_bytes());
-            err.status = value
-                .get("error")
-                .and_then(|e| e.get("code"))
+        if let Some(error) = value.get("error") {
+            let code = error
+                .get("code")
                 .and_then(Value::as_u64)
                 .and_then(|c| u16::try_from(c).ok());
+            let mut err = decode_error(code.unwrap_or(0), &HeaderList::new(), ev.data.as_bytes());
+            err.status = code;
             self.close(out);
             out.push(StreamEvent::Error(err));
             self.failed = true;

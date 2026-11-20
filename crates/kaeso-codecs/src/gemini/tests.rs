@@ -875,6 +875,13 @@ fn errors_name_their_kind_and_retry_delay() {
         invalid.param.as_deref(),
         Some("generation_config.thinking_config.thinking_level")
     );
+    let depleted = err("billing-prepay-depleted");
+    assert_eq!(depleted.kind, ErrorKind::Billing);
+    assert!(
+        depleted
+            .message
+            .starts_with("Your prepayment credits are depleted.")
+    );
     let limited = err("recorded-image-output");
     assert_eq!(limited.kind, ErrorKind::RateLimited);
     assert!(limited.retry_after.is_some());
@@ -980,6 +987,11 @@ fn stream_decoding_reports_errors_and_keeps_frames_it_cannot_read() {
         (e.kind.clone(), e.status),
         (ErrorKind::Overloaded, Some(503))
     );
+    let depleted = b"data: {\"error\": {\"code\": 402, \"message\": \"Your prepayment credits are depleted.\", \"status\": \"RESOURCE_EXHAUSTED\"}}\n\n";
+    let Some(StreamEvent::Error(e)) = decode_stream(depleted, 0).pop() else {
+        panic!()
+    };
+    assert_eq!((e.kind, e.status), (ErrorKind::Billing, Some(402)));
     let cut = b"data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Hi\"}], \"role\": \"model\"}}]}\n\n";
     let events = decode_stream(cut, 0);
     assert!(

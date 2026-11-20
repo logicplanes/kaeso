@@ -215,13 +215,13 @@ Google 的错误体 `{"error": {"code", "message", "status", "details"}}`（[问
 | `UNAUTHENTICATED` | `Authentication` | |
 | `PERMISSION_DENIED` | `PermissionDenied` | 当消息表明密钥无法访问请求所指的文件（例如已删除、已过期或属于其他项目的 `fileData.fileUri`，`errors/file-permission-denied-published.json`）时为 `InvalidRequest`：问题在于请求，而不是密钥。 |
 | `NOT_FOUND` | `NotFound` | |
-| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`（例如 `"23s"`）→ `retry_after`。 |
+| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`（例如 `"23s"`）→ `retry_after`。HTTP 状态为 402 时为 `Billing`：预付额度用完时 Google 会这样响应（`errors/billing-prepay-depleted.json`）。 |
 | `UNAVAILABLE` | `Overloaded` | |
 | `DEADLINE_EXCEEDED` | `Timeout` | |
 | `INTERNAL` 及其他代码 | `ProviderError` | |
 | 没有 `status` | 按 HTTP 状态码 | |
 
-`BadRequest.fieldViolations[0].field` → `param`。Gemini 错误按原样到达 Gemini 应用。其他方言的错误以其种类对应的代码和状态写出，429 或 503 带 `RetryInfo` 和 `retry-after`：`RateLimited` 和 `Billing` 为 429 `RESOURCE_EXHAUSTED`，`Overloaded` 为 503 `UNAVAILABLE`，`Authentication` 为 401 `UNAUTHENTICATED`。
+`BadRequest.fieldViolations[0].field` → `param`。Gemini 错误按原样到达 Gemini 应用。其他方言的错误以其种类对应的代码和状态写出，429 或 503 带 `RetryInfo` 和 `retry-after`：`RateLimited` 为 429、`Billing` 为 402，状态都是 `RESOURCE_EXHAUSTED`，与 Google 的写法一致，`Overloaded` 为 503 `UNAVAILABLE`，`Authentication` 为 401 `UNAUTHENTICATED`。
 
 ## 嵌入
 
