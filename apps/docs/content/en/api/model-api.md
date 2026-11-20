@@ -237,6 +237,8 @@ Kaeso reads a request body sent with `Content-Encoding: gzip`, `x-gzip` or `zstd
 
 A body takes one encoding. Any other, such as `br`, and two at once, such as `gzip, zstd`, get 415 in the app's format. A body that doesn't decode gets 400.
 
+A body over the limit gets 413 in the app's format once Kaeso has read it to its end, up to 1 GiB and within the body read deadline ([`server.body_read_deadline`](../self-hosting/configuration.md#listening)), so a proxy in front of Kaeso, such as Traefik, passes the 413 on instead of answering 502 itself.
+
 ## Streaming
 
 Ask for a stream as the format does, with `"stream": true`. The reply is a server-sent event stream in the app's format.
