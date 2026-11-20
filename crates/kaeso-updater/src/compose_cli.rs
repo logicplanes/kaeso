@@ -310,6 +310,15 @@ mod tests {
     mod with_a_fake_compose {
         use super::*;
         use std::os::unix::fs::PermissionsExt;
+        use std::sync::{Mutex, MutexGuard, PoisonError};
+
+        // A script another test thread still holds open for writing when this one forks fails
+        // to run with ETXTBSY, so the fakes take turns.
+        static TURN: Mutex<()> = Mutex::new(());
+
+        fn turn() -> MutexGuard<'static, ()> {
+            TURN.lock().unwrap_or_else(PoisonError::into_inner)
+        }
 
         struct Fake {
             dir: std::path::PathBuf,
@@ -362,6 +371,7 @@ mod tests {
 
         #[test]
         fn each_task_runs_compose_with_explicit_services() {
+            let _turn = turn();
             let fake = Fake::new("tasks", &config(""), 0);
             assert_eq!(fake.run(&["stop"]), DONE);
             assert_eq!(fake.run(&["pull"]), DONE);
@@ -380,6 +390,7 @@ mod tests {
 
         #[test]
         fn an_unpinned_image_is_refused_before_compose_touches_anything() {
+            let _turn = turn();
             let fake = Fake::new("unpinned", &config(r#","own":{"image":"example/own"}"#), 0);
             assert_eq!(fake.run(&["pull"]), REFUSED);
             assert_eq!(fake.run(&["up", "600"]), REFUSED);
@@ -388,6 +399,7 @@ mod tests {
 
         #[test]
         fn a_gateway_setting_the_release_refuses_stops_the_pull_but_never_a_rollback() {
+            let _turn = turn();
             let image = format!("ghcr.io/logicplanes/kaeso-gateway:40.2.1@sha256:{D}");
             let refusing = format!(
                 r#"{{"services":{{"gateway":{{"image":"{image}","environment":{{"KAESO_KPMR_INTERVAL":"1m","KAESO_SMTP_USER":""}}}}}}}}"#
@@ -412,6 +424,7 @@ mod tests {
 
         #[test]
         fn a_failing_compose_and_wrong_arguments_fail() {
+            let _turn = turn();
             let fake = Fake::new("failing", &config(""), 1);
             assert_eq!(fake.run(&["stop"]), FAILED);
             for wrong in [
