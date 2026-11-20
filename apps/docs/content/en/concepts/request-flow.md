@@ -50,7 +50,7 @@ KPP counts what the body holds before it decodes anything. A request gets 400 wh
 
 Kaeso then estimates the memory the request takes while it's translated. The estimate comes from its body as received and from its messages, blocks and tools. Once the request is decoded, Kaeso counts only what decoding kept.
 
-While the translations in progress already use `KAESO_BODY_LIMITS_IN_FLIGHT`, 512 MiB by default, or the key already holds a quarter of it, the request waits. After 10 seconds it gets 503 with `Retry-After: 10`, or 529 in the Anthropic format.
+While the translations in progress already use `KAESO_BODY_LIMITS_IN_FLIGHT`, 512 MiB by default, or the key already holds a quarter of it, the request waits. After 10 seconds it gets 503 with `Retry-After: 10`, or 529 in the Anthropic format. A body sent with `gzip` or `zstd` is decompressed only while it holds memory for what it may decompress to, because a few kilobytes can decompress to the whole body limit, and it is never kept decompressed while its request waits; all of its waits together take at most those 10 seconds.
 
 KPP then decodes the request from the app's format, such as Chat Completions or Messages, into its canonical format. Kaeso refuses a request it can't read here. It also refuses one that asks for something Kaeso never sends to a provider, such as more than one choice or stored Responses state.
 
