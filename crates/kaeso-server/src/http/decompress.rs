@@ -7,7 +7,7 @@ use ruzstd::decoding::{BlockDecodingStrategy, FrameDecoder};
 
 // RFC 9659 §3: zstd content coding must not need a window above 8 MiB, and a decoder may refuse
 // one; ruzstd reserves the declared window up front, so a larger one would be a cheap allocation.
-const ZSTD_WINDOW: u64 = 8 << 20;
+pub const ZSTD_WINDOW: u64 = 8 << 20;
 const CHUNK: usize = 64 << 10;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
