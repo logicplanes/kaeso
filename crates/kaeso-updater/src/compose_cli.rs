@@ -402,7 +402,7 @@ mod tests {
             let _turn = turn();
             let image = format!("ghcr.io/logicplanes/kaeso-gateway:40.2.1@sha256:{D}");
             let refusing = format!(
-                r#"{{"services":{{"gateway":{{"image":"{image}","environment":{{"KAESO_KPMR_INTERVAL":"1m","KAESO_SMTP_USER":""}}}}}}}}"#
+                r#"{{"services":{{"caddy":{{"image":"ghcr.io/logicplanes/kaeso-console@sha256:{D}"}},"gateway":{{"image":"{image}","environment":{{"KAESO_KPMR_INTERVAL":"1m","KAESO_SMTP_USER":""}}}}}}}}"#
             );
             let fake = Fake::new("refusing", &refusing, 0);
             assert_eq!(fake.run(&["pull"]), REFUSED);
@@ -415,8 +415,11 @@ mod tests {
             assert_eq!(fake.run(&["replace", "60"]), DONE);
             assert_eq!(
                 fake.calls(),
-                ["up --detach --wait --wait-timeout 600 gateway"],
-                "replace finds no Kaeso image the update left, and checks no setting"
+                [
+                    "up --detach --wait --wait-timeout 600 caddy gateway",
+                    "up --detach --no-deps --wait --wait-timeout 60 caddy",
+                ],
+                "neither up nor replace checks a setting"
             );
             let fine = Fake::new("fine", &refusing.replace("\"1m\"", "\"5m\""), 0);
             assert_eq!(fine.run(&["pull"]), DONE);

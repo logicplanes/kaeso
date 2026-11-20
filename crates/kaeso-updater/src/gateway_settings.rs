@@ -57,9 +57,7 @@ fn mounted(config: &Value, gateway: &Value, path: &str) -> Result<Mounted, Strin
                 Ok(Mounted::File(PathBuf::from(source)))
             }
             ("bind", Some(source)) => Ok(Mounted::File(Path::new(source).join(rest))),
-            _ => Err(format!(
-                "it is in a {kind} mount, not in the install's folder"
-            )),
+            _ => Err(format!("it is in a {kind} mount")),
         };
         offer(at, mount);
     }
