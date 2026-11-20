@@ -14,12 +14,12 @@ sequenceDiagram
   participant Gateway
   participant Provider
   App->>Gateway: Request
-  Note over Gateway: Check the key<br>401 or 403
-  Note over Gateway: Read the request<br>400, 413, 503 or 529
-  Note over Gateway: Resolve the model<br>400 or 404
+  Note over Gateway: Check the key<br>401, 403 or 429
+  Note over Gateway: Read the request<br>400, 413, 415, 503 or 529
+  Note over Gateway: Resolve the model<br>400, 404 or 410
   Note over Gateway: Ask the guardrails<br>400, 429 or 503
   Note over Gateway: Check the limits<br>403, 429 or 503
-  Note over Gateway: Pick the provider key<br>400
+  Note over Gateway: Pick the provider key<br>502
   Gateway->>Provider: Translated request
   Note over Gateway,Provider: Timeout 504<br>Unreachable 502
   Provider-->>Gateway: Reply
@@ -34,11 +34,11 @@ Kaeso translates every request rather than passing it through, and sends it once
 
 The gateway reads the API key from `x-api-key`, `x-goog-api-key` or `xi-api-key`, or else from `Authorization: Bearer`. The key decides the project, and acts there with the rights of its member or service account.
 
-The key needs inference access, and its owner needs the right `api.request`. An organization's platform keys never call models.
+The key needs inference access, and its owner needs the right `api.request`. An organization's platform keys never call models. After too many requests with unknown keys from one address, that address gets 429 for a while.
 
 ## The request
 
-A request body may be up to `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default. Kaeso answers a larger one with 413. A body sent compressed with `gzip` or `zstd` counts at its decoded size ([request bodies](../api/model-api.md#request-bodies)).
+A request body may be up to `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default. Kaeso answers a larger one with 413. A body sent compressed with `gzip` or `zstd` counts at its decoded size, and any other `Content-Encoding` gets 415 ([request bodies](../api/model-api.md#request-bodies)).
 
 KPP counts what the body holds before it decodes anything. A request gets 400 when it holds any of these:
 
@@ -58,7 +58,7 @@ KPP then decodes the request from the app's format, such as Chat Completions or 
 
 Kaeso looks the model name up in the project's catalogue: first as an alias, then as `provider/model`, then as the model's own id. A name that isn't there gets 404. An id that several providers serve in the project gets 400, so name it as `provider/model`. An alias's route chooses the model, and when that model fails, the checks from here on run again for its fallback ([alias routes](alias-routes.md)).
 
-If the member or the key may not use the model, the request also gets 404. The message is the same as for an unknown name, so a key can't learn which other models the project has.
+If the member or the key may not use the model, the request also gets 404. The message is the same as for an unknown name, so a key can't learn which other models the project has. A model its provider has retired gets 410, with the day of its shutdown and the replacement; in an alias, the route falls back to its next step ([model lifecycle](model-lifecycle.md#after-the-shutdown)).
 
 The catalogue entry says what the model can do. Kaeso answers 400 when a request needs something the model lacks:
 
@@ -93,15 +93,17 @@ Apps in the OpenAI formats get these 503 answers as 500, which their SDKs retry.
 
 ## The provider key
 
-Kaeso uses the provider keys assigned to the project for the model's provider, or else the organization's default for that provider. Without either, the request gets 400. With several assigned keys, each caller keeps one key, drawn by the keys' weights. A key that is refused, out of credit or rate limited gives way to the next ([choose which key a project uses](../console/provider-keys.md#choose-which-key-a-project-uses)). Kaeso decrypts the key with the master key and keeps it in memory, reading it again at least every 30 seconds. Until 15 minutes after the project's last request, it reads it again in the background before the 30 seconds are up, so requests don't wait for it.
+Kaeso uses the provider keys assigned to the project for the model's provider, or else the organization's default for that provider. Without either, the request gets 502, like a refused provider key, and the message asks for an organization admin. With several assigned keys, each caller keeps one key, drawn by the keys' weights. A key that is refused, out of credit or rate limited gives way to the next ([choose which key a project uses](../console/provider-keys.md#choose-which-key-a-project-uses)). Kaeso decrypts the key with the master key and keeps it in memory, reading it again at least every 30 seconds. Until 15 minutes after the project's last request, it reads it again in the background before the 30 seconds are up, so requests don't wait for it.
 
 ## Sending to the provider
 
 KPP checks the request against the provider's format and encodes it. Kaeso refuses what that format can't express before anything reaches the provider ([format translation](format-translation.md)). For a Chat Completions or Gemini app served through another format, Kaeso first puts back the reasoning kept from earlier turns ([reasoning between turns](format-translation.md#reasoning-between-turns)).
 
+In a project with the [response cache](../console/response-cache.md) on, a stored reply to the same request answers it without the provider. A request with `Cache-Control: only-if-cached` and no stored reply gets 504 ([control a single request](../console/response-cache.md#control-a-single-request)).
+
 Kaeso calls each provider in its own API format, such as Messages for Anthropic and Chat Completions for Groq. [Supported providers](supported-providers.md) lists the formats of every provider.
 
-Four timeouts limit the call: connecting, a whole request, the first byte of a stream, and the silence between two chunks. A model's own timeout in the catalogue replaces the request and first-byte timeouts. A timeout gets 504, and a provider that can't be reached gets 502. [Configuration](../self-hosting/configuration.md) lists the settings and their defaults.
+Four timeouts limit the call: connecting, a whole request, the first byte of a stream, and the silence between two chunks. A model's own timeout in the catalogue replaces the request and first-byte timeouts, and the app's `kaeso-timeout` header can shorten them, never lengthen them ([timeouts](../api/model-api.md#timeouts)). A timeout gets 504, and a provider that can't be reached gets 502. [Configuration](../self-hosting/configuration.md) lists the settings and their defaults.
 
 ## The reply
 

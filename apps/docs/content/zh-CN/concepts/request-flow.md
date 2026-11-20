@@ -14,12 +14,12 @@ sequenceDiagram
   participant Gateway as 网关
   participant Provider as 服务商
   App->>Gateway: 请求
-  Note over Gateway: 检查密钥<br>401 或 403
-  Note over Gateway: 读取请求<br>400、413、503 或 529
-  Note over Gateway: 解析模型<br>400 或 404
+  Note over Gateway: 检查密钥<br>401、403 或 429
+  Note over Gateway: 读取请求<br>400、413、415、503 或 529
+  Note over Gateway: 解析模型<br>400、404 或 410
   Note over Gateway: 询问防护规则<br>400、429 或 503
   Note over Gateway: 检查限额<br>403、429 或 503
-  Note over Gateway: 选择服务商密钥<br>400
+  Note over Gateway: 选择服务商密钥<br>502
   Gateway->>Provider: 转换后的请求
   Note over Gateway,Provider: 超时 504<br>无法连接 502
   Provider-->>Gateway: 回复
@@ -34,11 +34,11 @@ Kaeso 会转换每个请求，而不是原样透传，并且每个请求只发�
 
 网关从 `x-api-key`、`x-goog-api-key` 或 `xi-api-key` 读取 API 密钥，没有时从 `Authorization: Bearer` 读取。密钥决定所属项目，并以其成员或服务账号在该项目中的权限行事。
 
-密钥需要模型调用权限，其所有者需要 `api.request` 权限。组织的平台密钥从不调用模型。
+密钥需要模型调用权限，其所有者需要 `api.request` 权限。组织的平台密钥从不调用模型。同一地址使用未知密钥的请求过多时，该地址会在一段时间内得到 429。
 
 ## 请求
 
-请求正文最大为 `KAESO_BODY_LIMITS_MODEL_API`，默认 32 MiB。更大的请求会得到 413。以 `gzip` 或 `zstd` 压缩发送的正文按解压后的大小计算（[请求体](../api/model-api.md#请求体)）。
+请求正文最大为 `KAESO_BODY_LIMITS_MODEL_API`，默认 32 MiB。更大的请求会得到 413。以 `gzip` 或 `zstd` 压缩发送的正文按解压后的大小计算，其他 `Content-Encoding` 会得到 415（[请求体](../api/model-api.md#请求体)）。
 
 KPP 在解码之前先统计请求正文的内容。请求包含以下任一情况时会得到 400：
 
@@ -58,7 +58,7 @@ KPP 在解码之前先统计请求正文的内容。请求包含以下任一情�
 
 Kaeso 在项目目录中查找模型名称：先作为别名，再作为 `provider/model`，最后作为模型自身的 ID。不在目录中的名称会得到 404。项目中有多个服务商提供的 ID 会得到 400，这时请写成 `provider/model`。别名的路由决定使用哪个模型；该模型失败时，从这里开始的检查会针对其回退步骤重新进行（[别名路由](alias-routes.md)）。
 
-如果成员或密钥无权使用该模型，请求同样会得到 404。消息与未知名称相同，因此密钥无法得知项目中还有哪些模型。
+如果成员或密钥无权使用该模型，请求同样会得到 404。消息与未知名称相同，因此密钥无法得知项目中还有哪些模型。服务商已停用的模型会得到 410，并写明停用日期和替代模型；在别名中，路由会回退到下一个步骤（[模型生命周期](model-lifecycle.md#停用之后)）。
 
 目录条目说明模型具备哪些能力。请求需要模型不具备的能力时，Kaeso 会返回 400：
 
@@ -93,15 +93,17 @@ Kaeso 在一步之内检查所有适用的限额：密钥、其成员和项目�
 
 ## 服务商密钥
 
-Kaeso 使用项目为该模型的服务商指定的服务商密钥，没有时使用组织为该服务商设置的默认密钥。两者都没有时，请求会得到 400。指定了多个密钥时，每个调用方按密钥的权重抽取一个密钥并一直使用它。某个密钥被拒绝、额度用尽或达到速率限制时，请求会改用下一个密钥（[选择项目使用的密钥](../console/provider-keys.md#选择项目使用的密钥)）。Kaeso 用主密钥解密该密钥并保留在内存中，至少每 30 秒重新读取一次。在项目最后一个请求之后的 15 分钟内，Kaeso 会在 30 秒到期之前于后台重新读取，因此请求不必等待。
+Kaeso 使用项目为该模型的服务商指定的服务商密钥，没有时使用组织为该服务商设置的默认密钥。两者都没有时，请求会得到 502，与服务商密钥被拒绝时相同，消息会请您联系组织管理员。指定了多个密钥时，每个调用方按密钥的权重抽取一个密钥并一直使用它。某个密钥被拒绝、额度用尽或达到速率限制时，请求会改用下一个密钥（[选择项目使用的密钥](../console/provider-keys.md#选择项目使用的密钥)）。Kaeso 用主密钥解密该密钥并保留在内存中，至少每 30 秒重新读取一次。在项目最后一个请求之后的 15 分钟内，Kaeso 会在 30 秒到期之前于后台重新读取，因此请求不必等待。
 
 ## 发送给服务商
 
 KPP 按服务商的格式检查请求并编码。该格式无法表达的内容，Kaeso 会在任何内容到达服务商之前拒绝（[格式转换](format-translation.md)）。对于通过其他格式提供服务的 Chat Completions 应用或 Gemini 应用，Kaeso 会先放回之前轮次中保存的推理内容（[轮次之间的推理](format-translation.md#轮次之间的推理)）。
 
+在开启了[响应缓存](../console/response-cache.md)的项目中，对相同请求已存储的回复会直接作答，无需服务商。带有 `Cache-Control: only-if-cached` 且没有已存储回复的请求会得到 504（[控制单个请求](../console/response-cache.md#控制单个请求)）。
+
 Kaeso 以每个服务商自己的 API 格式调用它，例如 Anthropic 用 Messages，Groq 用 Chat Completions。各服务商的格式见[支持的服务商](supported-providers.md)。
 
-四个超时限制这次调用：建立连接、整个请求、流的首字节，以及两个数据块之间的静默时间。目录中模型自身的超时会取代请求超时和首字节超时。超时会得到 504，无法连接服务商则得到 502。[配置](../self-hosting/configuration.md)列出了这些设置及其默认值。
+四个超时限制这次调用：建立连接、整个请求、流的首字节，以及两个数据块之间的静默时间。目录中模型自身的超时会取代请求超时和首字节超时，应用的 `kaeso-timeout` 请求头可以缩短它们，但不能延长（[超时](../api/model-api.md#超时)）。超时会得到 504，无法连接服务商则得到 502。[配置](../self-hosting/configuration.md)列出了这些设置及其默认值。
 
 ## 回复
 

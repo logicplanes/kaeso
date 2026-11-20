@@ -14,12 +14,12 @@ sequenceDiagram
   participant Gateway
   participant Provider as Anbieter
   App->>Gateway: Anfrage
-  Note over Gateway: Schlüssel prüfen<br>401 oder 403
-  Note over Gateway: Anfrage lesen<br>400, 413, 503 oder 529
-  Note over Gateway: Modell auflösen<br>400 oder 404
+  Note over Gateway: Schlüssel prüfen<br>401, 403 oder 429
+  Note over Gateway: Anfrage lesen<br>400, 413, 415, 503 oder 529
+  Note over Gateway: Modell auflösen<br>400, 404 oder 410
   Note over Gateway: Guardrails fragen<br>400, 429 oder 503
   Note over Gateway: Limits prüfen<br>403, 429 oder 503
-  Note over Gateway: Anbieter-Schlüssel wählen<br>400
+  Note over Gateway: Anbieter-Schlüssel wählen<br>502
   Gateway->>Provider: Übersetzte Anfrage
   Note over Gateway,Provider: Zeitüberschreitung 504<br>Nicht erreichbar 502
   Provider-->>Gateway: Antwort
@@ -34,11 +34,11 @@ Kaeso übersetzt jede Anfrage, statt sie durchzureichen, und sendet sie einmal, 
 
 Das Gateway liest den API-Schlüssel aus `x-api-key`, `x-goog-api-key` oder `xi-api-key`, sonst aus `Authorization: Bearer`. Der Schlüssel bestimmt das Projekt und handelt dort mit den Rechten seines Mitglieds oder Dienstkontos.
 
-Der Schlüssel braucht Inferenzzugriff, und sein Inhaber braucht das Recht `api.request`. Plattform-Schlüssel einer Organisation rufen nie Modelle auf.
+Der Schlüssel braucht Inferenzzugriff, und sein Inhaber braucht das Recht `api.request`. Plattform-Schlüssel einer Organisation rufen nie Modelle auf. Nach zu vielen Anfragen mit unbekannten Schlüsseln von einer Adresse erhält diese Adresse eine Zeit lang 429.
 
 ## Die Anfrage
 
-Der Body einer Anfrage darf bis zu `KAESO_BODY_LIMITS_MODEL_API` groß sein, standardmäßig 32 MiB. Auf einen größeren antwortet Kaeso mit 413. Ein mit `gzip` oder `zstd` komprimierter Body zählt mit seiner entpackten Größe ([Anfragekörper](../api/model-api.md#anfragekörper)).
+Der Body einer Anfrage darf bis zu `KAESO_BODY_LIMITS_MODEL_API` groß sein, standardmäßig 32 MiB. Auf einen größeren antwortet Kaeso mit 413. Ein mit `gzip` oder `zstd` komprimierter Body zählt mit seiner entpackten Größe, und jedes andere `Content-Encoding` erhält 415 ([Anfragekörper](../api/model-api.md#anfragekörper)).
 
 KPP zählt, was der Body enthält, bevor es etwas decodiert. Eine Anfrage erhält 400, wenn sie eines davon enthält:
 
@@ -58,7 +58,7 @@ Dann decodiert KPP die Anfrage aus dem Format der App, etwa Chat Completions ode
 
 Kaeso sucht den Modellnamen im Katalog des Projekts: zuerst als Alias, dann als `provider/model`, dann als eigene ID des Modells. Ein Name, der dort nicht steht, erhält 404. Eine ID, die mehrere Anbieter im Projekt bedienen, erhält 400; nennen Sie sie dann als `provider/model`. Die Route eines Alias wählt das Modell, und scheitert es, laufen die Prüfungen ab hier für seinen Fallback erneut ([Alias-Routen](alias-routes.md)).
 
-Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage ebenfalls 404. Die Meldung ist dieselbe wie bei einem unbekannten Namen, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat.
+Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage ebenfalls 404. Die Meldung ist dieselbe wie bei einem unbekannten Namen, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. Ein Modell, das sein Anbieter abgeschaltet hat, erhält 410 mit dem Tag der Abschaltung und dem Nachfolger; in einem Alias weicht die Route auf ihren nächsten Schritt aus ([Modell-Lebenszyklus](model-lifecycle.md#nach-der-abschaltung)).
 
 Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine Anfrage etwas braucht, das dem Modell fehlt:
 
@@ -93,15 +93,17 @@ Apps in den OpenAI-Formaten erhalten diese 503-Antworten als 500, die ihre SDKs 
 
 ## Der Anbieter-Schlüssel
 
-Kaeso nutzt die Anbieter-Schlüssel, die dem Projekt für den Anbieter des Modells zugewiesen sind, sonst den Standard der Organisation für diesen Anbieter. Fehlen beide, erhält die Anfrage 400. Sind mehrere Schlüssel zugewiesen, behält jeder Aufrufer einen Schlüssel, gezogen nach den Gewichten der Schlüssel. Ein Schlüssel, der abgelehnt wird, kein Guthaben mehr hat oder sein Ratenlimit erreicht, überlässt die Anfrage dem nächsten ([Schlüssel eines Projekts wählen](../console/provider-keys.md#schlüssel-eines-projekts-wählen)). Kaeso entschlüsselt den Schlüssel mit dem Hauptschlüssel und hält ihn im Speicher, wobei es ihn mindestens alle 30 Sekunden neu liest. Bis 15 Minuten nach der letzten Anfrage des Projekts liest es ihn vor Ablauf der 30 Sekunden im Hintergrund neu, sodass Anfragen nicht darauf warten.
+Kaeso nutzt die Anbieter-Schlüssel, die dem Projekt für den Anbieter des Modells zugewiesen sind, sonst den Standard der Organisation für diesen Anbieter. Fehlen beide, erhält die Anfrage 502 wie bei einem abgelehnten Anbieter-Schlüssel, und die Meldung bittet um einen Organisations-Admin. Sind mehrere Schlüssel zugewiesen, behält jeder Aufrufer einen Schlüssel, gezogen nach den Gewichten der Schlüssel. Ein Schlüssel, der abgelehnt wird, kein Guthaben mehr hat oder sein Ratenlimit erreicht, überlässt die Anfrage dem nächsten ([Schlüssel eines Projekts wählen](../console/provider-keys.md#schlüssel-eines-projekts-wählen)). Kaeso entschlüsselt den Schlüssel mit dem Hauptschlüssel und hält ihn im Speicher, wobei es ihn mindestens alle 30 Sekunden neu liest. Bis 15 Minuten nach der letzten Anfrage des Projekts liest es ihn vor Ablauf der 30 Sekunden im Hintergrund neu, sodass Anfragen nicht darauf warten.
 
 ## Senden an den Anbieter
 
 KPP prüft die Anfrage am Format des Anbieters und codiert sie. Was dieses Format nicht ausdrücken kann, lehnt Kaeso ab, bevor etwas den Anbieter erreicht ([Formatübersetzung](format-translation.md)). Für eine Chat-Completions- oder Gemini-App, die über ein anderes Format bedient wird, fügt Kaeso zuerst das Reasoning aus früheren Zügen wieder ein ([Reasoning zwischen Zügen](format-translation.md#reasoning-zwischen-zügen)).
 
+In einem Projekt mit eingeschaltetem [Antwort-Cache](../console/response-cache.md) beantwortet Kaeso eine Anfrage, für die eine Antwort gespeichert ist, ohne den Anbieter. Eine Anfrage mit `Cache-Control: only-if-cached` ohne gespeicherte Antwort erhält 504 ([Einzelne Anfrage steuern](../console/response-cache.md#einzelne-anfrage-steuern)).
+
 Kaeso ruft jeden Anbieter in seinem eigenen API-Format auf, etwa Anthropic mit Messages und Groq mit Chat Completions. [Unterstützte Anbieter](supported-providers.md) listet die Formate jedes Anbieters.
 
-Vier Zeitlimits begrenzen den Aufruf: den Verbindungsaufbau, eine ganze Anfrage, das erste Byte eines Streams und die Stille zwischen zwei Chunks. Ein eigenes Zeitlimit des Modells im Katalog ersetzt die Zeitlimits für Anfrage und erstes Byte. Eine Zeitüberschreitung erhält 504, ein nicht erreichbarer Anbieter 502. Die [Konfiguration](../self-hosting/configuration.md) listet die Einstellungen und ihre Standardwerte.
+Vier Zeitlimits begrenzen den Aufruf: den Verbindungsaufbau, eine ganze Anfrage, das erste Byte eines Streams und die Stille zwischen zwei Chunks. Ein eigenes Zeitlimit des Modells im Katalog ersetzt die Zeitlimits für Anfrage und erstes Byte, und der Header `kaeso-timeout` der App kann sie verkürzen, nie verlängern ([Zeitlimits](../api/model-api.md#zeitlimits)). Eine Zeitüberschreitung erhält 504, ein nicht erreichbarer Anbieter 502. Die [Konfiguration](../self-hosting/configuration.md) listet die Einstellungen und ihre Standardwerte.
 
 ## Die Antwort
 
