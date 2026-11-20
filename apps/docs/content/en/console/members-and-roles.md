@@ -41,6 +41,7 @@ Choose a member on **Members** to open their sheet:
 - **Role** shows their role. **Customize** adds or removes single rights. A right that another of their rights needs is added and removed with it.
 - **Access** lists every right they hold, and the role or right it comes from.
 - Their projects list their role in each.
+- Under **Usage**, **Share** makes a read-only link to their last 30 days of usage ([share usage](share-usage.md)).
 - **Transfer ownership**, for owners, makes the member an owner and you an admin.
 - **Remove from organization** takes them out of every project and archives their keys in the organization. On your own sheet, this is **Leave organization**.
 

@@ -25,7 +25,7 @@ flowchart TD
   gateway --> mail
 ```
 
-Der Entwicklungsserver der Konsole leitet `/platform` und `/v1` an das Gateway weiter, sodass der Browser nur eine Adresse sieht. Das Sitzungscookie ist damit ein First-Party-Cookie, wie in Produktion hinter einem Reverse Proxy.
+Der Entwicklungsserver der Konsole leitet `/platform`, `/v1`, `/mcp`, `/oauth` und die OAuth-Discovery-Adressen unter `/.well-known` an das Gateway weiter, sodass der Browser nur eine Adresse sieht. Das Sitzungscookie ist damit ein First-Party-Cookie, wie in Produktion hinter einem Reverse Proxy.
 
 ## Dienste ansehen
 

@@ -64,7 +64,7 @@ console.log(tools.map((tool) => tool.name));
 
 ## 版本和方法
 
-门户通过 Streamable HTTP 使用 MCP 版本 `2025-03-26`、`2025-06-18`、`2025-11-25` 和 `2026-07-28`。版本 `2026-07-28` 是无状态的：每个请求都要发送 `MCP-Protocol-Version`，`server/discover` 会列出门户支持的版本。较早的版本以 `initialize` 开始，没有该请求头的请求按 `2025-03-26` 处理。
+门户通过 Streamable HTTP 使用 MCP 版本 `2025-03-26`、`2025-06-18`、`2025-11-25` 和 `2026-07-28`。版本 `2026-07-28` 是无状态的：每个请求都要发送 `MCP-Protocol-Version`、`Mcp-Method`，`tools/call` 和 `resources/read` 还要发送 `Mcp-Name`，并在 `_meta` 中写明版本，与 [MCP 服务器](mcp.md#协议)相同。`server/discover` 会列出门户支持的版本。较早的版本以 `initialize` 开始，没有该请求头的请求按 `2025-03-26` 处理。
 
 | 方法 | 作用 |
 | --- | --- |
@@ -75,7 +75,7 @@ console.log(tools.map((tool) => tool.name));
 | `resources/list`、`resources/read` | 您可以调用的工具的 [MCP Apps 视图](#mcp-apps-视图)，以及某个视图的 HTML |
 | `resources/templates/list` | 始终为空 |
 
-通知会收到 202，没有正文。其他方法会收到 `-32601`。
+通知会收到 202，没有正文。其他方法会收到 `-32601`，在版本 `2026-07-28` 中状态码为 HTTP 404。缺少请求头或请求头与请求不符时，会收到 HTTP 400 和 `-32020`；门户不支持的版本会收到 `-32022`。
 
 ## MCP Apps 视图
 

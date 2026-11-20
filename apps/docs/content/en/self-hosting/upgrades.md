@@ -52,13 +52,27 @@ The gateway migrates the databases when it starts. Migrations only move forward 
 
 When the updater can't install a release, the console shows the installer's command with the exact version.
 
+## Upgrading to 0.7.0
+
+0.7.0 refuses three settings that 0.6.0 took without a word. A gateway with one of them stops at startup and names the setting. The updater can't roll back once the new gateway has started on a release that migrates the databases, so such an update ends with **Needs attention**. Before you update, check these settings in `.env`, `compose.override.yaml`, the file `KAESO_CONFIG` names, or your platform's variables:
+
+| Setting | 0.6.0 | 0.7.0 |
+| --- | --- | --- |
+| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Took any duration above zero, and synced at most every 5 minutes | `auto`, or at least `5m` |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Raised a shorter interval to a minute | At least `1m` |
+| `KAESO_SMTP_USER` (`smtp.user`) | Sent mail without authentication when no password was set | Needs `KAESO_SMTP_PASSWORD`, which the error names; for a server without authentication, remove the user |
+
+In 0.7.0, an empty `KAESO_CONFIG` counts as unset, like every other variable, where 0.6.0 stopped. If an update stopped on one of these settings, correct it and run `docker compose up -d --wait`, or deploy again on your platform ([the gateway keeps restarting](troubleshooting.md#the-gateway-keeps-restarting)).
+
+On a platform that starts the new gateway before it stops the old one, such as Render, Railway or DigitalOcean App Platform, the old gateway can't add its last requests to the daily usage totals once the new one has migrated the database. **Analytics** and spend budgets then miss those requests; the request log keeps them.
+
 ## New releases
 
 The gateway looks for new releases at `update.kaeso.app` every 5 minutes, and 15 minutes later after a failure. When the feed asks it to wait longer, it waits an hour at most. The request carries nothing about your install but the gateway's version, and an unchanged list costs only a short `304` answer.
 
 Instance admins see the result under **Instance** › **Updates**. The page shows the running version, the newest release with the notes of every release since, and when the gateway last looked.
 
-The Platform API's `instance/updates/check` looks at once, even when checks are off or the feed asked the gateway to wait. It asks the feed at most once a minute. A **New** mark beside **Updates** is the only reminder; Kaeso sends no emails or banners about releases.
+The Platform API's `instance/updates/check` looks at once, even when checks are off or the feed asked the gateway to wait. It asks the feed at most once a minute. A **New** mark beside **Updates** shows a new release, and instance admins get an email about it unless they turned it off ([choose your emails](../console/account.md#choose-your-emails)). Kaeso shows no banners about releases.
 
 | Setting | Default | What it does |
 | --- | --- | --- |

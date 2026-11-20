@@ -12,11 +12,11 @@ order: 6
 2. Find a tool by searching its name or description, or filter by **Server**, **State** and **Hint**. Hints such as **Read-only** and **Destructive** are what the server claims, not guarantees.
 3. Turn a tool on with its switch, or every tool of a server with **Turn all on** at the server's header; **Turn all off** turns them off again. A tool's state changes to **On**, and the portal offers it at once.
 
-A tool that shows **Changed** waits for an admin to review its new definition under [Organization MCP servers](mcp-servers.md#review-a-changed-tool), and can't be turned on until then. Choose a tool to see its details, its input schema, its calls in the last 7 days and **See its calls**, which opens [request logs](request-logs.md) filtered to it.
+A tool that shows **Changed** waits for an admin to review its new definition under [Organization MCP servers](mcp-servers.md#review-a-changed-tool), and can't be turned on until then. Choose a tool to see its details, its input schema, its calls in the last 7 days, **Who can use it** and **See its calls**, which opens [request logs](request-logs.md) filtered to it.
 
 ## Use a server
 
-The **Servers** tab lists the servers the project uses, with their connection, the share of tools on and their calls in the last 7 days.
+The **Servers** tab lists the servers the project uses, with their connection, the share of tools on and their calls in the last 7 days. **Sort** orders them by **Name**, **Tools on**, **Calls in 7 days** or **Last used**.
 
 - **Use a server** adds one of the organization's servers. Its tools start off. You also need `mcp_servers.view`.
 - **Stop using** takes the server's tools out of the portal. Using it again starts with every tool off.

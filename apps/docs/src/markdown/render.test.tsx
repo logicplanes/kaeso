@@ -277,6 +277,32 @@ describe("Markdown", () => {
     expect(screen.queryByRole("list", { name: "Table: Level, Requests" })).toBeNull();
   });
 
+  it("puts a column's values below their label on phones when the label is long, so short values beside it keep room", () => {
+    const text = (v: string): Inline[] => [{ t: "text", v }];
+    const code = (v: string): Inline[] => [{ t: "code", v }];
+    draw([
+      {
+        t: "table",
+        align: ["start", "start", "start"],
+        head: [text("Signal"), code("ErrorKind"), text("Encoded for KPP errors from elsewhere")],
+        rows: [
+          [text("403"), code("PermissionDenied"), text("403 request_forbidden")],
+          [text("404"), code("NotFound"), text("404 not found")],
+        ],
+      },
+    ]);
+    const rows = within(screen.getByRole("list", { name: "Table: Signal, ErrorKind, Encoded for KPP errors from elsewhere" })).getAllByRole("listitem");
+    const lists = (row: HTMLElement | undefined) =>
+      [...(row?.querySelectorAll("dl") ?? [])].map((dl) => [
+        dl.classList.contains("flex-col") ? "below" : "beside",
+        ...[...dl.querySelectorAll("dt")].map((dt) => dt.textContent),
+      ]);
+    expect(lists(rows[0])).toEqual([
+      ["beside", "ErrorKind"],
+      ["below", "Encoded for KPP errors from elsewhere"],
+    ]);
+  });
+
   it("lets long code in a table break after its separators and brackets, a Chinese list break after each comma, and a wide table's text columns narrow further", () => {
     const code = (v: string): Inline => ({ t: "code", v });
     const text = (v: string): Inline => ({ t: "text", v });

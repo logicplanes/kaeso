@@ -230,6 +230,7 @@ These need a console session, so no agent has a tool for them:
 - Your sessions, email address, password, two-factor authentication, recovery codes and links to single sign-on, creating an organization and deleting your account.
 - Making someone an instance admin, single sign-on for instance admins, the instance's agent policy, and deleting a user or an organization at once.
 - An organization's agent policy, and closing an organization to an agent.
+- An organization's single sign-on: its connection, domain checks, group rules and requirement, and the SCIM token.
 - Creating or rotating platform keys, creating keys with platform access, and the Playground.
 
 An agent can create API keys that call models only in projects where it holds `api.request`.

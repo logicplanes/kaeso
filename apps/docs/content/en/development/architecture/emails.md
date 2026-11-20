@@ -58,20 +58,22 @@ The text and HTML of every email are snapshots in `crates/kaeso-mail/src/snapsho
 4. Each person's setting chooses now, daily or off, and a muted organization stops all but security emails. `notifications_sent` keeps one email per subject and day, and past 20 immediate emails an hour the rest go to `notification_digest`.
 5. The `notifications` job runs every minute. At 8:31 in the install's time zone it sends waiting digests, on the 1st the monthly cost report and on Mondays the weekly summary. The weekly summary names the week and each organization, and its button opens the usage of that week; a digest line keeps the organization and project it was about, so the digest groups its lines by them.
 
+Before the emails, a notice about an organization or project is queued for the organization's [webhooks](../../console/webhooks.md), whatever anyone chose for their emails, and the `webhooks` job sends it (`services::webhooks`).
+
 ## Languages
 
 `services::mail_lang` in `kaeso-server` picks the language. The person's choice in their account settings wins (`users.locale`; `null` means Automatic). Otherwise it takes the first language Kaeso writes from the `Accept-Language` of the request that caused the email.
 
 If the database can't answer, the fallbacks decide, so the lookup never stops an email. [Email](../../self-hosting/email.md#languages) has the rules for each kind of recipient.
 
-Each email's function has one `match` on the language, with whole sentences and values put in by name, never fragments joined together. German addresses people with "Sie". Chinese uses "您", full-width punctuation, and a space between Chinese and Latin words or digits, which `locale::zh` puts at the seams. Dates and numbers follow the language:
+Each email's function has one `match` on the language, with whole sentences and values put in by name, never fragments joined together. German addresses people with "Sie". Chinese uses "您", full-width punctuation, and a space between Chinese and Latin words or digits, which `locale::zh` puts at the seams. Dates and numbers follow the language, and spend and costs are in the organization's currency, with a symbol for dollars, euros and pounds and the code for any other; a spend budget names its currency's code, such as `40 EUR`:
 
 | | English | German | Chinese |
 | --- | --- | --- | --- |
 | Date | `14 Oct 2026` | `14. Okt. 2026` | `2026年10月14日` |
 | Month | `October 2026` | `Oktober 2026` | `2026年10月` |
 | Amount | `1,250` | `1.250` | `1,250` |
-| Dollars | `$1,250.00` | `1.250,00 $` | `$1,250.00` |
+| Money | `$1,250.00`, `€1,250.00`, `CHF 1,250.00` | `1.250,00 $`, `1.250,00 €`, `1.250,00 CHF` | `$1,250.00`, `€1,250.00`, `CHF 1,250.00` |
 | Percentage | `80%` | `80 %` | `80%` |
 
 ## The wordmark

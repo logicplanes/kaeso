@@ -45,6 +45,7 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Outgoing | The hosts that keep providers' finished videos, as their references show them: `vidgen.x.ai` for SpaceX, `video-product.cdn.minimax.io` and Alibaba Cloud OSS buckets such as `public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com` for MiniMax, `aigc-files.bigmodel.cn` for Z.ai. ElevenLabs names no fixed host; OpenRouter and Together AI serve files from their own hosts, and Veo and Gemini Omni inside their answers | Downloading a finished video ([Videos API](../api/videos.md#download-a-video)) |
 | Outgoing | `kpmr.kaeso.app` | Model data from [KPMR](../concepts/kpmr.md), checked about every hour |
 | Outgoing | `update.kaeso.app` | Looking for new Kaeso releases, every 5 minutes |
+| Outgoing | `www.ecb.europa.eu` | The ECB's reference rates for [currencies](../concepts/currencies.md), every 6 hours ([exchange rates](configuration.md#exchange-rates)) |
 | Outgoing | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy getting and renewing the certificate |
 | Outgoing | `ghcr.io`, `pkg-containers.githubusercontent.com` | Docker pulling Kaeso's images, when you install or update |
 | Outgoing | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker pulling the images of PostgreSQL, ClickHouse, Valkey and the updater's socket proxy |
@@ -54,6 +55,8 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Outgoing | Your organizations' identity providers | Single sign-on, when an organization connects one ([sign-in](sign-in.md)) |
 | Outgoing | The base URLs of your organizations' custom providers | Their requests, directly and never through a proxy ([custom providers](configuration.md#custom-providers)) |
 | Outgoing | The addresses of the MCP servers your organizations add, over HTTPS | Their tools, with sign-in and metadata requests; a private network only when `mcp_servers.allowed_networks` lists it ([MCP servers](configuration.md#mcp-servers)) |
+| Outgoing | The addresses of the webhooks and guardrails your organizations add | Deliveries and checks; a private network only when `webhooks.allowed_networks` or `guardrails.allowed_networks` lists it ([webhooks](configuration.md#webhooks), [guardrails](configuration.md#guardrails)) |
+| Outgoing | Your trace collector, when `otel.endpoint` is set | Traces of requests and tool calls ([traces](monitoring.md#traces)) |
 
 Without internet access, Kaeso works with the model data built into the release, and you update by hand. Turn off the outgoing checks as [installs without internet access](upgrades.md#installs-without-internet-access) shows.
 

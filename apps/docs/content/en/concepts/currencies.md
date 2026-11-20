@@ -9,7 +9,7 @@ Each organization has a currency, US dollars unless an owner or admin sets anoth
 ```mermaid
 flowchart LR
   accTitle: Where the organization's currency comes in
-  accDescr: The gateway fetches the ECB's reference rates once a working day. Requests are costed and stored in US dollars, and the organization reads spend, prices and budgets in its own currency.
+  accDescr: The gateway fetches the reference rates the ECB publishes once a working day. Requests are costed and stored in US dollars, and the organization reads spend, prices and budgets in its own currency.
   ecb[ECB reference rates]:::outside --> gateway[Gateway]:::accent
   gateway --> stored[Spend stored in USD]
   stored --> shown[Spend, prices and budgets in the organization's currency]
