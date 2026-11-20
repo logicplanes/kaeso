@@ -319,7 +319,7 @@ describe("AuditLog", () => {
     await waitFor(() => expect(logQuery()).toContainEqual({ from: "2026-10-14T15:00:00.000Z", to: "2026-10-15T15:00:00.000Z", limit: "100" }));
   });
 
-  it("lets the filters share each row on a phone and keeps them 160px wide beside each other", async () => {
+  it("lets the filters share each row on a phone, never narrower than a German placeholder, and keeps them 160px wide beside each other", async () => {
     orgLog();
     await renderApp(PATH);
     await table();
@@ -328,7 +328,7 @@ describe("AuditLog", () => {
       const field = within(filters)
         .getByRole(name === "Target id" ? "searchbox" : "combobox", { name })
         .closest("div.flex-1");
-      expect(field).toHaveClass("basis-120", "min-w-0", "sm:w-160", "sm:flex-none");
+      expect(field).toHaveClass("basis-140", "min-w-0", "sm:w-160", "sm:flex-none");
     }
   });
 

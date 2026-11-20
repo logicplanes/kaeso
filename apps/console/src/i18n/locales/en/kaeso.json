@@ -4,6 +4,7 @@
   "kaeso.agents.allProjectRights": "Rights in every project of {org}",
   "kaeso.agents.allProjects": "All projects",
   "kaeso.agents.customizeTitle": "Customize {name}",
+  "kaeso.agents.customized": "Customized",
   "kaeso.agents.futureOrgs": "Also orgs I join later",
   "kaeso.agents.futureOrgsHint": "With the preset's rights, never more than you hold there.",
   "kaeso.agents.instance": "Instance",

@@ -128,7 +128,7 @@ export function kaesoMergeConfig() {
       size: [{ size: sizing }],
       w: [{ w: ["screen", "anchor", ...sizing] }],
       "min-w": [{ "min-w": ["screen", "none", "anchor", ...sizing] }],
-      "max-w": [{ "max-w": ["screen", "none", "prose", ...sizing] }],
+      "max-w": [{ "max-w": ["screen", "none", "prose", "menu", ...sizing] }],
       h: [{ h: ["screen", "lh", ...sizing] }],
       "min-h": [{ "min-h": ["screen", "lh", "none", ...sizing] }],
       "max-h": [{ "max-h": ["screen", "lh", "none", ...sizing] }],
