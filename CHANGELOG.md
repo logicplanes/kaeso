@@ -4,6 +4,29 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+#### Console
+
+- The Kaeso plugin asks for the install's MCP address when it is installed in Claude Code. For Claude on the web, desktop and mobile and for Cowork, Account › Agents has an Add to Claude button, and the plugin's skill a link, that opens Claude's custom connector form with the install's MCP address filled in. ([#1006](https://github.com/logicplanes/kaeso/pull/1006))
+- Decision answers line their bars up under each question without repeating the answer, and the request log lists each question with what its answers mean. ([#1004](https://github.com/logicplanes/kaeso/pull/1004))
+
+### Fixed
+
+#### Gateway
+
+- The request log shows logged JSON with its keys in the order the app sent them, so a decision's answers sit under their own questions and options. ([#1000](https://github.com/logicplanes/kaeso/pull/1000))
+
+#### KPP
+
+- Gemini no longer bills cached image and audio tokens again as uncached input. ([#994](https://github.com/logicplanes/kaeso/pull/994))
+
+### Security
+
+#### Gateway
+
+- Email goes out through lettre 0.11.24, which fixes six SMTP advisories, RUSTSEC-2026-0560 to RUSTSEC-2026-0565, among them replies a man-in-the-middle could inject after STARTTLS. ([#1346](https://github.com/logicplanes/kaeso/pull/1346))
+
 ## [0.6.0] - 2026-11-10
 
 This release makes Kaeso one gateway for every kind of model, not only chat: images, video, speech, transcripts, music and sound effects, Gemini-format apps, thirteen new built-in providers, alias routes with fallbacks and splits, and an MCP portal per project. The updater now installs releases that change `compose.yaml`. These notes cover everything since the last stable release, the release candidates included. Read the breaking changes before you upgrade: installs that update from the console need a one-time installer run, and installs behind their own reverse proxy need new routes.
