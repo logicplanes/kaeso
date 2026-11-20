@@ -1,9 +1,11 @@
 #![forbid(unsafe_code)]
 
+pub mod duration;
 pub mod manifest;
 pub mod policy;
 pub mod protocol;
 pub mod schedule;
+pub mod settings;
 
 pub use semver::Version;
 
