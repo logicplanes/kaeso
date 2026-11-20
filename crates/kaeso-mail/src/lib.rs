@@ -10,7 +10,7 @@ mod style;
 pub mod templates;
 
 pub use layout::Instance;
-pub use locale::Locale;
+pub use locale::{Amount, Locale};
 pub use mailer::{MailError, Mailer, MemorySink, SmtpSecurity, SmtpSettings, Transport};
 pub use templates::{
     Actor, Budget, BudgetAlert, BudgetScope, Email, EmailKind, LimitKind, LimitPeriod, Rendered,

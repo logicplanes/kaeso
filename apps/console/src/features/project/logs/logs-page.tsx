@@ -10,9 +10,10 @@ import { CommonErrors, filtersOf, messagePrefix } from "./common-errors";
 import { CLIENT_IDS, clientLabel } from "~/format/clients";
 import { guardrailActionLabel } from "~/format/guardrails";
 import { aliasesQuery, catalogueQuery } from "~/api/queries/models";
-import { formatDuration, formatPrice } from "@logicplanes/kaeso-ui/format";
+import { formatDuration } from "@logicplanes/kaeso-ui/format";
 import { DIALECTS, ERROR_KIND_IDS, dialectLabel, errorKindLabel } from "~/format/labels";
-import { CurrencyPicker, useDisplayChoice } from "~/kaeso/currency";
+import { useOrgMoney } from "~/kaeso/org-money";
+import { useOrgPrices } from "~/kaeso/org-prices";
 import { catalogueModelOption } from "~/kaeso/model-options";
 import { useModelPickerProviders, useProviderFilterOptions, useProviders } from "~/kaeso/providers";
 import { showExportProgress } from "~/shell/export-job";
@@ -56,7 +57,7 @@ export type LogsSearch = LogFilters & {
 };
 
 const STATUSES = [200, 400, 401, 403, 404, 408, 413, 422, 429, 499, 500, 502, 503, 504, 529];
-// Amounts a request may cost at least, in USD, from a cent upwards.
+// Amounts a request may cost at least, in the organization's currency, from a cent upwards.
 const MIN_COSTS = ["0.01", "0.1", "1", "10"];
 type FlagFilterId = "fell_back";
 type FilterId =
@@ -189,10 +190,9 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const rights = useProjectRights(org, project);
   const needs = useNeedsRight(org, project);
   const { log, live, kind: _kind, call: _call, call_status: _status, call_tool: _tool, call_server: _server, call_error: _error, ...filters } = search;
-  const { display, settled } = useDisplayChoice();
-  // The rows also carry each cost in the person's display currency.
-  const listed = useMemo(() => (display ? { ...filters, currency: display.code } : filters), [filters, display]);
-  const logs = useInfiniteQuery({ ...logsInfiniteQuery(org, project, listed), enabled: settled });
+  const money = useOrgMoney(org);
+  const prices = useOrgPrices(org);
+  const logs = useInfiniteQuery(logsInfiniteQuery(org, project, filters));
   const { keyName, keyOptions, memberOptions } = usePartyFilters(org, project);
   const catalogue = useQuery(catalogueQuery(org, project));
   // Someone who reads the log may not see the aliases; the chip then offers none.
@@ -212,7 +212,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   };
 
   const base = useMemo(() => logs.data?.pages.flatMap((p) => p.data) ?? [], [logs.data]);
-  const { rows, pending, fresh, cut, showPending } = useLiveLogs({ org, project, filters: listed, live: !!live, base, scroller });
+  const { rows, pending, fresh, cut, showPending } = useLiveLogs({ org, project, filters, live: !!live, base, scroller });
   // Shown above the failures, and the message filter's choices; the same query either way.
   const commonErrors = useQuery({ ...logErrorsQuery(org, project, filters), enabled: filters.failed === true });
   const hasNextPage = logs.hasNextPage && !cut;
@@ -224,7 +224,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
   const errors = useGatewayErrors();
   const layout = logsLayout(width, phone, spansDays, columns);
   const withProvider = providerInModel(layout, columns);
-  const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, errors, currency: display?.code });
+  const all = logColumns({ spansDays, layout, withProvider, keyName, partyName, providerName: catalog.name, errors });
   const shownColumns = COLUMNS.filter((c) => columns.includes(c) && !(withProvider && c === "provider")).map((c) => all[c]);
 
   const modelGroups = useModelGroups(
@@ -233,10 +233,10 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
         (catalogue.data ?? [])
           .filter((m) => !filters.provider || m.provider === filters.provider)
           .map((m) => {
-            const { deprecated: _, ...option } = catalogueModelOption(m);
+            const { deprecated: _, ...option } = catalogueModelOption(m, prices);
             return { ...option, value: m.model_id };
           }),
-      [catalogue.data, filters.provider],
+      [catalogue.data, filters.provider, prices],
     ),
     {
       providers: useModelPickerProviders(
@@ -276,7 +276,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
                           : id === "endpoint"
                             ? ENDPOINTS.map((e) => ({ value: e, label: e }))
                             : id === "min_cost"
-                              ? MIN_COSTS.map((c) => ({ value: c, label: formatPrice(c) }))
+                              ? MIN_COSTS.map((c) => ({ value: c, label: money.price(c) }))
                               : id === "failed"
                                 ? [
                                     { value: "true", label: outcomeLabel(true) },
@@ -349,7 +349,6 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
         path="logs"
         actions={
           <>
-            <CurrencyPicker />
             <Button
               size="sm"
               leadingIcon={icons.download}
@@ -372,6 +371,7 @@ export function LogsPage({ org, project, search }: { org: string; project: strin
             member: memberOptions.find((m) => m.value === filters.member)?.label,
             model: catalogue.data?.find((m) => m.model_id === filters.model)?.effective.display_name ?? undefined,
             provider: filters.provider && catalog.name(filters.provider),
+            minCost: filters.min_cost && money.price(filters.min_cost),
           }}
           canContent={rights.has("logs.content.view")}
           open={exporting}

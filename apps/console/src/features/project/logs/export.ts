@@ -2,7 +2,7 @@ import type { ExportFile } from "~/api/download";
 import { logsParams, toolCallParams, type LogFilters, type ToolCallFilters } from "~/api/queries/logs";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
 import { fullDayLabel } from "~/format/period";
-import { formatDuration, formatPrice } from "@logicplanes/kaeso-ui/format";
+import { formatDuration } from "@logicplanes/kaeso-ui/format";
 import { clientLabel } from "~/format/clients";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
@@ -28,7 +28,14 @@ export function exportSummary(f: LogFilters): string {
       );
 }
 
-export type ExportNames = { key?: string | undefined; member?: string | undefined; model?: string | undefined; provider?: string | undefined };
+export type ExportNames = {
+  key?: string | undefined;
+  member?: string | undefined;
+  model?: string | undefined;
+  provider?: string | undefined;
+  /** The minimum cost as the organization's currency writes it. */
+  minCost?: string | undefined;
+};
 
 export const outcomeLabel = (failed: boolean): string => (failed ? t("logs.filter.outcomeFailed", "Failed") : t("logs.filter.outcomeSucceeded", "Succeeded"));
 
@@ -67,7 +74,7 @@ export function exportFilters(f: LogFilters, names: ExportNames = {}): { label: 
     { label: t("logs.filter.alias", "Alias"), value: f.alias },
     { label: t("logs.filter.fellBack", "Fell back"), value: !!f.fell_back && common.yes() },
     { label: t("logs.filter.endpoint", "Endpoint"), value: f.endpoint },
-    { label: t("logs.filter.minCost", "Cost at least"), value: f.min_cost && formatPrice(f.min_cost) },
+    { label: t("logs.filter.minCost", "Cost at least"), value: f.min_cost && (names.minCost ?? f.min_cost) },
   ];
   return filters.flatMap(({ label, value }) => (value ? [{ label, value }] : []));
 }

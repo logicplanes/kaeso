@@ -30,6 +30,7 @@ import { limitsQuery } from "~/api/queries/limits";
 import { projectMembersQuery, serviceAccountsQuery } from "~/api/queries/members";
 import { catalogueQuery } from "~/api/queries/models";
 import { useApiMutation } from "~/auth/mutation";
+import { useOrgCurrency } from "~/kaeso/org-money";
 import { LimitEditor, draftOf, limitBody, newLimit, type LimitDraft } from "~/kaeso/limit-editor";
 import { EditLimitDialog, RemoveLimitDialog, limitBlocker, useLimitText, useParentLimits, type LimitOwner, type LimitTarget } from "~/kaeso/limits-section";
 import { usePageCreateAction } from "~/shell/create-action";
@@ -400,6 +401,7 @@ function AddLimitDialog({
     ? { kind: key.principal.kind === "service_account" ? "service_account" : "user", id: key.principal.id ?? "" }
     : undefined;
   const parents = useParentLimits(org, project, { level }, owner);
+  const currency = useOrgCurrency(org);
 
   const add = useApiMutation({
     mutationFn: async (to: LimitTarget) =>
@@ -422,7 +424,7 @@ function AddLimitDialog({
       title={copy ? t("limits.copyTitle", "Copy limit") : t("limits.add", "Add limit")}
       submitLabel={t("limits.add", "Add limit")}
       submitting={add.isPending}
-      onSubmit={() => target && !limitBlocker(draft, parents) && add.mutate(target)}
+      onSubmit={() => target && !limitBlocker(draft, parents, currency) && add.mutate(target)}
       size="md"
       steps={[
         {
@@ -469,7 +471,7 @@ function AddLimitDialog({
           id: "limit",
           title: t("limits.whatTitle", "What's the limit?"),
           description: t("limits.whatHint", "Rates refuse requests above them; budgets refuse or alert once used up."),
-          blockedReason: limitBlocker(draft, parents) ?? undefined,
+          blockedReason: limitBlocker(draft, parents, currency) ?? undefined,
           content: <LimitEditor org={org} value={draft} onChange={setDraft} models={catalogue.data ?? []} />,
         },
       ]}

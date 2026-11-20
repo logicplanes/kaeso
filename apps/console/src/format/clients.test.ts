@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { TimelineBucket } from "~/api/generated/types";
 import { CLIENT_IDS, clientLabel, clientUsage } from "./clients";
 
-const bucket = (key: string | null, requests: number, cost: string | null): TimelineBucket => ({
+const bucket = (key: string | null, requests: number, cost: string | null, converted: string | null = cost, currency = "USD"): TimelineBucket => ({
   start: "2026-10-14T10:00:00Z",
   key,
   requests,
@@ -15,6 +15,8 @@ const bucket = (key: string | null, requests: number, cost: string | null): Time
   cache_write_tokens: 0,
   reasoning_tokens: 0,
   cost,
+  converted_cost: converted,
+  currency,
   duration_p50_ms: 100,
   duration_p95_ms: 200,
   duration_max_ms: 300,
@@ -46,5 +48,10 @@ describe("client apps", () => {
       ["codex", 5, 2, 20, "0.5"],
       ["", 5, 2, 20, null],
     ]);
+  });
+
+  it("sums each client's cost in the organization's currency too", () => {
+    const rows = clientUsage([bucket("codex", 2, "1", "0.9", "EUR"), bucket("codex", 3, "0.5", "0.46", "EUR")]);
+    expect(rows.map((r) => [r.cost, r.converted_cost, r.currency])).toEqual([["1.5", "1.36", "EUR"]]);
   });
 });

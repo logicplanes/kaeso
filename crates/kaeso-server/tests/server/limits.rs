@@ -261,7 +261,7 @@ async fn spend_budgets_stop_at_a_billion_dollars() {
     assert_eq!(beyond.body["error"]["param"], "amount");
     assert_eq!(
         beyond.body["error"]["message"],
-        "The amount must be positive and at most 1,000,000,000 USD."
+        "The amount must be positive and worth at most 1,000,000,000 USD."
     );
     let path = format!("{}/limits/{id}", base(&env));
     let raised = env

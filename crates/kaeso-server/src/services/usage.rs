@@ -534,13 +534,14 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
     drop(finishing);
     match charged {
         Ok(moved) => {
+            let book = crate::services::exchange_rates::book(state);
             let used_up: Vec<_> = moved
                 .iter()
                 .filter(|(limit, before, after)| {
                     limit.hard
                         && !limit.kind.is_rate()
-                        && *before < limit.units()
-                        && *after >= limit.units()
+                        && *before < limit.units(&book)
+                        && *after >= limit.units(&book)
                 })
                 .map(|(limit, _, _)| limit.clone())
                 .collect();
@@ -564,7 +565,8 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
             let alerts: Vec<_> = moved
                 .into_iter()
                 .filter_map(|(limit, before, after)| {
-                    let crossed = limits::crossed(&limit.thresholds, before, after, limit.units());
+                    let crossed =
+                        limits::crossed(&limit.thresholds, before, after, limit.units(&book));
                     (!crossed.is_empty()).then_some((limit, crossed, after))
                 })
                 .collect();
@@ -645,10 +647,15 @@ async fn alert(
         let scope = system::scope(limit.subject, name.as_deref());
         let budget = budget_of(limit);
         let used_amount = match limit.kind {
-            limits::Kind::SpendBudget => (Decimal::from(used) / Decimal::from(1_000_000_000_i64))
-                .round_dp(4)
-                .normalize()
-                .to_string(),
+            limits::Kind::SpendBudget => {
+                let usd = Decimal::from(used) / Decimal::from(1_000_000_000_i64);
+                crate::services::exchange_rates::book(state)
+                    .from_usd(usd, limit.currency())
+                    .unwrap_or(usd)
+                    .round_dp(4)
+                    .normalize()
+                    .to_string()
+            }
             _ => used.to_string(),
         };
         let alert = BudgetAlert {
@@ -712,7 +719,7 @@ async fn alert(
                     Action::LimitThresholdReached,
                     Some(("limit", kaeso_core::id::LimitId::from_uuid(limit.id).to_string())),
                     None,
-                    Some(serde_json::json!({ "threshold": t, "used": used, "amount": limit.units(), "recipients": to.len() })),
+                    Some(serde_json::json!({ "threshold": t, "used": used, "amount": limit.units(&crate::services::exchange_rates::book(state)), "recipients": to.len() })),
                     at,
                 )
                 .await
@@ -756,6 +763,7 @@ fn budget_of(limit: &Limit) -> Budget {
             limits::Period::Total => LimitPeriod::Total,
         },
         amount: limit.amount.normalize().to_string(),
+        currency: limit.currency().to_owned(),
     }
 }
 
@@ -1027,6 +1035,7 @@ mod tests {
                         model: None,
                         period,
                         amount: amount.parse().unwrap(),
+                        currency: (kind == limits::Kind::SpendBudget).then(|| "EUR".to_owned()),
                         hard: false,
                         thresholds: vec![80],
                     };

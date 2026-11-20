@@ -107,6 +107,7 @@ export function myMembership(overrides: Partial<MyMembership> = {}): MyMembershi
     org_state: "active",
     org_deletion_due_at: null,
     org_avatar_url: null,
+    org_currency: "USD",
     role: { id: "owner", kind: "builtin", name: "Owner" },
     preset: "owner",
     projects: [myProject(), myProject({ id: OTHER_PROJECT, name: "Support triage" })],
@@ -146,6 +147,7 @@ export function org(overrides: Partial<OrgView> = {}): OrgView {
     deletion_due_at: null,
     max_key_lifetime_days: null,
     sso_default_preset: null,
+    currency: "USD",
     ...overrides,
   };
 }

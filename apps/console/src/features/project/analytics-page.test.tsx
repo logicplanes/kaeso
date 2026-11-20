@@ -2,9 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
-import { exchangeRates, signedIn, without } from "~/test/fixtures";
-import { me } from "~/test/fixtures/instance-account";
-import { hoverReason } from "~/test/fixtures/org";
+import { exchangeRates, myMembership, signedIn, without } from "~/test/fixtures";
 import { apiKey, catalogueModel, listed, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -357,7 +355,7 @@ describe("AnalyticsPage", () => {
     await user.click(within(table).getByRole("button", { name: "Cost" }));
     await user.click(screen.getByRole("button", { name: "Download CSV" }));
     const lines = (await (files[0] as Blob).text()).trimEnd().split("\r\n");
-    expect(lines[0]).toBe("Model,Id,Requests,Errors,Tokens,Cache hit,Cost");
+    expect(lines[0]).toBe("Model,Id,Requests,Errors,Tokens,Cache hit,Cost (USD)");
     expect(lines.slice(1).map((l) => l.split(",")[1])).toEqual(
       order().map((o) => ({ sonnet: "anthropic/claude-sonnet-4-5", mini: "openai/gpt-5.4-mini", x: "openai/=gpt-x" })[o]),
     );
@@ -558,48 +556,43 @@ describe("AnalyticsPage", () => {
     );
   });
 
-  it("shows the cost in the currency picked next to the dollars, with the rates it used", async () => {
-    signedIn();
-    let mine = me({ display_currency: "EUR" });
-    on("GET", "me", () => mine);
-    on("PATCH", "me", ({ body }: { body: { display_currency: string } }) => (mine = me(body)));
+  it("shows every amount in the organization's currency, with the rates it used", async () => {
+    signedIn({ memberships: [myMembership({ org_currency: "EUR" })] });
     projectData();
-    usage({ day: [usageRow({ key: "2026-10-13", cost: "2", converted_cost: "1.8" }), usageRow({ cost: "1.25", converted_cost: "1.15" })] });
-    const { user } = await renderApp(projectPath(`analytics?${PERIOD}`));
+    usage({
+      day: [usageRow({ key: "2026-10-13", cost: "2", converted_cost: "1.8" }), usageRow({ cost: "1.25", converted_cost: "1.15", currency: "EUR" })],
+      model: [usageRow({ key: "openai/gpt-5.4-mini", cost: "3.25", converted_cost: "2.95", currency: "EUR" })],
+    });
+    await renderApp(projectPath(`analytics?${PERIOD}`));
 
-    expect(await screen.findByText("≈ €2.95")).toBeInTheDocument();
-    expect(screen.getByText("≈ EUR at each day's ECB rate; the latest is of 13 Nov 2026.")).toBeInTheDocument();
-    expect(requests("GET", USAGE).some((r) => r.query.get("currency") === "EUR")).toBe(true);
-    await user.click(screen.getByRole("combobox", { name: "Currency" }));
-    await user.click(await screen.findByRole("option", { name: /^USD/ }));
-    await waitFor(() => expect(requests("PATCH", "me").map((r) => r.body)).toEqual([{ display_currency: "USD" }]));
-    await waitFor(() => expect(screen.queryByText(/ECB rate/)).not.toBeInTheDocument());
+    expect(await screen.findByRole("tab", { name: /Cost.*€2\.95/ })).toBeInTheDocument();
+    expect(screen.getByText("In EUR at each day's ECB rate; the latest is of 13 Nov 2026.")).toBeInTheDocument();
+    const table = await breakdown();
+    await waitFor(() => expect(within(table).getByText("€1.15")).toBeInTheDocument());
+    expect(document.body).not.toHaveTextContent("$");
+    expect(requests("GET", USAGE).some((r) => r.query.has("currency"))).toBe(false);
   });
 
   it("says which days use the latest rate when the period starts before the oldest rates", async () => {
-    signedIn();
-    on("GET", "me", me({ display_currency: "GBP" }));
+    signedIn({ memberships: [myMembership({ org_currency: "GBP" })] });
     on("GET", "me/exchange-rates", exchangeRates({ first_day: "2026-10-05" }));
     projectData();
-    usage({ day: [usageRow({ converted_cost: "0.94" })] });
+    usage({ day: [usageRow({ converted_cost: "0.94", currency: "GBP" })] });
     await renderApp(projectPath(`analytics?${PERIOD}`));
 
-    expect(await screen.findByText("≈ GBP at each day's ECB rate; before 5 Oct 2026 at the rate of 13 Nov 2026.")).toBeInTheDocument();
-    expect(screen.getByText("≈ £0.94")).toBeInTheDocument();
+    expect(await screen.findByText("In GBP at each day's ECB rate; before 5 Oct 2026 at the rate of 13 Nov 2026.")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Cost.*£0\.94/ })).toBeInTheDocument();
   });
 
-  it("offers only dollars without exchange rates, and says why", async () => {
+  it("shows plain dollars without a note about rates in an organization that counts in US dollars", async () => {
     signedIn();
-    on("GET", "me/exchange-rates", exchangeRates({ fetching: false }, true));
     projectData();
-    usage();
-    const { user } = await renderApp(projectPath(`analytics?${PERIOD}`));
+    usage({ day: [usageRow({ cost: "1.25" })] });
+    await renderApp(projectPath(`analytics?${PERIOD}`));
 
-    await breakdown();
-    const only = screen.getByRole("button", { name: "USD" });
-    expect(only).toHaveAttribute("aria-disabled", "true");
-    await hoverReason(user, only, "Exchange rates are off on this install");
-    expect(requests("GET", USAGE).some((r) => r.query.has("currency"))).toBe(false);
+    expect(await screen.findByRole("tab", { name: /Cost.*\$1\.25/ })).toBeInTheDocument();
+    expect(screen.queryByText(/ECB rate/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Currency" })).not.toBeInTheDocument();
   });
 
   it("chooses a period from the picker", async () => {

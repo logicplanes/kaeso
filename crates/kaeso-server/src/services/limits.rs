@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use futures::future::BoxFuture;
 use kaeso_core::cost::Unpriced;
+use kaeso_core::currency::RateBook;
 use kaeso_core::limits::{self, Kind, Level, Limit, Period, Subject};
 use kaeso_store::StoreError;
 use kaeso_store::pg::limits as store;
@@ -12,6 +13,7 @@ use time::OffsetDateTime;
 use uuid::Uuid;
 
 use crate::model_api::hooks::{Admission, Caller, Left, Limits, Refusal, Reservation};
+use crate::services::exchange_rates as rates;
 use crate::state::AppState;
 
 mod flights;
@@ -483,6 +485,7 @@ pub async fn within_request_rates(
             }
         };
     let cutoff = now - 60;
+    let book = rates::book(state);
     for (l, window) in applicable.iter().zip(&windows) {
         let live: Vec<(i64, i64)> = window
             .iter()
@@ -490,7 +493,7 @@ pub async fn within_request_rates(
             .filter(|(s, _)| *s > cutoff)
             .collect();
         let used: i64 = live.iter().map(|(_, n)| n).sum();
-        if used >= l.units() {
+        if used >= l.units(&book) {
             let oldest = live.iter().map(|(s, _)| *s).min().unwrap_or(now);
             metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
             return Err(refusal(l, at, Why::Over(oldest + 60 - now)));
@@ -539,6 +542,7 @@ async fn count_one(
             }
         };
     let cutoff = now - 60;
+    let book = rates::book(state);
     let mut refused = None;
     let mut undo = redis::pipe();
     for (l, window) in applicable.iter().zip(&windows) {
@@ -555,7 +559,7 @@ async fn count_one(
             .filter(|(s, _)| *s > cutoff)
             .map(|(_, n)| n)
             .sum();
-        if refused.is_none() && used > l.units() {
+        if refused.is_none() && used > l.units(&book) {
             let oldest = seconds
                 .iter()
                 .filter(|(s, _)| *s > cutoff)
@@ -603,7 +607,7 @@ pub async fn session_within_budgets(
         .filter(|l| l.kind == Kind::SpendBudget && l.enforced())
     {
         let used = current(state, caller.project_id, l, at).await.unwrap_or(0);
-        if used.saturating_add(spent_nano_usd) >= l.units() {
+        if used.saturating_add(spent_nano_usd) >= l.units(&rates::book(state)) {
             metrics::counter!(crate::metrics::LIMIT_REFUSALS, "kind" => l.kind.as_str(), "level" => l.subject.level().as_str()).increment(1);
             return Err(refusal(l, at, Why::Over(0)));
         }
@@ -840,6 +844,7 @@ impl Limits for ValkeyLimits {
             if let Err(e) = settle(state, &applicable, a.at).await {
                 return fail(&applicable, &e);
             }
+            let book = rates::book(state);
             for attempt in 0..2 {
                 let refused = |i: usize, why: Why| {
                     let l = applicable.get(i).copied().ok_or_else(unavailable)?;
@@ -847,8 +852,8 @@ impl Limits for ValkeyLimits {
                     let mut r = refusal(l, a.at, why);
                     // Nothing is left of a limit that is used up or held by requests in flight.
                     r.left = match why {
-                        Why::Over(retry) => left(l, a.at, l.units(), retry),
-                        Why::Busy => left(l, a.at, l.units(), 1),
+                        Why::Over(retry) => left(l, a.at, l.units(&book), retry, &book),
+                        Why::Busy => left(l, a.at, l.units(&book), 1, &book),
                         Why::TooLarge => None,
                     };
                     Err(r)
@@ -859,7 +864,7 @@ impl Limits for ValkeyLimits {
                         held.left = applicable
                             .iter()
                             .zip(used)
-                            .filter_map(|(l, (used, reset))| left(l, a.at, used, reset))
+                            .filter_map(|(l, (used, reset))| left(l, a.at, used, reset, &book))
                             .collect();
                         return Ok(held);
                     }
@@ -915,7 +920,7 @@ fn unavailable() -> Refusal {
 
 // What the reply header says of a limit: its name, amount, what is left and when it frees up.
 // Only enforced limits (rates and hard budgets) are reported; `used` is -1 for the others.
-fn left(l: &Limit, at: OffsetDateTime, used: i64, reset: i64) -> Option<Left> {
+fn left(l: &Limit, at: OffsetDateTime, used: i64, reset: i64, book: &RateBook) -> Option<Left> {
     if !l.enforced() || used < 0 {
         return None;
     }
@@ -940,8 +945,8 @@ fn left(l: &Limit, at: OffsetDateTime, used: i64, reset: i64) -> Option<Left> {
         ),
         model: l.model.is_some(),
         spend: l.kind == Kind::SpendBudget,
-        limit: l.units(),
-        remaining: l.units().saturating_sub(used).max(0),
+        limit: l.units(book),
+        remaining: l.units(book).saturating_sub(used).max(0),
         reset,
     })
 }
@@ -1036,13 +1041,14 @@ async fn run_admit(
     applicable: &[&Limit],
 ) -> Result<Admit, LimitsError> {
     let now = a.at.unix_timestamp();
+    let book = rates::book(state);
     let mut script = ADMIT_SCRIPT.prepare_invoke();
     script.arg(now).arg(a.request_id.to_string());
     for l in applicable {
         script
             .key(state.valkey.key(&l.counter(a.at)))
             .arg(script_type(l.kind))
-            .arg(l.units())
+            .arg(l.units(&book))
             .arg(if l.enforced() { "1" } else { "0" })
             .arg(a.worst.units(l.kind))
             .arg(if a.worst.bounded { "1" } else { "0" });

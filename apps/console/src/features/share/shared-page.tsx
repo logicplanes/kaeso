@@ -18,6 +18,7 @@ import {
   TimeseriesChart,
 } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
+import { moneyIn, type Money } from "~/format/currency";
 import { isApiError } from "~/api/errors";
 import type { SharedBreakdown, SharedLimit, SharedRow, SharedView, UsageRow } from "~/api/generated/types";
 import { sharedViewQuery } from "~/api/queries/shared-links";
@@ -36,7 +37,7 @@ import { usePageTitle } from "~/shell/title";
 const DAY = 86_400_000;
 
 /** A shared row as the usage panels count it. */
-export function asUsage(r: SharedRow): UsageRow {
+export function asUsage(r: SharedRow, currency: string): UsageRow {
   return {
     key: r.key ?? "",
     requests: r.requests,
@@ -47,6 +48,8 @@ export function asUsage(r: SharedRow): UsageRow {
     cache_write_tokens: r.cache_write_tokens,
     reasoning_tokens: r.reasoning_tokens,
     cost: r.cost ?? null,
+    converted_cost: r.converted_cost ?? null,
+    currency,
     tool_calls: r.tool_calls,
     tool_call_errors: 0,
     unpriced: 0,
@@ -164,8 +167,9 @@ function SharedBody({ v }: { v: SharedView }) {
 }
 
 function Usage({ v }: { v: SharedView }) {
-  const rows = v.days.map(asUsage);
-  const before = v.previous_days.map(asUsage);
+  const rows = v.days.map((r) => asUsage(r, v.currency));
+  const before = v.previous_days.map((r) => asUsage(r, v.currency));
+  const money = moneyIn(v.currency);
   const ids: MetricId[] = ["requests", "tokens", ...(v.costs ? (["cost"] as const) : []), "errors", "cache"];
   const initial = ids.includes(v.metric as MetricId) ? (v.metric as MetricId) : "requests";
   const [metric, setMetric] = useState<MetricId>(initial);
@@ -187,7 +191,7 @@ function Usage({ v }: { v: SharedView }) {
             return {
               id,
               label: METRICS[id].label(),
-              value: METRICS[id].format(metricTotal(id, rows)),
+              value: METRICS[id].format(metricTotal(id, rows), money),
               ...(c === undefined ? {} : { change: { value: c, better: METRICS[id].better }, detail: t("kaeso.share.vsBefore", "vs. the days before") }),
             };
           })}
@@ -207,7 +211,7 @@ function Usage({ v }: { v: SharedView }) {
                 height={280}
                 hideLegend
                 shares={false}
-                formatValue={m.format}
+                formatValue={(value) => m.format(value, money)}
                 timeZone="UTC"
                 tickAt="points"
                 formatTime={(time: Date) => fullDayLabel(utcDay(time))}
@@ -236,7 +240,7 @@ function Usage({ v }: { v: SharedView }) {
       {breakdowns.length > 0 && (
         <Dashboard aria-label={t("kaeso.share.breakdowns", "Where the usage went")} columns={2}>
           {breakdowns.map((b) => (
-            <Breakdown key={b.by} b={b} metric={metric} />
+            <Breakdown key={b.by} b={b} metric={metric} money={money} />
           ))}
         </Dashboard>
       )}
@@ -244,10 +248,10 @@ function Usage({ v }: { v: SharedView }) {
   );
 }
 
-function Breakdown({ b, metric }: { b: SharedBreakdown; metric: MetricId }) {
+function Breakdown({ b, metric, money }: { b: SharedBreakdown; metric: MetricId; money: Money }) {
   const m = METRICS[metric];
   const ranked = b.rows
-    .map((r) => ({ r, value: m.rank(asUsage(r)) }))
+    .map((r) => ({ r, value: m.rank(asUsage(r, money.code)) }))
     .sort((a, c) => c.value - a.value)
     .slice(0, 10);
   const top = ranked[0]?.value ?? 0;
@@ -259,7 +263,7 @@ function Breakdown({ b, metric }: { b: SharedBreakdown; metric: MetricId }) {
         items={ranked.map(({ r, value }, i) => ({
           id: `${b.by}-${i}`,
           label: rowLabel(b.by, r),
-          value: m.formatRank(value),
+          value: m.formatRank(value, money),
           share: top > 0 ? value / top : 0,
         }))}
       />
@@ -309,7 +313,9 @@ function Budgets({ v }: { v: SharedView }) {
                 valueText={use.exact}
                 caption={
                   ahead !== undefined
-                    ? t("kaeso.share.forecast", "Heading for {amount} at this pace", { amount: limitAmount(l.kind, ahead.toFixed(6), CENTS).short })
+                    ? t("kaeso.share.forecast", "Heading for {amount} at this pace", {
+                        amount: limitAmount(l.kind, ahead.toFixed(6), { ...CENTS, currency: l.currency }).short,
+                      })
                     : l.hard
                       ? t("kaeso.share.hard", "Requests stop once it's used up")
                       : t("kaeso.share.soft", "Only alerts once it's used up")

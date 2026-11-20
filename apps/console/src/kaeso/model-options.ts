@@ -2,20 +2,21 @@ import type { ModelPickerOption } from "@logicplanes/kaeso-ui/playground";
 import type { CatalogueModelView } from "~/api/generated/types";
 import type { PlaygroundModel } from "~/api/queries/playground";
 import { capabilities, priceLabel } from "~/features/project/models/model-fields";
+import type { Prices } from "~/format/prices";
 import { modelName } from "~/format/models";
 import { t } from "~/i18n";
 import { recall, remember } from "~/shell/session-memory";
 
-export function pickerPrice(input: string | null | undefined, output: string | null | undefined): string | undefined {
-  return input && output ? priceLabel({ input_price: input, output_price: output }) : undefined;
+export function pickerPrice(input: string | null | undefined, output: string | null | undefined, prices: Prices): string | undefined {
+  return input && output ? priceLabel({ input_price: input, output_price: output }, prices) : undefined;
 }
 
 const notServed = () => t("kaeso.modelOptions.notServed", "The provider doesn't serve it");
 const needsApiKey = () => t("kaeso.modelOptions.needsApiKey", "Needs an API key");
 
-export function catalogueModelOption(m: CatalogueModelView): ModelPickerOption {
+export function catalogueModelOption(m: CatalogueModelView, prices: Prices): ModelPickerOption {
   const name = modelName(m);
-  const price = pickerPrice(m.effective.input_price, m.effective.output_price);
+  const price = pickerPrice(m.effective.input_price, m.effective.output_price, prices);
   return {
     value: m.id,
     provider: m.provider,
@@ -33,8 +34,8 @@ export function keepChosen(options: ModelPickerOption[], chosen: readonly string
   return options.map((o) => (o.disabled && chosen.includes(o.value) ? { ...o, disabled: false } : o));
 }
 
-export function playgroundModelOption(m: PlaygroundModel, value: string, noKey: string): ModelPickerOption {
-  const price = pickerPrice(m.input_price, m.output_price);
+export function playgroundModelOption(m: PlaygroundModel, value: string, noKey: string, prices: Prices): ModelPickerOption {
+  const price = pickerPrice(m.input_price, m.output_price, prices);
   return {
     value,
     provider: m.provider,

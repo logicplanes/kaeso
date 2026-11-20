@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, level, user_id, service_account_id, api_key_id, kind, catalogue_model_id, period, amount, hard, alert_thresholds, created_at, updated_at, revision FROM limits WHERE project_id = $1 AND id = $2",
+  "query": "SELECT id, org_id, project_id, level, user_id, service_account_id, api_key_id, kind, catalogue_model_id, period, amount, currency, hard, alert_thresholds, created_at, updated_at, revision FROM limits WHERE project_id = $1 ORDER BY level, id",
   "describe": {
     "columns": [
       {
@@ -126,6 +126,17 @@
       },
       {
         "ordinal": 11,
+        "name": "currency",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "limits",
+            "name": "currency"
+          }
+        }
+      },
+      {
+        "ordinal": 12,
         "name": "hard",
         "type_info": "Bool",
         "origin": {
@@ -136,7 +147,7 @@
         }
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "alert_thresholds",
         "type_info": "Int2Array",
         "origin": {
@@ -147,7 +158,7 @@
         }
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -158,7 +169,7 @@
         }
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "updated_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -169,7 +180,7 @@
         }
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "revision",
         "type_info": "Int8",
         "origin": {
@@ -182,7 +193,6 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Uuid"
       ]
     },
@@ -198,6 +208,7 @@
       true,
       false,
       false,
+      true,
       false,
       false,
       false,
@@ -205,5 +216,5 @@
       false
     ]
   },
-  "hash": "452b3e8bab6a8e065e2a7d3a49b19e30568094d68aeafee4ca0896ca9e90fa72"
+  "hash": "1d6f73e855e4710bde3b418328fdd595eb6ce9a69f55c2bb85bdd54574c7d1b4"
 }

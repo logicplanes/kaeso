@@ -22,7 +22,7 @@ import {
   type Capability,
   type ListGroup,
 } from "@logicplanes/kaeso-ui";
-import { formatNumber, formatUSD } from "@logicplanes/kaeso-ui/format";
+import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { CatalogueModelView, RetiringModelView } from "~/api/generated/types";
 import { api, data } from "~/api/client";
 import { aliasesQuery, catalogueQuery, retiringQuery } from "~/api/queries/models";
@@ -30,6 +30,8 @@ import { projectCatalogue } from "~/api/queries/invalidation";
 import { useApiMutation } from "~/auth/mutation";
 import { toast } from "~/shell/toast";
 import { useProviderOptions, useProviders } from "~/kaeso/providers";
+import { useOrgPrices } from "~/kaeso/org-prices";
+import type { Prices } from "~/format/prices";
 import { usePhone } from "~/shell/use-phone";
 import { monthLabel } from "~/format/period";
 import { usePageCreateAction } from "~/shell/create-action";
@@ -95,6 +97,7 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   const aliases = useQuery(aliasesQuery(org, project));
   const retiring = useQuery(retiringQuery(org, project));
   const retiringById = useMemo(() => new Map((retiring.data?.data ?? []).map((m) => [m.id, m])), [retiring.data]);
+  const prices = useOrgPrices(org);
   const sort = search.sort ?? "model";
   const reason = canManage ? undefined : needs("models.manage");
 
@@ -152,12 +155,14 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
               {...(m.effective.display_name && m.effective.display_name !== m.model_id ? { name: m.effective.display_name } : {})}
             />
           ),
-          ...(phone && !MODEL_STATUSES.some((status) => hasStatus(m, status)) ? {} : { meta: <ModelMeta m={m} shutdown={retiringById.get(m.id)} /> }),
+          ...(phone && !MODEL_STATUSES.some((status) => hasStatus(m, status))
+            ? {}
+            : { meta: <ModelMeta m={m} prices={prices} shutdown={retiringById.get(m.id)} /> }),
           date: m.effective.release_date ? monthLabel(m.effective.release_date) : undefined,
         })),
       };
     });
-  }, [filtered, sort, catalog, retiringById, phone]);
+  }, [filtered, sort, catalog, retiringById, phone, prices]);
 
   const check = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/models/check", { params: { path: { org, project } } })),
@@ -342,15 +347,15 @@ export function ModelsPage({ org, project, search }: { org: string; project: str
   );
 }
 
-function ModelMeta({ m, shutdown }: { m: CatalogueModelView; shutdown?: RetiringModelView | undefined }) {
+function ModelMeta({ m, prices, shutdown }: { m: CatalogueModelView; prices: Prices; shutdown?: RetiringModelView | undefined }) {
   const f = m.effective;
   const overridden = overriddenFields(m).length;
   const unit =
     f.output_price && Number(f.output_price) === 0
       ? t("models.perMillionInput", "Per million input tokens")
       : t("models.perMillionInputOutput", "Per million input / output tokens");
-  const read = f.cache_read_price ? formatUSD(f.cache_read_price) : null;
-  const write = f.cache_write_price ? formatUSD(f.cache_write_price) : null;
+  const read = f.cache_read_price ? prices.unit(f.cache_read_price) : null;
+  const write = f.cache_write_price ? prices.unit(f.cache_write_price) : null;
   const cache =
     read && write
       ? t("models.cacheReadWrite", "cache read {read}, cache write {write}", { read, write })
@@ -418,7 +423,7 @@ function ModelMeta({ m, shutdown }: { m: CatalogueModelView; shutdown?: Retiring
         )}
         <Tooltip content={cache ? t("models.priceWithCache", "{unit}; {cache}", { unit, cache }) : unit}>
           <Text variant="small" tone="secondary" tabular tabIndex={0} className="min-w-96 text-right">
-            {priceLabel(f)}
+            {priceLabel(f, prices)}
           </Text>
         </Tooltip>
       </span>

@@ -4,6 +4,7 @@ use time::{Date, Month, OffsetDateTime, Time};
 use uuid::Uuid;
 
 use crate::catalogue::Fields;
+use crate::currency::RateBook;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -173,6 +174,8 @@ pub struct Limit {
     pub model: Option<Uuid>,
     pub period: Period,
     pub amount: Decimal,
+    #[serde(default)]
+    pub currency: Option<String>,
     pub hard: bool,
     pub thresholds: Vec<u8>,
 }
@@ -186,11 +189,26 @@ impl Limit {
         self.kind.is_rate() || self.hard
     }
 
-    pub fn units(&self) -> i64 {
+    pub fn currency(&self) -> &str {
+        self.currency.as_deref().unwrap_or(crate::currency::USD)
+    }
+
+    /// A spend budget in another currency is checked at the newest rate. Without any rate for
+    /// it the budget counts as used up, so a hard budget never lets spend through unchecked.
+    pub fn units(&self, rates: &RateBook) -> i64 {
         use rust_decimal::prelude::ToPrimitive;
         match self.kind {
-            Kind::SpendBudget => crate::cost::nano_usd(self.amount),
+            Kind::SpendBudget => rates
+                .to_usd(self.amount, self.currency())
+                .map_or(0, crate::cost::nano_usd),
             _ => self.amount.trunc().to_i64().unwrap_or(i64::MAX),
+        }
+    }
+
+    pub fn amount_usd(&self, rates: &RateBook) -> Option<Decimal> {
+        match self.kind {
+            Kind::SpendBudget => rates.to_usd(self.amount, self.currency()),
+            _ => Some(self.amount),
         }
     }
 
@@ -205,7 +223,7 @@ impl Limit {
             Kind::RequestRate => format!("{} requests per minute", self.amount.normalize()),
             Kind::TokenRate => format!("{} tokens per minute", self.amount.normalize()),
             Kind::TokenBudget => format!("{} tokens", self.amount.normalize()),
-            Kind::SpendBudget => format!("{} USD", self.amount.normalize()),
+            Kind::SpendBudget => format!("{} {}", self.amount.normalize(), self.currency()),
             Kind::ToolCallRate => format!("{} tool calls per minute", self.amount.normalize()),
         };
         let what = if self.kind.is_rate() { "" } else { period };
@@ -230,7 +248,7 @@ fn invalid(field: &'static str, message: impl Into<String>) -> LimitError {
 pub const MAX_COUNT: i64 = 1_000_000_000_000;
 pub const MAX_SPEND_USD: i64 = 1_000_000_000;
 
-pub fn validate(l: &Limit) -> Result<(), LimitError> {
+pub fn validate(l: &Limit, rates: &RateBook) -> Result<(), LimitError> {
     match (l.kind.is_rate(), l.period) {
         (true, Period::Minute) | (false, Period::Day | Period::Month | Period::Total) => {}
         (true, _) => return Err(invalid("period", "Rates are per `minute`.")),
@@ -244,12 +262,13 @@ pub fn validate(l: &Limit) -> Result<(), LimitError> {
     let (max, message) = if l.kind == Kind::SpendBudget {
         (
             MAX_SPEND_USD,
-            "The amount must be positive and at most 1,000,000,000 USD.",
+            "The amount must be positive and worth at most 1,000,000,000 USD.",
         )
     } else {
         (MAX_COUNT, "The amount must be positive and at most 10^12.")
     };
-    if l.amount <= Decimal::ZERO || l.amount > Decimal::from(max) {
+    let worth = l.amount_usd(rates).unwrap_or(l.amount);
+    if l.amount <= Decimal::ZERO || worth > Decimal::from(max) {
         return Err(invalid("amount", message));
     }
     match l.kind {
@@ -626,11 +645,14 @@ impl WorstCase {
     }
 }
 
-pub fn exceeds(child: &Limit, parent: &Limit) -> bool {
+pub fn exceeds(child: &Limit, parent: &Limit, rates: &RateBook) -> bool {
     child.kind == parent.kind
         && child.period == parent.period
         && (parent.model.is_none() || parent.model == child.model)
-        && child.amount > parent.amount
+        && match (child.amount_usd(rates), parent.amount_usd(rates)) {
+            (Some(c), Some(p)) => c > p,
+            _ => child.currency() == parent.currency() && child.amount > parent.amount,
+        }
 }
 
 pub fn crossed(thresholds: &[u8], before: i64, after: i64, amount: i64) -> Vec<u8> {
@@ -661,9 +683,22 @@ mod tests {
             model: None,
             period,
             amount,
+            currency: (kind == Kind::SpendBudget).then(|| "USD".to_owned()),
             hard: true,
             thresholds: kind.default_thresholds(),
         }
+    }
+
+    fn validate_usd(l: &Limit) -> Result<(), LimitError> {
+        validate(l, &RateBook::default())
+    }
+
+    fn euros() -> RateBook {
+        let day = time::macros::date!(2026 - 11 - 16);
+        RateBook::new([
+            (day, "USD".to_owned(), dec!(1.25)),
+            (day, "JPY".to_owned(), dec!(125)),
+        ])
     }
 
     #[derive(Debug, Deserialize)]
@@ -716,37 +751,37 @@ mod tests {
             Period::Month,
             dec!(20000000),
         );
-        assert!(validate(&budget).is_ok());
+        assert!(validate_usd(&budget).is_ok());
         let too_big = limit(
             Subject::Project(Uuid::nil()),
             Kind::TokenBudget,
             Period::Month,
             dec!(1000000000001),
         );
-        assert_eq!(validate(&too_big).unwrap_err().field, "amount");
+        assert_eq!(validate_usd(&too_big).unwrap_err().field, "amount");
     }
 
     #[test]
     fn spend_budgets_stop_at_a_billion_dollars() {
         let p = Subject::Project(Uuid::nil());
         let spend = |amount: Decimal| limit(p, Kind::SpendBudget, Period::Total, amount);
-        assert!(validate(&spend(dec!(1000000000))).is_ok());
-        assert!(validate(&spend(dec!(999999999.999999999))).is_ok());
-        let beyond = validate(&spend(dec!(1000000000.000000001))).unwrap_err();
+        assert!(validate_usd(&spend(dec!(1000000000))).is_ok());
+        assert!(validate_usd(&spend(dec!(999999999.999999999))).is_ok());
+        let beyond = validate_usd(&spend(dec!(1000000000.000000001))).unwrap_err();
         assert_eq!(beyond.field, "amount");
         assert_eq!(
             beyond.message,
-            "The amount must be positive and at most 1,000,000,000 USD."
+            "The amount must be positive and worth at most 1,000,000,000 USD."
         );
         assert!(beyond.message.len() <= 90);
         assert_eq!(
-            validate(&spend(dec!(0))).unwrap_err().message,
+            validate_usd(&spend(dec!(0))).unwrap_err().message,
             beyond.message
         );
         let tokens = limit(p, Kind::TokenBudget, Period::Total, dec!(1000000000000));
-        assert!(validate(&tokens).is_ok());
+        assert!(validate_usd(&tokens).is_ok());
         let rate = limit(p, Kind::RequestRate, Period::Minute, dec!(1000000000000));
-        assert!(validate(&rate).is_ok());
+        assert!(validate_usd(&rate).is_ok());
     }
 
     fn openai() -> &'static crate::providers::ProviderRef {
@@ -1009,18 +1044,23 @@ mod tests {
             Period::Total,
             Decimal::from(MAX_SPEND_USD),
         );
-        assert_eq!(cap.units(), 1_000_000_000_000_000_000);
-        assert!(cap.units().checked_mul(9).is_some());
-        assert!(cap.units() < (1_i64 << 62));
+        assert_eq!(cap.units(&RateBook::default()), 1_000_000_000_000_000_000);
+        assert!(cap.units(&RateBook::default()).checked_mul(9).is_some());
+        assert!(cap.units(&RateBook::default()) < (1_i64 << 62));
         let nano = limit(
             p,
             Kind::SpendBudget,
             Period::Total,
             dec!(999999999.999999999),
         );
-        assert_eq!(nano.units(), 999_999_999_999_999_999);
+        assert_eq!(nano.units(&RateBook::default()), 999_999_999_999_999_999);
         assert_eq!(
-            crossed(&[50, 100], cap.units() - 1, cap.units(), cap.units()),
+            crossed(
+                &[50, 100],
+                cap.units(&RateBook::default()) - 1,
+                cap.units(&RateBook::default()),
+                cap.units(&RateBook::default())
+            ),
             vec![100]
         );
     }
@@ -1054,40 +1094,40 @@ mod tests {
     #[test]
     fn limits_are_validated() {
         let p = Subject::Project(Uuid::nil());
-        assert!(validate(&limit(p, Kind::RequestRate, Period::Minute, dec!(10))).is_ok());
+        assert!(validate_usd(&limit(p, Kind::RequestRate, Period::Minute, dec!(10))).is_ok());
         assert_eq!(
-            validate(&limit(p, Kind::RequestRate, Period::Day, dec!(10)))
+            validate_usd(&limit(p, Kind::RequestRate, Period::Day, dec!(10)))
                 .unwrap_err()
                 .field,
             "period"
         );
         assert_eq!(
-            validate(&limit(p, Kind::SpendBudget, Period::Minute, dec!(10)))
+            validate_usd(&limit(p, Kind::SpendBudget, Period::Minute, dec!(10)))
                 .unwrap_err()
                 .field,
             "period"
         );
         assert_eq!(
-            validate(&limit(p, Kind::TokenBudget, Period::Day, dec!(1.5)))
+            validate_usd(&limit(p, Kind::TokenBudget, Period::Day, dec!(1.5)))
                 .unwrap_err()
                 .field,
             "amount"
         );
-        assert!(validate(&limit(p, Kind::SpendBudget, Period::Month, dec!(1.5))).is_ok());
+        assert!(validate_usd(&limit(p, Kind::SpendBudget, Period::Month, dec!(1.5))).is_ok());
         assert_eq!(
-            validate(&limit(p, Kind::SpendBudget, Period::Month, dec!(0)))
+            validate_usd(&limit(p, Kind::SpendBudget, Period::Month, dec!(0)))
                 .unwrap_err()
                 .field,
             "amount"
         );
         let mut l = limit(p, Kind::SpendBudget, Period::Month, dec!(5));
         l.thresholds = vec![80, 50];
-        assert_eq!(validate(&l).unwrap_err().field, "alert_thresholds");
+        assert_eq!(validate_usd(&l).unwrap_err().field, "alert_thresholds");
         let mut rate = limit(p, Kind::TokenRate, Period::Minute, dec!(5));
         assert!(rate.thresholds.is_empty());
         rate.thresholds = vec![50];
         assert_eq!(
-            validate(&rate).unwrap_err().message,
+            validate_usd(&rate).unwrap_err().message,
             "Rate limits have no alerts; leave `alert_thresholds` out."
         );
         assert_eq!(Kind::TokenBudget.default_thresholds(), [50, 80, 100]);
@@ -1151,26 +1191,59 @@ mod tests {
         let k = Subject::Key(Uuid::nil());
         let parent = limit(p, Kind::SpendBudget, Period::Month, dec!(50));
         let child = limit(k, Kind::SpendBudget, Period::Month, dec!(60));
-        assert!(exceeds(&child, &parent));
+        assert!(exceeds(&child, &parent, &RateBook::default()));
         assert!(!exceeds(
             &limit(k, Kind::SpendBudget, Period::Month, dec!(50)),
-            &parent
+            &parent,
+            &RateBook::default()
         ));
         assert!(
-            !exceeds(&limit(k, Kind::SpendBudget, Period::Day, dec!(60)), &parent),
+            !exceeds(
+                &limit(k, Kind::SpendBudget, Period::Day, dec!(60)),
+                &parent,
+                &RateBook::default()
+            ),
             "other periods are independent"
         );
         let mut scoped = child.clone();
         scoped.model = Some(Uuid::now_v7());
         assert!(
-            exceeds(&scoped, &parent),
+            exceeds(&scoped, &parent, &RateBook::default()),
             "an all-models parent covers model limits"
         );
         let mut scoped_parent = parent.clone();
         scoped_parent.model = Some(Uuid::now_v7());
         assert!(
-            !exceeds(&child, &scoped_parent),
+            !exceeds(&child, &scoped_parent, &RateBook::default()),
             "a model parent does not cover other models"
+        );
+    }
+
+    #[test]
+    fn spend_budgets_in_another_currency_are_checked_in_dollars_at_the_newest_rate() {
+        let p = Subject::Project(Uuid::nil());
+        let mut budget = limit(p, Kind::SpendBudget, Period::Month, dec!(40));
+        budget.currency = Some("EUR".into());
+        // 1.25 dollars to the euro: €40 is $50.
+        assert_eq!(budget.units(&euros()), 50_000_000_000);
+        assert_eq!(budget.amount_usd(&euros()), Some(dec!(50)));
+        // Without a rate the budget counts as used up.
+        assert_eq!(budget.units(&RateBook::default()), 0);
+        let dollars = limit(p, Kind::SpendBudget, Period::Month, dec!(55));
+        assert!(exceeds(&dollars, &budget, &euros()), "$55 is more than €40");
+        assert!(!exceeds(&budget, &dollars, &euros()));
+        let mut yen = limit(p, Kind::SpendBudget, Period::Month, dec!(5000));
+        yen.currency = Some("JPY".into());
+        assert!(!exceeds(&yen, &budget, &euros()), "¥5,000 is $50");
+        yen.amount = dec!(5001);
+        assert!(exceeds(&yen, &budget, &euros()));
+        let mut huge = limit(p, Kind::SpendBudget, Period::Total, dec!(100000000000));
+        huge.currency = Some("JPY".into());
+        assert!(validate(&huge, &euros()).is_ok(), "¥10^11 is $10^9");
+        huge.amount = dec!(100000000001);
+        assert_eq!(
+            validate(&huge, &euros()).unwrap_err().message,
+            "The amount must be positive and worth at most 1,000,000,000 USD."
         );
     }
 
@@ -1218,8 +1291,11 @@ mod tests {
             l.counter(datetime!(2026-10-11 9:00 UTC)),
             format!("lim:{}:m2026-10", l.id)
         );
-        assert_eq!(l.units(), 50_000_000_000);
+        assert_eq!(l.units(&RateBook::default()), 50_000_000_000);
         assert_eq!(l.describe(), "monthly spend budget of 50 USD");
+        l.currency = Some("EUR".into());
+        assert_eq!(l.describe(), "monthly spend budget of 50 EUR");
+        l.currency = Some("USD".into());
         l.kind = Kind::RequestRate;
         l.period = Period::Minute;
         l.amount = dec!(60);
@@ -1247,7 +1323,7 @@ mod tests {
             tools.describe(),
             "tool call rate of 30 tool calls per minute"
         );
-        assert!(validate(&tools).is_ok());
+        assert!(validate_usd(&tools).is_ok());
         let all = [tools.clone(), requests.clone()];
         let model = Uuid::from_u128(3);
         assert_eq!(
@@ -1260,10 +1336,10 @@ mod tests {
         );
         assert!(applicable_to_tools(&all, project, None, None).is_empty());
         tools.model = Some(model);
-        assert_eq!(validate(&tools).map_err(|e| e.field), Err("model"));
+        assert_eq!(validate_usd(&tools).map_err(|e| e.field), Err("model"));
         tools.model = None;
         tools.amount = dec!(1.5);
-        assert_eq!(validate(&tools).map_err(|e| e.field), Err("amount"));
+        assert_eq!(validate_usd(&tools).map_err(|e| e.field), Err("amount"));
     }
 
     #[test]

@@ -69,24 +69,42 @@ impl RateBook {
         usd_rate(rates, code)
     }
 
+    // The newest day that lists `code`: the ECB stops publishing a currency now and then.
+    pub fn last(&self, code: &str) -> Option<Decimal> {
+        self.days
+            .values()
+            .rev()
+            .find_map(|rates| usd_rate(rates, code))
+    }
+
     pub fn on(&self, code: &str, day: Date) -> Option<(Date, Decimal)> {
         let (date, rates) = self.days.range(..=day).next_back()?;
         usd_rate(rates, code).map(|r| (*date, r))
     }
 
     pub fn convert(&self, usd: Decimal, code: &str, day: Date) -> Option<Decimal> {
+        if code == USD {
+            return Some(usd);
+        }
         let rate = self
             .on(code, day)
             .map(|(_, r)| r)
-            .or_else(|| self.latest(code))?;
+            .or_else(|| self.last(code))?;
         Some(usd * rate)
+    }
+
+    pub fn from_usd(&self, usd: Decimal, code: &str) -> Option<Decimal> {
+        if code == USD {
+            return Some(usd);
+        }
+        Some(usd * self.last(code)?)
     }
 
     pub fn to_usd(&self, amount: Decimal, code: &str) -> Option<Decimal> {
         if code == USD {
             return Some(amount);
         }
-        let rate = self.latest(code)?;
+        let rate = self.last(code)?;
         Some(
             (amount / rate)
                 .round_dp_with_strategy(PRICE_PLACES, RoundingStrategy::MidpointNearestEven)
@@ -256,6 +274,29 @@ mod tests {
             b.latest("GBP").map(|r| r * dec!(10))
         );
         assert_eq!(b.convert(dec!(10), "CHF", date!(2026 - 11 - 16)), None);
+        assert_eq!(
+            b.convert(dec!(10), "USD", date!(2026 - 11 - 01)),
+            Some(dec!(10))
+        );
+    }
+
+    #[test]
+    fn a_currency_the_ecb_stopped_listing_keeps_its_last_rate() {
+        let b = book(
+            "<Cube time='2026-11-16'><Cube currency='USD' rate='1.1014'/></Cube>\
+             <Cube time='2026-11-13'><Cube currency='USD' rate='1.0900'/>\
+             <Cube currency='RUB' rate='109.00'/></Cube>",
+        );
+        assert_eq!(b.latest("RUB"), None);
+        assert_eq!(b.last("RUB"), Some(dec!(100)));
+        assert_eq!(b.from_usd(dec!(2), "RUB"), Some(dec!(200)));
+        assert_eq!(b.to_usd(dec!(250), "RUB"), Some(dec!(2.5)));
+        assert_eq!(
+            b.convert(dec!(1), "RUB", date!(2026 - 11 - 16)),
+            Some(dec!(100))
+        );
+        assert_eq!(b.from_usd(dec!(2), "USD"), Some(dec!(2)));
+        assert_eq!(b.from_usd(dec!(2), "CHF"), None);
     }
 
     #[test]

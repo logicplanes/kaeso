@@ -3,7 +3,8 @@ import type { UsageRow } from "~/api/generated/types";
 import { shiftDay } from "~/format/period";
 import { t } from "~/i18n";
 import { totalTokens } from "~/kaeso/tokens";
-import { periodUSD, tileUSD, totals } from "~/kaeso/usage-panels";
+import type { Money } from "~/format/currency";
+import { totals } from "~/kaeso/usage-panels";
 
 export type MetricId = "requests" | "tokens" | "cost" | "errors" | "tools" | "cache";
 export type Dimension = "project" | "model" | "key" | "member";
@@ -14,8 +15,9 @@ export interface Metric {
   color: string;
   of: (r: UsageRow | undefined) => number;
   rank: (r: UsageRow) => number;
-  format: (v: number) => string;
-  formatRank: (v: number) => string;
+  /** `money` writes amounts of spend in the organization's currency. */
+  format: (v: number, money: Money) => string;
+  formatRank: (v: number, money: Money) => string;
   better: "up" | "down" | "none";
 }
 
@@ -27,7 +29,7 @@ export function cacheHit(rows: UsageRow[]): number | null {
 
 // The chart palette's tokens by name: importing VIZ would load the chart code into every page that shows a metric.
 const viz = (i: number) => `var(--k-viz-${i + 1})`;
-const costOf = (r: UsageRow | undefined) => Number(r?.cost ?? 0);
+const costOf = (r: UsageRow | undefined) => Number(r?.converted_cost ?? 0);
 const tokens = (v: number) => formatTokens(v);
 
 export const METRICS: Record<MetricId, Metric> = {
@@ -57,8 +59,8 @@ export const METRICS: Record<MetricId, Metric> = {
     color: viz(2),
     of: costOf,
     rank: (r) => costOf(r),
-    format: (v) => tileUSD(v.toFixed(6)),
-    formatRank: (v) => periodUSD(v.toFixed(6)),
+    format: (v, money) => money.tile(v.toFixed(6)),
+    formatRank: (v, money) => money.period(v.toFixed(6)),
     better: "none",
   },
   errors: {
@@ -93,6 +95,9 @@ export const METRICS: Record<MetricId, Metric> = {
   },
 };
 
+/** A metric's formatter for a chart, with amounts of spend in `money`. */
+export const formatWith = (id: MetricId, money: Money) => (v: number) => METRICS[id].format(v, money);
+
 export const change = (now: number, before: number | undefined) => (before ? (now - before) / before : undefined);
 
 export function metricTotal(id: MetricId, rows: UsageRow[]): number {
@@ -125,7 +130,7 @@ export function forecastFrom(today: string): string {
 export function forecast(rows: UsageRow[], from: string, to: string) {
   const monthStart = `${to.slice(0, 8)}01`;
   if (from > forecastFrom(to)) return undefined;
-  const byDay = new Map(rows.map((r) => [r.key, Number(r.cost ?? 0)]));
+  const byDay = new Map(rows.map((r) => [r.key, Number(r.converted_cost ?? 0)]));
   const [y = 1970, m = 1, d = 1] = to.split("-").map(Number);
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
   let soFar = 0;

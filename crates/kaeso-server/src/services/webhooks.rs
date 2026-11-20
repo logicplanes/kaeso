@@ -286,7 +286,11 @@ pub fn budget_data(budget: &Budget) -> Value {
         LimitPeriod::Month => "month",
         LimitPeriod::Total => "total",
     };
-    json!({ "kind": kind, "period": period, "amount": budget.amount })
+    if budget.kind == LimitKind::SpendBudget {
+        json!({ "kind": kind, "period": period, "amount": budget.amount, "currency": budget.currency })
+    } else {
+        json!({ "kind": kind, "period": period, "amount": budget.amount })
+    }
 }
 
 fn price(p: Price) -> &'static str {

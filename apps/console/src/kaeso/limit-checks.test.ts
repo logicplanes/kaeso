@@ -63,6 +63,11 @@ describe("limitProblem", () => {
     }
   });
 
+  it("leaves the cap of a budget in another currency to the gateway, which knows the day's rate", () => {
+    expect(limitProblem({ ...newLimit(), amount: "1000000001" }, "EUR")).toBeNull();
+    expect(limitProblem({ ...newLimit(), amount: "0" }, "EUR")).toBe("Enter an amount above zero.");
+  });
+
   it("lets tokens and requests go beyond the spend cap", () => {
     for (const kind of ["token_budget", "request_rate", "token_rate"] as const) {
       expect(limitProblem({ ...newLimit(), kind, period: kind === "token_budget" ? "month" : "minute", amount: "1000000000000" })).toBeNull();

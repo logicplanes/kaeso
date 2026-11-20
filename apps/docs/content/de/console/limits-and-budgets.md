@@ -20,7 +20,7 @@ Limits zu sehen erfordert das Recht **Limits ansehen**, sie zu ändern **Limits 
 
 | Art | Zählt | Zeitraum |
 | --- | --- | --- |
-| Ausgabenbudget | US-Dollar, zu den Preisen des Modells | Ein Tag, ein Monat oder insgesamt |
+| Ausgabenbudget | Die Währung der Organisation, zu den Preisen des Modells; geprüft in US-Dollar zum neuesten Kurs ([Währungen](../concepts/currencies.md#ausgabenbudgets)) | Ein Tag, ein Monat oder insgesamt |
 | Token-Budget | Token | Ein Tag, ein Monat oder insgesamt |
 | Anfragerate | Anfragen | Eine gleitende Minute |
 | Token-Rate | Token | Eine gleitende Minute |

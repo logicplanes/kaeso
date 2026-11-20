@@ -23,7 +23,6 @@ import { previousPeriod } from "~/format/period";
 import { t } from "~/i18n";
 import { totalTokens } from "~/kaeso/tokens";
 import { costUnknown, costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
-import { periodUSD, tileUSD } from "~/kaeso/usage-panels";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
 import type { Overview } from "./data";
@@ -81,7 +80,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
         requests: r.requests,
         errors: r.errors,
         tokens: totalTokens(r),
-        cost: Number(r.cost ?? 0),
+        cost: Number(r.converted_cost ?? 0),
         cache: cacheHit([r]),
         row: r,
         known: !costUnknown(r),
@@ -234,13 +233,13 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
           col.custom(
             { id: "cost", header: t("common.cost", "Cost"), size: costWidth(rows, 96, phone), priority: 1 },
             (e: Entity) => (e.known ? e.cost : -1),
-            (_v: number, e: Entity) => <UsageCost row={e.row} />,
+            (_v: number, e: Entity) => <UsageCost row={e.row} money={o.money} />,
             { align: "end" },
           ),
           col.custom(
             { id: "unit", header: t("kaeso.analytics.avgCost", "Avg cost"), size: 112, priority: 5 },
             (e: Entity) => (e.known && e.requests > e.row.unpriced ? e.cost / (e.requests - e.row.unpriced) : -1),
-            (v: number) => (v < 0 ? <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text> : tileUSD(v.toFixed(8))),
+            (v: number) => (v < 0 ? <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text> : o.money.tile(v.toFixed(8))),
             { align: "end" },
           ),
         ]
@@ -287,11 +286,11 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
                 ? {
                     detail: unpriced
                       ? t("kaeso.analytics.costShareKnown", "{amount}, {share} of the known cost", {
-                          amount: periodUSD(priciest.cost.toFixed(6)),
+                          amount: o.money.period(priciest.cost.toFixed(6)),
                           share: formatPercent(priciest.cost / totalCost, 0),
                         })
                       : t("kaeso.analytics.costShare", "{amount}, {share} of cost", {
-                          amount: periodUSD(priciest.cost.toFixed(6)),
+                          amount: o.money.period(priciest.cost.toFixed(6)),
                           share: formatPercent(priciest.cost / totalCost, 0),
                         }),
                   }
@@ -335,7 +334,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
               <ShareBar
                 aria-label={t("kaeso.analytics.costShareTitle", "Share of cost")}
                 slices={shareSlices((e) => e.cost)}
-                formatValue={(v) => periodUSD(v.toFixed(6))}
+                formatValue={(v) => o.money.period(v.toFixed(6))}
               />
               {unpricedNote && (
                 <Text as="p" variant="caption" tone="tertiary" className="mt-12">

@@ -2,11 +2,10 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
-import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRights } from "~/test/fixtures";
+import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, PROJECT, myMembership, project, signedIn, withRights } from "~/test/fixtures";
 import { credential, member, notifications, serviceAccount, usageRow } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
-import { me as account } from "~/test/fixtures/instance-account";
 
 const PERIOD = "from=2026-10-01&to=2026-10-07";
 const USAGE = "orgs/:org/usage";
@@ -65,18 +64,18 @@ describe("organization analytics", () => {
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("$2.00");
   });
 
-  it("shows the organization's cost in the currency picked, next to the dollars", async () => {
-    signedIn();
-    on("GET", "me", account({ display_currency: "GBP" }));
-    usage({ day: wrap([usageRow("2026-10-02", { cost: "2.75", converted_cost: "2.06" })]) });
+  it("shows the organization's cost in its currency, with the rates it used", async () => {
+    signedIn({ memberships: [myMembership({ org_currency: "GBP" })] });
+    usage({
+      day: wrap([usageRow("2026-10-02", { cost: "2.75", converted_cost: "2.06", currency: "GBP" })]),
+      project: wrap([usageRow(PROJECT, { cost: "2.75", converted_cost: "2.06", currency: "GBP" })]),
+    });
     await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
 
-    expect(await screen.findByText("≈ £2.06")).toBeInTheDocument();
-    expect(
-      usageQueries()
-        .filter((q) => q["group_by"] === "day")
-        .every((q) => q["currency"] === "GBP"),
-    ).toBe(true);
+    expect(await screen.findByRole("tab", { name: /Cost.*£2\.06/ })).toBeInTheDocument();
+    expect(screen.getByText("In GBP at each day's ECB rate; the latest is of 13 Nov 2026.")).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent("$");
+    expect(usageQueries().some((q) => "currency" in q)).toBe(false);
   });
 
   it("shows the period's usage, the cost by project and the projects ordered by requests", async () => {
@@ -260,7 +259,7 @@ describe("organization analytics", () => {
     await user.click(screen.getByRole("button", { name: "Download CSV" }));
     const csv = async (i: number) => (await (files[i] as Blob).text()).trimEnd().split("\r\n");
     const project = await csv(0);
-    expect(project[0]).toBe("Project,Id,Requests,Errors,Tokens,Cost");
+    expect(project[0]).toBe("Project,Id,Requests,Errors,Tokens,Cost (USD)");
     expect(project.slice(1)).toEqual(
       desc
         ? ["proj_gone,proj_gone,5,0,150,9", `Checkout assistant,${PROJECT},50,0,150,1`]

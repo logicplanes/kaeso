@@ -9,8 +9,7 @@ import type { Overview } from "./data";
 import { change, METRICS, metricTotal, type MetricId } from "./metrics";
 import { DayContext, hourLabel, MetricChart, PREVIOUS, rank, tabRange, useOpenRow, type Ranked } from "./parts";
 import { Efficiency, Reliability, Spend } from "./sections";
-import { approxMoney } from "~/format/currency";
-import { RatesNote } from "~/kaeso/currency";
+import { RatesNote } from "~/kaeso/rates-note";
 
 const TOP = 5;
 // German nouns keep their capital inside a sentence.
@@ -35,13 +34,13 @@ function shape(o: Overview, metric: MetricId): string | undefined {
   const peak = points.reduce<(typeof points)[number] | undefined>((a, p) => (p.v > (a?.v ?? 0) ? p : a), undefined);
   if (points.length < 3 || !peak) return undefined;
   const when = o.step ? hourLabel(peak.at) : bucketLabel(utcDay(peak.at), o.g, spansYears(o.from, o.to, o.g));
-  if (metric === "errors") return t("kaeso.overview.highest", "Highest: {value}, {when}", { value: m.format(peak.v), when });
+  if (metric === "errors") return t("kaeso.overview.highest", "Highest: {value}, {when}", { value: m.format(peak.v, o.money), when });
   const whole = o.live ? points.slice(0, -1) : points;
   const average = whole.reduce((a, p) => a + p.v, 0) / whole.length;
   return t(
     "kaeso.overview.typical",
     "{average} per {granularity, select, hour {hour} week {week} month {month} other {day}} on average; highest {value}, {when}",
-    { average: m.format(metric === "cost" ? average : Math.round(average)), granularity: o.step ?? o.g, value: m.format(peak.v), when },
+    { average: m.format(metric === "cost" ? average : Math.round(average), o.money), granularity: o.step ?? o.g, value: m.format(peak.v, o.money), when },
   );
 }
 
@@ -130,26 +129,24 @@ export function ControlRoom({ o, initial = "requests" }: { o: Overview; initial?
             return {
               id,
               label: m.label(),
-              value: m.format(metricTotal(id, o.rows)),
+              value: m.format(metricTotal(id, o.rows), o.money),
               ...(c ? { change: c } : {}),
               detail:
                 id === "cost" && o.now.unpriced
                   ? t("kaeso.usage.unpriced", "{count, plural, one {# request} other {# requests}} unknown", { count: o.now.unpriced })
-                  : id === "cost" && o.display && o.now.converted
-                    ? approxMoney(o.now.converted, o.display.code)
-                    : c
-                      ? o.compare
-                      : o.single && o.live
-                        ? t("kaeso.overview.soFarToday", "So far today")
-                        : undefined,
+                  : c
+                    ? o.compare
+                    : o.single && o.live
+                      ? t("kaeso.overview.soFarToday", "So far today")
+                      : undefined,
             };
           })}
         />
         <ChartCell o={o} metric={metric} />
       </Dashboard>
-      {o.display && (
-        <div className="mt-8">
-          <RatesNote display={o.display} from={o.from} />
+      {o.showCost && (
+        <div className="mt-8 empty:hidden">
+          <RatesNote money={o.money} from={o.from} />
         </div>
       )}
       <Section title={t("kaeso.overview.top", "Top usage")} description={t("kaeso.overview.topHint", "The five with the most of the total chosen above")}>

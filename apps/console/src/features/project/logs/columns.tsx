@@ -3,8 +3,7 @@ import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip,
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
-import { approxMoney } from "~/format/currency";
-import { requestUSD } from "~/format/money";
+import { shownCost } from "~/format/currency";
 import { locale, t, type Locale } from "~/i18n";
 import { common } from "~/i18n/common";
 import { inputTokens, totalTokens } from "~/kaeso/tokens";
@@ -135,10 +134,7 @@ export function logColumns({
   partyName,
   providerName,
   errors,
-  currency,
 }: {
-  /** The display currency each row's `converted_cost` is in. */
-  currency?: string | undefined;
   spansDays: boolean;
   layout?: LogsLayout | undefined;
   withProvider?: boolean | undefined;
@@ -233,20 +229,8 @@ export function logColumns({
     ),
     cost: col.custom(
       { id: "cost", header: columnLabel("cost"), size: KEPT_WIDTHS.cost, priority: 2 },
-      (r: LogView) => r.cost,
-      (v, r) =>
-        !r.cost_known ? (
-          <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text>
-        ) : currency && r.converted_cost ? (
-          <span className="flex flex-col items-end">
-            <span>{requestUSD(v)}</span>
-            <Text variant="caption" tone="tertiary">
-              {approxMoney(r.converted_cost, currency)}
-            </Text>
-          </span>
-        ) : (
-          requestUSD(v)
-        ),
+      (r: LogView) => shownCost(r).amount,
+      (v, r) => (r.cost_known ? shownCost(r).money.request(v) : <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text>),
       { align: "end" },
     ),
     key: col.custom(

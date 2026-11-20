@@ -686,6 +686,10 @@ pub struct SharedView {
     #[doc = "Whether costs show; without them every `cost` is `null` and spend budgets\n\
         are left out."]
     pub costs: bool,
+    #[doc = "The organization's currency, which every `converted_cost` is in; a snapshot\n\
+        keeps the one it was made with."]
+    #[schema(example = "EUR")]
+    pub currency: String,
     #[doc = "When the link was made."]
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: OffsetDateTime,
@@ -779,9 +783,9 @@ pub async fn open(
     let today = ctx.now.date();
     let window = data::period(link, today);
     let data = match (&link.snapshot, link.live) {
-        (Some(kept), false) => {
-            serde_json::from_value::<SharedData>(kept.clone()).map_err(ApiError::internal)?
-        }
+        (Some(kept), false) => serde_json::from_value::<SharedData>(kept.clone())
+            .map_err(ApiError::internal)?
+            .kept(),
         _ => data::compute(&state, link, o.names, o.costs, window).await?,
     };
     let data = if o.costs { data } else { data.without_costs() };
@@ -829,6 +833,7 @@ pub async fn open(
         to: window.1,
         metric: link.metric.clone(),
         costs: data.costs,
+        currency: data.currency,
         created_at: link.created_at,
         expires_at: link.expires_at,
         made_with_kaeso: mark,

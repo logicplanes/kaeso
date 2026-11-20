@@ -20,6 +20,8 @@ const asRow = (b: TimelineBucket): UsageRow => ({
   cache_write_tokens: b.cache_write_tokens,
   reasoning_tokens: b.reasoning_tokens,
   cost: b.cost ?? null,
+  converted_cost: b.converted_cost ?? null,
+  currency: b.currency,
   tool_calls: 0,
   tool_call_errors: 0,
   unpriced: 0,

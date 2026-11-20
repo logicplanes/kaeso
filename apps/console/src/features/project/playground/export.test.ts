@@ -84,6 +84,8 @@ describe("the playground export", () => {
     expect(md).toContain("### Turn 1\n\n**Prompt**\n\nWhere is order 7?\n\nAttachments: receipt.png (image/png)");
     expect(md).toContain("**Reply**\n\nIn transit.");
     expect(md).toMatch(/_first token .* · took .* · 120 in · 48 out · \$0\.000420 · request req_01text_/);
+    const euros = conversationMarkdown({ ...conversation(), cost: (usd) => `€${(Number(usd) * 0.9).toFixed(6)}` });
+    expect(euros).toMatch(/120 in · 48 out · €0\.000378 · request req_01text_/);
     expect(md).toContain("Failed: Rate limit reached.");
     expect(md).toContain("request req_01fail");
     expect(md).toContain("Well\nStopped before the model finished.");

@@ -84,7 +84,7 @@ In einem Projekt mit eingeschaltetem [Antwort-Cache](response-cache.md) nennt di
 
 | Format | Enthält |
 | --- | --- |
-| CSV | Metadaten, für Tabellenkalkulationen |
+| CSV | Metadaten, für Tabellenkalkulationen. Die Kosten stehen in `cost_usd`, in einer Organisation mit anderer Währung auch in dieser, etwa `cost_eur` ([Währungen](../concepts/currencies.md)) |
 | JSON Lines | Metadaten, eine Anfrage pro Zeile |
 | JSON Lines mit Inhalt | Metadaten und die gespeicherten Anfragen und Antworten |
 

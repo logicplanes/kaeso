@@ -19,6 +19,7 @@ pub struct LimitRow {
     pub catalogue_model_id: Option<Uuid>,
     pub period: String,
     pub amount: Decimal,
+    pub currency: Option<String>,
     pub hard: bool,
     pub alert_thresholds: Vec<i16>,
     pub created_at: OffsetDateTime,
@@ -48,6 +49,7 @@ impl LimitRow {
             model: self.catalogue_model_id,
             period: Period::parse(&self.period).ok_or_else(|| corrupt("period"))?,
             amount: self.amount,
+            currency: self.currency.clone(),
             hard: self.hard,
             thresholds: self
                 .alert_thresholds
@@ -77,8 +79,8 @@ pub async fn insert(
     let thresholds: Vec<i16> = l.thresholds.iter().map(|t| i16::from(*t)).collect();
     let r = sqlx::query!(
         "INSERT INTO limits (id, org_id, project_id, level, user_id, service_account_id, api_key_id, kind, \
-         catalogue_model_id, period, amount, hard, alert_thresholds) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) ON CONFLICT DO NOTHING",
+         catalogue_model_id, period, amount, currency, hard, alert_thresholds) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) ON CONFLICT DO NOTHING",
         l.id,
         org_id,
         project_id,
@@ -90,6 +92,7 @@ pub async fn insert(
         l.model,
         l.period.as_str(),
         l.amount,
+        l.currency.as_deref(),
         l.hard,
         &thresholds
     )
@@ -105,13 +108,14 @@ pub async fn update(
 ) -> Result<bool, StoreError> {
     let thresholds: Vec<i16> = l.thresholds.iter().map(|t| i16::from(*t)).collect();
     Ok(sqlx::query!(
-        "UPDATE limits SET amount = $3, hard = $4, alert_thresholds = $5, revision = revision + 1, updated_at = now() \
-         WHERE project_id = $1 AND id = $2",
+        "UPDATE limits SET amount = $3, currency = $6, hard = $4, alert_thresholds = $5, revision = revision + 1, \
+         updated_at = now() WHERE project_id = $1 AND id = $2",
         project_id,
         l.id,
         l.amount,
         l.hard,
-        &thresholds
+        &thresholds,
+        l.currency.as_deref()
     )
     .execute(db)
     .await?
@@ -163,7 +167,7 @@ pub async fn get(
     Ok(sqlx::query_as!(
         LimitRow,
         "SELECT id, org_id, project_id, level, user_id, service_account_id, api_key_id, kind, catalogue_model_id, \
-         period, amount, hard, alert_thresholds, created_at, updated_at, revision FROM limits WHERE project_id = $1 AND id = $2",
+         period, amount, currency, hard, alert_thresholds, created_at, updated_at, revision FROM limits WHERE project_id = $1 AND id = $2",
         project_id,
         id
     )
@@ -185,7 +189,7 @@ pub async fn list(db: impl PgExecutor<'_>, project_id: Uuid) -> Result<Vec<Limit
     Ok(sqlx::query_as!(
         LimitRow,
         "SELECT id, org_id, project_id, level, user_id, service_account_id, api_key_id, kind, catalogue_model_id, \
-         period, amount, hard, alert_thresholds, created_at, updated_at, revision FROM limits WHERE project_id = $1 \
+         period, amount, currency, hard, alert_thresholds, created_at, updated_at, revision FROM limits WHERE project_id = $1 \
          ORDER BY level, id",
         project_id
     )
@@ -197,7 +201,7 @@ pub async fn list_org(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<Limit
     Ok(sqlx::query_as!(
         LimitRow,
         "SELECT id, org_id, project_id, level, user_id, service_account_id, api_key_id, kind, catalogue_model_id, \
-         period, amount, hard, alert_thresholds, created_at, updated_at, revision FROM limits WHERE org_id = $1 \
+         period, amount, currency, hard, alert_thresholds, created_at, updated_at, revision FROM limits WHERE org_id = $1 \
          ORDER BY id",
         org_id
     )

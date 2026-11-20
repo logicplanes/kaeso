@@ -8,6 +8,21 @@ pub enum Locale {
     ZhCn,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Amount {
+    pub value: String,
+    pub currency: String,
+}
+
+impl Amount {
+    pub fn new(value: &str, currency: &str) -> Amount {
+        Amount {
+            value: value.to_owned(),
+            currency: currency.to_owned(),
+        }
+    }
+}
+
 impl Locale {
     pub const ALL: [Locale; 3] = [Locale::En, Locale::De, Locale::ZhCn];
 
@@ -110,15 +125,36 @@ impl Locale {
         }
     }
 
-    pub fn usd(self, plain: &str) -> String {
+    // The common symbols as CLDR writes them in these languages; any other currency goes by its
+    // code, which every reader of it knows.
+    pub fn money(self, plain: &str, currency: &str) -> String {
         let (sign, digits) = plain
             .strip_prefix('-')
             .map_or(("", plain), |rest| ("−", rest));
         let n = self.number(digits);
-        match self {
-            Locale::De => format!("{sign}{n}\u{a0}$"),
-            Locale::En | Locale::ZhCn => format!("{sign}${n}"),
+        let symbol = match currency {
+            "USD" => Some("$"),
+            "EUR" => Some("€"),
+            "GBP" => Some("£"),
+            _ => None,
+        };
+        match (self, symbol) {
+            (Locale::De, Some(s)) => format!("{sign}{n}\u{a0}{s}"),
+            (Locale::En | Locale::ZhCn, Some(s)) => format!("{sign}{s}{n}"),
+            (Locale::De, None) => format!("{sign}{n}\u{a0}{currency}"),
+            (Locale::En | Locale::ZhCn, None) => format!("{sign}{currency}\u{a0}{n}"),
         }
+    }
+
+    pub fn amount(self, a: &Amount) -> String {
+        self.money(&a.value, &a.currency)
+    }
+
+    pub fn amounts(self, all: &[Amount]) -> String {
+        all.iter()
+            .map(|a| self.amount(a))
+            .collect::<Vec<_>>()
+            .join(" + ")
     }
 
     pub fn number(self, plain: &str) -> String {
@@ -349,10 +385,17 @@ mod tests {
         assert_eq!(Locale::En.month(d), "October 2026");
         assert_eq!(Locale::De.month(d), "Oktober 2026");
         assert_eq!(Locale::ZhCn.month(d), "2026年10月");
-        assert_eq!(Locale::En.usd("1412.50"), "$1,412.50");
-        assert_eq!(Locale::De.usd("1412.50"), "1.412,50\u{a0}$");
-        assert_eq!(Locale::ZhCn.usd("41.20"), "$41.20");
-        assert_eq!(Locale::En.usd("-3.10"), "−$3.10");
+        assert_eq!(Locale::En.money("1412.50", "USD"), "$1,412.50");
+        assert_eq!(Locale::De.money("1412.50", "USD"), "1.412,50\u{a0}$");
+        assert_eq!(Locale::ZhCn.money("41.20", "USD"), "$41.20");
+        assert_eq!(Locale::En.money("-3.10", "USD"), "−$3.10");
+        assert_eq!(Locale::En.money("1412.50", "EUR"), "€1,412.50");
+        assert_eq!(Locale::De.money("1412.50", "EUR"), "1.412,50\u{a0}€");
+        assert_eq!(Locale::ZhCn.money("8.60", "GBP"), "£8.60");
+        assert_eq!(Locale::En.money("12.40", "CHF"), "CHF\u{a0}12.40");
+        assert_eq!(Locale::De.money("12.40", "CHF"), "12,40\u{a0}CHF");
+        let both = [Amount::new("12.40", "EUR"), Amount::new("3.10", "GBP")];
+        assert_eq!(Locale::En.amounts(&both), "€12.40 + £3.10");
     }
 
     #[test]

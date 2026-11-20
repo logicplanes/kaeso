@@ -37,7 +37,9 @@ export function logRow(overrides: Partial<LogView> = {}): LogView {
     fallbacks: [],
     tags: [],
     guardrails: [],
+    currency: "USD",
     ...overrides,
+    converted_cost: overrides.converted_cost !== undefined ? overrides.converted_cost : (overrides.cost ?? "0.000420"),
   };
 }
 

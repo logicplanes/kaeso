@@ -1,4 +1,3 @@
-use crate::platform::exchange_rates::CurrencyParam;
 use axum::Json;
 use axum::body::Body;
 use axum::extract::State;
@@ -30,6 +29,7 @@ use super::keys::creator_of;
 use super::pagination::{List, PageParams};
 use crate::platform::audit::Action;
 use crate::platform::params::{Path, Query};
+use crate::services::exchange_rates::Money;
 use crate::services::logs::forget;
 use crate::state::AppState;
 
@@ -685,8 +685,9 @@ pub struct LogFilter {
     #[doc = "Only requests to this endpoint, as the log names it."]
     #[param(value_type = Option<super::LoggedEndpoint>)]
     pub endpoint: Option<String>,
-    #[doc = "Only requests that cost at least this much, in USD, as a decimal string\n\
-        such as `0.5`."]
+    #[doc = "Only requests that cost at least this much in the organization's\n\
+        `currency`, as a decimal string such as `0.5`; turned into USD at the\n\
+        latest ECB rate."]
     pub min_cost: Option<String>,
     #[doc = "Only requests that named this model or alias, exactly as the app sent it,\n\
         `provider/model` included. Unlike `alias`, it also finds requests whose name\n\
@@ -776,7 +777,7 @@ impl ResponseCacheResult {
 }
 
 impl LogFilter {
-    fn filter(&self) -> ApiResult<Filter> {
+    fn filter(&self, money: &Money) -> ApiResult<Filter> {
         if let Some(s) = &self.source
             && !SOURCES.contains(&s.as_str())
         {
@@ -823,7 +824,11 @@ impl LogFilter {
             alias: self.alias.clone(),
             fell_back: self.fell_back,
             endpoint: self.endpoint.as_deref().map(endpoint_filter).transpose()?,
-            min_cost: self.min_cost.as_deref().map(cost_filter).transpose()?,
+            min_cost: self
+                .min_cost
+                .as_deref()
+                .map(|c| cost_filter(c, money))
+                .transpose()?,
             requested_model: self.requested_model.clone(),
             tag: self.tag.as_deref().map(tag_filter).transpose()?,
             error_message: self
@@ -886,17 +891,15 @@ fn endpoint_filter(e: &str) -> ApiResult<String> {
 }
 
 // Up to the log's 12 decimal places, and never negative.
-fn cost_filter(c: &str) -> ApiResult<String> {
+fn cost_filter(c: &str, money: &Money) -> ApiResult<String> {
     use std::str::FromStr as _;
     rust_decimal::Decimal::from_str(c.trim())
         .ok()
         .filter(|d| !d.is_sign_negative() && d.scale() <= 12)
-        .map(|d| d.normalize().to_string())
+        .and_then(|d| money.to_usd(d))
+        .map(|d| d.round_dp(12).normalize().to_string())
         .ok_or_else(|| {
-            ApiError::invalid(
-                "min_cost",
-                "`min_cost` must be an amount in USD, such as `0.5`.",
-            )
+            ApiError::invalid("min_cost", "`min_cost` must be an amount, such as `0.5`.")
         })
 }
 
@@ -1010,11 +1013,14 @@ pub struct LogView {
         request made or heard, such as a video model without a price per clip; `cost`\n\
         is then 0 and means unknown."]
     pub cost_known: bool,
-    #[doc = "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\n\
-        latest for days before the install's first rates), an estimate; absent when no\n\
-        currency was asked or the cost is unknown."]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[doc = "`cost` in `currency`, at the ECB rate of the request's day (the latest for\n\
+        days before the install's first rates); the same as `cost` in USD, and `null`\n\
+        when the cost is unknown."]
+    #[schema(example = "0.0042")]
     pub converted_cost: Option<String>,
+    #[doc = "The organization's currency, which `converted_cost` is in."]
+    #[schema(example = "EUR")]
+    pub currency: String,
     #[doc = "What the cost rests on: `none` when nothing was billed, `measured` by Kaeso\n\
         when the provider bills by the length of audio it was sent but reported none\n\
         and Kaeso read the length from the file's header, `estimated` when Kaeso\n\
@@ -1221,17 +1227,13 @@ pub struct StreamProgressView {
     pub processing_us: Option<u32>,
 }
 
-fn converted(
-    mut v: LogView,
-    converter: Option<&(std::sync::Arc<kaeso_core::currency::RateBook>, String)>,
-) -> LogView {
-    if let Some((book, code)) = converter
-        && v.cost_known
+fn converted(mut v: LogView, money: &Money) -> LogView {
+    if v.cost_known
         && let Ok(cost) = v.cost.parse::<rust_decimal::Decimal>()
     {
-        v.converted_cost =
-            crate::platform::exchange_rates::convert(book, code, cost, v.started_at.date());
+        v.converted_cost = money.text_on(cost, v.started_at.date());
     }
+    v.currency.clone_from(&money.code);
     v
 }
 
@@ -1274,6 +1276,7 @@ fn view(r: &LogRow) -> LogView {
         cost: cost_from_raw(r.cost).to_string(),
         cost_known: r.cost_known,
         converted_cost: None,
+        currency: kaeso_core::currency::USD.to_owned(),
         cost_basis: CostBasis::of(&r.cost_basis),
         user_agent: r.user_agent.clone(),
         client_ip: r.client_ip.clone(),
@@ -1332,7 +1335,7 @@ pub(crate) fn decode_cursor(c: &str) -> Option<(OffsetDateTime, Uuid)> {
     to the bucket's `duration_p95_ms`. Pages hold up to 100 entries; pass\n\
     `next_cursor` as `after` for the next.",
     tag = "logs",
-    params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, LogFilter, CurrencyParam),
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, LogFilter),
     responses((status = 200, body = List<LogView>))
 )]
 pub async fn list(
@@ -1341,23 +1344,22 @@ pub async fn list(
     Path(_p): Path<(String, String)>,
     Query(page): Query<PageParams>,
     Query(f): Query<LogFilter>,
-    Query(c): Query<CurrencyParam>,
 ) -> ApiResult<Json<List<LogView>>> {
-    let converter = crate::platform::exchange_rates::converter(&state, c.currency.as_deref())?;
+    let money = Money::of(&state, &ctx.org()?.org.currency);
     let page = page.page_by(decode_cursor)?;
     let p = &ctx.project()?.project;
     let rows = ch::search(
         log_store(&state)?,
         p.org_id,
         p.id,
-        &f.filter()?,
+        &f.filter(&money)?,
         page.after,
         page.fetch(),
     )
     .await
     .map_err(unavailable)?;
     Ok(Json(List::from_page(&page, rows, encode_cursor, |r| {
-        converted(view(&r), converter.as_ref())
+        converted(view(&r), &money)
     })))
 }
 
@@ -1464,9 +1466,16 @@ pub async fn errors(
         return Err(ApiError::invalid("limit", "`limit` must be 1 to 50."));
     }
     let p = &ctx.project()?.project;
-    let groups = ch::common_errors(log_store(&state)?, p.org_id, p.id, &f.filter()?, limit)
-        .await
-        .map_err(unavailable)?;
+    let money = Money::of(&state, &ctx.org()?.org.currency);
+    let groups = ch::common_errors(
+        log_store(&state)?,
+        p.org_id,
+        p.id,
+        &f.filter(&money)?,
+        limit,
+    )
+    .await
+    .map_err(unavailable)?;
     Ok(Json(List::complete(
         groups
             .into_iter()
@@ -1492,16 +1501,15 @@ pub async fn errors(
     `kaeso-request-id` header), plus the request and reply bodies when content\n\
     was logged and the caller holds `logs.content.view`.",
     tag = "logs",
-    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("log" = RequestId, Path), CurrencyParam),
+    params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("log" = RequestId, Path)),
     responses((status = 200, body = LogEntryView))
 )]
 pub async fn get(
     State(state): State<AppState>,
     ctx: Ctx,
     Path((_o, _p, id)): Path<(String, String, String)>,
-    Query(c): Query<CurrencyParam>,
 ) -> ApiResult<Json<LogEntryView>> {
-    let converter = crate::platform::exchange_rates::converter(&state, c.currency.as_deref())?;
+    let money = Money::of(&state, &ctx.org()?.org.currency);
     let id: RequestId = id.parse().map_err(|_| ApiError::not_found("log entry"))?;
     let scope = ctx.project()?;
     let p = &scope.project;
@@ -1520,7 +1528,7 @@ pub async fn get(
         None
     };
     Ok(Json(LogEntryView {
-        log: converted(view(&row), converter.as_ref()),
+        log: converted(view(&row), &money),
         content,
     }))
 }
@@ -1534,7 +1542,17 @@ pub struct ExportParams {
     pub include_content: Option<bool>,
 }
 
-const CSV_HEADER: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost,user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version,guardrails\n";
+const CSV_COLUMNS: &str = "id,started_at,duration_ms,ttfb_ms,key_id,principal_kind,principal_id,endpoint,ingress_dialect,egress_dialect,provider,requested_model,model,stream,status,error_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,reasoning_tokens,cost_usd,{converted}user_agent,client_ip,upstream_request_id,stream_events,stream_bytes,stream_first_byte_ms,stream_keepalives,usage_estimated,source,overhead_us,stream_processing_us,cache_breakpoints,request_upload_us,response_cache,alias,fallbacks,media_unit,media_input,media_output,media_detail,cost_known,cost_basis,tags,client,client_version,guardrails";
+
+// The cost in the organization's currency follows the USD one, named after its currency.
+fn csv_header(money: &Money) -> String {
+    let converted = if money.is_usd() {
+        String::new()
+    } else {
+        format!("cost_{},", money.code.to_ascii_lowercase())
+    };
+    format!("{}\n", CSV_COLUMNS.replace("{converted}", &converted))
+}
 
 // OWASP CSV injection (https://owasp.org/www-community/attacks/CSV_Injection): quote every
 // text cell and prefix `'` to one that starts a formula or holds a separator a spreadsheet
@@ -1570,7 +1588,7 @@ pub(crate) fn csv_text(s: &str) -> String {
     out
 }
 
-fn csv_line(v: &LogView) -> String {
+fn csv_line(v: &LogView, money: &Money) -> String {
     use Cell::{Number, Text};
     let progress = v.stream_progress.as_ref();
     fn number<T: ToString>(n: Option<T>) -> Cell {
@@ -1599,6 +1617,10 @@ fn csv_line(v: &LogView) -> String {
         Number(v.usage.cache_write_tokens.to_string()),
         Number(v.usage.reasoning_tokens.to_string()),
         Number(v.cost.clone()),
+    ]
+    .into_iter()
+    .chain((!money.is_usd()).then(|| Number(v.converted_cost.clone().unwrap_or_default())))
+    .chain([
         Text(v.user_agent.clone()),
         Text(v.client_ip.clone()),
         Text(v.upstream_request_id.clone()),
@@ -1655,7 +1677,8 @@ fn csv_line(v: &LogView) -> String {
                 .collect::<Vec<_>>()
                 .join("; "),
         ),
-    ];
+    ])
+    .collect::<Vec<_>>();
     let mut line = cells
         .iter()
         .map(|c| match c {
@@ -1681,6 +1704,7 @@ struct ExportState {
     after: Option<(OffsetDateTime, Uuid)>,
     content: bool,
     csv: bool,
+    money: Money,
     done: bool,
     header: bool,
     pending: std::collections::VecDeque<LogRow>,
@@ -1736,7 +1760,7 @@ async fn next_chunk(s: &mut ExportState) -> Option<Result<Bytes, std::io::Error>
     }
     let mut out = String::new();
     if s.header {
-        out.push_str(CSV_HEADER);
+        out.push_str(&csv_header(&s.money));
         s.header = false;
     }
     let rows = take_chunk(&mut s.pending, s.content);
@@ -1754,9 +1778,9 @@ async fn next_chunk(s: &mut ExportState) -> Option<Result<Bytes, std::io::Error>
         Vec::new()
     };
     for r in &rows {
-        let v = view(r);
+        let v = converted(view(r), &s.money);
         if s.csv {
-            out.push_str(&csv_line(&v));
+            out.push_str(&csv_line(&v, &s.money));
         } else {
             let line = if s.content {
                 let content = contents
@@ -1807,7 +1831,8 @@ pub async fn export(
             )
         });
     }
-    let filter = f.filter()?;
+    let money = Money::of(&state, &ctx.org()?.org.currency);
+    let filter = f.filter(&money)?;
     let clickhouse = log_store(&state)?.clone();
     ch::search(
         &clickhouse,
@@ -1834,6 +1859,7 @@ pub async fn export(
         after: None,
         content,
         csv,
+        money,
         done: false,
         header: csv,
         pending: std::collections::VecDeque::new(),

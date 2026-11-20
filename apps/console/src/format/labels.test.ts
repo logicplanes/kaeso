@@ -31,6 +31,7 @@ describe("limitDescription", () => {
     expect(limitDescription({ kind: "token_budget", period: "total", amount: "1000000" })).toBe("total token budget of 1000000 tokens");
     expect(limitDescription({ kind: "request_rate", period: "minute", amount: "60" })).toBe("request rate of 60 requests per minute");
     expect(limitDescription({ kind: "spend_budget", period: "day", amount: "0.5" })).toBe("daily spend budget of 0.5 USD");
+    expect(limitDescription({ kind: "spend_budget", period: "month", amount: "40", currency: "EUR" })).toBe("monthly spend budget of 40 EUR");
   });
 
   it("says every kind and period of limit", () => {
@@ -119,6 +120,7 @@ describe("labels", () => {
     ]);
     expect(sessionMethodLabel("oidc")).toBe("SSO");
     expect(limitUnit("spend_budget")).toBe("USD");
+    expect(limitUnit("spend_budget", "EUR")).toBe("EUR");
   });
 
   it("name limits, their units and periods", () => {

@@ -20,7 +20,7 @@ Seeing limits needs the right **View limits**, and changing them **Manage limits
 
 | Kind | Counts | Period |
 | --- | --- | --- |
-| Spend budget | US dollars, at the model's prices | A day, a month or in total |
+| Spend budget | The organization's currency, at the model's prices; checked in US dollars at the latest rate ([currencies](../concepts/currencies.md#spend-budgets)) | A day, a month or in total |
 | Token budget | Tokens | A day, a month or in total |
 | Request rate | Requests | A sliding minute |
 | Token rate | Tokens | A sliding minute |

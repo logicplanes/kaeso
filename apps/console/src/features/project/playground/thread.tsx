@@ -69,6 +69,7 @@ const TurnView = memo(function TurnView({
   onCancel,
   onEdit,
   logHref,
+  formatCost,
 }: {
   turn: Turn;
   model: PlaygroundModel | null;
@@ -79,13 +80,14 @@ const TurnView = memo(function TurnView({
   onCancel: ((turn: string) => void) | null;
   onEdit: (() => void) | null;
   logHref: ((id: string) => string) | null;
+  formatCost: ((usd: string) => string) | undefined;
 }) {
   const r = turn.response;
   const mode = turn.mode ?? "text";
   const kind = KIND[mode];
   // A reply reaches the log once it ended, so the link waits for that.
   const log = logHref && r.requestId && !isLive(r) ? logHref(r.requestId) : null;
-  const shownMetrics = r.status === "failed" && !r.usage ? null : <ResponseMetrics {...metricsOf(r, model, mode)} />;
+  const shownMetrics = r.status === "failed" && !r.usage ? null : <ResponseMetrics {...metricsOf(r, model, mode)} formatCost={formatCost} />;
   const metrics =
     shownMetrics || log ? (
       <span className="flex flex-wrap items-center gap-x-16 gap-y-4">
@@ -161,6 +163,7 @@ export default function Thread({
   onCancel = null,
   onEdit = null,
   logHref = null,
+  formatCost,
   className,
 }: {
   turns: Turn[];
@@ -174,6 +177,8 @@ export default function Thread({
   onEdit?: (() => void) | null | undefined;
   /** Where a reply's entry in the request log opens, for someone who may read the log. */
   logHref?: ((id: string) => string) | null | undefined;
+  /** Writes a reply's cost, given in dollars, such as in the organization's currency. */
+  formatCost?: ((usd: string) => string) | undefined;
   className?: string | undefined;
 }) {
   const last = turns.at(-1);
@@ -191,6 +196,7 @@ export default function Thread({
           onCancel={turn === last ? onCancel : null}
           onEdit={turn === last ? onEdit : null}
           logHref={logHref}
+          formatCost={formatCost}
         />
       ))}
     </Turns>

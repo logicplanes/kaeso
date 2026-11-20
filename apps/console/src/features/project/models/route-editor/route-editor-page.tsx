@@ -16,6 +16,7 @@ import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
 import { LoadFailed } from "~/features/org/load-failed";
 import { catalogueModelOption } from "~/kaeso/model-options";
+import { useOrgPrices } from "~/kaeso/org-prices";
 import { useModelPickerProviders, useProviders } from "~/kaeso/providers";
 import { toast } from "~/shell/toast";
 import { usePhone } from "~/shell/use-phone";
@@ -210,7 +211,8 @@ function Editor({
   const providerIds = useMemo(() => [...new Set(catalogue.map((m) => m.provider))], [catalogue]);
   const pickerProviders = useModelPickerProviders(org, providerIds);
   const providers = useProviders(org);
-  const options = useMemo(() => catalogue.map(catalogueModelOption), [catalogue]);
+  const prices = useOrgPrices(org);
+  const options = useMemo(() => catalogue.map((m) => catalogueModelOption(m, prices)), [catalogue, prices]);
 
   const usesWho = useMemo(() => {
     const fields = new Set<string>();

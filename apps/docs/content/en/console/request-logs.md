@@ -84,7 +84,7 @@ In a project with the [response cache](response-cache.md) on, **Usage** also say
 
 | Format | Holds |
 | --- | --- |
-| CSV | Metadata, for spreadsheets |
+| CSV | Metadata, for spreadsheets. The cost is in `cost_usd`, and in an organization with another currency also in that currency, such as `cost_eur` ([currencies](../concepts/currencies.md)) |
 | JSON Lines | Metadata, one request per line |
 | JSON Lines with content | Metadata, and the stored requests and replies |
 

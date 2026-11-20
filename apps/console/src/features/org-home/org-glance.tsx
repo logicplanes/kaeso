@@ -28,7 +28,8 @@ import { grantLabel } from "~/kaeso/grant";
 import { statusWord } from "~/kaeso/mcp-servers";
 import { RecentChanges } from "~/kaeso/overview/recent-changes";
 import { useProviders } from "~/kaeso/providers";
-import { byBucket, periodUSD } from "~/kaeso/usage-panels";
+import { useOrgMoney } from "~/kaeso/org-money";
+import { byBucket } from "~/kaeso/usage-panels";
 import { orgPath, projectPath } from "~/shell/pages";
 
 const REFRESH = 30_000;
@@ -53,13 +54,14 @@ export function CostByProject({ org }: { org: string }) {
   const monthStart = `${today.slice(0, 8)}01`;
   const byProject = useQuery({ ...orgUsageQuery(org, monthStart, today, "project"), refetchInterval: REFRESH });
   const projects = useQuery(orgProjectsQuery(org, true));
+  const money = useOrgMoney(org);
   const slices = [...(byProject.data ?? [])]
-    .filter((r) => Number(r.cost ?? 0) > 0)
-    .sort((a, b) => Number(b.cost) - Number(a.cost))
+    .filter((r) => Number(r.converted_cost ?? 0) > 0)
+    .sort((a, b) => Number(b.converted_cost) - Number(a.converted_cost))
     .slice(0, 4)
-    .map((r) => ({ id: r.key, label: projects.data?.find((p) => p.id === r.key)?.name ?? r.key, value: Number(r.cost) }));
+    .map((r) => ({ id: r.key, label: projects.data?.find((p) => p.id === r.key)?.name ?? r.key, value: Number(r.converted_cost) }));
   if (!slices.length) return null;
-  return <ShareBar aria-label={t("kaeso.overview.costByProject", "Cost by project")} slices={slices} formatValue={(v) => periodUSD(v.toFixed(6))} />;
+  return <ShareBar aria-label={t("kaeso.overview.costByProject", "Cost by project")} slices={slices} formatValue={(v) => money.period(v.toFixed(6))} />;
 }
 
 function ProjectsCell({ org }: { org: string }) {

@@ -29,6 +29,8 @@ import { catalogueModelOption, keepChosen } from "./model-options";
 import { useModelPickerProviders } from "./providers";
 import { t } from "~/i18n";
 import { ExpiryPicker, defaultExpiry, expiryRequest, type Expiry } from "./expiry-picker";
+import { useOrgCurrency } from "./org-money";
+import { useOrgPrices } from "./org-prices";
 import { LimitEditor, limitBody, limitProblem, newLimit, type LimitDraft } from "./limit-editor";
 import { useProjectRights } from "~/auth/rights";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -62,6 +64,8 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
   const accounts = useQuery({ ...serviceAccountsQuery(org, project), enabled: canForAccounts && !fixedServiceAccount });
   const projectView = useQuery(projectQuery(org, project));
   const orgView = useQuery(orgQuery(org));
+  const currency = useOrgCurrency(org);
+  const prices = useOrgPrices(org);
   const catalogue = useQuery(catalogueQuery(org, project));
 
   const [name, setName] = useState("");
@@ -94,7 +98,7 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
   const maxDays = projectView.data?.max_key_lifetime_days ?? orgView.data?.max_key_lifetime_days ?? null;
   const expiry: Expiry = picked ?? defaultExpiry(maxDays);
 
-  const problems = keptLimits.map(limitProblem).filter(Boolean);
+  const problems = keptLimits.map((l) => limitProblem(l, currency)).filter(Boolean);
   const ready = name.trim().length > 0 && access !== null && (expiry !== "date" || date !== null) && problems.length === 0;
 
   const create = useApiMutation({
@@ -240,7 +244,10 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
                   appearance="default"
                   size="md"
                   fullWidth
-                  options={keepChosen(allowedModels.map(catalogueModelOption), keptModels)}
+                  options={keepChosen(
+                    allowedModels.map((m) => catalogueModelOption(m, prices)),
+                    keptModels,
+                  )}
                   providers={modelProviders}
                   value={keptModels}
                   onValueChange={setModels}

@@ -9,7 +9,8 @@ import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
 import { bucketLabel, lastDay, type Granularity } from "~/format/buckets";
-import { saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
+import { costColumns, saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
+import { useOrgMoney } from "~/kaeso/org-money";
 import { useRequestLogs } from "~/auth/session";
 import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
 import type { AnalyticsSearch } from "~/kaeso/overview/views";
@@ -76,6 +77,7 @@ export function Breakdown({
   const logs = useRequestLogs() && rights.has("logs.metadata.view");
   const [sorting, setSorting] = useState<SortingState>([]);
   const providers = useProviders(org);
+  const money = useOrgMoney(org);
   const phone = usePhone();
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: by === "key" && rights.has("keys.all.view") });
   const partyName = usePartyName(org, project);
@@ -214,8 +216,8 @@ export function Breakdown({
       ? [
           col.custom(
             { id: "cost", header: common.cost(), size: costWidth(sorted, COST_WIDTH, phone), priority: 1 },
-            (r: UsageRow) => r.cost ?? "",
-            (_v: string, r: UsageRow) => <UsageCost row={r} />,
+            (r: UsageRow) => r.converted_cost ?? "",
+            (_v: string, r: UsageRow) => <UsageCost row={r} money={money} />,
             { align: "end" },
           ),
         ]
@@ -242,7 +244,7 @@ export function Breakdown({
           { header: t("project.overview.errors", "Errors"), value: (r) => r.errors },
           { header: common.tokens(), value: (r) => totalTokens(r) },
           { header: t("project.overview.cacheHit", "Cache hit"), value: (r) => r.cache_hit_rate },
-          ...(showCost ? [{ header: common.cost(), value: (r: UsageRow) => r.cost }] : []),
+          ...(showCost ? costColumns(money) : []),
           ...(hasMedia(shown) ? [{ header: t("kaeso.usage.media.header", "Media"), value: (r: UsageRow) => mediaSummary(r.media) }] : []),
         ],
         shown,

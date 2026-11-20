@@ -15,6 +15,7 @@ use super::access::Ctx;
 use super::error::{ApiError, ApiResult};
 use super::pagination::List;
 use crate::platform::params::{Path, Query};
+use crate::services::exchange_rates::{Money, amount_text};
 use crate::state::AppState;
 
 pub(crate) const USAGE_UNAVAILABLE: &str = "Usage is unavailable right now; try again shortly.";
@@ -33,10 +34,6 @@ pub struct UsageQuery {
         provider was sent), or for orgs `project`. A week or month that starts\n\
         before `from` or ends after `to` counts only the days in the period."]
     pub group_by: Option<String>,
-    #[doc = "Also give each row's cost in this currency, an ISO 4217 code from\n\
-        `exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\n\
-        rate, and days before the install's first rates at the latest rate."]
-    pub currency: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, IntoParams)]
@@ -185,9 +182,14 @@ pub struct UsageRow {
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
     pub cost: Option<String>,
-    #[doc = "`cost` in the `currency` asked for, an estimate; `null` when none was\n\
-        asked or `cost` is."]
+    #[doc = "`cost` in `currency`: each day's spend at that day's ECB rate, days\n\
+        before the install's first rates at the latest; the same as `cost`\n\
+        in USD, and `null` when `cost` is."]
+    #[schema(value_type = Option<String>, example = "11.32")]
     pub converted_cost: Option<String>,
+    #[doc = "The organization's currency, which `converted_cost` is in."]
+    #[schema(example = "EUR")]
+    pub currency: String,
     #[doc = "Tool calls through the project's MCP portals, refusals included. Counted by\n\
         day and project, so 0 when grouped or filtered by model, provider, key,\n\
         member or route."]
@@ -370,7 +372,7 @@ async fn usage(
         ));
     }
     let filter = f.parse()?;
-    let converter = crate::platform::exchange_rates::converter(state, q.currency.as_deref())?;
+    let money = Money::of(state, &ctx.org()?.org.currency);
     let rows = rows(
         state,
         UsageOf {
@@ -381,7 +383,7 @@ async fn usage(
         (from, to),
         group,
         &filter,
-        converter.as_ref(),
+        &money,
     )
     .await?;
     Ok(Json(List::complete(rows)))
@@ -395,7 +397,7 @@ pub(crate) struct UsageOf {
 }
 
 /// The usage rows of an org or one of its projects, as the usage endpoints return them;
-/// `costs` false leaves every cost out, and `converter` adds each cost in its currency.
+/// `costs` false leaves every cost out; `money` converts each cost into the org's currency.
 pub(crate) async fn rows(
     state: &AppState,
     UsageOf {
@@ -406,7 +408,7 @@ pub(crate) async fn rows(
     (from, to): (Date, Date),
     group: GroupBy,
     filter: &store::Filter,
-    converter: Option<&(std::sync::Arc<kaeso_core::currency::RateBook>, String)>,
+    money: &Money,
 ) -> ApiResult<Vec<UsageRow>> {
     let rows = store::usage(&state.pg, org, project, from, to, group, filter)
         .await
@@ -430,6 +432,7 @@ pub(crate) async fn rows(
                 reasoning_tokens: count(r.reasoning_tokens),
                 cost: costs.then(|| r.cost.normalize().to_string()),
                 converted_cost: None,
+                currency: money.code.clone(),
                 tool_calls: 0,
                 tool_call_errors: 0,
                 unpriced: count(r.media.unpriced),
@@ -457,6 +460,7 @@ pub(crate) async fn rows(
             cache_hit_rate: None,
             cost: costs.then(|| "0".to_owned()),
             converted_cost: None,
+            currency: money.code.clone(),
             tool_calls: 0,
             tool_call_errors: 0,
             unpriced: 0,
@@ -465,25 +469,22 @@ pub(crate) async fn rows(
         row.tool_calls = count(t.calls);
         row.tool_call_errors = count(t.errors);
     }
-    if let (Some((book, code)), true) = (converter, costs) {
+    if costs && money.is_usd() {
+        for row in merged.values_mut() {
+            row.converted_cost.clone_from(&row.cost);
+        }
+    } else if costs {
         let by_day = store::costs_by_day(&state.pg, org, project, from, to, group, filter)
             .await
             .map_err(|e| ApiError::unavailable(USAGE_UNAVAILABLE, e))?;
         let mut sums: std::collections::BTreeMap<String, rust_decimal::Decimal> =
             std::collections::BTreeMap::new();
         for (key, day, cost) in by_day {
-            let converted = book.convert(cost, code, day).unwrap_or_default();
+            let converted = money.on(cost, day).unwrap_or_default();
             *sums.entry(key).or_default() += converted;
         }
         for (key, row) in &mut merged {
-            row.converted_cost = Some(
-                sums.get(key)
-                    .copied()
-                    .unwrap_or_default()
-                    .round_dp(6)
-                    .normalize()
-                    .to_string(),
-            );
+            row.converted_cost = Some(amount_text(sums.get(key).copied().unwrap_or_default()));
         }
     }
     Ok(merged.into_values().collect())
@@ -499,7 +500,8 @@ pub(crate) async fn rows(
     `group_by`, sorted by `key`; groups without usage are left out. Every filter\n\
     takes a `key` as its grouping returns it, so filters and groupings combine:\n\
     `group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\n\
-    through one key. `cost` is in USD and `null` without `costs.org.view`. For\n\
+    through one key. `cost` is in USD, `converted_cost` in the org's `currency`;\n\
+    both are `null` without `costs.org.view`. For\n\
     minutes, hours, latency or error kinds use `usage/timeline`; for single\n\
     requests, a project's `logs`.",
     tag = "orgs",
@@ -528,7 +530,8 @@ pub async fn org(
     `group_by`, sorted by `key`; groups without usage are left out. Every filter\n\
     takes a `key` as its grouping returns it, so filters and groupings combine:\n\
     `group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\n\
-    through one key. `cost` is in USD and `null` without `costs.view`. For\n\
+    through one key. `cost` is in USD, `converted_cost` in the org's `currency`;\n\
+    both are `null` without `costs.view`. For\n\
     minutes, hours, latency or error kinds use `usage/timeline`; for single\n\
     requests, `logs`.",
     tag = "projects",
@@ -676,6 +679,13 @@ pub struct TimelineBucket {
     #[doc = "Cost in USD; `null` without the right to see costs."]
     #[schema(value_type = Option<String>)]
     pub cost: Option<String>,
+    #[doc = "`cost` in `currency`, at the ECB rate of the bucket's day; the same as\n\
+        `cost` in USD, and `null` when `cost` is."]
+    #[schema(value_type = Option<String>, example = "0.42")]
+    pub converted_cost: Option<String>,
+    #[doc = "The organization's currency, which `converted_cost` is in."]
+    #[schema(example = "EUR")]
+    pub currency: String,
     #[doc = "The median total time of its requests, in milliseconds."]
     pub duration_p50_ms: u32,
     #[doc = "The 95th percentile of the total time of its requests, in milliseconds."]
@@ -798,14 +808,14 @@ async fn timeline(
     .map_err(super::logs::unavailable)?;
     let format = time::format_description::well_known::Rfc3339;
     let ids = timeline_ids(group);
+    let money = Money::of(state, &ctx.org()?.org.currency);
     let mut buckets: Vec<TimelineBucket> = rows
         .into_iter()
         .filter_map(|r| {
-            let start = time::OffsetDateTime::from_unix_timestamp(r.start_unix)
-                .ok()?
-                .format(&format)
-                .ok()?;
+            let at = time::OffsetDateTime::from_unix_timestamp(r.start_unix).ok()?;
+            let start = at.format(&format).ok()?;
             let reached = r.with_ttfb > 0;
+            let cost = scope.costs.then(|| cost_from_raw(r.cost));
             Some(TimelineBucket {
                 start,
                 key: group.map(|_| public_key(ids, r.key)),
@@ -816,9 +826,9 @@ async fn timeline(
                 cache_read_tokens: r.cache_read_tokens,
                 cache_write_tokens: r.cache_write_tokens,
                 reasoning_tokens: r.reasoning_tokens,
-                cost: scope
-                    .costs
-                    .then(|| cost_from_raw(r.cost).normalize().to_string()),
+                cost: cost.map(|c| c.normalize().to_string()),
+                converted_cost: cost.and_then(|c| money.text_on(c, at.date())),
+                currency: money.code.clone(),
                 duration_p50_ms: millis(&r.duration, 0).unwrap_or(r.duration_max),
                 duration_p95_ms: millis(&r.duration, 1).unwrap_or(r.duration_max),
                 duration_max_ms: r.duration_max,
@@ -843,8 +853,9 @@ async fn timeline(
     request log, so it reaches back only as far as the org keeps metadata; for\n\
     longer periods use `usage`. It takes the filters of `usage` plus `failed`;\n\
     with `group_by` there is a bucket per step and group, `key` naming the group\n\
-    as `usage` does, and `top` keeps the busiest groups. `cost` is in USD and\n\
-    `null` without `costs.org.view`.",
+    as `usage` does, and `top` keeps the busiest groups. `cost` is in USD,\n\
+    `converted_cost` in the org's `currency`; both are `null` without\n\
+    `costs.org.view`.",
     tag = "orgs",
     params(("org" = OrgId, Path), TimelineQuery, UsageFilter, ProjectFilter),
     responses((status = 200, body = List<TimelineBucket>))
@@ -873,8 +884,9 @@ pub async fn org_timeline(
     log, so it reaches back only as far as the org keeps metadata; for longer\n\
     periods use `usage`. It takes the filters of `usage` plus `failed`; with\n\
     `group_by` there is a bucket per step and group, `key` naming the group as\n\
-    `usage` does, and `top` keeps the busiest groups. `cost` is in USD and\n\
-    `null` without `costs.view`.",
+    `usage` does, and `top` keeps the busiest groups. `cost` is in USD,\n\
+    `converted_cost` in the org's `currency`; both are `null` without\n\
+    `costs.view`.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), TimelineQuery, UsageFilter),
     responses((status = 200, body = List<TimelineBucket>))

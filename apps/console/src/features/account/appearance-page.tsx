@@ -6,7 +6,6 @@ import { useApiMutation } from "~/auth/mutation";
 import { sessionQuery, useSession } from "~/auth/session";
 import { resolve, t, type LocaleChoice } from "~/i18n";
 import { useChangeLocale } from "~/i18n/provider";
-import { CurrencyPicker } from "~/kaeso/currency";
 import { SettingsPage } from "~/shell/settings-page";
 
 type Theme = "system" | "light" | "dark";
@@ -66,11 +65,6 @@ export function AppearancePage() {
                 ]}
               />
             }
-          />
-          <SettingsRow
-            title={t("account.currency", "Currency")}
-            description={t("account.currencyHint", "Spend also shows in it, next to USD; saved to your account.")}
-            control={<CurrencyPicker />}
           />
         </SettingsGroup>
       </Section>

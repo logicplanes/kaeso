@@ -1,7 +1,7 @@
 import type { DecisionAnswer, DecisionQuestion } from "@logicplanes/kaeso-ui/playground";
 import { formatDuration, formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { PlaygroundModel } from "~/api/queries/playground";
-import { requestUSD } from "~/format/money";
+import { moneyIn, USD } from "~/format/currency";
 import { t } from "~/i18n";
 import { metricsOf } from "./metrics";
 import type { ResponseState, Turn } from "./responses";
@@ -22,6 +22,8 @@ export interface Conversation {
   parameters: Readonly<Record<string, unknown>>;
   columns: readonly ExportColumn[];
   at: Date;
+  /** Writes a reply's cost, given in dollars; in dollars when left out. */
+  cost?: ((usd: string) => string) | undefined;
 }
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -89,7 +91,7 @@ function replyLines(turn: Turn): string[] {
   return lines;
 }
 
-function figureLine(turn: Turn, model: PlaygroundModel | null): string {
+function figureLine(turn: Turn, model: PlaygroundModel | null, cost: (usd: string) => string): string {
   const f = figures(turn.response, model, turn);
   const parts = [
     ...(f.timeToFirstToken != null ? [t("playground.export.firstToken", "first token {time}", { time: formatDuration(f.timeToFirstToken) })] : []),
@@ -97,7 +99,7 @@ function figureLine(turn: Turn, model: PlaygroundModel | null): string {
     ...(f.inputTokens != null && f.outputTokens != null
       ? [t("playground.export.tokens", "{input} in · {output} out", { input: formatNumber(f.inputTokens), output: formatNumber(f.outputTokens) })]
       : []),
-    ...(f.cost != null ? [requestUSD(f.cost)] : []),
+    ...(f.cost != null ? [cost(f.cost)] : []),
     ...(turn.response.requestId ? [t("playground.export.request", "request {id}", { id: turn.response.requestId })] : []),
   ];
   return parts.length ? `_${parts.join(" · ")}_` : "";
@@ -116,7 +118,7 @@ export function conversationMarkdown(c: Conversation): string {
       if (files.length) out.push(`${t("playground.export.attachments", "Attachments")}: ${files.map((f) => `${f.name} (${f.type})`).join(", ")}`, "");
       const lines = replyLines(turn);
       out.push(`**${t("playground.export.reply", "Reply")}**`, "", ...(lines.length ? lines : [t("playground.export.noReply", "No reply.")]), "");
-      const line = figureLine(turn, column.model);
+      const line = figureLine(turn, column.model, c.cost ?? moneyIn(USD).request);
       if (line) out.push(line, "");
     });
   }

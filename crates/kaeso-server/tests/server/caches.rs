@@ -16,6 +16,7 @@ fn limit(amount: i64) -> Vec<Limit> {
         model: None,
         period: Period::Day,
         amount: amount.into(),
+        currency: None,
         hard: true,
         thresholds: Vec::new(),
     }]

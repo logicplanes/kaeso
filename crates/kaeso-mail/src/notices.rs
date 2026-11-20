@@ -3,7 +3,7 @@ use time::{Date, PrimitiveDateTime};
 use crate::layout::{
     Content, Cover, Detail, Footnote, Group, Label, Link, List, Reason, Row, Stat, Table, never,
 };
-use crate::locale::{Locale, zh};
+use crate::locale::{Amount, Locale, zh};
 use crate::templates::{Actor, Budget, BudgetScope, Email, EmailKind, budget_details};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -412,12 +412,12 @@ pub struct ProjectUse {
     pub organization: String,
     pub name: String,
     pub requests: Option<String>,
-    pub cost: String,
+    pub cost: Amount,
 }
 
 impl ProjectUse {
     fn line(&self, lang: Locale) -> String {
-        let cost = lang.usd(&self.cost);
+        let cost = lang.amount(&self.cost);
         match (lang, self.requests.as_deref().map(|r| lang.number(r))) {
             (Locale::En, Some(r)) => format!("{}: {r} requests, {cost}", self.name),
             (Locale::De, Some(r)) => format!("{}: {r} Anfragen, {cost}", self.name),
@@ -430,7 +430,7 @@ impl ProjectUse {
     fn row(&self, lang: Locale) -> Row {
         let mut cells = vec![self.name.clone()];
         cells.extend(self.requests.as_deref().map(|r| lang.number(r)));
-        cells.push(lang.usd(&self.cost));
+        cells.push(lang.amount(&self.cost));
         Row {
             cells,
             text: self.line(lang),
@@ -493,7 +493,7 @@ fn projects_table(lang: Locale, projects: &[ProjectUse], requests: bool) -> Opti
     Some(Table { head, rows })
 }
 
-fn usage_stats(lang: Locale, requests: &str, tool_calls: &str, cost: &str) -> Vec<Stat> {
+fn usage_stats(lang: Locale, requests: &str, tool_calls: &str, cost: &[Amount]) -> Vec<Stat> {
     let (r, t, c) = match lang {
         Locale::En => ("Requests", "Tool calls", "Cost"),
         Locale::De => ("Anfragen", "Tool-Aufrufe", "Kosten"),
@@ -510,7 +510,7 @@ fn usage_stats(lang: Locale, requests: &str, tool_calls: &str, cost: &str) -> Ve
         },
         Stat {
             label: c,
-            value: lang.usd(cost),
+            value: lang.amounts(cost),
         },
     ]
 }
@@ -579,7 +579,7 @@ pub enum Fact<'a> {
         to: Date,
         requests: String,
         tool_calls: String,
-        cost: String,
+        cost: Vec<Amount>,
         projects: Vec<ProjectUse>,
         top_models: Vec<String>,
     },
@@ -654,7 +654,7 @@ pub enum Fact<'a> {
     },
     CostReport {
         month: Date,
-        total: &'a str,
+        total: &'a Amount,
         projects: Vec<ProjectUse>,
     },
     InstanceUpdate {
@@ -778,7 +778,7 @@ impl Fact<'_> {
         let (r, t, c) = (
             lang.number(requests),
             lang.number(tool_calls),
-            lang.usd(cost),
+            lang.amounts(cost),
         );
         Some(match lang {
             Locale::En => {
@@ -1281,7 +1281,7 @@ impl Fact<'_> {
                 format!(
                     "{} cost {}",
                     Locale::En.month(*month),
-                    Locale::En.usd(total)
+                    Locale::En.amount(total)
                 ),
                 "These projects cost the most last month.".to_owned(),
                 "Open usage",
@@ -1735,7 +1735,7 @@ impl Fact<'_> {
                 format!(
                     "{} kostete {}",
                     Locale::De.month(*month),
-                    Locale::De.usd(total)
+                    Locale::De.amount(total)
                 ),
                 "Diese Projekte haben im letzten Monat am meisten gekostet.".to_owned(),
                 "Nutzung öffnen",
@@ -2219,7 +2219,7 @@ impl Fact<'_> {
                 zh(&[
                     &Locale::ZhCn.month(*month),
                     "的成本为 ",
-                    &Locale::ZhCn.usd(total),
+                    &Locale::ZhCn.amount(total),
                 ]),
                 "以下是上个月成本最高的项目。".to_owned(),
                 "打开用量",

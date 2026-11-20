@@ -26,6 +26,8 @@ import { common } from "~/i18n/common";
 import { t } from "~/i18n";
 import { toast } from "~/shell/toast";
 import { PictureControl, toPictureUpload } from "~/kaeso/picture";
+import { CurrencySelect } from "./currency-select";
+import { currencyName } from "~/format/prices";
 import { LoadFailed } from "./load-failed";
 import { OrgPage } from "./org-page";
 import { useNeedsRight } from "~/auth/needs-right";
@@ -53,6 +55,7 @@ export function OrgGeneralPage({ org }: { org: string }) {
             <SettingsGroup>
               <PictureRow org={org} name={o.name} src={o.avatar_url} canUpdate={rights.has("org.update")} />
               <NameRow key={o.name} org={org} name={o.name} canUpdate={rights.has("org.update")} />
+              <CurrencyRow org={org} currency={o.currency} canUpdate={rights.has("org.update")} />
               <SettingsRow
                 title={t("org.general.id", "Organization id")}
                 description={t("org.general.idHint", "For the Platform API and support.")}
@@ -144,6 +147,30 @@ function NameRow({ org, name, canUpdate }: { org: string; name: string; canUpdat
             {common.save()}
           </Button>
         </div>
+      }
+    />
+  );
+}
+
+function CurrencyRow({ org, currency, canUpdate }: { org: string; currency: string; canUpdate: boolean }) {
+  const save = useApiMutation({
+    mutationFn: async (code: string) => data(await api.PATCH("/platform/v1/orgs/{org}", { params: { path: { org } }, body: { currency: code } })),
+    // Every amount the organization shows is in its currency, so all of it reads again.
+    invalidates: [["orgs", org], ["me", "memberships"], ["session"]],
+    onSuccess: (o) => toast.success(t("org.general.currencySaved", "Amounts now show in {currency}", { currency: o.currency })),
+  });
+  return (
+    <SettingsRow
+      title={t("org.general.currency", "Currency")}
+      description={t("org.general.currencyHint", "Spend, prices and budgets show in it, at the ECB's rates.")}
+      control={
+        canUpdate ? (
+          <div className="w-240 min-w-0">
+            <CurrencySelect value={currency} disabled={save.isPending} onChange={(code) => code !== currency && save.mutate(code)} />
+          </div>
+        ) : (
+          <Text tone="secondary">{t("org.general.currencyValue", "{code} · {name}", { code: currency, name: currencyName(currency) })}</Text>
+        )
       }
     />
   );

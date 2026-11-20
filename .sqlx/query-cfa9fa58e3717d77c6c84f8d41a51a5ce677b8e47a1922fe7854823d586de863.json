@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE organizations SET name = $2, content_logging = $3, metadata_retention_days = $4, content_retention_days = $5, require_2fa = $6, require_sso = $7, max_key_lifetime_days = $8, sso_default_preset = $9, state = $10, deletion_due_at = $11, avatar = $12, sso_default_role_id = $13, currency = $14, updated_at = now() WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Bool",
+        "Int4",
+        "Int4",
+        "Bool",
+        "Bool",
+        "Int4",
+        "Text",
+        "Text",
+        "Timestamptz",
+        "Text",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cfa9fa58e3717d77c6c84f8d41a51a5ce677b8e47a1922fe7854823d586de863"
+}

@@ -162,8 +162,16 @@ async fn create_key(
     hold_for_key(&mut tx, ctx, &project.project, user, service_account).await?;
     let key_limits = match &req.limits {
         Some(specs) => {
-            super::limits::key_limits(state, &mut tx, project.project.id, id.uuid(), member, specs)
-                .await?
+            super::limits::key_limits(
+                state,
+                &mut tx,
+                project.project.id,
+                id.uuid(),
+                member,
+                specs,
+                &ctx.org()?.org.currency,
+            )
+            .await?
         }
         None => Vec::new(),
     };

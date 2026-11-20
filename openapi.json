@@ -4309,7 +4309,7 @@
         "tags": [
           "me"
         ],
-        "summary": "Changes the user's display name, language or display currency.",
+        "summary": "Changes the user's display name or language.",
         "description": "**Access:** a signed-in console session, or an agent granted `account.update`.",
         "operationId": "patchMe",
         "requestBody": {
@@ -7641,7 +7641,7 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Renames the org.",
+        "summary": "Renames the org or changes its currency.",
         "description": "**Right:** `org.update` on the organization in the path.",
         "operationId": "patchOrgsOrg",
         "parameters": [
@@ -17470,7 +17470,7 @@
           {
             "name": "min_cost",
             "in": "query",
-            "description": "Only requests that cost at least this much, in USD, as a decimal string\nsuch as `0.5`.",
+            "description": "Only requests that cost at least this much in the organization's\n`currency`, as a decimal string such as `0.5`; turned into USD at the\nlatest ECB rate.",
             "required": false,
             "schema": {
               "type": "string"
@@ -17520,16 +17520,6 @@
             "schema": {
               "$ref": "#/components/schemas/GuardrailAction"
             }
-          },
-          {
-            "name": "currency",
-            "in": "query",
-            "description": "Also give each cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: at the rate of the day it was spent, or\nthe latest rate for days before the install's first rates.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "example": "EUR"
           }
         ],
         "responses": {
@@ -17795,7 +17785,7 @@
           {
             "name": "min_cost",
             "in": "query",
-            "description": "Only requests that cost at least this much, in USD, as a decimal string\nsuch as `0.5`.",
+            "description": "Only requests that cost at least this much in the organization's\n`currency`, as a decimal string such as `0.5`; turned into USD at the\nlatest ECB rate.",
             "required": false,
             "schema": {
               "type": "string"
@@ -18117,7 +18107,7 @@
           {
             "name": "min_cost",
             "in": "query",
-            "description": "Only requests that cost at least this much, in USD, as a decimal string\nsuch as `0.5`.",
+            "description": "Only requests that cost at least this much in the organization's\n`currency`, as a decimal string such as `0.5`; turned into USD at the\nlatest ECB rate.",
             "required": false,
             "schema": {
               "type": "string"
@@ -18840,16 +18830,6 @@
             "schema": {
               "$ref": "#/components/schemas/RequestId"
             }
-          },
-          {
-            "name": "currency",
-            "in": "query",
-            "description": "Also give each cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: at the rate of the day it was spent, or\nthe latest rate for days before the install's first rates.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "example": "EUR"
           }
         ],
         "responses": {
@@ -24129,7 +24109,7 @@
           "projects"
         ],
         "summary": "The project's usage by day, week, month, model, provider, key, member or route.",
-        "description": "Requests (refusals included), errors, tokens, cost and MCP tool calls\nof the project, from daily totals that reach back to the first request\n(`usage/span`) and never expire; days are UTC. One row per group of\n`group_by`, sorted by `key`; groups without usage are left out. Every filter\ntakes a `key` as its grouping returns it, so filters and groupings combine:\n`group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\nthrough one key. `cost` is in USD and `null` without `costs.view`. For\nminutes, hours, latency or error kinds use `usage/timeline`; for single\nrequests, `logs`.\n\n**Right:** `usage.view` on the project in the path.",
+        "description": "Requests (refusals included), errors, tokens, cost and MCP tool calls\nof the project, from daily totals that reach back to the first request\n(`usage/span`) and never expire; days are UTC. One row per group of\n`group_by`, sorted by `key`; groups without usage are left out. Every filter\ntakes a `key` as its grouping returns it, so filters and groupings combine:\n`group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\nthrough one key. `cost` is in USD, `converted_cost` in the org's `currency`;\nboth are `null` without `costs.view`. For\nminutes, hours, latency or error kinds use `usage/timeline`; for single\nrequests, `logs`.\n\n**Right:** `usage.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectUsage",
         "parameters": [
           {
@@ -24170,15 +24150,6 @@
             "name": "group_by",
             "in": "query",
             "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, `billed_to` (the provider key that paid, `none` for requests no\nprovider was sent), or for orgs `project`. A week or month that starts\nbefore `from` or ends after `to` counts only the days in the period.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "currency",
-            "in": "query",
-            "description": "Also give each row's cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\nrate, and days before the install's first rates at the latest rate.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24369,7 +24340,7 @@
           "projects"
         ],
         "summary": "The project's requests and latency by minute or hour, from the request log.",
-        "description": "A bucket per `step` (a minute or an hour, UTC) with the project's\nrequests that started in it: requests, errors, tokens, cost, and latency in\nmilliseconds (`duration_*` for the whole request, `ttfb_*` to the provider's\nfirst byte; percentiles are estimated from a sample in buckets of more than\n8,192 requests). Steps without requests are left out. It reads the request\nlog, so it reaches back only as far as the org keeps metadata; for longer\nperiods use `usage`. It takes the filters of `usage` plus `failed`; with\n`group_by` there is a bucket per step and group, `key` naming the group as\n`usage` does, and `top` keeps the busiest groups. `cost` is in USD and\n`null` without `costs.view`.\n\n**Right:** `usage.view` on the project in the path.",
+        "description": "A bucket per `step` (a minute or an hour, UTC) with the project's\nrequests that started in it: requests, errors, tokens, cost, and latency in\nmilliseconds (`duration_*` for the whole request, `ttfb_*` to the provider's\nfirst byte; percentiles are estimated from a sample in buckets of more than\n8,192 requests). Steps without requests are left out. It reads the request\nlog, so it reaches back only as far as the org keeps metadata; for longer\nperiods use `usage`. It takes the filters of `usage` plus `failed`; with\n`group_by` there is a bucket per step and group, `key` naming the group as\n`usage` does, and `top` keeps the busiest groups. `cost` is in USD,\n`converted_cost` in the org's `currency`; both are `null` without\n`costs.view`.\n\n**Right:** `usage.view` on the project in the path.",
         "operationId": "getOrgsOrgProjectsProjectUsageTimeline",
         "parameters": [
           {
@@ -26823,7 +26794,7 @@
           "orgs"
         ],
         "summary": "The org's usage by day, week, month, model, provider, key, member, route or project.",
-        "description": "Requests (refusals included), errors, tokens, cost and MCP tool calls\nacross the org's projects, from daily totals that reach back to the first\nrequest (`usage/span`) and never expire; days are UTC. One row per group of\n`group_by`, sorted by `key`; groups without usage are left out. Every filter\ntakes a `key` as its grouping returns it, so filters and groupings combine:\n`group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\nthrough one key. `cost` is in USD and `null` without `costs.org.view`. For\nminutes, hours, latency or error kinds use `usage/timeline`; for single\nrequests, a project's `logs`.\n\n**Right:** `usage.org.view` on the organization in the path.",
+        "description": "Requests (refusals included), errors, tokens, cost and MCP tool calls\nacross the org's projects, from daily totals that reach back to the first\nrequest (`usage/span`) and never expire; days are UTC. One row per group of\n`group_by`, sorted by `key`; groups without usage are left out. Every filter\ntakes a `key` as its grouping returns it, so filters and groupings combine:\n`group_by=day&model=openai/gpt-5&key=key_…` is the daily usage of one model\nthrough one key. `cost` is in USD, `converted_cost` in the org's `currency`;\nboth are `null` without `costs.org.view`. For\nminutes, hours, latency or error kinds use `usage/timeline`; for single\nrequests, a project's `logs`.\n\n**Right:** `usage.org.view` on the organization in the path.",
         "operationId": "getOrgsOrgUsage",
         "parameters": [
           {
@@ -26856,15 +26827,6 @@
             "name": "group_by",
             "in": "query",
             "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, `billed_to` (the provider key that paid, `none` for requests no\nprovider was sent), or for orgs `project`. A week or month that starts\nbefore `from` or ends after `to` counts only the days in the period.",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "currency",
-            "in": "query",
-            "description": "Also give each row's cost in this currency, an ISO 4217 code from\n`exchange-rates`, as `converted_cost`: each day's spend at that day's ECB\nrate, and days before the install's first rates at the latest rate.",
             "required": false,
             "schema": {
               "type": "string"
@@ -27056,7 +27018,7 @@
           "orgs"
         ],
         "summary": "The org's requests and latency by minute or hour, from the request log.",
-        "description": "A bucket per `step` (a minute or an hour, UTC) with the requests that\nstarted in it across the org's projects: requests, errors, tokens, cost, and\nlatency in milliseconds (`duration_*` for the whole request, `ttfb_*` to the\nprovider's first byte; percentiles are estimated from a sample in buckets of\nmore than 8,192 requests). Steps without requests are left out. It reads the\nrequest log, so it reaches back only as far as the org keeps metadata; for\nlonger periods use `usage`. It takes the filters of `usage` plus `failed`;\nwith `group_by` there is a bucket per step and group, `key` naming the group\nas `usage` does, and `top` keeps the busiest groups. `cost` is in USD and\n`null` without `costs.org.view`.\n\n**Right:** `usage.org.view` on the organization in the path.",
+        "description": "A bucket per `step` (a minute or an hour, UTC) with the requests that\nstarted in it across the org's projects: requests, errors, tokens, cost, and\nlatency in milliseconds (`duration_*` for the whole request, `ttfb_*` to the\nprovider's first byte; percentiles are estimated from a sample in buckets of\nmore than 8,192 requests). Steps without requests are left out. It reads the\nrequest log, so it reaches back only as far as the org keeps metadata; for\nlonger periods use `usage`. It takes the filters of `usage` plus `failed`;\nwith `group_by` there is a bucket per step and group, `key` naming the group\nas `usage` does, and `top` keeps the busiest groups. `cost` is in USD,\n`converted_cost` in the org's `currency`; both are `null` without\n`costs.org.view`.\n\n**Right:** `usage.org.view` on the organization in the path.",
         "operationId": "getOrgsOrgUsageTimeline",
         "parameters": [
           {
@@ -33875,7 +33837,7 @@
           },
           "amount": {
             "$ref": "#/components/schemas/LimitAmount",
-            "description": "Requests, tool calls, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\nbudget."
+            "description": "Requests, tool calls, tokens, or for a spend budget an amount in the\norganization's `currency`; at most 10^12, and a spend budget worth at most\n1,000,000,000 USD."
           },
           "hard": {
             "type": [
@@ -34237,7 +34199,7 @@
           },
           "amount": {
             "$ref": "#/components/schemas/LimitAmount",
-            "description": "Requests, tool calls, tokens, or USD; at most 10^12, and 1,000,000,000 USD for a spend\nbudget."
+            "description": "Requests, tool calls, tokens, or for a spend budget an amount in the\norganization's `currency`; at most 10^12, and a spend budget worth at most\n1,000,000,000 USD."
           },
           "hard": {
             "type": [
@@ -34381,7 +34343,7 @@
           },
           "amount": {
             "type": "string",
-            "description": "Requests, tool calls, tokens, or USD (a decimal string).",
+            "description": "Requests, tool calls, tokens, or for a spend budget an amount in `currency`\n(a decimal string).",
             "example": "50"
           },
           "created_at": {
@@ -34389,9 +34351,17 @@
             "format": "date-time",
             "description": "Created."
           },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The currency of a spend budget's `amount` and `used`, the organization's;\n`null` for counts. Kaeso checks it in USD at the latest ECB rate.",
+            "example": "EUR"
+          },
           "description": {
             "type": "string",
-            "description": "A description, e.g. \"monthly spend budget of 50 USD\"."
+            "description": "A description, e.g. \"monthly spend budget of 50 EUR\"."
           },
           "hard": {
             "type": "boolean",
@@ -36061,7 +36031,7 @@
                 },
                 "amount": {
                   "type": "string",
-                  "description": "Requests, tool calls, tokens, or USD (a decimal string).",
+                  "description": "Requests, tool calls, tokens, or for a spend budget an amount in `currency`\n(a decimal string).",
                   "example": "50"
                 },
                 "created_at": {
@@ -36069,9 +36039,17 @@
                   "format": "date-time",
                   "description": "Created."
                 },
+                "currency": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The currency of a spend budget's `amount` and `used`, the organization's;\n`null` for counts. Kaeso checks it in USD at the latest ECB rate.",
+                  "example": "EUR"
+                },
                 "description": {
                   "type": "string",
-                  "description": "A description, e.g. \"monthly spend budget of 50 USD\"."
+                  "description": "A description, e.g. \"monthly spend budget of 50 EUR\"."
                 },
                 "hard": {
                   "type": "boolean",
@@ -36274,6 +36252,7 @@
                 "usage",
                 "cost",
                 "cost_known",
+                "currency",
                 "cost_basis",
                 "user_agent",
                 "client_ip",
@@ -36340,7 +36319,8 @@
                     "string",
                     "null"
                   ],
-                  "description": "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\nlatest for days before the install's first rates), an estimate; absent when no\ncurrency was asked or the cost is unknown."
+                  "description": "`cost` in `currency`, at the ECB rate of the request's day (the latest for\ndays before the install's first rates); the same as `cost` in USD, and `null`\nwhen the cost is unknown.",
+                  "example": "0.0042"
                 },
                 "cost": {
                   "type": "string",
@@ -36353,6 +36333,11 @@
                 "cost_known": {
                   "type": "boolean",
                   "description": "Whether the cost is known. `false` when the model has no price for what the\nrequest made or heard, such as a video model without a price per clip; `cost`\nis then 0 and means unknown."
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "The organization's currency, which `converted_cost` is in.",
+                  "example": "EUR"
                 },
                 "duration_ms": {
                   "type": "integer",
@@ -38594,6 +38579,7 @@
                 "cache_read_tokens",
                 "cache_write_tokens",
                 "reasoning_tokens",
+                "currency",
                 "duration_p50_ms",
                 "duration_p95_ms",
                 "duration_max_ms"
@@ -38611,12 +38597,25 @@
                   "description": "Cache writes.",
                   "minimum": 0
                 },
+                "converted_cost": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "`cost` in `currency`, at the ECB rate of the bucket's day; the same as\n`cost` in USD, and `null` when `cost` is.",
+                  "example": "0.42"
+                },
                 "cost": {
                   "type": [
                     "string",
                     "null"
                   ],
                   "description": "Cost in USD; `null` without the right to see costs."
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "The organization's currency, which `converted_cost` is in.",
+                  "example": "EUR"
                 },
                 "duration_max_ms": {
                   "type": "integer",
@@ -38995,6 +38994,7 @@
                 "cache_read_tokens",
                 "cache_write_tokens",
                 "reasoning_tokens",
+                "currency",
                 "tool_calls",
                 "tool_call_errors",
                 "unpriced",
@@ -39026,7 +39026,8 @@
                     "string",
                     "null"
                   ],
-                  "description": "`cost` in the `currency` asked for, an estimate; `null` when none was\nasked or `cost` is."
+                  "description": "`cost` in `currency`: each day's spend at that day's ECB rate, days\nbefore the install's first rates at the latest; the same as `cost`\nin USD, and `null` when `cost` is.",
+                  "example": "11.32"
                 },
                 "cost": {
                   "type": [
@@ -39034,6 +39035,11 @@
                     "null"
                   ],
                   "description": "Cost in USD; `null` without the right to see costs."
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "The organization's currency, which `converted_cost` is in.",
+                  "example": "EUR"
                 },
                 "errors": {
                   "type": "integer",
@@ -39466,6 +39472,7 @@
           "usage",
           "cost",
           "cost_known",
+          "currency",
           "cost_basis",
           "user_agent",
           "client_ip",
@@ -39532,7 +39539,8 @@
               "string",
               "null"
             ],
-            "description": "`cost` in the `currency` asked for, at the ECB rate of the request's day (the\nlatest for days before the install's first rates), an estimate; absent when no\ncurrency was asked or the cost is unknown."
+            "description": "`cost` in `currency`, at the ECB rate of the request's day (the latest for\ndays before the install's first rates); the same as `cost` in USD, and `null`\nwhen the cost is unknown.",
+            "example": "0.0042"
           },
           "cost": {
             "type": "string",
@@ -39545,6 +39553,11 @@
           "cost_known": {
             "type": "boolean",
             "description": "Whether the cost is known. `false` when the model has no price for what the\nrequest made or heard, such as a video model without a price per clip; `cost`\nis then 0 and means unknown."
+          },
+          "currency": {
+            "type": "string",
+            "description": "The organization's currency, which `converted_cost` is in.",
+            "example": "EUR"
           },
           "duration_ms": {
             "type": "integer",
@@ -40850,15 +40863,9 @@
               "totp_enabled",
               "has_password",
               "recovery_codes_left",
-              "locale",
-              "display_currency"
+              "locale"
             ],
             "properties": {
-              "display_currency": {
-                "type": "string",
-                "description": "The currency the console shows spend in next to US dollars, an ISO 4217\ncode from `exchange-rates`; `USD` for dollars only.",
-                "example": "EUR"
-              },
               "has_password": {
                 "type": "boolean",
                 "description": "Whether a password is set."
@@ -41585,6 +41592,7 @@
           "org_id",
           "org_name",
           "org_state",
+          "org_currency",
           "role",
           "preset",
           "projects",
@@ -41606,6 +41614,11 @@
               "null"
             ],
             "description": "The org's picture; `null` without one."
+          },
+          "org_currency": {
+            "type": "string",
+            "description": "The currency the org shows and enters money in, an ISO 4217 code.",
+            "example": "EUR"
           },
           "org_deletion_due_at": {
             "type": [
@@ -42395,6 +42408,14 @@
         "type": "object",
         "description": "General settings.",
         "properties": {
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "A new currency: `USD` or a code from `me/exchange-rates`. The spend\nbudgets of the org's projects change to it at the latest ECB rates.",
+            "example": "EUR"
+          },
           "name": {
             "type": [
               "string",
@@ -42418,6 +42439,7 @@
           "content_retention_days",
           "require_2fa",
           "require_sso",
+          "currency",
           "created_at"
         ],
         "properties": {
@@ -42442,6 +42464,11 @@
             "type": "string",
             "format": "date-time",
             "description": "Created."
+          },
+          "currency": {
+            "type": "string",
+            "description": "The currency the org reads and enters money in, an ISO 4217 code: spend,\nprices and spend budgets. Kaeso stores and costs in USD and converts at the\nECB's daily rates.",
+            "example": "EUR"
           },
           "deletion_due_at": {
             "type": [
@@ -43502,14 +43529,6 @@
         "type": "object",
         "description": "Profile changes.",
         "properties": {
-          "display_currency": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The currency to show spend in next to US dollars: `USD` for dollars only,\nor a code from `exchange-rates`.",
-            "example": "EUR"
-          },
           "locale": {
             "oneOf": [
               {
@@ -46889,7 +46908,14 @@
         "properties": {
           "amount": {
             "type": "string",
-            "description": "Requests, tool calls, tokens or USD."
+            "description": "Requests, tool calls, tokens, or for a spend budget an amount in `currency`."
+          },
+          "currency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The currency of a spend budget's `amount` and `used`; `null` for counts."
           },
           "hard": {
             "type": "boolean",
@@ -47287,6 +47313,13 @@
             "description": "Cache writes.",
             "minimum": 0
           },
+          "converted_cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`cost` in the view's `currency`, each day at that day's ECB rate; `null`\nwhen the link hides costs."
+          },
           "cost": {
             "type": [
               "string",
@@ -47367,6 +47400,7 @@
           "to",
           "metric",
           "costs",
+          "currency",
           "created_at",
           "made_with_kaeso",
           "days",
@@ -47390,6 +47424,11 @@
             "type": "string",
             "format": "date-time",
             "description": "When the link was made."
+          },
+          "currency": {
+            "type": "string",
+            "description": "The organization's currency, which every `converted_cost` is in; a snapshot\nkeeps the one it was made with.",
+            "example": "EUR"
           },
           "days": {
             "type": "array",
@@ -48269,6 +48308,7 @@
           "cache_read_tokens",
           "cache_write_tokens",
           "reasoning_tokens",
+          "currency",
           "duration_p50_ms",
           "duration_p95_ms",
           "duration_max_ms"
@@ -48286,12 +48326,25 @@
             "description": "Cache writes.",
             "minimum": 0
           },
+          "converted_cost": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`cost` in `currency`, at the ECB rate of the bucket's day; the same as\n`cost` in USD, and `null` when `cost` is.",
+            "example": "0.42"
+          },
           "cost": {
             "type": [
               "string",
               "null"
             ],
             "description": "Cost in USD; `null` without the right to see costs."
+          },
+          "currency": {
+            "type": "string",
+            "description": "The organization's currency, which `converted_cost` is in.",
+            "example": "EUR"
           },
           "duration_max_ms": {
             "type": "integer",
@@ -49535,6 +49588,7 @@
           "cache_read_tokens",
           "cache_write_tokens",
           "reasoning_tokens",
+          "currency",
           "tool_calls",
           "tool_call_errors",
           "unpriced",
@@ -49566,7 +49620,8 @@
               "string",
               "null"
             ],
-            "description": "`cost` in the `currency` asked for, an estimate; `null` when none was\nasked or `cost` is."
+            "description": "`cost` in `currency`: each day's spend at that day's ECB rate, days\nbefore the install's first rates at the latest; the same as `cost`\nin USD, and `null` when `cost` is.",
+            "example": "11.32"
           },
           "cost": {
             "type": [
@@ -49574,6 +49629,11 @@
               "null"
             ],
             "description": "Cost in USD; `null` without the right to see costs."
+          },
+          "currency": {
+            "type": "string",
+            "description": "The organization's currency, which `converted_cost` is in.",
+            "example": "EUR"
           },
           "errors": {
             "type": "integer",

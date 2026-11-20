@@ -45,7 +45,7 @@ export function MetricChart({ o, id, height, previous = true }: { o: Overview; i
       height={height}
       hideLegend
       shares={false}
-      formatValue={m.format}
+      formatValue={(v) => m.format(v, o.money)}
       loading={o.pointsLoading}
       error={o.daily.isError && t("kaeso.usage.chartFailed", "Couldn't load this chart")}
       onRetry={() => void o.daily.refetch()}
@@ -86,7 +86,7 @@ export function DayContext({ o, context, metric, height }: { o: Overview; contex
       layout="stacked"
       shares={false}
       height={height}
-      formatValue={m.format}
+      formatValue={(v) => m.format(v, o.money)}
       loading={context.query.isPending}
       empty={!context.query.isPending && days.every((d) => !d.row)}
       emptyText={t("kaeso.usage.noRequests", "No requests in this period.")}
@@ -137,7 +137,7 @@ export function rank(o: Overview, dim: Ranked, metric: MetricId, limit: number):
     items: rows.slice(0, limit).map((r) => ({
       id: r.key,
       label: entityLabel(o, dim, r.key),
-      value: m.formatRank(m.rank(r)),
+      value: m.formatRank(m.rank(r), o.money),
       secondary: metric === "errors" ? formatPercent(r.errors / r.requests) : formatPercent(m.rank(r) / total, 0),
       ...moved(r),
       share: m.rank(r) / total,

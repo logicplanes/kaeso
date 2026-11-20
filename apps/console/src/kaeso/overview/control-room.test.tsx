@@ -25,6 +25,8 @@ function bucket(start: string, overrides: Partial<TimelineBucket> = {}): Timelin
     cache_write_tokens: 50,
     reasoning_tokens: 100,
     cost: "2",
+    converted_cost: overrides.cost !== undefined ? overrides.cost : "2",
+    currency: "USD",
     duration_p50_ms: 900,
     duration_p95_ms: 2400,
     duration_max_ms: 3100,

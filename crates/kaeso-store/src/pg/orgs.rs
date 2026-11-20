@@ -21,6 +21,7 @@ pub struct Org {
     pub sso_default_role_id: Option<Uuid>,
     pub created_at: OffsetDateTime,
     pub avatar: Option<String>,
+    pub currency: String,
 }
 
 pub async fn insert(
@@ -46,7 +47,7 @@ pub async fn get(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<Org>, Store
     Ok(sqlx::query_as!(
         Org,
         "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, \
-         content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
+         content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar, currency \
          FROM organizations WHERE id = $1",
         id
     )
@@ -58,7 +59,7 @@ pub async fn get_for_update(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<
     Ok(sqlx::query_as!(
         Org,
         "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, \
-         content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
+         content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar, currency \
          FROM organizations WHERE id = $1 FOR NO KEY UPDATE",
         id
     )
@@ -86,7 +87,7 @@ pub async fn update(db: impl PgExecutor<'_>, org: &Org) -> Result<(), StoreError
         "UPDATE organizations SET name = $2, content_logging = $3, metadata_retention_days = $4, \
          content_retention_days = $5, require_2fa = $6, require_sso = $7, max_key_lifetime_days = $8, \
          sso_default_preset = $9, state = $10, deletion_due_at = $11, avatar = $12, sso_default_role_id = $13, \
-         updated_at = now() WHERE id = $1",
+         currency = $14, updated_at = now() WHERE id = $1",
         org.id,
         org.name,
         org.content_logging,
@@ -100,6 +101,7 @@ pub async fn update(db: impl PgExecutor<'_>, org: &Org) -> Result<(), StoreError
         org.deletion_due_at,
         org.avatar,
         org.sso_default_role_id,
+        org.currency,
     )
     .execute(db)
     .await?;
@@ -138,7 +140,7 @@ pub async fn list(
             sqlx::query_as!(
                 Org,
                 "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, \
-                 content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
+                 content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar, currency \
                  FROM organizations o WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) \
                  AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) \
                  ORDER BY id LIMIT $2",
@@ -154,7 +156,7 @@ pub async fn list(
             sqlx::query_as!(
                 Org,
                 "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, \
-                 content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar \
+                 content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar, currency \
                  FROM organizations o WHERE ($1::uuid IS NULL OR (COALESCE(o.deletion_due_at, 'infinity'), o.id) > \
                  (SELECT COALESCE(c.deletion_due_at, 'infinity'), c.id FROM organizations c WHERE c.id = $1)) \
                  AND ($3::text IS NULL OR name ILIKE $3) \

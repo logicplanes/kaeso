@@ -1,20 +1,23 @@
 ---
 title: Währungen
-description: Wie Kaeso Preise und Ausgaben in anderen Währungen zeigt, während es in US-Dollar rechnet.
+description: Wie eine Organisation Ausgaben, Preise und Budgets in ihrer eigenen Währung zeigt, während Kaeso in US-Dollar rechnet.
 order: 5
 ---
 
-Kaeso speichert und berechnet jeden Preis und alle Kosten in US-Dollar, damit Limits, Protokolle, Exporte und die Platform API genau bleiben und sich addieren lassen. Andere Währungen erscheinen nur an zwei Rändern: wo Sie einen Preis eingeben und wo Sie Ausgaben lesen.
+Jede Organisation hat eine Währung, US-Dollar, solange ein Owner oder Admin keine andere setzt. Die Konsole zeigt jeden Betrag der Organisation darin: Ausgaben, Modellpreise und Ausgabenbudgets. Darunter speichert und berechnet Kaeso jeden Preis und alle Kosten in US-Dollar, damit Limits, Protokolle und die Platform API genau bleiben und sich addieren lassen, und rechnet dort zu den täglichen Kursen der Europäischen Zentralbank um, wo Menschen Beträge lesen und eingeben.
 
 ```mermaid
 flowchart LR
-  accTitle: Wo andere Währungen erscheinen
-  accDescr: Das Gateway holt die Referenzkurse der EZB einmal pro Arbeitstag. Ein in Euro eingegebener Preis wird zum neuesten Kurs in US-Dollar berechnet, und in US-Dollar gespeicherte Ausgaben werden als Schätzung in Ihrer Währung gezeigt.
+  accTitle: Wo die Währung der Organisation hinzukommt
+  accDescr: Das Gateway holt die Referenzkurse der EZB einmal pro Arbeitstag. Anfragen werden in US-Dollar berechnet und gespeichert, und die Organisation liest Ausgaben, Preise und Budgets in ihrer eigenen Währung.
   ecb[Referenzkurse der EZB]:::outside --> gateway[Gateway]:::accent
-  price[Preis in EUR eingegeben] --> gateway
   gateway --> stored[Ausgaben in USD gespeichert]
-  stored --> shown[Ausgaben in Ihrer Währung gezeigt]
+  stored --> shown[Ausgaben, Preise und Budgets in der Währung der Organisation]
 ```
+
+## Die Währung der Organisation wählen
+
+Unter **Organisationseinstellungen** › **Allgemein** listet **Währung** US-Dollar und jede Währung, für die die Installation einen Kurs hat, jeweils mit ihrem Namen. Sie zu ändern braucht **Organisation bearbeiten** und landet im Audit-Log; alle Mitglieder sehen die neue Währung sofort. Eine Installation ohne Kurse bietet nur US-Dollar an und sagt, warum.
 
 ## Woher die Kurse kommen
 
@@ -23,32 +26,36 @@ Die Kurse sind die [Euro-Referenzkurse](https://www.ecb.europa.eu/stats/policy_a
 - **Täglicher Abruf.** Das Gateway holt sie im Hintergrund und prüft alle sechs Stunden erneut; ein fehlgeschlagener Abruf wird nach 15 Minuten wiederholt. Anfragen warten nie darauf.
 - **Erster Abruf.** Eine Installation ohne Kurse holt die letzten 90 Tage, sodass jüngere Ausgaben zu den Kursen ihrer eigenen Tage umgerechnet werden.
 - **Kurse je US-Dollar.** Ein Kurs je US-Dollar ist ein Kreuzkurs desselben Tages: der EZB-Kurs der Währung geteilt durch ihren Kurs des US-Dollar, auf 12 Nachkommastellen.
-- **Behaltene Kurse.** Schlägt ein Abruf fehl, behält Kaeso seine Kurse, und die Konsole zeigt ihr Datum. Eine Installation ohne Kurse, etwa eine ohne Internetzugang, bietet nur US-Dollar an.
+- **Behaltene Kurse.** Schlägt ein Abruf fehl, behält Kaeso seine Kurse, und die Konsole zeigt ihr Datum. Eine Währung, die die EZB nicht mehr listet, behält ihren letzten Kurs.
 
 Instanz-Admins schalten den Abruf unter **Wechselkurse** in der [Instanzverwaltung](../console/instance-administration.md#installationseinstellungen-ändern) aus; die schon geholten Kurse bleiben. Betreiber lenken ihn mit `exchange_rates.url` auf einen Spiegel ([Konfiguration](../self-hosting/configuration.md#wechselkurse)).
 
-## Preise in einer anderen Währung
+## Ausgaben
 
-Die Preise eines Modells können eine `currency` tragen, etwa `EUR`, wo Sie sie von Hand setzen: in Überschreibungen eines Modells im Projekt und in eigenen Modellen, auch denen eigener Anbieter. Ohne sie sind Preise in US-Dollar.
+Analysen, die Übersichten, die Aufschlüsselungen, die Anfrageprotokolle, der Playground, geteilte Links und die wöchentlichen und monatlichen Kosten-E-Mails zeigen Ausgaben in der Währung der Organisation, etwa `12,40 €`.
 
-- **Wie eingegeben.** Das Modell behält 2,50 € als 2,50 €, und sein Blatt in der Konsole zeigt den Gegenwert in US-Dollar daneben.
-- **In US-Dollar berechnet.** Jede Anfrage wird zum neuesten Kurs berechnet, also kosten 2,50 € je Million Token 2,7535 $ bei 1,1014 Dollar je Euro. Umgerechnete Preise behalten neun Nachkommastellen.
-- **Kein Kurs, kein Preis.** Eine Währung braucht einen Kurs, wenn Sie sie eingeben. Fehlt ihr Kurs später, zeigen Anfragen zu diesen Preisen unbekannte Kosten statt falscher.
-
-Preise von KPMR bleiben in US-Dollar. Ausgabenbudgets und Warnungen bleiben ebenfalls in US-Dollar, weil ein Budget in einer anderen Währung seine Bedeutung mit dem Kurs ändern würde.
-
-## Ausgaben in einer anderen Währung
-
-Wählen Sie eine Währung unter **Darstellung** in Ihrem Konto oder mit dem Währungsmenü in **Analysen** und **Anfrageprotokolle**. Die Wahl wird in Ihrem Konto gespeichert; `USD` zeigt nur US-Dollar.
-
-- **Eine Schätzung.** Ausgaben stehen zuerst in US-Dollar, mit dem Betrag in Ihrer Währung daneben, etwa `≈ 12,40 €`.
-- **Der Kurs jedes Tages.** Eine Summe rechnet die Ausgaben jedes Tages zu dessen Kurs um, ein Wochenende oder einen Feiertag zu dem des Arbeitstags davor. Tage vor den ältesten Kursen nutzen den neuesten, und die Seite sagt das.
+- **Der Kurs jedes Tages.** Ausgaben werden zum Kurs des Tages umgerechnet, an dem sie anfielen, ein Wochenende oder Feiertag zu dem des Arbeitstags davor; eine Summe addiert die Beträge der einzelnen Tage. Tage vor den ältesten Kursen nutzen den neuesten, und Analysen sagt, welche Kurse genutzt wurden.
 - **Das Format Ihrer Sprache.** Symbol, seine Stellung und die Trennzeichen folgen Ihrer Sprache, etwa `€12.40` auf Englisch und `12,40 €` auf Deutsch.
+- **Downloads.** Die CSV einer Aufschlüsselung und der CSV-Export des Anfrageprotokolls haben die Kosten in der Währung der Organisation, nach ihrem Code benannt, und daneben die Kosten in US-Dollar für die Buchhaltung.
 
-In der Platform API nehmen die Nutzungs-Endpunkte und das Anfrageprotokoll `currency=EUR` und ergänzen `converted_cost`, und `GET /platform/v1/me/exchange-rates` listet die Kurse ([Platform API](../api/platform-api.md)).
+Die Seiten der Instanz, die über Organisationen hinweg reichen, bleiben in US-Dollar.
+
+## Preise
+
+Preise von KPMR sind in US-Dollar; die Konsole zeigt sie zum neuesten Kurs in der Währung der Organisation.
+
+Wo Sie Preise von Hand setzen, in Überschreibungen eines Modells im Projekt und in eigenen Modellen, beginnt der Editor in der Währung der Organisation, und **Währung** nimmt jede andere Währung mit Kurs. Preise werden wie eingegeben behalten und zum neuesten Kurs in US-Dollar berechnet, also kosten 2,50 € je Million Token 2,7535 $ bei 1,1014 Dollar je Euro; umgerechnete Preise behalten neun Nachkommastellen. Eine Währung braucht einen Kurs, wenn Sie sie eingeben, und fehlt ihr Kurs später, zeigen Anfragen zu diesen Preisen unbekannte Kosten statt falscher.
+
+## Ausgabenbudgets
+
+Ein Ausgabenbudget wird in der Währung der Organisation gesetzt, gezeigt und gespeichert. Kaeso prüft es zum neuesten Kurs in US-Dollar, also lehnt ein Budget von 40 € Anfragen ab, sobald die Ausgaben des Monats erreichen, was 40 € an diesem Tag wert sind. Eine neue Währung der Organisation rechnet jedes Ausgabenbudget ihrer Projekte zum neuesten Kurs auf den Cent um und schreibt jedes ins Audit-Log. Budgetwarnungen und ihre E-Mails nennen das Budget in seiner Währung.
+
+## In der Platform API
+
+`GET /platform/v1/orgs/{org}` liefert `currency`, und `PATCH` setzt sie. Die Nutzungs- und Zeitverlauf-Endpunkte, das Anfrageprotokoll und geteilte Links geben jede `cost` in US-Dollar und `converted_cost` in der `currency` der Organisation an. `amount` und `used` eines Ausgabenbudgets sind in seiner `currency`, und der Filter `min_cost` des Anfrageprotokolls nimmt einen Betrag in der Währung der Organisation. `GET /platform/v1/me/exchange-rates` listet die Kurse ([Platform API](../api/platform-api.md)).
 
 ## Nächste Schritte
 
-- [Modelle und Aliasse](../console/models-and-aliases.md): Überschreiben Sie die Preise eines Modells, in US-Dollar oder einer anderen Währung.
-- [Limits und Budgets](../console/limits-and-budgets.md): Setzen Sie Ausgabenbudgets, die in US-Dollar bleiben.
-- [KPMR](kpmr.md): Erfahren Sie, woher die Modellpreise in US-Dollar kommen.
+- [Organisationen und Projekte](../console/organizations-and-projects.md#organisationseinstellungen-ändern): Setzen Sie die Währung der Organisation.
+- [Modelle und Aliasse](../console/models-and-aliases.md): Überschreiben Sie die Preise eines Modells.
+- [Limits und Budgets](../console/limits-and-budgets.md): Setzen Sie Ausgabenbudgets in der Währung der Organisation.

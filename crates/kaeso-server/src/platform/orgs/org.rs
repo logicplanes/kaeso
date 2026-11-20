@@ -1,8 +1,12 @@
 use axum::Json;
 use axum::extract::State;
-use kaeso_core::id::{OrgId, UserId};
+use kaeso_core::currency;
+use kaeso_core::id::{LimitId, OrgId, ProjectId, UserId};
+use kaeso_core::limits::Kind;
 use kaeso_core::rights::{OrgGrant, OrgPreset};
+use kaeso_store::pg::limits as limits_store;
 use kaeso_store::pg::{avatars, members, orgs, users};
+use rust_decimal::{Decimal, RoundingStrategy};
 use serde::{Deserialize, Serialize};
 use sqlx::PgConnection;
 use time::OffsetDateTime;
@@ -14,6 +18,7 @@ use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::org_to_store;
 use crate::platform::json::Body;
 use crate::platform::params::Path;
+use crate::services::exchange_rates as rates;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -50,6 +55,11 @@ pub struct OrgView {
         example = "/platform/v1/me/avatars/9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
     )]
     pub avatar_url: Option<String>,
+    #[doc = "The currency the org reads and enters money in, an ISO 4217 code: spend,\n\
+        prices and spend budgets. Kaeso stores and costs in USD and converts at the\n\
+        ECB's daily rates."]
+    #[schema(example = "EUR")]
+    pub currency: String,
 
     #[doc = "Created."]
     #[serde(with = "time::serde::rfc3339")]
@@ -71,6 +81,7 @@ impl OrgView {
             max_key_lifetime_days: o.max_key_lifetime_days,
             sso_default_preset: o.sso_default_preset.clone(),
             avatar_url: crate::platform::views::avatar_url(o.avatar.as_deref()),
+            currency: o.currency.clone(),
             created_at: o.created_at,
         }
     }
@@ -95,6 +106,10 @@ pub struct OrgUpdate {
     #[doc = "A new name, 1 to 100 characters."]
     #[schema(example = "Acme Inc.")]
     pub name: Option<String>,
+    #[doc = "A new currency: `USD` or a code from `me/exchange-rates`. The spend\n\
+        budgets of the org's projects change to it at the latest ECB rates."]
+    #[schema(example = "EUR")]
+    pub currency: Option<String>,
 }
 
 pub(crate) async fn lock_changeable(tx: &mut PgConnection, ctx: &Ctx) -> ApiResult<orgs::Org> {
@@ -126,7 +141,7 @@ async fn save(
 #[utoipa::path(
     patch,
     path = "/orgs/{org}",
-    summary = "Renames the org.",
+    summary = "Renames the org or changes its currency.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     request_body = OrgUpdate,
@@ -142,15 +157,74 @@ pub async fn update(
         .name
         .map(|n| crate::platform::validate::validate_name("name", &n))
         .transpose()?;
+    if let Some(code) = req.currency.as_deref()
+        && !(currency::is_code(code) && rates::known(&state, code))
+    {
+        return Err(crate::platform::exchange_rates::unknown("currency", code));
+    }
     let mut tx = state.pg.begin().await?;
     let before = lock_changeable(&mut tx, &ctx).await?;
     let mut org = before.clone();
     if let Some(name) = name {
         org.name = name;
     }
+    if let Some(code) = req.currency {
+        org.currency = code;
+    }
     save(&mut tx, &ctx, &before, &org).await?;
+    let changed = if org.currency == before.currency {
+        Vec::new()
+    } else {
+        convert_budgets(&state, &ctx, &mut tx, org.id, &org.currency).await?
+    };
     tx.commit().await?;
+    for project in changed {
+        crate::services::limits::forget(&state, project).await;
+    }
     Ok(Json(OrgView::from_row(&org)))
+}
+
+// Spend budgets keep the org's currency, so each reads as it was entered; cents are enough for a
+// budget, and a budget never rounds down to nothing.
+async fn convert_budgets(
+    state: &AppState,
+    ctx: &Ctx,
+    tx: &mut PgConnection,
+    org: uuid::Uuid,
+    code: &str,
+) -> ApiResult<Vec<uuid::Uuid>> {
+    let book = rates::book(state);
+    let mut projects = Vec::new();
+    for row in limits_store::list_org(&mut *tx, org).await? {
+        let before = row.limit()?;
+        if before.kind != Kind::SpendBudget || before.currency() == code {
+            continue;
+        }
+        let Some(amount) = book
+            .to_usd(before.amount, before.currency())
+            .and_then(|usd| book.from_usd(usd, code))
+        else {
+            continue;
+        };
+        let mut after = before.clone();
+        after.amount = amount
+            .round_dp_with_strategy(2, RoundingStrategy::MidpointNearestEven)
+            .max(Decimal::new(1, 2))
+            .normalize();
+        after.currency = Some(code.to_owned());
+        limits_store::update(&mut *tx, row.project_id, &after).await?;
+        ctx.audit(Some(OrgId::from_uuid(org)), Action::LimitUpdate)
+            .project(ProjectId::from_uuid(row.project_id))
+            .target("limit", LimitId::from_uuid(after.id))
+            .before(serde_json::json!({ "description": before.describe() }))
+            .after(serde_json::json!({ "description": after.describe() }))
+            .write(&mut *tx)
+            .await?;
+        if !projects.contains(&row.project_id) {
+            projects.push(row.project_id);
+        }
+    }
+    Ok(projects)
 }
 
 #[utoipa::path(

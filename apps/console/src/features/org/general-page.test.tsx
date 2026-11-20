@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ALL_ORG_RIGHTS, ORG, membership, org, signedIn, whoAmI, withRights } from "~/test/fixtures";
+import { ALL_ORG_RIGHTS, ORG, exchangeRates, membership, org, signedIn, whoAmI, withRights } from "~/test/fixtures";
 import { OTHER_USER, THIRD_USER, hoverReason, member, notifications, roleGrant } from "~/test/fixtures/org";
 import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -72,6 +72,65 @@ describe("organization general settings", () => {
     await user.type(input, "Contoso");
     await user.click(screen.getByRole("button", { name: "Save" }));
     expect(await notifications().findByText("That name is taken.")).toBeInTheDocument();
+  });
+
+  it("sets the currency the organization shows all money in", async () => {
+    signedIn();
+    let view = org();
+    on("GET", "orgs/:org", () => view);
+    on("PATCH", "orgs/:org", ({ body }: { body: { currency: string } }) => (view = org({ currency: body.currency })));
+    const { user } = await renderApp(PATH);
+
+    const currency = await screen.findByRole("combobox", { name: "Currency" });
+    await waitFor(() => expect(currency).toHaveTextContent("USD"));
+    await user.click(currency);
+    expect(await screen.findByRole("option", { name: /^USD.*US Dollar/ })).toBeInTheDocument();
+    await user.click(await screen.findByRole("option", { name: /^EUR.*Euro/ }));
+    expect(await notifications().findByText("Amounts now show in EUR")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Currency" })).toHaveTextContent("EUR"));
+    expect(requests("PATCH", "orgs/:org").map((r) => r.body)).toEqual([{ currency: "EUR" }]);
+    await waitFor(() => expect(requests("GET", "me/memberships").length).toBeGreaterThan(1));
+  });
+
+  it("keeps the currency when changing it is refused", async () => {
+    signedIn();
+    on(
+      "PATCH",
+      "orgs/:org",
+      apiError(400, "invalid_request", "Kaeso has no exchange rate for EUR; use a currency from `exchange-rates`.", { param: "currency" }),
+    );
+    const { user } = await renderApp(PATH);
+
+    await user.click(await screen.findByRole("combobox", { name: "Currency" }));
+    await user.click(await screen.findByRole("option", { name: /^EUR/ }));
+    expect(await notifications().findByText(/^Kaeso has no exchange rate for EUR/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Currency" })).toHaveTextContent("USD"));
+  });
+
+  it("offers only dollars until the install has exchange rates, and says why", async () => {
+    signedIn();
+    on("GET", "me/exchange-rates", exchangeRates({}, true));
+    const { user } = await renderApp(PATH);
+
+    const only = await screen.findByRole("button", { name: "USD" });
+    expect(only).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, only, "No exchange rates yet: Kaeso fetches the ECB's once a working day");
+  });
+
+  it("says when the install has exchange rates turned off", async () => {
+    signedIn();
+    on("GET", "me/exchange-rates", exchangeRates({ fetching: false }, true));
+    const { user } = await renderApp(PATH);
+
+    await hoverReason(user, await screen.findByRole("button", { name: "USD" }), "Exchange rates are off on this install");
+  });
+
+  it("shows the currency without a choice to people without Edit organization", async () => {
+    withRights(["org.view"], { role: "admin" });
+    on("GET", "orgs/:org", org({ currency: "EUR" }));
+    await renderApp(PATH);
+    expect(await screen.findByText("EUR · Euro")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Currency" })).not.toBeInTheDocument();
   });
 
   it("locks the name and picture for people without Edit organization", async () => {

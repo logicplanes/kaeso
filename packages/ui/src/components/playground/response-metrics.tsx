@@ -22,6 +22,7 @@ export interface ResponseMetricsProps {
   startedAt?: number | undefined;
   cost?: string | null | undefined;
   costKnown?: boolean | undefined;
+  formatCost?: ((cost: string) => string) | undefined;
   size?: keyof typeof KAESO_RESPONSE_METRICS_VARIANTS.size | undefined;
   className?: string | undefined;
 }
@@ -60,7 +61,20 @@ function Item({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps>(function ResponseMetrics(
-  { timeToFirstToken, duration, inputTokens, outputTokens, reasoningTokens, live = false, startedAt, cost, costKnown = true, size = "sm", className },
+  {
+    timeToFirstToken,
+    duration,
+    inputTokens,
+    outputTokens,
+    reasoningTokens,
+    live = false,
+    startedAt,
+    cost,
+    costKnown = true,
+    formatCost,
+    size = "sm",
+    className,
+  },
   ref,
 ) {
   const t = useUiText();
@@ -99,7 +113,9 @@ export const ResponseMetrics = forwardRef<HTMLDListElement, ResponseMetricsProps
       )}
       {known(reasoningTokens) && <Item label={t("responseMetrics.reasoning", "Reasoning")}>{formatNumber(reasoningTokens)}</Item>}
       {hasCost && (
-        <Item label={t("responseMetrics.cost", "Cost")}>{unknownCost ? t("responseMetrics.costUnknown", "Unknown") : requestCost(cost ?? "0", f)}</Item>
+        <Item label={t("responseMetrics.cost", "Cost")}>
+          {unknownCost ? t("responseMetrics.costUnknown", "Unknown") : (formatCost ?? ((c: string) => requestCost(c, f)))(cost ?? "0")}
+        </Item>
       )}
     </dl>
   );

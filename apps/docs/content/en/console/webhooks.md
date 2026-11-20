@@ -56,6 +56,7 @@ A JSON delivery is a `POST` with `content-type: application/json` and a body lik
     "kind": "spend_budget",
     "period": "month",
     "amount": "100",
+    "currency": "USD",
     "used": "80.42",
     "percent": 80,
     "applies_to": { "type": "project" },
@@ -69,7 +70,7 @@ A JSON delivery is a `POST` with `content-type: application/json` and a body lik
 - `project` is `null` for an event of the organization.
 - `summary` is the notice's line in English.
 - `url` opens the console page the event is about.
-- Ids have the form the [Platform API](../api/platform-api.md) uses. Amounts are strings: US dollars for spending, tokens or requests otherwise.
+- Ids have the form the [Platform API](../api/platform-api.md) uses. Amounts are strings: a spend budget's in its `currency`, the organization's, and tokens or requests otherwise.
 
 `data` holds:
 

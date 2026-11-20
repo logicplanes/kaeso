@@ -4,8 +4,12 @@ import { ModelPicker } from "@logicplanes/kaeso-ui/playground";
 import type { CatalogueModelView, LimitView } from "~/api/generated/types";
 import { catalogueModelOption } from "./model-options";
 import { useModelPickerProviders } from "./providers";
+import { USD } from "~/format/currency";
+import { currencySymbol } from "~/format/prices";
 import { limitKindLabel, limitUnit } from "~/format/labels";
 import { t } from "~/i18n";
+import { useOrgCurrency } from "./org-money";
+import { useOrgPrices } from "./org-prices";
 
 export type LimitKind = "request_rate" | "token_rate" | "token_budget" | "spend_budget" | "tool_call_rate";
 type BudgetPeriod = "day" | "month" | "total";
@@ -36,10 +40,12 @@ const isRate = (k: LimitKind) => k === "request_rate" || k === "token_rate" || k
 export const alertThresholds = (d: LimitDraft): number[] => (isRate(d.kind) ? [] : d.alert_thresholds);
 
 const KINDS: LimitKind[] = ["spend_budget", "token_budget", "request_rate", "token_rate", "tool_call_rate"];
-const kindHelp = (k: LimitKind): string => {
+const kindHelp = (k: LimitKind, currency: string): string => {
   switch (k) {
     case "spend_budget":
-      return t("kaeso.limitEditor.spendHelp", "US dollars per day, month or in total");
+      return currency === USD
+        ? t("kaeso.limitEditor.spendHelp", "US dollars per day, month or in total")
+        : t("kaeso.limitEditor.spendInHelp", "Spend in {currency} per day, month or in total", { currency });
     case "token_budget":
       return t("kaeso.limitEditor.tokenBudgetHelp", "Tokens per day, month or in total");
     case "request_rate":
@@ -61,10 +67,12 @@ function exceedsSpendCap(amount: string): boolean {
   return dollars > SPEND_CAP || (dollars === SPEND_CAP && /[1-9]/.test(fraction));
 }
 
-export function limitProblem(d: LimitDraft): string | null {
+// The gateway checks a budget in another currency against the dollar cap at the latest rate.
+export function limitProblem(d: LimitDraft, currency: string = USD): string | null {
   const amount = Number(d.amount);
   if (!d.amount || !Number.isFinite(amount) || amount <= 0) return t("kaeso.limitEditor.amountAboveZero", "Enter an amount above zero.");
-  if (d.kind === "spend_budget" && exceedsSpendCap(d.amount)) return t("kaeso.limitEditor.spendRange", "Enter an amount up to 1,000,000,000 USD.");
+  if (d.kind === "spend_budget" && currency === USD && exceedsSpendCap(d.amount))
+    return t("kaeso.limitEditor.spendRange", "Enter an amount up to 1,000,000,000 USD.");
   if (d.kind !== "spend_budget" && !Number.isInteger(amount)) return t("kaeso.limitEditor.wholeNumbers", "Requests and tokens are whole numbers.");
   if (alertThresholds(d).some((p) => p < 1 || p > 100)) return t("kaeso.limitEditor.thresholdRange", "Alert thresholds are between 1 and 100 percent.");
   if (alertThresholds(d).length > 10) return t("kaeso.limitEditor.thresholdCount", "Set up to 10 alert thresholds.");
@@ -96,8 +104,10 @@ export function LimitEditor({
   fixedKind?: boolean;
 }) {
   const set = (patch: Partial<LimitDraft>) => onChange({ ...value, ...patch });
+  const currency = useOrgCurrency(org);
   const rate = isRate(value.kind);
-  const options = useMemo(() => models.map(catalogueModelOption), [models]);
+  const prices = useOrgPrices(org);
+  const options = useMemo(() => models.map((m) => catalogueModelOption(m, prices)), [models, prices]);
   const providers = useModelPickerProviders(
     org,
     useMemo(() => [...new Set(models.map((m) => m.provider))], [models]),
@@ -116,7 +126,7 @@ export function LimitEditor({
               ...(k === "tool_call_rate" ? { model: null } : {}),
             })
           }
-          options={KINDS.map((k) => ({ value: k, label: limitKindLabel(k), description: kindHelp(k) }))}
+          options={KINDS.map((k) => ({ value: k, label: limitKindLabel(k), description: kindHelp(k, currency) }))}
         />
       )}
       <NumberInput
@@ -125,8 +135,8 @@ export function LimitEditor({
         onValueChange={(amount) => set({ amount })}
         min="0"
         step={value.kind === "spend_budget" ? "0.01" : "1"}
-        unit={limitUnit(value.kind)}
-        {...(value.kind === "spend_budget" ? { prefix: "$" } : {})}
+        unit={limitUnit(value.kind, currency)}
+        {...(value.kind === "spend_budget" ? { prefix: currencySymbol(currency) } : {})}
       />
       {rate ? (
         <Text variant="small" tone="secondary">

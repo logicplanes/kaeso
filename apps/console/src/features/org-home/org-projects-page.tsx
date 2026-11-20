@@ -55,7 +55,7 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
     });
   const amount = (id: string): number => {
     const row = usage.data?.find((r) => r.key === id);
-    return sort === "cost" ? Number(row?.cost ?? 0) : (row?.requests ?? 0);
+    return sort === "cost" ? Number(row?.converted_cost ?? 0) : (row?.requests ?? 0);
   };
   const all = [...(projects.data ?? [])].sort((a, b) => (sort ? amount(b.id) - amount(a.id) : 0) || compareNames(a.name, b.name));
   const words = query.trim().toLocaleLowerCase();

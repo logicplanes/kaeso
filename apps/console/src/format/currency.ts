@@ -1,49 +1,124 @@
-import { formatLocale } from "@logicplanes/kaeso-ui/format";
+import { createFormatters, formatLocale, formatPrice, formatUSD } from "@logicplanes/kaeso-ui/format";
 import { t } from "~/i18n";
 
-const formatters = new Map<string, Intl.NumberFormat>();
+export const USD = "USD";
 
-function formatter(code: string, maximumFractionDigits: number): Intl.NumberFormat {
-  const key = `${formatLocale()}|${code}|${maximumFractionDigits}`;
-  let f = formatters.get(key);
+type Options = { significant?: number | undefined; decimals?: number | undefined };
+
+/** Amounts in one currency, written the way the console has always written dollars: the same rounding, in the person's language. */
+export interface Money {
+  code: string;
+  format(amount: string, options?: Options): string;
+  /** A period's spend: in cents, and under a cent as such. */
+  period(amount: string | null | undefined): string;
+  /** A tile's total: in cents, and two significant digits below a cent. */
+  tile(amount: string): string;
+  /** One request's cost in a column: six places, so the column lines up. */
+  request(amount: string): string;
+  /** One request's cost on its own: three significant figures, cents at least and six places at most. */
+  cost(amount: string): string;
+  /** A price per million tokens as it was set: at least two decimals and up to six. */
+  price(amount: string): string;
+}
+
+const english = createFormatters({ locale: "en" });
+const numberFormats = new Map<string, Intl.NumberFormat>();
+
+function numberFormat(code: string, decimals: number): Intl.NumberFormat {
+  const key = `${formatLocale()}|${code}|${decimals}`;
+  let f = numberFormats.get(key);
   if (!f) {
-    f = new Intl.NumberFormat(formatLocale(), { style: "currency", currency: code, maximumFractionDigits });
-    formatters.set(key, f);
+    f = new Intl.NumberFormat(formatLocale(), {
+      style: "currency",
+      currency: code,
+      currencyDisplay: "narrowSymbol",
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    numberFormats.set(key, f);
   }
   return f;
 }
 
 export function currencyDigits(code: string): number {
-  return new Intl.NumberFormat("en", { style: "currency", currency: code })
-    .formatToParts(1)
-    .filter((p) => p.type === "fraction")
-    .reduce((n, p) => n + p.value.length, 0);
+  return new Intl.NumberFormat("en", { style: "currency", currency: code }).resolvedOptions().maximumFractionDigits as number;
 }
 
-// Amounts under one unit keep up to four decimals, so a request's cost doesn't read as 0.
-export function formatMoney(amount: string | number, code: string): string {
-  const n = Number(amount);
-  const digits = currencyDigits(code);
-  const small = n !== 0 && Math.abs(n) < 1;
-  return formatter(code, small ? Math.max(digits, 4) : digits).format(n);
+// Rounds as the dollar formatter does, then writes the digits it kept with the currency's own symbol and
+// separators; Intl takes the digits as a decimal string, so nothing passes through a float.
+function inCurrency(code: string, amount: string, options: Options = {}): string {
+  const written = english.formatUSD(amount, options);
+  const m = /^([<>]\u00a0)?(−)?\$([\d,]+)(?:\.(\d+))?$/.exec(written);
+  if (!m) return written;
+  const [, bound = "", minus = "", whole = "0", fraction = ""] = m;
+  const digits = `${minus ? "-" : ""}${whole.replace(/,/g, "")}${fraction ? `.${fraction}` : ""}` as Intl.StringNumericLiteral;
+  return `${bound}${numberFormat(code, fraction.length).format(digits).replace("-", "−")}`;
 }
 
-export function currencySymbol(code: string): string {
-  return new Intl.NumberFormat(formatLocale(), { style: "currency", currency: code, currencyDisplay: "narrowSymbol" })
-    .formatToParts(0)
-    .filter((p) => p.type === "currency")
-    .map((p) => p.value)
-    .join("");
+const isZero = (amount: string) => !/[1-9]/.test(amount);
+
+function costDecimals(amount: string): number {
+  const [whole = "0", frac = ""] = amount.replace(/^-/, "").split(".");
+  const lead = /^0*$/.test(whole) ? frac.length - frac.replace(/^0+/, "").length : 0;
+  const places = Math.min(6, Math.max(2, /^0*$/.test(whole) ? lead + 3 : 2));
+  const rounded = Math.abs(Number(amount)).toFixed(places);
+  return isZero(rounded) ? places : Math.max(2, rounded.replace(/0+$/, "").split(".")[1]?.length ?? 0);
 }
 
-export function approxMoney(amount: string | number, code: string): string {
-  return t("kaeso.currency.approx", "≈ {amount}", { amount: formatMoney(amount, code) });
+function money(code: string): Money {
+  const format = (amount: string, options?: Options) => (code === USD ? formatUSD(amount, options) : inCurrency(code, amount, options));
+  // A currency without cents (yen) counts its smallest unit where dollars count cents.
+  const cents = code === USD ? 2 : Math.min(2, currencyDigits(code));
+  const smallest = cents ? `0.${"1".padStart(cents, "0")}` : "1";
+  return {
+    code,
+    format,
+    period(amount) {
+      if (!amount || isZero(amount)) return format("0", { decimals: cents });
+      const n = Number(amount);
+      if (n > 0 && n < Number(smallest) / 2) return t("kaeso.usage.lessThan", "<{amount}", { amount: format(smallest, { decimals: cents }) });
+      return format(amount, { decimals: cents });
+    },
+    tile(v) {
+      if (!(Number(v) > 0 && Number(v) < 0.01)) return cents === 2 ? format(v) : format(v, { decimals: cents });
+      const rounded = Number(Number(v).toPrecision(2));
+      const fixed = rounded.toFixed(1 - Math.floor(Math.log10(rounded))).replace(/0+$/, "");
+      return format(fixed, { decimals: fixed.length - "0.".length });
+    },
+    request(amount) {
+      return isZero(amount) ? format("0", { decimals: 0 }) : format(amount, { decimals: 6 });
+    },
+    cost(amount) {
+      return isZero(amount) ? format("0", { decimals: 0 }) : format(amount, { decimals: costDecimals(amount) });
+    },
+    price(amount) {
+      if (code === USD) return formatPrice(amount);
+      const frac = /\.(\d*?)0*\s*$/.exec(amount)?.[1] ?? "";
+      return format(amount, { decimals: Math.min(6, Math.max(2, frac.length)) });
+    },
+  };
 }
 
-export function currencyName(code: string): string {
-  try {
-    return new Intl.DisplayNames([formatLocale()], { type: "currency", fallback: "none" }).of(code) ?? code;
-  } catch {
-    return code;
+const kept = new Map<string, Money>();
+
+/** The formatters for amounts in `code`; an amount without a currency is in US dollars. */
+export function moneyIn(code: string | null | undefined): Money {
+  const c = code ?? USD;
+  let m = kept.get(c);
+  if (!m) {
+    m = money(c);
+    kept.set(c, m);
   }
+  return m;
+}
+
+/** A cost as the gateway gave it: in the organization's currency, or in US dollars when there was no rate to convert it. */
+export function shownCost(c: { cost: string; converted_cost?: string | null | undefined; currency: string }): { money: Money; amount: string } {
+  return c.converted_cost == null ? { money: moneyIn(USD), amount: c.cost } : { money: moneyIn(c.currency), amount: c.converted_cost };
+}
+
+/** Adds decimal amounts in millionths, so sums never drift. */
+export function sumAmounts(values: (string | null | undefined)[]): string {
+  const micros = values.reduce((acc, v) => acc + (v ? Math.round(Number(v) * 1e6) : 0), 0);
+  return (micros / 1e6).toFixed(6).replace(/0+$/, "").replace(/\.$/, ".00");
 }

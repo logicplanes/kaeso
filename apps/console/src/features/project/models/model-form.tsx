@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox, CheckboxGroup, Field, Input, NumberInput, Select, Switch, Text } from "@logicplanes/kaeso-ui";
-import { formatDate, formatPrice } from "@logicplanes/kaeso-ui/format";
+import { formatDate } from "@logicplanes/kaeso-ui/format";
 import type { DecisionFields, ExchangeRates, Fields } from "~/api/generated/types";
-import { currencyName, currencySymbol } from "~/format/currency";
+import { moneyIn, USD } from "~/format/currency";
+import { currencyName, currencySymbol } from "~/format/prices";
 import { dialectLabel } from "~/format/labels";
 import { t } from "~/i18n";
-import { exchangeRatesQuery, USD } from "~/api/queries/exchange-rates";
+import { exchangeRatesQuery } from "~/api/queries/exchange-rates";
 
 export interface FieldDraft {
   display_name: string;
@@ -135,7 +136,22 @@ function sameValue(key: string, v: unknown, b: unknown): boolean {
   return same(v, b);
 }
 
-export function changedFields(d: FieldDraft, base: Fields, dialects: readonly string[]): Partial<Fields> {
+/** The editor's first draft: in the organization's currency when the install has its rate, so prices read as everywhere else. */
+export function startDraft(f: Fields, code: string, rates: ExchangeRates | undefined): FieldDraft {
+  const d = draftFrom(f);
+  if (f.currency || code === USD || !rates?.rates.some((r) => r.currency === code)) return d;
+  return inCurrency(d, code, rates);
+}
+
+// Prices the editor only showed in another currency stay as they were: saving them converted would pin KPMR's prices.
+function untouched(d: FieldDraft, base: Fields, start: FieldDraft | undefined): FieldDraft {
+  if (!start || start.currency === (base.currency ?? USD) || d.currency !== start.currency || EDITED_PRICES.some((k) => d[k] !== start[k])) return d;
+  const original = draftFrom(base);
+  return { ...d, currency: original.currency, ...Object.fromEntries(EDITED_PRICES.map((k) => [k, original[k]])) };
+}
+
+export function changedFields(draft: FieldDraft, base: Fields, dialects: readonly string[], start?: FieldDraft): Partial<Fields> {
+  const d = untouched(draft, base, start);
   const next = fieldsOf(d, dialects);
   // Prices in another currency than the saved ones are all sent again, in the new currency.
   const recurrency = d.currency !== (base.currency ?? USD);
@@ -181,16 +197,18 @@ export function ModelForm({
   value,
   onChange,
   dialects,
+  orgCurrency,
   overrideNote = true,
 }: {
   value: FieldDraft;
   onChange: (d: FieldDraft) => void;
   dialects: readonly string[];
+  /** The currency the organization shows money in, which a price in another currency is also shown in. */
+  orgCurrency: string;
   overrideNote?: boolean;
 }) {
   const set = (patch: Partial<FieldDraft>) => onChange({ ...value, ...patch });
   const rates = useQuery(exchangeRatesQuery).data;
-  const perUsd = rates?.rates.find((r) => r.currency === value.currency)?.per_usd;
   const price = (key: "input_price" | "output_price" | "cache_read_price" | "cache_write_price" | "cache_write_1h_price", label: string) => (
     <NumberInput
       label={label}
@@ -200,7 +218,7 @@ export function ModelForm({
       step="0.01"
       prefix={currencySymbol(value.currency)}
       unit={t("models.unit.perMillionTokens", "per M tokens")}
-      description={value.currency === USD ? undefined : inDollars(value[key], perUsd, rates?.day)}
+      description={inOrgCurrency(value[key], value.currency, orgCurrency, rates)}
     />
   );
   return (
@@ -349,11 +367,15 @@ export function inCurrency(d: FieldDraft, to: string, rates: ExchangeRates | und
   return next;
 }
 
-export function inDollars(amount: string, perUsd: string | undefined, day: string | null | undefined): string | undefined {
-  if (!perUsd || !day) return t("models.noRate", "No exchange rate for this currency yet; requests at these prices show an unknown cost.");
+/** A price entered in another currency than the organization's, in the organization's at the latest rate. */
+export function inOrgCurrency(amount: string, code: string, orgCode: string, rates: ExchangeRates | undefined): string | undefined {
+  if (code === orgCode) return undefined;
+  const per = (c: string) => (c === USD ? 1 : Number(rates?.rates.find((r) => r.currency === c)?.per_usd ?? NaN));
+  if (!rates?.day || !Number.isFinite(per(code)) || !Number.isFinite(per(orgCode)))
+    return t("models.noRate", "No exchange rate for this currency yet; requests at these prices show an unknown cost.");
   if (!/^\d+(\.\d+)?$/.test(amount.trim())) return undefined;
-  const usd = (Number(amount) / Number(perUsd)).toFixed(9).replace(/0+$/, "").replace(/\.$/, "");
-  return t("models.inDollars", "≈ {price} at the ECB rate of {day}", { price: formatPrice(usd), day: formatDate(day) });
+  const converted = ((Number(amount) / per(code)) * per(orgCode)).toFixed(9).replace(/0+$/, "").replace(/\.$/, "");
+  return t("models.inCurrency", "≈ {price} at the ECB rate of {day}", { price: moneyIn(orgCode).price(converted), day: formatDate(rates.day) });
 }
 
 function CurrencyField({ value, rates, onChange }: { value: string; rates: ExchangeRates | undefined; onChange: (code: string) => void }) {

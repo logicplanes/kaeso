@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar FROM organizations o WHERE ($1::uuid IS NULL OR id > $1) AND ($3::text IS NULL OR name ILIKE $3) AND ($4::bool IS NULL OR EXISTS (SELECT 1 FROM org_oidc x WHERE x.org_id = o.id) = $4) ORDER BY id LIMIT $2",
+  "query": "SELECT id, name, state, deletion_due_at, content_logging, keep_media, metadata_retention_days, content_retention_days, require_2fa, require_sso, max_key_lifetime_days, sso_default_preset, sso_default_role_id, created_at, avatar, currency FROM organizations WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -167,14 +167,22 @@
             "name": "avatar"
           }
         }
+      },
+      {
+        "ordinal": 15,
+        "name": "currency",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "organizations",
+            "name": "currency"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Int8",
-        "Text",
-        "Bool"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -192,8 +200,9 @@
       true,
       true,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "978e348bd039b57869075aabdcfac30470d5be30fb1290ae2530ccc3104a5508"
+  "hash": "c51cb47bbcb0f6eded171dae04bc48e02293138ae6fd19f9d594695ffdb9741f"
 }
