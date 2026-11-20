@@ -833,6 +833,10 @@ describe("organization providers", () => {
           wholeText("Default · Projects: Checkout assistant, and every unassigned project · Last used: Never · Added: Ada Okafor (you), 15 Oct 2026"),
         ),
       ).toBeInTheDocument();
+      // Its hidden labels ("Projects:") are absolutely placed: the line holds them, so they can't widen the page on a phone.
+      const line = within(await table()).getByText(wholeText("Projects: Support triage · Last used: Never · Added: Ada Okafor (you), 1 Oct 2026"));
+      expect(line).toHaveClass("truncate", "relative");
+      expect(within(line).getAllByText(/:$/, { selector: ".sr-only" }).length).toBeGreaterThan(0);
       expect(within(await row("OpenAI production")).getAllByText("Default", { exact: true })).toHaveLength(1);
       act(() => showTooltipsAtOnce(true));
       try {

@@ -138,6 +138,15 @@ describe("Dashboard headings", () => {
     );
     expect(screen.getByRole("heading", { name: "Cache hit", level: 2 })).toBeInTheDocument();
   });
+
+  it("gives a cell's title link a full touch target, though it's drawn 24px tall", () => {
+    render(
+      <Dashboard aria-label="Usage">
+        <DashboardCell title="Cache hit" href="/analytics" />
+      </Dashboard>,
+    );
+    expect(screen.getByRole("link", { name: "Cache hit" })).toHaveClass("relative", "tap-target", "h-24");
+  });
 });
 
 describe("Readout", () => {
@@ -172,6 +181,14 @@ describe("RankList", () => {
     expect(Number.parseFloat((bars[1] as HTMLElement).style.width)).toBeCloseTo(15.09, 1);
     fireEvent.click(rows[1]!);
     expect(open).toHaveBeenCalledWith("b");
+  });
+  it("makes a row that opens 44px tall for a finger, and leaves rows that don't open at 36px", () => {
+    const { rerender } = render(<RankList aria-label="Models by requests" items={items} onOpen={() => {}} />);
+    for (const row of screen.getAllByRole("button")) expect(row).toHaveClass("h-36", "coarse:h-44");
+    rerender(<RankList aria-label="Models by requests" items={items} />);
+    const still = screen.getByText("Claude Haiku 5.5").closest("li")!.firstElementChild!;
+    expect(still).toHaveClass("h-36");
+    expect(still).not.toHaveClass("coarse:h-44");
   });
   it("ends every number at the row's right edge, so values line up between rows", () => {
     render(<RankList aria-label="Models by requests" items={items} />);

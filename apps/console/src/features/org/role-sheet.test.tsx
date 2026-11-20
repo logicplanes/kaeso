@@ -59,6 +59,7 @@ describe("a built-in role's sheet", () => {
     await waitFor(() => expect(within(who).getAllByRole("gridcell")).toHaveLength(2));
     expect(within(sheet).queryByRole("button", { name: "Save role" })).not.toBeInTheDocument();
     expect(within(sheet).queryByRole("button", { name: "Delete role" })).not.toBeInTheDocument();
+    expect(within(sheet.querySelector<HTMLElement>("[data-sheet-footer]")!).getByRole("button", { name: "Duplicate" })).toBeInTheDocument();
     await user.click(within(who).getByText("Grace Hopper"));
     await waitFor(() => expect(router.state.location.search).toEqual({ member: OTHER_USER }));
   });
@@ -151,6 +152,22 @@ describe("a built-in role's sheet", () => {
 });
 
 describe("a custom role's sheet", () => {
+  it("keeps saving and duplicating in the sheet's footer, in reach while the rights scroll, and deleting at the end", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", paged(holders));
+    const { sheet } = await openSheet(`project:${LEAD}`, "Support lead");
+    const footer = sheet.querySelector<HTMLElement>("[data-sheet-footer]");
+    expect(footer).not.toBeNull();
+    expect(
+      within(footer!)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["Duplicate", "Cancel", "Save role"]);
+    const body = sheet.querySelector("[data-dialog-body]");
+    expect(body).not.toContainElement(within(sheet).getByRole("button", { name: "Save role" }));
+    expect(body).toContainElement(within(sheet).getByRole("button", { name: "Delete role" }));
+  });
+
   it("renames a role that people hold once the change is confirmed", async () => {
     signedIn();
     on("GET", "orgs/:org/members", paged(holders));

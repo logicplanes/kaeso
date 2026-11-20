@@ -8,6 +8,7 @@ import { mcpServersQuery } from "~/api/queries/mcp-servers";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgRights } from "~/auth/session";
+import { columnWidth } from "~/format/text-width";
 import { t } from "~/i18n";
 import { AddServerDialog } from "~/kaeso/mcp-server-dialog";
 import { connectionWord, hostOf, statusWord } from "~/kaeso/mcp-servers";
@@ -86,7 +87,20 @@ export function OrgMcpServersPage({ org, search = {} }: { org: string; search?: 
             </Text>
           ),
         ),
-        col.status({ id: "connection", header: t("orgHome.mcp.connection", "Connection"), size: 208, priority: 1 }, (s: McpServerView) => connectionWord(s)),
+        col.status(
+          {
+            id: "connection",
+            header: t("orgHome.mcp.connection", "Connection"),
+            // As wide as its words, so on a phone the server's name keeps the rest instead of hiding under a 208px column.
+            size: columnWidth(
+              t("orgHome.mcp.connection", "Connection"),
+              list.map((s) => connectionWord(s).label),
+              { min: 120, max: 208 },
+            ),
+            priority: 1,
+          },
+          (s: McpServerView) => connectionWord(s),
+        ),
         col.custom(
           { id: "tools", header: t("orgHome.mcp.tools", "Tools"), size: 136, priority: 2 },
           (s: McpServerView) => s.tools,
@@ -131,7 +145,7 @@ export function OrgMcpServersPage({ org, search = {} }: { org: string; search?: 
           },
         ),
       ].map((c) => ({ ...c, enableSorting: false })),
-    [all],
+    [all, list],
   );
 
   return (

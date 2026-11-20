@@ -89,6 +89,24 @@ describe("organization MCP servers", () => {
     expect(await screen.findByRole("dialog", { name: "Add MCP server" })).toBeInTheDocument();
   });
 
+  it("makes the Connection column as wide as its words, so a phone leaves the server's name the rest of the row", async () => {
+    signedIn();
+    serve([mcpServer({ auth_method: "none", connection: null }), mcpServer({ id: "mcp_docs", name: "Docs", auth_method: "none", connection: null })]);
+    await renderApp(PATH);
+    expect(within(await table()).getAllByRole("row")[0]?.style.gridTemplateColumns).toMatch(/^minmax\(240px, 1fr\) 192px 120px /);
+  });
+
+  it("widens the Connection column for the account a server is connected as, up to 208px", async () => {
+    signedIn();
+    serve([
+      mcpServer(),
+      mcpServer({ id: "mcp_long", name: "Long", connection: mcpConnection({ account: "release-notes-drafter@northwind.example.com" }) }),
+    ]);
+    await renderApp(PATH);
+    expect(await row("X")).toHaveTextContent("Connected as @kaesoapp");
+    expect(within(await table()).getAllByRole("row")[0]?.style.gridTemplateColumns).toMatch(/^minmax\(240px, 1fr\) 192px 208px /);
+  });
+
   it("adds a server and opens it", async () => {
     signedIn();
     serve([]);
