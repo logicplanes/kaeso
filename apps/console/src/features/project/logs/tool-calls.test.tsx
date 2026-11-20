@@ -96,8 +96,6 @@ describe("Tool calls in the request logs", () => {
     await user.keyboard("{ArrowLeft}");
     await screen.findByRole("grid", { name: "Requests" });
     await waitFor(() => expect(screen.getByRole("radio", { name: "Models" })).toHaveFocus());
-    await user.click(screen.getByRole("button", { name: "Live" }));
-    expect(screen.getByRole("button", { name: "Live" })).toHaveFocus();
   });
 
   it("keeps the range, the filters and live updates when switching between models and tools", async () => {

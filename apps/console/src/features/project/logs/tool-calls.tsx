@@ -49,16 +49,19 @@ import {
 } from "./toolbar";
 import { toolCallStatus as statusOf, toolErrorLabel as errorLabel, TOOL_CALL_STATUSES, TOOL_ERROR_TYPES } from "~/format/labels";
 
-// Each kind is a page of its own, so switching draws the switch anew; the focus of a keyboard user follows it there.
-let refocusKindSwitch = false;
+// Each kind is a page of its own, so switching draws the switch anew; whoever had the focus on it gets it back
+// there. Only for a moment: a switch drawn later, on another visit, leaves the focus alone.
+let refocusKindSwitchUntil = 0;
 
 export function KindSwitch({ value, onChange }: { value: "models" | "tools"; onChange: (kind: "tools" | undefined) => void }) {
   const own = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!refocusKindSwitch) return;
-    refocusKindSwitch = false;
+    if (performance.now() > refocusKindSwitchUntil) return;
     // After the radio group has registered its options, or its arrow keys start from the wrong one.
-    const frame = requestAnimationFrame(() => own.current?.querySelector<HTMLElement>("[role=radio][aria-checked=true]")?.focus());
+    const frame = requestAnimationFrame(() => {
+      refocusKindSwitchUntil = 0;
+      own.current?.querySelector<HTMLElement>("[role=radio][aria-checked=true]")?.focus();
+    });
     return () => cancelAnimationFrame(frame);
   }, []);
   return (
@@ -68,7 +71,7 @@ export function KindSwitch({ value, onChange }: { value: "models" | "tools"; onC
         aria-label={t("logs.kind", "What to show")}
         value={value}
         onValueChange={(v) => {
-          refocusKindSwitch = !!own.current?.contains(document.activeElement);
+          if (own.current?.contains(document.activeElement)) refocusKindSwitchUntil = performance.now() + 1000;
           onChange(v === "tools" ? "tools" : undefined);
         }}
         options={[

@@ -1,6 +1,6 @@
-import { createRef, useState } from "react";
+import { createRef, useEffect, useState } from "react";
 import { describe, expect, it } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Toolbar } from "./toolbar.js";
 import { FilterChip } from "../filter-chip/filter-chip.js";
@@ -64,10 +64,10 @@ describe("Toolbar keyboard", () => {
 });
 
 describe("Toolbar with a radio group in it", () => {
-  let choose: (v: string) => void = () => undefined;
+  // The value arrives after the first render, as it does when it comes from the address or a request.
   function Bar() {
     const [kind, setKind] = useState<string | undefined>(undefined);
-    choose = setKind;
+    useEffect(() => setKind("models"), []);
     return (
       <>
         <button type="button">Before</button>
@@ -92,8 +92,7 @@ describe("Toolbar with a radio group in it", () => {
 
   it("leaves the group its own tab stop and arrow keys, and Tab reaches the toolbar's controls whenever the group was chosen", async () => {
     render(<Bar />);
-    act(() => choose("models"));
-    await act(() => new Promise((r) => setTimeout(r, 0)));
+    expect(await screen.findByRole("radio", { name: "Models", checked: true })).toBeInTheDocument();
     screen.getByRole("button", { name: "Before" }).focus();
     await userEvent.tab();
     expect(screen.getByRole("radio", { name: "Models" })).toHaveFocus();
