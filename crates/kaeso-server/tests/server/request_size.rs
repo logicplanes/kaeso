@@ -749,21 +749,7 @@ async fn a_playground_body_cut_off_by_the_app_is_a_bad_request_not_too_large() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn an_oversized_body_is_read_to_its_end_so_a_proxy_in_front_passes_the_413_on() {
     let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_MODEL_API", "1MiB")])).await;
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    let shutdown = tokio_util::sync::CancellationToken::new();
-    tokio::spawn(kaeso_server::serve::serve_until(
-        listener,
-        env.app.router.clone(),
-        shutdown.clone(),
-        std::time::Duration::from_secs(1),
-        kaeso_server::serve::Connections {
-            header_read_timeout: std::time::Duration::from_secs(30),
-            max: 16,
-            metered: false,
-        },
-        tokio_util::sync::CancellationToken::new(),
-    ));
+    let (addr, shutdown) = serve_raw(&env).await;
     let body = serde_json::to_vec(&messages("claude-haiku-4-5", &"a".repeat(32 << 20))).unwrap();
     let head = format!(
         "POST /v1/messages HTTP/1.1\r\nhost: kaeso.test\r\nx-api-key: {}\r\nanthropic-version: 2023-06-01\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
@@ -788,25 +774,9 @@ async fn an_oversized_body_is_read_to_its_end_so_a_proxy_in_front_passes_the_413
     shutdown.cancel();
 }
 
-async fn raw_exchange(addr: std::net::SocketAddr, head: String, body: &[u8]) -> String {
-    let mut proxy = TcpStream::connect(addr).await.unwrap();
-    proxy.write_all(head.as_bytes()).await.unwrap();
-    let sent = proxy.write_all(body).await;
-    assert!(
-        sent.is_ok(),
-        "the gateway stopped reading the body of {head}: {sent:?}"
-    );
-    let mut answer = Vec::new();
-    proxy.read_to_end(&mut answer).await.unwrap();
-    String::from_utf8_lossy(&answer).into_owned()
-}
-
-// The same holds for every answer the gateway sends before the body has arrived: a refused key,
-// a method the path doesn't take, a sign-in the Platform API asks for, or a body over the MCP
-// endpoints' own limit. Each must reach the app, not break the proxy's write.
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn answers_sent_before_a_large_body_arrives_still_read_it_so_a_proxy_passes_them_on() {
-    let env = common::v1::env(None, None).await;
+async fn serve_raw(
+    env: &common::v1::Env,
+) -> (std::net::SocketAddr, tokio_util::sync::CancellationToken) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let shutdown = tokio_util::sync::CancellationToken::new();
@@ -822,6 +792,26 @@ async fn answers_sent_before_a_large_body_arrives_still_read_it_so_a_proxy_passe
         },
         tokio_util::sync::CancellationToken::new(),
     ));
+    (addr, shutdown)
+}
+
+async fn raw_exchange(addr: std::net::SocketAddr, head: String, body: &[u8]) -> String {
+    let mut proxy = TcpStream::connect(addr).await.unwrap();
+    proxy.write_all(head.as_bytes()).await.unwrap();
+    let sent = proxy.write_all(body).await;
+    assert!(
+        sent.is_ok(),
+        "the gateway stopped reading the body of {head}: {sent:?}"
+    );
+    let mut answer = Vec::new();
+    proxy.read_to_end(&mut answer).await.unwrap();
+    String::from_utf8_lossy(&answer).into_owned()
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn answers_sent_before_a_large_body_arrives_still_read_it_so_a_proxy_passes_them_on() {
+    let env = common::v1::env(None, None).await;
+    let (addr, shutdown) = serve_raw(&env).await;
     let body = serde_json::to_vec(&chat("claude-haiku-4-5", &"a".repeat(24 << 20))).unwrap();
     let json = "content-type: application/json\r\naccept: application/json, text/event-stream";
     let cases = [
@@ -872,26 +862,10 @@ async fn answers_sent_before_a_large_body_arrives_still_read_it_so_a_proxy_passe
     shutdown.cancel();
 }
 
-// A client that waits for `100 Continue` before it sends the body is answered without being asked
-// for the body it would send in vain.
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn a_refusal_does_not_ask_a_client_that_waits_for_100_continue_for_its_body() {
     let env = common::v1::env(None, None).await;
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    let shutdown = tokio_util::sync::CancellationToken::new();
-    tokio::spawn(kaeso_server::serve::serve_until(
-        listener,
-        env.app.router.clone(),
-        shutdown.clone(),
-        std::time::Duration::from_secs(1),
-        kaeso_server::serve::Connections {
-            header_read_timeout: std::time::Duration::from_secs(30),
-            max: 16,
-            metered: false,
-        },
-        tokio_util::sync::CancellationToken::new(),
-    ));
+    let (addr, shutdown) = serve_raw(&env).await;
     let mut client = TcpStream::connect(addr).await.unwrap();
     client
         .write_all(

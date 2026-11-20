@@ -237,7 +237,7 @@ Kaeso reads a request body sent with `Content-Encoding: gzip`, `x-gzip` or `zstd
 
 A body takes one encoding. Any other, such as `br`, and two at once, such as `gzip, zstd`, get 415 in the app's format. A body that doesn't decode gets 400.
 
-A body over the limit gets 413 in the app's format. Kaeso reads a body to its end before it answers, also one it refuses unread, such as for a key that isn't valid or a method the path doesn't take, up to 1 GiB and within the body read deadline ([`server.body_read_deadline`](../self-hosting/configuration.md#listening)), so a proxy in front of Kaeso, such as Traefik, passes the answer on instead of answering 502 itself. A client that sends `Expect: 100-continue` gets a refusal without being asked for the body.
+A body over the limit gets 413 in the app's format. Before it answers, Kaeso reads the rest of a body it refused, such as for a key that isn't valid or a method the path doesn't take, up to 1 GiB and within the body read deadline ([`server.body_read_deadline`](../self-hosting/configuration.md#listening)). A proxy in front of Kaeso, such as Traefik, then passes the answer on instead of answering 502 itself. A body that declares more than 1 GiB isn't read, and a client that sends `Expect: 100-continue` and waits gets a refusal before it sends the body.
 
 ## Streaming
 
