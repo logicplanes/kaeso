@@ -165,9 +165,7 @@ function CurrencyRow({ org, currency, canUpdate }: { org: string; currency: stri
       description={t("org.general.currencyHint", "Spend, prices and budgets show in it, at the ECB's rates.")}
       control={
         canUpdate ? (
-          <div className="w-240 min-w-0">
-            <CurrencySelect value={currency} disabled={save.isPending} onChange={(code) => code !== currency && save.mutate(code)} />
-          </div>
+          <CurrencySelect value={currency} disabled={save.isPending} onChange={(code) => code !== currency && save.mutate(code)} />
         ) : (
           <Text tone="secondary">{t("org.general.currencyValue", "{code} · {name}", { code: currency, name: currencyName(currency) })}</Text>
         )

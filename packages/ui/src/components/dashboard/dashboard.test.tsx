@@ -173,17 +173,15 @@ describe("RankList", () => {
     fireEvent.click(rows[1]!);
     expect(open).toHaveBeenCalledWith("b");
   });
-  it("ends every value on the row's right edge, numbers that roll as well as words", () => {
-    render(
-      <RankList
-        aria-label="Latest requests"
-        items={[
-          { id: "a", label: "Claude Haiku 5.5", value: "6 ms" },
-          { id: "b", label: "GPT-6 Sol", value: "—" },
-        ]}
-      />,
-    );
-    expect(screen.getByText("6 ms", { selector: ".sr-only" }).parentElement).toHaveClass("justify-end", "text-right", "min-w-64");
+  it("ends every number at the row's right edge, so values line up between rows", () => {
+    render(<RankList aria-label="Models by requests" items={items} />);
+    for (const value of ["31,629", "4,655"]) {
+      const shown = screen.getByText(value).parentElement!;
+      expect(shown).toHaveClass("inline-flex", "justify-end", "min-w-64");
+    }
+  });
+  it("ends a value that is a word on the row's right edge too", () => {
+    render(<RankList aria-label="Latest requests" items={[{ id: "b", label: "GPT-6 Sol", value: "—" }]} />);
     expect(screen.getByText("—")).toHaveClass("justify-end", "text-right", "min-w-64");
   });
   it("gives every row's change a column of its own: neutral, better or worse, or a word", () => {

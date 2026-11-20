@@ -5,7 +5,6 @@ import {
   Badge,
   Banner,
   Button,
-  Code,
   DataTable,
   Dialog,
   DialogScope,
@@ -256,7 +255,9 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
                 )}
               </span>
               <Text variant="small" tone="secondary" truncate>
-                <Code>{p.id}</Code>
+                <Text variant="small" tone="inherit" mono>
+                  {p.id}
+                </Text>
                 {serverName(servers, p.server) && (
                   <span>
                     {t("orgHome.partSeparator", " · ")}

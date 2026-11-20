@@ -80,6 +80,7 @@ describe("organization MCP servers", () => {
     const docs = await row("Docs");
     expect(docs).toHaveTextContent("Not checked yet");
     expect(docs).toHaveTextContent("proj_gone");
+    expect(within(await table()).getAllByRole("row")[0]?.style.gridTemplateColumns).toMatch(/^minmax\(240px, 1fr\) 192px /);
     await user.click(screen.getByRole("button", { name: "Add server" }));
     expect(await screen.findByRole("dialog", { name: "Add MCP server" })).toBeInTheDocument();
     await user.keyboard("{Escape}");
@@ -180,6 +181,9 @@ describe("an MCP server's sheet", () => {
     expect(within(s).getByText("https://mcp.x.example/mcp")).toBeInTheDocument();
     expect(within(s).getByText("x-mcp 1.2.0")).toBeInTheDocument();
     expect(within(s).getByText("2026-07-28")).toBeInTheDocument();
+    // Handle, version and id are set alike: mono text on the values' edge, not a chip.
+    for (const value of ["x", "2026-07-28", "mcp_x"]) expect(within(s).getByText(value).closest("dd")).toHaveClass("mono");
+    expect(within(s).queryByText("x", { selector: "code" })).not.toBeInTheDocument();
     expect(within(s).getByText("Held for review")).toBeInTheDocument();
     expect(within(s).getByText("Ada Okafor (you), 15 Oct 2026")).toBeInTheDocument();
     expect(within(s).getByText("Connected as @kaesoapp")).toBeInTheDocument();

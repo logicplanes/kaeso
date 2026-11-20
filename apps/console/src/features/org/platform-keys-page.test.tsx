@@ -419,7 +419,7 @@ describe("a platform key's details", () => {
     expect(sheet).toHaveTextContent("Ada Okafor (you)");
     expect(sheet).toHaveTextContent("expires in 3 days");
     expect(sheet).toHaveTextContent("5 min ago");
-    expect(sheet).toHaveTextContent("opk_terraform");
+    expect(within(sheet).getByText("opk_terraform").closest("dd")).toHaveClass("mono");
     expect(within(sheet).getByRole("button", { name: "Actions for Terraform" })).toBeInTheDocument();
     const replaced = await within(sheet).findByRole("link", { name: "kso_org_…c3d4" });
     expect(replaced).toHaveAttribute("href", `${PATH}?key=opk_new`);

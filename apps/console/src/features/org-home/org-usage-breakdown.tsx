@@ -52,7 +52,7 @@ const heading = (by: OrgBreakdown) =>
 const NOTABLE_ERROR_RATE = 0.05;
 const LABEL_WIDTH = 200;
 const LABEL_MIN_WIDTH = 120;
-const REQUESTS_WIDTH = 88;
+const REQUESTS_WIDTH = 104;
 const ERRORS_WIDTH = 112;
 const NUMBER_WIDTH = 88;
 
