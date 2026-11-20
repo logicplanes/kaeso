@@ -30,11 +30,22 @@ export interface Resolver {
   anchors: Set<string>;
 }
 
+// Chinese text puts no space after an address, so GFM's bare address would run on into the sentence; it ends at
+// the first CJK or full-width punctuation mark, which addresses never hold unencoded (their letters and digits may).
+const CJK_PUNCTUATION = /(?![\p{L}\p{N}])[\u3000-\u303f\uff00-\uffef]/u;
+
 function lexer() {
   const tokenizer = new Tokenizer();
   tokenizer.html = () => undefined;
   tokenizer.tag = () => undefined;
   tokenizer.def = () => undefined;
+  const url = tokenizer.url.bind(tokenizer);
+  // Tokenizing the address again up to the mark keeps GFM's trimming of a trailing ")" or "." and the "http://" of www.
+  tokenizer.url = (src) => {
+    const token = url(src);
+    const cut = token ? token.raw.search(CJK_PUNCTUATION) : -1;
+    return cut > 0 ? url(src.slice(0, cut)) : token;
+  };
   return new Lexer({ gfm: true, breaks: false, tokenizer });
 }
 
