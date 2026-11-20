@@ -37,7 +37,12 @@ export const ALLOWED = [
   { path: "crates/kaeso-codecs/fixtures/openai_responses/providers/xai/*/RECORDED.md", version: "0.4.2", why: "as above" },
   { path: "crates/kaeso-codecs/fixtures/openai_responses/providers/xai/errors/recorded-codex-*.meta.json", version: "0.4.2", why: "as above" },
   { path: "deploy/console.Dockerfile", version: "0.4.7", why: "xcaddy's version, which only shares the number" },
-  { path: "apps/docs/content/*/console/custom-providers.md", version: "0.7.0", why: "a llama.cpp version in the server table, which only shares the number" },
+  {
+    path: "apps/docs/content/*/console/custom-providers.md",
+    version: "0.7.0",
+    why: "the llama.cpp release that changed its default port, which only shares the number",
+  },
+  { path: ".github/workflows/ci.yml", version: "0.8.0", why: "kubeconform's version, which only shares the number" },
 ];
 
 const lineAt = (text, index) => text.slice(0, index).split("\n").length;
