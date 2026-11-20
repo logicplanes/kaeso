@@ -885,7 +885,38 @@ fn capabilities_are_checked_before_sending() {
     let Request::Generate(g) = &req else { panic!() };
     assert_eq!(g.sampling.temperature, None);
     temp.sampling.temperature = Some(1.0);
-    assert!(left_out(temp, DialectId::OpenAiChat, &gpt5).1.is_empty());
+    assert!(
+        left_out(temp.clone(), DialectId::OpenAiChat, &gpt5)
+            .1
+            .is_empty()
+    );
+    let sonnet55 = eff(&entry("anthropic", "claude-sonnet-5-5"));
+    let mut sampled = temp;
+    sampled.sampling.top_p = Some(0.9);
+    sampled.sampling.top_k = Some(5);
+    let (req, names) = left_out(sampled.clone(), DialectId::AnthropicMessages, &sonnet55);
+    assert_eq!(names, ["top_p", "top_k"]);
+    let Request::Generate(g) = &req else { panic!() };
+    assert_eq!(
+        (g.sampling.temperature, g.sampling.top_p, g.sampling.top_k),
+        (Some(1.0), None, None)
+    );
+    sampled.sampling.temperature = Some(0.2);
+    assert_eq!(
+        left_out(sampled.clone(), DialectId::Gemini, &sonnet55).1,
+        [
+            "generationConfig.temperature",
+            "generationConfig.topP",
+            "generationConfig.topK"
+        ]
+    );
+    let haiku45 = eff(&entry("anthropic", "claude-haiku-4-5"));
+    assert!(
+        left_out(sampled, DialectId::AnthropicMessages, &haiku45)
+            .1
+            .is_empty(),
+        "a model that takes sampling settings keeps them"
+    );
     let embed = eff(&entry("openai", "text-embedding-3-small"));
     assert!(
         check(user(vec![Block::text("x")]), DialectId::OpenAiChat, &embed)
