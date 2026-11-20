@@ -11,6 +11,10 @@ export const KAESO_LINK_VARIANTS = {
       classes: "text-inherit underline decoration-fg-tertiary decoration-1 underline-offset-3 hover:decoration-current",
       description: "Inside prose: text color with a grey underline that turns to the text color on hover",
     },
+    action: {
+      classes: "text-inherit underline decoration-fg-tertiary decoration-1 underline-offset-3 hover:decoration-current",
+      description: "On a line of its own under a form (“Forgot your password?”): inline's underline, with a touch target a finger can hit",
+    },
     quiet: {
       classes: "text-fg-secondary no-underline hover:text-fg",
       description: "Navigation-style links in footers and metadata; no underline until hover",

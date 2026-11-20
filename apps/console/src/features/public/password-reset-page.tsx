@@ -63,7 +63,9 @@ function RequestReset() {
           {t("public.emailMeLink", "Email me a link")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">
-          <Link href="/sign-in">{t("public.backToSignIn", "Back to sign in")}</Link>
+          <Link href="/sign-in" variant="action">
+            {t("public.backToSignIn", "Back to sign in")}
+          </Link>
         </Text>
       </form>
     </PublicPage>

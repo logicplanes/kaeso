@@ -118,7 +118,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   const header = !!(title || tabs);
   const digits = numberWidth(lines.length);
   const codeClass = cn(
-    "relative overflow-x-auto py-16 scrollbar-quiet scroll-fade-x focus-ring-inset",
+    "relative overflow-x-auto overscroll-x-contain py-16 scrollbar-quiet scroll-fade-x focus-ring-inset",
     collapsed && "overflow-y-hidden",
     copy && !header && "coarse:mr-40",
   );
