@@ -135,6 +135,15 @@ describe("the sidebar in a project", () => {
     expect(await within(sidebar()).findByRole("link", { name: "Playground" })).toBeInTheDocument();
   });
 
+  it("keeps the project's pages behind an unnamed switcher when a project the list leaves out fails for a passing reason", async () => {
+    signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage" })] });
+    on("GET", "orgs/:org/projects/:project", apiError(500, "internal", "The gateway hit an error."));
+    await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
+    expect(await screen.findByText("This page couldn't load")).toBeInTheDocument();
+    expect(await within(sidebar()).findByRole("button", { name: "Switch project" })).toBeInTheDocument();
+    expect(within(sidebar()).getByRole("link", { name: "Playground" })).toBeInTheDocument();
+  });
+
   it("names the project it is in even when the organization's list leaves it out", async () => {
     signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage" })] });
     on("GET", "orgs/:org/projects/:project", project());
@@ -381,6 +390,23 @@ describe("pictures in the sidebar", () => {
     await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" });
     await waitFor(() => expect(container.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull());
     expect(container.querySelector('img[src="/avatars/org.webp"]')).not.toBeNull();
+  });
+});
+
+describe("organization pictures in the switcher's menu", () => {
+  it("shows each organization's picture, or its initial without one", async () => {
+    const second = { org_id: "org_globex", org_name: "Globex" };
+    signedIn({
+      session: whoAmI({ memberships: [membership({ org_avatar_url: "/avatars/org.webp" }), membership(second)] }),
+      memberships: [myMembership({ org_avatar_url: "/avatars/org.webp" }), myMembership(second)],
+    });
+    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
+    const menu = await screen.findByRole("menu");
+    await waitFor(() =>
+      expect(within(menu).getByRole("menuitemradio", { name: "Northwind Labs" }).querySelector('img[src="/avatars/org.webp"]')).not.toBeNull(),
+    );
+    expect(within(menu).getByRole("menuitemradio", { name: "Globex" })).toHaveTextContent(/^GGlobex$/);
   });
 });
 
