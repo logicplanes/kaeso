@@ -26,10 +26,13 @@ describe("PageHeader", () => {
 });
 
 describe("PageHeader on a phone", () => {
-  it("keeps a long title and its actions on one row, the title shrinking first but never under 96px, and the tabs on the next", () => {
+  it("moves the actions under a title that doesn't fit beside them, instead of cutting the title short", () => {
     render(<PageHeader title="Anfrageprotokolle für alle Projekte der Organisation" actions={<button type="button">Exportieren</button>} />);
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading).toHaveClass("min-w-0", "flex-1", "shrink-4", "sm:flex-initial", "max-sm:min-w-96");
+    // flex-auto starts the title at its whole width, so a wrapping header breaks before the actions rather than shrinking it.
+    expect(heading).toHaveClass("min-w-0", "flex-auto", "shrink-4", "sm:flex-initial", "max-sm:min-w-96");
+    expect(heading).not.toHaveClass("flex-1");
+    expect(screen.getByRole("banner")).toHaveClass("flex-wrap", "sm:flex-nowrap");
     expect(screen.getByText(/^Anfrageprotokolle/)).toHaveClass("truncate");
     expect(screen.getByRole("button", { name: "Exportieren" }).parentElement).toHaveClass("ml-auto", "shrink-0");
   });

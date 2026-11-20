@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 describe("Project › Tools", () => {
-  it("on a phone, keeps a server's name and state in its group header and leaves out how many tools are on", async () => {
+  it("on a phone, keeps a server's name in its group header, and its state only when it needs a sign-in", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 639px)",
       media: query,
@@ -47,12 +47,24 @@ describe("Project › Tools", () => {
       removeEventListener() {},
     }));
     signedIn();
-    tools();
+    const issue = projectTool({
+      name: "create_issue",
+      id: "tool_issue",
+      server: "mcp_linear",
+      server_handle: "linear",
+      server_name: "Linear",
+      exposed_name: "linear__create_issue",
+    });
+    tools({
+      list: [post, getMe, issue],
+      servers: [projectServer(), projectServer({ id: "mcp_linear", name: "Linear", handle: "linear", connected: false })],
+    });
     await renderApp(projectPath("tools"));
     const grid = await list();
     expect(within(grid).getByText("X")).toBeInTheDocument();
-    expect(within(grid).getByText("Connected")).toBeInTheDocument();
+    expect(within(grid).queryByText("Connected")).not.toBeInTheDocument();
     expect(within(grid).queryByText("1 of 2 on")).not.toBeInTheDocument();
+    expect(within(grid).getByText("Signed out")).toHaveClass("shrink-0");
   });
 
   it("lists each server's tools with their switch, hints, state and calls", async () => {

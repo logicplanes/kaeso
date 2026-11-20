@@ -33,6 +33,7 @@ import { ProjectHeader } from "~/shell/project-header";
 import { usePhone } from "~/shell/use-phone";
 import { usePartyName } from "../keys/party";
 import type { LogsSearch } from "./logs-page";
+import { startedColumn } from "./columns";
 import { ToolCallsExportDialog } from "./export-dialog";
 import { useLiveToolCalls } from "./live";
 import {
@@ -109,6 +110,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
   useLoadMoreNearEnd(scroller, { ...calls, hasNextPage });
   useRowStepping(rows, search.call, (id) => setSearch({ call: id }));
 
+  const spansDays = search.from && search.to ? search.from !== search.to : search.range !== "1h";
   const serverName = (id: string) => servers.data?.find((s) => s.id === id)?.name ?? id;
   const filterDefs: FilterDef[] = TOOL_FILTER_IDS.map((id): FilterDef => {
     const value = search[SEARCH_OF[id]] as string | undefined;
@@ -151,9 +153,9 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
 
   const columns = useMemo(
     () => [
-      col.date({ id: "time", header: t("logs.column.started", "Started"), size: 176, priority: 1 }, (r: ToolCallView) => r.started_at),
-      col.mono({ id: "tool", header: t("logs.tools.tool", "Tool"), size: 240, priority: 1 }, (r: ToolCallView) => r.tool),
-      col.status({ id: "status", header: common.status(), size: 120, priority: 1 }, (r: ToolCallView) => statusOf(r.status)),
+      startedColumn<ToolCallView>(spansDays, phone ? "phone" : "wide"),
+      col.mono({ id: "tool", header: t("logs.tools.tool", "Tool"), size: 240, minWidth: 112, grow: phone, priority: 1 }, (r: ToolCallView) => r.tool),
+      col.status({ id: "status", header: common.status(), size: phone ? 96 : 120, priority: 1 }, (r: ToolCallView) => statusOf(r.status)),
       col.text({ id: "caller", header: t("logs.tools.caller", "Caller"), size: 180, priority: 2 }, (r: ToolCallView) => partyName(r.caller)),
       col.text({ id: "client", header: t("logs.tools.client", "Client"), size: 160, priority: 3 }, (r: ToolCallView) => r.client || "—"),
       col.duration({ id: "duration", header: t("logs.column.duration", "Duration"), size: 112, priority: 2 }, (r: ToolCallView) => r.duration_ms),
@@ -164,7 +166,7 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
         { align: "end" },
       ),
     ],
-    [partyName],
+    [partyName, spansDays, phone],
   );
   const unavailable = calls.error && isApiError(calls.error) && calls.error.type === "unavailable";
   const canExport = rights.has("logs.export");
@@ -312,7 +314,7 @@ function CallBody({ org, project, call }: { org: string; project: string; call: 
       <Section title={t("logs.inspector.sentBy", "Sent by")} spacing="none">
         <KeyValue
           layout="stacked"
-          className="grid grid-cols-2 gap-x-32"
+          className="grid grid-cols-1 gap-x-32 sm:grid-cols-2"
           items={[
             { label: t("logs.tools.caller", "Caller"), value: partyName(c.caller) },
             { label: t("logs.tools.client", "Client"), value: c.client || "—" },

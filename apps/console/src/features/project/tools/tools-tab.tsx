@@ -131,7 +131,11 @@ export function ToolsTab({
             <Text weight="medium" truncate className="min-w-48">
               {s.name}
             </Text>
-            <Status tone={word.tone}>{word.label}</Status>
+            {(!phone || word.tone === "warning") && (
+              <Status tone={word.tone} className="shrink-0">
+                {word.label}
+              </Status>
+            )}
             {!phone && (
               <Text variant="small" tone="secondary" truncate className="shrink-4">
                 {t("project.tools.onCount", "{on} of {total} on", { on: s.tools_on, total: s.tools })}
@@ -186,7 +190,7 @@ export function ToolsTab({
     <>
       {!none && (
         <Toolbar aria-label={t("project.tools.filter", "Filter tools")}>
-          <div className="w-240">
+          <div className="min-w-0 flex-1 basis-160 sm:w-240 sm:flex-none">
             <Input
               type="search"
               size="sm"

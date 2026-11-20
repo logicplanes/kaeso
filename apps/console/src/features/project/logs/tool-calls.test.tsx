@@ -62,6 +62,8 @@ function calls(rows: ToolCallView[], entries: ToolCallEntryView[] = []) {
 }
 
 describe("Tool calls in the request logs", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it("switches between model requests and tool calls", async () => {
     signedIn();
     projectData({ members: [projectMember()] });
@@ -81,6 +83,20 @@ describe("Tool calls in the request logs", () => {
     await user.click(screen.getByRole("radio", { name: "Models" }));
     expect(await screen.findByRole("grid", { name: "Requests" })).toBeInTheDocument();
     expect(window.location.search).not.toContain("kind=tools");
+  });
+
+  it("on a phone, stacks the day under the time and gives the tool's name the room, so the table fits", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(max-width: 639px)", media: query, addEventListener() {}, removeEventListener() {} }));
+    signedIn();
+    projectData({ members: [projectMember()] });
+    logsData();
+    calls([toolCall()]);
+    await renderApp(projectPath("logs?kind=tools"));
+    const table = await screen.findByRole("grid", { name: "Tool calls" });
+    const row = await within(table).findByRole("row", { name: /x__create_post/ });
+    expect(row.querySelectorAll("time > *")).toHaveLength(2);
+    expect(row.style.gridTemplateColumns).toMatch(/^88px minmax\(240px, 1fr\) 96px /);
+    expect(within(table).getAllByRole("columnheader")[0]).toHaveTextContent(/^Started$/);
   });
 
   it("keeps the range, the filters and live updates when switching between models and tools", async () => {

@@ -607,7 +607,7 @@ function Overview({
       <Section title={t("logs.inspector.sentBy", "Sent by")} spacing="none">
         <KeyValue
           layout="stacked"
-          className="-my-8 grid grid-cols-2 gap-x-32"
+          className="-my-8 grid grid-cols-1 gap-x-32 sm:grid-cols-2"
           items={[
             {
               label: e.principal_kind === "service_account" ? t("logs.inspector.serviceAccount", "Service account") : t("logs.filter.member", "Member"),
@@ -668,7 +668,7 @@ function Overview({
         <Section title={t("logs.inspector.guardrails", "Guardrails")} spacing="none">
           <KeyValue
             layout="stacked"
-            className="-my-8 grid grid-cols-2 gap-x-32"
+            className="-my-8 grid grid-cols-1 gap-x-32 sm:grid-cols-2"
             items={e.guardrails.map((g) => ({
               label: g.name,
               value: (
@@ -761,7 +761,7 @@ function Overview({
                     }
               }
             />
-            {caching.length > 0 && <KeyValue layout="stacked" className="-my-8 grid grid-cols-2 gap-x-32" items={caching} />}
+            {caching.length > 0 && <KeyValue layout="stacked" className="-my-8 grid grid-cols-1 gap-x-32 sm:grid-cols-2" items={caching} />}
           </div>
         </Section>
       )}

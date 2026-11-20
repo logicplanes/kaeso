@@ -648,7 +648,7 @@ function hitColumns(providerName: (id: string) => string, prices: Prices, review
     ),
     {
       ...col.custom(
-        { id: "review", header: "", size: 48, priority: 1 },
+        { id: "review", header: "", size: 48, priority: 2 },
         (h: SearchHit) => h.model_id,
         (_id: string, h: SearchHit) =>
           h.catalogue_model_id ? null : (
