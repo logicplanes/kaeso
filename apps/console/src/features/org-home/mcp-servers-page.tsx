@@ -78,7 +78,7 @@ export function OrgMcpServersPage({ org, search = {} }: { org: string; search?: 
           ),
         ),
         col.custom(
-          { id: "handle", header: t("orgHome.mcp.handle", "Handle"), size: 120, priority: 2 },
+          { id: "handle", header: t("orgHome.mcp.handle", "Handle"), size: 192, priority: 2 },
           (s: McpServerView) => s.handle,
           (handle: string) => (
             <Text variant="small" mono truncate>

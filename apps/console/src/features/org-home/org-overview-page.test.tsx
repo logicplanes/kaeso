@@ -82,6 +82,20 @@ describe("the organization overview", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
   });
 
+  it("orders the projects by the number it shows, today's requests, not by the last 14 days", async () => {
+    signedIn();
+    usage();
+    on("GET", "orgs/:org/projects/:project/usage", ({ params }: { params: Record<string, string> }) => ({
+      data: [usageRow("2026-10-15", { requests: params.project === PROJECT ? 12 : 265 })],
+    }));
+    models(0);
+    await renderApp(`/orgs/${ORG}`);
+    const list = await screen.findByRole("list", { name: "Projects" });
+    await waitFor(() => expect(within(list).getAllByRole("button")[0]).toHaveTextContent(/Support triage.*265/));
+    expect(within(list).getAllByRole("button")[1]).toHaveTextContent(/Checkout assistant.*12/);
+    expect(screen.getByRole("link", { name: "All projects" })).toHaveAttribute("href", `/orgs/${ORG}/projects`);
+  });
+
   it("shows the two newest models as cards and every new one in a dialog", async () => {
     signedIn();
     usage();

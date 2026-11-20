@@ -151,7 +151,7 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
       <KeyValue
         items={[
           { label: t("orgHome.mcp.address", "Address"), value: s.url, copy: s.url, wrap: true },
-          { label: t("orgHome.mcp.handle", "Handle"), value: <Code>{s.handle}</Code> },
+          { label: t("orgHome.mcp.handle", "Handle"), value: s.handle, mono: true },
           ...(info ? [{ label: t("orgHome.mcp.serverInfo", "Says it is"), value: info }] : []),
           ...(s.protocol_version ? [{ label: t("orgHome.mcp.protocol", "MCP version"), value: s.protocol_version, mono: true }] : []),
           {
@@ -164,7 +164,7 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
             label: t("orgHome.added", "Added"),
             value: t("orgHome.addedBy", "{name}, {date}", { name: partyName(s.created_by), date: formatDate(s.created_at) }),
           },
-          { label: t("orgHome.mcp.id", "Id"), value: s.id, copy: s.id },
+          { label: t("orgHome.mcp.id", "Id"), value: s.id, copy: s.id, mono: true },
         ]}
       />
       <Section

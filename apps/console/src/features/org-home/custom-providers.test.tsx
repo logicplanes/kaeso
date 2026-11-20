@@ -99,6 +99,11 @@ describe("custom providers", () => {
 
     const research = (await within(await table()).findByText("Research vLLM")).closest('[role="row"]') as HTMLElement;
     expect(research).toHaveTextContent("research-vllm");
+    // The id is plain mono text on the name's edge, inside the line that ends in an ellipsis, not a chip that can't be cut.
+    const id = within(research).getByText("research-vllm");
+    expect(id).toHaveClass("mono");
+    expect(id.tagName).not.toBe("CODE");
+    expect(id.parentElement).toHaveClass("truncate");
     expect(research).toHaveTextContent("https://vllm.example.com/");
     expect(research).toHaveTextContent("OpenAI Chat Completions");
     expect(research).toHaveTextContent("1 key · 3 models");

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Avatar, Badge, Button, Empty, FilterRow, List, Input, Select, SwapText, Tabs, icons } from "@logicplanes/kaeso-ui";
+import { Avatar, Badge, Button, Empty, FilterRow, List, Input, Select, Tabs, icons } from "@logicplanes/kaeso-ui";
 import { formatDate } from "@logicplanes/kaeso-ui/format";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { useMembership, useOrgRights, useSession } from "~/auth/session";
@@ -54,7 +54,7 @@ export function OrgMembersPage({ org, search }: { org: string; search: OrgMember
       description={t("org.members.description", "Who is in the organization, who is invited, and what each role can do.")}
       actions={
         <Button size="sm" variant="primary" leadingIcon={icons.add} disabled={!can} {...(reason ? { disabledReason: reason } : {})} onClick={run}>
-          <SwapText reserve={[inviteMember, createRole]}>{roles ? createRole : inviteMember}</SwapText>
+          {roles ? createRole : inviteMember}
         </Button>
       }
     >
@@ -170,7 +170,7 @@ function MembersPanel({
             ...(role && !roles.some((r) => r.id === role) ? [{ value: role, label: role }] : []),
           ]}
         />
-        <div className="w-240">
+        <div className="min-w-0 flex-1 basis-160 sm:w-240 sm:flex-none">
           <Input
             type="search"
             size="sm"

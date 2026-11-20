@@ -91,7 +91,7 @@ export function OrgProjectsPage({ org, search }: { org: string; search: OrgProje
         }
       />
       <FilterRow>
-        <div className="w-240">
+        <div className="min-w-0 flex-1 basis-160 sm:w-240 sm:flex-none">
           <Input
             type="search"
             size="sm"

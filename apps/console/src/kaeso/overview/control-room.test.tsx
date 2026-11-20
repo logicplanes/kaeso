@@ -5,7 +5,7 @@ import { atFixtureTime } from "~/test/clock";
 import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, whoAmI, withRights, without } from "~/test/fixtures";
 import { member, usageRow as orgRow } from "~/test/fixtures/org";
 import { apiKey, catalogueModel, limit, listed, projectData, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
-import { apiError, on, requests } from "~/test/network";
+import { apiError, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
 const USAGE = "orgs/:org/projects/:project/usage";
@@ -415,6 +415,35 @@ describe("the analytics views", () => {
         expect.stringContaining("Grace Hopper"),
         expect.stringContaining("Service account"),
         expect.stringContaining("Former member"),
+      ]),
+    );
+  });
+
+  it("names each of the organization's service accounts, so two don't read alike", async () => {
+    signedIn();
+    on("GET", "orgs/:org/members", listed([member()]));
+    on("GET", "orgs/:org/projects/:project/service-accounts", ({ params }: { params: Record<string, string> }) =>
+      page(params.project === PROJECT ? [serviceAccount(), serviceAccount({ id: "sa_ci", name: "ci-runner" })] : []),
+    );
+    usage(ORG_USAGE, {
+      member: [
+        orgRow("service_account:sa_deploy", { requests: 9 }),
+        orgRow("service_account:sa_ci", { requests: 5 }),
+        orgRow("service_account:sa_gone", { requests: 1 }),
+      ],
+    });
+    await renderApp(`/orgs/${ORG}/analytics/members?${PERIOD}`);
+    const table = await screen.findByRole("table", { name: "Members in the period" });
+    await waitFor(() =>
+      expect(
+        within(table)
+          .getAllByRole("row")
+          .map((r) => r.textContent),
+      ).toEqual([
+        expect.any(String),
+        expect.stringContaining("ci-deploy (service account)"),
+        expect.stringContaining("ci-runner (service account)"),
+        expect.stringContaining("Service account"),
       ]),
     );
   });

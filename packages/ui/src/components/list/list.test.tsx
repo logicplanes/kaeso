@@ -25,6 +25,16 @@ describe("List", () => {
     );
     expect(screen.getByRole("grid")).toHaveClass("rounded-group");
   });
+  it("first in a settings column, starts 24px under the header like a filter row, not 8px", () => {
+    const { rerender } = render(
+      <InsetContent>
+        <List aria-label="Keys" items={items} />
+      </InsetContent>,
+    );
+    expect(screen.getByRole("grid")).toHaveClass("first:mt-16");
+    rerender(<List aria-label="Keys" items={items} />);
+    expect(screen.getByRole("grid")).not.toHaveClass("first:mt-16");
+  });
   it("lets a description under the title wrap in a card, and keeps one line by default", () => {
     const items = [{ id: "dev", title: "Developer", subtitle: "Builds with the project's models, keys and logs." }];
     const { rerender } = render(
@@ -215,8 +225,31 @@ describe("List", () => {
         ]}
       />,
     );
-    for (const date of ["2. Juli 2026", "20. Sept. 2026"]) expect(screen.getByText(date)).toHaveClass("min-w-112", "text-right", "shrink-0");
+    for (const date of ["2. Juli 2026", "20. Sept. 2026"]) {
+      const column = screen.getByText(date).parentElement!;
+      expect(column).toHaveClass("text-right", "shrink-0");
+      expect(column.style.minWidth).toBe("max(var(--spacing-112), var(--k-list-date, 0px))");
+    }
     spy.mockRestore();
+  });
+  it("wide, gives every row's date the width of the widest, so a longer date doesn't push its row's badges out of line", () => {
+    const offset = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(900);
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const width = this.dataset.listDate !== undefined ? (this.textContent ?? "").length * 7.25 : 0;
+      return { width, height: 0, top: 0, left: 0, right: width, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    render(
+      <List
+        aria-label="Members"
+        items={[
+          { id: "a", title: "Ada Okafor", meta: <span>Owner</span>, date: "Joined 2 Jul 2026" },
+          { id: "b", title: "Jonas Weber", meta: <span>Member</span>, date: "Joined 15 Oct 2026" },
+        ]}
+      />,
+    );
+    expect(screen.getByRole("grid", { name: "Members" }).style.getPropertyValue("--k-list-date")).toBe("131px");
+    rect.mockRestore();
+    offset.mockRestore();
   });
   it("narrow (a phone), puts a row's metadata and date on a line under its title, and grows to hold them", () => {
     const rows = [{ id: "a", title: "shell-invitee@example.com", subtitle: "Invited by Ada", meta: <span>Accepted</span>, date: "Sent 13 Oct 2026" }];
@@ -238,6 +271,10 @@ describe("List", () => {
     expect(actions).toHaveClass("shrink-0", "h-24");
     expect(actions.previousElementSibling).toContainElement(screen.getByText("shell-invitee@example.com"));
     expect(actions.parentElement?.nextElementSibling).toContainElement(screen.getByText("Accepted"));
+    // The actions sit beside the title alone; the subtitle under them takes the row's whole width.
+    expect(actions.parentElement).toHaveClass("grid", "grid-cols-row-actions");
+    expect(actions).toHaveClass("col-start-2", "row-start-1");
+    expect(screen.getByText("Invited by Ada")).toHaveClass("col-span-2");
     gone();
     spy.mockReturnValue(900);
     render(<List aria-label="Invitations" items={rows} />);

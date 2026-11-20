@@ -83,6 +83,7 @@ describe("organization general settings", () => {
 
     const currency = await screen.findByRole("combobox", { name: "Currency" });
     await waitFor(() => expect(currency).toHaveTextContent("USD"));
+    expect(currency.parentElement).toHaveAttribute("data-row-control");
     await user.click(currency);
     expect(await screen.findByRole("option", { name: /^USD.*US Dollar/ })).toBeInTheDocument();
     await user.click(await screen.findByRole("option", { name: /^EUR.*Euro/ }));

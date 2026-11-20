@@ -7,7 +7,7 @@
   "orgHome.added": "Added",
   "orgHome.addedBy": "{name}, {date}",
   "orgHome.allCount": "All {count}",
-  "orgHome.allProjects": "View all projects",
+  "orgHome.allProjects": "All projects",
   "orgHome.analytics": "Analytics",
   "orgHome.archivedOn": "Archived {date}",
   "orgHome.assignDefaultKeyHint": "These projects keep it for {provider} even when another key becomes the default.",
