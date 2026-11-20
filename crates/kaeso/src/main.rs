@@ -179,9 +179,12 @@ fn main() -> Result<()> {
             .block_on(healthcheck(&ProcessSource, ready)),
         // Before the logs and without a database: a bad setting is what it is there to find.
         Command::Config(ConfigCommand::Check) => {
-            let unknown = config::check(&ProcessSource).map_err(anyhow::Error::msg)?;
-            for variable in &unknown {
+            let checked = config::check(&ProcessSource).map_err(anyhow::Error::msg)?;
+            for variable in &checked.unknown {
                 say!("{variable} names no setting and is ignored.");
+            }
+            for warning in &checked.warnings {
+                say!("Warning: {warning}");
             }
             say!("The configuration is valid.");
             Ok(())
@@ -262,6 +265,9 @@ async fn run(command: Command) -> Result<()> {
             %variable,
             "ignoring an environment variable that names no setting; see https://docs.kaeso.app/self-hosting/configuration"
         );
+    }
+    for warning in &config.warnings {
+        tracing::warn!("{warning}");
     }
     match command {
         Command::Serve => {
