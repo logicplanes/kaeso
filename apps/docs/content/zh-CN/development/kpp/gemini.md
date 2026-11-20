@@ -215,7 +215,7 @@ Google 的错误体 `{"error": {"code", "message", "status", "details"}}`（[问
 | `UNAUTHENTICATED` | `Authentication` | |
 | `PERMISSION_DENIED` | `PermissionDenied` | 当消息表明密钥无法访问请求所指的文件（例如已删除、已过期或属于其他项目的 `fileData.fileUri`，`errors/file-permission-denied-published.json`）时为 `InvalidRequest`：问题在于请求，而不是密钥。 |
 | `NOT_FOUND` | `NotFound` | |
-| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`（例如 `"23s"`）→ `retry_after`。 |
+| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`（例如 `"23s"`）→ `retry_after`。HTTP 状态为 402 时为 `Billing`：预付额度用完时 Google 会这样响应（`errors/billing-prepay-depleted.json`）。 |
 | `UNAVAILABLE` | `Overloaded` | |
 | `DEADLINE_EXCEEDED` | `Timeout` | |
 | `INTERNAL` 及其他代码 | `ProviderError` | |

@@ -405,6 +405,27 @@ async fn googles_errors_reach_each_app_in_its_own_format() {
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["type"], "invalid_request_error");
+    let r = call(
+        &env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(chat(
+            FLASH,
+            &format!("Hi {}", error("billing-prepay-depleted")),
+        )),
+    )
+    .await;
+    assert_eq!(
+        r.status,
+        StatusCode::BAD_GATEWAY,
+        "an empty prepaid balance is no rate limit to retry: {}",
+        r.text()
+    );
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers."
+    );
 }
 
 #[tokio::test]

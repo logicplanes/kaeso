@@ -16,6 +16,11 @@ fn kind_of(status: Option<&str>, http: u16, details: &[Value], message: &str) ->
         .iter()
         .filter(|d| d["@type"] == ERROR_INFO)
         .find_map(|d| d["reason"].as_str());
+    // An empty prepaid balance answers 402 with the status `RESOURCE_EXHAUSTED`, which otherwise
+    // means a rate limit; it won't pass with a retry.
+    if http == 402 {
+        return ErrorKind::Billing;
+    }
     match status {
         Some("INVALID_ARGUMENT") if reason == Some("API_KEY_INVALID") => ErrorKind::Authentication,
         Some("INVALID_ARGUMENT") if message.contains("exceeds the maximum number of tokens") => {
@@ -250,6 +255,8 @@ mod tests {
         );
         assert_eq!(k(Some("DEADLINE_EXCEEDED"), 504), ErrorKind::Timeout);
         assert_eq!(k(Some("INTERNAL"), 500), ErrorKind::ProviderError);
+        assert_eq!(k(Some("RESOURCE_EXHAUSTED"), 429), ErrorKind::RateLimited);
+        assert_eq!(k(Some("RESOURCE_EXHAUSTED"), 402), ErrorKind::Billing);
         assert_eq!(
             k(Some("FAILED_PRECONDITION"), 400),
             ErrorKind::InvalidRequest
@@ -261,6 +268,7 @@ mod tests {
             (404, ErrorKind::NotFound),
             (410, ErrorKind::NotFound),
             (413, ErrorKind::RequestTooLarge),
+            (402, ErrorKind::Billing),
             (429, ErrorKind::RateLimited),
             (503, ErrorKind::Overloaded),
             (504, ErrorKind::Timeout),

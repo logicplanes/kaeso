@@ -875,6 +875,13 @@ fn errors_name_their_kind_and_retry_delay() {
         invalid.param.as_deref(),
         Some("generation_config.thinking_config.thinking_level")
     );
+    let depleted = err("billing-prepay-depleted");
+    assert_eq!(depleted.kind, ErrorKind::Billing);
+    assert!(
+        depleted
+            .message
+            .starts_with("Your prepayment credits are depleted.")
+    );
     let limited = err("recorded-image-output");
     assert_eq!(limited.kind, ErrorKind::RateLimited);
     assert!(limited.retry_after.is_some());

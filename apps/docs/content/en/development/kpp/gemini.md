@@ -215,7 +215,7 @@ Google's error body `{"error": {"code", "message", "status", "details"}}` ([trou
 | `UNAUTHENTICATED` | `Authentication` | |
 | `PERMISSION_DENIED` | `PermissionDenied` | `InvalidRequest` when the message says the key can't access a file the request names, such as a deleted, expired or another project's `fileData.fileUri` (`errors/file-permission-denied-published.json`): the request is at fault, not the key. |
 | `NOT_FOUND` | `NotFound` | |
-| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, such as `"23s"`, → `retry_after`. |
+| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, such as `"23s"`, → `retry_after`. `Billing` with HTTP 402, which Google answers when the prepaid credits are used up (`errors/billing-prepay-depleted.json`). |
 | `UNAVAILABLE` | `Overloaded` | |
 | `DEADLINE_EXCEEDED` | `Timeout` | |
 | `INTERNAL` and the other codes | `ProviderError` | |

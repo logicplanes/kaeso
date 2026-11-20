@@ -215,7 +215,7 @@ Der Fehler-Body von Google `{"error": {"code", "message", "status", "details"}}`
 | `UNAUTHENTICATED` | `Authentication` | |
 | `PERMISSION_DENIED` | `PermissionDenied` | `InvalidRequest`, wenn die Meldung sagt, dass der Schlüssel eine Datei nicht lesen darf, die die Anfrage nennt, etwa eine gelöschte, abgelaufene oder fremde `fileData.fileUri` (`errors/file-permission-denied-published.json`): Der Fehler liegt bei der Anfrage, nicht beim Schlüssel. |
 | `NOT_FOUND` | `NotFound` | |
-| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, etwa `"23s"`, → `retry_after`. |
+| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, etwa `"23s"`, → `retry_after`. `Billing` bei HTTP 402, mit dem Google antwortet, wenn das vorausbezahlte Guthaben aufgebraucht ist (`errors/billing-prepay-depleted.json`). |
 | `UNAVAILABLE` | `Overloaded` | |
 | `DEADLINE_EXCEEDED` | `Timeout` | |
 | `INTERNAL` und die anderen Codes | `ProviderError` | |
