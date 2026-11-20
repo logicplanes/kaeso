@@ -44,7 +44,7 @@ describe("a tile Stat while loading", () => {
     expect(tile).toHaveTextContent(/^Requests$/);
     expect(tile.children).toHaveLength(4);
     expect(tile.querySelectorAll("[aria-hidden]")).toHaveLength(3);
-    expect(tile.querySelectorAll("[data-stat-value]")).toHaveLength(1);
+    expect(tile.querySelectorAll("[data-stat-value]")).toHaveLength(0);
   });
   it("keeps a plain tile's height and padding while loading: no trend row it won't have", () => {
     const { rerender } = render(
@@ -157,6 +157,25 @@ describe("StatGroup with live values", () => {
     const stepped = size();
     rerender(grid("$41.13"));
     expect(size()).toBe(stepped);
+    width.mockRestore();
+    scroll.mockRestore();
+  });
+
+  it("shows the numbers at full size on a phone once they load, however wide the placeholder was", () => {
+    const width = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(312);
+    const scroll = vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockImplementation(function (this: HTMLElement) {
+      return this.textContent ? this.textContent.length * 15 : 112;
+    });
+    const grid = (loading: boolean) => (
+      <StatGroup aria-label="Numbers">
+        <Stat variant="tile" label="Providers" value={loading ? "" : "50"} loading={loading} />
+        <Stat variant="tile" label="Models" value={loading ? "" : "2,934"} loading={loading} />
+      </StatGroup>
+    );
+    const { rerender } = render(grid(true));
+    rerender(grid(false));
+    expect(screen.getByText("50")).toHaveClass("text-display");
+    expect(screen.getByText("2,934")).toHaveClass("text-display");
     width.mockRestore();
     scroll.mockRestore();
   });

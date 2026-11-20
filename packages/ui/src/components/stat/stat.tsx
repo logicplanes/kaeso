@@ -88,7 +88,7 @@ const StatTile = forwardRef<HTMLDivElement, StatProps>(function StatTile({ label
       {label && <span className="order-last mt-auto flex min-w-0 pt-12 text-small font-medium text-pretty text-fg-secondary rule-t">{label}</span>}
       <span className="flex h-44 min-w-0 items-center">
         {loading ? (
-          <span data-stat-value={step.px} className={cn("flex max-w-full font-medium text-fg tabular", step.classes)}>
+          <span className={cn("flex max-w-full font-medium text-fg tabular", step.classes)}>
             <Skeleton shape="line" className="h-24 w-112" />
           </span>
         ) : (
