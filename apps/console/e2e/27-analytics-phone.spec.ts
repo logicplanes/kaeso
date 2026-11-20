@@ -60,10 +60,23 @@ test("analytics fits a phone on every view and grouping, and its chart answers a
   const org = orgOf(page);
   const project = projectOf(page);
   const headers = { origin };
-  await page.request.post(`/platform/v1/orgs/${org}/credentials`, {
-    headers,
-    data: { provider: "openai", name: "Phone analytics", secret: "sk-proj-mock-0000000000000000phones" },
-  });
+  // Each CI part runs on a stack of its own, so this spec brings its own provider key and model.
+  const credentials = (await (await page.request.get(`/platform/v1/orgs/${org}/credentials`)).json()) as { data: { provider: string }[] };
+  if (!credentials.data.some((c) => c.provider === "openai")) {
+    const added = await page.request.post(`/platform/v1/orgs/${org}/credentials`, {
+      headers,
+      data: { provider: "openai", name: "Mock", secret: "sk-proj-mock-0000000000000000openai" },
+    });
+    expect(added.ok()).toBe(true);
+  }
+  const models = (await (await page.request.get(`/platform/v1/orgs/${org}/projects/${project}/models`)).json()) as { data: { model_id: string }[] };
+  if (!models.data.some((m) => m.model_id === "gpt-5.4-mini")) {
+    const added = await page.request.post(`/platform/v1/orgs/${org}/projects/${project}/models`, {
+      headers,
+      data: { provider: "openai", model_id: "gpt-5.4-mini" },
+    });
+    expect(added.ok()).toBe(true);
+  }
   const created = await page.request.post(`/platform/v1/orgs/${org}/projects/${project}/keys`, {
     headers,
     data: { name: "phone-analytics-with-a-long-key-name", access: "inference" },
