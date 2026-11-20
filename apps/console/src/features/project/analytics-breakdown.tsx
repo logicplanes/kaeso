@@ -7,7 +7,7 @@ import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
-import { costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
+import { costWidth, PHONE_NAME_MIN_WIDTH, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
 import { bucketLabel, lastDay, type Granularity } from "~/format/buckets";
 import { costColumns, saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
 import { useOrgMoney } from "~/kaeso/org-money";
@@ -36,8 +36,6 @@ const timeHeader = (g: Granularity) => t("project.overview.time", "{granularity,
 
 const LABEL_WIDTH = 200;
 const LABEL_MIN_WIDTH = 120;
-// Leaves a 360px phone room for the requests beside a cost with a second line.
-const PHONE_LABEL_MIN_WIDTH = 96;
 const NUMBER_WIDTH = 88;
 const COST_WIDTH = 96;
 const VALUE_MAX = 168;
@@ -190,7 +188,7 @@ export function Breakdown({
   );
   const columns = [
     col.custom(
-      { id: "key", header, size: LABEL_WIDTH, minWidth: phone ? PHONE_LABEL_MIN_WIDTH : LABEL_MIN_WIDTH, priority: 1, grow: true },
+      { id: "key", header, size: LABEL_WIDTH, minWidth: phone ? PHONE_NAME_MIN_WIDTH : LABEL_MIN_WIDTH, priority: 1, grow: true },
       (r: UsageRow) => r.key,
       (_v, r) => label(r),
     ),

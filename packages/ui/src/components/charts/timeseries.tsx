@@ -22,6 +22,8 @@ import {
   tickLabel,
   useChartKeys,
   useChartPointer,
+  CHART_TOUCH,
+  PLOT,
   useSize,
   useTweened,
   wholeTicks,
@@ -29,10 +31,6 @@ import {
 } from "./core.js";
 import { axisRoom, finite, onlyZero, hasPoints, valueExtent } from "./domain.js";
 import { wallClock, wallDay, zoneTicks, type WallClock } from "./time-axis.js";
-
-// Room above the plot, and below it for the time or category labels.
-const PLOT_TOP = 8;
-const PLOT_BOTTOM = 28;
 
 export const KAESO_TIMESERIES_CHART_VARIANTS = {
   kind: {
@@ -173,9 +171,9 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   const drawn = useTweened([...flatValues.map((v) => (Number.isFinite(v) ? v : 0)), niceLo, niceHi], !!state.loading);
   const lo = drawn[drawn.length - 2] ?? niceLo;
   const hi = drawn[drawn.length - 1] ?? niceHi;
-  const yTicks = empty ? [] : onlyZero(flatValues) ? [0] : wholeTicks(readableTicks(axis, axisLabel, 4, height - PLOT_TOP - PLOT_BOTTOM), finite(flatValues));
+  const yTicks = empty ? [] : onlyZero(flatValues) ? [0] : wholeTicks(readableTicks(axis, axisLabel, 4, height - PLOT.top - PLOT.bottom), finite(flatValues));
   const inView = (v: number) => v >= Math.min(lo, hi) - 1e-9 && v <= Math.max(lo, hi) + 1e-9;
-  const M = { top: PLOT_TOP, right: axisRoom(yTicks.map(axisLabel), { max: size.width ? size.width * 0.4 : Infinity }), bottom: PLOT_BOTTOM, left: 0 };
+  const M = { top: PLOT.top, right: axisRoom(yTicks.map(axisLabel), { max: size.width ? size.width * 0.4 : Infinity }), bottom: PLOT.bottom, left: 0 };
   const w = Math.max(0, size.width - M.left - M.right);
   const h = Math.max(0, height - M.top - M.bottom);
   axis.range([h, 0]);
@@ -340,7 +338,7 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
           ) : undefined
         }
       >
-        <div ref={box} role="group" aria-label={ariaLabel} {...keys.props} className="absolute inset-0 rounded-cell focus-ring">
+        <div ref={box} role="group" aria-label={ariaLabel} {...keys.props} className={cn("absolute inset-0 rounded-cell focus-ring", CHART_TOUCH)}>
           {size.width > 0 && (
             <svg width={size.width} height={height} className="block overflow-visible" role="presentation">
               <defs>

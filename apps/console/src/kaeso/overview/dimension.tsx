@@ -23,7 +23,7 @@ import { previousPeriod } from "~/format/period";
 import { columnWidth } from "~/format/text-width";
 import { t } from "~/i18n";
 import { totalTokens } from "~/kaeso/tokens";
-import { costUnknown, costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
+import { costUnknown, costWidth, PHONE_NAME_MIN_WIDTH, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
 import type { Overview } from "./data";
@@ -48,8 +48,6 @@ interface Entity {
   change: number | undefined;
 }
 
-// Leaves a 360px phone room for the requests beside a cost with a second line.
-const PHONE_NAME_MIN_WIDTH = 96;
 const MOVERS = 5;
 const SHARES = 5;
 

@@ -234,6 +234,8 @@ export function kaesoMergeConfig() {
       "snap-align": [{ snap: ["start", "end", "center", "align-none"] }],
       "snap-stop": [{ snap: ["normal", "always"] }],
       touch: [{ touch: ["auto", "none", "manipulation"] }],
+      "touch-y": [{ touch: ["pan-y"] }],
+      "touch-pz": [{ touch: ["pinch-zoom"] }],
       select: [{ select: ["none", "text", "all", "auto"] }],
       material: [
         "material-primary",
@@ -251,6 +253,9 @@ export function kaesoMergeConfig() {
     conflictingClassGroups: {
       overflow: ["overflow-x", "overflow-y"],
       overscroll: ["overscroll-x", "overscroll-y"],
+      touch: ["touch-y", "touch-pz"],
+      "touch-y": ["touch"],
+      "touch-pz": ["touch"],
       inset: ["inset-x", "inset-y", "start", "end", "top", "right", "bottom", "left"],
       "inset-x": ["start", "end", "right", "left"],
       "inset-y": ["top", "bottom"],

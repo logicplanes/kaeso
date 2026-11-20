@@ -32,6 +32,9 @@ const marksUnpriced = (row: UsageRow) => row.cost != null && row.unpriced > 0 &&
 
 const crowded = (row: UsageRow) => marksUnpriced(row) || (Number(row.converted_cost ?? 0) > 0 && Number(row.converted_cost) < 0.005);
 
+// A usage table's name column may shrink this far on a phone, so a 360px screen keeps the requests beside a cost with a second line.
+export const PHONE_NAME_MIN_WIDTH = 96;
+
 // Table cells don't wrap: 106px fits "unter 0,01 $" and "+1 unbekannt" beside a phone's requests column.
 export const costWidth = (rows: readonly UsageRow[], width: number, phone: boolean) => (rows.some(crowded) ? (phone ? 106 : 120) : width);
 

@@ -516,14 +516,25 @@ export function useChartKeys(count: number, options: { vertical?: boolean | unde
 
 type HitEvent = React.PointerEvent<SVGElement>;
 
+/** Room above a plot, and below it for its time or category labels; the value axis spaces its ticks in what is left. */
+export const PLOT = { top: 8, bottom: 28 } as const;
+
 /**
- * Pointer handlers for a chart's hit areas. A mouse or pen shows a point while it hovers; a touch has no hover, so a tap
- * shows it until a tap outside the chart, and a swipe that turns into a scroll hides it.
+ * The touch action a chart's hit area takes: the page still scrolls up and down and zooms, and a finger that slides
+ * sideways moves the chart's point instead.
+ */
+export const CHART_TOUCH = "touch-pan-y touch-pinch-zoom";
+
+/**
+ * Pointer handlers for a chart's hit areas. A mouse, or a pen held above the screen, shows a point while it hovers. A finger
+ * or a pressed pen has no hover: its tap shows the point until a tap outside the chart, a sideways slide moves it, and a
+ * touch that turns into a scroll shows nothing.
  */
 export function useChartPointer(hide: () => void) {
   const [tapped, setTapped] = useState<Element | null>(null);
   const hideRef = useRef(hide);
   hideRef.current = hide;
+  const start = useRef<{ x: number; y: number; sliding: boolean } | null>(null);
   useEffect(() => {
     if (!tapped) return;
     const away = (e: PointerEvent) => {
@@ -534,18 +545,36 @@ export function useChartPointer(hide: () => void) {
     document.addEventListener("pointerdown", away, true);
     return () => document.removeEventListener("pointerdown", away, true);
   }, [tapped]);
+  const pressed = (e: HitEvent) => e.pointerType === "touch" || (e.pointerType === "pen" && e.buttons > 0);
   return (show: (e: HitEvent) => void) => ({
     onPointerDown: (e: HitEvent) => {
-      if (e.pointerType !== "touch") return;
+      if (!pressed(e)) return;
+      // A touch stays with the hit area it began on; let it go, so a slide across a bar chart reaches the next bar.
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      start.current = { x: e.clientX, y: e.clientY, sliding: false };
+    },
+    onPointerMove: (e: HitEvent) => {
+      const from = start.current;
+      if (!from) {
+        if (!pressed(e)) show(e);
+        return;
+      }
+      if (!from.sliding && Math.abs(e.clientX - from.x) <= Math.abs(e.clientY - from.y)) return;
+      from.sliding = true;
       setTapped(e.currentTarget.ownerSVGElement ?? e.currentTarget);
       show(e);
     },
-    // A touch moves only while the finger is down, so sliding along the chart moves the point with it.
-    onPointerMove: show,
+    onPointerUp: (e: HitEvent) => {
+      if (!start.current) return;
+      start.current = null;
+      setTapped(e.currentTarget.ownerSVGElement ?? e.currentTarget);
+      show(e);
+    },
     onPointerLeave: (e: HitEvent) => {
-      if (e.pointerType !== "touch") hide();
+      if (!start.current && !tapped && !pressed(e) && e.pointerType !== "touch") hide();
     },
     onPointerCancel: () => {
+      start.current = null;
       setTapped(null);
       hide();
     },

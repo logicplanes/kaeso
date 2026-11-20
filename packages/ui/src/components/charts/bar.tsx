@@ -20,6 +20,8 @@ import {
   tickLabel,
   useChartKeys,
   useChartPointer,
+  CHART_TOUCH,
+  PLOT,
   useSize,
   useTweened,
   wholeTicks,
@@ -27,10 +29,6 @@ import {
 } from "./core.js";
 import { axisRoom, finite, onlyZero, fitLabel, hasPoints, valueExtent } from "./domain.js";
 import { edgeColor } from "./marks.js";
-
-// Room above the plot, and below it for the time or category labels.
-const PLOT_TOP = 8;
-const PLOT_BOTTOM = 28;
 
 export const KAESO_BAR_CHART_VARIANTS = {
   layout: {
@@ -170,7 +168,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
     ? []
     : onlyZero(flat)
       ? [0]
-      : wholeTicks(readableTicks(axis, axisLabel, 4, horizontal ? Infinity : height - PLOT_TOP - PLOT_BOTTOM), finite(flat)).filter(
+      : wholeTicks(readableTicks(axis, axisLabel, 4, horizontal ? Infinity : height - PLOT.top - PLOT.bottom), finite(flat)).filter(
           (v) => v >= lo - 1e-9 && v <= hi + 1e-9,
         );
   const total = (ci: number) => {
@@ -190,7 +188,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
         bottom: 0,
         left: Math.round(Math.min(160, cap, Math.max(48, widestCategory + 12 + 4))),
       }
-    : { top: PLOT_TOP, right: axisRoom(ticks.map(axisLabel), { max: cap }), bottom: PLOT_BOTTOM, left: 0 };
+    : { top: PLOT.top, right: axisRoom(ticks.map(axisLabel), { max: cap }), bottom: PLOT.bottom, left: 0 };
   const w = Math.max(0, size.width - M.left - M.right);
   const h = Math.max(0, height - M.top - M.bottom);
   const band = scaleBand<string>()
@@ -326,7 +324,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
           ) : undefined
         }
       >
-        <div ref={box} role="group" aria-label={ariaLabel} {...keys.props} className="absolute inset-0 rounded-cell focus-ring">
+        <div ref={box} role="group" aria-label={ariaLabel} {...keys.props} className={cn("absolute inset-0 rounded-cell focus-ring", CHART_TOUCH)}>
           {size.width > 0 && (
             <svg width={size.width} height={height} className="block overflow-visible" role="presentation">
               <g transform={`translate(${M.left},${M.top})`}>

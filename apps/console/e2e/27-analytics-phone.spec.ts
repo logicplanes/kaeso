@@ -69,18 +69,20 @@ test("analytics fits a phone on every view and grouping, and its chart answers a
     data: { name: "phone-analytics-with-a-long-key-name", access: "inference" },
   });
   expect(created.ok()).toBe(true);
-  const { secret } = (await created.json()) as { secret: string };
+  const { id: keyId, secret } = (await created.json()) as { id: string; secret: string };
   const call = (content: string) =>
     page.request.post("/v1/chat/completions", {
       headers: { authorization: `Bearer ${secret}` },
       data: { model: "gpt-5.4-mini", messages: [{ role: "user", content }] },
     });
-  for (const content of ["One", "Two", "Three [mock:error=server-error]"]) await call(content);
+  for (const content of ["One", "Two"]) expect((await call(content)).status()).toBe(200);
+  expect((await call("Three [mock:error=server-error]")).status()).toBeGreaterThanOrEqual(400);
+  // The long key name has to be in the usage before the pages are measured.
   await expect(async () => {
-    const usage = (await (await page.request.get(`/platform/v1/orgs/${org}/projects/${project}/usage?group_by=day`)).json()) as {
+    const usage = (await (await page.request.get(`/platform/v1/orgs/${org}/projects/${project}/usage?group_by=key&key=${keyId}`)).json()) as {
       data: { requests: number }[];
     };
-    expect(usage.data.reduce((a, r) => a + r.requests, 0)).toBeGreaterThan(0);
+    expect(usage.data.reduce((a, r) => a + r.requests, 0)).toBeGreaterThanOrEqual(3);
   }).toPass({ timeout: 30_000 });
 
   const phone = await onPhone(browser, page);
@@ -117,7 +119,7 @@ test("analytics fits a phone on every view and grouping, and its chart answers a
 
   const chart = phone.locator("#overview-chart");
   await chart.scrollIntoViewIfNeeded();
-  const plot = await chart.locator("svg rect[fill=transparent]").boundingBox();
+  const plot = await chart.locator("svg rect[fill=transparent]").last().boundingBox();
   if (!plot) throw new Error("The chart has no plot to tap");
   const tooltip = chart.locator("div[role=presentation]");
   await phone.touchscreen.tap(plot.x + plot.width - 4, plot.y + plot.height / 2);
