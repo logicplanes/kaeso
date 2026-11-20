@@ -139,7 +139,7 @@ export function KeysPage({ org, project, search }: { org: string; project: strin
             onValueChange={(v) => setSearch({ sort: isKeySort(v) ? v : undefined })}
             options={keySortOptions()}
           />
-          <div className="w-240">
+          <div className="min-w-0 flex-1 basis-160 sm:w-240 sm:flex-none">
             <Input
               type="search"
               size="sm"
