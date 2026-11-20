@@ -1,6 +1,6 @@
 [package]
 name = "kaeso-update"
-description = "Kaeso updates without I/O: the release manifest, the update policy and the updater's protocol, shared by the gateway and the updater."
+description = "Kaeso updates without I/O: the release manifest, the update policy, the updater's protocol and the gateway settings a release refuses, shared by the gateway and the updater."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

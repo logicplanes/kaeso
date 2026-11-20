@@ -54,13 +54,24 @@ Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole den Befe
 
 ## Upgrade auf 0.7.0
 
-0.7.0 warnt vor drei Einstellungen, die 0.6.0 stillschweigend annahm, und Kaeso 0.8.0 wird sie ablehnen. Ein Gateway mit einer davon startet weiterhin, verhält sich wie 0.6.0 und protokolliert beim Start eine Warnung, die die Einstellung nennt; `kaeso config check` zeigt dieselben Warnungen. Korrigieren Sie sie vor 0.8.0: Der Updater kann nicht zurücksetzen, sobald das neue Gateway eines Releases gestartet ist, das die Datenbanken migriert, also endet ein Update, das beim Start anhält, mit **Prüfung nötig**. Prüfen Sie diese Einstellungen in der `.env`, der `compose.override.yaml`, der Datei, die `KAESO_CONFIG` nennt, oder den Variablen Ihrer Plattform:
+> [!IMPORTANT]
+> **Bevor Sie aktualisieren**, prüfen Sie drei Einstellungen, die 0.6.0 annahm und 0.7.0 beim Start ablehnt. Sehen Sie in der `.env`, der `compose.override.yaml`, der Datei, die `KAESO_CONFIG` nennt, oder den Variablen Ihrer Plattform nach:
+>
+> - `KAESO_KPMR_INTERVAL` (`kpmr.interval`) unter `5m`: setzen Sie es auf `5m` oder länger, oder entfernen Sie es für `auto`.
+> - `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) unter `1m`: setzen Sie es auf `1m` oder länger, oder entfernen Sie es.
+> - `KAESO_SMTP_USER` (`smtp.user`) ohne `KAESO_SMTP_PASSWORD` (`smtp.password`): ergänzen Sie das Passwort, oder entfernen Sie den Benutzer für einen Server ohne Anmeldung.
 
-| Einstellung | 0.6.0 | 0.7.0 | Ab 0.8.0 |
-| --- | --- | --- | --- |
-| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Nahm jede Dauer über null an und synchronisierte höchstens alle 5 Minuten | Hebt eine Dauer unter 5 Minuten mit einer Warnung auf `5m` an | `auto` oder mindestens `5m` |
-| `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Hob ein kürzeres Intervall auf eine Minute an | Hebt ein kürzeres Intervall mit einer Warnung auf `1m` an | Mindestens `1m` |
-| `KAESO_SMTP_USER` (`smtp.user`) | Sendete E-Mails ohne Anmeldung, wenn kein Passwort gesetzt war | Sendet mit einer Warnung ohne Anmeldung | Braucht `KAESO_SMTP_PASSWORD`; für einen Server ohne Anmeldung entfernen Sie den Benutzer |
+| Einstellung | 0.6.0 | 0.7.0 |
+| --- | --- | --- |
+| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Nahm jede Dauer über null an und synchronisierte höchstens alle 5 Minuten | `auto` oder mindestens `5m` |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Hob ein kürzeres Intervall auf eine Minute an | Mindestens `1m` |
+| `KAESO_SMTP_USER` (`smtp.user`) | Sendete E-Mails ohne Anmeldung, wenn kein Passwort gesetzt war | Braucht `KAESO_SMTP_PASSWORD`; für einen Server ohne Anmeldung entfernen Sie den Benutzer |
+
+Ein Gateway mit einer dieser Einstellungen hält beim Start an, bevor es die Datenbanken berührt, und seine Fehlermeldung nennt die Einstellung, den Wert und die Abhilfe. `kaeso config check` gibt denselben Fehler aus ([Das Gateway startet immer wieder neu](troubleshooting.md#das-gateway-startet-immer-wieder-neu)). So endet ein Update mit einer solchen Einstellung:
+
+- **Aus der Konsole oder im Update-Fenster:** Das Update hält an, bevor es etwas umstellt, legt die `compose.yaml` zurück, und 0.6.0 läuft weiter. Das Fortschrittsfenster zeigt **Nicht eingespielt** mit der Ablehnung, die die Einstellung nennt. **Instanz** › **Updates** führt das Update als **Nicht eingespielt**, mit dem Grund, dass Ihre Compose-Dateien Änderungen haben, die der Updater nicht übernehmen kann; auch `GET /platform/v1/instance/updates/jobs` und `docker compose logs updater` zeigen die Ablehnung. Korrigieren Sie die Einstellung, übernehmen Sie sie mit `docker compose up -d --wait` und aktualisieren Sie erneut; ein automatisches Update versucht es im nächsten Fenster wieder. Nennt `KAESO_CONFIG` eine Datei, die der Updater nicht aus dem Ordner der Installation lesen kann, etwa eine in einem benannten Volume, hält das Update ebenso an: Aktualisieren Sie dann mit dem Installationsskript.
+- **Mit dem Installationsskript:** Es prüft die Einstellungen mit dem neuen Gateway, bevor es das alte anhält, gibt den Fehler aus, legt die `compose.yaml` zurück und lässt 0.6.0 laufen.
+- **Von Hand oder auf einer Plattform:** Das neue Gateway hält beim Start an. Korrigieren Sie die Einstellung und führen Sie `docker compose up -d --wait` aus, oder stellen Sie neu bereit.
 
 In 0.7.0 gilt eine leere `KAESO_CONFIG` wie jede andere Variable als nicht gesetzt, wo 0.6.0 anhielt.
 
@@ -167,7 +178,7 @@ Die meisten Releases ändern in der `compose.yaml` nur die Image-Versionen. Ein 
 Wählen Sie **Auf … aktualisieren** und bestätigen Sie. Die Konsole verfolgt das Update Schritt für Schritt, und es dauert etwa eine Minute:
 
 1. **Signaturen des Release prüfen.** Der Updater prüft, dass das Release und jedes Image vom Release-Workflow von Kaeso gebaut wurden. Scheitert eine Prüfung, wird nichts eingespielt, und Kaeso läuft weiter.
-2. **Images herunterladen.** Er lädt die neuen Images von Gateway, Konsole und Updater. Ändert das Release die `compose.yaml`, schreibt er die neue Datei, behält die alte und lässt Docker Compose die übrigen Images des Release laden.
+2. **Images herunterladen.** Er lädt die neuen Images von Gateway, Konsole und Updater. Ändert das Release die `compose.yaml`, schreibt er die neue Datei, behält die alte und lässt Docker Compose die übrigen Images des Release laden. Vorher prüft er, ob das neue Gateway die Einstellungen der Installation annimmt, in der `.env`, der `compose.override.yaml` und der Datei, die `KAESO_CONFIG` nennt. Würde das neue Gateway eine Einstellung beim Start ablehnen, oder kann der Updater diese Datei nicht aus dem Ordner der Installation lesen, hält das Update hier mit dem Grund an, legt die alte `compose.yaml` zurück und endet mit **Nicht eingespielt**.
 3. **Auf die neue Version umstellen.** Er ersetzt erst die Konsole, dann das Gateway durch Container aus den neuen Images, mit denselben Einstellungen. Ändert das Release die `compose.yaml`, stoppt stattdessen Docker Compose beide und startet dann jeden Dienst der neuen Datei. Währenddessen antwortet Caddy an ihrer Stelle ([Während Kaeso aktualisiert wird](#während-kaeso-aktualisiert-wird)).
 4. **Datenbank migrieren.** Das neue Gateway migriert beim Start die Datenbanken. Der Updater gibt ihm bis zu 10 Minuten, um gesund zu werden.
 5. **Wieder erreichbar.** Der Updater schreibt die neuen Versionen in die `compose.yaml`, sodass ein späteres `docker compose up -d --wait` dieselben Images startet.

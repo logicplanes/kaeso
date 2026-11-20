@@ -129,7 +129,7 @@ Ohne diese Einstellung sendet Kaeso keine CORS-Header. Die [Modell-API](../api/m
 | `KAESO_SMTP_HOST`<br>`smtp.host` | Text | — | SMTP-Server. Erforderlich, außer `mail.transport` ist `log`. |
 | `KAESO_SMTP_PORT`<br>`smtp.port` | Ganzzahl | `587` | SMTP-Port. |
 | `KAESO_SMTP_TLS`<br>`smtp.tls` | Text | `starttls` | `starttls`, `tls` für implizites TLS (meist Port 465) oder `none` nur für einen lokalen Mail-Catcher. |
-| `KAESO_SMTP_USER`<br>`smtp.user` | Text | — | SMTP-Benutzername, falls der Server einen braucht. Erforderlich mit einem Passwort und braucht eines: Ohne Passwort ignoriert Kaeso den Benutzer, sendet E-Mails ohne Anmeldung und warnt beim Start. Kaeso 0.8.0 wird den Start verweigern. |
+| `KAESO_SMTP_USER`<br>`smtp.user` | Text | — | SMTP-Benutzername, falls der Server einen braucht. Benutzer und Passwort gehören zusammen: Eines allein hält das Gateway beim Start an. |
 | `KAESO_SMTP_PASSWORD`<br>`smtp.password` | Text, Secret | — | SMTP-Passwort. |
 | `KAESO_SMTP_FROM`<br>`smtp.from` | Text | `Kaeso <kaeso@localhost>` | Absender jeder E-Mail. `compose.yaml` setzt `Kaeso <kaeso@` und Ihre Domain. |
 | `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | Text | `smtp` | `smtp` oder `log`, um nur die Art jeder E-Mail zu protokollieren, nie Empfänger oder Inhalt. |
@@ -169,7 +169,7 @@ Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, d
 | --- | --- | --- | --- |
 | `KAESO_KPMR_SYNC`<br>`kpmr.sync` | Bool | `true` | Die Modelldaten von KPMR abrufen, der Kaeso Provider & Model Registry. Aus für Installationen ohne Internet; dann gilt der eingebaute Snapshot. |
 | `KAESO_KPMR_URL`<br>`kpmr.url` | Text | `https://kpmr.kaeso.app/v1/catalogue` | Woher der KPMR-Katalog kommt, von KPMR oder einem Spiegel: `https`, oder `http` auf localhost; Weiterleitungen müssen auf seinem Host und bei `https` bleiben, höchstens 3. |
-| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | Text | `auto` | Wie oft KPMR nach Änderungen gefragt wird: `auto` folgt `refresh_seconds` des Katalogs innerhalb von 5 Minuten bis 24 Stunden, oder eine Dauer von mindestens 5 Minuten wie `6h`. Eine kürzere über null wird mit einer Warnung beim Start auf 5 Minuten angehoben; Kaeso 0.8.0 wird sie ablehnen. |
+| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | Text | `auto` | Wie oft KPMR nach Änderungen gefragt wird: `auto` folgt `refresh_seconds` des Katalogs innerhalb von 5 Minuten bis 24 Stunden, oder eine Dauer von mindestens 5 Minuten wie `6h`. Eine kürzere hält das Gateway beim Start an. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | Text | — | Kommagetrennte Schlüssel, denen das Gateway neben dem eingebauten Schlüssel von KPMR vertraut, je `<key id>:<base64 Ed25519 public key>`, für eine eigene Registry; ein Katalog, dessen Signatur kein vertrauenswürdiger Schlüssel bestätigt, wird abgelehnt. |
 
 ### Wechselkurse
@@ -272,7 +272,7 @@ Die Basis-URL eines eigenen Anbieters wählt ein Organisations-Admin, also über
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | Kommagetrennte private, Loopback- oder andere nicht öffentliche Netze, in denen MCP-Server erreicht werden dürfen, etwa `10.0.0.0/8`. Reines `http` erreicht nur diese. |
-| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | Wie oft das Gateway jeden MCP-Server nach seinen Tools fragt, um neue, geänderte und entfernte zu finden. Mindestens eine Minute: Ein kürzeres Intervall wird mit einer Warnung beim Start auf eine Minute angehoben; Kaeso 0.8.0 wird es ablehnen. |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | Wie oft das Gateway jeden MCP-Server nach seinen Tools fragt, um neue, geänderte und entfernte zu finden. Mindestens eine Minute: Ein kürzeres Intervall hält das Gateway beim Start an. |
 | `KAESO_MCP_PORTAL_RESPONSE_LIMIT`<br>`mcp_portal.response_limit` | text | `4MiB` | Größte Antwort auf einen Tool-Aufruf, die das MCP-Portal eines Projekts weitergibt. Eine größere beendet den Aufruf mit einem Fehler. |
 | `KAESO_MCP_PORTAL_CALL_TIMEOUT`<br>`mcp_portal.call_timeout` | text | `60s` | Wie lange das MCP-Portal eines Projekts darauf wartet, dass ein MCP-Server einen Tool-Aufruf beendet. 1s bis 1h. |
 

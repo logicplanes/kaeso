@@ -1342,6 +1342,48 @@ async fn an_unpinned_image_or_a_failed_pull_changes_nothing() {
     }
 }
 
+// A new gateway that refuses its settings at startup can't be rolled back once a migrating
+// release has started it (above), so the release's runner refuses them before the switch.
+#[tokio::test]
+async fn a_gateway_setting_the_new_release_refuses_keeps_the_running_release() {
+    use kaeso_update::settings::{KPMR_INTERVAL, SMTP_USER, refused};
+    let found = refused(|s| match s {
+        s if s == KPMR_INTERVAL => Some("1m".into()),
+        s if s == SMTP_USER => Some("kaeso".into()),
+        _ => None,
+    });
+    let logs = format!(
+        "{}\nThe new gateway would stop at startup with these settings, so the update stops before it switches\n",
+        found.join("\n")
+    );
+    let mut daemon = Daemon::install();
+    daemon
+        .runners
+        .insert("pull", Outcome::Exit(3, Box::leak(logs.into_boxed_str())));
+    let world = changing("apply-refused-settings", daemon, "20261101000000_next").await;
+    let job = update(&world, TO).await;
+    assert_eq!(job.state, JobState::Failed, "{job:?}");
+    assert_eq!(job.reason, Some(Reason::ComposeChanged));
+    assert_eq!(job.step, Step::Downloading);
+    let detail = job.detail.unwrap();
+    for refusal in &found {
+        assert!(detail.contains(refusal.as_str()), "{detail}");
+    }
+    assert_eq!(
+        world.compose(),
+        compose_text(FROM),
+        "compose.yaml is put back"
+    );
+    assert_eq!(world.ran(), ["pull"], "nothing is stopped or started");
+    assert!(stops(&world).is_empty(), "no container was stopped");
+    assert_eq!(world.running("kaeso-gateway-1").image, "sha256:old-gateway");
+    assert_eq!(world.running("kaeso-console-1").image, "sha256:old-console");
+    assert!(
+        !world.maintenance(),
+        "Caddy never said Kaeso is being updated"
+    );
+}
+
 #[tokio::test]
 async fn a_compose_file_of_its_own_is_never_replaced_by_a_release_that_changes_it() {
     let world = changing("apply-own", Daemon::install(), FROM_MIGRATIONS).await;
