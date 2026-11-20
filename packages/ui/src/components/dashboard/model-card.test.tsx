@@ -20,6 +20,20 @@ describe("ModelCard", () => {
     expect(screen.getByRole("button", { name: "Add to this project" })).toBeInTheDocument();
   });
 
+  it("wraps a fact's value instead of cutting it, so a price in two currencies reads whole", () => {
+    render(
+      <ModelCard
+        mark={<span>A</span>}
+        name="GPT-6.2 Astra"
+        model="gpt-6.2-astra"
+        facts={[{ label: "Pro 1 Mio. Token", value: "8,00 $ rein, 40,00 $ raus" }]}
+      />,
+    );
+    const value = screen.getByText("8,00 $ rein, 40,00 $ raus");
+    expect(value).not.toHaveClass("truncate");
+    expect(value).toHaveClass("wrap-break-word");
+  });
+
   it("leaves out the badge, facts and action it isn't given", () => {
     render(<ModelCard mark={<span>Mistral</span>} name="mistral-large" model="mistral-large" detail="Mistral" facts={[]} />);
     expect(screen.getByRole("heading", { name: "mistral-large" })).toBeInTheDocument();

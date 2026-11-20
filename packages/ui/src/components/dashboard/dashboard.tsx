@@ -78,20 +78,20 @@ export const DashboardCell = forwardRef<
   return (
     <section ref={ref} className={cn("flex min-w-0 flex-col bg-raised px-8 pt-16 pb-20", className)}>
       {(title || actions) && (
-        <header className={cn("flex h-24 min-w-0 items-center justify-between gap-12", actions ? "pr-0" : "pr-12", href ? "pl-8" : "pl-12")}>
+        <header className={cn("flex min-h-24 min-w-0 items-center justify-between gap-12", actions ? "pr-0" : "pr-12", href ? "pl-8" : "pl-12")}>
           {title &&
             (href ? (
               <Heading className="min-w-0">
                 <Link
                   href={href}
-                  className="group inline-flex h-24 max-w-full items-center gap-2 rounded-cell px-4 text-small font-medium text-fg-secondary transition-control hover:text-fg focus-ring"
+                  className="group inline-flex min-h-24 max-w-full items-center gap-2 rounded-cell px-4 text-small font-medium text-fg-secondary transition-control hover:text-fg focus-ring"
                 >
-                  <span className="truncate">{title}</span>
+                  <span className="min-w-0 wrap-break-word">{title}</span>
                   <Icon icon={icons.chevronRight} size="xs" className="shrink-0 transition-control group-hover:translate-x-1" />
                 </Link>
               </Heading>
             ) : (
-              <Heading className="truncate text-small font-medium text-fg-secondary">{title}</Heading>
+              <Heading className="min-w-0 text-small font-medium wrap-break-word text-fg-secondary">{title}</Heading>
             ))}
           {actions && <div className="flex shrink-0 items-center gap-4">{actions}</div>}
         </header>

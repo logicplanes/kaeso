@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { atFixtureTime } from "~/test/clock";
 import { ORG, OTHER_PROJECT, PROJECT, project, signedIn, withRights } from "~/test/fixtures";
 import { credential, invite, member, OTHER_USER, usageRow } from "~/test/fixtures/org";
@@ -55,6 +55,7 @@ function models(n: number) {
 }
 
 describe("the organization overview", () => {
+  afterEach(() => vi.unstubAllGlobals());
   atFixtureTime();
 
   it("leads with the release this install runs and opens what's new from it", async () => {
@@ -80,6 +81,34 @@ describe("the organization overview", () => {
     expect(within(list).getAllByRole("button")[1]).toHaveTextContent(/Support triage.*3/);
     await user.click(within(list).getByRole("button", { name: /Support triage/ }));
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${OTHER_PROJECT}`));
+  });
+
+  it("draws each project's trend beside it, and on a phone gives that room to the project's name", async () => {
+    signedIn();
+    usage();
+    models(0);
+    around();
+    const { unmount } = await renderApp(`/orgs/${ORG}`);
+    const projects = await screen.findByRole("list", { name: "Projects" });
+    expect(await within(projects).findByRole("img", { name: "Checkout assistant: requests per day, the last 14 days" })).toBeInTheDocument();
+    unmount();
+
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    await renderApp(`/orgs/${ORG}`);
+    const onPhone = await screen.findByRole("list", { name: "Projects" });
+    await waitFor(() => expect(within(onPhone).getAllByRole("button")[0]).toHaveTextContent(/Checkout assistant.*12/));
+    expect(within(onPhone).queryByRole("img", { name: /requests per day/ })).not.toBeInTheDocument();
+    const keys = await screen.findByRole("list", { name: "Providers" });
+    await waitFor(() => expect(within(keys).getAllByRole("button")).toHaveLength(4));
+    // A long key name gives way first: the provider's name stays whole.
+    expect(within(within(keys).getAllByRole("button")[0] as HTMLElement).getByText("OpenAI", { selector: "span.truncate" })).toHaveClass("shrink-0");
   });
 
   it("orders the projects by the number it shows, today's requests, not by the last 14 days", async () => {

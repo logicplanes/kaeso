@@ -113,6 +113,25 @@ describe("Dashboard", () => {
     expect(screen.getByText("48%").parentElement).toHaveClass("text-metric");
     expect(screen.getByText("↑0.5%").parentElement?.parentElement).toHaveTextContent("↑0.5% better");
   });
+  it("wraps a long cell title instead of cutting it, linked or not", () => {
+    render(
+      <Dashboard aria-label="Usage in the period">
+        <DashboardCell title="Am stärksten gewachsen, ggü. den 30 Tagen davor">
+          <p>Rows</p>
+        </DashboardCell>
+        <DashboardCell title="Projekte, Anfragen heute" href="/analytics/projects">
+          <p>Rows</p>
+        </DashboardCell>
+      </Dashboard>,
+    );
+    const plain = screen.getByRole("heading", { name: "Am stärksten gewachsen, ggü. den 30 Tagen davor" });
+    expect(plain).not.toHaveClass("truncate");
+    expect(plain).toHaveClass("wrap-break-word");
+    const linked = screen.getByText("Projekte, Anfragen heute");
+    expect(linked).not.toHaveClass("truncate");
+    expect(linked).toHaveClass("wrap-break-word");
+    expect(plain.closest("header")).toHaveClass("min-h-24");
+  });
   it("keeps a readout's height while it loads, and sets a small one under its label", () => {
     const { rerender } = render(<Readout value="$60.45" loading />);
     expect(screen.queryByText("$60.45")).not.toBeInTheDocument();
