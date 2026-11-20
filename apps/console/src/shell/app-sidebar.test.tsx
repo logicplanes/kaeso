@@ -108,6 +108,16 @@ describe("the sidebar in a project", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}`));
   });
 
+  it("shows the organization's pages instead of a nameless project when the project doesn't exist", async () => {
+    signedIn();
+    on("GET", "orgs/:org/projects/:project", apiError(404, "not_found", "No project proj_gone in this organization."));
+    await renderApp(`/orgs/${ORG}/projects/proj_gone`);
+    expect(await screen.findByText("This doesn't exist or was removed")).toBeInTheDocument();
+    expect(await within(sidebar()).findByRole("link", { name: "Overview" })).toHaveAttribute("href", `/orgs/${ORG}`);
+    expect(within(sidebar()).queryByRole("button", { description: "Switch project" })).not.toBeInTheDocument();
+    expect(within(sidebar()).queryByRole("link", { name: "Playground" })).not.toBeInTheDocument();
+  });
+
   it("names the project it is in even when the organization's list leaves it out", async () => {
     signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage" })] });
     on("GET", "orgs/:org/projects/:project", project());
