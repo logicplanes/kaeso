@@ -178,12 +178,12 @@ describe("Project › Tools", () => {
 
   it("opens a tool with its details, schema and calls", async () => {
     signedIn();
-    tools({ list: [post, getMe, changed] });
+    tools({ list: [{ ...post, server_name: "Northwind X posts" }, getMe, changed] });
     const { user } = await renderApp(projectPath("tools"));
     await user.click(within(await list()).getByText("x__create_post"));
     const sheet = await screen.findByRole("dialog", { name: "x__create_post" });
-    // Under the title, in the sheet's type for ids, the server's handle; its name is the Server row's.
-    expect(within(sheet).getByRole("heading", { name: "x__create_post" }).parentElement).toHaveTextContent(/^x__create_postx$/);
+    // The server's name has its row; the code font under a sheet's title is for ids.
+    expect(within(sheet).getByRole("heading", { name: "x__create_post" }).closest("[data-sheet-header]")).toHaveTextContent(/^x__create_post$/);
     expect(within(sheet).getByText("create_post")).toBeInTheDocument();
     expect(within(sheet).getByText("Destructive")).toBeInTheDocument();
     expect(within(sheet).getByText("Calls in 7 days")).toBeInTheDocument();
