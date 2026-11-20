@@ -38,9 +38,11 @@ fn no_media_api(eff: &Effective, api: &str, fallback: String) -> String {
 fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
     use DialectId::{AnthropicMessages as A, Gemini as G, OpenAiResponses as R};
     match (field, ingress) {
+        ("budget", G) => "generationConfig.thinkingConfig.thinkingBudget",
         ("budget", _) => "thinking.budget_tokens",
         ("effort", A) => "output_config.effort",
         ("effort", R) => "reasoning.effort",
+        ("effort", G) => "generationConfig.thinkingConfig.thinkingLevel",
         ("effort", _) => "reasoning_effort",
         ("format", A) => "output_config.format",
         ("format", R) => "text.format",
@@ -54,6 +56,7 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("reasoning", A) => "thinking",
         ("user", A) => "metadata.user_id",
         ("reasoning", R) => "reasoning",
+        ("reasoning", G) => "generationConfig.thinkingConfig",
         ("reasoning", _) => "reasoning_effort",
         (other, _) => other,
     }
@@ -133,6 +136,7 @@ pub fn prepare(
         Request::Generate(g) => {
             refuse_decision_only(eff)?;
             let mut adapted = adaptive_to_budget(g, ingress, eff);
+            adapted.extend(budget_to_adaptive(g, ingress, eff));
             let mut left_out = leave_out_reasoning(g, ingress, eff);
             left_out.extend(leave_out_sampling(g, ingress, eff));
             adapted.extend(nearest_effort(g, ingress, eff));
@@ -166,6 +170,7 @@ pub fn prepare(
                 ));
             };
             let mut adapted = adaptive_to_budget(g, ingress, eff);
+            adapted.extend(budget_to_adaptive(g, ingress, eff));
             let left_out = leave_out_reasoning(g, ingress, eff);
             adapted.extend(nearest_effort(g, ingress, eff));
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
@@ -692,6 +697,37 @@ fn adaptive_to_budget(g: &mut GenerateRequest, ingress: DialectId, eff: &Effecti
         }
     }
     r.extras.fields.shift_remove("display");
+    vec![app_param(ingress, "reasoning").to_owned()]
+}
+
+// Claude Opus 4.7 and later refuse `enabled` thinking, so a budget, such as a Gemini app's
+// `thinkingBudget` or an older Anthropic app's `budget_tokens`, would fail on every current
+// Claude model; it becomes adaptive thinking with the effort the budget stands for. Anthropic
+// took budgets away in the same models as sampling settings, which the catalogue marks as
+// taking only the default temperature; Claude 4.6 still takes budgets.
+fn budget_to_adaptive(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    let Some(r) = g.reasoning.as_mut() else {
+        return Vec::new();
+    };
+    let refuses_budgets = eff.dialect == DialectId::AnthropicMessages
+        && is_claude(eff)
+        && eff.fields.reasoning == Some(true)
+        && eff.fields.temperature == Some(false)
+        && eff.fields.adaptive_thinking != Some(false);
+    if !refuses_budgets || !matches!(r.mode, Some(ReasoningMode::Enabled) | None) {
+        return Vec::new();
+    }
+    let Some(budget) = r.budget_tokens.take() else {
+        return Vec::new();
+    };
+    match r.effort {
+        Some(ReasoningEffort::None) => r.mode = Some(ReasoningMode::Disabled),
+        Some(_) => r.mode = Some(ReasoningMode::Adaptive),
+        None => {
+            r.mode = Some(ReasoningMode::Adaptive);
+            r.effort = Some(reasoning_map::effort_for_budget(budget));
+        }
+    }
     vec![app_param(ingress, "reasoning").to_owned()]
 }
 
