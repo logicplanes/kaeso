@@ -93,7 +93,7 @@ fn upload_share(body: &axum::body::Body, max_body: usize) -> u64 {
 pub(super) fn body_error(e: &axum::Error, too_large: &str) -> ApiError {
     if crate::http::body_timeout::timed_out(e) {
         ApiError::bad_request("The request body did not arrive in time; send it again.")
-    } else if pipeline::over_limit(e) {
+    } else if crate::http::body::over_limit(e) {
         ApiError::TooLarge(too_large.to_owned())
     } else {
         ApiError::bad_request("The request body broke off before it was complete; send it again.")
@@ -239,12 +239,14 @@ pub async fn responses(
     let max_body = state.config.body_limits.model_api.as_usize();
     // The body is read and taken apart here, before the pipeline takes its own share of the
     // translation memory, so it holds a share for itself while it does.
-    let share = state
-        .translating
-        .hold(session.user_id, upload_share(&body, max_body))
-        .await
-        .map_err(|_| ApiError::Unavailable(TRANSLATING_BUSY.into()))?;
-    let bytes = crate::http::body::read(body, max_body)
+    let mut share = Some(
+        state
+            .translating
+            .hold(session.user_id, upload_share(&body, max_body))
+            .await
+            .map_err(|_| ApiError::Unavailable(TRANSLATING_BUSY.into()))?,
+    );
+    let bytes = crate::http::body::read_releasing(body, max_body, || drop(share.take()))
         .await
         .map_err(|e| body_error(&e, "The conversation is larger than Kaeso accepts."))?;
     let Split { body, model, test } = pipeline::off_thread(bytes.len(), move || split(bytes))

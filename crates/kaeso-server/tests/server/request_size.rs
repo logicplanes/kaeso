@@ -743,3 +743,47 @@ async fn a_playground_body_cut_off_by_the_app_is_a_bad_request_not_too_large() {
     let r = env.app.post(&path, named, Some(&env.owner.cookie)).await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
 }
+
+// Traefik and other proxies that stream a body write all of it before they read the answer;
+// a gateway that stops reading at its limit breaks that write, and the proxy answers 502.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_oversized_body_is_read_to_its_end_so_a_proxy_in_front_passes_the_413_on() {
+    let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_MODEL_API", "1MiB")])).await;
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let shutdown = tokio_util::sync::CancellationToken::new();
+    tokio::spawn(kaeso_server::serve::serve_until(
+        listener,
+        env.app.router.clone(),
+        shutdown.clone(),
+        std::time::Duration::from_secs(1),
+        kaeso_server::serve::Connections {
+            header_read_timeout: std::time::Duration::from_secs(30),
+            max: 16,
+            metered: false,
+        },
+        tokio_util::sync::CancellationToken::new(),
+    ));
+    let body = serde_json::to_vec(&messages("claude-haiku-4-5", &"a".repeat(32 << 20))).unwrap();
+    let head = format!(
+        "POST /v1/messages HTTP/1.1\r\nhost: kaeso.test\r\nx-api-key: {}\r\nanthropic-version: 2023-06-01\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
+        env.key,
+        body.len()
+    );
+    let mut proxy = TcpStream::connect(addr).await.unwrap();
+    proxy.write_all(head.as_bytes()).await.unwrap();
+    proxy
+        .write_all(&body)
+        .await
+        .expect("the gateway reads the whole body before it answers");
+    let mut answer = Vec::new();
+    proxy.read_to_end(&mut answer).await.unwrap();
+    let answer = String::from_utf8_lossy(&answer);
+    assert!(answer.starts_with("HTTP/1.1 413"), "{answer}");
+    assert!(
+        answer.contains("The request body is larger than 1048576 bytes."),
+        "{answer}"
+    );
+    assert!(env.mock.received().is_empty());
+    shutdown.cancel();
+}
