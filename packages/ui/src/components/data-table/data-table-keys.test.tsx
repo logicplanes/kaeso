@@ -1,5 +1,6 @@
+import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DataTable } from "./data-table.js";
 import { col } from "./columns.js";
@@ -207,13 +208,15 @@ describe("DataTable keyboard model", () => {
     expect(row("checkout-web")).toHaveFocus();
     await user.tab();
     expect(screen.getByRole("button", { name: "After" })).toHaveFocus();
-    for (const rowgroup of within(table).getAllByRole("rowgroup"))
-      for (const child of rowgroup.querySelectorAll(":scope > *, :scope > * > *"))
-        if (child.getAttribute("role") !== "row") expect(child).not.toHaveAttribute("tabindex");
+    const result = await axe.run(table, { runOnly: { type: "rule", values: ["aria-required-children"] } });
+    expect(result.violations).toEqual([]);
     fireEvent.keyDown(row("checkout-web"), { key: "ArrowDown" });
     expect(row("ci-runner")).toHaveFocus();
     fireEvent.contextMenu(row("ci-runner"));
     expect(await screen.findByRole("menuitem", { name: "Copy id of ci-runner" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    expect(row("ci-runner")).toHaveFocus();
   });
 
   it("says how to recover when loading failed and there is no retry", () => {
