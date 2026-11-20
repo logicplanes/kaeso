@@ -73,6 +73,40 @@ fn gemini_error(r: &Answer, code: u16, status: &str) -> String {
 }
 
 #[tokio::test]
+async fn a_gemini_apps_sampling_settings_claude_5_refuses_are_left_out_by_their_gemini_names() {
+    let env = env().await;
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let r = env
+        .app
+        .post(
+            &format!("{base}/models"),
+            json!({ "provider": "anthropic", "model_id": "claude-sonnet-5-5" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let mut body = ask("Hello [mock:fixture=text-simple]");
+    body["generationConfig"] = json!({ "temperature": 0.2, "topP": 0.9, "topK": 5 });
+    let r = gemini(
+        &env,
+        "POST",
+        "/v1beta/models/claude-sonnet-5-5:generateContent",
+        Key::Header(&env.key),
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(
+        r.header("kaeso-left-out"),
+        Some("generationConfig.temperature, generationConfig.topP, generationConfig.topK")
+    );
+    let sent = env.mock.last().unwrap().json();
+    for field in ["temperature", "top_p", "top_k"] {
+        assert!(sent.get(field).is_none(), "{field}: {sent}");
+    }
+}
+
+#[tokio::test]
 async fn a_gemini_app_reaches_claude_with_its_key_in_the_header_or_the_query() {
     let env = env().await;
     for key in [Key::Header(&env.key), Key::Query(&env.key)] {
