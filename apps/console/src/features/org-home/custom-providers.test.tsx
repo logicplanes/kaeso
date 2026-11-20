@@ -104,6 +104,9 @@ describe("custom providers", () => {
     expect(id).toHaveClass("mono");
     expect(id.tagName).not.toBe("CODE");
     expect(id.parentElement).toHaveClass("truncate");
+    // The hidden field labels a narrow table folds into that line are absolutely placed: the line holds them, so they can't
+    // widen the page on a phone.
+    expect(id.parentElement).toHaveClass("relative");
     expect(research).toHaveTextContent("https://vllm.example.com/");
     expect(research).toHaveTextContent("OpenAI Chat Completions");
     expect(research).toHaveTextContent("1 key · 3 models");

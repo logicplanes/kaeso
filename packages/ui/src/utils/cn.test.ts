@@ -10,6 +10,7 @@ describe("cn: the components' own merges", () => {
     ["text-inherit", "text-fg", "text-fg"],
     ["size-14", "size-12", "size-12"],
     ["min-w-220", "min-w-(--anchor-width)", "min-w-(--anchor-width)"],
+    ["max-w-menu", "max-w-480", "max-w-480"],
     ["material-secondary", "material-ghost", "material-ghost"],
     ["focus-ring", "focus-ring-inset", "focus-ring-inset"],
     ["popup-motion", "dialog-motion", "dialog-motion"],
