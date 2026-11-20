@@ -18,7 +18,7 @@ Das Gateway hält an, wenn eine Einstellung fehlt oder ungültig ist, und sein C
 2. Korrigieren Sie die Einstellung in der `compose.override.yaml` oder in der `.env`, wenn sie zu den [Einstellungen in der .env](configuration.md#einstellungen-in-der-env) gehört.
 3. Führen Sie `docker compose up -d --wait` erneut aus.
 
-`docker compose run --rm --no-deps gateway kaeso config check` prüft die Einstellungen, ohne das Gateway zu starten oder eine Datenbank zu erreichen: Es gibt denselben Fehler aus, listet `KAESO_*`-Variablen, die keine Einstellung nennen, sowie die Warnungen, mit denen das Gateway startet, und endet bei einem Fehler mit 1.
+`docker compose run --rm --no-deps gateway config check` prüft die Einstellungen, ohne das Gateway zu starten oder eine Datenbank zu erreichen: Es gibt denselben Fehler aus, listet `KAESO_*`-Variablen, die keine Einstellung nennen, und endet bei einem Fehler mit 1.
 
 ## Compose verlangt eine Variable in der .env
 
