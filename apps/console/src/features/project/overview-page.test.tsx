@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { atFixtureTime } from "~/test/clock";
 import { signedIn, whoAmI, without } from "~/test/fixtures";
@@ -24,6 +24,25 @@ const cell = (title: string) => screen.getByRole("link", { name: title }).closes
 
 describe("the project overview", () => {
   atFixtureTime();
+
+  it("counts only the month's own days in its spend early in a month, and paces it by the last seven days", async () => {
+    vi.setSystemTime(new Date("2026-11-03T12:00:00Z"));
+    signedIn();
+    projectData();
+    on("GET", "orgs/:org/projects/:project/logs", listed([]));
+    usage({
+      "2026-10-27": [
+        usageRow({ key: "2026-10-28", cost: "7" }),
+        usageRow({ key: "2026-11-01", cost: "1" }),
+        usageRow({ key: "2026-11-02", cost: "2" }),
+        usageRow({ key: "2026-11-03", cost: "0.5" }),
+      ],
+    });
+    await renderApp(projectPath());
+
+    await waitFor(() => expect(cell("November spend")).toHaveTextContent("$3.50"));
+    expect(cell("November spend")).toHaveTextContent("On pace for $43.00");
+  });
 
   it("shows the last 14 days against the 14 before, and the last 7 days when asked", async () => {
     signedIn();
