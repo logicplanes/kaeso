@@ -34,7 +34,7 @@ Alles andere liest die Version, statt sie zu nennen. Eine Seite schreibt `\{{ver
 
 `CHANGELOG.md` folgt [Keep a Changelog](https://keepachangelog.com/de/1.1.0/), und Pull Requests ändern die Datei nie. Der Release-Workflow schreibt den Abschnitt jeder Version aus den Pull Requests, die seit dem letzten Release gemergt wurden. Der Titel jedes Pull Requests, wie er gemergt wurde, wird zu seiner Zeile, mit einem Link auf den Pull Request, und seine Labels bestimmen, wo die Zeile steht.
 
-Dieser Titel ist der Betreff des Squash-Commits des Pull Requests auf `prod`, daher ändert eine Bearbeitung nach dem Merge nichts. Für einen auf andere Weise gemergten Pull Request ist es der Titel zum Zeitpunkt des Merges.
+Dieser Titel ist der Betreff des Squash-Commits des Pull Requests auf `prod`, daher ändert eine Bearbeitung nach dem Merge nichts. Für einen auf andere Weise gemergten Pull Request ist es der Titel zum Zeitpunkt des Merges. Die Pull Requests eines gesperrten oder markierten Kontos liefert GitHub nicht mehr aus; die Zeile eines solchen Pull Requests entsteht dann allein aus seinem Squash-Commit, ohne Labels: Das erste Wort des Titels wählt den Abschnitt, und ein Thema hat sie nicht. Eine Zeile unter `[Unreleased]`, die ihn verlinkt, setzt ihn an die richtige Stelle; ohne sie hält ein Pull Request, den GitHub nicht per Squash gemergt hat oder dessen Nummer ein Issue ist, das Release an.
 
 Pull Requests mit dem Label `internal` werden ausgelassen. Die Updates von Dependabot werden zu einer Zeile, „Dependencies updated“. Ein Pull Request mit dem Label `breaking` wird zusätzlich oben im Abschnitt genannt.
 
