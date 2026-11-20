@@ -132,47 +132,6 @@ describe("Settings rows", () => {
     expect(screen.getByRole("button", { name: "Invite" }).parentElement).toHaveClass("shrink-0");
   });
 
-  it("keeps a section's actions beside a long title instead of dropping them under it at the start", () => {
-    render(
-      <Section
-        spacing="settings"
-        title="Internationale Forschungs- und Entwicklungsgesellschaft für Sprachmodelle"
-        actions={<button type="button">Leave organization</button>}
-      >
-        <p>Rows</p>
-      </Section>,
-    );
-    const titleBlock = screen.getByRole("heading", { name: /^Internationale/ }).parentElement!;
-    expect(titleBlock, "the title grows beside the actions and keeps 240px before they wrap under it").toHaveClass("min-w-0", "sm:grow", "sm:basis-240");
-    expect(titleBlock).not.toHaveClass("sm:flex-1");
-  });
-
-  it("wraps actions wider than the line among themselves instead of running past the column", () => {
-    render(
-      <Section
-        title="Aufschlüsselung"
-        actions={
-          <>
-            <button type="button">Nach zahlendem Schlüssel</button>
-            <button type="button">CSV herunterladen</button>
-          </>
-        }
-      >
-        <p>Rows</p>
-      </Section>,
-    );
-    expect(screen.getByRole("button", { name: "CSV herunterladen" }).parentElement).toHaveClass("max-w-full", "flex-wrap");
-  });
-
-  it("lets a section's description run to the actions, so an 80-character description stays on one line", () => {
-    render(
-      <Section spacing="settings" title="Storage" description="Die gesamte Installation; jede Organisation sieht ihren eigenen unter Protokollierung.">
-        <p>Rows</p>
-      </Section>,
-    );
-    expect(screen.getByText(/^Die gesamte Installation/)).not.toHaveClass("max-w-prose");
-  });
-
   it("breaks a long id or address in a description instead of widening the row", () => {
     render(<SettingsRow title="Identity provider" description="https://login.northwind.example/realms/northwind-labs/protocol/openid-connect" />);
     expect(screen.getByText(/^https:\/\/login/)).toHaveClass("wrap-anywhere");

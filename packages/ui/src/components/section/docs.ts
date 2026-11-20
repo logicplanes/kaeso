@@ -13,7 +13,7 @@ export const docs = {
   },
   Section: {
     description:
-      "A section of a page, as kaeso.app heads one: a title-sm heading with an optional sentence under it and actions at the end of its row, standing on a 1px rule in the strong line colour. No frame: the content follows 16px under the rule.",
+      "A section of a page, as kaeso.app heads one: a title-sm heading with an optional sentence under it and actions at the end of its row, standing on a 1px rule in the strong line colour. No frame: the content follows 16px under the rule. The title keeps 240px beside the actions before they wrap under it, and actions wider than the row wrap among themselves.",
     props: {
       actions: "Actions at the end of the heading row.",
       children: "The section's content.",
