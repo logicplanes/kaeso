@@ -16,7 +16,8 @@ export const docs = {
       children: "The trigger and the menu's content.",
       defaultOpen: "Whether it starts open, when the component keeps its own state.",
       modal: "Blocks the rest of the page while the menu is open.",
-      onOpenChange: "Called when it opens or closes.",
+      onOpenChange:
+        "Called when it opens or closes, with why: `item-press` when a chosen item closed it, `escape-key`, `outside-press` or `trigger-press` otherwise.",
       open: "Whether it is open, when you control it.",
     },
   },

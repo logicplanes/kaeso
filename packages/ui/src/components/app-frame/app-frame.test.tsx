@@ -8,6 +8,8 @@ import { PageHeader } from "../page-header/page-header.js";
 import { Sidebar } from "../sidebar/sidebar.js";
 import { Button } from "../button/button.js";
 import { Banner } from "../banner/banner.js";
+import { Menu } from "../menu/menu.js";
+import { Dialog } from "../dialog/dialog.js";
 import { icons } from "../../icons/vocabulary.js";
 import { LocaleProvider, type UiMessages } from "../../i18n/index.js";
 import de from "../../i18n/locales/de.js";
@@ -239,6 +241,45 @@ describe("AppFrame's refs", () => {
     expect(ref.current).toHaveAttribute("data-sidebar-expand");
     expect(ref.current).toHaveAccessibleName("Open navigation");
   });
+  it("closes when a switcher's item is chosen, a link followed or a marked control pressed, and stays for a kept-open item, a checkbox or a dialog it opens", async () => {
+    const user = userEvent.setup();
+    const changes: boolean[] = [];
+    render(
+      <Sidebar.Provider shortcut={false}>
+        <NavSheet open onOpenChange={(o) => changes.push(o)}>
+          <Sidebar aria-label="Console">
+            <Sidebar.Content>
+              <Sidebar.Switcher avatar={null} label="Northwind Labs">
+                <Menu.CheckboxItem checked={false}>Compact rows</Menu.CheckboxItem>
+                <Menu.Item closeOnClick={false}>Copy id</Menu.Item>
+                <Menu.Item>Create organization</Menu.Item>
+              </Sidebar.Switcher>
+              <Dialog trigger={<button type="button">Rename</button>} title="Rename" />
+              <button type="button" data-leaves-navigation="">
+                Search
+              </button>
+            </Sidebar.Content>
+          </Sidebar>
+        </NavSheet>
+      </Sidebar.Provider>,
+    );
+    const nav = await screen.findByRole("dialog", { name: "Navigation" });
+    changes.length = 0;
+    await user.click(within(nav).getByRole("button", { name: "Northwind Labs" }));
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: "Compact rows" }));
+    await user.click(screen.getByRole("menuitem", { name: "Copy id" }));
+    expect(changes).toEqual([]);
+    await user.click(screen.getByRole("menuitem", { name: "Create organization" }));
+    expect(changes).toEqual([false]);
+    changes.length = 0;
+    await user.click(within(nav).getByRole("button", { name: "Rename" }));
+    expect(await screen.findByRole("dialog", { name: "Rename" })).toBeInTheDocument();
+    expect(changes).toEqual([]);
+    await user.keyboard("{Escape}");
+    await user.click(within(nav).getByRole("button", { name: "Search" }));
+    expect(changes).toEqual([false]);
+  });
+
   it("forwards NavSheet's ref to the open sheet", async () => {
     const ref = createRef<HTMLDivElement>();
     render(

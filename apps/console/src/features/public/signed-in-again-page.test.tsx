@@ -12,11 +12,13 @@ function listen() {
 }
 
 describe("the window that confirms a sign-in", () => {
-  it("tells the console the sign-in is confirmed and closes", async () => {
+  it("tells the console the sign-in is confirmed and closes, with the sentence right under its title", async () => {
     const close = vi.spyOn(window, "close").mockImplementation(() => undefined);
     const { heard, stop } = listen();
     await renderApp("/signed-in-again");
-    expect(await screen.findByText("You can close this window and continue in Kaeso.")).toBeInTheDocument();
+    expect(await screen.findByText("You can close this window and continue in Kaeso.")).toBe(
+      screen.getByRole("heading", { name: "Signed in again" }).nextElementSibling,
+    );
     await waitFor(() => expect(heard).toEqual([{ error: null }]));
     expect(close).toHaveBeenCalled();
     stop();

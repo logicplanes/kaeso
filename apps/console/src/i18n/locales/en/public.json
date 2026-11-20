@@ -69,7 +69,7 @@
   "public.joinOrg": "Join {org}",
   "public.keepGoing": "Keep this session",
   "public.linkInstead": "Continue with a sign-in link instead",
-  "public.linkUsed": "This link has expired or was already used.",
+  "public.linkUsed": "This link has expired or was already used",
   "public.lookingUpAgentRequest": "Looking up the agent's request",
   "public.lookingUpInvitation": "Looking up the invitation",
   "public.lookingUpLink": "Looking up the link",

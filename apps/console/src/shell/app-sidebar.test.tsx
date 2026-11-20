@@ -108,6 +108,42 @@ describe("the sidebar in a project", () => {
     await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}`));
   });
 
+  it("shows the organization's pages instead of a nameless project when the project doesn't exist", async () => {
+    signedIn();
+    on("GET", "orgs/:org/projects/:project", apiError(404, "not_found", "No project proj_gone in this organization."));
+    await renderApp(`/orgs/${ORG}/projects/proj_gone`);
+    expect(await screen.findByText("This doesn't exist or was removed")).toBeInTheDocument();
+    expect(await within(sidebar()).findByRole("link", { name: "Overview" })).toHaveAttribute("href", `/orgs/${ORG}`);
+    expect(within(sidebar()).queryByRole("button", { description: "Switch project" })).not.toBeInTheDocument();
+    expect(within(sidebar()).queryByRole("link", { name: "Playground" })).not.toBeInTheDocument();
+  });
+
+  it("shows the organization's pages on a project the person can't open", async () => {
+    signedIn();
+    on("GET", "orgs/:org/projects/:project", apiError(403, "permission_denied", "You are not a member of this project."));
+    await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
+    expect(await screen.findByText("You don't have access to this page")).toBeInTheDocument();
+    expect(await within(sidebar()).findByRole("link", { name: "Overview" })).toHaveAttribute("href", `/orgs/${ORG}`);
+    expect(within(sidebar()).queryByRole("link", { name: "Playground" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the project's pages when the project fails to load for a passing reason", async () => {
+    signedIn();
+    on("GET", "orgs/:org/projects/:project", apiError(500, "internal", "The gateway hit an error."));
+    await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
+    expect(await screen.findByText("This page couldn't load")).toBeInTheDocument();
+    expect(await within(sidebar()).findByRole("link", { name: "Playground" })).toBeInTheDocument();
+  });
+
+  it("keeps the project's pages behind an unnamed switcher when a project the list leaves out fails for a passing reason", async () => {
+    signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage" })] });
+    on("GET", "orgs/:org/projects/:project", apiError(500, "internal", "The gateway hit an error."));
+    await renderApp(`/orgs/${ORG}/projects/${PROJECT}`);
+    expect(await screen.findByText("This page couldn't load")).toBeInTheDocument();
+    expect(await within(sidebar()).findByRole("button", { name: "Switch project" })).toBeInTheDocument();
+    expect(within(sidebar()).getByRole("link", { name: "Playground" })).toBeInTheDocument();
+  });
+
   it("names the project it is in even when the organization's list leaves it out", async () => {
     signedIn({ projects: [project({ id: OTHER_PROJECT, name: "Support triage" })] });
     on("GET", "orgs/:org/projects/:project", project());
@@ -148,13 +184,16 @@ describe("the sidebar in an organization", () => {
   it("opens the command palette from the search button", async () => {
     signedIn();
     const { user } = await renderApp(`/orgs/${ORG}/projects`);
-    await user.click(await within(await screen.findByRole("navigation", { name: "Console" })).findByRole("button", { name: "Search" }));
+    const search = await within(await screen.findByRole("navigation", { name: "Console" })).findByRole("button", { name: "Search" });
+    expect(search).toHaveAttribute("aria-haspopup", "dialog");
+    expect(search).toHaveAttribute("data-leaves-navigation");
+    await user.click(search);
     expect(await screen.findByPlaceholderText("Search pages, projects and members")).toBeInTheDocument();
   });
 });
 
 describe("the organization switcher", () => {
-  it("switches organization and links to settings, the account and the instance", async () => {
+  it("switches organization by each one's picture and name, and links to settings, the account and the instance", async () => {
     const second = membership({ org_id: "org_globex", org_name: "Globex" });
     signedIn({
       session: whoAmI({ memberships: [membership(), second] }),
@@ -168,6 +207,7 @@ describe("the organization switcher", () => {
     expect(within(menu).getByRole("menuitem", { name: "Organization settings" })).toHaveAttribute("href", `/settings/orgs/${ORG}/general`);
     expect(within(menu).getByRole("menuitem", { name: "Account" })).toHaveAttribute("href", "/settings/account/profile");
     expect(within(menu).getByRole("menuitem", { name: "Instance" })).toHaveAttribute("href", "/settings/instance/general");
+    expect(within(menu).getByRole("menuitemradio", { name: "Globex" })).toHaveTextContent(/^GGlobex$/);
     await user.click(within(menu).getByRole("menuitemradio", { name: "Globex" }));
     await waitFor(() => expect(router.state.location.pathname).toBe("/orgs/org_globex"));
   });
@@ -350,6 +390,23 @@ describe("pictures in the sidebar", () => {
     await within(sidebar()).findByRole("button", { name: "Checkout assistant", description: "Switch project" });
     await waitFor(() => expect(container.querySelector('img[src="/avatars/checkout.webp"]')).not.toBeNull());
     expect(container.querySelector('img[src="/avatars/org.webp"]')).not.toBeNull();
+  });
+});
+
+describe("organization pictures in the switcher's menu", () => {
+  it("shows each organization's picture, or its initial without one", async () => {
+    const second = { org_id: "org_globex", org_name: "Globex" };
+    signedIn({
+      session: whoAmI({ memberships: [membership({ org_avatar_url: "/avatars/org.webp" }), membership(second)] }),
+      memberships: [myMembership({ org_avatar_url: "/avatars/org.webp" }), myMembership(second)],
+    });
+    const { user } = await renderApp(`/orgs/${ORG}/projects`);
+    await user.click(await screen.findByRole("button", { name: "Northwind Labs", description: "Switch or open settings" }));
+    const menu = await screen.findByRole("menu");
+    await waitFor(() =>
+      expect(within(menu).getByRole("menuitemradio", { name: "Northwind Labs" }).querySelector('img[src="/avatars/org.webp"]')).not.toBeNull(),
+    );
+    expect(within(menu).getByRole("menuitemradio", { name: "Globex" })).toHaveTextContent(/^GGlobex$/);
   });
 });
 
