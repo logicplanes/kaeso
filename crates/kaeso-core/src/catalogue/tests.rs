@@ -1200,6 +1200,105 @@ fn adaptive_thinking_becomes_a_budget_on_a_claude_model_without_it() {
 }
 
 #[test]
+fn a_thinking_budget_becomes_adaptive_thinking_on_a_claude_model_that_refuses_budgets() {
+    use DialectId::{AnthropicMessages as A, Gemini as G};
+    let reasoning = |req: &Request| {
+        let (Request::Generate(g) | Request::CountTokens(g)) = req else {
+            panic!()
+        };
+        let r = g.reasoning.clone().unwrap();
+        (r.mode, r.effort, r.budget_tokens)
+    };
+    let adaptive = |effort| (Some(ReasoningMode::Adaptive), Some(effort), None);
+    for (provider, model) in [
+        ("anthropic", "claude-sonnet-5-5"),
+        ("anthropic", "claude-opus-4-7"),
+        ("anthropic", "claude-fable-5-2"),
+        ("amazon-bedrock", "us.anthropic.claude-sonnet-5"),
+    ] {
+        let claude = eff(&entry(provider, model));
+        for (budget, effort) in [
+            (512, ReasoningEffort::Low),
+            (1_024, ReasoningEffort::Low),
+            (8_192, ReasoningEffort::Medium),
+            (32_000, ReasoningEffort::High),
+        ] {
+            let mut req = Request::Generate(with_budget(budget, ReasoningMode::Enabled));
+            let plan = prepare(&mut req, A, &claude).unwrap();
+            assert_eq!(plan.adapted, ["thinking"], "{model} {budget}");
+            assert!(plan.left_out.is_empty(), "{model} {budget}");
+            assert_eq!(reasoning(&req), adaptive(effort), "{model} {budget}");
+        }
+    }
+
+    let sonnet55 = eff(&entry("anthropic", "claude-sonnet-5-5"));
+    let mut req = Request::Generate(with_budget(1_024, ReasoningMode::Enabled));
+    let plan = prepare(&mut req, G, &sonnet55).unwrap();
+    assert_eq!(plan.adapted, ["generationConfig.thinkingConfig"]);
+    assert_eq!(reasoning(&req), adaptive(ReasoningEffort::Low));
+
+    let mut req = Request::CountTokens(with_budget(8_192, ReasoningMode::Enabled));
+    let plan = prepare(&mut req, A, &sonnet55).unwrap();
+    assert_eq!(plan.adapted, ["thinking"], "counting tokens too");
+    assert_eq!(reasoning(&req), adaptive(ReasoningEffort::Medium));
+
+    let mut both = with_budget(1_024, ReasoningMode::Enabled);
+    both.reasoning.as_mut().unwrap().effort = Some(ReasoningEffort::High);
+    let mut req = Request::Generate(both);
+    prepare(&mut req, A, &sonnet55).unwrap();
+    assert_eq!(
+        reasoning(&req),
+        adaptive(ReasoningEffort::High),
+        "an effort sent beside the budget wins"
+    );
+
+    let mut off = with_budget(1_024, ReasoningMode::Enabled);
+    off.reasoning.as_mut().unwrap().effort = Some(ReasoningEffort::None);
+    let mut req = Request::Generate(off);
+    prepare(&mut req, A, &sonnet55).unwrap();
+    assert_eq!(
+        reasoning(&req),
+        (
+            Some(ReasoningMode::Disabled),
+            Some(ReasoningEffort::None),
+            None
+        ),
+        "an effort of `none` turns thinking off"
+    );
+
+    for mode in [ReasoningMode::Adaptive, ReasoningMode::Disabled] {
+        let mut g = user(vec![Block::text("hi")]);
+        let mut r = ReasoningConfig::default();
+        r.mode = Some(mode.clone());
+        g.reasoning = Some(r);
+        let mut req = Request::Generate(g);
+        let plan = prepare(&mut req, G, &sonnet55).unwrap();
+        assert!(plan.adapted.is_empty(), "{mode:?} without a budget");
+        assert_eq!(reasoning(&req).0, Some(mode));
+    }
+
+    let mut req = Request::Generate(with_budget(1_024, ReasoningMode::Disabled));
+    let plan = prepare(&mut req, A, &sonnet55).unwrap();
+    assert!(plan.adapted.is_empty(), "thinking off stays off");
+
+    for (provider, model) in [
+        ("anthropic", "claude-haiku-4-5"),
+        ("anthropic", "claude-opus-4-6"),
+        ("minimax", "MiniMax-M3"),
+    ] {
+        let keeps = eff(&entry(provider, model));
+        let mut req = Request::Generate(with_budget(2_048, ReasoningMode::Enabled));
+        let plan = prepare(&mut req, A, &keeps).unwrap();
+        assert!(plan.adapted.is_empty(), "{model} keeps its budget");
+        assert_eq!(
+            reasoning(&req),
+            (Some(ReasoningMode::Enabled), None, Some(2_048)),
+            "{model}"
+        );
+    }
+}
+
+#[test]
 fn an_effort_or_adaptive_thinking_a_model_cannot_take_is_left_out() {
     use DialectId::{AnthropicMessages as A, OpenAiResponses as R};
     let claude_code = || {

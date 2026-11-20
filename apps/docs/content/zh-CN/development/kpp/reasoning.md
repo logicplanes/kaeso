@@ -23,6 +23,7 @@ Anthropic 对其思考块签名，OpenAI 对其推理 item 加密，Gemini 则�
 | 推理强度 `low` 到 `max` | 支持自适应思考的 Anthropic 模型 | 采用该推理强度的自适应思考 |
 | 推理强度 `low` 到 `max` | 不支持自适应思考的 Anthropic 模型 | `enabled` 思考，预算取自下表 |
 | 只有预算 | Anthropic | 采用该预算的 `enabled` 思考 |
+| 只有预算 | 拒绝预算的 Claude Opus 4.7 及更新版本 | 自适应思考，推理强度取该预算对应的级别（见下表），除非请求已指定推理强度；推理强度为 `none` 时关闭思考 |
 | Anthropic 预算 | OpenAI | 取自下表的推理强度 |
 | Anthropic `thinking: {type: "disabled"}` | OpenAI | 推理强度 `none` |
 | 推理强度 `minimal` 到 `high` | Gemini | 对应级别的 `thinkingLevel`；`xhigh` 和 `max` 变为 `HIGH` |
@@ -65,7 +66,7 @@ Claude Code 会在每个请求中发送 `output_config.effort` 和自适应思�
 
 模型的回答与没有该设置时相同。每个被省略的设置都会以应用中的字段名出现在回复的 `kaeso-left-out` 响应头中，例如 `output_config.effort` 或 `thinking`，也会记录在网关日志中；记录的请求正文保留应用的设置。网关在编码之前执行这一步，因此同一格式内也适用。
 
-对于有推理强度等级的模型，其未列出的推理强度会变为它所列出的最近等级，例如 `kimi-k3`（`low`、`high`、`max`）上的 `medium` 变为 `low`：距离相同时取较低的等级，但绝不取会关闭推理的 `none`。对不支持自适应思考的 Claude 模型（例如 Claude Haiku 4.5）使用的自适应思考，会变为带该推理强度所对应预算的 `enabled` 思考（[推理强度与预算](#推理强度与预算)），没有推理强度时为 8,192 个 token，`none` 时则关闭思考。这两种改动都会以应用中的字段名出现在回复的 `kaeso-adapted` 响应头中，例如 `output_config.effort` 或 `thinking`。Claude Code 在对话中途系统消息的 `output_config` 中重复的推理强度会跟随请求的推理强度：随之改变，也随之以 `messages[i].output_config.effort` 的名义被省略。网关仍会拒绝它不认识的推理强度，以及发给不支持推理的模型的 `enabled` 思考和思考预算。
+对于有推理强度等级的模型，其未列出的推理强度会变为它所列出的最近等级，例如 `kimi-k3`（`low`、`high`、`max`）上的 `medium` 变为 `low`：距离相同时取较低的等级，但绝不取会关闭推理的 `none`。对不支持自适应思考的 Claude 模型（例如 Claude Haiku 4.5）使用的自适应思考，会变为带该推理强度所对应预算的 `enabled` 思考（[推理强度与预算](#推理强度与预算)），没有推理强度时为 8,192 个 token，`none` 时则关闭思考。反过来，发给拒绝预算的 Claude Opus 4.7 及更新版本的思考预算，例如 Gemini 应用的 `thinkingBudget`，会变为采用该预算所对应推理强度的自适应思考。目录将这些模型标记为只接受默认温度，因为 Anthropic 在同一批模型中同时取消了采样设置和预算；Claude 4.6 仍接受预算。这些改动都会以应用中的字段名出现在回复的 `kaeso-adapted` 响应头中，例如 `output_config.effort`、`thinking` 或 `generationConfig.thinkingConfig`。Claude Code 在对话中途系统消息的 `output_config` 中重复的推理强度会跟随请求的推理强度：随之改变，也随之以 `messages[i].output_config.effort` 的名义被省略。网关仍会拒绝它不认识的推理强度，以及发给不支持推理的模型的 `enabled` 思考和思考预算。
 
 ## 始终推理的模型
 
