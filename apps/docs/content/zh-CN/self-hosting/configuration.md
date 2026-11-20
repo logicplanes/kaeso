@@ -129,7 +129,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | `KAESO_SMTP_HOST`<br>`smtp.host` | 文本 | — | SMTP 服务器。除非 `mail.transport` 为 `log`，否则必填。 |
 | `KAESO_SMTP_PORT`<br>`smtp.port` | 整数 | `587` | SMTP 端口。 |
 | `KAESO_SMTP_TLS`<br>`smtp.tls` | 文本 | `starttls` | `starttls`，隐式 TLS 用 `tls`（通常是端口 465），`none` 仅用于本地邮件捕获工具。 |
-| `KAESO_SMTP_USER`<br>`smtp.user` | 文本 | — | SMTP 用户名，服务器需要时填写。用户名和密码必须同时设置：只设置其中一个，网关会在启动时停止。 |
+| `KAESO_SMTP_USER`<br>`smtp.user` | 文本 | — | SMTP 用户名，服务器需要时填写。设置密码时必填，设置用户名时也必须设置密码：没有密码时，Kaeso 会忽略用户名，不经身份验证发送邮件，并在启动时发出警告。Kaeso 0.8.0 将拒绝启动。 |
 | `KAESO_SMTP_PASSWORD`<br>`smtp.password` | 文本，机密 | — | SMTP 密码。 |
 | `KAESO_SMTP_FROM`<br>`smtp.from` | 文本 | `Kaeso <kaeso@localhost>` | 每封邮件的发件人。`compose.yaml` 设为 `Kaeso <kaeso@` 加您的域名。 |
 | `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | 文本 | `smtp` | `smtp`，或 `log`：只记录每封邮件的类型，从不记录收件人或内容。 |
@@ -169,7 +169,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | --- | --- | --- | --- |
 | `KAESO_KPMR_SYNC`<br>`kpmr.sync` | 布尔 | `true` | 从 KPMR（Kaeso Provider & Model Registry）获取模型数据。没有互联网的实例请关闭，此时使用内置快照。 |
 | `KAESO_KPMR_URL`<br>`kpmr.url` | 文本 | `https://kpmr.kaeso.app/v1/catalogue` | 从哪里获取 KPMR 目录：KPMR 或其镜像。必须使用 `https`，localhost 上可用 `http`；重定向必须留在同一主机并使用 `https`，最多 3 次。 |
-| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | 文本 | `auto` | 多久向 KPMR 询问一次变更：`auto` 跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；也可设为至少 5 分钟的时长，例如 `6h`。 |
+| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | 文本 | `auto` | 多久向 KPMR 询问一次变更：`auto` 跟随目录的 `refresh_seconds`，限定在 5 分钟到 24 小时之间；也可设为至少 5 分钟的时长，例如 `6h`。设置大于零但更短的时长时，Kaeso 会在启动时发出警告并将其提高到 5 分钟；Kaeso 0.8.0 将拒绝该值。 |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | 文本 | — | 除 KPMR 内置密钥外还要信任的密钥，以逗号分隔，每个为 `<key id>:<base64 Ed25519 public key>`，用于您自己的注册表；签名无法由任何受信任密钥验证的目录会被拒绝。 |
 
 ### 汇率
@@ -272,7 +272,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | 可以访问 MCP 服务器的私有、环回或其他非公网网络，以逗号分隔，例如 `10.0.0.0/8`。明文 `http` 只能访问这些网络。 |
-| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | 网关向每个 MCP 服务器查询其工具的频率，用于发现新增、变更和移除的工具。至少一分钟。 |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | 网关向每个 MCP 服务器查询其工具的频率，用于发现新增、变更和移除的工具。至少一分钟：设置更短的间隔时，Kaeso 会在启动时发出警告并将其提高到一分钟；Kaeso 0.8.0 将拒绝该值。 |
 | `KAESO_MCP_PORTAL_RESPONSE_LIMIT`<br>`mcp_portal.response_limit` | text | `4MiB` | 项目的 MCP 门户为一次工具调用转发的最大回答。更大的回答会以错误结束调用。 |
 | `KAESO_MCP_PORTAL_CALL_TIMEOUT`<br>`mcp_portal.call_timeout` | text | `60s` | 项目的 MCP 门户等待 MCP 服务器完成一次工具调用的时长。1s 到 1h。 |
 
