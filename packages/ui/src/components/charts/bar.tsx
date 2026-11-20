@@ -19,6 +19,7 @@ import {
   readableTicks,
   tickLabel,
   useChartKeys,
+  useChartPointer,
   useSize,
   useTweened,
   wholeTicks,
@@ -26,6 +27,10 @@ import {
 } from "./core.js";
 import { axisRoom, finite, onlyZero, fitLabel, hasPoints, valueExtent } from "./domain.js";
 import { edgeColor } from "./marks.js";
+
+// Room above the plot, and below it for the time or category labels.
+const PLOT_TOP = 8;
+const PLOT_BOTTOM = 28;
 
 export const KAESO_BAR_CHART_VARIANTS = {
   layout: {
@@ -140,6 +145,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
   const write = (v: number) => (Number.isFinite(v) ? format(v) : "–");
   const [box, size] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<{ i: number; y: number } | null>(null);
+  const pointer = useChartPointer(() => setHover(null));
   const [focus, setFocus] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const horizontal = layout === "horizontal";
@@ -160,7 +166,13 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
   const palette = seriesColors(series.map((s) => s.id));
   const color = (s: BarSeries) => s.color ?? palette.get(s.id)!;
   const axisLabel = tickLabel(formatValue ?? formatTokens);
-  const ticks = empty ? [] : onlyZero(flat) ? [0] : wholeTicks(readableTicks(axis, axisLabel), finite(flat)).filter((v) => v >= lo - 1e-9 && v <= hi + 1e-9);
+  const ticks = empty
+    ? []
+    : onlyZero(flat)
+      ? [0]
+      : wholeTicks(readableTicks(axis, axisLabel, 4, horizontal ? Infinity : height - PLOT_TOP - PLOT_BOTTOM), finite(flat)).filter(
+          (v) => v >= lo - 1e-9 && v <= hi + 1e-9,
+        );
   const total = (ci: number) => {
     const known = finite(shown.map((s) => s.values[ci] ?? NaN));
     return known.length ? known.reduce((a, n) => a + n, 0) : NaN;
@@ -178,7 +190,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
         bottom: 0,
         left: Math.round(Math.min(160, cap, Math.max(48, widestCategory + 12 + 4))),
       }
-    : { top: 8, right: axisRoom(ticks.map(axisLabel), { max: cap }), bottom: 28, left: 0 };
+    : { top: PLOT_TOP, right: axisRoom(ticks.map(axisLabel), { max: cap }), bottom: PLOT_BOTTOM, left: 0 };
   const w = Math.max(0, size.width - M.left - M.right);
   const h = Math.max(0, height - M.top - M.bottom);
   const band = scaleBand<string>()
@@ -386,12 +398,11 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
                           width={horizontal ? size.width : band.step()}
                           height={horizontal ? band.step() : h}
                           fill="transparent"
-                          onPointerMove={(e) => {
+                          {...pointer((e) => {
                             if (quiet) return;
                             const r = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect();
                             setHover({ i: ci, y: Math.round(e.clientY - r.top) });
-                          }}
-                          onPointerLeave={() => setHover(null)}
+                          })}
                         />
                         {horizontal && (
                           <>

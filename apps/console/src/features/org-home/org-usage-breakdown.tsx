@@ -1,21 +1,7 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Avatar,
-  Badge,
-  Button,
-  DataTable,
-  Empty,
-  Link,
-  ModelLabel,
-  ProviderBadge,
-  Section,
-  Segmented,
-  Text,
-  col,
-  icons,
-  type SortingState,
-} from "@logicplanes/kaeso-ui";
+import { useNavigate } from "@tanstack/react-router";
+import { Avatar, Badge, Button, DataTable, Empty, Link, ModelLabel, ProviderBadge, Section, Text, col, icons, type SortingState } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { ProjectView, UsageRow } from "~/api/generated/types";
 import { serviceAccountLookupQuery } from "~/api/queries/members";
@@ -30,6 +16,8 @@ import { usePhone } from "~/shell/use-phone";
 import { costWidth, UsageCost } from "~/kaeso/media-usage";
 import { costColumns, saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
 import { useOrgMoney } from "~/kaeso/org-money";
+import { columnWidth } from "~/format/text-width";
+import { GroupBy } from "~/kaeso/group-by";
 import { t } from "~/i18n";
 
 export type OrgBreakdown = "project" | "model" | "member" | "billed_to";
@@ -52,9 +40,12 @@ const heading = (by: OrgBreakdown) =>
 const NOTABLE_ERROR_RATE = 0.05;
 const LABEL_WIDTH = 200;
 const LABEL_MIN_WIDTH = 120;
+// Leaves a 360px phone room for the requests beside a cost with a second line.
+const PHONE_LABEL_MIN_WIDTH = 96;
 const REQUESTS_WIDTH = 104;
 const ERRORS_WIDTH = 112;
 const NUMBER_WIDTH = 88;
+const VALUE_MAX = 168;
 
 export function OrgUsageBreakdown({
   org,
@@ -76,6 +67,7 @@ export function OrgUsageBreakdown({
   ready?: boolean | undefined;
 }) {
   const session = useSession();
+  const navigate = useNavigate();
   const phone = usePhone();
   const rights = useOrgRights(org);
   const providers = useProviders(org);
@@ -135,13 +127,7 @@ export function OrgUsageBreakdown({
     if (by === "billed_to") {
       if (r.key === "none") return <Text tone="secondary">{t("orgHome.noProviderSent", "No provider")}</Text>;
       const k = paidBy(r.key);
-      if (!k)
-        return (
-          <span className="flex min-w-0 items-center gap-8">
-            <Text tone="secondary">{t("orgHome.removedKey", "Removed key")}</Text>
-            <Id value={r.key} />
-          </span>
-        );
+      if (!k) return <Pair phone={phone} main={<Text tone="secondary">{t("orgHome.removedKey", "Removed key")}</Text>} sub={<Id value={r.key} />} />;
       return (
         <span className="flex min-w-0 items-center gap-8">
           <ProviderBadge provider={k.provider} name={providers.name(k.provider)} />
@@ -153,25 +139,29 @@ export function OrgUsageBreakdown({
     if (kind === "service_account") {
       const found = named.find((n) => n.account.id === id);
       return (
-        <span className="flex min-w-0 items-center gap-8">
-          <Text truncate>{found?.account.name ?? t("orgHome.serviceAccount", "Service account")}</Text>
-          {found ? (
-            <Text variant="small" tone="secondary" truncate>
-              {t("orgHome.serviceAccountIn", "Service account in {project}", { project: found.project })}
-            </Text>
-          ) : (
-            <Id value={id} />
-          )}
-        </span>
+        <Pair
+          phone={phone}
+          main={<Text truncate>{found?.account.name ?? t("orgHome.serviceAccount", "Service account")}</Text>}
+          sub={
+            found ? (
+              <Text variant={phone ? "caption" : "small"} tone={phone ? "tertiary" : "secondary"} truncate>
+                {t("orgHome.serviceAccountIn", "Service account in {project}", { project: found.project })}
+              </Text>
+            ) : (
+              <Id value={id} />
+            )
+          }
+        />
       );
     }
     const m = members.data?.find((x) => x.user.id === id);
     if (!m)
       return (
-        <span className="flex min-w-0 items-center gap-8">
-          <Text tone="secondary">{members.data ? t("orgHome.formerMember", "Former member") : t("orgHome.member", "Member")}</Text>
-          <Id value={id} />
-        </span>
+        <Pair
+          phone={phone}
+          main={<Text tone="secondary">{members.data ? t("orgHome.formerMember", "Former member") : t("orgHome.member", "Member")}</Text>}
+          sub={<Id value={id} />}
+        />
       );
     return (
       <span className="flex min-w-0 items-center gap-8">
@@ -183,24 +173,48 @@ export function OrgUsageBreakdown({
 
   const columns = [
     col.custom(
-      { id: "key", header: heading(by), size: LABEL_WIDTH, minWidth: LABEL_MIN_WIDTH, priority: 1, grow: true },
+      { id: "key", header: heading(by), size: LABEL_WIDTH, minWidth: phone ? PHONE_LABEL_MIN_WIDTH : LABEL_MIN_WIDTH, priority: 1, grow: true },
       (r: UsageRow) => r.key,
       (_v, r) => label(r),
     ),
     col.custom(
-      { id: "requests", header: t("common.requests", "Requests"), size: REQUESTS_WIDTH, priority: 1 },
+      {
+        id: "requests",
+        header: t("common.requests", "Requests"),
+        size: fit(
+          t("common.requests", "Requests"),
+          rows.map((r) => formatNumber(r.requests)),
+          phone ? NUMBER_WIDTH : REQUESTS_WIDTH,
+        ),
+        priority: 1,
+      },
       (r: UsageRow) => r.requests,
       (v: number) => <Text tabular>{formatNumber(v)}</Text>,
       { align: "end" },
     ),
     col.custom(
-      { id: "errors", header: t("orgHome.errors", "Errors"), size: ERRORS_WIDTH, priority: 2, tone: (r: UsageRow) => (notable(r) ? "danger" : undefined) },
+      {
+        id: "errors",
+        header: t("orgHome.errors", "Errors"),
+        size: fit(t("orgHome.errors", "Errors"), rows.map(errorsText), ERRORS_WIDTH),
+        priority: 2,
+        tone: (r: UsageRow) => (notable(r) ? "danger" : undefined),
+      },
       (r: UsageRow) => r.errors,
       (_v, r) => <Errors errors={r.errors} requests={r.requests} />,
       { align: "end" },
     ),
     col.custom(
-      { id: "tokens", header: t("common.tokens", "Tokens"), size: NUMBER_WIDTH, priority: 2 },
+      {
+        id: "tokens",
+        header: t("common.tokens", "Tokens"),
+        size: fit(
+          t("common.tokens", "Tokens"),
+          rows.map((r) => formatTokens(totalTokens(r))),
+          NUMBER_WIDTH,
+        ),
+        priority: 2,
+      },
       (r: UsageRow) => totalTokens(r),
       (v: number) => <Text tabular>{formatTokens(v)}</Text>,
       { align: "end" },
@@ -208,7 +222,16 @@ export function OrgUsageBreakdown({
     ...(showCost
       ? [
           col.custom(
-            { id: "cost", header: t("common.cost", "Cost"), size: costWidth(rows, NUMBER_WIDTH, phone), priority: 1 },
+            {
+              id: "cost",
+              header: t("common.cost", "Cost"),
+              size: fit(
+                t("common.cost", "Cost"),
+                rows.map((r) => money.period(r.converted_cost)),
+                costWidth(rows, NUMBER_WIDTH, phone),
+              ),
+              priority: 1,
+            },
             (r: UsageRow) => r.converted_cost ?? "",
             (_v: string, r: UsageRow) => <UsageCost row={r} money={money} />,
             { align: "end" },
@@ -241,14 +264,8 @@ export function OrgUsageBreakdown({
           : t("orgHome.breakdownHint", "Requests, errors and tokens in the period")
       }
       actions={
-        <span className="flex flex-wrap items-center gap-8">
-          <Segmented
-            aria-label={t("orgHome.groupBy", "Group by")}
-            size="sm"
-            value={by}
-            onValueChange={(v) => onByChange(v as OrgBreakdown)}
-            options={options()}
-          />
+        <span className="flex max-w-full min-w-0 flex-wrap items-center gap-8">
+          <GroupBy label={t("orgHome.groupBy", "Group by")} value={by} onChange={onByChange} options={options()} />
           <Button size="sm" variant="ghost" leadingIcon={icons.download} disabled={rows.length === 0} onClick={download}>
             {t("orgHome.downloadCsv", "Download CSV")}
           </Button>
@@ -263,6 +280,14 @@ export function OrgUsageBreakdown({
         sorting={sorting}
         onSortingChange={setSorting}
         manualSorting
+        // The whole row opens the project, so a phone gets a row-high target instead of the name's line.
+        {...(by === "project"
+          ? {
+              onRowClick: (r: UsageRow) => {
+                if (projects?.some((p) => p.id === r.key)) void navigate({ href: projectPath(org, r.key) });
+              },
+            }
+          : {})}
         loading={loading}
         error={usage.isError}
         onRetry={() => void usage.refetch()}
@@ -272,19 +297,36 @@ export function OrgUsageBreakdown({
   );
 }
 
+const errorRate = (r: Pick<UsageRow, "errors" | "requests">) => {
+  const rate = r.requests ? r.errors / r.requests : 0;
+  return formatNumber(rate, rate === 1 ? { style: "percent" } : { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 });
+};
+// The errors cell as text, to size its column: the rate and the count beside it.
+const errorsText = (r: UsageRow) => (r.errors === 0 ? "0" : `${errorRate(r)} ${formatNumber(r.errors)}`);
+const fit = (header: string, values: string[], min: number) => columnWidth(header, values, { min, max: VALUE_MAX });
+
 const notable = (r: UsageRow) => r.errors > 0 && r.requests > 0 && r.errors / r.requests >= NOTABLE_ERROR_RATE;
 
 function Errors({ errors, requests }: { errors: number; requests: number }) {
   if (errors === 0) return <Text tone="tertiary">0</Text>;
-  const rate = requests ? errors / requests : 0;
   return (
     <span className="inline-flex items-baseline gap-6">
       <Text variant="small" tone="tertiary" tabular>
-        {formatNumber(rate, rate === 1 ? { style: "percent" } : { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+        {errorRate({ errors, requests })}
       </Text>
       <Text tone="inherit" tabular>
         {formatNumber(errors)}
       </Text>
+    </span>
+  );
+}
+
+/** A row's name with what tells it apart: beside it, or under it on a phone, where the column is too narrow for both. */
+function Pair({ phone, main, sub }: { phone: boolean; main: ReactNode; sub: ReactNode }) {
+  return (
+    <span className={phone ? "flex min-w-0 flex-col" : "flex min-w-0 items-center gap-8"}>
+      {main}
+      {sub}
     </span>
   );
 }

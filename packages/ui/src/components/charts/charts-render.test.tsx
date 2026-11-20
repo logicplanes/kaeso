@@ -110,6 +110,56 @@ describe("TimeseriesChart", () => {
   });
 });
 
+describe("charts on a touch screen", () => {
+  const touch = (type: "pointerDown" | "pointerMove" | "pointerLeave" | "pointerCancel", el: Element, clientX = 320) =>
+    fireEvent[type](el, { pointerType: "touch", clientX, clientY: 100 });
+
+  it("shows a tapped point until a tap outside the chart, and hides it when the touch turns into a scroll", () => {
+    render(
+      <>
+        <TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />
+        <p>Elsewhere</p>
+      </>,
+    );
+    const hit = screen.getByRole("group", { name: "Requests" }).querySelector("rect[fill=transparent]")!;
+    const tip = () => screen.getByRole("group", { name: "Requests" }).querySelector("div[role=presentation]");
+    touch("pointerDown", hit);
+    expect(tip()).toHaveTextContent("gpt-5");
+    touch("pointerLeave", hit);
+    expect(tip()).not.toBeNull();
+    fireEvent.pointerDown(hit, { pointerType: "touch", clientX: 40, clientY: 100 });
+    expect(tip()).not.toBeNull();
+    fireEvent.pointerDown(screen.getByText("Elsewhere"), { pointerType: "touch" });
+    expect(tip()).toBeNull();
+    touch("pointerDown", hit);
+    touch("pointerCancel", hit);
+    expect(tip()).toBeNull();
+  });
+
+  it("follows a finger that slides along the chart, and a mouse only while it hovers", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    const hit = screen.getByRole("group", { name: "Requests" }).querySelector("rect[fill=transparent]")!;
+    const heading = () => screen.getByRole("group", { name: "Requests" }).querySelector("div[role=presentation] > div")?.textContent;
+    touch("pointerDown", hit, 20);
+    const first = heading();
+    touch("pointerMove", hit, 600);
+    expect(heading()).not.toBe(first);
+    fireEvent.pointerDown(document.body, { pointerType: "touch" });
+    fireEvent.pointerMove(hit, { pointerType: "mouse", clientX: 320, clientY: 100 });
+    expect(heading()).toBeTruthy();
+    fireEvent.pointerLeave(hit, { pointerType: "mouse" });
+    expect(heading()).toBeUndefined();
+  });
+
+  it("shows a tapped bar's category", () => {
+    render(<BarChart aria-label="Tokens" categories={["Mon", "Tue"]} series={[{ id: "input", label: "Input", values: [10, 20] }]} />);
+    const hit = screen.getByRole("group", { name: "Tokens" }).querySelectorAll("rect[fill=transparent]")[1]!;
+    fireEvent.pointerDown(hit, { pointerType: "touch", clientY: 80 });
+    fireEvent.pointerLeave(hit, { pointerType: "touch" });
+    expect(screen.getByRole("group", { name: "Tokens" }).querySelector("div[role=presentation]")).toHaveTextContent("Tue");
+  });
+});
+
 describe("BarChart", () => {
   const categories = ["Mon", "Tue", "Wed", "Thu"];
   const bars = [

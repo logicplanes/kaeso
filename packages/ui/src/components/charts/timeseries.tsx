@@ -21,6 +21,7 @@ import {
   readableTicks,
   tickLabel,
   useChartKeys,
+  useChartPointer,
   useSize,
   useTweened,
   wholeTicks,
@@ -28,6 +29,10 @@ import {
 } from "./core.js";
 import { axisRoom, finite, onlyZero, hasPoints, valueExtent } from "./domain.js";
 import { wallClock, wallDay, zoneTicks, type WallClock } from "./time-axis.js";
+
+// Room above the plot, and below it for the time or category labels.
+const PLOT_TOP = 8;
+const PLOT_BOTTOM = 28;
 
 export const KAESO_TIMESERIES_CHART_VARIANTS = {
   kind: {
@@ -168,9 +173,9 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   const drawn = useTweened([...flatValues.map((v) => (Number.isFinite(v) ? v : 0)), niceLo, niceHi], !!state.loading);
   const lo = drawn[drawn.length - 2] ?? niceLo;
   const hi = drawn[drawn.length - 1] ?? niceHi;
-  const yTicks = empty ? [] : onlyZero(flatValues) ? [0] : wholeTicks(readableTicks(axis, axisLabel), finite(flatValues));
+  const yTicks = empty ? [] : onlyZero(flatValues) ? [0] : wholeTicks(readableTicks(axis, axisLabel, 4, height - PLOT_TOP - PLOT_BOTTOM), finite(flatValues));
   const inView = (v: number) => v >= Math.min(lo, hi) - 1e-9 && v <= Math.max(lo, hi) + 1e-9;
-  const M = { top: 8, right: axisRoom(yTicks.map(axisLabel), { max: size.width ? size.width * 0.4 : Infinity }), bottom: 28, left: 0 };
+  const M = { top: PLOT_TOP, right: axisRoom(yTicks.map(axisLabel), { max: size.width ? size.width * 0.4 : Infinity }), bottom: PLOT_BOTTOM, left: 0 };
   const w = Math.max(0, size.width - M.left - M.right);
   const h = Math.max(0, height - M.top - M.bottom);
   axis.range([h, 0]);
@@ -258,7 +263,8 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
   const palette = useMemo(() => seriesColors(series.map((s) => s.id)), [series]);
   const color = (s: TimeSeries) => s.color ?? palette.get(s.id)!;
   const bis = bisector((d: Date) => d.getTime()).center;
-  const onMove = (e: React.PointerEvent<SVGRectElement>) => {
+  const pointer = useChartPointer(() => setHover(null));
+  const onMove = (e: React.PointerEvent<SVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - r.left;
     const i = ordinal ? Math.max(0, Math.min(times.length - 1, Math.floor(px / slot))) : bis(times, x.invert(px));
@@ -450,7 +456,7 @@ export const TimeseriesChart = forwardRef<HTMLDivElement, TimeseriesChartProps>(
                       )}
                   </g>
                 )}
-                <rect width={w} height={h} fill="transparent" onPointerMove={onMove} onPointerLeave={() => setHover(null)} />
+                <rect width={w} height={h} fill="transparent" {...pointer(onMove)} />
               </g>
             </svg>
           )}

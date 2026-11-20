@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { forwardRef, memo, useDeferredValue, useEffect, useState, type ReactNode } from "react";
+import { forwardRef, memo, useDeferredValue, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
@@ -315,10 +315,21 @@ export interface LegendItem {
 
 export const tickLabel = (format: (v: number) => string) => (v: number) => format(v).replace(/[.,]00(?=\D*$)/, "");
 
-export function readableTicks(scale: { ticks: (count: number) => number[]; domain: () => number[] }, label: (v: number) => string, count = 4): number[] {
+// A 12px axis label needs this much room above the next one to read on its own.
+const TICK_GAP = 22;
+
+/** Value axis ticks whose labels differ, and, given the axis's length, that sit at least `TICK_GAP` apart. */
+export function readableTicks(
+  scale: { ticks: (count: number) => number[]; domain: () => number[] },
+  label: (v: number) => string,
+  count = 4,
+  length = Infinity,
+): number[] {
   for (let n = count; n >= 1; n--) {
     const ticks = scale.ticks(n);
-    if (new Set(ticks.map(label)).size === ticks.length) return ticks;
+    const [lo = 0, hi = 0] = scale.domain();
+    const roomy = ticks.length < 2 || n === 1 || (length * Math.abs(ticks[1]! - ticks[0]!)) / Math.abs(hi - lo || 1) >= TICK_GAP;
+    if (roomy && new Set(ticks.map(label)).size === ticks.length) return ticks;
   }
   const [lo = 0, hi = 0] = scale.domain();
   return label(lo) === label(hi) ? [lo] : [lo, hi];
@@ -501,6 +512,44 @@ export function useChartKeys(count: number, options: { vertical?: boolean | unde
     },
   };
   return { index: index !== null && index < count ? index : null, props };
+}
+
+type HitEvent = React.PointerEvent<SVGElement>;
+
+/**
+ * Pointer handlers for a chart's hit areas. A mouse or pen shows a point while it hovers; a touch has no hover, so a tap
+ * shows it until a tap outside the chart, and a swipe that turns into a scroll hides it.
+ */
+export function useChartPointer(hide: () => void) {
+  const [tapped, setTapped] = useState<Element | null>(null);
+  const hideRef = useRef(hide);
+  hideRef.current = hide;
+  useEffect(() => {
+    if (!tapped) return;
+    const away = (e: PointerEvent) => {
+      if (e.target instanceof Node && tapped.contains(e.target)) return;
+      setTapped(null);
+      hideRef.current();
+    };
+    document.addEventListener("pointerdown", away, true);
+    return () => document.removeEventListener("pointerdown", away, true);
+  }, [tapped]);
+  return (show: (e: HitEvent) => void) => ({
+    onPointerDown: (e: HitEvent) => {
+      if (e.pointerType !== "touch") return;
+      setTapped(e.currentTarget.ownerSVGElement ?? e.currentTarget);
+      show(e);
+    },
+    // A touch moves only while the finger is down, so sliding along the chart moves the point with it.
+    onPointerMove: show,
+    onPointerLeave: (e: HitEvent) => {
+      if (e.pointerType !== "touch") hide();
+    },
+    onPointerCancel: () => {
+      setTapped(null);
+      hide();
+    },
+  });
 }
 
 export interface ChartLiveProps {

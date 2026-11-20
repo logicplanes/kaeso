@@ -16,10 +16,11 @@ function usage(rows: Partial<Record<string, { data: UsageRow[] } | Response>>) {
 
 const wrap = (rows: UsageRow[]) => ({ data: rows });
 
-const breakdown = () => screen.findByRole("table", { name: "Usage breakdown" });
+// The breakdown by project opens a project from its rows, which makes it a grid.
+const breakdown = () => screen.findByLabelText("Usage breakdown", { selector: "[role=grid], [role=table]" });
 const usageQueries = () => requests("GET", USAGE).map((r) => Object.fromEntries(r.query));
 
-function onPhone() {
+function onPhone(width = 327) {
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(max-width: 639px)",
     media: query,
@@ -29,11 +30,11 @@ function onPhone() {
     removeListener() {},
   }));
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-    width: 327,
+    width,
     height: 0,
     top: 0,
     left: 0,
-    right: 327,
+    right: width,
     bottom: 0,
     x: 0,
     y: 0,
@@ -60,8 +61,60 @@ describe("organization analytics", () => {
         .getAllByRole("columnheader")
         .map((h) => h.textContent),
     ).toEqual(["Project", "Requests", "Cost"]);
-    expect(link.closest("[role=cell]")?.textContent).toBe("Checkout assistant");
+    expect(link.closest("[role=gridcell]")?.textContent).toBe("Checkout assistant");
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("$2.00");
+  });
+
+  it("keeps requests on a 360px phone beside a cost with a second line, and opens a project from anywhere on its row", async () => {
+    onPhone(312);
+    signedIn();
+    usage({ project: wrap([usageRow(PROJECT, { requests: 30, cost: "2.00", converted_cost: "2.00", unpriced: 1 })]) });
+    const { user, router } = await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
+
+    const table = await breakdown();
+    await within(table).findByRole("link", { name: "Checkout assistant" });
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Project", "Requests", "Cost"]);
+    expect(within(table).getAllByRole("row")[1]).toHaveTextContent("+1 unknown");
+    await user.click(within(within(table).getAllByRole("row")[1] as HTMLElement).getAllByRole("gridcell")[1] as HTMLElement);
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/orgs/${ORG}/projects/${PROJECT}`));
+  });
+
+  it("groups from a menu on a phone and puts a service account's project under its name", async () => {
+    onPhone();
+    signedIn();
+    on("GET", "orgs/:org/members", page([member()]));
+    on("GET", "orgs/:org/projects/:project/service-accounts", ({ params }: { params: Record<string, string> }) =>
+      page(params.project === PROJECT ? [serviceAccount()] : []),
+    );
+    usage({
+      project: wrap([usageRow(PROJECT, { requests: 30 })]),
+      member: wrap([usageRow("service_account:sa_bot", { requests: 20 })]),
+    });
+    const { user, router } = await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
+
+    await breakdown();
+    expect(screen.queryByRole("radiogroup", { name: "Group by" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Group by" }));
+    await user.click(await screen.findByRole("option", { name: "By member" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ by: "member" }));
+    const name = await within(await breakdown()).findByText("Nightly bot");
+    const where = within(name.parentElement as HTMLElement).getByText("Service account in Checkout assistant");
+    expect(name.parentElement).toHaveClass("flex-col");
+    expect(where.parentElement).toBe(name.parentElement);
+  });
+
+  it("sizes the token column for German values", async () => {
+    signedIn();
+    usage({ project: wrap([usageRow(PROJECT, { requests: 30, input_tokens: 137_400_000, output_tokens: 100_000 })]) });
+    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`, { locale: "de" });
+    const table = await screen.findByLabelText("Nutzung im Detail", { selector: "[role=grid]" });
+    await within(table).findByText("137,5 Mio.");
+    const header = within(table).getAllByRole("row")[0] as HTMLElement;
+    expect(header.style.gridTemplateColumns).toMatch(/^minmax\([^)]*\) 104px 112px 104px/);
   });
 
   it("gives Requests room for its header and the sort arrow beside it", async () => {
@@ -116,7 +169,7 @@ describe("organization analytics", () => {
     const table = await breakdown();
     await within(table).findByRole("link", { name: "Checkout assistant" });
     const rows = within(table).getAllByRole("row").slice(1);
-    expect(rows.map((r) => within(r).getAllByRole("cell")[0]?.textContent)).toEqual([
+    expect(rows.map((r) => within(r).getAllByRole("gridcell")[0]?.textContent)).toEqual([
       "CCheckout assistant",
       "SSupport triage",
       "OOld pilotArchived",

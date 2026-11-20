@@ -48,6 +48,8 @@ interface Entity {
   change: number | undefined;
 }
 
+// Leaves a 360px phone room for the requests beside a cost with a second line.
+const PHONE_NAME_MIN_WIDTH = 96;
 const MOVERS = 5;
 const SHARES = 5;
 
@@ -190,7 +192,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
   };
   const columns = [
     col.custom(
-      { id: "name", header: dimensionTitle(dim), size: 220, minWidth: 140, priority: 1, grow: true },
+      { id: "name", header: dimensionTitle(dim), size: 220, minWidth: phone ? PHONE_NAME_MIN_WIDTH : 140, priority: 1, grow: true },
       (e: Entity) => e.name,
       (_v, e) => label(e),
     ),
