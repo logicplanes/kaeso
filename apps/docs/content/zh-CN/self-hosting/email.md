@@ -19,7 +19,7 @@ KAESO_SMTP_PASSWORD=…
 KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 ```
 
-用 `docker compose up -d --wait` 应用。不设置 `KAESO_SMTP_FROM` 时，Kaeso 以您域名下的 `kaeso@` 发信，因此请设置一个 SMTP 服务器允许使用的发件地址。服务器不需要登录时，省略用户名和密码；两者要么都设置，要么都不设置，只设置其中一个会让网关在启动时停止。[配置](configuration.md#电子邮件)列出了每项邮件设置及其取值。
+用 `docker compose up -d --wait` 应用。不设置 `KAESO_SMTP_FROM` 时，Kaeso 以您域名下的 `kaeso@` 发信，因此请设置一个 SMTP 服务器允许使用的发件地址。服务器不需要登录时，省略用户名和密码；两者要么都设置，要么都不设置：只设置密码会让网关在启动时停止，只设置用户名则不经身份验证发送邮件并记录一条警告。[配置](configuration.md#电子邮件)列出了每项邮件设置及其取值。
 
 ## 发送测试邮件
 
