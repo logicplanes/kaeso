@@ -32,7 +32,7 @@ Kaeso translates every request rather than passing it through, and sends it once
 
 ## The key
 
-The gateway reads the API key from `x-api-key`, or else from `Authorization: Bearer`. The key decides the project, and acts there with the rights of its member or service account.
+The gateway reads the API key from `x-api-key`, `x-goog-api-key` or `xi-api-key`, or else from `Authorization: Bearer`. The key decides the project, and acts there with the rights of its member or service account.
 
 The key needs inference access, and its owner needs the right `api.request`. An organization's platform keys never call models.
 
@@ -68,7 +68,7 @@ The catalogue entry says what the model can do. Kaeso answers 400 when a request
 - embeddings from a generation model, or text from an embeddings model;
 - decisions from a generation model, or text from a model that only makes decisions ([Decisions API](../api/decisions.md#what-is-refused)).
 
-A model without effort levels gets no effort instead, a model that doesn't reason no adaptive thinking, and a model that takes only the default temperature no temperature. The reply's `kaeso-left-out` header names what Kaeso left out. An effort the model doesn't list becomes the nearest level it lists, and adaptive thinking for a Claude model without it becomes `enabled` thinking with a budget; the reply's `kaeso-adapted` header names those ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)).
+A model without effort levels gets no effort instead, a model that doesn't reason no adaptive thinking, and a model that takes only the default temperature no temperature. Claude Opus 4.7 and later also get no `top_p` or `top_k`. The reply's `kaeso-left-out` header names what Kaeso left out. An effort the model doesn't list becomes the nearest level it lists, and adaptive thinking for a Claude model without it becomes `enabled` thinking with a budget. A thinking budget for Claude Opus 4.7 and later becomes adaptive thinking instead. The reply's `kaeso-adapted` header names those ([models without effort levels](../development/kpp/reasoning.md#models-without-effort-levels)).
 
 A request in an OpenAI format for a Claude model needs no output limit: Kaeso sends the model's own maximum. A Messages request without `max_tokens` gets 400, as it would from Anthropic. A request from another format that asks for more output than the model can write gets the model's maximum instead, and the reply's `kaeso-adapted` header names the field, such as `max_tokens`. Claude Code, for one, asks every model it doesn't know for 32,000 tokens.
 
@@ -93,7 +93,7 @@ Apps in the OpenAI formats get these 503 answers as 500, which their SDKs retry.
 
 ## The provider key
 
-Kaeso uses the provider key assigned to the project for the model's provider, or else the organization's default for that provider. Without either, the request gets 400. Kaeso decrypts the key with the master key and keeps it in memory, reading it again at least every 30 seconds. Until 15 minutes after the project's last request, it reads it again in the background before the 30 seconds are up, so requests don't wait for it.
+Kaeso uses the provider keys assigned to the project for the model's provider, or else the organization's default for that provider. Without either, the request gets 400. With several assigned keys, each caller keeps one key, drawn by the keys' weights. A key that is refused, out of credit or rate limited gives way to the next ([choose which key a project uses](../console/provider-keys.md#choose-which-key-a-project-uses)). Kaeso decrypts the key with the master key and keeps it in memory, reading it again at least every 30 seconds. Until 15 minutes after the project's last request, it reads it again in the background before the 30 seconds are up, so requests don't wait for it.
 
 ## Sending to the provider
 
@@ -109,7 +109,7 @@ KPP decodes the reply into the canonical format and encodes it in the app's form
 
 A provider's error reaches an app in the same format exactly as the provider sent it. An app in another format gets the same meaning in its own format. A provider that refuses the project's provider key is the exception: every app gets a provider error, 502, that asks for an organization admin. [Errors](../api/errors.md) lists every error.
 
-Replies carry the headers `kaeso-model` and `kaeso-provider`. A stream's headers go out as soon as the provider answers. While a stream is open and silent, Kaeso writes keepalives that the app's SDK ignores.
+Replies carry the headers `kaeso-model` and `kaeso-provider`. A stream's headers go out once the provider sends its first output, or when the first keepalive is due. A provider error before that reaches the app with its status, as without a stream, and an alias route falls back ([fallbacks](alias-routes.md#fallbacks)). While a stream is open and silent, Kaeso writes keepalives that the app's SDK ignores.
 
 ## Failed streams
 

@@ -68,7 +68,7 @@ A model's sheet shows the **Values in use**, each with where it comes from: KPMR
 
 ## Decision models
 
-A decision model answers typed questions at `/v1/decisions`, `/v1/systemone` and `/v1beta/decisions` ([Decisions API](../api/decisions.md)). The add dialog marks such models **Decisions**, and **Add every current** model leaves out models that only make decisions; add them one by one. A model's sheet lists under **Decisions** whether it only makes decisions, the question types it answers and its limits. For a custom model on a provider with a decisions API, choose **Decisions** under **Outputs**; it then needs only its inputs and its input price. The Playground doesn't list models that only make decisions yet.
+A decision model answers typed questions at `/v1/decisions`, `/v1/systemone` and `/v1beta/decisions` ([Decisions API](../api/decisions.md)). The add dialog marks such models **Decisions**, and **Add every current** model leaves out models that only make decisions; add them one by one. A model's sheet lists under **Decisions** whether it only makes decisions, the question types it answers and its limits. For a custom model on a provider with a decisions API, choose **Decisions** under **Outputs**; it then needs only its inputs and its input price. The [Playground](playground.md#ask-decision-models) asks them typed questions too.
 
 ## Model lines
 

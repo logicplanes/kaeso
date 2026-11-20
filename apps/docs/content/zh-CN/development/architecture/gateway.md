@@ -35,6 +35,8 @@ sequenceDiagram
 
 在开启了[响应缓存](../../console/response-cache.md)的项目中，网关在发送编码后的请求之前，会先在 Valkey 中查找它。命中时，网关从其密封的条目中解码，再为应用编码，无需经过服务商（`crates/kaeso-server/src/services/response_cache.rs`）。
 
+项目使用的防护规则会在请求发出之前检查请求，并在应用收到回复之前检查回复（`services/guardrails`，[防护规则](../../console/guardrails.md)）。拥有同一服务商多个密钥的项目会按权重抽取密钥；被拒绝、余额用尽或触发速率限制的密钥会在一段时间内让位给下一个密钥（`services/key_pool.rs`）。开启追踪后，每个请求都会成为一条 OpenTelemetry 追踪，其中每个调用了服务商的步骤各有一个 span（`services/otel.rs`，[追踪](../../self-hosting/monitoring.md#追踪)）。
+
 Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥、平台密钥或智能体的访问令牌进行认证。随后每个端点恰好检查一项权限，由服务修改 PostgreSQL 并写入审计事件。
 
 | 代码 | 位置 |
@@ -42,13 +44,15 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | 模型 API（`/v1`，`model_api/gemini.rs` 中 Gemini 格式的 `/v1beta`（它也回答 `/v1` 下 Gemini 的路径），以及 `model_api/elevenlabs.rs` 中 ElevenLabs 声音列表的 `/v2`） | `crates/kaeso-server/src/model_api` |
 | Platform API（`/platform/v1`） | `crates/kaeso-server/src/platform` |
 | MCP 服务器及其 OAuth 登录（`/mcp`、`/oauth`） | `crates/kaeso-server/src/mcp` |
+| MCP 门户（`/mcp/{project}`） | `crates/kaeso-server/src/portal` |
+| SCIM 2.0（`/platform/v1/orgs/{org}/scim/v2`） | `crates/kaeso-server/src/scim` |
 | 两者共用的服务 | `crates/kaeso-server/src/services` |
 
 ## Crate
 
 | Crate | 职责 |
 | --- | --- |
-| `kaeso` | 可执行文件：命令行（`serve`、`migrate`、`master-key`、`user`、`sso`、`instance`、`setup-link`、`healthcheck`、`openapi`）、启动和关闭，以及其内存分配器 mimalloc。唯一允许使用 `anyhow` 的 crate |
+| `kaeso` | 可执行文件：命令行（`serve`、`migrate`、`master-key`、`setup-link`、`user`、`sso`、`instance`、`config`、`mail`、`kpmr`、`healthcheck`、`openapi`）、启动和关闭，以及其内存分配器 mimalloc。唯一允许使用 `anyhow` 的 crate |
 | `kaeso-server` | `/v1`、`/v1beta`、`/v2`、`/platform/v1`、`/mcp`、健康检查和指标的路由，包括提取器、错误映射、OpenAPI 文档、CSRF 检查、请求 ID 和请求体大小限制。还包括两个 API 背后的服务、配置、后台任务和遥测 |
 | `kaeso-core` | 不含 I/O 的领域规则：ID、权限和角色、密钥格式、模型解析、目录、能力、限额、费用和流式回复组装器。`data/` 保存每个版本附带的模型数据 |
 | `kaeso-store` | 通过 sqlx 访问的 PostgreSQL、ClickHouse、Valkey 连接（一条用于限额检查和计数器，两条用于缓存条目和保留的推理内容）及缓存失效机制，以及两个数据库的迁移 |
@@ -72,7 +76,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 1. **线路格式只存在于 KPP 中。** 网关从不手动解析或构建 OpenAI、Anthropic 或 Gemini 的 JSON，这些都由 `kaeso_codecs::dispatch` 完成。网关自己的 JSON 只有 Platform API 及其错误信封。
 2. **不做透传。** 每个模型请求都会解码为 KPP 再重新编码，即使应用和服务商使用同一种格式。
-3. **不重试；只在路由指明时回退。** 对服务商的调用失败就是失败，并以应用的格式返回，除非别名的路由在这种失败时回退（[别名路由](../../concepts/alias-routes.md)）。
+3. **只在设置了重试和回退时才重试和回退。** 对服务商的调用失败就是失败，并以应用的格式返回，除非步骤或项目的重试设置在短暂故障后再次尝试，或别名的路由在这种失败时回退（[别名路由](../../concepts/alias-routes.md)）。
 4. **绝不悄悄丢弃数据。** KPP 拒绝的内容（`Unsupported`）会在任何内容到达服务商之前，以应用自己的格式作为错误返回。`KppError` 从不被捕获后忽略。
 5. **库 crate 中不出现 panic。** 除测试和可执行文件的启动阶段外，不使用 `unwrap`、`expect`、`panic!`、`todo!`、`unimplemented!`、可能 panic 的索引或 `unsafe`。工作区 lint 和 `#![forbid(unsafe_code)]` 强制执行这一点。
 6. **机密信息绝不以未受保护的形式离开内存。** 服务商密钥、主密钥、API 密钥的机密部分、会话 ID、登录令牌、TOTP 密钥和密码都保存在自动脱敏的包装类型中。它们绝不会被写入日志或追踪、打印、存入 ClickHouse、由 API 返回或写进错误消息。
@@ -87,7 +91,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 
 每项设置都是 `crates/kaeso-server/src/config/settings.rs` 中表格的一行：TOML 键、环境变量、类型、默认值、是否为机密，以及一句话说明。服务商设置是一个模式行 `providers.<id>.<field>`，表格会为 `crates/kaeso-core/src/provider.rs` 中的每个服务商和 `PROVIDER_FIELDS` 中的每个字段展开它。
 
-`config/load.rs` 合并默认值、`KAESO_CONFIG` 指定的 TOML 文件和 `KAESO_*` 变量，包括用于机密的 `_FILE` 变量。它用 `toml` crate 读取文件，每个错误都会指明对应的设置。figment 之类的配置 crate 会成为键和默认值的第二个事实来源。
+`config/load.rs` 合并默认值、`KAESO_CONFIG` 指定的 TOML 文件和 `KAESO_*` 变量，包括用于机密的 `_FILE` 变量。它用 `toml` crate 读取文件，用 `config/duration.rs` 读取 `30s` 或 `1h 30m` 这样的时长，用 `config/size.rs` 读取大小，每个错误都会指明对应的设置。空的 `KAESO_CONFIG` 视为未设置。figment 之类的配置 crate 会成为键和默认值的第二个事实来源。
 
 测试检查每个变量都与其键对应并能反向映射，且变量名不会冲突。它们还检查必填设置和机密没有默认值，以及 `deploy/kaeso.example.toml` 把除机密外的每项设置都设为默认值。测试还会把表格渲染成一个经过审阅的快照。修改设置会改变这个快照，并据此更新[配置](../../self-hosting/configuration.md)。
 
@@ -123,6 +127,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | `reasoning_price` | `pricing.reasoning` | 每百万推理 Token 的价格：服务商报告为推理的那部分输出（`Usage::reasoning_tokens`），在图像和音频输出之后计算；没有该价格时按输出价格计费。预算的最坏情况按两者中较贵的价格计算输出。只设置 Token 价格而未设置推理价格的覆盖会丢弃 KPMR 的推理价格 |
 | `unit_prices` | `pricing.per_unit` | 每张图片、每百万像素、每秒、每分钟、每小时、每百万字符或每个视频的价格，适用于 `size`、`quality`、`resolution`、`audio`（带声音的视频）和 `duration`（视频的秒数）都匹配的请求；`minimum_seconds` 是一个请求的最低计费量，例如 Groq 的 10 秒。语音按字符数计，转写稿按音频时长计，音效或音乐按其时长计。`kaeso_core::cost::media_cost` 用请求的 `MediaUnits` 乘以这些价格并加到其 Token 费用上；请求未指明的条件取所列最低价格。只设置 Token 价格而未设置按单位价格的覆盖会丢弃 KPMR 的按单位价格，无法解析的单个按单位价格会被单独跳过 `per = "search"` 的价格是服务商每次执行网页搜索的费用（`Usage::web_searches`），例如 Anthropic 和 OpenAI 的 0.01 美元；有搜索但没有该价格的回复，其费用记为部分未知。 |
 | `decisions` | `kind`、`decisions` | 决策模型回答的内容：KPMR 类型 `decision` 对应 `only`，其后是 `question_types`、`max_questions`、`max_options`、`max_levels` 和 `max_images`。决策不遵循 `egress_dialect`：每个服务商的 `Provider.decisions` 表指明它接受决策的格式和配置，与媒体的 `images` 和 `videos` 相同，因此 `gpt-6-luna` 在同一个 ID 下既是聊天模型也是决策模型 |
+| `lifecycle` | `lifecycle` | 服务商宣布、弃用和停用该模型的日期及其替代模型；`model_lifecycle` 任务和控制台中即将停用的模型会读取它（[模型生命周期](../../concepts/model-lifecycle.md#kpmr-发布的内容)） |
 
 目录条目的值取自其覆盖值，否则取自 KPMR。除非 `KAESO_KPMR_SYNC` 为 `false`，`kpmr_sync` 任务每 5 分钟检查一次网关是否该再次询问 KPMR，依据是 `KAESO_KPMR_INTERVAL` 或目录的 `refresh_seconds`。它发送保存的 ETag，把 `304` 视为未变更，拒绝没有受信任密钥签名的目录，并把结果连同 ETag 存入 PostgreSQL。其他实例通过 Valkey 重新加载。启动时，存储的快照和内置快照中较新的一个生效。由服务商或字段较少的版本存储的数据，会从内置快照补齐缺少的服务商，并立即重新获取，即使 KPMR 没有变化。
 
@@ -134,11 +139,32 @@ cargo xtask kpmr
 
 该任务为 Kaeso 调用的服务商下载 `https://kpmr.kaeso.app/v1/catalogue`，用内置密钥验证签名，并检查网关能读取每个模型。`--url` 或 `KPMR_URL` 更改地址，`--public-keys` 或 `KPMR_PUBLIC_KEYS` 信任更多密钥。随后它按 KPMR 发送的原样写入目录，并写入 `crates/kaeso-core/data/README.md` 中的表格，测试会检查两者一致。
 
+## 后台任务
+
+每个网关都会运行 `crates/kaeso-server/src/jobs/mod.rs` 中的任务：每个任务先随机等待最多 30 秒，然后按各自的间隔运行。每个任务都有一个 PostgreSQL advisory lock，因此一个安装中同一时间只有一个网关运行它，其他网关跳过这一轮。`kaeso_job_runs_total` 按结果统计每次运行。
+
+| 任务 | 间隔 | 作用 |
+| --- | --- | --- |
+| `webhooks` | 5 秒 | 发送到期的 Webhook 投递（[Webhook](../../console/webhooks.md)） |
+| `log_jobs` | 30 秒 | 删除 ClickHouse 中某段时间的请求日志，并缩短其保留期 |
+| `account_renewal` | 1 分钟 | 在 ChatGPT 和 Grok 账户的访问令牌到期之前为其续期 |
+| `notifications` | 1 分钟 | 在实例时区早上 8:31 发送等待中的摘要、每月成本报告和每周摘要（[邮件](emails.md#通知)） |
+| `mcp_sync` | 1 分钟 | 同步 `mcp_servers.sync_interval` 已过的每个 MCP 服务器的工具 |
+| `update_check` | 1 分钟 | 到期时检查新版本，并启动自动更新（[更新](updates.md)） |
+| `batches` | 5 分钟 | 向服务商询问未完成的批处理并记录其用量 |
+| `kpmr_sync` | 5 分钟 | 到期时获取模型数据（[模型数据](#模型数据)） |
+| `exchange_rates` | 5 分钟 | 在上次成功获取 6 小时后、或上次失败 15 分钟后获取欧洲央行的参考汇率（[货币](../../concepts/currencies.md)） |
+| `model_lines` | 10 分钟 | 按各自的策略把每个项目的模型系列移到服务商最新的模型 |
+| `org_deletion` | 10 分钟 | 删除到期应删除的组织 |
+| `cleanup` | 1 小时 | 删除过期的会话、令牌和邀请、旧的智能体活动和 Webhook 投递，并撤销未使用的智能体 |
+| `key_expiry_warnings` | 1 小时 | 在 API 密钥或平台密钥到期前 7 天和 1 天发送邮件 |
+| `model_lifecycle` | 1 小时 | 发送模型停用的公告和警告，并在停用当天迁移到替代模型或添加替代模型（[模型生命周期](../../concepts/model-lifecycle.md)） |
+
 ## 用量和请求日志
 
-模型 API 把每个结束的请求交给一个接收器。它把请求的用量加到内存中的一个批次里，按天、项目、密钥、成员、模型和路由归类，并每 10 秒把该批次写入 PostgreSQL 的 `usage_daily`。同一个接收器还会在 Valkey 中计入限额计数器，这些计数器从 `usage_daily` 和该批次重建。重建会等待那些已加入批次但尚未计入计数器的请求（`limits::Charging`），因此每个请求只计一次。用量页面、Platform API 的 `usage` 端点以及实例中各组织的合计只读取 `usage_daily`。
+模型 API 把每个结束的请求交给一个接收器。它把请求的用量加到内存中的一个批次里，按天、项目、密钥、成员、模型、路由以及付费的服务商密钥归类，并每 10 秒把该批次写入 PostgreSQL 的 `usage_daily`。同一个接收器还会在 Valkey 中计入限额计数器，这些计数器从 `usage_daily` 和该批次重建。重建会等待那些已加入批次但尚未计入计数器的请求（`limits::Charging`），因此每个请求只计一次。用量页面、Platform API 的 `usage` 端点以及实例中各组织的合计只读取 `usage_daily`。
 
-请求日志通过各自的缓冲区写入 ClickHouse 的 `request_log` 和 `request_content`。没有 `clickhouse.url` 时，`AppState::clickhouse` 为 `None`：网关不运行 ClickHouse 迁移，不启动日志写入器，不为日志保留请求体，日志端点返回 `404`。Anthropic Messages、Chat Completions、Responses 或 Gemini 格式的请求体，会把历史中每个不小于 512 字节的元素（`system`/`instructions`/`systemInstruction`、每条消息或输入 item、每个工具）在每个项目中只存一次到 `request_content_part`，以其 SHA-256 的前 16 字节为键，并在原位置保留 `{"$kaeso_part":"<hash>"}`；`request_parts` 记录其数量，读取时按字节原样拼回。按项目缓存已写入的哈希，同一部分每小时最多重写一次；按时间范围删除时，`last_at` 距范围结束不足一小时的部分会被保留。用量迁移到 PostgreSQL 后，ClickHouse 迁移 0007 删除了 ClickHouse 自己的 `usage_daily`。
+请求日志通过各自的缓冲区写入 ClickHouse 的 `request_log` 和 `request_content`。没有 `clickhouse.url` 时，`AppState::clickhouse` 为 `None`：网关不运行 ClickHouse 迁移，不启动日志写入器，不为日志保留请求体，日志端点返回 `404`。Anthropic Messages、Chat Completions、Responses 或 Gemini 格式的请求体，会把历史中每个不小于 512 字节的元素（`system`/`instructions`/`systemInstruction`、每条消息或输入 item、每个工具）在每个项目中只存一次到 `request_content_part`，以其 SHA-256 的前 16 字节为键，并在原位置保留 `{"$kaeso_part":"<hash>"}`；`request_parts` 记录其数量，读取时按字节原样拼回。按项目缓存已写入的哈希，同一部分每小时最多重写一次；按时间范围删除时，`last_at` 距范围结束不足一小时的部分会被保留。用量迁移到 PostgreSQL 后，ClickHouse 迁移 0007 删除了 ClickHouse 自己的 `usage_daily`。通过 MCP 门户的工具调用写入 `tool_calls` 和 `tool_call_content`。
 
 视频任务比启动它的请求存在得更久，因此 PostgreSQL 的 `videos` 表保存每个任务：其项目、服务商的任务 ID、启动时使用的服务商密钥和价格，以及最后看到的状态。启动任务时记录日志，不产生费用。第一个看到任务结束的获取或下载请求会在一条条件 `UPDATE` 中设置 `accounted_at`，只有设置成功的请求才把完成的任务交给接收器，因此并发请求对一个视频只计费一次（[视频 API](../../api/videos.md#费用和日志)）。
 

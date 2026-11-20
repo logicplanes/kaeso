@@ -45,6 +45,7 @@ ClickHouse 于 2026-11-16 重新测量，分别在空闲时以及运行基准测
 | 出站 | 服务商存放已完成视频的主机（按其参考文档所示）：SpaceX 为 `vidgen.x.ai`，MiniMax 为 `video-product.cdn.minimax.io` 和阿里云 OSS 存储桶（例如 `public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com`），Z.ai 为 `aigc-files.bigmodel.cn`。ElevenLabs 没有固定主机；OpenRouter 和 Together AI 从自己的主机提供文件，Veo 和 Gemini Omni 在回复中直接返回文件 | 下载已完成的视频（[Videos API](../api/videos.md#下载视频)） |
 | 出站 | `kpmr.kaeso.app` | 来自 [KPMR](../concepts/kpmr.md) 的模型数据，大约每小时检查一次 |
 | 出站 | `update.kaeso.app` | 检查 Kaeso 新版本，每 5 分钟一次 |
+| 出站 | `www.ecb.europa.eu` | 欧洲央行的[货币](../concepts/currencies.md)参考汇率，每 6 小时一次（[汇率](configuration.md#汇率)） |
 | 出站 | `acme-v02.api.letsencrypt.org`、`acme.zerossl.com` | Caddy 获取和续期证书 |
 | 出站 | `ghcr.io`、`pkg-containers.githubusercontent.com` | 安装或更新时，Docker 拉取 Kaeso 的镜像 |
 | 出站 | `registry-1.docker.io`、`auth.docker.io`、`production.cloudflare.docker.com` | Docker 拉取 PostgreSQL、ClickHouse、Valkey 和更新器套接字代理的镜像 |
@@ -54,6 +55,8 @@ ClickHouse 于 2026-11-16 重新测量，分别在空闲时以及运行基准测
 | 出站 | 您各组织的身份提供商 | 组织连接身份提供商后的单点登录（[登录](sign-in.md)） |
 | 出站 | 您各组织的自定义服务商的基础 URL | 发往它们的请求，直接连接，绝不经过代理（[自定义服务商](configuration.md#自定义服务商)） |
 | 出站 | 您各组织添加的 MCP 服务器的地址，通过 HTTPS | 它们的工具，包括登录和元数据请求；只有 `mcp_servers.allowed_networks` 列出的私有网络才可访问（[MCP 服务器](configuration.md#mcp-服务器)） |
+| 出站 | 您各组织添加的 Webhook 和防护规则的地址 | 投递和检查；只有 `webhooks.allowed_networks` 或 `guardrails.allowed_networks` 列出的私有网络才可访问（[Webhook](configuration.md#webhook)、[防护规则](configuration.md#防护规则)） |
+| 出站 | 设置了 `otel.endpoint` 时，您的追踪收集器 | 请求和工具调用的追踪（[追踪](monitoring.md#追踪)） |
 
 没有互联网访问时，Kaeso 使用版本内置的模型数据，并需要手动更新。请按[无法联网的实例](upgrades.md#无法联网的实例)中的说明关闭出站检查。
 

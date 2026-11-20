@@ -35,6 +35,8 @@ The key, the project's catalogue, limits and log settings and the provider key a
 
 In a project with the [response cache](../../console/response-cache.md) on, the gateway looks the encoded request up in Valkey before it sends it. A hit is decoded from its sealed entry and encoded for the app, without the provider (`crates/kaeso-server/src/services/response_cache.rs`).
 
+The guardrails the project uses check the request before it goes out and the reply before the app gets it (`services/guardrails`, [guardrails](../../console/guardrails.md)). A project with several keys of one provider draws them by weight, and a key that was refused, ran out of credit or hit a rate limit gives way to the next for a while (`services/key_pool.rs`). With traces on, each request becomes an OpenTelemetry trace with a span for each step that called a provider (`services/otel.rs`, [traces](../../self-hosting/monitoring.md#traces)).
+
 A Platform API request authenticates with a session cookie, an API key with platform access, a platform key or an agent's access token. Each endpoint then checks exactly one right, and a service changes PostgreSQL and writes an audit event.
 
 | Code | Where |
@@ -42,13 +44,15 @@ A Platform API request authenticates with a session cookie, an API key with plat
 | The model API (`/v1`, `/v1beta` for the Gemini format in `model_api/gemini.rs`, which also answers Gemini's paths under `/v1`, and `/v2` for ElevenLabs' voice list in `model_api/elevenlabs.rs`) | `crates/kaeso-server/src/model_api` |
 | The Platform API (`/platform/v1`) | `crates/kaeso-server/src/platform` |
 | The MCP server and its OAuth sign-in (`/mcp`, `/oauth`) | `crates/kaeso-server/src/mcp` |
+| The MCP portal (`/mcp/{project}`) | `crates/kaeso-server/src/portal` |
+| SCIM 2.0 (`/platform/v1/orgs/{org}/scim/v2`) | `crates/kaeso-server/src/scim` |
 | The services both use | `crates/kaeso-server/src/services` |
 
 ## Crates
 
 | Crate | Job |
 | --- | --- |
-| `kaeso` | The binary: its command line (`serve`, `migrate`, `master-key`, `user`, `sso`, `instance`, `setup-link`, `healthcheck`, `openapi`), startup and shutdown, and its allocator, mimalloc. The only crate that may use `anyhow` |
+| `kaeso` | The binary: its command line (`serve`, `migrate`, `master-key`, `setup-link`, `user`, `sso`, `instance`, `config`, `mail`, `kpmr`, `healthcheck`, `openapi`), startup and shutdown, and its allocator, mimalloc. The only crate that may use `anyhow` |
 | `kaeso-server` | The routers for `/v1`, `/v1beta`, `/v2`, `/platform/v1`, `/mcp`, health and metrics, with extractors, error mapping, the OpenAPI document, CSRF checks, request ids and body limits. Also the services behind both APIs, the configuration, background jobs and telemetry |
 | `kaeso-core` | Domain rules without I/O: ids, rights and roles, the key format, model resolution, the catalogue, capabilities, limits, costs and the stream reply assembler. `data/` holds the model data each release ships |
 | `kaeso-store` | PostgreSQL through sqlx, ClickHouse, the Valkey connections (one for limit checks and counters, two for cache entries and kept reasoning) with the cache invalidation, and the migrations of both databases |
@@ -72,7 +76,7 @@ Every change to the gateway follows these rules, and lints and tests enforce mos
 
 1. **Wire formats live only in KPP.** The gateway never parses or builds OpenAI, Anthropic or Gemini JSON by hand; `kaeso_codecs::dispatch` does. The gateway's own JSON is the Platform API and its error envelope.
 2. **No passthrough.** Every model request is decoded to KPP and encoded again, even when the app and the provider speak the same format.
-3. **No retries; fallbacks only where a route names them.** A failed provider call fails, in the app's format, unless an alias's route falls back on that failure ([alias routes](../../concepts/alias-routes.md)).
+3. **Retries and fallbacks only where they are set.** A failed provider call fails, in the app's format, unless the step's or the project's retries try it again after a short-lived failure, or an alias's route falls back on that failure ([alias routes](../../concepts/alias-routes.md)).
 4. **Never drop data silently.** What KPP refuses (`Unsupported`) goes back to the app as an error in its own format, before anything reaches a provider. A `KppError` is never caught and ignored.
 5. **No panics in library crates.** No `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, panicking indexing or `unsafe` outside tests and the binary's startup. The workspace lints and `#![forbid(unsafe_code)]` enforce it.
 6. **Secrets never leave memory unprotected.** Provider keys, master keys, API key secrets, session ids, sign-in tokens, TOTP secrets and passwords live in redacting wrapper types. They are never logged, traced, printed, stored in ClickHouse, returned by an API or put into an error message.
@@ -87,7 +91,7 @@ Every change to the gateway follows these rules, and lints and tests enforce mos
 
 Every setting is one row of the table in `crates/kaeso-server/src/config/settings.rs`: its TOML key, environment variable, type, default, whether it is a secret, and a one-sentence description. Provider settings are a single pattern row, `providers.<id>.<field>`. The table repeats it for every provider in `crates/kaeso-core/src/provider.rs` and every field in `PROVIDER_FIELDS`.
 
-`config/load.rs` merges the defaults, the TOML file named by `KAESO_CONFIG` and the `KAESO_*` variables, including `_FILE` variables for secrets. It reads the file with the `toml` crate, and every error names its setting. A configuration crate such as figment would be a second source of truth for keys and defaults.
+`config/load.rs` merges the defaults, the TOML file named by `KAESO_CONFIG` and the `KAESO_*` variables, including `_FILE` variables for secrets. It reads the file with the `toml` crate, durations such as `30s` or `1h 30m` with `config/duration.rs` and sizes with `config/size.rs`, and every error names its setting. An empty `KAESO_CONFIG` counts as unset. A configuration crate such as figment would be a second source of truth for keys and defaults.
 
 Tests check that every variable follows its key and maps back, and that variable names can't collide. They also check that required settings and secrets have no default, and that `deploy/kaeso.example.toml` sets every setting but the secrets to its default. They also render the table into a reviewed snapshot. A change to a setting changes that snapshot, and [configuration](../../self-hosting/configuration.md) is updated from it.
 
@@ -123,6 +127,7 @@ A custom provider speaks the plain dialect, `ChatProfile::OPENAI` for Chat Compl
 | `reasoning_price` | `pricing.reasoning` | The price per million reasoning tokens: the share of output the provider reports as reasoning (`Usage::reasoning_tokens`), after image and audio output; without it, the output price. A budget's worst case holds the output at the dearer of the two. An override that sets a token price without a reasoning price drops KPMR's |
 | `unit_prices` | `pricing.per_unit` | Prices per image, megapixel, second, minute, hour, million characters or video, for the requests whose `size`, `quality`, `resolution`, `audio` (video with sound) and `duration` (a video's length in seconds) match; `minimum_seconds` is the least a request is billed for, such as Groq's 10 seconds. Speech counts its characters, a transcript the length of its audio, a sound or music its length. `kaeso_core::cost::media_cost` multiplies them by a request's `MediaUnits` and adds them to its token cost; for a condition the request doesn't name it takes the lowest listed price. An override that sets a token price without unit prices drops KPMR's, and one unit price that doesn't parse is skipped alone A price `per = "search"` is the fee per web search the provider ran (`Usage::web_searches`), such as Anthropic's and OpenAI's $0.01; a reply with searches and no such price is logged with a partly unknown cost. |
 | `decisions` | `kind`, `decisions` | What a decision model answers: `only` for KPMR's kind `decision`, then `question_types`, `max_questions`, `max_options`, `max_levels` and `max_images`. Decisions don't follow `egress_dialect`: each provider's `Provider.decisions` table names the format and profile it takes them in, as `images` and `videos` do for media, so `gpt-6-luna` is a chat model and a decision model under one id |
+| `lifecycle` | `lifecycle` | When the provider announced, deprecates and shuts down the model, and its replacement; the `model_lifecycle` job and the console's retiring models read it ([model lifecycle](../../concepts/model-lifecycle.md#what-kpmr-publishes)) |
 
 A catalogue entry's value is its override, else KPMR's. Unless `KAESO_KPMR_SYNC` is `false`, the `kpmr_sync` job checks every 5 minutes whether the gateway is due to ask KPMR again, by `KAESO_KPMR_INTERVAL` or the catalogue's `refresh_seconds`. It sends the stored ETag, takes `304` as unchanged, refuses a catalogue no trusted key signed, and stores the result with its ETag in PostgreSQL. Other instances reload it through Valkey. At startup, the newer of the stored and the built-in snapshot wins. Data stored by a release with fewer providers or fields gets the missing providers from the built-in snapshot and is fetched again right away, even when KPMR hasn't changed.
 
@@ -134,11 +139,32 @@ cargo xtask kpmr
 
 The task downloads `https://kpmr.kaeso.app/v1/catalogue` for the providers Kaeso calls, verifies its signature against the built-in key and checks that the gateway reads every model. `--url` or `KPMR_URL` changes the address, and `--public-keys` or `KPMR_PUBLIC_KEYS` trusts more keys. It then writes the catalogue exactly as KPMR sent it and the table in `crates/kaeso-core/data/README.md`, and a test checks that the two agree.
 
+## Background jobs
+
+Every gateway runs the jobs in `crates/kaeso-server/src/jobs/mod.rs`, each first after a random wait of up to 30 seconds and then on its interval. A PostgreSQL advisory lock per job lets one gateway of an install run it at a time; the others skip that round. `kaeso_job_runs_total` counts each run by its outcome.
+
+| Job | Every | What it does |
+| --- | --- | --- |
+| `webhooks` | 5 seconds | Sends the webhook deliveries that are due ([webhooks](../../console/webhooks.md)) |
+| `log_jobs` | 30 seconds | Deletes ranges of request logs and shortens their retention in ClickHouse |
+| `account_renewal` | 1 minute | Renews the access tokens of ChatGPT and Grok accounts before they are due |
+| `notifications` | 1 minute | At 8:31 in the instance's time zone, sends the waiting digests, the monthly cost reports and the weekly summaries ([emails](emails.md#notifications)) |
+| `mcp_sync` | 1 minute | Syncs the tools of each MCP server whose `mcp_servers.sync_interval` has passed |
+| `update_check` | 1 minute | Checks for releases when one is due and starts an automatic update ([updates](updates.md)) |
+| `batches` | 5 minutes | Asks the providers about open batches and records their usage |
+| `kpmr_sync` | 5 minutes | Fetches the model data when it is due ([model data](#model-data)) |
+| `exchange_rates` | 5 minutes | Fetches the ECB's reference rates 6 hours after the last fetch that worked, or 15 minutes after one that failed ([currencies](../../concepts/currencies.md)) |
+| `model_lines` | 10 minutes | Moves each project's model lines to the provider's newest model, by their policy |
+| `org_deletion` | 10 minutes | Deletes the organizations whose deletion is due |
+| `cleanup` | 1 hour | Deletes stale sessions, tokens and invitations, old agent activity and webhook deliveries, and revokes unused agents |
+| `key_expiry_warnings` | 1 hour | Emails 7 days and 1 day before an API key or platform key expires |
+| `model_lifecycle` | 1 hour | Sends model shutdown announcements and warnings, and on a shutdown day moves to or adds the replacement ([model lifecycle](../../concepts/model-lifecycle.md)) |
+
 ## Usage and request logs
 
-The model API hands every finished request to one sink. It adds the request's usage to a batch in memory, keyed by day, project, key, member, model and route, and writes the batch to PostgreSQL's `usage_daily` every 10 seconds. The same sink charges the limit counters in Valkey, which are rebuilt from `usage_daily` and the batch. A rebuild waits for the requests between adding to the batch and charging (`limits::Charging`), so it counts each of them once. The Usage pages, the Platform API's `usage` endpoints and the instance's organization totals read only `usage_daily`.
+The model API hands every finished request to one sink. It adds the request's usage to a batch in memory, keyed by day, project, key, member, model, route and the provider key that paid, and writes the batch to PostgreSQL's `usage_daily` every 10 seconds. The same sink charges the limit counters in Valkey, which are rebuilt from `usage_daily` and the batch. A rebuild waits for the requests between adding to the batch and charging (`limits::Charging`), so it counts each of them once. The Usage pages, the Platform API's `usage` endpoints and the instance's organization totals read only `usage_daily`.
 
-Request logs go to ClickHouse's `request_log` and `request_content` through their own buffer. Without `clickhouse.url`, `AppState::clickhouse` is `None`: the gateway runs no ClickHouse migrations, starts no log writer, keeps no bodies for logging, and the logs endpoints answer `404`. A request body in the Anthropic Messages, Chat Completions, Responses or Gemini format keeps each history element of 512 bytes or more (`system`/`instructions`/`systemInstruction`, each message or input item, each tool) once per project in `request_content_part`, under the first 16 bytes of its SHA-256, and holds `{"$kaeso_part":"<hash>"}` in its place; `request_parts` counts them, and reading splices them back byte for byte. A per-project cache of written hashes writes a part again at most once an hour, and range deletion keeps a part whose `last_at` lies within an hour of the range's end. ClickHouse migration 0007 dropped ClickHouse's own `usage_daily` once usage moved to PostgreSQL.
+Request logs go to ClickHouse's `request_log` and `request_content` through their own buffer. Without `clickhouse.url`, `AppState::clickhouse` is `None`: the gateway runs no ClickHouse migrations, starts no log writer, keeps no bodies for logging, and the logs endpoints answer `404`. A request body in the Anthropic Messages, Chat Completions, Responses or Gemini format keeps each history element of 512 bytes or more (`system`/`instructions`/`systemInstruction`, each message or input item, each tool) once per project in `request_content_part`, under the first 16 bytes of its SHA-256, and holds `{"$kaeso_part":"<hash>"}` in its place; `request_parts` counts them, and reading splices them back byte for byte. A per-project cache of written hashes writes a part again at most once an hour, and range deletion keeps a part whose `last_at` lies within an hour of the range's end. ClickHouse migration 0007 dropped ClickHouse's own `usage_daily` once usage moved to PostgreSQL. Tool calls through the MCP portal go to `tool_calls` and `tool_call_content`.
 
 A video job outlives the request that starts it, so PostgreSQL's `videos` table keeps each one: its project, the provider's job id, the provider key and prices it started with, and the status last seen. Starting a job logs it at no cost. The first retrieve or download that sees the job end sets `accounted_at` in one conditional `UPDATE`, and only the request that set it hands the finished job to the sink, so concurrent requests bill a video once ([Videos API](../../api/videos.md#costs-and-logs)).
 

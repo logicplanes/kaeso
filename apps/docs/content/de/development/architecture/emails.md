@@ -58,20 +58,22 @@ Text und HTML jeder E-Mail sind Snapshots in `crates/kaeso-mail/src/snapshots/`.
 4. Die Einstellung jeder Person wählt sofort, täglich oder aus, und eine stummgeschaltete Organisation stoppt alles außer Sicherheits-E-Mails. `notifications_sent` hält eine E-Mail pro Thema und Tag, und über 20 sofortige E-Mails pro Stunde kommt der Rest in `notification_digest`.
 5. Der Job `notifications` läuft jede Minute. Um 8:31 Uhr in der Zeitzone der Installation sendet er wartende Zusammenfassungen, am 1. den monatlichen Kostenbericht und montags die Wochenübersicht. Die Wochenübersicht nennt die Woche und jede Organisation, und ihr Button öffnet die Nutzung dieser Woche; eine Zeile der Zusammenfassung behält die Organisation und das Projekt, um die es ging, sodass die Zusammenfassung ihre Zeilen danach gruppiert.
 
+Vor den E-Mails kommt eine Benachrichtigung über eine Organisation oder ein Projekt in die Warteschlange der [Webhooks](../../console/webhooks.md) der Organisation, gleich was jemand für seine E-Mails gewählt hat, und der Job `webhooks` sendet sie (`services::webhooks`).
+
 ## Sprachen
 
 `services::mail_lang` in `kaeso-server` wählt die Sprache. Die Wahl der Person in ihren Kontoeinstellungen gewinnt (`users.locale`; `null` heißt Automatisch). Sonst nimmt es die erste Sprache, die Kaeso schreibt, aus dem `Accept-Language` der Anfrage, die die E-Mail ausgelöst hat.
 
 Kann die Datenbank nicht antworten, entscheiden die Rückfallregeln, sodass die Abfrage nie eine E-Mail aufhält. [E-Mail](../../self-hosting/email.md#sprachen) nennt die Regeln für jede Art von Empfänger.
 
-Die Funktion jeder E-Mail hat ein `match` auf die Sprache, mit ganzen Sätzen und namentlich eingesetzten Werten, nie zusammengesetzten Bruchstücken. Deutsch spricht Menschen mit „Sie“ an. Chinesisch nutzt „您“, Satzzeichen in voller Breite und ein Leerzeichen zwischen chinesischen und lateinischen Wörtern oder Ziffern, das `locale::zh` an den Nahtstellen setzt. Datumsangaben und Zahlen folgen der Sprache:
+Die Funktion jeder E-Mail hat ein `match` auf die Sprache, mit ganzen Sätzen und namentlich eingesetzten Werten, nie zusammengesetzten Bruchstücken. Deutsch spricht Menschen mit „Sie“ an. Chinesisch nutzt „您“, Satzzeichen in voller Breite und ein Leerzeichen zwischen chinesischen und lateinischen Wörtern oder Ziffern, das `locale::zh` an den Nahtstellen setzt. Datumsangaben und Zahlen folgen der Sprache, und Geldbeträge stehen in der Währung der Organisation, mit Symbol für Dollar, Euro und Pfund und mit dem Code für jede andere:
 
 | | Englisch | Deutsch | Chinesisch |
 | --- | --- | --- | --- |
 | Datum | `14 Oct 2026` | `14. Okt. 2026` | `2026年10月14日` |
 | Monat | `October 2026` | `Oktober 2026` | `2026年10月` |
 | Betrag | `1,250` | `1.250` | `1,250` |
-| Dollar | `$1,250.00` | `1.250,00 $` | `$1,250.00` |
+| Geld | `$1,250.00`, `€1,250.00`, `CHF 1,250.00` | `1.250,00 $`, `1.250,00 €`, `1.250,00 CHF` | `$1,250.00`, `€1,250.00`, `CHF 1,250.00` |
 | Prozent | `80%` | `80 %` | `80%` |
 
 ## Die Wortmarke

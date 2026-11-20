@@ -9,7 +9,7 @@ order: 5
 ```mermaid
 flowchart LR
   accTitle: 组织的货币在哪里起作用
-  accDescr: 网关每个工作日获取一次欧洲央行参考汇率。请求以美元计费和存储，组织以自己的货币查看支出、价格和预算。
+  accDescr: 网关获取欧洲央行每个工作日发布一次的参考汇率。请求以美元计费和存储，组织以自己的货币查看支出、价格和预算。
   ecb[欧洲央行参考汇率]:::outside --> gateway[网关]:::accent
   gateway --> stored[以 USD 存储的支出]
   stored --> shown[以组织货币显示的支出、价格和预算]

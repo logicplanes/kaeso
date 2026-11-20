@@ -52,13 +52,27 @@ Das Gateway migriert die Datenbanken beim Start. Migrationen laufen nur vorwärt
 
 Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole den Befehl des Installationsskripts mit der genauen Version.
 
+## Von 0.6.0 aktualisieren
+
+Releases nach 0.6.0 lehnen drei Einstellungen ab, die 0.6.0 stillschweigend annahm. Ein Gateway mit einer davon hält beim Start an und nennt die Einstellung. Der Updater kann nicht zurücksetzen, sobald das neue Gateway eines Releases gestartet ist, das die Datenbanken migriert, also endet ein solches Update mit **Prüfung nötig**. Prüfen Sie diese Einstellungen vor dem Update in der `.env`, der `compose.override.yaml`, der Datei, die `KAESO_CONFIG` nennt, oder den Variablen Ihrer Plattform:
+
+| Einstellung | 0.6.0 | Jetzt |
+| --- | --- | --- |
+| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Nahm jede Dauer an und synchronisierte höchstens alle 5 Minuten | `auto` oder mindestens `5m` |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Hob ein kürzeres Intervall auf eine Minute an | Mindestens `1m` |
+| `KAESO_SMTP_USER` (`smtp.user`) | Sendete E-Mails ohne Anmeldung, wenn kein Passwort gesetzt war | Braucht `KAESO_SMTP_PASSWORD`; für einen Server ohne Anmeldung entfernen Sie den Benutzer |
+
+Eine leere `KAESO_CONFIG` gilt jetzt wie jede andere Variable als nicht gesetzt, wo 0.6.0 anhielt. Hat ein Update wegen einer dieser Einstellungen angehalten, korrigieren Sie sie und führen Sie `docker compose up -d --wait` aus ([Das Gateway startet immer wieder neu](troubleshooting.md#das-gateway-startet-immer-wieder-neu)).
+
+Auf einer Plattform, die das neue Gateway startet, bevor sie das alte anhält, etwa Render, Railway oder DigitalOcean App Platform, kann das alte Gateway seine letzten Anfragen nicht mehr zu den täglichen Nutzungssummen addieren, sobald das neue die Datenbank migriert hat. In **Analysen** und Ausgabenbudgets fehlen dann diese Anfragen; das Anfrageprotokoll behält sie.
+
 ## Neue Releases
 
 Das Gateway sucht alle 5 Minuten unter `update.kaeso.app` nach neuen Releases, nach einem Fehler 15 Minuten später. Bittet der Feed, länger zu warten, wartet es höchstens eine Stunde. Die Anfrage verrät nichts über Ihre Installation außer der Version des Gateways, und eine unveränderte Liste kostet nur eine kurze Antwort `304`.
 
 Instanz-Admins sehen das Ergebnis unter **Instanz** › **Updates**. Die Seite zeigt die laufende Version, das neueste Release mit den Release-Notizen aller Releases seither und wann das Gateway zuletzt gesucht hat.
 
-`instance/updates/check` der Platform API sucht sofort, auch wenn die Suche abgeschaltet ist oder der Feed das Gateway warten lässt. Den Feed fragt sie höchstens einmal pro Minute. Die Markierung **Neu** neben **Updates** ist der einzige Hinweis; Kaeso sendet keine E-Mails oder Banner zu Releases.
+`instance/updates/check` der Platform API sucht sofort, auch wenn die Suche abgeschaltet ist oder der Feed das Gateway warten lässt. Den Feed fragt sie höchstens einmal pro Minute. Die Markierung **Neu** neben **Updates** zeigt ein neues Release, und Instanz-Admins erhalten dazu eine E-Mail, sofern sie sie nicht abgeschaltet haben ([E-Mails wählen](../console/account.md#e-mails-wählen)). Banner zu Releases zeigt Kaeso nicht.
 
 | Einstellung | Standard | Was sie bewirkt |
 | --- | --- | --- |

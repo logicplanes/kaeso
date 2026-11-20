@@ -32,7 +32,7 @@ Kaeso übersetzt jede Anfrage, statt sie durchzureichen, und sendet sie einmal, 
 
 ## Der Schlüssel
 
-Das Gateway liest den API-Schlüssel aus `x-api-key`, sonst aus `Authorization: Bearer`. Der Schlüssel bestimmt das Projekt und handelt dort mit den Rechten seines Mitglieds oder Dienstkontos.
+Das Gateway liest den API-Schlüssel aus `x-api-key`, `x-goog-api-key` oder `xi-api-key`, sonst aus `Authorization: Bearer`. Der Schlüssel bestimmt das Projekt und handelt dort mit den Rechten seines Mitglieds oder Dienstkontos.
 
 Der Schlüssel braucht Inferenzzugriff, und sein Inhaber braucht das Recht `api.request`. Plattform-Schlüssel einer Organisation rufen nie Modelle auf.
 
@@ -68,7 +68,7 @@ Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine
 - Embeddings von einem Generierungsmodell oder Text von einem Embeddings-Modell;
 - Entscheidungen von einem Generierungsmodell oder Text von einem reinen Entscheidungsmodell ([Decisions-API](../api/decisions.md#was-abgelehnt-wird)).
 
-Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken, und ein Modell, das nur die Standardtemperatur annimmt, keine Temperatur. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat. Eine Aufwandsstufe, die das Modell nicht nennt, wird zur nächstgelegenen Stufe, die es nennt, und adaptives Denken für ein Claude-Modell ohne adaptives Denken zu `enabled`-Denken mit Budget; das nennt der Header `kaeso-adapted` der Antwort ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
+Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken, und ein Modell, das nur die Standardtemperatur annimmt, keine Temperatur. Claude Opus 4.7 und neuer erhalten außerdem weder `top_p` noch `top_k`. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat. Eine Aufwandsstufe, die das Modell nicht nennt, wird zur nächstgelegenen Stufe, die es nennt, und adaptives Denken für ein Claude-Modell ohne adaptives Denken zu `enabled`-Denken mit Budget. Ein Denkbudget für Claude Opus 4.7 und neuer wird dagegen zu adaptivem Denken. Das nennt der Header `kaeso-adapted` der Antwort ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
 
 Eine Anfrage in einem OpenAI-Format für ein Claude-Modell braucht kein Ausgabelimit: Kaeso sendet das Maximum des Modells. Eine Messages-Anfrage ohne `max_tokens` erhält 400, so wie bei Anthropic. Eine Anfrage aus einem anderen Format, die mehr Ausgabe verlangt, als das Modell schreiben kann, erhält stattdessen das Maximum des Modells, und der Header `kaeso-adapted` der Antwort nennt das Feld, etwa `max_tokens`. Claude Code etwa verlangt von jedem Modell, das es nicht kennt, 32.000 Token.
 
@@ -93,7 +93,7 @@ Apps in den OpenAI-Formaten erhalten diese 503-Antworten als 500, die ihre SDKs 
 
 ## Der Anbieter-Schlüssel
 
-Kaeso nutzt den Anbieter-Schlüssel, der dem Projekt für den Anbieter des Modells zugewiesen ist, sonst den Standard der Organisation für diesen Anbieter. Fehlen beide, erhält die Anfrage 400. Kaeso entschlüsselt den Schlüssel mit dem Hauptschlüssel und hält ihn im Speicher, wobei es ihn mindestens alle 30 Sekunden neu liest. Bis 15 Minuten nach der letzten Anfrage des Projekts liest es ihn vor Ablauf der 30 Sekunden im Hintergrund neu, sodass Anfragen nicht darauf warten.
+Kaeso nutzt die Anbieter-Schlüssel, die dem Projekt für den Anbieter des Modells zugewiesen sind, sonst den Standard der Organisation für diesen Anbieter. Fehlen beide, erhält die Anfrage 400. Sind mehrere Schlüssel zugewiesen, behält jeder Aufrufer einen Schlüssel, gezogen nach den Gewichten der Schlüssel. Ein Schlüssel, der abgelehnt wird, kein Guthaben mehr hat oder sein Ratenlimit erreicht, überlässt die Anfrage dem nächsten ([Schlüssel eines Projekts wählen](../console/provider-keys.md#schlüssel-eines-projekts-wählen)). Kaeso entschlüsselt den Schlüssel mit dem Hauptschlüssel und hält ihn im Speicher, wobei es ihn mindestens alle 30 Sekunden neu liest. Bis 15 Minuten nach der letzten Anfrage des Projekts liest es ihn vor Ablauf der 30 Sekunden im Hintergrund neu, sodass Anfragen nicht darauf warten.
 
 ## Senden an den Anbieter
 
@@ -109,7 +109,7 @@ KPP decodiert die Antwort in das kanonische Format und codiert sie im Format der
 
 Ein Fehler des Anbieters erreicht eine App im selben Format genau so, wie der Anbieter ihn gesendet hat. Eine App in einem anderen Format erhält dieselbe Bedeutung in ihrem eigenen Format. Die Ausnahme ist ein Anbieter, der den Anbieter-Schlüssel des Projekts ablehnt: Jede App erhält dann einen Anbieterfehler, 502, der auf einen Organisations-Admin verweist. [Fehler](../api/errors.md) listet jeden Fehler.
 
-Antworten tragen die Header `kaeso-model` und `kaeso-provider`. Die Header eines Streams gehen hinaus, sobald der Anbieter antwortet. Solange ein Stream offen und still ist, schreibt Kaeso Keepalives, die das SDK der App ignoriert.
+Antworten tragen die Header `kaeso-model` und `kaeso-provider`. Die Header eines Streams gehen hinaus, sobald der Anbieter die erste Ausgabe sendet oder das erste Keepalive fällig ist. Ein Fehler des Anbieters davor erreicht die App mit seinem Status, wie ohne Stream, und eine Alias-Route weicht auf ihren Fallback aus ([Fallbacks](alias-routes.md#fallbacks)). Solange ein Stream offen und still ist, schreibt Kaeso Keepalives, die das SDK der App ignoriert.
 
 ## Fehlgeschlagene Streams
 

@@ -25,6 +25,12 @@ Sans-IO codecs between [KPP](https://crates.io/crates/kaeso-kpp) and the wire fo
 | OpenAI Decisions | Decisions: predicate, choice and score questions about text, images, JSON and conversations, with probabilities and refusals |
 | Gemini Decisions | Decisions: yes/no, choice and score questions about text, images, audio, video and PDF documents, with probabilities |
 | Cohere Rerank | Rerank: a query and documents, answered with each document's relevance score |
+| Voyage Rerank, Jina Rerank | Rerank, in Voyage AI's and Jina AI's forms |
+| Amazon Bedrock Converse | Generation and streams through Bedrock's Converse API |
+| fal, Replicate | Images and video jobs of the models Kaeso maps |
+| Deepgram | Speech and transcriptions |
+| Cartesia | Speech and transcriptions |
+| AssemblyAI | Transcriptions |
 
 Every dialect also reads and writes its own errors, and the chat and embeddings dialects their model listings. What a dialect cannot do is refused with an `Unsupported` error.
 

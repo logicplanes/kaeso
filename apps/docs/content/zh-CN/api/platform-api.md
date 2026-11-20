@@ -113,7 +113,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 主题 | 规则 |
 | --- | --- |
 | 格式 | 基于 JSON 的 REST：路径使用复数 kebab case（`service-accounts`），字段使用 `snake_case`。请求正文以 `content-type: application/json` 发送；端点不认识的字段会得到 400。 |
-| ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`mem_…`、`inv_…`、`svc_…`、`key_…`、`opk_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`ses_…`、`req_…`、`evt_…`、`exp_…`、`upd_…`、`agt_…`、`act_…`、`cli_…`、`mcp_…`、`conn_…`、`tool_…`、`grant_…`、`call_…`、`video_…`。 |
+| ID | 前缀加按时间排序的部分：`org_…`、`proj_…`、`usr_…`、`mem_…`、`inv_…`、`svc_…`、`key_…`、`opk_…`、`cred_…`、`model_…`、`alias_…`、`lim_…`、`role_…`、`ses_…`、`req_…`、`evt_…`、`exp_…`、`upd_…`、`agt_…`、`act_…`、`cli_…`、`mcp_…`、`conn_…`、`tool_…`、`grant_…`、`call_…`、`video_…`、`whk_…`、`msg_…`、`grd_…`、`shl_…`。 |
 | 时间 | RFC 3339，UTC。每个响应都在 `Kaeso-Time-Zone` 中给出实例的时区，例如 `Europe/Berlin`，即控制台显示时间所用的时区。 |
 | 金额 | 十进制字符串，例如 `"0.0001"`：`cost` 以美元计，`converted_cost` 和支出预算以组织的 `currency` 计（[货币](../concepts/currencies.md#在-platform-api-中)）。价格和数额以十进制字符串或整数发送；JSON 小数（例如 `0.5`）会得到 400。 |
 | 限额数额 | 最多 10^12 个请求或 Token；支出预算最多相当于 1,000,000,000 美元。 |
@@ -185,11 +185,12 @@ docker compose exec gateway kaeso openapi > openapi.json
 | 路径 | 内容 |
 | --- | --- |
 | `auth/*` | 首次设置、登录方式、密码和双重验证登录、登录链接、重置密码、单点登录、会话、实例允许该地址时的注册，以及邀请。`auth/session` 返回用户、其带有角色和权限的成员身份、管理该账户的组织（`managed_by`），以及能否创建组织（`can_create_orgs`）。 |
-| `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥、通知和智能体，以及创建组织和删除账户。 |
+| `me`、`me/*` | 您的个人资料、头像和语言（`locale`：`auto`、`en`、`de` 或 `zh-CN`）、电子邮件地址、密码、双重验证和恢复码。还有您的会话、成员身份、密钥、通知和智能体、汇率（`exchange-rates`），以及创建组织和删除账户。 |
+| `share/{token}` | [共享链接](../console/share-usage.md)显示的内容及其预览图（`share/{token}/image.png`）。面向所有人的链接无需登录；仅限成员的链接需要该组织某位成员的会话。 |
 | `notifications/unsubscribe` | 邮件末尾的链接：`GET` 说明它会停止哪封邮件，`POST` 关闭该邮件。它不需要会话，并且为了邮件应用的一键退订（RFC 8058）也不需要 `Origin`；链接中的签名令牌即为凭证。 |
-| `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、自定义服务商（`custom-providers`）、MCP 服务器及其工具（`mcp-servers`）、项目能否使用响应缓存（`response-cache`）、安全设置、平台密钥、Webhook 及其投递（`webhooks`）、日志设置和存储、用量及其时间线（`usage/timeline`）和首末日期（`usage/span`）、审计日志、所有权转让、删除和恢复。 |
-| `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录和别名、限额、响应缓存、项目使用的 MCP 服务器及其工具（`tools`）和谁可以调用哪个工具（`tool-access`）、连接到其门户的客户端（`portal-grants`）、内容日志、请求日志、工具调用（`logs/tool-calls`）和导出、带 `usage/timeline` 和 `usage/span` 的用量、审计日志和[试验场](#试验场)。 |
-| `instance/*` | 供实例管理员使用：用户、组织、实例设置和可通过其单点登录管理实例的组织（`instance/settings/admin-sso`）、智能体策略、系统健康状况、存储和模型数据、更新，以及实例审计日志。 |
+| `orgs/{org}/*` | 组织及其头像、成员、邀请、角色和权限，以及项目。还有 Kaeso 调用的服务商、服务商密钥、自定义服务商（`custom-providers`）、MCP 服务器及其工具（`mcp-servers`）、项目能否使用响应缓存（`response-cache`）、安全设置、SCIM 预配（`scim`）、防护规则（`guardrails`）、共享链接（`shared-links`）、项目能否在服务商处保存响应（`stored-responses`）、调用即将停用模型的项目（`deprecations`）、平台密钥、Webhook 及其投递（`webhooks`）、日志设置和存储、用量及其时间线（`usage/timeline`）和首末日期（`usage/span`）、审计日志、所有权转让、删除和恢复。 |
+| `orgs/{org}/projects/{project}/*` | 项目及其头像、成员及其模型访问范围、服务账号、密钥及其模型和限额，以及密钥策略。还有目录、模型系列（`lines`）和别名、即将停用的模型（`deprecations`、`model-lifecycle`）、限额、响应缓存、其请求经过的防护规则、在服务商处保存的响应（`stored-responses`）、项目使用的 MCP 服务器及其工具（`tools`）和谁可以调用哪个工具（`tool-access`）、连接到其门户的客户端（`portal-grants`）、内容日志、请求日志及其最常见的失败（`logs/errors`）、工具调用（`logs/tool-calls`）和导出、带 `usage/timeline` 和 `usage/span` 的用量、审计日志和[试验场](#试验场)。 |
+| `instance/*` | 供实例管理员使用：用户和发往本安装的邀请（`users/invites`）、组织、实例设置和可通过其单点登录管理实例的组织（`instance/settings/admin-sso`）、智能体策略、系统健康状况、存储和模型数据及按需同步（`kpmr/sync`）、更新，以及实例审计日志。 |
 | `orgs/{org}/agents`、`orgs/{org}/security/agents`、`me/agents/*`、`me/agent-requests/*` | 智能体、其权限和智能体策略，带有 `agents` 标签（[路由](mcp.md#platform-api-路由)）。 |
 
 `instance/*` 下的大多数路由在 `openapi.json` 中指定了一项 `instance.*` 权限。实例管理员的会话拥有其中每一项，实例管理员的智能体则需要逐项获得（[实例权限](../concepts/rights.md#实例权限)）。将某人设为实例管理员、`instance/settings/admin-sso`、设置智能体策略，以及立即删除用户或组织，都只能通过会话进行。同样，智能体可以使用的 `me/*` 路由指定了一项 `account.*` 权限，会话则不需要（[账户权限](../concepts/rights.md#账户权限)）。

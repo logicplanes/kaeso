@@ -41,6 +41,7 @@ Wählen Sie unter **Mitglieder** ein Mitglied, um sein Sheet zu öffnen:
 - **Rolle** zeigt seine Rolle. **Anpassen** gibt oder nimmt einzelne Rechte. Ein Recht, das ein anderes seiner Rechte voraussetzt, kommt und geht mit diesem.
 - **Zugriff** listet jedes Recht des Mitglieds und die Rolle oder das Recht, aus dem es stammt.
 - Unter seinen Projekten steht seine Rolle in jedem Projekt.
+- Unter **Nutzung** erstellt **Teilen** einen schreibgeschützten Link zu seiner Nutzung der letzten 30 Tage ([Nutzung teilen](share-usage.md)).
 - **Inhaberschaft übertragen**, für Inhaber, macht das Mitglied zum Inhaber und Sie zum Admin.
 - **Aus der Organisation entfernen** nimmt es aus jedem Projekt und archiviert seine Schlüssel in der Organisation. In Ihrem eigenen Sheet heißt das **Organisation verlassen**.
 
