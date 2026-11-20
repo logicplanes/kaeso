@@ -47,7 +47,12 @@ async function visitAll(browser: Browser, page: Page, places: Place[], device: k
     if (place.dialog) await expect(phone.getByRole("dialog").first()).toBeVisible();
     await expect(phone.locator("[aria-busy=true]")).toHaveCount(0);
     await phone.evaluate("document.fonts.ready.then(() => true)");
-    await phone.waitForFunction("!document.getAnimations().some((a) => a.playState === 'running' && a.effect?.getComputedTiming().endTime !== Infinity)");
+    // The console's Trusted Types policy refuses waitForFunction's string predicate; evaluate takes a string.
+    await expect
+      .poll(() =>
+        phone.evaluate("document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.getComputedTiming().endTime !== Infinity).length"),
+      )
+      .toBe(0);
     for (const problem of (await phone.evaluate(sideways(width))) as string[]) problems.push(`${place.name}: ${problem}`);
   }
   await context.close();
@@ -72,8 +77,10 @@ test("every project page outside Analytics, with its sheets and dialogs, fits a 
     expect(credential.ok()).toBe(true);
   }
   const listed = async () =>
-    ((await (await page.request.get(`${api}/models`)).json()) as { data: { id: string; model_id: string }[] }).data.find((m) => m.model_id === "gpt-5.4-mini")?.id;
-  if (!(await listed())) expect((await page.request.post(`${api}/models`, { headers, data: { provider: "openai", model_id: "gpt-5.4-mini" } })).ok()).toBe(true);
+    ((await (await page.request.get(`${api}/models`)).json()) as { data: { id: string; model_id: string }[] }).data.find((m) => m.model_id === "gpt-5.4-mini")
+      ?.id;
+  if (!(await listed()))
+    expect((await page.request.post(`${api}/models`, { headers, data: { provider: "openai", model_id: "gpt-5.4-mini" } })).ok()).toBe(true);
   const model = await listed();
   expect(model).toBeTruthy();
   const created = await page.request.post(`${api}/keys`, { headers, data: { name: LONG_KEY, access: "inference" } });
