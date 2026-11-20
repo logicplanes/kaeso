@@ -71,7 +71,7 @@ describe("organization analytics", () => {
     const table = await breakdown();
     await within(table).findByRole("link", { name: "Checkout assistant" });
     const header = within(table).getAllByRole("row")[0] as HTMLElement;
-    expect(header.style.gridTemplateColumns.split(" ").slice(2, 3)).toEqual(["104px"]);
+    expect(header.style.gridTemplateColumns).toMatch(/^minmax\([^)]*\) 104px /);
   });
 
   it("shows the organization's cost in its currency, with the rates it used", async () => {

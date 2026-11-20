@@ -203,7 +203,7 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     keyName,
     memberName,
     projectOf,
-    namesLoading: models.isLoading || keys.isLoading || projects.isLoading || orgMembers.isLoading,
+    namesLoading: models.isLoading || keys.isLoading || projects.isLoading || orgMembers.isLoading || accounts.isLoading,
     live: to === utcDay(new Date()),
     forecast: month.data ? forecast(month.data, monthFrom, today) : undefined,
     forecastLoading: showCost && month.isPending,

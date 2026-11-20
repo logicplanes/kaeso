@@ -1,6 +1,6 @@
-import { createRef } from "react";
+import { createRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { hydrateRoot } from "react-dom/client";
 import userEvent from "@testing-library/user-event";
@@ -228,7 +228,7 @@ describe("List", () => {
     for (const date of ["2. Juli 2026", "20. Sept. 2026"]) {
       const column = screen.getByText(date).parentElement!;
       expect(column).toHaveClass("text-right", "shrink-0");
-      expect(column.style.minWidth).toBe("max(var(--spacing-112), var(--k-list-date, 0px))");
+      expect(column.style.minWidth).toBe("max(112px, var(--k-list-date, 0px))");
     }
     spy.mockRestore();
   });
@@ -251,6 +251,26 @@ describe("List", () => {
     rect.mockRestore();
     offset.mockRestore();
   });
+  it("wide, widens every row's date when one grows without the list rendering again, such as a time that ticks", async () => {
+    const offset = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(900);
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      const width = this.dataset.listDate !== undefined ? (this.textContent ?? "").length * 7.25 : 0;
+      return { width, height: 0, top: 0, left: 0, right: width, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    let tick: (text: string) => void = () => {};
+    function LastUsed() {
+      const [text, setText] = useState("Used 2 min ago");
+      tick = setText;
+      return <>{text}</>;
+    }
+    render(<List aria-label="Links" items={[{ id: "a", title: "Northwind usage", meta: <span>Members</span>, date: <LastUsed /> }]} />);
+    const grid = screen.getByRole("grid", { name: "Links" });
+    expect(grid.style.getPropertyValue("--k-list-date")).toBe("102px");
+    act(() => tick("Used 3 weeks ago"));
+    await waitFor(() => expect(grid.style.getPropertyValue("--k-list-date")).toBe("116px"));
+    rect.mockRestore();
+    offset.mockRestore();
+  });
   it("narrow (a phone), puts a row's metadata and date on a line under its title, and grows to hold them", () => {
     const rows = [{ id: "a", title: "shell-invitee@example.com", subtitle: "Invited by Ada", meta: <span>Accepted</span>, date: "Sent 13 Oct 2026" }];
     const spy = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(360);
@@ -264,6 +284,9 @@ describe("List", () => {
     const line = within(cell).getByText("Accepted").parentElement?.parentElement;
     expect(line).toHaveClass("flex-wrap", "min-h-24");
     expect(line).not.toHaveClass("h-24");
+    // Without actions the title and its subtitle keep the whole width, with no gap held for them.
+    expect(screen.getByText("Invited by Ada")).not.toHaveClass("col-span-2");
+    expect(screen.getByText("Invited by Ada").closest(".grid")).toHaveClass("grid-cols-1");
     unmount();
     const withActions = [{ ...rows[0]!, actions: <button type="button">Copy</button> }];
     const { unmount: gone } = render(<List aria-label="Invitations" items={withActions} />);

@@ -191,21 +191,32 @@ export const List = forwardRef<HTMLDivElement, ListProps>(function List(
     };
     requestAnimationFrame(wait);
   });
-  // Each row lays itself out, so a date wider than the column's minimum would push that row's badges out of line with the others'.
+  // Each row lays itself out, so a date wider than the column's minimum would push that row's badges out of line with the
+  // others'. Rows scrolled into a long list and dates that change on their own are watched, and the width only grows until
+  // the rows change.
   useLayoutEffect(() => {
     const el = root.current;
     if (!el) return;
+    if (narrow || !dated) {
+      el.style.removeProperty("--k-list-date");
+      return;
+    }
+    let widest = 0;
     const measure = () => {
-      let widest = 0;
       for (const d of el.querySelectorAll<HTMLElement>("[data-list-date]")) widest = Math.max(widest, d.getBoundingClientRect().width);
       const next = widest ? `${Math.ceil(widest)}px` : "";
       if (el.style.getPropertyValue("--k-list-date") !== next) el.style.setProperty("--k-list-date", next);
     };
     measure();
-    void document.fonts?.ready.then(() => {
-      if (el.isConnected) measure();
-    });
-  });
+    const watch = new MutationObserver(measure);
+    watch.observe(el, { childList: true, subtree: true, characterData: true });
+    let live = true;
+    void document.fonts?.ready.then(() => live && measure());
+    return () => {
+      live = false;
+      watch.disconnect();
+    };
+  }, [flat, narrow, dated]);
   const hadVirtualRows = useRef(!!VirtualRows);
   useLayoutEffect(() => {
     if (VirtualRows && !hadVirtualRows.current && active >= 0 && document.activeElement === document.body) {
@@ -585,7 +596,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
           </TruncatedText>
         )}
         <span className={cn("flex min-w-0 flex-1", lines ? "flex-col items-stretch gap-4" : "contents")}>
-          <span className={cn(lines ? "grid min-w-0 grid-cols-row-actions items-start gap-x-8 gap-y-2" : "contents")}>
+          <span className={cn(lines ? cn("grid min-w-0 items-start gap-y-2", item.actions ? "grid-cols-row-actions gap-x-8" : "grid-cols-1") : "contents")}>
             <span className={cn(lines && stacked ? "contents" : cn("flex min-w-0 flex-1", stacked ? "flex-col items-start gap-2" : "items-baseline gap-8"))}>
               {typeof item.title === "string" ? (
                 <Text truncate weight="medium" tone={off ? "inherit" : "default"} className={cn("min-w-0 shrink", stacked && "max-w-full")}>
@@ -601,7 +612,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
                     "min-w-0",
                     off ? "text-fg-disabled" : "text-fg-secondary",
                     stacked ? "max-w-full text-small" : "flex-1 basis-0",
-                    lines && "col-span-2",
+                    lines && item.actions && "col-span-2",
                   )}
                 >
                   {item.subtitle}
@@ -646,7 +657,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
         {!lines && (item.date || dated) && (
           <span
             className={cn("shrink-0 text-right text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}
-            style={{ minWidth: "max(var(--spacing-112), var(--k-list-date, 0px))" }}
+            style={{ minWidth: "max(112px, var(--k-list-date, 0px))" }}
           >
             <span data-list-date="">{item.date}</span>
           </span>
