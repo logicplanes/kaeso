@@ -3,11 +3,12 @@ import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { limitsQuery } from "~/api/queries/limits";
 import { catalogueQuery } from "~/api/queries/models";
+import { serviceAccountLookupQuery } from "~/api/queries/members";
 import { orgMembersQuery } from "~/api/queries/orgs";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { orgUsageQuery, projectUsageQuery, timelineQuery, usageSpanQuery, type GroupBy, type TimelineStep } from "~/api/queries/usage";
 import { useProjectRights } from "~/auth/rights";
-import { useOrgRights, useRequestLogs, useSession } from "~/auth/session";
+import { everyProjectRights, useOrgRights, useRequestLogs, useSession } from "~/auth/session";
 import { analyticsGranularity } from "~/format/buckets";
 import { previousPeriod, shiftDay, utcDay, type PeriodSearch } from "~/format/period";
 import { comparedWith, resolvePeriod } from "~/format/presets";
@@ -108,6 +109,15 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
   const projects = useQuery({ ...orgProjectsQuery(org, true), enabled: !project });
   const orgMembers = useQuery({ ...orgMembersQuery(org), enabled: !project && orgRights.has("members.view") });
   const limits = useQuery({ ...limitsQuery(org, project ?? "", { level: "project" }), enabled: !!project && can("limits.view") });
+  const accountIds = project ? [] : [...new Set((byThird.data ?? []).flatMap((r) => (r.key.startsWith("service_account:") ? [r.key.slice(16)] : [])))].sort();
+  const accounts = useQuery({
+    ...serviceAccountLookupQuery(
+      org,
+      (projects.data ?? []).map((p) => ({ id: p.id, name: p.name })),
+      accountIds,
+    ),
+    enabled: !project && !!projects.data && accountIds.length > 0 && everyProjectRights(session, org).has("service_accounts.view"),
+  });
   const showErrors = !!project && logsOn && can("logs.metadata.view");
   const providers = useProviders(org);
   const partyName = usePartyName(org, project ?? "");
@@ -126,7 +136,10 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     const [kind, id = ""] = k.split(":");
     const sa = kind === "service_account";
     if (!project) {
-      if (sa) return t("orgHome.serviceAccount", "Service account");
+      if (sa) {
+        const found = accounts.data?.find((a) => a.account.id === id);
+        return found ? serviceAccountName(found.account.name) : t("orgHome.serviceAccount", "Service account");
+      }
       const m = orgMembers.data?.find((x) => x.user.id === id);
       if (!m) return t("orgHome.formerMember", "Former member");
       return m.user.id === session.user.id ? t("orgHome.nameYou", "{name} (you)", { name: m.user.name }) : m.user.name;
@@ -190,7 +203,7 @@ export function useOverview(scope: Scope, search: PeriodSearch) {
     keyName,
     memberName,
     projectOf,
-    namesLoading: models.isLoading || keys.isLoading || projects.isLoading || orgMembers.isLoading,
+    namesLoading: models.isLoading || keys.isLoading || projects.isLoading || orgMembers.isLoading || accounts.isLoading,
     live: to === utcDay(new Date()),
     forecast: month.data ? forecast(month.data, monthFrom, today) : undefined,
     forecastLoading: showCost && month.isPending,

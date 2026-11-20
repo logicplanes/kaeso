@@ -411,7 +411,7 @@ function PlatformKeyDetails({ org, k }: { org: string; k: OrgKeyView }) {
           { label: common.lastUsed(), value: k.last_used_at ? formatRelative(k.last_used_at) : common.never() },
           ...(k.replaced_by ? [{ label: t("keys.replacedBy", "Replaced by"), value: <PlatformKeyLink org={org} keyId={k.replaced_by} /> }] : []),
           ...(k.rotated_from ? [{ label: t("keys.rotatedFrom", "Rotated from"), value: <PlatformKeyLink org={org} keyId={k.rotated_from} /> }] : []),
-          { label: t("keys.id", "Id"), value: k.id, copy: k.id },
+          { label: t("keys.id", "Id"), value: k.id, copy: k.id, mono: true },
         ]}
       />
     </div>

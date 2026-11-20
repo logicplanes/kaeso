@@ -171,7 +171,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
   const busiest = entities[0];
   const priciest = [...entities].filter((e) => e.cost > 0).sort((a, b) => b.cost - a.cost)[0];
   const flakiest = [...entities].filter((e) => e.requests >= 10).sort((a, b) => b.errors / b.requests - a.errors / a.requests)[0];
-  const loading = now.isPending;
+  const loading = now.isPending || o.namesLoading;
 
   const columns = [
     col.custom(

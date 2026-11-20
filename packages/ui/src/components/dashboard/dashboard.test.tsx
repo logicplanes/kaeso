@@ -173,6 +173,13 @@ describe("RankList", () => {
     fireEvent.click(rows[1]!);
     expect(open).toHaveBeenCalledWith("b");
   });
+  it("ends every number at the row's right edge, so values line up between rows", () => {
+    render(<RankList aria-label="Models by requests" items={items} />);
+    for (const value of ["31,629", "4,655"]) {
+      const shown = screen.getByText(value).parentElement!;
+      expect(shown).toHaveClass("inline-flex", "justify-end", "min-w-64");
+    }
+  });
   it("gives every row's change a column of its own: neutral, better or worse, or a word", () => {
     render(
       <RankList

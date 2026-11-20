@@ -200,7 +200,8 @@ describe("organization members", () => {
     expect(await screen.findByText("No pending invitations")).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Roles" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ tab: "roles" }));
-    expect(await screen.findByRole("button", { name: "Create role" })).toBeInTheDocument();
+    // The button fits its own label, so its icon sits beside "Create role" instead of where "Invite members" would end.
+    expect(await screen.findByRole("button", { name: "Create role" })).toHaveTextContent(/^Create role$/);
     await user.click(screen.getByRole("tab", { name: "Members" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
     expect(await screen.findByRole("button", { name: "Invite members" })).toBeInTheDocument();

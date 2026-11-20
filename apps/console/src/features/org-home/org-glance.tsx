@@ -80,35 +80,37 @@ function ProjectsCell({ org }: { org: string }) {
   const daily = useQueries({
     queries: shown.map((p) => ({ ...projectUsageQuery(org, p.id, from, today, "day"), enabled: canUsage, refetchInterval: REFRESH, retry: false })),
   });
-  const items: RankItem[] = shown.map((p, i) => {
+  const rows = shown.map((p, i) => {
     const days = byBucket(daily[i]?.data ?? [], from, today);
-    const todayRow = days.at(-1)?.row;
-    return {
-      id: p.id,
-      label: (
-        <>
-          <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />
-          <span className="min-w-0 truncate">{p.name}</span>
-        </>
-      ),
-      ...(canUsage
-        ? {
-            secondary: (
-              <span className="hidden w-120 items-center sm:flex">
-                {daily[i]?.data && (
-                  <Sparkline
-                    values={days.map((d) => d.row?.requests ?? 0)}
-                    fluid
-                    aria-label={t("orgHome.projectTrend", "{project}: requests per day, the last 14 days", { project: p.name })}
-                  />
-                )}
-              </span>
-            ),
-            value: formatNumber(todayRow?.requests ?? 0),
-          }
-        : {}),
-    };
+    return { p, i, days, requests: days.at(-1)?.row?.requests ?? 0 };
   });
+  // The six with the most requests in 14 days, in the order of the number each row shows: today's.
+  if (canUsage) rows.sort((a, b) => b.requests - a.requests || a.i - b.i);
+  const items: RankItem[] = rows.map(({ p, i, days, requests }) => ({
+    id: p.id,
+    label: (
+      <>
+        <Avatar name={p.name} {...(p.avatar_url ? { src: p.avatar_url } : {})} kind="org" size={20} decorative />
+        <span className="min-w-0 truncate">{p.name}</span>
+      </>
+    ),
+    ...(canUsage
+      ? {
+          secondary: (
+            <span className="hidden w-120 items-center sm:flex">
+              {daily[i]?.data && (
+                <Sparkline
+                  values={days.map((d) => d.row?.requests ?? 0)}
+                  fluid
+                  aria-label={t("orgHome.projectTrend", "{project}: requests per day, the last 14 days", { project: p.name })}
+                />
+              )}
+            </span>
+          ),
+          value: formatNumber(requests),
+        }
+      : {}),
+  }));
   const total = projects.data?.filter((p) => !p.archived_at).length ?? 0;
   return (
     <DashboardCell
@@ -117,7 +119,7 @@ function ProjectsCell({ org }: { org: string }) {
       {...(canUsage ? { href: `${orgPath(org)}/analytics/projects` } : {})}
       actions={
         <Button size="sm" variant="ghost" href={`${orgPath(org)}/projects`}>
-          {total > PROJECT_ROWS ? t("orgHome.allCount", "All {count}", { count: total }) : t("orgHome.allProjects", "View all projects")}
+          {total > PROJECT_ROWS ? t("orgHome.allCount", "All {count}", { count: total }) : t("orgHome.allProjects", "All projects")}
         </Button>
       }
     >

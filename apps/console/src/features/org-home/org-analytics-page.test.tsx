@@ -64,6 +64,16 @@ describe("organization analytics", () => {
     expect(within(table).getAllByRole("row")[1]).toHaveTextContent("$2.00");
   });
 
+  it("gives Requests room for its header and the sort arrow beside it", async () => {
+    signedIn();
+    usage({ project: wrap([usageRow(PROJECT, { requests: 30, errors: 3, cost: "2.00" })]) });
+    await renderApp(`/orgs/${ORG}/analytics?${PERIOD}`);
+    const table = await breakdown();
+    await within(table).findByRole("link", { name: "Checkout assistant" });
+    const header = within(table).getAllByRole("row")[0] as HTMLElement;
+    expect(header.style.gridTemplateColumns).toMatch(/^minmax\([^)]*\) 104px /);
+  });
+
   it("shows the organization's cost in its currency, with the rates it used", async () => {
     signedIn({ memberships: [myMembership({ org_currency: "GBP" })] });
     usage({

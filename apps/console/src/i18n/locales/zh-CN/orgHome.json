@@ -6,7 +6,7 @@
   "orgHome.added": "添加信息",
   "orgHome.addedBy": "{name}，{date}",
   "orgHome.allCount": "全部 {count} 个",
-  "orgHome.allProjects": "查看全部项目",
+  "orgHome.allProjects": "全部项目",
   "orgHome.analytics": "分析",
   "orgHome.archivedOn": "归档于 {date}",
   "orgHome.assignDefaultKeyHint": "即使其他密钥成为默认密钥，这些项目仍使用它访问 {provider}。",

@@ -1323,6 +1323,10 @@
 @utility grid-cols-aside {
   grid-template-columns: minmax(0, 1fr) var(--k-width-aside);
 }
+/* A phone list row: the title beside its actions, the lines under them across the whole row. */
+@utility grid-cols-row-actions {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
 
 @utility ring-invalid {
   box-shadow: inset 0 0 0 1px var(--k-danger);
