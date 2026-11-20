@@ -387,6 +387,54 @@ def test_the_compose_runner_applies_a_changed_compose_file_through_the_proxy(ins
         install.run("up", "-d", "--wait", "--wait-timeout", "300")
 
 
+def test_the_compose_runner_stops_an_update_whose_gateway_would_refuse_its_settings(install):
+    compose = install.work / "compose.yaml"
+    env = install.work / ".env"
+    original, original_env = compose.read_text(), env.read_text()
+    marker = "      KAESO_LOG_FORMAT: json\n    secrets: [master_keys]\n"
+    assert marker in original
+    before = {service: container_ids(install, service) for service in ("gateway", "console")}
+
+    def refused(compose_text: str, env_text: str = original_env) -> str:
+        compose.write_text(compose_text)
+        env.write_text(env_text)
+        ran = as_runner(install, "pull")
+        assert ran.returncode == 3, ran.stdout + ran.stderr
+        assert "so the update stops before it switches" in ran.stderr, ran.stderr
+        return ran.stderr
+
+    try:
+        said = refused(original.replace(marker, "      KAESO_LOG_FORMAT: json\n      KAESO_KPMR_INTERVAL: 1m\n    secrets: [master_keys]\n"))
+        assert "KAESO_KPMR_INTERVAL (kpmr.interval) is 1m, and it must be `auto` or at least 5m" in said
+
+        said = refused(original, original_env + "KAESO_SMTP_USER=AKIAEXAMPLE\n")
+        assert "KAESO_SMTP_PASSWORD (smtp.password) is required when smtp.user is set" in said
+        assert "AKIAEXAMPLE" not in said, "some providers' SMTP user is an access key id"
+
+        (install.work / "gateway.env").write_text("KAESO_MCP_SERVERS_SYNC_INTERVAL=30s\n")
+        said = refused(original.replace(marker, marker + "    env_file: [gateway.env]\n"))
+        assert "KAESO_MCP_SERVERS_SYNC_INTERVAL (mcp_servers.sync_interval) is 30s" in said
+
+        (install.work / "kaeso.toml").write_text('[kpmr]\ninterval = "2m"\n')
+        with_file = original.replace(
+            marker,
+            "      KAESO_LOG_FORMAT: json\n      KAESO_CONFIG: /etc/kaeso/kaeso.toml\n    secrets: [master_keys]\n    volumes:\n      - ./kaeso.toml:/etc/kaeso/kaeso.toml:ro\n",
+        )
+        said = refused(with_file)
+        assert "KAESO_KPMR_INTERVAL (kpmr.interval) is 2m" in said
+
+        (install.work / "kaeso.toml").write_text('[kpmr]\ninterval = "5m"\n')
+        compose.write_text(with_file)
+        fine = as_runner(install, "pull")
+        assert fine.returncode == 0, fine.stderr
+        assert {service: container_ids(install, service) for service in ("gateway", "console")} == before, "nothing was switched"
+    finally:
+        compose.write_text(original)
+        env.write_text(original_env)
+        for leftover in ("gateway.env", "kaeso.toml"):
+            (install.work / leftover).unlink(missing_ok=True)
+
+
 def test_docker_proxy_refuses_the_runner_a_bind_mount_outside_the_install_folder(install):
     body = json.dumps({"Image": "sha256:" + "0" * 64, "HostConfig": {"Binds": ["/etc:/host:ro"]}})
     refused = subprocess.run(

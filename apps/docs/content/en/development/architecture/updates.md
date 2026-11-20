@@ -138,7 +138,7 @@ The updater polls the runner until it exits, keeps the last lines of its log as 
 
 | Task | Runs | Services |
 | --- | --- | --- |
-| `pull` | `pull --quiet --policy missing` | Every service but `updater`, `updater-init` and `docker-proxy`; it refuses an image not pinned by digest, which the proxy wouldn't let Compose inspect |
+| `pull` | `pull --quiet --policy missing` | Every service but `updater`, `updater-init` and `docker-proxy`; it refuses an image not pinned by digest, which the proxy wouldn't let Compose inspect, and a gateway setting the new gateway would refuse at startup (`gateway_settings.rs`), read from the resolved environment and the file `KAESO_CONFIG` names, since a migrating release can't roll back once its gateway has started. `up` leaves the settings alone, so a rollback starts the previous release |
 | `stop` | `stop gateway console` | Every gateway replica and the console |
 | `up` | `up --detach --wait --wait-timeout 600` | The same as `pull` |
 | `replace` | `up --detach --no-deps --wait` | Every service with one of Kaeso's images but the gateway and console, such as the updater and Caddy |
@@ -203,5 +203,5 @@ Caddy reads the maintenance flag from the `maintenance` volume. While it exists,
 | `crates/kaeso-updater/src/compose_cli.rs` | Every task's Docker Compose command against a fake binary, and unpinned images refused |
 | `crates/kaeso-updater/tests/engine.rs`, `server.rs` | The updater against a fake Docker API with fake compose runners: a full update, an applied `compose.yaml`, every refusal, rollbacks, runners that never end, restarts at every step, the self-replacement, the state file and the API |
 | `scripts/release-manifest.test.mjs` | The manifest, the pinned `compose.yaml`, a changed `docker-proxy`, `manual_since`, the latest migrations and the commit |
-| `e2e/install` | The install with the updater profile, the proxy and its allow-list, a compose runner applying a changed `compose.yaml` through it, a bind mount outside the install refused, and Caddy's answers in every format while Kaeso is away |
+| `e2e/install` | The install with the updater profile, the proxy and its allow-list, a compose runner applying a changed `compose.yaml` through it and refusing gateway settings the release refuses, a bind mount outside the install refused, and Caddy's answers in every format while Kaeso is away |
 | `apps/console` | The Updates page in every state, and the updating page in three languages |
