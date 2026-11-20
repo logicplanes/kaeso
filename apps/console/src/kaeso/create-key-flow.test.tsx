@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import type { UserEvent } from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { org, project, signedIn, without } from "~/test/fixtures";
+import { ALL_PROJECT_RIGHTS, USER, org, project, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { access, apiKey, catalogueModel, projectData, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { createdKey, model } from "~/test/fixtures/shell";
@@ -289,6 +289,28 @@ describe("CreateKeyDialog", () => {
         },
       ],
     ]);
+  });
+
+  it("offers every model to an organization owner who isn't a member of the project, without asking for member models they don't have", async () => {
+    signedIn();
+    projectData({ models: [sonnet, model()] });
+    on("GET", "orgs/:org/projects/:project/my-rights", {
+      project_id: project().id,
+      user_id: USER,
+      role: null,
+      rights: ALL_PROJECT_RIGHTS.map((right) => ({ right, sources: [{ kind: "owner" }] })),
+    });
+    on("GET", "orgs/:org/projects/:project/members/:user/models", apiError(404, "not_found", "No such project member, or you cannot see it."));
+    const { user, dialog } = await openDialog();
+
+    await user.type(within(dialog).getByRole("textbox", { name: "Name" }), "nightly-eval");
+    await next(user, dialog, "When does it expire?");
+    await next(user, dialog, "What can it call?");
+    await next(user, dialog, "Models and limits");
+    await user.click(within(dialog).getByRole("button", { name: "Models" }));
+    expect(await screen.findByRole("option", { name: /Sonnet 4.5/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /GPT-5 mini/ })).toBeInTheDocument();
+    expect(requests("GET", "orgs/:org/projects/:project/members/:user/models")).toEqual([]);
   });
 
   it("keeps only the models the new owner may call when the owner changes", async () => {

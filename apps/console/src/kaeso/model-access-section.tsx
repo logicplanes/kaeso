@@ -14,16 +14,24 @@ import { useOrgPrices } from "./org-prices";
 import { useModelPickerProviders } from "./providers";
 import { t } from "~/i18n";
 import { useApiMutation } from "~/auth/mutation";
+import { useProjectMember, useSession } from "~/auth/session";
+import { isApiError } from "~/api/errors";
 
 export type AccessSubject = Principal | { kind: "key"; id: string; owner: Principal };
 
 export function ModelAccessSection({ org, project, subject, canEdit }: { org: string; project: string; subject: AccessSubject; canEdit: boolean }) {
   const self: Principal | { kind: "key"; id: string } = subject.kind === "key" ? { kind: "key", id: subject.id } : subject;
   const access = useQuery(modelAccessQuery(org, project, self));
+  // A key's owner who reaches the project through an organization-wide role, not as a member, may give it any model
+  // in the catalogue; the members' endpoint doesn't know them. For yourself that is known without asking.
+  const me = useSession().user.id;
+  const memberHere = useProjectMember(org, project);
+  const ownerUnlisted = subject.kind === "key" && subject.owner.kind === "user" && subject.owner.id === me && memberHere === false;
   const owner = useQuery({
     ...modelAccessQuery(org, project, subject.kind === "key" ? subject.owner : { kind: "user", id: "" }),
-    enabled: canEdit && subject.kind === "key",
+    enabled: canEdit && subject.kind === "key" && !ownerUnlisted,
   });
+  const ownerNotMember = ownerUnlisted || (isApiError(owner.error) && owner.error.type === "not_found");
   const catalogue = useQuery(catalogueQuery(org, project));
   const [editing, setEditing] = useState<string[] | null>(null);
   const byId = (id: string) => catalogue.data?.find((m) => m.id === id);
@@ -33,8 +41,8 @@ export function ModelAccessSection({ org, project, subject, canEdit }: { org: st
   };
   const prices = useOrgPrices(org);
   const choices = useMemo(
-    () => (subject.kind === "key" ? (owner.data?.effective ?? []) : (catalogue.data ?? []).map((m) => m.id)),
-    [subject.kind, owner.data, catalogue.data],
+    () => (subject.kind === "key" && !ownerNotMember ? (owner.data?.effective ?? []) : (catalogue.data ?? []).map((m) => m.id)),
+    [subject.kind, ownerNotMember, owner.data, catalogue.data],
   );
   const options = useMemo(
     () =>
