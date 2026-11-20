@@ -32,7 +32,10 @@ import { orgSignIn } from "./sign-in";
 import { DeleteNowDialog, useRestoreOrg } from "./org-deletion";
 import { t } from "~/i18n";
 import { dayWithinYear } from "~/format/short-date";
-import { columnWidth } from "~/format/text-width";
+import { cellWidth, columnWidth } from "~/format/text-width";
+
+const STATE_MAX = 208;
+const BADGE_PADDING = 16;
 
 function stateWord(o: InstanceOrgView): string {
   if (o.state === "scheduled_for_deletion")
@@ -73,9 +76,16 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
     if (deletion !== byDeletion) show({ sort: deletion ? "deletion" : undefined });
   };
 
-  // The state takes the width of its widest word (a badge's 12px text and padding fit the 14px measure), so on a phone the
-  // names keep the rest of the row.
-  const stateWidth = columnWidth(t("instance.state", "State"), new Set(rows.map(stateWord)), { min: 104, max: 208 });
+  // The state takes the width of its widest word, so on a phone the names keep the rest of the row; a badge adds its own
+  // padding and weight to the cell's.
+  const badged = rows.filter((o) => o.state === "scheduled_for_deletion" || o.owners === 0).map(stateWord);
+  const stateWidth = Math.min(
+    STATE_MAX,
+    Math.max(
+      columnWidth(t("instance.state", "State"), new Set(rows.map(stateWord)), { min: 104, max: STATE_MAX }),
+      badged.length ? cellWidth(new Set(badged), { min: 0, max: STATE_MAX }) + BADGE_PADDING : 0,
+    ),
+  );
   const columns = useMemo(
     () =>
       [

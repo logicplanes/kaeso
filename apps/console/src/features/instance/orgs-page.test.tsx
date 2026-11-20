@@ -67,7 +67,7 @@ describe("instance organizations list", () => {
     orgs([NORTHWIND, CONTOSO]);
     await renderApp(PATH);
     const row = (await within(table()).findByText("Contoso")).closest<HTMLElement>("[role=row]");
-    expect(row?.style.gridTemplateColumns.split(" ")[2]).toBe("160px");
+    expect(row?.style.gridTemplateColumns.split(" ")[2]).toBe("176px");
   });
 
   it("searches by name through the URL", async () => {
