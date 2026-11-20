@@ -138,7 +138,7 @@ Der Updater fragt den Runner ab, bis er endet, behält die letzten Zeilen seines
 
 | Aufgabe | Führt aus | Dienste |
 | --- | --- | --- |
-| `pull` | `pull --quiet --policy missing` | Jeder Dienst außer `updater`, `updater-init` und `docker-proxy`; ein Image, das nicht per Digest festgelegt ist, lehnt es ab, da der Proxy Compose es nicht inspizieren ließe |
+| `pull` | `pull --quiet --policy missing` | Jeder Dienst außer `updater`, `updater-init` und `docker-proxy`; ein Image, das nicht per Digest festgelegt ist, lehnt es ab, da der Proxy Compose es nicht inspizieren ließe, und ebenso eine Gateway-Einstellung, die das neue Gateway beim Start ablehnen würde (`gateway_settings.rs`), gelesen aus der aufgelösten Umgebung und der Datei, die `KAESO_CONFIG` nennt, weil ein migrierendes Release nicht zurücksetzen kann, sobald sein Gateway gestartet ist. `up` prüft die Einstellungen nicht, damit ein Zurücksetzen das vorherige Release startet |
 | `stop` | `stop gateway console` | Jedes Gateway-Replikat und die Konsole |
 | `up` | `up --detach --wait --wait-timeout 600` | Dieselben wie bei `pull` |
 | `replace` | `up --detach --no-deps --wait` | Jeder Dienst mit einem Image von Kaeso außer Gateway und Konsole, etwa der Updater und Caddy |
@@ -203,5 +203,5 @@ Caddy liest das Wartungs-Flag aus dem Volume `maintenance`. Solange es existiert
 | `crates/kaeso-updater/src/compose_cli.rs` | Der Docker-Compose-Befehl jeder Aufgabe gegen ein nachgebildetes Programm und abgelehnte Images ohne Digest |
 | `crates/kaeso-updater/tests/engine.rs`, `server.rs` | Der Updater gegen eine nachgebildete Docker-API mit nachgebildeten Compose-Runnern: ein vollständiges Update, eine eingespielte `compose.yaml`, jede Ablehnung, Rollbacks, Runner, die nie enden, Neustarts bei jedem Schritt, das Selbstersetzen, die Zustandsdatei und die API |
 | `scripts/release-manifest.test.mjs` | Das Manifest, die festgelegte `compose.yaml`, ein geänderter `docker-proxy`, `manual_since`, die neuesten Migrationen und der Commit |
-| `e2e/install` | Die Installation mit dem Profil des Updaters, der Proxy und seine Allow-List, ein Compose-Runner, der darüber eine geänderte `compose.yaml` einspielt, ein abgelehnter Bind-Mount außerhalb der Installation und die Antworten von Caddy in jedem Format, solange Kaeso nicht erreichbar ist |
+| `e2e/install` | Die Installation mit dem Profil des Updaters, der Proxy und seine Allow-List, ein Compose-Runner, der darüber eine geänderte `compose.yaml` einspielt und Gateway-Einstellungen ablehnt, die das Release ablehnt, ein abgelehnter Bind-Mount außerhalb der Installation und die Antworten von Caddy in jedem Format, solange Kaeso nicht erreichbar ist |
 | `apps/console` | Die Seite Updates in jedem Zustand und die Update-Seite in drei Sprachen |

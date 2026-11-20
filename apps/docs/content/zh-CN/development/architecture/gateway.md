@@ -59,7 +59,7 @@ Platform API 请求通过会话 Cookie、具有平台访问权限的 API 密钥�
 | `kaeso-upstream` | 与服务商之间的传输：HTTP 客户端、认证请求头、基础 URL、超时、流式请求体和取消 |
 | `kaeso-crypto` | 信封加密（AES-256-GCM）、主密钥环、密码、TOTP，以及自动脱敏的机密类型 |
 | `kaeso-mail` | SMTP 发送和每一封邮件，支持三种语言（[邮件](emails.md)） |
-| `kaeso-update` | 不含 I/O 的更新逻辑：版本清单、更新策略和更新器协议（[更新](updates.md)） |
+| `kaeso-update` | 不含 I/O 的更新逻辑：版本清单、更新策略、更新器协议，以及早期版本接受而新版本会拒绝的网关设置（[更新](updates.md)） |
 | `kaeso-mcp` | 不含 I/O 的 MCP 消息处理：原样保留每个成员的 JSON-RPC 信封、协议版本、请求元数据、请求头检查、错误码，以及工具在 Kaeso 之外使用的名称 |
 | `kaeso-updater` | 可选的更新器，Kaeso 中唯一与 Docker 通信的部分（[更新](updates.md)） |
 | `kaeso-testkit` | 仅用于测试：开发和测试数据库、基于 KPP fixture 构建的模拟服务商，以及模拟身份提供商 |
