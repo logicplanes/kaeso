@@ -37,7 +37,7 @@ The organization's last owner is never removed: the provider gets `409` with a `
 
 ## Endpoints
 
-Every request carries the organization's token as `Authorization: Bearer …`. A wrong token, or one of another organization, gets `401`, and repeated failures from one address are throttled like unknown API keys. Answers are `application/scim+json`; errors follow RFC 7644, such as `{"schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"], "status": "409", "scimType": "uniqueness", "detail": "…"}`.
+Every request carries the organization's token as `Authorization: Bearer …`. A wrong token, or one of another organization, gets `401`, and repeated failures from one address are throttled like unknown API keys. While the organization has no single sign-on connection, every request gets `403`. Answers are `application/scim+json`; errors follow RFC 7644, such as `{"schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"], "status": "409", "scimType": "uniqueness", "detail": "…"}`.
 
 | Method and path | What it does |
 | --- | --- |

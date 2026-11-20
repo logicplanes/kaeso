@@ -42,5 +42,6 @@ These pages explain how Kaeso works, so you know what to expect before you rely 
 - [Format translation](format-translation.md): See what carries across when an app calls another provider's model.
 - [Rights](rights.md): Look up every right, which roles hold it and the rules for giving it.
 - [KPMR](kpmr.md): Learn where the model data comes from and how an install keeps it current.
+- [Model lifecycle](model-lifecycle.md): See how Kaeso warns projects about retiring models and moves them to the replacement.
 - [Currencies](currencies.md): Show an organization's spend, prices and budgets in its own currency, at the ECB's daily rates.
 - [MCP portal](mcp-portal.md): Give AI clients the tools of your MCP servers, with Kaeso's sign-in, rights, limits and logs.

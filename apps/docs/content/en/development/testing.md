@@ -155,7 +155,7 @@ Three more tests guard text. `crates/kaeso-server/tests/server/error_copy.rs` ch
 
 ## End-to-end tests
 
-The suites in `e2e/` run the official OpenAI, Anthropic, Google Gen AI, TypeSafe and MCP Python SDKs, pinned in `e2e/requirements.txt`, against KPP's encoders, the gateway, its MCP portal and a fresh install. Set up their virtual environment once:
+The suites in `e2e/` run the official OpenAI, Anthropic, Google Gen AI, ElevenLabs, TypeSafe and MCP Python SDKs, pinned in `e2e/requirements.txt`, against KPP's encoders, the gateway, its MCP portal, a fresh install and the Helm chart. Set up their virtual environment once:
 
 ```bash
 python3 -m venv e2e/.venv
@@ -226,6 +226,10 @@ The mock provider (`crates/kaeso-testkit/src/mock_provider.rs`) chooses its repl
 | `[mock:endless]` with `[mock:gen=N]` in the prompt | Repeats the made-up stream's text deltas without end, encoding each only when it is sent. A pace above a delta a millisecond sends each millisecond's deltas as one chunk |
 | `[mock:delta=C]` with `[mock:gen=N]` in the prompt | Makes each text delta of the made-up reply at least C characters long instead of 16 |
 | `[mock:tag=NAME]` in the prompt | Names the stream, so `MockProvider::closed_at(NAME)` returns when it was closed before its end |
+| `[mock:fail=MODEL FIXTURE]` in the prompt | Answers the requests for that model with that error fixture; `stall` never answers, and a third part in milliseconds answers that late |
+| `[mock:flaky=NAME N FIXTURE]` in the prompt | Fails the first N requests that carry it with that error fixture, or `drop` for a broken connection, and answers the ones after |
+| `[mock:key-fail=PART FIXTURE]` in the prompt | Fails the requests whose provider key contains PART, so one key of a pool fails while another answers |
+| `[mock:batch-running]`, `[mock:batch-fail]` in a batch's file | Keeps the batch running, or answers that line with a 400 |
 | A model id starting with `unserved-` | The format's model not found |
 | `[mock:gate=NAME]` in the provider key | Holds `GET /v1/models` and `GET /v1/models/{id}` |
 | `[mock:models=absent]` in the provider key | Answers both models endpoints with a bare 404 |
@@ -256,9 +260,17 @@ This suite builds the gateway, mock provider, console and updater images and run
 
 The console image also runs Caddy, as in a real install. `KAESO_TEST_GATEWAY_IMAGE`, `KAESO_TEST_MOCK_IMAGE`, `KAESO_TEST_CONSOLE_IMAGE` and `KAESO_TEST_UPDATER_IMAGE` use images that are already built.
 
+### Kubernetes test
+
+```bash
+e2e/.venv/bin/pytest -q e2e/kubernetes
+```
+
+This suite checks the Helm chart in `deploy/helm/kaeso`. `test_chart.py` renders it with `helm template` and compares it with the Compose install it mirrors, and checks every manifest with `kubeconform`; it needs `helm`, and `kubeconform` for that one test. `test_kind.py` installs the chart with its bundled stores on the cluster of `kubectl`'s current context, such as a [kind](https://kind.sigs.k8s.io) cluster with the images loaded. It gets the setup link, sends a request to the mock provider that the request log records, and upgrades the install while it keeps serving. It runs only with `KAESO_TEST_KIND=1`.
+
 ## Fuzzing
 
-`fuzz/` holds one [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) target per KPP decoder, `decode_<dialect>`, one for the SSE parser, `sse`, one for MCP messages, `mcp` and one for the audio length probe, `audio_length`. The decoder targets check that every decoder accepts any bytes without panicking, and that encoding the result into every dialect doesn't panic either. The `sse` target checks that the parser yields the same items however the input is split. The `mcp` target checks that any message Kaeso reads is written back whole, also after its tool is renamed, and that header values decode to what was encoded; its seed corpus is `crates/kaeso-mcp/fixtures`. The `audio_length` target checks that any bytes give a length within a day or none, without reading past its limits. `fuzz/` is a Cargo workspace of its own, so `libfuzzer-sys` never reaches the library crates.
+`fuzz/` holds one [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html) target per KPP decoder, `decode_<dialect>`, one for the SSE parser, `sse`, one for MCP messages, `mcp`, one for the audio length probe, `audio_length`, and one for the image size probe, `image_size`. The decoder targets check that every decoder accepts any bytes without panicking, and that encoding the result into every dialect doesn't panic either. The `sse` target checks that the parser yields the same items however the input is split. The `mcp` target checks that any message Kaeso reads is written back whole, also after its tool is renamed, and that header values decode to what was encoded; its seed corpus is `crates/kaeso-mcp/fixtures`. The `audio_length` target checks that any bytes give a length within a day or none, without reading past its limits. The `image_size` target checks that a size it reads is never zero and is the same when read again. `fuzz/` is a Cargo workspace of its own, so `libfuzzer-sys` never reaches the library crates.
 
 Every change checks that the targets build, and are formatted and linted:
 
@@ -308,6 +320,7 @@ The one required check is **CI**. It passes when **Changes** and **Repository ch
 | SDK end-to-end and OpenAPI document | Builds the gateway once, checks that `openapi.json` is current, then runs `pytest -q e2e/sdk` and `pytest -q e2e/mcp` |
 | Images (gateway, mock provider, updater, console) | Build the four images; the console's job also checks that its image serves the console with a content security policy. A pull request builds the three Rust images with the `pr` profile of `Cargo.toml`, which compiles like `dev` and takes a fraction of the time; `dev`, `prod` and releases build them with `release`, and on `dev` **Images (pull request cache)** builds them with `pr` once more, for the cache pull requests read |
 | Install test | `pytest -q e2e/install` with those images |
+| Kubernetes test | `pytest -q e2e/kubernetes` with the gateway, mock provider and console images, on a kind cluster |
 | TypeScript checks | `pnpm knip`, then `pnpm format:check`, `pnpm lint`, `pnpm i18n` and `pnpm audit --prod --audit-level high` at the same time, then `pnpm typecheck` |
 | TypeScript test | `pnpm test`: the UI library in one job, the tokens, the docs site, the showcase, the scripts and the MCP views in another, and the console in six shards whose coverage is merged and checked in one more job |
 | TypeScript build | `pnpm build`, `pnpm licenses:check` and `pnpm release:check` |

@@ -14,7 +14,7 @@ Ihr Konto finden Sie unter **Konto** im Menü am Fuß der Seitenleiste. Es hat d
 | Agenten | Die Agenten, die Sie über den [MCP-Server](../api/mcp.md) verbunden haben, mit ihren Rechten und ihrer Aktivität |
 | API-Schlüssel | Ihre eigenen Schlüssel in allen Projekten ([API-Schlüssel](api-keys.md)) |
 | Mitgliedschaften | Ihre Organisationen und deren Projekte mit Ihren Rollen sowie das Verlassen einer Organisation |
-| Verbindungen | Ihre eigenen Konten bei MCP-Servern, bei denen sich jede Person anmeldet ([MCP-Portal](../concepts/mcp-portal.md#verbindungen)) |
+| Verbindungen | Ihre eigenen Konten bei MCP-Servern, bei denen sich jede Person anmeldet, und wann jedes zuletzt genutzt wurde ([MCP-Portal](../concepts/mcp-portal.md#verbindungen)) |
 | Benachrichtigungen | Welche E-Mails Sie erhalten, und wann |
 | Darstellung | Design und Sprache |
 
@@ -65,7 +65,7 @@ Eine Sitzung endet nach 7 Tagen ohne Nutzung, spätestens nach 30 Tagen.
 
 ## Agenten verwalten
 
-Oben zeigt **Agenten** die Adresse des MCP-Servers mit den Zeichen von Claude Code, Cursor und GitHub Copilot; jedes zeigt, wie Sie den Server zu diesem Client hinzufügen. Darunter listet es jeden Agenten, den Sie autorisiert haben: seinen Namen und seine Modellfamilie, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt und zuletzt genutzt wurde. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
+Oben zeigt **Agenten** die Adresse des MCP-Servers mit den Zeichen von Claude, Cursor und GitHub Copilot; jedes zeigt, wie Sie den Server zu diesem Client hinzufügen. Für Claude fügt **Zu Claude hinzufügen** ihn als benutzerdefinierten Connector zu claude.ai, den Desktop- und Mobil-Apps und Cowork hinzu, und ein Befehl fügt ihn zu Claude Code hinzu. Darunter listet es jeden Agenten, den Sie autorisiert haben: seinen Namen und seine Modellfamilie, eine Zusammenfassung seiner Rechte, die Organisationen, die er erreicht, und wann er erstellt und zuletzt genutzt wurde. Wählen Sie einen Agenten, um seine Seite zu öffnen. Dort können Sie:
 
 - ihn umbenennen;
 - seine Rechte im selben Editor wie auf der Zustimmungsseite ändern und dann **Rechte speichern** wählen;

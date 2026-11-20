@@ -27,7 +27,7 @@ The dialog of **Share** sets:
 - **Numbers.** **Live** shows the last days whenever the link is opened, as many as the page's period. **Snapshot** keeps the period's numbers as they are now.
 - **Show costs**, off by default. It's offered only when you can see the costs.
 - **Hide** member names, key names and project names. Hidden names show as *Member 1*, *Key 2* and so on, by the number of requests.
-- **Who** can open it: **Members of this organization**, who sign in first, or **Anyone with the link**, where the organization allows it.
+- **Who** can open it: **Members of this organization, signed in**, or **Anyone with the link**, where the organization allows it.
 - **Expires** after 1, 7, 30 or 90 days, or never, within the organization's longest expiry.
 
 The link is shown once. Kaeso keeps only its hash, so copy it before you close the dialog.

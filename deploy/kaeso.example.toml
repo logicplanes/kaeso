@@ -31,6 +31,7 @@ email = ""
 host = "smtp.example.com"
 port = 587
 tls = "starttls"
+# Needs KAESO_SMTP_PASSWORD; remove it for a server without authentication.
 user = "kaeso"
 from = "Kaeso <kaeso@localhost>"
 

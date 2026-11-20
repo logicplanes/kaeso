@@ -11,7 +11,7 @@ You need `guardrails.view` to see **Organization settings** › **Guardrails** a
 ## Add a guardrail
 
 1. Open **Organization settings** › **Guardrails** and choose **Add guardrail**.
-2. Enter a name and the address Kaeso posts to, such as `https://guardrail.example.com/check`. Apps see the name when the guardrail blocks them.
+2. Keep **Your service**, and enter a name and the address Kaeso posts to, such as `https://guardrail.example.com/check`. Apps see the name when the guardrail blocks them.
 3. Choose what it checks: **Requests**, **Replies** or both. For replies, choose whether streamed replies go out unchecked (**Stream unchecked**) or wait for the check (**Hold and check**).
 4. Set the timeout, 2000 milliseconds unless you change it, at most 10000.
 5. Choose what happens when the guardrail can't answer: **Refuse the request** or **Let it through**.

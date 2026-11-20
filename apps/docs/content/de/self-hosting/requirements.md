@@ -45,6 +45,7 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Ausgehend | Die Hosts, auf denen Anbieter fertige Videos ablegen, wie ihre Referenzen sie zeigen: `vidgen.x.ai` für SpaceX, `video-product.cdn.minimax.io` und OSS-Buckets von Alibaba Cloud wie `public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com` für MiniMax, `aigc-files.bigmodel.cn` für Z.ai. ElevenLabs nennt keinen festen Host; OpenRouter und Together AI liefern Dateien von ihren eigenen Hosts, Veo und Gemini Omni in ihrer Antwort | Fertige Videos herunterladen ([Videos API](../api/videos.md#ein-video-herunterladen)) |
 | Ausgehend | `kpmr.kaeso.app` | Modelldaten von [KPMR](../concepts/kpmr.md), etwa stündlich geprüft |
 | Ausgehend | `update.kaeso.app` | Die Suche nach neuen Kaeso-Releases, alle 5 Minuten |
+| Ausgehend | `www.ecb.europa.eu` | Die Referenzkurse der EZB für [Währungen](../concepts/currencies.md), alle 6 Stunden ([Wechselkurse](configuration.md#wechselkurse)) |
 | Ausgehend | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy, um das Zertifikat zu holen und zu erneuern |
 | Ausgehend | `ghcr.io`, `pkg-containers.githubusercontent.com` | Docker, um die Images von Kaeso zu laden, wenn Sie installieren oder aktualisieren |
 | Ausgehend | `registry-1.docker.io`, `auth.docker.io`, `production.cloudflare.docker.com` | Docker, um die Images von PostgreSQL, ClickHouse, Valkey und dem Socket-Proxy des Updaters zu laden |
@@ -54,6 +55,8 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Ausgehend | Die Identitätsanbieter Ihrer Organisationen | Single Sign-on, wenn eine Organisation einen verbindet ([Anmeldung](sign-in.md)) |
 | Ausgehend | Die Basis-URLs der eigenen Anbieter Ihrer Organisationen | Ihre Anfragen, direkt und nie über einen Proxy ([Eigene Anbieter](configuration.md#eigene-anbieter)) |
 | Ausgehend | Die Adressen der MCP-Server, die Ihre Organisationen hinzufügen, über HTTPS | Ihre Tools, samt Anmelde- und Metadatenanfragen; ein privates Netzwerk nur, wenn `mcp_servers.allowed_networks` es nennt ([MCP-Server](configuration.md#mcp-server)) |
+| Ausgehend | Die Adressen der Webhooks und Guardrails, die Ihre Organisationen hinzufügen | Zustellungen und Prüfungen; ein privates Netzwerk nur, wenn `webhooks.allowed_networks` oder `guardrails.allowed_networks` es nennt ([Webhooks](configuration.md#webhooks), [Guardrails](configuration.md#guardrails)) |
+| Ausgehend | Ihr Trace-Collector, wenn `otel.endpoint` gesetzt ist | Traces von Anfragen und Tool-Aufrufen ([Traces](monitoring.md#traces)) |
 
 Ohne Internetzugang arbeitet Kaeso mit den Modelldaten, die im Release enthalten sind, und Sie aktualisieren von Hand. Schalten Sie die ausgehenden Abfragen ab, wie [Installationen ohne Internetzugang](upgrades.md#installationen-ohne-internetzugang) zeigt.
 

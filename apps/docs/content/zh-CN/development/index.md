@@ -12,10 +12,12 @@ order: 6
 | `apps/console` | Web 控制台 | TypeScript、React |
 | `apps/docs` | 本文档 | Markdown、TypeScript |
 | `apps/showcase` | UI 库的展示站点 ui.kaeso.app | Astro、React |
+| `apps/mcp-views` | Kaeso 的 MCP 服务器在支持 MCP Apps 的客户端中显示的交互视图，内置于网关 | TypeScript、React |
 | `packages/ui`、`packages/tokens` | 组件库和设计令牌，所有界面都由它们构建 | TypeScript、React |
-| `e2e/` | 用 OpenAI 和 Anthropic 的官方 Python SDK 测试 KPP、网关和全新实例 | Python |
+| `e2e/` | 用官方 Python SDK 测试 KPP、网关、其 MCP 门户、全新实例和 Helm chart | Python |
 | `fuzz/` | 每个 KPP 解码器的模糊测试目标 | Rust |
-| `deploy/` | Dockerfile、自托管用的 `compose.yaml` 和开发栈 | Docker |
+| `deploy/` | Dockerfile、自托管用的 `compose.yaml`、Helm chart、各平台模板和开发栈 | Docker、Helm |
+| `plugins/` | 用于 Kaeso MCP 服务器的 Claude Code 和 Cursor 插件 | JSON、Markdown |
 | `openapi.json` | Platform API 文档，由网关代码生成 | |
 
 Cargo 构建 Rust 工作区，pnpm 构建 TypeScript 工作区，两者都在仓库根目录运行。

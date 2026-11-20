@@ -64,7 +64,7 @@ Either way, a call runs as a person or a service account: the key's owner, or th
 
 ## Versions and methods
 
-The portal speaks MCP over Streamable HTTP in the versions `2025-03-26`, `2025-06-18`, `2025-11-25` and `2026-07-28`. Version `2026-07-28` is stateless: send `MCP-Protocol-Version` on every request, and `server/discover` lists the versions the portal speaks. Older versions start with `initialize`, and a request without the header is read as `2025-03-26`.
+The portal speaks MCP over Streamable HTTP in the versions `2025-03-26`, `2025-06-18`, `2025-11-25` and `2026-07-28`. Version `2026-07-28` is stateless: send `MCP-Protocol-Version`, `Mcp-Method` and, for `tools/call` and `resources/read`, `Mcp-Name` on every request, and put the version in `_meta`, as on the [MCP server](mcp.md#protocol). `server/discover` lists the versions the portal speaks. Older versions start with `initialize`, and a request without the header is read as `2025-03-26`.
 
 | Method | What it does |
 | --- | --- |
@@ -75,7 +75,7 @@ The portal speaks MCP over Streamable HTTP in the versions `2025-03-26`, `2025-0
 | `resources/list`, `resources/read` | The [MCP Apps views](#mcp-apps-views) of the tools you may call, and one view's HTML |
 | `resources/templates/list` | Always empty |
 
-Notifications get 202 and no body. Other methods get `-32601`.
+Notifications get 202 and no body. Other methods get `-32601`, with HTTP 404 in version `2026-07-28`. A header that is missing or doesn't match the request gets HTTP 400 with `-32020`, and a version the portal doesn't speak `-32022`.
 
 ## MCP Apps views
 
