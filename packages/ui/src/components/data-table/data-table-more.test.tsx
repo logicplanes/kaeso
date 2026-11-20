@@ -155,6 +155,27 @@ describe("DataTable selection and rows", () => {
   });
 });
 
+describe("DataTable growing past the rows it draws whole", () => {
+  it("stays where it was scrolled when more rows load and it starts drawing only the visible ones", () => {
+    const page = (document.scrollingElement ?? document.documentElement) as HTMLElement;
+    const size = vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(function (this: HTMLElement) {
+      return this === page ? 800 : 0;
+    });
+    try {
+      const many = (n: number) => Array.from({ length: n }, (_, i) => ({ id: String(i), key: `key-${i}`, requests: i }));
+      const { rerender } = render(<DataTable aria-label="Keys" data={many(40)} columns={columns} getRowId={(r) => r.id} virtualizeAbove={50} />);
+      page.scrollTop = 1200;
+      fireEvent.scroll(page);
+      rerender(<DataTable aria-label="Keys" data={many(80)} columns={columns} getRowId={(r) => r.id} virtualizeAbove={50} />);
+      expect(page.scrollTop).toBe(1200);
+      expect(screen.getByText("key-30")).toBeInTheDocument();
+    } finally {
+      size.mockRestore();
+      page.scrollTop = 0;
+    }
+  });
+});
+
 describe("DataTable load more", () => {
   it("moves focus from Load more to the line that says every row is shown", async () => {
     const user = userEvent.setup();
