@@ -4,9 +4,9 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
-- **Breaking:** The gateway stops at startup when `kpmr.interval` is below 5 minutes, which 0.6.0 took and synced at most every 5 minutes; set it to `5m` or longer, or remove it for `auto`. ([#1120](https://github.com/logicplanes/kaeso/pull/1120), [#PRNUM](https://github.com/logicplanes/kaeso/pull/PRNUM))
-- **Breaking:** The gateway stops at startup when `mcp_servers.sync_interval` is below a minute, which 0.6.0 raised to a minute; set it to `1m` or longer, or remove it. ([#1120](https://github.com/logicplanes/kaeso/pull/1120), [#PRNUM](https://github.com/logicplanes/kaeso/pull/PRNUM))
-- **Breaking:** The gateway stops at startup when `smtp.user` is set without `smtp.password`, where 0.6.0 sent email without authentication; add the password, or remove the user for a server without authentication. ([#1121](https://github.com/logicplanes/kaeso/pull/1121), [#PRNUM](https://github.com/logicplanes/kaeso/pull/PRNUM))
+- **Breaking:** The gateway stops at startup when `kpmr.interval` is below 5 minutes, which 0.6.0 took and synced at most every 5 minutes; set it to `5m` or longer, or remove it for `auto`. ([#1120](https://github.com/logicplanes/kaeso/pull/1120), [#1407](https://github.com/logicplanes/kaeso/pull/1407))
+- **Breaking:** The gateway stops at startup when `mcp_servers.sync_interval` is below a minute, which 0.6.0 raised to a minute; set it to `1m` or longer, or remove it. ([#1120](https://github.com/logicplanes/kaeso/pull/1120), [#1407](https://github.com/logicplanes/kaeso/pull/1407))
+- **Breaking:** The gateway stops at startup when `smtp.user` is set without `smtp.password`, where 0.6.0 sent email without authentication; add the password, or remove the user for a server without authentication. ([#1121](https://github.com/logicplanes/kaeso/pull/1121), [#1407](https://github.com/logicplanes/kaeso/pull/1407))
 
 ### Added
 
@@ -19,7 +19,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 #### Self-hosting
 
-- An update from the console or the update window checks first that the new gateway takes the install's settings, and when it would refuse one at startup, stops before it switches anything: the running release keeps serving, `compose.yaml` is put back and the update's detail names the setting. The installer's `--update` does the same check. ([#PRNUM](https://github.com/logicplanes/kaeso/pull/PRNUM))
+- An update from the console or the update window checks first that the new gateway takes the install's settings, and when it would refuse one at startup, stops before it switches anything: the running release keeps serving, `compose.yaml` is put back and the update's detail names the setting. The installer's `--update` does the same check. ([#1407](https://github.com/logicplanes/kaeso/pull/1407))
 
 ### Fixed
 
