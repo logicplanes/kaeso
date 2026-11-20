@@ -237,7 +237,7 @@ Kaeso 读取以 `Content-Encoding: gzip`、`x-gzip` 或 `zstd` 发送的请求�
 
 一个请求体只能使用一种编码。其他编码（如 `br`）以及同时使用两种编码（如 `gzip, zstd`）都会以应用的格式返回 415。无法解压的请求体返回 400。
 
-超出上限的请求体会在 Kaeso 将其读完（最多 1 GiB）后以应用的格式返回 413，因此 Kaeso 前面的代理（如 Traefik）会转发这个 413，而不是自己返回 502。
+超出上限的请求体会在 Kaeso 将其读完（最多 1 GiB，且不超过请求体读取期限 [`server.body_read_deadline`](../self-hosting/configuration.md#监听)）后以应用的格式返回 413，因此 Kaeso 前面的代理（如 Traefik）会转发这个 413，而不是自己返回 502。
 
 ## 流式传输
 

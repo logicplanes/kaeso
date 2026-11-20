@@ -461,12 +461,26 @@ async fn upload(
     body: Body,
 ) -> Result<Value, KppError> {
     let limit = state.config.body_limits.model_api.as_usize();
-    let bytes = crate::http::body::read(body, limit).await.map_err(|_| {
-        error(
-            ErrorKind::RequestTooLarge,
-            413,
-            "The file is larger than this install accepts.",
-        )
+    let bytes = crate::http::body::read(body, limit).await.map_err(|e| {
+        if crate::http::body_timeout::timed_out(&e) {
+            error(
+                ErrorKind::InvalidRequest,
+                400,
+                "The request body did not arrive in time; send it again.",
+            )
+        } else if crate::http::body::over_limit(&e) {
+            error(
+                ErrorKind::RequestTooLarge,
+                413,
+                "The file is larger than this install accepts.",
+            )
+        } else {
+            error(
+                ErrorKind::InvalidRequest,
+                400,
+                "The request body broke off before it was complete; send it again.",
+            )
+        }
     })?;
     let content_type = headers
         .get(header::CONTENT_TYPE)

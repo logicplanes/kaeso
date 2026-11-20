@@ -9,10 +9,28 @@ const DRAIN_LIMIT: u64 = 1 << 30;
 
 // Collecting the frames and joining them at the end holds a large upload twice; copying each
 // frame into a buffer sized from the body's length as it arrives holds it once.
-pub async fn read(mut body: Body, limit: usize) -> Result<Bytes, axum::Error> {
-    let read = collect(&mut body, limit).await;
+pub async fn read(body: Body, limit: usize) -> Result<Bytes, axum::Error> {
+    read_releasing(body, limit, || {}).await
+}
+
+// `release` runs before the rest of a refused body is read, so what the caller holds for the
+// body isn't kept while it drains.
+pub async fn read_releasing(
+    mut body: Body,
+    limit: usize,
+    release: impl FnOnce(),
+) -> Result<Bytes, axum::Error> {
+    let limit_bytes = u64::try_from(limit).unwrap_or(u64::MAX);
+    let declared = body.size_hint().exact();
+    let read = match declared {
+        Some(length) if length > limit_bytes => Err(axum::Error::new(DeclaredTooLarge)),
+        _ => collect(&mut body, limit).await,
+    };
     if read.as_ref().is_err_and(|e| over_limit(e)) {
-        drain(&mut body).await;
+        release();
+        if declared.is_none_or(|length| length <= limit_bytes.saturating_add(DRAIN_LIMIT)) {
+            drain(&mut body).await;
+        }
     }
     read
 }
@@ -71,10 +89,14 @@ async fn drain(body: &mut Body) {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+#[error("the request body declares a length over the limit")]
+struct DeclaredTooLarge;
+
 pub(crate) fn over_limit(error: &(dyn std::error::Error + 'static)) -> bool {
     let mut cause = Some(error);
     while let Some(e) = cause {
-        if e.is::<LengthLimitError>() {
+        if e.is::<LengthLimitError>() || e.is::<DeclaredTooLarge>() {
             return true;
         }
         cause = e.source();
@@ -150,5 +172,66 @@ mod tests {
         assert!(over_limit(&e), "{e}");
         let read = polled.load(std::sync::atomic::Ordering::Relaxed);
         assert_eq!(read, 1 + usize::try_from(DRAIN_LIMIT).unwrap() / frame + 1);
+    }
+
+    // A body that says how long it is, and counts the frames read from it.
+    struct Declared {
+        length: u64,
+        polled: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    }
+
+    impl axum::body::HttpBody for Declared {
+        type Data = Bytes;
+        type Error = std::io::Error;
+
+        fn poll_frame(
+            self: std::pin::Pin<&mut Self>,
+            _cx: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<Option<Result<hyper::body::Frame<Bytes>, Self::Error>>> {
+            let n = self
+                .polled
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            std::task::Poll::Ready(
+                (n < 4).then(|| Ok(hyper::body::Frame::data(Bytes::from_static(b"abcd")))),
+            )
+        }
+
+        fn size_hint(&self) -> hyper::body::SizeHint {
+            hyper::body::SizeHint::with_exact(self.length)
+        }
+    }
+
+    #[tokio::test]
+    async fn a_body_that_declares_too_much_is_refused_and_read_to_its_end_without_being_kept() {
+        let polled = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let released = std::sync::atomic::AtomicBool::new(false);
+        let body = Body::new(Declared {
+            length: 16,
+            polled: polled.clone(),
+        });
+        let e = read_releasing(body, 5, || {
+            released.store(true, std::sync::atomic::Ordering::Relaxed);
+        })
+        .await
+        .unwrap_err();
+        assert!(over_limit(&e), "{e}");
+        assert!(released.load(std::sync::atomic::Ordering::Relaxed));
+        assert_eq!(
+            polled.load(std::sync::atomic::Ordering::Relaxed),
+            5,
+            "four frames and the end"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_body_that_declares_more_than_can_be_drained_is_not_read() {
+        let polled = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let body = Body::new(Declared {
+            length: DRAIN_LIMIT + 6,
+            polled: polled.clone(),
+        });
+        let e = read(body, 5).await.unwrap_err();
+        assert!(over_limit(&e), "{e}");
+        assert_eq!(polled.load(std::sync::atomic::Ordering::Relaxed), 0);
     }
 }
