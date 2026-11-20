@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -49,14 +49,28 @@ import {
 } from "./toolbar";
 import { toolCallStatus as statusOf, toolErrorLabel as errorLabel, TOOL_CALL_STATUSES, TOOL_ERROR_TYPES } from "~/format/labels";
 
+// Each kind is a page of its own, so switching draws the switch anew; the focus of a keyboard user follows it there.
+let refocusKindSwitch = false;
+
 export function KindSwitch({ value, onChange }: { value: "models" | "tools"; onChange: (kind: "tools" | undefined) => void }) {
+  const own = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!refocusKindSwitch) return;
+    refocusKindSwitch = false;
+    // After the radio group has registered its options, or its arrow keys start from the wrong one.
+    const frame = requestAnimationFrame(() => own.current?.querySelector<HTMLElement>("[role=radio][aria-checked=true]")?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, []);
   return (
-    <div className="shrink-0">
+    <div ref={own} className="shrink-0">
       <Segmented
         size="sm"
         aria-label={t("logs.kind", "What to show")}
         value={value}
-        onValueChange={(v) => onChange(v === "tools" ? "tools" : undefined)}
+        onValueChange={(v) => {
+          refocusKindSwitch = !!own.current?.contains(document.activeElement);
+          onChange(v === "tools" ? "tools" : undefined);
+        }}
         options={[
           { value: "models", label: t("logs.kind.models", "Models") },
           { value: "tools", label: t("logs.kind.tools", "Tools") },

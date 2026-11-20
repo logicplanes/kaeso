@@ -2,7 +2,8 @@ import type { ComponentDocs } from "../../component-docs.js";
 
 export const docs = {
   Toolbar: {
-    description: "A row of controls above a list or a chart: one tab stop, with the arrow keys moving between its controls.",
+    description:
+      "A row of controls above a list or a chart: one tab stop, with the arrow keys moving between its controls; a Segmented or tabs in it keep their own tab stop and arrow keys.",
     props: {
       "aria-label": "Defines a string value that labels the current element.",
       size: "The bar's height: the default, or inset in a panel.",

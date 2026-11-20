@@ -83,6 +83,23 @@ describe("Tool calls in the request logs", () => {
     expect(window.location.search).not.toContain("kind=tools");
   });
 
+  it("keeps the focus on the switch when the arrow keys change what it shows", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    logsData();
+    calls([toolCall()]);
+    const { user } = await renderApp(projectPath("logs"));
+    (await screen.findByRole("radio", { name: "Models" })).focus();
+    await user.keyboard("{ArrowRight}");
+    await screen.findByRole("grid", { name: "Tool calls" });
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Tools" })).toHaveFocus());
+    await user.keyboard("{ArrowLeft}");
+    await screen.findByRole("grid", { name: "Requests" });
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Models" })).toHaveFocus());
+    await user.click(screen.getByRole("button", { name: "Live" }));
+    expect(screen.getByRole("button", { name: "Live" })).toHaveFocus();
+  });
+
   it("keeps the range, the filters and live updates when switching between models and tools", async () => {
     signedIn();
     projectData({ members: [projectMember()] });
