@@ -1,7 +1,5 @@
-//! Gateway settings that releases before #1120 and #1121 took and the gateway now refuses at
-//! startup. The gateway refuses them in these words, and the updater's compose runner looks for
-//! them before it switches an install, because an update that migrates the databases can't roll
-//! back once the new gateway has started.
+// The updater's compose runner checks an install's gateway with these rules before it switches,
+// because an update that migrates the databases can't roll back once the new gateway has started.
 
 use std::time::Duration;
 

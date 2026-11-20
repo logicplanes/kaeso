@@ -562,13 +562,16 @@ update_compose() {
 }
 
 # The new gateway checks the install's settings before anything stops: once it has started on a release
-# that migrates the databases, the previous release can't run on them.
+# that migrates the databases, the previous release can't run on them. A gateway without the check
+# answers with a usage error (2) and goes on as before.
 check_settings() {
   [ -n "$updated" ] || return 0
-  checked="$(docker compose run --rm --no-deps -T gateway config check </dev/null 2>&1)" && return 0
+  status=0
+  checked="$(docker compose run --rm --no-deps -T gateway config check </dev/null 2>&1)" || status=$?
+  case $status in 0 | 2) return 0 ;; esac
   cat compose.yaml.previous >compose.yaml
   printf '%s\n' "$checked" | tail -n 5 >&2
-  fail "Kaeso $target would stop at startup with these settings, so this install keeps running $updated. Correct them in .env or compose.override.yaml, then run the installer again; the release notes and https://docs.kaeso.app/self-hosting/upgrades say what changed."
+  fail "Kaeso $target refused this install's settings, so this install keeps running $updated. Correct them in .env, compose.override.yaml or the configuration file, then run the installer again; the release notes and https://docs.kaeso.app/self-hosting/upgrades say what changed."
 }
 
 is_install() {

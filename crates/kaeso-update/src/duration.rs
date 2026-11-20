@@ -1,5 +1,4 @@
-//! Durations in the configuration, such as `30s`, `15m`, `1h 30m` or `250ms`: one or more numbers,
-//! each followed by its unit, read as humantime read them before (its units and their spellings).
+// Read as humantime read durations before: its units and their spellings.
 
 use std::time::Duration;
 

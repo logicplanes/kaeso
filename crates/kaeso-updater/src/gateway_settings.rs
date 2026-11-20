@@ -23,7 +23,9 @@ fn environment(gateway: &Value, name: &str) -> Option<String> {
     (!value.is_empty()).then_some(value)
 }
 
-fn mounted(config: &Value, gateway: &Value, path: &str) -> Option<Mounted> {
+// Docker stacks every mount by the depth of its target, whatever its kind, so the deepest one that
+// holds the path is where the gateway reads the file.
+fn mounted(config: &Value, gateway: &Value, path: &str) -> Result<Mounted, String> {
     let target = Path::new(path);
     let list = |field: &str| {
         gateway
@@ -32,24 +34,34 @@ fn mounted(config: &Value, gateway: &Value, path: &str) -> Option<Mounted> {
             .cloned()
             .unwrap_or_default()
     };
-    // Docker mounts the deepest bind over the others, so the longest target holds the file.
-    let bind = list("volumes")
-        .into_iter()
-        .filter(|v| v.get("type").and_then(Value::as_str) == Some("bind"))
-        .filter_map(|v| {
-            let source = PathBuf::from(v.get("source")?.as_str()?);
-            let at = PathBuf::from(v.get("target")?.as_str()?);
-            let rest = target.strip_prefix(&at).ok()?;
-            let file = if rest.as_os_str().is_empty() {
-                source
-            } else {
-                source.join(rest)
-            };
-            Some((at.components().count(), file))
-        })
-        .max_by_key(|(depth, _)| *depth);
-    if let Some((_, file)) = bind {
-        return Some(Mounted::File(file));
+    let mut found: Option<(usize, Result<Mounted, String>)> = None;
+    let mut offer = |at: &Path, mount: Result<Mounted, String>| {
+        let depth = at.components().count();
+        if found.as_ref().is_none_or(|(deepest, _)| depth > *deepest) {
+            found = Some((depth, mount));
+        }
+    };
+    for volume in list("volumes") {
+        let Some(at) = volume.get("target").and_then(Value::as_str).map(Path::new) else {
+            continue;
+        };
+        let Ok(rest) = target.strip_prefix(at) else {
+            continue;
+        };
+        let kind = volume
+            .get("type")
+            .and_then(Value::as_str)
+            .unwrap_or("volume");
+        let mount = match (kind, volume.get("source").and_then(Value::as_str)) {
+            ("bind", Some(source)) if rest.as_os_str().is_empty() => {
+                Ok(Mounted::File(PathBuf::from(source)))
+            }
+            ("bind", Some(source)) => Ok(Mounted::File(Path::new(source).join(rest))),
+            _ => Err(format!(
+                "it is in a {kind} mount, not in the install's folder"
+            )),
+        };
+        offer(at, mount);
     }
     for (field, default_dir) in [("configs", "/"), ("secrets", "/run/secrets/")] {
         for entry in list(field) {
@@ -63,17 +75,19 @@ fn mounted(config: &Value, gateway: &Value, path: &str) -> Option<Mounted> {
             if Path::new(&at) != target {
                 continue;
             }
-            let top = config.get(field).and_then(|t| t.get(name))?;
-            if let Some(content) = top.get("content").and_then(Value::as_str) {
-                return Some(Mounted::Content(content.to_owned()));
-            }
-            return top
-                .get("file")
-                .and_then(Value::as_str)
-                .map(|f| Mounted::File(PathBuf::from(f)));
+            let top = config.get(field).and_then(|t| t.get(name));
+            let mount = match (
+                top.and_then(|t| t.get("content")).and_then(Value::as_str),
+                top.and_then(|t| t.get("file")).and_then(Value::as_str),
+            ) {
+                (Some(content), _) => Ok(Mounted::Content(content.to_owned())),
+                (None, Some(file)) => Ok(Mounted::File(PathBuf::from(file))),
+                (None, None) => Err(format!("the {field} entry `{name}` names no file")),
+            };
+            offer(Path::new(&at), mount);
         }
     }
-    None
+    found.map_or_else(|| Err("no mount holds it".to_owned()), |(_, mount)| mount)
 }
 
 enum Mounted {
@@ -94,15 +108,10 @@ fn file_table(
             "the gateway's configuration file {path} ({CONFIG_VAR}) can't be read from the install's folder ({why}), so the update can't check its settings before it switches"
         )
     };
-    let text = match mounted(config, gateway, &path) {
-        Some(Mounted::Content(text)) => text,
-        Some(Mounted::File(file)) => {
+    let text = match mounted(config, gateway, &path).map_err(&unreadable)? {
+        Mounted::Content(text) => text,
+        Mounted::File(file) => {
             read(&file).map_err(|e| unreadable(format!("{}: {e}", file.display())))?
-        }
-        None => {
-            return Err(unreadable(
-                "no bind mount, config or secret holds it".into(),
-            ));
         }
     };
     toml::from_str(&text)
@@ -279,16 +288,58 @@ mod tests {
     }
 
     #[test]
+    fn the_deepest_mount_of_any_kind_holds_the_file() {
+        let toml = "[kpmr]\ninterval = \"1m\"\n";
+        let secret_over_bind = json!({
+            "services": { "gateway": {
+                "environment": { "KAESO_CONFIG": "/etc/kaeso.toml" },
+                "volumes": [{ "type": "bind", "source": "/srv/kaeso", "target": "/etc" }],
+                "secrets": [{ "source": "kaeso", "target": "/etc/kaeso.toml" }],
+            }},
+            "secrets": { "kaeso": { "content": "[kpmr]\ninterval = \"auto\"\n" } },
+        });
+        assert_eq!(
+            checked_in(secret_over_bind, &[("/srv/kaeso/kaeso.toml", toml)]),
+            Check::Fine
+        );
+        let volume_over_bind = json!({
+            "environment": { "KAESO_CONFIG": "/etc/kaeso/kaeso.toml" },
+            "volumes": [
+                { "type": "bind", "source": "/srv/kaeso", "target": "/etc" },
+                { "type": "volume", "source": "conf", "target": "/etc/kaeso" },
+            ],
+        });
+        let Check::Unreadable(why) =
+            checked(volume_over_bind, &[("/srv/kaeso/kaeso/kaeso.toml", toml)])
+        else {
+            panic!()
+        };
+        assert!(why.contains("in a volume mount"), "{why}");
+    }
+
+    #[test]
+    fn an_empty_variable_leaves_the_file_value_as_in_the_gateway() {
+        let gateway = json!({
+            "environment": { "KAESO_CONFIG": "/kaeso.toml", "KAESO_KPMR_INTERVAL": "" },
+            "volumes": [{ "type": "bind", "source": "/srv/kaeso/kaeso.toml", "target": "/kaeso.toml" }],
+        });
+        assert_eq!(
+            named(checked(
+                gateway,
+                &[("/srv/kaeso/kaeso.toml", "[kpmr]\ninterval = \"1m\"\n")]
+            )),
+            ["KAESO_KPMR_INTERVAL"]
+        );
+    }
+
+    #[test]
     fn a_file_the_runner_cannot_read_stops_the_update() {
         let elsewhere = json!({ "environment": { "KAESO_CONFIG": "/etc/kaeso.toml" } });
         let Check::Unreadable(why) = checked(elsewhere, &[]) else {
             panic!()
         };
         assert!(why.contains("/etc/kaeso.toml (KAESO_CONFIG)"), "{why}");
-        assert!(
-            why.contains("no bind mount, config or secret holds it"),
-            "{why}"
-        );
+        assert!(why.contains("no mount holds it"), "{why}");
         let missing = json!({
             "environment": { "KAESO_CONFIG": "/kaeso.toml" },
             "volumes": [{ "type": "bind", "source": "/srv/kaeso/kaeso.toml", "target": "/kaeso.toml" }],

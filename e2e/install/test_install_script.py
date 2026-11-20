@@ -613,14 +613,25 @@ def test_an_update_whose_gateway_refuses_the_settings_keeps_the_running_release(
     result = check_settings_in(tmp_path, refusal, 1)
     assert result.returncode == 1
     assert refusal in result.stderr
-    assert "Kaeso 40.7.0 would stop at startup with these settings, so this install keeps running 40.6.0" in result.stderr
+    assert "Kaeso 40.7.0 refused this install's settings, so this install keeps running 40.6.0" in result.stderr
     assert (install / "compose.yaml").read_text() == compose_of("40.6.0")
     assert (tmp_path / "calls").read_text() == "docker compose run --rm --no-deps -T gateway config check\n"
 
 
-def test_an_update_whose_gateway_takes_the_settings_goes_on(tmp_path):
+@pytest.mark.parametrize(
+    ("answer", "code"),
+    [("The configuration is valid.", 0), ("error: unrecognized subcommand 'config'", 2)],
+)
+def test_an_update_whose_gateway_takes_the_settings_or_cannot_check_them_goes_on(answer, code, tmp_path):
     install = an_install(tmp_path, "40.7.0")
-    result = check_settings_in(tmp_path, "The configuration is valid.", 0)
+    result = check_settings_in(tmp_path, answer, code)
     assert result.returncode == 0, result.stderr
     assert "checked" in result.stdout
     assert (install / "compose.yaml").read_text() == compose_of("40.7.0")
+
+
+def test_a_fresh_install_checks_no_settings(tmp_path):
+    (tmp_path / "kaeso").mkdir()
+    result = run_part(f'docker() {{ echo called >"{tmp_path}/calls"; }}; updated=; check_settings; echo checked', tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert not (tmp_path / "calls").exists()

@@ -400,9 +400,11 @@ mod tests {
                 DONE,
                 "a rollback starts the previous release, which took the setting"
             );
+            assert_eq!(fake.run(&["replace", "60"]), DONE);
             assert_eq!(
                 fake.calls(),
-                ["up --detach --wait --wait-timeout 600 gateway"]
+                ["up --detach --wait --wait-timeout 600 gateway"],
+                "replace finds no Kaeso image the update left, and checks no setting"
             );
             let fine = Fake::new("fine", &refusing.replace("\"1m\"", "\"5m\""), 0);
             assert_eq!(fine.run(&["pull"]), DONE);

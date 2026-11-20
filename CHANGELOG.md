@@ -19,7 +19,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 #### Self-hosting
 
-- An update from the console or the update window checks first that the new gateway takes the install's settings, and when it would refuse one at startup, stops before it switches anything: the running release keeps serving, `compose.yaml` is put back and the update's detail names the setting. The installer's `--update` does the same check. ([#1407](https://github.com/logicplanes/kaeso/pull/1407))
+- An update from the console or the update window that changes `compose.yaml`, as every update from 0.6.0 does, checks first that the new gateway takes the install's settings, and when it would refuse one at startup, stops before it switches anything: the running release keeps serving, `compose.yaml` is put back and the update's detail names the setting. The installer's `--update` does the same check. ([#1407](https://github.com/logicplanes/kaeso/pull/1407))
 
 ### Fixed
 

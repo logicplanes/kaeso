@@ -18,7 +18,7 @@ docker compose logs --tail 100 gateway
 2. 在 `compose.override.yaml` 中更正该设置；如果它属于 [.env 中的设置](configuration.md#env-中的设置)，就在 `.env` 中更正。
 3. 再次运行 `docker compose up -d --wait`。
 
-`docker compose run --rm --no-deps gateway kaeso config check` 会在不启动网关、不连接数据库的情况下检查设置：它输出相同的错误，列出不对应任何设置的 `KAESO_*` 变量，出错时以 1 退出。
+`docker compose run --rm --no-deps gateway config check` 会在不启动网关、不连接数据库的情况下检查设置：它输出相同的错误，列出不对应任何设置的 `KAESO_*` 变量，出错时以 1 退出。
 
 ## Compose 要求在 .env 中设置变量
 
