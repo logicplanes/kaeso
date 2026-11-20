@@ -62,7 +62,7 @@ describe("project guardrails", () => {
   it("says when the project uses none", async () => {
     setUp([]);
     await renderApp(projectPath("settings"));
-    expect(await screen.findByText("Requests go to models unchecked.")).toBeInTheDocument();
+    expect(await screen.findByText("No guardrails; requests go to models unchecked.")).toBeInTheDocument();
   });
 
   it("is hidden from people who can't choose guardrails while the project has none", async () => {
@@ -114,7 +114,7 @@ describe("project guardrails", () => {
     setUp([]);
     on("GET", ALL, paged([]));
     const { user } = await renderApp(projectPath("settings"));
-    await screen.findByText("Requests go to models unchecked.");
+    await screen.findByText("No guardrails; requests go to models unchecked.");
     await user.click(screen.getByRole("button", { name: "Choose guardrails" }));
     const dialog = await screen.findByRole("dialog", { name: "Choose guardrails" });
     expect(await within(dialog).findByText("Add one under Organization settings › Guardrails first.")).toBeInTheDocument();

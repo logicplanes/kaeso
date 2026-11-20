@@ -189,7 +189,7 @@ export function LimitsPage({ org, project, search }: { org: string; project: str
           </Tabs>
         }
         actions={
-          <span className="flex items-center gap-8">
+          <span className="flex flex-wrap items-center justify-end gap-8">
             <Select
               aria-label={t("limits.sort", "Sort")}
               size="sm"

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertDialog, Badge, Banner, Button, Empty, KeyValue, Link, List, Sheet, Sparkline, Text } from "@logicplanes/kaeso-ui";
+import { AlertDialog, Badge, Banner, Button, Empty, KeyValue, Link, List, Section, Sheet, Sparkline, Text } from "@logicplanes/kaeso-ui";
 import { formatNumber } from "@logicplanes/kaeso-ui/format";
 import type { Prices } from "~/format/prices";
 import { useOrgPrices } from "~/kaeso/org-prices";
@@ -16,6 +16,9 @@ import { fullDayLabel } from "~/format/period";
 import { t } from "~/i18n";
 import { common } from "~/i18n/common";
 import { toast } from "~/shell/toast";
+import { allKeysQuery } from "~/api/queries/keys";
+import { clientLabel } from "~/format/clients";
+import { keyLabel, usePartyName } from "../keys/party";
 
 const SOON_DAYS = 90;
 
@@ -113,7 +116,7 @@ export function RetiringTab({ org, project, canManage }: { org: string; project:
   );
 }
 
-function Callers({ title, list, href }: { title: string; list: CallerCount[]; href: (id: string) => string | undefined }) {
+function Callers({ title, list, name, href }: { title: string; list: CallerCount[]; name: (id: string) => string; href: (id: string) => string | undefined }) {
   if (list.length === 0) return null;
   return (
     <KeyValue
@@ -128,13 +131,11 @@ function Callers({ title, list, href }: { title: string; list: CallerCount[]; hr
                 return (
                   <li key={c.id} className="flex items-center justify-between gap-12">
                     {to ? (
-                      <Link href={to} className="mono truncate">
-                        {c.id}
+                      <Link href={to} className="truncate">
+                        {name(c.id)}
                       </Link>
                     ) : (
-                      <Text mono truncate>
-                        {c.id}
-                      </Text>
+                      <Text truncate>{name(c.id)}</Text>
                     )}
                     <Text tabular tone="secondary">
                       {formatNumber(c.requests)}
@@ -167,6 +168,12 @@ function RetiringBody({
   const prices = useOrgPrices(org);
   const logs = useRequestLogs() && rights.has("logs.metadata.view");
   const [moving, setMoving] = useState(false);
+  const partyName = usePartyName(org, project);
+  const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: rights.has("keys.all.view") });
+  const keyName = (id: string) => {
+    const k = keys.data?.find((x) => x.id === id);
+    return k ? keyLabel(k) : id;
+  };
   const base = `/orgs/${org}/projects/${project}`;
   const logsOf = (filter: Record<string, string>) =>
     logs ? `${base}/logs?${new URLSearchParams({ model: m.model_id, provider: m.provider, range: "30d", ...filter }).toString()}` : undefined;
@@ -174,6 +181,11 @@ function RetiringBody({
   const r = m.replacement;
   const usage = m.usage;
   const movable = !!r && (r.listed || !!r.catalogue_model_id) && m.aliases.length > 0;
+  const moveBlocked = movable
+    ? undefined
+    : m.aliases.length === 0
+      ? t("models.retiring.nothingToMove", "No alias calls it, so there is nothing to move.")
+      : t("models.retiring.replacementUnlisted", "KPMR doesn't list the replacement, so it can't be added.");
   return (
     <div className="flex flex-col gap-24">
       <div className="flex flex-wrap items-center gap-8">
@@ -210,15 +222,18 @@ function RetiringBody({
             : []),
         ]}
       />
-      <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-12">
-          <Text weight="medium">{t("models.retiring.usedBy", "Aliases and route steps")}</Text>
-          {canManage && r && (
-            <Button size="sm" variant="primary" disabled={!movable} onClick={() => setMoving(true)}>
+      <Section
+        title={t("models.retiring.usedBy", "Aliases and route steps")}
+        spacing="none"
+        actions={
+          canManage &&
+          r && (
+            <Button size="sm" variant="primary" disabled={!movable} {...(moveBlocked ? { disabledReason: moveBlocked } : {})} onClick={() => setMoving(true)}>
               {t("models.retiring.move", "Move to replacement")}
             </Button>
-          )}
-        </div>
+          )
+        }
+      >
         {m.aliases.length === 0 ? (
           <Text tone="secondary">{t("models.retiring.noAliases", "No alias calls it; apps that name it directly still do.")}</Text>
         ) : (
@@ -235,28 +250,35 @@ function RetiringBody({
             ))}
           </ul>
         )}
-      </div>
+      </Section>
       {usage && (
-        <div className="flex flex-col gap-12">
-          <Text weight="medium">{t("models.retiring.callers", "Who still calls it, last 30 days")}</Text>
-          {usage.daily.length > 1 && (
-            <Sparkline values={usage.daily.map((d) => d.requests)} fluid aria-label={t("models.retiring.chart", "Requests per day since the announcement")} />
-          )}
-          {usage.requests === 0 ? (
-            <Text tone="secondary">{t("models.retiring.noCalls", "No requests in the last 30 days.")}</Text>
-          ) : (
-            <>
-              <Callers title={t("models.retiring.keys", "Keys")} list={usage.keys} href={(id) => logsOf({ key: id })} />
-              <Callers title={t("models.retiring.members", "Members")} list={usage.members} href={(id) => logsOf({ member: `user:${id}` })} />
-              <Callers
-                title={t("models.retiring.serviceAccounts", "Service accounts")}
-                list={usage.service_accounts}
-                href={(id) => logsOf({ member: `service_account:${id}` })}
-              />
-              <Callers title={t("models.retiring.clients", "Client apps")} list={usage.clients} href={(id) => logsOf({ client: id })} />
-            </>
-          )}
-        </div>
+        <Section title={t("models.retiring.callers", "Who still calls it, last 30 days")} spacing="none">
+          <div className="flex flex-col gap-12">
+            {usage.daily.length > 1 && (
+              <Sparkline values={usage.daily.map((d) => d.requests)} fluid aria-label={t("models.retiring.chart", "Requests per day since the announcement")} />
+            )}
+            {usage.requests === 0 ? (
+              <Text tone="secondary">{t("models.retiring.noCalls", "No requests in the last 30 days.")}</Text>
+            ) : (
+              <>
+                <Callers title={t("models.retiring.keys", "Keys")} list={usage.keys} name={keyName} href={(id) => logsOf({ key: id })} />
+                <Callers
+                  title={t("models.retiring.members", "Members")}
+                  list={usage.members}
+                  name={(id) => partyName({ kind: "user", id })}
+                  href={(id) => logsOf({ member: `user:${id}` })}
+                />
+                <Callers
+                  title={t("models.retiring.serviceAccounts", "Service accounts")}
+                  list={usage.service_accounts}
+                  name={(id) => partyName({ kind: "service_account", id })}
+                  href={(id) => logsOf({ member: `service_account:${id}` })}
+                />
+                <Callers title={t("models.retiring.clients", "Client apps")} list={usage.clients} name={clientLabel} href={(id) => logsOf({ client: id })} />
+              </>
+            )}
+          </div>
+        </Section>
       )}
       {r && <MoveDialog org={org} project={project} m={m} to={r.model_id} open={moving} onOpenChange={setMoving} onMoved={onMoved} />}
     </div>

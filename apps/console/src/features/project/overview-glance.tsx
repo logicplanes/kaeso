@@ -18,6 +18,7 @@ import { Limit } from "~/kaeso/overview/limit";
 import { RecentChanges } from "~/kaeso/overview/recent-changes";
 import { useProviders } from "~/kaeso/providers";
 import { projectPath } from "~/shell/pages";
+import { usePhone } from "~/shell/use-phone";
 import { lastDays } from "~/kaeso/share";
 import { ShareButton } from "~/kaeso/share-button";
 import { keyLabel, usePartyName } from "./keys/party";
@@ -214,6 +215,7 @@ function LiveCell({ org, project, className }: { org: string; project: string; c
   const keys = useQuery(allKeysQuery(org, project, { include_archived: true }));
   const rights = useProjectRights(org, project);
   const providers = useProviders(org);
+  const phone = usePhone();
   const models = useQuery({ ...catalogueQuery(org, project), enabled: rights.has("models.view") });
   const modelOf = (provider: string, model: string, asked: string) => {
     if (!provider || !model) return <span className="min-w-0 truncate">{asked}</span>;
@@ -233,9 +235,11 @@ function LiveCell({ org, project, className }: { org: string; project: string; c
       <>
         <StatusCode code={l.status} />
         {modelOf(l.provider, l.model, l.requested_model)}
-        <Text variant="small" tone="tertiary" truncate>
-          {keyName(l.key_id)}
-        </Text>
+        {!phone && (
+          <Text variant="small" tone="tertiary" truncate>
+            {keyName(l.key_id)}
+          </Text>
+        )}
       </>
     ),
     secondary: formatRelative(l.started_at),

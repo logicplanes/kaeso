@@ -25,12 +25,13 @@ describe("KeyValue", () => {
     expect(screen.getAllByText("Format")[1]?.parentElement).toHaveClass("hairline-b");
   });
 
-  it("hangs a label and its value from their first line, so a value stays level with a label that wraps", () => {
+  it("hangs a label and its value from their first line on one baseline, so a value stays level with a label that wraps", () => {
     render(<KeyValue items={[{ label: "Maximale Ausgabe-Tokens pro Anfrage im Projekt", value: "64.000" }, ...items.slice(1, 2)]} />);
     const label = screen.getByText(/Maximale Ausgabe-Tokens/);
-    expect(label).toHaveClass("items-start", "pt-10", "pb-8");
+    expect(label).toHaveClass("items-start", "pt-8", "pb-8", "leading-code");
     expect(label.nextElementSibling).toHaveClass("items-start", "pt-8", "pb-8");
-    expect(screen.getByText("Upstream request").nextElementSibling).toHaveClass("items-start", "pt-10");
+    expect(label.nextElementSibling).not.toHaveClass("leading-code");
+    expect(screen.getByText("Upstream request").nextElementSibling).toHaveClass("items-start", "pt-8", "leading-code");
   });
 
   it("puts pairs in columns that follow its own width in the grid layout", () => {

@@ -1,8 +1,8 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { signedIn } from "~/test/fixtures";
-import { notifications } from "~/test/fixtures/org";
-import { catalogueModel, projectData, projectPath, retiringModel, retiringReplacement, retiringUsage } from "~/test/fixtures/project";
+import { hoverReason, notifications } from "~/test/fixtures/org";
+import { apiKey, catalogueModel, projectData, projectPath, retiringModel, retiringReplacement, retiringUsage, serviceAccount } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 import type { RetiringModelView } from "~/api/generated/types";
@@ -13,6 +13,8 @@ const MOVE = "orgs/:org/projects/:project/deprecations/:model/move";
 function setUp(retiring: RetiringModelView[], { soon = 0, rights }: { soon?: number; rights?: string[] } = {}) {
   signedIn(rights ? { projectRights: rights } : {});
   projectData({
+    keys: [apiKey({ id: "key_app", name: "checkout-web" })],
+    accounts: [serviceAccount({ id: "sa_jobs", name: "nightly-jobs" })],
     models: [
       catalogueModel({ id: "model_gpt4o", provider: "openai", model_id: "gpt-4o", deprecated: true }),
       catalogueModel({ id: "model_old", provider: "openai", model_id: "gpt-3.5-turbo", deprecated: true }),
@@ -61,10 +63,13 @@ describe("retiring models", () => {
     expect(within(sheet).getByText("route, route.fallback")).toBeInTheDocument();
     expect(within(sheet).getByRole("link", { name: "example.com (opens in a new tab)" })).toHaveAttribute("href", "https://example.com/deprecations");
     const logs = (name: string) => decodeURIComponent(within(sheet).getByRole("link", { name }).getAttribute("href") ?? "");
-    expect(logs("key_app")).toContain("key=key_app");
-    expect(logs("usr_ada")).toContain("member=user:usr_ada");
-    expect(logs("sa_jobs")).toContain("member=service_account:sa_jobs");
-    expect(logs("openai-python")).toContain("client=openai-python");
+    expect(within(sheet).getByRole("heading", { name: "Who still calls it, last 30 days" })).toBeInTheDocument();
+    expect(await within(sheet).findByRole("link", { name: "nightly-jobs" })).toBeInTheDocument();
+    expect(await within(sheet).findByRole("link", { name: "checkout-web" })).toBeInTheDocument();
+    expect(logs("checkout-web")).toContain("key=key_app");
+    expect(logs("Ada Okafor (you)")).toContain("member=user:usr_ada");
+    expect(logs("nightly-jobs")).toContain("member=service_account:sa_jobs");
+    expect(logs("OpenAI Python SDK")).toContain("client=openai-python");
     expect(within(sheet).getByRole("img", { name: "Requests per day since the announcement" })).toBeInTheDocument();
 
     await user.click(within(sheet).getByRole("button", { name: "Move to replacement" }));
@@ -129,7 +134,8 @@ describe("retiring models", () => {
     expect(within(sheet).getByText("key_app")).not.toHaveAttribute("href");
     expect(within(sheet).queryByText("Members")).not.toBeInTheDocument();
     expect(within(sheet).queryByText("Client apps")).not.toBeInTheDocument();
-    expect(within(sheet).getByRole("button", { name: "Move to replacement" })).toBeDisabled();
+    expect(within(sheet).getByRole("button", { name: "Move to replacement" })).toHaveAttribute("aria-disabled", "true");
+    await hoverReason(user, within(sheet).getByRole("button", { name: "Move to replacement" }), "KPMR doesn't list the replacement, so it can't be added.");
   });
 
   it("move to a replacement already in the catalogue", async () => {

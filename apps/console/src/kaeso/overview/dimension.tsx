@@ -28,6 +28,7 @@ import { usePhone } from "~/shell/use-phone";
 import type { Overview } from "./data";
 import { cacheHit, change, type Dimension } from "./metrics";
 import { logsRange } from "./parts";
+import { headerWidth } from "~/format/text-width";
 
 interface Entity {
   key: string;
@@ -179,11 +180,14 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
       (e: Entity) => e.name,
       (_v, e) => label(e),
     ),
-    col.number({ id: "requests", header: t("common.requests", "Requests"), size: 96, priority: 1 }, (e: Entity) => e.requests),
+    col.number(
+      { id: "requests", header: t("common.requests", "Requests"), size: headerWidth(t("common.requests", "Requests"), 96), priority: 1 },
+      (e: Entity) => e.requests,
+    ),
     ...(o.compare
       ? [
           col.custom(
-            { id: "change", header: t("kaeso.analytics.change", "Change"), size: 96, priority: 2 },
+            { id: "change", header: t("kaeso.analytics.change", "Change"), size: headerWidth(t("kaeso.analytics.change", "Change"), 96), priority: 2 },
             (e: Entity) => e.change ?? Number.NEGATIVE_INFINITY,
             (_v, e) =>
               e.change === undefined ? (
@@ -198,7 +202,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
         ]
       : []),
     col.custom(
-      { id: "share", header: t("kaeso.analytics.share", "Share"), size: 84, priority: 3 },
+      { id: "share", header: t("kaeso.analytics.share", "Share"), size: headerWidth(t("kaeso.analytics.share", "Share"), 84), priority: 3 },
       (e: Entity) => e.requests / total,
       (v: number) => formatPercent(v, 0),
       { align: "end" },
@@ -207,7 +211,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
       {
         id: "rate",
         header: t("kaeso.overview.errorRate", "Error rate"),
-        size: 104,
+        size: headerWidth(t("kaeso.overview.errorRate", "Error rate"), 104),
         priority: 2,
         tone: (e: Entity) => (e.requests && e.errors / e.requests >= 0.05 ? "danger" : undefined),
       },
@@ -215,15 +219,18 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
       (v: number) => formatPercent(v),
       { align: "end" },
     ),
-    col.tokens({ id: "tokens", header: t("common.tokens", "Tokens"), size: 96, priority: 3 }, (e: Entity) => e.tokens),
+    col.tokens(
+      { id: "tokens", header: t("common.tokens", "Tokens"), size: headerWidth(t("common.tokens", "Tokens"), 96), priority: 3 },
+      (e: Entity) => e.tokens,
+    ),
     col.custom(
-      { id: "per", header: t("kaeso.analytics.avgTokens", "Avg tokens"), size: 112, priority: 4 },
+      { id: "per", header: t("kaeso.analytics.avgTokens", "Avg tokens"), size: headerWidth(t("kaeso.analytics.avgTokens", "Avg tokens"), 112), priority: 4 },
       (e: Entity) => (e.requests ? e.tokens / e.requests : 0),
       (v: number) => formatTokens(Math.round(v)),
       { align: "end" },
     ),
     col.custom(
-      { id: "cache", header: t("kaeso.overview.cacheHit", "Cache hit"), size: 104, priority: 4 },
+      { id: "cache", header: t("kaeso.overview.cacheHit", "Cache hit"), size: headerWidth(t("kaeso.overview.cacheHit", "Cache hit"), 104), priority: 4 },
       (e: Entity) => e.cache ?? -1,
       (v: number) => (v < 0 ? "—" : formatPercent(v, 0)),
       { align: "end" },
@@ -231,13 +238,13 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
     ...(o.showCost
       ? [
           col.custom(
-            { id: "cost", header: t("common.cost", "Cost"), size: costWidth(rows, 96, phone), priority: 1 },
+            { id: "cost", header: t("common.cost", "Cost"), size: headerWidth(t("common.cost", "Cost"), costWidth(rows, 96, phone)), priority: 1 },
             (e: Entity) => (e.known ? e.cost : -1),
             (_v: number, e: Entity) => <UsageCost row={e.row} money={o.money} />,
             { align: "end" },
           ),
           col.custom(
-            { id: "unit", header: t("kaeso.analytics.avgCost", "Avg cost"), size: 112, priority: 5 },
+            { id: "unit", header: t("kaeso.analytics.avgCost", "Avg cost"), size: headerWidth(t("kaeso.analytics.avgCost", "Avg cost"), 112), priority: 5 },
             (e: Entity) => (e.known && e.requests > e.row.unpriced ? e.cost / (e.requests - e.row.unpriced) : -1),
             (v: number) => (v < 0 ? <Text tone="secondary">{t("kaeso.usage.costUnknown", "Unknown")}</Text> : o.money.tile(v.toFixed(8))),
             { align: "end" },

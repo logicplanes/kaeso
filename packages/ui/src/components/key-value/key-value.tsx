@@ -48,10 +48,11 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
           key={i}
           className={cn(layout === "columns" ? "contents" : "flex min-w-0 flex-col gap-2 py-8 hairline-b", grid && it.span === "row" && "col-span-full")}
         >
+          {/* Labels and mono values take the body text's 20px line, so a row's baselines meet. */}
           <dt
             className={cn(
               "text-small font-medium text-fg-secondary",
-              layout === "columns" && "flex min-h-36 min-w-120 items-start pt-10 pb-8 pe-24 hairline-b",
+              layout === "columns" && "flex min-h-36 min-w-120 items-start pt-8 pb-8 pe-24 leading-code hairline-b",
               grid && "flex min-w-0",
             )}
           >
@@ -61,7 +62,7 @@ export const KeyValue = forwardRef<HTMLDListElement, KeyValueProps>(function Key
             className={cn(
               "group/kv flex min-w-0 gap-4 text-body text-fg",
               grid ? "min-h-24" : "min-h-36",
-              layout === "columns" ? cn("items-start pb-8 hairline-b", it.mono ? "pt-10" : "pt-8") : it.wrap ? "items-start" : "items-center",
+              layout === "columns" ? cn("items-start pt-8 pb-8 hairline-b", it.mono && "leading-code") : it.wrap ? "items-start" : "items-center",
               layout === "stacked" && it.wrap && "py-8",
               it.mono && "mono text-small",
             )}

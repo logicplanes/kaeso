@@ -173,6 +173,19 @@ describe("RankList", () => {
     fireEvent.click(rows[1]!);
     expect(open).toHaveBeenCalledWith("b");
   });
+  it("ends every value on the row's right edge, numbers that roll as well as words", () => {
+    render(
+      <RankList
+        aria-label="Latest requests"
+        items={[
+          { id: "a", label: "Claude Haiku 5.5", value: "6 ms" },
+          { id: "b", label: "GPT-6 Sol", value: "—" },
+        ]}
+      />,
+    );
+    expect(screen.getByText("6 ms", { selector: ".sr-only" }).parentElement).toHaveClass("justify-end", "text-right", "min-w-64");
+    expect(screen.getByText("—")).toHaveClass("justify-end", "text-right", "min-w-64");
+  });
   it("gives every row's change a column of its own: neutral, better or worse, or a word", () => {
     render(
       <RankList

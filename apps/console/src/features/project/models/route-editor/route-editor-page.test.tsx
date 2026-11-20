@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ORG, PROJECT, USER, signedIn, without } from "~/test/fixtures";
 import { hoverReason, notifications } from "~/test/fixtures/org";
 import { alias, apiKey, catalogueModel, modelRoute, modelsApi, projectData, projectMember, projectPath } from "~/test/fixtures/project";
@@ -73,6 +73,17 @@ const stepName = (name: RegExp) => new RegExp(`${KIND}.*${name.source}`);
 const step = (name: RegExp) => screen.findByRole("treeitem", { name: stepName(name) });
 
 describe("RouteEditorPage", () => {
+  // The test window is 1024px wide; the editor shows its whole header from 1280px.
+  const width = (wide: boolean) =>
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: !wide && query === "(max-width: 1279px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+  beforeEach(() => width(true));
+  afterEach(() => vi.unstubAllGlobals());
+
   it("draws the route and saves a change to when a step falls back", async () => {
     setUp();
     on("PATCH", ONE_ALIAS, ({ body }: { body: { route: unknown } }) => ({ ...sturdy(), route: body.route }));
@@ -82,6 +93,8 @@ describe("RouteEditorPage", () => {
     expect(await step(/Claude Haiku 4\.5/)).toBeInTheDocument();
     const save = screen.getByRole("button", { name: "Save" });
     expect(save).toHaveAttribute("aria-disabled", "true");
+    expect(save).toHaveClass("h-32");
+    expect(screen.getByRole("button", { name: "See its requests" })).toHaveClass("h-32");
 
     await user.click(await step(/Claude Sonnet 4\.5/));
     const panel = await screen.findByRole("complementary", { name: "Step settings" });
@@ -116,15 +129,8 @@ describe("RouteEditorPage", () => {
     });
   });
 
-  it("on a phone, keeps Save in reach and moves the other actions into a menu", async () => {
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: query === "(max-width: 639px)",
-      media: query,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-    }));
+  it("on a phone or a tablet, keeps Save in reach and moves the other actions into a menu", async () => {
+    width(false);
     setUp();
     const { user } = await renderApp(projectPath("models/aliases/al_fast"));
 
@@ -139,7 +145,6 @@ describe("RouteEditorPage", () => {
     ).toEqual(["See its requests", "ChangesNothing has changed since the last save.", "Show as JSON", "Duplicate", "Delete alias"]);
     await user.click(within(menu).getByRole("menuitem", { name: "Show as JSON" }));
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    vi.unstubAllGlobals();
   });
 
   it("offers no changes for a new alias", async () => {

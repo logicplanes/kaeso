@@ -41,7 +41,9 @@ describe("ModelSheet", () => {
     await renderApp(projectPath("models?model=cm_sonnet"));
 
     const s = await sheet("Sonnet");
-    await within(s).findByText("Values in use");
+    expect(await within(s).findByRole("heading", { name: "Values in use" })).toBeInTheDocument();
+    expect(within(s).getAllByText("Sonnet", { exact: true })).toHaveLength(2);
+    expect(within(s).getAllByText("claude-sonnet-4-5")[0]).toBeInTheDocument();
     expect(within(s).getByText("Overridden 2")).toBeInTheDocument();
     expect(s).toHaveTextContent("Aliasesfast, default");
     expect(s).toHaveTextContent("Added15 Oct 2026 by Ada Okafor (you)");

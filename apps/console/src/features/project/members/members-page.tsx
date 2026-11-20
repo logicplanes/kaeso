@@ -186,7 +186,13 @@ function AddMemberDialog({ org, project, existing, onClose }: { org: string; pro
           <Dialog.Close>
             <Button>{common.cancel()}</Button>
           </Dialog.Close>
-          <Button variant="primary" disabled={!user} loading={add.isPending} onClick={submit}>
+          <Button
+            variant="primary"
+            disabled={!user}
+            {...(user ? {} : { disabledReason: t("project.members.chooseFirst", "Choose someone to add first.") })}
+            loading={add.isPending}
+            onClick={submit}
+          >
             {t("project.members.add", "Add member")}
           </Button>
         </>

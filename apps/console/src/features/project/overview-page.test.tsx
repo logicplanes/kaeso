@@ -94,6 +94,26 @@ describe("the project overview", () => {
     expect(router.state.location.pathname).toBe(projectPath("logs"));
   });
 
+  it("on a phone, gives the latest requests' models the room their keys took", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    signedIn();
+    projectData({ keys: [apiKey()] });
+    usage({});
+    on("GET", "orgs/:org/projects/:project/logs", listed([logRow()]));
+    await renderApp(projectPath());
+
+    const latest = await screen.findByRole("list", { name: "Latest requests" });
+    const row = await within(latest).findByRole("button", { name: /gpt-5\.4-mini/ });
+    expect(row).toHaveTextContent("1.3 s");
+    expect(row).not.toHaveTextContent("checkout-web");
+    vi.unstubAllGlobals();
+  });
+
   it("shows the project's limits, its models by use, its keys by last use and its members", async () => {
     signedIn();
     projectData({

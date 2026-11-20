@@ -65,14 +65,26 @@ describe("AnalyticsPage", () => {
     expect(bodyRows(table)[0]).toHaveTextContent("$2.50");
   });
 
-  it("gives the model the room the number columns leave", async () => {
+  it("gives the model the room the number columns leave, each wide enough for its header", async () => {
     signedIn();
     projectData({ models: [catalogueModel()] });
     usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5" })] });
     await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
 
     const header = within(await breakdown()).getAllByRole("row")[0] as HTMLElement;
-    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 88px 88px 88px 88px 96px");
+    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 96px 88px 88px 104px 96px");
+  });
+
+  it("widens the number columns for German headers and values", async () => {
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({ model: [usageRow({ key: "anthropic/claude-sonnet-4-5", requests: 2057, input_tokens: 4_500_000, output_tokens: 10_000 })] });
+    await renderApp(projectPath(`analytics?${PERIOD}&by=model`), { locale: "de" });
+
+    const table = await screen.findByRole("grid", { name: "Aufschlüsselung der Nutzung" });
+    await waitFor(() => expect(bodyRows(table)[0]).toHaveTextContent("4,51 Mio."));
+    const header = within(table).getAllByRole("row")[0] as HTMLElement;
+    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 96px 88px 96px 128px 96px");
   });
 
   it("widens the cost column for a count of requests without a price", async () => {
@@ -82,7 +94,7 @@ describe("AnalyticsPage", () => {
     await renderApp(projectPath(`analytics?${PERIOD}&by=model`));
 
     const header = within(await breakdown()).getAllByRole("row")[0] as HTMLElement;
-    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 88px 88px 88px 88px 120px");
+    expect(header.style.gridTemplateColumns).toBe("minmax(200px, 1fr) 96px 88px 88px 104px 120px");
   });
 
   it("keeps the requests beside the count of requests without a price on a phone", async () => {

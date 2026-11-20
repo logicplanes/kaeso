@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cellWidth, textWidth } from "./text-width";
+import { cellWidth, headerWidth, textWidth } from "./text-width";
 
 describe("textWidth", () => {
   it("gives Chinese, Korean and full-width characters a full em and Latin letters about half of one", () => {
@@ -56,6 +56,14 @@ describe("textWidth in a browser", () => {
     vi.resetModules();
     const estimated = await import("./text-width");
     expect(estimated.textWidth("Key")).toBeCloseTo(3 * 7.4);
+  });
+});
+
+describe("headerWidth", () => {
+  it("fits a sortable header with its arrow and the cell's padding, on the 8px grid", () => {
+    expect(headerWidth("Requests", 88)).toBe(96);
+    expect(headerWidth("Cache-Trefferquote", 88)).toBe(160);
+    expect(headerWidth("请求", 88)).toBe(88);
   });
 });
 

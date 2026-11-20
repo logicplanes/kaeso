@@ -105,7 +105,7 @@ export const RankList = forwardRef<
               </span>
             )}
             {item.value !== undefined && (
-              <SwapValue text={textOf(item.value)} className="relative min-w-64 shrink-0 text-right text-body font-medium text-fg tabular">
+              <SwapValue text={textOf(item.value)} className="relative min-w-64 shrink-0 justify-end text-right text-body font-medium text-fg tabular">
                 {item.value}
               </SwapValue>
             )}
