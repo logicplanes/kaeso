@@ -215,13 +215,13 @@ Der Fehler-Body von Google `{"error": {"code", "message", "status", "details"}}`
 | `UNAUTHENTICATED` | `Authentication` | |
 | `PERMISSION_DENIED` | `PermissionDenied` | `InvalidRequest`, wenn die Meldung sagt, dass der Schlüssel eine Datei nicht lesen darf, die die Anfrage nennt, etwa eine gelöschte, abgelaufene oder fremde `fileData.fileUri` (`errors/file-permission-denied-published.json`): Der Fehler liegt bei der Anfrage, nicht beim Schlüssel. |
 | `NOT_FOUND` | `NotFound` | |
-| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, etwa `"23s"`, → `retry_after`. |
+| `RESOURCE_EXHAUSTED` | `RateLimited` | `RetryInfo.retryDelay`, etwa `"23s"`, → `retry_after`. `Billing` bei HTTP 402, mit dem Google antwortet, wenn das vorausbezahlte Guthaben aufgebraucht ist (`errors/billing-prepay-depleted.json`). |
 | `UNAVAILABLE` | `Overloaded` | |
 | `DEADLINE_EXCEEDED` | `Timeout` | |
 | `INTERNAL` und die anderen Codes | `ProviderError` | |
 | Kein `status` | nach HTTP-Status | |
 
-`BadRequest.fieldViolations[0].field` → `param`. Ein Gemini-Fehler erreicht Gemini-Apps wie empfangen. Fehler anderer Dialekte werden mit dem Code und Status ihrer Art geschrieben, ein 429 oder 503 mit `RetryInfo` und `retry-after`: `RateLimited` und `Billing` 429 `RESOURCE_EXHAUSTED`, `Overloaded` 503 `UNAVAILABLE`, `Authentication` 401 `UNAUTHENTICATED`.
+`BadRequest.fieldViolations[0].field` → `param`. Ein Gemini-Fehler erreicht Gemini-Apps wie empfangen. Fehler anderer Dialekte werden mit dem Code und Status ihrer Art geschrieben, ein 429 oder 503 mit `RetryInfo` und `retry-after`: `RateLimited` 429 und `Billing` 402, beide `RESOURCE_EXHAUSTED`, wie Google sie schreibt, `Overloaded` 503 `UNAVAILABLE`, `Authentication` 401 `UNAUTHENTICATED`.
 
 ## Embeddings
 
