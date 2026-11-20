@@ -5,7 +5,7 @@ use http_body_util::{BodyExt as _, LengthLimitError, Limited};
 
 // What an oversized body may still send before the gateway stops reading it. Beyond this, and
 // past the body's read deadline, the connection closes.
-const DRAIN_LIMIT: u64 = 1 << 30;
+pub(crate) const DRAIN_LIMIT: u64 = 1 << 30;
 
 // Collecting the frames and joining them at the end holds a large upload twice; copying each
 // frame into a buffer sized from the body's length as it arrives holds it once.
@@ -75,7 +75,7 @@ async fn collect(body: &mut Body, limit: usize) -> Result<Bytes, axum::Error> {
 // A proxy that streams the body to the gateway, such as Traefik, answers the app with its own
 // 502 when the gateway closes the connection while the body is still arriving, so the 413 never
 // reaches the app. Reading the rest first lets the proxy finish and pass the 413 on.
-async fn drain(body: &mut Body) {
+pub(crate) async fn drain(body: &mut Body) {
     let mut drained: u64 = 0;
     while drained <= DRAIN_LIMIT {
         match body.frame().await {

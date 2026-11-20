@@ -237,7 +237,7 @@ Kaeso liest einen Anfragekörper, der mit `Content-Encoding: gzip`, `x-gzip` ode
 
 Ein Body trägt eine Kodierung. Jede andere, etwa `br`, und zwei auf einmal, etwa `gzip, zstd`, erhalten 415 im Format der App. Ein Body, der sich nicht entpacken lässt, erhält 400.
 
-Ein Body über der Grenze erhält 413 im Format der App, sobald Kaeso ihn bis zu seinem Ende gelesen hat, höchstens 1 GiB und innerhalb der Lesefrist für Bodys ([`server.body_read_deadline`](../self-hosting/configuration.md#adressen)). So gibt ein Proxy vor Kaeso, etwa Traefik, die 413 weiter, statt selbst mit 502 zu antworten.
+Ein Body über der Grenze erhält 413 im Format der App. Kaeso liest einen Body bis zu seinem Ende, bevor es antwortet, auch einen, den es ungelesen ablehnt, etwa bei einem ungültigen Schlüssel oder einer Methode, die der Pfad nicht annimmt, höchstens 1 GiB und innerhalb der Lesefrist für Bodys ([`server.body_read_deadline`](../self-hosting/configuration.md#adressen)). So gibt ein Proxy vor Kaeso, etwa Traefik, die Antwort weiter, statt selbst mit 502 zu antworten. Ein Client, der `Expect: 100-continue` sendet, erhält eine Ablehnung, ohne dass Kaeso den Body anfordert.
 
 ## Streaming
 

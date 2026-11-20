@@ -5,9 +5,11 @@ use std::time::Duration;
 
 use axum::body::{Body, Bytes, HttpBody};
 use axum::extract::{Request, State};
+use axum::http::header;
 use axum::middleware::Next;
 use axum::response::Response;
 use hyper::body::{Frame, SizeHint};
+use tokio::sync::oneshot;
 use tokio::time::{Instant, Sleep};
 
 #[derive(Clone, Copy, Debug)]
@@ -18,19 +20,99 @@ pub struct BodyWaits {
 
 pub async fn middleware(State(waits): State<BodyWaits>, req: Request, next: Next) -> Response {
     let deadline = Instant::now() + waits.whole_body;
-    next.run(req.map(|body| {
-        if body.is_end_stream() {
-            return body;
+    let client_waits = req
+        .headers()
+        .get(header::EXPECT)
+        .is_some_and(|v| v.as_bytes().eq_ignore_ascii_case(b"100-continue"));
+    let (give_back, mut unread) = oneshot::channel();
+    let response = next
+        .run(req.map(|body| {
+            if body.is_end_stream() {
+                return body;
+            }
+            Body::new(Returned {
+                body: Some(Paced {
+                    body,
+                    between_frames: waits.between_frames,
+                    deadline,
+                    waiting_since: None,
+                    alarm: None,
+                }),
+                give_back: Some(give_back),
+                polled: false,
+                ended: false,
+            })
+        }))
+        .await;
+    // An answer sent before the body arrived breaks a proxy still sending it, which then answers
+    // 502 itself. A client waiting for `100 Continue` hasn't sent the body, so it isn't asked.
+    if let Ok(Unread { body, polled }) = unread.try_recv()
+        && (polled || !client_waits)
+        && body
+            .size_hint()
+            .exact()
+            .is_none_or(|length| length <= super::body::DRAIN_LIMIT)
+    {
+        super::body::drain(&mut Body::new(body)).await;
+    }
+    response
+}
+
+struct Unread {
+    body: Paced,
+    polled: bool,
+}
+
+// Hands a body the handler dropped before its end back to the middleware.
+struct Returned {
+    body: Option<Paced>,
+    give_back: Option<oneshot::Sender<Unread>>,
+    polled: bool,
+    ended: bool,
+}
+
+impl HttpBody for Returned {
+    type Data = Bytes;
+    type Error = axum::Error;
+
+    fn poll_frame(
+        mut self: Pin<&mut Self>,
+        cx: &mut Context<'_>,
+    ) -> Poll<Option<Result<Frame<Bytes>, axum::Error>>> {
+        self.polled = true;
+        let Some(body) = self.body.as_mut() else {
+            return Poll::Ready(None);
+        };
+        let frame = Pin::new(body).poll_frame(cx);
+        if matches!(frame, Poll::Ready(None | Some(Err(_)))) {
+            self.ended = true;
         }
-        Body::new(Paced {
-            body,
-            between_frames: waits.between_frames,
-            deadline,
-            waiting_since: None,
-            alarm: None,
-        })
-    }))
-    .await
+        frame
+    }
+
+    fn is_end_stream(&self) -> bool {
+        self.body.as_ref().is_none_or(HttpBody::is_end_stream)
+    }
+
+    fn size_hint(&self) -> SizeHint {
+        self.body
+            .as_ref()
+            .map_or_else(|| SizeHint::with_exact(0), HttpBody::size_hint)
+    }
+}
+
+impl Drop for Returned {
+    fn drop(&mut self) {
+        if let (Some(body), Some(give_back)) = (self.body.take(), self.give_back.take())
+            && !self.ended
+            && !body.is_end_stream()
+        {
+            let _ = give_back.send(Unread {
+                body,
+                polled: self.polled,
+            });
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
