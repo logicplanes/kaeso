@@ -467,31 +467,48 @@ pub(super) async fn peek(
         let Ok(next) = tokio::time::timeout_at(until, chunks.next()).await else {
             break;
         };
-        match next {
+        let (events, ended) = match next {
             Some(Ok(bytes)) => {
                 size = size.saturating_add(bytes.len());
                 let events = decoder.feed(&bytes);
                 read.push(bytes);
-                for event in events {
-                    match event {
-                        StreamEvent::Error(err) => return Some(err),
-                        StreamEvent::ResponseStart(_) | StreamEvent::Extra(_) => {}
-                        _ => {
-                            chunks.put_back(read, None);
-                            return None;
-                        }
-                    }
-                }
+                (events, false)
             }
             Some(Err(e)) => {
                 chunks.put_back(read, Some(e));
                 return None;
             }
-            None => break,
+            // A decoder may hold an error back to pair it with a later event, such as a
+            // Responses `error` before `response.failed`; `finish` would add its own error for
+            // the cut-off reply, which stays the pump's to report.
+            None => (decoder.flush(), true),
+        };
+        match first_of(events) {
+            Seen::Error(err) => return Some(err),
+            Seen::Output => break,
+            Seen::Nothing if ended => break,
+            Seen::Nothing => {}
         }
     }
     chunks.put_back(read, None);
     None
+}
+
+enum Seen {
+    Error(KppError),
+    Output,
+    Nothing,
+}
+
+fn first_of(events: Vec<StreamEvent>) -> Seen {
+    for event in events {
+        match event {
+            StreamEvent::Error(err) => return Seen::Error(err),
+            StreamEvent::ResponseStart(_) | StreamEvent::Extra(_) => {}
+            _ => return Seen::Output,
+        }
+    }
+    Seen::Nothing
 }
 
 pub(super) async fn gather(
@@ -1103,6 +1120,67 @@ mod tests {
         assert!(app.reply(b"data: one\n\n".to_vec()).await);
         assert!(!app.reply(b"data: two\n\n".to_vec()).await);
         assert!(app.stalled && app.left());
+    }
+
+    fn responses_stream(name: &str) -> Vec<u8> {
+        let path = format!(
+            "{}/../kaeso-codecs/fixtures/openai_responses/streams/{name}.sse",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        std::fs::read(path).unwrap()
+    }
+
+    async fn peek_at(bytes: &[u8]) -> (Option<KppError>, Vec<u8>) {
+        let mut chunks = kaeso_upstream::ByteStream::replay(
+            bytes
+                .split_inclusive(|b| *b == b'\n')
+                .map(Bytes::copy_from_slice)
+                .collect(),
+        );
+        let ctx = kaeso_codecs::EgressCtx::for_kind(
+            RequestKind::Generate,
+            kaeso_kpp::StreamMode::on(false),
+        );
+        let decoder =
+            kaeso_codecs::dispatch::stream_decoder(DialectId::OpenAiResponses, &ctx).unwrap();
+        let found = peek(&mut chunks, decoder, Duration::from_secs(15)).await;
+        let mut replayed = Vec::new();
+        while let Some(chunk) = chunks.next().await {
+            replayed.extend_from_slice(&chunk.unwrap());
+        }
+        (found, replayed)
+    }
+
+    #[tokio::test]
+    async fn an_error_event_that_ends_the_stream_before_any_output_fails_the_attempt() {
+        let (found, _) = peek_at(&responses_stream("error-at-start")).await;
+        let err = found.expect("the error before any output");
+        assert_eq!(err.kind, kaeso_kpp::ErrorKind::ProviderError);
+        assert!(
+            err.message
+                .starts_with("An error occurred while processing"),
+            "{}",
+            err.message
+        );
+    }
+
+    #[tokio::test]
+    async fn a_stream_with_output_or_without_an_error_is_left_to_the_app() {
+        for name in ["error-mid-stream", "text-basic-stream"] {
+            let stream = responses_stream(name);
+            let (found, replayed) = peek_at(&stream).await;
+            assert!(found.is_none(), "{name}: {found:?}");
+            assert_eq!(replayed, stream, "{name}");
+        }
+        // A stream cut off after its start is the pump's to report, as it would be later on.
+        let stream = responses_stream("error-at-start");
+        let cut = stream
+            .windows(13)
+            .position(|w| w == b"event: error\n")
+            .unwrap();
+        let (found, replayed) = peek_at(&stream[..cut]).await;
+        assert!(found.is_none(), "{found:?}");
+        assert_eq!(replayed, &stream[..cut]);
     }
 
     #[tokio::test]

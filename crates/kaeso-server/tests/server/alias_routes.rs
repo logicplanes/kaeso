@@ -1190,6 +1190,46 @@ async fn a_stream_that_fails_before_any_output_falls_back_and_one_after_output_d
 }
 
 #[tokio::test]
+async fn a_responses_stream_that_ends_on_an_error_event_before_any_output_falls_back() {
+    let env = env().await;
+    let gpt = model_id(&env, "gpt-4o").await;
+    let claude = model_id(&env, "claude-haiku-4-5").await;
+    alias(&env, "sturdy", with_fallback(&gpt, model_step(&claude))).await;
+    for app in APPS {
+        let r = ask(
+            &env,
+            app,
+            "sturdy",
+            "Hi [mock:fail=gpt-4o stream:error-at-start]",
+            true,
+        )
+        .await;
+        let what = format!("{app:?}");
+        assert_eq!(r.status, StatusCode::OK, "{what}: {}", r.text());
+        assert_eq!(r.header("kaeso-model"), Some("claude-haiku-4-5"), "{what}");
+        assert_eq!(walked(&r).len(), 2, "{what}: {:?}", walked(&r));
+        assert!(
+            !r.text().contains("An error occurred while processing"),
+            "{what}: {}",
+            r.text()
+        );
+        env.app.clock.advance(time::Duration::seconds(31));
+    }
+    let r = ask(
+        &env,
+        App::Messages,
+        "gpt-4o",
+        "Hi [mock:fail=gpt-4o stream:error-at-start]",
+        true,
+    )
+    .await;
+    assert!(r.status.is_server_error(), "{}: {}", r.status, r.text());
+    assert_eq!(r.json()["type"], "error", "{}", r.text());
+    let o = env.outcomes().await.pop().unwrap();
+    assert_eq!(o.error_kind.as_deref(), Some("provider_error"));
+}
+
+#[tokio::test]
 async fn a_stream_that_fails_before_any_output_answers_with_its_status_without_a_route() {
     let env = env().await;
     let r = ask(
