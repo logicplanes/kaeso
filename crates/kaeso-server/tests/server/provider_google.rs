@@ -426,6 +426,21 @@ async fn googles_errors_reach_each_app_in_its_own_format() {
         r.json()["error"]["message"],
         "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers."
     );
+    let r = call(
+        &env,
+        &format!("/v1beta/models/{FLASH}:generateContent"),
+        Some(&env.key),
+        false,
+        Some(json!({ "contents": [{ "role": "user", "parts": [{ "text": format!("Hi {}", error("billing-prepay-depleted")) }] }] })),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{}", r.text());
+    assert_eq!(r.json()["error"]["status"], "INTERNAL");
+    assert_eq!(
+        r.json()["error"]["message"],
+        "The provider refused this project's provider key for billing or quota reasons. Ask an organization admin to check it under Providers.",
+        "a Gemini app gets Kaeso's billing answer too, not Google's 402 to retry"
+    );
 }
 
 #[tokio::test]

@@ -221,7 +221,7 @@ Der Fehler-Body von Google `{"error": {"code", "message", "status", "details"}}`
 | `INTERNAL` und die anderen Codes | `ProviderError` | |
 | Kein `status` | nach HTTP-Status | |
 
-`BadRequest.fieldViolations[0].field` → `param`. Ein Gemini-Fehler erreicht Gemini-Apps wie empfangen. Fehler anderer Dialekte werden mit dem Code und Status ihrer Art geschrieben, ein 429 oder 503 mit `RetryInfo` und `retry-after`: `RateLimited` und `Billing` 429 `RESOURCE_EXHAUSTED`, `Overloaded` 503 `UNAVAILABLE`, `Authentication` 401 `UNAUTHENTICATED`.
+`BadRequest.fieldViolations[0].field` → `param`. Ein Gemini-Fehler erreicht Gemini-Apps wie empfangen. Fehler anderer Dialekte werden mit dem Code und Status ihrer Art geschrieben, ein 429 oder 503 mit `RetryInfo` und `retry-after`: `RateLimited` 429 und `Billing` 402, beide `RESOURCE_EXHAUSTED`, wie Google sie schreibt, `Overloaded` 503 `UNAVAILABLE`, `Authentication` 401 `UNAUTHENTICATED`.
 
 ## Embeddings
 
