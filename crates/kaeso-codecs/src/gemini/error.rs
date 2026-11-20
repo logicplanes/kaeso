@@ -12,6 +12,11 @@ const BAD_REQUEST: &str = "type.googleapis.com/google.rpc.BadRequest";
 // google.rpc.Code names, as the Gemini API writes them in `error.status`
 // (https://aistudio.google.com/docs/troubleshooting, "Error codes").
 fn kind_of(status: Option<&str>, http: u16, details: &[Value], message: &str) -> ErrorKind {
+    // An empty prepaid balance answers 402 with the status `RESOURCE_EXHAUSTED`, which otherwise
+    // means a rate limit; it won't pass with a retry.
+    if http == 402 {
+        return ErrorKind::Billing;
+    }
     let reason = details
         .iter()
         .filter(|d| d["@type"] == ERROR_INFO)
@@ -73,7 +78,8 @@ fn default_code(kind: &ErrorKind) -> u16 {
         ErrorKind::PermissionDenied => 403,
         ErrorKind::NotFound => 404,
         ErrorKind::RequestTooLarge => 413,
-        ErrorKind::RateLimited | ErrorKind::Billing => 429,
+        ErrorKind::Billing => 402,
+        ErrorKind::RateLimited => 429,
         ErrorKind::Overloaded => 503,
         ErrorKind::Timeout => 504,
         ErrorKind::ProviderError => 500,
@@ -250,6 +256,8 @@ mod tests {
         );
         assert_eq!(k(Some("DEADLINE_EXCEEDED"), 504), ErrorKind::Timeout);
         assert_eq!(k(Some("INTERNAL"), 500), ErrorKind::ProviderError);
+        assert_eq!(k(Some("RESOURCE_EXHAUSTED"), 429), ErrorKind::RateLimited);
+        assert_eq!(k(Some("RESOURCE_EXHAUSTED"), 402), ErrorKind::Billing);
         assert_eq!(
             k(Some("FAILED_PRECONDITION"), 400),
             ErrorKind::InvalidRequest
@@ -261,6 +269,7 @@ mod tests {
             (404, ErrorKind::NotFound),
             (410, ErrorKind::NotFound),
             (413, ErrorKind::RequestTooLarge),
+            (402, ErrorKind::Billing),
             (429, ErrorKind::RateLimited),
             (503, ErrorKind::Overloaded),
             (504, ErrorKind::Timeout),
@@ -286,7 +295,7 @@ mod tests {
             (ErrorKind::PermissionDenied, 403, "PERMISSION_DENIED"),
             (ErrorKind::NotFound, 404, "NOT_FOUND"),
             (ErrorKind::RequestTooLarge, 413, "INVALID_ARGUMENT"),
-            (ErrorKind::Billing, 429, "RESOURCE_EXHAUSTED"),
+            (ErrorKind::Billing, 402, "RESOURCE_EXHAUSTED"),
             (ErrorKind::Overloaded, 503, "UNAVAILABLE"),
             (ErrorKind::Timeout, 504, "DEADLINE_EXCEEDED"),
             (ErrorKind::ProviderError, 500, "INTERNAL"),

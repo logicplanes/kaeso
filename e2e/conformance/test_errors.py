@@ -26,7 +26,7 @@ ANTHROPIC_STATUS = {
 }
 GEMINI_STATUS = {
     "invalid_request": {400}, "context_too_long": {400}, "unsupported": {400},
-    "content_filtered": {400}, "authentication": {400, 401}, "billing": {429},
+    "content_filtered": {400}, "authentication": {400, 401}, "billing": {402},
     "permission_denied": {403}, "not_found": {404}, "request_too_large": {413},
     "rate_limited": {429}, "provider_error": {500}, "timeout": {504}, "overloaded": {503},
 }
