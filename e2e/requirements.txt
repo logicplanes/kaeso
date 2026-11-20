@@ -4,9 +4,9 @@ annotated-types==0.8.0 \
     --hash=sha256:13b2beaad985e05e2d6407ee4c4f35590b11f8d693a258a561055cac8f64cab7 \
     --hash=sha256:f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0
     # via pydantic
-anthropic==2.7.0 \
-    --hash=sha256:04775ef8ea252c1815e33c289848b18efa59a5da466e42be9bd91e358c4ac6f0 \
-    --hash=sha256:cafb1817435d095ef46551e9b0608f56c6490728406a73f2ea8664bc805e4352
+anthropic==2.8.0 \
+    --hash=sha256:76ad332e2d500fc54d0112cf100544ad1a7605e71e092b98d9eb664d2b66e283 \
+    --hash=sha256:d34e389ba0544cd64e033eb7475f46cc1ac6f2a388cdcd472b33ad4ac29ef40c
     # via -r e2e/requirements.in
 anyio==4.15.1 \
     --hash=sha256:6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101 \
@@ -136,9 +136,9 @@ cffi==2.1.1 ; platform_python_implementation != 'PyPy' \
     --hash=sha256:fb92203a88b3d3053034db775110081c49d28be6551923805e039924093761e4 \
     --hash=sha256:fcd22650c908d7b7da162bbfaab594a1227a15d1643a98c68b122ac642fa2264
     # via cryptography
-cfn-lint==1.60.0 \
-    --hash=sha256:5b3ee70562e034548d707f4b80bd4cc016b7137861a614cd4534751ca4edeea0 \
-    --hash=sha256:8c12142205cdba8b63236cc6e61f06aff6b563ae957c83af76e56940a3a4fe6a
+cfn-lint==1.60.1 \
+    --hash=sha256:3c2b9390fc8f8328c8f5655caa254578b499028e725c198fdc3ba95bdf0aa004 \
+    --hash=sha256:d07d50f0f60b5c719ed3ddcd06ab7329209f74892a14e1e853c49fe4d4bb5dce
     # via -r e2e/requirements.in
 charset-normalizer==3.5.2 \
     --hash=sha256:01077390b03f7988f11d700a2194e69b119741a86b1a638b1db88891e3eced8e \
@@ -393,9 +393,9 @@ docstring-parser==0.18.0 \
     --hash=sha256:292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015 \
     --hash=sha256:b3fcbed555c47d8479be0796ef7e19c2670d428d72e96da63f3a40122860374b
     # via anthropic
-elevenlabs==2.77.0 \
-    --hash=sha256:0ce354075318ddfe271a872adad94753ce75690a9dc7583f83b85aec047aa0a2 \
-    --hash=sha256:5b53d79ffd71665958f26b214ef3ae0d9a1d01462f1507c1ff9b4ab6529d6102
+elevenlabs==2.78.0 \
+    --hash=sha256:8b33e5a51ea04f89e47e0d08b1709a837e9208dc84076c692aefeeb492c59378 \
+    --hash=sha256:a09f59beb73a9805f90ff719182e2f91e4d418ef9327fd984d8aa97a51004351
     # via -r e2e/requirements.in
 google-auth==2.62.1 \
     --hash=sha256:015399a5abde39033c69404cc1c079e6d4c2de2993e164c9f4eac6e5376ad72b \
@@ -606,9 +606,9 @@ networkx==3.7 \
     --hash=sha256:e3fd2c13a7814cee3746340d8d7f8598a67f16a58bf47fb7f8793fab6efca1b0 \
     --hash=sha256:fd77a511bd90f39f3d016351345b52cf5319b813bdca01de3f755d3cca62e96a
     # via cfn-lint
-openai==3.49.0 \
-    --hash=sha256:3977754792115027ba80ae16996ba3366478b5b228e1ab58e2660bd7ac8c3d78 \
-    --hash=sha256:44badf2bea9bcd643dafa0bc4d5a109a14395889219fd68b8560322288196e96
+openai==3.50.0 \
+    --hash=sha256:7002115247cacb167154a3da4c668d074e61014a661d2c1ac02583da24e2ce19 \
+    --hash=sha256:ff094ba851ce512e0682f259e8c5bdc4802c7ef5373f68e7fd261261bb4496f2
     # via -r e2e/requirements.in
 opentelemetry-api==1.45.2 \
     --hash=sha256:2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34 \

@@ -1671,6 +1671,28 @@ expression: outcomes
     },
     "path": "/v1/messages"
   },
+  "error-at-start": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Write a haiku about the sea.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true
+    },
+    "path": "/v1/messages"
+  },
   "error-mid-stream": {
     "body": {
       "max_tokens": 4096,
