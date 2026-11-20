@@ -77,7 +77,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
   };
 
   // The state takes the width of its widest word, so on a phone the names keep the rest of the row; a badge adds its own
-  // padding and weight to the cell's.
+  // padding to the cell's.
   const badged = rows.filter((o) => o.state === "scheduled_for_deletion" || o.owners === 0).map(stateWord);
   const stateWidth = Math.min(
     STATE_MAX,

@@ -93,7 +93,7 @@ describe("organization MCP servers", () => {
     signedIn();
     serve([mcpServer({ auth_method: "none", connection: null }), mcpServer({ id: "mcp_docs", name: "Docs", auth_method: "none", connection: null })]);
     await renderApp(PATH);
-    expect(within(await table()).getAllByRole("row")[0]?.style.gridTemplateColumns).toMatch(/^minmax\(240px, 1fr\) 192px 120px /);
+    expect(within(await table()).getAllByRole("row")[0]?.style.gridTemplateColumns).toMatch(/^minmax\(240px, 1fr\) 192px 128px /);
   });
 
   it("widens the Connection column for the account a server is connected as, up to 208px", async () => {

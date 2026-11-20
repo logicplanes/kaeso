@@ -55,6 +55,8 @@ function applied(cat: AgentCatalogue, scope: Scope, current: readonly string[], 
   return sorted(cat, scope, next);
 }
 
+const CUSTOMIZED = "customized";
+
 export function PresetPicker({
   cat,
   grantable,
@@ -78,9 +80,11 @@ export function PresetPicker({
         aria-label={t("kaeso.agents.preset", "Preset")}
         fullWidth
         size="sm"
-        placeholder={t("kaeso.agents.customized", "Customized")}
-        options={cat.presets.map((p) => ({ value: p.id, label: p.name, description: p.description }))}
-        value={value.customized ? null : value.preset}
+        options={[
+          ...cat.presets.map((p) => ({ value: p.id, label: p.name, description: p.description })),
+          ...(value.customized ? [{ value: CUSTOMIZED, label: t("kaeso.agents.customized", "Customized"), disabled: true }] : []),
+        ]}
+        value={value.customized ? CUSTOMIZED : value.preset}
         onValueChange={pick}
       />
     );

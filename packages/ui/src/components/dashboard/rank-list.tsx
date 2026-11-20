@@ -118,7 +118,7 @@ export const RankList = forwardRef<
               <button
                 type="button"
                 onClick={() => onOpen(item.id)}
-                className={cn(row, "cursor-pointer text-left transition-control coarse:h-44 hover:bg-item-hover focus-ring-inset")}
+                className={cn(row, "cursor-pointer text-left transition-control hover:bg-item-hover focus-ring-inset")}
               >
                 {body}
               </button>

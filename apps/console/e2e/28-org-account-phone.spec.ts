@@ -1,14 +1,16 @@
 import type { Browser, Page } from "@playwright/test";
-import { OWNER, expect, signInAsOwner, test } from "./support";
+import { NEW_PASSWORD, OWNER, expect, expectSignedIn, signInWithPassword, test } from "./support";
 
 test.describe.configure({ mode: "serial" });
 
-// A phone the size of an iPhone 15 in Chromium: touch, a mobile viewport and 16px inputs.
+// A phone the size of an iPhone 15 in Chromium: touch and a mobile viewport. Without motion, so a sheet is measured where
+// it rests rather than while it slides in.
 async function onPhone(browser: Browser, page: Page): Promise<Page> {
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     hasTouch: true,
     isMobile: true,
+    reducedMotion: "reduce",
     storageState: await page.context().storageState(),
   });
   return context.newPage();
@@ -60,19 +62,23 @@ async function fits(page: Page, path: string): Promise<void> {
 }
 
 test("the organization's pages, its settings, the account and the instance fit a phone without scrolling sideways", async ({ browser, page }) => {
-  await signInAsOwner(page);
+  // A fresh sign-in: creating a platform key asks for one from the last 15 minutes.
+  await signInWithPassword(page, OWNER.email, NEW_PASSWORD);
+  await expectSignedIn(page);
   const memberships = (await (await page.request.get("/platform/v1/me/memberships")).json()) as { data: { org_id: string; org_name: string }[] };
   const org = memberships.data.find((m) => m.org_name === OWNER.org)?.org_id ?? memberships.data[0]?.org_id ?? "";
   const headers = { origin: new URL(page.url()).origin };
   // Long names, so a line that can't hold its text has to end in an ellipsis or wrap.
-  await page.request.post(`/platform/v1/orgs/${org}/credentials`, {
+  const credential = await page.request.post(`/platform/v1/orgs/${org}/credentials`, {
     headers,
     data: { provider: "openai", name: "Research and evaluation team, shared batch workloads", secret: "sk-proj-mock-0000000000000phonepages" },
   });
-  await page.request.post(`/platform/v1/orgs/${org}/platform-keys`, {
+  expect(credential.ok()).toBe(true);
+  const platformKey = await page.request.post(`/platform/v1/orgs/${org}/platform-keys`, {
     headers,
     data: { name: "terraform-provisioning-pipeline-for-production-and-staging", expires_in_days: 30 },
   });
+  expect(platformKey.ok()).toBe(true);
 
   const phone = await onPhone(browser, page);
   for (const path of [

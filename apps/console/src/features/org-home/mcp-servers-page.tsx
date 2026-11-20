@@ -91,11 +91,15 @@ export function OrgMcpServersPage({ org, search = {} }: { org: string; search?: 
           {
             id: "connection",
             header: t("orgHome.mcp.connection", "Connection"),
-            // As wide as its words, so on a phone the server's name keeps the rest instead of hiding under a 208px column.
-            size: columnWidth(
-              t("orgHome.mcp.connection", "Connection"),
-              list.map((s) => connectionWord(s).label),
-              { min: 120, max: 208 },
+            // As wide as its words, so on a phone the server's name keeps the rest instead of hiding under a 208px column;
+            // a status is medium weight, a few percent wider than the regular text the measure assumes.
+            size: Math.min(
+              208,
+              columnWidth(
+                t("orgHome.mcp.connection", "Connection"),
+                list.map((s) => connectionWord(s).label),
+                { min: 120, max: 208 },
+              ) + 8,
             ),
             priority: 1,
           },
