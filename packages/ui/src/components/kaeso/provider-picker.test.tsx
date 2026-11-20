@@ -72,6 +72,11 @@ describe("ProviderPicker", () => {
     expect(screen.getByRole("listbox", { name: "Provider" })).toBeInTheDocument();
   });
 
+  it("gives its trigger the hit area of a select, so a phone takes a finger-sized tap", () => {
+    render(<ProviderPicker appearance="select" size="sm" providers={providers} aria-label="Provider" value="groq" />);
+    expect(screen.getByRole("button", { name: "Groq", description: "Provider" })).toHaveClass("relative", "tap-target");
+  });
+
   it("opens from a pill with an option for every provider", async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();
