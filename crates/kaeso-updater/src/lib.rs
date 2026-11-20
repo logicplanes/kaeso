@@ -7,6 +7,7 @@ pub mod config;
 pub mod docker;
 pub mod engine;
 pub mod files;
+pub mod gateway_settings;
 pub mod guard;
 pub mod runner;
 pub mod server;

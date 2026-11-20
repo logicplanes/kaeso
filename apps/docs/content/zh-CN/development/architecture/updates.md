@@ -138,7 +138,7 @@ Docker Compose 不能在更新器自己的容器中运行：重建更新器会�
 
 | 任务 | 运行 | 服务 |
 | --- | --- | --- |
-| `pull` | `pull --quiet --policy missing` | 除 `updater`、`updater-init` 和 `docker-proxy` 外的每个服务；它会拒绝未按摘要固定的镜像，因为代理不允许 Compose 查看这类镜像 |
+| `pull` | `pull --quiet --policy missing` | 除 `updater`、`updater-init` 和 `docker-proxy` 外的每个服务；它会拒绝未按摘要固定的镜像，因为代理不允许 Compose 查看这类镜像；它也会拒绝新网关在启动时会拒绝的网关设置（`gateway_settings.rs`），这些设置读自解析后的环境变量和 `KAESO_CONFIG` 指向的文件，因为会迁移数据库的版本一旦启动其网关就无法回退。`up` 不检查这些设置，因此回退时能启动之前的版本 |
 | `stop` | `stop gateway console` | 每个网关副本和控制台 |
 | `up` | `up --detach --wait --wait-timeout 600` | 与 `pull` 相同 |
 | `replace` | `up --detach --no-deps --wait` | 除网关和控制台外每个使用 Kaeso 镜像的服务，例如更新器和 Caddy |
@@ -203,5 +203,5 @@ Caddy 从 `maintenance` 卷读取维护标志。标志存在时，每个请求�
 | `crates/kaeso-updater/src/compose_cli.rs` | 每个任务对接模拟程序时的 Docker Compose 命令，以及被拒绝的未固定摘要的镜像 |
 | `crates/kaeso-updater/tests/engine.rs`、`server.rs` | 更新器对接模拟的 Docker API 和模拟的 compose 运行器：完整更新、应用新的 `compose.yaml`、每种拒绝、回滚、永不结束的运行器、每一步的重启、自我替换、状态文件和 API |
 | `scripts/release-manifest.test.mjs` | 清单、固定版本的 `compose.yaml`、修改过的 `docker-proxy`、`manual_since`、最新的迁移和提交 |
-| `e2e/install` | 启用了 updater profile 的实例、代理及其允许列表、通过代理应用修改过的 `compose.yaml` 的 compose 运行器、被拒绝的实例目录之外的绑定挂载，以及 Kaeso 不可用时 Caddy 以各种格式给出的应答 |
+| `e2e/install` | 启用了 updater profile 的实例、代理及其允许列表、通过代理应用修改过的 `compose.yaml` 并拒绝该版本所拒绝的网关设置的 compose 运行器、被拒绝的实例目录之外的绑定挂载，以及 Kaeso 不可用时 Caddy 以各种格式给出的应答 |
 | `apps/console` | 各种状态下的更新页面，以及三种语言的更新中页面 |

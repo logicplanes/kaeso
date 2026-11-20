@@ -54,13 +54,24 @@ version={{version}}
 
 ## 升级到 0.7.0
 
-0.7.0 会对三项 0.6.0 默默接受的设置发出警告，Kaeso 0.8.0 将拒绝它们。带有其中任何一项的网关仍会启动，行为与 0.6.0 相同，并在启动时记录一条指出该设置的警告；`kaeso config check` 会显示同样的警告。请在 0.8.0 之前更正它们：对于会迁移数据库的版本，新网关一旦启动，更新器就无法回退，因此在启动时停止的更新会以**需要处理**结束。请在 `.env`、`compose.override.yaml`、`KAESO_CONFIG` 指向的文件或您所用平台的变量中检查这些设置：
+> [!IMPORTANT]
+> **升级前**，请检查三项 0.6.0 接受、而 0.7.0 会在启动时拒绝的设置。请在 `.env`、`compose.override.yaml`、`KAESO_CONFIG` 指向的文件或您所用平台的变量中查看：
+>
+> - `KAESO_KPMR_INTERVAL`（`kpmr.interval`）低于 `5m`：请设为 `5m` 或更长，或将其删除以使用 `auto`。
+> - `KAESO_MCP_SERVERS_SYNC_INTERVAL`（`mcp_servers.sync_interval`）低于 `1m`：请设为 `1m` 或更长，或将其删除。
+> - 设置了 `KAESO_SMTP_USER`（`smtp.user`）但没有 `KAESO_SMTP_PASSWORD`（`smtp.password`）：请补上密码；对于无需身份验证的服务器，请删除该用户名。
 
-| 设置 | 0.6.0 | 0.7.0 | 从 0.8.0 起 |
-| --- | --- | --- | --- |
-| `KAESO_KPMR_INTERVAL`（`kpmr.interval`） | 接受任何大于零的时长，最多每 5 分钟同步一次 | 把小于 5 分钟的时长提高到 `5m`，并发出警告 | `auto`，或至少 `5m` |
-| `KAESO_MCP_SERVERS_SYNC_INTERVAL`（`mcp_servers.sync_interval`） | 把更短的间隔提高到一分钟 | 把更短的间隔提高到 `1m`，并发出警告 | 至少 `1m` |
-| `KAESO_SMTP_USER`（`smtp.user`） | 未设置密码时，不经身份验证发送邮件 | 不经身份验证发送邮件，并发出警告 | 需要 `KAESO_SMTP_PASSWORD`；对于无需身份验证的服务器，请删除该用户名 |
+| 设置 | 0.6.0 | 0.7.0 |
+| --- | --- | --- |
+| `KAESO_KPMR_INTERVAL`（`kpmr.interval`） | 接受任何大于零的时长，最多每 5 分钟同步一次 | `auto`，或至少 `5m` |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL`（`mcp_servers.sync_interval`） | 把更短的间隔提高到一分钟 | 至少 `1m` |
+| `KAESO_SMTP_USER`（`smtp.user`） | 未设置密码时，不经身份验证发送邮件 | 需要 `KAESO_SMTP_PASSWORD`；对于无需身份验证的服务器，请删除该用户名 |
+
+带有其中任何一项设置的网关会在启动时、在访问数据库之前停止，其错误信息会写出该设置、它的值以及修正方法。`kaeso config check` 会输出同样的错误（[网关不断重启](troubleshooting.md#网关不断重启)）。带有这类设置的更新会这样结束：
+
+- **从控制台或在更新时间窗口中更新：** 更新会在切换任何内容之前停止，放回 `compose.yaml`，0.6.0 继续运行。进度窗口会显示**未安装**以及写出该设置的拒绝信息。**实例** › **更新**将这次更新列为**未安装**，原因是您的 Compose 文件包含更新器无法应用的修改；`GET /platform/v1/instance/updates/jobs` 和 `docker compose logs updater` 也会显示该拒绝信息。请更正该设置，用 `docker compose up -d --wait` 使其生效，然后再次更新；自动更新会在下一个时间窗口重试。如果 `KAESO_CONFIG` 指向更新器无法从安装目录读取的文件，例如位于命名卷中的文件，更新也会这样停止：此时请改用安装脚本更新。
+- **使用安装脚本：** 它会在停止旧网关之前用新网关检查设置，输出错误，放回 `compose.yaml`，并让 0.6.0 继续运行。
+- **手动更新或在平台上：** 新网关会在启动时停止。请更正该设置并运行 `docker compose up -d --wait`，或重新部署。
 
 在 0.7.0 中，空的 `KAESO_CONFIG` 与其他变量一样视为未设置，而 0.6.0 会因此停止。
 
@@ -167,7 +178,7 @@ curl -fsSL https://kaeso.app/install.sh | sh -s -- --update --version {{version}
 选择**更新到 …**并确认。控制台会逐步跟踪更新，整个过程约需一分钟：
 
 1. **检查版本签名。** 更新器检查该版本和每个镜像是否由 Kaeso 的发布工作流构建。任何一项检查失败，都不会安装任何内容，Kaeso 继续运行。
-2. **下载镜像。** 拉取新的网关、控制台和更新器镜像。如果该版本修改了 `compose.yaml`，更新器会写入新文件、保留旧文件，并让 Docker Compose 拉取该版本的其他镜像。
+2. **下载镜像。** 拉取新的网关、控制台和更新器镜像。如果该版本修改了 `compose.yaml`，更新器会写入新文件、保留旧文件，并让 Docker Compose 拉取该版本的其他镜像。在此之前，它会检查新网关是否接受本安装在 `.env`、`compose.override.yaml` 和 `KAESO_CONFIG` 指向的文件中的设置。如果新网关会在启动时拒绝某项设置，或更新器无法从安装目录读取该文件，更新就在这里停止并写出原因，放回旧的 `compose.yaml`，以**未安装**结束。
 3. **切换到新版本。** 先替换控制台，再替换网关，新容器使用新镜像并沿用原有设置。如果该版本修改了 `compose.yaml`，则改由 Docker Compose 停止两者，再启动新文件中的每个服务。期间由 Caddy 代为响应（[Kaeso 更新期间](#kaeso-更新期间)）。
 4. **迁移数据库。** 新网关启动时迁移数据库。更新器最多给它 10 分钟变为健康。
 5. **恢复在线。** 更新器把新版本号写入 `compose.yaml`，这样之后运行 `docker compose up -d --wait` 会启动相同的镜像。
