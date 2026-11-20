@@ -171,7 +171,6 @@ pub fn load(source: &dyn Source) -> Result<Config, ConfigError> {
         .map_err(|e| ConfigError::invalid("cors.allowed_origins", e.to_string()))?;
     config.cors.headers = crate::http::cors::ExtraHeaders::parse(&config.cors.allowed_headers)
         .map_err(|e| ConfigError::invalid("cors.allowed_headers", e.to_string()))?;
-    config.warnings = config.tolerated();
     config.validate()?;
     Ok(config)
 }
@@ -661,47 +660,38 @@ mod tests {
     }
 
     #[test]
-    fn smtp_takes_a_password_only_with_a_user() {
+    fn smtp_takes_a_user_and_a_password_together_or_neither() {
         let smtp = || {
             Map::minimal()
                 .set("KAESO_MAIL_TRANSPORT", "smtp")
                 .set("KAESO_SMTP_HOST", "mail.example.com")
         };
-        assert!(load(&smtp()).unwrap().warnings.is_empty());
-        let both = load(
-            &smtp()
-                .set("KAESO_SMTP_USER", "kaeso")
-                .set("KAESO_SMTP_PASSWORD", "pw"),
-        )
-        .unwrap();
-        assert!(both.warnings.is_empty());
+        assert!(load(&smtp()).is_ok());
+        assert!(
+            load(
+                &smtp()
+                    .set("KAESO_SMTP_USER", "kaeso")
+                    .set("KAESO_SMTP_PASSWORD", "pw")
+            )
+            .is_ok()
+        );
         let err = load(&smtp().set("KAESO_SMTP_PASSWORD", "pw"))
             .unwrap_err()
             .to_string();
         assert!(err.starts_with("KAESO_SMTP_USER (smtp.user)"), "{err}");
-    }
-
-    // Sent without authentication before #1121, so it still does, with a warning, until #1404.
-    #[test]
-    fn an_smtp_user_without_a_password_starts_and_sends_without_authentication() {
         for user_alone in [
-            Map::minimal().set("KAESO_SMTP_USER", "AKIAEXAMPLE"),
-            Map::minimal()
-                .set("KAESO_MAIL_TRANSPORT", "smtp")
-                .set("KAESO_SMTP_HOST", "mail.example.com")
+            smtp().set("KAESO_SMTP_USER", "AKIAEXAMPLE"),
+            smtp()
                 .set("KAESO_SMTP_USER", "AKIAEXAMPLE")
                 .set("KAESO_SMTP_PASSWORD", ""),
+            Map::minimal().set("KAESO_SMTP_USER", "AKIAEXAMPLE"),
         ] {
-            let c = load(&user_alone).unwrap();
-            assert_eq!(c.smtp.user.as_deref(), Some("AKIAEXAMPLE"));
-            assert!(c.smtp.password.is_none());
+            let err = load(&user_alone).unwrap_err().to_string();
             assert_eq!(
-                c.warnings,
-                [
-                    "KAESO_SMTP_PASSWORD (smtp.password) is required when smtp.user is set; unset smtp.user for a server without authentication. Kaeso ignores smtp.user instead, so email goes out without authentication. Kaeso 0.8.0 will refuse to start with smtp.user alone."
-                ]
+                err,
+                "KAESO_SMTP_PASSWORD (smtp.password) is required when smtp.user is set: set KAESO_SMTP_PASSWORD, or `password` under `[smtp]` in the configuration file; for a server without authentication, remove KAESO_SMTP_USER, or `user` under `[smtp]`"
             );
-            assert!(!c.warnings[0].contains("AKIAEXAMPLE"));
+            assert!(!err.contains("AKIAEXAMPLE"), "{err}");
         }
     }
 
@@ -938,85 +928,99 @@ mod tests {
             shortest.kpmr.interval,
             crate::config::KpmrInterval::Every(std::time::Duration::from_secs(300))
         );
-        assert!(shortest.warnings.is_empty());
-        for zero in ["0s", "0"] {
-            let err = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", zero))
+        for (short, shown) in [("0", "0s"), ("0s", "0s"), ("1m", "1m"), ("299s", "4m 59s")] {
+            let err = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", short))
                 .unwrap_err()
                 .to_string();
             assert_eq!(
-                err, "KAESO_KPMR_INTERVAL (kpmr.interval) must be `auto` or at least 5m",
-                "{zero}"
-            );
-        }
-    }
-
-    // Ran at 5 minutes before #1120, so they still do, with a warning, until #1404.
-    #[test]
-    fn a_kpmr_interval_under_five_minutes_starts_at_five_minutes() {
-        for (short, shown) in [("1s", "1s"), ("1m", "1m"), ("299s", "4m 59s")] {
-            let c = load(&Map::minimal().set("KAESO_KPMR_INTERVAL", short)).unwrap();
-            assert_eq!(
-                c.kpmr.interval,
-                crate::config::KpmrInterval::Every(std::time::Duration::from_secs(300)),
+                err,
+                format!(
+                    "KAESO_KPMR_INTERVAL (kpmr.interval) is {shown}, and it must be `auto` or at least 5m: set KAESO_KPMR_INTERVAL=5m or longer, or `interval = \"5m\"` under `[kpmr]` in the configuration file, or remove it for `auto`"
+                ),
                 "{short}"
-            );
-            assert_eq!(
-                c.warnings,
-                [format!(
-                    "KAESO_KPMR_INTERVAL (kpmr.interval) is {shown} and must be `auto` or at least 5m; Kaeso uses 5m instead. Kaeso 0.8.0 will refuse to start with it."
-                )]
             );
         }
     }
 
     #[test]
     fn mcp_servers_are_asked_for_their_tools_at_most_once_a_minute() {
-        let c = load(&Map::minimal().set("KAESO_MCP_SERVERS_SYNC_INTERVAL", "1m")).unwrap();
-        assert_eq!(c.mcp_servers.sync_interval.as_secs(), 60);
-        assert!(c.warnings.is_empty());
-        // Raised to a minute before #1120, so they still are, with a warning, until #1404.
+        for shortest in ["1m", "60s"] {
+            let c = load(&Map::minimal().set("KAESO_MCP_SERVERS_SYNC_INTERVAL", shortest)).unwrap();
+            assert_eq!(c.mcp_servers.sync_interval.as_secs(), 60);
+        }
         for (short, shown) in [("0s", "0s"), ("1s", "1s"), ("59s", "59s")] {
-            let c = load(&Map::minimal().set("KAESO_MCP_SERVERS_SYNC_INTERVAL", short)).unwrap();
-            assert_eq!(c.mcp_servers.sync_interval.as_secs(), 60, "{short}");
+            let err = load(&Map::minimal().set("KAESO_MCP_SERVERS_SYNC_INTERVAL", short))
+                .unwrap_err()
+                .to_string();
             assert_eq!(
-                c.warnings,
-                [format!(
-                    "KAESO_MCP_SERVERS_SYNC_INTERVAL (mcp_servers.sync_interval) is {shown} and must be at least 1m; Kaeso uses 1m instead. Kaeso 0.8.0 will refuse to start with it."
-                )]
+                err,
+                format!(
+                    "KAESO_MCP_SERVERS_SYNC_INTERVAL (mcp_servers.sync_interval) is {shown}, and it must be at least 1m: set KAESO_MCP_SERVERS_SYNC_INTERVAL=1m or longer, or `sync_interval = \"1m\"` under `[mcp_servers]` in the configuration file, or remove it for the default"
+                ),
+                "{short}"
             );
         }
     }
 
-    // Every setting #1404 will refuse at once: it starts, with one warning each.
+    // The updater's compose runner checks an install's gateway with these rules before it
+    // switches, so they must refuse exactly what the gateway refuses, in its words.
     #[test]
-    fn a_configuration_0_6_took_starts_with_a_warning_for_each_setting() {
-        let source = Map::minimal()
-            .set("KAESO_CONFIG", "/etc/kaeso.toml")
-            .file(
-                "/etc/kaeso.toml",
-                "[kpmr]\ninterval = \"2m\"\n\n[mcp_servers]\nsync_interval = \"30s\"\n\n[smtp]\nhost = \"mail.example.com\"\nuser = \"kaeso\"\n",
-            )
-            .set("KAESO_MAIL_TRANSPORT", "smtp");
-        let c = load(&source).unwrap();
-        assert_eq!(
-            c.kpmr.interval,
-            crate::config::KpmrInterval::Every(std::time::Duration::from_secs(300))
-        );
-        assert_eq!(c.mcp_servers.sync_interval.as_secs(), 60);
-        let named: Vec<&str> = c
-            .warnings
-            .iter()
-            .map(|w| w.split(' ').next().unwrap())
-            .collect();
-        assert_eq!(
-            named,
-            [
-                "KAESO_KPMR_INTERVAL",
-                "KAESO_MCP_SERVERS_SYNC_INTERVAL",
-                "KAESO_SMTP_PASSWORD"
-            ]
-        );
-        assert!(c.warnings.iter().all(|w| w.contains("0.8.0 will refuse")));
+    fn the_updater_refuses_what_the_gateway_refuses_in_its_words() {
+        use kaeso_update::settings as refused;
+        for s in refused::CHECKED {
+            assert_eq!(setting(s.key).map(|r| &*r.env), Some(s.env), "{}", s.key);
+        }
+        let file = |toml: &str| {
+            Map::minimal()
+                .set("KAESO_CONFIG", "/etc/kaeso.toml")
+                .file("/etc/kaeso.toml", toml)
+        };
+        let cases = [
+            (
+                Map::minimal().set("KAESO_KPMR_INTERVAL", "4m"),
+                vec![("kpmr.interval", "4m")],
+            ),
+            (
+                file("[kpmr]\ninterval = \"1m\"\n"),
+                vec![("kpmr.interval", "1m")],
+            ),
+            (
+                Map::minimal().set("KAESO_KPMR_INTERVAL", "5m"),
+                vec![("kpmr.interval", "5m")],
+            ),
+            (
+                Map::minimal().set("KAESO_KPMR_INTERVAL", "auto"),
+                vec![("kpmr.interval", "auto")],
+            ),
+            (
+                file("[mcp_servers]\nsync_interval = \"30s\"\n"),
+                vec![("mcp_servers.sync_interval", "30s")],
+            ),
+            (
+                Map::minimal().set("KAESO_MCP_SERVERS_SYNC_INTERVAL", "1m"),
+                vec![("mcp_servers.sync_interval", "1m")],
+            ),
+            (
+                file("[smtp]\nuser = \"kaeso\"\n"),
+                vec![("smtp.user", "kaeso")],
+            ),
+            (
+                Map::minimal()
+                    .set("KAESO_SMTP_USER", "kaeso")
+                    .set("KAESO_SMTP_PASSWORD", "pw"),
+                vec![("smtp.user", "kaeso"), ("smtp.password", "pw")],
+            ),
+        ];
+        for (source, values) in cases {
+            let gateway = load(&source).err().map(|e| e.to_string());
+            let updater = refused::refused(|s| {
+                values
+                    .iter()
+                    .find(|(key, _)| *key == s.key)
+                    .map(|(_, v)| (*v).to_owned())
+            });
+            assert_eq!(gateway, updater.first().cloned(), "{values:?}");
+        }
     }
 
     #[test]

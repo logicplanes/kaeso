@@ -8,6 +8,7 @@ use std::net::SocketAddr;
 use std::time::Duration;
 
 use kaeso_core::provider::ProviderId;
+use kaeso_update::settings as refused;
 use secrecy::{ExposeSecret, SecretString};
 use serde::Deserialize;
 use url::Url;
@@ -16,21 +17,12 @@ pub use crate::http::cors::AllowedOrigins;
 
 pub use load::{ConfigError, MapSource, ProcessSource, Source, load, unknown_variables};
 
-#[derive(Debug, Default, PartialEq, Eq)]
-pub struct ConfigCheck {
-    pub unknown: Vec<String>,
-    pub warnings: Vec<String>,
-}
-
 /// `kaeso config check`: the settings load and the master keys parse, without a database. Gives
-/// the variables that name no setting and the warnings, or the error the gateway would stop with.
-pub fn check(source: &dyn Source) -> Result<ConfigCheck, String> {
+/// the variables that name no setting, or the error the gateway would stop with.
+pub fn check(source: &dyn Source) -> Result<Vec<String>, String> {
     let config = load(source).map_err(|e| format!("configuration: {e}"))?;
     kaeso_crypto::KeyRing::parse(&config.master_keys).map_err(|e| e.to_string())?;
-    Ok(ConfigCheck {
-        unknown: unknown_variables(source),
-        warnings: config.warnings,
-    })
+    Ok(unknown_variables(source))
 }
 pub use settings::{
     Kind, PROVIDER_ENV_PREFIX, PROVIDER_FIELDS, ProviderField, ProviderVarError, REQUIRED, Setting,
@@ -92,8 +84,6 @@ pub struct Config {
     pub otel: OtelConfig,
     pub instance: InstanceConfig,
     pub log: LogConfig,
-    #[serde(skip)]
-    pub warnings: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -608,46 +598,6 @@ impl Config {
         self.public_url.origin().ascii_serialization()
     }
 
-    // Releases before #1120 and #1121 took these without a word, and an update that migrates
-    // the databases can't roll back, so they start as before, with a warning, until #1404.
-    pub(crate) fn tolerated(&mut self) -> Vec<String> {
-        const KPMR_SHORTEST: Duration = Duration::from_secs(300);
-        const MCP_SHORTEST: Duration = Duration::from_secs(60);
-        let named = |key: &str| {
-            let env = setting(key).map_or("", |s| &*s.env);
-            format!("{env} ({key})")
-        };
-        let refused = "Kaeso 0.8.0 will refuse to start with it";
-        let mut warnings = Vec::new();
-        if let KpmrInterval::Every(every) = self.kpmr.interval
-            && !every.is_zero()
-            && every < KPMR_SHORTEST
-        {
-            self.kpmr.interval = KpmrInterval::Every(KPMR_SHORTEST);
-            warnings.push(format!(
-                "{} is {} and must be `auto` or at least 5m; Kaeso uses 5m instead. {refused}.",
-                named("kpmr.interval"),
-                duration::shown(every),
-            ));
-        }
-        if self.mcp_servers.sync_interval < MCP_SHORTEST {
-            warnings.push(format!(
-                "{} is {} and must be at least 1m; Kaeso uses 1m instead. {refused}.",
-                named("mcp_servers.sync_interval"),
-                duration::shown(self.mcp_servers.sync_interval),
-            ));
-            self.mcp_servers.sync_interval = MCP_SHORTEST;
-        }
-        // The user name is left out: some providers' SMTP user is an access key id.
-        if self.smtp.user.is_some() && self.smtp.password.is_none() {
-            warnings.push(format!(
-                "{} is required when smtp.user is set; unset smtp.user for a server without authentication. Kaeso ignores smtp.user instead, so email goes out without authentication. Kaeso 0.8.0 will refuse to start with smtp.user alone.",
-                named("smtp.password"),
-            ));
-        }
-        warnings
-    }
-
     pub(crate) fn validate(&self) -> Result<(), ConfigError> {
         let invalid = |key: &str, reason: String| Err(ConfigError::invalid(key, reason));
         match self.public_url.scheme() {
@@ -749,6 +699,9 @@ impl Config {
         if self.smtp.password.is_some() && self.smtp.user.is_none() {
             return invalid("smtp.user", "is required when smtp.password is set".into());
         }
+        if self.smtp.user.is_some() && self.smtp.password.is_none() {
+            return invalid(refused::SMTP_PASSWORD.key, refused::smtp_user_alone());
+        }
         if self.valkey.ca().is_some() && !self.valkey.url.expose_secret().starts_with("rediss://") {
             return invalid(
                 "valkey.ca",
@@ -847,9 +800,19 @@ impl Config {
                 return invalid(key, "must be longer than zero".into());
             }
         }
-        // Refused before #1120 too; shorter ones are raised by `tolerated`.
-        if self.kpmr.interval == KpmrInterval::Every(Duration::ZERO) {
-            return invalid("kpmr.interval", "must be `auto` or at least 5m".into());
+        if let KpmrInterval::Every(every) = self.kpmr.interval
+            && every < refused::KPMR_SHORTEST
+        {
+            return invalid(
+                refused::KPMR_INTERVAL.key,
+                refused::kpmr_interval_too_short(every),
+            );
+        }
+        if self.mcp_servers.sync_interval < refused::MCP_SHORTEST {
+            return invalid(
+                refused::MCP_SYNC_INTERVAL.key,
+                refused::mcp_sync_interval_too_short(self.mcp_servers.sync_interval),
+            );
         }
         for (key, value) in [
             ("upstream.connect_timeout", self.upstream.connect_timeout),
@@ -1042,36 +1005,10 @@ mod check_tests {
         use secrecy::ExposeSecret as _;
         let key = kaeso_crypto::generate_master_key();
         let valid = settings(key.expose_secret()).set("KAESO_LISTN", "0.0.0.0:8080");
-        assert_eq!(
-            check(&valid),
-            Ok(ConfigCheck {
-                unknown: vec!["KAESO_LISTN".to_owned()],
-                warnings: Vec::new(),
-            })
-        );
+        assert_eq!(check(&valid), Ok(vec!["KAESO_LISTN".to_owned()]));
         let bad_key = check(&settings("k1:AAAA")).unwrap_err();
         assert!(!bad_key.is_empty());
         let missing = check(&MapSource::new()).unwrap_err();
         assert!(missing.starts_with("configuration: "), "{missing}");
-    }
-
-    #[test]
-    fn the_check_shows_the_warnings_the_gateway_starts_with() {
-        use secrecy::ExposeSecret as _;
-        let key = kaeso_crypto::generate_master_key();
-        let checked = check(
-            &settings(key.expose_secret())
-                .set("KAESO_KPMR_INTERVAL", "2m")
-                .set("KAESO_SMTP_USER", "kaeso"),
-        )
-        .unwrap();
-        assert!(checked.unknown.is_empty());
-        assert_eq!(
-            checked.warnings,
-            [
-                "KAESO_KPMR_INTERVAL (kpmr.interval) is 2m and must be `auto` or at least 5m; Kaeso uses 5m instead. Kaeso 0.8.0 will refuse to start with it.",
-                "KAESO_SMTP_PASSWORD (smtp.password) is required when smtp.user is set; unset smtp.user for a server without authentication. Kaeso ignores smtp.user instead, so email goes out without authentication. Kaeso 0.8.0 will refuse to start with smtp.user alone.",
-            ]
-        );
     }
 }

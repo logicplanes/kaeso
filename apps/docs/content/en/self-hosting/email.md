@@ -19,7 +19,7 @@ KAESO_SMTP_PASSWORD=…
 KAESO_SMTP_FROM="Kaeso <kaeso@example.com>"
 ```
 
-Apply it with `docker compose up -d --wait`. Without `KAESO_SMTP_FROM`, Kaeso sends from `kaeso@` at your domain, so set an address your SMTP server may send from. Leave out the user and password for a server that needs no sign-in; set both or neither: a password alone stops the gateway at startup, and a user alone sends without authentication and logs a warning. [Configuration](configuration.md#email) lists every email setting and its values.
+Apply it with `docker compose up -d --wait`. Without `KAESO_SMTP_FROM`, Kaeso sends from `kaeso@` at your domain, so set an address your SMTP server may send from. Leave out the user and password for a server that needs no sign-in; set both or neither, since either one alone stops the gateway at startup. [Configuration](configuration.md#email) lists every email setting and its values.
 
 ## Send a test email
 
