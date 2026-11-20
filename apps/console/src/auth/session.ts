@@ -38,15 +38,22 @@ export function everyProjectRights(session: WhoAmI, org: string): ReadonlySet<st
 
 export const PROJECT_RIGHTS_KEY = ["project-rights"] as const;
 
+export interface ProjectAccess {
+  rights: ReadonlySet<string>;
+  /** Whether the person is a member of the project, rather than reaching it through an organization-wide role. */
+  member: boolean;
+}
+
 export function projectRightsQuery(session: WhoAmI, org: string, project: string) {
   return queryOptions({
     queryKey: [...PROJECT_RIGHTS_KEY, session.user.id, org, project],
-    queryFn: async (): Promise<ReadonlySet<string>> => {
+    queryFn: async (): Promise<ProjectAccess> => {
       try {
         const mine = data(await api.GET("/platform/v1/orgs/{org}/projects/{project}/my-rights", { params: { path: { org, project } } }));
-        return new Set(mine.rights.map((r) => r.right));
+        return { rights: new Set(mine.rights.map((r) => r.right)), member: mine.role !== null };
       } catch (error) {
-        if (isApiError(error) && (error.type === "not_found" || error.type === "permission_denied")) return new Set(everyProjectRights(session, org));
+        if (isApiError(error) && (error.type === "not_found" || error.type === "permission_denied"))
+          return { rights: new Set(everyProjectRights(session, org)), member: false };
         throw error;
       }
     },
@@ -58,5 +65,11 @@ const NONE: ReadonlySet<string> = new Set();
 
 export function useProjectRights(org: string, project: string): ReadonlySet<string> {
   const session = useSession();
-  return useQuery({ ...projectRightsQuery(session, org, project), enabled: !!org && !!project }).data ?? NONE;
+  return useQuery({ ...projectRightsQuery(session, org, project), enabled: !!org && !!project, select: (a) => a.rights }).data ?? NONE;
+}
+
+/** Whether you are a member of the project; undefined until your rights there are known. */
+export function useProjectMember(org: string, project: string): boolean | undefined {
+  const session = useSession();
+  return useQuery({ ...projectRightsQuery(session, org, project), enabled: !!org && !!project, select: (a) => a.member }).data;
 }
