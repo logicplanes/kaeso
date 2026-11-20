@@ -90,16 +90,20 @@ describe("links", () => {
 
   it("ends a bare address at Chinese punctuation, so the sentence after it stays text", () => {
     const out = md(
-      "来源（https://docs.mistral.ai/openapi.yaml）以及录制文件；页面（https://console.groq.com/docs/openai，其中列出）。见 https://kaeso.app/docs。",
+      "来源（https://docs.mistral.ai/openapi.yaml）以及录制文件；页面（https://console.groq.com/docs/openai，其中列出）。见 https://kaeso.app/docs。另见 www.example.com/a，以及（参见 https://example.com/b)。维基 https://ja.wikipedia.org/wiki/人々，完。",
     );
     const s = json(out.blocks);
     expect(s.match(/"href":"[^"]*"/g)).toEqual([
       '"href":"https://docs.mistral.ai/openapi.yaml"',
       '"href":"https://console.groq.com/docs/openai"',
       '"href":"https://kaeso.app/docs"',
+      '"href":"http://www.example.com/a"',
+      '"href":"https://example.com/b"',
+      '"href":"https://ja.wikipedia.org/wiki/%E4%BA%BA%E3%80%85"',
     ]);
     expect(s).toContain("）以及录制文件；页面（");
     expect(s).toContain("，其中列出）。见 ");
+    expect(s).toContain(")。维基 ");
     expect(out.problems).toEqual([]);
   });
 
