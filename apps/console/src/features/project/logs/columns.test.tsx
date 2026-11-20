@@ -88,9 +88,12 @@ describe("logColumns", () => {
 
   it("gives the phone's Started column room for its whole header in Chinese", async () => {
     apply(await load("zh-CN"));
-    table("phone");
-    expect(screen.getAllByRole("row")[1]?.style.gridTemplateColumns).toMatch(/^96px 80px /);
-    apply(await load("en"));
+    try {
+      table("phone");
+      expect(screen.getAllByRole("row")[1]?.style.gridTemplateColumns).toMatch(/^96px 80px /);
+    } finally {
+      apply(await load("en"));
+    }
   });
 
   it("drops the seconds from a day's time on a tablet", () => {

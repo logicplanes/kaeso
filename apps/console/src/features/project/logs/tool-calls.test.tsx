@@ -85,8 +85,13 @@ describe("Tool calls in the request logs", () => {
     expect(window.location.search).not.toContain("kind=tools");
   });
 
-  it("on a phone, stacks the day under the time and gives the tool's name the room, so the table fits", async () => {
-    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(max-width: 639px)", media: query, addEventListener() {}, removeEventListener() {} }));
+  it("on a phone, stacks the day under the time and lets the tool's name take the room that's left", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
     signedIn();
     projectData({ members: [projectMember()] });
     logsData();

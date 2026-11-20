@@ -151,23 +151,20 @@ export function ToolCallsPage({ org, project, search }: { org: string; project: 
   };
   const filtered = filterDefs.some((f) => f.value !== undefined);
 
-  const columns = useMemo(
-    () => [
-      startedColumn<ToolCallView>(spansDays, phone ? "phone" : "wide"),
-      col.mono({ id: "tool", header: t("logs.tools.tool", "Tool"), size: 240, minWidth: 112, grow: phone, priority: 1 }, (r: ToolCallView) => r.tool),
-      col.status({ id: "status", header: common.status(), size: phone ? 96 : 120, priority: 1 }, (r: ToolCallView) => statusOf(r.status)),
-      col.text({ id: "caller", header: t("logs.tools.caller", "Caller"), size: 180, priority: 2 }, (r: ToolCallView) => partyName(r.caller)),
-      col.text({ id: "client", header: t("logs.tools.client", "Client"), size: 160, priority: 3 }, (r: ToolCallView) => r.client || "—"),
-      col.duration({ id: "duration", header: t("logs.column.duration", "Duration"), size: 112, priority: 2 }, (r: ToolCallView) => r.duration_ms),
-      col.custom(
-        { id: "server", header: t("logs.tools.serverTime", "Server time"), size: 120, priority: 3 },
-        (r: ToolCallView) => r.upstream_ms ?? null,
-        (v) => (v === null ? "—" : formatDuration(v)),
-        { align: "end" },
-      ),
-    ],
-    [partyName, spansDays, phone],
-  );
+  const columns = [
+    startedColumn<ToolCallView>(spansDays, phone ? "phone" : "wide"),
+    col.mono({ id: "tool", header: t("logs.tools.tool", "Tool"), size: 240, minWidth: 112, grow: phone, priority: 1 }, (r: ToolCallView) => r.tool),
+    col.status({ id: "status", header: common.status(), size: phone ? 96 : 120, priority: 1 }, (r: ToolCallView) => statusOf(r.status)),
+    col.text({ id: "caller", header: t("logs.tools.caller", "Caller"), size: 180, priority: 2 }, (r: ToolCallView) => partyName(r.caller)),
+    col.text({ id: "client", header: t("logs.tools.client", "Client"), size: 160, priority: 3 }, (r: ToolCallView) => r.client || "—"),
+    col.duration({ id: "duration", header: t("logs.column.duration", "Duration"), size: 112, priority: 2 }, (r: ToolCallView) => r.duration_ms),
+    col.custom(
+      { id: "server", header: t("logs.tools.serverTime", "Server time"), size: 120, priority: 3 },
+      (r: ToolCallView) => r.upstream_ms ?? null,
+      (v) => (v === null ? "—" : formatDuration(v)),
+      { align: "end" },
+    ),
+  ];
   const unavailable = calls.error && isApiError(calls.error) && calls.error.type === "unavailable";
   const canExport = rights.has("logs.export");
   const nothingToExport = calls.isSuccess && rows.length === 0;
@@ -301,7 +298,7 @@ function CallBody({ org, project, call }: { org: string; project: string; call: 
       <Section title={t("logs.inspector.outcome", "Outcome")} spacing="none">
         <KeyValue
           layout="stacked"
-          className="grid grid-cols-2 gap-x-32"
+          className="grid grid-cols-1 gap-x-32 sm:grid-cols-2"
           items={[
             { label: common.status(), value: <Status tone={status.tone}>{status.label}</Status> },
             ...(c.error_type ? [{ label: t("logs.inspector.error", "Error"), value: errorLabel(c.error_type) }] : []),

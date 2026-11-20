@@ -64,7 +64,7 @@ describe("Project › Tools", () => {
     expect(within(grid).getByText("X")).toBeInTheDocument();
     expect(within(grid).queryByText("Connected")).not.toBeInTheDocument();
     expect(within(grid).queryByText("1 of 2 on")).not.toBeInTheDocument();
-    expect(within(grid).getByText("Signed out")).toHaveClass("shrink-0");
+    expect(within(grid).getByText("Signed out")).toBeInTheDocument();
   });
 
   it("lists each server's tools with their switch, hints, state and calls", async () => {

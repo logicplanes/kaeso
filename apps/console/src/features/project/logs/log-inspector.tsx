@@ -406,7 +406,7 @@ function Overview({
           <div className="-my-8 flex flex-col">
             <KeyValue
               layout="stacked"
-              className="grid grid-cols-2 gap-x-32"
+              className="grid grid-cols-1 gap-x-32 sm:grid-cols-2"
               items={[
                 {
                   label: common.status(),
