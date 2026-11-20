@@ -54,15 +54,15 @@ Wenn der Updater ein Release nicht installieren kann, zeigt die Konsole den Befe
 
 ## Upgrade auf 0.7.0
 
-0.7.0 lehnt drei Einstellungen ab, die 0.6.0 stillschweigend annahm. Ein Gateway mit einer davon hält beim Start an und nennt die Einstellung. Der Updater kann nicht zurücksetzen, sobald das neue Gateway eines Releases gestartet ist, das die Datenbanken migriert, also endet ein solches Update mit **Prüfung nötig**. Prüfen Sie diese Einstellungen vor dem Update in der `.env`, der `compose.override.yaml`, der Datei, die `KAESO_CONFIG` nennt, oder den Variablen Ihrer Plattform:
+0.7.0 warnt vor drei Einstellungen, die 0.6.0 stillschweigend annahm, und Kaeso 0.8.0 wird sie ablehnen. Ein Gateway mit einer davon startet weiterhin, verhält sich wie 0.6.0 und protokolliert beim Start eine Warnung, die die Einstellung nennt; `kaeso config check` zeigt dieselben Warnungen. Korrigieren Sie sie vor 0.8.0: Der Updater kann nicht zurücksetzen, sobald das neue Gateway eines Releases gestartet ist, das die Datenbanken migriert, also endet ein Update, das beim Start anhält, mit **Prüfung nötig**. Prüfen Sie diese Einstellungen in der `.env`, der `compose.override.yaml`, der Datei, die `KAESO_CONFIG` nennt, oder den Variablen Ihrer Plattform:
 
-| Einstellung | 0.6.0 | 0.7.0 |
-| --- | --- | --- |
-| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Nahm jede Dauer über null an und synchronisierte höchstens alle 5 Minuten | `auto` oder mindestens `5m` |
-| `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Hob ein kürzeres Intervall auf eine Minute an | Mindestens `1m` |
-| `KAESO_SMTP_USER` (`smtp.user`) | Sendete E-Mails ohne Anmeldung, wenn kein Passwort gesetzt war | Braucht `KAESO_SMTP_PASSWORD`, das die Fehlermeldung nennt; für einen Server ohne Anmeldung entfernen Sie den Benutzer |
+| Einstellung | 0.6.0 | 0.7.0 | Ab 0.8.0 |
+| --- | --- | --- | --- |
+| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Nahm jede Dauer über null an und synchronisierte höchstens alle 5 Minuten | Hebt eine Dauer unter 5 Minuten mit einer Warnung auf `5m` an | `auto` oder mindestens `5m` |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Hob ein kürzeres Intervall auf eine Minute an | Hebt ein kürzeres Intervall mit einer Warnung auf `1m` an | Mindestens `1m` |
+| `KAESO_SMTP_USER` (`smtp.user`) | Sendete E-Mails ohne Anmeldung, wenn kein Passwort gesetzt war | Sendet mit einer Warnung ohne Anmeldung | Braucht `KAESO_SMTP_PASSWORD`; für einen Server ohne Anmeldung entfernen Sie den Benutzer |
 
-In 0.7.0 gilt eine leere `KAESO_CONFIG` wie jede andere Variable als nicht gesetzt, wo 0.6.0 anhielt. Hat ein Update wegen einer dieser Einstellungen angehalten, korrigieren Sie sie und führen Sie `docker compose up -d --wait` aus, oder stellen Sie auf Ihrer Plattform neu bereit ([Das Gateway startet immer wieder neu](troubleshooting.md#das-gateway-startet-immer-wieder-neu)).
+In 0.7.0 gilt eine leere `KAESO_CONFIG` wie jede andere Variable als nicht gesetzt, wo 0.6.0 anhielt.
 
 Auf einer Plattform, die das neue Gateway startet, bevor sie das alte anhält, etwa Render, Railway oder DigitalOcean App Platform, kann das alte Gateway seine letzten Anfragen nicht mehr zu den täglichen Nutzungssummen addieren, sobald das neue die Datenbank migriert hat. In **Analysen** und Ausgabenbudgets fehlen dann diese Anfragen; das Anfrageprotokoll behält sie.
 
