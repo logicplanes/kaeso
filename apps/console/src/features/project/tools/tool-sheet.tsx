@@ -18,7 +18,7 @@ export function ToolSheet({ org, project, toolId, onClose }: { org: string; proj
       modal={false}
       size="md"
       title={tool?.exposed_name ?? t("project.tools.tool", "Tool")}
-      {...(tool ? { subtitle: tool.server_name } : {})}
+      {...(tool ? { subtitle: tool.server_handle } : {})}
     >
       {toolId && (tools.isPending ? <Skeleton lines={4} /> : tool ? <ToolBody key={tool.id} org={org} project={project} tool={tool} /> : <Gone />)}
     </Sheet>

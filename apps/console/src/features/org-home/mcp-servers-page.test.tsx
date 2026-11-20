@@ -229,6 +229,7 @@ describe("an MCP server's sheet", () => {
     const s = await sheet("X");
     await user.click(await within(s).findByRole("button", { name: "Review" }));
     const review = await sheet("Review x__create_post");
+    expect(within(review).getByRole("heading", { name: "Review x__create_post" }).parentElement).toHaveTextContent(/^Review x__create_postx$/);
     expect(await within(review).findByText("X changed this tool")).toBeInTheDocument();
     expect(within(review).getByText("Its description is longer than 2,000 characters; read all of it before you approve.")).toBeInTheDocument();
     expect(within(review).getByText("Description")).toBeInTheDocument();

@@ -182,6 +182,8 @@ describe("Project › Tools", () => {
     const { user } = await renderApp(projectPath("tools"));
     await user.click(within(await list()).getByText("x__create_post"));
     const sheet = await screen.findByRole("dialog", { name: "x__create_post" });
+    // Under the title, in the sheet's type for ids, the server's handle; its name is the Server row's.
+    expect(within(sheet).getByRole("heading", { name: "x__create_post" }).parentElement).toHaveTextContent(/^x__create_postx$/);
     expect(within(sheet).getByText("create_post")).toBeInTheDocument();
     expect(within(sheet).getByText("Destructive")).toBeInTheDocument();
     expect(within(sheet).getByText("Calls in 7 days")).toBeInTheDocument();

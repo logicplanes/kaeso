@@ -290,7 +290,7 @@ function ToolReviewSheet({
       onOpenChange={(o) => !o && onClose()}
       size="lg"
       title={tool ? t("orgHome.mcp.reviewTitle", "Review {tool}", { tool: tool.exposed_name }) : ""}
-      subtitle={server.name}
+      subtitle={server.handle}
       {...(tool ? { footer: <ReviewActions org={org} server={server} tool={tool} canManage={canManage} onDone={onClose} /> } : {})}
     >
       {tool && <ReviewBody key={tool.id} org={org} server={server} tool={tool} />}
