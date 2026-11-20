@@ -17,43 +17,45 @@ async function onPhone(browser: Browser, page: Page): Promise<Page> {
 /**
  * What makes the page scroll sideways: the document itself, a page-sized scroller (the frame's body) that is wider
  * than the screen, or an element past the right edge that no scrolling parent holds. Tables, code and the controls
- * that scroll on purpose do it inside their own box, so they don't count.
+ * that scroll on purpose (tabs, segments) do it inside their own box, so they don't count. A string, because the e2e
+ * suite compiles without the DOM's types.
  */
-function sideways(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const width = window.innerWidth;
-    const found: string[] = [];
-    const name = (el: Element) => `${el.tagName.toLowerCase()} "${(el.textContent ?? "").trim().replace(/\s+/g, " ").slice(0, 40)}"`;
-    if (document.documentElement.scrollWidth > width) found.push(`the page is ${document.documentElement.scrollWidth}px wide`);
-    for (const el of document.querySelectorAll("body *")) {
-      const style = getComputedStyle(el);
-      const box = el.getBoundingClientRect();
-      if (!box.width || !box.height || style.display === "none") continue;
-      const scrollsDown = style.overflowY === "auto" || style.overflowY === "scroll";
-      if (scrollsDown && box.width >= width * 0.8 && el.scrollWidth > el.clientWidth + 1 && !el.closest("[role=grid], [role=table], table, pre, [role=tablist], [role=radiogroup]"))
-        found.push(`${name(el)} scrolls sideways by ${el.scrollWidth - el.clientWidth}px`);
-      if (box.right <= width + 1 || style.position === "fixed") continue;
-      let held = false;
-      for (let up = el.parentElement; up && !held; up = up.parentElement) {
-        held = /(auto|scroll|hidden|clip)/.test(getComputedStyle(up).overflowX) && up.getBoundingClientRect().right <= width + 1;
-      }
-      if (!held) found.push(`${name(el)} ends at ${Math.round(box.right)}px`);
-    }
-    return found;
-  });
-}
+const SIDEWAYS = `(() => {
+  const width = window.innerWidth;
+  const found = [];
+  const name = (el) => el.tagName.toLowerCase() + ' "' + (el.textContent || "").trim().replace(/\\s+/g, " ").slice(0, 40) + '"';
+  if (document.documentElement.scrollWidth > width) found.push("the page is " + document.documentElement.scrollWidth + "px wide");
+  for (const el of document.querySelectorAll("body *")) {
+    const style = getComputedStyle(el);
+    const box = el.getBoundingClientRect();
+    if (!box.width || !box.height || style.display === "none") continue;
+    const scrollsDown = style.overflowY === "auto" || style.overflowY === "scroll";
+    if (scrollsDown && box.width >= width * 0.8 && el.scrollWidth > el.clientWidth + 1 && !el.closest("[role=grid], [role=table], table, pre, [role=tablist], [role=radiogroup]"))
+      found.push(name(el) + " scrolls sideways by " + (el.scrollWidth - el.clientWidth) + "px");
+    if (box.right <= width + 1 || style.position === "fixed") continue;
+    let held = false;
+    for (let up = el.parentElement; up && !held; up = up.parentElement)
+      held = /(auto|scroll|hidden|clip)/.test(getComputedStyle(up).overflowX) && up.getBoundingClientRect().right <= width + 1;
+    if (!held) found.push(name(el) + " ends at " + Math.round(box.right) + "px");
+  }
+  return found;
+})()`;
+
+const TO_THE_FOOT = `(() => {
+  for (const el of document.querySelectorAll("*")) {
+    const style = getComputedStyle(el).overflowY;
+    if ((style === "auto" || style === "scroll") && el.scrollHeight > el.clientHeight) el.scrollTop = el.scrollHeight;
+  }
+})()`;
+
+const sideways = async (page: Page) => (await page.evaluate(SIDEWAYS)) as string[];
 
 /** Opens a page, scrolls every scroller to its foot so what renders late is measured too, then measures. */
 async function fits(page: Page, path: string): Promise<void> {
   await page.goto(path);
   await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible();
   await expect(page.locator("[aria-busy=true]")).toHaveCount(0, { timeout: 20_000 });
-  await page.evaluate(() => {
-    for (const el of document.querySelectorAll<HTMLElement>("*")) {
-      const style = getComputedStyle(el).overflowY;
-      if ((style === "auto" || style === "scroll") && el.scrollHeight > el.clientHeight) el.scrollTop = el.scrollHeight;
-    }
-  });
+  await page.evaluate(TO_THE_FOOT);
   expect(await sideways(page), path).toEqual([]);
 }
 
