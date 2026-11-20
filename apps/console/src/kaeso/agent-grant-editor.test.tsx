@@ -93,7 +93,7 @@ describe("AgentGrantEditor", () => {
       expect(preset).toHaveTextContent("Builder");
       await user.click(preset);
       const observer = await screen.findByRole("option", { name: /^Observer/ });
-      expect(observer).toHaveTextContent(agents.presets.find((p) => p.id === "observer")!.description);
+      expect(observer).toHaveTextContent(agents.presets.find((p) => p.id === "observer")?.description ?? "a description");
       await user.click(observer);
       expect(latest()?.preset).toBe("observer");
       await user.click(screen.getByRole("button", { name: "Customize" }));

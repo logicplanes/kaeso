@@ -287,8 +287,9 @@ describe("webhooks", () => {
     // A long URL or list of notices wraps in the sheet instead of running past a phone's edge, and the URL can be copied.
     const url = within(sheet).getByText("https://hooks.example.com/kaeso");
     expect(url).toHaveClass("break-words");
-    expect(url.closest("dd")).toHaveClass("mono");
-    expect(within(url.closest("dd")!).getByRole("button", { name: /Copy/ })).toBeInTheDocument();
+    const value = url.closest("dd") as HTMLElement;
+    expect(value).toHaveClass("mono");
+    expect(within(value).getByRole("button", { name: /Copy/ })).toBeInTheDocument();
     expect(within(sheet).getByText("Budget alerts, Provider keys need attention")).toHaveClass("break-words");
     const list = await within(sheet).findByRole("grid", { name: "Last deliveries" });
     await waitFor(() => expect(within(list).getAllByRole("row")).toHaveLength(3));

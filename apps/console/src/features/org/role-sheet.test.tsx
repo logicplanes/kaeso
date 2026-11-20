@@ -6,6 +6,7 @@ import { OTHER_USER, THIRD_USER, hoverReason, member, notifications, paged, role
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
+const footerOf = (sheet: HTMLElement) => sheet.querySelector("[data-sheet-footer]") as HTMLElement;
 const sheetOf = (key: string) => `/settings/orgs/${ORG}/members?tab=roles&role=${key}`;
 const LEAD = "role_01m507nbc5es18k4kb8aky91f6";
 
@@ -59,7 +60,7 @@ describe("a built-in role's sheet", () => {
     await waitFor(() => expect(within(who).getAllByRole("gridcell")).toHaveLength(2));
     expect(within(sheet).queryByRole("button", { name: "Save role" })).not.toBeInTheDocument();
     expect(within(sheet).queryByRole("button", { name: "Delete role" })).not.toBeInTheDocument();
-    expect(within(sheet.querySelector<HTMLElement>("[data-sheet-footer]")!).getByRole("button", { name: "Duplicate" })).toBeInTheDocument();
+    expect(within(footerOf(sheet)).getByRole("button", { name: "Duplicate" })).toBeInTheDocument();
     await user.click(within(who).getByText("Grace Hopper"));
     await waitFor(() => expect(router.state.location.search).toEqual({ member: OTHER_USER }));
   });
@@ -156,10 +157,9 @@ describe("a custom role's sheet", () => {
     signedIn();
     on("GET", "orgs/:org/members", paged(holders));
     const { sheet } = await openSheet(`project:${LEAD}`, "Support lead");
-    const footer = sheet.querySelector<HTMLElement>("[data-sheet-footer]");
-    expect(footer).not.toBeNull();
+    expect(sheet.querySelector("[data-sheet-footer]")).not.toBeNull();
     expect(
-      within(footer!)
+      within(footerOf(sheet))
         .getAllByRole("button")
         .map((b) => b.textContent),
     ).toEqual(["Duplicate", "Cancel", "Save role"]);
