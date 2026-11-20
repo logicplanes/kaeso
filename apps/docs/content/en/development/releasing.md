@@ -16,7 +16,7 @@ The gateway and the console of one release belong together. The release's `compo
 
 ## The version in the repository
 
-The root `package.json` holds the version, and only a release changes it, with `node scripts/version.mjs set <version>`. That command writes the version into every file that has to state it. Those are the other `package.json` files, the root `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock`, `openapi.json` and `deploy/compose.yaml`. It also sets the dependency lines in the READMEs of `kaeso-kpp` and `kaeso-codecs`. `node scripts/version.mjs files` lists them.
+The root `package.json` holds the version, and only a release changes it, with `node scripts/version.mjs set <version>`. That command writes the version into every file that has to state it. Those are the other `package.json` files, the root `Cargo.toml`, `Cargo.lock`, `fuzz/Cargo.lock`, `openapi.json`, `deploy/compose.yaml`, the Helm chart's `Chart.yaml`, the platform templates in `deploy/` and the root, and the plugins' manifests. It also sets the dependency lines in the READMEs of `kaeso-kpp` and `kaeso-codecs`. `node scripts/version.mjs files` lists them.
 
 Everything else reads the version instead of stating it. A page writes `\{{version}}`, the gateway reads `env!("CARGO_PKG_VERSION")`, and generated files read their `package.json`. `node scripts/version.mjs check`, part of `pnpm test`, fails on the current version anywhere else and names the file and line.
 
@@ -131,8 +131,8 @@ A release publishes:
 
 | Where | What |
 | --- | --- |
-| GitHub releases | `vX.Y.Z` with its notes, `compose.yaml`, `install.sh`, `kaeso.example.toml`, `env.example`, `release.json`, the npm tarballs and the `.crate` files |
-| GitHub Container Registry | `kaeso-gateway`, `kaeso-console` and `kaeso-updater` for `linux/amd64` and `linux/arm64`, with build provenance and a software bill of materials |
+| GitHub releases | `vX.Y.Z` with its notes, `compose.yaml`, `install.sh`, `kaeso.example.toml`, `env.example`, `release.json`, the Helm chart, the npm tarballs and the `.crate` files |
+| GitHub Container Registry | `kaeso-gateway`, `kaeso-console` and `kaeso-updater` for `linux/amd64` and `linux/arm64`, with build provenance and a software bill of materials, and the Helm chart as `charts/kaeso` with build provenance ([Kubernetes](../self-hosting/platforms/kubernetes.md)) |
 | crates.io | `kaeso-kpp` and `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` and `@logicplanes/kaeso-tokens` |
 | Amazon S3 | `deploy/aws/quick-server.yaml` and `managed.yaml` at `https://kaeso-cloudformation.s3.amazonaws.com/vX.Y.Z/` and, for stable releases, `latest/`, which the Launch on AWS button opens ([AWS](../self-hosting/platforms/aws.md)) |

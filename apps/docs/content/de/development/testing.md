@@ -155,7 +155,7 @@ Drei weitere Tests wachen über Texte. `crates/kaeso-server/tests/server/error_c
 
 ## End-to-End-Tests
 
-Die Suites in `e2e/` führen die offiziellen Python-SDKs von OpenAI, Anthropic, Google Gen AI, TypeSafe und MCP, festgelegt in `e2e/requirements.txt`, gegen die Encoder von KPP, das Gateway, sein MCP-Portal und eine frische Installation aus. Richten Sie ihre virtuelle Umgebung einmalig ein:
+Die Suites in `e2e/` führen die offiziellen Python-SDKs von OpenAI, Anthropic, Google Gen AI, ElevenLabs, TypeSafe und MCP, festgelegt in `e2e/requirements.txt`, gegen die Encoder von KPP, das Gateway, sein MCP-Portal, eine frische Installation und das Helm-Chart aus. Richten Sie ihre virtuelle Umgebung einmalig ein:
 
 ```bash
 python3 -m venv e2e/.venv
@@ -226,6 +226,10 @@ Der Mock-Anbieter (`crates/kaeso-testkit/src/mock_provider.rs`) wählt seine Ant
 | `[mock:endless]` mit `[mock:gen=N]` im Prompt | Wiederholt die Text-Deltas des erfundenen Streams ohne Ende und kodiert jedes erst, wenn es gesendet wird. Bei mehr als einem Delta pro Millisekunde gehen die Deltas jeder Millisekunde als ein Chunk hinaus |
 | `[mock:delta=C]` mit `[mock:gen=N]` im Prompt | Macht jedes Text-Delta der erfundenen Antwort mindestens C Zeichen lang statt 16 |
 | `[mock:tag=NAME]` im Prompt | Benennt den Stream, sodass `MockProvider::closed_at(NAME)` angibt, wann er vor seinem Ende geschlossen wurde |
+| `[mock:fail=MODEL FIXTURE]` im Prompt | Beantwortet die Anfragen an dieses Modell mit diesem Fehler-Fixture; `stall` antwortet nie, und ein dritter Teil in Millisekunden antwortet so spät |
+| `[mock:flaky=NAME N FIXTURE]` im Prompt | Lässt die ersten N Anfragen, die es tragen, mit diesem Fehler-Fixture scheitern, oder mit `drop` an einer abgebrochenen Verbindung, und beantwortet die folgenden |
+| `[mock:key-fail=PART FIXTURE]` im Prompt | Lässt die Anfragen scheitern, deren Anbieter-Schlüssel PART enthält, sodass ein Schlüssel eines Pools scheitert, während ein anderer antwortet |
+| `[mock:batch-running]`, `[mock:batch-fail]` in der Datei eines Batches | Hält den Batch am Laufen oder beantwortet diese Zeile mit einem 400 |
 | Eine Modell-ID, die mit `unserved-` beginnt | Den Fehler „Modell nicht gefunden“ im Format des Anbieters |
 | `[mock:gate=NAME]` im Anbieter-Schlüssel | Hält `GET /v1/models` und `GET /v1/models/{id}` fest |
 | `[mock:models=absent]` im Anbieter-Schlüssel | Beantwortet beide Modell-Endpunkte mit einem bloßen 404 |
@@ -256,9 +260,17 @@ Diese Suite baut die Images des Gateways, des Mock-Anbieters, der Konsole und de
 
 Das Image der Konsole führt wie in einer echten Installation auch Caddy aus. `KAESO_TEST_GATEWAY_IMAGE`, `KAESO_TEST_MOCK_IMAGE`, `KAESO_TEST_CONSOLE_IMAGE` und `KAESO_TEST_UPDATER_IMAGE` nutzen bereits gebaute Images.
 
+### Kubernetes-Test
+
+```bash
+e2e/.venv/bin/pytest -q e2e/kubernetes
+```
+
+Diese Suite prüft das Helm-Chart in `deploy/helm/kaeso`. `test_chart.py` rendert es mit `helm template`, vergleicht es mit der Compose-Installation, der es folgt, und prüft jedes Manifest mit `kubeconform`; es braucht `helm` und für diesen einen Test `kubeconform`. `test_kind.py` installiert das Chart mit seinen mitgelieferten Datenspeichern im Cluster des aktuellen Kontexts von `kubectl`, etwa einem [kind](https://kind.sigs.k8s.io)-Cluster mit geladenen Images. Es holt den Einrichtungslink, sendet eine Anfrage an den Mock-Anbieter, die das Anfrageprotokoll festhält, und aktualisiert die Installation, während sie weiter antwortet. Es läuft nur mit `KAESO_TEST_KIND=1`.
+
 ## Fuzzing
 
-`fuzz/` enthält ein [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html)-Target pro KPP-Decoder, `decode_<dialect>`, eines für den SSE-Parser, `sse`, eines für MCP-Nachrichten, `mcp` und eines für die Audiolänge, `audio_length`. Die Decoder-Targets prüfen, dass jeder Decoder beliebige Bytes ohne Panic annimmt und dass auch das Kodieren des Ergebnisses in jeden Dialekt keine Panic auslöst. Das Target `sse` prüft, dass der Parser dieselben Einträge liefert, egal wie die Eingabe geteilt ist. Das Target `mcp` prüft, dass jede Nachricht, die Kaeso liest, vollständig zurückgeschrieben wird, auch nach dem Umbenennen ihres Tools, und dass Header-Werte zu dem dekodieren, was kodiert wurde; sein Start-Korpus ist `crates/kaeso-mcp/fixtures`. Das Target `audio_length` prüft, dass beliebige Bytes eine Länge von höchstens einem Tag oder keine ergeben, ohne über seine Grenzen hinaus zu lesen. `fuzz/` ist ein eigener Cargo-Workspace, sodass `libfuzzer-sys` nie die Bibliotheks-Crates erreicht.
+`fuzz/` enthält ein [cargo-fuzz](https://rust-fuzz.github.io/book/cargo-fuzz.html)-Target pro KPP-Decoder, `decode_<dialect>`, eines für den SSE-Parser, `sse`, eines für MCP-Nachrichten, `mcp`, eines für die Audiolänge, `audio_length`, und eines für die Bildgröße, `image_size`. Die Decoder-Targets prüfen, dass jeder Decoder beliebige Bytes ohne Panic annimmt und dass auch das Kodieren des Ergebnisses in jeden Dialekt keine Panic auslöst. Das Target `sse` prüft, dass der Parser dieselben Einträge liefert, egal wie die Eingabe geteilt ist. Das Target `mcp` prüft, dass jede Nachricht, die Kaeso liest, vollständig zurückgeschrieben wird, auch nach dem Umbenennen ihres Tools, und dass Header-Werte zu dem dekodieren, was kodiert wurde; sein Start-Korpus ist `crates/kaeso-mcp/fixtures`. Das Target `audio_length` prüft, dass beliebige Bytes eine Länge von höchstens einem Tag oder keine ergeben, ohne über seine Grenzen hinaus zu lesen. Das Target `image_size` prüft, dass eine gelesene Größe nie null ist und beim erneuten Lesen gleich bleibt. `fuzz/` ist ein eigener Cargo-Workspace, sodass `libfuzzer-sys` nie die Bibliotheks-Crates erreicht.
 
 Jede Änderung prüft, dass die Targets bauen und formatiert und gelintet sind:
 
@@ -308,6 +320,7 @@ Die einzige erforderliche Prüfung ist **CI**. Sie besteht, wenn **Changes** und
 | SDK end-to-end and OpenAPI document | Baut das Gateway einmal, prüft, dass `openapi.json` aktuell ist, und führt dann `pytest -q e2e/sdk` und `pytest -q e2e/mcp` aus |
 | Images (gateway, mock provider, updater, console) | Bauen die vier Images; der Job der Konsole prüft außerdem, dass ihr Image die Konsole mit einer Content Security Policy ausliefert. Ein Pull Request baut die drei Rust-Images mit dem Profil `pr` aus `Cargo.toml`, das wie `dev` kompiliert und einen Bruchteil der Zeit braucht; `dev`, `prod` und Releases bauen sie mit `release`, und auf `dev` baut **Images (pull request cache)** sie ein weiteres Mal mit `pr`, für den Cache, den Pull Requests lesen |
 | Install test | `pytest -q e2e/install` mit diesen Images |
+| Kubernetes test | `pytest -q e2e/kubernetes` mit den Images von Gateway, Mock-Anbieter und Konsole, auf einem kind-Cluster |
 | TypeScript checks | `pnpm knip`, dann gleichzeitig `pnpm format:check`, `pnpm lint`, `pnpm i18n` und `pnpm audit --prod --audit-level high`, dann `pnpm typecheck` |
 | TypeScript test | `pnpm test`: die UI-Bibliothek in einem Job, die Tokens, die Docs-Site, der Showcase, die Skripte und die MCP-Ansichten in einem weiteren und die Konsole in sechs Shards, deren Coverage ein weiterer Job zusammenführt und prüft |
 | TypeScript build | `pnpm build`, `pnpm licenses:check` und `pnpm release:check` |

@@ -74,7 +74,7 @@ Chat Completions, Responses and Embeddings share one error body:
 | 400 | `invalid_request_error` | `context_length_exceeded` or `content_policy_violation` where they apply |
 | 401 | `invalid_request_error` | |
 | 403 | `request_forbidden` | |
-| 404 | `invalid_request_error` | |
+| 404, 410 | `invalid_request_error` | |
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
 | 415 | `invalid_request_error` | |
@@ -164,7 +164,7 @@ The error body carries the request's id in `request_id`, also when the error com
 | 400 | `invalid_request_error` |
 | 401 | `authentication_error` |
 | 403 | `permission_error` |
-| 404 | `not_found_error` |
+| 404, 410 | `not_found_error` |
 | 405, 415 | `invalid_request_error` |
 | 413 | `request_too_large` |
 | 429 | `rate_limit_error` |
@@ -245,7 +245,7 @@ The error body follows Google's shape. It has no field for the request's id, so 
 | 400 | `INVALID_ARGUMENT` |
 | 401 | `UNAUTHENTICATED` |
 | 403 | `PERMISSION_DENIED` |
-| 404 | `NOT_FOUND` |
+| 404, 410 | `NOT_FOUND` |
 | 405, 413, 415 | `INVALID_ARGUMENT` |
 | 429 | `RESOURCE_EXHAUSTED` |
 | 500, 502 | `INTERNAL` |
@@ -325,7 +325,7 @@ The error body follows ElevenLabs' documented shape, with the same value in `cod
 | 401 | `authentication_error` | `invalid_api_key` |
 | 402 | `payment_required` | `insufficient_credits` |
 | 403 | `authorization_error` | `permission_denied` |
-| 404 | `not_found` | `not_found` |
+| 404, 410 | `not_found` | `not_found` |
 | 413 | `invalid_request` | `request_too_large` |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
 | 503 | `service_unavailable` | `system_busy` |
@@ -361,7 +361,8 @@ The message names the cause and what to do. These are the causes behind each sta
 | 404 | The model isn't in the project's catalogue, the key or its member may not use it, or the provider doesn't serve it to the project's provider key. A model the key may not use answers like one that doesn't exist, so a key can't learn which other models the project has. |
 | 404 | The path doesn't exist. |
 | 405 | The path doesn't take this method. |
-| 413 | The body is larger than `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default, or decodes to more. |
+| 410 | The model's provider has retired it. The message names the day and the replacement the provider recommends ([model lifecycle](../concepts/model-lifecycle.md#after-the-shutdown)). |
+| 413 | The body is larger than its endpoint's limit, or decodes to more: `KAESO_BODY_LIMITS_MODEL_API`, 32 MiB by default, or the limits of images, audio and decisions ([body limits](../self-hosting/configuration.md#request-and-response-bodies)). |
 | 415 | The body's `Content-Encoding` is not `gzip`, `x-gzip` or `zstd`, or names more than one ([request bodies](model-api.md#request-bodies)). |
 | 429 | A rate limit or budget is reached, or the request could cost more than what's left of one, and the message names it. For a used-up budget, the message says when it resets. |
 | 429 | Too many requests with unknown keys came from your address. |
@@ -391,7 +392,7 @@ Otherwise Kaeso writes the error in your app's format and keeps its meaning:
 | Refuses the provider key | 502, in every format |
 | Doesn't allow the request with the key, for example for a model the key's plan excludes | 502, in every format |
 | Rate-limits the request | 429 |
-| Refuses for billing or quota reasons | 502, in every format |
+| Refuses for billing or quota reasons, such as Google's 402 for used-up prepaid credits | 502, in every format |
 | Is overloaded | 529 in the Anthropic format, 503 in the OpenAI and Gemini formats |
 | Fails with another server error | Its own 5xx status. A Gemini app gets 500, or 504 for a timeout |
 
@@ -399,7 +400,7 @@ A refused provider key is the install's problem, not your app's. The provider's 
 
 Instead, your app gets a provider error with the message "The provider refused this project's provider key. Ask an organization admin to check it under Providers.", or the same with "for billing or quota reasons". For the provider's 403, which comes with a working key that may not make this request, the message is "The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers." An organization admin checks the key under **Providers**.
 
-The request log keeps the provider's own message, with anything that looks like a key, a project or an organization id replaced by `[redacted]`. Kaeso sends every request once and never retries it, on this model or another. The SDKs retry on their own where the error allows it.
+The request log keeps the provider's own message, with anything that looks like a key, a project or an organization id replaced by `[redacted]`. Kaeso sends a request to its model again only where the project or an alias step sets retries, and moves on to the project's next key of the provider when one is refused, out of credit or rate limited ([fallbacks](../concepts/alias-routes.md#fallbacks), [provider keys](../console/provider-keys.md#choose-which-key-a-project-uses)). The SDKs retry on their own where the error allows it.
 
 ### Custom providers
 

@@ -195,12 +195,16 @@ docker compose exec gateway kaeso user reset-2fa owner@example.com
 | Command | Does |
 | --- | --- |
 | `kaeso setup-link` | Prints the setup link while the install has no users. The link works once, for 24 hours, and a new one retires the older ones |
+| `kaeso user list` | Lists the accounts with their address, name, state, whether they are instance admins and use two-factor authentication, and when they were created. `--instance-admins` lists only instance admins, `--search <text>` only accounts whose address or name contains the text |
 | `kaeso user sign-in-link <email>` | Prints a one-time sign-in link for an active user, valid for 15 minutes ([get back in](sign-in.md#get-back-in)) |
 | `kaeso user reset-2fa <email>` | Removes a user's two-factor authentication and recovery codes, ends their sessions and emails them. The instance audit log records it |
 | `kaeso sso verify-domain <domain>` | Marks an SSO email domain verified without its TXT record, for a domain that public DNS doesn't answer for. `--org <org>` names the organization when several list the domain. The organization's audit log records it |
 | `kaeso instance admin-sso <org\|none>` | Chooses the organization whose single sign-on may administer the instance, by an id such as `org_…`, or `none` for none, when no instance admin can change it in the console ([instance admins](sign-in.md#instance-admins)). The organization needs an SSO connection. The instance audit log records it |
 | `kaeso master-key generate` | Prints a new master key as `id:base64` |
 | `kaeso master-key rewrap` | Re-encrypts stored secrets with the first master key and reports which key ids are still in use ([rotate the master key](backups.md#rotate-the-master-key)) |
+| `kaeso config check` | Checks the settings and the master keys without a database, prints the error the gateway would stop with and exits with 1, or names the `KAESO_` variables that name no setting ([troubleshooting](troubleshooting.md#the-gateway-keeps-restarting)) |
+| `kaeso mail test <email>` | Sends a test email with the gateway's mail settings and prints what the SMTP server answered ([send a test email](email.md#send-a-test-email)) |
+| `kaeso kpmr sync` | Fetches the model data from KPMR now, as the scheduled sync does, and every gateway takes it. Needs `kpmr.sync` on ([KPMR](../concepts/kpmr.md#how-the-gateway-fetches-it)) |
 | `kaeso migrate` | Runs the PostgreSQL migrations, and the ClickHouse ones while request logs are on, then exits |
 | `kaeso serve` | Runs the gateway. It is the image's default command |
 

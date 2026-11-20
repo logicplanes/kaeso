@@ -14,12 +14,12 @@ sequenceDiagram
   participant Gateway
   participant Provider as Anbieter
   App->>Gateway: Anfrage
-  Note over Gateway: Schlüssel prüfen<br>401 oder 403
-  Note over Gateway: Anfrage lesen<br>400, 413, 503 oder 529
-  Note over Gateway: Modell auflösen<br>400 oder 404
+  Note over Gateway: Schlüssel prüfen<br>401, 403 oder 429
+  Note over Gateway: Anfrage lesen<br>400, 413, 415, 503 oder 529
+  Note over Gateway: Modell auflösen<br>400, 404 oder 410
   Note over Gateway: Guardrails fragen<br>400, 429 oder 503
   Note over Gateway: Limits prüfen<br>403, 429 oder 503
-  Note over Gateway: Anbieter-Schlüssel wählen<br>400
+  Note over Gateway: Anbieter-Schlüssel wählen<br>502
   Gateway->>Provider: Übersetzte Anfrage
   Note over Gateway,Provider: Zeitüberschreitung 504<br>Nicht erreichbar 502
   Provider-->>Gateway: Antwort
@@ -32,13 +32,13 @@ Kaeso übersetzt jede Anfrage, statt sie durchzureichen, und sendet sie einmal, 
 
 ## Der Schlüssel
 
-Das Gateway liest den API-Schlüssel aus `x-api-key`, sonst aus `Authorization: Bearer`. Der Schlüssel bestimmt das Projekt und handelt dort mit den Rechten seines Mitglieds oder Dienstkontos.
+Das Gateway liest den API-Schlüssel aus `x-api-key`, `x-goog-api-key` oder `xi-api-key`, sonst aus `Authorization: Bearer`. Der Schlüssel bestimmt das Projekt und handelt dort mit den Rechten seines Mitglieds oder Dienstkontos.
 
-Der Schlüssel braucht Inferenzzugriff, und sein Inhaber braucht das Recht `api.request`. Plattform-Schlüssel einer Organisation rufen nie Modelle auf.
+Der Schlüssel braucht Inferenzzugriff, und sein Inhaber braucht das Recht `api.request`. Plattform-Schlüssel einer Organisation rufen nie Modelle auf. Nach zu vielen Anfragen mit unbekannten Schlüsseln von einer Adresse erhält diese Adresse eine Zeit lang 429.
 
 ## Die Anfrage
 
-Der Body einer Anfrage darf bis zu `KAESO_BODY_LIMITS_MODEL_API` groß sein, standardmäßig 32 MiB. Auf einen größeren antwortet Kaeso mit 413. Ein mit `gzip` oder `zstd` komprimierter Body zählt mit seiner entpackten Größe ([Anfragekörper](../api/model-api.md#anfragekörper)).
+Der Body einer Anfrage darf bis zu `KAESO_BODY_LIMITS_MODEL_API` groß sein, standardmäßig 32 MiB. Auf einen größeren antwortet Kaeso mit 413. Ein mit `gzip` oder `zstd` komprimierter Body zählt mit seiner entpackten Größe, und jedes andere `Content-Encoding` erhält 415 ([Anfragekörper](../api/model-api.md#anfragekörper)).
 
 KPP zählt, was der Body enthält, bevor es etwas decodiert. Eine Anfrage erhält 400, wenn sie eines davon enthält:
 
@@ -58,7 +58,7 @@ Dann decodiert KPP die Anfrage aus dem Format der App, etwa Chat Completions ode
 
 Kaeso sucht den Modellnamen im Katalog des Projekts: zuerst als Alias, dann als `provider/model`, dann als eigene ID des Modells. Ein Name, der dort nicht steht, erhält 404. Eine ID, die mehrere Anbieter im Projekt bedienen, erhält 400; nennen Sie sie dann als `provider/model`. Die Route eines Alias wählt das Modell, und scheitert es, laufen die Prüfungen ab hier für seinen Fallback erneut ([Alias-Routen](alias-routes.md)).
 
-Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage ebenfalls 404. Die Meldung ist dieselbe wie bei einem unbekannten Namen, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat.
+Darf das Mitglied oder der Schlüssel das Modell nicht nutzen, erhält die Anfrage ebenfalls 404. Die Meldung ist dieselbe wie bei einem unbekannten Namen, damit ein Schlüssel nicht erfährt, welche anderen Modelle das Projekt hat. Ein Modell, das sein Anbieter abgeschaltet hat, erhält 410 mit dem Tag der Abschaltung und dem Nachfolger; in einem Alias weicht die Route auf ihren nächsten Schritt aus ([Modell-Lebenszyklus](model-lifecycle.md#nach-der-abschaltung)).
 
 Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine Anfrage etwas braucht, das dem Modell fehlt:
 
@@ -68,7 +68,7 @@ Der Katalogeintrag sagt, was das Modell kann. Kaeso antwortet mit 400, wenn eine
 - Embeddings von einem Generierungsmodell oder Text von einem Embeddings-Modell;
 - Entscheidungen von einem Generierungsmodell oder Text von einem reinen Entscheidungsmodell ([Decisions-API](../api/decisions.md#was-abgelehnt-wird)).
 
-Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken, und ein Modell, das nur die Standardtemperatur annimmt, keine Temperatur. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat. Eine Aufwandsstufe, die das Modell nicht nennt, wird zur nächstgelegenen Stufe, die es nennt, und adaptives Denken für ein Claude-Modell ohne adaptives Denken zu `enabled`-Denken mit Budget; das nennt der Header `kaeso-adapted` der Antwort ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
+Ein Modell ohne Aufwandsstufen erhält stattdessen keine Aufwandsstufe, ein Modell ohne Reasoning kein adaptives Denken, und ein Modell, das nur die Standardtemperatur annimmt, keine Temperatur. Claude Opus 4.7 und neuer erhalten außerdem weder `top_p` noch `top_k`. Der Header `kaeso-left-out` der Antwort nennt, was Kaeso weggelassen hat. Eine Aufwandsstufe, die das Modell nicht nennt, wird zur nächstgelegenen Stufe, die es nennt, und adaptives Denken für ein Claude-Modell ohne adaptives Denken zu `enabled`-Denken mit Budget. Ein Denkbudget für Claude Opus 4.7 und neuer wird dagegen zu adaptivem Denken. Das nennt der Header `kaeso-adapted` der Antwort ([Modelle ohne Aufwandsstufen](../development/kpp/reasoning.md#modelle-ohne-aufwandsstufen)).
 
 Eine Anfrage in einem OpenAI-Format für ein Claude-Modell braucht kein Ausgabelimit: Kaeso sendet das Maximum des Modells. Eine Messages-Anfrage ohne `max_tokens` erhält 400, so wie bei Anthropic. Eine Anfrage aus einem anderen Format, die mehr Ausgabe verlangt, als das Modell schreiben kann, erhält stattdessen das Maximum des Modells, und der Header `kaeso-adapted` der Antwort nennt das Feld, etwa `max_tokens`. Claude Code etwa verlangt von jedem Modell, das es nicht kennt, 32.000 Token.
 
@@ -93,15 +93,17 @@ Apps in den OpenAI-Formaten erhalten diese 503-Antworten als 500, die ihre SDKs 
 
 ## Der Anbieter-Schlüssel
 
-Kaeso nutzt den Anbieter-Schlüssel, der dem Projekt für den Anbieter des Modells zugewiesen ist, sonst den Standard der Organisation für diesen Anbieter. Fehlen beide, erhält die Anfrage 400. Kaeso entschlüsselt den Schlüssel mit dem Hauptschlüssel und hält ihn im Speicher, wobei es ihn mindestens alle 30 Sekunden neu liest. Bis 15 Minuten nach der letzten Anfrage des Projekts liest es ihn vor Ablauf der 30 Sekunden im Hintergrund neu, sodass Anfragen nicht darauf warten.
+Kaeso nutzt die Anbieter-Schlüssel, die dem Projekt für den Anbieter des Modells zugewiesen sind, sonst den Standard der Organisation für diesen Anbieter. Fehlen beide, erhält die Anfrage 502 wie bei einem abgelehnten Anbieter-Schlüssel, und die Meldung bittet um einen Organisations-Admin. Sind mehrere Schlüssel zugewiesen, behält jeder Aufrufer einen Schlüssel, gezogen nach den Gewichten der Schlüssel. Ein Schlüssel, der abgelehnt wird, kein Guthaben mehr hat oder sein Ratenlimit erreicht, überlässt die Anfrage dem nächsten ([Schlüssel eines Projekts wählen](../console/provider-keys.md#schlüssel-eines-projekts-wählen)). Kaeso entschlüsselt den Schlüssel mit dem Hauptschlüssel und hält ihn im Speicher, wobei es ihn mindestens alle 30 Sekunden neu liest. Bis 15 Minuten nach der letzten Anfrage des Projekts liest es ihn vor Ablauf der 30 Sekunden im Hintergrund neu, sodass Anfragen nicht darauf warten.
 
 ## Senden an den Anbieter
 
 KPP prüft die Anfrage am Format des Anbieters und codiert sie. Was dieses Format nicht ausdrücken kann, lehnt Kaeso ab, bevor etwas den Anbieter erreicht ([Formatübersetzung](format-translation.md)). Für eine Chat-Completions- oder Gemini-App, die über ein anderes Format bedient wird, fügt Kaeso zuerst das Reasoning aus früheren Zügen wieder ein ([Reasoning zwischen Zügen](format-translation.md#reasoning-zwischen-zügen)).
 
+In einem Projekt mit eingeschaltetem [Antwort-Cache](../console/response-cache.md) beantwortet Kaeso eine Anfrage, für die eine Antwort gespeichert ist, ohne den Anbieter. Eine Anfrage mit `Cache-Control: only-if-cached` ohne gespeicherte Antwort erhält 504 ([Einzelne Anfrage steuern](../console/response-cache.md#einzelne-anfrage-steuern)).
+
 Kaeso ruft jeden Anbieter in seinem eigenen API-Format auf, etwa Anthropic mit Messages und Groq mit Chat Completions. [Unterstützte Anbieter](supported-providers.md) listet die Formate jedes Anbieters.
 
-Vier Zeitlimits begrenzen den Aufruf: den Verbindungsaufbau, eine ganze Anfrage, das erste Byte eines Streams und die Stille zwischen zwei Chunks. Ein eigenes Zeitlimit des Modells im Katalog ersetzt die Zeitlimits für Anfrage und erstes Byte. Eine Zeitüberschreitung erhält 504, ein nicht erreichbarer Anbieter 502. Die [Konfiguration](../self-hosting/configuration.md) listet die Einstellungen und ihre Standardwerte.
+Vier Zeitlimits begrenzen den Aufruf: den Verbindungsaufbau, eine ganze Anfrage, das erste Byte eines Streams und die Stille zwischen zwei Chunks. Ein eigenes Zeitlimit des Modells im Katalog ersetzt die Zeitlimits für Anfrage und erstes Byte, und der Header `kaeso-timeout` der App kann sie verkürzen, nie verlängern ([Zeitlimits](../api/model-api.md#zeitlimits)). Eine Zeitüberschreitung erhält 504, ein nicht erreichbarer Anbieter 502. Die [Konfiguration](../self-hosting/configuration.md) listet die Einstellungen und ihre Standardwerte.
 
 ## Die Antwort
 
@@ -109,7 +111,7 @@ KPP decodiert die Antwort in das kanonische Format und codiert sie im Format der
 
 Ein Fehler des Anbieters erreicht eine App im selben Format genau so, wie der Anbieter ihn gesendet hat. Eine App in einem anderen Format erhält dieselbe Bedeutung in ihrem eigenen Format. Die Ausnahme ist ein Anbieter, der den Anbieter-Schlüssel des Projekts ablehnt: Jede App erhält dann einen Anbieterfehler, 502, der auf einen Organisations-Admin verweist. [Fehler](../api/errors.md) listet jeden Fehler.
 
-Antworten tragen die Header `kaeso-model` und `kaeso-provider`. Die Header eines Streams gehen hinaus, sobald der Anbieter antwortet. Solange ein Stream offen und still ist, schreibt Kaeso Keepalives, die das SDK der App ignoriert.
+Antworten tragen die Header `kaeso-model` und `kaeso-provider`. Die Header eines Streams gehen hinaus, sobald der Anbieter die erste Ausgabe sendet oder das erste Keepalive fällig ist. Ein Fehler des Anbieters davor erreicht die App mit seinem Status, wie ohne Stream, und eine Alias-Route weicht auf ihren Fallback aus ([Fallbacks](alias-routes.md#fallbacks)). Solange ein Stream offen und still ist, schreibt Kaeso Keepalives, die das SDK der App ignoriert.
 
 ## Fehlgeschlagene Streams
 

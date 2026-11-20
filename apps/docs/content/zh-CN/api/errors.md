@@ -74,7 +74,7 @@ Chat Completions、Responses 和 Embeddings 使用同一种错误正文：
 | 400 | `invalid_request_error` | 适用时为 `context_length_exceeded` 或 `content_policy_violation` |
 | 401 | `invalid_request_error` | |
 | 403 | `request_forbidden` | |
-| 404 | `invalid_request_error` | |
+| 404, 410 | `invalid_request_error` | |
 | 405 | `invalid_request_error` | |
 | 413 | `invalid_request_error` | |
 | 415 | `invalid_request_error` | |
@@ -164,7 +164,7 @@ try {
 | 400 | `invalid_request_error` |
 | 401 | `authentication_error` |
 | 403 | `permission_error` |
-| 404 | `not_found_error` |
+| 404, 410 | `not_found_error` |
 | 405, 415 | `invalid_request_error` |
 | 413 | `request_too_large` |
 | 429 | `rate_limit_error` |
@@ -245,7 +245,7 @@ try {
 | 400 | `INVALID_ARGUMENT` |
 | 401 | `UNAUTHENTICATED` |
 | 403 | `PERMISSION_DENIED` |
-| 404 | `NOT_FOUND` |
+| 404, 410 | `NOT_FOUND` |
 | 405, 413, 415 | `INVALID_ARGUMENT` |
 | 429 | `RESOURCE_EXHAUSTED` |
 | 500, 502 | `INTERNAL` |
@@ -325,7 +325,7 @@ try {
 | 401 | `authentication_error` | `invalid_api_key` |
 | 402 | `payment_required` | `insufficient_credits` |
 | 403 | `authorization_error` | `permission_denied` |
-| 404 | `not_found` | `not_found` |
+| 404, 410 | `not_found` | `not_found` |
 | 413 | `invalid_request` | `request_too_large` |
 | 429 | `rate_limit_error` | `rate_limit_exceeded` |
 | 503 | `service_unavailable` | `system_busy` |
@@ -361,7 +361,8 @@ ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry
 | 404 | 模型不在项目目录中，密钥或其成员无权使用该模型，或服务商不向项目的服务商密钥提供该模型。密钥无权使用的模型与不存在的模型返回相同的回答，因此密钥无法得知项目还有哪些模型。 |
 | 404 | 路径不存在。 |
 | 405 | 该路径不接受此方法。 |
-| 413 | 正文大于 `KAESO_BODY_LIMITS_MODEL_API`（默认为 32 MiB），或解压后大于该值。 |
+| 410 | 服务商已停用该模型。消息会写明停用日期和服务商推荐的替代模型（[模型生命周期](../concepts/model-lifecycle.md#停用之后)）。 |
+| 413 | 正文大于其端点的上限，或解压后大于该上限：`KAESO_BODY_LIMITS_MODEL_API`（默认为 32 MiB），或图像、音频和决策的上限（[正文上限](../self-hosting/configuration.md#请求体与响应体)）。 |
 | 415 | 正文的 `Content-Encoding` 不是 `gzip`、`x-gzip` 或 `zstd`，或列出了多种编码（[请求体](model-api.md#请求体)）。 |
 | 429 | 达到了速率限制或预算，或者请求的费用可能超过其剩余额度，消息会指明是哪一个。预算用尽时，消息会说明何时重置。 |
 | 429 | 来自您所在地址、使用未知密钥的请求过多。 |
@@ -391,7 +392,7 @@ ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry
 | 拒绝服务商密钥 | 502，所有格式均如此 |
 | 不允许用该密钥发出请求，例如密钥套餐不包含的模型 | 502，所有格式均如此 |
 | 因速率限制拒绝请求 | 429 |
-| 因计费或配额原因拒绝 | 502，所有格式均如此 |
+| 因计费或配额原因拒绝，例如 Google 在预付额度用尽时返回的 402 | 502，所有格式均如此 |
 | 过载 | Anthropic 格式为 529，OpenAI 格式和 Gemini 格式为 503 |
 | 返回其他服务器错误 | 其自身的 5xx 状态码。Gemini 应用收到 500，超时则为 504 |
 
@@ -399,7 +400,7 @@ ElevenLabs 自己发送的错误按原样连同其状态码传给应用。`Retry
 
 因此，应用收到的是一个服务商错误，消息为“The provider refused this project's provider key. Ask an organization admin to check it under Providers.”，或带有“for billing or quota reasons”的同一消息。服务商返回 403 时，密钥本身可用，只是不能发出此请求，消息为“The provider doesn't allow this request with this project's provider key, for example for this model, plan or region. Ask an organization admin to check it under Providers.”组织管理员可在**服务商**下检查该密钥。
 
-请求日志会保存服务商自己的消息，其中看起来像密钥、项目 ID 或组织 ID 的内容会替换为 `[redacted]`。Kaeso 每个请求只发送一次，从不重发，无论是发给这个模型还是其他模型。SDK 会在错误允许时自行重试。
+请求日志会保存服务商自己的消息，其中看起来像密钥、项目 ID 或组织 ID 的内容会替换为 `[redacted]`。只有在项目或别名的某个步骤设置了重试时，Kaeso 才会把请求再次发给其模型；当某个密钥被拒绝、额度用尽或达到速率限制时，请求会转到项目中该服务商的下一个密钥（[回退](../concepts/alias-routes.md#回退)、[服务商密钥](../console/provider-keys.md#选择项目使用的密钥)）。SDK 会在错误允许时自行重试。
 
 ### 自定义服务商
 

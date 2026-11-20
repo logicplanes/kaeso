@@ -16,7 +16,7 @@ Gateway und Konsole eines Releases gehören zusammen. Die `compose.yaml` des Rel
 
 ## Die Version im Repository
 
-Die `package.json` im Wurzelverzeichnis enthält die Version, und nur ein Release ändert sie, mit `node scripts/version.mjs set <version>`. Dieser Befehl schreibt die Version in jede Datei, die sie nennen muss. Das sind die übrigen `package.json`-Dateien, die `Cargo.toml` im Wurzelverzeichnis, `Cargo.lock`, `fuzz/Cargo.lock`, `openapi.json` und `deploy/compose.yaml`. Außerdem setzt er die Abhängigkeitszeilen in den READMEs von `kaeso-kpp` und `kaeso-codecs`. `node scripts/version.mjs files` listet sie auf.
+Die `package.json` im Wurzelverzeichnis enthält die Version, und nur ein Release ändert sie, mit `node scripts/version.mjs set <version>`. Dieser Befehl schreibt die Version in jede Datei, die sie nennen muss. Das sind die übrigen `package.json`-Dateien, die `Cargo.toml` im Wurzelverzeichnis, `Cargo.lock`, `fuzz/Cargo.lock`, `openapi.json`, `deploy/compose.yaml`, die `Chart.yaml` des Helm-Charts, die Plattformvorlagen in `deploy/` und im Wurzelverzeichnis sowie die Manifeste der Plugins. Außerdem setzt er die Abhängigkeitszeilen in den READMEs von `kaeso-kpp` und `kaeso-codecs`. `node scripts/version.mjs files` listet sie auf.
 
 Alles andere liest die Version, statt sie zu nennen. Eine Seite schreibt `\{{version}}`, das Gateway liest `env!("CARGO_PKG_VERSION")`, und erzeugte Dateien lesen ihre `package.json`. `node scripts/version.mjs check`, Teil von `pnpm test`, schlägt fehl, wenn die aktuelle Version irgendwo anders steht, und nennt Datei und Zeile.
 
@@ -131,8 +131,8 @@ Ein Release veröffentlicht:
 
 | Wo | Was |
 | --- | --- |
-| GitHub-Releases | `vX.Y.Z` mit seinen Notizen, `compose.yaml`, `install.sh`, `kaeso.example.toml`, `env.example`, `release.json`, den npm-Tarballs und den `.crate`-Dateien |
-| GitHub Container Registry | `kaeso-gateway`, `kaeso-console` und `kaeso-updater` für `linux/amd64` und `linux/arm64`, mit Build-Provenienz und einer Software-Stückliste (SBOM) |
+| GitHub-Releases | `vX.Y.Z` mit seinen Notizen, `compose.yaml`, `install.sh`, `kaeso.example.toml`, `env.example`, `release.json`, dem Helm-Chart, den npm-Tarballs und den `.crate`-Dateien |
+| GitHub Container Registry | `kaeso-gateway`, `kaeso-console` und `kaeso-updater` für `linux/amd64` und `linux/arm64`, mit Build-Provenienz und einer Software-Stückliste (SBOM), und das Helm-Chart als `charts/kaeso` mit Build-Provenienz ([Kubernetes](../self-hosting/platforms/kubernetes.md)) |
 | crates.io | `kaeso-kpp` und `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` und `@logicplanes/kaeso-tokens` |
 | Amazon S3 | `deploy/aws/quick-server.yaml` und `managed.yaml` unter `https://kaeso-cloudformation.s3.amazonaws.com/vX.Y.Z/` und, bei stabilen Releases, `latest/`, das der Knopf „Auf AWS starten“ öffnet ([AWS](../self-hosting/platforms/aws.md)) |

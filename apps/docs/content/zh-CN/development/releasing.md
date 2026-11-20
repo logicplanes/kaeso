@@ -16,7 +16,7 @@ Kaeso 作为一个整体发布。网关、控制台、KPP 的 crate 和 UI 库�
 
 ## 仓库中的版本号
 
-根目录的 `package.json` 保存版本号，只有发布才会修改它，使用的命令是 `node scripts/version.mjs set <version>`。这条命令把版本号写入每个必须写明它的文件，即其他 `package.json` 文件、根目录的 `Cargo.toml`、`Cargo.lock`、`fuzz/Cargo.lock`、`openapi.json` 和 `deploy/compose.yaml`。它还会更新 `kaeso-kpp` 和 `kaeso-codecs` 的 README 中的依赖行。`node scripts/version.mjs files` 会列出这些文件。
+根目录的 `package.json` 保存版本号，只有发布才会修改它，使用的命令是 `node scripts/version.mjs set <version>`。这条命令把版本号写入每个必须写明它的文件，即其他 `package.json` 文件、根目录的 `Cargo.toml`、`Cargo.lock`、`fuzz/Cargo.lock`、`openapi.json`、`deploy/compose.yaml`、Helm chart 的 `Chart.yaml`、`deploy/` 和根目录中的平台模板，以及各插件的清单文件。它还会更新 `kaeso-kpp` 和 `kaeso-codecs` 的 README 中的依赖行。`node scripts/version.mjs files` 会列出这些文件。
 
 其他地方都读取版本号，而不是写死它。页面写 `\{{version}}`，网关读取 `env!("CARGO_PKG_VERSION")`，生成的文件读取各自的 `package.json`。`node scripts/version.mjs check` 是 `pnpm test` 的一部分，只要当前版本号出现在其他任何地方就会失败，并指出文件和行号。
 
@@ -131,8 +131,8 @@ GitHub 发布页先给出一句话、两到三个亮点和破坏性变更。然�
 
 | 位置 | 内容 |
 | --- | --- |
-| GitHub Releases | `vX.Y.Z` 及其说明，以及 `compose.yaml`、`install.sh`、`kaeso.example.toml`、`env.example`、`release.json`、npm 压缩包和 `.crate` 文件 |
-| GitHub Container Registry | 面向 `linux/amd64` 和 `linux/arm64` 的 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，带构建来源证明和软件物料清单（SBOM） |
+| GitHub Releases | `vX.Y.Z` 及其说明，以及 `compose.yaml`、`install.sh`、`kaeso.example.toml`、`env.example`、`release.json`、Helm chart、npm 压缩包和 `.crate` 文件 |
+| GitHub Container Registry | 面向 `linux/amd64` 和 `linux/arm64` 的 `kaeso-gateway`、`kaeso-console` 和 `kaeso-updater`，带构建来源证明和软件物料清单（SBOM）；以及作为 `charts/kaeso` 的 Helm chart，带构建来源证明（[Kubernetes](../self-hosting/platforms/kubernetes.md)） |
 | crates.io | `kaeso-kpp` 和 `kaeso-codecs` |
 | npm | `@logicplanes/kaeso-ui` 和 `@logicplanes/kaeso-tokens` |
 | Amazon S3 | `deploy/aws/quick-server.yaml` 和 `managed.yaml`，位于 `https://kaeso-cloudformation.s3.amazonaws.com/vX.Y.Z/`，稳定版本还会放到 `latest/`，"在 AWS 上启动"按钮打开的就是它（[AWS](../self-hosting/platforms/aws.md)） |

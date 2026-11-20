@@ -11,7 +11,7 @@ Sie brauchen `guardrails.view`, um **Organisationseinstellungen** › **Guardrai
 ## Eine Guardrail hinzufügen
 
 1. Öffnen Sie **Organisationseinstellungen** › **Guardrails** und wählen Sie **Guardrail hinzufügen**.
-2. Geben Sie einen Namen und die Adresse ein, an die Kaeso sendet, etwa `https://guardrail.example.com/check`. Apps sehen den Namen, wenn die Guardrail sie blockiert.
+2. Lassen Sie **Ihr Dienst** gewählt, und geben Sie einen Namen und die Adresse ein, an die Kaeso sendet, etwa `https://guardrail.example.com/check`. Apps sehen den Namen, wenn die Guardrail sie blockiert.
 3. Wählen Sie, was sie prüft: **Anfragen**, **Antworten** oder beides. Wählen Sie für Antworten, ob gestreamte Antworten ungeprüft hinausgehen (**Ungeprüft streamen**) oder auf die Prüfung warten (**Zurückhalten und prüfen**).
 4. Legen Sie das Zeitlimit fest: 2000 Millisekunden, wenn Sie es nicht ändern, höchstens 10000.
 5. Wählen Sie, was geschieht, wenn die Guardrail nicht antworten kann: **Anfrage ablehnen** oder **Durchlassen**.
