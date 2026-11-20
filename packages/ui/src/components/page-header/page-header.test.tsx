@@ -26,12 +26,29 @@ describe("PageHeader", () => {
 });
 
 describe("PageHeader on a phone", () => {
-  it("keeps a long title and its actions on one row, the title shrinking first but never under 96px, and the tabs on the next", () => {
+  it("moves the actions under a title that doesn't fit beside them, instead of cutting the title short", () => {
     render(<PageHeader title="Anfrageprotokolle für alle Projekte der Organisation" actions={<button type="button">Exportieren</button>} />);
     const heading = screen.getByRole("heading", { level: 1 });
-    expect(heading).toHaveClass("min-w-0", "flex-1", "shrink-4", "sm:flex-initial", "max-sm:min-w-96");
+    // flex-auto starts the title at its whole width, so a wrapping header breaks before the actions rather than shrinking it.
+    expect(heading.parentElement).toHaveClass("min-w-0", "flex-auto", "shrink-4", "sm:flex-initial", "max-sm:min-w-96");
+    expect(heading.parentElement).not.toHaveClass("flex-1");
+    expect(screen.getByRole("banner")).toHaveClass("flex-wrap", "sm:flex-nowrap");
     expect(screen.getByText(/^Anfrageprotokolle/)).toHaveClass("truncate");
     expect(screen.getByRole("button", { name: "Exportieren" }).parentElement).toHaveClass("ml-auto", "shrink-0");
+  });
+
+  it("keeps a back button on the title's line when a long title sends the actions under it", () => {
+    render(
+      <PageHeader
+        start={<button type="button">Back to aliases</button>}
+        title="checkout-assistant-primary-reply-with-fallbacks-for-peak-traffic"
+        actions={<button type="button">Save</button>}
+      />,
+    );
+    const back = screen.getByRole("button", { name: "Back to aliases" });
+    expect(back.parentElement).toBe(screen.getByRole("heading", { level: 1 }).parentElement);
+    expect(back.parentElement).not.toHaveClass("flex-wrap");
+    expect(screen.getByRole("button", { name: "Save" }).parentElement?.parentElement).toBe(screen.getByRole("banner"));
   });
 
   it("wraps actions wider than the page onto another line instead of running them off the edge", () => {

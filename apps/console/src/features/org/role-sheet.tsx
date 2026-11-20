@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -75,8 +76,18 @@ export function RoleSheet({
   const roles = useRoles(org);
   const [scope, id] = roleKey?.split(":") ?? [];
   const role = roles?.find((r) => r.scope === scope && r.id === id);
+  // The body keys itself by the role, so its actions reach the sheet's footer through this slot, where they stay on screen
+  // while the rights list scrolls under them.
+  const [footer, setFooter] = useState<HTMLDivElement | null>(null);
   return (
-    <Sheet open={!!roleKey} onOpenChange={(o) => !o && onClose()} modal={false} size="lg" title={role?.name ?? common.role()}>
+    <Sheet
+      open={!!roleKey}
+      onOpenChange={(o) => !o && onClose()}
+      modal={false}
+      size="lg"
+      title={role?.name ?? common.role()}
+      footer={roleKey && role ? <div ref={setFooter} className="contents" /> : undefined}
+    >
       {roleKey &&
         (!roles ? (
           <Skeleton className="w-full" />
@@ -86,13 +97,25 @@ export function RoleSheet({
             actions={<Button onClick={onClose}>{t("org.role.back", "Back to roles")}</Button>}
           />
         ) : (
-          <RoleBody key={roleKey} org={org} role={role} onClose={onClose} onDuplicate={onDuplicate} />
+          <RoleBody key={roleKey} org={org} role={role} footer={footer} onClose={onClose} onDuplicate={onDuplicate} />
         ))}
     </Sheet>
   );
 }
 
-function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: RoleView; onClose: () => void; onDuplicate: (role: RoleView) => void }) {
+function RoleBody({
+  org,
+  role,
+  footer,
+  onClose,
+  onDuplicate,
+}: {
+  org: string;
+  role: RoleView;
+  footer: HTMLElement | null;
+  onClose: () => void;
+  onDuplicate: (role: RoleView) => void;
+}) {
   const navigate = useNavigate();
   const needs = useNeedsRight(org);
   const rights = useOrgRights(org);
@@ -230,36 +253,8 @@ function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: Role
           />
         </Section>
       )}
-      <div className="flex flex-wrap gap-8">
-        {custom && !reason && (
-          <>
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={!changed || !!saveReason}
-              {...(changed && saveReason ? { disabledReason: saveReason } : {})}
-              loading={save.isPending}
-              onClick={() => {
-                if (role.holders) setConfirming(true);
-                else save.mutate(editing);
-              }}
-            >
-              {t("org.saveRole", "Save role")}
-            </Button>
-            <Button size="sm" disabled={!changed} onClick={() => setDraft(null)}>
-              {common.cancel()}
-            </Button>
-          </>
-        )}
-        <Button
-          size="sm"
-          disabled={!rights.has("roles.manage")}
-          {...(rights.has("roles.manage") ? {} : { disabledReason: needs("roles.manage") })}
-          onClick={() => onDuplicate(role)}
-        >
-          {t("org.role.duplicate", "Duplicate")}
-        </Button>
-        {custom && (
+      {custom && (
+        <div>
           <Button
             variant="danger-secondary"
             size="sm"
@@ -269,8 +264,40 @@ function RoleBody({ org, role, onClose, onDuplicate }: { org: string; role: Role
           >
             {t("org.role.delete", "Delete role")}
           </Button>
+        </div>
+      )}
+      {footer &&
+        createPortal(
+          <>
+            <Button
+              disabled={!rights.has("roles.manage")}
+              {...(rights.has("roles.manage") ? {} : { disabledReason: needs("roles.manage") })}
+              onClick={() => onDuplicate(role)}
+            >
+              {t("org.role.duplicate", "Duplicate")}
+            </Button>
+            {custom && !reason && (
+              <>
+                <Button disabled={!changed} onClick={() => setDraft(null)}>
+                  {common.cancel()}
+                </Button>
+                <Button
+                  variant="primary"
+                  disabled={!changed || !!saveReason}
+                  {...(changed && saveReason ? { disabledReason: saveReason } : {})}
+                  loading={save.isPending}
+                  onClick={() => {
+                    if (role.holders) setConfirming(true);
+                    else save.mutate(editing);
+                  }}
+                >
+                  {t("org.saveRole", "Save role")}
+                </Button>
+              </>
+            )}
+          </>,
+          footer,
         )}
-      </div>
       <DialogScope open={confirming}>
         <SaveRoleDialog org={org} role={role} draft={editing} onSaved={() => setDraft(null)} open={confirming} onOpenChange={setConfirming} />
       </DialogScope>

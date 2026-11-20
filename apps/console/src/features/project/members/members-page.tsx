@@ -102,7 +102,7 @@ export function MembersPage({ org, project, search }: { org: string; project: st
               ...(search.role && !roles.some((r) => r.id === search.role) ? [{ value: search.role, label: search.role }] : []),
             ]}
           />
-          <div className="w-240">
+          <div className="min-w-0 flex-1 basis-160 sm:w-240 sm:flex-none">
             <Input
               type="search"
               size="sm"

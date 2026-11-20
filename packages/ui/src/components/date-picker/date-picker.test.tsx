@@ -21,6 +21,11 @@ describe("DateRangePicker", () => {
     expect(screen.getByRole("button", { description: "Period" })).toHaveAccessibleName("Last 7 days");
   });
 
+  it("gives its 32px trigger the touch target every selector has", () => {
+    render(<DateRangePicker aria-label="Period" size="sm" onValueChange={() => {}} />);
+    expect(screen.getByRole("button", { description: "Period" })).toHaveClass("relative", "tap-target");
+  });
+
   it("shows a value changed from outside by its dates, not the last preset's name", async () => {
     const presets = [
       {

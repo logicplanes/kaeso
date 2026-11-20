@@ -113,6 +113,16 @@ describe("Dashboard", () => {
     expect(screen.getByText("48%").parentElement).toHaveClass("text-metric");
     expect(screen.getByText("↑0.5%").parentElement?.parentElement).toHaveTextContent("↑0.5% better");
   });
+  it("gives a cell's title link a finger-sized hit area on a touch screen", () => {
+    render(
+      <Dashboard aria-label="Usage in the period">
+        <DashboardCell title="Requests" href="/analytics">
+          <p>Chart</p>
+        </DashboardCell>
+      </Dashboard>,
+    );
+    expect(screen.getByRole("link", { name: "Requests" })).toHaveClass("relative", "tap-target");
+  });
   it("keeps a readout's height while it loads, and sets a small one under its label", () => {
     const { rerender } = render(<Readout value="$60.45" loading />);
     expect(screen.queryByText("$60.45")).not.toBeInTheDocument();
@@ -172,6 +182,14 @@ describe("RankList", () => {
     expect(Number.parseFloat((bars[1] as HTMLElement).style.width)).toBeCloseTo(15.09, 1);
     fireEvent.click(rows[1]!);
     expect(open).toHaveBeenCalledWith("b");
+  });
+  it("grows rows that open something to 44px on a touch screen, and their loading shape with them", () => {
+    const { rerender } = render(<RankList aria-label="Latest requests" items={items} onOpen={() => {}} />);
+    for (const row of screen.getAllByRole("button")) expect(row).toHaveClass("h-36", "coarse:h-44");
+    rerender(<RankList aria-label="Latest requests" items={[]} loading onOpen={() => {}} />);
+    for (const row of screen.getAllByRole("listitem")) expect(row).toHaveClass("coarse:h-44");
+    rerender(<RankList aria-label="Models by requests" items={items} />);
+    for (const row of screen.getAllByRole("listitem")) expect(row.firstElementChild).not.toHaveClass("coarse:h-44");
   });
   it("ends every number at the row's right edge, so values line up between rows", () => {
     render(<RankList aria-label="Models by requests" items={items} />);

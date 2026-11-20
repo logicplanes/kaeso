@@ -299,6 +299,13 @@ describe("List", () => {
     expect(actions).toHaveClass("col-start-2", "row-start-1");
     expect(screen.getByText("Invited by Ada")).toHaveClass("col-span-2");
     gone();
+    // A trailing avatar sits beside the title too, instead of wrapping onto a line of its own after a long date.
+    const owned = [{ ...rows[0]!, avatar: <span data-testid="owner" /> }];
+    const { unmount: away } = render(<List aria-label="Invitations" items={owned} />);
+    const owner = screen.getByTestId("owner").parentElement!.parentElement!;
+    expect(owner).toHaveClass("col-start-2", "row-start-1");
+    expect(owner.parentElement?.nextElementSibling).not.toContainElement(screen.getByTestId("owner"));
+    away();
     spy.mockReturnValue(900);
     render(<List aria-label="Invitations" items={rows} />);
     expect(screen.getByRole("gridcell")).not.toHaveClass("min-h-56");

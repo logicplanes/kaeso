@@ -294,6 +294,7 @@
   "kaeso.agents.allProjectRights": "在 {org} 每个项目中的权限",
   "kaeso.agents.allProjects": "所有项目",
   "kaeso.agents.customizeTitle": "自定义 {name}",
+  "kaeso.agents.customized": "已自定义",
   "kaeso.agents.futureOrgs": "也包括我以后加入的组织",
   "kaeso.agents.futureOrgsHint": "使用预设的权限，绝不超过您在那里拥有的权限。",
   "kaeso.agents.instance": "实例",

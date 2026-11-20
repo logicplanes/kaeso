@@ -401,16 +401,18 @@ function ModelMeta({ m, prices, shutdown }: { m: CatalogueModelView; prices: Pri
         ) : (
           overridden > 0 && <Badge>{t("models.overriddenCount", "Overridden {count}", { count: overridden })}</Badge>
         )}
-        {m.aliases.slice(0, 2).map((a) => (
-          <Tag key={a} size="sm">
-            {a}
-          </Tag>
-        ))}
-        {m.aliases.length > 2 && (
-          <Text variant="small" tone="secondary">
-            {t("models.moreAliases", "+{count}", { count: m.aliases.length - 2 })}
-          </Text>
-        )}
+        <span className="hidden lg:contents">
+          {m.aliases.slice(0, 2).map((a) => (
+            <Tag key={a} size="sm" className="max-w-160">
+              {a}
+            </Tag>
+          ))}
+          {m.aliases.length > 2 && (
+            <Text variant="small" tone="secondary">
+              {t("models.moreAliases", "+{count}", { count: m.aliases.length - 2 })}
+            </Text>
+          )}
+        </span>
         <Tag size="sm" variant="outline">
           {dialectPill(m.egress_dialect, !!f.decisions?.only)}
         </Tag>
