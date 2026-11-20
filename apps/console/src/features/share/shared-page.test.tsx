@@ -70,6 +70,9 @@ describe("a shared link's page", () => {
     expect(screen.getByText("openai/gpt-5.4-mini")).toBeInTheDocument();
     expect(screen.getByText("A read-only view shared from Kaeso, until 13 Nov 2026.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^Made with Kaeso/ })).toHaveAttribute("href", "https://kaeso.app");
+    expect(screen.getByRole("link", { name: /^Made with Kaeso/ }).parentElement).toHaveClass("text-caption");
+    expect(screen.getByText("Live").parentElement).toBe(screen.getByRole("heading", { level: 1 }).parentElement);
+    expect(screen.getByText("Live").parentElement).not.toHaveClass("flex-wrap");
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(expect.arrayContaining(["Models", "Members"]));
     expect(requests("GET", "share/:token").map((r) => r.path)).toEqual([`/platform/v1/share/${TOKEN}`]);
   });
@@ -98,6 +101,18 @@ describe("a shared link's page", () => {
     expect(screen.queryByText("openai/model-f")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "tool" })).toBeInTheDocument();
     expect(screen.getByText("Nothing in this period")).toBeInTheDocument();
+  });
+
+  it("gives the last of an odd number of breakdowns the whole row, so no empty slot is left", async () => {
+    signedOut();
+    const one = [row({ key: "x" })];
+    on("GET", "share/:token", view({ project: null, breakdowns: ["key", "route", "client"].map((by) => ({ by, rows: one })) }));
+    await renderApp(`/share/${TOKEN}`);
+    const cell = (name: string) => screen.getByRole("heading", { name }).closest("section");
+    expect(await screen.findByRole("heading", { name: "Clients" })).toBeInTheDocument();
+    expect(cell("Keys")).toHaveClass("lg:col-span-1");
+    expect(cell("Routes")).toHaveClass("lg:col-span-1");
+    expect(cell("Clients")).toHaveClass("lg:col-span-2");
   });
 
   it("titles each breakdown by what it splits the usage by", async () => {
@@ -276,6 +291,9 @@ describe("a shared link's page", () => {
     on("GET", "share/:token", apiError(404, "not_found", "This shared link doesn't exist, has expired or was revoked."));
     await renderApp(`/share/${TOKEN}`);
     expect(await screen.findByRole("heading", { name: "This link doesn't work", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 }).parentElement?.lastElementChild).toHaveTextContent(
+      "It may have expired or been revoked; ask whoever shared it for a new one.",
+    );
   });
 });
 

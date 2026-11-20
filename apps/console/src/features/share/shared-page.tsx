@@ -116,9 +116,7 @@ export function SharedPage({ token }: { token: string }) {
       <PublicPage
         title={t("kaeso.share.gone", "This link doesn't work")}
         description={t("kaeso.share.goneHint", "It may have expired or been revoked; ask whoever shared it for a new one.")}
-      >
-        {null}
-      </PublicPage>
+      />
     );
   }
   return <SharedBody v={view.data} />;
@@ -143,23 +141,29 @@ function SharedBody({ v }: { v: SharedView }) {
   return (
     <Frame>
       <header className="flex flex-col gap-8">
-        <div className="flex flex-wrap items-center gap-8">
-          <Heading level={1}>{v.title}</Heading>
-          <Badge tone="outline">{v.live ? t("kaeso.share.liveBadge", "Live") : t("kaeso.share.snapshotBadge", "Snapshot")}</Badge>
+        <div className="flex items-baseline gap-8">
+          <Heading level={1} className="min-w-0">
+            {v.title}
+          </Heading>
+          <Badge tone="outline" className="shrink-0">
+            {v.live ? t("kaeso.share.liveBadge", "Live") : t("kaeso.share.snapshotBadge", "Snapshot")}
+          </Badge>
         </div>
         <Text tone="secondary">{subtitle(v)}</Text>
       </header>
       {v.kind === "budget" ? <Budgets v={v} /> : <Usage v={v} />}
-      <footer className="flex flex-wrap items-center justify-between gap-8">
+      <footer className="flex flex-wrap items-baseline justify-between gap-x-16 gap-y-8">
         <Text variant="caption" tone="tertiary">
           {v.expires_at
             ? t("kaeso.share.readOnlyUntil", "A read-only view shared from Kaeso, until {date}.", { date: formatDate(v.expires_at) })
             : t("kaeso.share.readOnly", "A read-only view shared from Kaeso.")}
         </Text>
         {v.made_with_kaeso && (
-          <Link href="https://kaeso.app" target="_blank" rel="noopener noreferrer">
-            {t("kaeso.share.madeWith", "Made with Kaeso")}
-          </Link>
+          <Text variant="caption" tone="secondary">
+            <Link href="https://kaeso.app" target="_blank" rel="noopener noreferrer">
+              {t("kaeso.share.madeWith", "Made with Kaeso")}
+            </Link>
+          </Text>
         )}
       </footer>
     </Frame>
@@ -239,8 +243,8 @@ function Usage({ v }: { v: SharedView }) {
       </Dashboard>
       {breakdowns.length > 0 && (
         <Dashboard aria-label={t("kaeso.share.breakdowns", "Where the usage went")} columns={2}>
-          {breakdowns.map((b) => (
-            <Breakdown key={b.by} b={b} metric={metric} money={money} />
+          {breakdowns.map((b, i) => (
+            <Breakdown key={b.by} b={b} metric={metric} money={money} wide={rowAlone(i, breakdowns.length)} />
           ))}
         </Dashboard>
       )}
@@ -248,7 +252,10 @@ function Usage({ v }: { v: SharedView }) {
   );
 }
 
-function Breakdown({ b, metric, money }: { b: SharedBreakdown; metric: MetricId; money: Money }) {
+// The last of an odd number of cells takes the whole row, or its empty neighbour shows the grid's hairline colour.
+const rowAlone = (i: number, count: number) => count % 2 === 1 && i === count - 1;
+
+function Breakdown({ b, metric, money, wide }: { b: SharedBreakdown; metric: MetricId; money: Money; wide: boolean }) {
   const m = METRICS[metric];
   const ranked = b.rows
     .map((r) => ({ r, value: m.rank(asUsage(r, money.code)) }))
@@ -256,7 +263,7 @@ function Breakdown({ b, metric, money }: { b: SharedBreakdown; metric: MetricId;
     .slice(0, 10);
   const top = ranked[0]?.value ?? 0;
   return (
-    <DashboardCell className="lg:col-span-1" title={BREAKDOWN_TITLE[b.by]?.() ?? b.by}>
+    <DashboardCell className={wide ? "lg:col-span-2" : "lg:col-span-1"} title={BREAKDOWN_TITLE[b.by]?.() ?? b.by}>
       <RankList
         aria-label={BREAKDOWN_TITLE[b.by]?.() ?? b.by}
         empty={t("kaeso.share.nothing", "Nothing in this period")}
@@ -304,7 +311,11 @@ function Budgets({ v }: { v: SharedView }) {
         const ahead = forecast(l, now);
         const use = limitUse(l, (values) => t("kaeso.share.usedOf", "{used} of {amount}", values), CENTS);
         return (
-          <DashboardCell key={i} className="lg:col-span-1" title={`${limitName(l)} · ${limitKindLabel(l.kind)}`}>
+          <DashboardCell
+            key={i}
+            className={rowAlone(i, v.limits.length) ? "lg:col-span-2" : "lg:col-span-1"}
+            title={`${limitName(l)} · ${limitKindLabel(l.kind)}`}
+          >
             <CellInset>
               <Meter
                 value={Number(l.used) / amount}

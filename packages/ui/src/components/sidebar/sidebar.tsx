@@ -364,6 +364,11 @@ function LazyMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [wanted, setWanted] = useState(false);
+  const sheet = useContext(SidebarSheetContext);
+  const onOpenChange = (next: boolean, reason?: string) => {
+    setOpen(next);
+    if (!next && reason === "item-press" && sheet && !sheet.peek) sheet.close();
+  };
   const mod = useLazyModule(sidebarMenu, wanted || open, () => {
     setWanted(false);
     setOpen(false);
@@ -418,7 +423,7 @@ function LazyMenu({
         {trigger}
       </HandedTrigger>
       {mod && (
-        <mod.SidebarMenuRoot open={open} onOpenChange={setOpen} triggerProps={store} side={side} header={header} footer={footer}>
+        <mod.SidebarMenuRoot open={open} onOpenChange={onOpenChange} triggerProps={store} side={side} header={header} footer={footer}>
           {children}
         </mod.SidebarMenuRoot>
       )}

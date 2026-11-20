@@ -87,7 +87,7 @@ describe("a project that can't open", () => {
     await renderApp(`/orgs/${ORG}/projects/proj_gone/settings`);
     expect(await screen.findByText("This doesn't exist or was removed")).toBeInTheDocument();
     expect(screen.getByText("No such project, or you cannot see it.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Go to the start page" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("link", { name: "Go to the overview" })).toHaveAttribute("href", "/");
   });
 
   it("says the person has no access", async () => {

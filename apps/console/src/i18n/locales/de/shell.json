@@ -80,7 +80,6 @@
   "shell.routeError.header": "Seite konnte nicht geladen werden",
   "shell.routeError.noAccess": "Kein Zugriff",
   "shell.routeError.noAccessTitle": "Kein Zugriff auf diese Seite",
-  "shell.routeError.start": "Zur Startseite",
   "shell.routeError.title": "Diese Seite konnte nicht geladen werden",
   "shell.routeError.unexpected": "Unerwarteter Fehler auf dieser Seite; bitte neu laden.",
   "shell.searchSettings": "Einstellungen suchen",

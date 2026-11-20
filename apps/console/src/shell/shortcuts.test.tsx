@@ -181,6 +181,7 @@ describe("keyboard shortcuts", () => {
       "Close a dialog or panel",
       "This list",
     ]);
+    for (const keys of within(sheet).getAllByRole("definition")) expect(keys).toHaveClass("justify-end");
     expect(within(sheet).queryByRole("region", { name: "Go to a project page" })).not.toBeInTheDocument();
     expect(rows(sheet, "Go to")).toEqual(["Organization overview", "Organization audit log", "Organization settings"]);
     expect(rows(sheet, "On some pages")).toEqual([

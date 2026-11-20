@@ -8,6 +8,10 @@ import { useUiText } from "../../i18n/context.js";
 
 const PEEK_LEAVE = 160;
 
+// Clicks from a switcher's menu bubble here through the portal too, so its links leave the
+// navigation like the sidebar's own; its other items close it through the menu (`item-press`).
+const LEAVES_NAVIGATION = "a[href], [data-leaves-navigation]";
+
 export interface NavSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -52,7 +56,7 @@ export const NavSheet = forwardRef<HTMLDivElement, NavSheetProps>(function NavSh
           {...(returnFocus ? { finalFocus: returnFocus } : {})}
           className={cn(place, "top-0 bottom-0 left-0 z-40 flex overflow-hidden bg-panel shadow-dialog outline-none safe-area-sheet sheet-motion")}
           onClick={(e) => {
-            if ((e.target as HTMLElement).closest("a[href]")) onOpenChange(false);
+            if ((e.target as HTMLElement).closest(LEAVES_NAVIGATION)) onOpenChange(false);
           }}
           onPointerEnter={() => clearTimeout(leave.current)}
           onPointerLeave={() => {

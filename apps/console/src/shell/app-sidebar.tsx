@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "@tanstack/react-router";
 import { Button, Sidebar, icons } from "@logicplanes/kaeso-ui";
-import { orgProjectsQuery } from "~/api/queries/projects";
+import { isApiError } from "~/api/errors";
+import { orgProjectsQuery, projectQuery } from "~/api/queries/projects";
 import { useMembership, useMemberships, useOrgRights } from "~/auth/session";
 import { t } from "~/i18n";
 import { readLast } from "./last";
@@ -17,13 +18,24 @@ export function AppSidebar() {
   const last = readLast();
   const org = params.org ?? last?.org ?? memberships[0]?.org_id;
   const project = params.project;
+  const opened = useQuery({ ...projectQuery(org ?? "", project ?? ""), enabled: !!org && !!project });
+  const gone = isApiError(opened.error) && (opened.error.type === "not_found" || opened.error.type === "permission_denied");
   return (
     <Sidebar aria-label={t("shell.sidebar", "Console")}>
       <Sidebar.Brand href={org ? orgPath(org) : "/"} label={t("shell.home", "Kaeso home")}>
-        <Button variant="ghost" size="sm" icon={icons.search} aria-label={t("common.search", "Search")} shortcut={["mod", "k"]} onClick={openPalette} />
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={icons.search}
+          aria-label={t("common.search", "Search")}
+          aria-haspopup="dialog"
+          data-leaves-navigation=""
+          shortcut={["mod", "k"]}
+          onClick={openPalette}
+        />
         <Sidebar.CollapseToggle />
       </Sidebar.Brand>
-      <Sidebar.Content>{org && project ? <ProjectArea org={org} project={project} /> : org && <OrgArea org={org} />}</Sidebar.Content>
+      <Sidebar.Content>{org && project && !gone ? <ProjectArea org={org} project={project} /> : org && <OrgArea org={org} />}</Sidebar.Content>
       <Sidebar.Footer>
         <OrgSwitcher org={org} />
       </Sidebar.Footer>

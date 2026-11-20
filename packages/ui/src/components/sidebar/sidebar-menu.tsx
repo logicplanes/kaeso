@@ -5,7 +5,7 @@ import type { TriggerProps, TriggerPropsStore } from "../tooltip/trigger-props.j
 
 export interface SidebarMenuRootProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange: (open: boolean, reason?: string) => void;
   triggerProps: TriggerPropsStore;
   side: "top" | "bottom";
   header?: ReactNode | undefined;

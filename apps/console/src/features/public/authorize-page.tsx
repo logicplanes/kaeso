@@ -160,7 +160,7 @@ function PortalConsent({ token, account, request, portal }: { token: string; acc
       title={t("public.connectPortalTitle", "Connect {client} to {project}", { client: request.client, project: portal.project_name })}
       description={t("public.connectPortalLead", "It calls this project's tools as you, with your access to them.")}
       footer={
-        <Text variant="small" tone="tertiary" className="text-center">
+        <Text variant="small" tone="tertiary">
           {t("public.agentSignedInAs", "Signed in as {account} · returns to {host}", { account, host: request.redirect_host })}
         </Text>
       }
@@ -284,7 +284,7 @@ function ConsentForm({
       title={t("public.connectAgentTitle", "Connect {name}", { name: shownName })}
       description={t("public.connectAgentLead", "It acts for you in Kaeso, only with the rights you give it.")}
       footer={
-        <Text variant="small" tone="tertiary" className="text-center">
+        <Text variant="small" tone="tertiary">
           {t("public.agentSignedInAs", "Signed in as {account} · returns to {host}", { account, host: request.redirect_host })}
         </Text>
       }

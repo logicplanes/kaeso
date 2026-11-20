@@ -86,7 +86,7 @@ export function SignUpVerifyPage() {
   if (error?.type === "authentication") {
     return (
       <PublicPage
-        title={t("public.linkUsed", "This link has expired or was already used.")}
+        title={t("public.linkUsed", "This link has expired or was already used")}
         description={t("public.signUpLinkOnce", "A sign-up link works once; start again for a new one.")}
       >
         <Button variant="primary" size="xl" fullWidth href="/sign-up">
