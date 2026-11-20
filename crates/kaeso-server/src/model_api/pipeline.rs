@@ -913,17 +913,23 @@ fn unread_encoding(refused: Refused) -> KppError {
     error(ErrorKind::InvalidRequest, 415, message)
 }
 
+// The hold goes into the blocking decompression and comes back with it, so a request that
+// is dropped meanwhile keeps its memory counted until the decompression ends.
 async fn decompressed(
     encoding: Encoding,
     raw: Bytes,
     cap: usize,
-) -> Result<Result<Bytes, Failed>, KppError> {
+    held: Option<super::memory::Held>,
+) -> Result<(Result<Bytes, Failed>, Option<super::memory::Held>), KppError> {
     if encoding == Encoding::Identity {
-        return Ok(Ok(raw));
+        return Ok((Ok(raw), held));
     }
     // A small compressed body can decode to the whole limit, so it is never decoded inline.
     let bytes = raw.len().max(OFF_THREAD_BYTES);
-    off_thread(bytes, move || decompress::decode(encoding, raw, cap)).await
+    off_thread(bytes, move || {
+        (decompress::decode(encoding, raw, cap), held)
+    })
+    .await
 }
 
 fn undecodable(failed: Failed, encoding: Encoding, limit: usize) -> KppError {
@@ -1109,12 +1115,12 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         || decision_upload;
     let logs_body =
         keep_content && image.is_none() && video.is_none() && generation.is_none() && !uploads;
-    // Held for the whole call, after the translation's share is returned: the app's
-    // decoded request, kept to encode the reply, the request sent while the input
-    // counter may still need it, and the body's size again for its log entry, raw or written.
     let logged = |request_bytes: usize| {
         u64::try_from(if keep_content { request_bytes } else { 0 }).unwrap_or(u64::MAX)
     };
+    // Held for the whole call, after the translation's share is returned: the app's
+    // decoded request, kept to encode the reply, the request sent while the input
+    // counter may still need it, and the body's size again for its log entry, raw or written.
     let needs = |request_bytes: usize, shape: &kaeso_codecs::limits::RequestShape| {
         super::memory::estimate(kind, request_bytes, shape).saturating_add(
             super::memory::decoded(shape)
@@ -1123,11 +1129,25 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         )
     };
     let busy = |_| Failure::new(translating_busy(), Stage::Limits);
-    let deadline = tokio::time::Instant::now() + super::memory::WAIT;
-    // A few kilobytes of gzip or zstd decode to the whole body limit, so a compressed body is
-    // decoded only under a hold that covers what it decodes to. It is never kept decoded while
-    // its request waits for room: requests of one key would then hold each other's share.
+    let deadline = state.translating.deadline();
+    if keep_content {
+        let o = rec.outcome();
+        o.content_kept = true;
+        o.media_kept = keep_media;
+    }
+    // A few kilobytes of gzip or zstd decompress to the whole body limit, so a compressed body is
+    // decompressed only under a hold for what it may become, and never kept while its request waits.
     let compressed = encoding != Encoding::Identity;
+    let window = if encoding == Encoding::Zstd {
+        decompress::ZSTD_WINDOW
+    } else {
+        0
+    };
+    let room = |cap: usize| {
+        u64::try_from(cap)
+            .unwrap_or(u64::MAX)
+            .saturating_add(window)
+    };
     let mut cap = if compressed {
         body.len()
             .saturating_mul(GUESSED_RATIO)
@@ -1136,28 +1156,26 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         limit
     };
     let mut admitted: Option<super::memory::Held> = None;
-    let mut measured = false;
     let (checked, request_bytes, held) = loop {
         if compressed && admitted.is_none() {
             admitted = Some(
                 state
                     .translating
-                    .hold_until(holder, u64::try_from(cap).unwrap_or(u64::MAX), deadline)
+                    .hold_until(holder, room(cap), deadline)
                     .await
                     .map_err(busy)?,
             );
         }
-        let decoded = match decompressed(encoding, body.clone(), cap)
+        let (result, kept) = decompressed(encoding, body.clone(), cap, admitted.take())
             .await
-            .map_err(at(Stage::Request))?
-        {
+            .map_err(at(Stage::Request))?;
+        admitted = kept;
+        let decoded = match result {
             Ok(decoded) => decoded,
             Err(Failed::TooLarge) if cap < limit => {
                 cap = limit;
                 if let Some(held) = admitted.as_mut()
-                    && !state
-                        .translating
-                        .try_grow(held, u64::try_from(cap).unwrap_or(u64::MAX))
+                    && !state.translating.try_grow(held, room(cap))
                 {
                     admitted = None;
                 }
@@ -1170,14 +1188,6 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 ));
             }
         };
-        if !measured && let Some(held) = admitted.as_mut() {
-            held.keep(u64::try_from(decoded.len()).unwrap_or(u64::MAX).max(1));
-        }
-        if keep_content {
-            let o = rec.outcome();
-            o.content_kept = true;
-            o.media_kept = keep_media;
-        }
         if logs_body {
             if decoded.len() < OFF_THREAD_BYTES {
                 rec.outcome().request_body = Some(decoded.clone());
@@ -1202,9 +1212,11 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                 if state.translating.try_grow(&mut held, needed) {
                     break (checked, request_bytes, held);
                 }
-                drop((held, checked));
                 rec.outcome().request_body = None;
-                rec.logging = None;
+                if let Some(writing) = rec.logging.take() {
+                    let _ = writing.await;
+                }
+                drop((held, checked));
                 admitted = Some(
                     state
                         .translating
@@ -1212,10 +1224,10 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
                         .await
                         .map_err(busy)?,
                 );
-                measured = true;
             }
         }
     };
+    drop(body);
     let logged = logged(request_bytes);
     let decoded = super::memory::decoded(checked.shape());
     rec.held = Some(held);

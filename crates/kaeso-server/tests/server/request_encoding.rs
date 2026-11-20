@@ -406,3 +406,30 @@ async fn compressed_requests_of_one_key_that_each_need_most_of_its_share_all_get
         (4 << 20, 0)
     );
 }
+
+#[tokio::test]
+async fn a_body_that_decompresses_past_its_first_guess_is_decompressed_again_under_the_limit() {
+    let env = env(&[]).await;
+    let state = &env.app.state;
+    let plain = serde_json::to_vec(&chat("gpt-4o", &"a".repeat(4 << 20))).unwrap();
+    for encoding in ["gzip", "zstd"] {
+        env.mock.clear();
+        let small = encoded(encoding, &plain);
+        assert!(
+            small.len() * 32 < 1 << 20,
+            "{encoding}: {} bytes",
+            small.len()
+        );
+        let r = send(&env, "/v1/chat/completions", App::OpenAi, encoding, small).await;
+        assert_eq!(r.status, StatusCode::OK, "{encoding}: {}", r.text());
+        let received = env.mock.received();
+        assert_eq!(received.len(), 1);
+        assert!(received[0].body.len() > 4 << 20, "{encoding}");
+        state.in_flight.settled().await;
+        assert_eq!(
+            (state.translating.free(), state.translating.waiting()),
+            (state.config.body_limits.in_flight.0, 0),
+            "{encoding}"
+        );
+    }
+}

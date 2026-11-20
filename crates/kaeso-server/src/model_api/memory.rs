@@ -123,9 +123,12 @@ impl Budget {
         u64::from(self.share_kib) * KIB
     }
 
+    pub fn deadline(&self) -> tokio::time::Instant {
+        tokio::time::Instant::now() + self.wait
+    }
+
     pub async fn hold(&self, holder: Uuid, bytes: u64) -> Result<Held, Busy> {
-        self.hold_until(holder, bytes, tokio::time::Instant::now() + self.wait)
-            .await
+        self.hold_until(holder, bytes, self.deadline()).await
     }
 
     pub async fn hold_until(
