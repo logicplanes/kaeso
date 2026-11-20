@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Grantable } from "~/api/generated/types";
 import { ORG, OTHER_PROJECT, PROJECT } from "~/test/fixtures";
 import { agents, grantable } from "~/test/fixtures/agents";
@@ -80,6 +80,29 @@ describe("AgentGrantEditor", () => {
     await user.click(screen.getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(screen.getByRole("radio", { name: "Observer" })).not.toBeChecked();
+  });
+
+  describe("on a phone", () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("picks a preset from a list that fits the screen, with each preset's description, and says when the rights are customized", async () => {
+      vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(max-width: 639px)", addEventListener() {}, removeEventListener() {} }));
+      const { user } = await renderUi(<Editor closed />);
+      expect(screen.queryByRole("radio", { name: "Observer" })).toBeNull();
+      const preset = screen.getByRole("combobox", { name: "Preset" });
+      expect(preset).toHaveTextContent("Builder");
+      await user.click(preset);
+      const observer = await screen.findByRole("option", { name: /^Observer/ });
+      expect(observer).toHaveTextContent(agents.presets.find((p) => p.id === "observer")!.description);
+      await user.click(observer);
+      expect(latest()?.preset).toBe("observer");
+      await user.click(screen.getByRole("button", { name: "Customize" }));
+      await user.click(screen.getByRole("tab", { name: "Account" }));
+      await user.click(checkbox(screen.getByRole("group", { name: "Rights on your account" }), /^Edit the profile/));
+      await user.click(screen.getByRole("button", { name: "Finish" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(screen.getByRole("combobox", { name: "Preset" })).toHaveTextContent("Customized");
+    });
   });
 
   it("gives instance admins an instance tab with presets and single rights", async () => {

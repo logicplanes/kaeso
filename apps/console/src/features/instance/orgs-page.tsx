@@ -32,9 +32,15 @@ import { orgSignIn } from "./sign-in";
 import { DeleteNowDialog, useRestoreOrg } from "./org-deletion";
 import { t } from "~/i18n";
 import { dayWithinYear } from "~/format/short-date";
+import { columnWidth } from "~/format/text-width";
 
-const STATE_WIDTH = 128;
-const DELETION_STATE_WIDTH = 184;
+function stateWord(o: InstanceOrgView): string {
+  if (o.state === "scheduled_for_deletion")
+    return o.deletion_due_at
+      ? t("instance.deletionOn", "Deletion on {date}", { date: dayWithinYear(o.deletion_due_at) })
+      : t("instance.scheduledForDeletion", "Scheduled for deletion");
+  return o.owners === 0 ? t("instance.noOwner", "No owner") : t("common.active", "Active");
+}
 
 export type InstanceOrgsSearch = { q?: string; sort?: "deletion"; sso?: "with" | "without"; create?: boolean };
 
@@ -67,7 +73,9 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
     if (deletion !== byDeletion) show({ sort: deletion ? "deletion" : undefined });
   };
 
-  const deletions = rows.some((o) => o.state === "scheduled_for_deletion");
+  // The state takes the width of its widest word (a badge's 12px text and padding fit the 14px measure), so on a phone the
+  // names keep the rest of the row.
+  const stateWidth = columnWidth(t("instance.state", "State"), new Set(rows.map(stateWord)), { min: 104, max: 208 });
   const columns = useMemo(
     () =>
       [
@@ -82,19 +90,15 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
           ),
         ),
         col.custom(
-          { id: "state", header: t("instance.state", "State"), size: deletions ? DELETION_STATE_WIDTH : STATE_WIDTH, priority: 1 },
+          { id: "state", header: t("instance.state", "State"), size: stateWidth, priority: 1 },
           (o: InstanceOrgView) => (o.state === "scheduled_for_deletion" ? (o.deletion_due_at ?? "") : "~"),
           (_v, o) =>
             o.state === "scheduled_for_deletion" ? (
-              <Badge tone="danger">
-                {o.deletion_due_at
-                  ? t("instance.deletionOn", "Deletion on {date}", { date: dayWithinYear(o.deletion_due_at) })
-                  : t("instance.scheduledForDeletion", "Scheduled for deletion")}
-              </Badge>
+              <Badge tone="danger">{stateWord(o)}</Badge>
             ) : o.owners === 0 ? (
-              <Badge tone="warning">{t("instance.noOwner", "No owner")}</Badge>
+              <Badge tone="warning">{stateWord(o)}</Badge>
             ) : (
-              <Text>{t("common.active", "Active")}</Text>
+              <Text>{stateWord(o)}</Text>
             ),
         ),
         col.text({ id: "signIn", header: t("instance.signIn", "Sign-in"), size: 176, priority: 3 }, (o: InstanceOrgView) => orgSignIn(o)),
@@ -116,7 +120,7 @@ export function InstanceOrgsPage({ search }: { search: InstanceOrgsSearch }) {
           (v: string) => <time dateTime={v}>{formatDate(v)}</time>,
         ),
       ].map((c) => ({ ...c, enableSorting: c.id === "state" })),
-    [deletions],
+    [stateWidth],
   );
 
   return (
