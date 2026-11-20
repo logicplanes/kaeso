@@ -315,3 +315,121 @@ async fn a_corrupt_body_is_refused_with_400() {
     );
     assert!(env.mock.received().is_empty());
 }
+
+#[tokio::test]
+async fn a_compressed_body_waits_for_translation_memory_before_it_is_decoded() {
+    let env = env(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "128KiB")]).await;
+    let state = &env.app.state;
+    let mut gate = env.mock.gate();
+    let mut open = messages("claude-haiku-4-5", &format!("Long {}", gate.marker()));
+    open["stream"] = json!(true);
+    let first = send(
+        &env,
+        "/v1/messages",
+        App::Anthropic,
+        "",
+        serde_json::to_vec(&open).unwrap(),
+    );
+    let second = async {
+        gate.wait_for(1).await;
+        let held = (128 << 10) - state.translating.free();
+        assert!(
+            held > 0 && held < 32 << 10,
+            "the open call keeps part of the key's 32 KiB share: {held}"
+        );
+        let mut zipped = Box::pin(send(
+            &env,
+            "/v1/chat/completions",
+            App::OpenAi,
+            "gzip",
+            b"not gzip at all".to_vec(),
+        ));
+        let waits = async {
+            while state.translating.waiting() == 0 {
+                tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+            }
+        };
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            tokio::select! {
+                biased;
+                r = &mut zipped => panic!(
+                    "a compressed body was decoded before the key had room for what it may decode to: {}",
+                    r.status
+                ),
+                () = waits => {}
+            }
+        })
+        .await
+        .expect("the compressed request waits for the key's share");
+        gate.open();
+        zipped.await
+    };
+    let (first, second) = tokio::join!(first, second);
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(
+        openai_error(&second, StatusCode::BAD_REQUEST),
+        (
+            "invalid_request_error".into(),
+            "The request body is not valid `gzip`; check its `Content-Encoding`.".into()
+        )
+    );
+    state.in_flight.settled().await;
+    assert_eq!(
+        (state.translating.free(), state.translating.waiting()),
+        (128 << 10, 0)
+    );
+}
+
+#[tokio::test]
+async fn compressed_requests_of_one_key_that_each_need_most_of_its_share_all_get_through() {
+    let env = env(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "4MiB")]).await;
+    let state = &env.app.state;
+    let text = "Where is my parcel? ".repeat(5_000);
+    let body = gzip(&serde_json::to_vec(&chat("gpt-4o", &text)).unwrap());
+    let answers = futures::future::join_all((0..4).map(|_| {
+        send(
+            &env,
+            "/v1/chat/completions",
+            App::OpenAi,
+            "gzip",
+            body.clone(),
+        )
+    }))
+    .await;
+    for r in &answers {
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    }
+    assert_eq!(env.mock.received().len(), 4);
+    state.in_flight.settled().await;
+    assert_eq!(
+        (state.translating.free(), state.translating.waiting()),
+        (4 << 20, 0)
+    );
+}
+
+#[tokio::test]
+async fn a_body_that_decompresses_past_its_first_guess_is_decompressed_again_under_the_limit() {
+    let env = env(&[]).await;
+    let state = &env.app.state;
+    let plain = serde_json::to_vec(&chat("gpt-4o", &"a".repeat(4 << 20))).unwrap();
+    for encoding in ["gzip", "zstd"] {
+        env.mock.clear();
+        let small = encoded(encoding, &plain);
+        assert!(
+            small.len() * 32 < 1 << 20,
+            "{encoding}: {} bytes",
+            small.len()
+        );
+        let r = send(&env, "/v1/chat/completions", App::OpenAi, encoding, small).await;
+        assert_eq!(r.status, StatusCode::OK, "{encoding}: {}", r.text());
+        let received = env.mock.received();
+        assert_eq!(received.len(), 1);
+        assert!(received[0].body.len() > 4 << 20, "{encoding}");
+        state.in_flight.settled().await;
+        assert_eq!(
+            (state.translating.free(), state.translating.waiting()),
+            (state.config.body_limits.in_flight.0, 0),
+            "{encoding}"
+        );
+    }
+}
