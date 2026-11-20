@@ -474,5 +474,5 @@
   "instance.allowSharedLinksHint": "Aus, hört jeder Link auf und keiner kann erstellt werden.",
   "instance.shareMark": "Erstellt mit Kaeso",
   "instance.shareMarkHint": "Ein kleines Zeichen am Fuß jeder geteilten Seite.",
-  "instance.agents.maxHint": "Was ein Agent auf dieser Instanz höchstens darf."
+  "instance.agents.maxHint": "Für alle Agenten; nie mehr, als ihr Benutzer darf."
 }

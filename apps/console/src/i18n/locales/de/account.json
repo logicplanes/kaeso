@@ -302,5 +302,5 @@
   "account.enterNewPassword": "Neues Passwort mit 12 bis 128 Zeichen eingeben",
   "account.confirmCodesStored": "Zuerst „Ich habe diese Codes sicher aufbewahrt“ ankreuzen",
   "account.noOtherSessions": "Kein anderer Browser ist angemeldet",
-  "account.agentNameHint": "Erscheint in Ihren Agenten und im Audit-Log."
+  "account.agentNameHint": "Erscheint in Ihrer Agentenliste und im Audit-Log."
 }

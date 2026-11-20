@@ -348,6 +348,17 @@ describe("instance updates page", () => {
     }
   });
 
+  it("offers no GitHub link for the one release when it has none", async () => {
+    signedIn();
+    const r = release({ url: "" });
+    on("GET", "instance/updates", available({ latest: r, releases: [r] }));
+    history();
+    await renderApp(PATH);
+    const header = (await screen.findByRole("heading", { name: "Kaeso 40.4.3" })).closest("header") as HTMLElement;
+    expect(within(header).queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /On GitHub/ })).not.toBeInTheDocument();
+  });
+
   it("names releases without a manifest", async () => {
     signedIn();
     on("GET", "instance/updates", available({ manual: "not_prepared", can_apply: false, releases: [release({ notes: " ", prerelease: true })] }));

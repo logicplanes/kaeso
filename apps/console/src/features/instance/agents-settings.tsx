@@ -38,16 +38,19 @@ export function AgentsSettings() {
         {p.allowed && cat.data && (
           <SettingsRow
             title={t("instance.agents.max", "Most on the instance")}
-            description={t("instance.agents.maxHint", "The most any agent may do on this instance.")}
+            description={t("instance.agents.maxHint", "Applies to every agent, within its user's own rights.")}
             control={
-              <Select
-                aria-label={t("instance.agents.max", "Most on the instance")}
-                size="sm"
-                disabled={save.isPending}
-                options={cat.data.instance_presets.map((x) => ({ value: x.id, label: x.name, description: x.description }))}
-                value={p.max}
-                onValueChange={(max) => save.mutate({ allowed: p.allowed, max })}
-              />
+              <div className="w-240">
+                <Select
+                  aria-label={t("instance.agents.max", "Most on the instance")}
+                  size="sm"
+                  fullWidth
+                  disabled={save.isPending}
+                  options={cat.data.instance_presets.map((x) => ({ value: x.id, label: x.name, description: x.description }))}
+                  value={p.max}
+                  onValueChange={(max) => save.mutate({ allowed: p.allowed, max })}
+                />
+              </div>
             }
           />
         )}

@@ -140,7 +140,7 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
         <SettingsGroup>
           <SettingsRow
             title={t("common.name", "Name")}
-            description={t("account.agentNameHint", "Shown in your agents and the audit log.")}
+            description={t("account.agentNameHint", "Shown in your agent list and the audit log.")}
             control={
               <div className="flex min-w-0 items-start gap-8">
                 <div className="w-240 min-w-0">
@@ -149,7 +149,7 @@ function Loaded({ agent, cat, grantable, search }: { agent: AgentView; cat: Agen
                     size="sm"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && !nameReason && !details.isPending && void details.mutateAsync()}
+                    onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && !nameReason && !details.isPending && void details.mutateAsync()}
                     maxLength={100}
                     error={fieldError(details.error, "name")}
                   />

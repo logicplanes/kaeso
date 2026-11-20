@@ -69,6 +69,21 @@ describe("Settings", () => {
     expect(slot).not.toHaveClass("@max-settings-row:pl-36");
   });
 
+  it("knows a switch without its displayName, which production builds leave out", () => {
+    const name = Switch.displayName;
+    Switch.displayName = undefined;
+    try {
+      render(
+        <SettingsGroup aria-label="Time">
+          <SettingsRow title="Show times in UTC" control={<Switch aria-label="Show times in UTC" />} />
+        </SettingsGroup>,
+      );
+      expect(screen.getByRole("switch", { name: "Show times in UTC" }).closest("[data-row-control]")).not.toHaveClass("@max-settings-row:basis-full");
+    } finally {
+      Switch.displayName = name;
+    }
+  });
+
   it("leaves out the heading when a section has none", () => {
     render(
       <Section spacing="settings">
@@ -128,8 +143,25 @@ describe("Settings rows", () => {
       </Section>,
     );
     const titleBlock = screen.getByRole("heading", { name: /^Internationale/ }).parentElement!;
-    expect(titleBlock).toHaveClass("min-w-0", "sm:flex-1");
-    expect(titleBlock).not.toHaveClass("flex-1");
+    expect(titleBlock, "the title grows beside the actions and keeps 240px before they wrap under it").toHaveClass("min-w-0", "sm:grow", "sm:basis-240");
+    expect(titleBlock).not.toHaveClass("sm:flex-1");
+  });
+
+  it("wraps actions wider than the line among themselves instead of running past the column", () => {
+    render(
+      <Section
+        title="Aufschlüsselung"
+        actions={
+          <>
+            <button type="button">Nach zahlendem Schlüssel</button>
+            <button type="button">CSV herunterladen</button>
+          </>
+        }
+      >
+        <p>Rows</p>
+      </Section>,
+    );
+    expect(screen.getByRole("button", { name: "CSV herunterladen" }).parentElement).toHaveClass("max-w-full", "flex-wrap");
   });
 
   it("lets a section's description run to the actions, so an 80-character description stays on one line", () => {

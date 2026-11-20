@@ -474,5 +474,5 @@
   "instance.allowSharedLinksHint": "关闭后，所有链接失效且无法创建新链接。",
   "instance.shareMark": "由 Kaeso 制作",
   "instance.shareMarkHint": "每个共享页面底部的小标记。",
-  "instance.agents.maxHint": "智能体在此实例上最多可以做的事。"
+  "instance.agents.maxHint": "适用于所有智能体，且不超出其用户自身的权限。"
 }

@@ -4,6 +4,7 @@ import { cn } from "../../utils/cn.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
+import { isCompactRowControl } from "../../utils/row-control.js";
 
 export const KAESO_SETTINGS_VARIANTS = {
   row: {
@@ -49,7 +50,7 @@ export const SettingsRow = forwardRef<HTMLDivElement, SettingsRowProps>(function
   const LinkComp = useLinkComponent();
   const navigates = !!(href || onClick);
   // A switch is as narrow as a chevron, so it keeps its place at the row's end on a phone instead of dropping under the text.
-  const compact = isValidElement(control) && (control.type as { displayName?: string | undefined }).displayName === "Switch";
+  const compact = isValidElement(control) && isCompactRowControl(control.type);
   const body = (
     <>
       {icon && (

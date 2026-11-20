@@ -21,7 +21,7 @@
   "account.agentFailed": "This agent couldn't load",
   "account.agentGone": "This agent was revoked or doesn't exist.",
   "account.agentModelAndDates": "{model} · {dates}",
-  "account.agentNameHint": "Shown in your agents and the audit log.",
+  "account.agentNameHint": "Shown in your agent list and the audit log.",
   "account.agentNeverUsed": "never",
   "account.agentNoActivity": "No tool calls yet",
   "account.agentRevoked": "Agent revoked",

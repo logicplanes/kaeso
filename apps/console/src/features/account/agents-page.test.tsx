@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { ORG, OTHER_PROJECT, PROJECT, signedIn } from "~/test/fixtures";
 import { AGENT, agentView, agents, grantable } from "~/test/fixtures/agents";
 import { apiError, noContent, on, page, requests } from "~/test/network";
@@ -130,10 +130,13 @@ describe("the agents tab", () => {
     on("PATCH", "me/agents/:agent", agentView({ name: "Ops" }));
     const { user } = await renderApp(`/settings/account/agents/${AGENT}`);
     const name = await screen.findByLabelText("Name");
-    expect(screen.getByText("Shown in your agents and the audit log.")).toBeInTheDocument();
+    expect(screen.getByText("Shown in your agent list and the audit log.")).toBeInTheDocument();
     expect(name.closest("[data-row-control]")).toContainElement(screen.getByRole("button", { name: "Save" }));
     await user.clear(name);
-    await user.type(name, "Ops{Enter}");
+    await user.type(name, "Ops");
+    fireEvent.keyDown(name, { key: "Enter", isComposing: true });
+    expect(requests("PATCH", "me/agents/:agent"), "an Enter that confirms an input method's word doesn't save").toHaveLength(0);
+    await user.type(name, "{Enter}");
     await waitFor(() => expect(requests("PATCH", "me/agents/:agent").map((r) => r.body)).toEqual([{ name: "Ops" }]));
   });
 
