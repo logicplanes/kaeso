@@ -47,6 +47,7 @@ export const ALLOWED = [
   { path: ".github/workflows/ci.yml", version: "0.8.0", why: "kubeconform's version, which only shares the number" },
   { path: "crates/kaeso-server/src/config/*.rs", version: "0.8.0", why: "the release that refuses the settings 0.6.0 took and only warns about now (#1404)" },
   { path: "apps/docs/content/*/self-hosting/configuration.md", version: "0.8.0", why: "as above" },
+  { path: "apps/docs/content/*/self-hosting/upgrades.md", version: "0.8.0", why: "as above" },
   { path: "deny.toml", version: "0.9.0", why: "sqlx-sqlite's version in an advisory's reason, which only shares the number" },
   { path: "osv-scanner.toml", version: "0.9.0", why: "as above" },
 ];
