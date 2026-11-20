@@ -1486,6 +1486,21 @@ expression: outcomes
     },
     "path": "/v1beta/models/claude-sonnet-5-5:streamGenerateContent?alt=sse"
   },
+  "error-at-start": {
+    "body": {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": "Write a haiku about the sea."
+            }
+          ],
+          "role": "user"
+        }
+      ]
+    },
+    "path": "/v1beta/models/gpt-5.5:streamGenerateContent?alt=sse"
+  },
   "error-mid-stream": {
     "body": {
       "contents": [
