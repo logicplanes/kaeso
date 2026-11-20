@@ -23,7 +23,7 @@ export function ModelAccessSection({ org, project, subject, canEdit }: { org: st
   const self: Principal | { kind: "key"; id: string } = subject.kind === "key" ? { kind: "key", id: subject.id } : subject;
   const access = useQuery(modelAccessQuery(org, project, self));
   // A key's owner who reaches the project through an organization-wide role, not as a member, may give it any model
-  // in the catalogue; the members' endpoint doesn't know them. For yourself that is known without asking.
+  // in the catalogue, and their member models answer 404. For yourself that is known without asking.
   const me = useSession().user.id;
   const memberHere = useProjectMember(org, project);
   const ownerUnlisted = subject.kind === "key" && subject.owner.kind === "user" && subject.owner.id === me && memberHere === false;
