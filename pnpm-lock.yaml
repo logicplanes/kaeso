@@ -24,11 +24,11 @@ importers:
         specifier: 6.45.1
         version: 6.45.1
       prettier:
-        specifier: 3.10.0
-        version: 3.10.0
+        specifier: 3.10.1
+        version: 3.10.1
       prettier-plugin-astro:
         specifier: 1.1.2
-        version: 1.1.2(prettier@3.10.0)
+        version: 1.1.2(prettier@3.10.1)
       semver:
         specifier: 7.8.6
         version: 7.8.6
@@ -94,8 +94,8 @@ importers:
         specifier: 16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/user-event':
-        specifier: 14.6.9
-        version: 14.6.9(@testing-library/dom@10.4.2)
+        specifier: 14.6.10
+        version: 14.6.10(@testing-library/dom@10.4.2)
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
@@ -127,8 +127,8 @@ importers:
         specifier: 21.0.4
         version: 21.0.4
       openai:
-        specifier: 7.55.0
-        version: 7.55.0(undici@8.12.3)(ws@8.22.0)(zod@4.6.7)
+        specifier: 7.56.0
+        version: 7.56.0(undici@8.12.3)(ws@8.22.0)(zod@4.6.7)
       openapi-typescript:
         specifier: 7.13.0
         version: 7.13.0(typescript@5.9.3)
@@ -191,8 +191,8 @@ importers:
         specifier: 16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/user-event':
-        specifier: 14.6.9
-        version: 14.6.9(@testing-library/dom@10.4.2)
+        specifier: 14.6.10
+        version: 14.6.10(@testing-library/dom@10.4.2)
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
@@ -288,8 +288,8 @@ importers:
         specifier: 16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/user-event':
-        specifier: 14.6.9
-        version: 14.6.9(@testing-library/dom@10.4.2)
+        specifier: 14.6.10
+        version: 14.6.10(@testing-library/dom@10.4.2)
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
@@ -494,8 +494,8 @@ importers:
         specifier: 16.3.3
         version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/user-event':
-        specifier: 14.6.9
-        version: 14.6.9(@testing-library/dom@10.4.2)
+        specifier: 14.6.10
+        version: 14.6.10(@testing-library/dom@10.4.2)
       '@types/d3-array':
         specifier: 3.2.2
         version: 3.2.2
@@ -2260,8 +2260,8 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@testing-library/user-event@14.6.9':
-    resolution: {integrity: sha512-/8boTjZHNXFi8JGUI2Ev05cq0Szh0OX35Bamkq6CK1ne+l1Xm8BKE3+nGgsnFgaYk0MX67Vh59cZDsNz5lJJEg==}
+  '@testing-library/user-event@14.6.10':
+    resolution: {integrity: sha512-tA4stGNp3mLGOGO+lh87UA56Tz4c8NVGBSkyIF58O+W/bs2Re9BCI9xihnL70+DsThncFznE0skS88SM1D2hyg==}
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
@@ -4178,8 +4178,8 @@ packages:
   oniguruma-to-es@4.3.6:
     resolution: {integrity: sha512-csuQ9x3Yr0cEIs/Zgx/OEt9iBw9vqIunAPQkx19R/fiMq2oGVTgcMqO/V3Ybqefr1TBvosI6jU539ksaBULJyA==}
 
-  openai@7.55.0:
-    resolution: {integrity: sha512-0r4snVSRN46m4wL2vXCW5Xw6CKGPbdNI8t79KZOpe8GKKPmhL8peDXN8YOY/2ipsOVWSfsP/vgkLjTmWB+kMug==}
+  openai@7.56.0:
+    resolution: {integrity: sha512-viGsb+pfPxaRqnap556J4vScLNXPzRRFAQ7dbWKvDaeyY5rleW3vEKnw7Mo4gnnee2kYOhppHXZS1b5JH42HCw==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
@@ -4351,8 +4351,8 @@ packages:
     peerDependencies:
       prettier: ^3.5.3
 
-  prettier@3.10.0:
-    resolution: {integrity: sha512-mBi4765LgjO1PFjlEs7pUeK0nb1bw71c+N4/ItfeUWNdY5cV2pRKaFpbbFRYmDJMO+5ZwzGxHRqHxFZna7iv5w==}
+  prettier@3.10.1:
+    resolution: {integrity: sha512-70vp3ZUYoPlFbF9uiTdXHUUCGEIp7d4+6p+8DYbkm2jP7x/3i/paXVF6dopSI3zd/CEitrZN1rc4i85xWmmXlg==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -6492,7 +6492,7 @@ snapshots:
       '@tanstack/virtual-file-routes': 1.162.0
       jiti: 2.7.0
       magic-string: 0.30.21
-      prettier: 3.10.0
+      prettier: 3.10.1
       zod: 4.6.7
     transitivePeerDependencies:
       - supports-color
@@ -6575,7 +6575,7 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@testing-library/user-event@14.6.9(@testing-library/dom@10.4.2)':
+  '@testing-library/user-event@14.6.10(@testing-library/dom@10.4.2)':
     dependencies:
       '@testing-library/dom': 10.4.2
 
@@ -9107,7 +9107,7 @@ snapshots:
       regex: 6.1.0
       regex-recursion: 6.0.2
 
-  openai@7.55.0(undici@8.12.3)(ws@8.22.0)(zod@4.6.7):
+  openai@7.56.0(undici@8.12.3)(ws@8.22.0)(zod@4.6.7):
     optionalDependencies:
       undici: 8.12.3
       ws: 8.22.0
@@ -9303,14 +9303,14 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier-plugin-astro@1.1.2(prettier@3.10.0):
+  prettier-plugin-astro@1.1.2(prettier@3.10.1):
     dependencies:
       '@astrojs/compiler-rs': 0.5.2
       '@prettier/parse-srcset': 3.1.0
-      prettier: 3.10.0
+      prettier: 3.10.1
       sass-formatter: 0.8.0
 
-  prettier@3.10.0: {}
+  prettier@3.10.1: {}
 
   pretty-format@27.5.1:
     dependencies:
