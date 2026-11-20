@@ -48,7 +48,7 @@ KPP zählt, was der Body enthält, bevor es etwas decodiert. Eine Anfrage erhäl
 - mehr als 2.048 Embedding-Eingaben;
 - Objekte und Arrays, die mehr als 127 Ebenen tief verschachtelt sind.
 
-Danach schätzt Kaeso den Speicher, den die Anfrage beim Übersetzen braucht. Die Schätzung beruht auf ihrem Body, wie er ankommt, und auf ihren Nachrichten, Blöcken und Werkzeugen. Nach dem Decodieren zählt Kaeso nur noch, was das Decodieren behalten hat.
+Danach schätzt Kaeso den Speicher, den die Anfrage beim Übersetzen braucht. Die Schätzung beruht auf ihrem Body, wie er ankommt, und auf ihren Nachrichten, Blöcken und Werkzeugen. Nach dem Decodieren zählt Kaeso nur noch, was das Decodieren behalten hat. Ein mit `gzip` oder `zstd` gesendeter Body hält zuerst das ganze Body-Limit, oder das Viertel des Schlüssels, wenn das weniger ist, denn wenige Kilobyte können sich zu so viel entpacken; sobald er entpackt ist, hält er stattdessen seine Schätzung.
 
 Solange die laufenden Übersetzungen `KAESO_BODY_LIMITS_IN_FLIGHT` schon ausschöpfen, standardmäßig 512 MiB, oder der Schlüssel schon ein Viertel davon hält, wartet die Anfrage. Nach 10 Sekunden erhält sie 503 mit `Retry-After: 10`, im Anthropic-Format 529.
 

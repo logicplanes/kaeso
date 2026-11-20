@@ -315,3 +315,60 @@ async fn a_corrupt_body_is_refused_with_400() {
     );
     assert!(env.mock.received().is_empty());
 }
+
+#[tokio::test]
+async fn a_compressed_body_waits_for_translation_memory_before_it_is_decoded() {
+    let env = env(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "128KiB")]).await;
+    let state = &env.app.state;
+    let mut gate = env.mock.gate();
+    let mut open = messages("claude-haiku-4-5", &format!("Long {}", gate.marker()));
+    open["stream"] = json!(true);
+    let first = send(
+        &env,
+        "/v1/messages",
+        App::Anthropic,
+        "",
+        serde_json::to_vec(&open).unwrap(),
+    );
+    let second = async {
+        gate.wait_for(1).await;
+        let held = (128 << 10) - state.translating.free();
+        assert!(
+            held > 0 && held < 32 << 10,
+            "the open call keeps part of the key's 32 KiB share: {held}"
+        );
+        let mut zipped = Box::pin(send(
+            &env,
+            "/v1/chat/completions",
+            App::OpenAi,
+            "gzip",
+            b"not gzip at all".to_vec(),
+        ));
+        let mut polls = 0;
+        while state.translating.waiting() == 0 {
+            assert!(
+                futures::poll!(zipped.as_mut()).is_pending(),
+                "a compressed body was decoded before the key had room for what it may decode to"
+            );
+            tokio::task::yield_now().await;
+            polls += 1;
+            assert!(polls < 10_000, "the compressed request never waited");
+        }
+        gate.open();
+        zipped.await
+    };
+    let (first, second) = tokio::join!(first, second);
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    assert_eq!(
+        openai_error(&second, StatusCode::BAD_REQUEST),
+        (
+            "invalid_request_error".into(),
+            "The request body is not valid `gzip`; check its `Content-Encoding`.".into()
+        )
+    );
+    state.in_flight.settled().await;
+    assert_eq!(
+        (state.translating.free(), state.translating.waiting()),
+        (128 << 10, 0)
+    );
+}

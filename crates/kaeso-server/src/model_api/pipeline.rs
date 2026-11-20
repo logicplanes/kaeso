@@ -1079,6 +1079,24 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
         };
         Failure::new(refused, Stage::Request)
     })?;
+    let holder = caller
+        .key_id
+        .or(caller.user_id)
+        .or(caller.service_account_id)
+        .unwrap_or(caller.project_id);
+    // A few kilobytes of gzip or zstd decode to the whole limit, so a compressed body is
+    // admitted at that size before it is decoded, and the hold is resized once it is measured.
+    let admitted = if encoding == Encoding::Identity {
+        None
+    } else {
+        Some(
+            state
+                .translating
+                .hold(holder, u64::try_from(limit).unwrap_or(u64::MAX))
+                .await
+                .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
+        )
+    };
     let body = decoded_body(encoding, body, limit)
         .await
         .map_err(at(Stage::Request))?;
@@ -1115,27 +1133,28 @@ async fn run(state: &AppState, inc: Incoming, rec: &mut Recording) -> Result<Don
     .and_then(|r| r)
     .map_err(at(Stage::Request))?;
     let shape = *checked.shape();
-    let holder = caller
-        .key_id
-        .or(caller.user_id)
-        .or(caller.service_account_id)
-        .unwrap_or(caller.project_id);
     // Held for the whole call, after the translation's share is returned: the app's
     // decoded request, kept to encode the reply, the request sent while the input
     // counter may still need it, and the body's size again for its log entry, raw or written.
     let logged = u64::try_from(if keep_content { request_bytes } else { 0 }).unwrap_or(u64::MAX);
     let decoded = super::memory::decoded(&shape);
     let retained = |copies: u64| decoded.saturating_mul(copies).saturating_add(logged);
-    rec.held = Some(
-        state
+    let needed = super::memory::estimate(kind, request_bytes, &shape).saturating_add(retained(2));
+    rec.held = Some(match admitted {
+        Some(mut held) => {
+            state
+                .translating
+                .grow(&mut held, needed)
+                .await
+                .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?;
+            held
+        }
+        None => state
             .translating
-            .hold(
-                holder,
-                super::memory::estimate(kind, request_bytes, &shape).saturating_add(retained(2)),
-            )
+            .hold(holder, needed)
             .await
             .map_err(|_| Failure::new(translating_busy(), Stage::Limits))?,
-    );
+    });
     let listed = header_list(&headers);
     let remix = video.as_ref().and_then(|v| v.remix.clone());
     let req = off_thread(request_bytes, move || {

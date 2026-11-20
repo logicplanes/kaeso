@@ -147,6 +147,44 @@ impl Budget {
         .await;
         acquired.map(|()| held).map_err(|_| Busy)
     }
+
+    pub async fn grow(&self, held: &mut Held, bytes: u64) -> Result<(), Busy> {
+        let kib = kib_of(bytes).clamp(1, self.share_kib.min(self.kib));
+        let have = held
+            .global
+            .as_ref()
+            .map_or(0, OwnedSemaphorePermit::num_permits);
+        let Some(more) = kib
+            .checked_sub(u32::try_from(have).unwrap_or(u32::MAX))
+            .filter(|more| *more > 0)
+        else {
+            held.keep(u64::from(kib) * KIB);
+            return Ok(());
+        };
+        let share = held.share.as_ref().map(|p| p.semaphore().clone());
+        self.waiting.fetch_add(1, Ordering::SeqCst);
+        let _waiting = Waiting(&self.waiting);
+        let (share, global) = tokio::time::timeout(self.wait, async {
+            let share = match share {
+                Some(s) => s.acquire_many_owned(more).await.ok(),
+                None => None,
+            };
+            (
+                share,
+                self.permits.clone().acquire_many_owned(more).await.ok(),
+            )
+        })
+        .await
+        .map_err(|_| Busy)?;
+        for (slot, more) in [(&mut held.share, share), (&mut held.global, global)] {
+            let Some(more) = more else { continue };
+            match slot {
+                Some(permit) => permit.merge(more),
+                None => *slot = Some(more),
+            }
+        }
+        Ok(())
+    }
 }
 
 impl Held {
@@ -319,6 +357,52 @@ mod tests {
             "the budget is spent"
         );
         drop(held);
+        assert_eq!(budget.free(), 8 * KIB);
+        assert!(budget.holders.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_hold_grows_within_its_share_waits_for_room_and_shrinks_when_less_is_needed() {
+        let budget = Budget::new(40 * KIB);
+        let (a, b) = (Uuid::now_v7(), Uuid::now_v7());
+        let mut held = budget.hold(a, 4 * KIB).await.unwrap();
+        budget.grow(&mut held, 7 * KIB).await.unwrap();
+        assert_eq!(budget.free(), 33 * KIB);
+        let other = budget.hold(a, 3 * KIB).await.unwrap();
+        let mut growing = Box::pin(budget.grow(&mut held, u64::MAX));
+        assert!(
+            futures::poll!(growing.as_mut()).is_pending(),
+            "a's share of 10 KiB has 0 KiB left"
+        );
+        assert_eq!(budget.waiting(), 1);
+        drop(other);
+        growing.await.unwrap();
+        assert_eq!(
+            (budget.free(), budget.waiting()),
+            (30 * KIB, 0),
+            "a grows to its whole share, no further"
+        );
+        assert!(budget.hold(b, 9 * KIB).await.is_ok(), "b is not held up");
+        budget.grow(&mut held, 2 * KIB).await.unwrap();
+        assert_eq!(budget.free(), 38 * KIB, "asking for less returns the rest");
+        drop(held);
+        assert_eq!(budget.free(), 40 * KIB);
+        assert!(budget.holders.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_hold_that_cannot_grow_in_time_keeps_what_it_had() {
+        let budget = Budget::with_wait(8 * KIB, Duration::ZERO);
+        let a = Uuid::now_v7();
+        let mut held = budget.hold(a, KIB).await.unwrap();
+        let other = budget.hold(a, KIB).await.unwrap();
+        assert!(budget.grow(&mut held, 2 * KIB).await.is_err());
+        assert_eq!(
+            (budget.free(), budget.waiting()),
+            (6 * KIB, 0),
+            "nothing half-taken stays behind"
+        );
+        drop((held, other));
         assert_eq!(budget.free(), 8 * KIB);
         assert!(budget.holders.lock().unwrap().is_empty());
     }
