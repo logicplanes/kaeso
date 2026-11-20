@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { ORG, PROJECT, membership, signedIn, user as person, whoAmI } from "~/test/fixtures";
-import { me } from "~/test/fixtures/instance-account";
+import { instanceOrg, me, orgUsage } from "~/test/fixtures/instance-account";
 import { member } from "~/test/fixtures/org";
 import { on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
@@ -33,6 +33,21 @@ describe("the settings sidebar", () => {
     expect(within(nav).getByRole("link", { name: "System" })).toHaveAttribute("href", "/settings/instance/system");
     expect(within(nav).queryByRole("link", { name: "Model sources" })).not.toBeInTheDocument();
     expect(within(nav).getAllByRole("link", { name: "Audit log" })).toHaveLength(2);
+  });
+
+  it("stays on the person's own organization while an instance admin looks at another one", async () => {
+    signedIn();
+    const other = "org_01k7c0nt0s0c0nt0s0c0nt0s00";
+    on("GET", "instance/orgs/:org", instanceOrg({ id: other, name: "Contoso Research" }));
+    on("GET", "instance/orgs/:org/usage", orgUsage());
+    on("GET", "instance/orgs/:org/members", page([]));
+    on("GET", "instance/orgs/:org/projects", page([]));
+    await renderApp(`/settings/instance/orgs/${other}`);
+    expect(await screen.findByRole("heading", { name: "Contoso Research", level: 1 })).toBeInTheDocument();
+    const nav = await sidebar();
+    const org = await within(nav).findByRole("group", { name: "Northwind Labs" });
+    expect(within(org).getByRole("link", { name: "General" })).toHaveAttribute("href", `/settings/orgs/${ORG}/general`);
+    expect(within(nav).getByRole("link", { name: "Organizations" })).toHaveAttribute("aria-current", "page");
   });
 
   it("draws a different icon beside every page of a group, Guardrails apart from Security", async () => {

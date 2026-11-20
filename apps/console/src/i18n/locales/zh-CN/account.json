@@ -8,7 +8,7 @@
   "account.apiKeysHint": "您在所有项目中的密钥；点击即在所属项目中打开。",
   "account.appCode": "应用中的验证码",
   "account.appearance": "外观",
-  "account.appearanceHint": "控制台在此浏览器中的外观、语言和货币。",
+  "account.appearanceHint": "控制台在此浏览器中的主题及其语言。",
   "account.archiveKey": "归档密钥",
   "account.archiveKeyConfirm": "归档 {name}？",
   "account.archiveKeyConfirmHint": "使用它的应用将无法再通过网关验证；归档无法撤销，历史记录会保留。",
@@ -301,5 +301,6 @@
   "account.enterCurrentPassword": "请输入您的当前密码",
   "account.enterNewPassword": "请输入 12 到 128 个字符的新密码",
   "account.confirmCodesStored": "请先勾选“我已妥善保存这些恢复码”",
-  "account.noOtherSessions": "没有其他浏览器已登录"
+  "account.noOtherSessions": "没有其他浏览器已登录",
+  "account.agentNameHint": "显示在您的智能体列表和审计日志中。"
 }

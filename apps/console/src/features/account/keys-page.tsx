@@ -133,7 +133,7 @@ export function AccountKeysPage({ search }: { search: AccountKeysSearch }) {
           onValueChange={(v) => void navigate({ to: "/settings/account/keys", search: isKeySort(v) ? { sort: v } : {}, replace: true })}
           options={keySortOptions()}
         />
-        <div className="w-240">
+        <div className="min-w-0 flex-1 sm:w-240 sm:flex-none">
           <Input
             type="search"
             size="sm"

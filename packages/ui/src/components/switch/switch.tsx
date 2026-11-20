@@ -4,6 +4,7 @@ import { cn } from "../../utils/cn.js";
 import { Tooltip } from "../tooltip/tooltip.js";
 import { Spinner, useDelayedLoading } from "../loader/loader.js";
 import { labelled } from "../radio/labelled.js";
+import { COMPACT_ROW_CONTROL } from "../../utils/row-control.js";
 
 export const KAESO_SWITCH_VARIANTS = {
   size: {
@@ -45,7 +46,7 @@ export interface SwitchProps {
   "data-force"?: string | undefined;
 }
 
-export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch(
+const SwitchControl = forwardRef<HTMLButtonElement, SwitchProps>(function Switch(
   {
     checked,
     defaultChecked,
@@ -127,4 +128,6 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
     </label>
   );
 });
-Switch.displayName = "Switch";
+SwitchControl.displayName = "Switch";
+
+export const Switch = Object.assign(SwitchControl, { [COMPACT_ROW_CONTROL]: true as const });

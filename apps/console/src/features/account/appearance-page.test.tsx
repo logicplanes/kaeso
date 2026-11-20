@@ -9,6 +9,13 @@ import { renderApp } from "~/test/render";
 const PATH = "/settings/account/appearance";
 
 describe("appearance", () => {
+  it("describes only what the page sets, now that the currency is the organization's", async () => {
+    signedIn();
+    await renderApp(PATH);
+    expect(await screen.findByText("The console's theme in this browser, and its language.")).toBeInTheDocument();
+    expect(screen.queryByText(/currency/i)).not.toBeInTheDocument();
+  });
+
   it("switches the theme in this browser", async () => {
     signedIn();
     const { user } = await renderApp(PATH);

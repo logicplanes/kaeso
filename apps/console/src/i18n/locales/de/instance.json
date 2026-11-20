@@ -334,7 +334,7 @@
   "instance.updates.leftToDo": "Ein Schritt bleibt",
   "instance.updates.major": "Hauptversion",
   "instance.updates.manual": "Von Hand",
-  "instance.updates.manualHint": "Sie starten jedes Update auf dieser Seite, sobald es erschienen ist.",
+  "instance.updates.manualHint": "Sie starten jedes Update hier, sobald es erschienen ist.",
   "instance.updates.manualMajor": "Kaeso {version} ist eine neue Hauptversion: Lesen Sie die Upgrade-Anleitung und aktualisieren Sie dann mit dem Installationsskript.",
   "instance.updates.manualSteps": "Ein Release auf dem Weg verlangt eigene Schritte: Folgen Sie der Upgrade-Anleitung und aktualisieren Sie dann mit dem Installationsskript.",
   "instance.updates.manualUnprepared": "Dieses Release lässt sich hier nicht anwenden: Aktualisieren Sie mit dem Installationsskript.",
@@ -473,5 +473,6 @@
   "instance.allowSharedLinks": "Geteilte Links erlauben",
   "instance.allowSharedLinksHint": "Aus, hört jeder Link auf und keiner kann erstellt werden.",
   "instance.shareMark": "Erstellt mit Kaeso",
-  "instance.shareMarkHint": "Ein kleines Zeichen am Fuß jeder geteilten Seite."
+  "instance.shareMarkHint": "Ein kleines Zeichen am Fuß jeder geteilten Seite.",
+  "instance.agents.maxHint": "Für alle Agenten; nie mehr, als ihr Benutzer darf."
 }

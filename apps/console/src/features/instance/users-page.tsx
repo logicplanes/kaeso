@@ -136,7 +136,7 @@ export function InstanceUsersPage({ search }: { search: UsersSearch }) {
               </Tabs>
             }
           >
-            <div className="w-240">
+            <div className="min-w-0 flex-1 sm:w-240 sm:flex-none">
               <Input
                 type="search"
                 size="sm"
@@ -501,7 +501,7 @@ function UserOrgs({ userId }: { userId: string }) {
             </>
           ),
         }))}
-        onOpen={(item) => void navigate({ to: "/settings/instance/orgs/$org", params: { org: item.id } })}
+        onOpen={(item) => void navigate({ to: "/settings/instance/orgs/$instanceOrg", params: { instanceOrg: item.id } })}
         empty={
           orgs.isError ? (
             <Empty size="compact" title={t("instance.userOrgsFailed", "Their organizations couldn't load")} />

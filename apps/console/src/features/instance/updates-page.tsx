@@ -183,11 +183,20 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
     : `${INSTALLER} -s -- --update --version ${latest.version}`;
   const helmTitle = t("instance.updates.helmTitle", "Update with Helm, with your release's name and namespace");
   const guide = httpsHref(u.upgrade_guide);
+  const only = u.releases.length === 1 && u.releases[0]?.version === latest.version;
+  const onlyUrl = only ? httpsHref(latest.url) : undefined;
   return (
     <Section
       spacing="settings"
       title={t("instance.updates.release", "Kaeso {version}", { version: latest.version })}
       description={t("instance.updates.published", "Published {date}", { date: formatDate(latest.published_at) })}
+      actions={
+        onlyUrl && (
+          <Link href={onlyUrl} external variant="quiet">
+            {t("instance.updates.onGitHub", "On GitHub")}
+          </Link>
+        )
+      }
     >
       <div className="flex flex-col gap-16">
         {u.manual ? (
@@ -245,31 +254,41 @@ function Latest({ u, latest }: { u: UpdatesView; latest: ReleaseView }) {
           )
         )}
         {u.releases.map((r) => (
-          <Notes key={r.version} release={r} />
+          <Notes key={r.version} release={r} named={!only} />
         ))}
       </div>
     </Section>
   );
 }
 
-function Notes({ release }: { release: ReleaseView }) {
+// With one release, the section's title and description already name it and its day; its notes only add what they don't.
+function Notes({ release, named }: { release: ReleaseView; named: boolean }) {
   const url = httpsHref(release.url);
+  const badges = (
+    <>
+      {release.prerelease && <Badge>{t("instance.updates.prerelease", "Pre-release")}</Badge>}
+      {release.major && <Badge tone="warning">{t("instance.updates.major", "Major version")}</Badge>}
+    </>
+  );
   return (
     <section aria-label={t("instance.updates.notesOf", "Release notes of {version}", { version: release.version })} className="mt-8 flex flex-col gap-8">
       <div className="flex flex-col gap-8">
-        <span className="flex flex-wrap items-center gap-8">
-          <Text weight="medium">{release.version}</Text>
-          {release.prerelease && <Badge>{t("instance.updates.prerelease", "Pre-release")}</Badge>}
-          {release.major && <Badge tone="warning">{t("instance.updates.major", "Major version")}</Badge>}
-          <Text variant="small" tone="secondary">
-            {formatDate(release.published_at)}
-          </Text>
-          {url && (
-            <Link href={url} external variant="quiet" className="ml-auto">
-              {t("instance.updates.onGitHub", "On GitHub")}
-            </Link>
-          )}
-        </span>
+        {named ? (
+          <span className="flex flex-wrap items-center gap-8">
+            <Text weight="medium">{release.version}</Text>
+            {badges}
+            <Text variant="small" tone="secondary">
+              {formatDate(release.published_at)}
+            </Text>
+            {url && (
+              <Link href={url} external variant="quiet" className="ml-auto">
+                {t("instance.updates.onGitHub", "On GitHub")}
+              </Link>
+            )}
+          </span>
+        ) : (
+          (release.prerelease || release.major) && <span className="flex flex-wrap items-center gap-8">{badges}</span>
+        )}
         {release.notes.trim() ? (
           <Markdown text={release.notes} headingLevel={4} size="small" collapseAfter={2400} />
         ) : (
@@ -489,6 +508,7 @@ function History() {
         onLoadMore={() => void jobs.fetchNextPage()}
         empty={
           <Empty
+            size="md"
             title={t("instance.updates.noHistory", "No updates yet")}
             description={t("instance.updates.noHistoryHint", "Updates applied from here show up with who started them and how they ended.")}
           />

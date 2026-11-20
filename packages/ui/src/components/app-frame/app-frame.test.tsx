@@ -41,6 +41,12 @@ describe("AppFrame.Settings", () => {
     expect(title).toHaveClass("sm:flex-1", "min-w-0");
     expect(title).not.toHaveClass("flex-1");
   });
+  it("makes the actions' line no taller than the title's, so a header with actions is as tall as one without", () => {
+    render(<Page description="People in the organization and their rights in it." />);
+    const actions = screen.getByRole("button", { name: "Invite member" }).parentElement!;
+    expect(actions).toHaveClass("min-h-32");
+    expect(actions.className.split(" ")).not.toContain("h-34");
+  });
   it("keeps the actions on the title's line without a description", () => {
     render(<Page />);
     const line = screen.getByRole("heading", { level: 1, name: "Members" }).parentElement!;

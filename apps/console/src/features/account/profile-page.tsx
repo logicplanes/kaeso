@@ -106,7 +106,7 @@ function NameRow({ name }: { name: string }) {
               value={draft}
               maxLength={100}
               onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && ready && !save.isPending && save.mutate(draft.trim())}
+              onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && ready && !save.isPending && save.mutate(draft.trim())}
             />
           </div>
           <Button

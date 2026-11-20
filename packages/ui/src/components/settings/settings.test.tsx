@@ -69,6 +69,21 @@ describe("Settings", () => {
     expect(slot).not.toHaveClass("@max-settings-row:pl-36");
   });
 
+  it("knows a switch without its displayName, which production builds leave out", () => {
+    const name = Switch.displayName;
+    Switch.displayName = undefined;
+    try {
+      render(
+        <SettingsGroup aria-label="Time">
+          <SettingsRow title="Show times in UTC" control={<Switch aria-label="Show times in UTC" />} />
+        </SettingsGroup>,
+      );
+      expect(screen.getByRole("switch", { name: "Show times in UTC" }).closest("[data-row-control]")).not.toHaveClass("@max-settings-row:basis-full");
+    } finally {
+      Switch.displayName = name;
+    }
+  });
+
   it("leaves out the heading when a section has none", () => {
     render(
       <Section spacing="settings">
