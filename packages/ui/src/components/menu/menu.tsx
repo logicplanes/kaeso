@@ -486,7 +486,8 @@ export const Menu = Object.assign(Root, {
 export const KAESO_CONTEXT_MENU_VARIANTS = {} as const;
 export const KAESO_CONTEXT_MENU_DEFAULT_VARIANTS = {} as const;
 
-const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+// Any tabindex counts: a row that a roving focus took out of the tab order (-1) is still reached from the keyboard.
+const FOCUSABLE = "a[href], button, input, select, textarea, [tabindex]";
 
 function ContextRoot({ children, onOpenChange }: { children: ReactNode; onOpenChange?: ((open: boolean) => void) | undefined }) {
   const opener = useRef<HTMLElement | null>(null);
