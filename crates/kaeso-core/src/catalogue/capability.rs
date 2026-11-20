@@ -48,6 +48,9 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
         ("messages", R) => "input",
         ("messages", G) => "contents",
         ("modalities", G) => "generationConfig.responseModalities",
+        ("temperature", G) => "generationConfig.temperature",
+        ("top_p", G) => "generationConfig.topP",
+        ("top_k", G) => "generationConfig.topK",
         ("reasoning", A) => "thinking",
         ("user", A) => "metadata.user_id",
         ("reasoning", R) => "reasoning",
@@ -131,7 +134,7 @@ pub fn prepare(
             refuse_decision_only(eff)?;
             let mut adapted = adaptive_to_budget(g, ingress, eff);
             let mut left_out = leave_out_reasoning(g, ingress, eff);
-            left_out.extend(leave_out_temperature(g, ingress, eff));
+            left_out.extend(leave_out_sampling(g, ingress, eff));
             adapted.extend(nearest_effort(g, ingress, eff));
             adapted.extend(lowest_effort_for_off(g, ingress, eff));
             adapted.extend(fit_end_user(g, ingress, eff));
@@ -692,24 +695,39 @@ fn adaptive_to_budget(g: &mut GenerateRequest, ingress: DialectId, eff: &Effecti
     vec![app_param(ingress, "reasoning").to_owned()]
 }
 
-// Apps send a temperature with no switch per model; Claude 5 models take only the default,
-// so the model answers at its default instead of refusing every such app.
-fn leave_out_temperature(
-    g: &mut GenerateRequest,
-    ingress: DialectId,
-    eff: &Effective,
-) -> Vec<String> {
-    let Some(t) = g.sampling.temperature else {
-        return Vec::new();
-    };
-    if eff.fields.temperature != Some(false)
-        || (t - 1.0).abs() <= f64::EPSILON
-        || kpp_turns_thinking_on(g, ingress, eff)
-    {
+// Apps send a temperature and `top_p` with no switch per model; Claude 5 models take only their
+// defaults, so the model answers at its defaults instead of refusing every such app.
+fn leave_out_sampling(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    if eff.fields.temperature != Some(false) || kpp_turns_thinking_on(g, ingress, eff) {
         return Vec::new();
     }
-    g.sampling.temperature = None;
-    vec!["temperature".to_owned()]
+    let s = &mut g.sampling;
+    let mut left_out = Vec::new();
+    if s.temperature
+        .is_some_and(|t| (t - 1.0).abs() > f64::EPSILON)
+    {
+        s.temperature = None;
+        left_out.push(app_param(ingress, "temperature").to_owned());
+    }
+    if !is_claude(eff) {
+        return left_out;
+    }
+    if s.top_p.take().is_some() {
+        left_out.push(app_param(ingress, "top_p").to_owned());
+    }
+    if s.top_k.take().is_some() {
+        left_out.push(app_param(ingress, "top_k").to_owned());
+    }
+    left_out
+}
+
+// Claude models that take only their default temperature also refuse `top_p` and `top_k`.
+// Other models the catalogue marks that way, such as Gemini 4 on some platforms, take them.
+fn is_claude(eff: &Effective) -> bool {
+    matches!(
+        eff.dialect,
+        DialectId::AnthropicMessages | DialectId::BedrockConverse
+    ) && eff.model_id.contains("claude")
 }
 
 const EFFORT_ORDER: [&str; 7] = ["none", "minimal", "low", "medium", "high", "xhigh", "max"];
