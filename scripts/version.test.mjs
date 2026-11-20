@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
@@ -218,6 +218,13 @@ test("every ALLOWED entry names files of the repository", () => {
 
 test("the repository states its version only where the release sets it", () => {
   assert.deepEqual(messages(check(gitRepo(root))), []);
+});
+
+test("no file states the next patch or minor version by hand, so either can be released", () => {
+  const [major, minor, patch] = JSON.parse(readFileSync(join(root, "package.json"), "utf8"))
+    .version.split(/[.-]/)
+    .map(Number);
+  for (const next of [`${major}.${minor}.${patch + 1}`, `${major}.${minor + 1}.0`]) assert.deepEqual(messages(strays(gitRepo(root), next)), [], next);
 });
 
 test("the repository reads files only, not untracked links to folders", () => {
