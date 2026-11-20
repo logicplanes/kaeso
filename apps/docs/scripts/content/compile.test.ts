@@ -88,6 +88,21 @@ describe("links", () => {
     expect(out.problems).toEqual(["links to #nope, which is not a heading on this page"]);
   });
 
+  it("ends a bare address at Chinese punctuation, so the sentence after it stays text", () => {
+    const out = md(
+      "来源（https://docs.mistral.ai/openapi.yaml）以及录制文件；页面（https://console.groq.com/docs/openai，其中列出）。见 https://kaeso.app/docs。",
+    );
+    const s = json(out.blocks);
+    expect(s.match(/"href":"[^"]*"/g)).toEqual([
+      '"href":"https://docs.mistral.ai/openapi.yaml"',
+      '"href":"https://console.groq.com/docs/openai"',
+      '"href":"https://kaeso.app/docs"',
+    ]);
+    expect(s).toContain("）以及录制文件；页面（");
+    expect(s).toContain("，其中列出）。见 ");
+    expect(out.problems).toEqual([]);
+  });
+
   it("keeps reference links as text", () => {
     const body = "See [the logs][logs].\n\n[logs]: https://docs.kaeso.app/console/request-logs";
     const resolver: Resolver = { anchors: new Set(), resolve: () => ({ kind: "problem", message: "no" }) };
