@@ -66,7 +66,7 @@ Vor den E-Mails kommt eine Benachrichtigung über eine Organisation oder ein Pro
 
 Kann die Datenbank nicht antworten, entscheiden die Rückfallregeln, sodass die Abfrage nie eine E-Mail aufhält. [E-Mail](../../self-hosting/email.md#sprachen) nennt die Regeln für jede Art von Empfänger.
 
-Die Funktion jeder E-Mail hat ein `match` auf die Sprache, mit ganzen Sätzen und namentlich eingesetzten Werten, nie zusammengesetzten Bruchstücken. Deutsch spricht Menschen mit „Sie“ an. Chinesisch nutzt „您“, Satzzeichen in voller Breite und ein Leerzeichen zwischen chinesischen und lateinischen Wörtern oder Ziffern, das `locale::zh` an den Nahtstellen setzt. Datumsangaben und Zahlen folgen der Sprache, und Geldbeträge stehen in der Währung der Organisation, mit Symbol für Dollar, Euro und Pfund und mit dem Code für jede andere:
+Die Funktion jeder E-Mail hat ein `match` auf die Sprache, mit ganzen Sätzen und namentlich eingesetzten Werten, nie zusammengesetzten Bruchstücken. Deutsch spricht Menschen mit „Sie“ an. Chinesisch nutzt „您“, Satzzeichen in voller Breite und ein Leerzeichen zwischen chinesischen und lateinischen Wörtern oder Ziffern, das `locale::zh` an den Nahtstellen setzt. Datumsangaben und Zahlen folgen der Sprache, und Ausgaben und Kosten stehen in der Währung der Organisation, mit Symbol für Dollar, Euro und Pfund und mit dem Code für jede andere; ein Ausgabenbudget nennt den Code seiner Währung, etwa `40 EUR`:
 
 | | Englisch | Deutsch | Chinesisch |
 | --- | --- | --- | --- |

@@ -66,7 +66,7 @@ Before the emails, a notice about an organization or project is queued for the o
 
 If the database can't answer, the fallbacks decide, so the lookup never stops an email. [Email](../../self-hosting/email.md#languages) has the rules for each kind of recipient.
 
-Each email's function has one `match` on the language, with whole sentences and values put in by name, never fragments joined together. German addresses people with "Sie". Chinese uses "您", full-width punctuation, and a space between Chinese and Latin words or digits, which `locale::zh` puts at the seams. Dates and numbers follow the language, and money is in the organization's currency, with a symbol for dollars, euros and pounds and the code for any other:
+Each email's function has one `match` on the language, with whole sentences and values put in by name, never fragments joined together. German addresses people with "Sie". Chinese uses "您", full-width punctuation, and a space between Chinese and Latin words or digits, which `locale::zh` puts at the seams. Dates and numbers follow the language, and spend and costs are in the organization's currency, with a symbol for dollars, euros and pounds and the code for any other; a spend budget names its currency's code, such as `40 EUR`:
 
 | | English | German | Chinese |
 | --- | --- | --- | --- |

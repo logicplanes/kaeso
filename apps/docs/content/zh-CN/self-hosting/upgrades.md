@@ -58,11 +58,11 @@ version={{version}}
 
 | 设置 | 0.6.0 | 现在 |
 | --- | --- | --- |
-| `KAESO_KPMR_INTERVAL`（`kpmr.interval`） | 接受任何时长，最多每 5 分钟同步一次 | `auto`，或至少 `5m` |
+| `KAESO_KPMR_INTERVAL`（`kpmr.interval`） | 接受任何大于零的时长，最多每 5 分钟同步一次 | `auto`，或至少 `5m` |
 | `KAESO_MCP_SERVERS_SYNC_INTERVAL`（`mcp_servers.sync_interval`） | 把更短的间隔提高到一分钟 | 至少 `1m` |
-| `KAESO_SMTP_USER`（`smtp.user`） | 未设置密码时，不经身份验证发送邮件 | 需要 `KAESO_SMTP_PASSWORD`；对于无需身份验证的服务器，请删除该用户名 |
+| `KAESO_SMTP_USER`（`smtp.user`） | 未设置密码时，不经身份验证发送邮件 | 需要 `KAESO_SMTP_PASSWORD`，错误信息会写出它；对于无需身份验证的服务器，请删除该用户名 |
 
-空的 `KAESO_CONFIG` 现在与其他变量一样视为未设置，而 0.6.0 会因此停止。如果更新因其中某项设置而停止，请更正它并运行 `docker compose up -d --wait`（[网关不断重启](troubleshooting.md#网关不断重启)）。
+空的 `KAESO_CONFIG` 现在与其他变量一样视为未设置，而 0.6.0 会因此停止。如果更新因其中某项设置而停止，请更正它并运行 `docker compose up -d --wait`，或在您的平台上重新部署（[网关不断重启](troubleshooting.md#网关不断重启)）。
 
 在先启动新网关、再停止旧网关的平台上，例如 Render、Railway 或 DigitalOcean App Platform，新网关迁移数据库后，旧网关无法再把最后的请求计入每日用量汇总。**分析**和支出预算会缺少这些请求；请求日志仍会保留它们。
 

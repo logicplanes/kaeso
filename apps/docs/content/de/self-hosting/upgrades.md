@@ -58,11 +58,11 @@ Releases nach 0.6.0 lehnen drei Einstellungen ab, die 0.6.0 stillschweigend anna
 
 | Einstellung | 0.6.0 | Jetzt |
 | --- | --- | --- |
-| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Nahm jede Dauer an und synchronisierte höchstens alle 5 Minuten | `auto` oder mindestens `5m` |
+| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Nahm jede Dauer über null an und synchronisierte höchstens alle 5 Minuten | `auto` oder mindestens `5m` |
 | `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Hob ein kürzeres Intervall auf eine Minute an | Mindestens `1m` |
-| `KAESO_SMTP_USER` (`smtp.user`) | Sendete E-Mails ohne Anmeldung, wenn kein Passwort gesetzt war | Braucht `KAESO_SMTP_PASSWORD`; für einen Server ohne Anmeldung entfernen Sie den Benutzer |
+| `KAESO_SMTP_USER` (`smtp.user`) | Sendete E-Mails ohne Anmeldung, wenn kein Passwort gesetzt war | Braucht `KAESO_SMTP_PASSWORD`, das die Fehlermeldung nennt; für einen Server ohne Anmeldung entfernen Sie den Benutzer |
 
-Eine leere `KAESO_CONFIG` gilt jetzt wie jede andere Variable als nicht gesetzt, wo 0.6.0 anhielt. Hat ein Update wegen einer dieser Einstellungen angehalten, korrigieren Sie sie und führen Sie `docker compose up -d --wait` aus ([Das Gateway startet immer wieder neu](troubleshooting.md#das-gateway-startet-immer-wieder-neu)).
+Eine leere `KAESO_CONFIG` gilt jetzt wie jede andere Variable als nicht gesetzt, wo 0.6.0 anhielt. Hat ein Update wegen einer dieser Einstellungen angehalten, korrigieren Sie sie und führen Sie `docker compose up -d --wait` aus, oder stellen Sie auf Ihrer Plattform neu bereit ([Das Gateway startet immer wieder neu](troubleshooting.md#das-gateway-startet-immer-wieder-neu)).
 
 Auf einer Plattform, die das neue Gateway startet, bevor sie das alte anhält, etwa Render, Railway oder DigitalOcean App Platform, kann das alte Gateway seine letzten Anfragen nicht mehr zu den täglichen Nutzungssummen addieren, sobald das neue die Datenbank migriert hat. In **Analysen** und Ausgabenbudgets fehlen dann diese Anfragen; das Anfrageprotokoll behält sie.
 

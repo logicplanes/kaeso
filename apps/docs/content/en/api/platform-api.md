@@ -113,7 +113,7 @@ These actions need a recent sign-in:
 | Topic | Rule |
 | --- | --- |
 | Format | REST with JSON: paths in plural kebab case (`service-accounts`), fields in `snake_case`. Send bodies with `content-type: application/json`; Kaeso answers 400 to a field the endpoint doesn't know. |
-| Ids | A prefix and a time-ordered part: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`, `agt_…`, `act_…`, `cli_…`, `mcp_…`, `conn_…`, `tool_…`, `grant_…`, `call_…`, `video_…`, `whk_…`, `msg_…`, `grd_…`, `shl_…`. |
+| Ids | A prefix and a time-ordered part: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`, `agt_…`, `act_…`, `cli_…`, `mcp_…`, `conn_…`, `tool_…`, `grant_…`, `call_…`, `video_…`, `imggen_…`, `file_…`, `batch_…`, `whk_…`, `msg_…`, `grd_…`, `shl_…`. |
 | Times | RFC 3339, in UTC. Every response names the install's time zone in `Kaeso-Time-Zone`, such as `Europe/Berlin`, the zone the console shows times in. |
 | Money | Decimal strings, such as `"0.0001"`: `cost` in US dollars, `converted_cost` and spend budgets in the organization's `currency` ([currencies](../concepts/currencies.md#on-the-platform-api)). Send prices and amounts as decimal strings or whole numbers; a JSON fraction such as `0.5` gets 400. |
 | Limit amounts | At most 10^12 requests or tokens, or what is worth 1,000,000,000 USD for a spend budget. |

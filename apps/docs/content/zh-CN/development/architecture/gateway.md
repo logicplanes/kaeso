@@ -141,7 +141,7 @@ cargo xtask kpmr
 
 ## 后台任务
 
-每个网关都会运行 `crates/kaeso-server/src/jobs/mod.rs` 中的任务：每个任务先随机等待最多 30 秒，然后按各自的间隔运行。每个任务都有一个 PostgreSQL advisory lock，因此一个安装中同一时间只有一个网关运行它，其他网关跳过这一轮。`kaeso_job_runs_total` 按结果统计每次运行。
+每个网关都会运行 `crates/kaeso-server/src/jobs/mod.rs` 中的任务：每个任务先随机等待最多 30 秒，然后按各自的间隔运行。每个任务运行前都会获取一个 PostgreSQL advisory lock，因此一个安装中同一时间只有一个网关运行它，其他网关跳过这一轮。`kaeso_job_runs_total` 按结果统计每次运行。
 
 | 任务 | 间隔 | 作用 |
 | --- | --- | --- |

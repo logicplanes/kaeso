@@ -141,7 +141,7 @@ The task downloads `https://kpmr.kaeso.app/v1/catalogue` for the providers Kaeso
 
 ## Background jobs
 
-Every gateway runs the jobs in `crates/kaeso-server/src/jobs/mod.rs`, each first after a random wait of up to 30 seconds and then on its interval. A PostgreSQL advisory lock per job lets one gateway of an install run it at a time; the others skip that round. `kaeso_job_runs_total` counts each run by its outcome.
+Every gateway runs the jobs in `crates/kaeso-server/src/jobs/mod.rs`, each first after a random wait of up to 30 seconds and then on its interval. Each job takes a PostgreSQL advisory lock, so one gateway of an install runs it at a time and the others skip that round. `kaeso_job_runs_total` counts each run by its outcome.
 
 | Job | Every | What it does |
 | --- | --- | --- |

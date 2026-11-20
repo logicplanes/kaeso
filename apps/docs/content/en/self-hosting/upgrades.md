@@ -58,11 +58,11 @@ Releases after 0.6.0 refuse three settings that 0.6.0 took without a word. A gat
 
 | Setting | 0.6.0 | Now |
 | --- | --- | --- |
-| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Took any duration, and synced at most every 5 minutes | `auto`, or at least `5m` |
+| `KAESO_KPMR_INTERVAL` (`kpmr.interval`) | Took any duration above zero, and synced at most every 5 minutes | `auto`, or at least `5m` |
 | `KAESO_MCP_SERVERS_SYNC_INTERVAL` (`mcp_servers.sync_interval`) | Raised a shorter interval to a minute | At least `1m` |
-| `KAESO_SMTP_USER` (`smtp.user`) | Sent mail without authentication when no password was set | Needs `KAESO_SMTP_PASSWORD`; for a server without authentication, remove the user |
+| `KAESO_SMTP_USER` (`smtp.user`) | Sent mail without authentication when no password was set | Needs `KAESO_SMTP_PASSWORD`, which the error names; for a server without authentication, remove the user |
 
-An empty `KAESO_CONFIG` now counts as unset, like every other variable, where 0.6.0 stopped. If an update stopped on one of these settings, correct it and run `docker compose up -d --wait` ([the gateway keeps restarting](troubleshooting.md#the-gateway-keeps-restarting)).
+An empty `KAESO_CONFIG` now counts as unset, like every other variable, where 0.6.0 stopped. If an update stopped on one of these settings, correct it and run `docker compose up -d --wait`, or deploy again on your platform ([the gateway keeps restarting](troubleshooting.md#the-gateway-keeps-restarting)).
 
 On a platform that starts the new gateway before it stops the old one, such as Render, Railway or DigitalOcean App Platform, the old gateway can't add its last requests to the daily usage totals once the new one has migrated the database. **Analytics** and spend budgets then miss those requests; the request log keeps them.
 

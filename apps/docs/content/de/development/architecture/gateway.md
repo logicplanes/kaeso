@@ -141,7 +141,7 @@ Die Aufgabe lädt `https://kpmr.kaeso.app/v1/catalogue` für die Anbieter herunt
 
 ## Hintergrund-Jobs
 
-Jedes Gateway führt die Jobs in `crates/kaeso-server/src/jobs/mod.rs` aus, jeden zuerst nach einer zufälligen Wartezeit von bis zu 30 Sekunden und dann in seinem Intervall. Ein Advisory Lock in PostgreSQL je Job sorgt dafür, dass ihn immer nur ein Gateway einer Installation ausführt; die anderen lassen diese Runde aus. `kaeso_job_runs_total` zählt jeden Lauf nach seinem Ergebnis.
+Jedes Gateway führt die Jobs in `crates/kaeso-server/src/jobs/mod.rs` aus, jeden zuerst nach einer zufälligen Wartezeit von bis zu 30 Sekunden und dann in seinem Intervall. Jeder Job nimmt einen Advisory Lock in PostgreSQL, sodass ihn immer nur ein Gateway einer Installation ausführt; die anderen lassen diese Runde aus. `kaeso_job_runs_total` zählt jeden Lauf nach seinem Ergebnis.
 
 | Job | Alle | Was er tut |
 | --- | --- | --- |
