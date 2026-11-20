@@ -8,7 +8,7 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 #### Console
 
-- The Kaeso plugin asks for the install's MCP address when it is added to Claude Code, and Account › Agents adds Kaeso to the Claude apps and Cowork with one button that opens a prefilled custom connector link. ([#1006](https://github.com/logicplanes/kaeso/pull/1006))
+- The Kaeso plugin asks for the install's MCP address when it is installed in Claude Code. For Claude on the web, desktop and mobile and for Cowork, Account › Agents has an Add to Claude button, and the plugin's skill a link, that opens Claude's custom connector form with the install's MCP address filled in. ([#1006](https://github.com/logicplanes/kaeso/pull/1006))
 - Decision answers line their bars up under each question without repeating the answer, and the request log lists each question with what its answers mean. ([#1004](https://github.com/logicplanes/kaeso/pull/1004))
 
 ### Fixed
