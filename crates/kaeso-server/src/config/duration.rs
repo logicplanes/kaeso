@@ -58,6 +58,28 @@ pub(crate) fn parse(text: &str) -> Result<Duration, String> {
     Ok(Duration::new(secs, sub))
 }
 
+/// A duration as a setting writes it, such as `4m 30s` or `250ms`, so a message can quote it.
+pub(crate) fn shown(d: Duration) -> String {
+    let nanos = d.as_nanos();
+    if nanos == 0 {
+        return "0s".into();
+    }
+    if d.subsec_nanos() != 0 {
+        return if nanos.is_multiple_of(1_000_000) {
+            format!("{}ms", nanos / 1_000_000)
+        } else {
+            format!("{nanos}ns")
+        };
+    }
+    let secs = d.as_secs();
+    [(secs / 3600, "h"), (secs / 60 % 60, "m"), (secs % 60, "s")]
+        .into_iter()
+        .filter(|(n, _)| *n > 0)
+        .map(|(n, unit)| format!("{n}{unit}"))
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 /// For `#[serde(deserialize_with = "duration::deserialize")]`.
 pub(crate) fn deserialize<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Duration, D::Error> {
     let text = String::deserialize(d)?;
@@ -101,6 +123,22 @@ mod tests {
             "99999999999999999999999w",
         ] {
             assert!(parse(bad).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn a_shown_duration_reads_back_as_itself() {
+        for (d, want) in [
+            (Duration::ZERO, "0s"),
+            (Duration::from_secs(30), "30s"),
+            (Duration::from_secs(60), "1m"),
+            (Duration::from_secs(299), "4m 59s"),
+            (Duration::from_secs(5400), "1h 30m"),
+            (Duration::from_millis(250), "250ms"),
+            (Duration::from_nanos(1_500), "1500ns"),
+        ] {
+            assert_eq!(shown(d), want);
+            assert_eq!(parse(want), Ok(d), "{want}");
         }
     }
 }

@@ -129,7 +129,7 @@ Without this setting, Kaeso sends no CORS headers. The [model API](../api/model-
 | `KAESO_SMTP_HOST`<br>`smtp.host` | text | — | SMTP server. Required unless `mail.transport` is `log`. |
 | `KAESO_SMTP_PORT`<br>`smtp.port` | integer | `587` | SMTP port. |
 | `KAESO_SMTP_TLS`<br>`smtp.tls` | text | `starttls` | `starttls`, `tls` for implicit TLS (usually port 465), or `none` for a local mail catcher only. |
-| `KAESO_SMTP_USER`<br>`smtp.user` | text | — | SMTP user name, if the server needs one. The user and the password go together: either one alone stops the gateway at startup. |
+| `KAESO_SMTP_USER`<br>`smtp.user` | text | — | SMTP user name, if the server needs one. Required with a password, and needs one: without a password, Kaeso ignores the user, sends email without authentication and warns at startup. Kaeso 0.8.0 will refuse to start. |
 | `KAESO_SMTP_PASSWORD`<br>`smtp.password` | text, secret | — | SMTP password. |
 | `KAESO_SMTP_FROM`<br>`smtp.from` | text | `Kaeso <kaeso@localhost>` | Sender of every email. `compose.yaml` sets `Kaeso <kaeso@` and your domain. |
 | `KAESO_MAIL_TRANSPORT`<br>`mail.transport` | text | `smtp` | `smtp`, or `log` to only log the kind of each email, never its recipient or content. |
@@ -169,7 +169,7 @@ The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the K
 | --- | --- | --- | --- |
 | `KAESO_KPMR_SYNC`<br>`kpmr.sync` | bool | `true` | Fetch the model data from KPMR, the Kaeso Provider & Model Registry. Off for installs without internet; the built-in snapshot is used. |
 | `KAESO_KPMR_URL`<br>`kpmr.url` | text | `https://kpmr.kaeso.app/v1/catalogue` | Where the KPMR catalogue is fetched from, KPMR or a mirror: `https`, or `http` on localhost; redirects must stay on its host and `https`, at most 3. |
-| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | text | `auto` | How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration of at least 5 minutes, such as `6h`. |
+| `KAESO_KPMR_INTERVAL`<br>`kpmr.interval` | text | `auto` | How often KPMR is asked for changes: `auto` follows the catalogue's `refresh_seconds` within 5 minutes to 24 hours, or a duration of at least 5 minutes, such as `6h`. A shorter one above zero is raised to 5 minutes with a warning at startup; Kaeso 0.8.0 will refuse it. |
 | `KAESO_KPMR_PUBLIC_KEYS`<br>`kpmr.public_keys` | text | — | Comma-separated keys to trust besides KPMR's built-in one, each `<key id>:<base64 Ed25519 public key>`, for a registry of your own; a catalogue whose signature no trusted key verifies is refused. |
 
 ### Exchange rates
@@ -272,7 +272,7 @@ An organization admin chooses a custom provider's base URL, so the gateway guard
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |
 | `KAESO_MCP_SERVERS_ALLOWED_NETWORKS`<br>`mcp_servers.allowed_networks` | text | — | Comma-separated private, loopback or other non-public networks MCP servers may be reached on, such as `10.0.0.0/8`. Plain `http` reaches only these. |
-| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | How often the gateway asks each MCP server for its tools, to find new, changed and removed ones. At least a minute. |
+| `KAESO_MCP_SERVERS_SYNC_INTERVAL`<br>`mcp_servers.sync_interval` | text | `15m` | How often the gateway asks each MCP server for its tools, to find new, changed and removed ones. At least a minute: a shorter one is raised to a minute with a warning at startup; Kaeso 0.8.0 will refuse it. |
 | `KAESO_MCP_PORTAL_RESPONSE_LIMIT`<br>`mcp_portal.response_limit` | text | `4MiB` | Largest answer to one tool call a project's MCP portal passes on. A larger one ends the call with an error. |
 | `KAESO_MCP_PORTAL_CALL_TIMEOUT`<br>`mcp_portal.call_timeout` | text | `60s` | How long a project's MCP portal waits for an MCP server to finish a tool call. 1s to 1h. |
 
