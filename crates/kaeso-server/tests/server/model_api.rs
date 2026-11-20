@@ -936,6 +936,18 @@ async fn tool_and_reasoning_controls_a_model_rejects_are_refused_in_the_apps_wor
         "adaptive thinking becomes a medium budget on a Claude model without it"
     );
     assert_eq!(env.mock.received().len(), before + 1);
+    let mut budget = messages("claude-opus-5-5", "Hi");
+    budget["max_tokens"] = json!(16_000);
+    budget["thinking"] = json!({"type": "enabled", "budget_tokens": 8_192});
+    let r = call(&env, "/v1/messages", Some(&env.key), true, Some(budget)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(r.header("kaeso-adapted"), Some("thinking"));
+    let sent = env.mock.last().unwrap().json();
+    assert_eq!(
+        (&sent["thinking"], &sent["output_config"]),
+        (&json!({"type": "adaptive"}), &json!({"effort": "medium"})),
+        "a budget becomes adaptive thinking on a Claude model that refuses budgets"
+    );
     let mut effort = messages("claude-haiku-4-5", "Hi");
     effort["output_config"] = json!({"effort": "low"});
     let r = call(&env, "/v1/messages", Some(&env.key), true, Some(effort)).await;
