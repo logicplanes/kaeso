@@ -181,9 +181,10 @@ function ProvidersCell({ org }: { org: string }) {
           label: (
             <>
               <ProviderBadge provider={k.provider} name={providers.name(k.provider)} size="sm" />
-              <span className="max-w-full shrink-0 truncate">{providers.name(k.provider)}</span>
+              <span className="min-w-0 truncate">{providers.name(k.provider)}</span>
               {k.name && (
-                <Text variant="small" tone="tertiary" truncate>
+                // From no width at all, the key's name gives way before the provider's.
+                <Text variant="small" tone="tertiary" truncate className="flex-1">
                   {k.name}
                 </Text>
               )}

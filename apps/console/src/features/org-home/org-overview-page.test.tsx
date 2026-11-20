@@ -87,7 +87,6 @@ describe("the organization overview", () => {
     signedIn();
     usage();
     models(0);
-    around();
     const { unmount } = await renderApp(`/orgs/${ORG}`);
     const projects = await screen.findByRole("list", { name: "Projects" });
     expect(await within(projects).findByRole("img", { name: "Checkout assistant: requests per day, the last 14 days" })).toBeInTheDocument();
@@ -105,10 +104,6 @@ describe("the organization overview", () => {
     const onPhone = await screen.findByRole("list", { name: "Projects" });
     await waitFor(() => expect(within(onPhone).getAllByRole("button")[0]).toHaveTextContent(/Checkout assistant.*12/));
     expect(within(onPhone).queryByRole("img", { name: /requests per day/ })).not.toBeInTheDocument();
-    const keys = await screen.findByRole("list", { name: "Providers" });
-    await waitFor(() => expect(within(keys).getAllByRole("button")).toHaveLength(4));
-    // A long key name gives way first: the provider's name stays whole.
-    expect(within(within(keys).getAllByRole("button")[0] as HTMLElement).getByText("OpenAI", { selector: "span.truncate" })).toHaveClass("shrink-0");
   });
 
   it("orders the projects by the number it shows, today's requests, not by the last 14 days", async () => {
@@ -206,6 +201,8 @@ describe("the organization overview", () => {
     await waitFor(() => expect(within(list).getAllByRole("button")).toHaveLength(4));
     const [used, signedOut, plan, idle] = within(list).getAllByRole("button");
     expect(used).toHaveTextContent(/OpenAI.*OpenAI production.*1 h ago/);
+    // A long key name gives way first: it starts from no width, so the provider's name keeps its own.
+    expect(within(used as HTMLElement).getByText("OpenAI production")).toHaveClass("flex-1");
     expect(signedOut).toHaveTextContent("Signed out");
     expect(plan).toHaveTextContent(/Team plan.*No API access/);
     expect(idle).toHaveTextContent("Never used");

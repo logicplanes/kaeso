@@ -113,10 +113,10 @@ describe("Dashboard", () => {
     expect(screen.getByText("48%").parentElement).toHaveClass("text-metric");
     expect(screen.getByText("↑0.5%").parentElement?.parentElement).toHaveTextContent("↑0.5% better");
   });
-  it("wraps a long cell title instead of cutting it, linked or not", () => {
+  it("wraps a long cell title below the grid's width and keeps it to one line in the grid, linked or not", () => {
     render(
       <Dashboard aria-label="Usage in the period">
-        <DashboardCell title="Am stärksten gewachsen, ggü. den 30 Tagen davor">
+        <DashboardCell title="Am stärksten gewachsen, ggü. den 30 Tagen davor" actions={<button type="button">Alle</button>}>
           <p>Rows</p>
         </DashboardCell>
         <DashboardCell title="Projekte, Anfragen heute" href="/analytics/projects">
@@ -125,12 +125,12 @@ describe("Dashboard", () => {
       </Dashboard>,
     );
     const plain = screen.getByRole("heading", { name: "Am stärksten gewachsen, ggü. den 30 Tagen davor" });
-    expect(plain).not.toHaveClass("truncate");
-    expect(plain).toHaveClass("wrap-break-word");
-    const linked = screen.getByText("Projekte, Anfragen heute");
-    expect(linked).not.toHaveClass("truncate");
-    expect(linked).toHaveClass("wrap-break-word");
-    expect(plain.closest("header")).toHaveClass("min-h-24");
+    expect(plain).toHaveClass("wrap-break-word", "lg:truncate");
+    expect(plain.closest("header")).toHaveClass("items-start", "lg:h-24", "lg:items-center");
+    expect(screen.getByRole("button", { name: "Alle" }).parentElement).toHaveClass("h-24");
+    const linked = screen.getByRole("link", { name: "Projekte, Anfragen heute" });
+    expect(screen.getByText("Projekte, Anfragen heute")).toHaveClass("wrap-break-word", "lg:truncate");
+    expect(linked).toHaveClass("lg:h-24");
   });
   it("keeps a readout's height while it loads, and sets a small one under its label", () => {
     const { rerender } = render(<Readout value="$60.45" loading />);
