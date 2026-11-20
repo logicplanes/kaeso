@@ -62,12 +62,23 @@ test("every project page outside Analytics, with its sheets and dialogs, fits a 
   const base = `/orgs/${org}/projects/${project}`;
   const api = `/platform/v1${base}`;
   const headers = { origin };
+  // Each e2e part runs on a stack of its own after 01-public, so this spec brings its own provider key, model and request.
+  const credentials = (await (await page.request.get(`/platform/v1/orgs/${org}/credentials`)).json()) as { data: { provider: string }[] };
+  if (!credentials.data.some((c) => c.provider === "openai")) {
+    const credential = await page.request.post(`/platform/v1/orgs/${org}/credentials`, {
+      headers,
+      data: { provider: "openai", name: "Phone check", secret: "sk-proj-mock-0000000000000000openai" },
+    });
+    expect(credential.ok()).toBe(true);
+  }
+  const listed = async () =>
+    ((await (await page.request.get(`${api}/models`)).json()) as { data: { id: string; model_id: string }[] }).data.find((m) => m.model_id === "gpt-5.4-mini")?.id;
+  if (!(await listed())) expect((await page.request.post(`${api}/models`, { headers, data: { provider: "openai", model_id: "gpt-5.4-mini" } })).ok()).toBe(true);
+  const model = await listed();
+  expect(model).toBeTruthy();
   const created = await page.request.post(`${api}/keys`, { headers, data: { name: LONG_KEY, access: "inference" } });
   expect(created.ok()).toBe(true);
   const key = (await created.json()) as { id: string; secret: string };
-  const models = (await (await page.request.get(`${api}/models`)).json()) as { data: { id: string; model_id: string }[] };
-  const model = models.data.find((m) => m.model_id === "gpt-5.4-mini")?.id;
-  expect(model, "the models spec added gpt-5.4-mini").toBeTruthy();
   const aliasMade = await page.request.post(`${api}/aliases`, { headers, data: { name: LONG_ALIAS, route: { type: "model", model } } });
   expect(aliasMade.ok()).toBe(true);
   const alias = (await aliasMade.json()) as { id: string };
