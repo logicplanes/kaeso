@@ -1362,6 +1362,22 @@ expression: outcomes
     },
     "path": "/v1/chat/completions"
   },
+  "error-at-start": {
+    "body": {
+      "messages": [
+        {
+          "content": "Write a haiku about the sea.",
+          "role": "user"
+        }
+      ],
+      "model": "gpt-5.5",
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      }
+    },
+    "path": "/v1/chat/completions"
+  },
   "error-mid-stream": {
     "body": {
       "messages": [
