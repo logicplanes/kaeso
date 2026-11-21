@@ -1,6 +1,7 @@
 import { forwardRef, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { useIndicator } from "../../hooks/use-indicator.js";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { Sparkline } from "../charts/sparkline.js";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Delta } from "../stat/delta.js";
@@ -99,7 +100,7 @@ export const MetricTabs = forwardRef<
                   {loading ? (
                     <Skeleton shape="line" className="w-80" />
                   ) : (
-                    <SwapValue text={textOf(item.value)} className="truncate text-title font-medium text-fg tabular">
+                    <SwapValue text={textOf(item.value)} className={cn("truncate text-title font-medium text-fg", figures(item.value))}>
                       {item.value}
                     </SwapValue>
                   )}
@@ -128,7 +129,7 @@ export const MetricTabs = forwardRef<
                   {loading ? (
                     <Skeleton shape="line" className="h-20 w-96" />
                   ) : (
-                    <SwapValue text={textOf(item.value)} className="truncate text-metric font-medium text-fg tabular">
+                    <SwapValue text={textOf(item.value)} className={cn("truncate text-metric font-medium text-fg", figures(item.value))}>
                       {item.value}
                     </SwapValue>
                   )}

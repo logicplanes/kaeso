@@ -19,7 +19,7 @@ describe("Collapsible", () => {
     expect(trigger).not.toHaveClass("items-center");
     expect(trigger.lastElementChild).toHaveClass("h-20", "items-center");
     const hint = screen.getByText("With where each comes from");
-    expect(hint).toHaveClass("tabular-nums", "whitespace-nowrap");
+    expect(hint).toHaveClass("tabular", "whitespace-nowrap");
     expect(hint.parentElement).toHaveClass("items-baseline");
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(trigger);

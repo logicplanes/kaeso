@@ -459,11 +459,7 @@ function History() {
     col.custom(
       { id: "versions", header: t("instance.updates.versions", "Versions"), size: 160, priority: 1, grow: true },
       (j: UpdateJobView) => j,
-      (j: UpdateJobView) => (
-        <Text tabular truncate>
-          {t("instance.updates.fromTo", "{from} to {to}", { from: j.from, to: j.to })}
-        </Text>
-      ),
+      (j: UpdateJobView) => <Text truncate>{t("instance.updates.fromTo", "{from} to {to}", { from: j.from, to: j.to })}</Text>,
     ),
     col.custom(
       { id: "result", header: t("instance.updates.result", "Result"), size: 168, priority: 1 },
