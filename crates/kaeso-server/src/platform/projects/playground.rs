@@ -239,14 +239,12 @@ pub async fn responses(
     let max_body = state.config.body_limits.model_api.as_usize();
     // The body is read and taken apart here, before the pipeline takes its own share of the
     // translation memory, so it holds a share for itself while it does.
-    let mut share = Some(
-        state
-            .translating
-            .hold(session.user_id, upload_share(&body, max_body))
-            .await
-            .map_err(|_| ApiError::Unavailable(TRANSLATING_BUSY.into()))?,
-    );
-    let bytes = crate::http::body::read_releasing(body, max_body, || drop(share.take()))
+    let share = state
+        .translating
+        .hold(session.user_id, upload_share(&body, max_body))
+        .await
+        .map_err(|_| ApiError::Unavailable(TRANSLATING_BUSY.into()))?;
+    let bytes = crate::http::body::read(body, max_body)
         .await
         .map_err(|e| body_error(&e, "The conversation is larger than Kaeso accepts."))?;
     let Split { body, model, test } = pipeline::off_thread(bytes.len(), move || split(bytes))
