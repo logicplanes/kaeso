@@ -327,8 +327,8 @@ function DataTableInner<T>(
     enabled: virtual,
     scrollMargin,
     // A table that grows past virtualizeAbove (a page of rows loading) is often scrolled already: the virtualizer
-    // starts from there, or it writes its default 0 back and the list jumps to the top. A server render has no page.
-    initialOffset: () => (typeof document === "undefined" ? 0 : (getScrollElement()?.scrollTop ?? 0)),
+    // starts from there, or it writes its default 0 back and the list jumps to the top.
+    initialOffset: () => getScrollElement()?.scrollTop ?? 0,
   });
 
   const cellPad = (i: number) => cn("flex min-w-0 items-center px-12", inset && i === 0 && "pl-20", inset && i === cols.length - 1 && "pr-20");

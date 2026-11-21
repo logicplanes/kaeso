@@ -17,6 +17,7 @@ describe("Long tables and lists rendered on a server", () => {
     expect(html).toContain('aria-label="Keys"');
   });
 
+  // A server draws a long list's first rows (its virtual rows load after hydration); this keeps it so.
   it("renders a list that draws only its visible rows", () => {
     const html = renderToString(<List aria-label="Keys" items={many(80).map((r) => ({ id: r.id, title: r.key }))} virtualizeAbove={50} />);
     expect(html).toContain('aria-label="Keys"');
