@@ -149,6 +149,7 @@ cargo xtask kpmr
 | `webhooks` | 5 秒 | 发送到期的 Webhook 投递（[Webhook](../../console/webhooks.md)） |
 | `log_jobs` | 30 秒 | 删除 ClickHouse 中某段时间的请求日志，并缩短其保留期 |
 | `account_renewal` | 1 分钟 | 在 ChatGPT 和 Grok 账户的访问令牌到期之前为其续期 |
+| `media_jobs` | 1 分钟 | 向服务商询问尚未计费的已启动视频和图片生成，为已结束的计费，并续期仍在运行的任务在硬性预算中占用的金额（[视频](../../api/videos.md#费用和日志)） |
 | `notifications` | 1 分钟 | 在实例时区早上 8:31 发送等待中的摘要、每月成本报告和每周摘要（[邮件](emails.md#通知)） |
 | `mcp_sync` | 1 分钟 | 同步 `mcp_servers.sync_interval` 已过的每个 MCP 服务器的工具 |
 | `update_check` | 1 分钟 | 到期时检查新版本，并启动自动更新（[更新](updates.md)） |

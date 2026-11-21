@@ -33,6 +33,39 @@ pub(super) fn logged_request(r: &ImageRequest, mut keep: Keep) -> Bytes {
     written(&left_out, &kept)
 }
 
+// The background job leaves a started job to its app for a minute after anyone last asked
+// about it, gives it up a day after it started (no provider keeps a job running that long), and
+// asks about a few at a time, each for a short while, so one slow provider holds up no other.
+pub(super) const ASKED_AFTER: time::Duration = time::Duration::minutes(1);
+pub(super) const GIVEN_UP_AFTER: time::Duration = time::Duration::days(1);
+pub(super) const ASKED_PER_RUN: i64 = 200;
+pub(super) const ASKED_AT_ONCE: usize = 8;
+pub(super) const ASK_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Renews what each started job nobody has billed yet holds of its budgets: cheap, and done for
+/// every one before asking any provider, so a slow run never lets a hold lapse.
+pub(super) async fn renew_holds(state: &AppState, requests: Vec<uuid::Uuid>) {
+    for request in requests {
+        let request = kaeso_core::id::RequestId::from_uuid(request).to_string();
+        if let Err(e) = crate::services::limits::extend_job(state, &request).await {
+            metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
+                .increment(1);
+            tracing::warn!(error = %e, "cannot renew what a running job holds of its budgets");
+        }
+    }
+}
+
+/// Lets go of what a job held of its budgets, once it is billed, has ended without a cost or
+/// is forgotten.
+pub(super) async fn release_hold(state: &AppState, request: uuid::Uuid) {
+    let request = kaeso_core::id::RequestId::from_uuid(request).to_string();
+    if let Err(e) = crate::services::limits::release_job(state, &request).await {
+        metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
+            .increment(1);
+        tracing::warn!(error = %e, "cannot release what an ended job held of its budgets; it expires by itself");
+    }
+}
+
 /// A transcription as the log keeps it: every field, the audio replaced by its media type and
 /// size.
 pub(super) fn logged_transcription(r: &TranscriptionRequest, mut keep: Keep) -> Bytes {

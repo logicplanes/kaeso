@@ -149,6 +149,7 @@ Every gateway runs the jobs in `crates/kaeso-server/src/jobs/mod.rs`, each first
 | `webhooks` | 5 seconds | Sends the webhook deliveries that are due ([webhooks](../../console/webhooks.md)) |
 | `log_jobs` | 30 seconds | Deletes ranges of request logs and shortens their retention in ClickHouse |
 | `account_renewal` | 1 minute | Renews the access tokens of ChatGPT and Grok accounts before they are due |
+| `media_jobs` | 1 minute | Asks the providers about started videos and image generations nobody has billed yet, bills the ones that ended and renews what the running ones hold of hard budgets ([videos](../../api/videos.md#costs-and-logs)) |
 | `notifications` | 1 minute | At 8:31 in the instance's time zone, sends the waiting digests, the monthly cost reports and the weekly summaries ([emails](emails.md#notifications)) |
 | `mcp_sync` | 1 minute | Syncs the tools of each MCP server whose `mcp_servers.sync_interval` has passed |
 | `update_check` | 1 minute | Checks for releases when one is due and starts an automatic update ([updates](updates.md)) |

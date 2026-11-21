@@ -130,6 +130,64 @@ pub async fn get(
     .await?)
 }
 
+/// Up to `limit` image generations nobody has billed yet, started after `since` and not asked about
+/// since `until`, those asked about least recently first.
+pub async fn unsettled(
+    db: impl PgExecutor<'_>,
+    since: OffsetDateTime,
+    until: OffsetDateTime,
+    limit: i64,
+) -> Result<Vec<ImageGenerationRow>, StoreError> {
+    Ok(sqlx::query_as!(
+        ImageGenerationRow,
+        "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, provider, \
+         credential_id, catalogue_model_id, model, upstream_model, dialect, upstream_id, \
+         request_id, params, prices, status, content_url, content_mime_type, failure_reason, \
+         error_message, units, cost, created_at, completed_at, accounted_at, tags, user_agent, \
+         alias, line \
+         FROM image_generations \
+         WHERE accounted_at IS NULL AND created_at > $1 AND created_at <= $2 \
+         AND (checked_at IS NULL OR checked_at <= $2) \
+         ORDER BY checked_at NULLS FIRST, created_at, id LIMIT $3",
+        since,
+        until,
+        limit
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+/// The starting requests of the image generations nobody has billed yet that started after `since`.
+pub async fn unsettled_requests(
+    db: impl PgExecutor<'_>,
+    since: OffsetDateTime,
+) -> Result<Vec<Uuid>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT request_id FROM image_generations WHERE accounted_at IS NULL AND created_at > $1",
+        since
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+/// Notes that Kaeso asked the provider about the image generation `id` at `at`.
+pub async fn checked(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    id: Uuid,
+    at: OffsetDateTime,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE image_generations SET checked_at = $3 WHERE org_id = $1 AND id = $2",
+        org_id,
+        id,
+        at
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 /// A page of the project's generations, newest first.
 pub async fn list(
     db: impl PgExecutor<'_>,

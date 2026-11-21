@@ -70,6 +70,7 @@ services:
 | `kaeso_log_rows_dropped_total`, `kaeso_clickhouse_write_failures_total` | Any increase: log rows were lost or are at risk |
 | `kaeso_otel_spans_total{outcome}` | Spans for the [trace collector](#traces): `exported`, `failed` for an export that failed, and `dropped` for spans lost to a full buffer, the collector's refusal or shutdown. A rise in `dropped`: check the collector and `KAESO_OTEL_ENDPOINT` |
 | `kaeso_usage_rows_dropped_total` | Any increase: PostgreSQL refused usage for good, and the log line `a usage row cannot be recorded` says why |
+| `kaeso_media_jobs_given_up_total{kind}` | Any increase: a started video (`video`) or image generation (`image`) Kaeso couldn't reach for a day, or whose provider no longer knows it, is given up without a cost, and the log line `given up unbilled` names it |
 | `kaeso_valkey_failures_total{operation}`, `kaeso_limits_fail_open_total{reason}` | Valkey trouble. Meanwhile, hard budgets refuse requests with 503, and other limits let them through unchecked |
 | `kaeso_job_runs_total{job, outcome}` | `outcome="failed"` for background jobs. `job="kpmr_sync"` is the [KPMR](../kpmr/index.md) sync |
 | `kaeso_kpmr_fetched_timestamp_seconds` | When KPMR published the model data in use, or generated the built-in snapshot, as **Instance** › **System** shows it. It moves only when KPMR publishes new data, so its age matters mainly where `kpmr.sync` is off |

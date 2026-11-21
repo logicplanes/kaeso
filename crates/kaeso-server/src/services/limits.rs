@@ -62,19 +62,26 @@ fn in_flight_ttl(timeout: Duration) -> i64 {
 }
 
 // A counter's open reservations live in `<key>:f` (expiry by request) and `<key>:r` (amount by
-// request). `#held` and `#n` in `:r` keep their total and count, so an admission costs the same
-// with 5 or 5,000 streams open; a count that disagrees with `:f`, as while an older release
-// still writes, or a total a minute old is summed again from the reservations themselves.
+// request); `<key>:j` names those that started videos or image generations still being made.
+// `#held` and `#n` in `:r` keep their total and count, and `#jobheld` and `#jobs` those of the
+// jobs, so an admission costs the same with 5 or 5,000 streams open; a count that disagrees with
+// `:f`, as while an older release still writes, or a total a minute old is summed again from the
+// reservations themselves.
 const RELEASE: &str = r"
 local function release(key, req)
   local r = key .. ':r'
+  local amount = tonumber(redis.call('HGET', r, req) or '0')
   if redis.call('ZREM', key .. ':f', req) == 1 and redis.call('HEXISTS', r, '#n') == 1 then
-    redis.call('HINCRBY', r, '#held', -tonumber(redis.call('HGET', r, req) or '0'))
+    redis.call('HINCRBY', r, '#held', -amount)
     if redis.call('HINCRBY', r, '#n', -1) <= 0 then
-      redis.call('HDEL', r, '#held', '#n', '#at')
+      redis.call('HDEL', r, '#held', '#n', '#at', '#jobs', '#jobheld')
     end
   end
   redis.call('HDEL', r, req)
+  if redis.call('SREM', key .. ':j', req) == 1 and redis.call('HEXISTS', r, '#jobs') == 1 then
+    redis.call('HINCRBY', r, '#jobs', -1)
+    redis.call('HINCRBY', r, '#jobheld', -amount)
+  end
 end
 ";
 
@@ -92,30 +99,49 @@ local function flying(key)
   local held = tonumber(redis.call('HGET', r, '#held') or '0')
   local counted = tonumber(redis.call('HGET', r, '#n') or '-1')
   local summed = tonumber(redis.call('HGET', r, '#at') or '0')
+  local jobs = tonumber(redis.call('HGET', r, '#jobs') or '-1')
+  local by_jobs = tonumber(redis.call('HGET', r, '#jobheld') or '0')
   local gone = redis.call('ZRANGEBYSCORE', f, '-inf', now)
   for _, id in ipairs(gone) do
-    held = held - tonumber(redis.call('HGET', r, id) or '0')
+    local amount = tonumber(redis.call('HGET', r, id) or '0')
+    held = held - amount
     redis.call('HDEL', r, id)
+    if redis.call('SREM', key .. ':j', id) == 1 then
+      jobs = jobs - 1
+      by_jobs = by_jobs - amount
+    end
   end
   if #gone > 0 then
     redis.call('ZREMRANGEBYSCORE', f, '-inf', now)
     counted = counted - #gone
   end
   local n = redis.call('ZCARD', f)
-  if n ~= counted or held < 0 or summed + 60 <= now then
+  local stale = n ~= counted or held < 0 or summed + 60 <= now
+  if stale then
     held = 0
     for _, id in ipairs(redis.call('ZRANGE', f, 0, -1)) do
       held = held + tonumber(redis.call('HGET', r, id) or '0')
     end
     summed = now
   end
+  if stale or jobs < 0 or by_jobs < 0 then
+    jobs, by_jobs = 0, 0
+    for _, id in ipairs(redis.call('SMEMBERS', key .. ':j')) do
+      if redis.call('ZSCORE', f, id) then
+        jobs = jobs + 1
+        by_jobs = by_jobs + tonumber(redis.call('HGET', r, id) or '0')
+      else
+        redis.call('SREM', key .. ':j', id)
+      end
+    end
+  end
   if n > 0 then
-    redis.call('HSET', r, '#held', held, '#n', n, '#at', summed)
+    redis.call('HSET', r, '#held', held, '#n', n, '#at', summed, '#jobs', jobs, '#jobheld', by_jobs)
     if redis.call('TTL', r) == -1 then redis.call('EXPIRE', r, ttl) end
   else
-    redis.call('HDEL', r, '#held', '#n', '#at')
+    redis.call('HDEL', r, '#held', '#n', '#at', '#jobs', '#jobheld')
   end
-  return n, held
+  return n, held, jobs, by_jobs
 end
 for i = 1, #KEYS do
   local b = 3 + (i - 1) * 5
@@ -171,10 +197,13 @@ for i = 1, #KEYS do
       if count > 0 then avg = math.ceil(v / count) end
       local mine = math.max(avg, reserve)
       if bounded and v + reserve > units then return {4, i} end
-      local n, held = flying(key)
+      local n, held, jobs, by_jobs = flying(key)
       if n > 0 then
-        if not bounded and avg <= 0 then return {3, i} end
-        if v + held + mine > units then return {3, i} end
+        if not bounded and avg <= 0 and n > jobs then return {3, i} end
+        if v + held + mine > units then
+          if v + held - by_jobs + mine <= units then return {5, i} end
+          return {3, i}
+        end
       end
       own[i] = mine
     end
@@ -267,6 +296,67 @@ end
 return out
 ";
 
+// A started video or image generation keeps what it reserved of each budget, under its starting
+// request's id, until the job is billed; `KEYS[#KEYS]` lists the counters it holds. Rates and
+// reservations of nothing are released as usual.
+const HOLD: &str = r"
+local now = tonumber(ARGV[1])
+local req = ARGV[2]
+local hold = tonumber(ARGV[3])
+local held = KEYS[#KEYS]
+local kept = 0
+for i = 1, #KEYS - 1 do
+  local key = KEYS[i]
+  local f = key .. ':f'
+  local r = key .. ':r'
+  local amount = tonumber(redis.call('HGET', r, req) or '0')
+  if ARGV[3 + i] == '3' and amount > 0 and redis.call('ZSCORE', f, req) then
+    redis.call('ZADD', f, 'XX', now + hold, req)
+    if redis.call('TTL', f) < hold then redis.call('EXPIRE', f, hold) end
+    if redis.call('TTL', r) < hold then redis.call('EXPIRE', r, hold) end
+    if redis.call('SADD', key .. ':j', req) == 1 and redis.call('HEXISTS', r, '#jobs') == 1 then
+      redis.call('HINCRBY', r, '#jobs', 1)
+      redis.call('HINCRBY', r, '#jobheld', amount)
+    end
+    if redis.call('TTL', key .. ':j') < hold then redis.call('EXPIRE', key .. ':j', hold) end
+    redis.call('SADD', held, key)
+    kept = kept + 1
+  else
+    release(key, req)
+  end
+end
+if kept > 0 and redis.call('TTL', held) < hold then redis.call('EXPIRE', held, hold) end
+return kept
+";
+
+const EXTEND_HELD: &str = r"
+local now = tonumber(ARGV[1])
+local req = ARGV[2]
+local hold = tonumber(ARGV[3])
+local held = KEYS[#KEYS]
+for i = 1, #KEYS - 1 do
+  local f = KEYS[i] .. ':f'
+  if redis.call('ZSCORE', f, req) then
+    redis.call('ZADD', f, 'XX', now + hold, req)
+    if redis.call('TTL', f) < hold then redis.call('EXPIRE', f, hold) end
+    local r = KEYS[i] .. ':r'
+    if redis.call('TTL', r) < hold then redis.call('EXPIRE', r, hold) end
+    local j = KEYS[i] .. ':j'
+    if redis.call('TTL', j) < hold then redis.call('EXPIRE', j, hold) end
+  end
+end
+if redis.call('TTL', held) < hold then redis.call('EXPIRE', held, hold) end
+return 1
+";
+
+const RELEASE_HELD: &str = r"
+for i = 1, #KEYS - 1 do
+  release(KEYS[i], ARGV[1])
+end
+redis.call('DEL', KEYS[#KEYS])
+return 1
+";
+
 const REBUILD: &str = r"
 if redis.call('HEXISTS', KEYS[1], 'v') == 0 then
   redis.call('HSET', KEYS[1], 'v', ARGV[1], 'n', ARGV[2], 'a', ARGV[4])
@@ -307,6 +397,24 @@ static INVALIDATE_SCRIPT: std::sync::LazyLock<Script> =
     std::sync::LazyLock::new(|| Script::new(&[RELEASE, INVALIDATE].concat()));
 static EXTEND_SCRIPT: std::sync::LazyLock<Script> =
     std::sync::LazyLock::new(|| Script::new(EXTEND));
+static HOLD_SCRIPT: std::sync::LazyLock<Script> =
+    std::sync::LazyLock::new(|| Script::new(&[RELEASE, HOLD].concat()));
+static EXTEND_HELD_SCRIPT: std::sync::LazyLock<Script> =
+    std::sync::LazyLock::new(|| Script::new(EXTEND_HELD));
+static RELEASE_HELD_SCRIPT: std::sync::LazyLock<Script> =
+    std::sync::LazyLock::new(|| Script::new(&[RELEASE, RELEASE_HELD].concat()));
+
+// How long a started job holds its reservations without news of it. The background job that
+// asks providers about unbilled jobs renews the hold of every one still running, so only a job
+// Kaeso can no longer reach lets its hold lapse.
+pub const JOB_HOLD: Duration = Duration::from_secs(3600);
+
+// The background job that bills ended jobs runs every minute, so asking sooner rarely helps.
+const JOB_RETRY: Duration = Duration::from_secs(60);
+
+fn job_retry() -> i64 {
+    i64::try_from(JOB_RETRY.as_secs()).unwrap_or(60)
+}
 
 #[derive(Debug, Default)]
 pub struct Distrusted {
@@ -635,6 +743,7 @@ fn noun(subject: Subject) -> &'static str {
 enum Why {
     Over(i64),
     Busy,
+    HeldByJobs,
     TooLarge,
 }
 
@@ -653,6 +762,17 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
                 l.describe()
             ),
             retry_after: Some(Duration::from_secs(1)),
+            param: None,
+            left: None,
+        },
+        Why::HeldByJobs => Refusal {
+            status: 429,
+            message: format!(
+                "{} {}{scope} is held by videos still being made; retry once they have ended.",
+                capitalise(noun(l.subject)),
+                l.describe()
+            ),
+            retry_after: Some(JOB_RETRY),
             param: None,
             left: None,
         },
@@ -854,6 +974,7 @@ impl Limits for ValkeyLimits {
                     r.left = match why {
                         Why::Over(retry) => left(l, a.at, l.units(&book), retry, &book),
                         Why::Busy => left(l, a.at, l.units(&book), 1, &book),
+                        Why::HeldByJobs => left(l, a.at, l.units(&book), job_retry(), &book),
                         Why::TooLarge => None,
                     };
                     Err(r)
@@ -870,6 +991,7 @@ impl Limits for ValkeyLimits {
                     }
                     Ok(Admit::Refused(i, retry)) => return refused(i, Why::Over(retry)),
                     Ok(Admit::Busy(i)) => return refused(i, Why::Busy),
+                    Ok(Admit::HeldByJobs(i)) => return refused(i, Why::HeldByJobs),
                     Ok(Admit::TooLarge(i)) => return refused(i, Why::TooLarge),
                     Ok(Admit::Missing(list)) if attempt == 0 => {
                         for i in list {
@@ -1031,6 +1153,7 @@ enum Admit {
     Pass(Vec<(i64, i64)>),
     Refused(usize, i64),
     Busy(usize),
+    HeldByJobs(usize),
     TooLarge(usize),
     Missing(Vec<usize>),
 }
@@ -1069,6 +1192,7 @@ async fn run_admit(
         ),
         [1, i, retry] => Admit::Refused(index(*i), *retry),
         [3, i] => Admit::Busy(index(*i)),
+        [5, i] => Admit::HeldByJobs(index(*i)),
         [4, i] => Admit::TooLarge(index(*i)),
         [2, rest @ ..] => Admit::Missing(rest.iter().map(|i| index(*i)).collect()),
         other => return Err(LimitsError::Protocol(other.to_vec())),
@@ -1179,6 +1303,109 @@ async fn run_charge(
             _ => None,
         })
         .collect())
+}
+
+fn held_key(state: &AppState, request_id: &str) -> String {
+    state.valkey.key(&format!("jobhold:{request_id}"))
+}
+
+fn job_hold() -> i64 {
+    i64::try_from(JOB_HOLD.as_secs()).unwrap_or(i64::MAX)
+}
+
+/// Keeps what the request that started a video or an image generation reserved of each budget
+/// until [`release_job`], instead of releasing it when the request ends: the provider bills the
+/// job later, and every other request must see that money as taken until then.
+pub async fn hold_job(
+    state: &AppState,
+    caller: &Caller,
+    catalogue_model_id: Uuid,
+    request_id: &str,
+    at: OffsetDateTime,
+) -> Result<(), LimitsError> {
+    let all = project_limits(state, caller.project_id).await?;
+    let held: Vec<&Limit> = limits::applicable(
+        &all,
+        caller.project_id,
+        member_of(caller),
+        caller.key_id,
+        catalogue_model_id,
+    )
+    .into_iter()
+    .filter(|l| l.kind != Kind::RequestRate)
+    .collect();
+    if held.is_empty() {
+        return Ok(());
+    }
+    let mut script = HOLD_SCRIPT.prepare_invoke();
+    script
+        .arg(state.clock.now().unix_timestamp())
+        .arg(request_id)
+        .arg(job_hold());
+    for l in &held {
+        script
+            .key(state.valkey.key(&l.counter(at)))
+            .arg(script_type(l.kind));
+    }
+    script.key(held_key(state, request_id));
+    let mut conn = state.valkey.conn();
+    tokio::time::timeout(VALKEY_DEADLINE, script.invoke_async::<i64>(&mut conn))
+        .await
+        .map_err(|_| LimitsError::Timeout)??;
+    Ok(())
+}
+
+async fn held_counters(state: &AppState, request_id: &str) -> Result<Vec<String>, LimitsError> {
+    let mut conn = state.valkey.conn();
+    let counters: Vec<String> = tokio::time::timeout(
+        VALKEY_DEADLINE,
+        redis::cmd("SMEMBERS")
+            .arg(held_key(state, request_id))
+            .query_async(&mut conn),
+    )
+    .await
+    .map_err(|_| LimitsError::Timeout)??;
+    Ok(counters)
+}
+
+/// Renews the hold of a job that is still running.
+pub async fn extend_job(state: &AppState, request_id: &str) -> Result<(), LimitsError> {
+    let counters = held_counters(state, request_id).await?;
+    if counters.is_empty() {
+        return Ok(());
+    }
+    let mut script = EXTEND_HELD_SCRIPT.prepare_invoke();
+    for key in &counters {
+        script.key(key);
+    }
+    script
+        .key(held_key(state, request_id))
+        .arg(state.clock.now().unix_timestamp())
+        .arg(request_id)
+        .arg(job_hold());
+    let mut conn = state.valkey.conn();
+    tokio::time::timeout(VALKEY_DEADLINE, script.invoke_async::<i64>(&mut conn))
+        .await
+        .map_err(|_| LimitsError::Timeout)??;
+    Ok(())
+}
+
+/// Lets go of what a job held, once it is billed or has ended without a cost.
+pub async fn release_job(state: &AppState, request_id: &str) -> Result<(), LimitsError> {
+    let counters = held_counters(state, request_id).await?;
+    if counters.is_empty() {
+        return Ok(());
+    }
+    let mut script = RELEASE_HELD_SCRIPT.prepare_invoke();
+    for key in &counters {
+        script.key(key);
+    }
+    script.key(held_key(state, request_id)).arg(request_id);
+    let mut conn = state.valkey.conn();
+    tokio::time::timeout(VALKEY_DEADLINE, script.invoke_async::<i64>(&mut conn))
+        .await
+        .map_err(|_| LimitsError::Timeout)??;
+    Ok(())
 }
 
 async fn distrust(state: &AppState, charged: &[&Limit], request_id: &str, at: OffsetDateTime) {

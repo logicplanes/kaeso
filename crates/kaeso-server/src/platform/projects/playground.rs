@@ -318,7 +318,9 @@ const CHAT: Ask = Ask {
     unreadable: "The request is not a Responses request Kaeso can read.",
 };
 
-pub(super) fn answer_with(ask: &'static Ask) -> impl Fn(&Failure) -> Response {
+pub(super) fn answer_with(
+    ask: &'static Ask,
+) -> impl Fn(&Failure) -> Response + Send + Sync + 'static {
     move |f| {
         let mut resp = refusal(f, ask).into_response();
         stamp(&mut resp, &f.served);

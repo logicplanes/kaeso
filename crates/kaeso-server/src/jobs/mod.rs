@@ -192,6 +192,24 @@ pub fn all() -> Vec<Job> {
                 })
             },
         },
+        // Far more often than `limits::JOB_HOLD`, so a running job never loses what it holds.
+        Job {
+            name: "media_jobs",
+            every: Duration::from_secs(60),
+            lock: 14,
+            run: |s| {
+                Box::pin(async move {
+                    let videos = crate::model_api::videos::look_after(&s).await;
+                    let images = crate::model_api::generations::look_after(&s).await;
+                    let ((videos, running_videos), (images, running_images)) = (videos?, images?);
+                    let (billed, running) = (videos + images, running_videos + running_images);
+                    Ok(Ran::of(
+                        format!("{billed} billed, {running} running"),
+                        billed + running > 0,
+                    ))
+                })
+            },
+        },
         // Shorter than `RENEW_AHEAD`, so an account in use never waits for its renewal.
         Job {
             name: "account_renewal",

@@ -28,6 +28,7 @@ pub const OTEL_SPANS: &str = "kaeso_otel_spans_total";
 pub const WEBHOOK_DELIVERIES: &str = "kaeso_webhook_deliveries_total";
 pub const CLICKHOUSE_WRITE_FAILURES: &str = "kaeso_clickhouse_write_failures_total";
 pub const USAGE_ROWS_DROPPED: &str = "kaeso_usage_rows_dropped_total";
+pub const MEDIA_JOBS_GIVEN_UP: &str = "kaeso_media_jobs_given_up_total";
 pub const VALKEY_FAILURES: &str = "kaeso_valkey_failures_total";
 pub const FAIL_OPEN: &str = "kaeso_limits_fail_open_total";
 pub const JOB_RUNS: &str = "kaeso_job_runs_total";
@@ -136,6 +137,10 @@ pub fn describe() {
     describe_counter!(
         USAGE_ROWS_DROPPED,
         "Usage rows PostgreSQL refused for good, which are dropped."
+    );
+    describe_counter!(
+        MEDIA_JOBS_GIVEN_UP,
+        "Started videos and image generations given up unbilled a day after they started, by kind."
     );
     describe_counter!(VALKEY_FAILURES, "Valkey failures by operation.");
     describe_counter!(

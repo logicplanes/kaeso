@@ -149,6 +149,7 @@ Jedes Gateway führt die Jobs in `crates/kaeso-server/src/jobs/mod.rs` aus, jede
 | `webhooks` | 5 Sekunden | Sendet die fälligen Webhook-Zustellungen ([Webhooks](../../console/webhooks.md)) |
 | `log_jobs` | 30 Sekunden | Löscht Zeiträume von Anfrageprotokollen und verkürzt ihre Aufbewahrung in ClickHouse |
 | `account_renewal` | 1 Minute | Erneuert die Zugriffstokens von ChatGPT- und Grok-Konten, bevor sie fällig werden |
+| `media_jobs` | 1 Minute | Fragt die Anbieter nach gestarteten Videos und Bilderzeugungen, die noch niemand abgerechnet hat, rechnet die beendeten ab und verlängert, was die laufenden von harten Budgets halten ([Videos](../../api/videos.md#kosten-und-logs)) |
 | `notifications` | 1 Minute | Sendet um 8:31 Uhr in der Zeitzone der Installation die wartenden Zusammenfassungen, die monatlichen Kostenberichte und die Wochenübersichten ([E-Mails](emails.md#benachrichtigungen)) |
 | `mcp_sync` | 1 Minute | Gleicht die Tools jedes MCP-Servers ab, dessen `mcp_servers.sync_interval` verstrichen ist |
 | `update_check` | 1 Minute | Sucht nach Releases, wenn eine Prüfung fällig ist, und startet ein automatisches Update ([Updates](updates.md)) |

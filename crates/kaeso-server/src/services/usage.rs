@@ -475,7 +475,11 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
     let (usage, c) = costed(outcome);
     let finishing = state.charging.finishing().await;
     state.usage.add(UsageRow {
-        day: outcome.started_at.to_offset(time::UtcOffset::UTC).date(),
+        day: outcome
+            .budget_at
+            .unwrap_or(outcome.started_at)
+            .to_offset(time::UtcOffset::UTC)
+            .date(),
         org_id: caller.org_id,
         project_id: caller.project_id,
         user_id: caller.user_id,
@@ -517,7 +521,17 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
         entry
     };
     let request_id = outcome.request_id.to_string();
-    let at = outcome.started_at;
+    let at = outcome.budget_at.unwrap_or(outcome.started_at);
+    if served(outcome) && billed_when_done(outcome) && !outcome.job_billed {
+        let held = engine::hold_job(state, &caller, entry, &request_id, at).await;
+        drop(finishing);
+        if let Err(e) = held {
+            metrics::counter!(crate::metrics::VALKEY_FAILURES, "operation" => "reservation")
+                .increment(1);
+            tracing::warn!(error = %e, "cannot keep a started job's reservation under its budgets; it expires with its request's timeout");
+        }
+        return;
+    }
     let charge = Charge {
         tokens: i(cost::total_tokens(&usage)),
         nano_usd: cost::nano_usd(c),

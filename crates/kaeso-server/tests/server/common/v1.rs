@@ -30,6 +30,24 @@ impl Sink for Capture {
     }
 }
 
+// Charges each outcome to the usage totals and limit counters, as the gateway's own sink does,
+// and keeps it, for tests that watch budgets.
+#[derive(Debug)]
+pub struct ChargedCapture(pub Arc<Capture>);
+
+impl Sink for ChargedCapture {
+    fn finish<'a>(
+        &'a self,
+        state: &'a kaeso_server::state::AppState,
+        outcome: Outcome,
+    ) -> futures::future::BoxFuture<'a, ()> {
+        Box::pin(async move {
+            kaeso_server::services::usage::account(state, &outcome).await;
+            self.0.finish(state, outcome).await;
+        })
+    }
+}
+
 impl Capture {
     pub fn all(&self) -> Vec<Outcome> {
         self.0.lock().unwrap().clone()
@@ -91,6 +109,11 @@ pub async fn env_hooked(
 ) -> Env {
     let sink = capture.clone().map(|c| c as Arc<dyn Sink>);
     env_with(capture, limits, sink, extra, false).await
+}
+
+pub async fn env_charged(capture: Arc<Capture>) -> Env {
+    let sink: Arc<dyn Sink> = Arc::new(ChargedCapture(capture.clone()));
+    env_with(Some(capture), None, Some(sink), None, false).await
 }
 
 pub async fn env_sunk(sink: Arc<dyn Sink>, extra: Option<&[(&str, &str)]>) -> Env {

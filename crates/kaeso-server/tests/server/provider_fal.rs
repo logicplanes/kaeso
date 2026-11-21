@@ -13,7 +13,15 @@ const FAL_SECRET: &str = "fal-test-key-0000000000000000:000000000000000000000000
 
 async fn env() -> Env {
     let capture = std::sync::Arc::new(common::v1::Capture::default());
-    let env = common::v1::env(Some(capture), None).await;
+    with_fal(common::v1::env(Some(capture), None).await).await
+}
+
+async fn charged_env() -> Env {
+    with_fal(common::v1::env_charged(std::sync::Arc::new(common::v1::Capture::default())).await)
+        .await
+}
+
+async fn with_fal(env: Env) -> Env {
     let org = &env.owner.org_id;
     let r = env
         .app
@@ -289,4 +297,36 @@ async fn veo_is_billed_with_sound_unless_it_is_turned_off() {
     .await;
     assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
     assert_eq!(r.json()["error"]["param"], "seconds");
+}
+
+#[tokio::test]
+async fn a_failed_video_frees_what_it_held_of_a_hard_budget() {
+    let env = charged_env().await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/limits", env.owner.org_id, env.project),
+            json!({ "level": "project", "kind": "spend_budget", "period": "day", "amount": "2" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let video = |prompt: &str| json!({ "model": "kling/v4/text-to-video", "prompt": prompt, "seconds": "5", "size": "1280x720" });
+    let r = post(&env, "/v1/videos", video("a paper boat [mock:fal=failed]")).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    let next = post(&env, "/v1/videos", video("a kite")).await;
+    assert_eq!(
+        next.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        next.text()
+    );
+    let mut status = Value::Null;
+    for _ in 0..3 {
+        status = get(&env, &format!("/v1/videos/{id}")).await.json()["status"].clone();
+    }
+    assert_eq!(status, "failed");
+    let next = post(&env, "/v1/videos", video("a kite")).await;
+    assert_eq!(next.status, StatusCode::OK, "{}", next.text());
 }

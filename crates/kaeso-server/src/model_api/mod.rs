@@ -4,7 +4,7 @@ pub(crate) mod batches;
 mod elevenlabs;
 pub mod errors;
 pub mod gemini;
-mod generations;
+pub(crate) mod generations;
 pub mod hooks;
 pub mod in_flight;
 mod input_count;

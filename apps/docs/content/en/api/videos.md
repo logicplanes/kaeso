@@ -84,7 +84,7 @@ Kaeso streams the file from where the provider keeps it, without storing it, and
 
 Providers keep files for a limited time. Kaeso fetches a fresh link for each download where the provider hands out short-lived links, as MiniMax and ElevenLabs do. After the job's `expires_at`, the download answers 404. Only Z.ai offers a `thumbnail` and no provider offers a `spritesheet`; asking for one answers 404 with `param` `variant`.
 
-Deleting a video deletes it at providers that can, Google AI Studio and MiniMax's H3 API, and Kaeso forgets it everywhere else.
+Deleting a video deletes it at providers that can, Google AI Studio and MiniMax's H3 API, and Kaeso forgets it everywhere else. A video still being made can be deleted once it has ended or a day after it started (`400` until then), so Kaeso bills every video its provider makes. A video its provider no longer knows counts as failed.
 
 ## Remix a video
 
@@ -125,9 +125,9 @@ The [OpenAI Videos mapping](../development/kpp/openai-videos.md) and the provide
 
 ## Costs and logs
 
-Starting a video costs nothing. Kaeso bills it once, when the first request sees it completed, at the model's prices from KPMR: per second or per video, by resolution, sound and length where the prices differ. Gemini Omni is billed by its tokens. A failed video costs nothing, and a model without prices in KPMR is logged without a cost. Kaeso keeps Together AI's `outputs.cost` with the job but doesn't bill it: Together's reference gives it as a whole number without a unit.
+Starting a video costs nothing. Kaeso bills it once, when it first sees it completed: on a retrieve or a download, or when Kaeso asks the provider itself, which it does every minute for each video nobody has asked about for a minute, at the model's prices from KPMR: per second or per video, by resolution, sound and length where the prices differ. Gemini Omni is billed by its tokens. A failed video costs nothing, and a model without prices in KPMR is logged without a cost. Kaeso keeps Together AI's `outputs.cost` with the job but doesn't bill it: Together's reference gives it as a whole number without a unit.
 
-Spend budgets check a video's dearest case before it starts, and its cost counts once it ends. Request logs show the start as `videos` or `videos/remix` and the finished video as `videos/completed`, with its clips, seconds and resolution and the tags, client, alias and model line of the request that started it. They never keep the video. An uploaded image is logged as its media type and size unless the organization and the project [keep media](../console/request-logs.md#media-in-requests-and-replies).
+Under a hard budget, a video holds its dearest case from its start until it is billed or has failed, so other requests can't spend that money meanwhile; then its cost counts instead. Request logs show the start as `videos` or `videos/remix` and the finished video as `videos/completed`, with its clips, seconds and resolution and the tags, client, alias and model line of the request that started it. They never keep the video. An uploaded image is logged as its media type and size unless the organization and the project [keep media](../console/request-logs.md#media-in-requests-and-replies).
 
 ## Next steps
 

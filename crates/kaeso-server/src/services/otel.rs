@@ -1238,6 +1238,8 @@ mod tests {
             cancelled: false,
             stream_progress: None,
             usage_estimated: false,
+            budget_at: None,
+            job_billed: false,
             content_kept: false,
             media_kept: false,
             media_reply: None,

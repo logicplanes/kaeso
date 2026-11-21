@@ -232,6 +232,11 @@ pub struct Outcome {
     pub media: Option<kaeso_core::cost::MediaUnits>,
     pub video: Option<VideoCall>,
     pub generation: Option<GenerationCall>,
+    /// The time whose budget periods a finished job is charged to: those of the request that
+    /// started it, which held its dearest case there.
+    pub budget_at: Option<OffsetDateTime>,
+    /// The job this request started had ended, and was billed, before the request did.
+    pub job_billed: bool,
     /// The media type of a whole reply that isn't JSON, such as speech's audio.
     pub content_type: Option<String>,
     /// The guardrails that checked the request and its reply, in the order they ran.

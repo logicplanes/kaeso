@@ -603,6 +603,7 @@ const messages = (): Rule[] => [
   rule("errors.videoPathUnserved", (v) => t("errors.videoPathUnserved", "Kaeso does not serve `{path}`; remix a video or create a new one.", v)),
   rule("errors.videoModelGone", (v) => t("errors.videoModelGone", "{provider} no longer serves this video's model.", v)),
   rule("errors.videoKeyReplaced", () => t("errors.videoKeyReplaced", "The provider key that started this video was replaced, so Kaeso can't reach it.")),
+  rule("errors.videoStillRunning", () => t("errors.videoStillRunning", "This video is still being made; delete it once it has ended.")),
   rule("errors.videoNotReady", (v) => t("errors.videoNotReady", "`{id}` is {status}; its files are ready once it is completed.", v)),
   rule("errors.videoExpired", (v) => t("errors.videoExpired", "The files of `{id}` expired; create the video again.", v)),
   rule("errors.videoNoVariant", (v) => t("errors.videoNoVariant", "{provider} offers no {variant} for this video.", v)),
@@ -789,6 +790,21 @@ const messages = (): Rule[] => [
   rule("errors.nearlyUsedUp.key", (v) => t("errors.nearlyUsedUp.key", "This key's {limit} is nearly used up by requests in progress; retry in a moment.", v), {
     limit: "limit",
   }),
+  rule(
+    "errors.heldByVideos.project",
+    (v) => t("errors.heldByVideos.project", "The project's {limit} is held by videos still being made; retry once they have ended.", v),
+    { limit: "limit" },
+  ),
+  rule(
+    "errors.heldByVideos.member",
+    (v) => t("errors.heldByVideos.member", "The member's {limit} is held by videos still being made; retry once they have ended.", v),
+    { limit: "limit" },
+  ),
+  rule(
+    "errors.heldByVideos.key",
+    (v) => t("errors.heldByVideos.key", "This key's {limit} is held by videos still being made; retry once they have ended.", v),
+    { limit: "limit" },
+  ),
   rule("errors.budgetResets.project", (v) => t("errors.budgetResets.project", "Budget used up: the project's {limit}; it resets at {time}.", v), {
     limit: "limit",
     time: "date",

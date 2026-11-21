@@ -70,6 +70,7 @@ services:
 | `kaeso_log_rows_dropped_total`、`kaeso_clickhouse_write_failures_total` | 任何增长：日志行已丢失或面临丢失 |
 | `kaeso_otel_spans_total{outcome}` | 发给[追踪 collector](#追踪) 的 span：`exported`，导出失败时为 `failed`，因缓冲区已满、collector 拒绝或关闭而丢失的为 `dropped`。`dropped` 增长时：检查 collector 和 `KAESO_OTEL_ENDPOINT` |
 | `kaeso_usage_rows_dropped_total` | 任何增长：PostgreSQL 永久拒绝了用量记录，日志行 `a usage row cannot be recorded` 会说明原因 |
+| `kaeso_media_jobs_given_up_total{kind}` | 任何增长：Kaeso 一天内都无法访问的、或服务商已不再知道的已启动视频（`video`）或图片生成（`image`）会在不计费的情况下被放弃，日志行 `given up unbilled` 会指出是哪一个 |
 | `kaeso_valkey_failures_total{operation}`、`kaeso_limits_fail_open_total{reason}` | Valkey 出现问题。在此期间，硬性预算以 503 拒绝请求，其他限额则不经检查直接放行 |
 | `kaeso_job_runs_total{job, outcome}` | 后台任务的 `outcome="failed"`。`job="kpmr_sync"` 是与 [KPMR](../kpmr/index.md) 的同步 |
 | `kaeso_kpmr_fetched_timestamp_seconds` | KPMR 发布当前所用模型数据的时间，或内置快照的生成时间，与**实例** › **系统**中显示的相同。只有 KPMR 发布新数据时它才会变化，因此主要在关闭 `kpmr.sync` 时需要关注其时长 |

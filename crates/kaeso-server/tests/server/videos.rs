@@ -25,6 +25,12 @@ async fn env() -> Env {
     env
 }
 
+async fn charged_env() -> Env {
+    let env = common::v1::env_charged(std::sync::Arc::new(common::v1::Capture::default())).await;
+    setup(&env).await;
+    env
+}
+
 async fn setup(env: &Env) {
     let org = &env.owner.org_id;
     for (provider, secret) in [
@@ -728,15 +734,20 @@ async fn deleting_a_video_deletes_it_at_providers_that_can_and_forgets_it() {
         ),
         (Some("768P"), Some("16:9"))
     );
-    let r = send(
-        &env,
-        "DELETE",
-        &format!("/v1/videos/{id}"),
-        &env.key,
-        None,
-        None,
-    )
-    .await;
+    let path = format!("/v1/videos/{id}");
+    let r = send(&env, "DELETE", &path, &env.key, None, None).await;
+    assert_eq!(
+        r.status,
+        StatusCode::BAD_REQUEST,
+        "a running video stays until it is billed, even where the provider deletes: {}",
+        r.text()
+    );
+    assert!(
+        !env.mock.received().iter().any(|r| r.method == "DELETE"),
+        "nothing is deleted at the provider while the video runs"
+    );
+    assert_eq!(retrieve(&env, &id).await.json()["status"], "completed");
+    let r = send(&env, "DELETE", &path, &env.key, None, None).await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     assert_eq!(
         r.json(),
@@ -1371,4 +1382,207 @@ async fn a_key_sees_no_video_of_a_model_it_may_not_use() {
         .json();
     assert_eq!(listed["data"].as_array().unwrap().len(), 0);
     assert_eq!(retrieve(&env, &id).await.status, StatusCode::OK);
+}
+
+fn grok(seconds: &str) -> Value {
+    json!({ "model": "grok-imagine-video-1.5", "prompt": "A serene lake at sunrise", "seconds": seconds, "size": "1280x720" })
+}
+
+// Noon, so moving the clock by minutes never starts a new budget day.
+fn at_noon(env: &Env) {
+    at(env, time::macros::time!(12:00));
+}
+
+fn at(env: &Env, time: time::Time) {
+    let now = time::OffsetDateTime::now_utc();
+    env.app.clock.set(now.replace_time(time));
+}
+
+async fn hard_daily_budget(env: &Env, amount: &str) -> String {
+    let r = env
+        .app
+        .post(
+            &format!(
+                "/orgs/{}/projects/{}/limits",
+                env.owner.org_id, env.project
+            ),
+            json!({ "level": "project", "kind": "spend_budget", "period": "day", "amount": amount }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    r.body["id"].as_str().unwrap().to_owned()
+}
+
+async fn budget_used(env: &Env, id: &str) -> String {
+    let r = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/limits/{id}",
+                env.owner.org_id, env.project
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    r.body["used"].as_str().unwrap().to_owned()
+}
+
+async fn billed(env: &Env) -> String {
+    let done = completions(env).await;
+    assert_eq!(done.len(), 1, "billed once");
+    kaeso_server::services::usage::costed(&done[0])
+        .1
+        .normalize()
+        .to_string()
+}
+
+async fn run_media_jobs(env: &Env) {
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "media_jobs")
+        .unwrap();
+    kaeso_server::jobs::run_once(&env.app.state, job)
+        .await
+        .unwrap();
+    env.app.state.in_flight.settled().await;
+}
+
+#[tokio::test]
+async fn a_started_video_holds_its_dearest_case_under_a_hard_budget_until_it_is_billed() {
+    let env = charged_env().await;
+    at_noon(&env);
+    let budget = hard_daily_budget(&env, "2.5").await;
+    let first = create(&env, grok("8")).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let id = first.json()["id"].as_str().unwrap().to_owned();
+    for seconds in ["8", "4"] {
+        let next = create(&env, grok(seconds)).await;
+        assert_eq!(
+            next.status,
+            StatusCode::TOO_MANY_REQUESTS,
+            "{seconds} s: {}",
+            next.text()
+        );
+        assert!(
+            next.text().contains("is held by videos still being made"),
+            "{}",
+            next.text()
+        );
+    }
+    retrieve(&env, &id).await;
+    assert_eq!(retrieve(&env, &id).await.json()["status"], "completed");
+    assert_eq!(budget_used(&env, &budget).await, billed(&env).await);
+    let after = create(&env, grok("4")).await;
+    assert_eq!(after.status, StatusCode::OK, "{}", after.text());
+}
+
+#[tokio::test]
+async fn a_video_nobody_asks_about_is_billed_once_it_ends_and_frees_its_hold() {
+    let env = charged_env().await;
+    at_noon(&env);
+    let budget = hard_daily_budget(&env, "2.5").await;
+    let first = create(&env, grok("8")).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    env.app.clock.advance(time::Duration::minutes(2));
+    run_media_jobs(&env).await;
+    assert!(completions(&env).await.is_empty(), "still running");
+    assert_eq!(
+        create(&env, grok("4")).await.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "the running video still holds its dearest case"
+    );
+    env.app.clock.advance(time::Duration::minutes(2));
+    run_media_jobs(&env).await;
+    assert_eq!(budget_used(&env, &budget).await, billed(&env).await);
+    let after = create(&env, grok("4")).await;
+    assert_eq!(after.status, StatusCode::OK, "{}", after.text());
+    let id = first.json()["id"].as_str().unwrap().to_owned();
+    assert_eq!(retrieve(&env, &id).await.json()["status"], "completed");
+    run_media_jobs(&env).await;
+    assert_eq!(completions(&env).await.len(), 1, "never billed twice");
+}
+
+#[tokio::test]
+async fn a_running_video_is_deleted_once_it_has_ended() {
+    let env = env().await;
+    let id = create(&env, grok("8")).await.json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let path = format!("/v1/videos/{id}");
+    let r = send(&env, "DELETE", &path, &env.key, None, None).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST, "{}", r.text());
+    assert_eq!(r.json()["error"]["param"], "video_id");
+    assert_eq!(retrieve(&env, &id).await.json()["status"], "completed");
+    assert_eq!(completions(&env).await.len(), 1);
+    let r = send(&env, "DELETE", &path, &env.key, None, None).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    assert_eq!(retrieve(&env, &id).await.status, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn a_video_is_charged_to_the_budget_day_it_started_in() {
+    let env = charged_env().await;
+    at(&env, time::macros::time!(23:59:30));
+    let budget = hard_daily_budget(&env, "2.5").await;
+    let first = create(&env, grok("8")).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    env.app.clock.advance(time::Duration::minutes(2));
+    run_media_jobs(&env).await;
+    env.app.clock.advance(time::Duration::minutes(2));
+    run_media_jobs(&env).await;
+    billed(&env).await;
+    assert_eq!(
+        budget_used(&env, &budget).await,
+        "0",
+        "yesterday's video counts in yesterday's budget, where it held its dearest case"
+    );
+    let today = create(&env, grok("8")).await;
+    assert_eq!(today.status, StatusCode::OK, "{}", today.text());
+}
+
+#[tokio::test]
+async fn a_long_running_video_keeps_its_hold_while_kaeso_asks_about_it() {
+    let env = charged_env().await;
+    at_noon(&env);
+    hard_daily_budget(&env, "2.5").await;
+    let first = create(&env, grok("8")).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    env.app.clock.advance(time::Duration::minutes(2));
+    run_media_jobs(&env).await;
+    env.app.clock.advance(time::Duration::minutes(59));
+    let next = create(&env, grok("4")).await;
+    assert_eq!(
+        next.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "renewed past the first hour: {}",
+        next.text()
+    );
+    assert_eq!(
+        next.headers
+            .get("retry-after")
+            .and_then(|v| v.to_str().ok()),
+        Some("60")
+    );
+}
+
+#[tokio::test]
+async fn a_video_kaeso_gave_up_on_can_be_deleted() {
+    let env = env().await;
+    let id = create(&env, grok("8")).await.json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    env.app.clock.advance(time::Duration::hours(25));
+    let r = send(
+        &env,
+        "DELETE",
+        &format!("/v1/videos/{id}"),
+        &env.key,
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
 }

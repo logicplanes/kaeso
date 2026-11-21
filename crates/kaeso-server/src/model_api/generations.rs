@@ -166,7 +166,7 @@ pub(super) async fn register(
         error_message: upstream.error_message,
         units: None,
         cost: None,
-        created_at: now,
+        created_at: rec.outcome().started_at,
         completed_at: upstream.completed_at,
         accounted_at: None,
         tags: rec.outcome().tags.clone(),
@@ -187,6 +187,7 @@ pub(super) async fn register(
     } else {
         row
     };
+    rec.outcome().job_billed = row.accounted_at.is_some();
     // ElevenLabs documents the create call's answer as always `pending`, whatever follows.
     encode_generation(&Generation::new(
         ImageGenerationId::from_uuid(row.id).to_string(),
@@ -268,7 +269,7 @@ pub(super) async fn retrieve(
         let key = super::auth::authenticate(&state, &headers, ip.0).await?;
         let caller = pipeline::key_caller(&key);
         let row = load(&state, &caller, &id).await?;
-        let row = refresh(&state, &caller, row).await?;
+        let row = refresh(&state, Some(&caller), row).await?;
         encode_generation(&app_view(&row))
     }
     .await;
@@ -369,14 +370,16 @@ fn replaced_key() -> KppError {
     .with_param("generation_id")
 }
 
-// Asking about a generation spends the provider's quota with the org's key, so it counts
-// against the key's request rates.
+// An app asking about a generation spends the provider's quota with the org's key, so it counts
+// against the key's request rates; Kaeso asking on its own behalf (`caller` none) doesn't.
 async fn reach(
     state: &AppState,
-    caller: &Caller,
+    caller: Option<&Caller>,
     row: &ImageGenerationRow,
 ) -> Result<Reached, KppError> {
-    pipeline::admit_follow_up(state, caller, row.catalogue_model_id).await?;
+    if let Some(caller) = caller {
+        pipeline::admit_follow_up(state, caller, row.catalogue_model_id).await?;
+    }
     let dialect: DialectId = row.dialect.parse().map_err(|_| unavailable())?;
     let provider = match kaeso_core::provider::provider(&row.provider) {
         Some(p) => ProviderRef::from(p),
@@ -484,11 +487,14 @@ async fn poll(
 /// as Kaeso last saw it.
 async fn refresh(
     state: &AppState,
-    caller: &Caller,
+    caller: Option<&Caller>,
     row: ImageGenerationRow,
 ) -> Result<ImageGenerationRow, KppError> {
-    if status_of(&row) == GenerationStatus::Failed {
+    if status_of(&row) == GenerationStatus::Failed && row.accounted_at.is_some() {
         return Ok(row);
+    }
+    if let Err(e) = store::checked(&state.pg, row.org_id, row.id, state.clock.now()).await {
+        tracing::warn!(error = %e, "cannot note when Kaeso asked about an image generation");
     }
     let seen = match reach(state, caller, &row).await {
         Ok(up) => match poll(state, &up, &row).await {
@@ -504,7 +510,9 @@ async fn refresh(
             return Ok(row);
         }
     };
-    if status_of(&row) == GenerationStatus::Completed && seen.status != GenerationStatus::Completed
+    if status_of(&row) == GenerationStatus::Completed
+        && seen.status != GenerationStatus::Completed
+        && row.accounted_at.is_some()
     {
         return Ok(row);
     }
@@ -563,11 +571,54 @@ async fn settle(
         if completed {
             record_completion(state, &row, units.clone(), prices).await;
         }
+        super::media::release_hold(state, row.request_id).await;
         row.units = serde_json::to_value(&units).ok();
         row.cost = cost;
         row.accounted_at = Some(now);
     }
     Ok(row)
+}
+
+/// Asks ElevenLabs about started generations that nobody has billed yet, so one its app never
+/// asks about again is billed when it ends, and renews what the running ones hold of their
+/// budgets. Returns how many it billed and how many still run.
+pub(crate) async fn look_after(
+    state: &AppState,
+) -> Result<(usize, usize), kaeso_store::StoreError> {
+    use super::media::{ASK_TIMEOUT, ASKED_AFTER, ASKED_AT_ONCE, ASKED_PER_RUN, GIVEN_UP_AFTER};
+    use futures::stream::{self, StreamExt as _};
+    let now = state.clock.now();
+    super::media::renew_holds(
+        state,
+        store::unsettled_requests(&state.pg, now - GIVEN_UP_AFTER).await?,
+    )
+    .await;
+    let rows = store::unsettled(
+        &state.pg,
+        now - GIVEN_UP_AFTER,
+        now - ASKED_AFTER,
+        ASKED_PER_RUN,
+    )
+    .await?;
+    let billed: Vec<bool> = stream::iter(rows)
+        .map(|row| async move {
+            let last_day = row.created_at <= now - GIVEN_UP_AFTER + ASKED_AFTER * 2;
+            let id = row.id;
+            let billed = matches!(
+                tokio::time::timeout(ASK_TIMEOUT, refresh(state, None, row)).await,
+                Ok(Ok(row)) if row.accounted_at.is_some()
+            );
+            if !billed && last_day {
+                metrics::counter!(crate::metrics::MEDIA_JOBS_GIVEN_UP, "kind" => "image").increment(1);
+                tracing::warn!(generation_id = %id, "an image generation is given up unbilled a day after it started");
+            }
+            billed
+        })
+        .buffer_unordered(ASKED_AT_ONCE)
+        .collect()
+        .await;
+    let done = billed.iter().filter(|b| **b).count();
+    Ok((done, billed.len() - done))
 }
 
 async fn record_completion(
@@ -606,6 +657,7 @@ async fn record_completion(
     o.prices = prices;
     o.status = 200;
     o.started_at = state.clock.now();
+    o.budget_at = Some(row.created_at);
     o.upstream_request_id = Some(row.upstream_id.clone());
     o.media = Some(units);
     o.generation = Some(GenerationCall::Completed);

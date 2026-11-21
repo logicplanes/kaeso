@@ -349,6 +349,8 @@ pub(crate) fn blank_outcome(request_id: RequestId) -> Outcome {
         media: None,
         video: None,
         generation: None,
+        budget_at: None,
+        job_billed: false,
         content_type: None,
         guardrails: Vec::new(),
         log_masks: Vec::new(),
@@ -432,6 +434,33 @@ pub async fn serve(state: AppState, inc: Incoming) -> Response {
 }
 
 pub async fn serve_with(
+    state: AppState,
+    inc: Incoming,
+    answer: impl Fn(&Failure) -> Response + Send + Sync + 'static,
+) -> Response {
+    // A provider bills a job it started even when the app hangs up, so starting one runs to its
+    // end on a task of its own: Kaeso keeps track of every job its provider makes.
+    let billed_later = inc.video.as_ref().is_some_and(|v| {
+        matches!(
+            v.call,
+            super::hooks::VideoCall::Create | super::hooks::VideoCall::Remix
+        )
+    }) || inc.generation == Some(super::hooks::GenerationCall::Create);
+    if !billed_later {
+        return serve_attached(state, inc, answer).await;
+    }
+    let ingress = inc.ingress;
+    let (done, answered) = tokio::sync::oneshot::channel();
+    let work = crate::http::request_id::within(serve_attached(state.clone(), inc, answer));
+    state.in_flight.spawn(async move {
+        let _ = done.send(work.await);
+    });
+    answered
+        .await
+        .unwrap_or_else(|_| respond(ingress, &shutting_down(), &Served::default()))
+}
+
+async fn serve_attached(
     state: AppState,
     inc: Incoming,
     answer: impl Fn(&Failure) -> Response,

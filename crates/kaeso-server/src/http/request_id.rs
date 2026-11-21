@@ -15,6 +15,19 @@ pub fn current() -> Option<RequestId> {
     CURRENT.try_with(|id| *id).ok()
 }
 
+/// Runs `work` as part of the current request, in its span and with its id, for work moved to a
+/// task of its own.
+pub fn within<F: Future>(work: F) -> impl Future<Output = F::Output> {
+    let span = tracing::Span::current();
+    let id = current();
+    async move {
+        match id {
+            Some(id) => CURRENT.scope(id, work.instrument(span)).await,
+            None => work.instrument(span).await,
+        }
+    }
+}
+
 pub async fn middleware(mut req: Request, next: Next) -> Response {
     let id = RequestId::new();
     req.extensions_mut().insert(id);

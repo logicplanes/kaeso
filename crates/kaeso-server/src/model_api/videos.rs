@@ -187,7 +187,6 @@ pub(super) async fn register(
             "The provider started a video job without naming it.",
         ));
     }
-    let now = state.clock.now();
     let id = VideoId::new();
     let row = VideoRow {
         id: id.uuid(),
@@ -213,7 +212,7 @@ pub(super) async fn register(
         remixed_from: s.remix.map(|r| r.id.uuid()),
         units: None,
         cost: None,
-        created_at: now,
+        created_at: rec.outcome().started_at,
         completed_at: None,
         expires_at: at(job.expires_at),
         accounted_at: None,
@@ -682,11 +681,28 @@ pub(crate) async fn delete_as(
 ) -> Result<Vec<u8>, KppError> {
     {
         let row = load(state, viewer, id).await?;
-        let reached = match reach(&Asking::new(state, viewer), &row).await {
+        let asking = Asking::new(state, viewer);
+        // A job its provider ended but nobody asked about yet is billed before Kaeso forgets it.
+        let row = if row.accounted_at.is_none() {
+            match refresh(&asking, row.clone()).await {
+                Ok(fresh) => fresh,
+                Err(e) if e.status == Some(429) => return Err(e),
+                Err(_) => row,
+            }
+        } else {
+            row
+        };
+        let reached = match reach(&asking, &row).await {
             Err(e) if e.status == Some(429) => return Err(e),
             r => r,
         };
-        if let Ok(up) = reached
+        // Deleting a job at its provider doesn't stop its bill everywhere (Google's delete
+        // removes only the record), so a job Kaeso can still reach is kept until it is billed.
+        let given_up = row.created_at <= state.clock.now() - super::media::GIVEN_UP_AFTER;
+        if row.accounted_at.is_none() && reached.is_ok() && !given_up {
+            return Err(still_running());
+        }
+        if let Ok(up) = &reached
             && let Some(req) = dispatch::encode_video_delete(
                 up.dialect,
                 &row.upstream_id,
@@ -694,7 +710,7 @@ pub(crate) async fn delete_as(
                 &up.ectx,
             )?
         {
-            let resp = send(state, &up, req).await?;
+            let resp = send(state, up, req).await?;
             if !(200..300).contains(&resp.0) && resp.0 != 404 {
                 return Err(dispatch::decode_error(up.dialect, resp.0, &resp.1, &resp.2));
             }
@@ -707,8 +723,20 @@ pub(crate) async fn delete_as(
                 unavailable()
             })?;
         state.caches.finished_videos.invalidate(&row.id).await;
+        if row.accounted_at.is_none() {
+            super::media::release_hold(state, row.request_id).await;
+        }
         openai_videos::encode_deleted(&VideoId::from_uuid(row.id).to_string())
     }
+}
+
+fn still_running() -> KppError {
+    error(
+        ErrorKind::InvalidRequest,
+        400,
+        "This video is still being made; delete it once it has ended.",
+    )
+    .with_param("video_id")
 }
 
 /// The parts of OpenAI's Videos API Kaeso doesn't route: edits, extensions and characters.
@@ -915,12 +943,28 @@ async fn poll(state: &AppState, up: &Reached, row: &VideoRow) -> Result<VideoJob
 /// the provider can't answer, the app gets the job as Kaeso last saw it and asks again later.
 async fn refresh(asking: &Asking<'_>, row: VideoRow) -> Result<VideoRow, KppError> {
     let state = asking.state;
-    if VideoStatus::from_wire(&row.status).is_some_and(VideoStatus::is_done) {
+    if row.accounted_at.is_some()
+        && VideoStatus::from_wire(&row.status).is_some_and(VideoStatus::is_done)
+    {
         return Ok(row);
+    }
+    if let Err(e) = store::checked(&state.pg, row.org_id, row.id, state.clock.now()).await {
+        tracing::warn!(error = %e, "cannot note when Kaeso asked about a video");
     }
     let job = match reach(asking, &row).await {
         Ok(up) => match poll(state, &up, &row).await {
             Ok(job) => job,
+            // A provider that no longer knows a job won't bill it, and nobody can ask again; a
+            // job younger than a minute may not be visible at its provider yet.
+            Err(e)
+                if (e.kind == ErrorKind::NotFound || e.status == Some(404))
+                    && row.created_at <= state.clock.now() - super::media::ASKED_AFTER =>
+            {
+                metrics::counter!(crate::metrics::MEDIA_JOBS_GIVEN_UP, "kind" => "video")
+                    .increment(1);
+                tracing::warn!(video_id = %row.id, provider = %row.provider, "a video job is given up unbilled: its provider no longer knows it");
+                VideoJob::new(row.upstream_id.clone(), VideoStatus::Failed)
+            }
             Err(e) => {
                 tracing::warn!(provider = %row.provider, kind = e.kind.as_str(), error = %e.message, "a provider did not say how a video job stands");
                 return Ok(row);
@@ -933,6 +977,68 @@ async fn refresh(asking: &Asking<'_>, row: VideoRow) -> Result<VideoRow, KppErro
         }
     };
     Box::pin(settle(state, row, job)).await
+}
+
+fn owner_of(row: &VideoRow) -> Caller {
+    Caller {
+        org_id: row.org_id,
+        project_id: row.project_id,
+        key_id: row.api_key_id,
+        user_id: row.user_id,
+        service_account_id: row.service_account_id,
+    }
+}
+
+/// Asks the providers of started videos that nobody has billed yet how they stand, so a video
+/// its app never asks about again is billed when it ends, and renews what the running ones hold
+/// of their budgets. Kaeso asks on its own behalf, so it counts against no request rate. Returns
+/// how many it billed and how many still run.
+pub(crate) async fn look_after(
+    state: &AppState,
+) -> Result<(usize, usize), kaeso_store::StoreError> {
+    use super::media::{ASK_TIMEOUT, ASKED_AFTER, ASKED_AT_ONCE, ASKED_PER_RUN, GIVEN_UP_AFTER};
+    use futures::stream::{self, StreamExt as _};
+    let now = state.clock.now();
+    super::media::renew_holds(
+        state,
+        store::unsettled_requests(&state.pg, now - GIVEN_UP_AFTER).await?,
+    )
+    .await;
+    let rows = store::unsettled(
+        &state.pg,
+        now - GIVEN_UP_AFTER,
+        now - ASKED_AFTER,
+        ASKED_PER_RUN,
+    )
+    .await?;
+    let billed: Vec<bool> = stream::iter(rows)
+        .map(|row| async move {
+            let last_day = row.created_at <= now - GIVEN_UP_AFTER + ASKED_AFTER * 2;
+            let (id, provider) = (row.id, row.provider.clone());
+            let viewer = Viewer {
+                caller: owner_of(&row),
+                playground: from_playground(&row),
+            };
+            let asking = Asking {
+                state,
+                viewer: &viewer,
+                counted: std::sync::atomic::AtomicBool::new(true),
+            };
+            let billed = matches!(
+                tokio::time::timeout(ASK_TIMEOUT, refresh(&asking, row)).await,
+                Ok(Ok(row)) if row.accounted_at.is_some()
+            );
+            if !billed && last_day {
+                metrics::counter!(crate::metrics::MEDIA_JOBS_GIVEN_UP, "kind" => "video").increment(1);
+                tracing::warn!(video_id = %id, %provider, "a video job is given up unbilled a day after it started");
+            }
+            billed
+        })
+        .buffer_unordered(ASKED_AT_ONCE)
+        .collect()
+        .await;
+    let done = billed.iter().filter(|b| **b).count();
+    Ok((done, billed.len() - done))
 }
 
 /// Writes what the provider said; the first request to see the job end bills it.
@@ -979,10 +1085,11 @@ async fn settle(state: &AppState, mut row: VideoRow, job: VideoJob) -> Result<Vi
         )
         .await
         .map_err(failed_store)?;
-        if won && job.status == VideoStatus::Completed {
-            record_completion(state, &row, &job, units.clone(), prices).await;
-        }
         if won {
+            if job.status == VideoStatus::Completed {
+                record_completion(state, &row, &job, units.clone(), prices).await;
+            }
+            super::media::release_hold(state, row.request_id).await;
             row.units = serde_json::to_value(&units).ok();
             row.cost = cost;
             row.accounted_at = Some(now);
@@ -1084,6 +1191,7 @@ async fn record_completion(
     o.status = 200;
     o.usage = job.usage.clone();
     o.started_at = now;
+    o.budget_at = Some(row.created_at);
     o.upstream_request_id = Some(row.upstream_id.clone());
     o.media = Some(units);
     o.video = Some(VideoCall::Completed);

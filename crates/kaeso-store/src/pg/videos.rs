@@ -120,6 +120,63 @@ pub async fn get(
     .await?)
 }
 
+/// Up to `limit` videos nobody has billed yet, started after `since` and not asked about
+/// since `until`, those asked about least recently first.
+pub async fn unsettled(
+    db: impl PgExecutor<'_>,
+    since: OffsetDateTime,
+    until: OffsetDateTime,
+    limit: i64,
+) -> Result<Vec<VideoRow>, StoreError> {
+    Ok(sqlx::query_as!(
+        VideoRow,
+        "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, catalogue_model_id, \
+         model, upstream_model, dialect, upstream_id, request_id, params, prices, status, progress, \
+         error, remixed_from, units, cost, created_at, completed_at, expires_at, accounted_at, \
+         tags, user_agent, alias, line, playground \
+         FROM videos \
+         WHERE accounted_at IS NULL AND created_at > $1 AND created_at <= $2 \
+         AND (checked_at IS NULL OR checked_at <= $2) \
+         ORDER BY checked_at NULLS FIRST, created_at, id LIMIT $3",
+        since,
+        until,
+        limit
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+/// The starting requests of the videos nobody has billed yet that started after `since`.
+pub async fn unsettled_requests(
+    db: impl PgExecutor<'_>,
+    since: OffsetDateTime,
+) -> Result<Vec<Uuid>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "SELECT request_id FROM videos WHERE accounted_at IS NULL AND created_at > $1",
+        since
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+/// Notes that Kaeso asked the provider about the video `id` at `at`.
+pub async fn checked(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    id: Uuid,
+    at: OffsetDateTime,
+) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE videos SET checked_at = $3 WHERE org_id = $1 AND id = $2",
+        org_id,
+        id,
+        at
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 /// A page of the project's videos, newest first unless `ascending`, after the video `after`
 /// when it names one of the project's.
 pub async fn list(
