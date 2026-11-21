@@ -43,7 +43,7 @@ AWS 和 Google Cloud 上的托管堆栈不是一键部署：您需要选择区�
 
 - **同一来源。** 控制台和 API 在同一个域名上应答。`/v1/*`、`/v1beta/*`、`/v2/*`、`/platform/*`、`/mcp`、`/mcp/*`、`/oauth/*`、`/ingest/*` 和 `/.well-known/oauth-*` 到达网关，其他所有路径到达控制台。在 Render、Railway、Fly.io、Coolify、Dokploy 和 CapRover 上由控制台镜像的第二个命令 `kaeso-edge` 负责，在 DigitalOcean 上由应用的 ingress 规则负责，在 AWS 和 Google Cloud 的托管堆栈上由负载均衡器的路径规则负责，在 Kubernetes 上由 chart 的 Ingress 或 HTTPRoute 负责，在快速服务器上由 Caddy 负责。
 - **流不被缓冲。** 边缘服务立即转发每个数据块，负载均衡器的空闲超时长于网关的保活间隔（[长时间的流](../domains-and-tls.md#长时间的流)）。
-- **只相信平台代理给出的客户端地址。** 边缘服务只从平台代理设置的请求头中获取客户端地址，并只向网关传递一个地址；网关只信任边缘服务（[`KAESO_TRUSTED_PROXIES`](../configuration.md#设置)）。
+- **只相信平台代理给出的客户端地址。** 边缘服务只接受平台代理给出的客户端地址，并只向网关传递一个地址（[边缘服务的设置](#边缘服务的设置)）；网关只信任边缘服务（[`KAESO_TRUSTED_PROXIES`](../configuration.md#设置)）。
 - **健康检查**用 `/healthz` 检查进程，用 `/readyz` 检查 PostgreSQL、Valkey 和 ClickHouse（[健康状态和指标](../monitoring.md)）。指标端口永不公开。
 - **更新器关闭。** 由平台推出和回滚新版本；版本的迁移只向前进行（[升级](../upgrades.md)）。
 - **同一版本。** 网关、控制台和边缘服务固定为同一版本；发布新版本时会更新模板。
@@ -57,6 +57,19 @@ AWS 和 Google Cloud 上的托管堆栈不是一键部署：您需要选择区�
 | 第一个用户 | `KAESO_SETUP_EMAIL`：在第一个用户创建之前，网关每次启动都会把一次性设置链接发送到该地址，因为网关镜像没有 shell 可运行 `kaeso setup-link`；在 Coolify、Dokploy 和 CapRover 上，也可以在服务器上用 `docker exec` 运行它（[配置](../configuration.md#设置)） |
 | 请求日志 | 在 `KAESO_CLICKHOUSE_URL` 中填入外部 ClickHouse，例如 ClickHouse Cloud；不填则请求日志关闭，用量、限额和预算照常工作；Coolify、Dokploy 和 CapRover 在 Kaeso 旁边运行 ClickHouse（[选择请求日志的保存方式](../installation.md#选择请求日志的保存方式)） |
 | 公开地址 | `KAESO_PUBLIC_URL`，用户和应用使用的 `https` 地址 |
+
+## 边缘服务的设置
+
+`kaeso-edge` 监听 `PORT`（默认为 8080），并读取以下变量。每个模板都设置了其平台需要的值；在其他地方运行边缘服务时，请自行设置。
+
+| 变量 | 默认值 | 作用 |
+| --- | --- | --- |
+| `KAESO_GATEWAY_UPSTREAM` | 必填 | 网关的主机和端口，例如 `kaeso-gateway:8080`；网关的路径发送到这里 |
+| `KAESO_CONSOLE_UPSTREAM` | 必填 | 控制台的主机和端口，例如 `kaeso-console:3000`；其他所有路径发送到这里 |
+| `KAESO_EDGE_TRUSTED_PROXIES` | `private_ranges` | 边缘服务前方代理的网段，以空格分隔，例如 `private_ranges 192.0.2.0/24`；`private_ranges` 涵盖私有 IPv4 和 IPv6 网段。对来自其他地址的请求，边缘服务以该地址作为客户端地址 |
+| `KAESO_EDGE_CLIENT_IP_HEADERS` | `X-Forwarded-For` | 对来自这些网段的请求，包含客户端地址的一个或多个请求头，以空格分隔；边缘服务使用请求中出现的第一个 |
+
+边缘服务从右向左读取 `X-Forwarded-For` 并跳过受信任的网段，因此第一个其他地址就是客户端，即使在向该请求头追加地址的代理后面也是如此。自身地址位于受信任网段内的客户端会显示为代理的地址；因此，如果有人从私有网络访问 Kaeso，请把 `KAESO_EDGE_TRUSTED_PROXIES` 缩小到代理所在的网段。如果平台代理前面的 CDN 也出现在该请求头中，请加入 CDN 的网段。如果平台代理会覆盖自己的某个请求头，请把 `KAESO_EDGE_CLIENT_IP_HEADERS` 设为该请求头：Render 上为 `CF-Connecting-IP`，Fly.io 上为 `Fly-Client-IP`，CapRover 和 Railway 上为 `X-Real-IP`。
 
 ## 已验证的内容
 
@@ -72,7 +85,7 @@ AWS 和 Google Cloud 上的托管堆栈不是一键部署：您需要选择区�
 | AWS 快速服务器 | 2026-11-07 在测试实例上修正主密钥所有权后，堆栈和应用检查通过；修正后的模板尚未重新部署 |
 | Google Cloud 快速服务器 | Terraform 配置和设置链接于 2026-11-07 通过 |
 | AWS 和 Google Cloud 托管堆栈 | 已通过 CI 的 lint 和格式检查；本轮未部署 |
-| Railway | 2026 年 11 月 9 日，文件和按钮的模板各自部署到一个空项目，并通过边缘服务完成设置和登录；邮件投递和流式传输尚未测试 |
+| Railway | 2026 年 11 月 9 日，文件和按钮的模板各自部署到一个空项目，并通过边缘服务完成设置和登录；邮件投递和流式传输尚未测试；边缘服务的客户端地址设置通过了模板检查，但尚未在实际部署上重新测试 |
 | DigitalOcean | 未部署；App Platform 的校验和提案 API 于 2026 年 11 月 9 日接受了按钮的规范 |
 | Fly.io | 未部署；文件通过了 SchemaStore 的 `fly.toml` 模式检查 |
 | Azure 快速服务器 | 未部署；模板通过了 ARM 模板测试工具包 |

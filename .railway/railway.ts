@@ -5,9 +5,9 @@ import { defineRailway, image, postgres, project, redis, service } from "railway
 const GATEWAY_IMAGE = "ghcr.io/logicplanes/kaeso-gateway:0.7.1-rc.1";
 const CONSOLE_IMAGE = "ghcr.io/logicplanes/kaeso-console:0.7.1-rc.1";
 
-// Railway's private network is IPv6 only, so the gateway listens on every address family and
-// trusts the edge from the unique local range. Railway's health checks call the port in PORT, so every
-// service sets it to the port it listens on.
+// Railway's private network is IPv6, and also IPv4 (10.x) in environments created after October 2025,
+// so the gateway listens on every address family and trusts the edge from the private ranges.
+// Railway's health checks call the port in PORT, so every service sets it to the port it listens on.
 const TRUSTED_PROXIES = "fc00::/7,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,127.0.0.0/8,::1/128";
 
 export default defineRailway((ctx) => {
@@ -48,8 +48,12 @@ export default defineRailway((ctx) => {
     source: image(CONSOLE_IMAGE, { autoUpdates: { type: "disabled" } }),
     start: "kaeso-edge",
     healthcheck: "/kaeso-edge/healthz",
+    // Railway's proxy currently connects from the shared address space, a range Railway doesn't promise,
+    // and overwrites X-Real-IP with the caller's address.
     env: {
       PORT: "8080",
+      KAESO_EDGE_TRUSTED_PROXIES: "100.64.0.0/10",
+      KAESO_EDGE_CLIENT_IP_HEADERS: "X-Real-IP",
       KAESO_GATEWAY_UPSTREAM: "${{kaeso-gateway.RAILWAY_PRIVATE_DOMAIN}}:8080",
       KAESO_CONSOLE_UPSTREAM: "${{kaeso-console.RAILWAY_PRIVATE_DOMAIN}}:3000",
     },

@@ -135,13 +135,48 @@ fn matcher(caddyfile: &str, name: &str) -> String {
         .to_owned()
 }
 
-#[test]
-fn gemini_calls_under_v1_and_requests_with_geminis_key_get_geminis_shape() {
-    let edge = std::fs::read_to_string(format!(
+fn edge_caddyfile() -> String {
+    std::fs::read_to_string(format!(
         "{}/../../deploy/console/edge.Caddyfile",
         env!("CARGO_MANIFEST_DIR")
     ))
-    .unwrap();
+    .unwrap()
+}
+
+#[test]
+fn the_edge_takes_the_client_address_from_the_nearest_untrusted_hop() {
+    let edge = edge_caddyfile();
+    let servers: Vec<&str> = edge
+        .lines()
+        .map(str::trim)
+        .skip_while(|l| *l != "servers {")
+        .skip(1)
+        .take_while(|l| *l != "}")
+        .filter(|l| !l.starts_with('#'))
+        .collect();
+    assert_eq!(
+        servers,
+        [
+            "trusted_proxies static {$KAESO_EDGE_TRUSTED_PROXIES:private_ranges}",
+            "trusted_proxies_strict",
+            "client_ip_headers {$KAESO_EDGE_CLIENT_IP_HEADERS:X-Forwarded-For}",
+        ],
+        "X-Forwarded-For is read from the right, so a proxy that appends to it names the caller"
+    );
+    let forwarded: Vec<&str> = edge
+        .lines()
+        .map(str::trim)
+        .filter(|l| l.starts_with("header_up X-Forwarded-For"))
+        .collect();
+    assert_eq!(
+        forwarded, ["header_up X-Forwarded-For {client_ip}"; 2],
+        "the gateway and the console get one address"
+    );
+}
+
+#[test]
+fn gemini_calls_under_v1_and_requests_with_geminis_key_get_geminis_shape() {
+    let edge = edge_caddyfile();
     let gemini = matcher(&config("caddyfile"), "gemini");
     assert_eq!(gemini, matcher(&edge, "gemini"));
     let methods: Vec<&str> = kaeso_codecs::gemini::GeminiAction::ALL

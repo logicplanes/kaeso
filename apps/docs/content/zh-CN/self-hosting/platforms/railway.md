@@ -16,7 +16,9 @@ order: 2
 | `kaeso-postgres` | Railway Postgres | 网关 |
 | `kaeso-valkey` | Railway Redis | 网关 |
 
-Railway 的私有网络只有 IPv6，因此网关在 `[::]:8080` 上监听，并信任来自唯一本地地址范围的边缘服务。Railway 的健康检查访问 `PORT` 中的端口，因此每个服务都把它设为自己监听的端口。每个镜像都关闭了自动更新，服务因此停留在部署时的版本上。
+Railway 的私有网络使用 IPv6，2025 年 10 月 16 日之后创建的环境还支持 IPv4，因此网关在 `[::]:8080` 上监听，并信任来自私有地址范围的边缘服务。Railway 的健康检查访问 `PORT` 中的端口，因此每个服务都把它设为自己监听的端口。每个镜像都关闭了自动更新，服务因此停留在部署时的版本上。
+
+对来自 `100.64.0.0/10`（Railway 代理目前发起连接所用的网段）的请求，边缘服务从 Railway 代理覆盖的 `X-Real-IP` 中读取客户端地址；Railway 并不保证这个网段（[边缘服务的设置](index.md#边缘服务的设置)）。如果请求日志中每个访问者都显示同一个地址，那就是代理的地址：请把 `kaeso-edge` 上的 `KAESO_EDGE_TRUSTED_PROXIES` 设为它所在的网段。不要在边缘服务前面放置 Railway 的 TCP 代理，因为它会原样传递调用方的 `X-Real-IP`。
 
 ## 用按钮部署
 
@@ -84,6 +86,8 @@ Railway 的私有网络只有 IPv6，因此网关在 `[::]:8080` 上监听，并
 该文件遵循 2026 年 11 月 6 日阅读的 Railway TypeScript 编写参考：`defineRailway`、`project`、`service`、`image`、`postgres`、`redis`、来自 `db.env` 和 `cache.env` 的服务环境、通过 `ctx.shared` 引用的共享变量，以及用于私有地址的 `${{service.RAILWAY_PRIVATE_DOMAIN}}`。Railway 把该功能标记为实验性，其 API 仍可能变化。
 
 2026 年 11 月 9 日，该文件被应用到一个空的 Railway 项目，模板被部署到另一个项目，两者都使用第八个候选版本。两次部署中，五个服务都已在线，边缘服务在 Railway 域名上提供控制台和 API，第一个用户完成设置并登录。第一次运行发现，没有 `PORT` 时网关和控制台无法通过 Railway 的健康检查；文件和模板现在都设置了它。测试使用的是占位 SMTP 服务器，因此设置链接来自通过 SSH 隧道运行的 `kaeso setup-link`，而不是邮件。邮件投递、流式回复和更新尚未在 Railway 上测试。
+
+边缘服务的客户端地址设置通过了模板检查，但尚未在实际运行的 Railway 部署上重新测试。
 
 ## 下一步
 

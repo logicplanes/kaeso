@@ -16,7 +16,9 @@ Der Button **Deploy on Railway** rollt Kaesos [Railway-Vorlage](https://railway.
 | `kaeso-postgres` | Railway Postgres | Das Gateway |
 | `kaeso-valkey` | Railway Redis | Das Gateway |
 
-Railways privates Netz ist reines IPv6, das Gateway lauscht also auf `[::]:8080` und vertraut dem Edge aus dem Unique-Local-Adressbereich. Railways Health-Checks rufen den Port in `PORT` auf, daher setzt jeder Dienst ihn auf den Port, auf dem er lauscht. Jedes Image hat automatische Updates aus, die Dienste bleiben also auf dem Release, mit dem sie ausgerollt wurden.
+Railways privates Netz ist IPv6 und in Umgebungen, die nach dem 16. Oktober 2025 angelegt wurden, auch IPv4. Das Gateway lauscht also auf `[::]:8080` und vertraut dem Edge aus den privaten Adressbereichen. Railways Health-Checks rufen den Port in `PORT` auf, daher setzt jeder Dienst ihn auf den Port, auf dem er lauscht. Jedes Image hat automatische Updates aus, die Dienste bleiben also auf dem Release, mit dem sie ausgerollt wurden.
+
+Der Edge liest die Adresse des Clients aus `X-Real-IP`, das Railways Proxy überschreibt, bei Anfragen aus `100.64.0.0/10`, dem Bereich, aus dem dieser Proxy derzeit verbindet. Railway sichert diesen Bereich nicht zu ([Einstellungen des Edge](index.md#einstellungen-des-edge)). Zeigen die Anfrageprotokolle für jeden Besucher dieselbe Adresse, ist das die Adresse des Proxys: Setzen Sie `KAESO_EDGE_TRUSTED_PROXIES` auf `kaeso-edge` auf ihr Netz. Setzen Sie keinen TCP-Proxy von Railway vor den Edge, denn er reicht das `X-Real-IP` eines Aufrufers unverändert durch.
 
 ## Mit dem Button ausrollen
 
@@ -84,6 +86,8 @@ Ein Release ändert die Image-Tags. Bei einem Projekt aus dem Button ändern Sie
 Die Datei folgt Railways TypeScript-Referenz, gelesen am 6. November 2026: `defineRailway`, `project`, `service`, `image`, `postgres`, `redis`, Dienstumgebungen aus `db.env` und `cache.env`, geteilte Variablen über `ctx.shared` und `${{service.RAILWAY_PRIVATE_DOMAIN}}` für die privaten Adressen. Railway kennzeichnet die Funktion als experimentell, ihre API kann sich also noch ändern.
 
 Am 9. November 2026 wurde die Datei auf ein leeres Railway-Projekt angewendet und die Vorlage in ein weiteres ausgerollt, beide mit dem achten Release Candidate. In beiden kamen die fünf Dienste online, der Edge lieferte Konsole und APIs auf der Railway-Domain aus, und der erste Benutzer wurde eingerichtet und angemeldet. Der erste Lauf ergab, dass Gateway und Konsole ohne `PORT` an Railways Health-Checks scheiterten; Datei und Vorlage setzen ihn jetzt. Der Test nutzte einen Platzhalter-SMTP-Server, der Einrichtungslink kam also von `kaeso setup-link` über einen SSH-Tunnel statt per E-Mail. E-Mail-Zustellung, eine gestreamte Antwort und ein Update wurden auf Railway nicht getestet.
+
+Die Einstellungen des Edge für die Client-Adresse bestehen die Prüfung der Vorlage, wurden aber noch nicht auf einem laufenden Railway-Deployment erneut getestet.
 
 ## Nächste Schritte
 

@@ -43,7 +43,7 @@ The managed stacks on AWS and Google Cloud are not one click: you choose a regio
 
 - **One origin.** The console and the APIs answer on one domain. `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*`, `/ingest/*` and `/.well-known/oauth-*` reach the gateway; every other path reaches the console. On Render, Railway, Fly.io, Coolify, Dokploy and CapRover, `kaeso-edge`, a second command in the console image, does this; on DigitalOcean, the app's ingress rules; on the managed stacks of AWS and Google Cloud, the load balancer's path rules; on Kubernetes, the chart's Ingress or HTTPRoute; on a quick server, Caddy.
 - **Streams stay unbuffered.** The edge flushes every chunk, and a load balancer's idle timeout is longer than the gateway's keepalive interval ([long streams](../domains-and-tls.md#long-streams)).
-- **The client address is believed only from the platform's proxy.** The edge takes the client's address only from the platform's proxy, from a header the proxy sets, and sends the gateway one address; the gateway trusts the edge alone ([`KAESO_TRUSTED_PROXIES`](../configuration.md#settings)).
+- **The client address is believed only from the platform's proxy.** The edge takes the client's address only from the platform's proxy and sends the gateway one address ([settings of the edge](#settings-of-the-edge)); the gateway trusts the edge alone ([`KAESO_TRUSTED_PROXIES`](../configuration.md#settings)).
 - **Health checks** use `/healthz` for the process and `/readyz` for PostgreSQL, Valkey and ClickHouse ([health and metrics](../monitoring.md)). The metrics port is never public.
 - **The updater is off.** The platform rolls a new release out and back; a release's migrations only move forward ([upgrades](../upgrades.md)).
 - **One version.** Gateway, console and edge are pinned to the same release; a release updates the templates.
@@ -57,6 +57,19 @@ The managed stacks on AWS and Google Cloud are not one click: you choose a regio
 | The first user | `KAESO_SETUP_EMAIL`: the gateway emails the one-time setup link at every start until the first user exists, since the gateway image has no shell for `kaeso setup-link`; on Coolify, Dokploy and CapRover, `docker exec` on the server also runs it ([configuration](../configuration.md#settings)) |
 | Request logs | An external ClickHouse, such as ClickHouse Cloud, in `KAESO_CLICKHOUSE_URL`; without it, request logs are off and usage, limits and budgets work the same; Coolify, Dokploy and CapRover run ClickHouse beside Kaeso ([choose how to keep request logs](../installation.md#choose-how-to-keep-request-logs)) |
 | A public address | `KAESO_PUBLIC_URL`, the `https` address people and apps use |
+
+## Settings of the edge
+
+`kaeso-edge` listens on `PORT`, 8080 by default, and reads these variables. Each template sets what its platform needs; set them yourself when you run the edge elsewhere.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `KAESO_GATEWAY_UPSTREAM` | Required | The gateway's host and port, such as `kaeso-gateway:8080`; it gets the gateway's paths |
+| `KAESO_CONSOLE_UPSTREAM` | Required | The console's host and port, such as `kaeso-console:3000`; it gets every other path |
+| `KAESO_EDGE_TRUSTED_PROXIES` | `private_ranges` | The networks of the proxies in front of the edge, separated by spaces, such as `private_ranges 192.0.2.0/24`; `private_ranges` covers the private IPv4 and IPv6 ranges. From any other address, the edge takes that address as the client's |
+| `KAESO_EDGE_CLIENT_IP_HEADERS` | `X-Forwarded-For` | One or more headers with the client's address, separated by spaces, read on requests from those networks; the edge uses the first one a request has |
+
+The edge reads `X-Forwarded-For` from the right and skips the trusted networks, so the first other address is the client, even behind a proxy that appends to the header. A client inside the trusted networks shows up as the proxy, so narrow `KAESO_EDGE_TRUSTED_PROXIES` to the proxy's network when people reach Kaeso from a private network. When a CDN in front of the platform's proxy shows up in the header too, add the CDN's networks. Where the platform's proxy overwrites a header of its own, set `KAESO_EDGE_CLIENT_IP_HEADERS` to it: `CF-Connecting-IP` on Render, `Fly-Client-IP` on Fly.io, `X-Real-IP` on CapRover and Railway.
 
 ## What was validated
 
@@ -72,7 +85,7 @@ The Render Blueprint was created from an empty Render project in Frankfurt on th
 | AWS quick server | Stack and app checks passed after correcting master-key ownership on the test instance on 2026-11-07; the corrected template has not been redeployed |
 | Google Cloud quick server | Terraform configuration and setup-link path passed on 2026-11-07 |
 | AWS and Google Cloud managed stacks | Linted and formatted by CI; not deployed in this pass |
-| Railway | The file and the button's template each deployed to an empty project on 2026-11-09, with setup and sign-in through the edge; email delivery and streaming not tested |
+| Railway | The file and the button's template each deployed to an empty project on 2026-11-09, with setup and sign-in through the edge; email delivery and streaming not tested; the edge's client-address settings pass the template check, but no live retest |
 | DigitalOcean | Not deployed; App Platform's validation and proposal API accepted the button's spec on 2026-11-09 |
 | Fly.io | Not deployed; the files pass the SchemaStore schema for `fly.toml` |
 | Azure quick server | Not deployed; the template passes the ARM template test toolkit |

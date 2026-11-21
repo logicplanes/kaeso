@@ -192,6 +192,13 @@ def test_railway_listens_on_ipv6_and_takes_secrets_from_shared_variables():
     assert "fc00::/7" in text
 
 
+def test_railway_runs_an_edge_that_reads_the_client_address_railways_proxy_sets():
+    text = (ROOT / ".railway/railway.ts").read_text()
+    edge = text[text.index('service("kaeso-edge"') :]
+    assert 'KAESO_EDGE_CLIENT_IP_HEADERS: "X-Real-IP"' in edge, "Railway's proxy overwrites X-Real-IP"
+    assert 'KAESO_EDGE_TRUSTED_PROXIES: "100.64.0.0/10"' in edge, "Railway's proxy connects from the shared address space"
+
+
 def test_railway_health_checks_reach_the_port_each_service_listens_on():
     text = (ROOT / ".railway/railway.ts").read_text()
     gateway = text[text.index('service("kaeso-gateway"') : text.index('service("kaeso-console"')]

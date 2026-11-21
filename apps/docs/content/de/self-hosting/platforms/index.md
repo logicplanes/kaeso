@@ -43,7 +43,7 @@ Die verwalteten Stacks auf AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wä
 
 - **Ein Ursprung.** Konsole und APIs antworten auf einer Domain. `/v1/*`, `/v1beta/*`, `/v2/*`, `/platform/*`, `/mcp`, `/mcp/*`, `/oauth/*`, `/ingest/*` und `/.well-known/oauth-*` erreichen das Gateway; jeder andere Pfad erreicht die Konsole. Auf Render, Railway, Fly.io, Coolify, Dokploy und CapRover übernimmt das `kaeso-edge`, ein zweiter Befehl im Konsolen-Image; auf DigitalOcean die Ingress-Regeln der App; bei den verwalteten Stacks auf AWS und Google Cloud die Pfadregeln des Load Balancers; auf Kubernetes das Ingress oder die HTTPRoute des Charts; auf einem schnellen Server Caddy.
 - **Streams bleiben ungepuffert.** Der Edge leitet jeden Chunk sofort weiter, und das Leerlauf-Timeout eines Load Balancers ist länger als das Keepalive-Intervall des Gateways ([lange Streams](../domains-and-tls.md#lange-streams)).
-- **Die Client-Adresse wird nur dem Proxy der Plattform geglaubt.** Der Edge nimmt die Adresse des Clients nur vom Proxy der Plattform an, aus einem Header, den der Proxy setzt, und sendet dem Gateway eine Adresse; das Gateway vertraut allein dem Edge ([`KAESO_TRUSTED_PROXIES`](../configuration.md#einstellungen)).
+- **Die Client-Adresse wird nur dem Proxy der Plattform geglaubt.** Der Edge nimmt die Adresse des Clients nur vom Proxy der Plattform an und sendet dem Gateway eine Adresse ([Einstellungen des Edge](#einstellungen-des-edge)); das Gateway vertraut allein dem Edge ([`KAESO_TRUSTED_PROXIES`](../configuration.md#einstellungen)).
 - **Health-Checks** nutzen `/healthz` für den Prozess und `/readyz` für PostgreSQL, Valkey und ClickHouse ([Zustand und Metriken](../monitoring.md)). Der Metrik-Port ist nie öffentlich.
 - **Der Updater ist aus.** Die Plattform rollt ein neues Release aus und zurück; die Migrationen eines Releases laufen nur vorwärts ([Upgrades](../upgrades.md)).
 - **Eine Version.** Gateway, Konsole und Edge sind auf dasselbe Release festgelegt; ein Release aktualisiert die Vorlagen.
@@ -57,6 +57,19 @@ Die verwalteten Stacks auf AWS und Google Cloud sind kein Ein-Klick-Weg: Sie wä
 | Der erste Benutzer | `KAESO_SETUP_EMAIL`: Das Gateway sendet den einmaligen Einrichtungslink bei jedem Start per E-Mail, bis der erste Benutzer existiert, denn das Gateway-Image hat keine Shell für `kaeso setup-link`; auf Coolify, Dokploy und CapRover führt es auch `docker exec` auf dem Server aus ([Konfiguration](../configuration.md#einstellungen)) |
 | Anfrageprotokolle | Ein externes ClickHouse, etwa ClickHouse Cloud, in `KAESO_CLICKHOUSE_URL`; ohne es sind Anfrageprotokolle aus, und Nutzung, Limits und Budgets funktionieren gleich; Coolify, Dokploy und CapRover betreiben ClickHouse neben Kaeso ([festlegen, wie Anfrageprotokolle gespeichert werden](../installation.md#festlegen-wie-anfrageprotokolle-gespeichert-werden)) |
 | Eine öffentliche Adresse | `KAESO_PUBLIC_URL`, die `https`-Adresse, die Personen und Apps nutzen |
+
+## Einstellungen des Edge
+
+`kaeso-edge` lauscht auf `PORT`, standardmäßig 8080, und liest diese Variablen. Jede Vorlage setzt, was ihre Plattform braucht; setzen Sie sie selbst, wenn Sie den Edge anderswo betreiben.
+
+| Variable | Standard | Was sie bewirkt |
+| --- | --- | --- |
+| `KAESO_GATEWAY_UPSTREAM` | Erforderlich | Host und Port des Gateways, etwa `kaeso-gateway:8080`; es bekommt die Pfade des Gateways |
+| `KAESO_CONSOLE_UPSTREAM` | Erforderlich | Host und Port der Konsole, etwa `kaeso-console:3000`; sie bekommt jeden anderen Pfad |
+| `KAESO_EDGE_TRUSTED_PROXIES` | `private_ranges` | Die Netze der Proxys vor dem Edge, durch Leerzeichen getrennt, etwa `private_ranges 192.0.2.0/24`; `private_ranges` umfasst die privaten IPv4- und IPv6-Bereiche. Von jeder anderen Adresse nimmt der Edge diese Adresse als die des Clients |
+| `KAESO_EDGE_CLIENT_IP_HEADERS` | `X-Forwarded-For` | Ein oder mehrere Header mit der Adresse des Clients, durch Leerzeichen getrennt, gelesen bei Anfragen aus diesen Netzen; der Edge nimmt den ersten, den eine Anfrage hat |
+
+Der Edge liest `X-Forwarded-For` von rechts und überspringt die vertrauenswürdigen Netze, die erste andere Adresse ist also der Client, auch hinter einem Proxy, der an den Header anhängt. Ein Client, dessen eigene Adresse in den vertrauenswürdigen Netzen liegt, erscheint mit der Adresse des Proxys; erreichen Personen Kaeso aus einem privaten Netz, grenzen Sie `KAESO_EDGE_TRUSTED_PROXIES` deshalb auf das Netz des Proxys ein. Erscheint auch ein CDN vor dem Proxy der Plattform im Header, nehmen Sie die Netze des CDN auf. Überschreibt der Proxy der Plattform einen eigenen Header, setzen Sie `KAESO_EDGE_CLIENT_IP_HEADERS` darauf: `CF-Connecting-IP` auf Render, `Fly-Client-IP` auf Fly.io, `X-Real-IP` auf CapRover und Railway.
 
 ## Was geprüft wurde
 
@@ -72,7 +85,7 @@ Der Render-Blueprint wurde am selben Tag aus einem leeren Render-Projekt in Fran
 | AWS, schneller Server | Stack und App-Prüfungen am 2026-11-07 nach der Korrektur des Master-Key-Besitzes auf der Testinstanz bestanden; die korrigierte Vorlage wurde nicht erneut ausgerollt |
 | Google Cloud, schneller Server | Terraform-Konfiguration und Einrichtungslink am 2026-11-07 bestanden |
 | AWS und Google Cloud, verwaltete Stacks | In CI gelintet und formatiert; in diesem Durchlauf nicht ausgerollt |
-| Railway | Datei und Vorlage des Buttons am 9. November 2026 jeweils in ein leeres Projekt ausgerollt, mit Einrichtung und Anmeldung über den Edge; E-Mail-Zustellung und Streaming nicht getestet |
+| Railway | Datei und Vorlage des Buttons am 9. November 2026 jeweils in ein leeres Projekt ausgerollt, mit Einrichtung und Anmeldung über den Edge; E-Mail-Zustellung und Streaming nicht getestet; die Einstellungen des Edge für die Client-Adresse bestehen die Prüfung der Vorlage, aber ohne erneuten Live-Test |
 | DigitalOcean | Nicht ausgerollt; die Validierungs- und Proposal-API von App Platform hat die Spec des Buttons am 9. November 2026 angenommen |
 | Fly.io | Nicht ausgerollt; die Dateien bestehen das SchemaStore-Schema für `fly.toml` |
 | Azure, schneller Server | Nicht ausgerollt; die Vorlage besteht das ARM Template Test Toolkit |

@@ -16,7 +16,9 @@ The **Deploy on Railway** button deploys Kaeso's [Railway template](https://rail
 | `kaeso-postgres` | Railway Postgres | The gateway |
 | `kaeso-valkey` | Railway Redis | The gateway |
 
-Railway's private network is IPv6 only, so the gateway listens on `[::]:8080` and trusts the edge from the unique local address range. Railway's health checks call the port in `PORT`, so each service sets it to the port it listens on. Every image has automatic updates off, so the services stay on the release they were deployed with.
+Railway's private network is IPv6, and also IPv4 in environments created after 2025-10-16. So the gateway listens on `[::]:8080` and trusts the edge from the private address ranges. Railway's health checks call the port in `PORT`, so each service sets it to the port it listens on. Every image has automatic updates off, so the services stay on the release they were deployed with.
+
+The edge reads the client's address from `X-Real-IP`, which Railway's proxy overwrites, on requests from `100.64.0.0/10`, the range that proxy currently connects from. Railway doesn't promise that range ([settings of the edge](index.md#settings-of-the-edge)). If request logs show the same address for every visitor, that is the proxy's address: set `KAESO_EDGE_TRUSTED_PROXIES` on `kaeso-edge` to its network. Don't put a Railway TCP proxy in front of the edge, since it passes a caller's `X-Real-IP` through unchanged.
 
 ## Deploy with the button
 
@@ -84,6 +86,8 @@ A release changes the image tags. For a project from the button, change the tag 
 The file follows Railway's TypeScript authoring reference, read on 2026-11-06: `defineRailway`, `project`, `service`, `image`, `postgres`, `redis`, service environments from `db.env` and `cache.env`, shared variables through `ctx.shared`, and `${{service.RAILWAY_PRIVATE_DOMAIN}}` for the private addresses. Railway marks the feature as experimental, so its API can still change.
 
 On 2026-11-09, the file was applied to an empty Railway project, and the template was deployed into another one, both with the eighth release candidate. In both, the five services came online, the edge served the console and the APIs on the Railway domain, and the first user was set up and signed in. The first run found that the gateway and the console failed Railway's health checks without `PORT`; the file and the template now set it. The test used a placeholder SMTP server, so the setup link came from `kaeso setup-link` through an SSH tunnel instead of email. Email delivery, a streaming reply and an update weren't tested on Railway.
+
+The edge's client-address settings pass the template check, but they haven't been retested on a live Railway deployment.
 
 ## Next steps
 
