@@ -85,6 +85,21 @@ describe("Tool calls in the request logs", () => {
     expect(window.location.search).not.toContain("kind=tools");
   });
 
+  it("keeps the focus on the switch when the arrow keys change what it shows", async () => {
+    signedIn();
+    projectData({ members: [projectMember()] });
+    logsData();
+    calls([toolCall()]);
+    const { user } = await renderApp(projectPath("logs"));
+    (await screen.findByRole("radio", { name: "Models" })).focus();
+    await user.keyboard("{ArrowRight}");
+    await screen.findByRole("grid", { name: "Tool calls" });
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Tools" })).toHaveFocus());
+    await user.keyboard("{ArrowLeft}");
+    await screen.findByRole("grid", { name: "Requests" });
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Models" })).toHaveFocus());
+  });
+
   it("on a phone, stacks the day under the time and lets the tool's name take the room that's left", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 639px)",
