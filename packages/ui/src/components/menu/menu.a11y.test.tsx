@@ -80,6 +80,22 @@ describe("ContextMenu from the keyboard", () => {
     expect(area).toHaveFocus();
   });
 
+  it("leaves the focus order alone when the area holds a row that a roving focus took out of the tab order", () => {
+    render(
+      <ContextMenu>
+        <ContextMenu.Trigger>
+          <div role="row" tabIndex={-1}>
+            ci-runner
+          </div>
+        </ContextMenu.Trigger>
+        <ContextMenu.Content>
+          <ContextMenu.Item>Copy key id</ContextMenu.Item>
+        </ContextMenu.Content>
+      </ContextMenu>,
+    );
+    expect(screen.getByRole("row", { name: "ci-runner" }).parentElement).not.toHaveAttribute("tabindex");
+  });
+
   it("leaves the focus order alone when the area holds a focusable row", () => {
     render(
       <ContextMenu>

@@ -217,7 +217,7 @@ function WebhookDetails({ org, webhook, onClose }: { org: string; webhook: Webho
         <div className="flex flex-col gap-24">
           <KeyValue
             items={[
-              { label: t("org.webhooks.url", "URL"), value: <Code>{webhook.url}</Code> },
+              { label: t("org.webhooks.url", "URL"), value: webhook.url, mono: true, wrap: true, copy: webhook.url },
               { label: t("org.webhooks.format", "Format"), value: formatLabel(webhook.format) },
               { label: t("org.webhooks.state", "State"), value: stateBadge(webhook) },
               {
@@ -226,7 +226,7 @@ function WebhookDetails({ org, webhook, onClose }: { org: string; webhook: Webho
                   ? (projects.data?.find((p) => p.id === webhook.project)?.name ?? webhook.project)
                   : t("org.webhooks.wholeOrg", "The whole organization"),
               },
-              { label: t("org.webhooks.receives", "Receives"), value: webhook.kinds.map((k) => kindName(k, k)).join(", ") },
+              { label: t("org.webhooks.receives", "Receives"), value: webhook.kinds.map((k) => kindName(k, k)).join(", "), wrap: true },
             ]}
           />
           <Deliveries key={webhook.id} org={org} webhook={webhook.id} />

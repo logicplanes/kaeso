@@ -41,6 +41,9 @@ export function Variants() {
       <Link href="#" variant="standalone">
         Team overview ›
       </Link>
+      <Link href="#" variant="action">
+        Forgot your password?
+      </Link>
     </div>
   );
 }

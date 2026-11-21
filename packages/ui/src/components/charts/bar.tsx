@@ -7,6 +7,7 @@ import { useUiText } from "../../i18n/context.js";
 import { useFormatters } from "../../i18n/formatters.js";
 import {
   AXIS,
+  axisText,
   axisLabelIndexes,
   type AxisDate,
   ChartFrame,
@@ -19,6 +20,9 @@ import {
   readableTicks,
   tickLabel,
   useChartKeys,
+  useChartPointer,
+  CHART_TOUCH,
+  PLOT,
   useSize,
   useTweened,
   wholeTicks,
@@ -140,6 +144,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
   const write = (v: number) => (Number.isFinite(v) ? format(v) : "–");
   const [box, size] = useSize<HTMLDivElement>();
   const [hover, setHover] = useState<{ i: number; y: number } | null>(null);
+  const pointer = useChartPointer(() => setHover(null));
   const [focus, setFocus] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const horizontal = layout === "horizontal";
@@ -160,7 +165,13 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
   const palette = seriesColors(series.map((s) => s.id));
   const color = (s: BarSeries) => s.color ?? palette.get(s.id)!;
   const axisLabel = tickLabel(formatValue ?? formatTokens);
-  const ticks = empty ? [] : onlyZero(flat) ? [0] : wholeTicks(readableTicks(axis, axisLabel), finite(flat)).filter((v) => v >= lo - 1e-9 && v <= hi + 1e-9);
+  const ticks = empty
+    ? []
+    : onlyZero(flat)
+      ? [0]
+      : wholeTicks(readableTicks(axis, axisLabel, 4, horizontal ? Infinity : height - PLOT.top - PLOT.bottom), finite(flat)).filter(
+          (v) => v >= lo - 1e-9 && v <= hi + 1e-9,
+        );
   const total = (ci: number) => {
     const known = finite(shown.map((s) => s.values[ci] ?? NaN));
     return known.length ? known.reduce((a, n) => a + n, 0) : NaN;
@@ -178,7 +189,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
         bottom: 0,
         left: Math.round(Math.min(160, cap, Math.max(48, widestCategory + 12 + 4))),
       }
-    : { top: 8, right: axisRoom(ticks.map(axisLabel), { max: cap }), bottom: 28, left: 0 };
+    : { top: PLOT.top, right: axisRoom(ticks.map(axisLabel), { max: cap }), bottom: PLOT.bottom, left: 0 };
   const w = Math.max(0, size.width - M.left - M.right);
   const h = Math.max(0, height - M.top - M.bottom);
   const band = scaleBand<string>()
@@ -314,7 +325,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
           ) : undefined
         }
       >
-        <div ref={box} role="group" aria-label={ariaLabel} {...keys.props} className="absolute inset-0 rounded-cell focus-ring">
+        <div ref={box} role="group" aria-label={ariaLabel} {...keys.props} className={cn("absolute inset-0 rounded-cell focus-ring", CHART_TOUCH)}>
           {size.width > 0 && (
             <svg width={size.width} height={height} className="block overflow-visible" role="presentation">
               <g transform={`translate(${M.left},${M.top})`}>
@@ -386,12 +397,11 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
                           width={horizontal ? size.width : band.step()}
                           height={horizontal ? band.step() : h}
                           fill="transparent"
-                          onPointerMove={(e) => {
+                          {...pointer((e) => {
                             if (quiet) return;
                             const r = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect();
                             setHover({ i: ci, y: Math.round(e.clientY - r.top) });
-                          }}
-                          onPointerLeave={() => setHover(null)}
+                          })}
                         />
                         {horizontal && (
                           <>
@@ -429,7 +439,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
                 {!horizontal &&
                   categories.map((c, ci) =>
                     labelled.has(ci) ? (
-                      <text key={c} x={(band(c) ?? 0) + band.bandwidth() / 2} y={h + 20} textAnchor="middle" {...AXIS.label}>
+                      <text key={c} x={(band(c) ?? 0) + band.bandwidth() / 2} y={h + 20} textAnchor="middle" {...axisText(axisLabels?.[ci] ?? c)}>
                         {axisLabels?.[ci] ?? c}
                       </text>
                     ) : null,

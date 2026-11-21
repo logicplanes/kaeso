@@ -102,7 +102,7 @@ export function MembersPage({ org, project, search }: { org: string; project: st
               ...(search.role && !roles.some((r) => r.id === search.role) ? [{ value: search.role, label: search.role }] : []),
             ]}
           />
-          <div className="w-240">
+          <div className="min-w-0 flex-1 basis-160 sm:w-240 sm:flex-none">
             <Input
               type="search"
               size="sm"
@@ -163,7 +163,8 @@ function AddMemberDialog({ org, project, existing, onClose }: { org: string; pro
   const add = useApiMutation({
     mutationFn: async (userId: string) =>
       data(await api.POST("/platform/v1/orgs/{org}/projects/{project}/members", { params: { path: { org, project } }, body: { user_id: userId, ...grant } })),
-    invalidates: [["orgs", org, "projects", project, "members"]],
+    // Adding yourself makes you a member: what you may do here and which models your keys may hold change with it.
+    invalidates: [["orgs", org, "projects", project, "members"], ["project-rights"]],
     onSuccess: (m) => {
       toast(t("project.members.added", "{name} added to the project", { name: m.user.name }));
       onClose();

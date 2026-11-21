@@ -97,4 +97,22 @@ describe("Link with an external icon", () => {
     expect(screen.getByRole("link", { name: "limits" })).not.toHaveClass("tap-target");
     expect(screen.getByRole("link", { name: "Changelog" })).toHaveClass("tap-target");
   });
+
+  it("underlines a link on a line of its own under a form like one in text, with a hit area a finger can reach", () => {
+    render(
+      <>
+        <Link href="/docs/limits">limits</Link>
+        <Link href="/auth/password-reset" variant="action">
+          Forgot your password?
+        </Link>
+      </>,
+    );
+    const action = screen.getByRole("link", { name: "Forgot your password?" });
+    const inline = screen.getByRole("link", { name: "limits" });
+    for (const look of ["underline", "decoration-fg-tertiary", "underline-offset-3", "text-inherit"]) {
+      expect(inline).toHaveClass(look);
+      expect(action).toHaveClass(look);
+    }
+    expect(action).toHaveClass("relative", "tap-target");
+  });
 });

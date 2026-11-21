@@ -96,7 +96,7 @@ describe("the project overview", () => {
     expect(router.state.location.pathname).toBe(projectPath("logs"));
   });
 
-  it("on a phone, gives the latest requests' models the room their keys took", async () => {
+  it("on a phone, gives the latest requests' models the room their keys and durations took", async () => {
     vi.stubGlobal("matchMedia", (query: string) => ({
       matches: query === "(max-width: 639px)",
       media: query,
@@ -111,7 +111,8 @@ describe("the project overview", () => {
 
     const latest = await screen.findByRole("list", { name: "Latest requests" });
     const row = await within(latest).findByRole("button", { name: /gpt-5\.4-mini/ });
-    expect(row).toHaveTextContent("1.3 s");
+    expect(row).toHaveTextContent("2 min ago");
+    expect(row).not.toHaveTextContent("1.3 s");
     expect(row).not.toHaveTextContent("checkout-web");
   });
 

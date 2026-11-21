@@ -22,6 +22,7 @@ describe("creating an account", () => {
     const { user } = await renderApp("/sign-up");
     expect(await screen.findByText("We email you a link to finish your account.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/sign-in");
+    expect(screen.getByRole("link", { name: "Sign in" })).toHaveClass("tap-target");
     const go = screen.getByRole("button", { name: "Continue" });
     expect(go).toBeDisabled();
     await user.type(screen.getByRole("textbox", { name: "Email" }), "  grace@example.com ");

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT g.id, g.org_id, g.project_id, g.api_key_id, g.user_id, g.service_account_id, g.provider, g.credential_id, g.catalogue_model_id, g.model, g.upstream_model, g.dialect, g.upstream_id, g.request_id, g.params, g.prices, g.status, g.content_url, g.content_mime_type, g.failure_reason, g.error_message, g.units, g.cost, g.created_at, g.completed_at, g.accounted_at FROM image_generations g LEFT JOIN image_generations b ON b.org_id = $1 AND b.project_id = $2 AND b.id = $3 WHERE g.org_id = $1 AND g.project_id = $2 AND ($3::uuid IS NULL OR (g.created_at, g.id) < (b.created_at, b.id)) AND ($4::text IS NULL OR g.status = $4) AND ($5::text IS NULL OR g.model = $5) ORDER BY g.created_at DESC, g.id DESC LIMIT $6",
+  "query": "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, catalogue_model_id, model, upstream_model, dialect, upstream_id, request_id, params, prices, status, content_url, content_mime_type, failure_reason, error_message, units, cost, created_at, completed_at, accounted_at, tags, user_agent, alias, line FROM image_generations WHERE org_id = $1 AND project_id = $2 AND id = $3",
   "describe": {
     "columns": [
       {
@@ -288,16 +288,57 @@
             "name": "accounted_at"
           }
         }
+      },
+      {
+        "ordinal": 26,
+        "name": "tags",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "tags"
+          }
+        }
+      },
+      {
+        "ordinal": 27,
+        "name": "user_agent",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "user_agent"
+          }
+        }
+      },
+      {
+        "ordinal": 28,
+        "name": "alias",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "alias"
+          }
+        }
+      },
+      {
+        "ordinal": 29,
+        "name": "line",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "line"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
         "Uuid",
         "Uuid",
-        "Uuid",
-        "Text",
-        "Text",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -326,8 +367,12 @@
       true,
       false,
       true,
+      true,
+      false,
+      true,
+      true,
       true
     ]
   },
-  "hash": "b71583144a86cfac933d90cffa12a3c7e6d11302cebf50069360456e13ddcdd3"
+  "hash": "bf31869bce7674505191abafc3ee814cecd8b1999aece4ec417c8f046cf7e394"
 }

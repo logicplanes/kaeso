@@ -110,6 +110,86 @@ describe("TimeseriesChart", () => {
   });
 });
 
+describe("charts on a touch screen", () => {
+  const at = (clientX: number, clientY = 100, pointerType = "touch") => ({ pointerType, clientX, clientY });
+  const tap = (el: Element, clientX = 320) => {
+    fireEvent.pointerDown(el, at(clientX));
+    fireEvent.pointerUp(el, at(clientX));
+    fireEvent.pointerLeave(el, at(clientX));
+  };
+  const plot = (name: string) => screen.getByRole("group", { name });
+  const tip = (name: string) => plot(name).querySelector("div[role=presentation]");
+
+  it("leaves vertical scrolling and zooming to the page and takes sideways slides", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    expect(plot("Requests")).toHaveClass("touch-pan-y", "touch-pinch-zoom");
+  });
+
+  it("shows a tapped point until a tap outside the chart", () => {
+    render(
+      <>
+        <TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />
+        <p>Elsewhere</p>
+      </>,
+    );
+    const hit = plot("Requests").querySelector("rect[fill=transparent]")!;
+    fireEvent.pointerDown(hit, at(320));
+    expect(tip("Requests")).toBeNull();
+    fireEvent.pointerUp(hit, at(320));
+    fireEvent.pointerLeave(hit, at(320));
+    expect(tip("Requests")).toHaveTextContent("gpt-5");
+    tap(hit, 40);
+    expect(tip("Requests")).not.toBeNull();
+    fireEvent.pointerDown(screen.getByText("Elsewhere"), { pointerType: "touch" });
+    expect(tip("Requests")).toBeNull();
+  });
+
+  it("shows nothing for a touch that scrolls the page", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    const hit = plot("Requests").querySelector("rect[fill=transparent]")!;
+    fireEvent.pointerDown(hit, at(320, 100));
+    fireEvent.pointerMove(hit, at(322, 140));
+    expect(tip("Requests")).toBeNull();
+    fireEvent.pointerCancel(hit, at(322, 140));
+    expect(tip("Requests")).toBeNull();
+  });
+
+  it("follows a finger that slides sideways, and a mouse only while it hovers", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    const hit = plot("Requests").querySelector("rect[fill=transparent]")!;
+    const heading = () => tip("Requests")?.firstElementChild?.textContent;
+    fireEvent.pointerDown(hit, at(20));
+    fireEvent.pointerMove(hit, at(60));
+    const first = heading();
+    expect(first).toBeTruthy();
+    fireEvent.pointerMove(hit, at(600, 110));
+    expect(heading()).not.toBe(first);
+    fireEvent.pointerUp(hit, at(600, 110));
+    fireEvent.pointerDown(document.body, { pointerType: "touch" });
+    expect(heading()).toBeUndefined();
+    fireEvent.pointerMove(hit, at(320, 100, "mouse"));
+    expect(heading()).toBeTruthy();
+    fireEvent.pointerLeave(hit, at(320, 100, "mouse"));
+    expect(heading()).toBeUndefined();
+  });
+
+  it("treats a pressed pen like a finger", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    const hit = plot("Requests").querySelector("rect[fill=transparent]")!;
+    fireEvent.pointerDown(hit, { ...at(320, 100, "pen"), buttons: 1 });
+    fireEvent.pointerUp(hit, at(320, 100, "pen"));
+    fireEvent.pointerLeave(hit, at(320, 100, "pen"));
+    expect(tip("Requests")).not.toBeNull();
+  });
+
+  it("shows a tapped bar's category", () => {
+    render(<BarChart aria-label="Tokens" categories={["Mon", "Tue"]} series={[{ id: "input", label: "Input", values: [10, 20] }]} />);
+    expect(plot("Tokens")).toHaveClass("touch-pan-y");
+    tap(plot("Tokens").querySelectorAll("rect[fill=transparent]")[1]!);
+    expect(tip("Tokens")).toHaveTextContent("Tue");
+  });
+});
+
 describe("BarChart", () => {
   const categories = ["Mon", "Tue", "Wed", "Thu"];
   const bars = [
@@ -243,5 +323,52 @@ describe("ChartTooltip swatches", () => {
     expect(container.querySelector(".data-mark")).toHaveClass("h-2", "w-12");
     rerender(<ChartTooltip x={10} y={10} width={400} heading="Sat 3 Oct" rows={rows} visible />);
     expect(container.querySelector(".data-mark")).toHaveClass("size-10");
+  });
+});
+
+describe("figures in category names", () => {
+  const axis = (container: HTMLElement, text: string) => [...container.querySelectorAll<SVGTextElement>("svg text")].find((n) => n.textContent === text);
+  const rows = [{ id: "requests", label: "Requests", color: "var(--k-viz-1)", value: "120" }];
+
+  it("sets a model's name under its bar in proportional figures, so its hyphens don't read as gaps", () => {
+    const { container } = render(
+      <BarChart
+        aria-label="Requests by model"
+        categories={["gpt-5-mini", "claude-haiku-4-5"]}
+        series={[{ id: "requests", label: "Requests", values: [120, 80] }]}
+      />,
+    );
+    for (const name of ["gpt-5-mini", "claude-haiku-4-5"]) {
+      const label = axis(container, name);
+      expect(label).toBeDefined();
+      expect(label!.style.fontVariantNumeric).toBe("");
+    }
+  });
+
+  it("keeps tabular figures for dates and weeks under the bars, and on the value axis", () => {
+    const { container } = render(
+      <BarChart aria-label="Requests per week" categories={["Week of 3 Aug", "13 Oct"]} series={[{ id: "requests", label: "Requests", values: [120, 80] }]} />,
+    );
+    expect(axis(container, "Week of 3 Aug")?.style.fontVariantNumeric).toBe("tabular-nums");
+    expect(axis(container, "13 Oct")?.style.fontVariantNumeric).toBe("tabular-nums");
+    expect(axis(container, "100")?.style.fontVariantNumeric).toBe("tabular-nums");
+  });
+
+  it("heads a tooltip with a model's name in proportional figures", () => {
+    render(<ChartTooltip x={10} y={10} width={400} heading="gpt-5-mini" rows={rows} visible />);
+    expect(screen.getByText("gpt-5-mini")).not.toHaveClass("tabular");
+  });
+
+  it.each(["3 Oct", "Tue, Oct 13, 02:00 PM", "Di., 13. Okt., 14:00", "10月13日周二 14:00", "Week of 3 Aug", "Mon 14:00", "2026-10-13"])(
+    "keeps tabular figures in a tooltip headed %s, so the time doesn't change width as the pointer moves",
+    (heading) => {
+      render(<ChartTooltip x={10} y={10} width={400} heading={heading} rows={rows} visible />);
+      expect(screen.getByText(heading)).toHaveClass("tabular");
+    },
+  );
+
+  it("keeps tabular figures in a heading that isn't plain text", () => {
+    render(<ChartTooltip x={10} y={10} width={400} heading={<span>13 Oct</span>} rows={rows} visible />);
+    expect(screen.getByText("13 Oct").parentElement).toHaveClass("tabular");
   });
 });

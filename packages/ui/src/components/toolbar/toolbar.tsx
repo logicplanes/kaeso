@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useMemo, useRef, type HTMLAttributes, type KeyboardEvent } from "react";
 import { cn } from "../../utils/cn.js";
 import { useInset } from "../../utils/inset.js";
-import { arrowFocus, focusables } from "../../utils/arrow-focus.js";
+import { arrowFocus, rowItems } from "../../utils/arrow-focus.js";
 import { mergeRefs } from "../../utils/merge-refs.js";
 
 export const KAESO_TOOLBAR_VARIANTS = {
@@ -30,7 +30,7 @@ const Root = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar({ size: s
     const bar = own.current;
     if (!bar) return;
     const rove = () => {
-      const items = focusables(bar);
+      const items = rowItems(bar);
       const stop = current.current && items.includes(current.current) ? current.current : items[0];
       for (const el of items) {
         el.dataset.roving = "";
@@ -52,13 +52,13 @@ const Root = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar({ size: s
         onFocus?.(e);
         const bar = own.current;
         const target = e.target as HTMLElement;
-        if (!bar || !focusables(bar).includes(target)) return;
+        if (!bar || !rowItems(bar).includes(target)) return;
         current.current = target;
-        for (const el of focusables(bar)) el.tabIndex = el === target ? 0 : -1;
+        for (const el of rowItems(bar)) el.tabIndex = el === target ? 0 : -1;
       }}
       onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
         onKeyDown?.(e);
-        arrowFocus(e);
+        arrowFocus(e, { items: rowItems });
       }}
       {...props}
     />

@@ -158,7 +158,7 @@ export function InviteDialog({ org, onClose, from }: { org: string; onClose: () 
                       fullWidth
                       value={pr.role}
                       onValueChange={(next) => setRoles(roles.map((r, j) => (j === i ? { ...r, role: next } : r)))}
-                      roles={roleOptions(cat, projectRoles, held[i]?.data ? { held: held[i].data, isOwner: giver.isOwner } : null)}
+                      roles={roleOptions(cat, projectRoles, held[i]?.data ? { held: held[i].data.rights, isOwner: giver.isOwner } : null)}
                     />
                   </div>
                   <Button

@@ -25,7 +25,7 @@ export async function projectGate({
   preload: boolean;
 }): Promise<void> {
   const session = await queryClient.ensureQueryData(sessionQuery);
-  const [rights] = await Promise.all([
+  const [{ rights }] = await Promise.all([
     queryClient.ensureQueryData(projectRightsQuery(session, org, project)),
     queryClient.ensureQueryData(projectQuery(org, project)),
     queryClient.ensureQueryData(orgProjectsQuery(org)).catch(() => undefined),

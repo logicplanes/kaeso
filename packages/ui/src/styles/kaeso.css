@@ -620,6 +620,11 @@
   grid-template-columns: fit-content(200px) minmax(0, 1fr) max-content;
 }
 
+/* Menus, selects and comboboxes: 360px at most, and never wider than the room the screen leaves beside the anchor, so a
+   long option can't push a popup past a phone's edge. */
+@utility max-w-menu {
+  max-width: min(var(--spacing-360), var(--available-width, var(--spacing-360)));
+}
 @utility min-w-anchor {
   min-width: var(--k-anchor-width, var(--anchor-width));
 }
@@ -908,6 +913,12 @@
   }
   [hidden] {
     display: none !important;
+  }
+  /* Hidden text starts at its containing block's start edge, not where the line would put it: inside a
+     truncated cell that spot is past the clip (truncate isn't positioned), and the page scrolled sideways to it.
+     Its vertical place stays, so screen readers' cursors stay on the line. */
+  .sr-only {
+    inset-inline-start: 0;
   }
   input[type="search"]::-webkit-search-cancel-button,
   input[type="search"]::-webkit-search-decoration {

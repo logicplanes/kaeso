@@ -14,6 +14,7 @@ describe("requesting a password reset", () => {
     const { user } = await renderApp("/auth/password-reset");
     expect(await screen.findByText("We email you a link to set a new one, valid for 15 minutes.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveAttribute("href", "/sign-in");
+    expect(screen.getByRole("link", { name: "Back to sign in" })).toHaveClass("tap-target");
     const send = screen.getByRole("button", { name: "Email me a link" });
     expect(send).toBeDisabled();
     await user.type(screen.getByRole("textbox", { name: "Email" }), " ada@example.com ");
