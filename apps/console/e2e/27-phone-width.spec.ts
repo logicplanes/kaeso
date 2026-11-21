@@ -1,10 +1,13 @@
 import { readFileSync } from "node:fs";
+import AxeBuilder from "@axe-core/playwright";
 import { devices, type Cookie, type Page } from "@playwright/test";
 import { expect, test, firstProjectOf, NEW_PASSWORD, OWNER } from "./support";
 
 // Without its WebKit default: a device's browser can't change inside a file, and CI runs Chromium.
 const { defaultBrowserType: _browser, ...phone } = devices["iPhone 15"];
-test.use({ ...phone, viewport: { width: 390, height: 844 } });
+// Without motion: a sheet or row still fading in would read as low contrast.
+const PHONE = { ...phone, viewport: { width: 390, height: 844 }, reducedMotion: "reduce" as const };
+test.use(PHONE);
 
 // Read from the generated route tree and the views' list, so a new page or view is checked without being listed here.
 const tree = readFileSync(new URL("../src/routeTree.gen.ts", import.meta.url), "utf8");
@@ -71,6 +74,7 @@ test.beforeAll(async ({ browser }) => {
 function urls(route: string, { org, project, share }: Ids): string[] {
   const filled = (view: string) =>
     route
+      .replace("$instanceOrg", org)
       .replace("$org", org)
       .replace("$project", project)
       .replace("$view", view)
@@ -138,14 +142,78 @@ async function settled(page: Page): Promise<void> {
   }
 }
 
-async function check(page: Page, url: string): Promise<void> {
-  await page.goto(url);
-  // Counts the route's code too, which a development server compiles on its first visit.
-  await page.waitForLoadState("networkidle");
-  await settled(page);
-  await page.evaluate(SCROLL_TO_THE_END);
-  await settled(page);
-  expect(await page.evaluate<string[]>(SIDEWAYS_SCROLLERS_AND_WHAT_STICKS_OUT), url).toEqual([]);
+// Controls a finger has to hit, at least 44px each way (a tap target's ::after counts). Left out on purpose: fields
+// and the buttons inside them, which keep their 32-36px (a larger area would cover the caret), and links in running text
+// or a table cell, whose area would cover the lines next to them.
+// Measured from the top of every scroller, so the whole page counts, not only its last screen.
+const SMALL_TOUCH_TARGETS = `(() => {
+  const small = [];
+  for (const sc of [document.scrollingElement, ...document.querySelectorAll("[data-frame-body], [data-dialog-body]")]) if (sc) sc.scrollTop = 0;
+  for (const el of document.querySelectorAll("button, a[href], [role=button], [role=tab], [role=switch], [role=checkbox], [role=radio], [role=menuitem], [role=option], select, summary")) {
+    const r = el.getBoundingClientRect();
+    if (r.width <= 2 || r.height <= 2 || !el.checkVisibility({ visibilityProperty: true }) || el.closest("[aria-hidden=true], [inert]")) continue;
+    if (el.closest(".material-field")) continue;
+    if (el.tagName === "A" && !el.matches("[class*=tap-target]") && (getComputedStyle(el).display === "inline" || el.closest("p, [role=cell], [role=gridcell], dd"))) continue;
+    const after = getComputedStyle(el, "::after");
+    const tap = after.content !== "none" && after.position === "absolute";
+    const w = Math.max(r.width, tap ? parseFloat(after.width) || 0 : 0);
+    const h = Math.max(r.height, tap ? parseFloat(after.height) || 0 : 0);
+    if (w < 43.5 || h < 43.5) small.push(Math.round(w) + "x" + Math.round(h) + " <" + el.tagName.toLowerCase() + "> " + ((el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 40)));
+  }
+  return small;
+})()`;
+
+// The placeholders urls() fills in for a route's own ids, which answer with an error on purpose.
+const EXPECTED = /\/(aliases\/no-such-alias|me\/agents\/agt_0{26})$/;
+// A signed-out visit asks whether it is signed in; signed in, the same answer would mean the session dropped.
+const SIGNED_OUT = /^\/platform\/v1\/(auth\/session|me\/memberships)$/;
+// The SSO popup's last page closes itself; opened as a page of its own, the browser says it may not.
+const EXPECTED_WARNING = /^Scripts may close only the windows that were opened by them\.$/;
+
+async function check(page: Page, url: string, signedIn: boolean): Promise<void> {
+  const problems: string[] = [];
+  const onConsole = (m: { type(): string; text(): string }) => {
+    if (m.type() === "warning" && !EXPECTED_WARNING.test(m.text())) problems.push(`console warning: ${m.text()}`);
+  };
+  const onResponse = (r: { status(): number; url(): string; request(): { method(): string } }) => {
+    const path = new URL(r.url()).pathname;
+    if (r.status() >= 400 && !EXPECTED.test(path) && (signedIn || !SIGNED_OUT.test(path)))
+      problems.push(`${r.request().method()} ${new URL(r.url()).pathname} answered ${r.status()}`);
+  };
+  const onFailed = (r: { url(): string; failure(): { errorText: string } | null }) => {
+    const reason = r.failure()?.errorText ?? "";
+    // A request the page itself dropped by moving on is not a failure.
+    if (!reason.includes("ERR_ABORTED")) problems.push(`${new URL(r.url()).pathname} failed: ${reason}`);
+  };
+  page.on("console", onConsole);
+  page.on("response", onResponse);
+  page.on("requestfailed", onFailed);
+  try {
+    await page.goto(url);
+    // Counts the route's code too, which a development server compiles on its first visit.
+    await page.waitForLoadState("networkidle");
+    await settled(page);
+    await page.evaluate(SCROLL_TO_THE_END);
+    await settled(page);
+    // Soft, so one run names every kind of problem a page has, not only the first.
+    expect.soft(await page.evaluate<string[]>(SIDEWAYS_SCROLLERS_AND_WHAT_STICKS_OUT), url).toEqual([]);
+    expect.soft(await page.evaluate<string[]>(SMALL_TOUCH_TARGETS), `${url}: controls smaller than a finger`).toEqual([]);
+    const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+    expect
+      .soft(
+        axe.violations
+          .filter((v) => v.impact === "serious" || v.impact === "critical")
+          .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`),
+        `${url}: serious accessibility problems`,
+      )
+      .toEqual([]);
+    expect.soft(problems, `${url}: warnings and failed requests`).toEqual([]);
+    if (signedIn) expect.soft(new URL(page.url()).pathname, `${url}: the session held`).not.toBe("/sign-in");
+  } finally {
+    page.off("console", onConsole);
+    page.off("response", onResponse);
+    page.off("requestfailed", onFailed);
+  }
 }
 
 test("the route list holds every page of the console", () => {
@@ -154,14 +222,17 @@ test("the route list holds every page of the console", () => {
 });
 
 for (const route of ROUTES) {
-  test(`${route} fits a phone without scrolling sideways`, async ({ page, browser }) => {
+  test(`${route} fits a phone: nothing scrolls sideways, every control takes a finger, axe finds nothing serious, and nothing fails or warns`, async ({
+    page,
+    browser,
+  }) => {
     await page.context().addCookies(cookies);
-    for (const url of urls(route, ids)) await check(page, url);
+    for (const url of urls(route, ids)) await check(page, url, !PUBLIC.test(route));
     if (!PUBLIC.test(route)) return;
-    const signedOut = await browser.newContext({ ...phone, viewport: { width: 390, height: 844 } });
+    const signedOut = await browser.newContext(PHONE);
     try {
       const out = await signedOut.newPage();
-      for (const url of urls(route, ids)) await check(out, url);
+      for (const url of urls(route, ids)) await check(out, url, false);
     } finally {
       await signedOut.close();
     }
