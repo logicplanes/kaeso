@@ -17,6 +17,7 @@ describe("time zone words", () => {
     const summer = new Date("2026-07-01T12:00:00Z");
     expect(offsetOf("Europe/Berlin", summer)).toBe("GMT+2");
     expect(offsetOf("UTC", summer)).toBe("GMT+0");
+    expect(offsetOf("America/New_York", summer)).toBe("GMT\u22124");
     expect(offsetOf("Mars/Olympus", summer)).toBe("Mars/Olympus");
     expect(clockIn("Asia/Tokyo", summer)).toBe("Wed 1 Jul, 21:00");
     expect(clockIn("Mars/Olympus", summer)).toBe("");

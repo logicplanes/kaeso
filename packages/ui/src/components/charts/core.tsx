@@ -1,13 +1,13 @@
 import type * as React from "react";
 import { forwardRef, memo, useDeferredValue, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
+import { tabularText } from "../../utils/figures.js";
 import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Button } from "../button/button.js";
 import { SwapText } from "../swap-text/swap-text.js";
 import { Table } from "../table/table.js";
 
-import { tabularText } from "../../utils/figures.js";
 import { ChartTooltip, Swatch, useSize, type TooltipRow } from "./tooltip.js";
 
 export { ChartTooltip, Swatch, useSize };

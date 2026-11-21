@@ -377,3 +377,15 @@ describe("QuestionEditor", () => {
     expect(screen.getByRole("button", { name: "Stufe hinzufügen" })).toBeInTheDocument();
   });
 });
+
+describe("DecisionResponse figures", () => {
+  it("sets a score nearest a level named with a hyphen as written", () => {
+    render(
+      <DecisionResponse
+        questions={[{ name: "fit", kind: "score", levels: [{ label: "Low" }, { label: "Well-known" }] }]}
+        answers={[{ kind: "score", score: 0.9 }]}
+      />,
+    );
+    expect(screen.getByText(/nearest Well-known/)).not.toHaveClass("tabular");
+  });
+});

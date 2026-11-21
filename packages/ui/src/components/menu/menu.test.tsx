@@ -51,3 +51,21 @@ describe("Menu", () => {
     expect(spacer).toHaveClass("hidden", "size-16", "group-has-data-menu-glyph/menu:block");
   });
 });
+
+describe("Menu figures", () => {
+  it("sets an item's hint naming a version as written", async () => {
+    render(
+      <Menu open>
+        <Menu.Trigger>
+          <button type="button">Release</button>
+        </Menu.Trigger>
+        <Menu.Content>
+          <Menu.Item hint="40.4.3-rc.1">Roll back</Menu.Item>
+          <Menu.Item hint="12">Requests</Menu.Item>
+        </Menu.Content>
+      </Menu>,
+    );
+    expect(await screen.findByText("40.4.3-rc.1")).not.toHaveClass("tabular");
+    expect(screen.getByText("12")).toHaveClass("tabular");
+  });
+});

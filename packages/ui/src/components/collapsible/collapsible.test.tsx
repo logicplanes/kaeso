@@ -27,3 +27,14 @@ describe("Collapsible", () => {
     expect(screen.getByText("View organization").parentElement).toHaveClass("px-12");
   });
 });
+
+describe("Collapsible figures", () => {
+  it("sets a hint naming a version as written", () => {
+    render(
+      <Collapsible title="Changes" hint="Since 40.4.3-rc.1">
+        Body
+      </Collapsible>,
+    );
+    expect(screen.getByText("Since 40.4.3-rc.1")).not.toHaveClass("tabular");
+  });
+});

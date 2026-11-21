@@ -1,9 +1,9 @@
 import { forwardRef, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { mergeRefs } from "../../utils/merge-refs.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { edgeColor } from "./marks.js";
-import { figures } from "../../utils/figures.js";
 
 export function useSize<T extends HTMLElement>(): [(el: T | null) => void, { width: number; height: number }] {
   const [el, setEl] = useState<T | null>(null);

@@ -1,7 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
-import { SwapValue, textOf } from "./swap-value.js";
 import { figures } from "../../utils/figures.js";
+import { SwapValue, textOf } from "./swap-value.js";
 
 export interface LegendEntry {
   id: string;

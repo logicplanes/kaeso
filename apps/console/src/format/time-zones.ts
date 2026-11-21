@@ -13,7 +13,8 @@ export function timeZoneNames(current: string): string[] {
 export function offsetOf(zone: string, at: Date = new Date()): string {
   try {
     const name = new Intl.DateTimeFormat("en-GB", { timeZone: zone, timeZoneName: "shortOffset" }).format(at).replace(/^.* /, "");
-    return name === "GMT" ? "GMT+0" : name;
+    // A minus sign, not the hyphen ICU writes: next to a letter, a hyphen drops the offsets' tabular figures.
+    return name === "GMT" ? "GMT+0" : name.replace("-", "\u2212");
   } catch {
     return zone;
   }

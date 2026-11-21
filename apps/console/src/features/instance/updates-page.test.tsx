@@ -43,7 +43,6 @@ describe("instance updates page", () => {
     expect(await within(table).findByText("40.4.0 to 40.4.1")).toBeInTheDocument();
   });
 
-  // Inter's tabular figures give a hyphen a figure's width: "40.4.3-rc.1" would read "40.4.3 - rc.1".
   it("sets versions in the history as written, and a pre-release's badges too", async () => {
     signedIn();
     on(

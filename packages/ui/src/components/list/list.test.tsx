@@ -386,3 +386,21 @@ describe("SelectionAction", () => {
     expect(onClick).toHaveBeenCalledOnce();
   });
 });
+
+describe("List figures", () => {
+  it("sets a date naming a version as written, beside dates in tabular figures, on wide and narrow rows", () => {
+    const items = [
+      { id: "a", title: "First", date: "Updated to 40.4.3-rc.1" },
+      { id: "b", title: "Second", date: "13 Oct" },
+    ];
+    const { unmount } = render(<List aria-label="Updates" items={items} />);
+    expect(screen.getByText("Updated to 40.4.3-rc.1").parentElement).not.toHaveClass("tabular");
+    expect(screen.getByText("13 Oct").parentElement).toHaveClass("tabular");
+    unmount();
+    const spy = vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(360);
+    render(<List aria-label="Updates" items={items.map((i) => ({ ...i, meta: <span>Done</span> }))} />);
+    expect(screen.getByText("Updated to 40.4.3-rc.1")).not.toHaveClass("tabular");
+    expect(screen.getByText("13 Oct")).toHaveClass("tabular");
+    spy.mockRestore();
+  });
+});

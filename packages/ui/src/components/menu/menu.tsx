@@ -17,6 +17,7 @@ import {
 import { Menu as BaseMenu } from "@base-ui/react/menu";
 import { ContextMenu as BaseContextMenu } from "@base-ui/react/context-menu";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { useLinkComponent } from "../../utils/link-provider.js";
 import { Icon, type IconData } from "../icon/icon.js";
 import { Kbd } from "../kbd/kbd.js";
@@ -209,7 +210,7 @@ function ItemContent({
         <span className="min-w-0 flex-1 py-6 text-pretty wrap-break-word">{children}</span>
       )}
       {(shortcut || hint) && (
-        <span id={hintId} aria-hidden className={MENU_HINT}>
+        <span id={hintId} aria-hidden className={cn(MENU_HINT, figures(hint))}>
           {hint}
           {shortcut && <Kbd keys={shortcut} />}
         </span>

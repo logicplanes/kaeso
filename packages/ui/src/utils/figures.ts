@@ -21,7 +21,7 @@ function plainText(node: ReactNode): string | undefined {
   return undefined;
 }
 
-/** `tabular`, unless the text is a hyphenated name or version. Elements keep it: what they show can't be read here. */
+// Elements keep `tabular`: what they show can't be read here.
 export function figures(node: ReactNode): "tabular" | undefined {
   const text = plainText(node);
   return text === undefined || tabularText(text) ? "tabular" : undefined;
