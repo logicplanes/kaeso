@@ -236,7 +236,7 @@ The gateway is one Rust process with no garbage collector between your app and t
 
 ## How it compares
 
-These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 21 November 2026 and every entry is sourced below. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we correct it.
+These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 21 November 2026 and every entry is sourced below. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we'll correct it.
 
 **Yes** means the free or open-source version has it. **Paid** means a paid plan or enterprise license has it. **Partial** is explained in a note. **–** means we didn't find it in their documentation.
 
@@ -256,17 +256,17 @@ These tables compare Kaeso with the gateways people most often weigh it against,
 
 ### Teams and control
 
-|                       | Single sign-on           | SCIM | Roles                   | Audit log | Budgets                   | PII and secret rules  | Your own guardrail service |
-| --------------------- | ------------------------ | ---- | ----------------------- | --------- | ------------------------- | --------------------- | -------------------------- |
-| **Kaeso**             | Yes                      | Yes  | Yes                     | Yes       | Yes                       | Yes                   | Yes                        |
-| LiteLLM               | Up to 5 users, then paid | Paid | Partial[^litellm-roles] | Paid      | Yes                       | Partial[^litellm-pii] | Yes                        |
-| Bifrost               | Paid                     | Paid | Paid                    | Paid      | Yes                       | Paid                  | Partial[^bifrost-plugins]  |
-| Portkey               | Paid                     | Paid | Paid                    | Paid      | Paid                      | Paid                  | Yes                        |
-| Helicone              | Paid                     | –    | –                       | –         | Partial[^helicone-budget] | –                     | –                          |
-| Kong AI Gateway       | Paid                     | Paid | Paid                    | Paid      | Paid                      | Paid                  | Paid                       |
-| Agent Router          | –                        | –    | –                       | –         | Partial[^ar-quota]        | –                     | Partial[^ar-extauth]       |
-| OpenRouter            | Paid                     | Paid | Partial[^or-roles]      | Paid      | Yes[^or-budgets]          | Yes                   | –                          |
-| Cloudflare AI Gateway | Yes                      | Paid | Partial[^cf-roles]      | Yes       | Yes                       | Partial[^cf-dlp]      | –                          |
+|                       | Single sign-on | SCIM | Roles                   | Audit log | Budgets                   | PII and secret rules  | Your own guardrail service |
+| --------------------- | -------------- | ---- | ----------------------- | --------- | ------------------------- | --------------------- | -------------------------- |
+| **Kaeso**             | Yes            | Yes  | Yes                     | Yes       | Yes                       | Yes                   | Yes                        |
+| LiteLLM               | Up to 5 users  | Paid | Partial[^litellm-roles] | Paid      | Yes                       | Partial[^litellm-pii] | Yes                        |
+| Bifrost               | Paid           | Paid | Paid                    | Paid      | Yes                       | Paid                  | Partial[^bifrost-plugins]  |
+| Portkey               | Paid           | Paid | Paid                    | Paid      | Paid                      | Paid                  | Yes                        |
+| Helicone              | Paid           | –    | –                       | –         | Partial[^helicone-budget] | –                     | –                          |
+| Kong AI Gateway       | Paid           | Paid | Paid                    | Paid      | Paid                      | Paid                  | Paid                       |
+| Agent Router          | –              | –    | –                       | –         | Partial[^ar-quota]        | –                     | Partial[^ar-extauth]       |
+| OpenRouter            | Paid           | Paid | Partial[^or-roles]      | Paid      | Yes[^or-budgets]          | Yes                   | –                          |
+| Cloudflare AI Gateway | Yes            | Paid | Partial[^cf-roles]      | Yes       | Yes                       | Partial[^cf-dlp]      | –                          |
 
 ### APIs your apps can call
 
