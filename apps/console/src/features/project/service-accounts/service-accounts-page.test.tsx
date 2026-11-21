@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ORG, PROJECT, signedIn, without } from "~/test/fixtures";
-import { hoverReason, notifications } from "~/test/fixtures/org";
+import { ADMIN_ORG_RIGHTS, ORG, PROJECT, signedIn, withRights, without } from "~/test/fixtures";
+import { hoverReason, member, notifications } from "~/test/fixtures/org";
 import { apiKey, grant, listed, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { createdKey } from "~/test/fixtures/shell";
 import { apiError, on, requests } from "~/test/network";
@@ -59,6 +59,35 @@ describe("ServiceAccountsPage", () => {
     expect(rows[1]).toHaveTextContent("Viewer · customized");
     for (const row of rows) expect(row.querySelector("svg")).toBeNull();
     expect(requests("GET", ACCOUNTS).map((r) => r.query.get("include_archived"))).toEqual(["true"]);
+  });
+
+  it("names who created an account when they reach the project through the organization, not as a member", async () => {
+    signedIn();
+    projectData({
+      members: [projectMember({ user: { id: "usr_ada", name: "Ada Okafor" } })],
+      accounts: [serviceAccount({ created_by: "usr_grace" })],
+    });
+    on("GET", "orgs/:org/members/:user", member({ user: { id: "usr_grace", name: "Grace Hopper" } }));
+    await renderApp(projectPath("service-accounts"));
+
+    const grid = await screen.findByRole("grid", { name: "Service accounts" });
+    await waitFor(() => expect(within(grid).getAllByRole("gridcell")[0]).toHaveTextContent("Created by Grace Hopper"));
+    expect(grid).not.toHaveTextContent("usr_grace");
+    expect(requests("GET", "orgs/:org/members/:user").map((r) => r.path)).toEqual([`/platform/v1/orgs/${ORG}/members/usr_grace`]);
+    expect(requests("GET", "orgs/:org/members")).toEqual([]);
+  });
+
+  it("asks nothing of the organization without the right to see its members, and keeps the id", async () => {
+    withRights(ADMIN_ORG_RIGHTS.filter((r) => r !== "members.view"));
+    projectData({
+      members: [projectMember({ user: { id: "usr_ada", name: "Ada Okafor" } })],
+      accounts: [serviceAccount({ created_by: "usr_grace" })],
+    });
+    await renderApp(projectPath("service-accounts"));
+
+    const grid = await screen.findByRole("grid", { name: "Service accounts" });
+    await waitFor(() => expect(within(grid).getAllByRole("gridcell")[0]).toHaveTextContent("Created by usr_grace"));
+    expect(requests("GET", "orgs/:org/members/:user")).toEqual([]);
   });
 
   it("shows archived service accounts on the All tab", async () => {

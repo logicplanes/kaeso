@@ -27,7 +27,7 @@ export const ModelCard = forwardRef<HTMLElement, ModelCardProps>(function ModelC
           {facts.map((f, i) => (
             <div key={i} className="flex min-w-0 flex-col gap-2">
               <dt className="truncate text-caption text-fg-tertiary">{f.label}</dt>
-              <dd className="truncate text-small font-medium text-fg tabular">{f.value}</dd>
+              <dd className="text-small font-medium wrap-break-word text-fg tabular">{f.value}</dd>
             </div>
           ))}
         </dl>

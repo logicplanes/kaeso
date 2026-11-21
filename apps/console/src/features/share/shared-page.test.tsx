@@ -71,6 +71,7 @@ describe("a shared link's page", () => {
     expect(screen.getByText("A read-only view shared from Kaeso, until 13 Nov 2026.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /^Made with Kaeso/ })).toHaveAttribute("href", "https://kaeso.app");
     expect(screen.getByRole("link", { name: /^Made with Kaeso/ }).parentElement).toHaveClass("text-caption");
+    expect(screen.getByRole("link", { name: /^Made with Kaeso/ })).toHaveClass("tap-target");
     expect(screen.getByText("Live").parentElement).toBe(screen.getByRole("heading", { level: 1 }).parentElement);
     expect(screen.getByText("Live").parentElement).not.toHaveClass("flex-wrap");
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(expect.arrayContaining(["Models", "Members"]));

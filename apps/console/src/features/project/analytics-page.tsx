@@ -74,7 +74,7 @@ export function AnalyticsPage({ org, project, search, view }: { org: string; pro
             <Suspense fallback={null}>
               <PeriodPicker from={o.from} to={o.to} period={o.period} days={(id) => presetDays(id, new Date(), span.data?.first_day)} onChange={setSearch} />
             </Suspense>
-            <Share org={org} target={{ kind: "analytics", project, from: o.from, to: o.to, costs: o.showCost }} />
+            <Share compact org={org} target={{ kind: "analytics", project, from: o.from, to: o.to, costs: o.showCost }} />
           </>
         }
       />

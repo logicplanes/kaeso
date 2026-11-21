@@ -86,13 +86,13 @@ export function MethodsStep({
         <Text variant="small" tone="secondary" className="text-center">
           {m.password && (
             <>
-              <Link href="/auth/password-reset" onClick={(e) => (e.preventDefault(), onForgotPassword())}>
+              <Link href="/auth/password-reset" variant="action" onClick={(e) => (e.preventDefault(), onForgotPassword())}>
                 {t("signIn.forgotPassword", "Forgot your password?")}
               </Link>
               {" · "}
             </>
           )}
-          <Link href="#" onClick={(e) => (e.preventDefault(), onOtherEmail())}>
+          <Link href="#" variant="action" onClick={(e) => (e.preventDefault(), onOtherEmail())}>
             {t("signIn.otherEmail", "Use another email")}
           </Link>
         </Text>
@@ -100,7 +100,7 @@ export function MethodsStep({
           <Text variant="small" tone="secondary" className="text-center">
             {tRich("signIn.newHere", "New here? {link}", {
               link: (
-                <Link href="#" aria-disabled={busy === "sign_up"} onClick={(e) => (e.preventDefault(), busy ? undefined : onSignUp())}>
+                <Link href="#" variant="action" aria-disabled={busy === "sign_up"} onClick={(e) => (e.preventDefault(), busy ? undefined : onSignUp())}>
                   {t("signIn.createAccount", "Create an account")}
                 </Link>
               ),
@@ -171,7 +171,7 @@ export function TotpStep({
             : tRich("signIn.challengeExpires", "The challenge expires {when}. {link}", {
                 when: formatRelative(expiresAt),
                 link: (
-                  <Link href="#" onClick={(e) => (e.preventDefault(), onToggleRecovery())}>
+                  <Link href="#" variant="action" onClick={(e) => (e.preventDefault(), onToggleRecovery())}>
                     {recovery ? t("signIn.useApp", "Use the authenticator app") : t("signIn.useRecovery", "Use a recovery code")}
                   </Link>
                 ),

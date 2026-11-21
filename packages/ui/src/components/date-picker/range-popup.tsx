@@ -131,29 +131,33 @@ export function RangePopup({ range, preset, presets, onPick, onClose, weekStarts
             weekStartsOn={weekStartsOn}
             disabled={disabledDays}
           />
-          <div ref={fields} className="mt-12 flex items-center gap-8 self-stretch">
-            <IsoField
-              label={t("datePicker.startDate", "Start date")}
-              value={draft?.from}
-              invalid={problemOf("from") !== null}
-              errorId={errorId}
-              onProblem={report("from")}
-              onCommit={(d) => typed("from", d)}
-            />
-            <span className="text-fg-tertiary" aria-hidden>
-              –
-            </span>
-            <IsoField
-              label={t("datePicker.endDate", "End date")}
-              value={draft?.to}
-              invalid={problemOf("to") !== null}
-              errorId={errorId}
-              onProblem={report("to")}
-              onCommit={(d) => typed("to", d)}
-            />
+          {/* Inputs write 16px on a touch screen, so in the narrow popup the two dates take a row of their own and Apply goes under them. */}
+          <div ref={fields} className={cn("mt-12 flex items-center gap-8 self-stretch", !wide && "flex-wrap")}>
+            <div className={cn("flex min-w-0 flex-1 items-center gap-8", !wide && "basis-full")}>
+              <IsoField
+                label={t("datePicker.startDate", "Start date")}
+                value={draft?.from}
+                invalid={problemOf("from") !== null}
+                errorId={errorId}
+                onProblem={report("from")}
+                onCommit={(d) => typed("from", d)}
+              />
+              <span className="text-fg-tertiary" aria-hidden>
+                –
+              </span>
+              <IsoField
+                label={t("datePicker.endDate", "End date")}
+                value={draft?.to}
+                invalid={problemOf("to") !== null}
+                errorId={errorId}
+                onProblem={report("to")}
+                onCommit={(d) => typed("to", d)}
+              />
+            </div>
             <Button
               size="sm"
               variant="primary"
+              fullWidth={!wide}
               onClick={() => {
                 if (!draft?.from) {
                   setProblem({ field: "from", problem: "missing" });

@@ -33,7 +33,7 @@ export async function explainMissingRight(queryClient: QueryClient, org: string,
     const cat = indexCatalogue(catalogue);
     const name = cat.byId.get(right)?.name ?? right;
     const projectRights = project ? await queryClient.fetchQuery(projectRightsQuery(session, org, project)).catch(() => undefined) : undefined;
-    const sees = { members: orgRights(session, org).has("members.view"), projectMembers: !!projectRights?.has("project.members.view") };
+    const sees = { members: orgRights(session, org).has("members.view"), projectMembers: !!projectRights?.rights.has("project.members.view") };
     const query = grantorsFor(cat, right, org, project, sees);
     const grantors = query ? await queryClient.fetchQuery(query).catch(() => undefined) : undefined;
     return needsText(name, grantors);

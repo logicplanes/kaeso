@@ -4,10 +4,10 @@ import type { ShareTarget } from "./share-button";
 // The button loads with its page's other lazy parts, so the pages that offer it keep their bundle budgets.
 const ShareButton = lazy(() => import("./share-button").then((m) => ({ default: m.ShareButton })));
 
-export function Share({ org, target }: { org: string; target: ShareTarget }) {
+export function Share({ org, target, compact }: { org: string; target: ShareTarget; compact?: boolean | undefined }) {
   return (
     <Suspense fallback={null}>
-      <ShareButton org={org} target={target} />
+      <ShareButton org={org} target={target} compact={compact} />
     </Suspense>
   );
 }

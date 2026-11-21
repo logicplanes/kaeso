@@ -36,6 +36,10 @@ pub struct ImageGenerationRow {
     pub created_at: OffsetDateTime,
     pub completed_at: Option<OffsetDateTime>,
     pub accounted_at: Option<OffsetDateTime>,
+    pub tags: Vec<String>,
+    pub user_agent: Option<String>,
+    pub alias: Option<String>,
+    pub line: Option<String>,
 }
 
 /// What the provider last said about a generation.
@@ -64,9 +68,9 @@ pub async fn insert(db: impl PgExecutor<'_>, g: &ImageGenerationRow) -> Result<(
          service_account_id, provider, credential_id, catalogue_model_id, model, upstream_model, \
          dialect, upstream_id, request_id, params, prices, status, content_url, \
          content_mime_type, failure_reason, error_message, units, cost, created_at, \
-         completed_at, accounted_at) \
+         completed_at, accounted_at, tags, user_agent, alias, line) \
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, \
-         $19, $20, $21, $22, $23, $24, $25, $26)",
+         $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)",
         g.id,
         g.org_id,
         g.project_id,
@@ -92,7 +96,11 @@ pub async fn insert(db: impl PgExecutor<'_>, g: &ImageGenerationRow) -> Result<(
         g.cost,
         g.created_at,
         g.completed_at,
-        g.accounted_at
+        g.accounted_at,
+        &g.tags,
+        g.user_agent,
+        g.alias,
+        g.line
     )
     .execute(db)
     .await?;
@@ -111,7 +119,8 @@ pub async fn get(
         "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, provider, \
          credential_id, catalogue_model_id, model, upstream_model, dialect, upstream_id, \
          request_id, params, prices, status, content_url, content_mime_type, failure_reason, \
-         error_message, units, cost, created_at, completed_at, accounted_at \
+         error_message, units, cost, created_at, completed_at, accounted_at, tags, user_agent, \
+         alias, line \
          FROM image_generations WHERE org_id = $1 AND project_id = $2 AND id = $3",
         org_id,
         project_id,
@@ -135,7 +144,7 @@ pub async fn list(
          g.provider, g.credential_id, g.catalogue_model_id, g.model, g.upstream_model, \
          g.dialect, g.upstream_id, g.request_id, g.params, g.prices, g.status, g.content_url, \
          g.content_mime_type, g.failure_reason, g.error_message, g.units, g.cost, g.created_at, \
-         g.completed_at, g.accounted_at \
+         g.completed_at, g.accounted_at, g.tags, g.user_agent, g.alias, g.line \
          FROM image_generations g \
          LEFT JOIN image_generations b ON b.org_id = $1 AND b.project_id = $2 AND b.id = $3 \
          WHERE g.org_id = $1 AND g.project_id = $2 \
@@ -192,7 +201,8 @@ pub async fn account(
     at: OffsetDateTime,
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query_scalar!(
-        "UPDATE image_generations SET units = $3, cost = $4, accounted_at = $5 \
+        "UPDATE image_generations SET units = $3, cost = $4, accounted_at = $5, tags = '{}', \
+         user_agent = NULL, alias = NULL, line = NULL \
          WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL \
            AND status IN ('completed', 'failed') RETURNING id",
         org_id,

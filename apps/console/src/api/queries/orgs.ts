@@ -21,6 +21,16 @@ export const orgMembersQuery = (org: string) =>
       ),
   });
 
+// One person of the organization, for naming someone a project shows without them being its member.
+export const orgMemberQuery = (org: string, user: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "member", user],
+    queryFn: async (): Promise<MemberView> => data(await api.GET("/platform/v1/orgs/{org}/members/{user}", { params: { path: { org, user } } })),
+    retry: false,
+    staleTime: 5 * 60_000,
+    meta: { quiet: true },
+  });
+
 export const orgOwnersQuery = (org: string) =>
   queryOptions({
     queryKey: ["orgs", org, "members", { role: "owner" }],

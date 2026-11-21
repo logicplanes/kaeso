@@ -80,7 +80,7 @@ curl https://kaeso.example.com/v1/flows/image \
 - **模型。** Kaeso 只用项目的 ElevenLabs 图片模型（按名称或通过别名）提供 `flows.image`：其他服务商直接应答图片本身，没有可供之后查询的生成。其他服务商的模型会在发送任何内容之前以 400 和 `param: model_id` 被拒绝；请通过[图片 API](images.md) 调用它。
 - **拒绝的内容。** `webhook` 会以 400 被拒绝，因为 webhook 会带有 ElevenLabs 自己的生成 ID，而 Kaeso 不对外提供该 ID。模型不接受的字段（例如 `gpt-image-1.5` 上的 `aspect_ratio` `16:9`）会在发送前被拒绝，字段放在 `param` 中。
 - **密钥。** 生成始终属于启动它的 ElevenLabs 密钥。项目改用另一个 ElevenLabs 密钥后，查询该生成会得到 409。
-- **费用和日志。** [请求日志](../console/request-logs.md)把开始显示为不产生费用的 `flows/image`，把完成的图片显示为带有费用的 `flows/image/completed`，无论多少请求看到它结束，都只计费一次。ElevenLabs 以积分计费图片，而 KPMR 不列出积分，因此其费用保持未知。除非组织和项目都[保留媒体](../console/request-logs.md#请求和回复中的媒体)，否则上传的图片只记录媒体类型和大小。
+- **费用和日志。** [请求日志](../console/request-logs.md)把开始显示为不产生费用的 `flows/image`，把完成的图片显示为带有费用以及启动请求的标签、客户端、别名和模型系列的 `flows/image/completed`，无论多少请求看到它结束，都只计费一次。ElevenLabs 以积分计费图片，而 KPMR 不列出积分，因此其费用保持未知。除非组织和项目都[保留媒体](../console/request-logs.md#请求和回复中的媒体)，否则上传的图片只记录媒体类型和大小。
 
 ## 实时会话
 

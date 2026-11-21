@@ -596,7 +596,11 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
           </TruncatedText>
         )}
         <span className={cn("flex min-w-0 flex-1", lines ? "flex-col items-stretch gap-4" : "contents")}>
-          <span className={cn(lines ? cn("grid min-w-0 items-start gap-y-2", item.actions ? "grid-cols-row-actions gap-x-8" : "grid-cols-1") : "contents")}>
+          <span
+            className={cn(
+              lines ? cn("grid min-w-0 items-start gap-y-2", item.actions || trailing ? "grid-cols-row-actions gap-x-8" : "grid-cols-1") : "contents",
+            )}
+          >
             <span className={cn(lines && stacked ? "contents" : cn("flex min-w-0 flex-1", stacked ? "flex-col items-start gap-2" : "items-baseline gap-8"))}>
               {typeof item.title === "string" ? (
                 <Text truncate weight="medium" tone={off ? "inherit" : "default"} className={cn("min-w-0 shrink", stacked && "max-w-full")}>
@@ -612,14 +616,19 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
                     "min-w-0",
                     off ? "text-fg-disabled" : "text-fg-secondary",
                     stacked ? "max-w-full text-small" : "flex-1 basis-0",
-                    lines && item.actions && "col-span-2",
+                    lines && (item.actions || trailing) && "col-span-2",
                   )}
                 >
                   {item.subtitle}
                 </TruncatedText>
               )}
             </span>
-            {lines && item.actions && <span className="col-start-2 row-start-1 flex h-24 shrink-0 items-center gap-2">{item.actions}</span>}
+            {lines && (item.actions || trailing) && (
+              <span className="col-start-2 row-start-1 flex h-24 shrink-0 items-center gap-2">
+                {item.actions}
+                {trailing}
+              </span>
+            )}
           </span>
           {lines && (
             <span className="flex min-h-24 min-w-0 flex-wrap items-center gap-x-8">
@@ -627,7 +636,6 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
               {item.date && (
                 <span className={cn("shrink-0 text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>{item.date}</span>
               )}
-              {trailing}
             </span>
           )}
         </span>
