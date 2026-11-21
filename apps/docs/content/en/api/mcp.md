@@ -293,7 +293,7 @@ In older versions an unknown method gets the JSON-RPC error `-32601` with status
 
 Using a refresh token or a code a second time ends that whole sign-in, because one of them must have leaked. Every token from it stops working, and the agent has to be connected again.
 
-An agent keeps working until you revoke it, or until it goes 90 days without a request. Deactivating its user stops it too, and so does turning agents off for the install. Whatever ends every session of its user revokes it as well: resetting the password or two-factor authentication, or an instance admin ending the sessions.
+An agent keeps working until you revoke it, or until it goes 90 days without a request. Deactivating its user stops it too, and so does turning agents off for the install. Whatever ends every session of its user revokes it as well: resetting the password or two-factor authentication, or an instance admin ending the sessions. So does whatever ends the session it was approved in because that sign-in no longer counts: replacing or disconnecting the identity provider that signed it in, unlinking the account from that provider, removing the account from that provider's organization through SCIM, or requiring single sign-on for the account when it was approved after a password or a sign-in link. Clients connected to a project's portal end the same way.
 
 ## OAuth endpoints
 

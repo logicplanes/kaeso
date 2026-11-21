@@ -7020,7 +7020,7 @@
           "me"
         ],
         "summary": "Unlinks the account from an org's identity provider: it no longer signs\nin through it, and the account's sessions it signed in end.",
-        "description": "Needs a sign-in within the last 15 minutes. When the session that asks came from that org's SSO, it ends too.\n\n**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
+        "description": "Needs a sign-in within the last 15 minutes. The agents and portal grants approved in those sessions end with them, and so does the session that asks when it came from that org's SSO.\n\n**Access:** a signed-in console session; one from the SSO of an org that doesn't manage the account gets `other_sign_in_required`.",
         "operationId": "deleteMeSsoLinksOrg",
         "parameters": [
           {
@@ -26597,7 +26597,7 @@
           "orgs"
         ],
         "summary": "Requires (or stops requiring) the accounts the org manages to sign in\nonly through its SSO. Needs an SSO connection.",
-        "description": "The accounts at the org's verified email domains then can't sign in with a password or a sign-in link anywhere on the install, and their sessions from those end, except the one making the request. Guests, members at other domains, keep their own sign-in. A sign-in link from `kaeso user sign-in-link` still works.\n\n**Right:** `security.sso.require` on the organization in the path; a console session only, signed in within the last 15 minutes.",
+        "description": "The accounts at the org's verified email domains then can't sign in with a password or a sign-in link anywhere on the install, and their sessions from those end, with the agents and portal grants approved in them, except the session making the request. Guests, members at other domains, keep their own sign-in. A sign-in link from `kaeso user sign-in-link` still works.\n\n**Right:** `security.sso.require` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "putOrgsOrgSecurityRequireSso",
         "parameters": [
           {
@@ -26751,7 +26751,7 @@
           "orgs"
         ],
         "summary": "Sets up or replaces the SSO connection. The provider's discovery\ndocument is fetched first, so a mistake shows now, not at sign-in.",
-        "description": "A new `issuer` or `client_id` ends every session the previous provider signed in to the org, since that provider no longer vouches for them.\n\n**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
+        "description": "A new `issuer` or `client_id` ends every session the previous provider signed in to the org, and the agents and portal grants approved in them, since that provider no longer vouches for them.\n\n**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "putOrgsOrgSecuritySso",
         "parameters": [
           {
@@ -26823,7 +26823,7 @@
           "orgs"
         ],
         "summary": "Removes the SSO connection and ends every session it signed in. Refused\nwhile SSO is required.",
-        "description": "**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
+        "description": "The agents and portal grants approved in those sessions end with them.\n\n**Right:** `security.sso.manage` on the organization in the path; a console session only, signed in within the last 15 minutes.",
         "operationId": "deleteOrgsOrgSecuritySso",
         "parameters": [
           {

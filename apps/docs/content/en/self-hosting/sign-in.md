@@ -71,7 +71,7 @@ An organization can also set the role and project memberships of the accounts it
 
 With **Require single sign-on** on, the accounts an organization manages sign in only through its provider, anywhere on the install. The sign-in page offers them the provider alone. Kaeso refuses a password, a sign-in link, a sign-up or an invitation without an account with `Your organization requires single sign-on; continue with its identity provider.`
 
-Turning the requirement on ends their sessions from a password or a sign-in link, except the session that turns it on. Verifying another domain while it is on does the same.
+Turning the requirement on ends their sessions from a password or a sign-in link, and the agents and portal clients approved in them, except the session that turns it on. Verifying another domain while it is on does the same.
 
 Guests keep their own sign-in and open the organization with it, under its two-factor requirement. A sign-in link from the server still signs a managed account in ([get back in](#get-back-in)).
 

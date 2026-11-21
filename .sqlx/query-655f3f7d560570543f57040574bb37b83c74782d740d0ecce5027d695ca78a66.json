@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE portal_grants g SET revoked_at = $2 FROM users u WHERE u.id = g.user_id AND g.sign_in_method <> 'oidc' AND g.revoked_at IS NULL AND split_part(email_key(u.email), '@', 2) = ANY($1) RETURNING g.id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "portal_grants",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "655f3f7d560570543f57040574bb37b83c74782d740d0ecce5027d695ca78a66"
+}

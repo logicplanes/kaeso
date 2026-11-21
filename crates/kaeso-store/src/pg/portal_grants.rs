@@ -186,6 +186,40 @@ pub async fn revoke_of_user(
     .await?)
 }
 
+pub async fn revoke_sso(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    user_id: Option<Uuid>,
+    now: OffsetDateTime,
+) -> Result<Vec<Uuid>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "UPDATE portal_grants SET revoked_at = $3 WHERE sign_in_method = 'oidc' \
+         AND oidc_org_id = $1 AND ($2::uuid IS NULL OR user_id = $2) AND revoked_at IS NULL \
+         RETURNING id",
+        org_id,
+        user_id,
+        now
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+pub async fn revoke_other_sign_ins_at(
+    db: impl PgExecutor<'_>,
+    domains: &[String],
+    now: OffsetDateTime,
+) -> Result<Vec<Uuid>, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "UPDATE portal_grants g SET revoked_at = $2 FROM users u WHERE u.id = g.user_id \
+         AND g.sign_in_method <> 'oidc' AND g.revoked_at IS NULL \
+         AND split_part(email_key(u.email), '@', 2) = ANY($1) RETURNING g.id",
+        domains,
+        now
+    )
+    .fetch_all(db)
+    .await?)
+}
+
 pub async fn touch(
     db: impl PgExecutor<'_>,
     id: Uuid,

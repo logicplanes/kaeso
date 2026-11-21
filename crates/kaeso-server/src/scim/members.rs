@@ -1,11 +1,10 @@
 //! What provisioning does to a membership: added with the single sign-on default role, or
-//! removed as an admin removes a member, with their keys archived and their sessions ended.
+//! removed as an admin removes a member, with their keys archived. Removal also ends the sessions
+//! the organization's single sign-on started, with the agents and portal grants approved in them.
 
 use axum::http::StatusCode;
 use kaeso_core::id::{OrgId, UserId};
-use kaeso_store::pg::{
-    key_lifecycle, members, orgs, scim as store, sessions as sessions_store, users,
-};
+use kaeso_store::pg::{key_lifecycle, members, orgs, scim as store, users};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -80,8 +79,9 @@ pub(super) async fn provision(
     Ok(())
 }
 
-/// Removes `user` from the organization and its projects, archives their keys in it and ends
-/// the sessions its single sign-on started, as removing a member does. The last owner stays.
+/// Removes `user` from the organization and its projects and archives their keys in it, as
+/// removing a member does, and ends the sessions its single sign-on started, with the agents and
+/// portal grants approved in them. The last owner stays.
 pub(super) async fn deprovision(
     state: &AppState,
     org: Uuid,
@@ -105,19 +105,20 @@ pub(super) async fn deprovision(
     members::delete_org(&mut tx, org, user).await?;
     let limited = kaeso_store::pg::limits::delete_of_user(&mut *tx, org, None, user).await?;
     let archived = key_lifecycle::archive_user_keys_in_org(&mut *tx, org, user, now).await?;
-    let ended = sessions_store::revoke_sso(&mut *tx, org, Some(user), now).await?;
+    let ended = sessions::revoke_sso_in(&mut tx, org, Some(user), now).await?;
     let remaining = members::org_count_of_user(&mut *tx, user).await?;
+    let mut after = serde_json::Map::new();
+    after.insert("via".into(), "scim".into());
+    after.insert("external_id".into(), external_id.into());
+    after.insert("archived_keys".into(), archived.len().into());
+    after.extend(ended.counts());
     system_event(
         &mut tx,
         Some(OrgId::from_uuid(org)),
         Action::MemberDeprovision,
         Some(("user", UserId::from_uuid(user).to_string())),
         Some(json!({ "role": RoleRef::of_org(&target.grant()) })),
-        Some(json!({
-            "via": "scim",
-            "external_id": external_id,
-            "archived_keys": archived.len(),
-        })),
+        Some(serde_json::Value::Object(after)),
         now,
     )
     .await?;
@@ -127,7 +128,7 @@ pub(super) async fn deprovision(
     for project in limited {
         crate::services::limits::forget(state, project).await;
     }
-    sessions::forget(state, &ended).await;
+    ended.forget(state).await;
     if remaining == 0 {
         sessions::revoke_all(state, UserId::from_uuid(user), None).await?;
     }

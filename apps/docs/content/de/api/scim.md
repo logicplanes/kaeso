@@ -26,7 +26,7 @@ SCIM verwaltet nur Konten an den bestätigten Domains der Organisation. Ein Gast
 | --- | --- |
 | Legt einen Benutzer an | Legt das Konto an, wenn es keines gibt, und fügt die Mitgliedschaft mit der Standardrolle von Single Sign-on hinzu. Die erste Anmeldung der Person über den Anbieter verknüpft ihre Identität. Ein bestehendes Konto an einer bestätigten Domain tritt ebenfalls bei |
 | Ändert den Namen eines Benutzers | Ändert den Namen des Kontos. Die Adresse lässt sich über SCIM nicht ändern |
-| Setzt `active` auf false | Entfernt das Mitglied aus der Organisation und ihren Projekten, archiviert dort seine Schlüssel und beendet die Sitzungen, die der Anbieter der Organisation angemeldet hat, wie **Aus Organisation entfernen**. Ist die Person in keiner Organisation mehr, enden alle ihre Sitzungen |
+| Setzt `active` auf false | Entfernt das Mitglied aus der Organisation und ihren Projekten und archiviert dort seine Schlüssel, wie **Aus Organisation entfernen**, und beendet die Sitzungen, die der Anbieter der Organisation angemeldet hat, samt den darin freigegebenen Agenten und Portal-Clients. Ist die Person in keiner Organisation mehr, enden alle ihre Sitzungen |
 | Setzt `active` wieder auf true | Fügt eine neue Mitgliedschaft mit der Standardrolle hinzu. Archivierte Schlüssel bleiben archiviert |
 | Löscht einen Benutzer | Entfernt das Mitglied wie oben und vergisst, dass der Anbieter es verwaltet |
 | Überträgt Gruppen | Speichert die Gruppen und ihre Mitglieder. Sie gewähren noch keinen Zugriff |

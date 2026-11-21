@@ -68,7 +68,7 @@ _kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9f
 
 DNS changes can take a while to show; choose **Verify** again later. Public mail domains, such as `gmail.com`, can't be added, and neither can a domain another organization verified. For a domain that public DNS doesn't answer for, an operator verifies it on the server with `kaeso sso verify-domain acme.example`.
 
-**Edit single sign-on** changes the connection. An empty client secret keeps the stored one while the issuer and client id stay the same. A new issuer or client id ends the sessions the previous provider signed in. **Disconnect** removes it and ends the sessions it signed in, and members sign in with a password or a sign-in link again.
+**Edit single sign-on** changes the connection. An empty client secret keeps the stored one while the issuer and client id stay the same. A new issuer or client id ends the sessions the previous provider signed in, and the agents and portal clients approved in them. **Disconnect** removes it and ends the sessions it signed in, with their agents and portal clients, and members sign in with a password or a sign-in link again.
 
 Single sign-on signs in an existing Kaeso account only once its owner links it to your provider, from their **Account** ([link single sign-on](account.md#link-single-sign-on)). The account must also belong to the organization: invite the person, and they accept by signing in another way. Changing single sign-on needs a console session with a recent sign-in; platform keys can't. [Sign-in and single sign-on](../self-hosting/sign-in.md) has every rule, and how to run an install on single sign-on alone.
 
@@ -103,7 +103,7 @@ Under **Security**, you can tighten how members get into the organization:
 
 | Setting | What it does |
 | --- | --- |
-| Require single sign-on | Accounts at its verified domains sign in only through SSO; guests keep their own sign-in. The accounts it manages can't sign in with a password or a sign-in link anywhere on the install, and their other sessions end. It needs a connected provider |
+| Require single sign-on | Accounts at its verified domains sign in only through SSO; guests keep their own sign-in. The accounts it manages can't sign in with a password or a sign-in link anywhere on the install, and their other sessions end, with the agents and portal clients approved in them. It needs a connected provider |
 | Require two-factor authentication | Members need a sign-in with a code from their authenticator, with a password or a sign-in link. A sign-in through single sign-on is enough too, from the organization's own provider or the one that manages the member's account |
 | Maximum key lifetime | The longest a new key may live, in days, or **No limit**. Existing keys keep their expiry, and a project can set a shorter limit |
 

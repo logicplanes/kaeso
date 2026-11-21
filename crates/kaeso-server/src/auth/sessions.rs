@@ -181,6 +181,7 @@ pub async fn revoke_all(
 #[derive(Debug, Default)]
 pub struct Ended {
     pub sessions: Vec<Vec<u8>>,
+    pub agents: i64,
     pub portal_grants: Vec<uuid::Uuid>,
 }
 
@@ -191,6 +192,58 @@ impl Ended {
             crate::portal::auth::forget_grant(state, *grant).await;
         }
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.sessions.is_empty() && self.agents == 0 && self.portal_grants.is_empty()
+    }
+
+    pub fn counts(&self) -> serde_json::Map<String, serde_json::Value> {
+        let mut counts = serde_json::Map::new();
+        counts.insert("sessions_ended".into(), self.sessions.len().into());
+        counts.insert("agents_ended".into(), self.agents.into());
+        counts.insert(
+            "portal_grants_ended".into(),
+            self.portal_grants.len().into(),
+        );
+        counts
+    }
+}
+
+// An agent or portal grant carries the sign-in it was approved from, so whatever stops trusting
+// that sign-in ends them with its sessions.
+pub async fn revoke_sso_in(
+    tx: &mut sqlx::PgConnection,
+    org: uuid::Uuid,
+    user: Option<uuid::Uuid>,
+    now: OffsetDateTime,
+) -> Result<Ended, StoreError> {
+    Ok(Ended {
+        sessions: sessions::revoke_sso(&mut *tx, org, user, now).await?,
+        agents: kaeso_store::pg::agents::revoke_sso(&mut *tx, org, user, now).await?,
+        portal_grants: kaeso_store::pg::portal_grants::revoke_sso(&mut *tx, org, user, now).await?,
+    })
+}
+
+pub async fn revoke_other_sign_ins_in(
+    tx: &mut sqlx::PgConnection,
+    domains: &[String],
+    keep: Option<SessionId>,
+    now: OffsetDateTime,
+) -> Result<Ended, StoreError> {
+    Ok(Ended {
+        sessions: sessions::revoke_other_sign_ins_at(
+            &mut *tx,
+            domains,
+            keep.map(|k| k.uuid()),
+            now,
+        )
+        .await?,
+        agents: kaeso_store::pg::agents::revoke_other_sign_ins_at(&mut *tx, domains, now).await?,
+        portal_grants: kaeso_store::pg::portal_grants::revoke_other_sign_ins_at(
+            &mut *tx, domains, now,
+        )
+        .await?,
+    })
 }
 
 pub async fn revoke_all_in(
@@ -203,14 +256,16 @@ pub async fn revoke_all_in(
     for kind in [TokenKind::EmailChange, TokenKind::EmailChangeCancel] {
         tokens::retire_all(&mut *tx, kind, Some(user.uuid()), now).await?;
     }
+    let mut agents = 0;
     let mut portal_grants = Vec::new();
     if keep.is_none() {
-        kaeso_store::pg::agents::revoke_of_user(&mut *tx, user.uuid(), now).await?;
+        agents = kaeso_store::pg::agents::revoke_of_user(&mut *tx, user.uuid(), now).await?;
         portal_grants =
             kaeso_store::pg::portal_grants::revoke_of_user(&mut *tx, user.uuid(), now).await?;
     }
     Ok(Ended {
         sessions,
+        agents,
         portal_grants,
     })
 }

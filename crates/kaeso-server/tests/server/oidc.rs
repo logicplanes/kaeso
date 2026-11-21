@@ -4,7 +4,7 @@ use crate::common;
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
-use common::{App, ORIGIN, Owner};
+use common::{App, ORIGIN, Owner, clients};
 use kaeso_core::clock::Clock;
 use kaeso_core::id::OrgId;
 use kaeso_store::pg::oidc;
@@ -1433,6 +1433,421 @@ async fn removing_or_repointing_the_connection_ends_the_sessions_it_signed_in() 
         signed_in(owner.cookie.clone()).await,
         StatusCode::OK,
         "sessions from other sign-ins stay"
+    );
+    s.cleanup().await;
+}
+
+async fn audited_after(app: &App, action: &str) -> serde_json::Value {
+    sqlx::query_scalar(
+        "SELECT after FROM audit_events WHERE action = $1 ORDER BY at DESC, id DESC LIMIT 1",
+    )
+    .bind(action)
+    .fetch_one(&app.state.pg)
+    .await
+    .unwrap()
+}
+
+#[tokio::test]
+async fn removing_or_repointing_the_connection_ends_the_agents_and_portal_clients_it_signed_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect(&app, &owner, &idp, Some("admin")).await;
+    let project = common::first_project(&app, &owner).await;
+    let sso = format!("/orgs/{}/security/sso", owner.org_id);
+    let connection = |idp: &MockIdp| {
+        json!({
+            "issuer": idp.issuer(),
+            "client_id": "kaeso",
+            "client_secret": "client-secret",
+            "domains": ["acme.example"],
+            "default_role": "admin",
+        })
+    };
+    let owners = clients::agent(&app, &owner.cookie, &owner.org_id).await;
+    let beta = another_org(&app, "Beta").await;
+    let betas_idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &beta, &betas_idp, "beta.example", None, false).await;
+    set_default_role(&app, &beta, "member").await;
+    let zoe = sso_as(&app, &betas_idp, "sub-zoe", "zoe@beta.example")
+        .await
+        .cookie()
+        .expect("signed in through the other org's provider");
+    let zoes_agent = clients::agent(&app, &zoe, &beta).await;
+    let alice = sso_as(&app, &idp, "sub-alice", "alice@acme.example")
+        .await
+        .cookie()
+        .expect("signed in");
+    let alices_agent = clients::agent(&app, &alice, &owner.org_id).await;
+    let alices_portal = clients::portal(&app, &alice, &project).await;
+
+    app.call(
+        axum::http::Method::PUT,
+        &sso,
+        Some(connection(&idp)),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        (
+            alices_agent.ping(&app).await,
+            alices_portal.ping(&app).await
+        ),
+        (StatusCode::OK, StatusCode::OK),
+        "a change that keeps the provider keeps its clients"
+    );
+
+    let other = MockIdp::start("kaeso", "client-secret").await;
+    app.call(
+        axum::http::Method::PUT,
+        &sso,
+        Some(connection(&other)),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert!(
+        alices_agent.stopped(&app).await,
+        "the replaced provider's agents end"
+    );
+    assert!(
+        alices_portal.stopped(&app).await,
+        "the replaced provider's portal clients end"
+    );
+    let audited = audited_after(&app, "security.sso_update").await;
+    assert_eq!(
+        (
+            &audited["sessions_ended"],
+            &audited["agents_ended"],
+            &audited["portal_grants_ended"]
+        ),
+        (&json!(1), &json!(1), &json!(1))
+    );
+
+    let bob = sso_as(&app, &other, "sub-bob", "bob@acme.example")
+        .await
+        .cookie()
+        .expect("signed in through the new provider");
+    let bobs_agent = clients::agent(&app, &bob, &owner.org_id).await;
+    let bobs_portal = clients::portal(&app, &bob, &project).await;
+    app.call(axum::http::Method::DELETE, &sso, None, Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::NO_CONTENT);
+    assert!(
+        bobs_agent.stopped(&app).await,
+        "a removed connection's agents end"
+    );
+    assert!(
+        bobs_portal.stopped(&app).await,
+        "a removed connection's portal clients end"
+    );
+    assert_eq!(
+        audited_after(&app, "security.sso_delete").await,
+        json!({ "sessions_ended": 1, "agents_ended": 1, "portal_grants_ended": 1 })
+    );
+    assert_eq!(
+        owners.ping(&app).await,
+        StatusCode::OK,
+        "agents from other sign-ins stay"
+    );
+    assert_eq!(
+        zoes_agent.ping(&app).await,
+        StatusCode::OK,
+        "agents another organization's provider signed in stay"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn unlinking_ends_the_agents_and_portal_clients_the_identity_signed_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    let project = common::first_project(&app, &owner).await;
+    link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    let sso = sso_as(&app, &idp, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .expect("signed in through the link");
+    let sso_agent = clients::agent(&app, &sso, &owner.org_id).await;
+    let sso_portal = clients::portal(&app, &sso, &project).await;
+    let password_agent = clients::agent(&app, &owner.cookie, &owner.org_id).await;
+
+    app.call(
+        axum::http::Method::DELETE,
+        &format!("/me/sso-links/{}", owner.org_id),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::NO_CONTENT);
+    assert!(
+        sso_agent.stopped(&app).await,
+        "the unlinked identity's agents end"
+    );
+    assert!(
+        sso_portal.stopped(&app).await,
+        "the unlinked identity's portal clients end"
+    );
+    assert_eq!(
+        password_agent.ping(&app).await,
+        StatusCode::OK,
+        "an agent from another sign-in stays"
+    );
+    assert_eq!(
+        audited_after(&app, "user.sso_unlink").await,
+        json!({ "sessions_ended": 1, "agents_ended": 1, "portal_grants_ended": 1 })
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn requiring_sso_ends_the_agents_and_portal_clients_of_password_sign_ins() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let project = common::first_project(&app, &owner).await;
+    let (ada, _) = common::join_first_project(
+        &app,
+        &owner,
+        json!({ "email": "ada@acme.example", "role": "member" }),
+        "Ada",
+    )
+    .await;
+    let (carol, _) = common::join_first_project(
+        &app,
+        &owner,
+        json!({ "email": "carol@beta.example", "role": "member" }),
+        "Carol",
+    )
+    .await;
+    let (dan, _) = common::join_first_project(
+        &app,
+        &owner,
+        json!({ "email": "dan@gamma.example", "role": "member" }),
+        "Dan",
+    )
+    .await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    let security = format!("/orgs/{}/security", owner.org_id);
+    app.call(
+        axum::http::Method::PUT,
+        &format!("{security}/sso"),
+        Some(json!({
+            "issuer": idp.issuer(),
+            "client_id": "kaeso",
+            "client_secret": "client-secret",
+            "domains": ["acme.example", "beta.example", "gamma.example"],
+        })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let adas_agent = clients::agent(&app, &ada, &owner.org_id).await;
+    let adas_portal = clients::portal(&app, &ada, &project).await;
+    let carols_agent = clients::agent(&app, &carol, &owner.org_id).await;
+    let carols_portal = clients::portal(&app, &carol, &project).await;
+    let owners = clients::agent(&app, &owner.cookie, &owner.org_id).await;
+    let dans_agent = clients::agent(&app, &dan, &owner.org_id).await;
+    set_default_role(&app, &owner.org_id, "member").await;
+    let eve = sso_as(&app, &idp, "sub-eve", "eve@acme.example")
+        .await
+        .cookie()
+        .expect("signed in through the organization's provider");
+    let eves_agent = clients::agent(&app, &eve, &owner.org_id).await;
+
+    let view = app
+        .call(
+            axum::http::Method::PUT,
+            &format!("{security}/require-sso"),
+            Some(json!({ "enabled": true })),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert!(
+        adas_agent.stopped(&app).await,
+        "a managed account's agent from a password sign-in ends"
+    );
+    assert!(
+        adas_portal.stopped(&app).await,
+        "a managed account's portal client from a password sign-in ends"
+    );
+    let audited = audited_after(&app, "security.require_sso").await;
+    assert_eq!(
+        (
+            &audited["sessions_ended"],
+            &audited["agents_ended"],
+            &audited["portal_grants_ended"]
+        ),
+        (&json!(1), &json!(1), &json!(1))
+    );
+    assert_eq!(
+        (
+            carols_agent.ping(&app).await,
+            carols_portal.ping(&app).await
+        ),
+        (StatusCode::OK, StatusCode::OK),
+        "an unverified domain's accounts aren't managed yet"
+    );
+
+    let beta = view.body["sso"]["domains"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|d| d["domain"] == "beta.example")
+        .unwrap()
+        .clone();
+    app.dns.set(
+        beta["record_name"].as_str().unwrap(),
+        &[beta["record_value"].as_str().unwrap()],
+    );
+    app.post(
+        &format!("{security}/sso/verify"),
+        json!({}),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert!(
+        carols_agent.stopped(&app).await,
+        "verifying the domain while SSO is required ends its accounts' agents"
+    );
+    assert!(
+        carols_portal.stopped(&app).await,
+        "verifying the domain while SSO is required ends its accounts' portal clients"
+    );
+    assert_eq!(
+        audited_after(&app, "security.sso_domain_verify").await,
+        json!({ "domain": "beta.example", "sessions_ended": 1, "agents_ended": 1, "portal_grants_ended": 1 })
+    );
+    assert_eq!(
+        dans_agent.ping(&app).await,
+        StatusCode::OK,
+        "a domain nobody verified yet keeps its accounts' agents"
+    );
+    let verified = kaeso_server::services::sso::operator_verify_domain(
+        &app.state,
+        "gamma.example",
+        Some(&owner.org_id),
+    )
+    .await
+    .unwrap();
+    assert!(
+        matches!(
+            verified,
+            kaeso_server::services::sso::OperatorVerify::Verified(_)
+        ),
+        "{verified:?}"
+    );
+    assert!(
+        dans_agent.stopped(&app).await,
+        "the operator verifying the domain while SSO is required ends its accounts' agents"
+    );
+    assert_eq!(
+        audited_after(&app, "security.sso_domain_verify").await,
+        json!({
+            "domain": "gamma.example",
+            "by": "operator",
+            "sessions_ended": 1,
+            "agents_ended": 1,
+            "portal_grants_ended": 0
+        })
+    );
+    assert_eq!(
+        owners.ping(&app).await,
+        StatusCode::OK,
+        "an account at another domain keeps its agents"
+    );
+    assert_eq!(
+        eves_agent.ping(&app).await,
+        StatusCode::OK,
+        "an agent the organization's own SSO approved stays"
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn removing_a_member_through_scim_ends_the_agents_its_sso_signed_in() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    set_default_role(&app, &owner.org_id, "member").await;
+    let beta = another_org(&app, "Beta").await;
+    let ada = sso_as(&app, &idp, "sub-ada", "ada@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+    let who = app.get("/auth/session", &ada).await;
+    let ada_id = who.body["user"]["id"].as_str().unwrap().to_owned();
+    join_org(&app, &beta, &ada_id).await;
+    let agent = clients::agent(&app, &ada, &beta).await;
+    let token = app
+        .post(
+            &format!("/orgs/{}/scim/token", owner.org_id),
+            json!({}),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["token"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    let r = app
+        .raw(
+            Request::builder()
+                .method(axum::http::Method::PATCH)
+                .uri(format!(
+                    "/platform/v1/orgs/{}/scim/v2/Users/{ada_id}",
+                    owner.org_id
+                ))
+                .header(header::AUTHORIZATION, format!("Bearer {token}"))
+                .header(header::CONTENT_TYPE, "application/scim+json")
+                .body(Body::from(
+                    json!({
+                        "schemas": ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+                        "Operations": [{ "op": "replace", "path": "active", "value": false }]
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    assert_eq!(
+        app.get("/auth/session", &ada).await.status,
+        StatusCode::UNAUTHORIZED,
+        "the session the organization's SSO signed in ends"
+    );
+    assert!(
+        agent.stopped(&app).await,
+        "and so does the agent it approved, in every organization"
+    );
+    let audited = audited_after(&app, "member.deprovision").await;
+    assert_eq!(
+        (
+            &audited["sessions_ended"],
+            &audited["agents_ended"],
+            &audited["portal_grants_ended"]
+        ),
+        (&json!(1), &json!(1), &json!(0))
     );
     s.cleanup().await;
 }

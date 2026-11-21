@@ -71,7 +71,7 @@ Eine Organisation kann Rolle und Projektmitgliedschaften der Konten, die sie ver
 
 Ist **Single Sign-on verlangen** eingeschaltet, melden sich die Konten, die eine Organisation verwaltet, überall auf der Installation nur über ihren Anbieter an. Die Anmeldeseite bietet ihnen allein den Anbieter an. Ein Passwort, einen Anmeldelink, eine Registrierung oder eine Einladung ohne Konto lehnt Kaeso mit `Your organization requires single sign-on; continue with its identity provider.` ab.
 
-Das Einschalten der Pflicht beendet ihre Sitzungen aus einem Passwort oder einem Anmeldelink, außer der Sitzung, die sie einschaltet. Das Bestätigen einer weiteren Domain, während die Pflicht gilt, tut dasselbe.
+Das Einschalten der Pflicht beendet ihre Sitzungen aus einem Passwort oder einem Anmeldelink und die darin freigegebenen Agenten und Portal-Clients, außer der Sitzung, die sie einschaltet. Das Bestätigen einer weiteren Domain, während die Pflicht gilt, tut dasselbe.
 
 Gäste behalten ihre eigene Anmeldung und öffnen die Organisation damit, unter ihrer Zwei-Faktor-Pflicht. Ein Anmeldelink vom Server meldet ein verwaltetes Konto weiterhin an ([wieder hineinkommen](#wieder-hineinkommen)).
 

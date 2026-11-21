@@ -1,10 +1,9 @@
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use kaeso_core::id::OrgId;
+use kaeso_core::id::{OrgId, SessionId};
 use kaeso_core::rights::OrgPreset;
 use kaeso_crypto::{ExposeSecret, Sealed};
-use kaeso_store::pg::sessions as sessions_store;
 use kaeso_store::pg::{oidc, orgs};
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
@@ -215,7 +214,8 @@ pub struct SsoRequest {
     summary = "Sets up or replaces the SSO connection. The provider's discovery\n\
     document is fetched first, so a mistake shows now, not at sign-in.",
     description = "A new `issuer` or `client_id` ends every session the previous provider \
-    signed in to the org, since that provider no longer vouches for them.",
+    signed in to the org, and the agents and portal grants approved in them, since that provider \
+    no longer vouches for them.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     request_body = SsoRequest,
@@ -377,17 +377,21 @@ pub async fn put_sso(
     // Only after the upsert has the connection row's lock: an SSO callback holds it until its
     // session is committed, so that session is ended here rather than outliving the change.
     let ended = if repointed {
-        sessions_store::revoke_sso(&mut *tx, scope.org.id, None, ctx.now).await?
+        sessions::revoke_sso_in(&mut tx, scope.org.id, None, ctx.now).await?
     } else {
-        Vec::new()
+        sessions::Ended::default()
     };
+    let mut after = serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect, "require_email_verified": require_email_verified });
+    if let Some(fields) = after.as_object_mut() {
+        fields.extend(ended.counts());
+    }
     ctx.audit(Some(org), Action::SecuritySsoUpdate)
         .target("org", org)
-        .after(serde_json::json!({ "issuer": issuer, "client_id": req.client_id.trim(), "domains": domains, "default_preset": row.sso_default_preset, "default_role": row.sso_default_role_id.map(|r| kaeso_core::id::RoleId::from_uuid(r).to_string()), "secret_replaced": req.client_secret.is_some(), "name": display_name, "auto_redirect": auto_redirect, "require_email_verified": require_email_verified, "sessions_ended": ended.len() }))
+        .after(after)
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    sessions::forget(&state, &ended).await;
+    ended.forget(&state).await;
     Ok(Json(view(&state, &row).await?))
 }
 
@@ -445,18 +449,23 @@ pub async fn verify_domains(
             let ended = if row.require_sso {
                 end_other_sign_ins(&mut tx, &ctx, std::slice::from_ref(domain)).await?
             } else {
-                Vec::new()
+                sessions::Ended::default()
             };
+            let mut after = serde_json::Map::new();
+            after.insert("domain".into(), domain.as_str().into());
+            after.extend(ended.counts());
             ctx.audit(Some(org), Action::SecuritySsoDomainVerify)
                 .target("org", org)
-                .after(serde_json::json!({ "domain": domain, "sessions_ended": ended.len() }))
+                .after(after)
                 .write(&mut tx)
                 .await?;
-            ended_all.extend(ended);
+            ended_all.push(ended);
         }
     }
     tx.commit().await?;
-    sessions::forget(&state, &ended_all).await;
+    for ended in &ended_all {
+        ended.forget(&state).await;
+    }
     Ok(Json(view(&state, &row).await?))
 }
 
@@ -465,6 +474,7 @@ pub async fn verify_domains(
     path = "/orgs/{org}/security/sso",
     summary = "Removes the SSO connection and ends every session it signed in. Refused\n\
     while SSO is required.",
+    description = "The agents and portal grants approved in those sessions end with them.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     responses((status = 204, description = "Removed."))
@@ -489,14 +499,14 @@ pub async fn delete_sso(
     row.sso_default_role_id = None;
     orgs::update(&mut *tx, &row).await?;
     // Only after the delete has the connection row's lock, as in `put_sso`.
-    let ended = sessions_store::revoke_sso(&mut *tx, row.id, None, ctx.now).await?;
+    let ended = sessions::revoke_sso_in(&mut tx, row.id, None, ctx.now).await?;
     ctx.audit(Some(scope.id()), Action::SecuritySsoDelete)
         .target("org", scope.id())
-        .after(serde_json::json!({ "sessions_ended": ended.len() }))
+        .after(ended.counts())
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    sessions::forget(&state, &ended).await;
+    ended.forget(&state).await;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -519,7 +529,7 @@ async fn set_flag(
     let before = lock_changeable(&mut tx, ctx).await?;
     let mut row = before.clone();
     apply(&mut row);
-    let mut ended = Vec::new();
+    let mut ended = sessions::Ended::default();
     if row.require_sso && !before.require_sso {
         let connection = oidc::get(&mut *tx, row.id).await?.ok_or_else(|| {
             ApiError::Conflict("Set up an SSO connection before requiring SSO.".into())
@@ -529,7 +539,7 @@ async fn set_flag(
     orgs::update(&mut *tx, &row).await?;
     let mut after = serde_json::to_value(OrgView::from_row(&row)).map_err(ApiError::internal)?;
     if let (false, Some(fields)) = (ended.is_empty(), after.as_object_mut()) {
-        fields.insert("sessions_ended".into(), ended.len().into());
+        fields.extend(ended.counts());
     }
     ctx.audit(Some(scope.id()), action)
         .target("org", scope.id())
@@ -538,22 +548,23 @@ async fn set_flag(
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    sessions::forget(state, &ended).await;
+    ended.forget(state).await;
     Ok(Json(view(state, &row).await?))
 }
 
-// Requiring SSO covers the accounts the org manages everywhere, so their sessions from a
-// password or a sign-in link end; the caller's own stays, and the org closes to it instead.
+// Requiring SSO covers the accounts the org manages everywhere, so their sessions, agents and
+// portal grants from a password or a sign-in link end; the caller's session stays, and the org
+// closes to it instead.
 async fn end_other_sign_ins(
     tx: &mut sqlx::PgConnection,
     ctx: &Ctx,
     domains: &[String],
-) -> ApiResult<Vec<Vec<u8>>> {
+) -> ApiResult<sessions::Ended> {
     if domains.is_empty() {
-        return Ok(Vec::new());
+        return Ok(sessions::Ended::default());
     }
-    let keep = ctx.session().ok().map(|s| s.id);
-    Ok(sessions_store::revoke_other_sign_ins_at(&mut *tx, domains, keep, ctx.now).await?)
+    let keep = ctx.session().ok().map(|s| SessionId::from_uuid(s.id));
+    Ok(sessions::revoke_other_sign_ins_in(&mut *tx, domains, keep, ctx.now).await?)
 }
 
 #[utoipa::path(
@@ -562,9 +573,10 @@ async fn end_other_sign_ins(
     summary = "Requires (or stops requiring) the accounts the org manages to sign in\n\
     only through its SSO. Needs an SSO connection.",
     description = "The accounts at the org's verified email domains then can't sign in with a \
-    password or a sign-in link anywhere on the install, and their sessions from those end, except \
-    the one making the request. Guests, members at other domains, keep their own sign-in. A \
-    sign-in link from `kaeso user sign-in-link` still works.",
+    password or a sign-in link anywhere on the install, and their sessions from those end, with the \
+    agents and portal grants approved in them, except the session making the request. Guests, \
+    members at other domains, keep their own sign-in. A sign-in link from \
+    `kaeso user sign-in-link` still works.",
     tag = "orgs",
     params(("org" = OrgId, Path)),
     request_body = Switch,

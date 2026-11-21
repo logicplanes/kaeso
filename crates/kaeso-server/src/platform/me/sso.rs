@@ -3,7 +3,6 @@ use axum::extract::State;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use kaeso_core::id::{OrgId, SessionId, UserId};
-use kaeso_store::pg::sessions as sessions_store;
 use kaeso_store::pg::{members, oidc, sso_identities, users};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -130,8 +129,9 @@ async fn member_with_sso(state: &AppState, org: OrgId, me: UserId) -> ApiResult<
     path = "/me/sso-links/{org}",
     summary = "Unlinks the account from an org's identity provider: it no longer signs\n\
     in through it, and the account's sessions it signed in end.",
-    description = "Needs a sign-in within the last 15 minutes. When the session that asks \
-    came from that org's SSO, it ends too.",
+    description = "Needs a sign-in within the last 15 minutes. The agents and portal grants \
+    approved in those sessions end with them, and so does the session that asks when it came from \
+    that org's SSO.",
     tag = "me",
     params(("org" = OrgId, Path)),
     responses((status = 204, description = "Unlinked."))
@@ -148,14 +148,14 @@ pub async fn unlink(
     if !sso_identities::unlink(&mut *tx, org.uuid(), me.uuid()).await? {
         return Err(ApiError::not_found("link"));
     }
-    let ended = sessions_store::revoke_sso(&mut *tx, org.uuid(), Some(me.uuid()), ctx.now).await?;
+    let ended = sessions::revoke_sso_in(&mut tx, org.uuid(), Some(me.uuid()), ctx.now).await?;
     ctx.audit(Some(org), Action::UserSsoUnlink)
         .target("user", me)
-        .after(serde_json::json!({ "sessions_ended": ended.len() }))
+        .after(ended.counts())
         .write(&mut tx)
         .await?;
     tx.commit().await?;
-    sessions::forget(&state, &ended).await;
+    ended.forget(&state).await;
     Ok(StatusCode::NO_CONTENT)
 }
 

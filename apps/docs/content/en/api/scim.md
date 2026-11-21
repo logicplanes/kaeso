@@ -26,7 +26,7 @@ SCIM manages only accounts at the organization's verified domains. A guest, whos
 | --- | --- |
 | Creates a user | Creates the account if there is none, and adds the membership with the single sign-on default role. The person's first sign-in through the provider links their identity. An existing account at a verified domain joins too |
 | Changes a user's name | Changes the account's name. The address can't change through SCIM |
-| Sets `active` to false | Removes the member from the organization and its projects, archives their keys in it, and ends the sessions the organization's provider signed in, as **Remove from organization** does. In no organization any more, all their sessions end |
+| Sets `active` to false | Removes the member from the organization and its projects and archives their keys in it, as **Remove from organization** does, and ends the sessions the organization's provider signed in, with the agents and portal clients approved in them. In no organization any more, all their sessions end |
 | Sets `active` to true again | Adds a new membership with the default role. Archived keys stay archived |
 | Deletes a user | Removes the member as above, and forgets that the provider manages them |
 | Pushes groups | Keeps the groups and their members. They grant no access yet |

@@ -55,7 +55,7 @@ An organization's identity provider signs you in only once your account is linke
 2. Choose **Link** next to the organization.
 3. Sign in at the identity provider. You come back to **Security**, signed in as before.
 
-**Unlink** stops the provider from signing you in and ends the sessions it signed you in to; like other security changes, it needs a recent sign-in. The organization's audit log records both, as `user.sso_link` and `user.sso_unlink`.
+**Unlink** stops the provider from signing you in and ends the sessions it signed you in to, with the agents and portal clients you approved in them; like other security changes, it needs a recent sign-in. The organization's audit log records both, as `user.sso_link` and `user.sso_unlink`.
 
 ## Sign out other browsers
 
@@ -72,7 +72,7 @@ At the top, **Agents** shows the MCP server's address with the marks of Claude, 
 - **Revoke** it, which signs it out at once;
 - read its **Activity**: every tool call of the last 90 days, with the tool, the organization and project it acted in, its target, the result, the time and the IP address.
 
-An agent keeps working until you revoke it, until it goes 90 days unused, or until all your sessions end, such as when you reset your password. Changing your password ends it only when you choose **Also disconnect my agents**. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
+An agent keeps working until you revoke it, until it goes 90 days unused, or until all your sessions end, such as when you reset your password. It also ends when the sign-in you approved it from stops counting: a single sign-on whose provider the organization replaces or disconnects, or that you unlink, and a password or sign-in link once the organization that manages your account requires single sign-on. Changing your password ends it only when you choose **Also disconnect my agents**. When it needs a right it lacks, it gives you a link to its page here, with that right ready to approve ([missing rights](../api/mcp.md#missing-rights)).
 
 ## Confirm a sensitive action
 

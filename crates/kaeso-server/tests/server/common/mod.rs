@@ -7,6 +7,7 @@
     clippy::indexing_slicing
 )]
 
+pub mod clients;
 pub mod copy;
 pub mod flaky_valkey;
 pub mod kpmr;

@@ -55,7 +55,7 @@ Der Identitätsanbieter einer Organisation meldet Sie erst an, wenn Ihr Konto mi
 2. Wählen Sie **Verknüpfen** neben der Organisation.
 3. Melden Sie sich beim Identitätsanbieter an. Sie kommen zurück zu **Sicherheit** und sind angemeldet wie zuvor.
 
-**Trennen** hindert den Anbieter daran, Sie anzumelden, und beendet die Sitzungen, in denen er Sie angemeldet hat; wie andere Sicherheitsänderungen braucht es eine kürzliche Anmeldung. Das Audit-Log der Organisation verzeichnet beides, als `user.sso_link` und `user.sso_unlink`.
+**Trennen** hindert den Anbieter daran, Sie anzumelden, und beendet die Sitzungen, in denen er Sie angemeldet hat, samt den Agenten und Portal-Clients, die Sie darin freigegeben haben; wie andere Sicherheitsänderungen braucht es eine kürzliche Anmeldung. Das Audit-Log der Organisation verzeichnet beides, als `user.sso_link` und `user.sso_unlink`.
 
 ## Andere Browser abmelden
 
@@ -72,7 +72,7 @@ Oben zeigt **Agenten** die Adresse des MCP-Servers mit den Zeichen von Claude, C
 - ihn **Widerrufen**, was ihn sofort abmeldet;
 - seine **Aktivität** lesen: jeden Tool-Aufruf der letzten 90 Tage, mit Tool, der Organisation und dem Projekt, in denen er wirkte, Ziel, Ergebnis, Zeit und IP-Adresse.
 
-Ein Agent arbeitet, bis Sie ihn widerrufen, bis er 90 Tage ungenutzt bleibt oder bis alle Ihre Sitzungen enden, etwa wenn Sie Ihr Passwort zurücksetzen. Eine Änderung des Passworts beendet ihn nur, wenn Sie **Auch meine Agenten trennen** wählen. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
+Ein Agent arbeitet, bis Sie ihn widerrufen, bis er 90 Tage ungenutzt bleibt oder bis alle Ihre Sitzungen enden, etwa wenn Sie Ihr Passwort zurücksetzen. Er endet auch, wenn die Anmeldung, aus der Sie ihn freigegeben haben, nicht mehr gilt: ein Single Sign-on, dessen Anbieter die Organisation ersetzt oder trennt oder den Sie trennen, und ein Passwort oder Anmeldelink, sobald die Organisation, die Ihr Konto verwaltet, Single Sign-on verlangt. Eine Änderung des Passworts beendet ihn nur, wenn Sie **Auch meine Agenten trennen** wählen. Braucht er ein Recht, das ihm fehlt, gibt er Ihnen einen Link zu seiner Seite hier, mit diesem Recht zur Freigabe bereit ([fehlende Rechte](../api/mcp.md#fehlende-rechte)).
 
 ## Sensible Aktion bestätigen
 

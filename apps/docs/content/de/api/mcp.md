@@ -293,7 +293,7 @@ In älteren Versionen erhält eine unbekannte Methode den JSON-RPC-Fehler `-3260
 
 Wird ein Refresh-Token oder ein Code ein zweites Mal genutzt, endet diese ganze Anmeldung, denn eines davon muss abgeflossen sein. Jedes Token daraus hört auf zu funktionieren, und der Agent muss neu verbunden werden.
 
-Ein Agent arbeitet, bis Sie ihn widerrufen oder bis er 90 Tage ohne Anfrage bleibt. Auch das Deaktivieren seines Benutzers stoppt ihn, ebenso das Abschalten von Agenten für die Installation. Alles, was jede Sitzung seines Benutzers beendet, widerruft ihn ebenfalls: das Zurücksetzen des Passworts oder der Zwei-Faktor-Authentifizierung und das Beenden der Sitzungen durch einen Instanzadmin.
+Ein Agent arbeitet, bis Sie ihn widerrufen oder bis er 90 Tage ohne Anfrage bleibt. Auch das Deaktivieren seines Benutzers stoppt ihn, ebenso das Abschalten von Agenten für die Installation. Alles, was jede Sitzung seines Benutzers beendet, widerruft ihn ebenfalls: das Zurücksetzen des Passworts oder der Zwei-Faktor-Authentifizierung und das Beenden der Sitzungen durch einen Instanzadmin. Ebenso alles, was die Sitzung, in der er freigegeben wurde, beendet, weil diese Anmeldung nicht mehr gilt: das Ersetzen oder Trennen des Identitätsanbieters, der sie angemeldet hat, das Trennen des Kontos von diesem Anbieter, das Entfernen des Kontos aus der Organisation dieses Anbieters per SCIM oder das Verlangen von Single Sign-on für das Konto, wenn er nach einem Passwort oder einem Anmeldelink freigegeben wurde. Clients, die mit dem Portal eines Projekts verbunden sind, enden auf dieselbe Weise.
 
 ## OAuth-Endpunkte
 

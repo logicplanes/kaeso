@@ -68,7 +68,7 @@ _kaeso-verify.acme.example  TXT  "kaeso-verify=Qm9ZtX3c8L1aV7pK2rN5wE0yH4uJ6sD9f
 
 DNS-Änderungen brauchen etwas, bis sie sichtbar sind; wählen Sie **Bestätigen** später erneut. Domains öffentlicher Mail-Anbieter wie `gmail.com` lassen sich nicht hinzufügen, ebenso wenig eine Domain, die eine andere Organisation bestätigt hat. Eine Domain, für die das öffentliche DNS nicht antwortet, bestätigt ein Operator auf dem Server mit `kaeso sso verify-domain acme.example`.
 
-**Single Sign-on bearbeiten** ändert die Verbindung. Ein leeres Client-Secret behält das gespeicherte, solange Issuer und Client-ID gleich bleiben. Ein neuer Issuer oder eine neue Client-ID beendet die Sitzungen, die der bisherige Anbieter angemeldet hat. **Trennen** entfernt sie und beendet die Sitzungen, die sie angemeldet hat, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
+**Single Sign-on bearbeiten** ändert die Verbindung. Ein leeres Client-Secret behält das gespeicherte, solange Issuer und Client-ID gleich bleiben. Ein neuer Issuer oder eine neue Client-ID beendet die Sitzungen, die der bisherige Anbieter angemeldet hat, und die Agenten und Portal-Clients, die darin freigegeben wurden. **Trennen** entfernt sie und beendet die Sitzungen, die sie angemeldet hat, samt ihren Agenten und Portal-Clients, und Mitglieder melden sich wieder mit Passwort oder Anmeldelink an.
 
 Single Sign-on meldet ein bestehendes Kaeso-Konto erst an, wenn seine Inhaberin oder sein Inhaber es unter **Konto** mit Ihrem Anbieter verknüpft ([Single Sign-on verknüpfen](account.md#single-sign-on-verknüpfen)). Das Konto muss außerdem der Organisation angehören: Laden Sie die Person ein, und sie nimmt die Einladung nach einer Anmeldung auf anderem Weg an. Single Sign-on zu ändern verlangt eine Konsolensitzung mit kürzlicher Anmeldung; Plattform-Schlüssel können es nicht. [Anmeldung und Single Sign-on](../self-hosting/sign-in.md) enthält alle Regeln und beschreibt, wie eine Installation allein mit Single Sign-on läuft.
 
@@ -103,7 +103,7 @@ Unter **Sicherheit** legen Sie fest, wie Mitglieder in die Organisation gelangen
 
 | Einstellung | Wirkung |
 | --- | --- |
-| Single Sign-on verlangen | Konten an ihren bestätigten Domains melden sich nur per SSO an; Gäste behalten ihre eigene Anmeldung. Die Konten, die sie verwaltet, können sich nirgends auf der Installation mit Passwort oder Anmeldelink anmelden, und ihre anderen Sitzungen enden. Setzt einen verbundenen Anbieter voraus |
+| Single Sign-on verlangen | Konten an ihren bestätigten Domains melden sich nur per SSO an; Gäste behalten ihre eigene Anmeldung. Die Konten, die sie verwaltet, können sich nirgends auf der Installation mit Passwort oder Anmeldelink anmelden, und ihre anderen Sitzungen enden, samt den darin freigegebenen Agenten und Portal-Clients. Setzt einen verbundenen Anbieter voraus |
 | Zwei-Faktor-Authentifizierung verlangen | Mitglieder brauchen eine Anmeldung mit einem Code aus ihrer Authenticator-App, per Passwort oder Anmeldelink. Eine Anmeldung über Single Sign-on reicht ebenfalls, über den eigenen Anbieter der Organisation oder den der Organisation, die das Konto des Mitglieds verwaltet |
 | Maximale Schlüssellaufzeit | Die längste Laufzeit eines neuen Schlüssels in Tagen, oder **Kein Limit**. Bestehende Schlüssel behalten ihren Ablauf, und ein Projekt kann ein kürzeres Limit setzen |
 

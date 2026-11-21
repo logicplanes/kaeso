@@ -522,6 +522,46 @@ pub async fn revoke_of_user(
     .await?)
 }
 
+pub async fn revoke_sso(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    user_id: Option<Uuid>,
+    now: OffsetDateTime,
+) -> Result<i64, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "WITH ended AS (UPDATE agents SET revoked_at = $3 WHERE sign_in_method = 'oidc' \
+         AND oidc_org_id = $1 AND ($2::uuid IS NULL OR user_id = $2) AND revoked_at IS NULL \
+         RETURNING id), \
+         tokens AS (UPDATE agent_tokens t SET revoked_at = $3 FROM ended e \
+         WHERE t.agent_id = e.id AND t.revoked_at IS NULL) \
+         SELECT count(*) AS \"ended!\" FROM ended",
+        org_id,
+        user_id,
+        now
+    )
+    .fetch_one(db)
+    .await?)
+}
+
+pub async fn revoke_other_sign_ins_at(
+    db: impl PgExecutor<'_>,
+    domains: &[String],
+    now: OffsetDateTime,
+) -> Result<i64, StoreError> {
+    Ok(sqlx::query_scalar!(
+        "WITH ended AS (UPDATE agents a SET revoked_at = $2 FROM users u WHERE u.id = a.user_id \
+         AND a.sign_in_method <> 'oidc' AND a.revoked_at IS NULL \
+         AND split_part(email_key(u.email), '@', 2) = ANY($1) RETURNING a.id), \
+         tokens AS (UPDATE agent_tokens t SET revoked_at = $2 FROM ended e \
+         WHERE t.agent_id = e.id AND t.revoked_at IS NULL) \
+         SELECT count(*) AS \"ended!\" FROM ended",
+        domains,
+        now
+    )
+    .fetch_one(db)
+    .await?)
+}
+
 pub async fn touch(
     db: impl PgExecutor<'_>,
     id: Uuid,

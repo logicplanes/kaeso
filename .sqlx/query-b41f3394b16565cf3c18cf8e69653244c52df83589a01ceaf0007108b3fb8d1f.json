@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE portal_grants SET revoked_at = $3 WHERE sign_in_method = 'oidc' AND oidc_org_id = $1 AND ($2::uuid IS NULL OR user_id = $2) AND revoked_at IS NULL RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid",
+        "origin": {
+          "Table": {
+            "table": "portal_grants",
+            "name": "id"
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "b41f3394b16565cf3c18cf8e69653244c52df83589a01ceaf0007108b3fb8d1f"
+}
