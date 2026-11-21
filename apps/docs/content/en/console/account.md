@@ -95,7 +95,7 @@ A provider that once answered without a fresh sign-in isn't offered again ([rece
 
 When your address is at a verified email domain of an organization with single sign-on, that organization manages your account, and **Profile** shows **Managed by** with its name. A sign-in through its identity provider is a full sign-in: it opens every organization you belong to, each with its own requirements. It also lets you make changes to your account, which still need a recent sign-in. Instance administration needs another sign-in, unless an instance admin chose the organization for it.
 
-A sign-in through the provider of an organization that doesn't manage your account opens only that organization, and lets you read your account. That happens when your address is at another domain. **API keys** then lists only your keys in that organization. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
+A sign-in through the provider of an organization that doesn't manage your account opens only that organization, and lets you read your account. That happens when your address is at another domain. **API keys** and **Connections** then list only your keys and connections in that organization. Everything else needs another sign-in, and the console asks for your password or sends a sign-in link:
 
 - changing your email address or password, or two-factor authentication;
 - creating an organization, leaving another one, or deleting the account;
@@ -149,7 +149,7 @@ An organization's [webhooks](webhooks.md) get its notices too, whatever anyone c
 
 When the install only writes emails to its log, the page says so and offers no choices. To check that mail goes out, an instance admin sends a test email under **Instance** › **System** ([send a test email](../self-hosting/email.md#send-a-test-email)).
 
-To stop every email about one organization except security emails, turn off **Email me about this organization** for it under **Memberships**.
+To stop every email about one organization except security emails, turn off **Email me about this organization** for it under **Memberships**. The switch stays as it is while the organization is scheduled for deletion, and needs a sign-in that meets the organization's requirements.
 
 Every email except security emails ends with a link that turns off that one kind, without signing in. Mail apps that show their own unsubscribe button use the same link. Turn the email back on under **Notifications**.
 

@@ -6,9 +6,7 @@ use kaeso_store::pg::{keys, members};
 use serde::Deserialize;
 use utoipa::IntoParams;
 
-use crate::platform::access::{
-    Area, Ctx, agent_scope, managed_by, policy_gap, refused, require_policy,
-};
+use crate::platform::access::{Area, Ctx, agent_scope, refused, require_policy};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::grants::{org_from_store, project_from_store};
 use crate::platform::keys::KeyView;
@@ -44,20 +42,7 @@ pub async fn list(
 ) -> ApiResult<Json<List<KeyView>>> {
     let page = page.page()?;
     let session = ctx.sign_in()?;
-    let managed = managed_by(&state, session).await?.map(|m| m.org_id);
-    let open: Vec<uuid::Uuid> = members::orgs_of_user(&state.pg, session.user_id)
-        .await?
-        .into_iter()
-        .filter(|m| {
-            let area = Area::Org {
-                id: m.org_id,
-                require_sso: m.require_sso,
-                require_2fa: m.require_2fa,
-            };
-            policy_gap(session, managed, area).is_none()
-        })
-        .map(|m| m.org_id)
-        .collect();
+    let open = super::open_orgs(&state, session).await?;
     let projects = match ctx.agent() {
         Some(agent) => Some(
             crate::services::agents::reachable(&state, agent)

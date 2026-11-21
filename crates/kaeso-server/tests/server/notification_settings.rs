@@ -324,6 +324,88 @@ async fn a_muted_org_sends_no_alerts_and_shows_on_memberships() {
     assert_eq!(memberships.body["data"][0]["notifications_muted"], false);
 }
 
+async fn muted(app: &App, owner: &common::Owner, org: &str) -> (bool, usize) {
+    let memberships = app
+        .get("/me/memberships", &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let muted = memberships.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["org_id"] == org)
+        .unwrap()["notifications_muted"]
+        .as_bool()
+        .unwrap();
+    let audit = app
+        .get(&format!("/orgs/{org}/audit-log?limit=100"), &owner.cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    let events = audit.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["action"] == "user.notifications")
+        .count();
+    (muted, events)
+}
+
+#[tokio::test]
+async fn muting_an_org_follows_its_sign_in_rules_and_waits_while_it_is_scheduled_for_deletion() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup().await;
+    let require_2fa = |on: bool| {
+        sqlx::query("UPDATE organizations SET require_2fa = $1 WHERE id = $2")
+            .bind(on)
+            .bind(common::uuid(&owner.org_id))
+            .execute(&app.state.pg)
+    };
+    require_2fa(true).await.unwrap();
+    let r = mute(&app, &owner, &owner.org_id, true).await;
+    assert_eq!(
+        (r.status, r.body["error"]["message"].as_str()),
+        (
+            StatusCode::FORBIDDEN,
+            Some(
+                "This organization requires two-factor authentication; set it up, then sign in again."
+            )
+        ),
+        "{:?}",
+        r.body
+    );
+    require_2fa(false).await.unwrap();
+    assert_eq!(muted(&app, &owner, &owner.org_id).await, (false, 0));
+
+    let beta = app
+        .post("/me/orgs", json!({ "name": "Beta" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED);
+    let beta = beta.body["id"].as_str().unwrap().to_owned();
+    app.call(
+        Method::DELETE,
+        &format!("/orgs/{beta}"),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let r = mute(&app, &owner, &beta, true).await;
+    assert_eq!(
+        (r.status, r.error_type()),
+        (StatusCode::CONFLICT, "org_scheduled_for_deletion"),
+        "{:?}",
+        r.body
+    );
+    assert_eq!(muted(&app, &owner, &beta).await, (false, 0));
+
+    mute(&app, &owner, &owner.org_id, true)
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(muted(&app, &owner, &owner.org_id).await, (true, 1));
+    s.cleanup().await;
+}
+
 #[tokio::test]
 async fn an_account_sends_itself_no_test_email() {
     let s = TestServices::start().await;

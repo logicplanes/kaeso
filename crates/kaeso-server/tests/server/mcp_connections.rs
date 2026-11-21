@@ -213,6 +213,98 @@ async fn only_the_person_who_started_a_sign_in_can_finish_it() {
 }
 
 #[tokio::test]
+async fn a_shared_sign_in_finishes_only_while_its_starter_may_still_manage_the_server() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        oauth: Some(OAuth::default()),
+        ..Options::default()
+    })
+    .await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let row = server(&app, &owner, &mock.url(), "oauth", "shared", Some("cimd")).await;
+    let (admin, admin_id) = common::join(
+        &app,
+        &owner,
+        serde_json::json!({ "email": "admin@example.com", "preset": "admin" }),
+        "Admin",
+    )
+    .await;
+    let membership = |sql: &'static str| {
+        sqlx::query(sql)
+            .bind(uuid(&owner.org_id))
+            .bind(uuid(&admin_id))
+            .execute(&app.state.pg)
+    };
+    let started = || mcp_connections::begin(&app.state, &row, None, uuid(&admin_id), None);
+
+    let begun = started().await.unwrap();
+    membership("UPDATE org_memberships SET preset = 'member' WHERE org_id = $1 AND user_id = $2")
+        .await
+        .unwrap();
+    assert_eq!(
+        follow(&app, &mock.authorize(&begun.url), Some(&admin)).await,
+        connected_page(&owner, &row, "failed"),
+        "a member who lost the right to manage MCP servers"
+    );
+
+    membership("UPDATE org_memberships SET preset = 'admin' WHERE org_id = $1 AND user_id = $2")
+        .await
+        .unwrap();
+    let begun = started().await.unwrap();
+    membership("DELETE FROM org_memberships WHERE org_id = $1 AND user_id = $2")
+        .await
+        .unwrap();
+    assert_eq!(
+        follow(&app, &mock.authorize(&begun.url), Some(&admin)).await,
+        connected_page(&owner, &row, "failed"),
+        "someone who left the organization"
+    );
+
+    let begun = mcp_connections::begin(&app.state, &row, None, uuid(&owner.user_id), None)
+        .await
+        .unwrap();
+    app.call(
+        axum::http::Method::DELETE,
+        &format!("/orgs/{}", owner.org_id),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert_eq!(
+        follow(&app, &mock.authorize(&begun.url), Some(&owner.cookie)).await,
+        connected_page(&owner, &row, "failed"),
+        "an organization scheduled for deletion"
+    );
+
+    assert!(
+        connections::of_server(&app.state.pg, row.id)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert!(mock.token_requests().is_empty());
+    let audit = app
+        .get(
+            &format!("/orgs/{}/audit-log?limit=100", owner.org_id),
+            &owner.cookie,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert!(
+        audit.body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|e| e["action"] != "mcp_server.connect"),
+        "{:?}",
+        audit.body
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
 async fn an_answer_from_another_issuer_is_never_redeemed() {
     let s = TestServices::start().await;
     let mock = MockMcp::start(Options {

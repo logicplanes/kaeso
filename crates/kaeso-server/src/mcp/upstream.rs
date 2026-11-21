@@ -97,9 +97,9 @@ pub async fn callback(
             *slot = Some(v.into_owned());
         }
     }
-    let user = match cookies::session_token(&state, &headers) {
+    let session = match cookies::session_token(&state, &headers) {
         Some(token) => match sessions::authenticate(&state, &token).await {
-            Ok(row) => row.map(|r| r.user_id),
+            Ok(row) => row,
             Err(e) => {
                 tracing::error!(error = %e, "an MCP sign-in couldn't read the session");
                 None
@@ -107,10 +107,10 @@ pub async fn callback(
         },
         None => None,
     };
-    match mcp_connections::finish(&state, &params, user).await {
+    match mcp_connections::finish(&state, &params, session.as_deref()).await {
         Ok(f) => {
-            if let Some(by) = user {
-                connected(&state, f, by).await;
+            if let Some(by) = &session {
+                connected(&state, f, by.user_id).await;
             }
             Redirect::to(&back(&state, f, "connected")).into_response()
         }

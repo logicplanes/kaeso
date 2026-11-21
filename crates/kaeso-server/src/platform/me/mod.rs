@@ -9,13 +9,33 @@ pub mod sessions;
 pub mod sso;
 pub mod whats_new;
 
+use kaeso_store::pg::members;
+use kaeso_store::pg::sessions::SessionRow;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 
 use kaeso_core::rights::AccountRight::*;
 
-use super::access::{Access, Secure};
+use super::access::{Access, Area, Secure, managed_by, policy_gap};
+use super::error::ApiResult;
 use crate::state::AppState;
+
+async fn open_orgs(state: &AppState, session: &SessionRow) -> ApiResult<Vec<uuid::Uuid>> {
+    let managed = managed_by(state, session).await?.map(|m| m.org_id);
+    Ok(members::orgs_of_user(&state.pg, session.user_id)
+        .await?
+        .into_iter()
+        .filter(|m| {
+            let area = Area::Org {
+                id: m.org_id,
+                require_sso: m.require_sso,
+                require_2fa: m.require_2fa,
+            };
+            policy_gap(session, managed, area).is_none()
+        })
+        .map(|m| m.org_id)
+        .collect())
+}
 
 #[rustfmt::skip]
 pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {

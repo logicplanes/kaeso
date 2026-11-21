@@ -6,6 +6,7 @@ use axum::body::Body;
 use axum::http::{Method, Request, StatusCode, header};
 use common::{App, ORIGIN, Owner};
 use kaeso_testkit::mcp::{MockMcp, OAuth, Options};
+use kaeso_testkit::oidc::MockIdp;
 use kaeso_testkit::services::TestServices;
 use serde_json::{Value, json};
 use url::Url;
@@ -311,4 +312,388 @@ async fn a_person_is_never_sent_to_a_sign_in_address_that_isnt_a_web_address() {
         );
         assert_eq!(r.body["redirect_url"], Value::Null);
     }
+}
+
+async fn add_in(app: &App, org: &str, cookie: &str, handle: &str, url: &str) -> String {
+    let r = app
+        .post(
+            &format!("/orgs/{org}/mcp-servers"),
+            json!({ "handle": handle, "name": handle, "url": url, "auth_method": "header", "credential_mode": "per_user" }),
+            Some(cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    r.body["id"].as_str().unwrap().to_owned()
+}
+
+async fn connect_header(app: &App, cookie: &str, server: &str) -> common::Resp {
+    app.post(
+        &format!("{MINE}/{server}"),
+        json!({ "header": { "name": "Authorization", "value": "Bearer person-token" } }),
+        Some(cookie),
+    )
+    .await
+}
+
+async fn mcp_actions(app: &App, org: &str, cookie: &str) -> Vec<String> {
+    let r = app
+        .get(&format!("/orgs/{org}/audit-log?limit=100"), cookie)
+        .await
+        .expect_status(StatusCode::OK);
+    r.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|e| e["action"].as_str().unwrap().to_owned())
+        .filter(|a| a.starts_with("mcp_server."))
+        .collect()
+}
+
+struct Org<'a> {
+    id: &'a str,
+    connected: String,
+    fresh: String,
+}
+
+async fn org_with_servers<'a>(app: &App, id: &'a str, cookie: &str, mock: &MockMcp) -> Org<'a> {
+    let connected = add_in(app, id, cookie, "x", &mock.url()).await;
+    let fresh = add_in(app, id, cookie, "y", &mock.url()).await;
+    connect_header(app, cookie, &connected)
+        .await
+        .expect_status(StatusCode::OK);
+    Org {
+        id,
+        connected,
+        fresh,
+    }
+}
+
+async fn refuses_changes(app: &App, org: &Org<'_>, cookie: &str, refusal: impl Fn(&common::Resp)) {
+    refusal(&connect_header(app, cookie, &org.fresh).await);
+    refusal(&connect_header(app, cookie, &org.connected).await);
+    refusal(
+        &app.call(
+            Method::DELETE,
+            &format!("{MINE}/{}", org.connected),
+            None,
+            Some(cookie),
+        )
+        .await,
+    );
+}
+
+async fn left_alone(app: &App, org: &Org<'_>, reader: &str) {
+    let listed = mine(app, reader).await;
+    let connection = |server: &str| {
+        listed
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|v| v["server"] == server)
+            .unwrap()["connection"]
+            .clone()
+    };
+    assert_eq!(connection(&org.fresh), Value::Null, "{listed:?}");
+    assert_ne!(connection(&org.connected), Value::Null, "{listed:?}");
+    let tools = app
+        .get(
+            &format!("/orgs/{}/mcp-servers/{}/tools", org.id, org.fresh),
+            reader,
+        )
+        .await;
+    assert_eq!(
+        tools.body["data"],
+        json!([]),
+        "nobody connected, so the server lists no tools"
+    );
+    assert_eq!(
+        mcp_actions(app, org.id, reader).await,
+        [
+            "mcp_server.connect",
+            "mcp_server.create",
+            "mcp_server.create"
+        ]
+    );
+}
+
+fn listed_servers(listed: &Value) -> Vec<String> {
+    listed
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v["server"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[tokio::test]
+async fn a_session_without_the_second_factor_an_org_requires_leaves_its_connections_alone() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        token: Some("person-token".into()),
+        ..Options::default()
+    })
+    .await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let org = org_with_servers(&app, &owner.org_id, &owner.cookie, &mock).await;
+    let require_2fa = |on: bool| {
+        sqlx::query("UPDATE organizations SET require_2fa = $1 WHERE id = $2")
+            .bind(on)
+            .bind(common::uuid(&owner.org_id))
+            .execute(&app.state.pg)
+    };
+    require_2fa(true).await.unwrap();
+
+    assert_eq!(
+        mine(&app, &owner.cookie).await,
+        json!([]),
+        "the org's servers stay hidden from a session the org refuses"
+    );
+    refuses_changes(&app, &org, &owner.cookie, |r| {
+        assert_eq!(
+            (r.status, r.body["error"]["message"].as_str()),
+            (
+                StatusCode::FORBIDDEN,
+                Some(
+                    "This organization requires two-factor authentication; set it up, then sign in again."
+                )
+            ),
+            "{:?}",
+            r.body
+        );
+    })
+    .await;
+
+    require_2fa(false).await.unwrap();
+    left_alone(&app, &org, &owner.cookie).await;
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn another_orgs_sso_session_leaves_the_connections_of_an_org_it_may_not_open_alone() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        token: Some("person-token".into()),
+        ..Options::default()
+    })
+    .await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let idp = MockIdp::start("kaeso", "client-secret").await;
+    crate::oidc::connect_org(&app, &owner.org_id, &idp, "acme.example", None, false).await;
+    crate::oidc::link_account(
+        &app,
+        &idp,
+        &owner.cookie,
+        &owner.org_id,
+        "sub-owner",
+        "owner@acme.example",
+    )
+    .await;
+    let acme = add_in(&app, &owner.org_id, &owner.cookie, "acme", &mock.url()).await;
+    let beta = app
+        .post("/me/orgs", json!({ "name": "Beta" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED);
+    let beta = beta.body["id"].as_str().unwrap().to_owned();
+    let org = org_with_servers(&app, &beta, &owner.cookie, &mock).await;
+    let sso = crate::oidc::sso_as(&app, &idp, "sub-owner", "owner@acme.example")
+        .await
+        .cookie()
+        .unwrap();
+
+    assert_eq!(
+        listed_servers(&mine(&app, &sso).await),
+        [acme.as_str()],
+        "only the servers of the org whose SSO signed the session in are listed"
+    );
+    refuses_changes(&app, &org, &sso, |r| {
+        assert_eq!(r.error_type(), "other_sign_in_required", "{:?}", r.body);
+    })
+    .await;
+    connect_header(&app, &sso, &acme)
+        .await
+        .expect_status(StatusCode::OK);
+
+    left_alone(&app, &org, &owner.cookie).await;
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn connections_in_an_org_scheduled_for_deletion_stay_readable_and_unchanged() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        token: Some("person-token".into()),
+        ..Options::default()
+    })
+    .await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let beta = app
+        .post("/me/orgs", json!({ "name": "Beta" }), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::CREATED);
+    let beta = beta.body["id"].as_str().unwrap().to_owned();
+    let org = org_with_servers(&app, &beta, &owner.cookie, &mock).await;
+    app.call(
+        Method::DELETE,
+        &format!("/orgs/{beta}"),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let mut listed = listed_servers(&mine(&app, &owner.cookie).await);
+    listed.sort();
+    let mut expected = [org.connected.clone(), org.fresh.clone()];
+    expected.sort();
+    assert_eq!(listed, expected, "a scheduled org stays readable");
+    refuses_changes(&app, &org, &owner.cookie, |r| {
+        assert_eq!(
+            (r.status, r.error_type()),
+            (StatusCode::CONFLICT, "org_scheduled_for_deletion"),
+            "{:?}",
+            r.body
+        );
+    })
+    .await;
+
+    left_alone(&app, &org, &owner.cookie).await;
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_oauth_sign_in_finishes_only_while_the_session_may_still_change_the_org() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        oauth: Some(OAuth {
+            cimd: true,
+            label: Some("@kaesoapp".into()),
+            ..OAuth::default()
+        }),
+        ..Options::default()
+    })
+    .await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let server = add(
+        &app,
+        &owner,
+        json!({ "handle": "x", "name": "X", "url": mock.url(), "auth_method": "oauth", "credential_mode": "per_user" }),
+    )
+    .await;
+    let r = app
+        .post(
+            &format!("{MINE}/{server}"),
+            json!({ "oauth": true }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let back = Url::parse(&mock.authorize(r.body["redirect_url"].as_str().unwrap())).unwrap();
+    let require_2fa = |on: bool| {
+        sqlx::query("UPDATE organizations SET require_2fa = $1 WHERE id = $2")
+            .bind(on)
+            .bind(common::uuid(&owner.org_id))
+            .execute(&app.state.pg)
+    };
+    require_2fa(true).await.unwrap();
+
+    let r = app
+        .raw(
+            Request::builder()
+                .uri(format!("{}?{}", back.path(), back.query().unwrap()))
+                .header(
+                    header::COOKIE,
+                    format!("__Host-kaeso_session={}", owner.cookie),
+                )
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::SEE_OTHER);
+    assert_eq!(
+        r.headers[header::LOCATION],
+        format!("{ORIGIN}/settings/account/connections?server={server}&result=failed").as_str()
+    );
+    app.state.in_flight.settled().await;
+
+    require_2fa(false).await.unwrap();
+    assert_eq!(
+        mine(&app, &owner.cookie).await[0]["connection"],
+        Value::Null
+    );
+    assert_eq!(
+        mcp_actions(&app, &owner.org_id, &owner.cookie).await,
+        ["mcp_server.create"]
+    );
+    s.cleanup().await;
+}
+
+#[tokio::test]
+async fn an_oauth_sign_in_doesnt_finish_once_the_org_is_scheduled_for_deletion() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options {
+        oauth: Some(OAuth {
+            cimd: true,
+            ..OAuth::default()
+        }),
+        ..Options::default()
+    })
+    .await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let server = add(
+        &app,
+        &owner,
+        json!({ "handle": "x", "name": "X", "url": mock.url(), "auth_method": "oauth", "credential_mode": "per_user" }),
+    )
+    .await;
+    let r = app
+        .post(
+            &format!("{MINE}/{server}"),
+            json!({ "oauth": true }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let back = Url::parse(&mock.authorize(r.body["redirect_url"].as_str().unwrap())).unwrap();
+    app.call(
+        Method::DELETE,
+        &format!("/orgs/{}", owner.org_id),
+        None,
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let r = app
+        .raw(
+            Request::builder()
+                .uri(format!("{}?{}", back.path(), back.query().unwrap()))
+                .header(
+                    header::COOKIE,
+                    format!("__Host-kaeso_session={}", owner.cookie),
+                )
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::SEE_OTHER);
+    assert_eq!(
+        r.headers[header::LOCATION],
+        format!("{ORIGIN}/settings/account/connections?server={server}&result=failed").as_str()
+    );
+    app.state.in_flight.settled().await;
+    assert_eq!(
+        mine(&app, &owner.cookie).await[0]["connection"],
+        Value::Null
+    );
+    assert!(mock.token_requests().is_empty());
+    assert_eq!(
+        mcp_actions(&app, &owner.org_id, &owner.cookie).await,
+        ["mcp_server.create"]
+    );
+    s.cleanup().await;
 }

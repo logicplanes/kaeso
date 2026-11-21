@@ -1,11 +1,14 @@
 use std::time::Duration;
 
 use bytes::Bytes;
+use kaeso_core::rights::OrgRight;
 use kaeso_core::secret;
 use kaeso_crypto::{CryptoError, Sealed};
 use kaeso_store::StoreError;
 use kaeso_store::pg::mcp_connections::{self as store, NewConnection, SealedConnection};
 use kaeso_store::pg::mcp_servers::{self, OAuthClient, ServerRow};
+use kaeso_store::pg::members;
+use kaeso_store::pg::sessions::SessionRow;
 use kaeso_store::pg::tokens::{self, NewToken, TokenKind};
 use kaeso_upstream::mcp::Limits;
 use openidconnect::PkceCodeChallenge;
@@ -17,6 +20,8 @@ use url::Url;
 use uuid::Uuid;
 
 use crate::mcp::oauth::endpoint;
+use crate::platform::access::{Area, policy_gap};
+use crate::platform::grants::org_from_store;
 use crate::state::AppState;
 
 pub const CLIENT_DOCUMENT_PATH: &str = "oauth/client.json";
@@ -62,6 +67,8 @@ pub enum SignInError {
     IssuerMismatch,
     #[error("the sign-in was declined: {0}")]
     Denied(String),
+    #[error("the person may no longer change this connection")]
+    NotAllowed,
     #[error("the header can't carry a secret: {0}")]
     BadHeader(HeaderProblem),
     #[error(transparent)]
@@ -620,12 +627,44 @@ struct Granted {
     expires_in: Option<i64>,
 }
 
+async fn may_finish(
+    state: &AppState,
+    session: &SessionRow,
+    org: Uuid,
+    shared: bool,
+) -> Result<bool, StoreError> {
+    let mut conn = state.pg.acquire().await?;
+    let found = members::access_context(&mut conn, org, Some(session.user_id), None).await?;
+    drop(conn);
+    let Some((org, grant)) = found.and_then(|f| Some((f.org, f.org_grant?))) else {
+        return Ok(false);
+    };
+    if org.state == "scheduled_for_deletion" {
+        return Ok(false);
+    }
+    if shared {
+        match org_from_store(&grant) {
+            Ok(g) if g.effective().contains(OrgRight::McpServersManage) => {}
+            Ok(_) => return Ok(false),
+            Err(e) => {
+                tracing::error!(error = %e, "an MCP sign-in couldn't read the member's rights");
+                return Ok(false);
+            }
+        }
+    }
+    let managed = crate::services::managed::of_user(&state.pg, session.user_id)
+        .await?
+        .map(|m| m.org_id);
+    Ok(policy_gap(session, managed, Area::of_org(&org)).is_none())
+}
+
 // The person who finishes a sign-in must be the one who started it: otherwise anyone could hand
-// someone a link that puts that person's upstream account on a connection they don't own.
+// someone a link that puts that person's upstream account on a connection they don't own. The
+// organization may have changed since the sign-in started, so it must still take this change.
 pub async fn finish(
     state: &AppState,
     params: &CallbackParams,
-    signed_in_as: Option<Uuid>,
+    signed_in: Option<&SessionRow>,
 ) -> Result<Finished, (Option<Finished>, SignInError)> {
     let Some(token) = params.state.as_deref() else {
         return Err((None, SignInError::Expired));
@@ -643,9 +682,9 @@ pub async fn finish(
         user: pending.connection_user,
     };
     let fail = |e: SignInError| (Some(finished), e);
-    if signed_in_as != Some(pending.started_by) {
+    let Some(session) = signed_in.filter(|s| s.user_id == pending.started_by) else {
         return Err(fail(SignInError::Expired));
-    }
+    };
     if let Some(error) = &params.error {
         let why = params.error_description.as_deref().unwrap_or(error);
         return Err(fail(SignInError::Denied(why.chars().take(200).collect())));
@@ -666,6 +705,17 @@ pub async fn finish(
         .await
         .map_err(|e| fail(e.into()))?
         .ok_or_else(|| fail(SignInError::Expired))?;
+    if !may_finish(
+        state,
+        session,
+        server.org_id,
+        pending.connection_user.is_none(),
+    )
+    .await
+    .map_err(|e| fail(e.into()))?
+    {
+        return Err(fail(SignInError::NotAllowed));
+    }
     let secret = match mcp_servers::client_secret(&state.pg, server.id)
         .await
         .map_err(|e| fail(e.into()))?

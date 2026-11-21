@@ -21,7 +21,7 @@ async fn connect(app: &App, owner: &Owner, idp: &MockIdp, default_preset: Option
         .unwrap();
 }
 
-async fn connect_org(
+pub(crate) async fn connect_org(
     app: &App,
     org: &str,
     idp: &MockIdp,
@@ -1136,7 +1136,7 @@ async fn an_sso_answer_never_signs_a_signed_in_browser_in_as_someone_else() {
     s.cleanup().await;
 }
 
-async fn sso_as(app: &App, idp: &MockIdp, subject: &str, email: &str) -> common::Resp {
+pub(crate) async fn sso_as(app: &App, idp: &MockIdp, subject: &str, email: &str) -> common::Resp {
     let flow = start(app, json!({ "email": email })).await;
     answer_as(app, idp, &flow, subject, email).await
 }
@@ -1152,7 +1152,7 @@ async fn answer_as(
     callback(app, &auth.code, &auth.state, Some(&flow.binding)).await
 }
 
-async fn link_account(
+pub(crate) async fn link_account(
     app: &App,
     idp: &MockIdp,
     cookie: &str,

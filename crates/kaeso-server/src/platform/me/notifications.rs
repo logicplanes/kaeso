@@ -4,12 +4,12 @@ use axum::Json;
 use axum::extract::State;
 use kaeso_core::id::{OrgId, UserId};
 use kaeso_core::notifications::{Area, Delivery, Kind};
-use kaeso_store::pg::{members, notifications, users};
+use kaeso_store::pg::{members, notifications, orgs, users};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
 use crate::config::MailTransport;
-use crate::platform::access::{Ctx, agent_scope};
+use crate::platform::access::{self, Ctx, agent_scope, require_policy};
 use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
@@ -254,6 +254,8 @@ pub async fn update(
     put,
     path = "/me/memberships/{org}/notifications",
     summary = "Mutes or unmutes emails about an org. Security emails still arrive.",
+    description = "Refused while the org is scheduled for deletion, and for a session whose \
+    `access` to the org in `auth/session` isn't `ok`.",
     tag = "me",
     params(("org" = OrgId, Path)),
     request_body = MembershipNotifications,
@@ -277,6 +279,15 @@ pub async fn mute(
     members::get_org(&state.pg, org.uuid(), me.uuid())
         .await?
         .ok_or_else(|| ApiError::not_found("membership"))?;
+    if ctx.agent().is_none() {
+        let found = orgs::get(&state.pg, org.uuid())
+            .await?
+            .ok_or_else(|| ApiError::not_found("membership"))?;
+        if found.state == "scheduled_for_deletion" {
+            return Err(ApiError::OrgScheduledForDeletion);
+        }
+        require_policy(&state, ctx.sign_in()?, access::Area::of_org(&found)).await?;
+    }
     let mut tx = state.pg.begin().await?;
     notifications::set_muted(&mut *tx, me.uuid(), org.uuid(), req.muted).await?;
     ctx.audit(Some(org), Action::UserNotifications)

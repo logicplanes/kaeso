@@ -4,11 +4,13 @@ use axum::http::StatusCode;
 use kaeso_core::id::{McpServerId, OrgId};
 use kaeso_store::pg::mcp_connections as connections;
 use kaeso_store::pg::mcp_servers::{self as servers, ServerRow};
+use kaeso_store::pg::orgs;
+use kaeso_store::pg::sessions::SessionRow;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::platform::access::Ctx;
+use crate::platform::access::{Area, Ctx, require_policy};
 use crate::platform::audit::{self, Action};
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
@@ -49,11 +51,13 @@ fn method(s: &str) -> McpAuthMethod {
     }
 }
 
-async fn views(state: &AppState, user: Uuid) -> ApiResult<Vec<PersonConnectionView>> {
-    let mine = connections::of_user(&state.pg, user).await?;
-    Ok(servers::per_person_of_member(&state.pg, user)
+async fn views(state: &AppState, session: &SessionRow) -> ApiResult<Vec<PersonConnectionView>> {
+    let open = super::open_orgs(state, session).await?;
+    let mine = connections::of_user(&state.pg, session.user_id).await?;
+    Ok(servers::per_person_of_member(&state.pg, session.user_id)
         .await?
         .into_iter()
+        .filter(|s| open.contains(&s.org_id))
         .map(|s| PersonConnectionView {
             server: McpServerId::from_uuid(s.id),
             connection: mine
@@ -68,19 +72,28 @@ async fn views(state: &AppState, user: Uuid) -> ApiResult<Vec<PersonConnectionVi
         .collect())
 }
 
-async fn own_server(state: &AppState, user: Uuid, raw: &str) -> ApiResult<ServerRow> {
+async fn own_server(state: &AppState, session: &SessionRow, raw: &str) -> ApiResult<ServerRow> {
     let id = server_param(raw)?;
-    servers::per_person_of_member(&state.pg, user)
+    let row = servers::per_person_of_member(&state.pg, session.user_id)
         .await?
         .into_iter()
         .find(|s| s.id == id)
-        .ok_or_else(|| ApiError::not_found("MCP server"))
+        .ok_or_else(|| ApiError::not_found("MCP server"))?;
+    let org = orgs::get(&state.pg, row.org_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("MCP server"))?;
+    if org.state == "scheduled_for_deletion" {
+        return Err(ApiError::OrgScheduledForDeletion);
+    }
+    require_policy(state, session, Area::of_org(&org)).await?;
+    Ok(row)
 }
 
 #[utoipa::path(
     get,
     path = "/me/mcp-connections",
     summary = "The MCP servers where you sign in with your own account, with your connection.",
+    description = "Leaves out the servers of an org whose `access` in `auth/session` isn't `ok`.",
     tag = "me",
     responses((status = 200, body = List<PersonConnectionView>))
 )]
@@ -88,8 +101,7 @@ pub async fn list(
     State(state): State<AppState>,
     ctx: Ctx,
 ) -> ApiResult<Json<List<PersonConnectionView>>> {
-    let user = ctx.user_id()?.uuid();
-    Ok(Json(List::complete(views(&state, user).await?)))
+    Ok(Json(List::complete(views(&state, ctx.sign_in()?).await?)))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -152,8 +164,9 @@ pub async fn connect(
     Path(server): Path<String>,
     Body(req): Body<PersonConnectionSet>,
 ) -> ApiResult<Json<PersonConnectionAnswer>> {
-    let user = ctx.user_id()?.uuid();
-    let row = own_server(&state, user, &server).await?;
+    let session = ctx.sign_in()?;
+    let user = session.user_id;
+    let row = own_server(&state, session, &server).await?;
     let redirect_url = match (&req.header, req.oauth, row.auth_method.as_str()) {
         (Some(h), false, "header") => {
             signin::set_header(&state, &row, Some(user), &h.name, &h.value)
@@ -199,7 +212,7 @@ pub async fn connect(
             ));
         }
     };
-    let connection = views(&state, user)
+    let connection = views(&state, session)
         .await?
         .into_iter()
         .find(|v| v.server.uuid() == row.id)
@@ -223,8 +236,9 @@ pub async fn disconnect(
     ctx: Ctx,
     Path(server): Path<String>,
 ) -> ApiResult<StatusCode> {
-    let user = ctx.user_id()?.uuid();
-    let row = own_server(&state, user, &server).await?;
+    let session = ctx.sign_in()?;
+    let user = session.user_id;
+    let row = own_server(&state, session, &server).await?;
     if !connections::delete(&state.pg, row.id, Some(user)).await? {
         return Err(ApiError::not_found("connection"));
     }

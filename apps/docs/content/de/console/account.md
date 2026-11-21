@@ -95,7 +95,7 @@ Einen Anbieter, der einmal ohne frische Anmeldung geantwortet hat, bietet sie ni
 
 Gehört Ihre Adresse zu einer bestätigten E-Mail-Domain einer Organisation mit Single Sign-on, verwaltet diese Organisation Ihr Konto, und **Profil** zeigt **Verwaltet von** mit ihrem Namen. Eine Anmeldung über ihren Identitätsanbieter ist eine vollständige Anmeldung: Sie öffnet jede Organisation, der Sie angehören, jede mit ihren eigenen Anforderungen. Außerdem können Sie damit Ihr Konto ändern, wofür weiterhin eine kürzliche Anmeldung nötig ist. Die Verwaltung der Instanz braucht eine weitere Anmeldung, es sei denn, ein Instanz-Admin hat die Organisation dafür gewählt.
 
-Eine Anmeldung über den Anbieter einer Organisation, die Ihr Konto nicht verwaltet, öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. Das geschieht, wenn Ihre Adresse zu einer anderen Domain gehört. **API-Schlüssel** zeigt dann nur Ihre Schlüssel in dieser Organisation. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
+Eine Anmeldung über den Anbieter einer Organisation, die Ihr Konto nicht verwaltet, öffnet nur diese Organisation und lässt Sie Ihr Konto lesen. Das geschieht, wenn Ihre Adresse zu einer anderen Domain gehört. **API-Schlüssel** und **Verbindungen** zeigen dann nur Ihre Schlüssel und Verbindungen in dieser Organisation. Alles andere braucht eine weitere Anmeldung, und die Konsole fragt nach Ihrem Passwort oder schickt einen Anmeldelink:
 
 - E-Mail-Adresse, Passwort oder Zwei-Faktor-Authentifizierung ändern;
 - eine Organisation erstellen, eine andere verlassen oder das Konto löschen;
@@ -149,7 +149,7 @@ Die [Webhooks](webhooks.md) einer Organisation bekommen ihre Benachrichtigungen 
 
 Schreibt die Installation E-Mails nur in ihr Protokoll, sagt die Seite das und bietet keine Auswahl. Ob E-Mails ankommen, prüft ein Instanz-Admin mit einer Test-E-Mail unter **Instanz** › **System** ([Test-E-Mail senden](../self-hosting/email.md#test-e-mail-senden)).
 
-Um alle E-Mails zu einer Organisation außer Sicherheits-E-Mails zu stoppen, schalten Sie unter **Mitgliedschaften** für sie **Mir E-Mails zu dieser Organisation senden** aus.
+Um alle E-Mails zu einer Organisation außer Sicherheits-E-Mails zu stoppen, schalten Sie unter **Mitgliedschaften** für sie **Mir E-Mails zu dieser Organisation senden** aus. Solange die Organisation zur Löschung vorgemerkt ist, bleibt der Schalter, wie er ist, und er verlangt eine Anmeldung, die die Anforderungen der Organisation erfüllt.
 
 Jede E-Mail außer Sicherheits-E-Mails endet mit einem Link, der genau diese Art ausschaltet, ohne Anmeldung. Mail-Apps mit eigener Abmelde-Schaltfläche nutzen denselben Link. Schalten Sie die E-Mail unter **Benachrichtigungen** wieder ein.
 

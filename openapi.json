@@ -5958,7 +5958,7 @@
           "me"
         ],
         "summary": "The MCP servers where you sign in with your own account, with your connection.",
-        "description": "**Access:** a signed-in console session; no right is needed. Agents can't use it.",
+        "description": "Leaves out the servers of an org whose `access` in `auth/session` isn't `ok`.\n\n**Access:** a signed-in console session; no right is needed. Agents can't use it.",
         "operationId": "getMeMcpConnections",
         "responses": {
           "200": {
@@ -6246,7 +6246,7 @@
           "me"
         ],
         "summary": "Mutes or unmutes emails about an org. Security emails still arrive.",
-        "description": "**Access:** a signed-in console session, or an agent granted `account.notifications.manage`.",
+        "description": "Refused while the org is scheduled for deletion, and for a session whose `access` to the org in `auth/session` isn't `ok`.\n\n**Access:** a signed-in console session, or an agent granted `account.notifications.manage`.",
         "operationId": "putMeMembershipsOrgNotifications",
         "parameters": [
           {
