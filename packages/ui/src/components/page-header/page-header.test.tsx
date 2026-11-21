@@ -41,9 +41,10 @@ describe("PageHeader", () => {
     );
     // sm:flex-initial resets flex-shrink to 1, so the title and the tabs would give up room alike and the last tab
     // would hide behind the list's edge while the title still had letters to spare.
-    const title = screen.getByRole("heading", { level: 1 }).parentElement!;
-    expect(title).toHaveClass("sm:flex-initial", "sm:shrink-1000");
-    expect(screen.getByRole("tablist").parentElement!.parentElement).not.toHaveClass("shrink-0");
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveClass("sm:flex-initial", "sm:shrink-1000");
+    // The box around a back button and the title steps aside, so the back button never shrinks under the tabs.
+    expect(heading.parentElement).toHaveClass("sm:contents");
   });
 });
 
@@ -52,7 +53,7 @@ describe("PageHeader on a phone", () => {
     render(<PageHeader title="Anfrageprotokolle für alle Projekte der Organisation" actions={<button type="button">Exportieren</button>} />);
     const heading = screen.getByRole("heading", { level: 1 });
     // flex-auto starts the title at its whole width, so a wrapping header breaks before the actions rather than shrinking it.
-    expect(heading.parentElement).toHaveClass("min-w-0", "flex-auto", "shrink-4", "sm:flex-initial", "max-sm:min-w-96");
+    expect(heading.parentElement).toHaveClass("min-w-0", "flex-auto", "shrink-4", "sm:contents", "max-sm:min-w-96");
     expect(heading.parentElement).not.toHaveClass("flex-1");
     expect(screen.getByRole("banner")).toHaveClass("flex-wrap", "sm:flex-nowrap");
     expect(screen.getByText(/^Anfrageprotokolle/)).toHaveClass("truncate");

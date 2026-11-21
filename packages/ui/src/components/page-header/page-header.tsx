@@ -29,10 +29,12 @@ export const PageHeader = forwardRef<HTMLElement, PageHeaderProps>(function Page
   return (
     <header ref={ref} className={cn("flex shrink-0 items-center", KAESO_PAGE_HEADER_VARIANTS.size.md.classes, className)}>
       {(start || title) && (
-        <div className="flex min-w-0 flex-auto shrink-4 items-center gap-x-12 max-sm:min-w-96 sm:flex-initial sm:shrink-1000">
+        // From sm up this box steps aside (contents), so the start keeps its width and only the heading gives way.
+        <div className="flex min-w-0 flex-auto shrink-4 items-center gap-x-12 max-sm:min-w-96 sm:contents">
           {start}
           {title && (
-            <Heading className="flex min-w-0 flex-auto items-center gap-8 text-title-sm font-semibold text-fg sm:flex-initial">
+            // flex-initial alone would shrink the title no faster than the tabs, cutting the last tab while letters remain.
+            <Heading className="flex min-w-0 flex-auto items-center gap-8 text-title-sm font-semibold text-fg sm:flex-initial sm:shrink-1000">
               {icon && <Icon icon={icon} size="sm" className="shrink-0 text-fg-secondary" />}
               <Text truncate variant="title-sm" tone="inherit">
                 {title}
