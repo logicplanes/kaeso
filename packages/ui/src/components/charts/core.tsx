@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { forwardRef, memo, useDeferredValue, useEffect, useState, type ReactNode } from "react";
+import { forwardRef, memo, useDeferredValue, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
 import { motion, tokenKindSeries, tokenKindTint } from "@logicplanes/kaeso-tokens";
 import { Skeleton } from "../skeleton/skeleton.js";
@@ -315,10 +315,21 @@ export interface LegendItem {
 
 export const tickLabel = (format: (v: number) => string) => (v: number) => format(v).replace(/[.,]00(?=\D*$)/, "");
 
-export function readableTicks(scale: { ticks: (count: number) => number[]; domain: () => number[] }, label: (v: number) => string, count = 4): number[] {
+// A 12px axis label needs this much room above the next one to read on its own.
+const TICK_GAP = 22;
+
+/** Value axis ticks whose labels differ, and, given the axis's length, that sit at least `TICK_GAP` apart. */
+export function readableTicks(
+  scale: { ticks: (count: number) => number[]; domain: () => number[] },
+  label: (v: number) => string,
+  count = 4,
+  length = Infinity,
+): number[] {
   for (let n = count; n >= 1; n--) {
     const ticks = scale.ticks(n);
-    if (new Set(ticks.map(label)).size === ticks.length) return ticks;
+    const [lo = 0, hi = 0] = scale.domain();
+    const roomy = ticks.length < 2 || n === 1 || (length * Math.abs(ticks[1]! - ticks[0]!)) / Math.abs(hi - lo || 1) >= TICK_GAP;
+    if (roomy && new Set(ticks.map(label)).size === ticks.length) return ticks;
   }
   const [lo = 0, hi = 0] = scale.domain();
   return label(lo) === label(hi) ? [lo] : [lo, hi];
@@ -501,6 +512,73 @@ export function useChartKeys(count: number, options: { vertical?: boolean | unde
     },
   };
   return { index: index !== null && index < count ? index : null, props };
+}
+
+type HitEvent = React.PointerEvent<SVGElement>;
+
+/** Room above a plot, and below it for its time or category labels; the value axis spaces its ticks in what is left. */
+export const PLOT = { top: 8, bottom: 28 } as const;
+
+/**
+ * The touch action a chart's hit area takes: the page still scrolls up and down and zooms, and a finger that slides
+ * sideways moves the chart's point instead.
+ */
+export const CHART_TOUCH = "touch-pan-y touch-pinch-zoom";
+
+/**
+ * Pointer handlers for a chart's hit areas. A mouse, or a pen held above the screen, shows a point while it hovers. A finger
+ * or a pressed pen has no hover: its tap shows the point until a tap outside the chart, a sideways slide moves it, and a
+ * touch that turns into a scroll shows nothing.
+ */
+export function useChartPointer(hide: () => void) {
+  const [tapped, setTapped] = useState<Element | null>(null);
+  const hideRef = useRef(hide);
+  hideRef.current = hide;
+  const start = useRef<{ x: number; y: number; sliding: boolean } | null>(null);
+  useEffect(() => {
+    if (!tapped) return;
+    const away = (e: PointerEvent) => {
+      if (e.target instanceof Node && tapped.contains(e.target)) return;
+      setTapped(null);
+      hideRef.current();
+    };
+    document.addEventListener("pointerdown", away, true);
+    return () => document.removeEventListener("pointerdown", away, true);
+  }, [tapped]);
+  const pressed = (e: HitEvent) => e.pointerType === "touch" || (e.pointerType === "pen" && e.buttons > 0);
+  return (show: (e: HitEvent) => void) => ({
+    onPointerDown: (e: HitEvent) => {
+      if (!pressed(e)) return;
+      // A touch stays with the hit area it began on; let it go, so a slide across a bar chart reaches the next bar.
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+      start.current = { x: e.clientX, y: e.clientY, sliding: false };
+    },
+    onPointerMove: (e: HitEvent) => {
+      const from = start.current;
+      if (!from) {
+        if (!pressed(e)) show(e);
+        return;
+      }
+      if (!from.sliding && Math.abs(e.clientX - from.x) <= Math.abs(e.clientY - from.y)) return;
+      from.sliding = true;
+      setTapped(e.currentTarget.ownerSVGElement ?? e.currentTarget);
+      show(e);
+    },
+    onPointerUp: (e: HitEvent) => {
+      if (!start.current) return;
+      start.current = null;
+      setTapped(e.currentTarget.ownerSVGElement ?? e.currentTarget);
+      show(e);
+    },
+    onPointerLeave: (e: HitEvent) => {
+      if (!start.current && !tapped && !pressed(e) && e.pointerType !== "touch") hide();
+    },
+    onPointerCancel: () => {
+      start.current = null;
+      setTapped(null);
+      hide();
+    },
+  });
 }
 
 export interface ChartLiveProps {
