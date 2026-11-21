@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { observeResize } from "../../utils/observe-resize.js";
 import { Badge } from "../badge/badge.js";
 import { Delta } from "./delta.js";
@@ -58,7 +59,7 @@ Stat.displayName = "Stat";
 const PlainStat = forwardRef<HTMLDivElement, StatProps>(function PlainStat({ value, unit, delta, size = "md", className }, ref) {
   return (
     <div ref={ref} className={cn("flex min-w-0 flex-wrap items-baseline gap-x-8 gap-y-4", className)}>
-      <span className={cn("font-medium text-fg tabular", KAESO_STAT_VARIANTS.size[size].classes)}>{value}</span>
+      <span className={cn("font-medium text-fg", figures(value), KAESO_STAT_VARIANTS.size[size].classes)}>{value}</span>
       {unit && <span className="text-body-lg font-regular text-fg-secondary">{unit}</span>}
       {delta && <Badge tone={delta.tone ?? "neutral"}>{delta.label}</Badge>}
     </div>
@@ -92,7 +93,7 @@ const StatTile = forwardRef<HTMLDivElement, StatProps>(function StatTile({ label
             <Skeleton shape="line" className="h-24 w-112" />
           </span>
         ) : (
-          <TruncatedText data-stat-value={step.px} className={cn("max-w-full font-medium text-fg tabular", step.classes)}>
+          <TruncatedText data-stat-value={step.px} className={cn("max-w-full font-medium text-fg", figures(value), step.classes)}>
             {value}
           </TruncatedText>
         )}

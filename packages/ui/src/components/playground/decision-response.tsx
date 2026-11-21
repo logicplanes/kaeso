@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { icons } from "../../icons/vocabulary.js";
 import { useUiText, type UiText } from "../../i18n/context.js";
 import { useFormatters } from "../../i18n/formatters.js";
@@ -100,6 +101,10 @@ function Bars({ bars, pending, max, unit, t }: { bars: readonly Bar[]; pending: 
 
 function clamp01(n: number): number {
   return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0;
+}
+
+function ScoreText({ text }: { text: string }) {
+  return <span className={cn("min-w-0 text-body text-fg wrap-anywhere", figures(text))}>{text}</span>;
 }
 
 function BoxAnswer({ answer, image, t }: { answer: Extract<DecisionAnswer, { kind: "box" }> | undefined; image: DecisionImage | undefined; t: UiText }) {
@@ -251,11 +256,13 @@ function QuestionAnswer({
               {pending || !score ? (
                 <span aria-hidden className={cn("h-12 w-120 self-center rounded-pill bg-fill-1", WAITING)} />
               ) : (
-                <span className="min-w-0 text-body text-fg tabular wrap-anywhere">
-                  {score.level
-                    ? t("decisionResponse.scoreNear", "{score} of {max}, nearest {level}", { score: score.value, max: score.max, level: score.level })
-                    : t("decisionResponse.score", "{score} of {max}", { score: score.value, max: score.max })}
-                </span>
+                <ScoreText
+                  text={
+                    score.level
+                      ? t("decisionResponse.scoreNear", "{score} of {max}, nearest {level}", { score: score.value, max: score.max, level: score.level })
+                      : t("decisionResponse.score", "{score} of {max}", { score: score.value, max: score.max })
+                  }
+                />
               )}
             </div>
           )}

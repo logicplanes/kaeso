@@ -1,5 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
+import { cn } from "../../utils/cn.js";
 import { SwapValue, textOf } from "./swap-value.js";
+import { figures } from "../../utils/figures.js";
 
 export interface LegendEntry {
   id: string;
@@ -28,7 +30,7 @@ export const Legend = forwardRef<HTMLUListElement, { items: LegendEntry[] }>(fun
           </svg>
           <span>{i.label}</span>
           {i.value !== undefined && (
-            <SwapValue text={textOf(i.value)} className="font-medium text-fg tabular">
+            <SwapValue text={textOf(i.value)} className={cn("font-medium text-fg", figures(i.value))}>
               {i.value}
             </SwapValue>
           )}

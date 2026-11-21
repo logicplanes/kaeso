@@ -3,6 +3,7 @@ import { forwardRef, useEffect, useMemo, useRef, useState, type KeyboardEvent, t
 import { Combobox as BaseCombobox } from "@base-ui/react/combobox";
 import { Autocomplete as BaseAutocomplete } from "@base-ui/react/autocomplete";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { warnStylingClassName } from "../../utils/dev.js";
 import { useField, useFieldControl, withField, type FieldWrapProps } from "../field/field.js";
 import { Icon, type IconData } from "../icon/icon.js";
@@ -342,7 +343,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(function Com
                         </span>
                         {o.description && <span className="text-small font-regular text-fg-secondary">{o.description}</span>}
                       </span>
-                      {o.meta && <span className="shrink-0 text-small font-regular text-fg-tertiary tabular">{o.meta}</span>}
+                      {o.meta && <span className={cn("shrink-0 text-small font-regular text-fg-tertiary", figures(o.meta))}>{o.meta}</span>}
                       <BaseCombobox.ItemIndicator
                         keepMounted
                         className="flex size-16 shrink-0 items-center justify-center text-fg opacity-0 data-selected:opacity-100"

@@ -2,7 +2,8 @@ import { forwardRef, useLayoutEffect, useMemo, useRef, useState, type ReactNode 
 import { cn } from "../../utils/cn.js";
 import { mergeRefs } from "../../utils/merge-refs.js";
 import { observeResize } from "../../utils/observe-resize.js";
-import { edgeColor, tabularLabel } from "./marks.js";
+import { edgeColor } from "./marks.js";
+import { figures } from "../../utils/figures.js";
 
 export function useSize<T extends HTMLElement>(): [(el: T | null) => void, { width: number; height: number }] {
   const [el, setEl] = useState<T | null>(null);
@@ -91,9 +92,7 @@ export const ChartTooltip = forwardRef<HTMLDivElement, ChartTooltipProps>(functi
         top,
       }}
     >
-      <div className={cn("mb-8 pb-6 text-caption font-medium text-fg hairline-b", (typeof heading !== "string" || tabularLabel(heading)) && "tabular")}>
-        {heading}
-      </div>
+      <div className={cn("mb-8 pb-6 text-caption font-medium text-fg hairline-b", figures(heading))}>{heading}</div>
       <div className="flex flex-col gap-4">
         {rows.map((r) => (
           <div key={r.id} className="flex items-center gap-8">
