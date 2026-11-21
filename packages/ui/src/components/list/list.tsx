@@ -1,5 +1,6 @@
 import { forwardRef, useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { useGutterPadded, useInset } from "../../utils/inset.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon, type IconData } from "../icon/icon.js";
@@ -634,7 +635,9 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
             <span className="flex min-h-24 min-w-0 flex-wrap items-center gap-x-8">
               {item.meta && <span className={cn("flex min-w-0 max-w-full items-center gap-6 overflow-hidden", off && "opacity-50")}>{item.meta}</span>}
               {item.date && (
-                <span className={cn("shrink-0 text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}>{item.date}</span>
+                <span className={cn("shrink-0 text-small whitespace-nowrap", figures(item.date), off ? "text-fg-disabled" : "text-fg-secondary")}>
+                  {item.date}
+                </span>
               )}
             </span>
           )}
@@ -664,7 +667,7 @@ export const ListRow = forwardRef<HTMLDivElement, ListRowProps>(function ListRow
         )}
         {!lines && (item.date || dated) && (
           <span
-            className={cn("shrink-0 text-right text-small whitespace-nowrap tabular", off ? "text-fg-disabled" : "text-fg-secondary")}
+            className={cn("shrink-0 text-right text-small whitespace-nowrap", figures(item.date), off ? "text-fg-disabled" : "text-fg-secondary")}
             style={{ minWidth: "max(112px, var(--k-list-date, 0px))" }}
           >
             <span data-list-date="">{item.date}</span>

@@ -43,6 +43,27 @@ describe("instance updates page", () => {
     expect(await within(table).findByText("40.4.0 to 40.4.1")).toBeInTheDocument();
   });
 
+  // Inter's tabular figures give a hyphen a figure's width: "40.4.3-rc.1" would read "40.4.3 - rc.1".
+  it("sets versions in the history as written, and a pre-release's badges too", async () => {
+    signedIn();
+    on(
+      "GET",
+      "instance/updates",
+      available({
+        latest: release({ version: "40.4.4-rc.1", prerelease: true }),
+        releases: [release({ version: "40.4.4-rc.1", prerelease: true })],
+        can_apply: false,
+      }),
+    );
+    history([updateJob({ from: "40.4.2", to: "40.4.3-rc.1", state: "succeeded", step: "online", finished_at: "2026-10-15T12:01:00Z" })]);
+    await renderApp(PATH);
+    const table = await screen.findByRole("table", { name: "History" });
+    expect(await within(table).findByText("40.4.2 to 40.4.3-rc.1")).not.toHaveClass("tabular");
+    expect(within(table).getByText(/^15 Oct 2026/)).toHaveClass("tabular");
+    expect(await screen.findByText("40.4.4-rc.1 available")).not.toHaveClass("tabular");
+    expect(screen.getAllByText("Pre-release")[0]).not.toHaveClass("tabular");
+  });
+
   it("says the install is up to date, without a time of the last check", async () => {
     signedIn();
     on("GET", "instance/updates", updates());

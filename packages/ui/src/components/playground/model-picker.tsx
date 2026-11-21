@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useMemo, useState, type ReactNode } from "reac
 import { useLocale, useUiText } from "../../i18n/context.js";
 import { useFormatters } from "../../i18n/formatters.js";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { CommandList, type CommandListGroup, type CommandListItem } from "../command-list/command-list.js";
 import { PickerPopover, PickerTrigger } from "../command-list/picker-popover.js";
 import { Highlight } from "../combobox/combobox.js";
@@ -98,7 +99,13 @@ function ModelRow({ option, query, providerLabel }: { option: ModelPickerOption;
       </span>
       {option.capabilities && option.capabilities.length > 0 && <CapabilityIcons capabilities={option.capabilities} className="hidden sm:flex" />}
       {(option.note ?? details) && (
-        <span className={cn("shrink-0 text-caption font-regular tabular", option.note ? "text-fg-secondary" : "hidden text-fg-tertiary sm:inline")}>
+        <span
+          className={cn(
+            "shrink-0 text-caption font-regular",
+            figures(option.note ?? details),
+            option.note ? "text-fg-secondary" : "hidden text-fg-tertiary sm:inline",
+          )}
+        >
           {option.note ?? details}
         </span>
       )}

@@ -1,5 +1,6 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { TruncatedText } from "../text/truncated.js";
 
 export const KAESO_BADGE_VARIANTS = {
@@ -25,7 +26,8 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge({ to
     <TruncatedText
       ref={ref}
       className={cn(
-        "inline-block h-22 max-w-full min-w-0 shrink-0 rounded-code px-8 py-3 align-middle text-caption font-medium tabular",
+        "inline-block h-22 max-w-full min-w-0 shrink-0 rounded-code px-8 py-3 align-middle text-caption font-medium",
+        figures(children),
         "forced-colors:outline forced-colors:-outline-offset-1",
         KAESO_BADGE_VARIANTS.tone[tone].classes,
         className,
