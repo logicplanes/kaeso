@@ -15,7 +15,7 @@ function useChanged(value: string): number {
 
 // A name such as a key or model rolls one span per character, which drops its kerning and its ellipsis.
 const NUMBER = /^[^\p{L}]*\d/u;
-export const isNumber = (text: string) => NUMBER.test(text);
+const isNumber = (text: string) => NUMBER.test(text);
 
 export const SwapValue = forwardRef<HTMLSpanElement, { children: ReactNode; text: string; className: string }>(function SwapValue(
   { children, text, className },

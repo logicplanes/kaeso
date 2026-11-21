@@ -212,3 +212,18 @@ describe("StatGroup with live values", () => {
     expect(list).not.toHaveClass("lg:grid-cols-4");
   });
 });
+
+describe("Stat figures", () => {
+  it("sets a model's name as written and a number in tabular figures", () => {
+    render(
+      <>
+        <Stat value="gpt-5-mini" />
+        <Stat value="1,204" />
+        <Stat variant="tile" label="Top model" value="o3-mini" />
+      </>,
+    );
+    expect(screen.getByText("gpt-5-mini")).not.toHaveClass("tabular");
+    expect(screen.getByText("1,204")).toHaveClass("tabular");
+    expect(screen.getByText("o3-mini")).not.toHaveClass("tabular");
+  });
+});

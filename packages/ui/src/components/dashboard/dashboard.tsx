@@ -3,9 +3,10 @@ import { useLinkComponent } from "../../utils/link-provider.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { Skeleton } from "../skeleton/skeleton.js";
 import { Delta } from "../stat/delta.js";
-import { SwapValue, isNumber, textOf } from "./swap-value.js";
+import { SwapValue, textOf } from "./swap-value.js";
 
 export const KAESO_DASHBOARD_VARIANTS = {
   surface: {
@@ -148,15 +149,7 @@ export const Readout = forwardRef<HTMLDivElement, ReadoutProps>(function Readout
           <Skeleton shape="line" className={md ? "h-20 w-96" : "w-64"} />
         ) : (
           <span className="flex min-w-0 items-baseline gap-6">
-            <SwapValue
-              text={text}
-              className={cn(
-                "truncate font-medium text-fg",
-                // Inter's tabular figures give a hyphen a figure's width, which spaces out a name like checkout-web.
-                (!text || isNumber(text)) && "tabular",
-                KAESO_READOUT_VARIANTS.size[size].classes,
-              )}
-            >
+            <SwapValue text={text} className={cn("truncate font-medium text-fg", figures(value), KAESO_READOUT_VARIANTS.size[size].classes)}>
               {value}
             </SwapValue>
             {unit && <span className="truncate text-small text-fg-secondary">{unit}</span>}

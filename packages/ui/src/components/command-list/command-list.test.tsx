@@ -403,3 +403,25 @@ describe("CommandList's lines", () => {
     expect(search).toHaveClass("hairline-b-strong", "px-18");
   });
 });
+
+describe("CommandList figures", () => {
+  it("sets an item's note naming a model as written, and a size in tabular figures", () => {
+    render(
+      <CommandList
+        aria-label="Models"
+        groups={[
+          {
+            id: "g",
+            label: "Models",
+            items: [
+              { value: "a", label: "Smart", meta: "gpt-5-mini" },
+              { value: "b", label: "Long", meta: "200K" },
+            ],
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("gpt-5-mini")).not.toHaveClass("tabular");
+    expect(screen.getByText("200K")).toHaveClass("tabular");
+  });
+});

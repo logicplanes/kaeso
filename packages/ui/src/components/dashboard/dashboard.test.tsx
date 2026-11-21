@@ -5,6 +5,7 @@ import { Legend } from "./legend.js";
 import { RankList } from "./rank-list.js";
 import { MetricTabs } from "./metric-tabs.js";
 import { Delta } from "../stat/delta.js";
+import { ModelCard } from "./model-card.js";
 
 const tabs = [
   { id: "requests", label: "Requests", value: "59,415", change: { value: 0.17 }, detail: "vs. prior 30 days" },
@@ -287,5 +288,31 @@ describe("Legend and Delta", () => {
     const delta = screen.getByText("0%").parentElement?.parentElement;
     expect(delta).toHaveClass("text-fg-secondary");
     expect(delta).toHaveTextContent(/^0%$/);
+  });
+});
+
+describe("dashboard figures", () => {
+  it("sets names as written in a model card, a legend and metric tabs, and numbers and dates in tabular figures", () => {
+    render(
+      <>
+        <ModelCard
+          mark={null}
+          name="GPT-5"
+          model="gpt-5"
+          facts={[
+            { label: "Replaces", value: "gpt-4.1-mini" },
+            { label: "Context", value: "400k" },
+          ]}
+        />
+        <Legend items={[{ id: "a", label: "Busiest", value: "claude-haiku-4-5", color: "var(--k-viz-1)" }]} />
+        <MetricTabs aria-label="Metric" items={[{ id: "m", label: "Top model", value: "o3-mini" }]} value="m" onValueChange={() => {}} />
+        <Readout label="Since" value="13 Oct" />
+      </>,
+    );
+    expect(screen.getByText("gpt-4.1-mini")).not.toHaveClass("tabular");
+    expect(screen.getByText("400k")).toHaveClass("tabular");
+    expect(screen.getByText("claude-haiku-4-5")).not.toHaveClass("tabular");
+    expect(screen.getByText("o3-mini")).not.toHaveClass("tabular");
+    expect(screen.getByText("13 Oct").closest(".tabular")).not.toBeNull();
   });
 });

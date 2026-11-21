@@ -25,7 +25,7 @@ Inter for everything people read: "Request logs, keys and usage for every model 
 
 ## Numbers
 
-Numbers that align in columns use tabular figures (`tabular`). Money keeps its exact decimal string from the API and is formatted only for display; token counts use thin grouping; durations pick their unit (`840 ms`, `2.4 s`). Use the formatters: `useFormatters()` in components, `@logicplanes/kaeso-ui/format` outside React.
+Numbers that align in columns use tabular figures (`tabular`). Names and versions don't: Inter's tabular figures give a hyphen a figure's width, so `gpt-5-mini` and `1.4.0-rc.2` would read spaced out. Components that take any text (`Badge`, `List` dates, `Stat`, chart labels) decide by themselves. Money keeps its exact decimal string from the API and is formatted only for display; token counts use thin grouping; durations pick their unit (`840 ms`, `2.4 s`). Use the formatters: `useFormatters()` in components, `@logicplanes/kaeso-ui/format` outside React.
 
 ## Rules
 
