@@ -242,73 +242,73 @@ These tables compare Kaeso with the gateways people most often weigh it against,
 
 ### Running it yourself
 
-|                                     | On your servers         | License                                 | Written in            | Web console | Docker Compose | Helm chart          |
-| ----------------------------------- | ----------------------- | --------------------------------------- | --------------------- | ----------- | -------------- | ------------------- |
-| **Kaeso**                           | Yes                     | MIT                                     | Rust                  | Yes         | Yes            | Yes                 |
-| LiteLLM                             | Yes                     | MIT, except `enterprise/`[^litellm-lic] | Python[^litellm-lang] | Yes         | Yes            | Yes                 |
-| Bifrost                             | Yes[^bifrost-ha]        | Apache 2.0                              | Go                    | Yes         | Yes            | Yes                 |
-| Portkey                             | Yes                     | MIT                                     | TypeScript            | Logs only   | Yes            | Paid[^portkey-helm] |
-| Helicone                            | Partial[^helicone-self] | Apache 2.0                              | TypeScript            | Yes         | Yes            | Yes                 |
-| Kong AI Gateway                     | Yes                     | Apache 2.0, AI plugins paid[^kong-lic]  | Lua                   | Yes         | Yes            | Yes                 |
-| Agent Router (was Envoy AI Gateway) | Yes                     | Apache 2.0                              | Go                    | –           | Yes            | Yes                 |
-| OpenRouter                          | Hosted only             | –                                       | –                     | Hosted      | –              | –                   |
-| Cloudflare AI Gateway               | Hosted only             | –                                       | –                     | Hosted      | –              | –                   |
+|                                     | On your servers                | License                                            | Written in                    | Web console | Docker Compose | Helm chart                  |
+| ----------------------------------- | ------------------------------ | -------------------------------------------------- | ----------------------------- | ----------- | -------------- | --------------------------- |
+| **Kaeso**                           | Yes                            | MIT                                                | Rust                          | Yes         | Yes            | Yes                         |
+| LiteLLM                             | Yes                            | MIT, except `enterprise/`<sup>[1](#note-1)</sup>   | Python<sup>[2](#note-2)</sup> | Yes         | Yes            | Yes                         |
+| Bifrost                             | Yes<sup>[3](#note-3)</sup>     | Apache 2.0                                         | Go                            | Yes         | Yes            | Yes                         |
+| Portkey                             | Yes                            | MIT                                                | TypeScript                    | Logs only   | Yes            | Paid<sup>[4](#note-4)</sup> |
+| Helicone                            | Partial<sup>[5](#note-5)</sup> | Apache 2.0                                         | TypeScript                    | Yes         | Yes            | Yes                         |
+| Kong AI Gateway                     | Yes                            | Apache 2.0, AI plugins paid<sup>[6](#note-6)</sup> | Lua                           | Yes         | Yes            | Yes                         |
+| Agent Router (was Envoy AI Gateway) | Yes                            | Apache 2.0                                         | Go                            | –           | Yes            | Yes                         |
+| OpenRouter                          | Hosted only                    | –                                                  | –                             | Hosted      | –              | –                           |
+| Cloudflare AI Gateway               | Hosted only                    | –                                                  | –                             | Hosted      | –              | –                           |
 
 ### Teams and control
 
-|                       | Single sign-on | SCIM | Roles                   | Audit log | Budgets                   | PII and secret rules  | Your own guardrail service |
-| --------------------- | -------------- | ---- | ----------------------- | --------- | ------------------------- | --------------------- | -------------------------- |
-| **Kaeso**             | Yes            | Yes  | Yes                     | Yes       | Yes                       | Yes                   | Yes                        |
-| LiteLLM               | Up to 5 users  | Paid | Partial[^litellm-roles] | Paid      | Yes                       | Partial[^litellm-pii] | Yes                        |
-| Bifrost               | Paid           | Paid | Paid                    | Paid      | Yes                       | Paid                  | Partial[^bifrost-plugins]  |
-| Portkey               | Paid           | Paid | Paid                    | Paid      | Paid                      | Paid                  | Yes                        |
-| Helicone              | Paid           | –    | –                       | –         | Partial[^helicone-budget] | –                     | –                          |
-| Kong AI Gateway       | Paid           | Paid | Paid                    | Paid      | Paid                      | Paid                  | Paid                       |
-| Agent Router          | –              | –    | –                       | –         | Partial[^ar-quota]        | –                     | Partial[^ar-extauth]       |
-| OpenRouter            | Paid           | Paid | Partial[^or-roles]      | Paid      | Yes[^or-budgets]          | Yes                   | –                          |
-| Cloudflare AI Gateway | Yes            | Paid | Partial[^cf-roles]      | Yes       | Yes                       | Partial[^cf-dlp]      | –                          |
+|                       | Single sign-on | SCIM | Roles                            | Audit log | Budgets                          | PII and secret rules             | Your own guardrail service       |
+| --------------------- | -------------- | ---- | -------------------------------- | --------- | -------------------------------- | -------------------------------- | -------------------------------- |
+| **Kaeso**             | Yes            | Yes  | Yes                              | Yes       | Yes                              | Yes                              | Yes                              |
+| LiteLLM               | Up to 5 users  | Paid | Partial<sup>[7](#note-7)</sup>   | Paid      | Yes                              | Partial<sup>[8](#note-8)</sup>   | Yes                              |
+| Bifrost               | Paid           | Paid | Paid                             | Paid      | Yes                              | Paid                             | Partial<sup>[9](#note-9)</sup>   |
+| Portkey               | Paid           | Paid | Paid                             | Paid      | Paid                             | Paid                             | Yes                              |
+| Helicone              | Paid           | –    | –                                | –         | Partial<sup>[10](#note-10)</sup> | –                                | –                                |
+| Kong AI Gateway       | Paid           | Paid | Paid                             | Paid      | Paid                             | Paid                             | Paid                             |
+| Agent Router          | –              | –    | –                                | –         | Partial<sup>[11](#note-11)</sup> | –                                | Partial<sup>[12](#note-12)</sup> |
+| OpenRouter            | Paid           | Paid | Partial<sup>[13](#note-13)</sup> | Paid      | Yes<sup>[14](#note-14)</sup>     | Yes                              | –                                |
+| Cloudflare AI Gateway | Yes            | Paid | Partial<sup>[15](#note-15)</sup> | Yes       | Yes                              | Partial<sup>[16](#note-16)</sup> | –                                |
 
 ### APIs your apps can call
 
-|                       | OpenAI Chat Completions and Responses | Anthropic Messages        | Gemini                    | ElevenLabs           | Rerank              | OpenAI batches          |
-| --------------------- | ------------------------------------- | ------------------------- | ------------------------- | -------------------- | ------------------- | ----------------------- |
-| **Kaeso**             | Yes                                   | Yes                       | Yes                       | Yes                  | Yes                 | Partial[^kaeso-batches] |
-| LiteLLM               | Yes                                   | Yes                       | Yes                       | –                    | Yes                 | Yes                     |
-| Bifrost               | Yes                                   | Yes                       | Yes                       | Yes                  | Yes                 | Yes                     |
-| Portkey               | Yes                                   | Yes                       | Partial[^portkey-gemini]  | Partial[^portkey-11] | Yes                 | Paid                    |
-| Helicone              | Yes                                   | Partial[^helicone-legacy] | Partial[^helicone-legacy] | –                    | –                   | –                       |
-| Kong AI Gateway       | Partial[^kong-310]                    | Paid[^kong-310]           | Yes                       | –                    | Paid[^kong-310]     | Paid[^kong-310]         |
-| Agent Router          | Yes                                   | Yes                       | –                         | –                    | Yes                 | –                       |
-| OpenRouter            | Yes                                   | Yes                       | –                         | –                    | Yes                 | Yes                     |
-| Cloudflare AI Gateway | Yes                                   | Yes                       | Yes[^cf-pass]             | Yes[^cf-pass]        | Partial[^cf-cohere] | –                       |
+|                       | OpenAI Chat Completions and Responses | Anthropic Messages               | Gemini                           | ElevenLabs                       | Rerank                           | OpenAI batches                   |
+| --------------------- | ------------------------------------- | -------------------------------- | -------------------------------- | -------------------------------- | -------------------------------- | -------------------------------- |
+| **Kaeso**             | Yes                                   | Yes                              | Yes                              | Yes                              | Yes                              | Partial<sup>[17](#note-17)</sup> |
+| LiteLLM               | Yes                                   | Yes                              | Yes                              | –                                | Yes                              | Yes                              |
+| Bifrost               | Yes                                   | Yes                              | Yes                              | Yes                              | Yes                              | Yes                              |
+| Portkey               | Yes                                   | Yes                              | Partial<sup>[18](#note-18)</sup> | Partial<sup>[19](#note-19)</sup> | Yes                              | Paid                             |
+| Helicone              | Yes                                   | Partial<sup>[20](#note-20)</sup> | Partial<sup>[20](#note-20)</sup> | –                                | –                                | –                                |
+| Kong AI Gateway       | Partial<sup>[21](#note-21)</sup>      | Paid<sup>[21](#note-21)</sup>    | Yes                              | –                                | Paid<sup>[21](#note-21)</sup>    | Paid<sup>[21](#note-21)</sup>    |
+| Agent Router          | Yes                                   | Yes                              | –                                | –                                | Yes                              | –                                |
+| OpenRouter            | Yes                                   | Yes                              | –                                | –                                | Yes                              | Yes                              |
+| Cloudflare AI Gateway | Yes                                   | Yes                              | Yes<sup>[22](#note-22)</sup>     | Yes<sup>[22](#note-22)</sup>     | Partial<sup>[23](#note-23)</sup> | –                                |
 
 ### Media
 
-|                       | Images                    | Video           | Speech          | Transcription   | Music |
-| --------------------- | ------------------------- | --------------- | --------------- | --------------- | ----- |
-| **Kaeso**             | Yes                       | Yes             | Yes             | Yes             | Yes   |
-| LiteLLM               | Yes                       | Yes             | Yes             | Yes             | Yes   |
-| Bifrost               | Yes                       | Yes             | Yes             | Yes             | –     |
-| Portkey               | Yes                       | Yes             | Yes             | Yes             | –     |
-| Helicone              | Partial[^helicone-images] | –               | –               | –               | –     |
-| Kong AI Gateway       | Paid[^kong-310]           | Paid[^kong-310] | Paid[^kong-310] | Paid[^kong-310] | –     |
-| Agent Router          | Yes                       | –               | –               | Yes             | –     |
-| OpenRouter            | Yes                       | Yes             | Yes             | Yes             | –     |
-| Cloudflare AI Gateway | Yes                       | Yes             | Yes             | Yes             | –     |
+|                       | Images                           | Video                         | Speech                        | Transcription                 | Music |
+| --------------------- | -------------------------------- | ----------------------------- | ----------------------------- | ----------------------------- | ----- |
+| **Kaeso**             | Yes                              | Yes                           | Yes                           | Yes                           | Yes   |
+| LiteLLM               | Yes                              | Yes                           | Yes                           | Yes                           | Yes   |
+| Bifrost               | Yes                              | Yes                           | Yes                           | Yes                           | –     |
+| Portkey               | Yes                              | Yes                           | Yes                           | Yes                           | –     |
+| Helicone              | Partial<sup>[24](#note-24)</sup> | –                             | –                             | –                             | –     |
+| Kong AI Gateway       | Paid<sup>[21](#note-21)</sup>    | Paid<sup>[21](#note-21)</sup> | Paid<sup>[21](#note-21)</sup> | Paid<sup>[21](#note-21)</sup> | –     |
+| Agent Router          | Yes                              | –                             | –                             | Yes                           | –     |
+| OpenRouter            | Yes                              | Yes                           | Yes                           | Yes                           | –     |
+| Cloudflare AI Gateway | Yes                              | Yes                           | Yes                           | Yes                           | –     |
 
 ### Routing and operations
 
-|                       | Several keys per provider | Fallbacks | Retries | Model retirements      | MCP gateway           | Logs without content |
-| --------------------- | ------------------------- | --------- | ------- | ---------------------- | --------------------- | -------------------- |
-| **Kaeso**             | Yes, weighted             | Yes       | Yes     | Yes[^kaeso-lifecycle]  | Yes                   | Yes                  |
-| LiteLLM               | Yes                       | Yes       | Yes     | Partial[^litellm-dep]  | Yes                   | Yes                  |
-| Bifrost               | Yes, weighted             | Yes       | Yes     | Partial[^bifrost-gone] | Yes                   | Yes                  |
-| Portkey               | Yes, weighted             | Yes       | Yes     | –                      | Partial[^portkey-mcp] | Paid                 |
-| Helicone              | –                         | Yes       | Yes     | –                      | –                     | Yes                  |
-| Kong AI Gateway       | –                         | Paid      | Paid    | –                      | Paid                  | Yes                  |
-| Agent Router          | Partial[^ar-backends]     | Yes       | Yes     | –                      | Yes                   | Yes                  |
-| OpenRouter            | Partial[^or-byok]         | Yes       | Yes     | Partial[^or-expiry]    | –                     | Yes                  |
-| Cloudflare AI Gateway | Partial[^cf-keys]         | Yes       | Yes     | –                      | –[^cf-mcp]            | Yes                  |
+|                       | Several keys per provider        | Fallbacks | Retries | Model retirements                | MCP gateway                      | Logs without content |
+| --------------------- | -------------------------------- | --------- | ------- | -------------------------------- | -------------------------------- | -------------------- |
+| **Kaeso**             | Yes, weighted                    | Yes       | Yes     | Yes<sup>[25](#note-25)</sup>     | Yes                              | Yes                  |
+| LiteLLM               | Yes                              | Yes       | Yes     | Partial<sup>[26](#note-26)</sup> | Yes                              | Yes                  |
+| Bifrost               | Yes, weighted                    | Yes       | Yes     | Partial<sup>[27](#note-27)</sup> | Yes                              | Yes                  |
+| Portkey               | Yes, weighted                    | Yes       | Yes     | –                                | Partial<sup>[28](#note-28)</sup> | Paid                 |
+| Helicone              | –                                | Yes       | Yes     | –                                | –                                | Yes                  |
+| Kong AI Gateway       | –                                | Paid      | Paid    | –                                | Paid                             | Yes                  |
+| Agent Router          | Partial<sup>[29](#note-29)</sup> | Yes       | Yes     | –                                | Yes                              | Yes                  |
+| OpenRouter            | Partial<sup>[30](#note-30)</sup> | Yes       | Yes     | Partial<sup>[31](#note-31)</sup> | –                                | Yes                  |
+| Cloudflare AI Gateway | Partial<sup>[32](#note-32)</sup> | Yes       | Yes     | –                                | –<sup>[33](#note-33)</sup>       | Yes                  |
 
 ### Paid plans, as published
 
@@ -329,6 +329,42 @@ These tables compare Kaeso with the gateways people most often weigh it against,
 Kaeso runs as containers next to PostgreSQL, ClickHouse and Valkey, on at least 2 vCPUs and 4 GB of memory ([requirements](https://docs.kaeso.app/self-hosting/requirements)), and it has no hosted version and no paid support. If you want a hosted service with nothing to run, OpenRouter or Cloudflare AI Gateway fit better, and OpenRouter bills hundreds of models through one account. If your platform team already runs Kong or Envoy Gateway, Kong AI Gateway or Agent Router put model traffic under the same policies and Kubernetes resources. LiteLLM serves more kinds of endpoints, such as realtime, OCR and vector stores, and comes as a Python SDK as well as a proxy. Helicone goes further into observability, with sessions, evaluations, datasets and prompt management. If you need a vendor contract, LiteLLM, Bifrost, Portkey, Helicone and Kong sell enterprise plans.
 
 TensorZero is not in the tables: its website says it is no longer maintained.
+
+#### Notes
+
+1. <a id="note-1"></a>The repository's license is MIT except for `enterprise/` folders, whose code needs a BerriAI Enterprise license in production.
+2. <a id="note-2"></a>GitHub lists Python as the repository's main language; its description reads "Rust core with Python SDK".
+3. <a id="note-3"></a>Running several open-source Bifrost nodes against one PostgreSQL is not supported; clustering is part of Enterprise.
+4. <a id="note-4"></a>The official chart pulls enterprise images with credentials Portkey shares.
+5. <a id="note-5"></a>The self-hosted stack forwards OpenAI and Anthropic traffic; Vertex AI, Bedrock and Azure OpenAI are not supported there, and the AI gateway is documented as a cloud endpoint.
+6. <a id="note-6"></a>Kong Gateway is Apache 2.0; most AI plugins, such as AI Proxy Advanced, AI Sanitizer and AI MCP Proxy, are part of AI Gateway Enterprise.
+7. <a id="note-7"></a>Global proxy roles carry no enterprise label; roles scoped to organizations or teams are a premium feature.
+8. <a id="note-8"></a>PII masking with Presidio is in the open-source version; secret detection and redaction are enterprise-only.
+9. <a id="note-9"></a>No webhook guardrail in the open-source version; Go or WASM plugins can inspect requests, and named guardrail vendors are Enterprise.
+10. <a id="note-10"></a>Cost-based rate limits per user or property, set with a request header.
+11. <a id="note-11"></a>Token quotas per model, not money.
+12. <a id="note-12"></a>Envoy's external authorization hook, not a guardrail feature of its own.
+13. <a id="note-13"></a>Organization admins and members; workspace roles need a higher plan.
+14. <a id="note-14"></a>The workspace budgets page says budgets are on every plan; the pricing page lists them as not included on Free.
+15. <a id="note-15"></a>Cloudflare account roles and API token permissions; no role for AI Gateway members alone.
+16. <a id="note-16"></a>Data loss prevention flags or blocks prompts and replies; two predefined profiles without a Zero Trust subscription, no masking documented.
+17. <a id="note-17"></a>For providers whose batch API takes OpenAI's batches as they are, today OpenAI.
+18. <a id="note-18"></a>Google Gen AI SDK requests pass through for Gemini models on Vertex AI only.
+19. <a id="note-19"></a>Speech and transcription go through OpenAI-style `/v1/audio` endpoints; other ElevenLabs APIs through a custom host.
+20. <a id="note-20"></a>Through a provider-specific proxy that Helicone maintains but no longer develops.
+21. <a id="note-21"></a>Documented for AI Proxy from Kong Gateway 3.10 or 3.11; the open-source releases on GitHub are 3.9. The open-source AI Proxy takes Chat Completions.
+22. <a id="note-22"></a>The provider's own API, passed through to that provider only.
+23. <a id="note-23"></a>Cohere's API passes through to Cohere.
+24. <a id="note-24"></a>One image model, through Google AI Studio.
+25. <a id="note-25"></a>`Deprecation`, `Sunset` and `Link` headers, 410 after the shutdown, and aliases that move to the replacement.
+26. <a id="note-26"></a>Deprecation reminders 30 days and 1 day before a provider's date, with a recommended replacement.
+27. <a id="note-27"></a>Requests to a retired model are recognized and handled like other failures; no warnings or move to a replacement are documented.
+28. <a id="note-28"></a>In Portkey's hosted and enterprise platform, not in the open-source gateway.
+29. <a id="note-29"></a>Weighted backends, each with its own credentials.
+30. <a id="note-30"></a>Several of your own keys, tried in the order you set; no weights.
+31. <a id="note-31"></a>The models API returns a model endpoint's deprecation date.
+32. <a id="note-32"></a>Several keys per provider, chosen per request by an alias header.
+33. <a id="note-33"></a>MCP server portals are a separate Cloudflare One product.
 
 <details>
 <summary><b>Sources</b>, all read on 21 November 2026</summary>
@@ -354,72 +390,6 @@ TensorZero is not in the tables: its website says it is no longer maintained.
 **TensorZero:** [website](https://www.tensorzero.com/), [repository](https://github.com/tensorzero/tensorzero), archived on GitHub.
 
 </details>
-
-[^litellm-lic]: The repository's license is MIT except for `enterprise/` folders, whose code needs a BerriAI Enterprise license in production.
-
-[^litellm-lang]: GitHub lists Python as the repository's main language; its description reads "Rust core with Python SDK".
-
-[^litellm-roles]: Global proxy roles carry no enterprise label; roles scoped to organizations or teams are a premium feature.
-
-[^litellm-pii]: PII masking with Presidio is in the open-source version; secret detection and redaction are enterprise-only.
-
-[^litellm-dep]: Deprecation reminders 30 days and 1 day before a provider's date, with a recommended replacement.
-
-[^bifrost-ha]: Running several open-source Bifrost nodes against one PostgreSQL is not supported; clustering is part of Enterprise.
-
-[^bifrost-plugins]: No webhook guardrail in the open-source version; Go or WASM plugins can inspect requests, and named guardrail vendors are Enterprise.
-
-[^bifrost-gone]: Requests to a retired model are recognized and handled like other failures; no warnings or move to a replacement are documented.
-
-[^portkey-helm]: The official chart pulls enterprise images with credentials Portkey shares.
-
-[^portkey-gemini]: Google Gen AI SDK requests pass through for Gemini models on Vertex AI only.
-
-[^portkey-11]: Speech and transcription go through OpenAI-style `/v1/audio` endpoints; other ElevenLabs APIs through a custom host.
-
-[^portkey-mcp]: In Portkey's hosted and enterprise platform, not in the open-source gateway.
-
-[^helicone-self]: The self-hosted stack forwards OpenAI and Anthropic traffic; Vertex AI, Bedrock and Azure OpenAI are not supported there, and the AI gateway is documented as a cloud endpoint.
-
-[^helicone-budget]: Cost-based rate limits per user or property, set with a request header.
-
-[^helicone-legacy]: Through a provider-specific proxy that Helicone maintains but no longer develops.
-
-[^helicone-images]: One image model, through Google AI Studio.
-
-[^kong-lic]: Kong Gateway is Apache 2.0; most AI plugins, such as AI Proxy Advanced, AI Sanitizer and AI MCP Proxy, are part of AI Gateway Enterprise.
-
-[^kong-310]: Documented for AI Proxy from Kong Gateway 3.10 or 3.11; the open-source releases on GitHub are 3.9. The open-source AI Proxy takes Chat Completions.
-
-[^ar-quota]: Token quotas per model, not money.
-
-[^ar-extauth]: Envoy's external authorization hook, not a guardrail feature of its own.
-
-[^ar-backends]: Weighted backends, each with its own credentials.
-
-[^or-roles]: Organization admins and members; workspace roles need a higher plan.
-
-[^or-budgets]: The workspace budgets page says budgets are on every plan; the pricing page lists them as not included on Free.
-
-[^or-byok]: Several of your own keys, tried in the order you set; no weights.
-
-[^or-expiry]: The models API returns a model endpoint's deprecation date.
-
-[^cf-roles]: Cloudflare account roles and API token permissions; no role for AI Gateway members alone.
-
-[^cf-dlp]: Data loss prevention flags or blocks prompts and replies; two predefined profiles without a Zero Trust subscription, no masking documented.
-
-[^cf-pass]: The provider's own API, passed through to that provider only.
-
-[^cf-cohere]: Cohere's API passes through to Cohere.
-
-[^cf-keys]: Several keys per provider, chosen per request by an alias header.
-
-[^cf-mcp]: MCP server portals are a separate Cloudflare One product.
-
-[^kaeso-batches]: For providers whose batch API takes OpenAI's batches as they are, today OpenAI.
-
-[^kaeso-lifecycle]: `Deprecation`, `Sunset` and `Link` headers, 410 after the shutdown, and aliases that move to the replacement.
 
 ## Works with
 
