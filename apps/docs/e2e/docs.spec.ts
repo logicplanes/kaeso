@@ -265,6 +265,28 @@ test.describe("on a phone", () => {
     expect(indent).toBe("-16px");
   });
 
+  test("a line of code that fits the screen stays on one line, a word alone on it included", async ({ page }) => {
+    await page.goto("/guides/keys-and-limits");
+    const lines = page.locator("article pre").locator("code > span");
+    await expect(lines.first()).toBeVisible();
+    const found = await lines.evaluateAll((all) => {
+      const ruler = document.createElement("canvas").getContext("2d");
+      if (!ruler) return [];
+      return all.map((line) => {
+        const cs = getComputedStyle(line);
+        ruler.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const room = line.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const fits = ruler.measureText(line.textContent ?? "").width <= room - 1;
+        if (!line.checkVisibility()) return { text: line.textContent, fits: false, lines: 0 };
+        return { text: line.textContent, fits, lines: Math.round(line.getBoundingClientRect().height / parseFloat(cs.lineHeight)) };
+      });
+    });
+    // The page has lines that fit a phone and lines that don't, among them `request,` alone on its line.
+    expect(found.some((l) => l.fits) && found.some((l) => !l.fits)).toBe(true);
+    expect(found.map((l) => l.text)).toContain("  request,");
+    for (const line of found.filter((l) => l.fits)) expect(line, line.text ?? "").toMatchObject({ lines: 1 });
+  });
+
   test("the navigation is a sheet that closes when a page opens", async ({ page }) => {
     await page.goto("/guides/keys-and-limits");
     await expect(page.getByRole("navigation", { name: "On this page" })).toBeHidden();

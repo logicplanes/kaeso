@@ -131,7 +131,7 @@ describe("CodeBlock", () => {
     const [indent, body] = [...row.children] as HTMLElement[];
     expect(indent).toHaveClass("shrink-0", "whitespace-pre");
     expect(indent?.textContent).toBe("    ");
-    expect(body).toHaveClass("pl-16", "-indent-16");
+    expect(body).toHaveClass("flex-1", "pl-16", "-indent-16");
     expect(body?.textContent?.startsWith('"message"')).toBe(true);
     expect(row.textContent).toBe(code.split("\n")[1]);
   });
@@ -143,11 +143,11 @@ describe("CodeBlock", () => {
     expect(container.querySelector("code")).toHaveClass("sm:min-w-max");
     expect(container.querySelector("code")).not.toHaveClass("min-w-max");
     expect(row()).toHaveClass("max-sm:whitespace-pre-wrap", "max-sm:wrap-anywhere");
-    expect(row().lastElementChild).toHaveClass("max-sm:pl-16", "max-sm:-indent-16");
+    expect(row().lastElementChild).toHaveClass("max-sm:flex-1", "max-sm:pl-16", "max-sm:-indent-16");
     rerender(<CodeBlock code={line} lang="text" wrap copy={false} />);
     expect(row()).toHaveClass("whitespace-pre-wrap");
     expect(row()).not.toHaveClass("max-sm:whitespace-pre-wrap");
-    expect(row().lastElementChild).toHaveClass("pl-16", "-indent-16");
+    expect(row().lastElementChild).toHaveClass("flex-1", "pl-16", "-indent-16");
     rerender(<CodeBlock code={line} lang="text" copy={false} />);
     expect(container.querySelector("code")).toHaveClass("min-w-max");
   });
