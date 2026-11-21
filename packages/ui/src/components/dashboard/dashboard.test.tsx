@@ -113,6 +113,25 @@ describe("Dashboard", () => {
     expect(screen.getByText("48%").parentElement).toHaveClass("text-metric");
     expect(screen.getByText("↑0.5%").parentElement?.parentElement).toHaveTextContent("↑0.5% better");
   });
+  it("wraps a long cell title below the grid's width and keeps it to one line in the grid, linked or not", () => {
+    render(
+      <Dashboard aria-label="Usage in the period">
+        <DashboardCell title="Am stärksten gewachsen, ggü. den 30 Tagen davor" actions={<button type="button">Alle</button>}>
+          <p>Rows</p>
+        </DashboardCell>
+        <DashboardCell title="Projekte, Anfragen heute" href="/analytics/projects">
+          <p>Rows</p>
+        </DashboardCell>
+      </Dashboard>,
+    );
+    const plain = screen.getByRole("heading", { name: "Am stärksten gewachsen, ggü. den 30 Tagen davor" });
+    expect(plain).toHaveClass("wrap-break-word", "lg:truncate");
+    expect(plain.closest("header")).toHaveClass("items-start", "lg:h-24", "lg:items-center");
+    expect(screen.getByRole("button", { name: "Alle" }).parentElement).toHaveClass("h-24");
+    const linked = screen.getByRole("link", { name: "Projekte, Anfragen heute" });
+    expect(screen.getByText("Projekte, Anfragen heute")).toHaveClass("wrap-break-word", "lg:truncate");
+    expect(linked).toHaveClass("lg:h-24");
+  });
   it("gives a cell's title link a finger-sized hit area on a touch screen", () => {
     render(
       <Dashboard aria-label="Usage in the period">
