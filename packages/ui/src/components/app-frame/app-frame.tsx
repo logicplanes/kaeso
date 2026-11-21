@@ -308,6 +308,7 @@ const Body = forwardRef<HTMLDivElement, AppFrameBodyProps>(function AppFrameBody
   return (
     <div
       ref={refs}
+      data-frame-body=""
       className={cn("min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-quiet", KAESO_APP_FRAME_BODY_VARIANTS.padding[padding].classes, className)}
       {...props}
     >

@@ -272,7 +272,11 @@ export const JsonView = forwardRef<HTMLDivElement, JsonViewProps>(function JsonV
   return (
     <div
       ref={ref}
-      className={cn("mono overflow-x-auto text-small leading-code text-fg scrollbar-quiet", KAESO_JSON_VIEW_VARIANTS.surface[surface].classes, className)}
+      className={cn(
+        "mono overflow-x-auto overscroll-x-contain text-small leading-code text-fg scrollbar-quiet",
+        KAESO_JSON_VIEW_VARIANTS.surface[surface].classes,
+        className,
+      )}
     >
       <TreeContext.Provider value={tree}>
         <div ref={root} role="tree" aria-label={t("jsonView.label", "JSON")}>

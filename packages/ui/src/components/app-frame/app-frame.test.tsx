@@ -26,6 +26,11 @@ function Page(props: { description?: string }) {
 }
 
 describe("AppFrame.Settings", () => {
+  it("scrolls the page in its body, marked as the page's scroller", () => {
+    render(<Page />);
+    expect(screen.getByText("Rows").closest("[data-frame-body]")).toHaveClass("overflow-y-auto", "overscroll-contain");
+  });
+
   it("puts the actions on the title's line and the description below both", () => {
     render(<Page description="People in the organization and their rights in it." />);
     const title = screen.getByRole("heading", { level: 1, name: "Members" });
@@ -109,6 +114,12 @@ describe("AppFrame's phone bar", () => {
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle).toHaveAttribute("aria-haspopup", "dialog");
     expect(bar.compareDocumentPosition(screen.getByRole("main")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("gives the wordmark a hit area a finger can reach", () => {
+    render(<Shell brandHref="/" />);
+    const bar = document.querySelector<HTMLElement>("[data-phone-bar]")!;
+    expect(within(bar).getByRole("link", { name: "Kaeso home" })).toHaveClass("relative", "tap-target");
   });
   it("puts its own actions between the wordmark and the navigation toggle", async () => {
     let searched = 0;

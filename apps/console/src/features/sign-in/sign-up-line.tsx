@@ -9,7 +9,13 @@ export function SignUpLine() {
   if (!install.data?.sign_up) return null;
   return (
     <Text variant="small" tone="secondary" className="text-center">
-      {tRich("signIn.newHere", "New here? {link}", { link: <Link href="/sign-up">{t("signIn.createAccount", "Create an account")}</Link> })}
+      {tRich("signIn.newHere", "New here? {link}", {
+        link: (
+          <Link href="/sign-up" variant="action">
+            {t("signIn.createAccount", "Create an account")}
+          </Link>
+        ),
+      })}
     </Text>
   );
 }

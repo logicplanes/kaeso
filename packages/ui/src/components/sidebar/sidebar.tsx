@@ -338,7 +338,12 @@ export interface BrandWordmarkProps {
 export const BrandWordmark = forwardRef<HTMLAnchorElement | SVGSVGElement, BrandWordmarkProps>(function BrandWordmark({ href, label = "Kaeso" }, ref) {
   const LinkComp = useLinkComponent();
   return href ? (
-    <LinkComp ref={ref as Ref<HTMLAnchorElement>} href={href} aria-label={label} className="-mx-4 flex h-32 items-center rounded-code px-4 text-fg focus-ring">
+    <LinkComp
+      ref={ref as Ref<HTMLAnchorElement>}
+      href={href}
+      aria-label={label}
+      className="relative -mx-4 flex h-32 items-center rounded-code px-4 text-fg tap-target focus-ring"
+    >
       <NavWordmark decorative />
     </LinkComp>
   ) : (
