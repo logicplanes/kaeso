@@ -7,7 +7,7 @@
       "name": "MIT",
       "identifier": "MIT"
     },
-    "version": "0.6.0"
+    "version": "0.7.0-rc.1"
   },
   "paths": {
     "/platform/v1/auth/demo": {
@@ -48239,7 +48239,7 @@
           "version": {
             "type": "string",
             "description": "The gateway version.",
-            "example": "0.6.0"
+            "example": "0.7.0-rc.1"
           }
         }
       },
@@ -49461,7 +49461,7 @@
           "current": {
             "type": "string",
             "description": "The version the gateway runs.",
-            "example": "0.6.0"
+            "example": "0.7.0-rc.1"
           },
           "github_stars": {
             "type": [
@@ -50231,7 +50231,7 @@
           "current": {
             "type": "string",
             "description": "The version the gateway runs.",
-            "example": "0.6.0"
+            "example": "0.7.0-rc.1"
           },
           "releases": {
             "type": "array",
