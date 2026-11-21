@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE videos SET status = $3, progress = $4, error = $5, completed_at = $6, expires_at = COALESCE($7, expires_at), units = $8, cost = $9, accounted_at = $10 WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL RETURNING id",
+  "query": "UPDATE videos SET status = $3, progress = $4, error = $5, completed_at = $6, expires_at = COALESCE($7, expires_at), units = $8, cost = $9, accounted_at = $10, tags = '{}', user_agent = NULL, alias = NULL, line = NULL WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL RETURNING id",
   "describe": {
     "columns": [
       {
@@ -33,5 +33,5 @@
       false
     ]
   },
-  "hash": "89eabf05d6fe5b2ff12f5c59bcb808b6c5aedda4d66f71a08d6cd8dc06073389"
+  "hash": "c0d33c4ab94a66c3e57c0898a2c2e6ea6cfa5612132af00857b536358ba450f6"
 }

@@ -169,6 +169,10 @@ pub(super) async fn register(
         created_at: now,
         completed_at: upstream.completed_at,
         accounted_at: None,
+        tags: rec.outcome().tags.clone(),
+        user_agent: rec.outcome().user_agent.clone(),
+        alias: rec.outcome().alias.clone(),
+        line: rec.outcome().line.clone(),
     };
     store::insert(&state.pg, &row).await.map_err(|e| {
         tracing::error!(error = %e, "cannot keep a started image generation");
@@ -591,6 +595,11 @@ async fn record_completion(
         }
     }
     o.requested_model = Some(row.model.clone());
+    o.tags.clone_from(&row.tags);
+    o.user_agent.clone_from(&row.user_agent);
+    o.alias.clone_from(&row.alias);
+    o.line.clone_from(&row.line);
+    o.credential_id = Some(row.credential_id);
     o.catalogue_model_id = row.catalogue_model_id;
     o.model_id = Some(row.upstream_model.clone());
     o.response_model = Some(row.upstream_model.clone());

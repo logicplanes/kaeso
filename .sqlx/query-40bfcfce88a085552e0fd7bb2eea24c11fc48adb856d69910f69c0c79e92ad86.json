@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE image_generations SET units = $3, cost = $4, accounted_at = $5 WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL AND status IN ('completed', 'failed') RETURNING id",
+  "query": "UPDATE image_generations SET units = $3, cost = $4, accounted_at = $5, tags = '{}', user_agent = NULL, alias = NULL, line = NULL WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL AND status IN ('completed', 'failed') RETURNING id",
   "describe": {
     "columns": [
       {
@@ -28,5 +28,5 @@
       false
     ]
   },
-  "hash": "469f30e0155f0c3224410d6dff002518c876ec8d106a2bdba3372d744d5d075b"
+  "hash": "40bfcfce88a085552e0fd7bb2eea24c11fc48adb856d69910f69c0c79e92ad86"
 }

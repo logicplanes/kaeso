@@ -23,6 +23,29 @@ describe("PageHeader", () => {
     expect(slot.className).not.toMatch(/(^| )-ml-/);
     expect(screen.getByRole("banner")).toHaveClass("px-24");
   });
+
+  it("cuts a long title short before its tabs start to scroll, beside them on one line", () => {
+    render(
+      <PageHeader
+        title="checkout-assistant-primary-reply-with-fallbacks-for-peak-traffic"
+        tabs={
+          <Tabs variant="pill" defaultValue="editor">
+            <Tabs.List aria-label="Alias views">
+              <Tabs.Tab value="editor">Editor</Tabs.Tab>
+              <Tabs.Tab value="test">Test</Tabs.Tab>
+              <Tabs.Tab value="audit">Audit log</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
+        }
+      />,
+    );
+    // sm:flex-initial resets flex-shrink to 1, so the title and the tabs would give up room alike and the last tab
+    // would hide behind the list's edge while the title still had letters to spare.
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveClass("sm:flex-initial", "sm:shrink-1000");
+    // The box around a back button and the title steps aside, so the back button never shrinks under the tabs.
+    expect(heading.parentElement).toHaveClass("sm:contents");
+  });
 });
 
 describe("PageHeader on a phone", () => {
@@ -30,7 +53,7 @@ describe("PageHeader on a phone", () => {
     render(<PageHeader title="Anfrageprotokolle für alle Projekte der Organisation" actions={<button type="button">Exportieren</button>} />);
     const heading = screen.getByRole("heading", { level: 1 });
     // flex-auto starts the title at its whole width, so a wrapping header breaks before the actions rather than shrinking it.
-    expect(heading.parentElement).toHaveClass("min-w-0", "flex-auto", "shrink-4", "sm:flex-initial", "max-sm:min-w-96");
+    expect(heading.parentElement).toHaveClass("min-w-0", "flex-auto", "shrink-4", "sm:contents", "max-sm:min-w-96");
     expect(heading.parentElement).not.toHaveClass("flex-1");
     expect(screen.getByRole("banner")).toHaveClass("flex-wrap", "sm:flex-nowrap");
     expect(screen.getByText(/^Anfrageprotokolle/)).toHaveClass("truncate");
