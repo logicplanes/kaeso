@@ -325,3 +325,34 @@ describe("ChartTooltip swatches", () => {
     expect(container.querySelector(".data-mark")).toHaveClass("size-10");
   });
 });
+
+describe("figures in category names", () => {
+  const axis = (container: HTMLElement, text: string) => [...container.querySelectorAll<SVGTextElement>("svg text")].find((n) => n.textContent === text);
+
+  it("sets a model's name under its bar in proportional figures, so its hyphens don't read as gaps", () => {
+    const { container } = render(
+      <BarChart
+        aria-label="Requests by model"
+        categories={["gpt-5-mini", "claude-haiku-4-5"]}
+        series={[{ id: "requests", label: "Requests", values: [120, 80] }]}
+      />,
+    );
+    for (const name of ["gpt-5-mini", "claude-haiku-4-5"]) expect(axis(container, name)?.style.fontVariantNumeric ?? "").toBe("");
+  });
+
+  it("keeps tabular figures for dates and numbers under the bars, and on the value axis", () => {
+    const { container } = render(
+      <BarChart aria-label="Requests per day" categories={["13 Oct", "14 Oct"]} series={[{ id: "requests", label: "Requests", values: [120, 80] }]} />,
+    );
+    expect(axis(container, "13 Oct")?.style.fontVariantNumeric).toBe("tabular-nums");
+    expect(axis(container, "100")?.style.fontVariantNumeric).toBe("tabular-nums");
+  });
+
+  it("heads a tooltip with a name in proportional figures and with a date in tabular ones", () => {
+    const rows = [{ id: "requests", label: "Requests", color: "var(--k-viz-1)", value: "120" }];
+    const { rerender } = render(<ChartTooltip x={10} y={10} width={400} heading="gpt-5-mini" rows={rows} visible />);
+    expect(screen.getByText("gpt-5-mini")).not.toHaveClass("tabular");
+    rerender(<ChartTooltip x={10} y={10} width={400} heading="3 Oct" rows={rows} visible />);
+    expect(screen.getByText("3 Oct")).toHaveClass("tabular");
+  });
+});
