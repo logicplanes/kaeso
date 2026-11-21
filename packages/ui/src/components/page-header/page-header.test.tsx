@@ -23,6 +23,28 @@ describe("PageHeader", () => {
     expect(slot.className).not.toMatch(/(^| )-ml-/);
     expect(screen.getByRole("banner")).toHaveClass("px-24");
   });
+
+  it("cuts a long title short before its tabs start to scroll, beside them on one line", () => {
+    render(
+      <PageHeader
+        title="checkout-assistant-primary-reply-with-fallbacks-for-peak-traffic"
+        tabs={
+          <Tabs variant="pill" defaultValue="editor">
+            <Tabs.List aria-label="Alias views">
+              <Tabs.Tab value="editor">Editor</Tabs.Tab>
+              <Tabs.Tab value="test">Test</Tabs.Tab>
+              <Tabs.Tab value="audit">Audit log</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
+        }
+      />,
+    );
+    // sm:flex-initial resets flex-shrink to 1, so the title and the tabs would give up room alike and the last tab
+    // would hide behind the list's edge while the title still had letters to spare.
+    const title = screen.getByRole("heading", { level: 1 }).parentElement!;
+    expect(title).toHaveClass("sm:flex-initial", "sm:shrink-1000");
+    expect(screen.getByRole("tablist").parentElement!.parentElement).not.toHaveClass("shrink-0");
+  });
 });
 
 describe("PageHeader on a phone", () => {

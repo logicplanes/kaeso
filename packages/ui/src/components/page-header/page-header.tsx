@@ -29,7 +29,7 @@ export const PageHeader = forwardRef<HTMLElement, PageHeaderProps>(function Page
   return (
     <header ref={ref} className={cn("flex shrink-0 items-center", KAESO_PAGE_HEADER_VARIANTS.size.md.classes, className)}>
       {(start || title) && (
-        <div className="flex min-w-0 flex-auto shrink-4 items-center gap-x-12 max-sm:min-w-96 sm:flex-initial">
+        <div className="flex min-w-0 flex-auto shrink-4 items-center gap-x-12 max-sm:min-w-96 sm:flex-initial sm:shrink-1000">
           {start}
           {title && (
             <Heading className="flex min-w-0 flex-auto items-center gap-8 text-title-sm font-semibold text-fg sm:flex-initial">
