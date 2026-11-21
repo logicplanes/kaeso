@@ -294,6 +294,7 @@
   "kaeso.agents.allProjectRights": "Rechte in jedem Projekt von {org}",
   "kaeso.agents.allProjects": "Alle Projekte",
   "kaeso.agents.customizeTitle": "{name} anpassen",
+  "kaeso.agents.customized": "Angepasst",
   "kaeso.agents.futureOrgs": "Auch Organisationen, denen ich später beitrete",
   "kaeso.agents.futureOrgsHint": "Mit den Rechten der Vorlage, nie mehr als Sie dort haben.",
   "kaeso.agents.instance": "Instanz",

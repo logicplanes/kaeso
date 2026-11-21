@@ -624,7 +624,7 @@ function hitColumns(providerName: (id: string) => string, prices: Prices, review
     ),
     fixed(
       col.custom(
-        { id: "context", header: t("models.field.context", "Context"), size: 88, priority: 3 },
+        { id: "context", header: t("models.field.context", "Context"), size: 88, priority: 4 },
         (h: SearchHit) => h.context_limit ?? -1,
         (_v: number, h: SearchHit) => contextLabel(h.context_limit),
         { align: "end" },
@@ -632,7 +632,7 @@ function hitColumns(providerName: (id: string) => string, prices: Prices, review
     ),
     fixed(
       col.custom(
-        { id: "price", header: t("models.priceInOut", "Per 1M in / out"), size: 128, priority: 2 },
+        { id: "price", header: t("models.priceInOut", "Per 1M in / out"), size: 128, priority: 3 },
         (h: SearchHit) => Number(h.input_price ?? -1),
         (_v: number, h: SearchHit) => priceLabel(h, prices),
         { align: "end" },
@@ -640,7 +640,7 @@ function hitColumns(providerName: (id: string) => string, prices: Prices, review
     ),
     fixed(
       col.custom(
-        { id: "released", header: t("models.field.released", "Released"), size: 96, priority: 4 },
+        { id: "released", header: t("models.field.released", "Released"), size: 96, priority: 5 },
         (h: SearchHit) => h.release_date ?? "",
         (_v: string, h: SearchHit) => (h.release_date ? monthLabel(h.release_date) : ""),
         { align: "end" },
@@ -648,7 +648,7 @@ function hitColumns(providerName: (id: string) => string, prices: Prices, review
     ),
     {
       ...col.custom(
-        { id: "review", header: "", size: 48, priority: 1 },
+        { id: "review", header: "", size: 48, priority: 2 },
         (h: SearchHit) => h.model_id,
         (_id: string, h: SearchHit) =>
           h.catalogue_model_id ? null : (

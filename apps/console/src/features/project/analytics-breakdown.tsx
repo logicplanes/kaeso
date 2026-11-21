@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Button, DataTable, Empty, ModelLabel, ProviderBadge, Section, Segmented, Text, col, icons, type SortingState } from "@logicplanes/kaeso-ui";
+import { Button, DataTable, Empty, ModelLabel, ProviderBadge, Section, Text, col, icons, type SortingState } from "@logicplanes/kaeso-ui";
 import { formatNumber, formatPercent, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
-import { costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
+import { costWidth, PHONE_NAME_MIN_WIDTH, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
 import { bucketLabel, lastDay, type Granularity } from "~/format/buckets";
 import { costColumns, saveCsv, sortUsage, sortsUsage, usageCsv } from "~/kaeso/usage-table";
 import { useOrgMoney } from "~/kaeso/org-money";
+import { GroupBy } from "~/kaeso/group-by";
 import { useRequestLogs } from "~/auth/session";
 import { keyLabel, serviceAccountName, usePartyName, usePartyNamesLoading } from "./keys/party";
 import type { AnalyticsSearch } from "~/kaeso/overview/views";
@@ -21,13 +22,15 @@ import { usePhone } from "~/shell/use-phone";
 import { columnWidth } from "~/format/text-width";
 import { common } from "~/i18n/common";
 
-const byOptions = (g: Granularity, clients: boolean) => [
+type By = NonNullable<AnalyticsSearch["by"]>;
+
+const byOptions = (g: Granularity, clients: boolean): { value: By; label: string }[] => [
   { value: "day", label: t("project.overview.byTime", "{granularity, select, week {By week} month {By month} other {By day}}", { granularity: g }) },
   { value: "model", label: t("project.overview.byModel", "By model") },
   { value: "key", label: t("project.overview.byKey", "By key") },
   { value: "member", label: t("project.overview.byMember", "By member") },
   { value: "route", label: t("project.overview.byRoute", "By route") },
-  ...(clients ? [{ value: "client", label: t("project.overview.byClient", "By client") }] : []),
+  ...(clients ? [{ value: "client" as const, label: t("project.overview.byClient", "By client") }] : []),
 ];
 const timeHeader = (g: Granularity) => t("project.overview.time", "{granularity, select, week {Week} month {Month} other {Day}}", { granularity: g });
 
@@ -185,7 +188,7 @@ export function Breakdown({
   );
   const columns = [
     col.custom(
-      { id: "key", header, size: LABEL_WIDTH, minWidth: LABEL_MIN_WIDTH, priority: 1, grow: true },
+      { id: "key", header, size: LABEL_WIDTH, minWidth: phone ? PHONE_NAME_MIN_WIDTH : LABEL_MIN_WIDTH, priority: 1, grow: true },
       (r: UsageRow) => r.key,
       (_v, r) => label(r),
     ),
@@ -306,13 +309,7 @@ export function Breakdown({
       }
       actions={
         <span className="flex max-w-full min-w-0 flex-wrap items-center gap-8">
-          <Segmented
-            aria-label={t("project.overview.groupBy", "Group by")}
-            size="sm"
-            value={by}
-            onValueChange={(v) => onByChange(v as NonNullable<AnalyticsSearch["by"]>)}
-            options={byOptions(granularity, clients)}
-          />
+          <GroupBy label={t("project.overview.groupBy", "Group by")} value={by} onChange={onByChange} options={byOptions(granularity, clients)} />
           <Button size="sm" variant="ghost" leadingIcon={icons.download} disabled={shown.length === 0} onClick={download}>
             {t("project.overview.downloadCsv", "Download CSV")}
           </Button>

@@ -56,7 +56,7 @@ function ToolBody({ org, project, tool }: { org: string; project: string; tool: 
         items={[
           { label: t("project.tools.state", "State"), value: <Status tone={state.tone}>{state.label}</Status> },
           { label: t("project.tools.onServer", "Name on the server"), value: tool.name, mono: true },
-          { label: t("project.tools.server", "Server"), value: tool.server_name },
+          { label: t("project.tools.server", "Server"), value: tool.server_name, wrap: true },
           ...(hints.length
             ? [
                 {

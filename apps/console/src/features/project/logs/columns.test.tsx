@@ -86,6 +86,16 @@ describe("logColumns", () => {
     expect(started?.querySelectorAll("time > *")).toHaveLength(2);
   });
 
+  it("gives the phone's Started column room for its whole header in Chinese", async () => {
+    apply(await load("zh-CN"));
+    try {
+      table("phone");
+      expect(screen.getAllByRole("row")[1]?.style.gridTemplateColumns).toMatch(/^96px 80px /);
+    } finally {
+      apply(await load("en"));
+    }
+  });
+
   it("drops the seconds from a day's time on a tablet", () => {
     const [started] = table("narrow");
     expect(started?.textContent).toMatch(/\d{2}:\d{2}$/);

@@ -45,11 +45,18 @@ describe("the email step", () => {
     expect(screen.queryByRole("button", { name: "Continue with SSO" })).not.toBeInTheDocument();
   });
 
+  it("gives the links under the form a hit area a finger can reach on a phone", async () => {
+    await atMethods("/sign-in");
+    expect(screen.getByRole("link", { name: "Forgot your password?" })).toHaveClass("tap-target");
+    expect(screen.getByRole("link", { name: "Use another email" })).toHaveClass("tap-target");
+  });
+
   it("offers to create an account when the install allows it", async () => {
     signedOut();
     on("GET", "auth/methods", methods({ sign_up: true }));
     await renderApp("/sign-in");
     expect(await screen.findByRole("link", { name: "Create an account" })).toHaveAttribute("href", "/sign-up");
+    expect(screen.getByRole("link", { name: "Create an account" })).toHaveClass("tap-target");
   });
 
   it("keeps account creation out of sight on an install by invitation", async () => {
@@ -313,6 +320,7 @@ describe("two-step verification", () => {
 
   it("takes a recovery code instead, and can switch back", async () => {
     const { user } = await atCode();
+    expect(screen.getByRole("link", { name: "Use a recovery code" })).toHaveClass("tap-target");
     await user.click(screen.getByRole("link", { name: "Use a recovery code" }));
     expect(screen.getByText("Enter one of your recovery codes; each works once.")).toBeInTheDocument();
     on("POST", "auth/totp", () => {

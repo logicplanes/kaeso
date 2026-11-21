@@ -22,7 +22,7 @@ target/
 fuzz/corpus/
 fuzz/artifacts/
 fuzz/coverage/
-.venv/
+.venv
 __pycache__/
 .pytest_cache/
 *.profraw

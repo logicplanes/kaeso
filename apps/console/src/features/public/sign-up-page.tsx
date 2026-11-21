@@ -67,7 +67,13 @@ export function SignUpPage() {
           {t("common.continue", "Continue")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">
-          {tRich("public.haveAccount", "Have an account? {link}", { link: <Link href="/sign-in">{t("public.signIn", "Sign in")}</Link> })}
+          {tRich("public.haveAccount", "Have an account? {link}", {
+            link: (
+              <Link href="/sign-in" variant="action">
+                {t("public.signIn", "Sign in")}
+              </Link>
+            ),
+          })}
         </Text>
       </form>
     </PublicPage>

@@ -164,7 +164,7 @@ const TriggerButton = forwardRef<HTMLButtonElement, TriggerButtonProps>(function
         {...(invalid ? { "aria-invalid": true } : {})}
         {...(force ? { "data-force": force } : {})}
         className={cn(
-          "group/date inline-flex min-w-0 cursor-pointer items-center rounded-pill whitespace-nowrap material-selector transition-control disabled:cursor-not-allowed",
+          "group/date relative inline-flex min-w-0 cursor-pointer items-center rounded-pill whitespace-nowrap material-selector transition-control tap-target disabled:cursor-not-allowed",
           KAESO_DATE_PICKER_VARIANTS.size[size].classes,
           className,
         )}

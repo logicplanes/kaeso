@@ -554,6 +554,9 @@ update_compose() {
     rm -f compose.yaml.part
     fail "Kaeso $running runs here, which is newer than $target. To install a particular release, give it with --version."
   fi
+  # A refused update puts back the backup an earlier update left; the x keeps its trailing newlines.
+  earlier=
+  [ ! -f compose.yaml.previous ] || earlier="$(cat compose.yaml.previous; echo x)"
   cp compose.yaml compose.yaml.previous
   cat compose.yaml.part >compose.yaml
   rm -f compose.yaml.part
@@ -570,6 +573,11 @@ check_settings() {
   checked="$(docker compose run --rm --no-deps -T gateway config check </dev/null 2>&1)" || status=$?
   case $status in 0 | 2) return 0 ;; esac
   cat compose.yaml.previous >compose.yaml
+  if [ -n "${earlier:-}" ]; then
+    printf '%s' "${earlier%x}" >compose.yaml.previous
+  else
+    rm -f compose.yaml.previous
+  fi
   printf '%s\n' "$checked" | tail -n 5 >&2
   fail "Kaeso $target refused this install's settings, so this install keeps running $updated. Correct them in .env, compose.override.yaml or the configuration file, then run the installer again; the release notes and https://docs.kaeso.app/self-hosting/upgrades say what changed."
 }

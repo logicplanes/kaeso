@@ -749,21 +749,7 @@ async fn a_playground_body_cut_off_by_the_app_is_a_bad_request_not_too_large() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn an_oversized_body_is_read_to_its_end_so_a_proxy_in_front_passes_the_413_on() {
     let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_MODEL_API", "1MiB")])).await;
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    let shutdown = tokio_util::sync::CancellationToken::new();
-    tokio::spawn(kaeso_server::serve::serve_until(
-        listener,
-        env.app.router.clone(),
-        shutdown.clone(),
-        std::time::Duration::from_secs(1),
-        kaeso_server::serve::Connections {
-            header_read_timeout: std::time::Duration::from_secs(30),
-            max: 16,
-            metered: false,
-        },
-        tokio_util::sync::CancellationToken::new(),
-    ));
+    let (addr, shutdown) = serve_raw(&env).await;
     let body = serde_json::to_vec(&messages("claude-haiku-4-5", &"a".repeat(32 << 20))).unwrap();
     let head = format!(
         "POST /v1/messages HTTP/1.1\r\nhost: kaeso.test\r\nx-api-key: {}\r\nanthropic-version: 2023-06-01\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
@@ -785,5 +771,118 @@ async fn an_oversized_body_is_read_to_its_end_so_a_proxy_in_front_passes_the_413
         "{answer}"
     );
     assert!(env.mock.received().is_empty());
+    shutdown.cancel();
+}
+
+async fn serve_raw(
+    env: &common::v1::Env,
+) -> (std::net::SocketAddr, tokio_util::sync::CancellationToken) {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let shutdown = tokio_util::sync::CancellationToken::new();
+    tokio::spawn(kaeso_server::serve::serve_until(
+        listener,
+        env.app.router.clone(),
+        shutdown.clone(),
+        std::time::Duration::from_secs(1),
+        kaeso_server::serve::Connections {
+            header_read_timeout: std::time::Duration::from_secs(30),
+            max: 16,
+            metered: false,
+        },
+        tokio_util::sync::CancellationToken::new(),
+    ));
+    (addr, shutdown)
+}
+
+async fn raw_exchange(addr: std::net::SocketAddr, head: String, body: &[u8]) -> String {
+    let mut proxy = TcpStream::connect(addr).await.unwrap();
+    proxy.write_all(head.as_bytes()).await.unwrap();
+    let sent = proxy.write_all(body).await;
+    assert!(
+        sent.is_ok(),
+        "the gateway stopped reading the body of {head}: {sent:?}"
+    );
+    let mut answer = Vec::new();
+    proxy.read_to_end(&mut answer).await.unwrap();
+    String::from_utf8_lossy(&answer).into_owned()
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn answers_sent_before_a_large_body_arrives_still_read_it_so_a_proxy_passes_them_on() {
+    let env = common::v1::env(None, None).await;
+    let (addr, shutdown) = serve_raw(&env).await;
+    let body = serde_json::to_vec(&chat("claude-haiku-4-5", &"a".repeat(24 << 20))).unwrap();
+    let json = "content-type: application/json\r\naccept: application/json, text/event-stream";
+    let cases = [
+        (
+            format!(
+                "POST /v1/chat/completions HTTP/1.1\r\nauthorization: Bearer sk-kso-nope\r\n{json}"
+            ),
+            "HTTP/1.1 401",
+            "This API key is not valid",
+        ),
+        (
+            format!(
+                "PUT /v1/chat/completions HTTP/1.1\r\nauthorization: Bearer {}\r\n{json}",
+                env.key
+            ),
+            "HTTP/1.1 405",
+            "does not accept `PUT` requests",
+        ),
+        (
+            format!("PATCH /platform/v1/me HTTP/1.1\r\n{json}"),
+            "HTTP/1.1 401",
+            "Sign in first.",
+        ),
+        (
+            format!(
+                "POST /mcp/{} HTTP/1.1\r\nauthorization: Bearer {}\r\n{json}",
+                env.project, env.key
+            ),
+            "HTTP/1.1 413",
+            "The request is too large.",
+        ),
+        (
+            format!("POST /mcp HTTP/1.1\r\n{json}"),
+            "HTTP/1.1 413",
+            "The request is too large.",
+        ),
+    ];
+    for (head, status, text) in cases {
+        let head = format!(
+            "{head}\r\nhost: kaeso.test\r\ncontent-length: {}\r\nconnection: close\r\n\r\n",
+            body.len()
+        );
+        let answer = raw_exchange(addr, head.clone(), &body).await;
+        assert!(answer.starts_with(status), "{head}\n{answer}");
+        assert!(answer.contains(text), "{head}\n{answer}");
+    }
+    assert!(env.mock.received().is_empty());
+    shutdown.cancel();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn a_refusal_does_not_ask_a_client_that_waits_for_100_continue_for_its_body() {
+    let env = common::v1::env(None, None).await;
+    let (addr, shutdown) = serve_raw(&env).await;
+    let mut client = TcpStream::connect(addr).await.unwrap();
+    client
+        .write_all(
+            b"POST /v1/chat/completions HTTP/1.1\r\nhost: kaeso.test\r\nauthorization: Bearer sk-kso-nope\r\ncontent-type: application/json\r\ncontent-length: 1000000\r\nexpect: 100-continue\r\nconnection: close\r\n\r\n",
+        )
+        .await
+        .unwrap();
+    let mut answer = Vec::new();
+    tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        client.read_to_end(&mut answer),
+    )
+    .await
+    .expect("the refusal comes without the body")
+    .unwrap();
+    let answer = String::from_utf8_lossy(&answer);
+    assert!(answer.starts_with("HTTP/1.1 401"), "{answer}");
+    assert!(!answer.contains("100 Continue"), "{answer}");
     shutdown.cancel();
 }
