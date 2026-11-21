@@ -148,8 +148,8 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
                 </span>
               )}
               {wrap && INDENT.test(line) && <span className="shrink-0 whitespace-pre">{INDENT.exec(line)?.[0]}</span>}
-              {/* Filling the line: sized to its words, the negative indent left the box 16px short of them, so a word alone
-                  on its line (max-w-full) wrapped inside itself although the line had room. */}
+              {/* Not sized to its words: their width counts the negative indent, leaving the box 16px narrower than its words,
+                  so a lone word (max-w-full) wrapped inside itself. */}
               <span className={cn("min-w-0", wrap === true && "flex-1 pl-16 -indent-16", wrap === "phone" && "max-sm:flex-1 max-sm:pl-16 max-sm:-indent-16")}>
                 {wrap ? (
                   <Words
