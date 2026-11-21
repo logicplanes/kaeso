@@ -42,6 +42,20 @@ describe("List, loading what it needs", () => {
     expect(body().style.height).toBe(`${300 * 44}px`);
     expect(body().children[1]).toHaveStyle({ transform: "translateY(44px)" });
   });
+  it("stays where it was scrolled when more items load and it starts drawing only the visible ones", async () => {
+    const page = scroller();
+    const many = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `key-${i}`, title: `key-${i}` }));
+    try {
+      const { rerender } = render(<List aria-label="Keys" items={many(40)} virtualizeAbove={50} />);
+      page.scrollTop = 30 * 44;
+      fireEvent.scroll(page);
+      rerender(<List aria-label="Keys" items={many(80)} virtualizeAbove={50} />);
+      await act(() => lazyModulesSettled());
+      expect(page.scrollTop).toBe(30 * 44);
+    } finally {
+      page.scrollTop = 0;
+    }
+  });
   it("shows the rows in view of a long list that sits below other content", async () => {
     const page = scroller();
     const above = 3000;
