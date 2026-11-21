@@ -9,18 +9,19 @@
   <br>
   <br>
   <h3>The open-source AI gateway you run yourself</h3>
-  <p>One OpenAI-, Anthropic-, Gemini- and ElevenLabs-compatible API in front of every provider, for chat, embeddings, reranking, decisions, images, video, speech, transcription and music, with single sign-on, roles, budgets, guardrails, alias routes, request logs, a playground and an MCP portal, in one Rust process.</p>
+  <p>One OpenAI-, Anthropic-, Gemini- and ElevenLabs-compatible API in front of every provider and your own model servers, for chat, embeddings, reranking, decisions, images, video, speech, transcription and music. Single sign-on, SCIM, roles, budgets, guardrails, alias routes, key pools, request logs, a playground and an MCP portal come with it, under the MIT license, with no paid edition.</p>
   <p>
     <a href="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/logicplanes/kaeso/actions/workflows/ci.yml/badge.svg?branch=dev"></a>
+    <a href="https://github.com/logicplanes/kaeso/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/logicplanes/kaeso?label=release&color=555"></a>
     <a href="https://scorecard.dev/viewer/?uri=github.com/logicplanes/kaeso"><img alt="OpenSSF Scorecard" src="https://api.scorecard.dev/projects/github.com/logicplanes/kaeso/badge"></a>
     <a href="https://www.bestpractices.dev/projects/15818"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/15818/badge"></a>
     <a href="LICENSE"><img alt="License: MIT" src=".github/assets/badges/license.svg"></a>
   </p>
   <p>
     <a href="https://kaeso.app"><b>Website</b></a> ·
-    <a href="https://docs.kaeso.app"><b>Documentation</b></a> ·
+    <a href="https://docs.kaeso.app"><b>Documentation</b></a> (<a href="https://docs.kaeso.app/de">Deutsch</a>, <a href="https://docs.kaeso.app/zh-CN">简体中文</a>) ·
     <a href="https://demo.kaeso.app"><b>Live demo</b></a> ·
-    <a href="https://github.com/logicplanes/kaeso/discussions"><b>Discussions</b></a> ·
+    <a href="https://kaeso.app/articles"><b>Articles</b></a> ·
     <a href="CHANGELOG.md"><b>Changelog</b></a>
   </p>
   <br>
@@ -28,18 +29,25 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/demo-dark.gif">
-  <img alt="The Kaeso console: connecting an Anthropic provider key, sending an OpenAI-format request to claude-haiku-5-5 from a terminal, and the request arriving at the top of the request logs" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/demo-light.gif">
+  <img alt="The Kaeso console with sample data: a request in the request log opens its inspector, which shows the app's OpenAI Chat Completions request sent to Anthropic Messages through the support alias; then the support alias route with a condition, a split by caller and fallbacks; the project's spend budget and rate limits; and the project's analytics" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/demo-light.gif">
 </picture>
 
 ## Install
 
-On a server or your computer with Docker and Compose 2.24 or newer:
+On a Linux server or your computer with Docker and Compose 2.24 or newer:
 
 ```sh
 curl -fsSL https://kaeso.app/install.sh | sh
 ```
 
-It installs Kaeso with PostgreSQL, ClickHouse and Valkey into `./kaeso`, starts it at `https://localhost` and prints the link that creates the first user. Add `-s -- --domain kaeso.example.com` to serve your own domain. The [quick start](https://docs.kaeso.app/get-started/quick-start) continues from there, and [install by hand](https://docs.kaeso.app/self-hosting/installation#install-by-hand) shows each step.
+It installs Kaeso with PostgreSQL, ClickHouse and Valkey into `./kaeso`, starts it at `https://localhost` and prints the link that creates the first user. Add `-s -- --domain kaeso.example.com` to serve your own domain. The [quick start](https://docs.kaeso.app/get-started/quick-start) continues from there, and [install by hand](https://docs.kaeso.app/self-hosting/installation#install-by-hand) sets up the same Compose package step by step.
+
+On Kubernetes, each release publishes a Helm chart next to its images ([Kubernetes](https://docs.kaeso.app/self-hosting/platforms/kubernetes)):
+
+```sh
+helm install kaeso oci://ghcr.io/logicplanes/charts/kaeso \
+  --namespace kaeso --create-namespace --values values.yaml --wait
+```
 
 On a cloud or a hosting platform, the [platform templates](https://docs.kaeso.app/self-hosting/platforms) run the same release:
 
@@ -65,6 +73,8 @@ On a cloud or a hosting platform, the [platform templates](https://docs.kaeso.ap
   <a href="https://docs.kaeso.app/self-hosting/platforms/kubernetes">Kubernetes</a>
 </p>
 
+Updates install from the console's **Updates** page or with the installer's `--update`, and check the install's settings before they switch anything ([upgrades](https://docs.kaeso.app/self-hosting/upgrades)).
+
 ## Send your first request
 
 Point the OpenAI SDK at Kaeso and call any model in your project, Claude included:
@@ -75,9 +85,71 @@ client = OpenAI(base_url="https://kaeso.example.com/v1", api_key="sk-kso-…")
 print(client.responses.create(model="claude-haiku-5-5", input="Hello").output_text)
 ```
 
-The Anthropic SDK works the same way with `base_url="https://kaeso.example.com"`. Kaeso translates the request and the reply between the formats ([calling models](https://docs.kaeso.app/get-started/calling-models)).
+The Anthropic, Google Gen AI, ElevenLabs and Cohere SDKs work the same way with their base URL pointed at Kaeso. Kaeso translates the request and the reply between the formats ([calling models](https://docs.kaeso.app/get-started/calling-models)).
 
 Built in are Amazon Bedrock, Anthropic, AssemblyAI, Azure, Baidu Qianfan, Baseten, Cartesia, Cerebras, Cloudflare AI Gateway, Cohere, Deepgram, DeepInfra, DeepSeek, ElevenLabs, fal, Fireworks AI, Gemini Enterprise Agent Platform, Google AI Studio, Groq, Hugging Face, IONOS AI Model Hub, Jina AI, MiniMax, Mistral, Moonshot, Nebius Token Factory, Novita AI, NVIDIA, Ollama Cloud, OpenAI, OpenRouter, OVHcloud AI Endpoints, Perplexity, QwenCloud, Replicate, SambaNova, Scaleway, SiliconFlow, SpaceX (xAI), Standard Compute, StepFun, Tencent TokenHub, Together AI, TypeSafe, Upstage, Venice, Vercel, Volcengine Ark, Voyage AI and Z.ai ([supported providers](https://docs.kaeso.app/concepts/supported-providers)). A server of your own, such as vLLM, Ollama, LM Studio or llama.cpp, joins as a [custom provider](https://docs.kaeso.app/console/custom-providers).
+
+## What you get
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><b>One format in, any provider out</b><br>Apps speak OpenAI Chat Completions or Responses, Anthropic Messages, Gemini or ElevenLabs; Kaeso encodes each request for the provider and translates the reply and the stream back (<a href="https://docs.kaeso.app/concepts/format-translation">format translation</a>).</td>
+    <td width="50%" valign="top"><b>More than chat</b><br>Embeddings, reranking in Cohere's format, decision models that answer typed questions with probabilities, images, video, speech, transcription, sound effects, music and OpenAI-format batches, with the same keys, limits and logs (<a href="https://docs.kaeso.app/api">API reference</a>).</td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>Routes that hold up</b><br>Alias routes with conditions, weighted splits and fallbacks, retries after dropped connections and 5xx answers, key pools that spread a project over several keys of one provider, and a response cache (<a href="https://docs.kaeso.app/concepts/alias-routes">alias routes</a>).</td>
+    <td width="50%" valign="top"><b>Model lifecycle</b><br>Replies from retiring models carry <code>Deprecation</code> and <code>Sunset</code> headers, projects see who still calls them, aliases move to the replacement, and model lines such as <code>claude-opus-latest</code> follow the newest model (<a href="https://docs.kaeso.app/concepts/model-lifecycle">model lifecycle</a>).</td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>People and access</b><br>Single sign-on per organization over OpenID Connect for any number of people, roles and projects from your identity provider's groups, SCIM 2.0, organization and project roles with single rights, and audit logs (<a href="https://docs.kaeso.app/console/members-and-roles">members and roles</a>).</td>
+    <td width="50%" valign="top"><b>Spend under control</b><br>Hard or soft budgets and rate limits per project, member, service account or key, checked before the provider is called; prices from KPMR, shown in your currency; alerts by email or signed webhook (<a href="https://docs.kaeso.app/console/limits-and-budgets">limits and budgets</a>).</td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>Guardrails</b><br>Built-in rules find keys, tokens, email addresses, IBANs and card numbers and mask or block them, and your own HTTP services can allow, block or rewrite a request before the model sees it (<a href="https://docs.kaeso.app/console/guardrails">guardrails</a>).</td>
+    <td width="50%" valign="top"><b>Logs you decide on</b><br>Every request with its model, status, tokens, cost, timing and caller; content only where the organization, the project or the request allows it; OpenTelemetry traces and Prometheus metrics for your own tools (<a href="https://docs.kaeso.app/console/request-logs">request logs</a>).</td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>An MCP portal per project</b><br>Connect your MCP servers once, review their tools, and let claude.ai, ChatGPT, Cursor or any MCP client call them through one signed-in portal (<a href="https://docs.kaeso.app/concepts/mcp-portal">MCP portal</a>).</td>
+    <td width="50%" valign="top"><b>Verifiable releases</b><br>Every image, chart and release file carries signed build provenance that <code>gh attestation verify</code> checks, and the updater installs nothing whose signatures don't match (<a href="https://docs.kaeso.app/self-hosting/upgrades">upgrades</a>).</td>
+  </tr>
+</table>
+
+## New in 0.7
+
+Decision models, reranking, guardrails, webhooks, SCIM, key pools, batches and the Helm chart arrived in 0.7, with new providers from Amazon Bedrock and Azure to Deepgram and fal. The [release article](https://kaeso.app/articles/kaeso-0-7) walks through them, and the [changelog](CHANGELOG.md) lists every change.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img alt="Two decision models side by side in the Playground answer a refund request: refund yes at 94 and 90 percent, the shipping team at 81 and 74 percent, and an urgency score" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-decision-models.webp" width="100%">
+      <p><a href="https://docs.kaeso.app/api/decisions">Decision models</a></p>
+    </td>
+    <td width="50%" valign="top">
+      <img alt="A guardrail's built-in rules tried on sample text: an order number, an email address and an API key are replaced by placeholders before the model sees them" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-guardrails.webp" width="100%">
+      <p><a href="https://docs.kaeso.app/console/guardrails">Guardrails</a></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img alt="An OpenAI key assigned to a project with a weight of 30, beside the project's other OpenAI keys" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-key-pools.webp" width="100%">
+      <p><a href="https://docs.kaeso.app/console/provider-keys#choose-which-key-a-project-uses">Key pools</a></p>
+    </td>
+    <td width="50%" valign="top">
+      <img alt="A deprecated model with its announcement, shutdown date, replacement and new prices, the aliases that still use it and who called it in the last 30 days" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-model-lifecycle.webp" width="100%">
+      <p><a href="https://docs.kaeso.app/concepts/model-lifecycle">Model lifecycle</a></p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img alt="A webhook for the on-call team with its URL, format and events, and its last deliveries of budget alerts, limits reached and refused provider keys" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-webhooks.webp" width="100%">
+      <p><a href="https://docs.kaeso.app/console/webhooks">Webhooks</a></p>
+    </td>
+    <td width="50%" valign="top">
+      <img alt="An organization's provisioning settings with its SCIM base URL, token and last activity, above the mapping of the identity provider's groups" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/feature-scim.webp" width="100%">
+      <p><a href="https://docs.kaeso.app/api/scim">SCIM 2.0 and SSO groups</a></p>
+    </td>
+  </tr>
+</table>
 
 ## The console
 
@@ -88,48 +160,48 @@ The pages below show the console with sample data. The [live demo](https://demo.
     <td width="50%" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-analytics-dark.webp">
-        <img alt="Analytics: requests, tokens, cost and error rate for the last 30 days against the 30 days before, a chart of requests per day, and the projects and models with the most usage" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-analytics-light.webp" width="100%">
+        <img alt="Analytics: requests, tokens, cost and error rate for the last 30 days against the 30 days before, and a chart of requests per day" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-analytics-light.webp" width="100%">
       </picture>
-      <p><b><a href="https://docs.kaeso.app/console/organizations-and-projects#read-usage">Analytics</a></b><br>Requests, tokens, cost and errors per organization, project, model and member, against the period before.</p>
+      <p><b><a href="https://docs.kaeso.app/console/organizations-and-projects#read-usage">Analytics</a></b><br>Requests, tokens, cost and errors per organization, project, model, key and member, against the period before.</p>
     </td>
-    <td width="50%" valign="top">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-playground-dark.webp">
-        <img alt="The Playground: two prompts to Claude Haiku 5.5 with their replies, each with its time to first token, total time, tokens and cost" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-playground-light.webp" width="100%">
-      </picture>
-      <p><b><a href="https://docs.kaeso.app/console/playground">Playground</a></b><br>Try any model in the project, up to four side by side, for text, images, speech, music, transcription and video.</p>
-    </td>
-  </tr>
-  <tr>
     <td width="50%" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logs-dark.webp">
-        <img alt="Request logs: every request with its status, model, provider, duration, tokens or audio length, cached share and cost, transcriptions, speech and images among the chat requests" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logs-light.webp" width="100%">
+        <img alt="Request logs: every request with its time, status, model, duration, tokens with the cached share, and cost" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logs-light.webp" width="100%">
       </picture>
-      <p><b><a href="https://docs.kaeso.app/console/request-logs">Request logs</a></b><br>Every request with its model, status, tokens, cost, timing and caller, and its content and media if you keep them.</p>
-    </td>
-    <td width="50%" valign="top">
-      <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-dark.webp">
-        <img alt="The project's model catalogue: Claude and GPT models with their aliases, capabilities, context windows, prices and release dates from KPMR" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-light.webp" width="100%">
-      </picture>
-      <p><b><a href="https://docs.kaeso.app/console/models-and-aliases">Models</a></b><br>A catalogue per project with the prices and capabilities of every model from KPMR, the Kaeso Provider &amp; Model Registry.</p>
+      <p><b><a href="https://docs.kaeso.app/console/request-logs">Request logs</a></b><br>Every request with its model, status, tokens, cost, timing, route and caller, filtered by any of them.</p>
     </td>
   </tr>
   <tr>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-dark.webp">
+        <img alt="The project's model catalogue: Anthropic and OpenAI models with their aliases, capabilities, context windows, prices and release dates, two of them marked deprecated" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-models-light.webp" width="100%">
+      </picture>
+      <p><b><a href="https://docs.kaeso.app/console/models-and-aliases">Models</a></b><br>A catalogue per project with the prices, capabilities and status of every model from KPMR, the Kaeso Provider &amp; Model Registry.</p>
+    </td>
     <td width="50%" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-aliases-dark.webp">
         <img alt="An alias route in the editor: a condition sends enterprise requests to Claude Sonnet 5.5 with a fallback to GPT-6 Sol, and splits the rest by caller between Claude Haiku 5.5 and GPT-5.4 mini" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-aliases-light.webp" width="100%">
       </picture>
-      <p><b><a href="https://docs.kaeso.app/concepts/alias-routes">Alias routes</a></b><br>Name the models behind an alias, with fallbacks, conditions on headers and tokens, and weighted splits.</p>
+      <p><b><a href="https://docs.kaeso.app/concepts/alias-routes">Alias routes</a></b><br>Name the models behind an alias, with fallbacks, retries, conditions on headers and tokens, and weighted splits.</p>
     </td>
+  </tr>
+  <tr>
     <td width="50%" valign="top">
       <picture>
         <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-limits-dark.webp">
         <img alt="Limits: a hard monthly spend budget and a request rate for the project, and a soft daily token budget for a service account" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-limits-light.webp" width="100%">
       </picture>
-      <p><b><a href="https://docs.kaeso.app/console/limits-and-budgets">Limits and budgets</a></b><br>Hard or soft spend, token and rate limits per project, member, service account or key, checked before the provider is called.</p>
+      <p><b><a href="https://docs.kaeso.app/console/limits-and-budgets">Limits and budgets</a></b><br>Hard or soft spend, token and rate limits per project, member, service account or key.</p>
+    </td>
+    <td width="50%" valign="top">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logging-dark.webp">
+        <img alt="Logging settings: whether request content and media are kept, and how many days metadata and content are kept" src="https://raw.githubusercontent.com/logicplanes/kaeso/dev/.github/assets/console-logging-light.webp" width="100%">
+      </picture>
+      <p><b><a href="https://docs.kaeso.app/console/request-logs#retention">Logging</a></b><br>Whether request content and media are kept at all, and for how long, per organization and project.</p>
     </td>
   </tr>
 </table>
@@ -139,7 +211,7 @@ The pages below show the console with sample data. The [live demo](https://demo.
 ```mermaid
 flowchart LR
   accTitle: How Kaeso sits between apps and providers
-  accDescr: Apps, SDKs and coding tools call the gateway in the OpenAI, Anthropic, Gemini or ElevenLabs format, and MCP clients call its MCP portal. The gateway resolves the model, checks rights and limits, calls the provider in its own format, and writes usage and logs to PostgreSQL, ClickHouse and Valkey, which the console reads.
+  accDescr: Apps, SDKs and coding tools call the gateway in the OpenAI, Anthropic, Gemini or ElevenLabs format, and MCP clients call its MCP portal. The gateway resolves the model, checks rights, limits and guardrails, calls the provider in its own format, and writes usage and logs to PostgreSQL, ClickHouse and Valkey, which the console reads.
   apps[Apps, SDKs and coding tools]:::outside
   mcp[MCP clients]:::outside
   subgraph install [Your Kaeso install]
@@ -150,39 +222,204 @@ flowchart LR
     gateway --- data
     console --- gateway
   end
+  guardrails[Your guardrail services]:::outside
   providers[Model providers]:::outside
   servers[Your MCP servers]:::outside
   apps -- OpenAI, Anthropic, Gemini or ElevenLabs format --> gateway
   mcp -- MCP --> gateway
+  gateway -- signed HTTP --> guardrails
   gateway -- the provider's format --> providers
   gateway -- MCP --> servers
 ```
 
-<table>
-  <tr>
-    <td width="33%" valign="top"><b>Single sign-on and roles</b><br>Each organization signs in through its own OpenID Connect provider, for any number of people at no cost, with organization and project roles and single rights on top (<a href="https://docs.kaeso.app/console/members-and-roles">members and roles</a>).</td>
-    <td width="33%" valign="top"><b>One format in, any provider out</b><br>Apps speak the OpenAI, Anthropic, Gemini or ElevenLabs API, for chat, images, audio and video; Kaeso decodes every request, encodes it for the provider and translates the reply and the stream back (<a href="https://docs.kaeso.app/concepts/format-translation">format translation</a>).</td>
-    <td width="33%" valign="top"><b>Media through the same gateway</b><br>Images, video, speech, transcription, sound effects and music go through the same keys, limits, request logs and costs as chat, on every provider that makes them (<a href="https://docs.kaeso.app/api/images">images</a>, <a href="https://docs.kaeso.app/api/audio">audio</a>, <a href="https://docs.kaeso.app/api/videos">videos</a>).</td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top"><b>An MCP portal per project</b><br>Connect your own MCP servers once, review their tools, and let claude.ai, ChatGPT, Cursor or any MCP client call them through one signed-in portal (<a href="https://docs.kaeso.app/concepts/mcp-portal">MCP portal</a>).</td>
-    <td width="33%" valign="top"><b>Verifiable releases</b><br>Every image and release file carries signed build provenance; <code>gh attestation verify</code> checks it, and the updater installs nothing whose signatures don't match (<a href="https://docs.kaeso.app/self-hosting/upgrades">upgrades</a>).</td>
-    <td width="33%" valign="top"><b>Rust, and more gateways when you need them</b><br>One process with no garbage collector between your app and the provider; run several behind Caddy or a load balancer and they share everything a request depends on (<a href="https://docs.kaeso.app/self-hosting/scaling">multiple gateways</a>).</td>
-  </tr>
-</table>
+The gateway is one Rust process with no garbage collector between your app and the provider. Run several behind Caddy or a load balancer and they share everything a request depends on ([multiple gateways](https://docs.kaeso.app/self-hosting/scaling)). The [gateway benchmark](https://docs.kaeso.app/development/benchmark) in this repository measures the time and memory Kaeso adds, so you can run it on your own hardware.
 
 ## How it compares
 
-Checked on 6 November 2026 against each project's repository and documentation. [Open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when a row is out of date.
+These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 21 November 2026 and every entry is sourced below. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we correct it.
 
-|                                          | Kaeso               | LiteLLM                                                                           | Bifrost                                                 | Portkey Gateway                                                                                               |
-| ---------------------------------------- | ------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Gateway written in                       | Rust                | Python                                                                            | Go                                                      | TypeScript                                                                                                    |
-| License                                  | MIT                 | MIT, except [`enterprise/`](https://github.com/BerriAI/litellm/blob/main/LICENSE) | Apache 2.0                                              | MIT                                                                                                           |
-| Single sign-on when self-hosted for free | Yes, OpenID Connect | Up to 5 users ([docs](https://docs.litellm.ai/docs/proxy/admin_ui_sso))           | Enterprise ([pricing](https://www.getmaxim.ai/pricing)) | Enterprise ([docs](https://portkey.ai/docs/product/enterprise-offering/org-management/sso))                   |
-| Budgets when self-hosted for free        | Yes                 | Yes ([docs](https://docs.litellm.ai/docs/proxy/users))                            | Yes ([pricing](https://www.getmaxim.ai/pricing))        | Enterprise and some Pro plans ([docs](https://portkey.ai/docs/product/ai-gateway/virtual-keys/budget-limits)) |
-| Web console when self-hosted             | Yes                 | Yes                                                                               | Yes                                                     | Request logs only ([README](https://github.com/Portkey-AI/gateway#readme))                                    |
-| MCP portal for your own MCP servers      | Yes, per project    | Yes ([docs](https://docs.litellm.ai/docs/mcp))                                    | Yes ([docs](https://docs.getbifrost.ai/mcp/gateway))    | Yes ([docs](https://portkey.ai/docs/product/mcp-gateway))                                                     |
+**Yes** means the free or open-source version has it. **Paid** means a paid plan or enterprise license has it. **Partial** is explained in a note. **–** means we didn't find it in their documentation.
+
+### Running it yourself
+
+|                                     | On your servers         | License                                 | Written in            | Web console | Docker Compose | Helm chart          |
+| ----------------------------------- | ----------------------- | --------------------------------------- | --------------------- | ----------- | -------------- | ------------------- |
+| **Kaeso**                           | Yes                     | MIT                                     | Rust                  | Yes         | Yes            | Yes                 |
+| LiteLLM                             | Yes                     | MIT, except `enterprise/`[^litellm-lic] | Python[^litellm-lang] | Yes         | Yes            | Yes                 |
+| Bifrost                             | Yes[^bifrost-ha]        | Apache 2.0                              | Go                    | Yes         | Yes            | Yes                 |
+| Portkey                             | Yes                     | MIT                                     | TypeScript            | Logs only   | Yes            | Paid[^portkey-helm] |
+| Helicone                            | Partial[^helicone-self] | Apache 2.0                              | TypeScript            | Yes         | Yes            | Yes                 |
+| Kong AI Gateway                     | Yes                     | Apache 2.0, AI plugins paid[^kong-lic]  | Lua                   | Yes         | Yes            | Yes                 |
+| Agent Router (was Envoy AI Gateway) | Yes                     | Apache 2.0                              | Go                    | –           | Yes            | Yes                 |
+| OpenRouter                          | Hosted only             | –                                       | –                     | Hosted      | –              | –                   |
+| Cloudflare AI Gateway               | Hosted only             | –                                       | –                     | Hosted      | –              | –                   |
+
+### Teams and control
+
+|                       | Single sign-on           | SCIM | Roles                   | Audit log | Budgets                   | PII and secret rules  | Your own guardrail service |
+| --------------------- | ------------------------ | ---- | ----------------------- | --------- | ------------------------- | --------------------- | -------------------------- |
+| **Kaeso**             | Yes                      | Yes  | Yes                     | Yes       | Yes                       | Yes                   | Yes                        |
+| LiteLLM               | Up to 5 users, then paid | Paid | Partial[^litellm-roles] | Paid      | Yes                       | Partial[^litellm-pii] | Yes                        |
+| Bifrost               | Paid                     | Paid | Paid                    | Paid      | Yes                       | Paid                  | Partial[^bifrost-plugins]  |
+| Portkey               | Paid                     | Paid | Paid                    | Paid      | Paid                      | Paid                  | Yes                        |
+| Helicone              | Paid                     | –    | –                       | –         | Partial[^helicone-budget] | –                     | –                          |
+| Kong AI Gateway       | Paid                     | Paid | Paid                    | Paid      | Paid                      | Paid                  | Paid                       |
+| Agent Router          | –                        | –    | –                       | –         | Partial[^ar-quota]        | –                     | Partial[^ar-extauth]       |
+| OpenRouter            | Paid                     | Paid | Partial[^or-roles]      | Paid      | Yes[^or-budgets]          | Yes                   | –                          |
+| Cloudflare AI Gateway | Yes                      | Paid | Partial[^cf-roles]      | Yes       | Yes                       | Partial[^cf-dlp]      | –                          |
+
+### APIs your apps can call
+
+|                       | OpenAI Chat Completions and Responses | Anthropic Messages        | Gemini                    | ElevenLabs           | Rerank              | OpenAI batches          |
+| --------------------- | ------------------------------------- | ------------------------- | ------------------------- | -------------------- | ------------------- | ----------------------- |
+| **Kaeso**             | Yes                                   | Yes                       | Yes                       | Yes                  | Yes                 | Partial[^kaeso-batches] |
+| LiteLLM               | Yes                                   | Yes                       | Yes                       | –                    | Yes                 | Yes                     |
+| Bifrost               | Yes                                   | Yes                       | Yes                       | Yes                  | Yes                 | Yes                     |
+| Portkey               | Yes                                   | Yes                       | Partial[^portkey-gemini]  | Partial[^portkey-11] | Yes                 | Paid                    |
+| Helicone              | Yes                                   | Partial[^helicone-legacy] | Partial[^helicone-legacy] | –                    | –                   | –                       |
+| Kong AI Gateway       | Partial[^kong-310]                    | Paid[^kong-310]           | Yes                       | –                    | Paid[^kong-310]     | Paid[^kong-310]         |
+| Agent Router          | Yes                                   | Yes                       | –                         | –                    | Yes                 | –                       |
+| OpenRouter            | Yes                                   | Yes                       | –                         | –                    | Yes                 | Yes                     |
+| Cloudflare AI Gateway | Yes                                   | Yes                       | Yes[^cf-pass]             | Yes[^cf-pass]        | Partial[^cf-cohere] | –                       |
+
+### Media
+
+|                       | Images                    | Video           | Speech          | Transcription   | Music |
+| --------------------- | ------------------------- | --------------- | --------------- | --------------- | ----- |
+| **Kaeso**             | Yes                       | Yes             | Yes             | Yes             | Yes   |
+| LiteLLM               | Yes                       | Yes             | Yes             | Yes             | Yes   |
+| Bifrost               | Yes                       | Yes             | Yes             | Yes             | –     |
+| Portkey               | Yes                       | Yes             | Yes             | Yes             | –     |
+| Helicone              | Partial[^helicone-images] | –               | –               | –               | –     |
+| Kong AI Gateway       | Paid[^kong-310]           | Paid[^kong-310] | Paid[^kong-310] | Paid[^kong-310] | –     |
+| Agent Router          | Yes                       | –               | –               | Yes             | –     |
+| OpenRouter            | Yes                       | Yes             | Yes             | Yes             | –     |
+| Cloudflare AI Gateway | Yes                       | Yes             | Yes             | Yes             | –     |
+
+### Routing and operations
+
+|                       | Several keys per provider | Fallbacks | Retries | Model retirements      | MCP gateway           | Logs without content |
+| --------------------- | ------------------------- | --------- | ------- | ---------------------- | --------------------- | -------------------- |
+| **Kaeso**             | Yes, weighted             | Yes       | Yes     | Yes[^kaeso-lifecycle]  | Yes                   | Yes                  |
+| LiteLLM               | Yes                       | Yes       | Yes     | Partial[^litellm-dep]  | Yes                   | Yes                  |
+| Bifrost               | Yes, weighted             | Yes       | Yes     | Partial[^bifrost-gone] | Yes                   | Yes                  |
+| Portkey               | Yes, weighted             | Yes       | Yes     | –                      | Partial[^portkey-mcp] | Paid                 |
+| Helicone              | –                         | Yes       | Yes     | –                      | –                     | Yes                  |
+| Kong AI Gateway       | –                         | Paid      | Paid    | –                      | Paid                  | Yes                  |
+| Agent Router          | Partial[^ar-backends]     | Yes       | Yes     | –                      | Yes                   | Yes                  |
+| OpenRouter            | Partial[^or-byok]         | Yes       | Yes     | Partial[^or-expiry]    | –                     | Yes                  |
+| Cloudflare AI Gateway | Partial[^cf-keys]         | Yes       | Yes     | –                      | –[^cf-mcp]            | Yes                  |
+
+### Paid plans, as published
+
+| Product               | Paid plans                                                                                                                   |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Kaeso**             | None. Everything above is in the MIT-licensed release; there is no paid edition or support contract.                         |
+| LiteLLM               | Enterprise license, priced on request.                                                                                       |
+| Bifrost               | Enterprise, custom pricing.                                                                                                  |
+| Portkey               | Pro at $49 a month and Enterprise at custom pricing; Portkey is now offered by Palo Alto Networks as Prisma AIRS AI Gateway. |
+| Helicone              | Pro at $79 and Team at $799 a month, Enterprise on request.                                                                  |
+| Kong AI Gateway       | Konnect Plus from $25 a month plus usage, with AI model proxies at $100 a month each; Enterprise at custom pricing.          |
+| Agent Router          | None; an Apache 2.0 project.                                                                                                 |
+| OpenRouter            | A 5.5% fee on credits on Standard and 8% on Business, Enterprise on request.                                                 |
+| Cloudflare AI Gateway | Core features free; a 5% fee on Unified Billing credits; logs billed as Workers Logs.                                        |
+
+### When another tool fits better
+
+Kaeso runs as containers next to PostgreSQL, ClickHouse and Valkey, on at least 2 vCPUs and 4 GB of memory ([requirements](https://docs.kaeso.app/self-hosting/requirements)), and it has no hosted version and no paid support. If you want a hosted service with nothing to run, OpenRouter or Cloudflare AI Gateway fit better, and OpenRouter bills hundreds of models through one account. If your platform team already runs Kong or Envoy Gateway, Kong AI Gateway or Agent Router put model traffic under the same policies and Kubernetes resources. LiteLLM serves more kinds of endpoints, such as realtime, OCR and vector stores, and comes as a Python SDK as well as a proxy. Helicone goes further into observability, with sessions, evaluations, datasets and prompt management. If you need a vendor contract, LiteLLM, Bifrost, Portkey, Helicone and Kong sell enterprise plans.
+
+TensorZero is not in the tables: its website says it is no longer maintained.
+
+<details>
+<summary><b>Sources</b>, all read on 21 November 2026</summary>
+
+**Kaeso:** [license](LICENSE), [installation](https://docs.kaeso.app/self-hosting/installation), [Kubernetes](https://docs.kaeso.app/self-hosting/platforms/kubernetes), [single sign-on and SCIM](https://docs.kaeso.app/console/organizations-and-projects#single-sign-on), [roles](https://docs.kaeso.app/console/members-and-roles), [audit log](https://docs.kaeso.app/console/organizations-and-projects#read-the-audit-log), [budgets](https://docs.kaeso.app/console/limits-and-budgets), [guardrails](https://docs.kaeso.app/console/guardrails), [model API](https://docs.kaeso.app/api/model-api), [ElevenLabs API](https://docs.kaeso.app/api/elevenlabs), [rerank](https://docs.kaeso.app/api/rerank), [batches](https://docs.kaeso.app/api/batches), [images](https://docs.kaeso.app/api/images), [videos](https://docs.kaeso.app/api/videos), [audio](https://docs.kaeso.app/api/audio), [key pools](https://docs.kaeso.app/console/provider-keys#choose-which-key-a-project-uses), [fallbacks and retries](https://docs.kaeso.app/concepts/alias-routes#fallbacks), [model lifecycle](https://docs.kaeso.app/concepts/model-lifecycle), [MCP portal](https://docs.kaeso.app/concepts/mcp-portal), [keeping content out of the log](https://docs.kaeso.app/api/model-api#keeping-content-out-of-the-log), [requirements](https://docs.kaeso.app/self-hosting/requirements).
+
+**LiteLLM:** [license](https://github.com/BerriAI/litellm/blob/main/LICENSE), [enterprise license](https://github.com/BerriAI/litellm/blob/main/litellm/enterprise/LICENSE.md), [repository](https://github.com/BerriAI/litellm), [pricing](https://www.litellm.ai/pricing), [enterprise features](https://docs.litellm.ai/docs/enterprise), [Docker](https://docs.litellm.ai/docs/proxy/docker_quick_start), [Helm](https://docs.litellm.ai/docs/proxy/deploy), [SSO](https://docs.litellm.ai/docs/proxy/admin_ui_sso), [SCIM](https://docs.litellm.ai/docs/tutorials/scim_litellm), [roles](https://docs.litellm.ai/docs/proxy/access_control), [audit logs](https://docs.litellm.ai/docs/proxy/audit_logs), [budgets](https://docs.litellm.ai/docs/proxy/users), [PII masking](https://docs.litellm.ai/docs/proxy/guardrails/pii_masking_v2), [generic guardrail API](https://docs.litellm.ai/docs/adding_provider/generic_guardrail_api), [supported endpoints](https://docs.litellm.ai/docs/supported_endpoints), [Responses](https://docs.litellm.ai/docs/response_api), [Anthropic format](https://docs.litellm.ai/docs/anthropic_unified), [generateContent](https://docs.litellm.ai/docs/generateContent), [pass-through](https://docs.litellm.ai/docs/pass_through/intro), [rerank](https://docs.litellm.ai/docs/rerank), [batches](https://docs.litellm.ai/docs/batches), [images](https://docs.litellm.ai/docs/image_generation), [speech](https://docs.litellm.ai/docs/text_to_speech), [transcription](https://docs.litellm.ai/docs/audio_transcription), [music](https://docs.litellm.ai/release_notes/v1.102.0/v1-102-0), [load balancing](https://docs.litellm.ai/docs/proxy/load_balancing), [fallbacks and retries](https://docs.litellm.ai/docs/proxy/reliability), [deprecation alerts](https://docs.litellm.ai/blog/model-deprecation-alerts), [MCP gateway](https://docs.litellm.ai/docs/mcp), [logging](https://docs.litellm.ai/docs/proxy/logging).
+
+**Bifrost:** [license](https://github.com/maximhq/bifrost/blob/main/LICENSE), [repository](https://github.com/maximhq/bifrost), [pricing](https://www.getmaxim.ai/bifrost/pricing), [setup](https://docs.getbifrost.ai/quickstart/gateway/setting-up), [multiple nodes](https://docs.getbifrost.ai/deployment-guides/how-to/multinode), [Helm](https://docs.getbifrost.ai/deployment-guides/helm), [SSO and SCIM](https://docs.getbifrost.ai/enterprise/user-provisioning), [RBAC](https://docs.getbifrost.ai/enterprise/rbac), [audit logs](https://docs.getbifrost.ai/enterprise/audit-logs), [budgets](https://docs.getbifrost.ai/features/governance/budget-and-limits), [guardrails](https://docs.getbifrost.ai/enterprise/guardrails), [plugins](https://docs.getbifrost.ai/plugins/getting-started), [OpenAI](https://docs.getbifrost.ai/integrations/openai-sdk/overview), [Anthropic](https://docs.getbifrost.ai/integrations/anthropic-sdk/overview), [Google GenAI](https://docs.getbifrost.ai/integrations/genai-sdk/overview), [ElevenLabs](https://docs.getbifrost.ai/integrations/elevenlabs-sdk/overview), [Cohere](https://docs.getbifrost.ai/integrations/cohere-sdk/overview), [batches](https://docs.getbifrost.ai/integrations/openai-sdk/files-and-batch), [media](https://docs.getbifrost.ai/quickstart/gateway/multimodal), [video](https://docs.getbifrost.ai/providers/supported-providers/gemini), [keys](https://docs.getbifrost.ai/features/keys-management), [retries and fallbacks](https://docs.getbifrost.ai/features/retries-and-fallbacks), [MCP](https://docs.getbifrost.ai/mcp/overview), [content logging](https://docs.getbifrost.ai/features/observability/content-logging).
+
+**Portkey:** [license](https://github.com/Portkey-AI/gateway/blob/main/LICENSE), [repository](https://github.com/Portkey-AI/gateway), [deployment](https://github.com/Portkey-AI/gateway/blob/main/docs/installation-deployments.md), [Helm chart](https://github.com/Portkey-AI/helm/blob/main/charts/portkey-gateway/README.md), [plans and features](https://docs.portkey.ai/docs/product/product-feature-comparison), [SSO](https://docs.portkey.ai/docs/product/enterprise-offering/org-management/sso), [audit logs](https://docs.portkey.ai/docs/product/enterprise-offering/audit-logs), [budgets](https://docs.portkey.ai/docs/product/ai-gateway/virtual-keys/budget-limits), [PII redaction](https://docs.portkey.ai/docs/product/guardrails/pii-redaction), [webhook guardrails](https://docs.portkey.ai/docs/integrations/guardrails/bring-your-own-guardrails), [Responses](https://docs.portkey.ai/docs/product/ai-gateway/responses-api), [Messages](https://docs.portkey.ai/docs/product/ai-gateway/messages-api), [Vertex AI](https://docs.portkey.ai/docs/integrations/llms/vertex-ai), [ElevenLabs](https://docs.portkey.ai/docs/integrations/llms/elevenlabs), [rerank](https://docs.portkey.ai/docs/api-reference/inference-api/rerank), [batches](https://docs.portkey.ai/docs/product/ai-gateway/batches), [images](https://docs.portkey.ai/docs/product/ai-gateway/multimodal-capabilities/image-generation), [video](https://docs.portkey.ai/docs/integrations/llms/openai), [speech](https://docs.portkey.ai/docs/product/ai-gateway/multimodal-capabilities/text-to-speech), [transcription](https://docs.portkey.ai/docs/product/ai-gateway/multimodal-capabilities/speech-to-text), [load balancing](https://docs.portkey.ai/docs/product/ai-gateway/load-balancing), [fallbacks](https://docs.portkey.ai/docs/product/ai-gateway/fallbacks), [retries](https://docs.portkey.ai/docs/product/ai-gateway/automatic-retries), [MCP gateway](https://docs.portkey.ai/docs/product/mcp-gateway), [request logging](https://docs.portkey.ai/docs/product/administration/configuring-request-logging), [Prisma AIRS AI Gateway](https://www.paloaltonetworks.com/ai-security/ai-gateway), where portkey.ai/pricing leads.
+
+**Helicone:** [license](https://github.com/Helicone/helicone/blob/main/LICENSE), [repository](https://github.com/Helicone/helicone), [pricing](https://www.helicone.ai/pricing), [self-hosting with Docker](https://docs.helicone.ai/getting-started/self-host/docker), [Kubernetes](https://docs.helicone.ai/getting-started/self-host/kubernetes), [custom rate limits](https://docs.helicone.ai/features/advanced-usage/custom-rate-limits), [gateway](https://docs.helicone.ai/gateway/overview), [Responses](https://docs.helicone.ai/gateway/concepts/responses-api), [Anthropic proxy](https://docs.helicone.ai/integrations/anthropic/curl), [Gemini proxy](https://docs.helicone.ai/integrations/gemini/api/curl), [gateway OpenAPI](https://docs.helicone.ai/ai-gateway.openapi.json), [batches](https://docs.helicone.ai/guides/cookbooks/openai-batch-api), [images](https://docs.helicone.ai/gateway/concepts/image-generation), [provider routing](https://docs.helicone.ai/gateway/provider-routing), [retries](https://docs.helicone.ai/features/advanced-usage/retries), [MCP](https://docs.helicone.ai/integrations/tools/mcp), [headers](https://docs.helicone.ai/helicone-headers/header-directory).
+
+**Kong AI Gateway:** [license](https://github.com/Kong/kong/blob/master/LICENSE), [repository](https://github.com/Kong/kong), [Helm charts](https://github.com/Kong/charts), [pricing](https://konghq.com/pricing), [AI Proxy](https://developer.konghq.com/plugins/ai-proxy/), [AI Proxy Advanced](https://developer.konghq.com/plugins/ai-proxy-advanced/), [open-source AI Proxy formats](https://github.com/Kong/kong/blob/3.9.5/kong/plugins/ai-proxy/schema.lua), [AI Rate Limiting Advanced](https://developer.konghq.com/plugins/ai-rate-limiting-advanced/), [AI Sanitizer](https://developer.konghq.com/plugins/ai-sanitizer/), [AI Custom Guardrail](https://developer.konghq.com/plugins/ai-custom-guardrail/), [load balancing](https://developer.konghq.com/ai-gateway/load-balancing/), [AI MCP Proxy](https://developer.konghq.com/plugins/ai-mcp-proxy/), [payload logging](https://github.com/Kong/kong/blob/master/kong/llm/schemas/init.lua).
+
+**Agent Router:** [license](https://github.com/theagentrouter/agent-router/blob/main/LICENSE), [repository](https://github.com/theagentrouter/agent-router), [installation](https://theagentrouter.ai/docs/getting-started/installation/), [CLI](https://theagentrouter.ai/docs/cli/aigwinstall/), [security](https://theagentrouter.ai/docs/capabilities/security/), [quota policy](https://theagentrouter.ai/docs/capabilities/traffic/quota-policy/), [supported endpoints](https://theagentrouter.ai/docs/capabilities/llm-integrations/supported-endpoints/), [API](https://theagentrouter.ai/docs/api/), [provider fallback](https://theagentrouter.ai/docs/capabilities/traffic/provider-fallback/), [MCP](https://theagentrouter.ai/docs/capabilities/mcp/), [tracing](https://theagentrouter.ai/docs/capabilities/observability/tracing/). The former address, aigateway.envoyproxy.io, redirects there.
+
+**OpenRouter:** [pricing](https://openrouter.ai/pricing), [FAQ](https://openrouter.ai/docs/faq), [SSO](https://openrouter.ai/docs/guides/features/sso), [SCIM and audit log](https://openrouter.ai/docs/guides/features/scim-mappings), [workspaces](https://openrouter.ai/docs/guides/features/workspaces), [spend controls](https://openrouter.ai/docs/guides/best-practices/spend-controls), [sensitive information](https://openrouter.ai/docs/guides/features/guardrails/sensitive-info), [guardrails](https://openrouter.ai/docs/guides/features/guardrails), [compatibility](https://openrouter.ai/docs/guides/features/compatibility), [Anthropic Messages](https://openrouter.ai/docs/api/api-reference/anthropic-messages/create-a-message), [rerank](https://openrouter.ai/docs/api/api-reference/rerank/submit-a-rerank-request), [your own keys](https://openrouter.ai/docs/guides/overview/auth/byok), [fallbacks](https://openrouter.ai/docs/guides/routing/model-fallbacks), [provider selection](https://openrouter.ai/docs/guides/routing/provider-selection), [models API](https://openrouter.ai/docs/guides/overview/models), [MCP server](https://openrouter.ai/docs/guides/overview/mcp-server), [data collection](https://openrouter.ai/docs/guides/privacy/data-collection).
+
+**Cloudflare AI Gateway:** [pricing](https://developers.cloudflare.com/ai-gateway/reference/pricing/), [dashboard SSO](https://developers.cloudflare.com/fundamentals/manage-members/dashboard-sso/), [SCIM](https://developers.cloudflare.com/fundamentals/account/account-security/scim-setup/), [roles](https://developers.cloudflare.com/fundamentals/manage-members/roles/), [audit logs](https://developers.cloudflare.com/ai-gateway/reference/audit-logs/), [spend limits](https://developers.cloudflare.com/ai-gateway/features/spend-limits/), [guardrails](https://developers.cloudflare.com/ai-gateway/features/guardrails/), [REST API](https://developers.cloudflare.com/ai-gateway/usage/rest-api/), [Google AI Studio](https://developers.cloudflare.com/ai-gateway/usage/providers/google-ai-studio/), [ElevenLabs](https://developers.cloudflare.com/ai-gateway/usage/providers/elevenlabs/), [Cohere](https://developers.cloudflare.com/ai-gateway/usage/providers/cohere/), [your own keys](https://developers.cloudflare.com/ai-gateway/configuration/bring-your-own-keys/), [fallbacks](https://developers.cloudflare.com/ai-gateway/configuration/fallbacks/), [request handling](https://developers.cloudflare.com/ai-gateway/configuration/request-handling/), [MCP server portals](https://developers.cloudflare.com/cloudflare-one/access-controls/ai-controls/mcp-portals/), [logging](https://developers.cloudflare.com/ai-gateway/observability/logging/).
+
+**TensorZero:** [website](https://www.tensorzero.com/), [repository](https://github.com/tensorzero/tensorzero), archived on GitHub.
+
+</details>
+
+[^litellm-lic]: The repository's license is MIT except for `enterprise/` folders, whose code needs a BerriAI Enterprise license in production.
+
+[^litellm-lang]: GitHub lists Python as the repository's main language; its description reads "Rust core with Python SDK".
+
+[^litellm-roles]: Global proxy roles carry no enterprise label; roles scoped to organizations or teams are a premium feature.
+
+[^litellm-pii]: PII masking with Presidio is in the open-source version; secret detection and redaction are enterprise-only.
+
+[^litellm-dep]: Deprecation reminders 30 days and 1 day before a provider's date, with a recommended replacement.
+
+[^bifrost-ha]: Running several open-source Bifrost nodes against one PostgreSQL is not supported; clustering is part of Enterprise.
+
+[^bifrost-plugins]: No webhook guardrail in the open-source version; Go or WASM plugins can inspect requests, and named guardrail vendors are Enterprise.
+
+[^bifrost-gone]: Requests to a retired model are recognized and handled like other failures; no warnings or move to a replacement are documented.
+
+[^portkey-helm]: The official chart pulls enterprise images with credentials Portkey shares.
+
+[^portkey-gemini]: Google Gen AI SDK requests pass through for Gemini models on Vertex AI only.
+
+[^portkey-11]: Speech and transcription go through OpenAI-style `/v1/audio` endpoints; other ElevenLabs APIs through a custom host.
+
+[^portkey-mcp]: In Portkey's hosted and enterprise platform, not in the open-source gateway.
+
+[^helicone-self]: The self-hosted stack forwards OpenAI and Anthropic traffic; Vertex AI, Bedrock and Azure OpenAI are not supported there, and the AI gateway is documented as a cloud endpoint.
+
+[^helicone-budget]: Cost-based rate limits per user or property, set with a request header.
+
+[^helicone-legacy]: Through a provider-specific proxy that Helicone maintains but no longer develops.
+
+[^helicone-images]: One image model, through Google AI Studio.
+
+[^kong-lic]: Kong Gateway is Apache 2.0; most AI plugins, such as AI Proxy Advanced, AI Sanitizer and AI MCP Proxy, are part of AI Gateway Enterprise.
+
+[^kong-310]: Documented for AI Proxy from Kong Gateway 3.10 or 3.11; the open-source releases on GitHub are 3.9. The open-source AI Proxy takes Chat Completions.
+
+[^ar-quota]: Token quotas per model, not money.
+
+[^ar-extauth]: Envoy's external authorization hook, not a guardrail feature of its own.
+
+[^ar-backends]: Weighted backends, each with its own credentials.
+
+[^or-roles]: Organization admins and members; workspace roles need a higher plan.
+
+[^or-budgets]: The workspace budgets page says budgets are on every plan; the pricing page lists them as not included on Free.
+
+[^or-byok]: Several of your own keys, tried in the order you set; no weights.
+
+[^or-expiry]: The models API returns a model endpoint's deprecation date.
+
+[^cf-roles]: Cloudflare account roles and API token permissions; no role for AI Gateway members alone.
+
+[^cf-dlp]: Data loss prevention flags or blocks prompts and replies; two predefined profiles without a Zero Trust subscription, no masking documented.
+
+[^cf-pass]: The provider's own API, passed through to that provider only.
+
+[^cf-cohere]: Cohere's API passes through to Cohere.
+
+[^cf-keys]: Several keys per provider, chosen per request by an alias header.
+
+[^cf-mcp]: MCP server portals are a separate Cloudflare One product.
+
+[^kaeso-batches]: For providers whose batch API takes OpenAI's batches as they are, today OpenAI.
+
+[^kaeso-lifecycle]: `Deprecation`, `Sunset` and `Link` headers, 410 after the shutdown, and aliases that move to the replacement.
 
 ## Works with
 
@@ -192,6 +429,7 @@ Checked on 6 November 2026 against each project's repository and documentation. 
 | The Kaeso plugins for [Claude Code](https://docs.kaeso.app/api/mcp#claude-code) and [Cursor](https://docs.kaeso.app/api/mcp#cursor)                                                                                                                                                                                                                                     | Manage Kaeso through its MCP server, from keys to limits; the Claude Code plugin's skill connects the server for you                                     |
 | [claude.ai](https://docs.kaeso.app/console/tools#connect-a-client), ChatGPT and any MCP client                                                                                                                                                                                                                                                                          | Call your MCP servers' tools through a project's [MCP portal](https://docs.kaeso.app/concepts/mcp-portal)                                                |
 | The [OpenAI](https://docs.kaeso.app/get-started/calling-models), [Anthropic](https://docs.kaeso.app/get-started/calling-models#use-the-anthropic-sdk), [Google Gen AI](https://docs.kaeso.app/get-started/calling-models#use-the-google-gen-ai-sdk) and [ElevenLabs](https://docs.kaeso.app/api/elevenlabs) SDKs, in any language, and anything with a base URL setting | Point the base URL at Kaeso; [supported providers](https://docs.kaeso.app/concepts/supported-providers) lists what each provider can do through each API |
+| OpenTelemetry collectors and Prometheus                                                                                                                                                                                                                                                                                                                                 | Receive a trace per request and the gateway's metrics ([monitoring](https://docs.kaeso.app/self-hosting/monitoring))                                     |
 
 ## In this repository
 
@@ -209,9 +447,9 @@ Checked on 6 November 2026 against each project's repository and documentation. 
 ## Community
 
 - [Discussions](https://github.com/logicplanes/kaeso/discussions) for questions, ideas and what you built.
-- [@kaesoapp on X](https://x.com/kaesoapp) for releases.
+- [Articles](https://kaeso.app/articles) on kaeso.app for releases and guides, and [@kaesoapp on X](https://x.com/kaesoapp) for news.
 - [Good first issues](https://github.com/logicplanes/kaeso/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22) to start contributing, with the [contributing guide](https://docs.kaeso.app/development/contributing).
 
 ## License
 
-[MIT](LICENSE). The Kaeso name and logo are not covered by the license. All trademarks belong to their owners; Kaeso is not affiliated with any provider or client it names. Third-party notices, trademarks included, are in [NOTICE.md](NOTICE.md).
+[MIT](LICENSE). The Kaeso name and logo are not covered by the license. All trademarks belong to their owners; Kaeso is not affiliated with any provider, client or product it names, including those in the comparison. Third-party notices, trademarks included, are in [NOTICE.md](NOTICE.md).
