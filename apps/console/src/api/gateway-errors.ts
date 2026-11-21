@@ -445,6 +445,9 @@ const messages = (): Rule[] => [
   rule("errors.mcp.signInUnreachable", () => t("errors.mcp.signInUnreachable", "Kaeso couldn't reach the server's sign-in; check the address and try again.")),
   rule("errors.mcp.noAuthServer", () => t("errors.mcp.noAuthServer", "The server names no OAuth sign-in Kaeso can use.")),
   rule("errors.mcp.noPkce", () => t("errors.mcp.noPkce", "The server's sign-in doesn't support PKCE, which Kaeso requires.")),
+  rule("errors.mcp.unusableSignInAddress", () =>
+    t("errors.mcp.unusableSignInAddress", "The server's sign-in names an address Kaeso can't use; check the server."),
+  ),
   rule("errors.mcp.manualClient", () => t("errors.mcp.manualClient", "The server's sign-in needs a client registered by hand; send `oauth.client`.")),
   rule("errors.mcp.clientRefused", () => t("errors.mcp.clientRefused", "The server's sign-in refused Kaeso's client; check it and try again.")),
   rule("errors.mcp.signedOut", () => t("errors.mcp.signedOut", "Kaeso has no working sign-in for this server; connect it again.")),

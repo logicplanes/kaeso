@@ -268,3 +268,47 @@ async fn a_person_signs_in_with_oauth_and_comes_back_to_their_connections() {
     assert_eq!(after.body["tools"]["total"], 3, "{:?}", after.body);
     assert_eq!(after.body["status"], "ok");
 }
+
+#[tokio::test]
+async fn a_person_is_never_sent_to_a_sign_in_address_that_isnt_a_web_address() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    for (n, address) in [
+        "javascript:void(0)//",
+        "data:text/html,Kaeso",
+        "kaeso-app://sign-in",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mock = MockMcp::start(Options {
+            oauth: Some(OAuth {
+                metadata: vec![("authorization_endpoint", address.to_owned())],
+                ..OAuth::default()
+            }),
+            ..Options::default()
+        })
+        .await;
+        let server = add(
+            &app,
+            &owner,
+            json!({ "handle": format!("x{n}"), "name": "X", "url": mock.url(), "auth_method": "oauth", "credential_mode": "per_user" }),
+        )
+        .await;
+        let r = app
+            .post(
+                &format!("{MINE}/{server}"),
+                json!({ "oauth": true }),
+                Some(&owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::BAD_GATEWAY, "{address}: {:?}", r.body);
+        assert_eq!(
+            r.body["error"]["message"],
+            "The server's sign-in names an address Kaeso can't use; check the server.",
+            "{address}"
+        );
+        assert_eq!(r.body["redirect_url"], Value::Null);
+    }
+}

@@ -688,6 +688,7 @@
   "errors.mcp.signInUnreachable": "Kaeso erreicht die Anmeldung des Servers nicht; prüfen Sie die Adresse und versuchen Sie es erneut.",
   "errors.mcp.noAuthServer": "Der Server nennt keine OAuth-Anmeldung, die Kaeso nutzen kann.",
   "errors.mcp.noPkce": "Die Anmeldung des Servers unterstützt kein PKCE, das Kaeso voraussetzt.",
+  "errors.mcp.unusableSignInAddress": "Die Anmeldung des Servers nennt eine Adresse, die Kaeso nicht nutzen kann; prüfen Sie den Server.",
   "errors.mcp.manualClient": "Die Anmeldung des Servers braucht einen von Hand registrierten Client; senden Sie `oauth.client`.",
   "errors.mcp.clientRefused": "Die Anmeldung des Servers lehnte den Client von Kaeso ab; prüfen Sie ihn und versuchen Sie es erneut.",
   "errors.mcp.signedOut": "Kaeso hat keine gültige Anmeldung für diesen Server; verbinden Sie ihn erneut.",

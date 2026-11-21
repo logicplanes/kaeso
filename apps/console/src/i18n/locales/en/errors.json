@@ -392,6 +392,7 @@
   "errors.mcp.toolChangedAgain": "The tool changed again since you reviewed it; review it again.",
   "errors.mcp.toolRemoved": "The server no longer lists this tool.",
   "errors.mcp.unreachable": "Kaeso couldn't reach this server; check its address and try again.",
+  "errors.mcp.unusableSignInAddress": "The server's sign-in names an address Kaeso can't use; check the server.",
   "errors.mcp.urlCredentials": "`url` can't hold a user name or password; use a secret header instead.",
   "errors.mcp.urlFragment": "`url` can't have a fragment.",
   "errors.mcp.urlHost": "`url` must be a full URL with a host, such as `https://mcp.example.com/mcp`.",

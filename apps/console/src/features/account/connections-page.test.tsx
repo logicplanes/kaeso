@@ -99,6 +99,17 @@ describe("Account › Connections", () => {
     expect(assign).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["javascript:void(0)//", "data:text/html,Kaeso", "kaeso-app://sign-in"])("stays in the console when the sign-in address is %s", async (address) => {
+    signedIn();
+    const assign = vi.spyOn(window.location, "assign").mockImplementation(() => undefined);
+    on("GET", MINE, page([person()]));
+    on("POST", ONE, { redirect_url: address, connection: person() });
+    const { user } = await renderApp(PATH);
+    await user.click(await screen.findByRole("button", { name: "Connect" }));
+    expect(await notifications().findByText("The sign-in address can't be opened; check the server.")).toBeInTheDocument();
+    expect(assign).not.toHaveBeenCalled();
+  });
+
   it("disconnects, and closes the confirmation when that fails", async () => {
     signedIn();
     on("GET", MINE, page([person({ connection: mcpConnection() })]));

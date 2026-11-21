@@ -13,6 +13,7 @@ import { signInToast, type SignInResult } from "~/features/org-home/mcp-servers-
 import { t } from "~/i18n";
 import { McpConnectionFacts } from "~/kaeso/mcp-connection-facts";
 import { HeaderFields } from "~/kaeso/mcp-header-fields";
+import { signInPage } from "~/kaeso/mcp-sign-in";
 import type { Word } from "~/kaeso/mcp-servers";
 import { SettingsLoading, SettingsPage } from "~/shell/settings-page";
 import { toast } from "~/shell/toast";
@@ -53,7 +54,8 @@ export function ConnectionsPage({ search = {} }: { search?: ConnectionsSearch })
     mutationFn: async (c: PersonConnectionView) =>
       data(await api.POST("/platform/v1/me/mcp-connections/{server}", { params: { path: { server: c.server } }, body: { oauth: true } })),
     onSuccess: (answer) => {
-      if (answer.redirect_url) window.location.assign(answer.redirect_url);
+      const page = answer.redirect_url ? signInPage(answer.redirect_url) : null;
+      if (page) window.location.assign(page);
     },
   });
   const connect = (c: PersonConnectionView) => (c.auth_method === "header" ? setHeader(c) : signIn.mutate(c));

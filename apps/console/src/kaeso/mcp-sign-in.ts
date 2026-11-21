@@ -1,14 +1,25 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { safeHref } from "@logicplanes/kaeso-ui/markdown";
 import { api, data } from "~/api/client";
 import type { McpServerView } from "~/api/generated/types";
 import { mcpServerQuery } from "~/api/queries/mcp-servers";
 import { useApiMutation } from "~/auth/mutation";
+import { t } from "~/i18n";
+import { toast } from "~/shell/toast";
 import { openBlankTab } from "./blank-tab";
 
 const POLL_MS = 2000;
 // The sign-in address Kaeso hands out is valid for 10 minutes.
 const SIGN_IN_MS = 10 * 60_000;
+
+// The address comes from the server's metadata, so the console leaves only for a web page.
+export function signInPage(url: string): string | null {
+  const href = safeHref(url);
+  if (href && /^https?:/.test(href)) return href;
+  toast.error(t("orgHome.mcp.signInAddress", "The sign-in address can't be opened; check the server."));
+  return null;
+}
 
 type Begin = { tab: Window | null; ensure: () => Promise<string> };
 type Waiting = { server: string; since: string | null };
@@ -47,8 +58,13 @@ export function useMcpSignIn(org: string) {
     onSuccess: (answer, { tab }) => {
       setExpired(false);
       setServer(null);
+      const url = answer.redirect_url ? signInPage(answer.redirect_url) : null;
+      if (answer.redirect_url && !url) {
+        tab?.close();
+        setLink(null);
+        return;
+      }
       setWaiting({ server: answer.server.id, since: answer.server.connection?.updated_at ?? null });
-      const url = answer.redirect_url ?? null;
       if (tab && url) tab.location.href = url;
       else tab?.close();
       setLink(tab ? null : url);

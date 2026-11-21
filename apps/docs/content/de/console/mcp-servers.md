@@ -20,6 +20,8 @@ Eine Adresse in einem privaten Netz funktioniert nur, wenn die Installation das 
 
 Nimmt der Autorisierungsserver des Servers weder Client-Metadatendokumente noch Registrierungen an, fragt der Dialog nach einer Client-ID und, bei einem vertraulichen Client, nach seinem Geheimnis. Registrieren Sie Kaeso dort mit der Weiterleitungs-URI `https://kaeso.example.com/oauth/upstream/callback`.
 
+Kaeso meldet sich nur an `https`-Adressen aus den Anmelde-Metadaten des Servers an, oder an `http`-Adressen, wenn die Adresse des Servers selbst `http` ist.
+
 ## Erneut anmelden oder das Geheimnis ersetzen
 
 Wählen Sie einen Server, um sein Sheet zu öffnen. Unter **Verbindung** startet **Erneut anmelden** eine neue OAuth-Anmeldung, und **Geheimnis ersetzen** setzt einen neuen Header. Ein Server, der die Anmeldung von Kaeso ablehnt, zeigt **Abgemeldet**, bis sich jemand anmeldet.

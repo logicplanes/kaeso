@@ -20,6 +20,8 @@ An address on a private network works only when the install allows its network i
 
 When the server's authorization server takes neither client metadata documents nor registration, the dialog asks for a client id and, for a confidential client, its secret. Register Kaeso there with the redirect URI `https://kaeso.example.com/oauth/upstream/callback`.
 
+Kaeso signs in only at `https` addresses from the server's sign-in metadata, or at `http` ones when the server's own address is `http`.
+
 ## Sign in again or replace the secret
 
 Choose a server to open its sheet. Under **Connection**, **Sign in again** starts a new OAuth sign-in, and **Replace secret** sets a new header. A server that refuses Kaeso's sign-in shows **Signed out** until someone does.

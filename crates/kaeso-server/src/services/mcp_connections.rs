@@ -48,6 +48,8 @@ pub enum SignInError {
     Unreachable(String),
     #[error("the server names no authorization server")]
     NoAuthServer,
+    #[error("the sign-in metadata's {0} isn't a web address Kaeso may use")]
+    NotWebAddress(&'static str),
     #[error("the authorization server doesn't offer PKCE with S256")]
     NoPkce,
     #[error("the authorization server takes neither client metadata documents nor registration")]
@@ -179,8 +181,27 @@ fn string(v: &Value, key: &str) -> Option<String> {
     v.get(key).and_then(Value::as_str).map(str::to_owned)
 }
 
-fn url_of(v: &Value, key: &str) -> Option<Url> {
-    string(v, key).and_then(|s| Url::parse(&s).ok())
+// Sign-in addresses are opened in people's browsers and receive their codes and tokens, so the
+// metadata may name only web addresses, and plain http only for a plain-http server, as for SSO.
+fn web_address(server: &Url, member: &'static str, url: Url) -> Result<Url, SignInError> {
+    match url.scheme() {
+        "https" => Ok(url),
+        "http" if server.scheme() == "http" => Ok(url),
+        _ => Err(SignInError::NotWebAddress(member)),
+    }
+}
+
+fn url_of(server: &Url, v: &Value, key: &'static str) -> Result<Option<Url>, SignInError> {
+    match string(v, key).map(|s| Url::parse(&s)) {
+        Some(Ok(url)) => web_address(server, key, url).map(Some),
+        Some(Err(_)) | None => Ok(None),
+    }
+}
+
+fn stored_address(server: &str, member: &'static str, url: &str) -> Result<Url, SignInError> {
+    let server = Url::parse(server).map_err(|_| SignInError::NoAuthServer)?;
+    let url = Url::parse(url).map_err(|_| SignInError::NoAuthServer)?;
+    web_address(&server, member, url)
 }
 
 fn strings(v: &Value, key: &str) -> Vec<String> {
@@ -205,6 +226,7 @@ pub async fn discover(
     if let Some(named) = challenge
         .and_then(resource_metadata_of)
         .and_then(|u| Url::parse(&u).ok())
+        .and_then(|u| web_address(server, "resource_metadata", u).ok())
     {
         candidates.push(named);
     }
@@ -234,7 +256,11 @@ pub async fn discover(
         .into_iter()
         .next()
         .ok_or(SignInError::NoAuthServer)?;
-    let issuer_url = Url::parse(&issuer).map_err(|_| SignInError::NoAuthServer)?;
+    let issuer_url = web_address(
+        server,
+        "authorization_servers",
+        Url::parse(&issuer).map_err(|_| SignInError::NoAuthServer)?,
+    )?;
     let ipath = issuer_url.path().trim_end_matches('/');
     let o = origin(&issuer_url);
     let mut meta = None;
@@ -263,11 +289,12 @@ pub async fn discover(
     let scopes = strings(&prm, "scopes_supported");
     Ok(AuthServer {
         issuer,
-        authorization_endpoint: url_of(&meta, "authorization_endpoint")
+        authorization_endpoint: url_of(server, &meta, "authorization_endpoint")?
             .ok_or(SignInError::NoAuthServer)?,
-        token_endpoint: url_of(&meta, "token_endpoint").ok_or(SignInError::NoAuthServer)?,
-        registration_endpoint: url_of(&meta, "registration_endpoint"),
-        userinfo_endpoint: url_of(&meta, "userinfo_endpoint"),
+        token_endpoint: url_of(server, &meta, "token_endpoint")?
+            .ok_or(SignInError::NoAuthServer)?,
+        registration_endpoint: url_of(server, &meta, "registration_endpoint")?,
+        userinfo_endpoint: url_of(server, &meta, "userinfo_endpoint")?,
         cimd: meta
             .get("client_id_metadata_document_supported")
             .and_then(Value::as_bool)
@@ -647,7 +674,7 @@ pub async fn finish(
         None => None,
     };
     let token_endpoint =
-        Url::parse(&pending.token_endpoint).map_err(|_| fail(SignInError::NoAuthServer))?;
+        stored_address(&server.url, "token_endpoint", &pending.token_endpoint).map_err(fail)?;
     let form = vec![
         ("grant_type", "authorization_code"),
         ("code", code),
@@ -665,12 +692,11 @@ pub async fn finish(
     )
     .await
     .map_err(fail)?;
-    let label = account_label(
-        state,
-        pending.userinfo_endpoint.as_deref(),
-        &granted.access_token,
-    )
-    .await;
+    let userinfo = pending
+        .userinfo_endpoint
+        .as_deref()
+        .and_then(|u| stored_address(&server.url, "userinfo_endpoint", u).ok());
+    let label = account_label(state, userinfo.as_ref(), &granted.access_token).await;
     let stored = StoredTokens {
         access_token: granted.access_token.clone(),
         refresh_token: granted.refresh_token.clone(),
@@ -723,12 +749,12 @@ async fn token_call(
     serde_json::from_value(answer).map_err(|_| SignInError::Refused("no access token".into()))
 }
 
-async fn account_label(state: &AppState, userinfo: Option<&str>, access: &str) -> Option<String> {
-    let url = Url::parse(userinfo?).ok()?;
+async fn account_label(state: &AppState, userinfo: Option<&Url>, access: &str) -> Option<String> {
+    let url = userinfo?;
     let bearer = SecretString::from(format!("Bearer {access}"));
     let (status, body) = state
         .mcp
-        .get_json_signed(&url, "authorization", &bearer, METADATA)
+        .get_json_signed(url, "authorization", &bearer, METADATA)
         .await
         .ok()?;
     if status != 200 {
@@ -1064,8 +1090,12 @@ async fn renewed(
     let Some(refresh) = tokens.refresh_token.clone() else {
         return signed_out(state, tx, server, row, "no refresh token").await;
     };
-    let Ok(endpoint) = Url::parse(&tokens.token_endpoint) else {
-        return signed_out(state, tx, server, row, "no token endpoint").await;
+    let endpoint = match stored_address(&server.url, "token_endpoint", &tokens.token_endpoint) {
+        Ok(endpoint) => endpoint,
+        Err(e @ SignInError::NotWebAddress(_)) => {
+            return signed_out(state, tx, server, row, &e.to_string()).await;
+        }
+        Err(_) => return signed_out(state, tx, server, row, "no token endpoint").await,
     };
     let form = vec![
         ("grant_type", "refresh_token"),
@@ -1191,5 +1221,62 @@ mod tests {
         assert_ne!(aad(a, None), aad(a, Some(b)));
         assert_ne!(aad(a, None), aad(b, None));
         assert_ne!(aad(a, None), client_secret_aad(a));
+    }
+
+    #[test]
+    fn sign_in_addresses_are_https_or_plain_http_for_a_plain_http_server() {
+        let secure = Url::parse("https://mcp.example.com/mcp").unwrap();
+        let plain = Url::parse("http://192.0.2.10/mcp").unwrap();
+        let allowed = |server: &Url, address: &str| {
+            web_address(
+                server,
+                "authorization_endpoint",
+                Url::parse(address).unwrap(),
+            )
+            .is_ok()
+        };
+        assert!(allowed(&secure, "https://auth.example.com/authorize"));
+        assert!(allowed(&plain, "https://auth.example.com/authorize"));
+        assert!(allowed(&plain, "http://192.0.2.10/authorize"));
+        assert!(!allowed(&secure, "http://auth.example.com/authorize"));
+        for address in [
+            "javascript:void(0)//",
+            "data:text/html,Kaeso",
+            "kaeso-app://sign-in",
+        ] {
+            assert!(!allowed(&secure, address), "{address}");
+            assert!(!allowed(&plain, address), "{address}");
+        }
+    }
+
+    #[test]
+    fn a_stored_token_endpoint_follows_the_same_rule() {
+        let refused = stored_address(
+            "https://mcp.example.com/mcp",
+            "token_endpoint",
+            "http://auth.example.com/token",
+        );
+        assert!(matches!(
+            refused,
+            Err(SignInError::NotWebAddress("token_endpoint"))
+        ));
+        assert_eq!(
+            stored_address(
+                "http://192.0.2.10/mcp",
+                "token_endpoint",
+                "http://192.0.2.10/token"
+            )
+            .unwrap()
+            .as_str(),
+            "http://192.0.2.10/token"
+        );
+        assert!(
+            stored_address(
+                "https://mcp.example.com/mcp",
+                "token_endpoint",
+                "https://auth.example.com/token"
+            )
+            .is_ok()
+        );
     }
 }

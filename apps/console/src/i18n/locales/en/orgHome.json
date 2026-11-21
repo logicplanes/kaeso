@@ -305,6 +305,7 @@
   "orgHome.mcp.signIn.header": "Secret header",
   "orgHome.mcp.signIn.none": "No sign-in",
   "orgHome.mcp.signIn.oauth": "OAuth",
+  "orgHome.mcp.signInAddress": "The sign-in address can't be opened; check the server.",
   "orgHome.mcp.signInAgain": "Sign in again",
   "orgHome.mcp.signInDeclined": "The sign-in to {name} was declined.",
   "orgHome.mcp.signInDescription": "Kaeso keeps secrets sealed and never shows them again.",

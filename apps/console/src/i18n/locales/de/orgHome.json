@@ -273,6 +273,7 @@
   "orgHome.mcp.theServer": "dem Server",
   "orgHome.mcp.signInDeclined": "Die Anmeldung bei {name} wurde abgelehnt.",
   "orgHome.mcp.signInExpired": "Die Anmeldung hat zu lange gedauert; starten Sie sie erneut.",
+  "orgHome.mcp.signInAddress": "Die Anmeldeadresse lässt sich nicht öffnen; prüfen Sie den Server.",
   "orgHome.mcp.signInFailed": "Die Anmeldung bei {name} schlug fehl; versuchen Sie es erneut.",
   "orgHome.mcp.add": "Server hinzufügen",
   "orgHome.mcp.changedCount": "{count} geändert",

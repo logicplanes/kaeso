@@ -1231,6 +1231,9 @@ pub(crate) fn sign_in_refused(e: SignInError) -> ApiError {
         }
         SignInError::NoAuthServer => "The server names no OAuth sign-in Kaeso can use.",
         SignInError::NoPkce => "The server's sign-in doesn't support PKCE, which Kaeso requires.",
+        SignInError::NotWebAddress(_) => {
+            "The server's sign-in names an address Kaeso can't use; check the server."
+        }
         SignInError::NoRegistration => {
             "The server's sign-in needs a client registered by hand; send `oauth.client`."
         }

@@ -688,6 +688,7 @@
   "errors.mcp.signInUnreachable": "Kaeso 无法访问该服务器的登录服务；请检查地址后重试。",
   "errors.mcp.noAuthServer": "该服务器未提供 Kaeso 可用的 OAuth 登录。",
   "errors.mcp.noPkce": "该服务器的登录不支持 Kaeso 所需的 PKCE。",
+  "errors.mcp.unusableSignInAddress": "该服务器的登录给出了 Kaeso 无法使用的地址；请检查服务器。",
   "errors.mcp.manualClient": "该服务器的登录需要手动注册的客户端；请发送 `oauth.client`。",
   "errors.mcp.clientRefused": "该服务器的登录拒绝了 Kaeso 的客户端；请检查后重试。",
   "errors.mcp.signedOut": "Kaeso 没有此服务器的有效登录；请重新连接。",

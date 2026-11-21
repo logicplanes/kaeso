@@ -273,6 +273,7 @@
   "orgHome.mcp.theServer": "服务器",
   "orgHome.mcp.signInDeclined": "{name} 的登录被拒绝。",
   "orgHome.mcp.signInExpired": "登录耗时过长；请重新开始。",
+  "orgHome.mcp.signInAddress": "无法打开登录地址；请检查服务器。",
   "orgHome.mcp.signInFailed": "{name} 的登录未完成；请重试。",
   "orgHome.mcp.add": "添加服务器",
   "orgHome.mcp.changedCount": "{count} 个已变更",

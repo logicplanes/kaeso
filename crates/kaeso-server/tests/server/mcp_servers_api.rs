@@ -611,6 +611,66 @@ async fn an_oauth_sign_in_starts_in_the_api_and_finishes_in_the_browser() {
     );
 }
 
+const NOT_WEB: &str = "The server's sign-in names an address Kaeso can't use; check the server.";
+
+#[tokio::test]
+async fn an_oauth_sign_in_starts_only_at_web_addresses() {
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let cases = [
+        ("authorization_endpoint", "javascript:void(0)//", true),
+        ("authorization_endpoint", "data:text/html,Kaeso", true),
+        ("authorization_endpoint", "kaeso-app://sign-in", true),
+        ("token_endpoint", "javascript:void(0)//", true),
+        ("registration_endpoint", "kaeso-app://register", false),
+    ];
+    for (n, (member, address, cimd)) in cases.into_iter().enumerate() {
+        let mock = MockMcp::start(Options {
+            oauth: Some(OAuth {
+                cimd,
+                metadata: vec![(member, address.to_owned())],
+                ..OAuth::default()
+            }),
+            ..Options::default()
+        })
+        .await;
+        let probe = app
+            .post(
+                &format!("{}/probe", servers(&owner)),
+                json!({ "url": mock.url() }),
+                Some(&owner.cookie),
+            )
+            .await;
+        assert_eq!(probe.body["problem"], "sign_in", "{member}: {address}");
+        let created = add(
+            &app,
+            &owner,
+            json!({ "handle": format!("x{n}"), "name": "X", "url": mock.url(), "auth_method": "oauth" }),
+        )
+        .await;
+        let r = app
+            .post(
+                &format!(
+                    "{}/{}/connection",
+                    servers(&owner),
+                    created["id"].as_str().unwrap()
+                ),
+                json!({ "oauth": {} }),
+                Some(&owner.cookie),
+            )
+            .await;
+        assert_eq!(
+            r.status,
+            StatusCode::BAD_GATEWAY,
+            "{member}: {address}: {:?}",
+            r.body
+        );
+        assert_eq!(r.body["error"]["message"], NOT_WEB, "{member}: {address}");
+        assert_eq!(r.body["redirect_url"], Value::Null);
+    }
+}
+
 #[tokio::test]
 async fn rights_decide_who_sees_and_changes_servers_and_tools() {
     let s = TestServices::start().await;

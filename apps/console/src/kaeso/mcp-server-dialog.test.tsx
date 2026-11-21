@@ -332,6 +332,38 @@ describe("Add MCP server", () => {
     expect(requests("POST", `${SERVER}/connection`)).toHaveLength(2);
   });
 
+  it.each([
+    ["in a new tab", true],
+    ["without a tab", false],
+  ])("opens no sign-in address that isn't a web page %s", async (_how, withTab) => {
+    const tab = withTab ? newTab() : null;
+    if (!withTab) vi.spyOn(window, "open").mockReturnValue(null);
+    on(
+      "POST",
+      PROBE,
+      probeView({
+        sign_in: { method: "oauth", issuer: "https://auth.x.example", client_metadata_documents: true, registration: false, scopes: [] },
+        tools: null,
+      }),
+    );
+    const made = mcpServer({ id: "mcp_new", name: "mock-x", connection: null });
+    on("POST", SERVERS, made);
+    on("POST", `${SERVER}/connection`, { redirect_url: "kaeso-app://sign-in", server: made });
+    on("GET", SERVER, made);
+    const { user, dialog } = await open();
+    await address(user, dialog);
+    await within(dialog).findByText("Listed after the sign-in");
+    await next(user, dialog);
+    await user.click(await within(dialog).findByRole("button", { name: "Sign in to mock-x" }));
+    expect(await notifications().findByText("The sign-in address can't be opened; check the server.")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("link", { name: /Open the sign-in page/ })).not.toBeInTheDocument();
+    expect(within(dialog).queryByText("Waiting for the sign-in in the new tab…")).not.toBeInTheDocument();
+    if (tab) {
+      expect(tab.location.href).toBe("");
+      expect(tab.close).toHaveBeenCalled();
+    }
+  });
+
   it("adds a server each person signs in to, without choosing tools", async () => {
     on(
       "POST",

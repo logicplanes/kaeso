@@ -33,6 +33,7 @@ pub struct OAuth {
     pub iss: bool,
     pub expires_in: i64,
     pub label: Option<String>,
+    pub metadata: Vec<(&'static str, String)>,
 }
 
 impl Default for OAuth {
@@ -44,6 +45,7 @@ impl Default for OAuth {
             iss: true,
             expires_in: 3600,
             label: Some("kaesoapp".to_owned()),
+            metadata: Vec::new(),
         }
     }
 }
@@ -342,6 +344,9 @@ async fn server_metadata(State(inner): State<Arc<Inner>>) -> Response {
     });
     if o.dcr {
         meta["registration_endpoint"] = json!(format!("{b}/register"));
+    }
+    for (key, value) in &o.metadata {
+        meta[*key] = json!(value);
     }
     axum::Json(meta).into_response()
 }
