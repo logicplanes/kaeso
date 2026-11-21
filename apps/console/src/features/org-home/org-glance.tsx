@@ -31,6 +31,7 @@ import { useProviders } from "~/kaeso/providers";
 import { useOrgMoney } from "~/kaeso/org-money";
 import { byBucket } from "~/kaeso/usage-panels";
 import { orgPath, projectPath } from "~/shell/pages";
+import { usePhone } from "~/shell/use-phone";
 
 const REFRESH = 30_000;
 const PROJECT_ROWS = 6;
@@ -67,6 +68,7 @@ export function CostByProject({ org }: { org: string }) {
 function ProjectsCell({ org }: { org: string }) {
   const rights = useOrgRights(org);
   const navigate = useNavigate();
+  const phone = usePhone();
   const canUsage = rights.has("usage.org.view");
   const today = utcDay(new Date());
   const from = shiftDay(today, -13);
@@ -96,17 +98,22 @@ function ProjectsCell({ org }: { org: string }) {
     ),
     ...(canUsage
       ? {
-          secondary: (
-            <span className="hidden w-120 items-center sm:flex">
-              {daily[i]?.data && (
-                <Sparkline
-                  values={days.map((d) => d.row?.requests ?? 0)}
-                  fluid
-                  aria-label={t("orgHome.projectTrend", "{project}: requests per day, the last 14 days", { project: p.name })}
-                />
-              )}
-            </span>
-          ),
+          // A phone has no room for the trend: leaving it out gives its column to the project's name.
+          ...(phone
+            ? {}
+            : {
+                secondary: (
+                  <span className="flex w-120 items-center">
+                    {daily[i]?.data && (
+                      <Sparkline
+                        values={days.map((d) => d.row?.requests ?? 0)}
+                        fluid
+                        aria-label={t("orgHome.projectTrend", "{project}: requests per day, the last 14 days", { project: p.name })}
+                      />
+                    )}
+                  </span>
+                ),
+              }),
           value: formatNumber(requests),
         }
       : {}),
@@ -176,7 +183,8 @@ function ProvidersCell({ org }: { org: string }) {
               <ProviderBadge provider={k.provider} name={providers.name(k.provider)} size="sm" />
               <span className="min-w-0 truncate">{providers.name(k.provider)}</span>
               {k.name && (
-                <Text variant="small" tone="tertiary" truncate>
+                // From no width at all, the key's name gives way before the provider's.
+                <Text variant="small" tone="tertiary" truncate className="flex-1">
                   {k.name}
                 </Text>
               )}

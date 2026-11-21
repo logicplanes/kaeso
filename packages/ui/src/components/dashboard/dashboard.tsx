@@ -78,22 +78,30 @@ export const DashboardCell = forwardRef<
   return (
     <section ref={ref} className={cn("flex min-w-0 flex-col bg-raised px-8 pt-16 pb-20", className)}>
       {(title || actions) && (
-        <header className={cn("flex h-24 min-w-0 items-center justify-between gap-12", actions ? "pr-0" : "pr-12", href ? "pl-8" : "pl-12")}>
+        // Below lg a cell has the row to itself, so a long title wraps; in the grid it stays one line, so neighbours line up.
+        <header className={cn("flex min-w-0 items-start justify-between gap-12 lg:h-24 lg:items-center", actions ? "pr-0" : "pr-12", href ? "pl-8" : "pl-12")}>
           {title &&
             (href ? (
               <Heading className="min-w-0">
                 <Link
                   href={href}
-                  className="group relative inline-flex h-24 max-w-full items-center gap-2 rounded-cell px-4 text-small font-medium text-fg-secondary transition-control tap-target hover:text-fg focus-ring"
+                  className="group relative inline-flex max-w-full items-center gap-2 rounded-cell px-4 py-3 text-small font-medium text-fg-secondary transition-control tap-target hover:text-fg focus-ring lg:h-24 lg:py-0"
                 >
-                  <span className="truncate">{title}</span>
-                  <Icon icon={icons.chevronRight} size="xs" className="shrink-0 transition-control group-hover:translate-x-1" />
+                  <span className="min-w-0 wrap-break-word lg:truncate">
+                    {title}
+                    <Icon
+                      icon={icons.chevronRight}
+                      size="xs"
+                      className="ml-2 inline-block align-middle transition-control group-hover:translate-x-1 lg:hidden"
+                    />
+                  </span>
+                  <Icon icon={icons.chevronRight} size="xs" className="hidden shrink-0 transition-control group-hover:translate-x-1 lg:block" />
                 </Link>
               </Heading>
             ) : (
-              <Heading className="truncate text-small font-medium text-fg-secondary">{title}</Heading>
+              <Heading className="min-w-0 py-3 text-small font-medium wrap-break-word text-fg-secondary lg:truncate lg:py-0">{title}</Heading>
             ))}
-          {actions && <div className="flex shrink-0 items-center gap-4">{actions}</div>}
+          {actions && <div className="flex h-24 shrink-0 items-center gap-4">{actions}</div>}
         </header>
       )}
       <div className={cn("flex min-w-0 flex-1 flex-col", (title || actions) && "mt-6")}>{children}</div>
