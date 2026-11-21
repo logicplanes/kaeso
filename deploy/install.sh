@@ -74,7 +74,7 @@ main() {
     if [ "$update" = yes ]; then
       update_compose
     else
-      say "Kaeso is installed in $here; starting it"
+      unfinished_update || say "Kaeso is installed in $here; starting it"
     fi
   else
     fresh=yes
@@ -517,8 +517,12 @@ newer() {
     BEGIN { exit cmp(a, b) == 1 ? 0 : 1 }'
 }
 
+gateway_version() {
+  sed -n 's#.*ghcr\.io/logicplanes/kaeso-gateway:\([0-9A-Za-z.+-]*\).*#\1#p' | head -n 1
+}
+
 running_version() {
-  sed -n 's#.*ghcr\.io/logicplanes/kaeso-gateway:\([0-9A-Za-z.+-]*\).*#\1#p' compose.yaml | head -n 1
+  gateway_version <compose.yaml
 }
 
 # The new compose.yaml only replaces the install's once its hash matches the release's manifest. It is written in place,
@@ -547,7 +551,7 @@ update_compose() {
   running="$(running_version)"
   if [ "$running" = "$target" ]; then
     rm -f compose.yaml.part
-    say "Kaeso $target is installed in $here already; starting it"
+    unfinished_update || say "Kaeso $target is installed in $here already; starting it"
     return 0
   fi
   if [ -n "$running" ] && newer "$running" "$target"; then
@@ -564,14 +568,32 @@ update_compose() {
   say "Updating Kaeso in $here from ${running:-its release} to $target"
 }
 
-# The new gateway checks the install's settings before anything stops: once it has started on a release
-# that migrates the databases, the previous release can't run on them. A gateway without the check
-# answers with a usage error (2) and goes on as before.
+# A run that stopped after it wrote the new compose.yaml, such as on a failed image pull, left the gateway
+# on the release compose.yaml.previous names. Starting now switches releases as that update would have.
+unfinished_update() {
+  [ -f compose.yaml.previous ] || return 1
+  container="$(docker compose ps -a -q gateway </dev/null 2>/dev/null | head -n 1)" || return 1
+  [ -n "$container" ] || return 1
+  started="$(docker inspect --format '{{.Config.Image}}' "$container" </dev/null 2>/dev/null | gateway_version)" || return 1
+  target="$(running_version)"
+  [ -n "$started" ] && [ -n "$target" ] && [ "$started" != "$target" ] && [ "$started" = "$(gateway_version <compose.yaml.previous)" ] || return 1
+  updated="$started"
+  earlier=
+  say "Updating Kaeso in $here from $started to $target"
+}
+
+# The gateway checks the install's settings before anything stops: once it has started on a release
+# that migrates the databases, the previous release can't run on them, and a gateway that refuses
+# them never starts. A gateway without the check answers with a usage error (2) and goes on as before.
 check_settings() {
-  [ -n "$updated" ] || return 0
+  [ -z "$fresh" ] || return 0
   status=0
   checked="$(docker compose run --rm --no-deps -T gateway config check </dev/null 2>&1)" || status=$?
   case $status in 0 | 2) return 0 ;; esac
+  if [ -z "$updated" ]; then
+    printf '%s\n' "$checked" | tail -n 5 >&2
+    fail "Kaeso refused this install's settings, so the installer doesn't start it. Correct them in .env, compose.override.yaml or the configuration file, then run the installer again."
+  fi
   cat compose.yaml.previous >compose.yaml
   if [ -n "${earlier:-}" ]; then
     printf '%s' "${earlier%x}" >compose.yaml.previous
