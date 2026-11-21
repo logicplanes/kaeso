@@ -110,6 +110,86 @@ describe("TimeseriesChart", () => {
   });
 });
 
+describe("charts on a touch screen", () => {
+  const at = (clientX: number, clientY = 100, pointerType = "touch") => ({ pointerType, clientX, clientY });
+  const tap = (el: Element, clientX = 320) => {
+    fireEvent.pointerDown(el, at(clientX));
+    fireEvent.pointerUp(el, at(clientX));
+    fireEvent.pointerLeave(el, at(clientX));
+  };
+  const plot = (name: string) => screen.getByRole("group", { name });
+  const tip = (name: string) => plot(name).querySelector("div[role=presentation]");
+
+  it("leaves vertical scrolling and zooming to the page and takes sideways slides", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    expect(plot("Requests")).toHaveClass("touch-pan-y", "touch-pinch-zoom");
+  });
+
+  it("shows a tapped point until a tap outside the chart", () => {
+    render(
+      <>
+        <TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />
+        <p>Elsewhere</p>
+      </>,
+    );
+    const hit = plot("Requests").querySelector("rect[fill=transparent]")!;
+    fireEvent.pointerDown(hit, at(320));
+    expect(tip("Requests")).toBeNull();
+    fireEvent.pointerUp(hit, at(320));
+    fireEvent.pointerLeave(hit, at(320));
+    expect(tip("Requests")).toHaveTextContent("gpt-5");
+    tap(hit, 40);
+    expect(tip("Requests")).not.toBeNull();
+    fireEvent.pointerDown(screen.getByText("Elsewhere"), { pointerType: "touch" });
+    expect(tip("Requests")).toBeNull();
+  });
+
+  it("shows nothing for a touch that scrolls the page", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    const hit = plot("Requests").querySelector("rect[fill=transparent]")!;
+    fireEvent.pointerDown(hit, at(320, 100));
+    fireEvent.pointerMove(hit, at(322, 140));
+    expect(tip("Requests")).toBeNull();
+    fireEvent.pointerCancel(hit, at(322, 140));
+    expect(tip("Requests")).toBeNull();
+  });
+
+  it("follows a finger that slides sideways, and a mouse only while it hovers", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    const hit = plot("Requests").querySelector("rect[fill=transparent]")!;
+    const heading = () => tip("Requests")?.firstElementChild?.textContent;
+    fireEvent.pointerDown(hit, at(20));
+    fireEvent.pointerMove(hit, at(60));
+    const first = heading();
+    expect(first).toBeTruthy();
+    fireEvent.pointerMove(hit, at(600, 110));
+    expect(heading()).not.toBe(first);
+    fireEvent.pointerUp(hit, at(600, 110));
+    fireEvent.pointerDown(document.body, { pointerType: "touch" });
+    expect(heading()).toBeUndefined();
+    fireEvent.pointerMove(hit, at(320, 100, "mouse"));
+    expect(heading()).toBeTruthy();
+    fireEvent.pointerLeave(hit, at(320, 100, "mouse"));
+    expect(heading()).toBeUndefined();
+  });
+
+  it("treats a pressed pen like a finger", () => {
+    render(<TimeseriesChart aria-label="Requests" series={series(hours(24))} hideLegend />);
+    const hit = plot("Requests").querySelector("rect[fill=transparent]")!;
+    fireEvent.pointerDown(hit, { ...at(320, 100, "pen"), buttons: 1 });
+    fireEvent.pointerUp(hit, at(320, 100, "pen"));
+    fireEvent.pointerLeave(hit, at(320, 100, "pen"));
+    expect(tip("Requests")).not.toBeNull();
+  });
+
+  it("shows a tapped bar's category", () => {
+    render(<BarChart aria-label="Tokens" categories={["Mon", "Tue"]} series={[{ id: "input", label: "Input", values: [10, 20] }]} />);
+    expect(plot("Tokens")).toHaveClass("touch-pan-y");
+    tap(plot("Tokens").querySelectorAll("rect[fill=transparent]")[1]!);
+    expect(tip("Tokens")).toHaveTextContent("Tue");
+  });
+});
+
 describe("BarChart", () => {
   const categories = ["Mon", "Tue", "Wed", "Thu"];
   const bars = [

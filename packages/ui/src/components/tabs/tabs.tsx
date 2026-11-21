@@ -79,7 +79,7 @@ const List = forwardRef<HTMLDivElement, TabsListProps>(function TabsList({ class
     <BaseTabs.List
       ref={refs}
       className={cn(
-        "relative flex min-w-0 items-center overflow-x-auto scroll-px-16 scrollbar-none scroll-fade-x",
+        "relative flex min-w-0 items-center overflow-x-auto overflow-y-hidden scroll-px-16 scrollbar-none scroll-fade-x",
         variant === "underline" ? "gap-24 hairline-b-strong" : "gap-4",
         className,
       )}
