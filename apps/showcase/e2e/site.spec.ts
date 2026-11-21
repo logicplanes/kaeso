@@ -1,4 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
+import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +9,8 @@ import { componentPages, open, overviewPages } from "./support";
 const SITE = "https://ui.kaeso.app";
 const dist = fileURLToPath(new URL("../dist/", import.meta.url));
 const { version } = JSON.parse(readFileSync(fileURLToPath(new URL("../../../package.json", import.meta.url)), "utf8")) as { version: string };
-const TAG = `v${version}`;
+// The commit the site was built from: a pre-release build has components that no release tag contains yet.
+const COMMIT = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const LANGS = ["en", "de", "zh-CN"] as const;
 const at = (lang: (typeof LANGS)[number], path: string) => (lang === "en" ? path : path === "/" ? `/${lang}` : `/${lang}${path}`);
 
@@ -21,22 +23,22 @@ function builtFiles(dir: string): string[] {
 
 test.describe("links to the source", () => {
   for (const lang of LANGS) {
-    test(`View source opens the component at the release tag in ${lang}`, async ({ request }) => {
+    test(`View source opens the component at the build's commit in ${lang}`, async ({ request }) => {
       const html = await (await request.get(at(lang, "/components/select"))).text();
       const links = [...html.matchAll(/href="(https:\/\/github\.com\/[^"]+)"/g)].map((m) => m[1]);
-      expect(links).toContain(`https://github.com/logicplanes/kaeso/tree/${TAG}/packages/ui/src/components/select`);
+      expect(links).toContain(`https://github.com/logicplanes/kaeso/tree/${COMMIT}/packages/ui/src/components/select`);
     });
   }
 
-  test("every link into the repository names the release tag, never a branch", () => {
+  test("every link into the repository names the build's commit, never a branch or a tag", () => {
     const pinned = /https:\/\/(?:github\.com\/logicplanes\/kaeso\/(?:tree|blob|raw)|raw\.githubusercontent\.com\/logicplanes\/kaeso)\/([^/"\s)]+)/g;
     const refs = new Set<string>();
     for (const file of builtFiles(dist)) for (const m of readFileSync(file, "utf8").matchAll(pinned)) refs.add(m[1] ?? "");
-    expect([...refs]).toEqual([TAG]);
+    expect([...refs]).toEqual([COMMIT]);
   });
 
-  test("llms.txt points at the release tag", async ({ request }) => {
-    expect(await (await request.get("/llms.txt")).text()).toContain(`- Source: https://github.com/logicplanes/kaeso/tree/${TAG}/packages/ui\n`);
+  test("llms.txt points at the build's commit", async ({ request }) => {
+    expect(await (await request.get("/llms.txt")).text()).toContain(`- Source: https://github.com/logicplanes/kaeso/tree/${COMMIT}/packages/ui\n`);
   });
 });
 
@@ -147,13 +149,39 @@ test.describe("for search engines and link previews", () => {
   });
 });
 
+test.describe("search beyond names", () => {
+  const cases = {
+    en: { example: ["destructive", "Example: Danger"], description: ["exactly one per view", "Description"], prop: ["pressed", "Prop: pressed"] },
+    de: { example: ["zerstörerischen", "Beispiel: Gefahr"], description: ["genau einer pro Ansicht", "Beschreibung"], prop: ["pressed", "Prop: pressed"] },
+    "zh-CN": { example: ["破坏性", "示例：危险"], description: ["墨色主按钮", "描述"], prop: ["pressed", "属性：pressed"] },
+  } as const;
+
+  for (const lang of LANGS) {
+    test(`finds a component by an example, its description and a prop, and says why, in ${lang}`, async ({ page }) => {
+      const c = cases[lang];
+      await open(page, at(lang, "/installation"));
+      await page.keyboard.press("ControlOrMeta+k");
+      const dialog = page.getByRole("dialog");
+      const input = dialog.getByRole("combobox");
+      for (const [query, reason] of [c.example, c.description, c.prop]) {
+        await input.fill(query);
+        const option = dialog.getByRole("option", { name: /^Button\W/ });
+        await expect(option).toBeVisible();
+        await expect(option.getByText(reason)).toBeVisible();
+      }
+      await dialog.getByRole("option", { name: /^Button\W/ }).click();
+      await expect(page).toHaveURL(at(lang, "/components/button"));
+    });
+  }
+});
+
 test.describe("search on a phone", () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
 
   const words = {
-    en: { search: "Search", nav: "Open navigation", placeholder: "Search pages, components and props" },
-    de: { search: "Suchen", nav: "Navigation öffnen", placeholder: "Seiten, Komponenten und Props suchen" },
-    "zh-CN": { search: "搜索", nav: "打开导航", placeholder: "搜索页面、组件和属性" },
+    en: { search: "Search", nav: "Open navigation", placeholder: "Search pages, components, props and examples" },
+    de: { search: "Suchen", nav: "Navigation öffnen", placeholder: "Seiten, Komponenten, Props und Beispiele suchen" },
+    "zh-CN": { search: "搜索", nav: "打开导航", placeholder: "搜索页面、组件、属性和示例" },
   } as const;
 
   for (const lang of LANGS) {
