@@ -780,7 +780,7 @@ async fn an_elevenlabs_app_keeps_its_image_generation_id_and_kaeso_bills_it_once
 }
 
 #[tokio::test]
-async fn a_finished_image_generation_is_logged_with_the_tags_and_client_of_the_request_that_started_it()
+async fn a_finished_image_generation_is_logged_with_the_tags_client_and_key_of_the_request_that_started_it()
  {
     let env = env().await;
     with_elevenlabs(&env).await;
@@ -799,15 +799,35 @@ async fn a_finished_image_generation_is_logged_with_the_tags_and_client_of_the_r
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     let id = r.json()["id"].as_str().unwrap().to_owned();
+    let start = outcome(&env).await;
     let polled = [("kaeso-tags", "poller"), ("user-agent", "Watcher/9")];
+    let path = format!("/v1/flows/image/{id}");
+    let mut last = Value::Null;
     for _ in 0..3 {
-        let path = format!("/v1/flows/image/{id}");
-        flows_with(&env, "GET", &path, &env.key, None, &polled).await;
+        last = flows_with(&env, "GET", &path, &env.key, None, &polled)
+            .await
+            .json();
     }
+    assert_eq!(last["status"], "completed", "{last}");
     let billed = finished_generations(&env).await;
     assert_eq!(billed.len(), 1);
     assert_eq!(billed[0].tags, ["launch", "eval-7"]);
     assert_eq!(billed[0].user_agent.as_deref(), Some("Studio/2.1"));
+    assert!(start.credential_id.is_some());
+    assert_eq!(
+        billed[0].credential_id, start.credential_id,
+        "the key that paid"
+    );
+    let kept: Vec<(Vec<String>, Option<String>)> =
+        sqlx::query_as("SELECT tags, user_agent FROM image_generations")
+            .fetch_all(&env.app.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(
+        kept,
+        [(Vec::new(), None)],
+        "nothing of the request stays once it is billed"
+    );
 }
 
 #[tokio::test]

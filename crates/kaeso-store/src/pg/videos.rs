@@ -208,7 +208,8 @@ pub async fn account(
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query_scalar!(
         "UPDATE videos SET status = $3, progress = $4, error = $5, completed_at = $6, \
-         expires_at = COALESCE($7, expires_at), units = $8, cost = $9, accounted_at = $10 \
+         expires_at = COALESCE($7, expires_at), units = $8, cost = $9, accounted_at = $10, \
+         tags = '{}', user_agent = NULL, alias = NULL, line = NULL \
          WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL RETURNING id",
         org_id,
         id,

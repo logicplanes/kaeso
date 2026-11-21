@@ -201,7 +201,8 @@ pub async fn account(
     at: OffsetDateTime,
 ) -> Result<bool, StoreError> {
     Ok(sqlx::query_scalar!(
-        "UPDATE image_generations SET units = $3, cost = $4, accounted_at = $5 \
+        "UPDATE image_generations SET units = $3, cost = $4, accounted_at = $5, tags = '{}', \
+         user_agent = NULL, alias = NULL, line = NULL \
          WHERE org_id = $1 AND id = $2 AND accounted_at IS NULL \
            AND status IN ('completed', 'failed') RETURNING id",
         org_id,

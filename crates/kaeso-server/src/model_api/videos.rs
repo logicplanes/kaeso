@@ -1071,6 +1071,7 @@ async fn record_completion(
     o.user_agent.clone_from(&row.user_agent);
     o.alias.clone_from(&row.alias);
     o.line.clone_from(&row.line);
+    o.credential_id = Some(row.credential_id);
     o.catalogue_model_id = row.catalogue_model_id;
     o.model_id = Some(row.upstream_model.clone());
     o.response_model = Some(if job.model.is_empty() {
