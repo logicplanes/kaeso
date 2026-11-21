@@ -35,6 +35,8 @@ def test_the_chart_is_attested_with_docker_credentials_and_pulled_without_any():
     pull = chart.split("name: Pull the chart without signing in", 1)[1]
     assert "login" not in pull
     assert pull.index('export DOCKER_CONFIG="$RUNNER_TEMP/anonymous-docker"') < pull.index("helm pull")
+    # helm pull writes into --destination but doesn't create it.
+    assert pull.index('mkdir -p "$RUNNER_TEMP/pulled"') < pull.index('--destination "$RUNNER_TEMP/pulled"')
     assert "echo '{}' > \"$DOCKER_CONFIG/config.json\"" in pull
     assert '--registry-config "$RUNNER_TEMP/anonymous-helm.json"' in pull
     assert re.search(r"::error::ghcr\.io refused an anonymous pull .* Make the package public", pull)

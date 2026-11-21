@@ -702,6 +702,7 @@ jobs:
           mkdir -p "$DOCKER_CONFIG"
           echo '{}' > "$DOCKER_CONFIG/config.json"
           echo '{}' > "$RUNNER_TEMP/anonymous-helm.json"
+          mkdir -p "$RUNNER_TEMP/pulled"
           if ! out="$(helm pull "oci://$CHART" --version "$VERSION" --registry-config "$RUNNER_TEMP/anonymous-helm.json" --destination "$RUNNER_TEMP/pulled" 2>&1)"; then
             echo "::error::ghcr.io refused an anonymous pull of oci://$CHART $VERSION, so clusters can't install it: ${out//$'\n'/ }. Make the package public under https://github.com/orgs/logicplanes/packages/container/charts%2Fkaeso/settings, Danger Zone, Change visibility, then re-run this job."
             exit 1
