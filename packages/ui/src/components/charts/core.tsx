@@ -7,6 +7,7 @@ import { Button } from "../button/button.js";
 import { SwapText } from "../swap-text/swap-text.js";
 import { Table } from "../table/table.js";
 
+import { tabularLabel } from "./marks.js";
 import { ChartTooltip, Swatch, useSize, type TooltipRow } from "./tooltip.js";
 
 export { ChartTooltip, Swatch, useSize };
@@ -465,7 +466,11 @@ export const AXIS = {
   grid: { stroke: "var(--k-line)", strokeWidth: 1 },
   baseline: { stroke: "var(--k-line-strong)", strokeWidth: 1 },
   label: { fill: "var(--k-text-tertiary)", fontSize: 12, fontWeight: 500, style: { fontVariantNumeric: "tabular-nums" as const } },
+  name: { fill: "var(--k-text-tertiary)", fontSize: 12, fontWeight: 500 },
 };
+
+/** The axis style for a category label: proportional figures for a hyphenated name, tabular ones for everything else. */
+export const axisText = (label: string) => (tabularLabel(label) ? AXIS.label : AXIS.name);
 
 export const KAESO_CHARTS_VARIANTS = {
   chrome: { default: { classes: "", description: "Solid 1px hairline grid, so only data is ever dashed; tertiary 12px labels, a strong baseline; no frame" } },

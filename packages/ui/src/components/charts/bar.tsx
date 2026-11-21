@@ -7,6 +7,7 @@ import { useUiText } from "../../i18n/context.js";
 import { useFormatters } from "../../i18n/formatters.js";
 import {
   AXIS,
+  axisText,
   axisLabelIndexes,
   type AxisDate,
   ChartFrame,
@@ -438,7 +439,7 @@ export const BarChart = forwardRef<HTMLDivElement, BarChartProps>(function BarCh
                 {!horizontal &&
                   categories.map((c, ci) =>
                     labelled.has(ci) ? (
-                      <text key={c} x={(band(c) ?? 0) + band.bandwidth() / 2} y={h + 20} textAnchor="middle" {...AXIS.label}>
+                      <text key={c} x={(band(c) ?? 0) + band.bandwidth() / 2} y={h + 20} textAnchor="middle" {...axisText(axisLabels?.[ci] ?? c)}>
                         {axisLabels?.[ci] ?? c}
                       </text>
                     ) : null,
