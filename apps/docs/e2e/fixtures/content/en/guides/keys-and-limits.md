@@ -63,6 +63,15 @@ import OpenAI from "openai";
 export const client = new OpenAI({ baseURL: "https://kaeso.example.com/v1", apiKey: process.env.KAESO_KEY });
 ```
 
+A call takes its options after the request:
+
+```ts
+const reply = await client.chat.completions.create(
+  request,
+  { timeout: 30_000 },
+);
+```
+
 ## Limits
 
 ```mermaid
