@@ -23,7 +23,7 @@ import { previousPeriod } from "~/format/period";
 import { columnWidth } from "~/format/text-width";
 import { t } from "~/i18n";
 import { totalTokens } from "~/kaeso/tokens";
-import { costUnknown, costWidth, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
+import { costUnknown, costWidth, PHONE_NAME_MIN_WIDTH, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
 import { projectPath } from "~/shell/pages";
 import { usePhone } from "~/shell/use-phone";
 import type { Overview } from "./data";
@@ -190,7 +190,7 @@ export function DimensionView({ o, dim }: { o: Overview; dim: Dimension }) {
   };
   const columns = [
     col.custom(
-      { id: "name", header: dimensionTitle(dim), size: 220, minWidth: 140, priority: 1, grow: true },
+      { id: "name", header: dimensionTitle(dim), size: 220, minWidth: phone ? PHONE_NAME_MIN_WIDTH : 140, priority: 1, grow: true },
       (e: Entity) => e.name,
       (_v, e) => label(e),
     ),
