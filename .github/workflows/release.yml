@@ -684,6 +684,12 @@ jobs:
           fi
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
           echo "Published \`oci://$CHART\` $VERSION ($digest)." >> "$GITHUB_STEP_SUMMARY"
+      # The attestation goes to the registry with Docker's credentials; Helm's login above isn't one.
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
         with:
           subject-name: ${{ env.CHART }}
@@ -692,8 +698,11 @@ jobs:
       - name: Pull the chart without signing in
         run: |
           set -euo pipefail
-          helm registry logout ghcr.io || true
-          if ! out="$(helm pull "oci://$CHART" --version "$VERSION" --destination "$RUNNER_TEMP/pulled" 2>&1)"; then
+          export DOCKER_CONFIG="$RUNNER_TEMP/anonymous-docker"
+          mkdir -p "$DOCKER_CONFIG"
+          echo '{}' > "$DOCKER_CONFIG/config.json"
+          echo '{}' > "$RUNNER_TEMP/anonymous-helm.json"
+          if ! out="$(helm pull "oci://$CHART" --version "$VERSION" --registry-config "$RUNNER_TEMP/anonymous-helm.json" --destination "$RUNNER_TEMP/pulled" 2>&1)"; then
             echo "::error::ghcr.io refused an anonymous pull of oci://$CHART $VERSION, so clusters can't install it: ${out//$'\n'/ }. Make the package public under https://github.com/orgs/logicplanes/packages/container/charts%2Fkaeso/settings, Danger Zone, Change visibility, then re-run this job."
             exit 1
           fi

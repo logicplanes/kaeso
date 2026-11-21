@@ -27,6 +27,19 @@ def test_a_release_pulls_every_image_for_both_platforms_without_signing_in():
     assert 'exit "$failed"' in pull
 
 
+def test_the_chart_is_attested_with_docker_credentials_and_pulled_without_any():
+    chart = job("chart")
+    login = chart.index("uses: docker/login-action@")
+    assert chart.index("helm push") < login < chart.index("uses: actions/attest-build-provenance@")
+    assert re.search(r"uses: docker/login-action@\w+\n        with:\n          registry: ghcr.io\n", chart)
+    pull = chart.split("name: Pull the chart without signing in", 1)[1]
+    assert "login" not in pull
+    assert pull.index('export DOCKER_CONFIG="$RUNNER_TEMP/anonymous-docker"') < pull.index("helm pull")
+    assert "echo '{}' > \"$DOCKER_CONFIG/config.json\"" in pull
+    assert '--registry-config "$RUNNER_TEMP/anonymous-helm.json"' in pull
+    assert re.search(r"::error::ghcr\.io refused an anonymous pull .* Make the package public", pull)
+
+
 def test_the_github_release_waits_until_anyone_can_pull_the_images():
     assert re.search(r"^    needs: \[[^\]]*\bpublic-images\b[^\]]*\]$", job("github-release"), re.M)
 
