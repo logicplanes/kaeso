@@ -52,6 +52,13 @@ describe("chart helpers", () => {
     expect(readableTicks(scaleLinear().domain([0, 1]).nice(4), whole)).toEqual([0, 1]);
     expect(readableTicks(scaleLinear().domain([0, 400]).nice(4), whole)).toEqual([0, 100, 200, 300, 400]);
   });
+  it("spaces value ticks so a short chart's labels don't touch", () => {
+    const whole = (v: number) => String(Math.round(v));
+    const axis = scaleLinear().domain([0, 120]).nice(4);
+    expect(readableTicks(axis, whole)).toEqual([0, 20, 40, 60, 80, 100, 120]);
+    expect(readableTicks(axis, whole, 4, 96)).toEqual([0, 50, 100]);
+    expect(readableTicks(axis, whole, 4, 244)).toEqual([0, 20, 40, 60, 80, 100, 120]);
+  });
   it("drops zero cents from axis labels", () => {
     const label = tickLabel((v) => `$${v.toFixed(2)}`);
     expect(label(20)).toBe("$20");

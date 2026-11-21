@@ -52,7 +52,7 @@ const Root = forwardRef<HTMLTableElement, TableProps>(function Table({ density =
       <div
         ref={scroller}
         {...(overflows ? { tabIndex: 0, role: "group", "aria-label": t("table.scrolls", "Table, scrolls sideways") } : {})}
-        className="min-w-0 overflow-x-auto scrollbar-quiet scroll-fade-x focus-ring-inset"
+        className="min-w-0 overflow-x-auto overscroll-x-contain scrollbar-quiet scroll-fade-x focus-ring-inset"
       >
         <table ref={ref} className={cn("w-full border-collapse text-body", className)} {...props} />
       </div>

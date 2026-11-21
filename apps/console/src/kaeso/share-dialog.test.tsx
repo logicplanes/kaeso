@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ALL_ORG_RIGHTS, ORG, USER, signedIn, withRights } from "~/test/fixtures";
 import { hoverReason } from "~/test/fixtures/org";
 import { projectData, projectPath } from "~/test/fixtures/project";
@@ -58,6 +58,29 @@ const created = (body: Record<string, unknown>) => ({
 });
 
 describe("sharing a page as a read-only link", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("leaves the analytics header only Share's icon on a phone, and it still opens the dialog", async () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query === "(max-width: 639px)",
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+    }));
+    signedIn();
+    projectData();
+    usageApi();
+    policy("anyone", null);
+    const { user } = await renderApp(projectPath(`analytics?${PERIOD}`));
+
+    const share = await screen.findByRole("button", { name: "Share" });
+    expect(share).not.toHaveTextContent("Share");
+    await user.click(share);
+    expect(await screen.findByRole("dialog", { name: "Share a read-only link" })).toBeInTheDocument();
+  });
+
   it("makes a live link to the project's analytics and shows its address once", async () => {
     signedIn();
     projectData();

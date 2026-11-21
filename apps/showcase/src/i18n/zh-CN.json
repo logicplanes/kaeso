@@ -1258,7 +1258,7 @@
   "The figure's background: a flat plate like a code block's, or none, with the caption under a hairline.": "图片的背景：像代码块一样的平面底板，或者没有背景；图注位于一条细线下方。",
   "The page, in the content panel.": "页面，位于内容面板中。",
   "The page's title (17/600), alone: no label above it.": "页面标题（17/600），单独显示：上方没有标签。",
-  "Underlined in text (`inline`), secondary until hovered in footers and lists (`quiet`), on its own line in full text that steps back on hover (`standalone`), inside a heading that links to itself (`heading`), or as a page to read next on a cut plate, its name strong and a sentence under it (`card`).": "文本中带下划线（`inline`）；在页脚和列表中为次要颜色，悬停时变深（`quiet`）；单独成行、使用完整文字颜色，悬停时淡出（`standalone`）；在链接到自身的标题中（`heading`）；或作为下一篇阅读的页面，放在小圆角底板上，名称醒目，下方一句说明（`card`）。",
+  "Underlined in text (`inline`) or on a line of its own under a form, with a touch target a finger can hit (`action`), secondary until hovered in footers and lists (`quiet`), on its own line in full text that steps back on hover (`standalone`), inside a heading that links to itself (`heading`), or as a page to read next on a cut plate, its name strong and a sentence under it (`card`).": "文本中带下划线（`inline`）；在表单下方单独成行、带下划线，触控区域足够手指点按（`action`）；在页脚和列表中为次要颜色，悬停时变深（`quiet`）；单独成行、使用完整文字颜色，悬停时淡出（`standalone`）；在链接到自身的标题中（`heading`）；或作为下一篇阅读的页面，放在小圆角底板上，名称醒目，下方一句说明（`card`）。",
   "What the number counts: \"Requests\", \"Cost\". A tile sets it at its foot.": "数字统计的内容：“请求”“费用”。磁贴将它放在底部。",
   "The console frame: one square ground, the sidebar beside the content behind a hairline, the content scrolling by itself.": "控制台框架：一整块方正的底面，侧边栏与内容之间以一条细线分隔，内容独立滚动。",
   "Segmented": "分段",

@@ -165,7 +165,7 @@ export const PickerTrigger = forwardRef<HTMLButtonElement, PickerTriggerProps>(f
         {...(descriptions ? { "aria-describedby": descriptions } : {})}
         {...(invalid ? { "aria-invalid": true } : {})}
         className={cn(
-          "group/picker inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control disabled:cursor-not-allowed",
+          "group/picker relative inline-flex min-w-0 cursor-pointer items-center justify-between rounded-pill font-medium whitespace-nowrap transition-control tap-target disabled:cursor-not-allowed",
           KAESO_SELECT_VARIANTS.size[size].classes,
           KAESO_SELECT_VARIANTS.appearance[appearance].classes,
           invalid && appearance !== "default" && "ring-invalid",

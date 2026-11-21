@@ -20,7 +20,7 @@ function usage(by: Partial<Record<string, UsageRow[] | Response>> = {}): void {
   });
 }
 
-function onPhone() {
+function onPhone(width = 327) {
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(max-width: 639px)",
     media: query,
@@ -30,11 +30,11 @@ function onPhone() {
     removeListener() {},
   }));
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
-    width: 327,
+    width,
     height: 0,
     top: 0,
     left: 0,
-    right: 327,
+    right: width,
     bottom: 0,
     x: 0,
     y: 0,
@@ -114,7 +114,57 @@ describe("AnalyticsPage", () => {
     expect(bodyRows(table)[0]).toHaveTextContent("+3 unknown");
     const actions = screen.getByRole("button", { name: "Download CSV" }).parentElement;
     expect(actions).toHaveClass("max-w-full", "min-w-0", "flex-wrap");
-    expect(within(actions as HTMLElement).getByRole("radiogroup", { name: "Group by" })).toBeInTheDocument();
+    expect(within(actions as HTMLElement).getByRole("combobox", { name: "Group by" })).toBeInTheDocument();
+  });
+
+  it("groups from a menu on a phone, where six segments would scroll out of sight", async () => {
+    onPhone();
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({ day: [usageRow({ key: "2026-10-13" })], key: [usageRow({ key: "key_web", requests: 10 })] });
+    const { user, router } = await renderApp(projectPath(`analytics?${PERIOD}`));
+
+    await breakdown();
+    expect(screen.queryByRole("radiogroup", { name: "Group by" })).not.toBeInTheDocument();
+    const menu = screen.getByRole("combobox", { name: "Group by" });
+    expect(menu).toHaveTextContent("By day");
+    await user.click(menu);
+    await user.click(await screen.findByRole("option", { name: "By key" }));
+    await waitFor(() => expect(router.state.location.search).toMatchObject({ by: "key" }));
+    expect(await within(await breakdown()).findByRole("columnheader", { name: "Key" })).toBeInTheDocument();
+  });
+
+  it("keeps the requests on a 360px phone beside a cost with a second line", async () => {
+    onPhone(312);
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({
+      day: [usageRow({ key: "2026-10-13", requests: 12, cost: "2.5", unpriced: 3 })],
+      key: [usageRow({ key: "key_web", requests: 12, cost: "2.5", unpriced: 3 })],
+    });
+    await renderApp(projectPath(`analytics?${PERIOD}`));
+    const table = await breakdown();
+    await waitFor(() => expect(bodyRows(table)).toHaveLength(1));
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Day", "Requests", "Cost"]);
+  });
+
+  it("keeps the requests in the Keys view on a 360px phone beside a cost with a second line", async () => {
+    onPhone(312);
+    signedIn();
+    projectData({ models: [catalogueModel()] });
+    usage({ key: [usageRow({ key: "key_web", requests: 12, cost: "2.5", unpriced: 3 })] });
+    await renderApp(projectPath(`analytics/keys?${PERIOD}`));
+    const keys = await screen.findByRole("grid", { name: "Keys in the period" });
+    await waitFor(() => expect(bodyRows(keys)).toHaveLength(1));
+    expect(
+      within(keys)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent),
+    ).toEqual(["Keys", "Requests", "Cost"]);
   });
 
   it("breaks usage down by model with names from the catalogue", async () => {

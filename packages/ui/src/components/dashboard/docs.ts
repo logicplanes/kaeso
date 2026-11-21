@@ -69,7 +69,7 @@ export const docs = {
       items:
         'The rows: `id`, `label`, `value`, `secondary` (the share or a time), `change` against the previous period (a fraction with its `better` side, or a word such as "New"; on a phone it takes the place of `secondary`, so the label keeps its room) and `share` for the bar; leave `share` out for plain rows.',
       loading: "While the rows load: `rows` lines of their shape.",
-      onOpen: "Called with a row's id when it is chosen; without it, rows are plain text.",
+      onOpen: "Called with a row's id when it is chosen; without it, rows are plain text. Rows that open something grow to 44px on a touch screen.",
       rows: "How many lines the loading state shows.",
     },
   },

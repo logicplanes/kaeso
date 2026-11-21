@@ -6,6 +6,7 @@ import { useNeedsRight } from "~/auth/needs-right";
 import { useMembership, useOrgRights } from "~/auth/session";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { t } from "~/i18n";
+import { usePhone } from "~/shell/use-phone";
 
 const ShareDialog = lazy(() => import("./share-dialog"));
 
@@ -32,9 +33,10 @@ export function expiryLabel(d: number | typeof NEVER): string {
   return d === NEVER ? t("kaeso.share.never", "Never") : t("kaeso.share.afterDays", "After {count, plural, one {# day} other {# days}}", { count: d });
 }
 
-/** Opens the dialog that shares what the page shows as a read-only link. */
-export function ShareButton({ org, target }: { org: string; target: ShareTarget }) {
+/** Opens the dialog that shares what the page shows as a read-only link; `compact` leaves only its icon on a phone, for a crowded header. */
+export function ShareButton({ org, target, compact = false }: { org: string; target: ShareTarget; compact?: boolean | undefined }) {
   const [open, setOpen] = useState(false);
+  const phone = usePhone();
   const rights = useOrgRights(org);
   const needs = useNeedsRight(org);
   const policy = useQuery({ ...securityQuery(org), enabled: rights.has("usage.share") }).data?.shared_links;
@@ -48,9 +50,26 @@ export function ShareButton({ org, target }: { org: string; target: ShareTarget 
       : undefined;
   return (
     <>
-      <Button size="sm" leadingIcon={icons.alias} disabled={!!reason || !policy} {...(reason ? { disabledReason: reason } : {})} onClick={() => setOpen(true)}>
-        {t("kaeso.share.share", "Share")}
-      </Button>
+      {compact && phone ? (
+        <Button
+          size="sm"
+          icon={icons.alias}
+          aria-label={t("kaeso.share.share", "Share")}
+          disabled={!!reason || !policy}
+          {...(reason ? { disabledReason: reason } : {})}
+          onClick={() => setOpen(true)}
+        />
+      ) : (
+        <Button
+          size="sm"
+          leadingIcon={icons.alias}
+          disabled={!!reason || !policy}
+          {...(reason ? { disabledReason: reason } : {})}
+          onClick={() => setOpen(true)}
+        >
+          {t("kaeso.share.share", "Share")}
+        </Button>
+      )}
       <DialogScope open={open}>
         {open && policy && (
           <Suspense fallback={null}>
