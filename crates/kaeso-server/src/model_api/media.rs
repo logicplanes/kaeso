@@ -8,8 +8,7 @@ use kaeso_core::provider::AuthStyle;
 use kaeso_core::providers::ProviderRef;
 use kaeso_kpp::{
     AudioInput, Block, DecideRequest, DecisionInput, ImageRequest, ImageResponse, ImageSize,
-    RequestKind, Source, SpeechRequest, SpeechResponse, TranscriptionRequest,
-    TranscriptionResponse,
+    RequestKind, SpeechRequest, SpeechResponse, TranscriptionRequest, TranscriptionResponse,
 };
 use kaeso_kpp::{DialectId, KppError};
 use kaeso_upstream::{Call, Guard, Outgoing, ResponseBody, Timeouts};
@@ -130,20 +129,18 @@ pub(super) fn units_of_transcription(r: &TranscriptionRequest) -> MediaUnits {
     units
 }
 
-// Only the file's headers are read, never its audio; a file that states no length leaves the
-// length unknown, and the request goes ahead either way. Audio sent as a link or a file id is
-// never read, so only the provider's reply can say its length.
+// A file that states no length, or one too short for its size, leaves the length unknown, and the
+// request goes ahead either way.
 fn measure(units: &mut MediaUnits, audio: &AudioInput) {
-    let Source::Base64(b) = &audio.source else {
-        units.input_length_unknown = true;
-        return;
-    };
-    match kaeso_codecs::audio_length::audio_duration(&b.data) {
-        Some(length) => {
-            units.input_ms = u64::try_from(length.as_millis()).unwrap_or(u64::MAX).max(1);
+    match kaeso_core::cost::billed_audio_ms(audio) {
+        Some(ms) => {
+            units.input_ms = ms;
             units.measured = true;
         }
-        None => units.input_length_unknown = true,
+        None => {
+            units.input_length_unknown = true;
+            units.longest_input_ms = kaeso_core::cost::longest_audio_ms(audio);
+        }
     }
 }
 
@@ -160,6 +157,7 @@ pub(super) fn add_transcript(units: &mut MediaUnits, reply: &TranscriptionRespon
         units.input_ms = kaeso_core::assembler::seconds_to_ms(seconds);
         units.measured = false;
         units.input_length_unknown = false;
+        units.longest_input_ms = None;
     }
 }
 
@@ -353,7 +351,9 @@ pub(super) fn host_root(base: &Url) -> Url {
 
 #[cfg(test)]
 mod tests {
-    use kaeso_kpp::{GeneratedImage, ImageInput, ImageOperation, ImageQuality, ImageSettings};
+    use kaeso_kpp::{
+        GeneratedImage, ImageInput, ImageOperation, ImageQuality, ImageSettings, Source,
+    };
 
     use super::*;
 

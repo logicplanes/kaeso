@@ -356,6 +356,34 @@ fn wav(ms: u32) -> Vec<u8> {
 }
 
 #[tokio::test]
+async fn a_file_whose_length_is_too_short_for_its_size_has_an_unknown_cost() {
+    let env = env().await;
+    let clip = super::limits::m4a(100, 12_000);
+    let r = upload_file(
+        &env,
+        "/v1/audio/transcriptions",
+        &[("model", "whisper-1"), ("response_format", "srt")],
+        ("file", "a.m4a", "audio/mp4", &clip),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let o = outcome(&env).await;
+    let media = o.media.clone().unwrap();
+    assert_eq!(
+        (media.input_ms, media.longest_input_ms),
+        (0, Some(24_120)),
+        "a tenth of a second can't be 12,060 bytes; at most 24.12 seconds"
+    );
+    assert!(!kaeso_server::services::usage::cost_known(&o));
+    let (_, cost) = kaeso_server::services::usage::costed(&o);
+    assert_eq!(
+        cost,
+        rust_decimal::Decimal::ZERO,
+        "the logged cost stays unknown"
+    );
+}
+
+#[tokio::test]
 async fn audio_length_is_read_from_the_file_when_the_provider_reports_none() {
     let env = env().await;
     let clip = wav(1500);

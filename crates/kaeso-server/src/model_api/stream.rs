@@ -1701,6 +1701,7 @@ impl Pump {
                         units.input_ms = ms;
                         units.measured = false;
                         units.input_length_unknown = false;
+                        units.longest_input_ms = None;
                     }
                 }
                 RequestKind::Speech => {

@@ -68,6 +68,9 @@ pub struct Admission {
     pub timeout: Duration,
     pub worst: WorstCase,
     pub unpriced: Option<Unpriced>,
+    // A transcription, a translation or a voice change is billed by the audio it sends, so a
+    // refusal asks for shorter audio rather than fewer output tokens.
+    pub sends_audio: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

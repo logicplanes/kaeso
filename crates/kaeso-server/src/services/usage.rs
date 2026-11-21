@@ -443,6 +443,33 @@ pub fn costed(outcome: &Outcome) -> (Usage, Decimal) {
     (usage, c)
 }
 
+// Uploaded audio whose length neither the provider nor the file says is charged to limits at
+// the longest it can last, as its hold was; its logged cost stays unknown, but the provider
+// bills all of it.
+fn charged_cost(outcome: &Outcome, usage: &Usage, c: Decimal) -> Decimal {
+    let (Some(m), Some(prices)) = (outcome.media.as_ref(), outcome.prices.as_ref()) else {
+        return c;
+    };
+    let Some(longest) = m
+        .longest_input_ms
+        .filter(|_| m.input_length_unknown && m.input_ms == 0)
+    else {
+        return c;
+    };
+    if !served(outcome)
+        || outcome.response_cache == Some(crate::services::response_cache::Verdict::Hit)
+    {
+        return c;
+    }
+    let held = cost::MediaUnits {
+        input_ms: longest,
+        input_length_unknown: false,
+        longest_input_ms: None,
+        ..m.clone()
+    };
+    c.max(cost::cost_with_media(usage, prices, Some(&held)))
+}
+
 #[derive(Debug, Default)]
 pub struct Accounting;
 
@@ -534,7 +561,7 @@ pub async fn account(state: &AppState, outcome: &Outcome) {
     }
     let charge = Charge {
         tokens: i(cost::total_tokens(&usage)),
-        nano_usd: cost::nano_usd(c),
+        nano_usd: cost::nano_usd(charged_cost(outcome, &usage, c)),
         succeeded: !outcome.is_error(),
     };
     let charged = engine::charge(state, &caller, entry, &request_id, at, charge).await;

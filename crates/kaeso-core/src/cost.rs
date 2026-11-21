@@ -299,6 +299,112 @@ pub struct MediaUnits {
     /// so a price per second, minute or hour of it can't be applied.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub input_length_unknown: bool,
+    /// The longest uploaded audio of unknown length can last, in milliseconds: what limits are
+    /// charged for it, since its cost is unknown but the provider bills all of it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub longest_input_ms: Option<u64>,
+}
+
+// 4 kbit/s, below the lowest bitrate of the codecs providers take (AMR-NB 4.75 kbit/s, Opus
+// 6 kbit/s), so an upload's size bounds how long it can last whatever its headers state.
+const LEAST_AUDIO_BYTES_PER_SECOND: u64 = 500;
+// 512 kbit/s, above any compressed audio providers take; a compressed file that states a length
+// too short for its size states a wrong one.
+const MOST_AUDIO_BYTES_PER_SECOND: u64 = 64_000;
+
+// Audio sent as a link or a file id is never read, so only the provider's reply can say its
+// length.
+fn uploaded(audio: &kaeso_kpp::AudioInput) -> Option<&[u8]> {
+    match &audio.source {
+        kaeso_kpp::Source::Base64(b) => Some(&b.data),
+        _ => None,
+    }
+}
+
+fn ms_at(bytes: usize, per_second: u64) -> u64 {
+    u64::try_from(bytes)
+        .unwrap_or(u64::MAX)
+        .saturating_mul(1000)
+        .div_ceil(per_second)
+}
+
+fn stated_ms(bytes: &[u8]) -> Option<u64> {
+    let length = kaeso_codecs::audio_length::audio_duration(bytes)?;
+    Some(u64::try_from(length.as_millis()).unwrap_or(u64::MAX).max(1))
+}
+
+// Uncompressed WAV lasts at most as long as the bytes after its `data` header, at its sample rate
+// and frame size. The average bytes per second is not used, since a decoder ignores it, and the
+// stated data size may be short; counting to the end never holds less than a decoder plays. A
+// decoder reads the first `fmt ` chunk only, so a file with several has no length here.
+fn pcm_wav_ms(b: &[u8]) -> Option<u64> {
+    if !b.starts_with(b"RIFF") || b.get(8..12) != Some(b"WAVE".as_slice()) {
+        return None;
+    }
+    let u16_at = |at: usize| -> Option<u64> {
+        let bytes: [u8; 2] = b.get(at..at.checked_add(2)?)?.try_into().ok()?;
+        Some(u64::from(u16::from_le_bytes(bytes)))
+    };
+    let u32_at = |at: usize| -> Option<u64> {
+        let bytes: [u8; 4] = b.get(at..at.checked_add(4)?)?.try_into().ok()?;
+        Some(u64::from(u32::from_le_bytes(bytes)))
+    };
+    let mut at = 12usize;
+    let mut per_second = None;
+    while let Some(id) = b.get(at..at.checked_add(4)?) {
+        let size = usize::try_from(u32_at(at.checked_add(4)?)?).ok()?;
+        let body = at.checked_add(8)?;
+        match id {
+            b"fmt " if per_second.is_some() => return None,
+            b"fmt " => {
+                // WAVE_FORMAT_EXTENSIBLE names its format in the sub-format GUID's first bytes.
+                let tag = match u16_at(body)? {
+                    0xFFFE => u16_at(body.checked_add(24)?)?,
+                    tag => tag,
+                };
+                if tag != 1 && tag != 3 {
+                    return None;
+                }
+                let channels = u16_at(body.checked_add(2)?)?;
+                let rate = u32_at(body.checked_add(4)?)?;
+                let align = u16_at(body.checked_add(12)?)?;
+                let bits = u16_at(body.checked_add(14)?)?;
+                let frame = [align, channels.saturating_mul(bits.div_ceil(8))]
+                    .into_iter()
+                    .filter(|n| *n > 0)
+                    .min()?;
+                per_second = Some(rate.checked_mul(frame).filter(|n| *n > 0)?);
+            }
+            b"data" => {
+                return Some(ms_at(b.len().saturating_sub(body), per_second?));
+            }
+            _ => {}
+        }
+        at = body.checked_add(size)?.checked_add(size & 1)?;
+    }
+    None
+}
+
+// The length to bill uploaded audio by when the provider reports none: an uncompressed WAV's
+// exact length, else the length the file states, unless that is too short for the file's size.
+pub fn billed_audio_ms(audio: &kaeso_kpp::AudioInput) -> Option<u64> {
+    let bytes = uploaded(audio)?;
+    if let Some(ms) = pcm_wav_ms(bytes) {
+        return (ms > 0).then_some(ms);
+    }
+    stated_ms(bytes).filter(|ms| *ms >= ms_at(bytes.len(), MOST_AUDIO_BYTES_PER_SECOND))
+}
+
+// The longest uploaded audio can last: an uncompressed WAV's exact length, else the longer of the
+// length the file states and the length its size allows at the lowest bitrate. `None` for audio
+// sent as a link or a file id.
+pub fn longest_audio_ms(audio: &kaeso_kpp::AudioInput) -> Option<u64> {
+    let bytes = uploaded(audio)?;
+    if let Some(ms) = pcm_wav_ms(bytes) {
+        return Some(ms);
+    }
+    let by_size = ms_at(bytes.len(), LEAST_AUDIO_BYTES_PER_SECOND);
+    Some(stated_ms(bytes).map_or(by_size, |ms| ms.max(by_size)))
 }
 
 const MS_PER_SECOND: Decimal = Decimal::from_parts(1_000, 0, 0, false, 0);

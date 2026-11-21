@@ -2362,6 +2362,11 @@ async fn attempt(
             &eff.model_id,
         )
         .or_else(|| kaeso_core::cost::unpriced(&req, plan.dialect, eff.provider.responses())),
+        sends_audio: match &req {
+            Request::Transcription(_) => true,
+            Request::Speech(s) => s.audio.is_some(),
+            _ => false,
+        },
     };
     if again.is_none() {
         rec.reservation = match state.limits.admit(state, &admission).await {

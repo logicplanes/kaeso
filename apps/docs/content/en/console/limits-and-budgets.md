@@ -76,13 +76,15 @@ While requests still running could use up a hard budget or a token rate, Kaeso r
 
 A video or an image generation holds it from its start until it is billed or has failed, in the budget period it started in. Its cost counts in that period too. When videos still being made hold what a request needs, Kaeso refuses it with `Retry-After: 60` and says so.
 
+A transcription, a translation or a voice change holds the longest its uploaded audio can last, at the model's highest price per second, minute or hour of audio; a model priced by the token holds the upload's size as input and the model's output limit. An uncompressed WAV file lasts exactly as long as its samples; any other file lasts at most as long as its headers state or as its size allows at 4 kbit/s, whichever is longer, so a large upload holds more than its header may claim ([audio](../api/audio.md#costs-and-logs)).
+
 The input counts at the highest of the model's input and cache prices, at its long-context prices when the estimated input is longer than a tier's threshold. When a request asks for Anthropic's one-hour cache, that includes the one-hour cache write price ([models and aliases](models-and-aliases.md#change-a-models-values)).
 
 SpaceX's limit leaves reasoning out, so a request to a SpaceX reasoning model holds the model's own output limit. A ChatGPT account can't send an output limit, so a request through one holds the model's own too. Under a budget, a request holds at least what an average request cost in the period, or in the 30 days before.
 
-Kaeso refuses a request that could cost more than what's left of a hard budget or a token rate, even with nothing else running. The message asks for fewer output tokens. Under a token rate that has room for the request once older requests leave the minute, the message says when to retry instead. To run more requests side by side under a small budget, send a lower output limit.
+Kaeso refuses a request that could cost more than what's left of a hard budget or a token rate, even with nothing else running. The message asks for fewer output tokens, or for shorter audio for a transcription, a translation or a voice change. Under a token rate that has room for the request once older requests leave the minute, the message says when to retry instead. To run more requests side by side under a small budget, send a lower output limit.
 
-Kaeso can't bound a request that sets no output limit, to a model with neither an output limit nor a context window. Such a request passes when nothing else runs, so it can overrun a limit by itself. Under a hard budget with no finished request in its period or the 30 days before, it runs alone, though videos and image generations still being made don't stop it.
+Kaeso can't bound a request that sets no output limit, to a model with neither an output limit nor a context window. Nor can it bound audio sent as a link or a file id to a model priced by its length, since Kaeso never reads it. Such a request passes when nothing else runs, so it can overrun a limit by itself. Under a hard budget with no finished request in its period or the 30 days before, it runs alone, though videos and image generations still being made don't stop it.
 
 > [!NOTE]
 > Kaeso counts limits in Valkey. While Valkey can't be reached, rates and soft budgets let requests through, and hard budgets refuse them with status 503.

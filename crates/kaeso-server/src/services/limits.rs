@@ -744,7 +744,9 @@ enum Why {
     Over(i64),
     Busy,
     HeldByJobs,
-    TooLarge,
+    // A transcription, a translation or a voice change is made smaller by shorter audio, not by
+    // fewer output tokens.
+    TooLarge { audio: bool },
 }
 
 fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
@@ -776,10 +778,21 @@ fn refusal(l: &Limit, now: OffsetDateTime, why: Why) -> Refusal {
             param: None,
             left: None,
         },
-        Why::TooLarge => Refusal {
+        Why::TooLarge { audio: false } => Refusal {
             status: 429,
             message: format!(
                 "This request could exceed {} {}{scope}; ask for fewer output tokens.",
+                noun(l.subject),
+                l.describe()
+            ),
+            retry_after: None,
+            param: None,
+            left: None,
+        },
+        Why::TooLarge { audio: true } => Refusal {
+            status: 429,
+            message: format!(
+                "This request could exceed {} {}{scope}; send shorter audio.",
                 noun(l.subject),
                 l.describe()
             ),
@@ -975,7 +988,7 @@ impl Limits for ValkeyLimits {
                         Why::Over(retry) => left(l, a.at, l.units(&book), retry, &book),
                         Why::Busy => left(l, a.at, l.units(&book), 1, &book),
                         Why::HeldByJobs => left(l, a.at, l.units(&book), job_retry(), &book),
-                        Why::TooLarge => None,
+                        Why::TooLarge { .. } => None,
                     };
                     Err(r)
                 };
@@ -992,7 +1005,14 @@ impl Limits for ValkeyLimits {
                     Ok(Admit::Refused(i, retry)) => return refused(i, Why::Over(retry)),
                     Ok(Admit::Busy(i)) => return refused(i, Why::Busy),
                     Ok(Admit::HeldByJobs(i)) => return refused(i, Why::HeldByJobs),
-                    Ok(Admit::TooLarge(i)) => return refused(i, Why::TooLarge),
+                    Ok(Admit::TooLarge(i)) => {
+                        return refused(
+                            i,
+                            Why::TooLarge {
+                                audio: a.sends_audio,
+                            },
+                        );
+                    }
                     Ok(Admit::Missing(list)) if attempt == 0 => {
                         for i in list {
                             if let Some(l) = applicable.get(i)

@@ -777,6 +777,15 @@ const messages = (): Rule[] => [
   rule("errors.mayExceed.key", (v) => t("errors.mayExceed.key", "This request could exceed this key's {limit}; ask for fewer output tokens.", v), {
     limit: "limit",
   }),
+  rule("errors.mayExceedAudio.project", (v) => t("errors.mayExceedAudio.project", "This request could exceed the project's {limit}; send shorter audio.", v), {
+    limit: "limit",
+  }),
+  rule("errors.mayExceedAudio.member", (v) => t("errors.mayExceedAudio.member", "This request could exceed the member's {limit}; send shorter audio.", v), {
+    limit: "limit",
+  }),
+  rule("errors.mayExceedAudio.key", (v) => t("errors.mayExceedAudio.key", "This request could exceed this key's {limit}; send shorter audio.", v), {
+    limit: "limit",
+  }),
   rule(
     "errors.nearlyUsedUp.project",
     (v) => t("errors.nearlyUsedUp.project", "The project's {limit} is nearly used up by requests in progress; retry in a moment.", v),

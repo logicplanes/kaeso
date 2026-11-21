@@ -44,6 +44,8 @@ describe("a refusal with a budget or a rate", () => {
     expect(error.message).toBe(
       "Diese Anfrage könnte das Limit dieses Schlüssels (Monats-Ausgabenbudget von 1 USD) überschreiten; weniger Ausgabe-Token anfordern.",
     );
+    const audio = await errorFromResponse(refusal("This request could exceed the project's daily spend budget of 0.01 USD; send shorter audio."));
+    expect(audio.message).toBe("Diese Anfrage könnte das Limit des Projekts (Tages-Ausgabenbudget von 0,01 USD) überschreiten; kürzeres Audio senden.");
   });
 
   it("keeps an amount that isn't a number as the gateway wrote it", async () => {

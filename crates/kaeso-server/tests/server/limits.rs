@@ -914,6 +914,308 @@ async fn parallel_requests_never_overrun_a_budget() {
     assert_eq!(ok, 5);
 }
 
+// 16 kHz, mono, 16-bit PCM: 32,000 bytes a second. The gate's marker sits in a `LIST` chunk
+// before the audio, so the mock holds the upload without changing how long it lasts.
+fn held_wav(gate: &Gate, ms: u32) -> Vec<u8> {
+    let data = ms * 32;
+    let mut marker = gate.marker().into_bytes();
+    if marker.len() % 2 == 1 {
+        marker.push(b' ');
+    }
+    let list = u32::try_from(marker.len()).unwrap();
+    let mut b = b"RIFF".to_vec();
+    b.extend_from_slice(&(44 + list + data).to_le_bytes());
+    b.extend_from_slice(b"WAVEfmt \x10\0\0\0\x01\0\x01\0");
+    b.extend_from_slice(&16_000u32.to_le_bytes());
+    b.extend_from_slice(&32_000u32.to_le_bytes());
+    b.extend_from_slice(b"\x02\0\x10\0LIST");
+    b.extend_from_slice(&list.to_le_bytes());
+    b.extend_from_slice(&marker);
+    b.extend_from_slice(b"data");
+    b.extend_from_slice(&data.to_le_bytes());
+    b.resize(b.len() + data as usize, 0);
+    b
+}
+
+async fn upload(
+    env: &Env,
+    key: &str,
+    path: &str,
+    fields: &[(&str, &str)],
+    (field, bytes): (&str, &[u8]),
+) -> Answer {
+    let mut body = Vec::new();
+    for (name, value) in fields {
+        body.extend_from_slice(
+            format!("--kb\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n")
+                .as_bytes(),
+        );
+    }
+    body.extend_from_slice(
+        format!("--kb\r\nContent-Disposition: form-data; name=\"{field}\"; filename=\"a.wav\"\r\nContent-Type: audio/wav\r\n\r\n").as_bytes(),
+    );
+    body.extend_from_slice(bytes);
+    body.extend_from_slice(b"\r\n--kb--\r\n");
+    let req = axum::http::Request::builder()
+        .uri(path)
+        .method("POST")
+        .header("authorization", format!("Bearer {key}"))
+        .header("xi-api-key", key)
+        .header("content-type", "multipart/form-data; boundary=kb")
+        .body(axum::body::Body::from(body))
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let body = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes()
+        .to_vec();
+    Answer {
+        status,
+        headers,
+        body,
+    }
+}
+
+async fn add_model(env: &Env, provider: &str, model: &str) {
+    let r = env
+        .app
+        .post(
+            &format!("{}/models", base(env)),
+            json!({ "provider": provider, "model_id": model }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{model}: {:?}", r.body);
+}
+
+#[tokio::test]
+async fn parallel_transcriptions_never_overrun_a_spend_budget() {
+    let env = common::v1::env(None, None).await;
+    add_model(&env, "openai", "whisper-1").await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "day", "amount": "0.01" })).await;
+    let mut gate = env.mock.gate();
+    let minute = held_wav(&gate, 60_000);
+    let transcribe = |path: &'static str, clip: &[u8]| {
+        let clip = clip.to_vec();
+        let secret = secret.clone();
+        let env = &env;
+        async move {
+            upload(
+                env,
+                &secret,
+                path,
+                &[("model", "whisper-1"), ("response_format", "text")],
+                ("file", &clip),
+            )
+            .await
+        }
+    };
+    let calls = (0..10)
+        .map(|i| {
+            let path = if i % 2 == 0 {
+                "/v1/audio/transcriptions"
+            } else {
+                "/v1/audio/translations"
+            };
+            transcribe(path, &minute)
+        })
+        .collect();
+    let answers = held(&mut gate, calls).await;
+    assert_eq!(
+        passed(&answers),
+        1,
+        "a minute of audio at $0.006 a minute holds $0.006 of a $0.01 budget: {:?}",
+        answers.iter().map(|a| a.status).collect::<Vec<_>>()
+    );
+    for a in answers.iter().filter(|a| a.status != StatusCode::OK) {
+        assert_eq!(a.status, StatusCode::TOO_MANY_REQUESTS, "{}", a.text());
+        assert_eq!(a.header("retry-after"), Some("1"), "{}", a.text());
+    }
+    let lim = lim["id"].as_str().unwrap();
+    used(&env, lim, "0.006").await;
+
+    let r = transcribe("/v1/audio/transcriptions", &held_wav(&gate, 60_000)).await;
+    assert_eq!(r.status, StatusCode::TOO_MANY_REQUESTS, "{}", r.text());
+    assert_eq!(
+        r.json()["error"]["message"],
+        "This request could exceed this key's daily spend budget of 0.01 USD; send shorter audio."
+    );
+    let r = transcribe("/v1/audio/transcriptions", &held_wav(&gate, 30_000)).await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    used(&env, lim, "0.009").await;
+}
+
+#[tokio::test]
+async fn parallel_voice_changes_never_overrun_a_spend_budget() {
+    let env = common::v1::env(None, None).await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/credentials", env.owner.org_id),
+            json!({ "provider": "elevenlabs", "name": "elevenlabs", "secret": "sk_test-elevenlabs-limits-00000000000000000" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    add_model(&env, "elevenlabs", "eleven_multilingual_sts_v2").await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "day", "amount": "0.1" })).await;
+    let mut gate = env.mock.gate();
+    let clip = held_wav(&gate, 30_000);
+    let calls = (0..5)
+        .map(|_| {
+            upload(
+                &env,
+                &secret,
+                "/v1/voice-changer/hpp4J3VqNfWAUOO0d1Us",
+                &[("model_id", "eleven_multilingual_sts_v2")],
+                ("audio", &clip),
+            )
+        })
+        .collect();
+    let answers = held(&mut gate, calls).await;
+    assert_eq!(
+        passed(&answers),
+        1,
+        "half a minute of audio at $0.12 a minute holds $0.06 of a $0.1 budget: {:?}",
+        answers.iter().map(|a| a.status).collect::<Vec<_>>()
+    );
+    used(&env, lim["id"].as_str().unwrap(), "0.06").await;
+}
+
+// An M4A file whose movie header states `stated_ms`, followed by `media` bytes of audio.
+pub(crate) fn m4a(stated_ms: u32, media: usize) -> Vec<u8> {
+    let boxed = |kind: &[u8; 4], body: &[u8]| {
+        let mut b = u32::try_from(body.len() + 8)
+            .unwrap()
+            .to_be_bytes()
+            .to_vec();
+        b.extend_from_slice(kind);
+        b.extend_from_slice(body);
+        b
+    };
+    let mut mvhd = vec![0u8; 12];
+    mvhd.extend_from_slice(&1000u32.to_be_bytes());
+    mvhd.extend_from_slice(&stated_ms.to_be_bytes());
+    let mut file = boxed(b"ftyp", b"M4A \0\0\0\0");
+    file.extend(boxed(b"moov", &boxed(b"mvhd", &mvhd)));
+    file.extend(boxed(b"mdat", &vec![0u8; media]));
+    file
+}
+
+#[tokio::test]
+async fn voice_changes_of_audio_whose_length_is_unknown_count_against_a_spend_budget() {
+    let env = common::v1::env(None, None).await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/credentials", env.owner.org_id),
+            json!({ "provider": "elevenlabs", "name": "elevenlabs", "secret": "sk_test-elevenlabs-limits-00000000000000000" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    add_model(&env, "elevenlabs", "eleven_multilingual_sts_v2").await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    let lim = limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "day", "amount": "0.1" })).await;
+    // 12,060 bytes stating a tenth of a second: too short to believe, and at most 24.12 seconds.
+    let clip = m4a(100, 12_000);
+    let send = || {
+        upload(
+            &env,
+            &secret,
+            "/v1/voice-changer/hpp4J3VqNfWAUOO0d1Us",
+            &[("model_id", "eleven_multilingual_sts_v2")],
+            ("audio", &clip),
+        )
+    };
+    assert_eq!(send().await.status, StatusCode::OK);
+    used(&env, lim["id"].as_str().unwrap(), "0.04824").await;
+    assert_eq!(send().await.status, StatusCode::OK);
+    used(&env, lim["id"].as_str().unwrap(), "0.09648").await;
+    let third = send().await;
+    assert_eq!(
+        third.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "24.12 seconds at $0.12 a minute no longer fit: {}",
+        third.text()
+    );
+}
+
+#[tokio::test]
+async fn parallel_transcriptions_of_links_run_alone_under_a_spend_budget_without_history() {
+    let env = common::v1::env(None, None).await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/credentials", env.owner.org_id),
+            json!({ "provider": "elevenlabs", "name": "elevenlabs", "secret": "sk_test-elevenlabs-limits-00000000000000000" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    add_model(&env, "elevenlabs", "scribe_v2").await;
+    let (secret, id) = key_of(&env, "k", json!({})).await;
+    limit(&env, json!({ "level": "key", "key": id, "kind": "spend_budget", "period": "day", "amount": "10" })).await;
+    let mut gate = env.mock.gate();
+    let link = format!("https://example.com/memo.wav?note={}", gate.marker());
+    let fields = [
+        ("model_id", "scribe_v2"),
+        ("cloud_storage_url", link.as_str()),
+    ];
+    let calls = (0..5).map(|_| linked(&env, &secret, &fields)).collect();
+    let answers = held(&mut gate, calls).await;
+    assert_eq!(
+        passed(&answers),
+        1,
+        "audio of unknown length can't be bounded: {:?}",
+        answers.iter().map(Answer::text).collect::<Vec<_>>()
+    );
+    for a in answers.iter().filter(|a| a.status != StatusCode::OK) {
+        assert_eq!(a.status, StatusCode::TOO_MANY_REQUESTS, "{}", a.text());
+        assert_eq!(a.header("retry-after"), Some("1"), "{}", a.text());
+    }
+}
+
+async fn linked(env: &Env, key: &str, fields: &[(&str, &str)]) -> Answer {
+    let mut body = Vec::new();
+    for (name, value) in fields {
+        body.extend_from_slice(
+            format!("--kb\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n")
+                .as_bytes(),
+        );
+    }
+    body.extend_from_slice(b"--kb--\r\n");
+    let req = axum::http::Request::builder()
+        .uri("/v1/speech-to-text")
+        .method("POST")
+        .header("xi-api-key", key)
+        .header("content-type", "multipart/form-data; boundary=kb")
+        .body(axum::body::Body::from(body))
+        .unwrap();
+    let resp = tower::ServiceExt::oneshot(env.app.router.clone(), req)
+        .await
+        .unwrap();
+    let status = resp.status();
+    let headers = resp.headers().clone();
+    let body = http_body_util::BodyExt::collect(resp.into_body())
+        .await
+        .unwrap()
+        .to_bytes()
+        .to_vec();
+    Answer {
+        status,
+        headers,
+        body,
+    }
+}
+
 fn held_at(gate: &Gate, text: &str) -> Value {
     capped(&format!("{text} {}", gate.marker()), MOCK_OUTPUT_TOKENS)
 }
@@ -926,9 +1228,20 @@ async fn wave_of(env: &Env, key: &str, n: usize, max_tokens: u64) -> (Vec<Answer
     let mut gate = env.mock.gate();
     let body = capped(&format!("Hi {}", gate.marker()), max_tokens);
     let most = worst(&body);
-    let mut calls: FuturesUnordered<_> = (0..n)
+    let calls = (0..n)
         .map(|_| call(env, "/v1/messages", Some(key), true, Some(body.clone())))
         .collect();
+    (held(&mut gate, calls).await, most)
+}
+
+// Holds every call that reaches the provider until each call has either arrived there or been
+// answered, so all of them are in flight at once.
+async fn held<F: std::future::Future<Output = Answer>>(
+    gate: &mut Gate,
+    calls: Vec<F>,
+) -> Vec<Answer> {
+    let n = calls.len();
+    let mut calls: FuturesUnordered<_> = calls.into_iter().collect();
     let mut answers = Vec::with_capacity(n);
     let mut opened = false;
     while answers.len() < n {
@@ -941,7 +1254,7 @@ async fn wave_of(env: &Env, key: &str, n: usize, max_tokens: u64) -> (Vec<Answer
             () = gate.next_arrival(), if !opened => {}
         }
     }
-    (answers, most)
+    answers
 }
 
 fn passed(answers: &[Answer]) -> usize {
@@ -1286,6 +1599,7 @@ async fn a_request_without_an_output_bound_runs_alone_under_a_fresh_budget() {
                 bounded,
             },
             unpriced: None,
+            sends_audio: false,
         };
         async move {
             let limits = kaeso_server::services::limits::ValkeyLimits;
@@ -1335,6 +1649,7 @@ async fn admit_alone(
         timeout: Duration::from_secs(600),
         worst,
         unpriced: None,
+        sends_audio: false,
     };
     kaeso_server::services::limits::ValkeyLimits
         .admit(&env.app.state, &admission)
@@ -1489,6 +1804,7 @@ async fn requests_count_as_in_flight_for_as_long_as_their_model_may_take() {
                 bounded: true,
             },
             unpriced: None,
+            sends_audio: false,
         };
         async move {
             let limits = kaeso_server::services::limits::ValkeyLimits;
@@ -1549,6 +1865,7 @@ async fn open_reservations_are_totalled_as_they_come_go_and_expire() {
                 bounded: true,
             },
             unpriced: None,
+            sends_audio: false,
         };
         async move {
             let limits = kaeso_server::services::limits::ValkeyLimits;

@@ -419,6 +419,9 @@ impl WorstCase {
             kaeso_kpp::Request::Image(r) => return WorstCase::of_images(r, prices),
             kaeso_kpp::Request::Speech(r) => return WorstCase::of_speech(r, prices),
             kaeso_kpp::Request::Video(r) => return WorstCase::of_videos(r, prices),
+            kaeso_kpp::Request::Transcription(r) => {
+                return WorstCase::of_transcription(r, body_bytes, prices);
+            }
             _ => {}
         }
         let context = prices.context_limit;
@@ -498,22 +501,14 @@ impl WorstCase {
                 .and_then(|(w, h)| u64::from(w).checked_mul(u64::from(h))),
             ..crate::cost::MediaUnits::default()
         };
-        let dearest = prices.unit_prices.as_ref().map(|list| {
-            let mut top: Vec<crate::catalogue::UnitPrice> = Vec::new();
-            for p in list {
-                match top.iter_mut().find(|t| t.per == p.per && t.of == p.of) {
-                    Some(t) if t.usd < p.usd => t.usd = p.usd,
-                    Some(_) => {}
-                    None => top.push(crate::catalogue::UnitPrice {
-                        size: None,
-                        quality: None,
-                        resolution: None,
-                        audio: None,
-                        ..p.clone()
-                    }),
-                }
-            }
-            top
+        let dearest = prices.unit_prices.as_deref().map(|list| {
+            dearest_by_unit(list, |p| crate::catalogue::UnitPrice {
+                size: None,
+                quality: None,
+                resolution: None,
+                audio: None,
+                ..p.clone()
+            })
         });
         let output_price = prices.output_image_price.or(prices.output_price);
         let output = match (prices.output_limit, output_price) {
@@ -540,12 +535,16 @@ impl WorstCase {
 
     // Every character at the dearest price per character, the text's tokens at the input
     // price, and audio tokens up to the model's output limit; without one, token-priced audio
-    // has no bound. A sound effect or music asked for by length is priced by that length.
+    // has no bound. A sound effect or music asked for by length is priced by that length, and
+    // the audio a voice changer hears by the longest its upload can last; audio sent as a link
+    // or a file id has no bound at a price per length.
     fn of_speech(r: &kaeso_kpp::SpeechRequest, prices: &Fields) -> WorstCase {
         let characters = r.characters();
         let input = crate::estimate::tokens_of_bytes(characters);
+        let heard = r.audio.as_ref().map(crate::cost::longest_audio_ms);
         let units = crate::cost::MediaUnits {
             characters,
+            input_ms: heard.flatten().unwrap_or(0),
             output_ms: r.duration.map_or(0, crate::assembler::seconds_to_ms),
             ..crate::cost::MediaUnits::default()
         };
@@ -555,17 +554,11 @@ impl WorstCase {
             (limit, Some(_)) => limit,
         };
         let usage = kaeso_kpp::Usage::new(input, output.unwrap_or(0));
-        let dearest = prices.unit_prices.as_ref().map(|list| {
-            let mut top: Vec<crate::catalogue::UnitPrice> = Vec::new();
-            for p in list {
-                match top.iter_mut().find(|t| t.per == p.per && t.of == p.of) {
-                    Some(t) if t.usd < p.usd => t.usd = p.usd,
-                    Some(_) => {}
-                    None => top.push(p.clone()),
-                }
-            }
-            top
-        });
+        let dearest = prices
+            .unit_prices
+            .as_deref()
+            .map(|list| dearest_by_unit(list, Clone::clone));
+        let unmeasured = heard == Some(None) && priced_by_length(dearest.as_deref());
         let mut priced = Fields {
             unit_prices: dearest,
             ..prices.clone()
@@ -575,7 +568,73 @@ impl WorstCase {
         WorstCase {
             tokens: i64::try_from(crate::cost::total_tokens(&usage)).unwrap_or(i64::MAX),
             nano_usd: crate::cost::nano_usd(cost),
-            bounded: output.is_some(),
+            bounded: output.is_some() && !unmeasured,
+        }
+    }
+
+    // The longest the uploaded audio can last at the dearest price per second, minute or hour
+    // of input; audio sent as a link or a file id has no bound at such a price. A model priced
+    // by the token holds the upload's tokens, estimated from its size and at most its context
+    // window, at the dearest input price, and output up to its limit; without one, token-priced
+    // output has no bound.
+    fn of_transcription(
+        r: &kaeso_kpp::TranscriptionRequest,
+        body_bytes: usize,
+        prices: &Fields,
+    ) -> WorstCase {
+        let heard = crate::cost::longest_audio_ms(&r.audio);
+        let dearest = prices.unit_prices.as_deref().map(|list| {
+            dearest_by_unit(list, |p| crate::catalogue::UnitPrice {
+                size: None,
+                quality: None,
+                resolution: None,
+                audio: None,
+                duration: None,
+                ..p.clone()
+            })
+        });
+        let unmeasured = heard.is_none() && priced_by_length(dearest.as_deref());
+        let by_token = [
+            prices.input_price,
+            prices.input_audio_price,
+            prices.output_price,
+        ]
+        .iter()
+        .any(Option::is_some);
+        let context = prices.context_limit;
+        let input = match (by_token, r.audio.byte_len()) {
+            (false, _) => Some(0),
+            (true, Some(_)) => {
+                let bytes = u64::try_from(body_bytes).unwrap_or(u64::MAX);
+                let tokens = crate::estimate::tokens_of_bytes(bytes);
+                Some(context.map_or(tokens, |c| tokens.min(c)))
+            }
+            (true, None) => context,
+        };
+        let prices = &crate::cost::prices_for_prompt(prices, input.unwrap_or(0));
+        let input_price = [prices.input_price, prices.input_audio_price]
+            .into_iter()
+            .flatten()
+            .max();
+        let output = match prices.output_price {
+            None => Some(0),
+            Some(_) => prices.output_limit.or(context),
+        };
+        let usage = kaeso_kpp::Usage::new(input.unwrap_or(0), output.unwrap_or(0));
+        let units = crate::cost::MediaUnits {
+            input_ms: heard.unwrap_or(0),
+            ..crate::cost::MediaUnits::default()
+        };
+        let mut priced = Fields {
+            unit_prices: dearest,
+            ..prices.clone()
+        };
+        priced.input_price = input_price;
+        let cost = crate::cost::cost_with_media(&usage, &priced, Some(&units));
+        WorstCase {
+            tokens: i64::try_from(crate::cost::total_tokens(&usage)).unwrap_or(i64::MAX),
+            nano_usd: crate::cost::nano_usd(cost),
+            bounded: input.is_some() && output.is_some() && !unmeasured,
         }
     }
 
@@ -591,23 +650,15 @@ impl WorstCase {
             }),
             ..crate::cost::MediaUnits::default()
         };
-        let dearest = prices.unit_prices.as_ref().map(|list| {
-            let mut top: Vec<crate::catalogue::UnitPrice> = Vec::new();
-            for p in list {
-                match top.iter_mut().find(|t| t.per == p.per && t.of == p.of) {
-                    Some(t) if t.usd < p.usd => t.usd = p.usd,
-                    Some(_) => {}
-                    None => top.push(crate::catalogue::UnitPrice {
-                        size: None,
-                        quality: None,
-                        resolution: None,
-                        audio: None,
-                        duration: None,
-                        ..p.clone()
-                    }),
-                }
-            }
-            top
+        let dearest = prices.unit_prices.as_deref().map(|list| {
+            dearest_by_unit(list, |p| crate::catalogue::UnitPrice {
+                size: None,
+                quality: None,
+                resolution: None,
+                audio: None,
+                duration: None,
+                ..p.clone()
+            })
         });
         let per_time = dearest.as_ref().is_some_and(|top| {
             top.iter()
@@ -643,6 +694,34 @@ impl WorstCase {
             Kind::SpendBudget => self.nano_usd,
         }
     }
+}
+
+// The dearest price of each unit, with the conditions `strip` leaves on it. Of several tiers of
+// one unit, the largest minimum applies too, since any of them may be the one billed.
+fn dearest_by_unit(
+    list: &[crate::catalogue::UnitPrice],
+    strip: impl Fn(&crate::catalogue::UnitPrice) -> crate::catalogue::UnitPrice,
+) -> Vec<crate::catalogue::UnitPrice> {
+    let mut top: Vec<crate::catalogue::UnitPrice> = Vec::new();
+    for p in list {
+        match top.iter_mut().find(|t| t.per == p.per && t.of == p.of) {
+            Some(t) => {
+                if t.usd < p.usd {
+                    t.usd = p.usd;
+                }
+                t.minimum_seconds = t.minimum_seconds.max(p.minimum_seconds);
+            }
+            None => top.push(strip(p)),
+        }
+    }
+    top
+}
+
+fn priced_by_length(prices: Option<&[crate::catalogue::UnitPrice]>) -> bool {
+    prices
+        .into_iter()
+        .flatten()
+        .any(|p| p.of == "input" && matches!(p.per.as_str(), "second" | "minute" | "hour"))
 }
 
 pub fn exceeds(child: &Limit, parent: &Limit, rates: &RateBook) -> bool {
@@ -847,6 +926,369 @@ mod tests {
         assert_eq!(
             WorstCase::of(&request, 4000, &thinking, openai()).nano_usd,
             at(dec!(1.2))
+        );
+    }
+
+    // 16 kHz, mono, 16-bit PCM: 32,000 bytes a second, whatever the header states as its
+    // average bytes per second and its data size.
+    fn pcm_stating(ms: u32, bytes_per_second: u32, data_size: Option<u32>) -> Vec<u8> {
+        let data = ms * 32;
+        let mut b = b"RIFF".to_vec();
+        b.extend_from_slice(&(36 + data).to_le_bytes());
+        b.extend_from_slice(b"WAVEfmt \x10\0\0\0\x01\0\x01\0");
+        b.extend_from_slice(&16_000u32.to_le_bytes());
+        b.extend_from_slice(&bytes_per_second.to_le_bytes());
+        b.extend_from_slice(b"\x02\0\x10\0data");
+        b.extend_from_slice(&data_size.unwrap_or(data).to_le_bytes());
+        b.resize(b.len() + data as usize, 0);
+        b
+    }
+
+    fn wav(ms: u32) -> Vec<u8> {
+        pcm_stating(ms, 32_000, None)
+    }
+
+    // An M4A file whose movie header states `stated_ms`, followed by `media` bytes of audio.
+    fn m4a(stated_ms: u32, media: usize) -> Vec<u8> {
+        let boxed = |kind: &[u8; 4], body: &[u8]| {
+            let mut b = u32::try_from(body.len() + 8)
+                .unwrap()
+                .to_be_bytes()
+                .to_vec();
+            b.extend_from_slice(kind);
+            b.extend_from_slice(body);
+            b
+        };
+        let mut mvhd = vec![0u8; 12];
+        mvhd.extend_from_slice(&1000u32.to_be_bytes());
+        mvhd.extend_from_slice(&stated_ms.to_be_bytes());
+        let mut file = boxed(b"ftyp", b"M4A \0\0\0\0");
+        file.extend(boxed(b"moov", &boxed(b"mvhd", &mvhd)));
+        file.extend(boxed(b"mdat", &vec![0u8; media]));
+        file
+    }
+
+    fn by_length(per: &str, usd: Decimal) -> Fields {
+        Fields {
+            unit_prices: Some(vec![crate::catalogue::UnitPrice {
+                per: per.into(),
+                of: "input".into(),
+                usd,
+                ..crate::catalogue::UnitPrice::default()
+            }]),
+            ..Fields::default()
+        }
+    }
+
+    fn transcription(
+        operation: kaeso_kpp::TranscriptionOperation,
+        audio: kaeso_kpp::Source,
+    ) -> kaeso_kpp::Request {
+        kaeso_kpp::Request::Transcription(kaeso_kpp::TranscriptionRequest::new(
+            "m",
+            operation,
+            kaeso_kpp::AudioInput::new(audio),
+        ))
+    }
+
+    fn transcribe(audio: kaeso_kpp::Source) -> kaeso_kpp::Request {
+        transcription(kaeso_kpp::TranscriptionOperation::Transcribe, audio)
+    }
+
+    fn link() -> kaeso_kpp::Source {
+        kaeso_kpp::Source::Url("https://example.com/memo.wav".into())
+    }
+
+    #[test]
+    fn a_transcription_reserves_the_longest_its_audio_can_last_at_the_dearest_price_per_length() {
+        use kaeso_kpp::{Source, TranscriptionOperation};
+        let minute = Source::bytes("audio/wav", wav(60_000));
+        for operation in [
+            TranscriptionOperation::Transcribe,
+            TranscriptionOperation::Translate,
+        ] {
+            let request = transcription(operation, minute.clone());
+            assert_eq!(
+                WorstCase::of(
+                    &request,
+                    1_920_500,
+                    &by_length("minute", dec!(0.006)),
+                    openai()
+                ),
+                WorstCase {
+                    tokens: 0,
+                    nano_usd: 6_000_000,
+                    bounded: true
+                },
+                "a minute at $0.006 a minute"
+            );
+        }
+        let request = transcribe(minute);
+        let nano = |prices: &Fields| WorstCase::of(&request, 1_920_500, prices, openai()).nano_usd;
+        assert_eq!(nano(&by_length("second", dec!(0.000035))), 2_100_000);
+        assert_eq!(nano(&by_length("hour", dec!(0.22))), 3_666_667);
+        let mut tiers = by_length("minute", dec!(0.004));
+        if let Some(list) = tiers.unit_prices.as_mut() {
+            list.push(crate::catalogue::UnitPrice {
+                per: "minute".into(),
+                of: "input".into(),
+                usd: dec!(0.008),
+                quality: Some("high".into()),
+                ..crate::catalogue::UnitPrice::default()
+            });
+        }
+        assert_eq!(nano(&tiers), 8_000_000, "the dearest price per minute");
+
+        let mut at_least_ten_seconds = by_length("hour", dec!(0.111));
+        if let Some(p) = at_least_ten_seconds
+            .unit_prices
+            .as_mut()
+            .and_then(|l| l.first_mut())
+        {
+            p.minimum_seconds = Some(10);
+        }
+        let second = transcribe(Source::bytes("audio/wav", wav(1_000)));
+        let w = WorstCase::of(&second, 32_500, &at_least_ten_seconds, openai());
+        assert_eq!(
+            (w.nano_usd, w.bounded),
+            (308_334, true),
+            "ten seconds at $0.111 an hour"
+        );
+
+        let tier = |usd: Decimal, minimum_seconds: Option<u64>| crate::catalogue::UnitPrice {
+            per: "hour".into(),
+            of: "input".into(),
+            usd,
+            minimum_seconds,
+            ..crate::catalogue::UnitPrice::default()
+        };
+        let tiers = Fields {
+            unit_prices: Some(vec![tier(dec!(0.111), None), tier(dec!(0.04), Some(10))]),
+            ..Fields::default()
+        };
+        let w = WorstCase::of(&second, 32_500, &tiers, openai());
+        assert_eq!(
+            w.nano_usd, 308_334,
+            "the dearest tier with the largest minimum"
+        );
+    }
+
+    #[test]
+    fn audio_sent_as_a_link_or_a_file_id_has_no_bound_at_a_price_per_length() {
+        use kaeso_kpp::{DialectId, Source};
+        let whisper = by_length("minute", dec!(0.006));
+        for audio in [
+            link(),
+            Source::file_id(DialectId::OpenAiTranscriptions, "file-abc"),
+        ] {
+            let w = WorstCase::of(&transcribe(audio.clone()), 4000, &whisper, openai());
+            assert_eq!((w.nano_usd, w.bounded), (0, false), "{audio:?}");
+        }
+        assert_eq!(
+            WorstCase::of(&transcribe(link()), 4000, &Fields::default(), openai()),
+            WorstCase::FREE,
+            "a model without prices is refused by spend budgets before this"
+        );
+    }
+
+    #[test]
+    fn an_upload_whose_length_cannot_be_read_holds_what_its_size_allows_at_4_kbits() {
+        use kaeso_kpp::Source;
+        let whisper = by_length("minute", dec!(0.006));
+        let unknown = transcribe(Source::bytes("audio/mpeg", vec![0u8; 30_000]));
+        assert_eq!(
+            WorstCase::of(&unknown, 30_500, &whisper, openai()),
+            WorstCase {
+                tokens: 0,
+                nano_usd: 6_000_000,
+                bounded: true
+            },
+            "30,000 bytes last at most a minute at 500 bytes a second"
+        );
+        let stub = transcribe(Source::bytes(
+            "audio/mpeg",
+            b"ID3\x04\0\0\0\0\0\x23TSSE".to_vec(),
+        ));
+        let w = WorstCase::of(&stub, 400, &whisper, openai());
+        assert_eq!((w.nano_usd, w.bounded), (2_800, true), "14 bytes, 28 ms");
+    }
+
+    #[test]
+    fn a_header_that_understates_the_length_neither_shrinks_the_reservation_nor_the_bill() {
+        use kaeso_kpp::{AudioInput, Source};
+        let whisper = by_length("minute", dec!(0.006));
+        let fast = pcm_stating(60_000, 32_000_000, Some(1_000));
+        assert_eq!(
+            kaeso_codecs::audio_length::audio_duration(&fast),
+            None,
+            "the header alone says under a millisecond"
+        );
+        let fast = AudioInput::new(Source::bytes("audio/wav", fast));
+        assert_eq!(crate::cost::longest_audio_ms(&fast), Some(60_000));
+        assert_eq!(crate::cost::billed_audio_ms(&fast), Some(60_000));
+        let request = kaeso_kpp::Request::Transcription(kaeso_kpp::TranscriptionRequest::new(
+            "m",
+            kaeso_kpp::TranscriptionOperation::Transcribe,
+            fast,
+        ));
+        assert_eq!(
+            WorstCase::of(&request, 1_920_500, &whisper, openai()).nano_usd,
+            6_000_000,
+            "the bytes after the data header at 16 kHz in 2-byte frames"
+        );
+
+        let short = m4a(1_000, 100_000);
+        let size = i64::try_from(short.len()).unwrap();
+        assert_eq!(
+            kaeso_codecs::audio_length::audio_duration(&short),
+            Some(std::time::Duration::from_secs(1))
+        );
+        let short = AudioInput::new(Source::bytes("audio/mp4", short));
+        let w = WorstCase::of(
+            &transcribe(short.source.clone()),
+            100_500,
+            &whisper,
+            openai(),
+        );
+        assert_eq!(
+            (w.nano_usd, w.bounded),
+            (size * 2 * 100, true),
+            "two milliseconds a byte at $0.0001 a second"
+        );
+        assert_eq!(
+            crate::cost::billed_audio_ms(&short),
+            None,
+            "a second is too short for 100 kB, so the cost is unknown"
+        );
+
+        let honest = AudioInput::new(Source::bytes("audio/mp4", m4a(10_000, 100_000)));
+        assert_eq!(crate::cost::billed_audio_ms(&honest), Some(10_000));
+        assert_eq!(
+            crate::cost::longest_audio_ms(&honest),
+            Some(u64::try_from(size).unwrap() * 2),
+            "the size allows longer than it states"
+        );
+    }
+
+    #[test]
+    fn a_wav_file_with_a_second_format_chunk_is_measured_by_its_size() {
+        use kaeso_kpp::{AudioInput, Source};
+        let honest = pcm_stating(60_000, 32_000, None);
+        let mut second = b"fmt \x10\0\0\0\x01\0\x08\0".to_vec();
+        second.extend_from_slice(&384_000u32.to_le_bytes());
+        second.extend_from_slice(&(384_000u32 * 32).to_le_bytes());
+        second.extend_from_slice(b"\x20\0\x20\0");
+        let data = honest
+            .windows(4)
+            .position(|w| w == b"data")
+            .expect("a data chunk");
+        let mut doubled = honest[..data].to_vec();
+        doubled.extend_from_slice(&second);
+        doubled.extend_from_slice(&honest[data..]);
+        let size = u64::try_from(doubled.len()).unwrap();
+        let doubled = AudioInput::new(Source::bytes("audio/wav", doubled));
+        assert_eq!(
+            crate::cost::longest_audio_ms(&doubled),
+            Some(size * 2),
+            "a decoder plays the first format, so only the size bounds the length"
+        );
+        assert_eq!(
+            crate::cost::billed_audio_ms(&doubled),
+            None,
+            "the second format makes a minute look like a fraction of a second"
+        );
+    }
+
+    #[test]
+    fn a_token_priced_transcription_reserves_its_upload_and_the_models_output_limit() {
+        use kaeso_kpp::Source;
+        let gpt_4o_transcribe = Fields {
+            input_price: Some(dec!(2.5)),
+            output_price: Some(dec!(10)),
+            context_limit: Some(16_000),
+            output_limit: Some(2_000),
+            ..Fields::default()
+        };
+        let upload = transcribe(Source::bytes("audio/mpeg", vec![0u8; 300]));
+        assert_eq!(
+            WorstCase::of(&upload, 400, &gpt_4o_transcribe, openai()),
+            WorstCase {
+                tokens: 2_100,
+                nano_usd: 20_250_000,
+                bounded: true
+            },
+            "100 tokens at $2.50 and 2,000 at $10 a million"
+        );
+        let large = WorstCase::of(&upload, 20_000_000, &gpt_4o_transcribe, openai());
+        assert_eq!(
+            (large.tokens, large.bounded),
+            (18_000, true),
+            "at most the context window"
+        );
+        let linked = WorstCase::of(&transcribe(link()), 400, &gpt_4o_transcribe, openai());
+        assert_eq!((linked.tokens, linked.bounded), (18_000, true));
+
+        let audio_dearer = Fields {
+            input_audio_price: Some(dec!(5)),
+            ..gpt_4o_transcribe.clone()
+        };
+        assert_eq!(
+            WorstCase::of(&upload, 400, &audio_dearer, openai()).nano_usd,
+            20_500_000
+        );
+
+        let no_limits = Fields {
+            context_limit: None,
+            output_limit: None,
+            ..gpt_4o_transcribe.clone()
+        };
+        assert!(!WorstCase::of(&upload, 400, &no_limits, openai()).bounded);
+        assert!(!WorstCase::of(&transcribe(link()), 400, &no_limits, openai()).bounded);
+
+        let input_only = Fields {
+            input_price: Some(dec!(0.03)),
+            ..Fields::default()
+        };
+        assert_eq!(
+            WorstCase::of(&upload, 400, &input_only, openai()),
+            WorstCase {
+                tokens: 100,
+                nano_usd: 3_000,
+                bounded: true
+            }
+        );
+    }
+
+    #[test]
+    fn a_voice_change_reserves_the_longest_its_audio_can_last() {
+        use kaeso_kpp::{AudioInput, Request, Source, SpeechOperation, SpeechRequest};
+        let sts = by_length("minute", dec!(0.12));
+        let mut change = SpeechRequest::new("m", SpeechOperation::VoiceChange);
+        change.audio = Some(AudioInput::new(Source::bytes("audio/wav", wav(30_000))));
+        assert_eq!(
+            WorstCase::of(&Request::Speech(change.clone()), 960_500, &sts, openai()),
+            WorstCase {
+                tokens: 0,
+                nano_usd: 60_000_000,
+                bounded: true
+            },
+            "half a minute at $0.12 a minute"
+        );
+        change.audio = Some(AudioInput::new(link()));
+        let w = WorstCase::of(&Request::Speech(change.clone()), 400, &sts, openai());
+        assert_eq!((w.nano_usd, w.bounded), (0, false));
+        let per_character = Fields {
+            unit_prices: Some(vec![crate::catalogue::UnitPrice {
+                per: "million_characters".into(),
+                of: "input".into(),
+                usd: dec!(30),
+                ..crate::catalogue::UnitPrice::default()
+            }]),
+            ..Fields::default()
+        };
+        assert!(
+            WorstCase::of(&Request::Speech(change), 400, &per_character, openai()).bounded,
+            "only a price per length needs the length"
         );
     }
 

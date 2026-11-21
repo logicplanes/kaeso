@@ -286,6 +286,7 @@ impl Opening {
                 kind,
                 &eff.model_id,
             ),
+            sends_audio: kind == RequestKind::Transcription,
         };
         let reservation = state
             .limits
