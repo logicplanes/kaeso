@@ -1584,27 +1584,74 @@ mod tests {
                     requests: "12480".to_owned(),
                     tool_calls: "312".to_owned(),
                     cost: vec![Amount::new("41.20", "USD")],
+                    cost_partial: false,
                     projects: vec![
                         ProjectUse {
                             organization: "Acme".to_owned(),
                             name: "Checkout".to_owned(),
                             requests: Some("9120".to_owned()),
-                            cost: Amount::new("30.10", "USD"),
+                            cost: Some(Amount::new("30.10", "USD")),
                         },
                         ProjectUse {
                             organization: "Globex".to_owned(),
                             name: "Research".to_owned(),
                             requests: Some("2400".to_owned()),
-                            cost: Amount::new("8.60", "USD"),
+                            cost: Some(Amount::new("8.60", "USD")),
                         },
                         ProjectUse {
                             organization: "Acme".to_owned(),
                             name: "Support".to_owned(),
                             requests: Some("960".to_owned()),
-                            cost: Amount::new("2.50", "USD"),
+                            cost: Some(Amount::new("2.50", "USD")),
                         },
                     ],
                     top_models: vec!["claude-haiku-4-5".to_owned(), "gpt-4o".to_owned()],
+                },
+                Because::Right("usage.view"),
+            ),
+            one(
+                None,
+                Fact::WeeklySummary {
+                    from: date!(2026 - 11 - 02),
+                    to: date!(2026 - 11 - 08),
+                    requests: "10080".to_owned(),
+                    tool_calls: "0".to_owned(),
+                    cost: vec![Amount::new("2.50", "USD")],
+                    cost_partial: true,
+                    projects: vec![
+                        ProjectUse {
+                            organization: "Acme".to_owned(),
+                            name: "Checkout".to_owned(),
+                            requests: Some("9120".to_owned()),
+                            cost: None,
+                        },
+                        ProjectUse {
+                            organization: "Acme".to_owned(),
+                            name: "Support".to_owned(),
+                            requests: Some("960".to_owned()),
+                            cost: Some(Amount::new("2.50", "USD")),
+                        },
+                    ],
+                    top_models: vec!["claude-haiku-4-5".to_owned()],
+                },
+                Because::Right("usage.view"),
+            ),
+            one(
+                None,
+                Fact::WeeklySummary {
+                    from: date!(2026 - 11 - 02),
+                    to: date!(2026 - 11 - 08),
+                    requests: "9120".to_owned(),
+                    tool_calls: "0".to_owned(),
+                    cost: Vec::new(),
+                    cost_partial: true,
+                    projects: vec![ProjectUse {
+                        organization: "Acme".to_owned(),
+                        name: "Checkout".to_owned(),
+                        requests: Some("9120".to_owned()),
+                        cost: None,
+                    }],
+                    top_models: vec!["claude-haiku-4-5".to_owned()],
                 },
                 Because::Right("usage.view"),
             ),
@@ -1808,13 +1855,13 @@ mod tests {
                             organization: "Acme".to_owned(),
                             name: "Checkout".to_owned(),
                             requests: None,
-                            cost: Amount::new("300.00", "USD"),
+                            cost: Some(Amount::new("300.00", "USD")),
                         },
                         ProjectUse {
                             organization: "Acme".to_owned(),
                             name: "Support".to_owned(),
                             requests: None,
-                            cost: Amount::new("112.50", "USD"),
+                            cost: Some(Amount::new("112.50", "USD")),
                         },
                     ],
                 },
@@ -2330,7 +2377,7 @@ mod tests {
             organization: org.to_owned(),
             name: name.to_owned(),
             requests: Some("10".to_owned()),
-            cost: Amount::new("1.00", "USD"),
+            cost: Some(Amount::new("1.00", "USD")),
         };
         let week = |lang, projects| {
             notice(
@@ -2343,6 +2390,7 @@ mod tests {
                     requests: "20".to_owned(),
                     tool_calls: "0".to_owned(),
                     cost: vec![Amount::new("2.00", "USD")],
+                    cost_partial: false,
                     projects,
                     top_models: Vec::new(),
                 },
@@ -2613,7 +2661,7 @@ mod tests {
 
     #[test]
     fn every_email_speaks_each_language() {
-        let expected: [(EmailKind, [&str; 2], [&str; 2]); 49] = [
+        let expected: [(EmailKind, [&str; 2], [&str; 2]); 51] = [
             (
                 EmailKind::Invitation,
                 [
@@ -2796,6 +2844,16 @@ mod tests {
                     "Ihr Export ist abgeschlossen",
                 ],
                 ["[Checkout] 您的导出已完成", "您的导出已完成"],
+            ),
+            (
+                EmailKind::WeeklySummary,
+                ["Ihre Woche in Kaeso", "Ihre Woche in Kaeso"],
+                ["您在 Kaeso 的一周", "您在 Kaeso 的一周"],
+            ),
+            (
+                EmailKind::WeeklySummary,
+                ["Ihre Woche in Kaeso", "Ihre Woche in Kaeso"],
+                ["您在 Kaeso 的一周", "您在 Kaeso 的一周"],
             ),
             (
                 EmailKind::WeeklySummary,

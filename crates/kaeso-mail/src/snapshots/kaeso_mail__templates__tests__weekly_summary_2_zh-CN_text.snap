@@ -1,0 +1,29 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: 您在 Kaeso 的一周
+
+您在 Kaeso 的一周
+
+以下是您在 Acme 中的项目在 2026年11月2日–8日期间使用 Kaeso 的情况。
+
+请求： 10,080
+工具调用： 0
+成本： $2.50
+
+常用模型： claude-haiku-4-5
+
+- Checkout：9,120 次请求
+- Support：960 次请求，$2.50
+
+打开用量：
+https://kaeso.example.com/orgs/org_1
+
+成本仅包括您可以查看成本的项目。
+
+-- 
+此邮件由 kaeso.example.com 上的 Kaeso 发送。
+您收到此邮件，是因为您拥有“查看用量”权限。
+选择邮件： https://kaeso.example.com/settings/account/notifications
+退订： https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag

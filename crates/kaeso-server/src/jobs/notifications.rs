@@ -277,7 +277,7 @@ async fn cost_report(
             organization: place.clone(),
             name,
             requests: None,
-            cost: Amount::new(&plain(in_currency(&p.key)), &money.code),
+            cost: Some(Amount::new(&plain(in_currency(&p.key)), &money.code)),
         });
     }
     let total = Amount::new(&plain(total), &money.code);
@@ -339,6 +339,7 @@ async fn weekly_summary(
     let mut requests = 0_i64;
     let mut calls = 0_i64;
     let mut cost: BTreeMap<String, Decimal> = BTreeMap::new();
+    let mut cost_partial = false;
     let mut currencies: BTreeMap<Uuid, Money> = BTreeMap::new();
     let mut models: BTreeMap<String, i64> = BTreeMap::new();
     let mut projects = Vec::new();
@@ -369,26 +370,39 @@ async fn weekly_summary(
         )
         .await?;
         let r: i64 = rows.iter().map(|m| m.requests).sum();
-        let money = match currencies.entry(p.org_id) {
-            std::collections::btree_map::Entry::Occupied(e) => e.into_mut(),
-            std::collections::btree_map::Entry::Vacant(e) => {
-                e.insert(Money::of_org(state, p.org_id).await?)
+        let t: i64 = tools.iter().map(|t| t.calls).sum();
+        let org_costs = grants
+            .get(&p.org_id)
+            .is_some_and(|g| g.effective().contains(OrgRight::CostsOrgView));
+        let c = if held.contains(ProjectRight::CostsView) || org_costs {
+            let money = match currencies.entry(p.org_id) {
+                std::collections::btree_map::Entry::Occupied(e) => e.into_mut(),
+                std::collections::btree_map::Entry::Vacant(e) => {
+                    e.insert(Money::of_org(state, p.org_id).await?)
+                }
+            };
+            let money = &*money;
+            let c: Decimal = converted_costs(state, money, p.org_id, Some(p.project_id), from, to)
+                .await?
+                .values()
+                .sum();
+            if r > 0 || t > 0 || !c.is_zero() {
+                *cost.entry(money.code.clone()).or_default() += c;
             }
+            Some((c, Amount::new(&plain(c), &money.code)))
+        } else {
+            cost_partial |= r > 0 || t > 0;
+            None
         };
-        let money = &*money;
-        let c: Decimal = converted_costs(state, money, p.org_id, Some(p.project_id), from, to)
-            .await?
-            .values()
-            .sum();
         for m in &rows {
             *models.entry(m.key.clone()).or_default() += m.requests;
         }
         requests += r;
-        *cost.entry(money.code.clone()).or_default() += c;
-        calls += tools.iter().map(|t| t.calls).sum::<i64>();
+        calls += t;
         if r > 0 {
+            let (rank, shown) = c.map_or((Decimal::ZERO, None), |(c, a)| (c, Some(a)));
             projects.push((
-                c,
+                (rank, r),
                 p.org_id,
                 ProjectUse {
                     organization: names
@@ -396,7 +410,7 @@ async fn weekly_summary(
                         .map_or_else(|| p.org_id.to_string(), |n| (*n).to_owned()),
                     name: p.project_name.clone(),
                     requests: Some(r.to_string()),
-                    cost: Amount::new(&plain(c), &money.code),
+                    cost: shown,
                 },
             ));
         }
@@ -404,7 +418,12 @@ async fn weekly_summary(
     if requests == 0 && calls == 0 {
         return Ok(0);
     }
-    projects.sort_by_key(|p| std::cmp::Reverse(p.0));
+    // Ranking by visible cost would push a busy project whose cost is hidden out of the top.
+    if cost_partial {
+        projects.sort_by_key(|p| std::cmp::Reverse(p.0.1));
+    } else {
+        projects.sort_by_key(|p| std::cmp::Reverse(p.0));
+    }
     let mut top: Vec<(String, i64)> = models.into_iter().collect();
     top.sort_by_key(|m| std::cmp::Reverse(m.1));
     let open = projects.first().map_or_else(String::new, |(_, org, _)| {
@@ -422,6 +441,7 @@ async fn weekly_summary(
             .iter()
             .map(|(code, c)| Amount::new(&plain(*c), code))
             .collect(),
+        cost_partial,
         projects: projects.into_iter().take(TOP).map(|(_, _, l)| l).collect(),
         top_models: top.into_iter().take(3).map(|(m, _)| m).collect(),
     };

@@ -779,6 +779,156 @@ async fn the_weekly_summary_names_each_organization_and_the_week_and_links_to_us
     s.cleanup().await;
 }
 
+#[tokio::test]
+async fn the_weekly_summary_shows_only_the_costs_each_person_may_see() {
+    let s = TestServices::start().await;
+    let app = App::start(&s).await;
+    let owner = app.setup_without_projects().await;
+    let org = owner.org_id.clone();
+    let checkout = common::create_project(&app, &org, &owner.cookie, "Checkout").await;
+    let support = common::create_project(&app, &org, &owner.cookie, "Support").await;
+    let quiet = common::create_project(&app, &org, &owner.cookie, "Quiet").await;
+    let usage_only = app
+        .post(
+            &format!("/orgs/{org}/roles"),
+            json!({ "scope": "project", "name": "Usage reader", "rights": ["project.view", "usage.view"] }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED)
+        .body["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let (grace, _) = common::join(
+        &app,
+        &owner,
+        json!({
+            "email": "grace@example.com",
+            "role": "member",
+            "project_roles": [
+                { "project_id": checkout, "role": usage_only },
+                { "project_id": support, "role": "viewer" },
+            ],
+        }),
+        "Grace Hopper",
+    )
+    .await;
+    let (linus, _) = common::join(
+        &app,
+        &owner,
+        json!({
+            "email": "linus@example.com",
+            "role": "member",
+            "project_roles": [
+                { "project_id": checkout, "role": usage_only },
+                { "project_id": quiet, "role": "viewer" },
+            ],
+        }),
+        "Linus Pauling",
+    )
+    .await;
+    let mut costs_from_the_org = Vec::new();
+    for (email, role) in [
+        ("margaret@example.com", "developer"),
+        ("katherine@example.com", "auditor"),
+    ] {
+        let (cookie, _) = common::join(
+            &app,
+            &owner,
+            json!({
+                "email": email,
+                "role": role,
+                "project_roles": [{ "project_id": checkout, "role": usage_only }],
+            }),
+            email,
+        )
+        .await;
+        costs_from_the_org.push((email, cookie));
+    }
+    for cookie in [&owner.cookie, &grace, &linus]
+        .into_iter()
+        .chain(costs_from_the_org.iter().map(|(_, c)| c))
+    {
+        choose(&app, cookie, json!({ "weekly_summary": "now" })).await;
+    }
+    let mut monday = app.state.clock.now().date().next_day().unwrap();
+    while monday.weekday() != time::Weekday::Monday {
+        monday = monday.next_day().unwrap();
+    }
+    let day = monday - time::Duration::days(3);
+    kaeso_store::pg::limits::add_usage(
+        &app.state.pg,
+        &[
+            usage(
+                day,
+                common::uuid(&org),
+                common::uuid(&checkout),
+                9120,
+                "30.10",
+            ),
+            usage(day, common::uuid(&org), common::uuid(&support), 960, "2.50"),
+        ],
+    )
+    .await
+    .unwrap();
+    app.clock.set(monday.with_time(time!(8:31)).assume_utc());
+    assert!(
+        run_notices(&app).await.contains("5 weekly summaries"),
+        "one summary for each person"
+    );
+    settle(&app).await;
+    let week = |to: &str| {
+        app.mail
+            .to(to)
+            .into_iter()
+            .find(|m| m.kind.as_str() == "weekly_summary")
+            .unwrap()
+    };
+
+    let all = week(OWNER);
+    for line in [
+        "Requests: 10,080\n",
+        "Cost: $32.60\n",
+        "- Checkout: 9,120 requests, $30.10\n",
+        "- Support: 960 requests, $2.50\n",
+    ] {
+        assert!(all.text.contains(line), "{line}\n{}", all.text);
+    }
+
+    let some = week("grace@example.com");
+    for line in [
+        "Requests: 10,080\n",
+        "Cost: $2.50\n",
+        "- Checkout: 9,120 requests\n- Support: 960 requests, $2.50\n",
+        "Costs include only the projects whose costs you can see.\n",
+    ] {
+        assert!(some.text.contains(line), "{line}\n{}", some.text);
+    }
+    for hidden in ["30.10", "32.60"] {
+        assert!(!some.text.contains(hidden), "{hidden}\n{}", some.text);
+        assert!(!some.html.contains(hidden), "{hidden}\n{}", some.html);
+    }
+
+    let none = week("linus@example.com");
+    for line in ["Requests: 9,120\n", "- Checkout: 9,120 requests\n"] {
+        assert!(none.text.contains(line), "{line}\n{}", none.text);
+    }
+    assert!(!none.text.contains("Cost"), "{}", none.text);
+    for mail in [&none.text, &none.html] {
+        assert!(!mail.contains('$'), "{mail}");
+    }
+
+    for (email, _) in &costs_from_the_org {
+        let seen = week(email);
+        for line in ["Cost: $30.10\n", "- Checkout: 9,120 requests, $30.10\n"] {
+            assert!(seen.text.contains(line), "{email}: {line}\n{}", seen.text);
+        }
+        assert!(!seen.text.contains("Costs include only"), "{}", seen.text);
+    }
+    s.cleanup().await;
+}
+
 fn sign_in_mail(app: &App, to: &str) -> Vec<String> {
     app.mail
         .to(to)

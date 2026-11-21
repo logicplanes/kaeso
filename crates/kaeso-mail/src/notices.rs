@@ -412,25 +412,36 @@ pub struct ProjectUse {
     pub organization: String,
     pub name: String,
     pub requests: Option<String>,
-    pub cost: Amount,
+    pub cost: Option<Amount>,
 }
 
 impl ProjectUse {
     fn line(&self, lang: Locale) -> String {
-        let cost = lang.amount(&self.cost);
-        match (lang, self.requests.as_deref().map(|r| lang.number(r))) {
-            (Locale::En, Some(r)) => format!("{}: {r} requests, {cost}", self.name),
-            (Locale::De, Some(r)) => format!("{}: {r} Anfragen, {cost}", self.name),
-            (Locale::ZhCn, Some(r)) => zh(&[&self.name, "：", &r, " 次请求，", &cost]),
-            (Locale::En | Locale::De, None) => format!("{}: {cost}", self.name),
-            (Locale::ZhCn, None) => zh(&[&self.name, "：", &cost]),
+        let requests = self.requests.as_deref().map(|r| lang.number(r));
+        let cost = self.cost.as_ref().map(|c| lang.amount(c));
+        match (lang, requests, cost) {
+            (Locale::En, Some(r), Some(c)) => format!("{}: {r} requests, {c}", self.name),
+            (Locale::En, Some(r), None) => format!("{}: {r} requests", self.name),
+            (Locale::De, Some(r), Some(c)) => format!("{}: {r} Anfragen, {c}", self.name),
+            (Locale::De, Some(r), None) => format!("{}: {r} Anfragen", self.name),
+            (Locale::ZhCn, Some(r), Some(c)) => zh(&[&self.name, "：", &r, " 次请求，", &c]),
+            (Locale::ZhCn, Some(r), None) => zh(&[&self.name, "：", &r, " 次请求"]),
+            (Locale::En | Locale::De, None, Some(c)) => format!("{}: {c}", self.name),
+            (Locale::ZhCn, None, Some(c)) => zh(&[&self.name, "：", &c]),
+            (_, None, None) => self.name.clone(),
         }
     }
 
-    fn row(&self, lang: Locale) -> Row {
+    fn row(&self, lang: Locale, with_cost: bool) -> Row {
         let mut cells = vec![self.name.clone()];
         cells.extend(self.requests.as_deref().map(|r| lang.number(r)));
-        cells.push(lang.amount(&self.cost));
+        if with_cost {
+            cells.push(
+                self.cost
+                    .as_ref()
+                    .map_or_else(|| "—".to_owned(), |c| lang.amount(c)),
+            );
+        }
         Row {
             cells,
             text: self.line(lang),
@@ -465,11 +476,14 @@ fn projects_table(lang: Locale, projects: &[ProjectUse], requests: bool) -> Opti
         Locale::De => ("Projekt", "Anfragen", "Kosten"),
         Locale::ZhCn => ("项目", "请求", "成本"),
     };
+    let with_cost = projects.iter().any(|p| p.cost.is_some());
     let mut head = vec![project];
     if requests {
         head.push(count);
     }
-    head.push(cost);
+    if with_cost {
+        head.push(cost);
+    }
     let orgs = organizations(projects);
     let rows = if orgs.len() > 1 {
         orgs.iter()
@@ -483,12 +497,12 @@ fn projects_table(lang: Locale, projects: &[ProjectUse], requests: bool) -> Opti
                     projects
                         .iter()
                         .filter(|p| p.organization == *org)
-                        .map(|p| p.row(lang)),
+                        .map(|p| p.row(lang, with_cost)),
                 )
             })
             .collect()
     } else {
-        projects.iter().map(|p| p.row(lang)).collect()
+        projects.iter().map(|p| p.row(lang, with_cost)).collect()
     };
     Some(Table { head, rows })
 }
@@ -499,7 +513,7 @@ fn usage_stats(lang: Locale, requests: &str, tool_calls: &str, cost: &[Amount]) 
         Locale::De => ("Anfragen", "Tool-Aufrufe", "Kosten"),
         Locale::ZhCn => ("请求", "工具调用", "成本"),
     };
-    vec![
+    let mut stats = vec![
         Stat {
             label: r,
             value: lang.number(requests),
@@ -508,11 +522,14 @@ fn usage_stats(lang: Locale, requests: &str, tool_calls: &str, cost: &[Amount]) 
             label: t,
             value: lang.number(tool_calls),
         },
-        Stat {
+    ];
+    if !cost.is_empty() {
+        stats.push(Stat {
             label: c,
             value: lang.amounts(cost),
-        },
-    ]
+        });
+    }
+    stats
 }
 
 fn installs(lang: Locale, install: Install<'_>) -> String {
@@ -580,6 +597,7 @@ pub enum Fact<'a> {
         requests: String,
         tool_calls: String,
         cost: Vec<Amount>,
+        cost_partial: bool,
         projects: Vec<ProjectUse>,
         top_models: Vec<String>,
     },
@@ -770,24 +788,29 @@ impl Fact<'_> {
             requests,
             tool_calls,
             cost,
+            cost_partial,
             ..
         } = self
         else {
             return None;
         };
-        let (r, t, c) = (
-            lang.number(requests),
-            lang.number(tool_calls),
-            lang.amounts(cost),
-        );
-        Some(match lang {
-            Locale::En => {
+        let (r, t) = (lang.number(requests), lang.number(tool_calls));
+        // A total that leaves out some projects would read as the cost of every request counted.
+        let c = (!cost.is_empty() && !cost_partial).then(|| lang.amounts(cost));
+        Some(match (lang, c) {
+            (Locale::En, Some(c)) => {
                 format!("Last week your projects sent {r} requests and {t} tool calls for {c}.")
             }
-            Locale::De => format!(
+            (Locale::En, None) => {
+                format!("Last week your projects sent {r} requests and {t} tool calls.")
+            }
+            (Locale::De, Some(c)) => format!(
                 "Ihre Projekte sendeten letzte Woche {r} Anfragen und {t} Tool-Aufrufe für {c}."
             ),
-            Locale::ZhCn => zh(&[
+            (Locale::De, None) => {
+                format!("Ihre Projekte sendeten letzte Woche {r} Anfragen und {t} Tool-Aufrufe.")
+            }
+            (Locale::ZhCn, Some(c)) => zh(&[
                 "上周您的项目发送了 ",
                 &r,
                 " 次请求和 ",
@@ -796,7 +819,27 @@ impl Fact<'_> {
                 &c,
                 "。",
             ]),
+            (Locale::ZhCn, None) => {
+                zh(&["上周您的项目发送了 ", &r, " 次请求和 ", &t, " 次工具调用。"])
+            }
         })
+    }
+
+    fn note(&self, lang: Locale) -> Option<&'static str> {
+        match self {
+            Fact::WeeklySummary {
+                cost,
+                cost_partial: true,
+                ..
+            } if !cost.is_empty() => Some(match lang {
+                Locale::En => "Costs include only the projects whose costs you can see.",
+                Locale::De => {
+                    "Die Kosten umfassen nur die Projekte, deren Kosten Sie sehen können."
+                }
+                Locale::ZhCn => "成本仅包括您可以查看成本的项目。",
+            }),
+            _ => None,
+        }
     }
 
     fn details(&self, lang: Locale) -> Vec<Detail> {
@@ -2395,6 +2438,9 @@ pub fn notice(
     }
     if let Some(preheader) = fact.preheader(lang) {
         content = content.preheader(preheader);
+    }
+    if let Some(note) = fact.note(lang) {
+        content = content.note(note);
     }
     Email::new(to, fact.kind(), subject(place, &words.heading), content)
         .list_unsubscribe(links.unsubscribe.as_ref().map(|u| u.one_click.clone()))

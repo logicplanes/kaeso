@@ -95,11 +95,11 @@ fn reports(l: Locale, to: &str) -> Vec<Email> {
         unsubscribe: None,
     };
     let open = "https://kaeso.example.com/settings/instance/updates";
-    let project = |name: &str, requests: Option<&str>, cost: &str| ProjectUse {
+    let project = |name: &str, requests: Option<&str>, cost: Option<&str>| ProjectUse {
         organization: "Acme".to_owned(),
         name: name.to_owned(),
         requests: requests.map(str::to_owned),
-        cost: Amount::new(cost, "EUR"),
+        cost: cost.map(|c| Amount::new(c, "EUR")),
     };
     let facts = [
         Fact::WeeklySummary {
@@ -108,13 +108,27 @@ fn reports(l: Locale, to: &str) -> Vec<Email> {
             requests: "12480".to_owned(),
             tool_calls: "312".to_owned(),
             cost: vec![Amount::new("41.20", "EUR")],
-            projects: vec![project("Checkout", Some("9120"), "30.10")],
+            cost_partial: false,
+            projects: vec![project("Checkout", Some("9120"), Some("30.10"))],
+            top_models: vec!["gpt-4o".to_owned()],
+        },
+        Fact::WeeklySummary {
+            from: date!(2026 - 11 - 02),
+            to: date!(2026 - 11 - 08),
+            requests: "10080".to_owned(),
+            tool_calls: "0".to_owned(),
+            cost: vec![Amount::new("2.50", "EUR")],
+            cost_partial: true,
+            projects: vec![
+                project("Checkout", Some("9120"), None),
+                project("Support", Some("960"), Some("2.50")),
+            ],
             top_models: vec!["gpt-4o".to_owned()],
         },
         Fact::CostReport {
             month: date!(2026 - 10 - 01),
             total: &Amount::new("412.50", "EUR"),
-            projects: vec![project("Checkout", None, "300.00")],
+            projects: vec![project("Checkout", None, Some("300.00"))],
         },
         Fact::InstanceUpdate {
             version: "1.4.0",

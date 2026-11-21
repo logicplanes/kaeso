@@ -121,7 +121,7 @@ The weekly summary and the monthly cost report go out on their own schedule, so 
 | --- | --- | --- | --- |
 | Security | Account security, A new app can act as you | You | Always |
 | Personal | Export finished | Whoever started the export (`logs.export`, `audit_log.export`) | Now |
-| Personal | Weekly summary | `usage.view` | Off |
+| Personal | Weekly summary | `usage.view`; a project's cost only with `costs.view` or `costs.org.view` | Off |
 | Project | Your access changed | You | Now |
 | Project | Budget alerts, Limit reached | `limits.manage`, or the owner of a key with a limit | Now, Daily |
 | Project | Your key expires, Your key changed | The key's owner | Now |

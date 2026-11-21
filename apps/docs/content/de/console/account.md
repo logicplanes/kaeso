@@ -121,7 +121,7 @@ Die Wochenübersicht und der monatliche Kostenbericht gehen nach ihrem eigenen Z
 | --- | --- | --- | --- |
 | Sicherheit | Kontosicherheit, Eine neue App kann als Sie handeln | Sie | Immer |
 | Persönlich | Export abgeschlossen | Wer den Export gestartet hat (`logs.export`, `audit_log.export`) | Sofort |
-| Persönlich | Wochenübersicht | `usage.view` | Aus |
+| Persönlich | Wochenübersicht | `usage.view`; die Kosten eines Projekts nur mit `costs.view` oder `costs.org.view` | Aus |
 | Projekt | Ihr Zugriff hat sich geändert | Sie | Sofort |
 | Projekt | Budget-Warnungen, Limit erreicht | `limits.manage` oder der Inhaber eines Schlüssels mit Limit | Sofort, Täglich |
 | Projekt | Ihr Schlüssel läuft ab, Ihr Schlüssel wurde geändert | Der Inhaber des Schlüssels | Sofort |

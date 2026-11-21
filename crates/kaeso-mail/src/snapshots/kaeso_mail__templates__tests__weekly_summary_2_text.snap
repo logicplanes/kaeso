@@ -1,0 +1,29 @@
+---
+source: crates/kaeso-mail/src/templates.rs
+expression: "format!(\"Subject: {}\\n\\n{}\", r.subject, r.text)"
+---
+Subject: Your week in Kaeso
+
+Your week in Kaeso
+
+Here is how your projects in Acme used Kaeso, 2–8 Nov 2026.
+
+Requests: 10,080
+Tool calls: 0
+Cost: $2.50
+
+Top models: claude-haiku-4-5
+
+- Checkout: 9,120 requests
+- Support: 960 requests, $2.50
+
+Open usage:
+https://kaeso.example.com/orgs/org_1
+
+Costs include only the projects whose costs you can see.
+
+-- 
+Sent by Kaeso at kaeso.example.com.
+You get this email because you hold the right “View usage”.
+Choose your emails: https://kaeso.example.com/settings/account/notifications
+Unsubscribe: https://kaeso.example.com/unsubscribe#token=usr_1.org_members.tag
