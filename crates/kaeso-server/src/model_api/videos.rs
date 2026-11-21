@@ -216,6 +216,10 @@ pub(super) async fn register(
         completed_at: None,
         expires_at: at(job.expires_at),
         accounted_at: None,
+        tags: rec.outcome().tags.clone(),
+        user_agent: rec.outcome().user_agent.clone(),
+        alias: rec.outcome().alias.clone(),
+        line: rec.outcome().line.clone(),
     };
     store::insert(&state.pg, &row).await.map_err(|e| {
         tracing::error!(error = %e, "cannot keep a started video job");
@@ -1063,6 +1067,10 @@ async fn record_completion(
         }
     }
     o.requested_model = Some(row.model.clone());
+    o.tags.clone_from(&row.tags);
+    o.user_agent.clone_from(&row.user_agent);
+    o.alias.clone_from(&row.alias);
+    o.line.clone_from(&row.line);
     o.catalogue_model_id = row.catalogue_model_id;
     o.model_id = Some(row.upstream_model.clone());
     o.response_model = Some(if job.model.is_empty() {

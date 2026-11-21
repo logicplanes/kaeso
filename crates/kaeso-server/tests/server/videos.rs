@@ -72,10 +72,25 @@ async fn send(
     body: Option<Value>,
     range: Option<&str>,
 ) -> Answer {
+    send_with(env, method, path, key, body, range, &[]).await
+}
+
+async fn send_with(
+    env: &Env,
+    method: &str,
+    path: &str,
+    key: &str,
+    body: Option<Value>,
+    range: Option<&str>,
+    headers: &[(&str, &str)],
+) -> Answer {
     let mut req = Request::builder()
         .uri(path)
         .method(method)
         .header("authorization", format!("Bearer {key}"));
+    for (name, value) in headers {
+        req = req.header(*name, *value);
+    }
     if let Some(r) = range {
         req = req.header("range", r);
     }
@@ -159,6 +174,36 @@ fn sample() -> Vec<u8> {
         kaeso_testkit::mock_provider::kpp_fixtures().join("openai_videos/content/sample.mp4"),
     )
     .unwrap()
+}
+
+#[tokio::test]
+async fn a_finished_video_is_logged_with_the_tags_and_client_of_the_request_that_started_it() {
+    let env = env().await;
+    let started = [
+        ("kaeso-tags", "launch,eval-7"),
+        ("user-agent", "Studio/2.1"),
+    ];
+    let r = send_with(
+        &env,
+        "POST",
+        "/v1/videos",
+        &env.key,
+        Some(json!({ "model": "grok-imagine-video-1.5", "prompt": "A serene lake at sunrise", "seconds": "8", "size": "1280x720" })),
+        None,
+        &started,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    let polled = [("kaeso-tags", "poller"), ("user-agent", "Watcher/9")];
+    for _ in 0..3 {
+        let path = format!("/v1/videos/{id}");
+        send_with(&env, "GET", &path, &env.key, None, None, &polled).await;
+    }
+    let billed = completions(&env).await;
+    assert_eq!(billed.len(), 1);
+    assert_eq!(billed[0].tags, ["launch", "eval-7"]);
+    assert_eq!(billed[0].user_agent.as_deref(), Some("Studio/2.1"));
 }
 
 #[tokio::test]
