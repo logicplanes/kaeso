@@ -1,9 +1,11 @@
+import axe from "axe-core";
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DataTable } from "./data-table.js";
 import { col } from "./columns.js";
 import { InsetContent } from "../../utils/inset.js";
+import { ContextMenu } from "../menu/index.js";
 
 type Row = { id: string; key: string; at: string; cost: string };
 const rows: Row[] = [
@@ -184,6 +186,37 @@ describe("DataTable keyboard model", () => {
     await user.pointer({ keys: "[MouseRight]", target: screen.getByRole("button", { name: "Key" }) });
     await user.click(await screen.findByRole("menuitem", { name: "Reset width" }));
     expect(handle()).toHaveAttribute("aria-valuenow", "160");
+  });
+
+  it("stays one tab stop with a right-click menu on rows that hold no controls, and opens the menu on the focused row", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <DataTable
+          aria-label="Keys"
+          data={rows}
+          columns={columns.filter((c) => c.id !== "open")}
+          getRowId={(r) => r.id}
+          onRowClick={() => undefined}
+          rowMenu={(r) => <ContextMenu.Item>Copy id of {r.key}</ContextMenu.Item>}
+        />
+        <button type="button">After</button>
+      </>,
+    );
+    const table = screen.getByRole("grid", { name: "Keys" });
+    await user.tab();
+    expect(row("checkout-web")).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "After" })).toHaveFocus();
+    const result = await axe.run(table, { runOnly: { type: "rule", values: ["aria-required-children"] } });
+    expect(result.violations).toEqual([]);
+    fireEvent.keyDown(row("checkout-web"), { key: "ArrowDown" });
+    expect(row("ci-runner")).toHaveFocus();
+    fireEvent.contextMenu(row("ci-runner"));
+    expect(await screen.findByRole("menuitem", { name: "Copy id of ci-runner" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    expect(row("ci-runner")).toHaveFocus();
   });
 
   it("says how to recover when loading failed and there is no retry", () => {

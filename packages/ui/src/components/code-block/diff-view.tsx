@@ -174,7 +174,7 @@ export const DiffView = forwardRef<HTMLDivElement, DiffViewProps>(function DiffV
         tabIndex={0}
         role="group"
         aria-label={typeof title === "string" ? title : t("diffView.label", "Changes")}
-        className="relative overflow-x-auto py-8 scrollbar-quiet scroll-fade-x focus-ring-inset"
+        className="relative overflow-x-auto overscroll-x-contain py-8 scrollbar-quiet scroll-fade-x focus-ring-inset"
       >
         <pre className="mono text-small text-fg">
           <code className={cn("grid", !wrap && "min-w-max")}>

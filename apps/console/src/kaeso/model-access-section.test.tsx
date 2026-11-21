@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ALL_PROJECT_RIGHTS, signedIn } from "~/test/fixtures";
+import { ALL_PROJECT_RIGHTS, USER, project, signedIn } from "~/test/fixtures";
 import { notifications } from "~/test/fixtures/org";
 import { access, apiKey, catalogueModel, memberRights, projectData, projectMember, projectPath, serviceAccount } from "~/test/fixtures/project";
 import { model } from "~/test/fixtures/shell";
@@ -11,6 +11,7 @@ const sonnet = catalogueModel({ effective: { ...catalogueModel().effective, disp
 
 const MEMBER = "orgs/:org/projects/:project/members/:user";
 const MODELS = [sonnet, model()];
+const haiku = catalogueModel({ id: "cm_haiku", effective: { ...catalogueModel().effective, display_name: "Haiku 4.5" } });
 
 async function memberSheet(memberAccess = access({ effective: ["cm_sonnet", "cm_gpt"] }), rights: readonly string[] = ALL_PROJECT_RIGHTS) {
   signedIn({ projectRights: rights });
@@ -142,5 +143,45 @@ describe("ModelAccessSection", () => {
     await user.keyboard("{Escape}");
     await user.click(within(sheet).getByRole("button", { name: "Save" }));
     await waitFor(() => expect(requests("PATCH", "orgs/:org/projects/:project/keys/:key/models").map((r) => r.body)).toEqual([{ models: ["cm_custom"] }]));
+  });
+
+  it("offers your own key every catalogue model when you reach the project through the organization, without asking for member models", async () => {
+    signedIn();
+    projectData({ keys: [apiKey()], models: [...MODELS, haiku] });
+    on("GET", "orgs/:org/projects/:project/my-rights", {
+      project_id: project().id,
+      user_id: USER,
+      role: null,
+      rights: ALL_PROJECT_RIGHTS.map((right) => ({ right, sources: [{ kind: "owner" }] })),
+    });
+    on("GET", "orgs/:org/projects/:project/keys/:key", apiKey());
+    on("GET", "orgs/:org/projects/:project/keys/:key/models", access({ all: false, models: ["cm_sonnet"], effective: ["cm_sonnet"] }));
+    on("GET", `${MEMBER}/models`, apiError(404, "not_found", "No such project member, or you cannot see it."));
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    const sheet = await screen.findByRole("dialog", { name: /checkout-web/ });
+    await user.click(await within(sheet).findByRole("button", { name: "Edit" }));
+    await user.click(within(sheet).getByRole("button", { description: "Models" }));
+    expect(await screen.findByRole("option", { name: /Sonnet 4.5/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /GPT-5 mini/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Haiku 4.5/ })).toBeInTheDocument();
+    expect(requests("GET", `${MEMBER}/models`)).toEqual([]);
+  });
+
+  it("offers every catalogue model for a key whose owner isn't a member of the project", async () => {
+    signedIn();
+    const theirs = apiKey({ principal: { kind: "user", id: "usr_grace" } });
+    projectData({ keys: [theirs], models: [...MODELS, haiku] });
+    on("GET", "orgs/:org/projects/:project/keys/:key", theirs);
+    on("GET", "orgs/:org/projects/:project/keys/:key/models", access({ all: false, models: ["cm_sonnet"], effective: ["cm_sonnet"] }));
+    on("GET", `${MEMBER}/models`, apiError(404, "not_found", "No such project member, or you cannot see it."));
+    const { user } = await renderApp(projectPath("keys?key=key_web"));
+
+    const sheet = await screen.findByRole("dialog", { name: /checkout-web/ });
+    await user.click(await within(sheet).findByRole("button", { name: "Edit" }));
+    await user.click(within(sheet).getByRole("button", { description: "Models" }));
+    expect(await screen.findByRole("option", { name: /Sonnet 4.5/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /GPT-5 mini/ })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /Haiku 4.5/ })).toBeInTheDocument();
   });
 });

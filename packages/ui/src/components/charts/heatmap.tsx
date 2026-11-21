@@ -143,7 +143,7 @@ export const Heatmap = forwardRef<
                 setKeyboard(false);
               }}
               onScroll={() => setCell((c) => (keyboard ? c : null))}
-              className="size-full overflow-x-auto overflow-y-hidden rounded-cell scrollbar-quiet scroll-fade-x focus-ring-inset"
+              className="size-full overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-cell scrollbar-quiet scroll-fade-x focus-ring-inset"
             >
               <div
                 ref={grid}

@@ -715,7 +715,7 @@ function DataTableInner<T>(
         <div
           ref={body}
           role="rowgroup"
-          className="overflow-x-auto scrollbar-quiet scroll-fade-x"
+          className="overflow-x-auto overscroll-x-contain scrollbar-quiet scroll-fade-x"
           onScroll={(e) => {
             if (head.current && head.current.scrollLeft !== e.currentTarget.scrollLeft) head.current.scrollLeft = e.currentTarget.scrollLeft;
           }}

@@ -4,6 +4,8 @@ use std::process::{Command, Stdio};
 
 use serde_json::Value;
 
+use crate::gateway_settings::Check;
+
 pub const COMPOSE_BIN: &str = "/usr/local/bin/docker-compose";
 pub const DONE: u8 = 0;
 pub const FAILED: u8 = 1;
@@ -39,7 +41,10 @@ pub struct Service {
 }
 
 pub fn services(config: &[u8]) -> Option<Vec<Service>> {
-    let value: Value = serde_json::from_slice(config).ok()?;
+    listed(&serde_json::from_slice(config).ok()?)
+}
+
+fn listed(value: &Value) -> Option<Vec<Service>> {
     let mut list: Vec<Service> = value
         .get("services")?
         .as_object()?
@@ -103,7 +108,7 @@ fn compose(bin: &Path, args: &[String]) -> u8 {
     }
 }
 
-fn config(bin: &Path) -> Result<Vec<Service>, u8> {
+fn config(bin: &Path) -> Result<(Vec<Service>, Value), u8> {
     let out = Command::new(bin)
         .args(["config", "--format", "json"])
         .stdin(Stdio::null())
@@ -117,10 +122,37 @@ fn config(bin: &Path) -> Result<Vec<Service>, u8> {
         say("the install's Compose files do not load");
         return Err(FAILED);
     }
-    services(&out.stdout).ok_or_else(|| {
+    let value: Value = serde_json::from_slice(&out.stdout).unwrap_or(Value::Null);
+    let services = listed(&value).ok_or_else(|| {
         say("docker compose config printed no services");
         FAILED
-    })
+    })?;
+    Ok((services, value))
+}
+
+// Pull is the last step before the switch, and the only one the release's own runner takes
+// while the running gateway still serves: a gateway that would refuse its settings at startup
+// stops the update here, since an update that migrates can't roll back once it has started.
+fn gateway_starts(config: &Value) -> Result<(), u8> {
+    let read = |path: &Path| std::fs::read_to_string(path);
+    match crate::gateway_settings::check(config, &read) {
+        Check::Fine => Ok(()),
+        Check::Refused(found) => {
+            for refusal in &found {
+                say(refusal);
+            }
+            say(
+                "The new gateway would stop at startup with these settings, so the update stops before it switches; change them in .env, compose.override.yaml or the configuration file, then update again",
+            );
+            Err(REFUSED)
+        }
+        Check::Unreadable(why) => {
+            say(&format!(
+                "{why}; check the settings the upgrade guide lists, then update with the installer"
+            ));
+            Err(REFUSED)
+        }
+    }
 }
 
 fn seconds(arg: Option<&String>) -> Option<String> {
@@ -139,34 +171,41 @@ pub fn run(bin: &Path, args: &[String]) -> u8 {
         (Some("stop"), None) if args.len() == 1 => {
             compose(bin, &owned(&["stop", "gateway", "console"]))
         }
-        (Some("pull"), None) if args.len() == 1 => match config(bin).map(|s| applied(&s)) {
+        (Some("pull"), None) if args.len() == 1 => match config(bin) {
             Err(code) => code,
-            Ok(Err(why)) => {
-                say(&why);
-                REFUSED
-            }
-            Ok(Ok(names)) => {
-                let mut call = owned(&["pull", "--quiet", "--policy", "missing"]);
-                call.extend(names);
-                compose(bin, &call)
-            }
+            Ok((services, value)) => match applied(&services) {
+                Err(why) => {
+                    say(&why);
+                    REFUSED
+                }
+                Ok(names) => {
+                    if let Err(code) = gateway_starts(&value) {
+                        return code;
+                    }
+                    let mut call = owned(&["pull", "--quiet", "--policy", "missing"]);
+                    call.extend(names);
+                    compose(bin, &call)
+                }
+            },
         },
-        (Some("up"), Some(wait)) if args.len() == 2 => match config(bin).map(|s| applied(&s)) {
-            Err(code) => code,
-            Ok(Err(why)) => {
-                say(&why);
-                REFUSED
+        (Some("up"), Some(wait)) if args.len() == 2 => {
+            match config(bin).map(|(s, _)| applied(&s)) {
+                Err(code) => code,
+                Ok(Err(why)) => {
+                    say(&why);
+                    REFUSED
+                }
+                Ok(Ok(names)) => {
+                    let mut call = owned(&["up", "--detach", "--wait", "--wait-timeout"]);
+                    call.push(wait);
+                    call.extend(names);
+                    compose(bin, &call)
+                }
             }
-            Ok(Ok(names)) => {
-                let mut call = owned(&["up", "--detach", "--wait", "--wait-timeout"]);
-                call.push(wait);
-                call.extend(names);
-                compose(bin, &call)
-            }
-        },
+        }
         (Some("replace"), Some(wait)) if args.len() == 2 => match config(bin) {
             Err(code) => code,
-            Ok(services) => {
+            Ok((services, _)) => {
                 let names = replaced(&services);
                 if names.is_empty() {
                     say("no service runs a Kaeso image the update hasn't replaced");
@@ -271,6 +310,15 @@ mod tests {
     mod with_a_fake_compose {
         use super::*;
         use std::os::unix::fs::PermissionsExt;
+        use std::sync::{Mutex, MutexGuard, PoisonError};
+
+        // A script another test thread still holds open for writing when this one forks fails
+        // to run with ETXTBSY, so the fakes take turns.
+        static TURN: Mutex<()> = Mutex::new(());
+
+        fn turn() -> MutexGuard<'static, ()> {
+            TURN.lock().unwrap_or_else(PoisonError::into_inner)
+        }
 
         struct Fake {
             dir: std::path::PathBuf,
@@ -323,6 +371,7 @@ mod tests {
 
         #[test]
         fn each_task_runs_compose_with_explicit_services() {
+            let _turn = turn();
             let fake = Fake::new("tasks", &config(""), 0);
             assert_eq!(fake.run(&["stop"]), DONE);
             assert_eq!(fake.run(&["pull"]), DONE);
@@ -341,6 +390,7 @@ mod tests {
 
         #[test]
         fn an_unpinned_image_is_refused_before_compose_touches_anything() {
+            let _turn = turn();
             let fake = Fake::new("unpinned", &config(r#","own":{"image":"example/own"}"#), 0);
             assert_eq!(fake.run(&["pull"]), REFUSED);
             assert_eq!(fake.run(&["up", "600"]), REFUSED);
@@ -348,7 +398,36 @@ mod tests {
         }
 
         #[test]
+        fn a_gateway_setting_the_release_refuses_stops_the_pull_but_never_a_rollback() {
+            let _turn = turn();
+            let image = format!("ghcr.io/logicplanes/kaeso-gateway:40.2.1@sha256:{D}");
+            let refusing = format!(
+                r#"{{"services":{{"caddy":{{"image":"ghcr.io/logicplanes/kaeso-console@sha256:{D}"}},"gateway":{{"image":"{image}","environment":{{"KAESO_KPMR_INTERVAL":"1m","KAESO_SMTP_USER":""}}}}}}}}"#
+            );
+            let fake = Fake::new("refusing", &refusing, 0);
+            assert_eq!(fake.run(&["pull"]), REFUSED);
+            assert!(fake.calls().is_empty(), "nothing is pulled");
+            assert_eq!(
+                fake.run(&["up", "600"]),
+                DONE,
+                "a rollback starts the previous release, which took the setting"
+            );
+            assert_eq!(fake.run(&["replace", "60"]), DONE);
+            assert_eq!(
+                fake.calls(),
+                [
+                    "up --detach --wait --wait-timeout 600 caddy gateway",
+                    "up --detach --no-deps --wait --wait-timeout 60 caddy",
+                ],
+                "neither up nor replace checks a setting"
+            );
+            let fine = Fake::new("fine", &refusing.replace("\"1m\"", "\"5m\""), 0);
+            assert_eq!(fine.run(&["pull"]), DONE);
+        }
+
+        #[test]
         fn a_failing_compose_and_wrong_arguments_fail() {
+            let _turn = turn();
             let fake = Fake::new("failing", &config(""), 1);
             assert_eq!(fake.run(&["stop"]), FAILED);
             for wrong in [

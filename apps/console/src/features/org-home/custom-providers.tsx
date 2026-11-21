@@ -254,7 +254,8 @@ export function CustomProvidersTab({ org, adding, onAddingChange }: { org: strin
                   </Tooltip>
                 )}
               </span>
-              <Text variant="small" tone="secondary" truncate>
+              {/* Relative, so the hidden labels inside (absolutely placed) are clipped with the line instead of widening the page. */}
+              <Text variant="small" tone="secondary" truncate className="relative">
                 <Text variant="small" tone="inherit" mono>
                   {p.id}
                 </Text>

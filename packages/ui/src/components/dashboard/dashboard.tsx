@@ -85,7 +85,7 @@ export const DashboardCell = forwardRef<
               <Heading className="min-w-0">
                 <Link
                   href={href}
-                  className="group inline-flex max-w-full items-center gap-2 rounded-cell px-4 py-3 text-small font-medium text-fg-secondary transition-control hover:text-fg focus-ring lg:h-24 lg:py-0"
+                  className="group relative inline-flex max-w-full items-center gap-2 rounded-cell px-4 py-3 text-small font-medium text-fg-secondary transition-control tap-target hover:text-fg focus-ring lg:h-24 lg:py-0"
                 >
                   <span className="min-w-0 wrap-break-word lg:truncate">
                     {title}

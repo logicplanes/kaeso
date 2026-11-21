@@ -160,7 +160,7 @@ function SharedBody({ v }: { v: SharedView }) {
         </Text>
         {v.made_with_kaeso && (
           <Text variant="caption" tone="secondary">
-            <Link href="https://kaeso.app" target="_blank" rel="noopener noreferrer">
+            <Link href="https://kaeso.app" variant="action" target="_blank" rel="noopener noreferrer">
               {t("kaeso.share.madeWith", "Made with Kaeso")}
             </Link>
           </Text>

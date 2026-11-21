@@ -131,7 +131,10 @@ export const Flow = forwardRef<HTMLDivElement, FlowProps>(function Flow(
       role="figure"
       aria-label={ariaLabel ?? t("flow.label", "Flow diagram")}
       {...(scrolls ? { tabIndex: 0 } : {})}
-      className={cn("relative inline-block max-w-full overflow-x-auto overflow-y-hidden align-top scrollbar-quiet scroll-fade-x focus-ring-inset", className)}
+      className={cn(
+        "relative inline-block max-w-full overflow-x-auto overflow-y-hidden overscroll-x-contain align-top scrollbar-quiet scroll-fade-x focus-ring-inset",
+        className,
+      )}
     >
       <div ref={content} data-flow-content="" className="relative flex w-max items-center gap-64">
         <svg ref={lines} aria-hidden className="pointer-events-none absolute inset-0 overflow-visible" width={size.w} height={size.h}>

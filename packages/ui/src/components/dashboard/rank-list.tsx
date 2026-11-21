@@ -63,7 +63,7 @@ export const RankList = forwardRef<
     return (
       <ol ref={ref} aria-label={ariaLabel} aria-busy className={cn("flex flex-col gap-2", className)}>
         {Array.from({ length: rows }, (_, i) => (
-          <li key={i} className="flex h-36 items-center justify-between gap-12 px-12">
+          <li key={i} className={cn("flex h-36 items-center justify-between gap-12 px-12", onOpen && "coarse:h-44")}>
             <Skeleton shape="line" className={SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]} />
             <Skeleton shape="line" className="w-48" />
           </li>
@@ -111,7 +111,7 @@ export const RankList = forwardRef<
             )}
           </>
         );
-        const row = "relative flex h-36 w-full min-w-0 items-center gap-12 rounded-cell px-12";
+        const row = cn("relative flex h-36 w-full min-w-0 items-center gap-12 rounded-cell px-12", onOpen && "coarse:h-44");
         return (
           <li key={item.id} data-id={item.id} className={cn(arrived.current.has(item.id) && "value-swap-in")}>
             {onOpen ? (

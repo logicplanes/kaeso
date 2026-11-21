@@ -63,7 +63,7 @@ export const columnLabel = (id: ColumnId): string =>
 const DAY_TIME_WIDTH: Record<Locale, number> = { en: 148, de: 156, "zh-CN": 164 };
 const SHORT_DAY_TIME_WIDTH: Record<Locale, number> = { en: 128, de: 136, "zh-CN": 144 };
 const TIME_WIDTH: Record<Locale, number> = { en: 128, de: 128, "zh-CN": 144 };
-const STACKED_WIDTH = 88;
+const STACKED_WIDTH: Record<Locale, number> = { en: 88, de: 88, "zh-CN": 96 };
 const PHONE_TIME_WIDTH = 96;
 const PROVIDER_WIDTH = 144;
 const MODEL_WIDTH = 280;
@@ -73,7 +73,7 @@ const NARROW_BELOW = 800;
 export type LogsLayout = "wide" | "medium" | "narrow" | "phone";
 
 function timeWidth(spansDays: boolean, layout: LogsLayout): number {
-  if (layout === "phone" && spansDays) return STACKED_WIDTH;
+  if (layout === "phone" && spansDays) return STACKED_WIDTH[locale()];
   if (layout === "phone") return PHONE_TIME_WIDTH;
   if (!spansDays) return TIME_WIDTH[locale()];
   return (layout === "narrow" ? SHORT_DAY_TIME_WIDTH : DAY_TIME_WIDTH)[locale()];
@@ -123,6 +123,40 @@ export function storeColumns(next: ColumnId[]): void {
   writeStored(COLUMNS_KEY, JSON.stringify(next));
 }
 
+export function startedColumn<T extends { started_at: string }>(spansDays: boolean, layout: LogsLayout) {
+  const stacked = layout === "phone" && spansDays;
+  const format = (iso: string, parts: Intl.DateTimeFormatOptions) => dateFormatter({ ...parts, hourCycle: "h23", ...inZone() }, locale())(iso);
+  const time = (iso: string) =>
+    format(iso, {
+      ...(spansDays ? { day: "numeric", month: "short" } : {}),
+      hour: "2-digit",
+      minute: "2-digit",
+      ...(layout === "narrow" && spansDays ? {} : { second: "2-digit" }),
+    });
+  return col.custom(
+    {
+      id: "time",
+      header: layout === "phone" ? columnLabel("time") : t("logs.column.startedIn", "Started ({zone})", { zone: zoneName() }),
+      size: timeWidth(spansDays, layout),
+      priority: 1,
+    },
+    (r: T) => r.started_at,
+    (v) =>
+      stacked ? (
+        <time dateTime={v} className="flex flex-col">
+          <Text tabular>{format(v, { hour: "2-digit", minute: "2-digit" })}</Text>
+          <Text variant="caption" tone="tertiary">
+            {format(v, { day: "numeric", month: "short" })}
+          </Text>
+        </time>
+      ) : (
+        <Text tabular>
+          <time dateTime={v}>{time(v)}</time>
+        </Text>
+      ),
+  );
+}
+
 export const providerInModel = (layout: LogsLayout, shown: readonly ColumnId[]) =>
   shown.includes("provider") && shown.includes("model") && (layout === "medium" || layout === "narrow");
 
@@ -143,38 +177,8 @@ export function logColumns({
   partyName: (p: Party) => string;
   providerName: (id: string) => string;
 }) {
-  const stacked = layout === "phone" && spansDays;
-  const format = (iso: string, parts: Intl.DateTimeFormatOptions) => dateFormatter({ ...parts, hourCycle: "h23", ...inZone() }, locale())(iso);
-  const time = (iso: string) =>
-    format(iso, {
-      ...(spansDays ? { day: "numeric", month: "short" } : {}),
-      hour: "2-digit",
-      minute: "2-digit",
-      ...(layout === "narrow" && spansDays ? {} : { second: "2-digit" }),
-    });
   return {
-    time: col.custom(
-      {
-        id: "time",
-        header: layout === "phone" ? columnLabel("time") : t("logs.column.startedIn", "Started ({zone})", { zone: zoneName() }),
-        size: timeWidth(spansDays, layout),
-        priority: 1,
-      },
-      (r: LogView) => r.started_at,
-      (v) =>
-        stacked ? (
-          <time dateTime={v} className="flex flex-col">
-            <Text tabular>{format(v, { hour: "2-digit", minute: "2-digit" })}</Text>
-            <Text variant="caption" tone="tertiary">
-              {format(v, { day: "numeric", month: "short" })}
-            </Text>
-          </time>
-        ) : (
-          <Text tabular>
-            <time dateTime={v}>{time(v)}</time>
-          </Text>
-        ),
-    ),
+    time: startedColumn<LogView>(spansDays, layout),
     status: col.custom(
       { id: "status", header: columnLabel("status"), size: STATUS_WIDTH, priority: 1 },
       (r: LogView) => r.status,

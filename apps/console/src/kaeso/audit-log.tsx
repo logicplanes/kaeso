@@ -42,7 +42,7 @@ import { usePhone } from "~/shell/use-phone";
 const dateTag = () => (locale() === "en" ? "en-GB" : locale());
 const shortTime = (v: string) =>
   dateFormatter({ day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", ...inZone() }, locale())(v);
-const FILTER_FIELD = "min-w-0 flex-1 basis-120 sm:w-160 sm:flex-none sm:basis-auto";
+const FILTER_FIELD = "min-w-0 flex-1 basis-140 sm:w-160 sm:flex-none sm:basis-auto";
 const TIME_WIDTH: Record<Locale, number> = { en: 140, de: 148, "zh-CN": 148 };
 const PHONE_TIME_MIN = 88;
 const PHONE_TIME_MAX = 128;
