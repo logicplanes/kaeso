@@ -689,13 +689,14 @@ def test_starting_an_install_again_checks_its_settings_and_refuses_without_touch
     assert (install / "compose.yaml.previous").read_text() == compose_of("40.6.0")
 
 
-def gateway_running(tmp_path: Path, image: str | None) -> str:
-    """A docker function whose install has a gateway container from that image, or none."""
-    container = "echo c0ffee" if image else ":"
+def gateway_running(*containers: tuple[str, str], ps: str = "") -> str:
+    """A docker function whose install has these gateway containers, by name and image, listed in this order."""
+    listed = "".join(f"echo '{name} id{i}'; " for i, (name, _) in enumerate(containers)) or ":"
+    inspected = "".join(f'"inspect --format {{{{.Config.Image}}}} id{i}") echo "{image}" ;; ' for i, (_, image) in enumerate(containers))
     return f'''docker() {{
   case "$*" in
-    "compose ps -a -q gateway") {container} ;;
-    "inspect --format {{{{.Config.Image}}}} c0ffee") echo "{image}" ;;
+    "compose ps -a --format {{{{.Name}}}} {{{{.ID}}}} gateway") {ps or listed} ;;
+    {inspected}
     *) return 1 ;;
   esac
 }}'''
@@ -705,23 +706,31 @@ def gateway_image(version: str) -> str:
     return f"ghcr.io/logicplanes/kaeso-gateway:{version}@sha256:{'a' * 64}"
 
 
+def on(version: str) -> tuple[str, str]:
+    return ("kaeso-gateway-1", gateway_image(version))
+
+
 @pytest.mark.parametrize(
-    ("previous", "image", "unfinished"),
+    ("previous", "docker", "unfinished"),
     [
-        ("40.6.0", gateway_image("40.6.0"), True),
-        ("40.6.0", gateway_image("40.7.0"), False),
-        (None, gateway_image("40.6.0"), False),
-        ("40.5.0", gateway_image("40.6.0"), False),
-        ("40.6.0", None, False),
-        ("40.6.0", "kaeso-gateway:local", False),
+        ("40.6.0", gateway_running(on("40.6.0")), True),
+        ("40.6.0", gateway_running(on("40.7.0")), False),
+        (None, gateway_running(on("40.6.0")), False),
+        ("40.5.0", gateway_running(on("40.6.0")), False),
+        ("40.6.0", gateway_running(), False),
+        ("40.6.0", gateway_running(("kaeso-gateway-1", "kaeso-gateway:local")), False),
+        ("40.8.0", gateway_running(on("40.8.0")), False),
+        ("40.6.0", gateway_running(("kaeso-gateway-1-previous", gateway_image("40.6.0")), on("40.7.0")), False),
+        ("40.6.0", gateway_running(ps="exit 1"), False),
     ],
+    ids=["halfway", "switched", "no-backup", "other-backup", "no-container", "local-image", "downgrade", "updater-kept-old", "ps-fails"],
 )
-def test_an_update_that_stopped_before_its_release_started_counts_as_unfinished(previous, image, unfinished, tmp_path):
+def test_an_update_that_stopped_before_its_release_started_counts_as_unfinished(previous, docker, unfinished, tmp_path):
     install = an_install(tmp_path, "40.7.0")
     if previous:
         (install / "compose.yaml.previous").write_text(compose_of(previous))
     result = run_part(
-        f'{gateway_running(tmp_path, image)}; cd "{install}"; here="{install}"; updated=; '
+        f'{docker}; cd "{install}"; here="{install}"; updated=; '
         'if unfinished_update; then echo "updated=$updated target=$target"; else echo finished; fi',
         tmp_path,
     )
@@ -731,6 +740,65 @@ def test_an_update_that_stopped_before_its_release_started_counts_as_unfinished(
         assert "updated=40.6.0 target=40.7.0" in result.stdout
     else:
         assert result.stdout.strip() == "finished"
+
+
+def halfway_update_to(tmp_path: Path, version: str, refuses: bool) -> subprocess.CompletedProcess:
+    """An --update to that release, in an install whose last update wrote 40.7.0's compose.yaml and stopped
+    with the gateway still on 40.6.0."""
+    install = an_install(tmp_path, "40.7.0")
+    (install / "compose.yaml.previous").write_text(compose_of("40.6.0"))
+    release_dir(tmp_path, version, compose_of(version), latest=True)
+    check = "echo 'Error: configuration: KAESO_KPMR_INTERVAL (kpmr.interval) is 1m'; return 1" if refuses else "return 0"
+    docker = gateway_running(on("40.6.0")).replace("*) return 1 ;;", f'"compose run --rm --no-deps -T gateway config check") {check} ;;\n    *) return 1 ;;')
+    return run_part(
+        f'{docker}; cd "{install}"; version=latest; here="{install}"; fresh=; updated=; update_compose; check_settings; echo "updated=$updated"',
+        tmp_path,
+        {"KAESO_RELEASES_URL": (tmp_path / "releases").as_uri()},
+    )
+
+
+def test_an_update_to_a_newer_release_after_one_that_stopped_halfway_updates_from_the_release_that_runs(tmp_path):
+    result = halfway_update_to(tmp_path, "40.8.0", refuses=False)
+    assert result.returncode == 0, result.stderr
+    assert "from 40.6.0 to 40.8.0" in result.stdout
+    assert "updated=40.6.0" in result.stdout
+    assert (tmp_path / "kaeso" / "compose.yaml").read_text() == compose_of("40.8.0")
+    assert (tmp_path / "kaeso" / "compose.yaml.previous").read_text() == compose_of("40.6.0"), "the release that ran, not 40.7.0"
+
+
+def test_a_refused_update_after_one_that_stopped_halfway_keeps_the_release_that_runs(tmp_path):
+    result = halfway_update_to(tmp_path, "40.8.0", refuses=True)
+    assert result.returncode == 1
+    assert "Kaeso 40.8.0 refused this install's settings, so this install keeps running 40.6.0" in result.stderr
+    assert (tmp_path / "kaeso" / "compose.yaml").read_text() == compose_of("40.6.0")
+    assert sorted(p.name for p in (tmp_path / "kaeso").iterdir()) == ["compose.yaml"]
+
+
+def test_an_update_to_the_release_that_runs_after_one_that_stopped_halfway_goes_back_to_its_compose_file(tmp_path):
+    result = halfway_update_to(tmp_path, "40.6.0", refuses=False)
+    assert result.returncode == 0, result.stderr
+    assert "Kaeso 40.6.0 is installed in" in result.stdout
+    assert "updated=\n" in result.stdout
+    assert (tmp_path / "kaeso" / "compose.yaml").read_text() == compose_of("40.6.0")
+    assert sorted(p.name for p in (tmp_path / "kaeso").iterdir()) == ["compose.yaml"]
+
+
+@pytest.mark.parametrize(
+    ("answer", "code"),
+    [
+        ("The configuration is valid.", 0),
+        ("error: unrecognized subcommand 'config'", 2),
+        ("Error response from daemon: Pool overlaps with other one on this address space", 1),
+    ],
+    ids=["valid", "no-check", "compose-error"],
+)
+def test_starting_an_install_again_goes_on_unless_the_gateway_refuses_its_settings(answer, code, tmp_path):
+    an_install(tmp_path, "40.7.0")
+    (tmp_path / "answer").write_text(answer + "\n")
+    fake = f'docker() {{ cat "{tmp_path}/answer"; return {code}; }}'
+    result = run_part(f'{fake}; cd "{tmp_path / "kaeso"}"; fresh=; updated=; check_settings; echo checked', tmp_path)
+    assert result.returncode == 0, result.stderr
+    assert "checked" in result.stdout
 
 
 def compose_with_console(version: str) -> str:
@@ -751,7 +819,7 @@ case "$*" in
   "info --format {{{{.MemTotal}}}}") echo 8000000000 ;;
   "compose version --short") echo 2.40.0 ;;
   "ps -a --filter"*) ;;
-  "compose ps -a -q gateway") [ ! -s "$S/started" ] || echo c0ffee ;;
+  "compose ps -a --format {{{{.Name}}}} {{{{.ID}}}} gateway") [ ! -s "$S/started" ] || echo "kaeso-gateway-1 c0ffee" ;;
   "inspect --format {{{{.Config.Image}}}} c0ffee") cat "$S/started" ;;
   "compose ps -q --status running caddy") echo caddy ;;
   "compose config --images") sed -n 's/^ *image: //p' compose.yaml ;;

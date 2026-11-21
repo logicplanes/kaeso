@@ -211,7 +211,7 @@ Usage: curl -fsSL https://kaeso.app/install.sh | sh -s -- [options]
 The environment variables KAESO_DOMAIN, KAESO_PUBLIC_URL, KAESO_INSTALL_DIR, KAESO_VERSION, KAESO_INSTALL_DOCKER=yes,
 KAESO_NO_OPEN=yes, KAESO_NO_UPDATER=yes and KAESO_UPDATE=yes set the same options.
 Running it again in the same folder keeps the settings and the master key, turns on the updater if it's off, and starts
-Kaeso if it's stopped.
+Kaeso if it's stopped, once the gateway has checked the settings.
 When Docker Desktop, OrbStack or Colima is installed but stopped, the installer starts it.
 EOF
 }
@@ -549,9 +549,16 @@ update_compose() {
   fi
   rm -f release.json.part
   running="$(running_version)"
+  # After an update that stopped halfway, compose.yaml.previous is already the compose.yaml of the release that runs.
+  halfway="$(left_running)" || halfway=
+  [ -z "$halfway" ] || running="$halfway"
   if [ "$running" = "$target" ]; then
+    if [ -n "$halfway" ]; then
+      cat compose.yaml.part >compose.yaml
+      rm -f compose.yaml.previous
+    fi
     rm -f compose.yaml.part
-    unfinished_update || say "Kaeso $target is installed in $here already; starting it"
+    say "Kaeso $target is installed in $here already; starting it"
     return 0
   fi
   if [ -n "$running" ] && newer "$running" "$target"; then
@@ -560,8 +567,10 @@ update_compose() {
   fi
   # A refused update puts back the backup an earlier update left; the x keeps its trailing newlines.
   earlier=
-  [ ! -f compose.yaml.previous ] || earlier="$(cat compose.yaml.previous; echo x)"
-  cp compose.yaml compose.yaml.previous
+  if [ -z "$halfway" ]; then
+    [ ! -f compose.yaml.previous ] || earlier="$(cat compose.yaml.previous; echo x)"
+    cp compose.yaml compose.yaml.previous
+  fi
   cat compose.yaml.part >compose.yaml
   rm -f compose.yaml.part
   updated="${running:-the previous release}"
@@ -569,14 +578,22 @@ update_compose() {
 }
 
 # A run that stopped after it wrote the new compose.yaml, such as on a failed image pull, left the gateway
-# on the release compose.yaml.previous names. Starting now switches releases as that update would have.
-unfinished_update() {
+# on the older release compose.yaml.previous names; this prints that release. The updater keeps a gateway
+# it replaced as …-previous, with the same Compose labels.
+left_running() {
   [ -f compose.yaml.previous ] || return 1
-  container="$(docker compose ps -a -q gateway </dev/null 2>/dev/null | head -n 1)" || return 1
+  container="$(docker compose ps -a --format '{{.Name}} {{.ID}}' gateway </dev/null 2>/dev/null | awk '$1 !~ /-previous$/ { print $2; exit }')"
   [ -n "$container" ] || return 1
-  started="$(docker inspect --format '{{.Config.Image}}' "$container" </dev/null 2>/dev/null | gateway_version)" || return 1
+  started="$(docker inspect --format '{{.Config.Image}}' "$container" </dev/null 2>/dev/null | gateway_version)"
+  written="$(running_version)"
+  [ -n "$started" ] && [ -n "$written" ] && [ "$started" = "$(gateway_version <compose.yaml.previous)" ] && newer "$written" "$started" || return 1
+  printf '%s\n' "$started"
+}
+
+# Starting now switches releases as the update that stopped halfway would have.
+unfinished_update() {
+  started="$(left_running)" || return 1
   target="$(running_version)"
-  [ -n "$started" ] && [ -n "$target" ] && [ "$started" != "$target" ] && [ "$started" = "$(gateway_version <compose.yaml.previous)" ] || return 1
   updated="$started"
   earlier=
   say "Updating Kaeso in $here from $started to $target"
@@ -591,6 +608,8 @@ check_settings() {
   checked="$(docker compose run --rm --no-deps -T gateway config check </dev/null 2>&1)" || status=$?
   case $status in 0 | 2) return 0 ;; esac
   if [ -z "$updated" ]; then
+    # Compose answers its own errors with 1 too; up and explain_failure explain those better.
+    printf '%s\n' "$checked" | grep -q '^Error: configuration: ' || return 0
     printf '%s\n' "$checked" | tail -n 5 >&2
     fail "Kaeso refused this install's settings, so the installer doesn't start it. Correct them in .env, compose.override.yaml or the configuration file, then run the installer again."
   fi
