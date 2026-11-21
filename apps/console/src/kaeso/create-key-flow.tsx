@@ -24,7 +24,7 @@ import { modelAccessQuery, serviceAccountsQuery, type Principal } from "~/api/qu
 import { orgQuery } from "~/api/queries/orgs";
 import { projectQuery } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
-import { useSession } from "~/auth/session";
+import { useProjectMember, useSession } from "~/auth/session";
 import { catalogueModelOption, keepChosen } from "./model-options";
 import { useModelPickerProviders } from "./providers";
 import { t } from "~/i18n";
@@ -83,7 +83,12 @@ function CreateKeyFlow({ org, project, open, onClose, fixedServiceAccount }: Cre
   const reveal = useKeyReveal(org, project, created, onClose);
 
   const principal: Principal = owner === "me" ? { kind: "user", id: session.user.id } : { kind: "service_account", id: owner };
-  const effective = useQuery({ ...modelAccessQuery(org, project, principal), enabled: rights.has("limits.view") });
+  // A person who reaches the project through an organization-wide role has no member models to ask for: every model is theirs.
+  const member = useProjectMember(org, project);
+  const effective = useQuery({
+    ...modelAccessQuery(org, project, principal),
+    enabled: rights.has("limits.view") && (principal.kind !== "user" || member === true),
+  });
   const allowedModels = useMemo(
     () => (catalogue.data ?? []).filter((m) => !effective.data || effective.data.effective.includes(m.id)),
     [catalogue.data, effective.data],

@@ -24,6 +24,11 @@ const open = async (user: ReturnType<typeof userEvent.setup>) => {
 };
 
 describe("ModelPicker", () => {
+  it("gives its small ghost trigger the hit area of a select, as in the Playground's header", () => {
+    render(<ModelPicker options={options} providers={providers} appearance="ghost" size="sm" value="gpt-5" />);
+    expect(screen.getByRole("button", { description: "Model" })).toHaveClass("relative", "tap-target");
+  });
+
   it("groups models under their providers, connected ones first, with recent models on top", async () => {
     const user = userEvent.setup();
     render(<ModelPicker options={options} providers={[...providers, { id: "deepseek", name: "DeepSeek", connected: true }]} recent={["gpt-5-mini"]} />);
