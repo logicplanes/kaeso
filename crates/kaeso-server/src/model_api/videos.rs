@@ -195,6 +195,7 @@ pub(super) async fn register(
         project_id: s.caller.project_id,
         api_key_id: s.caller.key_id,
         user_id: s.caller.user_id,
+        playground: rec.outcome().source == super::hooks::Source::Playground,
         service_account_id: s.caller.service_account_id,
         provider: s.eff.provider.id().to_owned(),
         credential_id: s.credential.uuid(),
@@ -383,10 +384,10 @@ impl Viewer {
     }
 }
 
-/// A video a member started in the Playground: no key started it, a person did. Apps never
-/// see these, and the members who didn't start them neither.
+/// A video a member started in the Playground. Apps never see these, and the members who didn't
+/// start them neither. The row says so itself: a video whose key is gone is still an app's.
 fn from_playground(row: &VideoRow) -> bool {
-    row.api_key_id.is_none() && row.user_id.is_some()
+    row.playground
 }
 
 // An id that isn't Kaeso's or belongs to another project is answered the same way, so ids

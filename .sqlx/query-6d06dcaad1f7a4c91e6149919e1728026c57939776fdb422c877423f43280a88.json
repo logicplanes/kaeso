@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT v.id, v.org_id, v.project_id, v.api_key_id, v.user_id, v.service_account_id, v.provider, v.credential_id, v.catalogue_model_id, v.model, v.upstream_model, v.dialect, v.upstream_id, v.request_id, v.params, v.prices, v.status, v.progress, v.error, v.remixed_from, v.units, v.cost, v.created_at, v.completed_at, v.expires_at, v.accounted_at, v.tags, v.user_agent, v.alias, v.line FROM videos v LEFT JOIN videos a ON a.org_id = $1 AND a.project_id = $2 AND a.id = $3 WHERE v.org_id = $1 AND v.project_id = $2 AND ($3::uuid IS NULL OR ( CASE WHEN $4 THEN (v.created_at, v.id) > (a.created_at, a.id) ELSE (v.created_at, v.id) < (a.created_at, a.id) END)) ORDER BY CASE WHEN $4 THEN v.created_at END ASC, CASE WHEN $4 THEN v.id END ASC, CASE WHEN NOT $4 THEN v.created_at END DESC, CASE WHEN NOT $4 THEN v.id END DESC LIMIT $5",
+  "query": "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, catalogue_model_id, model, upstream_model, dialect, upstream_id, request_id, params, prices, status, progress, error, remixed_from, units, cost, created_at, completed_at, expires_at, accounted_at, tags, user_agent, alias, line, playground FROM videos WHERE org_id = $1 AND project_id = $2 AND id = $3",
   "describe": {
     "columns": [
       {
@@ -332,15 +332,24 @@
             "name": "line"
           }
         }
+      },
+      {
+        "ordinal": 30,
+        "name": "playground",
+        "type_info": "Bool",
+        "origin": {
+          "Table": {
+            "table": "videos",
+            "name": "playground"
+          }
+        }
       }
     ],
     "parameters": {
       "Left": [
         "Uuid",
         "Uuid",
-        "Uuid",
-        "Bool",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -373,8 +382,9 @@
       false,
       true,
       true,
-      true
+      true,
+      false
     ]
   },
-  "hash": "fa478e03565ebcf8a7650a13e4df64e811908b16bec89bd3dd429443be3a2393"
+  "hash": "6d06dcaad1f7a4c91e6149919e1728026c57939776fdb422c877423f43280a88"
 }

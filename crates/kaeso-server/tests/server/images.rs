@@ -831,6 +831,55 @@ async fn a_finished_image_generation_is_logged_with_the_tags_client_and_key_of_t
 }
 
 #[tokio::test]
+async fn an_image_generation_whose_key_no_longer_exists_is_logged_with_that_key() {
+    let env = env().await;
+    with_elevenlabs(&env).await;
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/keys", env.owner.org_id, env.project),
+            json!({ "name": "studio" }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let key: kaeso_core::id::ApiKeyId = r.body["id"].as_str().unwrap().parse().unwrap();
+    let r = flows_with(
+        &env,
+        "POST",
+        "/v1/flows/image",
+        r.body["secret"].as_str().unwrap(),
+        Some(json!({"model_id": "gpt-image-1.5", "prompt": "A lighthouse"})),
+        &[
+            ("kaeso-tags", "launch,eval-7"),
+            ("user-agent", "Studio/2.1"),
+        ],
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    sqlx::query("DELETE FROM api_keys WHERE id = $1")
+        .bind(key.uuid())
+        .execute(&env.app.state.pg)
+        .await
+        .unwrap();
+    let mut last = Value::Null;
+    for _ in 0..3 {
+        last = generation(&env, &id).await;
+    }
+    assert_eq!(last["status"], "completed", "{last}");
+    let billed = finished_generations(&env).await;
+    assert_eq!(billed.len(), 1);
+    assert_eq!(
+        billed[0].source,
+        kaeso_server::model_api::hooks::Source::Api
+    );
+    assert_eq!(billed[0].caller.clone().unwrap().key_id, Some(key.uuid()));
+    assert_eq!(billed[0].tags, ["launch", "eval-7"]);
+    assert_eq!(billed[0].user_agent.as_deref(), Some("Studio/2.1"));
+}
+
+#[tokio::test]
 async fn image_generations_answer_only_their_own_project_and_list_in_pages() {
     let env = env().await;
     with_elevenlabs(&env).await;

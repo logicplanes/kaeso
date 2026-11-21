@@ -14,6 +14,8 @@ pub struct VideoRow {
     pub project_id: Uuid,
     pub api_key_id: Option<Uuid>,
     pub user_id: Option<Uuid>,
+    /// Started by a member in the Playground, not by an app with a key.
+    pub playground: bool,
     pub service_account_id: Option<Uuid>,
     pub provider: String,
     pub credential_id: Uuid,
@@ -56,9 +58,9 @@ pub async fn insert(db: impl PgExecutor<'_>, v: &VideoRow) -> Result<(), StoreEr
         "INSERT INTO videos (id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, \
          catalogue_model_id, model, upstream_model, dialect, upstream_id, request_id, params, \
          prices, status, progress, error, remixed_from, units, cost, created_at, completed_at, \
-         expires_at, accounted_at, tags, user_agent, alias, line) \
+         expires_at, accounted_at, tags, user_agent, alias, line, playground) \
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, \
-         $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)",
+         $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)",
         v.id,
         v.org_id,
         v.project_id,
@@ -88,7 +90,8 @@ pub async fn insert(db: impl PgExecutor<'_>, v: &VideoRow) -> Result<(), StoreEr
         &v.tags,
         v.user_agent,
         v.alias,
-        v.line
+        v.line,
+        v.playground
     )
     .execute(db)
     .await?;
@@ -107,7 +110,7 @@ pub async fn get(
         "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, catalogue_model_id, \
          model, upstream_model, dialect, upstream_id, request_id, params, prices, status, progress, \
          error, remixed_from, units, cost, created_at, completed_at, expires_at, accounted_at, \
-         tags, user_agent, alias, line \
+         tags, user_agent, alias, line, playground \
          FROM videos WHERE org_id = $1 AND project_id = $2 AND id = $3",
         org_id,
         project_id,
@@ -132,7 +135,7 @@ pub async fn list(
         "SELECT v.id, v.org_id, v.project_id, v.api_key_id, v.user_id, v.service_account_id, v.provider, v.credential_id, \
          v.catalogue_model_id, v.model, v.upstream_model, v.dialect, v.upstream_id, v.request_id, \
          v.params, v.prices, v.status, v.progress, v.error, v.remixed_from, v.units, v.cost, \
-         v.created_at, v.completed_at, v.expires_at, v.accounted_at, v.tags, v.user_agent, v.alias, v.line \
+         v.created_at, v.completed_at, v.expires_at, v.accounted_at, v.tags, v.user_agent, v.alias, v.line, v.playground \
          FROM videos v \
          LEFT JOIN videos a ON a.org_id = $1 AND a.project_id = $2 AND a.id = $3 \
          WHERE v.org_id = $1 AND v.project_id = $2 \
