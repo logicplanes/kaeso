@@ -698,7 +698,6 @@ jobs:
       - name: Pull the chart without signing in
         run: |
           set -euo pipefail
-          helm registry logout ghcr.io || true
           export DOCKER_CONFIG="$RUNNER_TEMP/anonymous-docker"
           mkdir -p "$DOCKER_CONFIG"
           echo '{}' > "$DOCKER_CONFIG/config.json"
