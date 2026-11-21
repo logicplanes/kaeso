@@ -704,7 +704,11 @@ jobs:
           echo '{}' > "$RUNNER_TEMP/anonymous-helm.json"
           mkdir -p "$RUNNER_TEMP/pulled"
           if ! out="$(helm pull "oci://$CHART" --version "$VERSION" --registry-config "$RUNNER_TEMP/anonymous-helm.json" --destination "$RUNNER_TEMP/pulled" 2>&1)"; then
-            echo "::error::ghcr.io refused an anonymous pull of oci://$CHART $VERSION, so clusters can't install it: ${out//$'\n'/ }. Make the package public under https://github.com/orgs/logicplanes/packages/container/charts%2Fkaeso/settings, Danger Zone, Change visibility, then re-run this job."
+            if grep -qiE 'denied|unauthorized|forbidden|\b40[13]\b' <<< "$out"; then
+              echo "::error::ghcr.io refused an anonymous pull of oci://$CHART $VERSION, so clusters can't install it: ${out//$'\n'/ }. Make the package public under https://github.com/orgs/logicplanes/packages/container/charts%2Fkaeso/settings, Danger Zone, Change visibility, then re-run this job."
+            else
+              echo "::error::The anonymous pull of oci://$CHART $VERSION failed: ${out//$'\n'/ }"
+            fi
             exit 1
           fi
           echo "Anyone can pull \`oci://$CHART\` $VERSION." >> "$GITHUB_STEP_SUMMARY"

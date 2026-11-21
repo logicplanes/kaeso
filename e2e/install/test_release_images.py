@@ -39,7 +39,10 @@ def test_the_chart_is_attested_with_docker_credentials_and_pulled_without_any():
     assert pull.index('mkdir -p "$RUNNER_TEMP/pulled"') < pull.index('--destination "$RUNNER_TEMP/pulled"')
     assert "echo '{}' > \"$DOCKER_CONFIG/config.json\"" in pull
     assert '--registry-config "$RUNNER_TEMP/anonymous-helm.json"' in pull
-    assert re.search(r"::error::ghcr\.io refused an anonymous pull .* Make the package public", pull)
+    # Only a refusal is blamed on the package's visibility.
+    refused = re.search(r"grep -qiE 'denied\|unauthorized\|forbidden\|\\b40\[13\]\\b'", pull)
+    assert refused and refused.start() < pull.index("Make the package public")
+    assert "::error::The anonymous pull of oci://$CHART $VERSION failed:" in pull
 
 
 def test_the_github_release_waits_until_anyone_can_pull_the_images():
