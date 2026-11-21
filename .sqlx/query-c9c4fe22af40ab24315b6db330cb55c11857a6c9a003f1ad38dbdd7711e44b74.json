@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, catalogue_model_id, model, upstream_model, dialect, upstream_id, request_id, params, prices, status, progress, error, remixed_from, units, cost, created_at, completed_at, expires_at, accounted_at FROM videos WHERE org_id = $1 AND project_id = $2 AND id = $3",
+  "query": "SELECT g.id, g.org_id, g.project_id, g.api_key_id, g.user_id, g.service_account_id, g.provider, g.credential_id, g.catalogue_model_id, g.model, g.upstream_model, g.dialect, g.upstream_id, g.request_id, g.params, g.prices, g.status, g.content_url, g.content_mime_type, g.failure_reason, g.error_message, g.units, g.cost, g.created_at, g.completed_at, g.accounted_at, g.tags, g.user_agent, g.alias, g.line FROM image_generations g LEFT JOIN image_generations b ON b.org_id = $1 AND b.project_id = $2 AND b.id = $3 WHERE g.org_id = $1 AND g.project_id = $2 AND ($3::uuid IS NULL OR (g.created_at, g.id) < (b.created_at, b.id)) AND ($4::text IS NULL OR g.status = $4) AND ($5::text IS NULL OR g.model = $5) ORDER BY g.created_at DESC, g.id DESC LIMIT $6",
   "describe": {
     "columns": [
       {
@@ -9,7 +9,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "id"
           }
         }
@@ -20,7 +20,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "org_id"
           }
         }
@@ -31,7 +31,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "project_id"
           }
         }
@@ -42,7 +42,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "api_key_id"
           }
         }
@@ -53,7 +53,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "user_id"
           }
         }
@@ -64,7 +64,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "service_account_id"
           }
         }
@@ -75,7 +75,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "provider"
           }
         }
@@ -86,7 +86,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "credential_id"
           }
         }
@@ -97,7 +97,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "catalogue_model_id"
           }
         }
@@ -108,7 +108,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "model"
           }
         }
@@ -119,7 +119,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "upstream_model"
           }
         }
@@ -130,7 +130,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "dialect"
           }
         }
@@ -141,7 +141,7 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "upstream_id"
           }
         }
@@ -152,7 +152,7 @@
         "type_info": "Uuid",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "request_id"
           }
         }
@@ -163,7 +163,7 @@
         "type_info": "Jsonb",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "params"
           }
         }
@@ -174,7 +174,7 @@
         "type_info": "Jsonb",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "prices"
           }
         }
@@ -185,96 +185,96 @@
         "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "status"
           }
         }
       },
       {
         "ordinal": 17,
-        "name": "progress",
-        "type_info": "Int2",
+        "name": "content_url",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
-            "name": "progress"
+            "table": "image_generations",
+            "name": "content_url"
           }
         }
       },
       {
         "ordinal": 18,
-        "name": "error",
-        "type_info": "Jsonb",
+        "name": "content_mime_type",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
-            "name": "error"
+            "table": "image_generations",
+            "name": "content_mime_type"
           }
         }
       },
       {
         "ordinal": 19,
-        "name": "remixed_from",
-        "type_info": "Uuid",
+        "name": "failure_reason",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
-            "name": "remixed_from"
+            "table": "image_generations",
+            "name": "failure_reason"
           }
         }
       },
       {
         "ordinal": 20,
-        "name": "units",
-        "type_info": "Jsonb",
+        "name": "error_message",
+        "type_info": "Text",
         "origin": {
           "Table": {
-            "table": "videos",
-            "name": "units"
+            "table": "image_generations",
+            "name": "error_message"
           }
         }
       },
       {
         "ordinal": 21,
-        "name": "cost",
-        "type_info": "Numeric",
+        "name": "units",
+        "type_info": "Jsonb",
         "origin": {
           "Table": {
-            "table": "videos",
-            "name": "cost"
+            "table": "image_generations",
+            "name": "units"
           }
         }
       },
       {
         "ordinal": 22,
-        "name": "created_at",
-        "type_info": "Timestamptz",
+        "name": "cost",
+        "type_info": "Numeric",
         "origin": {
           "Table": {
-            "table": "videos",
-            "name": "created_at"
+            "table": "image_generations",
+            "name": "cost"
           }
         }
       },
       {
         "ordinal": 23,
-        "name": "completed_at",
+        "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "videos",
-            "name": "completed_at"
+            "table": "image_generations",
+            "name": "created_at"
           }
         }
       },
       {
         "ordinal": 24,
-        "name": "expires_at",
+        "name": "completed_at",
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "videos",
-            "name": "expires_at"
+            "table": "image_generations",
+            "name": "completed_at"
           }
         }
       },
@@ -284,8 +284,52 @@
         "type_info": "Timestamptz",
         "origin": {
           "Table": {
-            "table": "videos",
+            "table": "image_generations",
             "name": "accounted_at"
+          }
+        }
+      },
+      {
+        "ordinal": 26,
+        "name": "tags",
+        "type_info": "TextArray",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "tags"
+          }
+        }
+      },
+      {
+        "ordinal": 27,
+        "name": "user_agent",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "user_agent"
+          }
+        }
+      },
+      {
+        "ordinal": 28,
+        "name": "alias",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "alias"
+          }
+        }
+      },
+      {
+        "ordinal": 29,
+        "name": "line",
+        "type_info": "Text",
+        "origin": {
+          "Table": {
+            "table": "image_generations",
+            "name": "line"
           }
         }
       }
@@ -294,7 +338,10 @@
       "Left": [
         "Uuid",
         "Uuid",
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8"
       ]
     },
     "nullable": [
@@ -315,9 +362,13 @@
       false,
       true,
       false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
       false,
-      true,
-      true,
       true,
       true,
       false,
@@ -326,5 +377,5 @@
       true
     ]
   },
-  "hash": "ad088d2980d55e41533f7335ede58e372e546f919d9c9d15fd2cad1dd44e0807"
+  "hash": "c9c4fe22af40ab24315b6db330cb55c11857a6c9a003f1ad38dbdd7711e44b74"
 }

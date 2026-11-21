@@ -72,10 +72,25 @@ async fn send(
     body: Option<Value>,
     range: Option<&str>,
 ) -> Answer {
+    send_with(env, method, path, key, body, range, &[]).await
+}
+
+async fn send_with(
+    env: &Env,
+    method: &str,
+    path: &str,
+    key: &str,
+    body: Option<Value>,
+    range: Option<&str>,
+    headers: &[(&str, &str)],
+) -> Answer {
     let mut req = Request::builder()
         .uri(path)
         .method(method)
         .header("authorization", format!("Bearer {key}"));
+    for (name, value) in headers {
+        req = req.header(*name, *value);
+    }
     if let Some(r) = range {
         req = req.header("range", r);
     }
@@ -159,6 +174,87 @@ fn sample() -> Vec<u8> {
         kaeso_testkit::mock_provider::kpp_fixtures().join("openai_videos/content/sample.mp4"),
     )
     .unwrap()
+}
+
+async fn start_and_finish(env: &Env, model: &str) -> (Outcome, Outcome) {
+    let started = [
+        ("kaeso-tags", "launch,eval-7"),
+        ("user-agent", "Studio/2.1"),
+    ];
+    let r = send_with(
+        env,
+        "POST",
+        "/v1/videos",
+        &env.key,
+        Some(json!({ "model": model, "prompt": "A serene lake at sunrise", "seconds": "8", "size": "1280x720" })),
+        None,
+        &started,
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let start = env.outcomes().await.into_iter().last().unwrap();
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    let polled = [("kaeso-tags", "poller"), ("user-agent", "Watcher/9")];
+    let path = format!("/v1/videos/{id}");
+    let mut last = Value::Null;
+    for _ in 0..3 {
+        last = send_with(env, "GET", &path, &env.key, None, None, &polled)
+            .await
+            .json();
+    }
+    assert_eq!(last["status"], "completed", "{last}");
+    let billed = completions(env).await;
+    assert_eq!(billed.len(), 1);
+    (start, billed[0].clone())
+}
+
+#[tokio::test]
+async fn a_finished_video_is_logged_with_the_tags_client_and_key_of_the_request_that_started_it() {
+    let env = env().await;
+    let (start, done) = start_and_finish(&env, "grok-imagine-video-1.5").await;
+    assert_eq!(done.tags, ["launch", "eval-7"]);
+    assert_eq!(done.user_agent.as_deref(), Some("Studio/2.1"));
+    assert!(start.credential_id.is_some());
+    assert_eq!(done.credential_id, start.credential_id, "the key that paid");
+    let kept: Vec<(Vec<String>, Option<String>)> =
+        sqlx::query_as("SELECT tags, user_agent FROM videos")
+            .fetch_all(&env.app.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(
+        kept,
+        [(Vec::new(), None)],
+        "nothing of the request stays once it is billed"
+    );
+}
+
+#[tokio::test]
+async fn a_finished_video_started_through_an_alias_names_the_alias() {
+    let env = env().await;
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let models = env
+        .app
+        .get(&format!("{base}/models"), &env.owner.cookie)
+        .await;
+    let model = models.body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["model_id"] == "grok-imagine-video-1.5")
+        .unwrap()["id"]
+        .clone();
+    let r = env
+        .app
+        .post(
+            &format!("{base}/aliases"),
+            json!({ "name": "studio", "route": { "type": "model", "model": model } }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    let (_, done) = start_and_finish(&env, "studio").await;
+    assert_eq!(done.alias.as_deref(), Some("studio"));
+    assert_eq!(done.tags, ["launch", "eval-7"]);
 }
 
 #[tokio::test]

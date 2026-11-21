@@ -618,6 +618,43 @@ def test_an_update_whose_gateway_refuses_the_settings_keeps_the_running_release(
     assert (tmp_path / "calls").read_text() == "docker compose run --rm --no-deps -T gateway config check\n"
 
 
+def refused_update_in(tmp_path: Path) -> subprocess.CompletedProcess:
+    (tmp_path / "answer").write_text("Error: configuration: KAESO_KPMR_INTERVAL (kpmr.interval) is 1m\n")
+    fake = f'docker() {{ cat "{tmp_path}/answer"; return 1; }}'
+    install = tmp_path / "kaeso"
+    return run_part(
+        f'{fake}; cd "{install}"; version=40.7.0; here="{install}"; updated=; update_compose; check_settings',
+        tmp_path,
+        {"KAESO_RELEASES_URL": (tmp_path / "releases").as_uri()},
+    )
+
+
+def test_a_refused_update_leaves_no_compose_backup_behind(tmp_path):
+    install = an_install(tmp_path, "40.6.0")
+    release_dir(tmp_path, "40.7.0", compose_of("40.7.0"))
+    result = refused_update_in(tmp_path)
+    assert result.returncode == 1
+    assert "keeps running 40.6.0" in result.stderr
+    assert (install / "compose.yaml").read_text() == compose_of("40.6.0")
+    assert sorted(p.name for p in install.iterdir()) == ["compose.yaml"]
+
+
+def test_a_refused_update_keeps_the_compose_file_an_earlier_update_left(tmp_path):
+    install = an_install(tmp_path, "40.6.0")
+    earlier = (compose_of("40.5.0") + "\n\n").encode()
+    (install / "compose.yaml.previous").write_bytes(earlier)
+    (install / "compose.yaml.previous").chmod(0o640)
+    inode = (install / "compose.yaml.previous").stat().st_ino
+    release_dir(tmp_path, "40.7.0", compose_of("40.7.0"))
+    result = refused_update_in(tmp_path)
+    assert result.returncode == 1
+    assert (install / "compose.yaml").read_text() == compose_of("40.6.0")
+    assert (install / "compose.yaml.previous").read_bytes() == earlier
+    assert (install / "compose.yaml.previous").stat().st_ino == inode
+    assert stat.S_IMODE((install / "compose.yaml.previous").stat().st_mode) == 0o640
+    assert sorted(p.name for p in install.iterdir()) == ["compose.yaml", "compose.yaml.previous"]
+
+
 @pytest.mark.parametrize(
     ("answer", "code"),
     [("The configuration is valid.", 0), ("error: unrecognized subcommand 'config'", 2)],
