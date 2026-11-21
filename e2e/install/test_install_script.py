@@ -739,7 +739,7 @@ def compose_with_console(version: str) -> str:
 
 def docker_for_updates(tmp_path: Path, state: Path) -> dict[str, str]:
     """A Docker engine with one Kaeso install: its gateway container, the images it has, a registry that
-    can be offline, and a 40.7.0 gateway that refuses KAESO_KPMR_INTERVAL=1m as 0.7.0 does."""
+    can be offline, and a 40.7.0 gateway that refuses KAESO_KPMR_INTERVAL=1m."""
     return stub(
         tmp_path,
         "docker",
