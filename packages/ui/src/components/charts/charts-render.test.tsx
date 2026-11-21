@@ -325,3 +325,50 @@ describe("ChartTooltip swatches", () => {
     expect(container.querySelector(".data-mark")).toHaveClass("size-10");
   });
 });
+
+describe("figures in category names", () => {
+  const axis = (container: HTMLElement, text: string) => [...container.querySelectorAll<SVGTextElement>("svg text")].find((n) => n.textContent === text);
+  const rows = [{ id: "requests", label: "Requests", color: "var(--k-viz-1)", value: "120" }];
+
+  it("sets a model's name under its bar in proportional figures, so its hyphens don't read as gaps", () => {
+    const { container } = render(
+      <BarChart
+        aria-label="Requests by model"
+        categories={["gpt-5-mini", "claude-haiku-4-5"]}
+        series={[{ id: "requests", label: "Requests", values: [120, 80] }]}
+      />,
+    );
+    for (const name of ["gpt-5-mini", "claude-haiku-4-5"]) {
+      const label = axis(container, name);
+      expect(label).toBeDefined();
+      expect(label!.style.fontVariantNumeric).toBe("");
+    }
+  });
+
+  it("keeps tabular figures for dates and weeks under the bars, and on the value axis", () => {
+    const { container } = render(
+      <BarChart aria-label="Requests per week" categories={["Week of 3 Aug", "13 Oct"]} series={[{ id: "requests", label: "Requests", values: [120, 80] }]} />,
+    );
+    expect(axis(container, "Week of 3 Aug")?.style.fontVariantNumeric).toBe("tabular-nums");
+    expect(axis(container, "13 Oct")?.style.fontVariantNumeric).toBe("tabular-nums");
+    expect(axis(container, "100")?.style.fontVariantNumeric).toBe("tabular-nums");
+  });
+
+  it("heads a tooltip with a model's name in proportional figures", () => {
+    render(<ChartTooltip x={10} y={10} width={400} heading="gpt-5-mini" rows={rows} visible />);
+    expect(screen.getByText("gpt-5-mini")).not.toHaveClass("tabular");
+  });
+
+  it.each(["3 Oct", "Tue, Oct 13, 02:00 PM", "Di., 13. Okt., 14:00", "10月13日周二 14:00", "Week of 3 Aug", "Mon 14:00", "2026-10-13"])(
+    "keeps tabular figures in a tooltip headed %s, so the time doesn't change width as the pointer moves",
+    (heading) => {
+      render(<ChartTooltip x={10} y={10} width={400} heading={heading} rows={rows} visible />);
+      expect(screen.getByText(heading)).toHaveClass("tabular");
+    },
+  );
+
+  it("keeps tabular figures in a heading that isn't plain text", () => {
+    render(<ChartTooltip x={10} y={10} width={400} heading={<span>13 Oct</span>} rows={rows} visible />);
+    expect(screen.getByText("13 Oct").parentElement).toHaveClass("tabular");
+  });
+});
