@@ -655,7 +655,8 @@ pub async fn key_id_usage(db: impl PgExecutor<'_>) -> Result<Vec<(String, i64)>,
            UNION ALL SELECT key_id FROM org_oidc UNION ALL SELECT key_id FROM mcp_connections \
            UNION ALL SELECT oauth_client_secret_key_id FROM mcp_servers \
            WHERE oauth_client_secret_key_id IS NOT NULL \
-           UNION ALL SELECT secret_key_id FROM guardrails WHERE secret_key_id IS NOT NULL) k GROUP BY key_id ORDER BY key_id"
+           UNION ALL SELECT secret_key_id FROM guardrails WHERE secret_key_id IS NOT NULL \
+           UNION ALL SELECT key_id FROM notification_webhooks) k GROUP BY key_id ORDER BY key_id"
     )
     .fetch_all(db)
     .await?;

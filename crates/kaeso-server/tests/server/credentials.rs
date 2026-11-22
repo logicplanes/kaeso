@@ -510,6 +510,81 @@ async fn master_keys_rotate_without_reentering_credentials() {
     assert!(err.contains("k2"), "{err}");
 }
 
+#[tokio::test]
+async fn master_keys_rotate_webhook_signing_secrets_too() {
+    const LOOPBACK: (&str, &str) = ("KAESO_WEBHOOKS_ALLOWED_NETWORKS", "127.0.0.0/8");
+    let s = TestServices::start().await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let receiver = kaeso_testkit::webhooks::MockReceiver::start().await;
+    let created = app
+        .post(
+            &format!("/orgs/{}/webhooks", owner.org_id),
+            json!({ "name": "On-call", "url": receiver.url, "kinds": ["budget_alerts"] }),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(created.status, StatusCode::CREATED, "{:?}", created.body);
+    let id = created.body["id"].as_str().unwrap().to_owned();
+
+    let err = kaeso_server::serve::prepare(common::config(&s, &[("KAESO_MASTER_KEYS", K2)]))
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(
+        err.contains("k1") && !err.contains("k2"),
+        "starting without k1 must refuse while a webhook secret uses k1: {err}"
+    );
+
+    let both = format!("{K2},{K1}");
+    let rotated = App::start_with(&s, &[LOOPBACK, ("KAESO_MASTER_KEYS", both.as_str())]).await;
+    let usage = master_key::usage(&rotated.state.pg).await.unwrap();
+    assert_eq!(usage.get("k1"), Some(&1));
+
+    let report = master_key::rewrap(&rotated.state.pg, &rotated.state.keyring)
+        .await
+        .unwrap();
+    assert_eq!(report.rewrapped, 1);
+    assert_eq!(report.usage.get("k2"), Some(&1));
+    assert_eq!(report.usage.get("k1"), None);
+
+    let (webhook_uuid, current): (uuid::Uuid, Vec<u8>) =
+        sqlx::query_as("SELECT id, wrapped_key FROM notification_webhooks LIMIT 1")
+            .fetch_one(&rotated.state.pg)
+            .await
+            .unwrap();
+    assert!(
+        !kaeso_store::pg::webhooks::set_wrapped_key(
+            &rotated.state.pg,
+            webhook_uuid,
+            b"stale wrapped key",
+            b"garbage",
+            "k1",
+        )
+        .await
+        .unwrap()
+    );
+    let kept: Vec<u8> =
+        sqlx::query_scalar("SELECT wrapped_key FROM notification_webhooks WHERE id = $1")
+            .bind(webhook_uuid)
+            .fetch_one(&rotated.state.pg)
+            .await
+            .unwrap();
+    assert_eq!(kept, current);
+
+    let only_new = App::start_with(&s, &[LOOPBACK, ("KAESO_MASTER_KEYS", K2)]).await;
+    let tested = only_new
+        .post(
+            &format!("/orgs/{}/webhooks/{id}/test", owner.org_id),
+            json!({}),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(tested.status, StatusCode::OK, "{:?}", tested.body);
+    assert_eq!(tested.body["status"], "delivered", "{:?}", tested.body);
+    s.cleanup().await;
+}
+
 const NOT_CALLBACK: &str =
     "Paste the address of the page that didn't load; it starts with `http://127.0.0.1`.";
 const EXPIRED: &str = "This sign-in expired or was already used; start again.";
