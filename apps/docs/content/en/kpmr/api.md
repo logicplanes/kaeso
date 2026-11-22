@@ -157,11 +157,10 @@ const response = await fetch(
   { headers: { Accept: "application/vnd.kaeso.kpmr+json; version=1" } },
 );
 const body = Buffer.from(await response.arrayBuffer());
+const signature = response.headers.get("KPMR-Signature");
+if (!signature) throw new Error("The catalogue isn't signed.");
 const fields = Object.fromEntries(
-  response.headers
-    .get("KPMR-Signature")
-    .split(",")
-    .map((part) => part.trim().split(/=(.*)/s)),
+  signature.split(",").map((part) => part.trim().split(/=(.*)/s)),
 );
 
 if (!verify(null, body, key, Buffer.from(fields.ed25519, "base64"))) {

@@ -61,12 +61,12 @@ KPMR 没有新内容时，它会打印 `The model data is current: KPMR has noth
 
 ## 网关应用的内容
 
-请求列出此版本 Kaeso 调用的服务商，要求 `application/vnd.kaeso.kpmr+json; version=1`，并发送 `User-Agent: kaeso-gateway/<version>`；不附带实例的任何数据。重定向必须留在同一主机并使用 `https`，最多三次。耗时超过 60 秒的获取或超过 64 MiB 的文档会失败。
+请求列出此版本 Kaeso 调用的服务商，要求 `application/vnd.kaeso.kpmr+json; version=1`，并发送 `User-Agent: kaeso-gateway/<version>`；不附带实例的任何数据。重定向必须留在同一主机，且不能离开 `https`，最多三次。耗时超过 60 秒的获取或超过 64 MiB 的文档会失败。
 
 网关应用新目录时：
 
 - **价格和其他值会更新**到每个项目的模型，项目[覆盖](../console/models-and-aliases.md#更改模型的参数)的字段除外。
-- **价格变更和不再收录的模型**会记入实例的[审计日志](../console/instance-administration.md#查看审计日志)。项目会以最后已知的值保留 KPMR 不再收录的模型。
+- **价格变更和不再收录的模型**会记入实例的[审计日志](../console/instance-administration.md#查看审计日志)；价格变更还会记入其项目按新价格计费的每个组织的[审计日志](../console/organizations-and-projects.md#查看审计日志)。项目会以最后已知的值保留 KPMR 不再收录的模型。
 - **无法读取的模型条目**会被略去，网关会记录一条注明该条目的警告。目录的其余部分仍会应用。
 
 尝试失败时，继续使用当前数据，**实例** › **系统**会在**模型数据**下显示错误。要在同步持续失败时收到通知，请对 `kaeso_kpmr_last_attempt_failed` 设置告警（[监控](../self-hosting/monitoring.md#指标)）。

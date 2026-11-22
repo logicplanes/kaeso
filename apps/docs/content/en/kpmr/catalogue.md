@@ -114,7 +114,7 @@ Each entry of `lines` points a name at one model of the provider ([retirements a
 | `description` | One sentence on what the model is for |
 | `family` | The model family, such as `claude-sonnet` |
 | `kind` | What the model does: `generation`, `embedding`, `decision`, `image`, `video`, `speech`, `transcription`, `realtime`, `reranking`, `music` or `sound_effects`. Read a kind you don't know as unknown |
-| `status` | `active`, `preview`, `deprecated` or `retired`; it follows the `lifecycle` dates |
+| `status` | `active`, `preview`, `deprecated` or `retired`; it follows the `lifecycle` dates, and a model can be `deprecated` before any date is announced |
 | `release_date` | When the model was released, `YYYY-MM-DD`, or `YYYY-MM` where only the month is known |
 | `last_updated` | When the model was last updated, in the same form |
 | `knowledge` | The training data cutoff, `YYYY-MM` or `YYYY-MM-DD` |
@@ -144,7 +144,7 @@ Each entry of `lines` points a name at one model of the provider ([retirements a
 
 | Field | Meaning |
 | --- | --- |
-| `efforts` | The effort levels the model accepts, such as `low` and `high`; `[]` for none |
+| `efforts` | The effort levels the model accepts, such as `low` and `high`; `[]` for none, `null` when unknown |
 | `adaptive_thinking` | The model accepts adaptive thinking, where it decides how long to think |
 | `thinking_binding` | Thinking blocks must stay with the turn they belong to |
 
@@ -164,7 +164,7 @@ Each `max_` field is `null` when unknown.
 
 ### Lifecycle
 
-Every key is present, and `null` until the provider announces it. `status` becomes `deprecated` on `deprecated_on` and `retired` on `shutdown_on` ([retirements and model lines](lifecycle-and-lines.md)).
+Every key is present, and `null` until the provider announces it. `status` becomes `deprecated` on `deprecated_on` and `retired` on `shutdown_on`. A model can also be `deprecated` while every date is still `null` ([retirements and model lines](lifecycle-and-lines.md)).
 
 | Field | Meaning |
 | --- | --- |

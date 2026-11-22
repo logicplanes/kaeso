@@ -61,12 +61,12 @@ When KPMR has nothing new, it prints `The model data is current: KPMR has nothin
 
 ## What the gateway applies
 
-The request names the providers this version of Kaeso calls, asks for `application/vnd.kaeso.kpmr+json; version=1` and sends `User-Agent: kaeso-gateway/<version>`; no data from the install goes with it. Redirects must stay on the same host and on `https`, at most three. A fetch that takes longer than 60 seconds, or a document over 64 MiB, fails.
+The request names the providers this version of Kaeso calls, asks for `application/vnd.kaeso.kpmr+json; version=1` and sends `User-Agent: kaeso-gateway/<version>`; no data from the install goes with it. Redirects must stay on the same host and may not leave `https`, at most three. A fetch that takes longer than 60 seconds, or a document over 64 MiB, fails.
 
 When the gateway applies a new catalogue:
 
 - **Prices and values change** for every project's models, except the fields a project [overrides](../console/models-and-aliases.md#change-a-models-values).
-- **Price changes and models no longer listed** go into the instance [audit log](../console/instance-administration.md#read-the-audit-log). A project keeps a model that KPMR stops listing, with its last known values.
+- **Price changes and models no longer listed** go into the instance [audit log](../console/instance-administration.md#read-the-audit-log), and a price change also into the [audit log](../console/organizations-and-projects.md#read-the-audit-log) of each organization whose project pays the new price. A project keeps a model that KPMR stops listing, with its last known values.
 - **A model entry it can't read** is left out, and the gateway logs a warning that names it. The rest of the catalogue still applies.
 
 If an attempt fails, the data in use stays, and **Instance** › **System** shows the error under **Model data**. To hear about a sync that keeps failing, alert on `kaeso_kpmr_last_attempt_failed` ([monitoring](../self-hosting/monitoring.md#metrics)).

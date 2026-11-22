@@ -114,7 +114,7 @@ Jeder Eintrag in `lines` lässt einen Namen auf ein Modell des Anbieters zeigen 
 | `description` | Ein Satz dazu, wofür das Modell gedacht ist |
 | `family` | Die Modellfamilie, etwa `claude-sonnet` |
 | `kind` | Was das Modell tut: `generation`, `embedding`, `decision`, `image`, `video`, `speech`, `transcription`, `realtime`, `reranking`, `music` oder `sound_effects`. Lesen Sie eine Art, die Sie nicht kennen, als unbekannt |
-| `status` | `active`, `preview`, `deprecated` oder `retired`; er folgt den Daten in `lifecycle` |
+| `status` | `active`, `preview`, `deprecated` oder `retired`; er folgt den Daten in `lifecycle`, und ein Modell kann `deprecated` sein, bevor ein Datum angekündigt ist |
 | `release_date` | Wann das Modell erschien, `YYYY-MM-DD`, oder `YYYY-MM`, wo nur der Monat bekannt ist |
 | `last_updated` | Wann das Modell zuletzt aktualisiert wurde, in derselben Form |
 | `knowledge` | Der Stichtag der Trainingsdaten, `YYYY-MM` oder `YYYY-MM-DD` |
@@ -144,7 +144,7 @@ Jeder Eintrag in `lines` lässt einen Namen auf ein Modell des Anbieters zeigen 
 
 | Feld | Bedeutung |
 | --- | --- |
-| `efforts` | Die Aufwandsstufen, die das Modell annimmt, etwa `low` und `high`; `[]` für keine |
+| `efforts` | Die Aufwandsstufen, die das Modell annimmt, etwa `low` und `high`; `[]` für keine, `null`, wenn unbekannt |
 | `adaptive_thinking` | Das Modell nimmt adaptives Denken an, bei dem es selbst entscheidet, wie lange es nachdenkt |
 | `thinking_binding` | Thinking-Blöcke müssen bei dem Zug bleiben, zu dem sie gehören |
 
@@ -164,7 +164,7 @@ Jedes Feld `max_` ist `null`, wenn unbekannt.
 
 ### Lebenszyklus
 
-Jeder Schlüssel ist vorhanden und `null`, bis der Anbieter ihn ankündigt. `status` wird an `deprecated_on` zu `deprecated` und an `shutdown_on` zu `retired` ([Abschaltungen und Modelllinien](lifecycle-and-lines.md)).
+Jeder Schlüssel ist vorhanden und `null`, bis der Anbieter ihn ankündigt. `status` wird an `deprecated_on` zu `deprecated` und an `shutdown_on` zu `retired`. Ein Modell kann auch `deprecated` sein, während jedes Datum noch `null` ist ([Abschaltungen und Modelllinien](lifecycle-and-lines.md)).
 
 | Feld | Bedeutung |
 | --- | --- |

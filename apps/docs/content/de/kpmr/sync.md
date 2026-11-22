@@ -61,12 +61,12 @@ Hat KPMR nichts Neues, gibt er `The model data is current: KPMR has nothing new.
 
 ## Was das Gateway übernimmt
 
-Die Anfrage nennt die Anbieter, die diese Version von Kaeso aufruft, verlangt `application/vnd.kaeso.kpmr+json; version=1` und sendet `User-Agent: kaeso-gateway/<version>`; Daten der Installation gehen nicht mit. Weiterleitungen müssen auf demselben Host und bei `https` bleiben, höchstens drei. Ein Abruf, der länger als 60 Sekunden dauert, oder ein Dokument über 64 MiB scheitert.
+Die Anfrage nennt die Anbieter, die diese Version von Kaeso aufruft, verlangt `application/vnd.kaeso.kpmr+json; version=1` und sendet `User-Agent: kaeso-gateway/<version>`; Daten der Installation gehen nicht mit. Weiterleitungen müssen auf demselben Host bleiben und dürfen `https` nicht verlassen, höchstens drei. Ein Abruf, der länger als 60 Sekunden dauert, oder ein Dokument über 64 MiB scheitert.
 
 Übernimmt das Gateway einen neuen Katalog:
 
 - **Preise und Werte ändern sich** für die Modelle jedes Projekts, außer den Feldern, die ein Projekt [überschreibt](../console/models-and-aliases.md#werte-eines-modells-ändern).
-- **Preisänderungen und nicht mehr geführte Modelle** kommen in das [Audit-Log](../console/instance-administration.md#audit-log-lesen) der Instanz. Ein Projekt behält ein Modell, das KPMR nicht mehr führt, mit seinen letzten bekannten Werten.
+- **Preisänderungen und nicht mehr geführte Modelle** kommen in das [Audit-Log](../console/instance-administration.md#audit-log-lesen) der Instanz, eine Preisänderung außerdem in das [Audit-Log](../console/organizations-and-projects.md#audit-log-lesen) jeder Organisation, deren Projekt den neuen Preis zahlt. Ein Projekt behält ein Modell, das KPMR nicht mehr führt, mit seinen letzten bekannten Werten.
 - **Einen Modelleintrag, den es nicht lesen kann,** lässt es weg und protokolliert eine Warnung, die ihn nennt. Der Rest des Katalogs gilt trotzdem.
 
 Schlägt ein Versuch fehl, bleiben die verwendeten Daten in Gebrauch, und **Instanz** › **System** zeigt den Fehler unter **Modelldaten**. Um von einer Synchronisierung zu erfahren, die immer wieder scheitert, alarmieren Sie auf `kaeso_kpmr_last_attempt_failed` ([Monitoring](../self-hosting/monitoring.md#metriken)).

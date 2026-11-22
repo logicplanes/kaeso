@@ -114,7 +114,7 @@ order: 2
 | `description` | 一句话说明模型的用途 |
 | `family` | 模型家族，例如 `claude-sonnet` |
 | `kind` | 模型的用途：`generation`、`embedding`、`decision`、`image`、`video`、`speech`、`transcription`、`realtime`、`reranking`、`music` 或 `sound_effects`。遇到不认识的类型时按未知处理 |
-| `status` | `active`、`preview`、`deprecated` 或 `retired`；随 `lifecycle` 中的日期变化 |
+| `status` | `active`、`preview`、`deprecated` 或 `retired`；随 `lifecycle` 中的日期变化，模型也可能在任何日期公布之前就是 `deprecated` |
 | `release_date` | 模型的发布日期，`YYYY-MM-DD`；只知道月份时为 `YYYY-MM` |
 | `last_updated` | 模型的最后更新日期，格式相同 |
 | `knowledge` | 训练数据截止时间，`YYYY-MM` 或 `YYYY-MM-DD` |
@@ -144,7 +144,7 @@ order: 2
 
 | 字段 | 含义 |
 | --- | --- |
-| `efforts` | 模型接受的推理强度级别，例如 `low` 和 `high`；没有时为 `[]` |
+| `efforts` | 模型接受的推理强度级别，例如 `low` 和 `high`；没有时为 `[]`，未知时为 `null` |
 | `adaptive_thinking` | 模型接受自适应思考，由它自己决定思考多久 |
 | `thinking_binding` | 思考块必须与其所属的轮次放在一起 |
 
@@ -164,7 +164,7 @@ order: 2
 
 ### 生命周期
 
-每个键都存在，服务商宣布之前为 `null`。`status` 在 `deprecated_on` 变为 `deprecated`，在 `shutdown_on` 变为 `retired`（[停用和模型系列](lifecycle-and-lines.md)）。
+每个键都存在，服务商宣布之前为 `null`。`status` 在 `deprecated_on` 变为 `deprecated`，在 `shutdown_on` 变为 `retired`。模型也可能在所有日期仍为 `null` 时就是 `deprecated`（[停用和模型系列](lifecycle-and-lines.md)）。
 
 | 字段 | 含义 |
 | --- | --- |
