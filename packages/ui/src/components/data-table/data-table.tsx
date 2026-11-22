@@ -368,30 +368,36 @@ function DataTableInner<T>(
     focusLine(next);
   };
 
-  // Load more: Tab or a click puts focus on the button under the rows, and a page of rows then pushes it out of view.
-  // A page the button asked for takes focus to its first row; any page is said aloud.
+  // A new page pushes a focused Load more out of view, so a page the button asked for takes focus to its first new row.
+  // Rows are told apart by id: a sort mixes new rows in with old ones, and live rows can arrive while a page loads.
   const more = useRef<HTMLElement | null>(null);
-  const asked = useRef<{ from: number; pressed: boolean } | null>(null);
-  const [landing, setLanding] = useState<number | null>(null);
+  const asked = useRef<{ seen: Set<string>; pressed: boolean } | null>(null);
+  const [landing, setLanding] = useState<string | null>(null);
   const [said, setSaid] = useState("");
+  const seenNow = () => new Set(rows.map((r) => r.id));
   const loadMore = () => {
-    asked.current = { from: rows.length, pressed: true };
+    asked.current = { seen: seenNow(), pressed: true };
     setSaid("");
     onLoadMore?.();
   };
+  const wasLoading = useRef(false);
   const settle = useRef(() => {});
   settle.current = () => {
+    const ended = wasLoading.current && !loadingMore;
+    wasLoading.current = !!loadingMore;
     if (loadingMore) {
-      if (!asked.current) {
-        asked.current = { from: rows.length, pressed: false };
-        setSaid("");
-      }
+      asked.current = { seen: seenNow(), pressed: asked.current?.pressed ?? false };
+      if (!asked.current.pressed) setSaid("");
       return;
     }
     const was = asked.current;
+    if (!was) return;
+    const fresh = rows.findIndex((r) => !was.seen.has(r.id));
+    // A load that ends without new rows failed; rows that come later aren't its page.
+    if (fresh < 0 && !ended) return;
     asked.current = null;
-    const added = was ? rows.length - was.from : 0;
-    if (!was || added <= 0) return;
+    if (fresh < 0) return;
+    const added = rows.reduce((n, r) => (was.seen.has(r.id) ? n : n + 1), 0);
     setSaid(
       hasMore
         ? t("dataTable.moreRows", "{count, plural, one {# more row loaded} other {# more rows loaded}}", { count: added })
@@ -400,14 +406,15 @@ function DataTableInner<T>(
     const now = document.activeElement;
     const atMore = !!more.current?.contains(now);
     if (was.pressed && (atMore || !now || now === document.body)) {
-      if (focusable) focusAt(was.from);
-      else setLanding(was.from);
+      if (focusable) focusAt(fresh);
+      else setLanding(rows[fresh]!.id);
     } else if (atMore) more.current?.scrollIntoView({ block: "nearest" });
   };
-  useLayoutEffect(() => settle.current(), [loadingMore, rows.length]);
+  useLayoutEffect(() => settle.current(), [loadingMore, rows]);
   const land = useRef(() => {});
   land.current = () => {
-    if (landing !== null) focusLine(landing);
+    const i = landing === null ? -1 : rows.findIndex((r) => r.id === landing);
+    if (i >= 0) focusLine(i);
   };
   useLayoutEffect(() => land.current(), [landing]);
 
@@ -575,8 +582,8 @@ function DataTableInner<T>(
         data-fresh={freshRowIds?.has(row.id) || undefined}
         data-row-index={i}
         {...(forceRow && i === 0 ? { "data-force": forceRow } : {})}
-        tabIndex={focusable ? (bodyZone && i === stop ? 0 : -1) : landing === i ? -1 : undefined}
-        {...(landing === i ? { onBlur: () => setLanding(null) } : {})}
+        tabIndex={focusable ? (bodyZone && i === stop ? 0 : -1) : landing === row.id ? -1 : undefined}
+        {...(landing === row.id ? { onBlur: () => setLanding(null) } : {})}
         onFocus={(e) => {
           if (e.target !== e.currentTarget) return;
           setZone("body");
@@ -825,9 +832,11 @@ function DataTableInner<T>(
         </div>
       </div>
       <Pagination ref={more} variant="load-more" hasMore={!!hasMore} loading={loadingMore} {...(onLoadMore ? { onLoadMore: loadMore } : {})} />
-      <span role="status" className="sr-only">
-        {said}
-      </span>
+      {onLoadMore && (
+        <span role="status" className="sr-only">
+          {said}
+        </span>
+      )}
     </div>
   );
 }

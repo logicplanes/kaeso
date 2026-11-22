@@ -70,6 +70,43 @@ describe("DataTable Load more", () => {
     expect(row("key-5")).toHaveFocus();
   });
 
+  it("moves to the first new row in the table's order when the rows are sorted, and counts only new rows", async () => {
+    const user = userEvent.setup();
+    const keys = (...k: string[]): Row[] => k.map((key) => ({ id: key, key }));
+    const props = { "aria-label": "Keys", columns, getRowId: (r: Row) => r.id, sorting: [{ id: "key", desc: false }], hasMore: true };
+    const { rerender } = render(<DataTable {...props} data={keys("key-b", "key-d", "key-f")} onLoadMore={() => {}} />);
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    rerender(<DataTable {...props} data={keys("key-b", "key-d", "key-f")} loadingMore onLoadMore={() => {}} />);
+    // A live row at the top while the page loads is no part of the page.
+    rerender(<DataTable {...props} data={keys("key-0", "key-b", "key-d", "key-f")} loadingMore onLoadMore={() => {}} />);
+    rerender(<DataTable {...props} data={keys("key-0", "key-b", "key-d", "key-f", "key-c", "key-e", "key-g")} onLoadMore={() => {}} />);
+    expect(row("key-c")).toHaveFocus();
+    expect(status()).toHaveTextContent("3 more rows loaded");
+  });
+
+  it("makes a plain table's first new row focusable only until focus leaves it", async () => {
+    const user = userEvent.setup();
+    render(<Paged />);
+    await user.click(screen.getByRole("button", { name: "Load more" }));
+    act(() => pager.arrive());
+    expect(row("key-4")).toHaveAttribute("tabindex", "-1");
+    await user.tab();
+    expect(row("key-4")).not.toHaveAttribute("tabindex");
+  });
+
+  it("forgets a page that failed, so rows that come later neither take focus nor are announced", async () => {
+    const user = userEvent.setup();
+    const props = { "aria-label": "Keys", columns, getRowId: (r: Row) => r.id, hasMore: true, onLoadMore: () => {} };
+    const { rerender } = render(<DataTable {...props} data={named(1, 3)} />);
+    const more = screen.getByRole("button", { name: "Load more" });
+    await user.click(more);
+    rerender(<DataTable {...props} data={named(1, 3)} loadingMore />);
+    rerender(<DataTable {...props} data={named(1, 3)} />);
+    rerender(<DataTable {...props} data={[...named(0, 1), ...named(1, 3)]} />);
+    expect(more).toHaveFocus();
+    expect(status()).toHaveTextContent("");
+  });
+
   it("says when the last page has come, and still moves to its first row", async () => {
     const user = userEvent.setup();
     render(<Paged pages={2} />);
