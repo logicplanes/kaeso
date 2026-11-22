@@ -123,5 +123,6 @@ Ein Lauf schlägt fehl, und der Befehl endet mit einem Fehler, wenn eine Prüfun
 ## Nächste Schritte
 
 - [Tests](testing.md): Führen Sie jede Prüfung aus, die eine Änderung bestehen muss.
+- [Leistung](../self-hosting/performance.md): Vergleichen Sie Kaeso mit LiteLLM, Bifrost und Portkey in BerriAIs Benchmark.
 - [Zustand und Metriken](../self-hosting/monitoring.md): Beobachten Sie den Overhead von Kaeso in einer laufenden Installation.
 - [Ablauf einer Anfrage](../concepts/request-flow.md#fehlgeschlagene-streams): Sehen Sie, wie Kaeso Streams beendet, die scheitern oder hängen.

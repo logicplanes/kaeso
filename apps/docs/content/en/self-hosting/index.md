@@ -20,4 +20,5 @@ Kaeso runs on your server as one Docker Compose project. The [quick start](../ge
 - [Health and metrics](monitoring.md): Check health, scrape Prometheus metrics and read the logs.
 - [Troubleshooting](troubleshooting.md): Find the fix for a problem you see.
 - [Several gateways](scaling.md): Run more than one gateway behind Caddy or a load balancer, and know what they share.
+- [Performance](performance.md): See how much time, CPU and memory Kaeso adds next to LiteLLM, Bifrost and Portkey on BerriAI's benchmark.
 - [Managed platforms](platforms/index.md): Run Kaeso on Render, Railway, DigitalOcean, Fly.io, AWS, Azure, Google Cloud, Coolify, Dokploy or CapRover from the repository's templates.

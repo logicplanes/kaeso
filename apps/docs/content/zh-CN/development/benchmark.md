@@ -123,5 +123,6 @@ ulimit -n 65536
 ## 下一步
 
 - [测试](testing.md)：运行变更必须通过的每一项检查。
+- [性能](../self-hosting/performance.md)：在 BerriAI 的基准测试中比较 Kaeso 与 LiteLLM、Bifrost 和 Portkey。
 - [健康状态和指标](../self-hosting/monitoring.md)：在运行中的实例上观察 Kaeso 的开销。
 - [请求流程](../concepts/request-flow.md#失败的流)：了解 Kaeso 如何结束失败或停滞的流。
