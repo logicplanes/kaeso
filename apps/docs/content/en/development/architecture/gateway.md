@@ -109,7 +109,7 @@ A custom provider speaks the plain dialect, `ChatProfile::OPENAI` for Chat Compl
 
 ## Model data
 
-`crates/kaeso-core/data/kpmr.json` is a snapshot of the [KPMR](../../concepts/kpmr.md) catalogue in format 1, for the providers Kaeso calls, so a fresh install works without network access. Its `provider_ids` list every provider KPMR knows, which a custom provider can't take. The folder's `README.md` records the snapshot's revision, when KPMR generated it and its SHA-256.
+`crates/kaeso-core/data/kpmr.json` is a snapshot of the [KPMR](../../kpmr/index.md) catalogue in format 1, for the providers Kaeso calls, so a fresh install works without network access. Its `provider_ids` list every provider KPMR knows, which a custom provider can't take. The folder's `README.md` records the snapshot's revision, when KPMR generated it and its SHA-256.
 
 `kaeso_core::kpmr` reads a catalogue: it checks the format, keeps the providers Kaeso calls, skips a model that doesn't parse or prices in another unit, and verifies the Ed25519 signature against the trusted keys. `Fields::from_kpmr` turns a model into catalogue fields. Besides names, prices, limits and capabilities, KPMR gives these:
 

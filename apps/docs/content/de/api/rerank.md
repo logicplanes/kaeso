@@ -91,7 +91,7 @@ Schlüssel, Modellauflösung mit Aliassen und Routen, Limits und Budgets, Anfrag
 
 Jina AI bekommt immer `return_documents`, da es die Dokumente zurückgibt, wenn man es nicht abbestellt, und `max_tokens_per_doc` als `max_doc_length` für `jina-reranker-v3` und `jina-reranker-v3.5`; sein `usage.total_tokens` kommt als `billed_units.input_tokens` zurück. Voyage AI bekommt `top_n` als `top_k` und jedes Dokument als seinen Text; die Dokumente seiner Antwort kommen als `{"text": "…"}` zurück und sein `usage.total_tokens` als `billed_units.input_tokens`.
 
-Ein Modell ist ein Rerank-Modell, wenn [KPMR](../concepts/kpmr.md) ihm die Art `reranking` gibt. Rerank-Modelle eines Anbieters, dessen Rerank-API Kaeso noch nicht aufruft, etwa die von NVIDIA, werden abgelehnt, bevor etwas gesendet wird: „Kaeso calls no rerank models on NVIDIA, so `nvidia/rerank-qa-mistral-4b` can't rerank documents.“
+Ein Modell ist ein Rerank-Modell, wenn [KPMR](../kpmr/index.md) ihm die Art `reranking` gibt. Rerank-Modelle eines Anbieters, dessen Rerank-API Kaeso noch nicht aufruft, etwa die von NVIDIA, werden abgelehnt, bevor etwas gesendet wird: „Kaeso calls no rerank models on NVIDIA, so `nvidia/rerank-qa-mistral-4b` can't rerank documents.“
 
 ## Was abgelehnt wird
 

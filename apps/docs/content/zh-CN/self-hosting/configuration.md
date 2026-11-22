@@ -163,7 +163,7 @@ Docker 会在每个服务的日志达到 10 MB 时轮转，并保留五个文件
 
 ### KPMR
 
-网关通过 [KPMR](../concepts/kpmr.md)（Kaeso Provider & Model Registry）保持模型数据最新。
+网关通过 [KPMR](../kpmr/index.md)（Kaeso Provider & Model Registry）保持模型数据最新。
 
 | 变量<br>TOML 键 | 类型 | 默认值 | 作用 |
 | --- | --- | --- | --- |

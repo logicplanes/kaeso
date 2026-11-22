@@ -131,7 +131,7 @@ Kaeso sendet Entscheidungen über die eigene Decisions-API jedes Anbieters, glei
 
 Alle anderen Anbieter und Gemini Enterprise Agent Platform haben in Kaeso noch keine Decisions-API. Eine Anfrage an einen von ihnen wird abgelehnt, bevor etwas gesendet wird, zum Beispiel „Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.“. Ebenso eine Anfrage an OpenAI in einem Projekt, dessen OpenAI-Schlüssel ein [ChatGPT-Konto](../console/provider-keys.md#mit-einem-chatgpt-konto-anmelden) ist.
 
-Entscheidungsmodelle kommen aus [KPMR](../concepts/kpmr.md#entscheidungsmodelle): Ein Modell der Art `decision` beantwortet nur Fragen, und ein Modell mit einem Eintrag `decisions`, etwa `gpt-6-luna`, erzeugt auch Text. Ein eigenes Modell bei einem Anbieter mit Decisions-API wird mit dem Feld `decisions` zum Entscheidungsmodell ([Modelle und Aliasse](../console/models-and-aliases.md#entscheidungsmodelle)).
+Entscheidungsmodelle kommen aus [KPMR](../kpmr/catalogue.md#entscheidungen): Ein Modell der Art `decision` beantwortet nur Fragen, und ein Modell mit einem Eintrag `decisions`, etwa `gpt-6-luna`, erzeugt auch Text. Ein eigenes Modell bei einem Anbieter mit Decisions-API wird mit dem Feld `decisions` zum Entscheidungsmodell ([Modelle und Aliasse](../console/models-and-aliases.md#entscheidungsmodelle)).
 
 ## Was abgelehnt wird
 

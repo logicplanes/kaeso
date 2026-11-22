@@ -163,7 +163,7 @@ Set these when your install is public and the law where you run it asks for a le
 
 ### KPMR
 
-The gateway keeps its model data current from [KPMR](../concepts/kpmr.md), the Kaeso Provider & Model Registry.
+The gateway keeps its model data current from [KPMR](../kpmr/index.md), the Kaeso Provider & Model Registry.
 
 | Variable<br>TOML key | Type | Default | What it does |
 | --- | --- | --- | --- |

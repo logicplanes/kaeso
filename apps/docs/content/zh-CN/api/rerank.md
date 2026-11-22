@@ -91,7 +91,7 @@ Cohere 自己的字段，例如 `relevant_spans`（Context Focus）和 `priority
 
 Jina AI 总会收到 `return_documents`，因为除非明确关闭，它会返回文档；对 `jina-reranker-v3` 和 `jina-reranker-v3.5`，`max_tokens_per_doc` 以 `max_doc_length` 发送；其 `usage.total_tokens` 以 `billed_units.input_tokens` 返回。Voyage AI 收到的 `top_n` 为 `top_k`，每个文档为其文本；其回复中的文档以 `{"text": "…"}` 返回，其 `usage.total_tokens` 以 `billed_units.input_tokens` 返回。
 
-[KPMR](../concepts/kpmr.md) 将其类型标为 `reranking` 的模型就是重排序模型。Kaeso 尚未调用其重排序 API 的服务商（例如 NVIDIA）的重排序模型，会在发送任何内容之前被拒绝：“Kaeso calls no rerank models on NVIDIA, so `nvidia/rerank-qa-mistral-4b` can't rerank documents.”
+[KPMR](../kpmr/index.md) 将其类型标为 `reranking` 的模型就是重排序模型。Kaeso 尚未调用其重排序 API 的服务商（例如 NVIDIA）的重排序模型，会在发送任何内容之前被拒绝：“Kaeso calls no rerank models on NVIDIA, so `nvidia/rerank-qa-mistral-4b` can't rerank documents.”
 
 ## 拒绝的内容
 

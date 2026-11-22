@@ -52,7 +52,7 @@ console.log(response.output_text);
 - **一个 API 对接所有服务商。** Kaeso 提供 OpenAI 的 Chat Completions、Responses 和 Embeddings，Anthropic 的 Messages、Gemini API 以及 ElevenLabs API，还有用于[重排序](api/rerank.md)的 Cohere 格式和用于[决策](api/decisions.md)的三种格式。每种聊天格式都能调用目录中的任意聊天模型，无论由哪个[服务商](concepts/providers.md)提供，因此 OpenAI SDK 也能调用 Claude。
 - **媒体。** 通过 OpenAI 的 [Images](api/images.md)、[Audio](api/audio.md) 和 [Videos](api/videos.md) API 以及 [ElevenLabs API](api/elevenlabs.md) 生成图片、视频、语音、音效和音乐，以及转写音频，覆盖所有提供这些功能的服务商。
 - **服务商密钥留在您手中。** 应用拿到的是 Kaeso API 密钥（`sk-kso-…`），您可以为它设置限额和到期时间，也可以停用它。您的服务商密钥用只有本实例持有的主密钥加密。
-- **组织和项目。** 成员、角色、权限和服务账号，以及每个项目各自的模型目录，价格和能力来自 [KPMR](concepts/kpmr.md)。
+- **组织和项目。** 成员、角色、权限和服务账号，以及每个项目各自的模型目录，价格和能力来自 [KPMR](kpmr/index.md)。
 - **别名和路由。** 别名指定其背后的模型，支持回退、条件和按权重分流（[别名路由](concepts/alias-routes.md)）。
 - **限额和预算。** 请求速率和 Token 速率，以及 Token 预算和支出预算，可针对项目、成员或单个密钥设置。
 - **请求日志。** 每个请求的状态、Token、费用和耗时；您选择保留时，还包括请求内容。
@@ -99,4 +99,5 @@ Kaeso 采用 MIT 许可证。网关、KPP、控制台、UI 组件库和本文档
 - [使用控制台](console/index.md)：熟悉控制台。
 - [API](api/index.md)：查阅模型 API 和 Platform API。
 - [自托管](self-hosting/index.md)：规划、运行和升级一个实例。
+- [KPMR](kpmr/index.md)：了解模型数据从何而来、实例如何保持其最新，以及如何自己使用注册表。
 - [开发](development/index.md)：构建、测试和修改 Kaeso 本身。

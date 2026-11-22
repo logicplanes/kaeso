@@ -43,7 +43,7 @@ Die Installation braucht eine Domain, deren DNS-Eintrag auf den Server zeigt, un
 | Ausgehend | `oauth2.googleapis.com` | Zugriffstoken für Dienstkonto-Schlüssel von Gemini Enterprise Agent Platform |
 | Ausgehend | `dashscope-*.aliyuncs.com` | Bilder, `qwen3-tts-flash`-Audio und Wan-Videos von QwenCloud, die QwenCloud mit Links beantwortet ([Images API](../api/images.md#anbieter)) |
 | Ausgehend | Die Hosts, auf denen Anbieter fertige Videos ablegen, wie ihre Referenzen sie zeigen: `vidgen.x.ai` für SpaceX, `video-product.cdn.minimax.io` und OSS-Buckets von Alibaba Cloud wie `public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com` für MiniMax, `aigc-files.bigmodel.cn` für Z.ai. ElevenLabs nennt keinen festen Host; OpenRouter und Together AI liefern Dateien von ihren eigenen Hosts, Veo und Gemini Omni in ihrer Antwort | Fertige Videos herunterladen ([Videos API](../api/videos.md#ein-video-herunterladen)) |
-| Ausgehend | `kpmr.kaeso.app` | Modelldaten von [KPMR](../concepts/kpmr.md), etwa stündlich geprüft |
+| Ausgehend | `kpmr.kaeso.app` | Modelldaten von [KPMR](../kpmr/index.md), etwa stündlich geprüft |
 | Ausgehend | `update.kaeso.app` | Die Suche nach neuen Kaeso-Releases, alle 5 Minuten |
 | Ausgehend | `www.ecb.europa.eu` | Die Referenzkurse der EZB für [Währungen](../concepts/currencies.md), alle 6 Stunden ([Wechselkurse](configuration.md#wechselkurse)) |
 | Ausgehend | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy, um das Zertifikat zu holen und zu erneuern |

@@ -4,21 +4,11 @@ description: Wie Kaeso erfährt, dass ein Anbieter ein Modell abschaltet, die Pr
 order: 5
 ---
 
-Anbieter schalten Modelle zu festen Terminen ab, und eine Anfrage an ein Modell nach seinem Abschalttag scheitert. Kaeso verfolgt jede Abschaltung von der Ankündigung des Anbieters bis zum letzten Tag: [KPMR](kpmr.md) veröffentlicht die Daten und den Nachfolger, den der Anbieter empfiehlt, und das Gateway ermittelt, welche Projekte das Modell noch aufrufen, warnt sie rechtzeitig und stellt sie mit einem Klick um, oder von selbst, wo ein Projekt es erlaubt.
+Anbieter schalten Modelle zu festen Terminen ab, und eine Anfrage an ein Modell nach seinem Abschalttag scheitert. Kaeso verfolgt jede Abschaltung von der Ankündigung des Anbieters bis zum letzten Tag: [KPMR](../kpmr/index.md) veröffentlicht die Daten und den Nachfolger, den der Anbieter empfiehlt, und das Gateway ermittelt, welche Projekte das Modell noch aufrufen, warnt sie rechtzeitig und stellt sie mit einem Klick um, oder von selbst, wo ein Projekt es erlaubt.
 
 ## Was KPMR veröffentlicht
 
-Jedes Modell im Katalog hat einen `lifecycle`. Jedes Feld ist `null`, solange der Anbieter nichts angekündigt hat:
-
-| Feld | Bedeutung |
-| --- | --- |
-| `announced_on` | Der Tag, an dem der Anbieter die Abschaltung angekündigt hat |
-| `deprecated_on` | Der Tag, ab dem das Modell veraltet ist: Es funktioniert noch, aber der Anbieter möchte, dass Apps umsteigen |
-| `shutdown_on` | Der Tag, an dem der Anbieter das Modell abschaltet |
-| `replacement` | Die Modell-ID, die der Anbieter stattdessen empfiehlt, ein Modell desselben Anbieters |
-| `source` | Die Seite, auf der der Anbieter es angekündigt hat |
-
-Der `status` des Modells folgt den Daten: `deprecated` ab `deprecated_on` und `retired` ab `shutdown_on`. Ein abgeschaltetes Modell bleibt im Katalog, sodass seine Geschichte und seine Preise vergangener Anfragen lesbar bleiben. KPMR liest die Abkündigungsseiten der Anbieter regelmäßig und schlägt jedes neue Datum zur Prüfung vor; nichts erreicht den Katalog ungeprüft. Seine Seite [Abkündigungen](https://kpmr.kaeso.app/de/deprecations) listet jede kommende Abschaltung aller Anbieter.
+Jedes Modell im Katalog hat einen `lifecycle`: die Tage, an denen der Anbieter die Abschaltung angekündigt hat, das Modell abkündigt und abschaltet, den empfohlenen Nachfolger `replacement` und die Quelle der Ankündigung `source`, jeweils `null` bis zur Ankündigung ([Katalogformat](../kpmr/catalogue.md#lebenszyklus)). Der `status` des Modells wird an diesen Tagen `deprecated` und dann `retired`, und ein abgeschaltetes Modell bleibt im Katalog. KPMR prüft jedes Datum, bevor es es veröffentlicht ([Abschaltungen und Modelllinien](../kpmr/lifecycle-and-lines.md)).
 
 ## Wo ein auslaufendes Modell erscheint
 
@@ -88,6 +78,6 @@ Kaesos [MCP-Server](../api/mcp.md) bietet dieselben Aktionen als Werkzeuge an. D
 
 ## Nächste Schritte
 
-- [KPMR](kpmr.md): Sehen Sie, woher die Daten kommen und wie das Gateway sie abruft.
+- [Abschaltungen und Modelllinien](../kpmr/lifecycle-and-lines.md): Sehen Sie, woher die Daten kommen und wie KPMR sie prüft.
 - [Alias-Routen](alias-routes.md): Leiten Sie Anfragen mit Fallbacks über mehrere Modelle.
 - [Webhooks](../console/webhooks.md): Empfangen Sie die Warnungen in Ihren eigenen Systemen.

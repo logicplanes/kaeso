@@ -22,8 +22,8 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 | Anbieter | Ein Unternehmen, dessen Modelle Kaeso aufruft, etwa OpenAI, Anthropic oder Groq. Seine ID, etwa `groq`, bezeichnet es in Modellnamen und Einstellungen ([Anbieter](providers.md)) |
 | Anbieter-Schlüssel | Der Schlüssel der Organisation für einen Modellanbieter wie OpenAI oder Anthropic, mit dem Kaeso den Anbieter aufruft. Apps sehen ihn nie ([Anbieter-Schlüssel](../console/provider-keys.md)) |
 | Hauptschlüssel | Der eigene Schlüssel der Installation, der die gespeicherten Secrets verschlüsselt, etwa Anbieter-Schlüssel ([Backups und Hauptschlüssel](../self-hosting/backups.md)) |
-| Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten. Sie kommen aus [KPMR](kpmr.md), und ein Projekt kann eigene Modelle hinzufügen oder Felder überschreiben ([Modelle und Aliasse](../console/models-and-aliases.md)) |
-| KPMR | Die Kaeso Provider & Model Registry, die jede Installation mit von Logicplanes geprüften Modelldaten versorgt ([KPMR](kpmr.md)) |
+| Katalog | Die Modelle, die ein Projekt aufrufen darf, mit ihren Preisen, Limits und Fähigkeiten. Sie kommen aus [KPMR](../kpmr/index.md), und ein Projekt kann eigene Modelle hinzufügen oder Felder überschreiben ([Modelle und Aliasse](../console/models-and-aliases.md)) |
+| KPMR | Die Kaeso Provider & Model Registry, die jede Installation mit von Logicplanes geprüften Modelldaten versorgt ([KPMR](../kpmr/index.md)) |
 | Alias | Ein eigener Name eines Projekts für ein Modell seines Katalogs, etwa `fast`, mit einer Route, die auf andere Modelle ausweichen kann ([Alias-Routen](alias-routes.md)) |
 | Limit | Eine Anfrage- oder Token-Rate oder ein Token- oder Ausgabenbudget, für ein Projekt, ein Mitglied oder einen Schlüssel. Ein hartes Budget lehnt Anfragen ab, ein weiches warnt nur ([Limits und Budgets](../console/limits-and-budgets.md)) |
 | Anfrageprotokoll | Der Eintrag zu einer Modellanfrage: Status, Token, Kosten, Zeiten und, wo aufbewahrt, ihr Inhalt ([Anfrageprotokolle](../console/request-logs.md)) |
@@ -41,7 +41,6 @@ Diese Seiten erklären, wie Kaeso arbeitet, damit Sie wissen, was Sie erwartet, 
 - [Alias-Routen](alias-routes.md): Leiten Sie jede Anfrage an einen Alias zum passenden Modell, und weichen Sie aus, wenn eines ausfällt.
 - [Formatübersetzung](format-translation.md): Sehen Sie, was erhalten bleibt, wenn eine App das Modell eines anderen Anbieters aufruft.
 - [Rechte](rights.md): Schlagen Sie jedes Recht nach, welche Rollen es haben und nach welchen Regeln Sie es vergeben.
-- [KPMR](kpmr.md): Erfahren Sie, woher die Modelldaten kommen und wie eine Installation sie aktuell hält.
 - [Modell-Lebenszyklus](model-lifecycle.md): Sehen Sie, wie Kaeso Projekte vor abgeschalteten Modellen warnt und sie auf den Nachfolger umstellt.
 - [Währungen](currencies.md): Zeigen Sie Ausgaben, Preise und Budgets einer Organisation in ihrer eigenen Währung, zu den Tageskursen der EZB.
 - [MCP-Portal](mcp-portal.md): Geben Sie KI-Clients die Tools Ihrer MCP-Server, mit Anmeldung, Rechten, Limits und Protokollen von Kaeso.

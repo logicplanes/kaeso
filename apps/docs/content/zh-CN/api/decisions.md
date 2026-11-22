@@ -131,7 +131,7 @@ sequenceDiagram
 
 其他所有服务商和 Gemini Enterprise Agent Platform 在 Kaeso 中还没有决策 API。发往它们的请求会在发送任何内容之前被拒绝，例如“Anthropic offers no decisions API Kaeso can call, so `claude-haiku-4-5` can't make decisions.”。如果项目的 OpenAI 密钥是 [ChatGPT 账户](../console/provider-keys.md#使用-chatgpt-账户登录)，发往 OpenAI 的请求同样会被拒绝。
 
-决策模型来自 [KPMR](../concepts/kpmr.md#决策模型)：类型为 `decision` 的模型只回答问题，带有 `decisions` 条目的模型（例如 `gpt-6-luna`）也生成文本。在有决策 API 的服务商上，自定义模型设置 `decisions` 字段后即成为决策模型（[模型和别名](../console/models-and-aliases.md#决策模型)）。
+决策模型来自 [KPMR](../kpmr/catalogue.md#决策)：类型为 `decision` 的模型只回答问题，带有 `decisions` 条目的模型（例如 `gpt-6-luna`）也生成文本。在有决策 API 的服务商上，自定义模型设置 `decisions` 字段后即成为决策模型（[模型和别名](../console/models-and-aliases.md#决策模型)）。
 
 ## 拒绝的内容
 

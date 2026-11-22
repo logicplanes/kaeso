@@ -163,7 +163,7 @@ Setzen Sie diese Einstellungen, wenn Ihre Installation öffentlich ist und das R
 
 ### KPMR
 
-Das Gateway hält seine Modelldaten über [KPMR](../concepts/kpmr.md) aktuell, die Kaeso Provider & Model Registry.
+Das Gateway hält seine Modelldaten über [KPMR](../kpmr/index.md) aktuell, die Kaeso Provider & Model Registry.
 
 | Variable<br>TOML-Schlüssel | Typ | Standard | Was sie bewirkt |
 | --- | --- | --- | --- |
