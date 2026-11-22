@@ -354,16 +354,63 @@ function DataTableInner<T>(
   const cellRole = focusable ? "gridcell" : "cell";
   const bodyZone = focusable && rows.length > 0 && zone === "body";
   const stop = Math.min(focusRow, Math.max(rows.length - 1, 0));
-  const focusAt = (i: number) => {
-    const next = Math.max(0, Math.min(rows.length - 1, i));
-    setZone("body");
-    setFocusRow(next);
-    if (virtual) virtualizer.scrollToIndex(next, { align: "auto" });
-    const line = () => body.current?.querySelector<HTMLElement>(`[data-row-index="${next}"]`);
+  const focusLine = (i: number) => {
+    if (virtual) virtualizer.scrollToIndex(i, { align: "auto" });
+    const line = () => body.current?.querySelector<HTMLElement>(`[data-row-index="${i}"]`);
     const now = line();
     if (now) now.focus();
     else requestAnimationFrame(() => line()?.focus());
   };
+  const focusAt = (i: number) => {
+    const next = Math.max(0, Math.min(rows.length - 1, i));
+    setZone("body");
+    setFocusRow(next);
+    focusLine(next);
+  };
+
+  // Load more: Tab or a click puts focus on the button under the rows, and a page of rows then pushes it out of view.
+  // A page the button asked for takes focus to its first row; any page is said aloud.
+  const more = useRef<HTMLElement | null>(null);
+  const asked = useRef<{ from: number; pressed: boolean } | null>(null);
+  const [landing, setLanding] = useState<number | null>(null);
+  const [said, setSaid] = useState("");
+  const loadMore = () => {
+    asked.current = { from: rows.length, pressed: true };
+    setSaid("");
+    onLoadMore?.();
+  };
+  const settle = useRef(() => {});
+  settle.current = () => {
+    if (loadingMore) {
+      if (!asked.current) {
+        asked.current = { from: rows.length, pressed: false };
+        setSaid("");
+      }
+      return;
+    }
+    const was = asked.current;
+    asked.current = null;
+    const added = was ? rows.length - was.from : 0;
+    if (!was || added <= 0) return;
+    setSaid(
+      hasMore
+        ? t("dataTable.moreRows", "{count, plural, one {# more row loaded} other {# more rows loaded}}", { count: added })
+        : t("dataTable.moreRowsAll", "{count, plural, one {# more row loaded; all rows shown} other {# more rows loaded; all rows shown}}", { count: added }),
+    );
+    const now = document.activeElement;
+    const atMore = !!more.current?.contains(now);
+    if (was.pressed && (atMore || !now || now === document.body)) {
+      if (focusable) focusAt(was.from);
+      else setLanding(was.from);
+    } else if (atMore) more.current?.scrollIntoView({ block: "nearest" });
+  };
+  useLayoutEffect(() => settle.current(), [loadingMore, rows.length]);
+  const land = useRef(() => {});
+  land.current = () => {
+    if (landing !== null) focusLine(landing);
+  };
+  useLayoutEffect(() => land.current(), [landing]);
+
   const focusHead = (i: number) => {
     const targets = headTargets(head.current);
     const target = targets[Math.max(0, Math.min(targets.length - 1, i))];
@@ -528,7 +575,8 @@ function DataTableInner<T>(
         data-fresh={freshRowIds?.has(row.id) || undefined}
         data-row-index={i}
         {...(forceRow && i === 0 ? { "data-force": forceRow } : {})}
-        tabIndex={focusable ? (bodyZone && i === stop ? 0 : -1) : undefined}
+        tabIndex={focusable ? (bodyZone && i === stop ? 0 : -1) : landing === i ? -1 : undefined}
+        {...(landing === i ? { onBlur: () => setLanding(null) } : {})}
         onFocus={(e) => {
           if (e.target !== e.currentTarget) return;
           setZone("body");
@@ -776,7 +824,10 @@ function DataTableInner<T>(
           )}
         </div>
       </div>
-      <Pagination variant="load-more" hasMore={!!hasMore} loading={loadingMore} onLoadMore={onLoadMore} />
+      <Pagination ref={more} variant="load-more" hasMore={!!hasMore} loading={loadingMore} {...(onLoadMore ? { onLoadMore: loadMore } : {})} />
+      <span role="status" className="sr-only">
+        {said}
+      </span>
     </div>
   );
 }

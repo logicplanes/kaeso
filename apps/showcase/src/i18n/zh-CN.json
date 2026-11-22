@@ -134,7 +134,7 @@
   "Called once every cell is filled.": "所有单元格填满后调用一次。",
   "Called to go to the next page.": "调用以前往下一页。",
   "Called to go to the previous page.": "调用以前往上一页。",
-  "Called to load the next rows.": "调用以加载后续行。",
+  "Called to load the next rows. When Load more asked for them, focus moves to the first new row once they arrive; screen readers hear how many came.": "调用以加载后续行。若由“加载更多”请求，加载完成后焦点移到第一条新行；屏幕阅读器会读出新增的行数。",
   "Called when Try again is pressed after `error`; without it, the button doesn't show.": "出现 `error` 后点击“重试”时调用；不传入时不显示该按钮。",
   "Called when a row is clicked; rows then show that they can be opened.": "点击行时调用；此时行会显示可打开的样式。",
   "Called when a row is opened with a click or Enter. Enter with ⌘ or Ctrl is left to the surrounding form.": "通过点击或 Enter 打开行时调用。按住 ⌘ 或 Ctrl 的 Enter 交给外层表单处理。",
