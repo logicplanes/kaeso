@@ -4,6 +4,8 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import ts from "typescript";
 import { translationProblem } from "./translation-problems.mjs";
+import { commitOf } from "./source-ref.mjs";
+import { buildSearchIndex, HIDDEN_PROPS } from "./search-index.mjs";
 import { pagesWithoutVariants } from "../../../packages/ui/scripts/variant-exports.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -103,7 +105,6 @@ const typeOf = (t) =>
     .replace(/\s*\|\s*undefined\b/g, "")
     .replace(/\s+/g, " ")
     .trim();
-const HIDDEN_PROPS = new Set(["className", "data-force", "style"]);
 const docPages = {};
 for (const [slug, page] of Object.entries(out)) {
   const entry = page.entry ?? slug;
@@ -120,6 +121,20 @@ for (const [slug, page] of Object.entries(out)) {
   };
 }
 writeFileSync(join(genDir, "doc-pages.json"), `${JSON.stringify(docPages, null, 2)}\n`);
+const commit = commitOf(root);
+// Without a commit, View source falls back to the release tag, which a pre-release build's new components aren't in.
+if (!commit) writeSync(2, "docs: no git checkout found; View source links to the release tag instead of the build's commit\n");
+writeFileSync(join(genDir, "source.json"), `${JSON.stringify({ commit })}\n`);
+
+const { index: search, missing: unindexed } = buildSearchIndex(Object.values(out), registryJson);
+if (unindexed.length) {
+  writeSync(
+    2,
+    `docs: ${unindexed.length} components no page's search holds; import them on a page or name a page after their entry:\n  ${unindexed.join("\n  ")}\n`,
+  );
+  process.exit(1);
+}
+writeFileSync(join(genDir, "search.json"), `${JSON.stringify(search)}\n`);
 
 const withoutVariants = pagesWithoutVariants(
   Object.values(out).map((page) => ({

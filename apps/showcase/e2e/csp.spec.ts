@@ -71,7 +71,7 @@ test.describe("on a phone", () => {
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.keyboard.press("Escape");
       await page.getByRole("button", { name: "搜索" }).first().click();
-      await page.getByPlaceholder("搜索页面、组件和属性").fill("Select");
+      await page.getByPlaceholder("搜索页面、组件、属性和示例").fill("Select");
       await expect(page.getByRole("option").first()).toBeVisible();
       expect(await violations()).toEqual([]);
     });
