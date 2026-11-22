@@ -155,8 +155,8 @@ fn decode_action(
 }
 
 // Gemini accepts `functionResponse` turns under non-user roles (for instance `google.golang.org/genai`
-// clients send `role: "model"`). A content whose parts are all `functionResponse` belongs to the
-// user/tool side in KPP, while keeping its wire role in form for same-dialect round trips.
+// clients send `role: "model"`). A content whose parts all decode to `Block::ToolResult` belongs to
+// the user/tool side in KPP, while keeping its wire role in form for same-dialect round trips.
 fn all_function_responses(parts: &[Raw]) -> bool {
     !parts.is_empty()
         && parts.iter().all(|raw| {
@@ -167,6 +167,7 @@ fn all_function_responses(parts: &[Raw]) -> bool {
                     && p.file_data.is_none()
                     && p.function_call.is_none()
                     && p.thought != Some(true)
+                    && p.thought_signature.is_none()
             })
         })
 }
@@ -185,14 +186,13 @@ fn decode_contents(
             verbatim,
         } = c;
         let mut extras = extras_from(origin, extra, verbatim);
-        let response_only = all_function_responses(&known.parts);
         let role = match known.role.as_deref() {
             Some("user") => Role::User,
             None => {
                 extras.form.insert(FORM_ROLE.into(), Value::Null);
                 Role::User
             }
-            Some(other) if response_only => {
+            Some(other) if all_function_responses(&known.parts) => {
                 extras.form.insert(FORM_ROLE.into(), other.into());
                 Role::User
             }

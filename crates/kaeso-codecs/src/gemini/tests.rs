@@ -1364,6 +1364,97 @@ fn function_response_contents_decode_as_user_regardless_of_wire_role() {
         panic!()
     };
     assert_eq!(g.messages[0].role, Role::Assistant);
+
+    // Multiple functionResponse parts in one role: "model" content decode as one User turn.
+    let multi = serde_json::to_vec(&json!({
+        "contents": [
+            {"role": "user", "parts": [{"text": "run both"}]},
+            {"role": "model", "parts": [
+                {"functionCall": {"id": "c1", "name": "f", "args": {}}},
+                {"functionCall": {"id": "c2", "name": "g", "args": {}}}
+            ]},
+            {"role": "model", "parts": [
+                {"functionResponse": {"id": "c1", "name": "f", "response": {"output": "a"}}},
+                {"functionResponse": {"id": "c2", "name": "g", "response": {"output": "b"}}}
+            ]}
+        ]
+    }))
+    .unwrap();
+    let req = crate::dispatch::decode_gemini_request(
+        MODEL,
+        GeminiAction::GenerateContent,
+        &multi,
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let Request::Generate(g) = &req else { panic!() };
+    assert_eq!(g.messages[2].role, Role::User);
+    assert_eq!(g.messages[2].blocks.len(), 2);
+    let enc = Gemini::encode_request(&req, &mut EgressCtx::new(&req)).unwrap();
+    assert_json_eq("multi functionResponse role:model", &multi, &enc.body);
+
+    // A functionResponse with a thoughtSignature emits a Reasoning block too, so it is not
+    // rewritten to Role::User; an unknown role with mixed parts stays raw Unknown.
+    let signed = serde_json::to_vec(&json!({
+        "contents": [
+            {"role": "model", "parts": [{"functionResponse": {"id": "c1", "name": "f", "response": {"output": "ok"}}, "thoughtSignature": "c2ln"}]}
+        ]
+    }))
+    .unwrap();
+    let Request::Generate(g) = crate::dispatch::decode_gemini_request(
+        MODEL,
+        GeminiAction::GenerateContent,
+        &signed,
+        &HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    assert_eq!(g.messages[0].role, Role::Assistant);
+
+    let unknown_mixed = serde_json::to_vec(&json!({
+        "contents": [
+            {"role": "assistant", "parts": [{"text": "hi"}, {"functionResponse": {"id": "c1", "name": "f", "response": {"output": "ok"}}}]}
+        ]
+    }))
+    .unwrap();
+    let Request::Generate(g) = crate::dispatch::decode_gemini_request(
+        MODEL,
+        GeminiAction::GenerateContent,
+        &unknown_mixed,
+        &HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    assert!(matches!(
+        g.messages[0].blocks.as_slice(),
+        [Block::Unknown(_)]
+    ));
+
+    // Absent role on a functionResponse content respects `role_on_every_content`.
+    let absent = serde_json::to_vec(&json!({
+        "contents": [
+            {"role": "user", "parts": [{"text": "run"}]},
+            {"role": "model", "parts": [{"functionCall": {"id": "c1", "name": "f", "args": {}}}]},
+            {"parts": [{"functionResponse": {"id": "c1", "name": "f", "response": {"output": "ok"}}}]}
+        ]
+    }))
+    .unwrap();
+    let req = crate::dispatch::decode_gemini_request(
+        MODEL,
+        GeminiAction::GenerateContent,
+        &absent,
+        &HeaderList::new(),
+    )
+    .unwrap();
+    let back_default = Gemini::encode_request(&req, &mut EgressCtx::new(&req)).unwrap();
+    assert_json_eq("absent role default", &absent, &back_default.body);
+    let mut agent_ctx = EgressCtx::new(&req).with_gemini_profile(GeminiProfile::AGENT_PLATFORM);
+    let back_agent: Value =
+        serde_json::from_slice(&Gemini::encode_request(&req, &mut agent_ctx).unwrap().body)
+            .unwrap();
+    assert_eq!(back_agent["contents"][2]["role"], "user");
 }
 
 // Mirrors google.golang.org/genai (`api_client.go`: `scan` + `iterateResponseStream`).

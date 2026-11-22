@@ -201,7 +201,7 @@ A count from another dialect with a system prompt or tools goes as `generateCont
 - **Same-dialect replay.** The first event of each chunk carries the form marker `chunk`: the chunk without its parts, its finish reason and its final usage. The encoder puts them back, so every chunk comes out as received.
 - **Other dialects** get one chunk per text delta, one per function call, and a last chunk with an empty text part, the `finishReason` and `usageMetadata`.
 - **Errors.** A `data:` line with an `error` object is an error event; the encoder writes errors the same way.
-- **Keepalives.** Two blank lines (`\n\n`, [keepalives](cross-format.md#keepalives)). The Python `google-genai` SDK reads every non-`data: ` line as JSON, so a comment breaks it, and the Go (`google.golang.org/genai`) and JS (`@google/genai`) SDKs split chunks on `\n\n`, so a single newline would attach to the next `data: ` line.
+- **Keepalives.** Two newlines (`\n\n`, [keepalives](cross-format.md#keepalives)). The Python `google-genai` SDK reads every non-`data: ` line as JSON, so a comment breaks it, and the Go (`google.golang.org/genai`) and JS (`@google/genai`) SDKs split chunks on `\n\n`, so a single newline would attach to the next `data: ` line.
 - Comments, named events and frames that aren't JSON objects pass through as `Extra`.
 
 ## Errors
