@@ -123,5 +123,6 @@ A run fails, and the command exits with an error, when a check fails. The checks
 ## Next steps
 
 - [Testing](testing.md): Run every check a change must pass.
+- [Performance](../self-hosting/performance.md): Compare Kaeso with LiteLLM, Bifrost and Portkey on BerriAI's benchmark.
 - [Health and metrics](../self-hosting/monitoring.md): Watch Kaeso's overhead on a running install.
 - [Request flow](../concepts/request-flow.md#failed-streams): See how Kaeso ends streams that fail or stall.

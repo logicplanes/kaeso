@@ -28,6 +28,7 @@ export const ALLOWED = [
   { path: "apps/docs/content/*/self-hosting/upgrades.md", version: "0.1.0", why: "the migrations of the first release" },
   { path: "apps/docs/content/*/self-hosting/upgrades.md", version: "0.6.0", why: "the release the upgrade notes compare with" },
   { path: "apps/docs/content/*/self-hosting/upgrades.md", version: "0.7.0", why: "the upgrade notes of that release" },
+  { path: "apps/docs/content/*/self-hosting/performance.md", version: "0.7.0", why: "the release the gateway comparison measured" },
   { path: "apps/docs/content/*/development/architecture/updates.md", version: "0.1.0", why: "the signed release the updater's tests verify" },
   { path: "crates/kaeso-updater/tests/verify.rs", version: "0.1.0", why: "the signed images of the first release the updater's tests verify" },
   { path: "crates/kaeso-updater/tests/fixtures/*", version: "0.1.0", why: "the attestations and image indexes of the first release" },
