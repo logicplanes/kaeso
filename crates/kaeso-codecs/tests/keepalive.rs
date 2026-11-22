@@ -168,10 +168,13 @@ fn gemini_apps_hear_blank_lines_that_their_sdk_skips() {
     ));
     let start = StreamEvent::ResponseStart(ResponseStart::new("x", "m"));
     let outputs = encode_each(g, &[start, ping.clone(), ping]);
-    assert_eq!([outputs[1].clone(), outputs[2].clone()].concat(), b"\n\n");
+    assert_eq!(
+        [outputs[1].clone(), outputs[2].clone()].concat(),
+        b"\n\n\n\n"
+    );
     let mut enc =
         dispatch::stream_encoder(g, &EncodeCtx::new(RequestKind::Generate, mode())).unwrap();
-    assert_eq!(enc.keepalive(), b"\n");
+    assert_eq!(enc.keepalive(), b"\n\n");
     assert!(
         parse_all(b"\n\n").unwrap().is_empty(),
         "a blank line is no event"
@@ -254,7 +257,7 @@ fn a_tool_call_held_until_it_is_complete_keeps_the_app_hearing_from_the_stream()
     let g = DialectId::Gemini;
     let outputs = encode_each(g, &events);
     assert!(longest_silence(&events, &outputs) <= HIDDEN_TEXT_PER_KEEPALIVE);
-    let blank = outputs.iter().filter(|o| o.as_slice() == b"\n").count();
+    let blank = outputs.iter().filter(|o| o.as_slice() == b"\n\n").count();
     assert_eq!(blank, frames);
     let back = decode(g, &outputs.concat());
     let arguments: String = back

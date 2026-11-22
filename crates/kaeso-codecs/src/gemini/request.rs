@@ -10,8 +10,8 @@ use super::D;
 use super::parts::{Calls, DUMMY_SIGNATURE, PartDecoder, PartEncoder};
 use super::path::GeminiAction;
 use super::wire::{
-    ContentW, CountTokensW, FunctionCallingConfigW, FunctionDeclarationW, GenerationConfigW, Raw,
-    RequestW, ThinkingConfigW, ToolConfigW, ToolW,
+    ContentW, CountTokensW, FunctionCallingConfigW, FunctionDeclarationW, GenerationConfigW, PartW,
+    Raw, RequestW, ThinkingConfigW, ToolConfigW, ToolW,
 };
 use crate::codec::{EgressCtx, EncodedRequest, HeaderList};
 use crate::cross::{Setting, app_field, check_foreign};
@@ -154,6 +154,23 @@ fn decode_action(
     }
 }
 
+// Gemini accepts `functionResponse` turns under non-user roles (for instance `google.golang.org/genai`
+// clients send `role: "model"`). A content whose parts are all `functionResponse` belongs to the
+// user/tool side in KPP, while keeping its wire role in form for same-dialect round trips.
+fn all_function_responses(parts: &[Raw]) -> bool {
+    !parts.is_empty()
+        && parts.iter().all(|raw| {
+            Ext::<PartW>::from_raw(raw).is_ok_and(|p| {
+                p.function_response.is_some()
+                    && p.text.is_none()
+                    && p.inline_data.is_none()
+                    && p.file_data.is_none()
+                    && p.function_call.is_none()
+                    && p.thought != Some(true)
+            })
+        })
+}
+
 fn decode_contents(
     contents: Vec<Ext<ContentW>>,
     origin: &Origin,
@@ -168,13 +185,18 @@ fn decode_contents(
             verbatim,
         } = c;
         let mut extras = extras_from(origin, extra, verbatim);
+        let response_only = all_function_responses(&known.parts);
         let role = match known.role.as_deref() {
             Some("user") => Role::User,
-            Some("model") => Role::Assistant,
             None => {
-                extras.form.insert(FORM_ROLE.into(), "absent".into());
+                extras.form.insert(FORM_ROLE.into(), Value::Null);
                 Role::User
             }
+            Some(other) if response_only => {
+                extras.form.insert(FORM_ROLE.into(), other.into());
+                Role::User
+            }
+            Some("model") => Role::Assistant,
             Some(_) => {
                 let mut m = Message::new(
                     Role::User,
@@ -900,10 +922,15 @@ fn encode_contents(
             continue;
         }
         last_foreign_results = foreign_results;
-        let role = if own && m.extras.form_str(D, FORM_ROLE) == Some("absent") {
-            ctx.gemini_profile
-                .role_on_every_content
-                .then(|| role.to_owned())
+        let role = if own {
+            match m.extras.form_value(D, FORM_ROLE) {
+                Some(Value::Null) => ctx
+                    .gemini_profile
+                    .role_on_every_content
+                    .then(|| role.to_owned()),
+                Some(Value::String(wire)) => Some(wire.clone()),
+                _ => Some(role.to_owned()),
+            }
         } else {
             Some(role.to_owned())
         };

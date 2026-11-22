@@ -44,7 +44,7 @@ Schema `GenerateContentRequest`。
 | 线路字段 | KPP | 说明 |
 |---|---|---|
 | `contents[]`（`Content`） | `messages[]` | 每个 content 一条消息，相邻的同角色 content 按原样保留。未知键 → 消息的字段。 |
-| `contents[].role` `user` / `model` | `Role::User` / `Role::Assistant` | 缺失 → `Role::User`，形式标记 `role: "absent"`。其他角色 → 一条用户消息，把整个 content 作为一个未知块保存，跨方言时以 `` `<role>` message `` 拒绝（[请求](cross-format.md#请求)）。Gemini 曾回答过角色为 `assistant` 的 content（`requests/role-assistant.json`）。 |
+| `contents[].role` `user` / `model` | `Role::User` / `Role::Assistant` | 缺失 → `Role::User`，形式标记 `role: null`。如果一个 content 的 part 全部是 `functionResponse`，无论其角色为何都解码为 `Role::User`（形式标记 `role` 保留原始线路角色以便回传 Gemini，例如 `google.golang.org/genai` 发送的 `role: "model"`，`requests/tool-result-role-model.json`）。其他角色 → 一条用户消息，把整个 content 作为一个未知块保存，跨方言时以 `` `<role>` message `` 拒绝（[请求](cross-format.md#请求)）。Gemini 曾回答过角色为 `assistant` 的 content（`requests/role-assistant.json`）。 |
 | `systemInstruction` | `system` | 其 part 作为块；`role` → 形式标记 `systemInstruction.role`；未知键 → 字段 `systemInstruction.*`。系统指令只包含文本，因此外来的非文本系统块为 `Unsupported`。 |
 | 只含 `functionDeclarations` 的 `tools[]` | `tools[]`，即 `ToolDef::Function` | 每个声明所在 Tool 的索引 → 形式标记 `group`，使同一方言内编码时保留分组。外来工具放进同一个 Tool。 |
 | 含其他键（`googleSearch`、`urlContext`、`codeExecution`、`googleMaps`、`fileSearch`、`computerUse`、`mcpServers`、`googleSearchRetrieval`）或 `functionDeclarations` 为空的 `tools[]` | `ToolDef::Unknown`（原样） | 跨方言时被拒绝。 |
@@ -201,7 +201,7 @@ Schema `CountTokensRequest` 和 `CountTokensResponse`。
 - **同方言回放。** 每个 chunk 的第一个事件带有形式标记 `chunk`：去掉 part、结束原因和最终用量之后的 chunk。编码器把它们放回去，因此每个 chunk 都按收到的原样输出。
 - **其他方言**每个文本增量得到一个 chunk，每个函数调用一个 chunk，最后一个 chunk 带空文本 part、`finishReason` 和 `usageMetadata`。
 - **错误。** 带 `error` 对象的 `data:` 行是错误事件；编码器也以同样方式写出错误。
-- **保活消息。** 一个空行（[保活消息](cross-format.md#保活消息)）。`google-genai` SDK 把每个不以 `data: ` 开头的行当作 JSON 读取，因此注释会让它出错。
+- **保活消息。** 两个换行符（`\n\n`，[保活消息](cross-format.md#保活消息)）。Python 的 `google-genai` SDK 会把每个不以 `data: ` 开头的行当作 JSON 读取，因此注释会让它出错；Go（`google.golang.org/genai`）和 JS（`@google/genai`）SDK 按 `\n\n` 切分 chunk，单个换行符会粘到下一行 `data: ` 上。
 - 注释、具名事件以及不是 JSON 对象的帧作为 `Extra` 传递。
 
 ## 错误

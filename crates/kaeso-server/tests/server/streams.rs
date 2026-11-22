@@ -927,8 +927,9 @@ fn gemini_frames(text: &str) -> (usize, Vec<Value>) {
         .filter_map(|l| l.strip_prefix("data: "))
         .map(|d| serde_json::from_str(d.trim_end()).unwrap())
         .collect();
-    let lines = text.matches('\n').count();
-    (lines - 2 * chunks.len(), chunks)
+    let extra = text.matches('\n').count() - 2 * chunks.len();
+    assert_eq!(extra % 2, 0, "keepalives come in \\n\\n frames: {text:?}");
+    (extra / 2, chunks)
 }
 
 #[tokio::test]
@@ -1013,7 +1014,7 @@ async fn apps_hear_keepalives_while_a_tool_calls_arguments_are_held_back() {
         let r = call(&env, &path, None, false, Some(body)).await;
         assert_eq!(r.status, 200, "{}", r.text());
         let text = r.text();
-        assert_eq!(keepalive_of(DialectId::Gemini), "\n");
+        assert_eq!(keepalive_of(DialectId::Gemini), "\n\n");
         let (blank, chunks) = gemini_frames(&text);
         assert!(blank >= 2, "{text:?}");
         let calls: Vec<&Value> = chunks

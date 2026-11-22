@@ -339,7 +339,7 @@ A provider can stream for minutes without producing anything the app's format ca
 | --- | --- | --- |
 | OpenAI Chat Completions and Responses | The SSE comment `: keepalive` and a blank line | Lines starting with a colon are comments in the SSE specification, and the OpenAI SDK parsers skip them |
 | Anthropic Messages | `event: ping` with `data: {"type": "ping"}`, exactly as Anthropic sends it | The Anthropic SDKs skip ping events |
-| Gemini API | A blank line | The `google-genai` SDK skips blank lines but reads every other line that doesn't start with `data: ` as JSON, so a comment would break it; a blank line with no data before it dispatches no event |
+| Gemini API | Two newlines (`\n\n`) | The Python, Go (`google.golang.org/genai`) and JS (`@google/genai`) SDKs all skip empty `\n\n`-delimited chunks, while a comment breaks Python and a single newline breaks Go |
 
 Frames reach the wire in two ways:
 

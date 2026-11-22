@@ -44,7 +44,7 @@ Schema `GenerateContentRequest`.
 | Wire field | KPP | Notes |
 |---|---|---|
 | `contents[]` (`Content`) | `messages[]` | One message per content, consecutive same-role contents kept as written. Unknown keys → message fields. |
-| `contents[].role` `user` / `model` | `Role::User` / `Role::Assistant` | Absent → `Role::User`, form `role: "absent"`. Any other role → a user message holding the whole content as one unknown block, refused across dialects as `` `<role>` message `` ([requests](cross-format.md#requests)). Gemini answered a content with the role `assistant` (`requests/role-assistant.json`). |
+| `contents[].role` `user` / `model` | `Role::User` / `Role::Assistant` | Absent → `Role::User`, form `role: null`. A content whose parts are all `functionResponse` decodes as `Role::User` whatever its role (form `role` keeps the wire role for Gemini, as `google.golang.org/genai` sends `role: "model"`, `requests/tool-result-role-model.json`). Any other role → a user message holding the whole content as one unknown block, refused across dialects as `` `<role>` message `` ([requests](cross-format.md#requests)). Gemini answered a content with the role `assistant` (`requests/role-assistant.json`). |
 | `systemInstruction` | `system` | Its parts as blocks; `role` → form `systemInstruction.role`; unknown keys → fields `systemInstruction.*`. The system instruction holds text only, so a foreign non-text system block is `Unsupported`. |
 | `tools[]` with only `functionDeclarations` | `tools[]` as `ToolDef::Function` | Each declaration's Tool index → form `group`, so a same-dialect encode keeps the grouping. Foreign tools go into one Tool. |
 | `tools[]` with any other key (`googleSearch`, `urlContext`, `codeExecution`, `googleMaps`, `fileSearch`, `computerUse`, `mcpServers`, `googleSearchRetrieval`), or with empty `functionDeclarations` | `ToolDef::Unknown` (raw) | Refused across dialects. |
@@ -201,7 +201,7 @@ A count from another dialect with a system prompt or tools goes as `generateCont
 - **Same-dialect replay.** The first event of each chunk carries the form marker `chunk`: the chunk without its parts, its finish reason and its final usage. The encoder puts them back, so every chunk comes out as received.
 - **Other dialects** get one chunk per text delta, one per function call, and a last chunk with an empty text part, the `finishReason` and `usageMetadata`.
 - **Errors.** A `data:` line with an `error` object is an error event; the encoder writes errors the same way.
-- **Keepalives.** A blank line ([keepalives](cross-format.md#keepalives)). The `google-genai` SDK reads every line that doesn't start with `data: ` as JSON, so a comment would break it.
+- **Keepalives.** Two blank lines (`\n\n`, [keepalives](cross-format.md#keepalives)). The Python `google-genai` SDK reads every non-`data: ` line as JSON, so a comment breaks it, and the Go (`google.golang.org/genai`) and JS (`@google/genai`) SDKs split chunks on `\n\n`, so a single newline would attach to the next `data: ` line.
 - Comments, named events and frames that aren't JSON objects pass through as `Extra`.
 
 ## Errors

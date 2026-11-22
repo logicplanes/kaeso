@@ -23,10 +23,12 @@ use crate::wire::Ext;
 pub(crate) const CHUNK: &str = "chunk";
 const SAME_PART: &str = "same_part";
 
-// The google-genai SDK reads every line that doesn't start with `data: ` as part of a JSON
-// error body (`_api_client.py`, `_iter_response_stream`), so an SSE comment would break it; it
-// skips blank lines, and a blank line with no data before it dispatches no event (WHATWG).
-pub(crate) const KEEPALIVE_FRAME: &[u8] = b"\n";
+// The Python google-genai SDK reads non-`data: ` lines as JSON error bodies, so an SSE comment
+// breaks it. The Go (`google.golang.org/genai`, `scan` + `iterateResponseStream`) and JS
+// (`@google/genai`, `processStreamResponse`) SDKs split chunks on `\n\n`, so a single `\n`
+// attaches to the next `data: ` line and fails Go with `invalid stream chunk`. Two newlines form
+// an empty chunk that Go (`len(line) == 0`), Python, JS and WHATWG SSE all skip.
+pub(crate) const KEEPALIVE_FRAME: &[u8] = b"\n\n";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Open {

@@ -523,6 +523,54 @@ expression: outcomes
     "param": "messages[2].blocks[0].content[1]",
     "unsupported": "messages[2].blocks[0].content[1].inlineData.displayName"
   },
+  "tool-result-role-model": {
+    "body": {
+      "input": [
+        {
+          "content": "Create hello.txt with hi, then say what you did.",
+          "role": "user"
+        },
+        {
+          "arguments": "{\n              \"path\": \"hello.txt\",\n              \"content\": \"hi\"\n            }",
+          "call_id": "call_go_sdk_1",
+          "name": "write_file",
+          "type": "function_call"
+        },
+        {
+          "call_id": "call_go_sdk_1",
+          "output": "Created hello.txt.",
+          "type": "function_call_output"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "gemini-3.5-flash",
+      "store": false,
+      "tools": [
+        {
+          "description": "Writes text to a file.",
+          "name": "write_file",
+          "parameters": {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "tool-result-signature": {
     "body": {
       "input": [

@@ -945,7 +945,7 @@ fn streams_from_other_formats_become_complete_gemini_streams() {
         StreamEvent::ResponseStop(ResponseStop::new()),
     ];
     let out = String::from_utf8(encode_stream(&events)).unwrap();
-    assert!(out.starts_with("\ndata: "), "{out}");
+    assert!(out.starts_with("\n\ndata: "), "{out}");
     let back = decode_stream(out.as_bytes(), 0);
     assert!(
         back.iter().any(
@@ -960,7 +960,7 @@ fn streams_from_other_formats_become_complete_gemini_streams() {
     assert!(!out.contains("hidden"));
     let mut enc =
         Gemini::stream_encoder(&EncodeCtx::new(RequestKind::Generate, StreamMode::on(true)));
-    assert_eq!(enc.keepalive(), b"\n");
+    assert_eq!(enc.keepalive(), b"\n\n");
     let err = enc
         .encode(&StreamEvent::Error(kaeso_kpp::KppError::new(
             ErrorKind::Overloaded,
@@ -1271,4 +1271,278 @@ fn google_genais_snake_case_keys_and_float_top_k_reach_every_format_and_gemini_a
     )
     .unwrap_err();
     assert_eq!(e.param.as_deref(), Some("generationConfig.topK"));
+}
+
+#[test]
+fn function_response_contents_decode_as_user_regardless_of_wire_role() {
+    use kaeso_kpp::Role;
+    let body = fixture("requests", "tool-result-role-model");
+    let req = decode_fixture("requests", "tool-result-role-model", &body);
+    let Request::Generate(g) = &req else { panic!() };
+    assert_eq!(g.messages.len(), 3);
+    assert_eq!(g.messages[1].role, Role::Assistant);
+    assert_eq!(g.messages[2].role, Role::User);
+    assert!(matches!(
+        g.messages[2].blocks.as_slice(),
+        [Block::ToolResult(r)] if r.call_id == "call_go_sdk_1"
+    ));
+
+    let back = Gemini::encode_request(&req, &mut EgressCtx::new(&req)).unwrap();
+    assert_json_eq("tool-result-role-model", &body, &back.body);
+
+    let anthropic: Value = serde_json::from_slice(
+        &crate::dispatch::encode_request(
+            DialectId::AnthropicMessages,
+            &req,
+            &mut EgressCtx::new(&req),
+        )
+        .unwrap()
+        .body,
+    )
+    .unwrap();
+    assert_eq!(anthropic["messages"][2]["role"], "user");
+    assert_eq!(
+        anthropic["messages"][2]["content"][0]["type"],
+        "tool_result"
+    );
+
+    let chat: Value = serde_json::from_slice(
+        &crate::dispatch::encode_request(DialectId::OpenAiChat, &req, &mut EgressCtx::new(&req))
+            .unwrap()
+            .body,
+    )
+    .unwrap();
+    assert_eq!(chat["messages"][2]["role"], "tool");
+
+    let responses: Value = serde_json::from_slice(
+        &crate::dispatch::encode_request(
+            DialectId::OpenAiResponses,
+            &req,
+            &mut EgressCtx::new(&req),
+        )
+        .unwrap()
+        .body,
+    )
+    .unwrap();
+    assert_eq!(responses["input"][2]["type"], "function_call_output");
+
+    for wire_role in ["model", "function", "absent"] {
+        let raw = serde_json::to_vec(&json!({
+            "contents": [
+                {"role": "user", "parts": [{"text": "run"}]},
+                {"role": "model", "parts": [{"functionCall": {"id": "c1", "name": "f", "args": {}}}]},
+                {"role": wire_role, "parts": [{"functionResponse": {"id": "c1", "name": "f", "response": {"output": "ok"}}}]}
+            ]
+        }))
+        .unwrap();
+        let req = crate::dispatch::decode_gemini_request(
+            MODEL,
+            GeminiAction::GenerateContent,
+            &raw,
+            &HeaderList::new(),
+        )
+        .unwrap();
+        let Request::Generate(g) = &req else { panic!() };
+        assert_eq!(g.messages[2].role, Role::User, "wire_role={wire_role}");
+        let enc = Gemini::encode_request(&req, &mut EgressCtx::new(&req)).unwrap();
+        assert_json_eq(wire_role, &raw, &enc.body);
+    }
+
+    let mixed = serde_json::to_vec(&json!({
+        "contents": [
+            {"role": "model", "parts": [{"text": "done"}, {"functionResponse": {"id": "c1", "name": "f", "response": {"output": "ok"}}}]}
+        ]
+    }))
+    .unwrap();
+    let Request::Generate(g) = crate::dispatch::decode_gemini_request(
+        MODEL,
+        GeminiAction::GenerateContent,
+        &mixed,
+        &HeaderList::new(),
+    )
+    .unwrap() else {
+        panic!()
+    };
+    assert_eq!(g.messages[0].role, Role::Assistant);
+}
+
+// Mirrors google.golang.org/genai (`api_client.go`: `scan` + `iterateResponseStream`).
+fn parse_go_genai_stream(mut bytes: &[u8]) -> Result<Vec<Value>, String> {
+    let mut out = Vec::new();
+    while !bytes.is_empty() {
+        let (token, rest) = if let Some(i) = bytes.windows(2).position(|w| w == b"\n\n") {
+            (&bytes[..i], &bytes[i + 2..])
+        } else if let Some(i) = bytes.windows(4).position(|w| w == b"\r\n\r\n") {
+            (&bytes[..i], &bytes[i + 4..])
+        } else {
+            (bytes, &bytes[bytes.len()..])
+        };
+        let token = token.strip_suffix(b"\r").unwrap_or(token);
+        bytes = rest;
+        if token.is_empty() {
+            continue;
+        }
+        let colon = token.iter().position(|&b| b == b':');
+        let (prefix, data) = match colon {
+            Some(i) => (&token[..i], &token[i + 1..]),
+            None => (token, &token[token.len()..]),
+        };
+        if prefix != b"data" {
+            return Err(format!(
+                "iterateResponseStream: invalid stream chunk: {}:{}",
+                String::from_utf8_lossy(prefix),
+                String::from_utf8_lossy(data)
+            ));
+        }
+        let v: Value = serde_json::from_slice(data)
+            .map_err(|e| format!("iterateResponseStream: error unmarshalling data: {e}"))?;
+        out.push(v);
+    }
+    Ok(out)
+}
+
+// Mirrors google-genai (`google/genai/_api_client.py`: `_SseLineDecoder` + `_iter_response_stream`).
+fn parse_python_genai_stream(bytes: &[u8]) -> Result<Vec<Value>, String> {
+    let text = std::str::from_utf8(bytes).map_err(|e| e.to_string())?;
+    let mut out = Vec::new();
+    let mut data_buffer: Vec<&str> = Vec::new();
+    for line in text.split('\n').map(|l| l.strip_suffix('\r').unwrap_or(l)) {
+        if line.is_empty() {
+            if !data_buffer.is_empty() {
+                let joined = data_buffer.join("\n");
+                let v: Value = serde_json::from_str(&joined).map_err(|e| e.to_string())?;
+                out.push(v);
+                data_buffer.clear();
+            }
+            continue;
+        }
+        if let Some(rest) = line.strip_prefix("data: ") {
+            data_buffer.push(rest);
+            continue;
+        }
+        return Err(format!(
+            "non-data line treated as JSON error body: {line:?}"
+        ));
+    }
+    if !data_buffer.is_empty() {
+        let joined = data_buffer.join("\n");
+        out.push(serde_json::from_str(&joined).map_err(|e| e.to_string())?);
+    }
+    Ok(out)
+}
+
+// Mirrors @google/genai (`src/_api_client.ts`: `processStreamResponse`).
+fn parse_js_genai_stream(bytes: &[u8], chunk_size: usize) -> Result<Vec<Value>, String> {
+    let text = std::str::from_utf8(bytes).map_err(|e| e.to_string())?;
+    let mut buffer = String::new();
+    let mut out = Vec::new();
+    for chunk in text.as_bytes().chunks(chunk_size.max(1)) {
+        buffer.push_str(std::str::from_utf8(chunk).map_err(|e| e.to_string())?);
+        loop {
+            let found = ["\n\n", "\r\r", "\r\n\r\n"]
+                .iter()
+                .filter_map(|d| buffer.find(d).map(|i| (i, d.len())))
+                .min_by_key(|&(i, _)| i);
+            let Some((idx, len)) = found else {
+                break;
+            };
+            let event = buffer[..idx].trim().to_owned();
+            buffer.drain(..idx + len);
+            if let Some(rest) = event.strip_prefix("data:") {
+                let v: Value = serde_json::from_str(rest.trim()).map_err(|e| e.to_string())?;
+                out.push(v);
+            }
+        }
+    }
+    if !buffer.trim().is_empty() {
+        return Err(format!("Incomplete JSON segment at the end: {buffer:?}"));
+    }
+    Ok(out)
+}
+
+#[test]
+fn gemini_keepalives_follow_go_python_and_js_sdk_framing_rules() {
+    use kaeso_kpp::{
+        BlockDelta, BlockHeader, BlockStart, BlockStop, Delta, RawItem, RawJson, ResponseDelta,
+        ResponseStart, ResponseStop,
+    };
+    let ping = StreamEvent::Extra(RawItem::new(
+        DialectId::AnthropicMessages,
+        RawJson::from_string(r#"{"event":"ping","data":{"type":"ping"}}"#.into()).unwrap(),
+    ));
+    let events = vec![
+        StreamEvent::ResponseStart(ResponseStart::new("msg_1", "claude")),
+        ping.clone(),
+        StreamEvent::BlockStart(BlockStart::new(0, BlockHeader::Text)),
+        StreamEvent::BlockDelta(BlockDelta::new(0, Delta::Text("Hi".into()))),
+        ping.clone(),
+        ping.clone(),
+        StreamEvent::BlockDelta(BlockDelta::new(0, Delta::Text("!".into()))),
+        StreamEvent::BlockStop(BlockStop::new(0)),
+        StreamEvent::ResponseDelta(ResponseDelta::new(
+            Some(StopReason::EndTurn),
+            Some(kaeso_kpp::Usage::new(2, 2)),
+        )),
+        StreamEvent::ResponseStop(ResponseStop::new()),
+    ];
+    let check_all_sdks = |label: &str, wire: &[u8], expected: usize| {
+        let go = parse_go_genai_stream(wire)
+            .unwrap_or_else(|e| panic!("{label} go: {e}\nwire={wire:?}"));
+        let py = parse_python_genai_stream(wire)
+            .unwrap_or_else(|e| panic!("{label} python: {e}\nwire={wire:?}"));
+        let js_whole = parse_js_genai_stream(wire, wire.len())
+            .unwrap_or_else(|e| panic!("{label} js whole: {e}\nwire={wire:?}"));
+        let js_byte = parse_js_genai_stream(wire, 1)
+            .unwrap_or_else(|e| panic!("{label} js 1B: {e}\nwire={wire:?}"));
+        assert_eq!(go.len(), expected, "{label}");
+        assert_eq!(go, py, "{label}");
+        assert_eq!(go, js_whole, "{label}");
+        assert_eq!(go, js_byte, "{label}");
+    };
+
+    // Single leading keepalive from a foreign ping, single mid-stream keepalive, and double keepalive.
+    let mut enc =
+        Gemini::stream_encoder(&EncodeCtx::new(RequestKind::Generate, StreamMode::on(true)));
+    let mut wire = Vec::new();
+    for ev in &events {
+        wire.extend(enc.encode(ev).unwrap());
+    }
+    wire.extend(enc.finish().unwrap());
+    check_all_sdks("single leading + double mid", &wire, 3);
+
+    // Gateway-driven keepalive before the first event, single keepalive between chunks, and one before end.
+    let mut enc =
+        Gemini::stream_encoder(&EncodeCtx::new(RequestKind::Generate, StreamMode::on(true)));
+    let mut driven = enc.keepalive();
+    for ev in [
+        StreamEvent::ResponseStart(ResponseStart::new("msg_2", "claude")),
+        StreamEvent::BlockStart(BlockStart::new(0, BlockHeader::Text)),
+        StreamEvent::BlockDelta(BlockDelta::new(0, Delta::Text("Hello".into()))),
+    ] {
+        driven.extend(enc.encode(&ev).unwrap());
+    }
+    driven.extend(enc.keepalive());
+    for ev in [
+        StreamEvent::BlockDelta(BlockDelta::new(0, Delta::Text(" world".into()))),
+        StreamEvent::BlockStop(BlockStop::new(0)),
+        StreamEvent::ResponseDelta(ResponseDelta::new(Some(StopReason::EndTurn), None)),
+    ] {
+        driven.extend(enc.encode(&ev).unwrap());
+    }
+    driven.extend(enc.keepalive());
+    driven.extend(
+        enc.encode(&StreamEvent::ResponseStop(ResponseStop::new()))
+            .unwrap(),
+    );
+    driven.extend(enc.finish().unwrap());
+    check_all_sdks("gateway keepalives", &driven, 3);
+
+    assert!(
+        parse_go_genai_stream(b"\ndata: {\"candidates\":[]}\n\n").is_err(),
+        "a single leading newline breaks google.golang.org/genai"
+    );
+    assert!(
+        parse_python_genai_stream(b": keepalive\n\ndata: {\"candidates\":[]}\n\n").is_err(),
+        "an SSE comment breaks google-genai"
+    );
 }
