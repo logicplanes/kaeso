@@ -110,7 +110,7 @@ ai-gateway-bench/.venv/bin/python run.py
 ai-gateway-bench/.venv/bin/python run_capacity.py
 ```
 
-所有网关跑完三轮约需 90 分钟，容量测试另需 30 分钟。结果保存在 `/root/out` 和 `/root/cap` 中。
+所有网关跑完三轮约需 90 分钟，容量测试另需 30 分钟。结果保存在 `/root/out` 和 `/root/cap` 中。绝对数值因机器而异，请比较同一次运行中测得的网关。
 
 ## 下一步
 

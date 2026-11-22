@@ -110,7 +110,7 @@ ai-gateway-bench/.venv/bin/python run.py
 ai-gateway-bench/.venv/bin/python run_capacity.py
 ```
 
-Three rounds of every gateway take about 90 minutes, and the capacity run another 30. The results land in `/root/out` and `/root/cap`.
+Three rounds of every gateway take about 90 minutes, and the capacity run another 30. The results land in `/root/out` and `/root/cap`. Absolute numbers change from machine to machine, so compare gateways measured in the same run.
 
 ## Next steps
 
