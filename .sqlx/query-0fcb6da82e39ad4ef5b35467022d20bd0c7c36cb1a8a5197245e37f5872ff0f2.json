@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE mcp_tool_changes SET outcome = 'superseded', decided_by_kind = 'system', decided_at = $2 WHERE tool_id = $1 AND outcome IS NULL",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0fcb6da82e39ad4ef5b35467022d20bd0c7c36cb1a8a5197245e37f5872ff0f2"
+}

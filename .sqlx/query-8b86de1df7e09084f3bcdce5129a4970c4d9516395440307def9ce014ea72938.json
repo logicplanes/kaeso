@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, handle, name, url, auth_method, credential_mode, oauth_registration, oauth_issuer, oauth_client_id, oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", scopes, change_policy, protocol_version, server_info, status, last_checked_at, last_error, created_by_kind, created_by_id, created_at, updated_at, revision FROM mcp_servers WHERE org_id = $1 AND id = $2",
+  "query": "SELECT id, org_id, handle, name, url, auth_method, credential_mode, oauth_registration, oauth_issuer, oauth_client_id, oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", scopes, auto_approve_tool_changes, protocol_version, server_info, status, last_checked_at, last_error, created_by_kind, created_by_id, created_at, updated_at, revision FROM mcp_servers WHERE org_id = $1 AND id = $2",
   "describe": {
     "columns": [
       {
@@ -132,12 +132,12 @@
       },
       {
         "ordinal": 12,
-        "name": "change_policy",
-        "type_info": "Text",
+        "name": "auto_approve_tool_changes",
+        "type_info": "Bool",
         "origin": {
           "Table": {
             "table": "mcp_servers",
-            "name": "change_policy"
+            "name": "auto_approve_tool_changes"
           }
         }
       },
@@ -284,5 +284,5 @@
       false
     ]
   },
-  "hash": "c037809faa43f91b60a560793f5c9f5cf5f00d7dc650fe1e0e31b8c01028a14d"
+  "hash": "8b86de1df7e09084f3bcdce5129a4970c4d9516395440307def9ce014ea72938"
 }

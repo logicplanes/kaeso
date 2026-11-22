@@ -109,9 +109,12 @@ pub async fn insert(
         == 1)
 }
 
+// Only while the stored definition is still `was`: when two checks of a server overlap, the one
+// that comes second finds it changed and leaves it, so a change is recorded and approved once.
 pub async fn update_definition(
     db: impl PgExecutor<'_>,
     id: Uuid,
+    was: &[u8],
     d: &Definition<'_>,
     approval: Option<&Approval<'_>>,
     now: OffsetDateTime,
@@ -121,8 +124,8 @@ pub async fn update_definition(
          annotations = $7, meta = $8, definition_hash = $9, \
          approved_hash = COALESCE($10, approved_hash), approved = COALESCE($11, approved), \
          state = CASE WHEN $9 = COALESCE($10, approved_hash) THEN 'active' ELSE 'changed' END, \
-         changed_at = CASE WHEN $9 = COALESCE($10, approved_hash) THEN changed_at ELSE $12 END, \
-         updated_at = $12 WHERE id = $1 AND name = $2",
+         changed_at = CASE WHEN $9 = definition_hash THEN changed_at ELSE $12 END, \
+         updated_at = $12 WHERE id = $1 AND name = $2 AND definition_hash = $13",
         id,
         d.name,
         d.title,
@@ -134,7 +137,8 @@ pub async fn update_definition(
         d.hash,
         approval.map(|a| a.hash),
         approval.map(|a| a.definition),
-        now
+        now,
+        was
     )
     .execute(db)
     .await?
@@ -326,6 +330,135 @@ pub async fn projects_using(
     Ok(sqlx::query_scalar!(
         "SELECT project_id FROM project_tools WHERE tool_id = $1 AND enabled ORDER BY project_id",
         tool_id
+    )
+    .fetch_all(db)
+    .await?)
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Decider {
+    pub kind: &'static str,
+    pub id: Option<Uuid>,
+}
+
+impl Decider {
+    pub const SYSTEM: Decider = Decider {
+        kind: "system",
+        id: None,
+    };
+}
+
+#[derive(Clone, Debug)]
+pub struct NewChange<'a> {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub server_id: Uuid,
+    pub tool_id: Uuid,
+    pub from_hash: &'a [u8],
+    pub to_hash: &'a [u8],
+    pub at: OffsetDateTime,
+    pub decided: Option<(&'a str, Decider)>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ChangeRow {
+    pub id: Uuid,
+    pub tool_id: Uuid,
+    pub tool_name: String,
+    pub from_hash: Vec<u8>,
+    pub to_hash: Vec<u8>,
+    pub detected_at: OffsetDateTime,
+    pub outcome: Option<String>,
+    pub decided_by_kind: Option<String>,
+    pub decided_by_id: Option<Uuid>,
+    pub decided_at: Option<OffsetDateTime>,
+}
+
+pub async fn record_change(db: impl PgExecutor<'_>, c: &NewChange<'_>) -> Result<(), StoreError> {
+    sqlx::query!(
+        "INSERT INTO mcp_tool_changes (id, org_id, server_id, tool_id, from_hash, to_hash, detected_at, \
+         outcome, decided_by_kind, decided_by_id, decided_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8::text, $9::text, $10::uuid, \
+         CASE WHEN $8::text IS NULL THEN NULL ELSE $7::timestamptz END)",
+        c.id,
+        c.org_id,
+        c.server_id,
+        c.tool_id,
+        c.from_hash,
+        c.to_hash,
+        c.at,
+        c.decided.map(|(o, _)| o),
+        c.decided.map(|(_, by)| by.kind),
+        c.decided.and_then(|(_, by)| by.id)
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
+// A change nobody decided on yet is superseded when the server changes the tool again.
+pub async fn supersede_open(
+    db: impl PgExecutor<'_>,
+    tool_id: Uuid,
+    now: OffsetDateTime,
+) -> Result<u64, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE mcp_tool_changes SET outcome = 'superseded', decided_by_kind = 'system', decided_at = $2 \
+         WHERE tool_id = $1 AND outcome IS NULL",
+        tool_id,
+        now
+    )
+    .execute(db)
+    .await?
+    .rows_affected())
+}
+
+// Records how the change to `to_hash` was decided. A change kept off can still be approved later;
+// an approval is final.
+pub async fn decide(
+    db: impl PgExecutor<'_>,
+    tool_id: Uuid,
+    to_hash: &[u8],
+    outcome: &str,
+    by: Decider,
+    now: OffsetDateTime,
+) -> Result<u64, StoreError> {
+    Ok(sqlx::query!(
+        "UPDATE mcp_tool_changes SET outcome = $3, decided_by_kind = $4, decided_by_id = $5, decided_at = $6 \
+         WHERE tool_id = $1 AND to_hash = $2 \
+         AND (outcome IS NULL OR (outcome = 'kept_off' AND $3 <> 'kept_off'))",
+        tool_id,
+        to_hash,
+        outcome,
+        by.kind,
+        by.id,
+        now
+    )
+    .execute(db)
+    .await?
+    .rows_affected())
+}
+
+pub async fn changes_of_server(
+    db: impl PgExecutor<'_>,
+    org_id: Uuid,
+    server_id: Uuid,
+    after: Option<Uuid>,
+    limit: i64,
+) -> Result<Vec<ChangeRow>, StoreError> {
+    Ok(sqlx::query_as!(
+        ChangeRow,
+        "SELECT c.id, c.tool_id, t.name AS tool_name, c.from_hash, c.to_hash, c.detected_at, c.outcome, \
+         c.decided_by_kind, c.decided_by_id, c.decided_at \
+         FROM mcp_tool_changes c JOIN mcp_tools t ON t.id = c.tool_id \
+         WHERE c.org_id = $1 AND c.server_id = $2 \
+         AND ($3::uuid IS NULL OR (c.detected_at, c.id) < \
+              (SELECT p.detected_at, p.id FROM mcp_tool_changes p WHERE p.id = $3 AND p.server_id = $2)) \
+         ORDER BY c.detected_at DESC, c.id DESC LIMIT $4",
+        org_id,
+        server_id,
+        after,
+        limit
     )
     .fetch_all(db)
     .await?)

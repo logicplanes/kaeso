@@ -299,6 +299,7 @@
   "format.audit.action.sourceRotate": "已更换来源密钥",
   "format.audit.action.sourceUpdate": "已更改来源",
   "format.audit.kind.sharedLink": "共享链接",
+  "format.audit.action.toolAutoApprove": "已自动批准变更的工具",
   "format.audit.kind.source": "来源",
   "format.targetKind.sharedLink": "共享链接",
   "format.targetKind.source": "来源"

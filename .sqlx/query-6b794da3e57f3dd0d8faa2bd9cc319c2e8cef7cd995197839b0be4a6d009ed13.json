@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT s.id, s.org_id, s.handle, s.name, s.url, s.auth_method, s.credential_mode, s.oauth_registration, s.oauth_issuer, s.oauth_client_id, s.oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", s.scopes, s.change_policy, s.protocol_version, s.server_info, s.status, s.last_checked_at, s.last_error, s.created_by_kind, s.created_by_id, s.created_at, s.updated_at, s.revision FROM mcp_servers s JOIN org_memberships m ON m.org_id = s.org_id AND m.user_id = $1 WHERE s.credential_mode = 'per_user' AND s.auth_method <> 'none' ORDER BY s.name, s.handle",
+  "query": "SELECT s.id, s.org_id, s.handle, s.name, s.url, s.auth_method, s.credential_mode, s.oauth_registration, s.oauth_issuer, s.oauth_client_id, s.oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", s.scopes, s.auto_approve_tool_changes, s.protocol_version, s.server_info, s.status, s.last_checked_at, s.last_error, s.created_by_kind, s.created_by_id, s.created_at, s.updated_at, s.revision FROM project_mcp_servers ps JOIN mcp_servers s ON s.id = ps.server_id WHERE ps.project_id = $1 ORDER BY s.name, s.handle",
   "describe": {
     "columns": [
       {
@@ -132,12 +132,12 @@
       },
       {
         "ordinal": 12,
-        "name": "change_policy",
-        "type_info": "Text",
+        "name": "auto_approve_tool_changes",
+        "type_info": "Bool",
         "origin": {
           "Table": {
             "table": "mcp_servers",
-            "name": "change_policy"
+            "name": "auto_approve_tool_changes"
           }
         }
       },
@@ -283,5 +283,5 @@
       false
     ]
   },
-  "hash": "c6b8eec5eb9ad3e83202efc3bf78d7b616fd982df5c5d2df8cb473596058db78"
+  "hash": "6b794da3e57f3dd0d8faa2bd9cc319c2e8cef7cd995197839b0be4a6d009ed13"
 }

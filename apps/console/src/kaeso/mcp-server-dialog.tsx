@@ -61,7 +61,7 @@ export function AddServerDialog({ org, open, onClose, onAdded }: { org: string; 
   const [created, setCreated] = useState<McpServerView | null>(null);
   const [listed, setListed] = useState<Choice[] | null>(null);
   const [chosen, setChosen] = useState<Set<string> | null>(null);
-  const [hold, setHold] = useState(true);
+  const [autoApprove, setAutoApprove] = useState(true);
   const [picked, setPicked] = useState<string[]>([]);
   const signIn = useMcpSignIn(org);
 
@@ -98,7 +98,7 @@ export function AddServerDialog({ org, open, onClose, onAdded }: { org: string; 
     url: url.trim(),
     auth_method: method,
     credential_mode: method === "none" ? "shared" : mode,
-    change_policy: hold ? "hold" : "accept",
+    auto_approve_tool_changes: autoApprove,
     projects: picked,
     ...(needsClient && clientId.trim()
       ? { oauth_client: { client_id: clientId.trim(), ...(clientSecret.trim() ? { client_secret: clientSecret.trim() } : {}) } }
@@ -123,7 +123,7 @@ export function AddServerDialog({ org, open, onClose, onAdded }: { org: string; 
             body: {
               ...(name.trim() !== server.name ? { name: name.trim() } : {}),
               ...(handle !== server.handle ? { handle } : {}),
-              change_policy: hold ? "hold" : "accept",
+              auto_approve_tool_changes: autoApprove,
               projects: picked,
             },
           }),
@@ -391,10 +391,10 @@ export function AddServerDialog({ org, open, onClose, onAdded }: { org: string; 
           />
         )}
         <Switch
-          label={t("orgHome.mcp.holdChanges", "Hold changed tools for review")}
-          description={t("orgHome.mcp.holdChangesHint", "A changed tool stays off until someone approves it.")}
-          checked={hold}
-          onCheckedChange={setHold}
+          label={t("orgHome.mcp.autoApprove", "Auto-approve tool changes")}
+          description={t("orgHome.mcp.autoApproveHint", "Offers a changed tool at once; off holds it for review.")}
+          checked={autoApprove}
+          onCheckedChange={setAutoApprove}
         />
       </div>
     ),

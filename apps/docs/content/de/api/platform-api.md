@@ -113,7 +113,7 @@ Diese Aktionen verlangen eine kürzliche Anmeldung:
 | Thema | Regel |
 | --- | --- |
 | Format | REST mit JSON: Pfade im Plural in Kebab-Case (`service-accounts`), Felder in `snake_case`. Senden Sie Bodys mit `content-type: application/json`; auf ein Feld, das der Endpunkt nicht kennt, antwortet Kaeso mit 400. |
-| IDs | Ein Präfix und ein zeitlich geordneter Teil: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`, `agt_…`, `act_…`, `cli_…`, `mcp_…`, `conn_…`, `tool_…`, `grant_…`, `call_…`, `video_…`, `imggen_…`, `file_…`, `batch_…`, `whk_…`, `msg_…`, `grd_…`, `shl_…`. |
+| IDs | Ein Präfix und ein zeitlich geordneter Teil: `org_…`, `proj_…`, `usr_…`, `mem_…`, `inv_…`, `svc_…`, `key_…`, `opk_…`, `cred_…`, `model_…`, `alias_…`, `lim_…`, `role_…`, `ses_…`, `req_…`, `evt_…`, `exp_…`, `upd_…`, `agt_…`, `act_…`, `cli_…`, `mcp_…`, `conn_…`, `tool_…`, `tchg_…`, `grant_…`, `call_…`, `video_…`, `imggen_…`, `file_…`, `batch_…`, `whk_…`, `msg_…`, `grd_…`, `shl_…`. |
 | Zeiten | RFC 3339, in UTC. Jede Antwort nennt die Zeitzone der Installation in `Kaeso-Time-Zone`, etwa `Europe/Berlin`, die Zone, in der die Konsole Zeiten zeigt. |
 | Geld | Dezimal-Strings, etwa `"0.0001"`: `cost` in US-Dollar, `converted_cost` und Ausgabenbudgets in der `currency` der Organisation ([Währungen](../concepts/currencies.md#in-der-platform-api)). Senden Sie Preise und Beträge als Dezimal-Strings oder ganze Zahlen; ein JSON-Bruch wie `0.5` erhält 400. |
 | Beträge von Limits | Höchstens 10^12 Anfragen oder Token, bei einem Ausgabenbudget der Gegenwert von 1.000.000.000 USD. |

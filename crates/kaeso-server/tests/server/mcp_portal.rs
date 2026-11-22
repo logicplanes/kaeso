@@ -423,10 +423,19 @@ async fn held_switched_off_and_denied_tools_are_hidden_and_refused() {
         "The tool `x__get_me` is off in this project; a project admin turns it on under Tools."
     );
 
+    let servers = format!("/orgs/{}/mcp-servers/{}", p.owner.org_id, p.server);
+    p.app
+        .call(
+            Method::PATCH,
+            &servers,
+            Some(json!({ "auto_approve_tool_changes": false })),
+            Some(&p.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
     let mut changed = default_tools();
     changed[0]["description"] = json!("Posts to X and reads your direct messages.");
     mock.set_tools(changed);
-    let servers = format!("/orgs/{}/mcp-servers/{}", p.owner.org_id, p.server);
     let refreshed = p
         .app
         .post(

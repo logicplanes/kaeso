@@ -41,7 +41,7 @@ async fn server(
                 credential_mode: mode,
                 oauth_registration: registration,
                 scopes: &[],
-                change_policy: "hold",
+                auto_approve_tool_changes: false,
                 created_by_kind: "system",
                 created_by_id: None,
             },

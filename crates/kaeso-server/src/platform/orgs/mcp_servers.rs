@@ -3,11 +3,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use kaeso_core::id::{McpConnectionId, McpServerId, OrgId, ProjectId, ToolId};
+use kaeso_core::id::{McpConnectionId, McpServerId, OrgId, ProjectId, ToolChangeId, ToolId};
 use kaeso_mcp::{names, params::ParamError};
 use kaeso_store::pg::mcp_connections::{self as connections, ConnectionRow};
 use kaeso_store::pg::mcp_servers::{self as store, Changes, NewServer, ServerRow, Updated};
-use kaeso_store::pg::mcp_tools::{self as tools, ServerTools, ToolRow};
+use kaeso_store::pg::mcp_tools::{self as tools, ChangeRow, Decider, ServerTools, ToolRow};
 use secrecy::SecretString;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -21,8 +21,8 @@ use crate::platform::audit::Action;
 use crate::platform::error::{ApiError, ApiResult};
 use crate::platform::json::Body;
 use crate::platform::keys::{Party, creator, creator_of};
-use crate::platform::pagination::List;
-use crate::platform::params::{Path, id_param};
+use crate::platform::pagination::{List, PageParams};
+use crate::platform::params::{Path, Query, id_param};
 use crate::platform::precondition::{IfMatch, etag};
 use crate::services::custom_providers::Reachability;
 use crate::services::mcp_connections::{self as signin, HeaderProblem, SignInError};
@@ -92,25 +92,6 @@ pub enum McpRegistration {
     Dcr,
     #[doc = "A client an admin registered with the server and entered by hand."]
     Manual,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
-#[serde(rename_all = "snake_case")]
-#[schema(description = "What happens when an MCP server changes a tool's definition.")]
-pub enum McpChangePolicy {
-    #[doc = "The tool is held: clients don't see it until someone approves the change."]
-    Hold,
-    #[doc = "The change is approved as it comes."]
-    Accept,
-}
-
-impl McpChangePolicy {
-    fn as_str(self) -> &'static str {
-        match self {
-            McpChangePolicy::Hold => "hold",
-            McpChangePolicy::Accept => "accept",
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -246,8 +227,9 @@ pub struct McpServerView {
     pub oauth: Option<McpOAuthView>,
     #[doc = "The OAuth scopes Kaeso asks for; empty asks for what the server offers."]
     pub scopes: Vec<String>,
-    #[doc = "What happens when the server changes a tool."]
-    pub change_policy: McpChangePolicy,
+    #[doc = "Whether a tool's changed definition is approved as Kaeso finds it. Off holds the\n\
+        tool until someone approves the change."]
+    pub auto_approve_tool_changes: bool,
     #[doc = "How the last check went."]
     pub status: McpServerStatus,
     #[doc = "Why the last check failed."]
@@ -313,11 +295,7 @@ fn view(
             client_secret: row.has_client_secret,
         }),
         scopes: row.scopes.clone(),
-        change_policy: if row.change_policy == "accept" {
-            McpChangePolicy::Accept
-        } else {
-            McpChangePolicy::Hold
-        },
+        auto_approve_tool_changes: row.auto_approve_tool_changes,
         status: McpServerStatus::of(&row.status),
         last_error: row.last_error.clone(),
         last_checked_at: row.last_checked_at,
@@ -786,9 +764,9 @@ pub struct McpServerCreate {
     #[doc = "For `oauth`: the scopes to ask for; absent asks for what the server offers."]
     #[serde(default)]
     pub scopes: Option<Vec<String>>,
-    #[doc = "What happens when it changes a tool; `hold` when absent."]
+    #[doc = "Whether its changed tools are approved as Kaeso finds them; `true` when absent."]
     #[serde(default)]
-    pub change_policy: Option<McpChangePolicy>,
+    pub auto_approve_tool_changes: Option<bool>,
     #[doc = "Projects that use it from the start."]
     #[serde(default)]
     pub projects: Option<Vec<ProjectId>>,
@@ -847,7 +825,7 @@ pub async fn create(
         ));
     }
     let projects = org_projects(&state, org, req.projects.as_deref().unwrap_or_default()).await?;
-    let policy = req.change_policy.unwrap_or(McpChangePolicy::Hold);
+    let auto_approve = req.auto_approve_tool_changes.unwrap_or(true);
     let id = Uuid::now_v7();
     let (kind, by) = creator_of(&ctx);
     let mut tx = state.pg.begin().await?;
@@ -867,7 +845,7 @@ pub async fn create(
                 "cimd"
             }),
             scopes: &scopes,
-            change_policy: policy.as_str(),
+            auto_approve_tool_changes: auto_approve,
             created_by_kind: kind,
             created_by_id: by,
         },
@@ -921,8 +899,9 @@ pub struct McpServerUpdate {
     pub name: Option<String>,
     #[doc = "A new handle; the tools' names outside Kaeso change with it."]
     pub handle: Option<String>,
-    #[doc = "A new policy for changed tools. Switching to `accept` doesn't approve tools held now."]
-    pub change_policy: Option<McpChangePolicy>,
+    #[doc = "Whether its changed tools are approved as Kaeso finds them. Switching it on also\n\
+        approves the changes held for review now."]
+    pub auto_approve_tool_changes: Option<bool>,
     #[doc = "The projects that use it, replacing the list; projects left out stop offering its\n\
         tools."]
     pub projects: Option<Vec<ProjectId>>,
@@ -931,10 +910,11 @@ pub struct McpServerUpdate {
 #[utoipa::path(
     patch,
     path = "/orgs/{org}/mcp-servers/{server}",
-    summary = "Renames an MCP server, changes its handle, its policy for changed tools or the\n\
-    projects that use it.",
+    summary = "Renames an MCP server, changes its handle, whether it auto-approves tool changes or\n\
+    the projects that use it.",
     description = "With `If-Match`, only while the server is still at that revision; a newer one\n\
-    answers 412.",
+    answers 412. Switching `auto_approve_tool_changes` on approves the changes held for review,\n\
+    each with its own `tool.approve` entry in the audit log.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("server" = McpServerId, Path), ("If-Match" = Option<String>, Header, description = "The `ETag` the change is meant for, such as `\"3\"`.")),
     request_body = McpServerUpdate,
@@ -965,7 +945,7 @@ pub async fn update(
         &Changes {
             name: name.as_deref(),
             handle,
-            change_policy: req.change_policy.map(McpChangePolicy::as_str),
+            auto_approve_tool_changes: req.auto_approve_tool_changes,
         },
     )
     .await?
@@ -974,6 +954,20 @@ pub async fn update(
         Updated::NotFound => return Err(ApiError::not_found("MCP server")),
         Updated::HandleTaken => return Err(handle_taken(handle.unwrap_or_default())),
     };
+    let released = if row.auto_approve_tool_changes && !before_row.auto_approve_tool_changes {
+        let (kind, id) = creator_of(&ctx);
+        sync::approve_held(&mut tx, &row, Decider { kind, id }, state.clock.now()).await?
+    } else {
+        Vec::new()
+    };
+    for (t, definition) in &released {
+        ctx.audit(Some(ctx.org()?.id()), Action::ToolApprove)
+            .target("tool", ToolId::from_uuid(t.id))
+            .before(serde_json::json!({ "hash": t.approved_hash.as_deref().map(hex), "definition": t.approved }))
+            .after(serde_json::json!({ "hash": hex(&t.definition_hash), "definition": definition }))
+            .write(&mut tx)
+            .await?;
+    }
     if let Some(p) = &projects {
         store::set_projects(&mut tx, org, row.id, p).await?;
     }
@@ -981,7 +975,10 @@ pub async fn update(
         &row,
         ServerTools {
             total: before.tools.total,
-            changed: before.tools.changed,
+            changed: before
+                .tools
+                .changed
+                .saturating_sub(i64::try_from(released.len()).unwrap_or(0)),
         },
         None,
         &[],
@@ -1225,10 +1222,12 @@ pub struct McpSkippedTool {
 pub struct McpRefreshView {
     #[doc = "New tools."]
     pub added: Vec<String>,
-    #[doc = "Tools whose definition changed and that are held until someone approves them."]
+    #[doc = "Tools whose definition changed and that are held until someone approves them, on a\n\
+        server that doesn't auto-approve tool changes."]
     pub held: Vec<String>,
-    #[doc = "Tools whose change was approved as it came, under the policy `accept`."]
-    pub accepted: Vec<String>,
+    #[doc = "Tools whose changed definition was approved as Kaeso found it, on a server that\n\
+        auto-approves tool changes."]
+    pub auto_approved: Vec<String>,
     #[doc = "How many tools the server no longer lists."]
     pub removed: usize,
     #[doc = "Tools Kaeso left out."]
@@ -1273,8 +1272,8 @@ fn sync_failed(e: &SyncError) -> ApiError {
     post,
     path = "/orgs/{org}/mcp-servers/{server}/refresh",
     summary = "Asks an MCP server for its tools now, instead of waiting for the next check.",
-    description = "New tools are added, removed ones marked, and changed ones held under the\n\
-    policy `hold`. A server Kaeso can't reach or sign in to answers 502, and its `status` and\n\
+    description = "New tools are added, removed ones marked, and changed ones approved, or held for\n\
+    review on a server that doesn't auto-approve tool changes. A server Kaeso can't reach or sign in to answers 502, and its `status` and\n\
     `last_error` say why.",
     tag = "orgs",
     params(("org" = OrgId, Path), ("server" = McpServerId, Path)),
@@ -1298,7 +1297,7 @@ pub async fn refresh(
     Ok(Json(McpRefreshView {
         added: synced.added,
         held: synced.changed,
-        accepted: synced.accepted,
+        auto_approved: synced.auto_approved,
         removed: synced.removed,
         skipped: synced
             .skipped
@@ -1507,7 +1506,8 @@ pub async fn approve(
             "The server no longer lists this tool.".into(),
         ));
     }
-    if !sync::approve(&state, org, t.id, &hash).await? {
+    let (kind, id) = creator_of(&ctx);
+    if !sync::approve(&state, org, t.id, &hash, Decider { kind, id }).await? {
         return Err(ApiError::Conflict(
             "The tool changed again since you reviewed it; review it again.".into(),
         ));
@@ -1548,7 +1548,8 @@ pub async fn reject(
         ));
     }
     let projects = tools::projects_using(&state.pg, t.id).await?;
-    sync::reject(&state, org, t.id).await?;
+    let (kind, id) = creator_of(&ctx);
+    sync::reject(&state, org, t.id, Decider { kind, id }).await?;
     let mut tx = state.pg.begin().await?;
     ctx.audit(Some(ctx.org()?.id()), Action::ToolReject)
         .target("tool", ToolId::from_uuid(t.id))
@@ -1560,4 +1561,107 @@ pub async fn reject(
         .await?;
     tx.commit().await?;
     Ok(Json(tool_view(&row.handle, &t)))
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+#[schema(description = "How a tool's change was decided.")]
+pub enum McpToolChangeOutcome {
+    #[doc = "Held until someone approves it or keeps it off."]
+    Waiting,
+    #[doc = "Approved as Kaeso found it, because the server auto-approves tool changes."]
+    AutoApproved,
+    #[doc = "Approved by `decided_by`, also by switching auto-approve on."]
+    Approved,
+    #[doc = "Kept off by `decided_by`; it can still be approved."]
+    KeptOff,
+    #[doc = "The server changed the tool again before anyone decided."]
+    Superseded,
+    #[doc = "The server went back to the tool's approved definition."]
+    Restored,
+}
+
+fn outcome(s: Option<&str>) -> McpToolChangeOutcome {
+    match s {
+        Some("auto_approved") => McpToolChangeOutcome::AutoApproved,
+        Some("approved") => McpToolChangeOutcome::Approved,
+        Some("kept_off") => McpToolChangeOutcome::KeptOff,
+        Some("superseded") => McpToolChangeOutcome::Superseded,
+        Some("restored") => McpToolChangeOutcome::Restored,
+        _ => McpToolChangeOutcome::Waiting,
+    }
+}
+
+#[derive(Clone, Debug, Serialize, ToSchema)]
+#[schema(description = "A change of one of an MCP server's tools and how it was decided.")]
+pub struct McpToolChangeEntry {
+    #[doc = "Id."]
+    pub id: ToolChangeId,
+    #[doc = "The tool."]
+    pub tool: ToolId,
+    #[doc = "Its name on the server."]
+    #[schema(example = "create_post")]
+    pub name: String,
+    #[doc = "Its name for clients of a portal."]
+    #[schema(example = "x__create_post")]
+    pub exposed_name: String,
+    #[doc = "The hash of the definition before the change, in hex."]
+    pub from_hash: String,
+    #[doc = "The hash of the definition after it, in hex."]
+    pub to_hash: String,
+    #[doc = "When Kaeso found the change."]
+    #[serde(with = "time::serde::rfc3339")]
+    pub detected_at: OffsetDateTime,
+    #[doc = "How it was decided."]
+    pub outcome: McpToolChangeOutcome,
+    #[doc = "Who decided: a person or key for `approved` and `kept_off`, `system` otherwise;\n\
+        `null` while it waits."]
+    pub decided_by: Option<Party>,
+    #[doc = "When it was decided."]
+    #[serde(with = "time::serde::rfc3339::option")]
+    pub decided_at: Option<OffsetDateTime>,
+}
+
+fn change_entry(handle: &str, c: ChangeRow) -> McpToolChangeEntry {
+    McpToolChangeEntry {
+        id: ToolChangeId::from_uuid(c.id),
+        tool: ToolId::from_uuid(c.tool_id),
+        exposed_name: names::exposed(handle, &c.tool_name),
+        name: c.tool_name,
+        from_hash: hex(&c.from_hash),
+        to_hash: hex(&c.to_hash),
+        detected_at: c.detected_at,
+        outcome: outcome(c.outcome.as_deref()),
+        decided_by: c
+            .decided_by_kind
+            .as_deref()
+            .map(|kind| creator(kind, c.decided_by_id)),
+        decided_at: c.decided_at,
+    }
+}
+
+#[utoipa::path(
+    get,
+    path = "/orgs/{org}/mcp-servers/{server}/tool-changes",
+    summary = "The changes of an MCP server's tools, newest first, and how each was decided.",
+    tag = "orgs",
+    params(("org" = OrgId, Path), ("server" = McpServerId, Path), PageParams),
+    responses((status = 200, body = List<McpToolChangeEntry>))
+)]
+pub async fn tool_changes(
+    State(state): State<AppState>,
+    ctx: Ctx,
+    Path((_org, server)): Path<(String, String)>,
+    Query(page): Query<PageParams>,
+) -> ApiResult<Json<List<McpToolChangeEntry>>> {
+    let row = server_row(&state, &ctx, &server).await?;
+    let page = page.page_by(|c| c.parse::<ToolChangeId>().ok().map(|id| id.uuid()))?;
+    let rows =
+        tools::changes_of_server(&state.pg, row.org_id, row.id, page.after, page.fetch()).await?;
+    Ok(Json(List::from_page(
+        &page,
+        rows,
+        |c| ToolChangeId::from_uuid(c.id).to_string(),
+        |c| change_entry(&row.handle, c),
+    )))
 }

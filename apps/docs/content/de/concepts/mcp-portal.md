@@ -41,7 +41,7 @@ Unter **Konto** › **Verbindungen** sagt jede Ihrer Verbindungen, wann Sie sie 
 
 Kaeso speichert einen Hash der Definition jedes Tools: Name, Titel, Beschreibung, Schemas und Hinweise. Es fragt jeden Server im Abstand `mcp_servers.sync_interval` nach seinen Tools, standardmäßig alle 15 Minuten, und wenn jemand den Server in der Konsole prüft.
 
-Ändert ein Server ein Tool, entscheidet die Richtlinie des Servers. `hold`, der Standard, nimmt das Tool aus jedem Portal, bis ein Admin die Änderung prüft und freigibt. `accept` bietet die neue Definition sofort an. Eine geänderte Beschreibung kann einem Modell etwas anderes auftragen, behalten Sie `hold` also für Server, die Sie nicht selbst betreiben.
+Ändert ein Server ein Tool, entscheidet seine Einstellung **Tool-Änderungen automatisch freigeben**. Ist sie an, der Standard, gibt Kaeso die neue Definition sofort frei und Portale bieten sie an. Ist sie aus, nimmt Kaeso das Tool aus jedem Portal, bis ein Admin die Änderung prüft und freigibt. In beiden Fällen kommt die Änderung in den Tool-Verlauf des Servers und eine Freigabe, die Kaeso selbst erteilt hat, ins Audit-Log. Der Tool-Zugriff der Projekte gilt weiter: Ein freigegebenes Tool erreicht nur Projekte, in denen es an ist, und Aufrufer, die es nutzen dürfen.
 
 ## Wer was aufrufen darf
 

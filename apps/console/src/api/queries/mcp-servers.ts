@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { api, data } from "../client";
-import type { McpServerView, McpToolChange, McpToolView } from "../generated/types";
+import type { McpServerView, McpToolChange, McpToolChangeEntry, McpToolView } from "../generated/types";
 
 export const mcpServersQuery = (org: string) =>
   queryOptions({
@@ -27,4 +27,11 @@ export const mcpToolChangeQuery = (org: string, server: string, tool: string) =>
     queryKey: ["orgs", org, "mcp-servers", server, "tools", tool, "change"],
     queryFn: async (): Promise<McpToolChange> =>
       data(await api.GET("/platform/v1/orgs/{org}/mcp-servers/{server}/tools/{tool}/change", { params: { path: { org, server, tool } } })),
+  });
+
+export const mcpToolChangesQuery = (org: string, server: string) =>
+  queryOptions({
+    queryKey: ["orgs", org, "mcp-servers", server, "tool-changes"],
+    queryFn: async (): Promise<McpToolChangeEntry[]> =>
+      data(await api.GET("/platform/v1/orgs/{org}/mcp-servers/{server}/tool-changes", { params: { path: { org, server }, query: { limit: 20 } } })).data,
   });

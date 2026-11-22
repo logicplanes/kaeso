@@ -36,6 +36,16 @@ test("an MCP server is added with its read-only tools, shown in its sheet and de
   await expect(sheet.getByText("e2e_x__search_posts")).toBeVisible();
   await expect(sheet.getByText(FIRST_PROJECT)).toBeVisible();
 
+  const autoApprove = sheet.getByRole("switch", { name: /Auto-approve tool changes/ });
+  await expect(autoApprove).toBeChecked();
+  await expect(sheet.getByText("No tool has changed yet")).toBeVisible();
+  await autoApprove.click();
+  await expect(toastText(page, "mock-x holds tool changes for review")).toBeVisible();
+  await expect(autoApprove).not.toBeChecked();
+  await autoApprove.click();
+  await expect(toastText(page, "mock-x auto-approves tool changes")).toBeVisible();
+  await expect(autoApprove).toBeChecked();
+
   await sheet.getByRole("button", { name: "Server actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog", { name: "Delete mock-x?" }).getByRole("button", { name: "Delete server" }).click();

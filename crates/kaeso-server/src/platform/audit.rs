@@ -159,6 +159,7 @@ actions! {
         StoredResponsesOrgUpdate = "stored_responses.org_update",
         StoredResponsesProjectUpdate = "stored_responses.project_update",
         ToolApprove = "tool.approve",
+        ToolAutoApprove = "tool.auto_approve",
         ToolReject = "tool.reject",
         ToolAccessUpdate = "tool_access.update",
         User2faReset = "user.2fa_reset",

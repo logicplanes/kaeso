@@ -27,16 +27,17 @@ import {
 import { formatDate, formatRelative } from "@logicplanes/kaeso-ui/format";
 import { api, data, ifMatch } from "~/api/client";
 import { isApiError } from "~/api/errors";
-import type { McpServerView, McpToolView, ProjectView } from "~/api/generated/types";
-import { mcpServerQuery, mcpServerToolsQuery, mcpToolChangeQuery } from "~/api/queries/mcp-servers";
+import type { McpServerView, McpToolChangeEntry, McpToolView, ProjectView } from "~/api/generated/types";
+import { mcpServerQuery, mcpServerToolsQuery, mcpToolChangeQuery, mcpToolChangesQuery } from "~/api/queries/mcp-servers";
 import { projectToolViews } from "~/api/queries/invalidation";
 import { orgProjectsQuery } from "~/api/queries/projects";
 import { useApiMutation } from "~/auth/mutation";
 import { useNeedsRight } from "~/auth/needs-right";
 import { useOrgRights } from "~/auth/session";
 import { useOrgPartyName } from "~/features/org/party";
+import type { PartyRef } from "~/kaeso/party";
 import { t } from "~/i18n";
-import { HANDLE, MAX_HANDLE, toolPrefix, connectionWord, hostOf, serverInfoText, statusWord, toolStateWord } from "~/kaeso/mcp-servers";
+import { HANDLE, MAX_HANDLE, type Word, toolPrefix, connectionWord, hostOf, serverInfoText, statusWord, toolStateWord } from "~/kaeso/mcp-servers";
 import { McpConnectionFacts } from "~/kaeso/mcp-connection-facts";
 import { HeaderFields } from "~/kaeso/mcp-header-fields";
 import { useMcpSignIn } from "~/kaeso/mcp-sign-in";
@@ -74,17 +75,42 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
   const [deleting, setDeleting] = useState(false);
   const [replacing, setReplacing] = useState(false);
   const [reviewing, setReviewing] = useState<McpToolView | null>(null);
+  const [confirmingAuto, setConfirmingAuto] = useState(false);
+  const changes = useQuery(mcpToolChangesQuery(org, serverId));
   const signIn = useMcpSignIn(org);
   const all = projects.data ?? [];
   const refresh = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/mcp-servers/{server}/refresh", { params: { path: { org, server: serverId } } })),
-    invalidates: [SERVERS(org)],
+    invalidates: [SERVERS(org), projectToolViews(org)],
     onSuccess: (found) =>
       toast(
-        found.added.length + found.held.length === 0
+        found.added.length + found.held.length + found.auto_approved.length === 0
           ? t("orgHome.mcp.refreshedNothing", "No new or changed tools")
-          : t("orgHome.mcp.refreshed", "{added} new and {held} changed tools found", { added: found.added.length, held: found.held.length }),
+          : t("orgHome.mcp.refreshed", "{added} new and {held} changed tools found", {
+              added: found.added.length,
+              held: found.held.length + found.auto_approved.length,
+            }),
       ),
+  });
+
+  const setAutoApprove = useApiMutation({
+    mutationFn: async ({ on, server: s }: { on: boolean; server: McpServerView }) =>
+      data(
+        await api.PATCH("/platform/v1/orgs/{org}/mcp-servers/{server}", {
+          params: { path: { org, server: s.id }, header: ifMatch(s) },
+          body: { auto_approve_tool_changes: on },
+        }),
+      ),
+    invalidates: [SERVERS(org), projectToolViews(org)],
+    onSuccess: (s) => {
+      setConfirmingAuto(false);
+      toast(
+        s.auto_approve_tool_changes
+          ? t("orgHome.mcp.autoApproveOn", "{name} auto-approves tool changes", { name: s.name })
+          : t("orgHome.mcp.autoApproveOff", "{name} holds tool changes for review", { name: s.name }),
+      );
+    },
+    onError: () => setConfirmingAuto(false),
   });
 
   if (server.isPending) return <Skeleton lines={4} />;
@@ -154,10 +180,6 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
           { label: t("orgHome.mcp.handle", "Handle"), value: s.handle, mono: true },
           ...(info ? [{ label: t("orgHome.mcp.serverInfo", "Says it is"), value: info }] : []),
           ...(s.protocol_version ? [{ label: t("orgHome.mcp.protocol", "MCP version"), value: s.protocol_version, mono: true }] : []),
-          {
-            label: t("orgHome.mcp.changes", "Changed tools"),
-            value: s.change_policy === "hold" ? t("orgHome.mcp.policy.hold", "Held for review") : t("orgHome.mcp.policy.accept", "Offered as they come"),
-          },
           { label: t("orgHome.mcp.checked", "Checked"), value: s.last_checked_at ? formatRelative(s.last_checked_at) : t("common.never", "Never") },
           ...(s.last_error ? [{ label: t("orgHome.mcp.lastError", "Last error"), value: s.last_error, wrap: true }] : []),
           {
@@ -241,6 +263,35 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
           })}
         />
       </Section>
+      <Section title={t("orgHome.mcp.toolChanges", "Tool changes")} spacing="none">
+        <div className="flex flex-col gap-16">
+          <Switch
+            label={t("orgHome.mcp.autoApprove", "Auto-approve tool changes")}
+            description={t("orgHome.mcp.autoApproveHint", "Offers a changed tool at once; off holds it for review.")}
+            checked={s.auto_approve_tool_changes}
+            loading={setAutoApprove.isPending}
+            disabled={!canManage}
+            {...(reason ? { disabledReason: reason } : {})}
+            onCheckedChange={(on) => (on && held.length > 0 ? setConfirmingAuto(true) : setAutoApprove.mutate({ on, server: s }))}
+          />
+          <List
+            aria-label={t("orgHome.mcp.toolChanges", "Tool changes")}
+            loading={changes.isPending}
+            empty={<Empty size="compact" title={t("orgHome.mcp.noChanges", "No tool has changed yet")} />}
+            items={(changes.data ?? []).map((c) => {
+              const word = changeWord(c, partyName);
+              return {
+                id: c.id,
+                title: <Code>{c.exposed_name}</Code>,
+                textValue: c.exposed_name,
+                subtitle: word.detail,
+                meta: <Status tone={word.tone}>{word.label}</Status>,
+                date: formatRelative(c.detected_at),
+              };
+            })}
+          />
+        </div>
+      </Section>
       <Section
         title={t("common.projects", "Projects")}
         spacing="none"
@@ -263,8 +314,47 @@ function ServerBody({ org, serverId, onClose }: { org: string; serverId: string;
         <DeleteServerDialog org={org} server={s} open={deleting} onOpenChange={setDeleting} onDeleted={onClose} />
       </DialogScope>
       <ToolReviewSheet org={org} server={s} tool={reviewing} canManage={canManage} onClose={() => setReviewing(null)} />
+      <AlertDialog
+        open={confirmingAuto}
+        onOpenChange={setConfirmingAuto}
+        title={t("orgHome.mcp.autoApproveQuestion", "Auto-approve tool changes of {name}?", { name: s.name })}
+        description={t(
+          "orgHome.mcp.autoApproveWaiting",
+          "{count, plural, one {The # tool waiting for review is approved too} other {The # tools waiting for review are approved too}}; projects that have them on offer them again.",
+          { count: held.length },
+        )}
+        confirmLabel={t("orgHome.mcp.autoApproveConfirm", "Turn on and approve")}
+        loading={setAutoApprove.isPending}
+        onConfirm={() => setAutoApprove.mutateAsync({ on: true, server: s })}
+      />
     </div>
   );
+}
+
+function changeWord(c: McpToolChangeEntry, partyName: (p: PartyRef) => string): Word & { detail: string | undefined } {
+  const by = c.decided_by && c.decided_by.kind !== "system" ? partyName(c.decided_by) : undefined;
+  switch (c.outcome) {
+    case "auto_approved":
+      return { tone: "success", label: t("orgHome.mcp.change.autoApproved", "Auto-approved"), detail: undefined };
+    case "approved":
+      return {
+        tone: "success",
+        label: t("orgHome.mcp.change.approved", "Approved"),
+        detail: by ? t("orgHome.mcp.change.approvedBy", "Approved by {name}", { name: by }) : undefined,
+      };
+    case "kept_off":
+      return {
+        tone: "neutral",
+        label: t("orgHome.mcp.change.keptOff", "Kept off"),
+        detail: by ? t("orgHome.mcp.change.keptOffBy", "Kept off by {name}", { name: by }) : undefined,
+      };
+    case "superseded":
+      return { tone: "neutral", label: t("orgHome.mcp.change.superseded", "Changed again"), detail: undefined };
+    case "restored":
+      return { tone: "neutral", label: t("orgHome.mcp.change.restored", "Changed back"), detail: undefined };
+    default:
+      return { tone: "warning", label: t("orgHome.mcp.change.waiting", "Waiting for review"), detail: undefined };
+  }
 }
 
 const pretty = (v: unknown) => (v === undefined || v === null ? "" : JSON.stringify(v, null, 2));
@@ -355,7 +445,7 @@ function ReviewActions({
   const path = { params: { path: { org, server: server.id, tool: tool.id } } };
   const approve = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/mcp-servers/{server}/tools/{tool}/approve", { ...path, body: { hash: tool.hash } })),
-    invalidates: [SERVERS(org)],
+    invalidates: [SERVERS(org), projectToolViews(org)],
     onSuccess: (x) => {
       toast.success(t("orgHome.mcp.approved", "{tool} approved", { tool: x.exposed_name }));
       onDone();
@@ -363,7 +453,7 @@ function ReviewActions({
   });
   const reject = useApiMutation({
     mutationFn: async () => data(await api.POST("/platform/v1/orgs/{org}/mcp-servers/{server}/tools/{tool}/reject", path)),
-    invalidates: [SERVERS(org)],
+    invalidates: [SERVERS(org), projectToolViews(org)],
     onSuccess: (x) => {
       toast(t("orgHome.mcp.keptOff", "{tool} stays off", { tool: x.exposed_name }));
       onDone();
@@ -385,7 +475,6 @@ function ReviewActions({
 function EditServerDialog({ org, server, open, onClose }: { org: string; server: McpServerView; open: boolean; onClose: () => void }) {
   const [name, setName] = useState(server.name);
   const [handle, setHandle] = useState(server.handle);
-  const [hold, setHold] = useState(server.change_policy === "hold");
   const save = useApiMutation({
     mutationFn: async () =>
       data(
@@ -394,11 +483,10 @@ function EditServerDialog({ org, server, open, onClose }: { org: string; server:
           body: {
             ...(name.trim() !== server.name ? { name: name.trim() } : {}),
             ...(handle !== server.handle ? { handle } : {}),
-            change_policy: hold ? "hold" : "accept",
           },
         }),
       ),
-    invalidates: [SERVERS(org)],
+    invalidates: [SERVERS(org), projectToolViews(org)],
     onSuccess: (s) => {
       toast(t("orgHome.mcp.saved", "{name} saved", { name: s.name }));
       onClose();
@@ -443,12 +531,6 @@ function EditServerDialog({ org, server, open, onClose }: { org: string; server:
           onChange={(e) => setHandle(e.target.value.toLowerCase())}
           maxLength={MAX_HANDLE}
           spellCheck={false}
-        />
-        <Switch
-          label={t("orgHome.mcp.holdChanges", "Hold changed tools for review")}
-          description={t("orgHome.mcp.holdChangesHint", "A changed tool stays off until someone approves it.")}
-          checked={hold}
-          onCheckedChange={setHold}
         />
       </div>
     </Dialog>
@@ -527,7 +609,7 @@ function ReplaceSecretDialog({ org, server, open, onClose }: { org: string; serv
           body: { header: { name: name.trim(), value: value.trim() } },
         }),
       ),
-    invalidates: [SERVERS(org)],
+    invalidates: [SERVERS(org), projectToolViews(org)],
     onSuccess: (answer) => {
       setValue("");
       toast.success(t("orgHome.mcp.secretReplaced", "The secret of {name} was replaced", { name: answer.server.name }));
@@ -587,7 +669,7 @@ function DeleteServerDialog({
     mutationFn: async () => {
       await api.DELETE("/platform/v1/orgs/{org}/mcp-servers/{server}", { params: { path: { org, server: server.id }, header: ifMatch(server) } });
     },
-    invalidates: [SERVERS(org)],
+    invalidates: [SERVERS(org), projectToolViews(org)],
     onSuccess: () => {
       onOpenChange(false);
       toast(t("orgHome.mcp.deleted", "{name} deleted", { name: server.name }));

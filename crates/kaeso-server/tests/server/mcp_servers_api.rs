@@ -92,10 +92,10 @@ async fn an_admin_adds_a_server_turns_its_tools_on_and_reviews_a_change() {
     let created = add(
         &app,
         &owner,
-        json!({ "handle": "x", "name": "X", "url": mock.url(), "auth_method": "none", "projects": [project] }),
+        json!({ "handle": "x", "name": "X", "url": mock.url(), "auth_method": "none", "projects": [project], "auto_approve_tool_changes": false }),
     )
     .await;
-    assert_eq!(created["change_policy"], "hold");
+    assert_eq!(created["auto_approve_tool_changes"], false);
     assert_eq!(created["projects"], json!([project]));
     assert_eq!(created["created_by"]["id"], owner.user_id);
     assert_eq!(
@@ -260,12 +260,12 @@ async fn an_admin_adds_a_server_turns_its_tools_on_and_reviews_a_change() {
         .call(
             Method::PATCH,
             &base,
-            Some(json!({ "handle": "x-two", "change_policy": "accept" })),
+            Some(json!({ "handle": "x-two" })),
             Some(&owner.cookie),
         )
         .await;
     assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
-    assert_eq!(r.body["change_policy"], "accept");
+    assert_eq!(r.body["auto_approve_tool_changes"], false);
     let tools = app.get(&format!("{base}/tools"), &owner.cookie).await;
     assert_eq!(
         named(&tools.body, "name", "create_post")["exposed_name"],
@@ -888,5 +888,202 @@ async fn connected_portal_clients_are_listed_and_disconnected() {
         audited(&app, &owner)
             .await
             .contains(&"portal_grant.revoke".to_owned())
+    );
+}
+
+async fn mails_about(app: &App, tool: &str) -> usize {
+    app.state.in_flight.settled().await;
+    app.state.mailer.flush().await;
+    app.mail
+        .to("owner@example.com")
+        .iter()
+        .filter(|m| m.subject.contains(&format!("{tool} changed")))
+        .count()
+}
+
+async fn history(app: &App, base: &str, cookie: &str) -> Vec<Value> {
+    let r = app.get(&format!("{base}/tool-changes"), cookie).await;
+    assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    r.body["data"].as_array().unwrap().clone()
+}
+
+#[tokio::test]
+async fn a_new_server_auto_approves_tool_changes_and_says_so_in_its_history() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let project = common::first_project(&app, &owner).await;
+    let created = add(
+        &app,
+        &owner,
+        json!({ "handle": "x", "name": "X", "url": mock.url(), "auth_method": "none", "projects": [project] }),
+    )
+    .await;
+    assert_eq!(created["auto_approve_tool_changes"], true, "on by default");
+    let base = format!("{}/{}", servers(&owner), created["id"].as_str().unwrap());
+    let at_project = format!("/orgs/{}/projects/{project}", owner.org_id);
+    let tools = app.get(&format!("{at_project}/tools"), &owner.cookie).await;
+    let post = named(&tools.body, "name", "create_post")["id"].clone();
+    app.call(
+        Method::PATCH,
+        &format!("{at_project}/tools"),
+        Some(json!({ "tools": [{ "id": post, "enabled": true }] })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    assert!(history(&app, &base, &owner.cookie).await.is_empty());
+
+    let mut changed = with_description("create_post", "Posts to X, quickly.");
+    for t in &mut changed {
+        if t["name"] == "search_posts" {
+            t["description"] = json!("Finds posts.");
+        }
+    }
+    mock.set_tools(changed);
+    let refreshed = app
+        .post(&format!("{base}/refresh"), json!({}), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        (&refreshed.body["held"], &refreshed.body["auto_approved"]),
+        (&json!([]), &json!(["create_post", "search_posts"]))
+    );
+    assert_eq!(refreshed.body["server"]["tools"]["changed"], 0);
+    let tools = app.get(&format!("{at_project}/tools"), &owner.cookie).await;
+    let p = named(&tools.body, "name", "create_post");
+    assert_eq!(
+        (&p["state"], &p["offered"], &p["description"]),
+        (
+            &json!("active"),
+            &json!(true),
+            &json!("Posts to X, quickly.")
+        ),
+        "the project offers the new definition at once"
+    );
+    let search = named(&tools.body, "name", "search_posts");
+    assert_eq!(
+        (&search["state"], &search["enabled"], &search["offered"]),
+        (&json!("active"), &json!(false), &json!(false)),
+        "approving a change never turns a tool on in a project"
+    );
+    let entries = history(&app, &base, &owner.cookie).await;
+    assert_eq!(entries.len(), 2);
+    let entries: Vec<Value> = entries
+        .into_iter()
+        .filter(|e| e["name"] == "create_post")
+        .collect();
+    assert_eq!(entries[0]["exposed_name"], "x__create_post");
+    assert_eq!(entries[0]["outcome"], "auto_approved");
+    assert_eq!(
+        entries[0]["decided_by"],
+        json!({ "kind": "system", "id": null })
+    );
+    assert!(entries[0]["id"].as_str().unwrap().starts_with("tchg_"));
+    assert_eq!(
+        mails_about(&app, "create_post").await,
+        0,
+        "nobody is asked to review it"
+    );
+    let actions = audited(&app, &owner).await;
+    assert!(
+        actions.iter().any(|a| a == "tool.auto_approve"),
+        "{actions:?}"
+    );
+    assert!(!actions.iter().any(|a| a == "tool.approve"), "{actions:?}");
+}
+
+#[tokio::test]
+async fn switching_auto_approve_on_approves_the_changes_held_for_review() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let created = add(
+        &app,
+        &owner,
+        json!({ "handle": "x", "name": "X", "url": mock.url(), "auth_method": "none", "auto_approve_tool_changes": false }),
+    )
+    .await;
+    let base = format!("{}/{}", servers(&owner), created["id"].as_str().unwrap());
+    mock.set_tools(with_description("create_post", "Posts to X, quickly."));
+    let refreshed = app
+        .post(&format!("{base}/refresh"), json!({}), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        refreshed.body["held"],
+        json!(["create_post"]),
+        "off holds it"
+    );
+    assert_eq!(mails_about(&app, "create_post").await, 1);
+    let entries = history(&app, &base, &owner.cookie).await;
+    assert_eq!(
+        (&entries[0]["outcome"], &entries[0]["decided_by"]),
+        (&json!("waiting"), &Value::Null)
+    );
+
+    let r = app
+        .call(
+            Method::PATCH,
+            &base,
+            Some(json!({ "auto_approve_tool_changes": true })),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["auto_approve_tool_changes"], true);
+    assert_eq!(r.body["tools"]["changed"], 0);
+    let tools = app.get(&format!("{base}/tools"), &owner.cookie).await;
+    assert_eq!(named(&tools.body, "name", "create_post")["state"], "active");
+    let entries = history(&app, &base, &owner.cookie).await;
+    assert_eq!(entries[0]["outcome"], "approved");
+    assert_eq!(entries[0]["decided_by"]["id"], owner.user_id);
+
+    let r = app
+        .get(
+            &format!("/orgs/{}/audit-log?limit=100", owner.org_id),
+            &owner.cookie,
+        )
+        .await;
+    let events = r.body["data"].as_array().unwrap();
+    let switched = events
+        .iter()
+        .find(|e| e["action"] == "mcp_server.update")
+        .unwrap();
+    assert_eq!(
+        (
+            &switched["before"]["auto_approve_tool_changes"],
+            &switched["after"]["auto_approve_tool_changes"]
+        ),
+        (&json!(false), &json!(true))
+    );
+    assert!(
+        events
+            .iter()
+            .any(|e| e["action"] == "tool.approve" && e["actor"]["id"] == owner.user_id),
+        "{events:?}"
+    );
+
+    let r = app
+        .call(
+            Method::PATCH,
+            &base,
+            Some(json!({ "auto_approve_tool_changes": false })),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(r.body["auto_approve_tool_changes"], false);
+    mock.set_tools(with_description("create_post", "Posts to X, slowly."));
+    let refreshed = app
+        .post(&format!("{base}/refresh"), json!({}), Some(&owner.cookie))
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        refreshed.body["held"],
+        json!(["create_post"]),
+        "off again holds it again"
     );
 }

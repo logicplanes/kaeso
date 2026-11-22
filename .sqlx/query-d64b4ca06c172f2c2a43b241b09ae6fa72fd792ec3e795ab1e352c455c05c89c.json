@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, handle, name, url, auth_method, credential_mode, oauth_registration, oauth_issuer, oauth_client_id, oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", scopes, change_policy, protocol_version, server_info, status, last_checked_at, last_error, created_by_kind, created_by_id, created_at, updated_at, revision FROM mcp_servers WHERE id = $1",
+  "query": "UPDATE mcp_servers SET name = COALESCE($3, name), handle = COALESCE($4, handle), auto_approve_tool_changes = COALESCE($5, auto_approve_tool_changes), revision = revision + 1, updated_at = now() WHERE org_id = $1 AND id = $2 RETURNING id, org_id, handle, name, url, auth_method, credential_mode, oauth_registration, oauth_issuer, oauth_client_id, oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", scopes, auto_approve_tool_changes, protocol_version, server_info, status, last_checked_at, last_error, created_by_kind, created_by_id, created_at, updated_at, revision",
   "describe": {
     "columns": [
       {
@@ -132,12 +132,12 @@
       },
       {
         "ordinal": 12,
-        "name": "change_policy",
-        "type_info": "Text",
+        "name": "auto_approve_tool_changes",
+        "type_info": "Bool",
         "origin": {
           "Table": {
             "table": "mcp_servers",
-            "name": "change_policy"
+            "name": "auto_approve_tool_changes"
           }
         }
       },
@@ -254,7 +254,11 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Bool"
       ]
     },
     "nullable": [
@@ -283,5 +287,5 @@
       false
     ]
   },
-  "hash": "af44ed05b21f6f4b2ffc1b21520a4601f078f67e28a19749f5441e82a491d121"
+  "hash": "d64b4ca06c172f2c2a43b241b09ae6fa72fd792ec3e795ab1e352c455c05c89c"
 }

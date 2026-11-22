@@ -2,6 +2,7 @@ import type {
   McpConnectionView,
   McpServerProbeView,
   McpServerView,
+  McpToolChangeEntry,
   McpToolView,
   PortalGrantView,
   ProjectMcpServerView,
@@ -14,6 +15,7 @@ export const obj = (value: Record<string, unknown>) => value as Record<string, n
 export const SERVERS = "orgs/:org/mcp-servers";
 export const SERVER = `${SERVERS}/:server`;
 export const SERVER_TOOLS = `${SERVER}/tools`;
+export const SERVER_CHANGES = `${SERVER}/tool-changes`;
 
 export function mcpConnection(overrides: Partial<McpConnectionView> = {}): McpConnectionView {
   return {
@@ -38,7 +40,7 @@ export function mcpServer(overrides: Partial<McpServerView> = {}): McpServerView
     url: "https://mcp.x.example/mcp",
     auth_method: "oauth",
     credential_mode: "shared",
-    change_policy: "hold",
+    auto_approve_tool_changes: false,
     connection: mcpConnection(),
     created_at: NOW,
     created_by: { kind: "user", id: USER },
@@ -73,6 +75,23 @@ export function mcpTool(overrides: Partial<McpToolView> = {}): McpToolView {
     long_description: false,
     first_seen_at: NOW,
     changed_at: null,
+    ...overrides,
+  };
+}
+
+export function mcpToolChange(overrides: Partial<McpToolChangeEntry> = {}): McpToolChangeEntry {
+  const name = overrides.name ?? "search_posts";
+  return {
+    id: `tchg_${name}`,
+    tool: `tool_${name}`,
+    name,
+    exposed_name: `x__${name}`,
+    from_hash: "a".repeat(64),
+    to_hash: "b".repeat(64),
+    detected_at: NOW,
+    outcome: "auto_approved",
+    decided_by: { kind: "system", id: null },
+    decided_at: NOW,
     ...overrides,
   };
 }

@@ -11897,8 +11897,8 @@
         "tags": [
           "orgs"
         ],
-        "summary": "Renames an MCP server, changes its handle, its policy for changed tools or the\nprojects that use it.",
-        "description": "With `If-Match`, only while the server is still at that revision; a newer one\nanswers 412.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "summary": "Renames an MCP server, changes its handle, whether it auto-approves tool changes or\nthe projects that use it.",
+        "description": "With `If-Match`, only while the server is still at that revision; a newer one\nanswers 412. Switching `auto_approve_tool_changes` on approves the changes held for review,\neach with its own `tool.approve` entry in the audit log.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "patchOrgsOrgMcpServersServer",
         "parameters": [
           {
@@ -12097,7 +12097,7 @@
           "orgs"
         ],
         "summary": "Asks an MCP server for its tools now, instead of waiting for the next check.",
-        "description": "New tools are added, removed ones marked, and changed ones held under the\npolicy `hold`. A server Kaeso can't reach or sign in to answers 502, and its `status` and\n`last_error` say why.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
+        "description": "New tools are added, removed ones marked, and changed ones approved, or held for\nreview on a server that doesn't auto-approve tool changes. A server Kaeso can't reach or sign in to answers 502, and its `status` and\n`last_error` say why.\n\n**Right:** `mcp_servers.manage` on the organization in the path; with a session, a sign-in within the last 15 minutes.",
         "operationId": "postOrgsOrgMcpServersServerRefresh",
         "parameters": [
           {
@@ -12164,6 +12164,103 @@
           }
         ],
         "x-kaeso-access": "right:mcp_servers.manage"
+      }
+    },
+    "/platform/v1/orgs/{org}/mcp-servers/{server}/tool-changes": {
+      "get": {
+        "tags": [
+          "orgs"
+        ],
+        "summary": "The changes of an MCP server's tools, newest first, and how each was decided.",
+        "description": "**Right:** `mcp_servers.view` on the organization in the path.",
+        "operationId": "getOrgsOrgMcpServersServerToolChanges",
+        "parameters": [
+          {
+            "name": "org",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OrgId"
+            }
+          },
+          {
+            "name": "server",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "How many items to return, 1 to 100. Default 20.",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            },
+            "example": 20
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "description": "The `next_cursor` of the previous page.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/List_McpToolChangeEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/Internal"
+          },
+          "503": {
+            "$ref": "#/components/responses/Unavailable"
+          }
+        },
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "api_key": []
+          },
+          {
+            "agent": []
+          }
+        ],
+        "x-kaeso-access": "right:mcp_servers.view"
       }
     },
     "/platform/v1/orgs/{org}/mcp-servers/{server}/tools": {
@@ -37489,7 +37586,7 @@
                 "auth_method",
                 "credential_mode",
                 "scopes",
-                "change_policy",
+                "auto_approve_tool_changes",
                 "status",
                 "tools",
                 "projects",
@@ -37503,9 +37600,9 @@
                   "$ref": "#/components/schemas/McpAuthMethod",
                   "description": "How Kaeso signs in to it."
                 },
-                "change_policy": {
-                  "$ref": "#/components/schemas/McpChangePolicy",
-                  "description": "What happens when the server changes a tool."
+                "auto_approve_tool_changes": {
+                  "type": "boolean",
+                  "description": "Whether a tool's changed definition is approved as Kaeso finds it. Off holds the\ntool until someone approves the change."
                 },
                 "connection": {
                   "oneOf": [
@@ -37623,6 +37720,101 @@
                   "type": "string",
                   "description": "Its Streamable HTTP address.",
                   "example": "https://mcp.example.com/mcp"
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
+      "List_McpToolChangeEntry": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A change of one of an MCP server's tools and how it was decided.",
+              "required": [
+                "id",
+                "tool",
+                "name",
+                "exposed_name",
+                "from_hash",
+                "to_hash",
+                "detected_at",
+                "outcome"
+              ],
+              "properties": {
+                "decided_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When it was decided."
+                },
+                "decided_by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Party",
+                      "description": "Who decided: a person or key for `approved` and `kept_off`, `system` otherwise;\n`null` while it waits."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "detected_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When Kaeso found the change."
+                },
+                "exposed_name": {
+                  "type": "string",
+                  "description": "Its name for clients of a portal.",
+                  "example": "x__create_post"
+                },
+                "from_hash": {
+                  "type": "string",
+                  "description": "The hash of the definition before the change, in hex."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/ToolChangeId",
+                  "description": "Id."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Its name on the server.",
+                  "example": "create_post"
+                },
+                "outcome": {
+                  "$ref": "#/components/schemas/McpToolChangeOutcome",
+                  "description": "How it was decided."
+                },
+                "to_hash": {
+                  "type": "string",
+                  "description": "The hash of the definition after it, in hex."
+                },
+                "tool": {
+                  "$ref": "#/components/schemas/ToolId",
+                  "description": "The tool."
                 }
               }
             },
@@ -40828,14 +41020,6 @@
           "oauth"
         ]
       },
-      "McpChangePolicy": {
-        "type": "string",
-        "description": "What happens when an MCP server changes a tool's definition.",
-        "enum": [
-          "hold",
-          "accept"
-        ]
-      },
       "McpConnectionAnswer": {
         "type": "object",
         "description": "The server after a sign-in was set or started.",
@@ -41122,19 +41306,12 @@
         "required": [
           "added",
           "held",
-          "accepted",
+          "auto_approved",
           "removed",
           "skipped",
           "server"
         ],
         "properties": {
-          "accepted": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "Tools whose change was approved as it came, under the policy `accept`."
-          },
           "added": {
             "type": "array",
             "items": {
@@ -41142,12 +41319,19 @@
             },
             "description": "New tools."
           },
+          "auto_approved": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tools whose changed definition was approved as Kaeso found it, on a server that\nauto-approves tool changes."
+          },
           "held": {
             "type": "array",
             "items": {
               "type": "string"
             },
-            "description": "Tools whose definition changed and that are held until someone approves them."
+            "description": "Tools whose definition changed and that are held until someone approves them, on a\nserver that doesn't auto-approve tool changes."
           },
           "removed": {
             "type": "integer",
@@ -41190,16 +41374,12 @@
             "$ref": "#/components/schemas/McpAuthMethod",
             "description": "How Kaeso signs in to it."
           },
-          "change_policy": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/McpChangePolicy",
-                "description": "What happens when it changes a tool; `hold` when absent."
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "auto_approve_tool_changes": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether its changed tools are approved as Kaeso finds them; `true` when absent."
           },
           "credential_mode": {
             "oneOf": [
@@ -41383,16 +41563,12 @@
         "type": "object",
         "description": "Changes to an MCP server; absent fields stay as they are.",
         "properties": {
-          "change_policy": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/McpChangePolicy",
-                "description": "A new policy for changed tools. Switching to `accept` doesn't approve tools held now."
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "auto_approve_tool_changes": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Whether its changed tools are approved as Kaeso finds them. Switching it on also\napproves the changes held for review now."
           },
           "handle": {
             "type": [
@@ -41432,7 +41608,7 @@
           "auth_method",
           "credential_mode",
           "scopes",
-          "change_policy",
+          "auto_approve_tool_changes",
           "status",
           "tools",
           "projects",
@@ -41446,9 +41622,9 @@
             "$ref": "#/components/schemas/McpAuthMethod",
             "description": "How Kaeso signs in to it."
           },
-          "change_policy": {
-            "$ref": "#/components/schemas/McpChangePolicy",
-            "description": "What happens when the server changes a tool."
+          "auto_approve_tool_changes": {
+            "type": "boolean",
+            "description": "Whether a tool's changed definition is approved as Kaeso finds it. Off holds the\ntool until someone approves the change."
           },
           "connection": {
             "oneOf": [
@@ -41680,6 +41856,88 @@
             "description": "The tool."
           }
         }
+      },
+      "McpToolChangeEntry": {
+        "type": "object",
+        "description": "A change of one of an MCP server's tools and how it was decided.",
+        "required": [
+          "id",
+          "tool",
+          "name",
+          "exposed_name",
+          "from_hash",
+          "to_hash",
+          "detected_at",
+          "outcome"
+        ],
+        "properties": {
+          "decided_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When it was decided."
+          },
+          "decided_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Party",
+                "description": "Who decided: a person or key for `approved` and `kept_off`, `system` otherwise;\n`null` while it waits."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detected_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When Kaeso found the change."
+          },
+          "exposed_name": {
+            "type": "string",
+            "description": "Its name for clients of a portal.",
+            "example": "x__create_post"
+          },
+          "from_hash": {
+            "type": "string",
+            "description": "The hash of the definition before the change, in hex."
+          },
+          "id": {
+            "$ref": "#/components/schemas/ToolChangeId",
+            "description": "Id."
+          },
+          "name": {
+            "type": "string",
+            "description": "Its name on the server.",
+            "example": "create_post"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/McpToolChangeOutcome",
+            "description": "How it was decided."
+          },
+          "to_hash": {
+            "type": "string",
+            "description": "The hash of the definition after it, in hex."
+          },
+          "tool": {
+            "$ref": "#/components/schemas/ToolId",
+            "description": "The tool."
+          }
+        }
+      },
+      "McpToolChangeOutcome": {
+        "type": "string",
+        "description": "How a tool's change was decided.",
+        "enum": [
+          "waiting",
+          "auto_approved",
+          "approved",
+          "kept_off",
+          "superseded",
+          "restored"
+        ]
       },
       "McpToolCounts": {
         "type": "object",
@@ -49852,6 +50110,13 @@
             "example": "create_post"
           }
         }
+      },
+      "ToolChangeId": {
+        "type": "string",
+        "examples": [
+          "tchg_01k7a3f8m2xq4v9c5r6t8w0yz1"
+        ],
+        "pattern": "^tchg_[0-9a-hjkmnp-tv-z]{26}$"
       },
       "ToolId": {
         "type": "string",

@@ -233,7 +233,7 @@ export async function hoverReason(user: UserEvent, element: HTMLElement, text: s
     // A pointer still resting on the button from the click that blocked it gets no enter event; a person moves onto it.
     await user.pointer({ target: element.parentElement ?? element });
     await user.hover(element);
-    const tip = await screen.findByText(text);
+    const tip = await screen.findByText(text, { selector: '[role="tooltip"], [role="tooltip"] *' });
     await user.unhover(element);
     return tip;
   } finally {

@@ -41,7 +41,7 @@ Under **Account** › **Connections**, each of your connections says when you la
 
 Kaeso keeps a hash of each tool's definition: its name, title, description, schemas and hints. It asks every server for its tools at the interval `mcp_servers.sync_interval`, 15 minutes by default, and when someone checks the server in the console.
 
-When a server changes a tool, the server's policy decides what happens. `hold`, the default, takes the tool out of every portal until an admin reviews the change and approves it. `accept` offers the new definition at once. A changed description can tell a model to do something else, so keep `hold` for servers you don't control.
+When a server changes a tool, its **Auto-approve tool changes** setting decides what happens. On, the default, Kaeso approves the new definition at once and portals offer it. Off, Kaeso takes the tool out of every portal until an admin reviews the change and approves it. Either way the change goes into the server's tool history, and an approval Kaeso made by itself into the audit log. Project tool access still applies: an approved tool reaches only the projects that have it on and the callers who may use it.
 
 ## Who may call what
 

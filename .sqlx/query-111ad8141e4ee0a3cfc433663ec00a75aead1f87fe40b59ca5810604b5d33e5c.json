@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO mcp_tool_changes (id, org_id, server_id, tool_id, from_hash, to_hash, detected_at, outcome, decided_by_kind, decided_by_id, decided_at) VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8::text, $9::text, $10::uuid, CASE WHEN $8::text IS NULL THEN NULL ELSE $7::timestamptz END)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Bytea",
+        "Bytea",
+        "Timestamptz",
+        "Text",
+        "Text",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "111ad8141e4ee0a3cfc433663ec00a75aead1f87fe40b59ca5810604b5d33e5c"
+}
