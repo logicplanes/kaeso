@@ -41,7 +41,7 @@ export function glyph(step: DraftStep, models: TreeInput["models"], providerName
   if (step.type === "condition") return <Icon icon={icons.condition} size="sm" />;
   if (step.type === "split") return <Icon icon={icons.split} size="sm" />;
   const m = step.model ? models.get(step.model) : undefined;
-  return m ? <ProviderBadge provider={m.provider} name={providerName(m.provider)} size="sm" /> : <Icon icon={icons.model} size="sm" />;
+  return m ? <ProviderBadge provider={m.provider} name={providerName(m.provider)} model={m.model_id} size="sm" /> : <Icon icon={icons.model} size="sm" />;
 }
 
 function status(problems: Problem[] | undefined): FlowCanvasNode["status"] {

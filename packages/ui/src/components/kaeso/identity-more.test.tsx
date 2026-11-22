@@ -4,9 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { KeyDisplay, ModelLabel, ProviderBadge, StatusCode, KAESO_IDENTITY_VARIANTS, providerName } from "./identity.js";
 import { providerMark } from "@logicplanes/kaeso-tokens";
 import { PROVIDER_MARKS, type ProviderMark, type ProviderMarkPart } from "./provider-marks.js";
+import { VENDOR_MARKS } from "./vendor-marks.js";
 import { Slider } from "../slider/slider.js";
 import { icons } from "../../icons/vocabulary.js";
-import { LocaleProvider } from "../../i18n/index.js";
+import { LocaleProvider, loadUiMessages } from "../../i18n/index.js";
 import { TooltipProvider } from "../tooltip/tooltip-provider.js";
 import { hoverWithMouse } from "../../../test/hover.js";
 import { lazyModulesSettled } from "../../utils/lazy-module.js";
@@ -15,32 +16,64 @@ import { ProviderMarksProvider } from "../../utils/provider-marks.js";
 afterEach(() => vi.useRealTimers());
 
 describe("identity parts", () => {
-  it("draws provider marks, names from the caller, and the name's first letter for providers without a mark", () => {
+  it("draws provider marks, names from the caller, and the provider icon for a provider without a mark, never a letter", () => {
     render(
       <>
         <ProviderBadge provider="openai" name="OpenAI" withName />
-        <ProviderBadge provider="acme" name="Zenith Labs" size="xl" />
-        <ProviderBadge provider="302ai" name=" 302.AI " />
+        <ProviderBadge provider="custom:acme" name="Zenith Labs" size="xl" />
         <ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" />
         <ProviderBadge provider="fal" name="fal" />
         <ProviderBadge provider="qianfan" name="Baidu Qianfan" />
       </>,
     );
     expect(screen.getByText("OpenAI")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Zenith Labs" })).toHaveTextContent(/^Z$/);
-    expect(screen.getByRole("img", { name: "302.AI" })).toHaveTextContent(/^3$/);
-    // AWS's trademark guidelines allow its marks in plain text only, so Amazon Bedrock has no mark.
-    expect(PROVIDER_MARKS["amazon-bedrock"]).toBeUndefined();
-    expect(screen.getByRole("img", { name: "Amazon Bedrock" })).toHaveTextContent(/^A$/);
-    // fal's terms forbid using its logos without its written permission.
-    expect(PROVIDER_MARKS.fal).toBeUndefined();
-    expect(screen.getByRole("img", { name: "fal" })).toHaveTextContent(/^f$/i);
-    // Baidu's terms forbid copying its logos without its permission.
-    expect(PROVIDER_MARKS.qianfan).toBeUndefined();
-    expect(screen.getByRole("img", { name: "Baidu Qianfan" })).toHaveTextContent(/^B$/);
+    const other = screen.getByRole("img", { name: "Zenith Labs" });
+    expect(other).toHaveTextContent(/^$/);
+    expect(other.querySelector("svg")).toHaveClass("size-24");
+    for (const name of ["Amazon Bedrock", "fal", "Baidu Qianfan"]) {
+      const badge = screen.getByRole("img", { name });
+      expect(badge).toHaveTextContent(/^$/);
+      expect(badge.querySelector("svg path")).not.toBeNull();
+    }
   });
 
-  it("draws an icon instead of a letter for a choice that isn't one provider, and a mark over the icon", () => {
+  it("shows the mark of a model's maker in a row about the model, and names the maker and the provider", async () => {
+    render(
+      <>
+        <ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" model="global.openai.gpt-6.2-astra" />
+        <ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" model="us.meta.llama4-maverick-17b-instruct-v1:0" />
+        <ProviderBadge provider="openai" name="OpenAI" model="gpt-6.2-astra" />
+        <ProviderBadge provider="openrouter" name="OpenRouter" model="thedrummer/cydonia-24b-v4.1" />
+        <ModelLabel provider="openrouter" providerName="OpenRouter" model="anthropic/claude-opus-5" name="Claude Opus 5" />
+      </>,
+    );
+    const gpt = screen.getByRole("img", { name: "OpenAI model on Amazon Bedrock" });
+    expect(gpt.querySelector("path")).toHaveAttribute("d", PROVIDER_MARKS.openai!.d);
+    expect(screen.getByRole("img", { name: "OpenAI" }).querySelector("path")).toHaveAttribute("d", PROVIDER_MARKS.openai!.d);
+    expect(screen.getByRole("img", { name: "OpenRouter" }).querySelector("path")).toHaveAttribute("d", PROVIDER_MARKS.openrouter!.d);
+    expect(screen.getByRole("img", { name: "Anthropic model on OpenRouter" }).querySelector("path")).toHaveAttribute("d", PROVIDER_MARKS.anthropic!.d);
+    const llama = screen.getByRole("img", { name: "Meta model on Amazon Bedrock" });
+    expect(llama).toHaveTextContent(/^$/);
+    await act(() => lazyModulesSettled());
+    expect(llama.querySelector("path")).toHaveAttribute("d", VENDOR_MARKS.meta!.d);
+  });
+
+  it("reads the maker's mark in German and Chinese too", async () => {
+    for (const [locale, name] of [
+      ["de", "OpenAI-Modell bei Amazon Bedrock"],
+      ["zh-CN", "Amazon Bedrock 上的 OpenAI 模型"],
+    ] as const) {
+      const { unmount } = render(
+        <LocaleProvider locale={locale} messages={await loadUiMessages(locale)}>
+          <ProviderBadge provider="amazon-bedrock" name="Amazon Bedrock" model="openai.gpt-6.2-sol" />
+        </LocaleProvider>,
+      );
+      expect(screen.getByRole("img", { name })).toBeInTheDocument();
+      unmount();
+    }
+  });
+
+  it("draws an icon for a choice that isn't one provider, and a mark over the icon", () => {
     render(
       <>
         <ProviderBadge provider="other" name="Any other server" icon={icons.instance} />
@@ -63,13 +96,12 @@ describe("identity parts", () => {
         <ProviderBadge provider="lab-2" name="Lab two" />
       </ProviderMarksProvider>,
     );
-    for (const name of ["Home Ollama", "Lab", "Ollama box"]) {
+    for (const name of ["Home Ollama", "Lab", "Alibaba model on Ollama box", "Plain", "Lab two"]) {
       const tile = screen.getByRole("img", { name });
       expect(tile.querySelector("svg")).not.toBeNull();
       expect(tile).toHaveTextContent("");
     }
-    expect(screen.getByRole("img", { name: "Plain" })).toHaveTextContent(/^P$/);
-    expect(screen.getByRole("img", { name: "Lab two" })).toHaveTextContent(/^L$/);
+    expect(screen.getByRole("img", { name: "Alibaba model on Ollama box" }).querySelector("path")).toHaveAttribute("d", PROVIDER_MARKS.alibaba!.parts![0]!.d);
   });
 
   it("falls back to the provider id without a name", () => {
@@ -81,8 +113,8 @@ describe("identity parts", () => {
       </>,
     );
     expect(screen.getByText("gemini")).toBeVisible();
-    expect(screen.getByRole("img", { name: "kestrel" })).toHaveTextContent(/^K$/);
-    expect(screen.getByRole("img", { name: "vellum" })).toHaveTextContent(/^V$/);
+    expect(screen.getByRole("img", { name: "kestrel" })).toHaveTextContent(/^$/);
+    expect(screen.getByRole("img", { name: "Google model on vellum" })).toHaveTextContent(/^$/);
     expect(providerName("gemini")).toBe("gemini");
     expect(providerName("gemini", "  ")).toBe("gemini");
     expect(providerName("gemini", "Gemini")).toBe("Gemini");
@@ -243,6 +275,11 @@ const MARKED_PROVIDERS = {
   localai: "LocalAI",
   "mlx-lm": "MLX LM",
   jan: "Jan",
+  "amazon-bedrock": "Amazon Bedrock",
+  fal: "fal",
+  qianfan: "Baidu Qianfan",
+  koboldcpp: "KoboldCpp",
+  tabbyapi: "TabbyAPI",
 };
 const PARAMS: Record<string, number> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7, z: 0 };
 
@@ -292,6 +329,8 @@ function pathEndpoints(d: string) {
   }
   return points;
 }
+
+const ALL_MARKS: Record<string, ProviderMark> = { ...PROVIDER_MARKS, ...VENDOR_MARKS };
 
 describe("provider marks", () => {
   const single = Object.entries(PROVIDER_MARKS).filter(([, mark]) => mark.d !== undefined);
@@ -344,8 +383,14 @@ describe("provider marks", () => {
     });
   });
 
-  it("has a mark for every built-in provider, for the server software that publishes one, and for nothing else", () => {
+  it("has a mark for every built-in provider and server software, and for nothing else", () => {
     expect(Object.keys(PROVIDER_MARKS).sort()).toEqual(Object.keys(MARKED_PROVIDERS).sort());
+  });
+
+  it.each(Object.entries(VENDOR_MARKS))("draws the maker %s's mark like a provider's", async (id, mark) => {
+    render(<ProviderBadge provider={id} mark={id} name={id} />);
+    await act(() => lazyModulesSettled());
+    expect(screen.getByRole("img", { name: id }).querySelectorAll("svg path")).toHaveLength(mark.parts?.length ?? 1);
   });
 
   it("gives every drawn gradient its own id, so two marks on one page never share one", () => {
@@ -367,7 +412,7 @@ describe("provider marks", () => {
 
   it("colours every part with the text colour or one of the owner's colour tokens, and leaves no token unused", () => {
     const used = new Set<string>();
-    for (const [id, mark] of Object.entries(PROVIDER_MARKS)) {
+    for (const [id, mark] of Object.entries(ALL_MARKS)) {
       const classes = partsOf(mark).flatMap((part) => (part.gradient ? part.gradient.stops.map((stop) => stop.color) : [part.color!]));
       for (const cls of classes) {
         if (cls === "text-fg") continue;
@@ -384,7 +429,7 @@ describe("provider marks", () => {
     expect(providerMark["alibaba-violet"]).toEqual({ light: "#4f21ff", dark: "#6e72ff" });
   });
 
-  it.each(Object.entries(PROVIDER_MARKS))("keeps %s's mark on the 24px grid with at most three decimals", (_, mark) => {
+  it.each(Object.entries(ALL_MARKS))("keeps %s's mark on the 24px grid with at most three decimals", (_, mark) => {
     const parts = partsOf(mark);
     const points = parts.flatMap((part) => {
       expect(part.d).toMatch(/^M/);

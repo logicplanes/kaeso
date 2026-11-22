@@ -104,7 +104,7 @@
   "kaeso.home.readWhatsNew": "Neuigkeiten lesen",
   "kaeso.home.recentChanges": "Letzte Änderungen",
   "kaeso.home.releaseTitle": "Kaeso {version}",
-  "kaeso.home.released": "Veröffentlicht am {date}",
+  "kaeso.home.providerReleased": "{provider} · Veröffentlicht am {date}",
   "kaeso.home.running": "Läuft jetzt",
   "kaeso.home.seeAll": "Alle {count} ansehen",
   "kaeso.home.vsBefore": "ggü. den {days} Tagen davor",

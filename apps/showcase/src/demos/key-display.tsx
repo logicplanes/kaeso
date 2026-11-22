@@ -1,5 +1,5 @@
-import { KeyDisplay, ProviderBadge, ModelLabel, StatusCode, RequestTimeline } from "@logicplanes/kaeso-ui";
-import { keys, models, providerNames, providers } from "~/fixtures/kaeso";
+import { KeyDisplay, MODEL_MAKERS, PROVIDER_MARKS, ProviderBadge, ModelLabel, StatusCode, RequestTimeline } from "@logicplanes/kaeso-ui";
+import { keys, models, providerNames } from "~/fixtures/kaeso";
 import { StateCell, StateMatrix, StateRow, StateSection } from "~/lib/states";
 
 export const meta = {
@@ -9,7 +9,7 @@ export const meta = {
   entry: "kaeso",
   import: "KeyDisplay, ModelLabel, ProviderBadge, StatusCode, RequestTimeline",
   a11y: [
-    "Providers show their mark in its owner's colours for the theme; others a letter. The name is always next to it or its accessible label.",
+    "Providers show their mark in its owner's colours for the theme; a row about a model shows its maker's mark. The name is always next to it or in its accessible label.",
     "Capability icons have tooltips and are summarized in an accessible label.",
     "Status codes carry their phrase for screen readers.",
   ],
@@ -55,39 +55,52 @@ export function Status() {
   );
 }
 const BADGE_SIZES = ["sm", "md", "lg", "xl"] as const;
-const MARKED = [
-  ...providers,
-  { id: "cohere", name: "Cohere" },
-  { id: "elevenlabs", name: "ElevenLabs" },
-  { id: "vllm", name: "vLLM" },
-  { id: "sglang", name: "SGLang" },
-  { id: "ollama", name: "Ollama" },
-  { id: "lm-studio", name: "LM Studio" },
-  { id: "llama-cpp", name: "llama.cpp" },
-  { id: "localai", name: "LocalAI" },
-  { id: "tgi", name: "Text Generation Inference" },
-  { id: "lmdeploy", name: "LMDeploy" },
-  { id: "nim", name: "NVIDIA NIM" },
-  { id: "docker-model-runner", name: "Docker Model Runner" },
-  { id: "xinference", name: "Xinference" },
-  { id: "mlx-lm", name: "MLX LM" },
-  { id: "jan", name: "Jan" },
-];
+const OTHER_NAMES: Record<string, string> = {
+  cohere: "Cohere",
+  elevenlabs: "ElevenLabs",
+  fal: "fal",
+  vllm: "vLLM",
+  sglang: "SGLang",
+  ollama: "Ollama",
+  "lm-studio": "LM Studio",
+  "llama-cpp": "llama.cpp",
+  localai: "LocalAI",
+  tgi: "Text Generation Inference",
+  lmdeploy: "LMDeploy",
+  nim: "NVIDIA NIM",
+  "docker-model-runner": "Docker Model Runner",
+  koboldcpp: "KoboldCpp",
+  tabbyapi: "TabbyAPI",
+  xinference: "Xinference",
+  "mlx-lm": "MLX LM",
+  jan: "Jan",
+};
+const MARKED = Object.keys(PROVIDER_MARKS).map((id) => ({ id, name: providerNames[id] ?? OTHER_NAMES[id] ?? id }));
+const MAKERS = Object.values(MODEL_MAKERS)
+  .filter((maker) => !PROVIDER_MARKS[maker.mark])
+  .map((maker) => ({ id: maker.mark, name: maker.name }));
+
+function MarkMatrix({ title, marks }: { title: string; marks: { id: string; name: string }[] }) {
+  return (
+    <StateMatrix title={title} columns={["sm · 16", "md · 20", "lg · 28", "xl · 40"]}>
+      {marks.map((p) => (
+        <StateRow key={p.id} label={p.name}>
+          {BADGE_SIZES.map((size) => (
+            <StateCell key={size} id={`${p.id}-${size}`}>
+              <ProviderBadge provider={p.id} mark={p.id} name={p.name} size={size} />
+            </StateCell>
+          ))}
+        </StateRow>
+      ))}
+    </StateMatrix>
+  );
+}
 
 export function States() {
   return (
     <>
-      <StateMatrix title="ProviderBadge for every built-in provider, at every size" columns={["sm · 16", "md · 20", "lg · 28", "xl · 40"]}>
-        {MARKED.map((p) => (
-          <StateRow key={p.id} label={p.name}>
-            {BADGE_SIZES.map((size) => (
-              <StateCell key={size} id={`${p.id}-${size}`}>
-                <ProviderBadge provider={p.id} name={p.name} size={size} />
-              </StateCell>
-            ))}
-          </StateRow>
-        ))}
-      </StateMatrix>
+      <MarkMatrix title="ProviderBadge for every built-in provider and inference server, at every size" marks={MARKED} />
+      <MarkMatrix title="The marks of model makers, which rows about a model show, at every size" marks={MAKERS} />
       <StateSection title="Keys: every state, access in one outline style">
         <div className="flex flex-col gap-12">
           {(["active", "disabled", "expired", "archived"] as const).map((state) => (

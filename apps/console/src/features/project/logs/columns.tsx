@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons } from "@logicplanes/kaeso-ui";
+import { Badge, Icon, CopyButton, Tag, ProviderBadge, StatusCode, Text, Tooltip, col, icons, useProviderTile } from "@logicplanes/kaeso-ui";
 import { dateFormatter, formatDuration, formatNumber, formatPercent } from "@logicplanes/kaeso-ui/format";
 import type { LogView, Party } from "~/api/generated/types";
 import { dialectLabel, errorKindLabel } from "~/format/labels";
@@ -199,7 +199,9 @@ export function logColumns({
         <ModelCell
           row={r}
           message={logMessage(errors, r.error_message, r.provider, providerName)}
-          provider={withProvider && r.provider ? <ProviderMark provider={r.provider} name={providerName(r.provider)} /> : null}
+          provider={
+            withProvider && r.provider ? <ProviderMark provider={r.provider} name={providerName(r.provider)} model={r.model || r.requested_model} /> : null
+          }
         />
       ),
     ),
@@ -285,11 +287,12 @@ export function logColumns({
 
 const errorTone = (row: LogView) => (row.error_kind === "client_disconnected" ? "neutral" : row.status >= 500 ? "danger" : "warning");
 
-function ProviderMark({ provider, name }: { provider: string; name: string }) {
+function ProviderMark({ provider, name, model }: { provider: string; name: string; model: string }) {
+  const { label } = useProviderTile({ provider, name, model });
   return (
-    <Tooltip content={name}>
+    <Tooltip content={label}>
       <Text tabIndex={0} className="flex shrink-0">
-        <ProviderBadge provider={provider} name={name} size="sm" />
+        <ProviderBadge provider={provider} name={name} model={model} size="sm" />
       </Text>
     </Tooltip>
   );

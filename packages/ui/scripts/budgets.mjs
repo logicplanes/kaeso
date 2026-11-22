@@ -7,7 +7,8 @@ import { fileURLToPath } from "node:url";
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(packageRoot, "dist");
 const budgets = { "components/button.js": 4, "components/menu.js": 9, "components/data-table.js": 22 };
-const cssBudget = 28;
+// Every provider and model maker mark colour is a light and dark token with its own text-mark utility (about 25 B each).
+const cssBudget = 31;
 
 function closure(file, seen = new Set()) {
   if (seen.has(file)) return seen;
