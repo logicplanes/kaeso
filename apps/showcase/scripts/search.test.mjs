@@ -18,9 +18,10 @@ const GERMAN = {
 };
 const english = (s) => s;
 const german = (s) => GERMAN[s] ?? s;
-const EN = { part: "Part", prop: "Prop", description: "Description", example: "Example", colon: ": " };
-const DE = { part: "Teil", prop: "Prop", description: "Beschreibung", example: "Beispiel", colon: ": " };
-const ZH = { part: "子组件", prop: "属性", description: "描述", example: "示例", colon: "：" };
+const named = (pattern) => (label, name) => pattern.replace("{label}", label).replace("{name}", name);
+const EN = { part: "Part", prop: "Prop", description: "Description", example: "Example", named: named("{label}: {name}") };
+const DE = { part: "Teil", prop: "Prop", description: "Beschreibung", example: "Beispiel", named: named("{label}: {name}") };
+const ZH = { part: "子组件", prop: "属性", description: "描述", example: "示例", named: named("{label}：{name}") };
 
 test("a query the name holds needs no reason", () => {
   assert.equal(matchReason("Button", button, "butt", english, EN), null);
@@ -49,6 +50,11 @@ test("an example by its title, description or the words it shows, named in the p
 test("the place that holds most of the query wins over an earlier kind", () => {
   assert.equal(matchReason("Button", button, "loading spinner", english, EN), "Example: Loading");
   assert.equal(matchReason("Button", button, "loading", english, EN), "Prop: loading");
+});
+
+test("a word still being typed names no reason", () => {
+  assert.equal(matchReason("Button", button, "va", english, EN), null);
+  assert.equal(matchReason("Button", button, "var", english, EN), "Prop: variant");
 });
 
 test("nothing that holds the query means no reason", () => {

@@ -11,6 +11,7 @@ const dist = fileURLToPath(new URL("../dist/", import.meta.url));
 const { version } = JSON.parse(readFileSync(fileURLToPath(new URL("../../../package.json", import.meta.url)), "utf8")) as { version: string };
 // The commit the site was built from: a pre-release build has components that no release tag contains yet.
 const COMMIT = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const REBUILT = "the site names another commit than HEAD: build it again after committing";
 const LANGS = ["en", "de", "zh-CN"] as const;
 const at = (lang: (typeof LANGS)[number], path: string) => (lang === "en" ? path : path === "/" ? `/${lang}` : `/${lang}${path}`);
 
@@ -26,7 +27,7 @@ test.describe("links to the source", () => {
     test(`View source opens the component at the build's commit in ${lang}`, async ({ request }) => {
       const html = await (await request.get(at(lang, "/components/select"))).text();
       const links = [...html.matchAll(/href="(https:\/\/github\.com\/[^"]+)"/g)].map((m) => m[1]);
-      expect(links).toContain(`https://github.com/logicplanes/kaeso/tree/${COMMIT}/packages/ui/src/components/select`);
+      expect(links, REBUILT).toContain(`https://github.com/logicplanes/kaeso/tree/${COMMIT}/packages/ui/src/components/select`);
     });
   }
 
@@ -34,11 +35,11 @@ test.describe("links to the source", () => {
     const pinned = /https:\/\/(?:github\.com\/logicplanes\/kaeso\/(?:tree|blob|raw)|raw\.githubusercontent\.com\/logicplanes\/kaeso)\/([^/"\s)]+)/g;
     const refs = new Set<string>();
     for (const file of builtFiles(dist)) for (const m of readFileSync(file, "utf8").matchAll(pinned)) refs.add(m[1] ?? "");
-    expect([...refs]).toEqual([COMMIT]);
+    expect([...refs], REBUILT).toEqual([COMMIT]);
   });
 
   test("llms.txt points at the build's commit", async ({ request }) => {
-    expect(await (await request.get("/llms.txt")).text()).toContain(`- Source: https://github.com/logicplanes/kaeso/tree/${COMMIT}/packages/ui\n`);
+    expect(await (await request.get("/llms.txt")).text(), REBUILT).toContain(`- Source: https://github.com/logicplanes/kaeso/tree/${COMMIT}/packages/ui\n`);
   });
 });
 
@@ -151,24 +152,51 @@ test.describe("for search engines and link previews", () => {
 
 test.describe("search beyond names", () => {
   const cases = {
-    en: { example: ["destructive", "Example: Danger"], description: ["exactly one per view", "Description"], prop: ["pressed", "Prop: pressed"] },
-    de: { example: ["zerstörerischen", "Beispiel: Gefahr"], description: ["genau einer pro Ansicht", "Beschreibung"], prop: ["pressed", "Prop: pressed"] },
-    "zh-CN": { example: ["破坏性", "示例：危险"], description: ["墨色主按钮", "描述"], prop: ["pressed", "属性：pressed"] },
+    en: {
+      section: "Components",
+      reasons: [
+        ["destructive", "Example: Danger"],
+        ["archive project", "Example: Danger"],
+        ["exactly one per view", "Description"],
+        ["pressed", "Prop: pressed"],
+      ],
+    },
+    de: {
+      section: "Komponenten",
+      reasons: [
+        ["zerstörerischen", "Beispiel: Gefahr"],
+        ["archive project", "Beispiel: Gefahr"],
+        ["genau einer pro Ansicht", "Beschreibung"],
+        ["pressed", "Prop: pressed"],
+      ],
+    },
+    "zh-CN": {
+      section: "组件",
+      reasons: [
+        ["破坏性", "示例：危险"],
+        ["archive project", "示例：危险"],
+        ["墨色主按钮", "描述"],
+        ["pressed", "属性：pressed"],
+      ],
+    },
   } as const;
 
   for (const lang of LANGS) {
-    test(`finds a component by an example, its description and a prop, and says why, in ${lang}`, async ({ page }) => {
+    test(`finds a component by an example, the words it shows, its description and a prop, and says why, in ${lang}`, async ({ page }) => {
       const c = cases[lang];
       await open(page, at(lang, "/installation"));
       await page.keyboard.press("ControlOrMeta+k");
       const dialog = page.getByRole("dialog");
       const input = dialog.getByRole("combobox");
-      for (const [query, reason] of [c.example, c.description, c.prop]) {
+      const button = dialog.getByRole("option", { name: /^Button\W/ });
+      for (const [query, reason] of c.reasons) {
         await input.fill(query);
-        const option = dialog.getByRole("option", { name: /^Button\W/ });
-        await expect(option).toBeVisible();
-        await expect(option.getByText(reason)).toBeVisible();
+        await expect(button.getByText(reason)).toBeVisible();
       }
+      await input.fill("butt");
+      await expect(button.getByText(c.section)).toBeVisible();
+      await input.fill(`${c.section} pressed`);
+      await expect(button.getByText(c.reasons[3]![1])).toBeVisible();
       await dialog.getByRole("option", { name: /^Button\W/ }).click();
       await expect(page).toHaveURL(at(lang, "/components/button"));
     });

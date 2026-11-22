@@ -11,12 +11,8 @@ function read(file) {
   }
 }
 
-/**
- * The commit a checkout at `dir` (or a folder above it) has out, read from its `.git` without running git: the site is
- * also built where git isn't installed, such as a container's build stage with a clone of the tag copied in. Covers a
- * detached HEAD, a branch in loose or packed refs, and a linked worktree, whose `.git` is a file naming its folder.
- * Null outside a checkout.
- */
+// Read from .git without running git: the site is also built where git isn't installed, such as a container's build
+// stage with a clone of the tag copied in.
 export function commitOf(dir) {
   let at = resolve(dir);
   while (!existsSync(join(at, ".git"))) {

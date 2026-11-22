@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import ts from "typescript";
 import { translationProblem } from "./translation-problems.mjs";
 import { commitOf } from "./source-ref.mjs";
+import { buildSearchIndex } from "./search-index.mjs";
 import { pagesWithoutVariants } from "../../../packages/ui/scripts/variant-exports.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -121,44 +122,18 @@ for (const [slug, page] of Object.entries(out)) {
   };
 }
 writeFileSync(join(genDir, "doc-pages.json"), `${JSON.stringify(docPages, null, 2)}\n`);
-writeFileSync(join(genDir, "source.json"), `${JSON.stringify({ commit: commitOf(root) })}\n`);
+const commit = commitOf(root);
+// Without a commit, View source falls back to the release tag, which a pre-release build's new components aren't in.
+if (!commit) writeSync(2, "docs: no git checkout found; View source links to the release tag instead of the build's commit\n");
+writeFileSync(join(genDir, "source.json"), `${JSON.stringify({ commit })}\n`);
 
-// What the search finds a component by beyond its name, small enough for the sidebar's bundle: its parts and props, its
-// description, and its examples' titles, descriptions and the words they show (JSX text and text-like props, not code).
-const VISIBLE = new Set(["aria-label", "description", "emptyText", "hint", "label", "message", "name", "placeholder", "text", "title"]);
-function shownWords(code, skip) {
-  const words = new Set();
-  const add = (text) => {
-    for (const w of text.toLowerCase().split(/[^\p{L}\p{N}]+/u)) if (w.length > 2 && !skip.has(w)) words.add(w);
-  };
-  const visit = (node) => {
-    if (ts.isJsxText(node)) add(node.text);
-    else if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-      const owner = node.parent && (ts.isJsxExpression(node.parent) ? node.parent.parent : node.parent);
-      const name = owner && (ts.isJsxAttribute(owner) || ts.isPropertyAssignment(owner)) ? owner.name.getText().replace(/^["']|["']$/g, "") : null;
-      if (name && VISIBLE.has(name)) add(node.text);
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(ts.createSourceFile("example.tsx", code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX));
-  return [...words].join(" ");
-}
-const search = {};
-for (const [slug, page] of Object.entries(out)) {
-  // An entry can hold many pages' components (charts, playground): a page owns the ones it imports and their parts.
-  const names = (page.import ?? page.title.replace(/\s+/g, "")).split(",").map((n) => n.trim());
-  const own = (registryJson.components.find((c) => c.entry === (page.entry ?? slug))?.components ?? []).filter((c) =>
-    names.some((n) => c.name === n || c.name.startsWith(`${n}.`)),
+const { index: search, missing: unindexed } = buildSearchIndex(Object.values(out), registryJson);
+if (unindexed.length) {
+  writeSync(
+    2,
+    `docs: ${unindexed.length} components no page's search holds; import them on a page or name a page after their entry:\n  ${unindexed.join("\n  ")}\n`,
   );
-  search[slug] = {
-    parts: own.map((c) => c.name).filter((n) => n !== names[0]),
-    props: [...new Set(own.flatMap((c) => c.props.filter((p) => !HIDDEN_PROPS.has(p.name) && !p.deprecated).map((p) => p.name)))],
-    description: norm(page.description ?? ""),
-    examples: page.examples.map((ex) => {
-      const skip = new Set(`${ex.title} ${ex.description ?? ""}`.toLowerCase().split(/[^\p{L}\p{N}]+/u));
-      return { title: norm(ex.title), ...(ex.description ? { description: norm(ex.description) } : {}), text: shownWords(ex.code, skip) };
-    }),
-  };
+  process.exit(1);
 }
 writeFileSync(join(genDir, "search.json"), `${JSON.stringify(search)}\n`);
 

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { commitOf } from "./source-ref.mjs";
@@ -46,6 +46,26 @@ test("a linked worktree, whose .git is a file", (t) => {
   t.after(() => rmSync(other, { recursive: true, force: true }));
   r.git("worktree", "add", "-q", "-b", "task", other, "HEAD~1");
   assert.equal(commitOf(other), r.git("rev-parse", "HEAD~1"));
+});
+
+test("a .git file naming its folder by a relative path, as a submodule has", (t) => {
+  const r = repo(t);
+  const outer = mkdtempSync(join(tmpdir(), "source-ref-sub-"));
+  t.after(() => rmSync(outer, { recursive: true, force: true }));
+  mkdirSync(join(outer, "modules"));
+  r.git("clone", "-q", "--separate-git-dir", join(outer, "modules", "kaeso"), r.dir, join(outer, "kaeso"));
+  writeFileSync(join(outer, "kaeso", ".git"), "gitdir: ../modules/kaeso\n");
+  assert.equal(commitOf(join(outer, "kaeso")), r.head());
+});
+
+test("a shallow clone of an annotated tag, as a release build makes", (t) => {
+  const r = repo(t);
+  r.git("commit", "-q", "--allow-empty", "-m", "two");
+  r.git("tag", "-a", "-m", "Release", "v1.2.3");
+  const into = mkdtempSync(join(tmpdir(), "source-ref-tag-"));
+  t.after(() => rmSync(into, { recursive: true, force: true }));
+  r.git("clone", "-q", "--depth", "1", "--branch", "v1.2.3", `file://${r.dir}`, join(into, "src"));
+  assert.equal(commitOf(join(into, "src", "apps", "showcase")), r.head());
 });
 
 test("nothing outside a checkout", (t) => {
