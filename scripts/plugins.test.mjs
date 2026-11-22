@@ -81,25 +81,21 @@ test("the Claude Code plugin has its icon, its links and no Cursor files", () =>
   assert.equal(existsSync(join(root, CURSOR, ".claude-plugin")), false);
 });
 
-test("the Claude Code plugin asks for the instance's address in Claude Code, and its skill connects every other Claude", () => {
+// The plugin directory refuses an MCP server whose url it can't read as one fixed public address, and every install has
+// its own, so the plugin declares no server and no settings: its skill connects the install wherever Claude runs.
+test("the Claude Code plugin declares no MCP server, and its skill connects the instance in every Claude", () => {
   const claude = json(`${CLAUDE}/.claude-plugin/plugin.json`);
   assert.equal(claude.mcpServers, undefined);
+  assert.equal(claude.userConfig, undefined);
+  assert.equal(existsSync(join(root, CLAUDE, ".mcp.json")), false);
   assert.equal(existsSync(join(root, CLAUDE, "mcp.json")), false);
-  const servers = Object.values(json(`${CLAUDE}/.mcp.json`).mcpServers);
-  assert.equal(servers.length, 1);
-  for (const server of servers) {
-    const key = /^\$\{user_config\.(\w+)\}$/.exec(server.url)?.[1];
-    assert.ok(key, "the server's url is one user_config reference, the only variable the plugin directory accepts there");
-    assert.equal(claude.userConfig[key].type, "string");
-    assert.notEqual(claude.userConfig[key].required, true, "Cowork and claude.ai can't prompt for it");
-  }
   const { description, body } = skill(`${CLAUDE}/skills/kaeso/SKILL.md`);
   assert.match(description, /connect/i);
   assert.equal(/^## .*$/m.exec(body)?.[0], "## Connecting Kaeso", "the skill connects the server before anything else");
   const section = CONNECT.exec(body)?.[0] ?? "";
   assert.match(section, /claude mcp add --transport http --scope user kaeso https:\/\/<their install>\/mcp/);
   assert.match(section, /`\/mcp`/);
-  assert.match(section, /\/plugin configure kaeso@kaeso/);
+  assert.doesNotMatch(section, /\/plugin configure/);
   assert.match(section, /https:\/\/claude\.ai\/customize\/connectors\?modal=add-custom-connector&connectorName=Kaeso&connectorUrl=/);
 });
 
@@ -180,7 +176,7 @@ test("every file of the Claude Code plugin is a type the plugin directory accept
     assert.equal(bytes.includes(0), false, `${file} has a NUL byte`);
     if (ext === ".json")
       for (const url of urls(JSON.parse(bytes.toString("utf8")))) {
-        assert.equal(/^\$\{user_config\.\w+\}$/.test(url) || !url.includes("${"), true, `${file}: ${url} has a variable`);
+        assert.equal(url.includes("${"), false, `${file}: ${url} has a variable`);
         assert.match(url, /^[\x21-\x7e]+$/, `${file}: ${url} is not plain ASCII`);
       }
   }

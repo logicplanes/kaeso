@@ -26,13 +26,13 @@ Each client below signs in with OAuth on its own. It finds Kaeso's sign-in from 
 
 The command above adds the server to the current project. Add `--scope user` to make it available in every project. `/mcp` signs in, and signs in again after you revoke the agent.
 
-The Kaeso plugin adds Kaeso's skill, which teaches the agent the server's tools. Claude Code asks for your install's address, such as `https://kaeso.example.com/mcp`, when you install it, and connects the server for you:
+The Kaeso plugin adds Kaeso's skill, which teaches the agent the server's tools and, if the server isn't connected yet, asks for your install's address and connects it:
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso
 ```
 
-To change the address later, run `/plugin configure kaeso@kaeso`. To get each release of the plugin, turn on auto-update for the `kaeso` marketplace under `/plugin` › **Marketplaces**.
+To get each release of the plugin, turn on auto-update for the `kaeso` marketplace under `/plugin` › **Marketplaces**.
 
 ### Claude on the web, desktop and mobile, and Cowork
 
