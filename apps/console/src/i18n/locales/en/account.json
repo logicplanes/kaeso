@@ -50,7 +50,7 @@
   "account.codesStored": "I stored these codes",
   "account.confirmCodesStored": "Tick “I stored these codes” first",
   "account.connectClaudeApps": "For claude.ai, the desktop and mobile apps and Cowork: this adds Kaeso as a custom connector.",
-  "account.connectClaudePlugin": "Or install the plugin, which adds Kaeso's skill, and enter {url} when it asks for the address.",
+  "account.connectClaudePlugin": "Or install the plugin, which adds Kaeso's skill: it teaches your agent the tools and can connect the server too.",
   "account.connectClaudeServer": "In Claude Code, connect the server, then run /mcp to sign in.",
   "account.connectClient": "Add to {client}",
   "account.connectCursorHint": "Or install Kaeso from the Cursor Marketplace and enter {origin} as KAESO_URL.",

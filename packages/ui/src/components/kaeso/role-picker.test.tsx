@@ -68,3 +68,11 @@ describe("EffectiveAccess", () => {
     expect(screen.getByText("Keys").parentElement).toHaveClass("min-h-40", "justify-center", "@auth:content-center");
   });
 });
+
+describe("RolePicker figures", () => {
+  it("sets a count in tabular figures and a hint with a hyphenated word as written", () => {
+    render(<RolePicker aria-label="Role" roles={[...roles, { value: "ops", label: "Ops", custom: true, hint: "Read-only" }]} />);
+    expect(screen.getByText("6 rights")).toHaveClass("tabular");
+    expect(screen.getByText("Read-only")).not.toHaveClass("tabular");
+  });
+});

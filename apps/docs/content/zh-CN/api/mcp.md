@@ -26,13 +26,13 @@ claude mcp add --transport http kaeso https://kaeso.example.com/mcp
 
 上面的命令会把服务器添加到当前项目。加上 `--scope user` 后，它在每个项目中都可用。`/mcp` 用于登录，撤销智能体之后也用它重新登录。
 
-Kaeso 插件会添加 Kaeso 的技能，它教智能体使用服务器的工具。安装时 Claude Code 会询问您实例的地址，例如 `https://kaeso.example.com/mcp`，并为您连接服务器：
+Kaeso 插件会添加 Kaeso 的技能。它教智能体使用服务器的工具；如果服务器尚未连接，它会询问您实例的地址并完成连接：
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso
 ```
 
-之后要更改地址，请运行 `/plugin configure kaeso@kaeso`。要获得插件的每个新版本，请在 `/plugin` › **Marketplaces** 中为 `kaeso` 市场开启自动更新。
+要获得插件的每个新版本，请在 `/plugin` › **Marketplaces** 中为 `kaeso` 市场开启自动更新。
 
 ### 网页版、桌面版和移动版 Claude 以及 Cowork
 

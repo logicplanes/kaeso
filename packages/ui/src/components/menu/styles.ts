@@ -13,4 +13,4 @@ export const MENU_LABEL = "flex h-28 items-center px-10 text-caption font-medium
 export const MENU_SEPARATOR = "-mx-6 my-6 h-1 shrink-0 bg-line";
 
 export const MENU_HINT =
-  "ml-auto flex shrink-0 items-center gap-4 pl-16 text-caption font-medium text-fg-tertiary tabular group-data-highlighted/item:text-fg-secondary forced-colors:text-current";
+  "ml-auto flex shrink-0 items-center gap-4 pl-16 text-caption font-medium text-fg-tertiary group-data-highlighted/item:text-fg-secondary forced-colors:text-current";

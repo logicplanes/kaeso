@@ -20,7 +20,7 @@
   "account.changePassword": "Passwort ändern",
   "account.codesStored": "Ich habe diese Codes sicher aufbewahrt",
   "account.connectClaudeApps": "Für claude.ai, die Desktop- und Mobil-Apps und Cowork: Das fügt Kaeso als benutzerdefinierten Connector hinzu.",
-  "account.connectClaudePlugin": "Oder installieren Sie das Plugin, das den Skill von Kaeso hinzufügt, und geben Sie {url} ein, wenn es nach der Adresse fragt.",
+  "account.connectClaudePlugin": "Oder installieren Sie das Plugin, das den Skill von Kaeso hinzufügt: Er bringt Ihrem Agenten die Tools bei und kann auch den Server verbinden.",
   "account.connectClaudeServer": "Verbinden Sie in Claude Code den Server und melden Sie sich dann mit /mcp an.",
   "account.connectClient": "Zu {client} hinzufügen",
   "account.connectCursorHint": "Oder installieren Sie Kaeso aus dem Cursor Marketplace und geben Sie {origin} als KAESO_URL ein.",

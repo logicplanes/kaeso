@@ -15,6 +15,7 @@ import {
 } from "react";
 import { defaultRangeExtractor, observeElementRect, useVirtualizer, type Range, type Virtualizer } from "@tanstack/react-virtual";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { icons } from "../../icons/vocabulary.js";
 import { Icon } from "../icon/icon.js";
 import { Highlight } from "../combobox/combobox.js";
@@ -413,7 +414,7 @@ export const CommandList = forwardRef<HTMLInputElement, CommandListProps>(functi
             <Highlight text={item.label} query={query} />
           </span>
         )}
-        {item.meta !== undefined && <span className={cn(MENU_HINT, "pl-8 font-regular")}>{item.meta}</span>}
+        {item.meta !== undefined && <span className={cn(MENU_HINT, "pl-8 font-regular", figures(item.meta))}>{item.meta}</span>}
         {checks && (
           <span aria-hidden className={cn("flex size-16 shrink-0 items-center justify-center text-fg", !isSelected && "opacity-0")}>
             <Icon icon={icons.check} size="sm" />

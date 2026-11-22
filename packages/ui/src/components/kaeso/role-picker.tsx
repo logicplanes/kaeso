@@ -1,6 +1,7 @@
 import { forwardRef, Fragment, useId } from "react";
 import { RadioGroup as BaseRadioGroup } from "@base-ui/react/radio-group";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { RadioCircle } from "../radio/radio.js";
 import { Select } from "../select/select.js";
 import { useUiText } from "../../i18n/context.js";
@@ -116,7 +117,9 @@ export const RolePicker = forwardRef<HTMLDivElement, RolePickerProps>(function R
                           <span id={`${id}-name`} className={cn("min-w-0 wrap-break-word text-body-lg font-medium", off ? "text-fg-disabled" : "text-fg")}>
                             {r.label}
                           </span>
-                          {r.hint && <span className={cn("ml-auto shrink-0 text-small tabular", off ? "text-fg-disabled" : "text-fg-tertiary")}>{r.hint}</span>}
+                          {r.hint && (
+                            <span className={cn("ml-auto shrink-0 text-small", figures(r.hint), off ? "text-fg-disabled" : "text-fg-tertiary")}>{r.hint}</span>
+                          )}
                         </span>
                         {r.description && (
                           <span id={`${id}-desc`} className={cn("text-small text-pretty", off ? "text-fg-disabled" : "text-fg-secondary")}>

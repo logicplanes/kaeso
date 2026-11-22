@@ -9,10 +9,55 @@ Kaeso is a self-hosted AI gateway. The `kaeso` MCP server gives you one tool per
 
 ## Connecting Kaeso
 
-If the `kaeso` MCP tools aren't available, connect the server first. You need the address of the user's Kaeso install, such as `https://kaeso.example.com`; ask for it if you don't have it.
+If the `kaeso` MCP tools aren't available, help the user connect their Kaeso install first. Most people doing this aren't developers, so keep it easy:
 
-- In Claude Code, the plugin asks for the server's address when it is installed, and `/plugin configure kaeso@kaeso` changes it. Otherwise run `claude mcp add --transport http --scope user kaeso https://<their install>/mcp`. Then tell them to run `/mcp`, choose `kaeso` and sign in through their browser, where they choose what you may do. If `/mcp` doesn't list `kaeso` yet, they restart Claude Code first.
-- In Claude on the web, in the desktop and mobile apps and in Cowork, you can't run commands. Give them the link `https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kaeso&connectorUrl=` followed by their install's address and `/mcp`, percent-encoded, so `https://kaeso.example.com/mcp` becomes `https%3A%2F%2Fkaeso.example.com%2Fmcp`. It opens **Add custom connector** with the values filled in. Or they open **Customize** › **Connectors**, choose **Add custom connector** and enter the name `Kaeso` and that address. After **Connect**, they sign in through their browser; a new conversation then has the tools.
+- Give one step at a time, in plain words, and wait until they say it worked before the next one.
+- Name buttons exactly as they appear on screen, in bold, such as **Add custom connector**.
+- Don't mention MCP, OAuth or other jargon unless they ask. Call it "connecting Claude to your Kaeso".
+- When something goes wrong, ask what they see on screen and use **When something goes wrong** below.
+
+### 1. Find the address
+
+Every Kaeso install has its own address, the one the user opens to sign in to Kaeso, such as `https://kaeso.example.com`. Ask for it if you don't have it. Claude connects to that address followed by `/mcp`, such as `https://kaeso.example.com/mcp`.
+
+The easiest way is often the Kaeso console itself: in Kaeso, they open their account menu, then **Account** › **Agents**, where the address is shown with an **Add to Claude** button that does steps 2 and 3 for them.
+
+For claude.ai, the Claude apps and Cowork, Claude's servers connect to the install over the internet. The address must start with `https://` and open from any network. An address like `http://localhost:…`, `192.168.…`, or one that only works on an office network or VPN, can't be reached from there; Claude Code on their own computer can still use it. If that's their case, tell them so kindly and suggest Claude Code, or asking whoever runs their Kaeso to make it reachable over HTTPS.
+
+### 2. Add Kaeso to Claude
+
+Pick the steps for where they use Claude. Ask if you aren't sure.
+
+**Claude on the web (claude.ai), the desktop and mobile apps, and Cowork.** You can't run commands here, so you guide them. A connector added once works in all of these, as long as they use the same Claude account.
+
+1. Give them this link, with their address and `/mcp` percent-encoded after `connectorUrl=`, so `https://kaeso.example.com/mcp` becomes `https%3A%2F%2Fkaeso.example.com%2Fmcp`:
+   `https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kaeso&connectorUrl=https%3A%2F%2Fkaeso.example.com%2Fmcp`
+   Opening it in a browser where they're signed in to Claude shows **Add custom connector** with the name and address already filled in. Write the link out with their real address; don't leave the example in.
+2. If the link doesn't open the form, they do it by hand: open **Customize** › **Connectors** (in the menu at their name, or the settings), choose **Add custom connector**, enter `Kaeso` as the name and their address with `/mcp` as the URL. They leave **Advanced settings** empty; Kaeso doesn't need a client ID or secret.
+3. They choose **Add**. If they don't see **Add custom connector** at all, their plan or their organization may not allow custom connectors: on a Team or Enterprise plan, an owner adds Kaeso once under the organization's connector settings, and then everyone connects it for themselves.
+
+**Claude Code.** Run `claude mcp add --transport http --scope user kaeso https://<their install>/mcp` with their address. `--scope user` makes it available in every project. If you can't run commands, give them the command to paste into their terminal.
+
+### 3. Sign in and choose what Claude may do
+
+- In claude.ai, the apps and Cowork, they choose **Connect** next to Kaeso. In Claude Code, they run `/mcp`, choose `kaeso` and **Authenticate**. If `/mcp` doesn't list `kaeso` yet, they restart Claude Code first.
+- Their browser opens their Kaeso sign-in. After signing in, Kaeso asks what Claude may do: on the instance, in each organization and project, and on their account. Tell them they can start with only what they need and grant more later; Kaeso shows a link whenever Claude needs a right it doesn't have yet.
+- They choose to allow it, and the browser returns to Claude.
+
+### 4. Check that it works
+
+- In claude.ai and the apps, they start a **new conversation**: tools load when a conversation starts. If Kaeso's tools don't show up, they open the tools menu below the message box (the **+** or the sliders icon) and make sure **Kaeso** is turned on.
+- In Claude Code, `/mcp` shows `kaeso` as connected.
+- Then call `get_me_memberships` and tell them which organizations you can see. That proves the connection end to end.
+
+### When something goes wrong
+
+- **"Couldn't connect" or "couldn't reach the server":** the address must end in `/mcp`, start with `https://` and open from any network (see step 1). Ask them to open their address without `/mcp` in a browser; it should show their Kaeso sign-in.
+- **Nothing happens when they choose Connect:** their browser may have blocked the sign-in window; allow pop-ups for claude.ai and try again.
+- **Signed in, but no tools:** start a new conversation, and check that **Kaeso** is turned on in the tools menu.
+- **A tool says `insufficient_rights`:** Kaeso includes an `approve_url`. Give it to them; they open it, approve, and you try again.
+- **It worked before and stopped:** someone may have disconnected Claude in Kaeso under **Account** › **Agents**. They choose **Connect** again in Claude's connectors, or run `/mcp` again in Claude Code.
+- **They want to remove it:** in Claude, **Customize** › **Connectors**, then Kaeso's menu › **Remove**. In Claude Code, `claude mcp remove kaeso --scope user`. In Kaeso, **Account** › **Agents** shows every connected agent, and each can be revoked there.
 
 ## Calling the tools
 

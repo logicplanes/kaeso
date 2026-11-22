@@ -204,3 +204,12 @@ describe("useModelGroups", () => {
     expect(container.querySelector("[aria-label=OpenAI]")).toBeInTheDocument();
   });
 });
+
+describe("ModelPicker figures", () => {
+  it("sets a note naming a model as written", async () => {
+    const user = userEvent.setup();
+    render(<ModelPicker options={[{ value: "gpt-5", provider: "openai", name: "GPT-5", note: "Replaces gpt-4.1-mini" }]} providers={providers} />);
+    await user.click(screen.getByRole("button", { description: "Model" }));
+    expect(await screen.findByText("Replaces gpt-4.1-mini")).not.toHaveClass("tabular");
+  });
+});

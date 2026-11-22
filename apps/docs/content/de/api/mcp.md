@@ -26,13 +26,13 @@ Jeder Client unten meldet sich selbst per OAuth an. Er findet die Anmeldung von 
 
 Der Befehl oben fügt den Server dem aktuellen Projekt hinzu. Mit `--scope user` steht er in jedem Projekt bereit. `/mcp` meldet an und meldet erneut an, nachdem Sie den Agenten widerrufen haben.
 
-Das Kaeso-Plugin fügt den Skill von Kaeso hinzu, der dem Agenten die Tools des Servers beibringt. Claude Code fragt bei der Installation nach der Adresse Ihrer Installation, etwa `https://kaeso.example.com/mcp`, und verbindet den Server für Sie:
+Das Kaeso-Plugin fügt den Skill von Kaeso hinzu. Er bringt dem Agenten die Tools des Servers bei und fragt, wenn der Server noch nicht verbunden ist, nach der Adresse Ihrer Installation und verbindet ihn:
 
 ```text
 /plugin install kaeso --marketplace logicplanes/kaeso
 ```
 
-Um die Adresse später zu ändern, führen Sie `/plugin configure kaeso@kaeso` aus. Damit Sie jede Version des Plugins erhalten, schalten Sie unter `/plugin` › **Marketplaces** die automatische Aktualisierung für den Marketplace `kaeso` ein.
+Damit Sie jede Version des Plugins erhalten, schalten Sie unter `/plugin` › **Marketplaces** die automatische Aktualisierung für den Marketplace `kaeso` ein.
 
 ### Claude im Web, auf dem Desktop und mobil sowie Cowork
 

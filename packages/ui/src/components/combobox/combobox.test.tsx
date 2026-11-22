@@ -146,3 +146,21 @@ describe("Highlight", () => {
     expect(ref.current).not.toHaveAttribute("class");
   });
 });
+
+describe("Combobox figures", () => {
+  it("sets an option's note naming a model as written, and a number in tabular figures", async () => {
+    const user = userEvent.setup();
+    render(
+      <Combobox
+        aria-label="Model"
+        options={[
+          { value: "a", label: "Smart", meta: "gpt-5-mini" },
+          { value: "b", label: "Cheap", meta: "12" },
+        ]}
+      />,
+    );
+    await user.click(screen.getByRole("combobox", { name: "Model" }));
+    expect(await screen.findByText("gpt-5-mini")).not.toHaveClass("tabular");
+    expect(screen.getByText("12")).toHaveClass("tabular");
+  });
+});

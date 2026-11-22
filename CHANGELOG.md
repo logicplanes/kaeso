@@ -4,6 +4,10 @@ All notable changes to Kaeso are documented in this file. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- The Claude plugin declares no MCP server again and asks for no address, because the plugin directory refuses a server whose address is a setting; its skill connects your install in Claude Code with `claude mcp add`, and everywhere else with the custom connector link, and the console and documentation no longer mention `/plugin configure`.
+
 ## [0.7.0] - 2026-11-21
 
 Kaeso 0.7.0 adds decision models in three API formats, a rerank endpoint, guardrails, webhooks, SCIM 2.0 provisioning, key pools, batches and a Helm chart, new built-in providers from Amazon Bedrock and Azure to TypeSafe, and brings the console, documentation and UI library into the Kaeso Vanguard design. Updates from the console or the installer now check the install's settings before switching anything and stop before changing files when the new gateway would refuse one. Three settings that 0.6.0 accepted are refused at startup, so check `kpmr.interval`, `mcp_servers.sync_interval` and `smtp.user` before you upgrade.

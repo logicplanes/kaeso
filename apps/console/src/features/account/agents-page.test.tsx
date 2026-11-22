@@ -67,7 +67,9 @@ describe("the agents tab", () => {
     expect(connector.searchParams.get("connectorUrl")).toBe(url);
     expect(within(dialog).getByText("In Claude Code, connect the server, then run /mcp to sign in.")).toBeInTheDocument();
     await waitFor(() => expect(dialog).toHaveTextContent(`claude mcp add --transport http --scope user kaeso ${url}`));
-    expect(within(dialog).getByText(`Or install the plugin, which adds Kaeso's skill, and enter ${url} when it asks for the address.`)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Or install the plugin, which adds Kaeso's skill: it teaches your agent the tools and can connect the server too."),
+    ).toBeInTheDocument();
     await waitFor(() => expect(dialog).toHaveTextContent("/plugin install kaeso --marketplace logicplanes/kaeso"));
     expect(within(dialog).queryByRole("tab")).toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "Finish" }));

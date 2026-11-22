@@ -1,6 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import { Collapsible as BaseCollapsible } from "@base-ui/react/collapsible";
 import { cn } from "../../utils/cn.js";
+import { figures } from "../../utils/figures.js";
 import { DISCLOSURE_TRIGGER, DisclosureChevron } from "./disclosure.js";
 
 export const KAESO_COLLAPSIBLE_VARIANTS = {
@@ -18,7 +19,7 @@ function DisclosureText({ title, hint }: { title: ReactNode; hint: ReactNode | u
   return (
     <span className="flex min-w-0 flex-1 items-baseline gap-8">
       <span className="min-w-0 flex-1">{title}</span>
-      {hint && <span className="shrink-0 text-small font-regular whitespace-nowrap text-fg-secondary tabular-nums">{hint}</span>}
+      {hint && <span className={cn("shrink-0 text-small font-regular whitespace-nowrap text-fg-secondary", figures(hint))}>{hint}</span>}
     </span>
   );
 }

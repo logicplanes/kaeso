@@ -23,3 +23,18 @@ describe("Badge", () => {
     expect(screen.getByText("Owner").closest("span.rounded-code")).toHaveClass("forced-colors:outline");
   });
 });
+
+describe("Badge figures", () => {
+  it("sets a version or a hyphenated word as written, and a count in tabular figures", () => {
+    render(
+      <>
+        <Badge>40.4.3-rc.1 available</Badge>
+        <Badge>Pre-release</Badge>
+        <Badge>{"+3 projects"}</Badge>
+      </>,
+    );
+    expect(screen.getByText("40.4.3-rc.1 available")).not.toHaveClass("tabular");
+    expect(screen.getByText("Pre-release")).not.toHaveClass("tabular");
+    expect(screen.getByText("+3 projects")).toHaveClass("tabular");
+  });
+});

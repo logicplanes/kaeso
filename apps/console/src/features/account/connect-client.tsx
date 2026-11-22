@@ -33,9 +33,7 @@ function Steps({ client }: { client: ClientMark }) {
         </Text>
         <CodeBlock copy lang="bash" code={`claude mcp add --transport http --scope user kaeso ${mcpUrl()}`} />
         <Text variant="small" tone="secondary">
-          {t("account.connectClaudePlugin", "Or install the plugin, which adds Kaeso's skill, and enter {url} when it asks for the address.", {
-            url: mcpUrl(),
-          })}
+          {t("account.connectClaudePlugin", "Or install the plugin, which adds Kaeso's skill: it teaches your agent the tools and can connect the server too.")}
         </Text>
         <CodeBlock copy lang="text" code="/plugin install kaeso --marketplace logicplanes/kaeso" />
       </div>
