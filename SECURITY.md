@@ -2,7 +2,13 @@
 
 ## Supported versions
 
-Security fixes are made for the latest release only. Please make sure the problem still occurs with the latest release before reporting it.
+| Version                                                                    | Security fixes                      |
+| -------------------------------------------------------------------------- | ----------------------------------- |
+| The [latest release](https://github.com/logicplanes/kaeso/releases/latest) | Yes                                 |
+| A pre-release of the next version, such as an `-rc`                        | Yes, until that version is released |
+| Every older release                                                        | No; update to the latest release    |
+
+Fixes ship in a new release, usually a patch release of the latest version, and the advisory names the release that fixes it. The console's **Updates** page and the updater show and install new releases ([upgrades](https://docs.kaeso.app/self-hosting/upgrades)). Please make sure the problem still occurs with the latest release, or on `dev`, before reporting it.
 
 ## Reporting a vulnerability
 
