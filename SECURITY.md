@@ -8,7 +8,7 @@
 | A pre-release of the next version, such as an `-rc`                        | Yes, until that version is released |
 | Every older release                                                        | No; update to the latest release    |
 
-Fixes ship in a new release, usually a patch release of the latest version, and the advisory names the release that fixes it. The console's **Updates** page and the updater show and install new releases ([upgrades](https://docs.kaeso.app/self-hosting/upgrades)). Please make sure the problem still occurs with the latest release, or on `dev`, before reporting it.
+Fixes ship in a new release: a patch release of the latest version, or, for a pre-release, the next pre-release or the release itself. The advisory names the release that fixes it. The console's **Updates** page and the updater show and install new releases ([upgrades](https://docs.kaeso.app/self-hosting/upgrades)). Please make sure the problem still occurs with the latest release, or on `dev`, before reporting it.
 
 ## Reporting a vulnerability
 
@@ -40,6 +40,6 @@ Kaeso holds provider keys, API keys, sessions and request logs, and it decodes u
 - server-side request forgery through OIDC discovery or provider base URLs;
 - input that makes the gateway or a KPP codec panic, use unbounded memory or time, carry data from one format to another against KPP's rules, or leak data from one request into another;
 - cross-site scripting or markup injection through anything the console, the UI library or the documentation site renders, such as Markdown, code blocks, model output or a page's content;
-- weaknesses of the container images, the Compose package or the console's Caddy configuration.
+- weaknesses of the container images, the Compose package, the Helm chart or the console's Caddy configuration.
 
 Never put keys, tokens or personal data in a report, an issue, a fixture or a test. Use placeholders such as `sk-kso-…`, `kaeso.example.com` and `owner@example.com`.

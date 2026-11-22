@@ -29,6 +29,6 @@ annotations:
     - name: Documentation
       url: https://docs.kaeso.app/self-hosting/platforms/kubernetes
     - name: Source
-      url: https://github.com/logicplanes/kaeso/tree/dev/deploy/helm/kaeso
+      url: https://github.com/logicplanes/kaeso/tree/prod/deploy/helm/kaeso
     - name: Changelog
       url: https://github.com/logicplanes/kaeso/blob/prod/CHANGELOG.md
