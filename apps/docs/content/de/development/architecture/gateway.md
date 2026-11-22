@@ -109,7 +109,7 @@ Ein eigener Anbieter spricht den reinen Dialekt, `ChatProfile::OPENAI` für Chat
 
 ## Modelldaten
 
-`crates/kaeso-core/data/kpmr.json` ist ein Snapshot des [KPMR](../../concepts/kpmr.md)-Katalogs im Format 1 für die Anbieter, die Kaeso aufruft, damit eine frische Installation ohne Netzzugang funktioniert. Seine `provider_ids` nennen jeden Anbieter, den KPMR kennt und dessen ID ein eigener Anbieter nicht nehmen darf. Die `README.md` des Ordners hält Revision, Erstellungszeitpunkt bei KPMR und SHA-256 des Snapshots fest.
+`crates/kaeso-core/data/kpmr.json` ist ein Snapshot des [KPMR](../../kpmr/index.md)-Katalogs im Format 1 für die Anbieter, die Kaeso aufruft, damit eine frische Installation ohne Netzzugang funktioniert. Seine `provider_ids` nennen jeden Anbieter, den KPMR kennt und dessen ID ein eigener Anbieter nicht nehmen darf. Die `README.md` des Ordners hält Revision, Erstellungszeitpunkt bei KPMR und SHA-256 des Snapshots fest.
 
 `kaeso_core::kpmr` liest einen Katalog: Es prüft das Format, behält die Anbieter, die Kaeso aufruft, überspringt ein Modell, das sich nicht lesen lässt oder in einer anderen Einheit bepreist ist, und prüft die Ed25519-Signatur gegen die vertrauenswürdigen Schlüssel. `Fields::from_kpmr` macht aus einem Modell Katalogfelder. Neben Namen, Preisen, Limits und Fähigkeiten liefert KPMR diese:
 

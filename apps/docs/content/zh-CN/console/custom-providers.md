@@ -17,7 +17,7 @@ order: 4
 
 如果没有**添加服务商密钥**权限，Kaeso 只用该密钥检测设置；拥有该权限的人可以在**服务商密钥**中添加它（[服务商密钥](provider-keys.md)）。最后将该服务商的模型添加到项目中（[添加其模型](#添加其模型)）。
 
-**ID** 以服务器的主机名为起点；对于 `localhost`、`10.0.0.5` 或 `host.docker.internal` 这类地址，则以其软件名称为起点，并在您修改之前跟随名称生成。模型名称以它开头，例如 `research-vllm/llama-3.3-70b`，且它不可更改。ID 由小写字母和数字组成，中间用单个连字符分隔，最多 40 个字符。它不能是内置服务商的 ID，也不能是 [KPMR](../concepts/kpmr.md) 中列出的服务商的 ID，因为 Kaeso 将来可能内置该服务商。每个组织的 ID 相互独立，因此两个组织都可以有 `research-vllm`。
+**ID** 以服务器的主机名为起点；对于 `localhost`、`10.0.0.5` 或 `host.docker.internal` 这类地址，则以其软件名称为起点，并在您修改之前跟随名称生成。模型名称以它开头，例如 `research-vllm/llama-3.3-70b`，且它不可更改。ID 由小写字母和数字组成，中间用单个连字符分隔，最多 40 个字符。它不能是内置服务商的 ID，也不能是 [KPMR](../kpmr/index.md) 中列出的服务商的 ID，因为 Kaeso 将来可能内置该服务商。每个组织的 ID 相互独立，因此两个组织都可以有 `research-vllm`。
 
 与所有服务商一样，Kaeso 会在基础 URL 后加上格式的路径，例如 `/v1/chat/completions`。因此它会去掉末尾的 `/v1` 或粘贴进来的端点，例如 `/v1/chat/completions`，并为没有协议的地址补上 `https://`。`/v1` 之前的路径会保留：`https://proxy.example.com/llm/v1` 接收的请求地址为 `https://proxy.example.com/llm/v1/chat/completions`。API 不在 `/v1` 之下的服务器暂时无法添加；只有[决策](#决策)可以使用自己的路径。
 

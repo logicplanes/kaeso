@@ -71,7 +71,7 @@ services:
 | `kaeso_otel_spans_total{outcome}` | 发给[追踪 collector](#追踪) 的 span：`exported`，导出失败时为 `failed`，因缓冲区已满、collector 拒绝或关闭而丢失的为 `dropped`。`dropped` 增长时：检查 collector 和 `KAESO_OTEL_ENDPOINT` |
 | `kaeso_usage_rows_dropped_total` | 任何增长：PostgreSQL 永久拒绝了用量记录，日志行 `a usage row cannot be recorded` 会说明原因 |
 | `kaeso_valkey_failures_total{operation}`、`kaeso_limits_fail_open_total{reason}` | Valkey 出现问题。在此期间，硬性预算以 503 拒绝请求，其他限额则不经检查直接放行 |
-| `kaeso_job_runs_total{job, outcome}` | 后台任务的 `outcome="failed"`。`job="kpmr_sync"` 是与 [KPMR](../concepts/kpmr.md) 的同步 |
+| `kaeso_job_runs_total{job, outcome}` | 后台任务的 `outcome="failed"`。`job="kpmr_sync"` 是与 [KPMR](../kpmr/index.md) 的同步 |
 | `kaeso_kpmr_fetched_timestamp_seconds` | KPMR 发布当前所用模型数据的时间，或内置快照的生成时间，与**实例** › **系统**中显示的相同。只有 KPMR 发布新数据时它才会变化，因此主要在关闭 `kpmr.sync` 时需要关注其时长 |
 | `kaeso_kpmr_last_attempt_timestamp_seconds`、`kaeso_kpmr_last_attempt_failed` | 网关上次尝试获取 KPMR 数据的时间；该次尝试失败时为 1，成功后为 0。同步未到期的运行不算尝试。如需得知同步失败，可在 `kaeso_kpmr_last_attempt_failed == 1` 持续数小时时告警；有多个网关时请对它们取 `max()`。`kaeso kpmr sync` 会立即重试，并打印失败原因 |
 | `kaeso_auth_failures_total{method, reason}` | 登录或密钥失败突增。`reason="throttled"` 统计被 [API 密钥限流](configuration.md#api-密钥限流)拒绝的请求 |

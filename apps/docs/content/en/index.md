@@ -52,7 +52,7 @@ This documentation describes Kaeso {{version}}.
 - **One API for every provider.** Kaeso serves OpenAI Chat Completions, Responses and Embeddings, Anthropic Messages, the Gemini API and the ElevenLabs API, and Cohere's format for [reranking](api/rerank.md) and three formats for [decisions](api/decisions.md). Each chat format can call every chat model in your catalogue, whichever [provider](concepts/providers.md) serves it, so an OpenAI SDK can talk to Claude.
 - **Media.** Images, video, speech, transcription, sound effects and music through OpenAI's [Images](api/images.md), [Audio](api/audio.md) and [Videos](api/videos.md) APIs and the [ElevenLabs API](api/elevenlabs.md), on every provider that offers them.
 - **Provider keys that stay with you.** Apps get Kaeso API keys (`sk-kso-…`) that you can limit, expire and disable. Your provider keys are encrypted under a master key that only your install holds.
-- **Organizations and projects.** Members, roles, rights and service accounts, and a model catalogue in each project, with prices and capabilities from [KPMR](concepts/kpmr.md).
+- **Organizations and projects.** Members, roles, rights and service accounts, and a model catalogue in each project, with prices and capabilities from [KPMR](kpmr/index.md).
 - **Aliases and routes.** An alias names the models behind it, with fallbacks, conditions and weighted splits ([alias routes](concepts/alias-routes.md)).
 - **Limits and budgets.** Request and token rates, and token and spend budgets, for a project, a member or a single key.
 - **Request logs.** The status, tokens, cost and timing of every request, and its content where you choose to keep it.
@@ -99,4 +99,5 @@ Kaeso is MIT licensed. The gateway, KPP, the console, the UI library and this do
 - [Using the console](console/index.md): Find your way around the console.
 - [API](api/index.md): Look up the model API and the Platform API.
 - [Self-hosting](self-hosting/index.md): Plan, run and upgrade an install.
+- [KPMR](kpmr/index.md): See where model data comes from, how an install keeps it current, and how to use the registry yourself.
 - [Development](development/index.md): Build, test and change Kaeso itself.

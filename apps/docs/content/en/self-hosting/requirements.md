@@ -43,7 +43,7 @@ The install needs a domain whose DNS record points at the server, and these conn
 | Outgoing | `oauth2.googleapis.com` | Access tokens for Gemini Enterprise Agent Platform service account keys |
 | Outgoing | `dashscope-*.aliyuncs.com` | QwenCloud's images, `qwen3-tts-flash` audio and Wan videos, which QwenCloud answers with links ([Images API](../api/images.md#providers)) |
 | Outgoing | The hosts that keep providers' finished videos, as their references show them: `vidgen.x.ai` for SpaceX, `video-product.cdn.minimax.io` and Alibaba Cloud OSS buckets such as `public-cdn-video-data-algeng.oss-cn-wulanchabu.aliyuncs.com` for MiniMax, `aigc-files.bigmodel.cn` for Z.ai. ElevenLabs names no fixed host; OpenRouter and Together AI serve files from their own hosts, and Veo and Gemini Omni inside their answers | Downloading a finished video ([Videos API](../api/videos.md#download-a-video)) |
-| Outgoing | `kpmr.kaeso.app` | Model data from [KPMR](../concepts/kpmr.md), checked about every hour |
+| Outgoing | `kpmr.kaeso.app` | Model data from [KPMR](../kpmr/index.md), checked about every hour |
 | Outgoing | `update.kaeso.app` | Looking for new Kaeso releases, every 5 minutes |
 | Outgoing | `www.ecb.europa.eu` | The ECB's reference rates for [currencies](../concepts/currencies.md), every 6 hours ([exchange rates](configuration.md#exchange-rates)) |
 | Outgoing | `acme-v02.api.letsencrypt.org`, `acme.zerossl.com` | Caddy getting and renewing the certificate |

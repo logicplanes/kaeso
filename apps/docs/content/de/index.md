@@ -52,7 +52,7 @@ Diese Dokumentation beschreibt Kaeso {{version}}.
 - **Eine API für alle Anbieter.** Kaeso bedient OpenAI Chat Completions, Responses und Embeddings, Anthropic Messages, die Gemini API und die ElevenLabs API, dazu das Format von Cohere für [Reranking](api/rerank.md) und drei Formate für [Entscheidungen](api/decisions.md). Jedes Chat-Format kann jedes Chat-Modell in Ihrem Katalog aufrufen, gleich welcher [Anbieter](concepts/providers.md) es bedient; ein OpenAI SDK spricht also auch mit Claude.
 - **Medien.** Bilder, Videos, Sprache, Transkription, Soundeffekte und Musik über OpenAIs [Images](api/images.md)-, [Audio](api/audio.md)- und [Videos](api/videos.md)-API und die [ElevenLabs API](api/elevenlabs.md), bei jedem Anbieter, der sie anbietet.
 - **Anbieter-Schlüssel, die bei Ihnen bleiben.** Apps erhalten Kaeso-API-Schlüssel (`sk-kso-…`), die Sie begrenzen, befristen und deaktivieren können. Ihre Anbieter-Schlüssel sind mit einem Hauptschlüssel verschlüsselt, den nur Ihre Installation kennt.
-- **Organisationen und Projekte.** Mitglieder, Rollen, Rechte und Dienstkonten sowie ein Modellkatalog in jedem Projekt, mit Preisen und Fähigkeiten aus [KPMR](concepts/kpmr.md).
+- **Organisationen und Projekte.** Mitglieder, Rollen, Rechte und Dienstkonten sowie ein Modellkatalog in jedem Projekt, mit Preisen und Fähigkeiten aus [KPMR](kpmr/index.md).
 - **Aliasse und Routen.** Ein Alias nennt die Modelle dahinter, mit Fallbacks, Bedingungen und gewichteten Aufteilungen ([Alias-Routen](concepts/alias-routes.md)).
 - **Limits und Budgets.** Anfrage- und Token-Raten sowie Token- und Ausgabenbudgets für ein Projekt, ein Mitglied oder einen einzelnen Schlüssel.
 - **Anfrageprotokolle.** Status, Token, Kosten und Zeiten jeder Anfrage, und ihr Inhalt, wo Sie ihn behalten möchten.
@@ -99,4 +99,5 @@ Kaeso steht unter der MIT-Lizenz. Gateway, KPP, Konsole, UI-Bibliothek und diese
 - [Die Konsole verwenden](console/index.md): Finden Sie sich in der Konsole zurecht.
 - [API](api/index.md): Schlagen Sie die Modell-API und die Platform API nach.
 - [Selbst hosten](self-hosting/index.md): Planen, betreiben und aktualisieren Sie eine Installation.
+- [KPMR](kpmr/index.md): Sehen Sie, woher die Modelldaten kommen, wie eine Installation sie aktuell hält und wie Sie die Registry selbst nutzen.
 - [Entwicklung](development/index.md): Bauen, testen und ändern Sie Kaeso selbst.

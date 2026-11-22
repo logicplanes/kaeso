@@ -12,7 +12,7 @@ Wählen Sie **Modelle hinzufügen**, wählen Sie dann in der durchsuchbaren List
 
 Der Dialog listet die Modelle, die neuesten zuerst, jedes mit seinem Kontextfenster sowie seinen Eingabe- und Ausgabepreisen. Ein Router, ein Modell, das für jede Anfrage ein anderes Modell wählt, etwa `standardcompute` von Standard Compute, steht an erster Stelle und ist mit **Router** markiert. Passen mehr als 50 Modelle, zeigt er die ersten 50 und sagt, wie viele passen, sodass Sie sie mit der Suche eingrenzen. Wählen Sie eines oder mehrere aus und fügen Sie sie hinzu. **Veraltete anzeigen** listet auch veraltete Modelle, und **Werte prüfen** zeigt die Werte eines Modells, bevor Sie es hinzufügen.
 
-Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [KPMR](../concepts/kpmr.md) mit, der Kaeso Provider & Model Registry. Zwei Abkürzungen decken den Rest ab:
+Jedes Modell bringt seine Preise, Limits und Fähigkeiten von [KPMR](../kpmr/index.md) mit, der Kaeso Provider & Model Registry. Zwei Abkürzungen decken den Rest ab:
 
 - **Alle aktuellen OpenAI-Modelle hinzufügen**, ebenso für jeden anderen Anbieter, fügt jedes nicht veraltete Text- und Embeddings-Modell des Anbieters hinzu. Modelle, die schon im Katalog sind, überspringt es, und später erscheinende Modelle fügt es nicht hinzu. Der Dialog sagt, wie viele Modelle er hinzufügt, und warnt vor 50 oder mehr.
 - **Eigenes Modell hinzufügen** fügt ein Modell per ID hinzu. Kennt KPMR es nicht, geben Sie Eingaben und Ausgaben, Limits, Preise und das API-Format an, mit dem Kaeso es aufruft. Eine ID darf nicht `.` oder `..` sein und keines davon zwischen Schrägstrichen enthalten, weil eine URL diesen Teil verwirft.
@@ -72,7 +72,7 @@ Ein Entscheidungsmodell beantwortet typisierte Fragen an `/v1/decisions`, `/v1/s
 
 ## Modelllinien
 
-Eine Modelllinie ist ein Name wie `claude-opus-latest`, den [KPMR](../concepts/kpmr.md) auf das neueste stabile Modell einer Familie eines Anbieters zeigen lässt. Fügen Sie eine hinzu, und Apps, die sie aufrufen, erhalten das neueste Modell, ohne dass jemand einen Alias ändert.
+Eine Modelllinie ist ein Name wie `claude-opus-latest`, den [KPMR](../kpmr/index.md) auf das neueste stabile Modell einer Familie eines Anbieters zeigen lässt. Fügen Sie eine hinzu, und Apps, die sie aufrufen, erhalten das neueste Modell, ohne dass jemand einen Alias ändert.
 
 Wählen Sie in **Modelle hinzufügen** unter den Suchergebnissen **Eine …-Modelllinie hinzufügen**: Die Liste zeigt jede Linie des Anbieters mit dem Modell, auf das sie jetzt zeigt. Wählen Sie, wie das Projekt ihr folgt, dann **Linie hinzufügen**. Die Linie erscheint im Katalog als `anthropic/claude-opus-latest`, markiert als **Linie** mit ihrem Modell, und Apps, Aliasse, Modellzugriff und Limits nutzen sie wie jedes Modell; ein Limit, das sie nennt, zählt jedes Modell, das sie erreicht. Ihre Werte sind die des Modells, auf das sie zeigt.
 

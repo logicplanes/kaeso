@@ -1,7 +1,7 @@
 ---
 title: Development
 description: Build, test and change Kaeso, from a fresh clone to a merged pull request.
-order: 6
+order: 7
 ---
 
 These pages are for people who change Kaeso itself. Everything lives in one repository, [logicplanes/kaeso](https://github.com/logicplanes/kaeso), and ships together under one version.

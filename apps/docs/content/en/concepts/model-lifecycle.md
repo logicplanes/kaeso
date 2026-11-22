@@ -4,21 +4,11 @@ description: How Kaeso learns that a provider retires a model, warns the project
 order: 5
 ---
 
-Providers retire models on fixed dates, and a request to a model after its shutdown day fails. Kaeso tracks each retirement from the provider's announcement to the shutdown: [KPMR](kpmr.md) publishes the dates and the replacement the provider recommends, and the gateway works out which projects still call the model, warns them ahead of time and moves them with one click, or on its own where a project allows it.
+Providers retire models on fixed dates, and a request to a model after its shutdown day fails. Kaeso tracks each retirement from the provider's announcement to the shutdown: [KPMR](../kpmr/index.md) publishes the dates and the replacement the provider recommends, and the gateway works out which projects still call the model, warns them ahead of time and moves them with one click, or on its own where a project allows it.
 
 ## What KPMR publishes
 
-Every model in the catalogue has a `lifecycle`. Each field is `null` while the provider hasn't announced anything:
-
-| Field | Meaning |
-| --- | --- |
-| `announced_on` | The day the provider announced the retirement |
-| `deprecated_on` | The day the model became deprecated: it still works, but the provider wants apps to move |
-| `shutdown_on` | The day the provider stops serving the model |
-| `replacement` | The provider's model id it recommends instead, a model of the same provider |
-| `source` | The page where the provider announced it |
-
-The model's `status` follows the dates: `deprecated` from `deprecated_on` and `retired` from `shutdown_on`. A retired model stays in the catalogue, so its history and its prices for past requests stay readable. KPMR reads the providers' deprecation pages on a schedule and proposes each new date for review; nothing reaches the catalogue unreviewed. Its [Deprecations page](https://kpmr.kaeso.app/deprecations) lists every upcoming shutdown across providers.
+Every model in the catalogue has a `lifecycle`: the days the provider announced the retirement, deprecates the model and shuts it down, the `replacement` it recommends and the `source` of the announcement, each `null` until announced ([catalogue format](../kpmr/catalogue.md#lifecycle)). The model's `status` becomes `deprecated` and then `retired` on those days, and a retired model stays in the catalogue. KPMR reviews every date before it publishes it ([retirements and model lines](../kpmr/lifecycle-and-lines.md)).
 
 ## Where a retiring model shows
 
@@ -88,6 +78,6 @@ Kaeso's [MCP server](../api/mcp.md) offers the same actions as tools. The counte
 
 ## Next steps
 
-- [KPMR](kpmr.md): See where the dates come from and how the gateway fetches them.
+- [Retirements and model lines](../kpmr/lifecycle-and-lines.md): See where the dates come from and how KPMR reviews them.
 - [Alias routes](alias-routes.md): Route requests across models with fallbacks.
 - [Webhooks](../console/webhooks.md): Receive the warnings in your own systems.

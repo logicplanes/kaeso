@@ -12,7 +12,7 @@ Choose **Add models**, then pick a provider from the searchable list next to the
 
 The dialog lists models newest first, each with its context window and its input and output prices. A router, a model that picks another model for each request, such as Standard Compute's `standardcompute`, comes first and is marked **Router**. When more than 50 models match, it shows the first 50 and says how many match, so search to narrow them down. Select one or more and add them. **Include deprecated** lists deprecated models too, and **Review values** shows a model's values before you add it.
 
-Each model brings its prices, limits and capabilities from [KPMR](../concepts/kpmr.md), the Kaeso Provider & Model Registry. Two shortcuts cover the rest:
+Each model brings its prices, limits and capabilities from [KPMR](../kpmr/index.md), the Kaeso Provider & Model Registry. Two shortcuts cover the rest:
 
 - **Add every current OpenAI model**, and the same button for each other provider, adds each of the provider's text and embedding models that isn't deprecated. It skips models already in the catalogue, and doesn't add models that appear later. The dialog says how many models it adds, and warns before you add 50 or more.
 - **Add a custom model** adds a model by its id. If KPMR doesn't list it, enter its inputs and outputs, limits, prices and the API format Kaeso sends it. An id can't be `.` or `..` or have either between slashes, because a URL would drop that part.
@@ -72,7 +72,7 @@ A decision model answers typed questions at `/v1/decisions`, `/v1/systemone` and
 
 ## Model lines
 
-A model line is a name such as `claude-opus-latest` that [KPMR](../concepts/kpmr.md) keeps pointed at a provider's newest stable model of a family. Add one, and apps that call it get the newest model without anyone changing an alias.
+A model line is a name such as `claude-opus-latest` that [KPMR](../kpmr/index.md) keeps pointed at a provider's newest stable model of a family. Add one, and apps that call it get the newest model without anyone changing an alias.
 
 In **Add models**, choose **Add a … model line** under the search results: the list shows each line of the provider with the model it points at now. Choose how the project follows it, then **Add line**. The line appears in the catalogue as `anthropic/claude-opus-latest`, marked **Line** with its model, and apps, aliases, model access and limits use it like any model; a limit that names it counts every model it reaches. Its values are those of the model it points at.
 

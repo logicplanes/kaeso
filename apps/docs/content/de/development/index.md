@@ -1,7 +1,7 @@
 ---
 title: Entwicklung
 description: Kaeso bauen, testen und ändern, vom frischen Klon bis zum gemergten Pull Request.
-order: 6
+order: 7
 ---
 
 Diese Seiten richten sich an alle, die Kaeso selbst ändern. Alles liegt in einem Repository, [logicplanes/kaeso](https://github.com/logicplanes/kaeso), und erscheint gemeinsam unter einer Version.

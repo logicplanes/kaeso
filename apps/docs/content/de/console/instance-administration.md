@@ -70,7 +70,7 @@ Nur die Konsolensitzung eines Instanz-Admins ändert die Richtlinie; kein Agent 
 
 **System** zeigt Version und Zustand des Gateways und ob PostgreSQL, ClickHouse und Valkey laufen. ClickHouse erscheint als aus, wenn die Installation keine Anfrageprotokolle speichert. Es zeigt außerdem den Puffer der Anfrageprotokolle, den Speicher und wie das Gateway E-Mails sendet. Die Seite aktualisiert sich alle 10 Sekunden.
 
-**Modelldaten** zeigt die Daten von [KPMR](../concepts/kpmr.md), die in Gebrauch sind: ihre Quelle, wann sie abgerufen wurden, wie viele Modelle sie enthalten, ob sie automatisch synchronisiert werden, und die letzte Synchronisierung mit gegebenenfalls ihrem Fehler. Das Gateway hält die Daten selbst aktuell; nur die [Konfiguration](../self-hosting/configuration.md#kpmr) ändert, wie. **Jetzt synchronisieren** ruft sie sofort ab und sagt, wie viele Preise sich geändert haben; dafür muss die automatische Synchronisierung an sein. Ist KPMR nicht erreichbar, bleiben die aktuellen Daten in Gebrauch.
+**Modelldaten** zeigt die Daten von [KPMR](../kpmr/index.md), die in Gebrauch sind: ihre Quelle, wann sie abgerufen wurden, wie viele Modelle sie enthalten, ob sie automatisch synchronisiert werden, und die letzte Synchronisierung mit gegebenenfalls ihrem Fehler. Das Gateway hält die Daten selbst aktuell; nur die [Konfiguration](../self-hosting/configuration.md#kpmr) ändert, wie. **Jetzt synchronisieren** ruft sie sofort ab und sagt, wie viele Preise sich geändert haben; dafür muss die automatische Synchronisierung an sein. Ist KPMR nicht erreichbar, bleiben die aktuellen Daten in Gebrauch.
 
 ## Kaeso aktualisieren
 
