@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO videos (id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, catalogue_model_id, model, upstream_model, dialect, upstream_id, request_id, params, prices, status, progress, error, remixed_from, units, cost, created_at, completed_at, expires_at, accounted_at, tags, user_agent, alias, line) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)",
+  "query": "INSERT INTO videos (id, org_id, project_id, api_key_id, user_id, service_account_id, provider, credential_id, catalogue_model_id, model, upstream_model, dialect, upstream_id, request_id, params, prices, status, progress, error, remixed_from, units, cost, created_at, completed_at, expires_at, accounted_at, tags, user_agent, alias, line, playground) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -34,10 +34,11 @@
         "TextArray",
         "Text",
         "Text",
-        "Text"
+        "Text",
+        "Bool"
       ]
     },
     "nullable": []
   },
-  "hash": "6b02faddbaef26971362951c02375911ddb9dd934cac5af8554f70ce3011afb8"
+  "hash": "1b723b30e2ff4fa2016938bd87a680166ade7a2ff67e118ad84eff2b0f1fc650"
 }

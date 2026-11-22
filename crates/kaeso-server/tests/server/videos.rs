@@ -228,6 +228,124 @@ async fn a_finished_video_is_logged_with_the_tags_client_and_key_of_the_request_
     );
 }
 
+async fn project_key(env: &Env, name: &str) -> (String, String) {
+    let r = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/keys", env.owner.org_id, env.project),
+            json!({ "name": name }),
+            Some(&env.owner.cookie),
+        )
+        .await;
+    assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+    (
+        r.body["id"].as_str().unwrap().to_owned(),
+        r.body["secret"].as_str().unwrap().to_owned(),
+    )
+}
+
+// A new key starts a video with its tags and client, and `gone` takes the key away before the
+// job ends; another key of the project follows the job until it ends.
+async fn finished_after_its_key_is_gone(
+    env: &Env,
+    gone: impl AsyncFnOnce(&Env, &str),
+) -> (String, Outcome) {
+    let (key, secret) = project_key(env, "studio").await;
+    let r = send_with(
+        env,
+        "POST",
+        "/v1/videos",
+        &secret,
+        Some(json!({ "model": "grok-imagine-video-1.5", "prompt": "A serene lake at sunrise", "seconds": "8", "size": "1280x720" })),
+        None,
+        &[("kaeso-tags", "launch,eval-7"), ("user-agent", "Studio/2.1")],
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    let id = r.json()["id"].as_str().unwrap().to_owned();
+    gone(env, &key).await;
+
+    let playground = env
+        .app
+        .get(
+            &format!(
+                "/orgs/{}/projects/{}/playground/videos/{id}",
+                env.owner.org_id, env.project
+            ),
+            &env.owner.cookie,
+        )
+        .await;
+    assert_eq!(
+        playground.status,
+        StatusCode::NOT_FOUND,
+        "an app's video stays out of the Playground: {:?}",
+        playground.body
+    );
+    let mut last = Value::Null;
+    for _ in 0..3 {
+        let r = retrieve(env, &id).await;
+        assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+        last = r.json();
+    }
+    assert_eq!(last["status"], "completed", "{last}");
+    let billed = completions(env).await;
+    assert_eq!(billed.len(), 1);
+    (key, billed[0].clone())
+}
+
+fn started_by(env: &Env, key: &str, done: &Outcome) {
+    use kaeso_server::model_api::hooks::Source;
+    assert_eq!(done.source, Source::Api, "not a Playground video");
+    let caller = done.caller.clone().unwrap();
+    let project: kaeso_core::id::ProjectId = env.project.parse().unwrap();
+    assert_eq!(caller.project_id, project.uuid());
+    assert_eq!(
+        caller
+            .key_id
+            .map(|k| kaeso_core::id::ApiKeyId::from_uuid(k).to_string()),
+        Some(key.to_owned()),
+        "the key that started it"
+    );
+    assert_eq!(done.tags, ["launch", "eval-7"]);
+    assert_eq!(done.user_agent.as_deref(), Some("Studio/2.1"));
+}
+
+#[tokio::test]
+async fn a_video_whose_key_is_archived_before_anyone_asks_is_logged_with_that_key() {
+    let env = env().await;
+    let (key, done) = finished_after_its_key_is_gone(&env, async |env, key| {
+        let r = env
+            .app
+            .post(
+                &format!(
+                    "/orgs/{}/projects/{}/keys/{key}/archive",
+                    env.owner.org_id, env.project
+                ),
+                json!({}),
+                Some(&env.owner.cookie),
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::OK, "{:?}", r.body);
+    })
+    .await;
+    started_by(&env, &key, &done);
+}
+
+#[tokio::test]
+async fn a_video_whose_key_no_longer_exists_is_still_an_apps_video_logged_with_that_key() {
+    let env = env().await;
+    let (key, done) = finished_after_its_key_is_gone(&env, async |env, key| {
+        let id: kaeso_core::id::ApiKeyId = key.parse().unwrap();
+        sqlx::query("DELETE FROM api_keys WHERE id = $1")
+            .bind(id.uuid())
+            .execute(&env.app.state.pg)
+            .await
+            .unwrap();
+    })
+    .await;
+    started_by(&env, &key, &done);
+}
+
 #[tokio::test]
 async fn a_finished_video_started_through_an_alias_names_the_alias() {
     let env = env().await;
