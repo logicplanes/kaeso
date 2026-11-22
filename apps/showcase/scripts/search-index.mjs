@@ -3,7 +3,7 @@ import ts from "typescript";
 // Props whose strings people read in an example; everything else in its code (classes, links, handlers) is not a word
 // anyone searches the showcase for.
 const VISIBLE = new Set(["aria-label", "description", "emptyText", "hint", "label", "message", "name", "placeholder", "text", "title"]);
-const HIDDEN_PROPS = new Set(["className", "data-force", "style"]);
+export const HIDDEN_PROPS = new Set(["className", "data-force", "style"]);
 const words = (text) => text.toLowerCase().split(/[^\p{L}\p{N}]+/u);
 const norm = (t) => t.replace(/\s+/g, " ").trim();
 

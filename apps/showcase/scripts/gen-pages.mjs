@@ -5,7 +5,7 @@ import { execFileSync } from "node:child_process";
 import ts from "typescript";
 import { translationProblem } from "./translation-problems.mjs";
 import { commitOf } from "./source-ref.mjs";
-import { buildSearchIndex } from "./search-index.mjs";
+import { buildSearchIndex, HIDDEN_PROPS } from "./search-index.mjs";
 import { pagesWithoutVariants } from "../../../packages/ui/scripts/variant-exports.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -105,7 +105,6 @@ const typeOf = (t) =>
     .replace(/\s*\|\s*undefined\b/g, "")
     .replace(/\s+/g, " ")
     .trim();
-const HIDDEN_PROPS = new Set(["className", "data-force", "style"]);
 const docPages = {};
 for (const [slug, page] of Object.entries(out)) {
   const entry = page.entry ?? slug;
