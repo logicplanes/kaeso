@@ -244,13 +244,13 @@ async fn project_key(env: &Env, name: &str) -> (String, String) {
     )
 }
 
-// The key `name` starts a video with its tags and client, then is gone before the job ends;
-// `gone` takes it away. Another key of the project follows the job until it ends.
+// A new key starts a video with its tags and client, and `gone` takes the key away before the
+// job ends; another key of the project follows the job until it ends.
 async fn finished_after_its_key_is_gone(
     env: &Env,
     gone: impl AsyncFnOnce(&Env, &str),
 ) -> (String, Outcome) {
-    let (started_by, secret) = project_key(env, "studio").await;
+    let (key, secret) = project_key(env, "studio").await;
     let r = send_with(
         env,
         "POST",
@@ -263,7 +263,7 @@ async fn finished_after_its_key_is_gone(
     .await;
     assert_eq!(r.status, StatusCode::OK, "{}", r.text());
     let id = r.json()["id"].as_str().unwrap().to_owned();
-    gone(env, &started_by).await;
+    gone(env, &key).await;
 
     let playground = env
         .app
@@ -290,7 +290,7 @@ async fn finished_after_its_key_is_gone(
     assert_eq!(last["status"], "completed", "{last}");
     let billed = completions(env).await;
     assert_eq!(billed.len(), 1);
-    (started_by, billed[0].clone())
+    (key, billed[0].clone())
 }
 
 fn started_by(env: &Env, key: &str, done: &Outcome) {
