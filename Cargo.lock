@@ -2773,6 +2773,7 @@ dependencies = [
  "peak_alloc",
  "percent-encoding",
  "proptest",
+ "prost",
  "redis",
  "reqwest",
  "resvg",

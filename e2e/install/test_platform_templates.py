@@ -13,7 +13,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 VERSION = json.loads((ROOT / "package.json").read_text())["version"]
 IMAGE = re.compile(r"ghcr\.io/logicplanes/kaeso-(gateway|console|updater):(\S+?)[\"'\s]")
-API_PATHS = ["/v1/*", "/v1beta/*", "/v2/*", "/platform/*", "/mcp", "/mcp/*", "/oauth/*"]
+API_PATHS = ["/v1/*", "/v1beta/*", "/v2/*", "/platform/*", "/mcp", "/mcp/*", "/oauth/*", "/ingest/*"]
 SECRET_KEYS = {"KAESO_MASTER_KEYS", "KAESO_SMTP_PASSWORD", "KAESO_CLICKHOUSE_URL", "KAESO_POSTGRES_URL", "KAESO_VALKEY_URL"}
 
 
@@ -51,7 +51,7 @@ def test_digitalocean_runs_both_images_of_this_release_behind_the_apps_edge(app_
     assert services["kaeso-console"]["http_port"] == 3000
     rules = app_spec["ingress"]["rules"]
     gateway_prefixes = [r["match"]["path"]["prefix"] for r in rules if r["component"]["name"] == "kaeso-gateway"]
-    assert gateway_prefixes == ["/v1", "/v1beta", "/v2", "/platform", "/mcp", "/oauth", "/.well-known"]
+    assert gateway_prefixes == ["/v1", "/v1beta", "/v2", "/platform", "/mcp", "/oauth", "/ingest", "/.well-known"]
     assert all(r["component"]["preserve_path_prefix"] for r in rules if r["component"]["name"] == "kaeso-gateway")
     assert rules[-1] == {"match": {"path": {"prefix": "/"}}, "component": {"name": "kaeso-console"}}, "the console takes every other path, last"
 

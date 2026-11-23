@@ -1,0 +1,1332 @@
+{
+ "resourceLogs": [
+  {
+   "resource": {
+    "attributes": [
+     {
+      "key": "host.arch",
+      "value": {
+       "stringValue": "amd64"
+      }
+     },
+     {
+      "key": "os.type",
+      "value": {
+       "stringValue": "linux"
+      }
+     },
+     {
+      "key": "os.version",
+      "value": {
+       "stringValue": "6.8.0"
+      }
+     },
+     {
+      "key": "service.name",
+      "value": {
+       "stringValue": "claude-code"
+      }
+     },
+     {
+      "key": "service.version",
+      "value": {
+       "stringValue": "2.1.322"
+      }
+     }
+    ],
+    "droppedAttributesCount": 0
+   },
+   "scopeLogs": [
+    {
+     "scope": {
+      "name": "com.anthropic.claude_code.events",
+      "version": "2.1.322"
+     },
+     "logRecords": [
+      {
+       "timeUnixNano": "1795388059227000000",
+       "observedTimeUnixNano": "1795388059227000000",
+       "body": {
+        "stringValue": "claude_code.plugin_loaded"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "plugin_loaded"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:19.227Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 1
+         }
+        },
+        {
+         "key": "plugin.name",
+         "value": {
+          "stringValue": "cc-plugin-sec-default"
+         }
+        },
+        {
+         "key": "marketplace.name",
+         "value": {
+          "stringValue": "builtin"
+         }
+        },
+        {
+         "key": "plugin.scope",
+         "value": {
+          "stringValue": "default-bundle"
+         }
+        },
+        {
+         "key": "enabled_via",
+         "value": {
+          "stringValue": "default-enable"
+         }
+        },
+        {
+         "key": "plugin_id_hash",
+         "value": {
+          "stringValue": "edea695a220b6dd7"
+         }
+        },
+        {
+         "key": "has_hooks",
+         "value": {
+          "boolValue": true
+         }
+        },
+        {
+         "key": "has_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "host_owned_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "skill_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "command_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "agent_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1795388059227000000",
+       "observedTimeUnixNano": "1795388059227000000",
+       "body": {
+        "stringValue": "claude_code.plugin_loaded"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "plugin_loaded"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:19.227Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 2
+         }
+        },
+        {
+         "key": "plugin.name",
+         "value": {
+          "stringValue": "cc-plugin-agents-md"
+         }
+        },
+        {
+         "key": "marketplace.name",
+         "value": {
+          "stringValue": "builtin"
+         }
+        },
+        {
+         "key": "plugin.scope",
+         "value": {
+          "stringValue": "default-bundle"
+         }
+        },
+        {
+         "key": "enabled_via",
+         "value": {
+          "stringValue": "default-enable"
+         }
+        },
+        {
+         "key": "plugin_id_hash",
+         "value": {
+          "stringValue": "da63145d0acbb62d"
+         }
+        },
+        {
+         "key": "has_hooks",
+         "value": {
+          "boolValue": true
+         }
+        },
+        {
+         "key": "has_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "host_owned_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "skill_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "command_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "agent_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1795388059228000000",
+       "observedTimeUnixNano": "1795388059228000000",
+       "body": {
+        "stringValue": "claude_code.plugin_loaded"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "plugin_loaded"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:19.228Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 3
+         }
+        },
+        {
+         "key": "plugin.name",
+         "value": {
+          "stringValue": "cc-plugin-telemetry"
+         }
+        },
+        {
+         "key": "marketplace.name",
+         "value": {
+          "stringValue": "builtin"
+         }
+        },
+        {
+         "key": "plugin.scope",
+         "value": {
+          "stringValue": "default-bundle"
+         }
+        },
+        {
+         "key": "enabled_via",
+         "value": {
+          "stringValue": "default-enable"
+         }
+        },
+        {
+         "key": "plugin_id_hash",
+         "value": {
+          "stringValue": "0452636910a73fd4"
+         }
+        },
+        {
+         "key": "has_hooks",
+         "value": {
+          "boolValue": true
+         }
+        },
+        {
+         "key": "has_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "host_owned_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "skill_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "command_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "agent_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1795388059228000000",
+       "observedTimeUnixNano": "1795388059228000000",
+       "body": {
+        "stringValue": "claude_code.plugin_loaded"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "plugin_loaded"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:19.228Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 4
+         }
+        },
+        {
+         "key": "plugin.name",
+         "value": {
+          "stringValue": "cc-plugin-privacy"
+         }
+        },
+        {
+         "key": "marketplace.name",
+         "value": {
+          "stringValue": "builtin"
+         }
+        },
+        {
+         "key": "plugin.scope",
+         "value": {
+          "stringValue": "default-bundle"
+         }
+        },
+        {
+         "key": "enabled_via",
+         "value": {
+          "stringValue": "default-enable"
+         }
+        },
+        {
+         "key": "plugin_id_hash",
+         "value": {
+          "stringValue": "a2f27f067781660d"
+         }
+        },
+        {
+         "key": "has_hooks",
+         "value": {
+          "boolValue": true
+         }
+        },
+        {
+         "key": "has_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "host_owned_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "skill_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "command_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "agent_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1795388059228000000",
+       "observedTimeUnixNano": "1795388059228000000",
+       "body": {
+        "stringValue": "claude_code.plugin_loaded"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "plugin_loaded"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:19.228Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 5
+         }
+        },
+        {
+         "key": "plugin.name",
+         "value": {
+          "stringValue": "cc-plugin-plugin-authoring"
+         }
+        },
+        {
+         "key": "marketplace.name",
+         "value": {
+          "stringValue": "builtin"
+         }
+        },
+        {
+         "key": "plugin.scope",
+         "value": {
+          "stringValue": "default-bundle"
+         }
+        },
+        {
+         "key": "enabled_via",
+         "value": {
+          "stringValue": "default-enable"
+         }
+        },
+        {
+         "key": "plugin_id_hash",
+         "value": {
+          "stringValue": "559932fe5f722b82"
+         }
+        },
+        {
+         "key": "has_hooks",
+         "value": {
+          "boolValue": true
+         }
+        },
+        {
+         "key": "has_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "host_owned_mcp",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "skill_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "command_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "agent_path_count",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "safe_mode",
+         "value": {
+          "stringValue": "false"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1795388059339000000",
+       "observedTimeUnixNano": "1795388059339000000",
+       "body": {
+        "stringValue": "claude_code.user_prompt"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "user_prompt"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:19.339Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 6
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "c0f14404-0d62-47cb-9da0-658ab44b068f"
+         }
+        },
+        {
+         "key": "prompt_length",
+         "value": {
+          "stringValue": "52"
+         }
+        },
+        {
+         "key": "prompt",
+         "value": {
+          "stringValue": "<REDACTED>"
+         }
+        },
+        {
+         "key": "prompt_text",
+         "value": {
+          "stringValue": "<REDACTED>"
+         }
+        },
+        {
+         "key": "message.uuid",
+         "value": {
+          "stringValue": "3d5f0f14-8aea-43a7-956f-cf31ce59301c"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1795388060374000000",
+       "observedTimeUnixNano": "1795388060374000000",
+       "body": {
+        "stringValue": "claude_code.tool_decision"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "tool_decision"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:20.374Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 10
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "c0f14404-0d62-47cb-9da0-658ab44b068f"
+         }
+        },
+        {
+         "key": "decision",
+         "value": {
+          "stringValue": "accept"
+         }
+        },
+        {
+         "key": "source",
+         "value": {
+          "stringValue": "config"
+         }
+        },
+        {
+         "key": "tool_name",
+         "value": {
+          "stringValue": "Read"
+         }
+        },
+        {
+         "key": "tool_use_id",
+         "value": {
+          "stringValue": "toolu_01YYqwC2Cq6Y8bRCHVTTC89s"
+         }
+        },
+        {
+         "key": "tool_source",
+         "value": {
+          "stringValue": "builtin"
+         }
+        },
+        {
+         "key": "permission_mode",
+         "value": {
+          "stringValue": "default"
+         }
+        },
+        {
+         "key": "request_id",
+         "value": {
+          "stringValue": "req_011ChJnkD3cpnkSCVQKhwNpL"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0,
+       "flags": 1,
+       "traceId": "547c48a10fddf21e29ae7e6606f973b7",
+       "spanId": "aad3cdeb519c92e1"
+      },
+      {
+       "timeUnixNano": "1795388060384000000",
+       "observedTimeUnixNano": "1795388060384000000",
+       "body": {
+        "stringValue": "claude_code.api_request"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "api_request"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:20.383Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 11
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "c0f14404-0d62-47cb-9da0-658ab44b068f"
+         }
+        },
+        {
+         "key": "model",
+         "value": {
+          "stringValue": "claude-haiku-5-5"
+         }
+        },
+        {
+         "key": "input_tokens",
+         "value": {
+          "intValue": 2
+         }
+        },
+        {
+         "key": "output_tokens",
+         "value": {
+          "intValue": 62
+         }
+        },
+        {
+         "key": "cache_read_tokens",
+         "value": {
+          "intValue": 11873
+         }
+        },
+        {
+         "key": "cache_creation_tokens",
+         "value": {
+          "intValue": 16236
+         }
+        },
+        {
+         "key": "cache_creation_5m_tokens",
+         "value": {
+          "intValue": 0
+         }
+        },
+        {
+         "key": "cache_creation_1h_tokens",
+         "value": {
+          "intValue": 16236
+         }
+        },
+        {
+         "key": "cost_usd",
+         "value": {
+          "doubleValue": 0.0033971300000000004
+         }
+        },
+        {
+         "key": "cost_usd_micros",
+         "value": {
+          "intValue": 3397
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "intValue": 899
+         }
+        },
+        {
+         "key": "ttft_ms",
+         "value": {
+          "intValue": 749
+         }
+        },
+        {
+         "key": "request_id",
+         "value": {
+          "stringValue": "req_011ChJnkD3cpnkSCVQKhwNpL"
+         }
+        },
+        {
+         "key": "client_request_id",
+         "value": {
+          "stringValue": "8dc962da-8bc5-44fd-a38b-c29dcf09a2e3"
+         }
+        },
+        {
+         "key": "speed",
+         "value": {
+          "stringValue": "normal"
+         }
+        },
+        {
+         "key": "query_source",
+         "value": {
+          "stringValue": "sdk"
+         }
+        },
+        {
+         "key": "effort",
+         "value": {
+          "stringValue": "medium"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      },
+      {
+       "timeUnixNano": "1795388060395000000",
+       "observedTimeUnixNano": "1795388060395000000",
+       "body": {
+        "stringValue": "claude_code.tool_result"
+       },
+       "attributes": [
+        {
+         "key": "user.id",
+         "value": {
+          "stringValue": "0000000000000000000000000000000000000000000000000000000000000000"
+         }
+        },
+        {
+         "key": "session.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000003"
+         }
+        },
+        {
+         "key": "organization.id",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000002"
+         }
+        },
+        {
+         "key": "user.email",
+         "value": {
+          "stringValue": "ada@example.com"
+         }
+        },
+        {
+         "key": "user.account_uuid",
+         "value": {
+          "stringValue": "00000000-0000-4000-8000-000000000001"
+         }
+        },
+        {
+         "key": "user.account_id",
+         "value": {
+          "stringValue": "user_01EXAMPLE0000000000000000"
+         }
+        },
+        {
+         "key": "anthropic.provider",
+         "value": {
+          "stringValue": "firstParty"
+         }
+        },
+        {
+         "key": "anthropic.custom_base_url",
+         "value": {
+          "boolValue": false
+         }
+        },
+        {
+         "key": "event.name",
+         "value": {
+          "stringValue": "tool_result"
+         }
+        },
+        {
+         "key": "event.timestamp",
+         "value": {
+          "stringValue": "2026-11-22T22:54:20.395Z"
+         }
+        },
+        {
+         "key": "event.sequence",
+         "value": {
+          "intValue": 12
+         }
+        },
+        {
+         "key": "prompt.id",
+         "value": {
+          "stringValue": "c0f14404-0d62-47cb-9da0-658ab44b068f"
+         }
+        },
+        {
+         "key": "tool_name",
+         "value": {
+          "stringValue": "Read"
+         }
+        },
+        {
+         "key": "tool_use_id",
+         "value": {
+          "stringValue": "toolu_01YYqwC2Cq6Y8bRCHVTTC89s"
+         }
+        },
+        {
+         "key": "success",
+         "value": {
+          "stringValue": "true"
+         }
+        },
+        {
+         "key": "duration_ms",
+         "value": {
+          "stringValue": "19"
+         }
+        },
+        {
+         "key": "tool_input",
+         "value": {
+          "stringValue": "{\"file_path\":\"/home/ada/project/note.txt\"}"
+         }
+        },
+        {
+         "key": "tool_input_size_bytes",
+         "value": {
+          "stringValue": "38"
+         }
+        },
+        {
+         "key": "tool_result_size_bytes",
+         "value": {
+          "stringValue": "16"
+         }
+        },
+        {
+         "key": "request_id",
+         "value": {
+          "stringValue": "req_011ChJnkD3cpnkSCVQKhwNpL"
+         }
+        }
+       ],
+       "droppedAttributesCount": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

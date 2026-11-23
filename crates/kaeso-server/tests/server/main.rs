@@ -30,6 +30,7 @@ mod gateway_overhead;
 mod gemini_apps;
 mod guardrails;
 mod images;
+mod ingest;
 mod instance_users;
 mod jobs;
 mod key_failures;

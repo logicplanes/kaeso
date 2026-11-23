@@ -232,11 +232,11 @@ booleans, and arrays of plain values.
 {{- end -}}
 
 {{/*
-The paths the gateway answers, as prefixes: the model APIs, the Platform API, the MCP portal and
-the sign-in of agents. Everything else is the console's.
+The paths the gateway answers, as prefixes: the model APIs, the Platform API, the MCP portal, the
+sign-in of agents and what sources report. Everything else is the console's.
 */}}
 {{- define "kaeso.gatewayPaths" -}}
-{{- list "/v1" "/v1beta" "/v2" "/platform" "/mcp" "/oauth" "/.well-known/oauth-authorization-server" "/.well-known/oauth-protected-resource" | toJson -}}
+{{- list "/v1" "/v1beta" "/v2" "/platform" "/mcp" "/oauth" "/ingest" "/.well-known/oauth-authorization-server" "/.well-known/oauth-protected-resource" | toJson -}}
 {{- end -}}
 
 {{/* A bundled store's StatefulSet volume claim. */}}

@@ -23,6 +23,7 @@ pub fn router(state: AppState) -> Router {
             .merge(mcp::router(&state, in_process))
             .merge(portal::router(&state))
             .merge(crate::scim::router())
+            .merge(crate::ingest::router())
     };
     let router = router
         .route_layer(middleware::from_fn_with_state(
