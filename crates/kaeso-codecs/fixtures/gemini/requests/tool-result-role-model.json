@@ -1,0 +1,71 @@
+{
+  "contents": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "text": "Create hello.txt with hi, then say what you did."
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "functionCall": {
+            "id": "call_go_sdk_1",
+            "name": "write_file",
+            "args": {
+              "path": "hello.txt",
+              "content": "hi"
+            }
+          },
+          "thoughtSignature": "c2tpcF90aG91Z2h0X3NpZ25hdHVyZV92YWxpZGF0b3I="
+        }
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "functionResponse": {
+            "id": "call_go_sdk_1",
+            "name": "write_file",
+            "response": {
+              "output": "Created hello.txt."
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "functionDeclarations": [
+        {
+          "name": "write_file",
+          "description": "Writes text to a file.",
+          "parametersJsonSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "content": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    }
+  ],
+  "generationConfig": {
+    "maxOutputTokens": 1024
+  }
+}

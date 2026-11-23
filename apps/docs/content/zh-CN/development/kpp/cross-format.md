@@ -339,7 +339,7 @@ Anthropic 和 Responses 模型会在工具结果中原样收到这些媒体，Ge
 | --- | --- | --- |
 | OpenAI Chat Completions 和 Responses | SSE 注释 `: keepalive` 加一个空行 | 在 SSE 规范中，以冒号开头的行是注释，OpenAI SDK 的解析器会跳过它们 |
 | Anthropic Messages | `event: ping` 加 `data: {"type": "ping"}`，与 Anthropic 发送的完全一致 | Anthropic SDK 会跳过 ping 事件 |
-| Gemini API | 一个空行 | `google-genai` SDK 会跳过空行，但把其他所有不以 `data: ` 开头的行当作 JSON 读取，因此注释会让它出错；前面没有数据的空行不会派发事件 |
+| Gemini API | 两个换行符（`\n\n`） | Python、Go（`google.golang.org/genai`）和 JS（`@google/genai`）SDK 都会跳过以 `\n\n` 分隔的空 chunk，而注释会让 Python 出错、单个换行符会让 Go 出错 |
 
 保活帧以两种方式到达线路：
 

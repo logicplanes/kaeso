@@ -523,6 +523,81 @@ expression: outcomes
     "param": "messages[2].blocks[0].content[1]",
     "unsupported": "messages[2].blocks[0].content[1].inlineData.displayName"
   },
+  "tool-result-role-model": {
+    "body": {
+      "max_tokens": 1024,
+      "messages": [
+        {
+          "content": [
+            {
+              "text": "Create hello.txt with hi, then say what you did.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        },
+        {
+          "content": [
+            {
+              "id": "call_go_sdk_1",
+              "input": {
+                "content": "hi",
+                "path": "hello.txt"
+              },
+              "name": "write_file",
+              "type": "tool_use"
+            }
+          ],
+          "role": "assistant"
+        },
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "content": [
+                {
+                  "text": "Created hello.txt.",
+                  "type": "text"
+                }
+              ],
+              "tool_use_id": "call_go_sdk_1",
+              "type": "tool_result"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gemini-3.5-flash",
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Writes text to a file.",
+          "input_schema": {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "content"
+            ],
+            "type": "object"
+          },
+          "name": "write_file"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "tool-result-signature": {
     "body": {
       "max_tokens": 4096,

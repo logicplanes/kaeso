@@ -15,6 +15,7 @@ A `<name>.meta.json` names the model or the method of a request when the round-t
 | `tools-forced.json` | `mode: ANY` with one `allowedFunctionNames` entry | schema: FunctionCallingConfig (discovery v1beta revision 20261106) |
 | `tool-result-signature.json` | the model content of `responses/recorded-tools-parallel.json` sent back with its thought signature, and two function responses | doc: thought signatures, parallel function calling |
 | `tool-result-dummy-signature.json` | a function call from another model with the documented dummy signature and an id in Anthropic's pattern | doc: thought signatures, FAQ |
+| `tool-result-role-model.json` | a `functionResponse` turn sent with `role: "model"`, as `google.golang.org/genai` clients send it | sdk: `google.golang.org/genai` (`functionResponse` content with `role: "model"`) |
 | `tool-result-media.json` | a function response with an image part and a `$ref` to it | doc: function calling, multimodal function responses |
 | `history-without-ids.json` | function calls and responses without ids, matched by name; a response that is a JSON object | schema: FunctionCall, FunctionResponse (discovery v1beta revision 20261106) |
 | `structured-json-schema.json` | `responseMimeType: application/json` with `responseJsonSchema` | doc: structured output |

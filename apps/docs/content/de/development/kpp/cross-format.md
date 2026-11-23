@@ -339,7 +339,7 @@ Ein Anbieter kann minutenlang streamen, ohne etwas zu erzeugen, das das Format d
 | --- | --- | --- |
 | OpenAI Chat Completions und Responses | Der SSE-Kommentar `: keepalive` und eine Leerzeile | Zeilen, die mit einem Doppelpunkt beginnen, sind in der SSE-Spezifikation Kommentare, und die Parser der OpenAI-SDKs überspringen sie |
 | Anthropic Messages | `event: ping` mit `data: {"type": "ping"}`, genau wie Anthropic es sendet | Die Anthropic-SDKs überspringen Ping-Events |
-| Gemini API | Eine Leerzeile | Das SDK `google-genai` überspringt Leerzeilen, liest aber jede andere Zeile, die nicht mit `data: ` beginnt, als JSON, sodass ein Kommentar es brechen würde; eine Leerzeile ohne Daten davor löst kein Event aus |
+| Gemini API | Zwei Zeilenumbrüche (`\n\n`) | Das Python-, Go- (`google.golang.org/genai`) und JS-SDK (`@google/genai`) überspringen leere, durch `\n\n` getrennte Chunks, während ein Kommentar Python und ein einzelner Umbruch Go bricht |
 
 Frames gelangen auf zwei Wegen auf die Leitung:
 

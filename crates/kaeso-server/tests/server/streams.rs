@@ -922,13 +922,25 @@ async fn a_request_body_dripped_in_time_for_each_part_is_refused_at_its_deadline
 }
 
 fn gemini_frames(text: &str) -> (usize, Vec<Value>) {
-    let chunks: Vec<Value> = text
-        .lines()
-        .filter_map(|l| l.strip_prefix("data: "))
-        .map(|d| serde_json::from_str(d.trim_end()).unwrap())
-        .collect();
-    let lines = text.matches('\n').count();
-    (lines - 2 * chunks.len(), chunks)
+    if text.is_empty() {
+        return (0, Vec::new());
+    }
+    let body = text
+        .strip_suffix("\n\n")
+        .unwrap_or_else(|| panic!("unterminated Gemini SSE stream: {text:?}"));
+    let mut keepalives = 0;
+    let mut chunks = Vec::new();
+    for frame in body.split("\n\n") {
+        if frame.is_empty() {
+            keepalives += 1;
+        } else {
+            let data = frame
+                .strip_prefix("data: ")
+                .unwrap_or_else(|| panic!("unexpected Gemini SSE frame: {frame:?} in {text:?}"));
+            chunks.push(serde_json::from_str(data.trim_end()).unwrap());
+        }
+    }
+    (keepalives, chunks)
 }
 
 #[tokio::test]
@@ -1013,7 +1025,7 @@ async fn apps_hear_keepalives_while_a_tool_calls_arguments_are_held_back() {
         let r = call(&env, &path, None, false, Some(body)).await;
         assert_eq!(r.status, 200, "{}", r.text());
         let text = r.text();
-        assert_eq!(keepalive_of(DialectId::Gemini), "\n");
+        assert_eq!(keepalive_of(DialectId::Gemini), "\n\n");
         let (blank, chunks) = gemini_frames(&text);
         assert!(blank >= 2, "{text:?}");
         let calls: Vec<&Value> = chunks
