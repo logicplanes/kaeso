@@ -60,6 +60,35 @@ describe("SourcesPage", () => {
     expect(await screen.findByText("No archived sources")).toBeInTheDocument();
   });
 
+  it("adds a source from the header or with C, lists service accounts by name, and opens a source", async () => {
+    signedIn();
+    projectData({ sources: [claude], accounts: [serviceAccount(), serviceAccount({ id: "sa_audit", name: "audit" })] });
+    on("GET", SOURCE, claude);
+    const { user, router } = await renderApp(projectPath("sources"));
+    const grid = await screen.findByRole("grid", { name: "Sources" });
+
+    await user.click(screen.getAllByRole("button", { name: "Add source" })[0] as HTMLElement);
+    const dialog = await screen.findByRole("dialog", { name: /Add source/ });
+    await user.click(within(dialog).getByRole("radio", { name: /HTTP/ }));
+    await user.click(within(dialog).getByRole("button", { name: "Continue" }));
+    await user.click(await within(dialog).findByRole("combobox", { name: "Counts for" }));
+    const options = (await screen.findAllByRole("option")).map((o) => o.textContent);
+    expect(options).toEqual(["You", "audit (service account)", "ci-deploy (service account)"]);
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("option")).not.toBeInTheDocument());
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Add source/ })).not.toBeInTheDocument());
+
+    await user.keyboard("c");
+    expect(await screen.findByRole("dialog", { name: /Add source/ })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /Add source/ })).not.toBeInTheDocument());
+
+    await user.click(within(grid).getByText("Claude Code, Ada's laptop"));
+    expect(await screen.findByRole("dialog", { name: "Claude Code, Ada's laptop" })).toBeInTheDocument();
+    expect(router.state.location.search).toMatchObject({ source: "src_claude" });
+  });
+
   it("says why the sources couldn't load", async () => {
     signedIn();
     projectData();

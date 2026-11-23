@@ -117,6 +117,28 @@ describe("SourceSheet", () => {
     expect(body).toEqual({ disabled: true });
   });
 
+  it("shows the setting being saved while its change is on the way", async () => {
+    signedIn();
+    source();
+    on("PATCH", SOURCE, () => new Promise(() => undefined));
+    const { user } = await renderApp(projectPath("sources?source=src_claude"));
+    const sheet = await screen.findByRole("dialog", { name: "Claude Code, Ada's laptop" });
+    await user.click(await within(sheet).findByRole("switch", { name: "Keep prompts and replies" }));
+    await waitFor(() => expect(within(sheet).getByRole("switch", { name: "Keep prompts and replies" })).toHaveAttribute("aria-busy", "true"));
+    expect(within(sheet).getByRole("switch", { name: "Match members by email" })).not.toHaveAttribute("aria-busy");
+    expect(within(sheet).getByRole("switch", { name: "Accept its events" })).not.toHaveAttribute("aria-busy");
+    await user.click(within(sheet).getByRole("button", { name: "Rename" }));
+    expect(within(sheet).getByRole("button", { name: "Save" })).not.toHaveAttribute("aria-busy");
+  });
+
+  it("names a service account it can't find by its id", async () => {
+    signedIn();
+    source(externalSource({ user_id: null, service_account_id: "sa_gone" }));
+    await renderApp(projectPath("sources?source=src_claude"));
+    const sheet = await screen.findByRole("dialog", { name: "Claude Code, Ada's laptop" });
+    expect(await within(sheet).findByText("sa_gone (service account)")).toBeInTheDocument();
+  });
+
   it("enables a disabled source again", async () => {
     signedIn();
     source(externalSource({ disabled_at: "2026-10-15T10:00:00Z", status: "disabled" }));
@@ -145,6 +167,18 @@ describe("SourceSheet", () => {
     expect(requests("POST", `${SOURCE}/rotate`)).toHaveLength(1);
     await user.click(within(result).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /New key for/ })).not.toBeInTheDocument());
+  });
+
+  it("keeps its key when the new-key question is dismissed", async () => {
+    signedIn();
+    source();
+    const { user } = await renderApp(projectPath("sources?source=src_claude"));
+    const sheet = await screen.findByRole("dialog", { name: "Claude Code, Ada's laptop" });
+    await user.click(await within(sheet).findByRole("button", { name: "Give it a new key" }));
+    await screen.findByRole("dialog", { name: /Give Claude Code, Ada's laptop a new key\?/ });
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: /a new key\?/ })).not.toBeInTheDocument());
+    expect(requests("POST", `${SOURCE}/rotate`)).toHaveLength(0);
   });
 
   it("archives the source after confirming", async () => {
@@ -194,6 +228,28 @@ describe("SourceSheet", () => {
     await user.click(within(sheet).getByRole("combobox", { name: "Counts for" }));
     await user.click(await screen.findByRole("option", { name: "You" }));
     await waitFor(() => expect(requests("PATCH", SOURCE).map((r) => r.body)).toContainEqual({ user_id: "usr_ada" }));
+  });
+
+  it("lists the service accounts it can count for by name, and closes with Escape", async () => {
+    signedIn();
+    projectData({
+      sources: [claude],
+      accounts: [
+        serviceAccount(),
+        serviceAccount({ id: "sa_old", name: "batch", archived_at: "2026-10-01T12:00:00Z" }),
+        serviceAccount({ id: "sa_audit", name: "audit" }),
+      ],
+    });
+    on("GET", SOURCE, claude);
+    const { user, router } = await renderApp(projectPath("sources?source=src_claude"));
+    const sheet = await screen.findByRole("dialog", { name: "Claude Code, Ada's laptop" });
+    await user.click(await within(sheet).findByRole("combobox", { name: "Counts for" }));
+    const options = (await screen.findAllByRole("option")).map((o) => o.textContent);
+    expect(options).toEqual(["You", "audit (service account)", "ci-deploy (service account)"]);
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("option")).not.toBeInTheDocument());
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
 
   it("says when the source doesn't exist, and closes", async () => {
