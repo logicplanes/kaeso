@@ -156,12 +156,14 @@ describe("SourcesPage", () => {
     expect(within(result).getByText("~/.codex/config.toml")).toBeInTheDocument();
     expect(within(result).getAllByText("Waiting for the first event; use the client once.").length).toBeGreaterThan(0);
 
+    const listed = requests("GET", SOURCES).length;
     reported = true;
     await act(async () => {
       await vi.advanceTimersByTimeAsync(WATCH_MS);
     });
     await waitFor(() => expect(within(result).getByRole("status")).toHaveTextContent("Connected"));
     expect(within(result).getByRole("status")).toHaveTextContent("2 requests and 1 tool call so far");
+    await waitFor(() => expect(requests("GET", SOURCES).length).toBeGreaterThan(listed));
     await user.click(within(result).getByRole("button", { name: "Finish" }));
     await waitFor(() => expect(router.state.location.search).toEqual({}));
   });
