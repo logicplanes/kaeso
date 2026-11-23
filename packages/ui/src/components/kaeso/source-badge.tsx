@@ -7,10 +7,10 @@ import { MarkGlyph } from "./identity.js";
 /** The tile is a provider tile, in the same four sizes. */
 export const KAESO_SOURCE_BADGE_VARIANTS = {
   size: {
-    sm: { classes: "size-16 rounded-cell text-micro", description: "16px, inside table cells" },
-    md: { classes: "size-20 rounded-avatar text-micro", description: "20px (default)" },
-    lg: { classes: "size-28 rounded-org text-caption", description: "28px" },
-    xl: { classes: "size-40 rounded-org text-body", description: "40px: a source's own page" },
+    sm: { classes: "size-16 rounded-cell", description: "16px, inside table cells" },
+    md: { classes: "size-20 rounded-avatar", description: "20px (default)" },
+    lg: { classes: "size-28 rounded-org", description: "28px" },
+    xl: { classes: "size-40 rounded-org", description: "40px: a source's own page" },
   },
 } as const;
 export const KAESO_SOURCE_BADGE_DEFAULT_VARIANTS = { size: "md" } as const;
