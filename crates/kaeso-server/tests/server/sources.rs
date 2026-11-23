@@ -608,3 +608,17 @@ async fn the_log_lists_only_observed_requests_when_asked() {
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0]["source"], "observed");
 }
+
+#[test]
+fn the_api_document_describes_a_source_with_its_own_schema() {
+    let doc = serde_json::to_value(kaeso_server::platform::openapi()).unwrap();
+    let list = &doc["paths"]["/platform/v1/orgs/{org}/projects/{project}/sources/{source}"]["get"]
+        ["responses"]["200"]["content"]["application/json"]["schema"]["$ref"];
+    let name = list.as_str().unwrap().rsplit('/').next().unwrap();
+    let schema = &doc["components"]["schemas"][name];
+    assert_eq!(
+        schema["properties"]["kind"]["$ref"], "#/components/schemas/SourceKindView",
+        "another type took the name {name}: {schema}"
+    );
+    assert!(schema["properties"]["status"].is_object());
+}

@@ -23568,7 +23568,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/List_SourceView"
+                  "$ref": "#/components/schemas/List_ExternalSourceView"
                 }
               }
             }
@@ -23737,7 +23737,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SourceView"
+                  "$ref": "#/components/schemas/ExternalSourceView"
                 }
               }
             }
@@ -23828,7 +23828,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SourceView"
+                  "$ref": "#/components/schemas/ExternalSourceView"
                 }
               }
             }
@@ -23914,7 +23914,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SourceView"
+                  "$ref": "#/components/schemas/ExternalSourceView"
                 }
               }
             }
@@ -31751,6 +31751,156 @@
           }
         }
       },
+      "ExternalSourceView": {
+        "type": "object",
+        "description": "A source: a client that reports the requests and tool calls it makes without the gateway. Kaeso logs and counts them as observed; it never sits in their path and can't refuse them.",
+        "required": [
+          "id",
+          "project_id",
+          "kind",
+          "name",
+          "key",
+          "match_members",
+          "content",
+          "status",
+          "activity",
+          "ingest_url",
+          "created_at"
+        ],
+        "properties": {
+          "activity": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceDay"
+            },
+            "description": "The last 14 days, oldest first; days without events are left out."
+          },
+          "archived_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When archived."
+          },
+          "content": {
+            "type": "boolean",
+            "description": "Whether prompts, replies and tool arguments the source sends are kept, as far as the organization and the project keep content."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Created."
+          },
+          "created_by": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "Who added it."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "disabled_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When disabled."
+          },
+          "first_event_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Its first event."
+          },
+          "id": {
+            "$ref": "#/components/schemas/SourceId",
+            "description": "Id."
+          },
+          "ingest_url": {
+            "type": "string",
+            "description": "Where it sends its events: the OpenTelemetry endpoint is this URL with `/otlp` added, the JSON endpoints this URL with `/v1/…`.",
+            "example": "https://kaeso.example.com/ingest"
+          },
+          "key": {
+            "type": "string",
+            "description": "The key, with only its start and last four characters.",
+            "example": "sk-kso-src-AbC123…wXyZ"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/SourceKindView",
+            "description": "The client it reports from."
+          },
+          "last_error": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why, as a code: `no_model`, `no_tool` or `no_id` for a record without what its format needs, `too_many_tokens`, `cost_too_high` or `bad_status` for numbers no request has, `too_old` (more than 7 days) or `in_future` for its date, `nobody` when the source counts for no one, `unreadable` for a body Kaeso can't read, `inactive` for a disabled source."
+          },
+          "last_error_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When Kaeso last refused something it sent."
+          },
+          "last_event_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "Its latest event."
+          },
+          "match_members": {
+            "type": "boolean",
+            "description": "Whether an event's email address counts the request for the organization member with that address."
+          },
+          "name": {
+            "type": "string",
+            "description": "Name.",
+            "example": "Claude Code, Ada's laptop"
+          },
+          "project_id": {
+            "$ref": "#/components/schemas/ProjectId",
+            "description": "The project its requests count in."
+          },
+          "service_account_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ServiceAccountId",
+                "description": "The service account its requests count for instead of a member."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/SourceStatus",
+            "description": "Whether it reports."
+          },
+          "user_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserId",
+                "description": "The member its requests count for when an event names nobody Kaeso knows."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
       "FallbackView": {
         "type": "object",
         "description": "A step of an alias's route that failed or was skipped, so the request moved on.",
@@ -35997,6 +36147,181 @@
           }
         }
       },
+      "List_ExternalSourceView": {
+        "type": "object",
+        "description": "A page of results.",
+        "required": [
+          "data",
+          "has_more"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "A source: a client that reports the requests and tool calls it makes without the gateway. Kaeso logs and counts them as observed; it never sits in their path and can't refuse them.",
+              "required": [
+                "id",
+                "project_id",
+                "kind",
+                "name",
+                "key",
+                "match_members",
+                "content",
+                "status",
+                "activity",
+                "ingest_url",
+                "created_at"
+              ],
+              "properties": {
+                "activity": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SourceDay"
+                  },
+                  "description": "The last 14 days, oldest first; days without events are left out."
+                },
+                "archived_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When archived."
+                },
+                "content": {
+                  "type": "boolean",
+                  "description": "Whether prompts, replies and tool arguments the source sends are kept, as far as the organization and the project keep content."
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Created."
+                },
+                "created_by": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/UserId",
+                      "description": "Who added it."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "disabled_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When disabled."
+                },
+                "first_event_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "Its first event."
+                },
+                "id": {
+                  "$ref": "#/components/schemas/SourceId",
+                  "description": "Id."
+                },
+                "ingest_url": {
+                  "type": "string",
+                  "description": "Where it sends its events: the OpenTelemetry endpoint is this URL with `/otlp` added, the JSON endpoints this URL with `/v1/…`.",
+                  "example": "https://kaeso.example.com/ingest"
+                },
+                "key": {
+                  "type": "string",
+                  "description": "The key, with only its start and last four characters.",
+                  "example": "sk-kso-src-AbC123…wXyZ"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/SourceKindView",
+                  "description": "The client it reports from."
+                },
+                "last_error": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Why, as a code: `no_model`, `no_tool` or `no_id` for a record without what its format needs, `too_many_tokens`, `cost_too_high` or `bad_status` for numbers no request has, `too_old` (more than 7 days) or `in_future` for its date, `nobody` when the source counts for no one, `unreadable` for a body Kaeso can't read, `inactive` for a disabled source."
+                },
+                "last_error_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "When Kaeso last refused something it sent."
+                },
+                "last_event_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "description": "Its latest event."
+                },
+                "match_members": {
+                  "type": "boolean",
+                  "description": "Whether an event's email address counts the request for the organization member with that address."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name.",
+                  "example": "Claude Code, Ada's laptop"
+                },
+                "project_id": {
+                  "$ref": "#/components/schemas/ProjectId",
+                  "description": "The project its requests count in."
+                },
+                "service_account_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ServiceAccountId",
+                      "description": "The service account its requests count for instead of a member."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "status": {
+                  "$ref": "#/components/schemas/SourceStatus",
+                  "description": "Whether it reports."
+                },
+                "user_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/UserId",
+                      "description": "The member its requests count for when an event names nobody Kaeso knows."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "The items."
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "Whether more items follow."
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Pass as `after` to get the next page; `null` on the last page."
+          }
+        }
+      },
       "List_GuardrailView": {
         "type": "object",
         "description": "A page of results.",
@@ -39075,181 +39400,6 @@
                   "type": "integer",
                   "format": "int64",
                   "description": "How often it was opened."
-                }
-              }
-            },
-            "description": "The items."
-          },
-          "has_more": {
-            "type": "boolean",
-            "description": "Whether more items follow."
-          },
-          "next_cursor": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Pass as `after` to get the next page; `null` on the last page."
-          }
-        }
-      },
-      "List_SourceView": {
-        "type": "object",
-        "description": "A page of results.",
-        "required": [
-          "data",
-          "has_more"
-        ],
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "description": "A source: a client that reports the requests and tool calls it makes without the gateway. Kaeso logs and counts them as observed; it never sits in their path and can't refuse them.",
-              "required": [
-                "id",
-                "project_id",
-                "kind",
-                "name",
-                "key",
-                "match_members",
-                "content",
-                "status",
-                "activity",
-                "ingest_url",
-                "created_at"
-              ],
-              "properties": {
-                "activity": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SourceDay"
-                  },
-                  "description": "The last 14 days, oldest first; days without events are left out."
-                },
-                "archived_at": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time",
-                  "description": "When archived."
-                },
-                "content": {
-                  "type": "boolean",
-                  "description": "Whether prompts, replies and tool arguments the source sends are kept, as far as the organization and the project keep content."
-                },
-                "created_at": {
-                  "type": "string",
-                  "format": "date-time",
-                  "description": "Created."
-                },
-                "created_by": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/UserId",
-                      "description": "Who added it."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "disabled_at": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time",
-                  "description": "When disabled."
-                },
-                "first_event_at": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time",
-                  "description": "Its first event."
-                },
-                "id": {
-                  "$ref": "#/components/schemas/SourceId",
-                  "description": "Id."
-                },
-                "ingest_url": {
-                  "type": "string",
-                  "description": "Where it sends its events: the OpenTelemetry endpoint is this URL with `/otlp` added, the JSON endpoints this URL with `/v1/…`.",
-                  "example": "https://kaeso.example.com/ingest"
-                },
-                "key": {
-                  "type": "string",
-                  "description": "The key, with only its start and last four characters.",
-                  "example": "sk-kso-src-AbC123…wXyZ"
-                },
-                "kind": {
-                  "$ref": "#/components/schemas/SourceKindView",
-                  "description": "The client it reports from."
-                },
-                "last_error": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "Why, as a code: `no_model`, `no_tool` or `no_id` for a record without what its format needs, `too_many_tokens`, `cost_too_high` or `bad_status` for numbers no request has, `too_old` (more than 7 days) or `in_future` for its date, `nobody` when the source counts for no one, `unreadable` for a body Kaeso can't read, `inactive` for a disabled source."
-                },
-                "last_error_at": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time",
-                  "description": "When Kaeso last refused something it sent."
-                },
-                "last_event_at": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "format": "date-time",
-                  "description": "Its latest event."
-                },
-                "match_members": {
-                  "type": "boolean",
-                  "description": "Whether an event's email address counts the request for the organization member with that address."
-                },
-                "name": {
-                  "type": "string",
-                  "description": "Name.",
-                  "example": "Claude Code, Ada's laptop"
-                },
-                "project_id": {
-                  "$ref": "#/components/schemas/ProjectId",
-                  "description": "The project its requests count in."
-                },
-                "service_account_id": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/ServiceAccountId",
-                      "description": "The service account its requests count for instead of a member."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "status": {
-                  "$ref": "#/components/schemas/SourceStatus",
-                  "description": "Whether it reports."
-                },
-                "user_id": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/UserId",
-                      "description": "The member its requests count for when an event names nobody Kaeso knows."
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
                 }
               }
             },
@@ -48430,7 +48580,7 @@
             "example": "sk-kso-src-AbC123dEf456gHi789jKl012mNo345pQr678sTu901vWxY"
           },
           "source": {
-            "$ref": "#/components/schemas/SourceView",
+            "$ref": "#/components/schemas/ExternalSourceView",
             "description": "The source."
           }
         }

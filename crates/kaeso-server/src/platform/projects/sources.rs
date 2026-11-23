@@ -112,7 +112,7 @@ pub struct SourceDay {
     without the gateway. Kaeso logs and counts them as observed; it never sits in their path and \
     can't refuse them."
 )]
-pub struct SourceView {
+pub struct ExternalSourceView {
     #[doc = "Id."]
     pub id: SourceId,
     #[doc = "The project its requests count in."]
@@ -175,7 +175,7 @@ pub struct SourceView {
 #[schema(description = "A source with its key, shown this once.")]
 pub struct SourceCreated {
     #[doc = "The source."]
-    pub source: SourceView,
+    pub source: ExternalSourceView,
     #[doc = "The key the client sends its events with. Kaeso keeps only its hash."]
     #[schema(example = "sk-kso-src-AbC123dEf456gHi789jKl012mNo345pQr678sTu901vWxY")]
     pub key: String,
@@ -207,8 +207,13 @@ fn day(d: Date) -> String {
     format!("{y:04}-{m:02}-{d:02}")
 }
 
-pub fn view(state: &AppState, s: &Source, days: &[store::Day], now: OffsetDateTime) -> SourceView {
-    SourceView {
+pub fn view(
+    state: &AppState,
+    s: &Source,
+    days: &[store::Day],
+    now: OffsetDateTime,
+) -> ExternalSourceView {
+    ExternalSourceView {
         id: SourceId::from_uuid(s.id),
         project_id: ProjectId::from_uuid(s.project_id),
         kind: s
@@ -249,7 +254,7 @@ pub async fn views(
     state: &AppState,
     rows: &[Source],
     now: OffsetDateTime,
-) -> ApiResult<Vec<SourceView>> {
+) -> ApiResult<Vec<ExternalSourceView>> {
     let ids: Vec<Uuid> = rows.iter().map(|s| s.id).collect();
     let from = now.date() - Duration::days(ACTIVITY_DAYS - 1);
     let days = store::activity(&state.pg, &ids, from).await?;
@@ -269,7 +274,7 @@ pub struct SourceFilter {
     summary = "The project's sources, newest first.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), PageParams, SourceFilter),
-    responses((status = 200, body = List<SourceView>))
+    responses((status = 200, body = List<ExternalSourceView>))
 )]
 pub async fn list(
     State(state): State<AppState>,
@@ -277,7 +282,7 @@ pub async fn list(
     Path(_p): Path<(String, String)>,
     Query(page): Query<PageParams>,
     Query(f): Query<SourceFilter>,
-) -> ApiResult<Json<List<SourceView>>> {
+) -> ApiResult<Json<List<ExternalSourceView>>> {
     let page = page.page()?;
     let rows = store::list(
         &state.pg,
@@ -466,13 +471,13 @@ async fn lock_active(tx: &mut PgConnection, ctx: &Ctx, id: &str) -> ApiResult<So
     summary = "One source.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("source" = SourceId, Path)),
-    responses((status = 200, body = SourceView))
+    responses((status = 200, body = ExternalSourceView))
 )]
 pub async fn get(
     State(state): State<AppState>,
     ctx: Ctx,
     Path((_o, _p, id)): Path<(String, String, String)>,
-) -> ApiResult<Json<SourceView>> {
+) -> ApiResult<Json<ExternalSourceView>> {
     let row = find(&state, &ctx, &id).await?;
     let mut list = views(&state, std::slice::from_ref(&row), ctx.now).await?;
     list.pop()
@@ -506,14 +511,14 @@ pub struct SourceUpdate {
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("source" = SourceId, Path)),
     request_body = SourceUpdate,
-    responses((status = 200, body = SourceView))
+    responses((status = 200, body = ExternalSourceView))
 )]
 pub async fn update(
     State(state): State<AppState>,
     ctx: Ctx,
     Path((_o, _p, id)): Path<(String, String, String)>,
     Body(req): Body<SourceUpdate>,
-) -> ApiResult<Json<SourceView>> {
+) -> ApiResult<Json<ExternalSourceView>> {
     ensure_active(&ctx, ARCHIVED)?;
     let mut tx = state.pg.begin().await?;
     let before = lock_active(&mut tx, &ctx, &id).await?;
@@ -607,13 +612,13 @@ pub async fn rotate(
     reported stays in the logs and the usage. Permanent.",
     tag = "projects",
     params(("org" = OrgId, Path), ("project" = ProjectId, Path), ("source" = SourceId, Path)),
-    responses((status = 200, body = SourceView))
+    responses((status = 200, body = ExternalSourceView))
 )]
 pub async fn archive(
     State(state): State<AppState>,
     ctx: Ctx,
     Path((_o, _p, id)): Path<(String, String, String)>,
-) -> ApiResult<Json<SourceView>> {
+) -> ApiResult<Json<ExternalSourceView>> {
     ensure_active(&ctx, ARCHIVED)?;
     let mut tx = state.pg.begin().await?;
     let mut row = lock_active(&mut tx, &ctx, &id).await?;
