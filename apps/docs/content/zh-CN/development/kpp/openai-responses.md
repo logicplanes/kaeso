@@ -66,7 +66,8 @@ order: 7
 | `text.format` 其他类型 | extras `text.format` | |
 | `text.verbosity` | `"medium"` 是默认值，GPT-5 和 Codex 客户端每次请求都会发送：作为形式标记。`low`/`high`：extras `text.verbosity`，一种输出长度提示：接受 `verbosity` 的 Chat Completions 目标会收到它，其他方言会省略它（参见[条件条目](cross-format.md#条件条目)）。 | `null`：形式标记。 |
 | `reasoning.effort` | `reasoning.effort` 类型化 | 来自其他方言时（参见[推理](reasoning.md)）：显式推理强度原样使用；Anthropic `thinking.disabled` → `none`；预算 → `low`（低于 4,096）、`medium`（4,096 到 16,383）、`high`（16,384 及以上），与[推理强度与预算](reasoning.md#推理强度与预算)一致。取值从 `none` 到 `max`；未知值为 `ReasoningEffort::Other`。 |
-| `reasoning.summary` | `reasoning.summary` 类型化 | `auto`/`concise`/`detailed`/其他。开启了思考、且 `display` 不是 `omitted` 的 Anthropic Messages 请求会得到 `summary: "auto"`，因为 OpenAI 只有在被要求时才返回可读推理（参见[可读推理与摘要](reasoning.md#可读推理与摘要)）。不适用于 `/v1/responses/input_tokens`。OpenAI 要求部分组织先完成验证才能获得推理摘要；对于这类组织的服务商密钥，OpenAI 的错误会原样传给应用。 |
+| `reasoning.summary` | `reasoning.summary` 类型化 | `auto`/`concise`/`detailed`/其他。开启思考且 `display` 非 `omitted` 的 Anthropic 请求，以及带 OpenRouter `reasoning` 对象且未设 `exclude: true` 的 Chat 请求，均得 `summary: "auto"`（[可读推理与摘要](reasoning.md#可读推理与摘要)）。不适用于 `/v1/responses/input_tokens`。未验证组织的 OpenAI 错误原样传给应用。 |
+| `reasoning.max_tokens`、`enabled`、`exclude` | `reasoning` 类型化 | OpenRouter 字段：预算、自适应/关闭及在回复中隐藏推理（保留 `reasoning_tokens`）；冲突为 `InvalidRequest`（[OpenAI Chat](openai-chat.md#请求createchatcompletionrequest)）。 |
 | `reasoning.mode`（`standard`/`pro`）、`reasoning.context`、`reasoning.generate_summary`（已弃用） | `ReasoningConfig` 的 extras | 与 KPP 的 `ReasoningMode`（Anthropic 思考的开或关）不是同一概念。 |
 | `reasoning` `{}` | `reasoning` = 空配置 | 形式标记 `object`。 |
 | `include[]` `"reasoning.encrypted_content"` | `reasoning.include_encrypted` 类型化 | 没有 `reasoning` 对象时：配置上的形式标记 `no_object`。来自其他方言的请求只要（经推理强度换算后）发送了 `none` 以外的推理强度，就总会请求它；当 `EgressCtx::reasoning = Some(true)` 时，没有推理强度的 Anthropic `adaptive` 或 `enabled` 思考也会请求它（参见[可读推理与摘要](reasoning.md#可读推理与摘要)）。在 `store: false` 下，这是在下一轮交还推理的唯一途径（参见[推理数据块](reasoning.md#推理数据块)）。 |

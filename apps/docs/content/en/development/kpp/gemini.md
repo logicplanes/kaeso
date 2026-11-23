@@ -135,7 +135,7 @@ The SDK also sends `topK` as a float, such as `20.0`. KPP reads a whole float as
 | `thinkingBudget` above 0 | `mode = Enabled`, `budget_tokens` | Other negative values → reasoning field `thinkingBudget`. |
 | `includeThoughts: true` | `reasoning.summary = Auto` | `false` → form `include_thoughts`. |
 
-From other dialects: the efforts `minimal`, `low`, `medium` and `high` become `thinkingLevel`, and `xhigh` and `max` become `HIGH`. A budget becomes `thinkingBudget`, which Gemini 3 maps to the nearest level. The effort `none` and disabled thinking become `thinkingBudget: 0`, and adaptive or enabled thinking without either becomes `-1`. `includeThoughts: true` is sent when the app asked for a reasoning summary, or for Anthropic thinking that isn't `omitted`. [Reasoning](reasoning.md#effort-and-budget) has the rules.
+From other dialects: the efforts `minimal`, `low`, `medium` and `high` become `thinkingLevel`, and `xhigh` and `max` become `HIGH`. A budget becomes `thinkingBudget`, which Gemini 3 maps to the nearest level. The effort `none` and disabled thinking become `thinkingBudget: 0`, and adaptive or enabled thinking without either becomes `-1`. `includeThoughts: true` is sent when the app asked for a reasoning summary, for Anthropic thinking that isn't `omitted`, or with OpenRouter's `reasoning` object on Chat Completions without `exclude: true`. [Reasoning](reasoning.md#effort-and-budget) has the rules.
 
 ### Thought signatures
 

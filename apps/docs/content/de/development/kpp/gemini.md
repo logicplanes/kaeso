@@ -135,7 +135,7 @@ Das SDK sendet `topK` außerdem als Gleitkommazahl, etwa `20.0`. KPP liest eine 
 | `thinkingBudget` über 0 | `mode = Enabled`, `budget_tokens` | Andere negative Werte → Reasoning-Feld `thinkingBudget`. |
 | `includeThoughts: true` | `reasoning.summary = Auto` | `false` → Form `include_thoughts`. |
 
-Aus anderen Dialekten werden die Aufwände `minimal`, `low`, `medium` und `high` zu `thinkingLevel`, `xhigh` und `max` zu `HIGH`. Ein Budget wird zu `thinkingBudget`, das Gemini 3 auf die nächstliegende Stufe abbildet. Der Aufwand `none` und ausgeschaltetes Thinking werden zu `thinkingBudget: 0`, adaptives oder eingeschaltetes Thinking ohne beides zu `-1`. `includeThoughts: true` geht mit, wenn die App eine Reasoning-Zusammenfassung verlangt hat oder Anthropic-Thinking, das nicht `omitted` ist. [Reasoning](reasoning.md#aufwand-und-budget) hat die Regeln.
+Aus anderen Dialekten werden die Aufwände `minimal`, `low`, `medium` und `high` zu `thinkingLevel`, `xhigh` und `max` zu `HIGH`. Ein Budget wird zu `thinkingBudget`, das Gemini 3 auf die nächstliegende Stufe abbildet. Der Aufwand `none` und ausgeschaltetes Thinking werden zu `thinkingBudget: 0`, adaptives oder eingeschaltetes Thinking ohne beides zu `-1`. `includeThoughts: true` geht mit, wenn die App eine Reasoning-Zusammenfassung verlangt hat, Anthropic-Thinking, das nicht `omitted` ist, oder OpenRouters `reasoning`-Objekt auf Chat Completions ohne `exclude: true`. [Reasoning](reasoning.md#aufwand-und-budget) hat die Regeln.
 
 ### Thought Signatures
 

@@ -532,6 +532,65 @@ expression: outcomes
   "n-2": {
     "rejected_by_source": "n"
   },
+  "openrouter-reasoning": {
+    "body": {
+      "max_tokens": 4096,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Check the weather in Berlin and explain whether I need an umbrella.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "claude-sonnet-5-5",
+      "output_config": {
+        "effort": "max"
+      },
+      "stream": true,
+      "system": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "text": "You are a helpful assistant. Use the tools when needed.",
+          "type": "text"
+        }
+      ],
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      },
+      "tools": [
+        {
+          "cache_control": {
+            "type": "ephemeral"
+          },
+          "description": "Get the current weather for a city.",
+          "input_schema": {
+            "properties": {
+              "city": {
+                "description": "City name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "name": "get_weather"
+        }
+      ]
+    },
+    "path": "/v1/messages"
+  },
   "plain-developer-string": {
     "body": {
       "max_tokens": 4096,
@@ -5470,9 +5529,32 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/ollama-cloud/reasoning-object": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "max_tokens": 400,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Name one prime number above 100.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "gpt-oss:20b",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/ollama-cloud/reasoning-sent-back": {
     "body": {
@@ -5763,19 +5845,83 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/openrouter/free-reasoning": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 91 a prime number? Answer yes or no with one short reason.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/openrouter/free-reasoning-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "max_tokens": 512,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 91 a prime number? Answer yes or no with one short reason.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/openrouter/free-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "max_tokens": 2048,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Count from one to five in words, separated by commas.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "google/gemma-4-31b-it:free",
+      "stream": true
+    },
+    "path": "/v1/messages"
   },
   "providers/openrouter/free-stream-rate-limited": {
     "body": {
@@ -7991,14 +8137,61 @@ expression: outcomes
     "path": "/v1/messages"
   },
   "providers/vercel/reasoning": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "max_tokens": 1024,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 91 a prime number? Answer yes or no with one short reason.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "output_config": {
+        "effort": "low"
+      },
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/vercel/reasoning-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in Anthropic Messages. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "max_tokens": 1024,
+      "messages": [
+        {
+          "content": [
+            {
+              "cache_control": {
+                "type": "ephemeral"
+              },
+              "text": "Is 91 a prime number? Answer yes or no with one short reason.",
+              "type": "text"
+            }
+          ],
+          "role": "user"
+        }
+      ],
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "output_config": {
+        "effort": "low"
+      },
+      "stream": true,
+      "thinking": {
+        "display": "summarized",
+        "type": "adaptive"
+      }
+    },
+    "path": "/v1/messages"
   },
   "providers/vercel/restricted-model": {
     "body": {

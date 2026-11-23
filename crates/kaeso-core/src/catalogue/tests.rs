@@ -3953,3 +3953,102 @@ fn assemblyai_transcribes_through_its_sync_api_per_minute_of_audio() {
     };
     assert_eq!(media_cost(&heard, &u.fields), dec!(0.01));
 }
+
+#[test]
+fn openrouter_reasoning_object_follows_clamping_left_out_and_refusals() {
+    let decode_chat = |reasoning: serde_json::Value| {
+        let body = serde_json::json!({
+            "model": "m",
+            "messages": [{"role": "user", "content": "hi"}],
+            "reasoning": reasoning
+        });
+        kaeso_codecs::dispatch::decode_request(
+            DialectId::OpenAiChat,
+            kaeso_kpp::RequestKind::Generate,
+            body.to_string().as_bytes(),
+            &kaeso_codecs::HeaderList::new(),
+        )
+        .unwrap()
+    };
+
+    let gemini_flash = eff(&entry("google", "gemini-3.5-flash"));
+    let mut req = decode_chat(serde_json::json!({"effort": "max"}));
+    let plan = prepare(&mut req, DialectId::OpenAiChat, &gemini_flash).unwrap();
+    assert_eq!(plan.adapted, ["reasoning.effort"]);
+    let Request::Generate(g) = &req else { panic!() };
+    assert_eq!(
+        g.reasoning.as_ref().unwrap().effort,
+        Some(ReasoningEffort::High)
+    );
+
+    let non_reasoning = eff(&entry("cohere", "command-a-03-2025"));
+    let mut req = decode_chat(serde_json::json!({"effort": "max"}));
+    let plan = prepare(&mut req, DialectId::OpenAiChat, &non_reasoning).unwrap();
+    assert_eq!(plan.left_out, ["reasoning.effort"]);
+    let Request::Generate(g) = &req else { panic!() };
+    assert!(g.reasoning.is_none());
+
+    let mut req = decode_chat(serde_json::json!({"effort": "max", "exclude": true}));
+    let plan = prepare(&mut req, DialectId::OpenAiChat, &non_reasoning).unwrap();
+    assert_eq!(plan.left_out, ["reasoning.effort"]);
+    let Request::Generate(g) = &req else { panic!() };
+    let r = g.reasoning.as_ref().unwrap();
+    assert!(r.exclude && r.effort.is_none());
+
+    // Review fix #2: `enabled: true` left out for a non-reasoning model stays omitted on `with_reasoning_object()`.
+    let mut req = decode_chat(serde_json::json!({"enabled": true, "exclude": true}));
+    let plan = prepare(&mut req, DialectId::OpenAiChat, &non_reasoning).unwrap();
+    assert_eq!(plan.left_out, ["reasoning"]);
+    let mut or_ctx = kaeso_codecs::EgressCtx::new(&req).with_chat_profile(
+        kaeso_codecs::openai_chat::ChatProfile::compatible("OpenRouter").with_reasoning_object(),
+    );
+    let encoded: serde_json::Value = serde_json::from_slice(
+        &<kaeso_codecs::openai_chat::OpenAiChat as kaeso_codecs::Codec>::encode_request(
+            &req,
+            &mut or_ctx,
+        )
+        .unwrap()
+        .body,
+    )
+    .unwrap();
+    assert_eq!(encoded["reasoning"], serde_json::json!({"exclude": true}));
+
+    let mut req = decode_chat(serde_json::json!({"exclude": true}));
+    let plan = prepare(&mut req, DialectId::OpenAiChat, &non_reasoning).unwrap();
+    assert!(plan.left_out.is_empty() && plan.adapted.is_empty());
+
+    let mut req = decode_chat(serde_json::json!({"max_tokens": 2048}));
+    let err = prepare(&mut req, DialectId::OpenAiChat, &non_reasoning).unwrap_err();
+    assert_eq!(err.param, Some("reasoning"));
+
+    let cohere_reasoning = eff(&entry("cohere", "command-a-reasoning-08-2025"));
+    let mut req = decode_chat(serde_json::json!({"max_tokens": 2048}));
+    let err = prepare(&mut req, DialectId::OpenAiChat, &cohere_reasoning).unwrap_err();
+    assert_eq!(err.param, Some("reasoning.max_tokens"));
+
+    let claude_haiku = eff(&entry("anthropic", "claude-haiku-4-5"));
+    let mut req = decode_chat(serde_json::json!({"enabled": true}));
+    let plan = prepare(&mut req, DialectId::OpenAiChat, &claude_haiku).unwrap();
+    assert_eq!(plan.adapted, ["reasoning"]);
+    let Request::Generate(g) = &req else { panic!() };
+    let r = g.reasoning.as_ref().unwrap();
+    assert_eq!(
+        (r.mode.clone(), r.budget_tokens),
+        (Some(ReasoningMode::Enabled), Some(8_192))
+    );
+
+    let claude_5 = eff(&entry("anthropic", "claude-sonnet-5-5"));
+    let mut req = decode_chat(serde_json::json!({"max_tokens": 8192}));
+    let plan = prepare(&mut req, DialectId::OpenAiChat, &claude_5).unwrap();
+    assert_eq!(plan.adapted, ["reasoning"]);
+    let Request::Generate(g) = &req else { panic!() };
+    let r = g.reasoning.as_ref().unwrap();
+    assert_eq!(
+        (r.mode.clone(), r.effort.clone(), r.budget_tokens),
+        (
+            Some(ReasoningMode::Adaptive),
+            Some(ReasoningEffort::Medium),
+            None
+        )
+    );
+}

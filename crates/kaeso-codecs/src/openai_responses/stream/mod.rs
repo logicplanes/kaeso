@@ -121,6 +121,7 @@ pub(super) struct Engine {
     terminated: bool,
     namespaces: Namespaces,
     searches: Vec<Search>,
+    exclude_reasoning: bool,
 }
 
 fn int(n: u32) -> Node {
@@ -166,7 +167,13 @@ impl Engine {
             terminated: false,
             namespaces,
             searches: Vec::new(),
+            exclude_reasoning: false,
         }
+    }
+
+    pub(super) fn with_exclude_reasoning(mut self, exclude: bool) -> Engine {
+        self.exclude_reasoning = exclude;
+        self
     }
 
     pub(super) fn open(&self) -> bool {
@@ -290,6 +297,9 @@ impl Engine {
                                 args: String::new(),
                             },
                         );
+                    }
+                    BlockHeader::Reasoning(_) if self.exclude_reasoning => {
+                        self.hidden.push(b.index);
                     }
                     BlockHeader::Reasoning(h)
                         if reasoning_reply_policy(h.origin.as_ref(), DIALECT)

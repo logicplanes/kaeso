@@ -281,6 +281,20 @@ pub mod reasoning_map {
     }
 }
 
+pub(crate) fn wants_chat_reasoning(cfg: &kaeso_kpp::ReasoningConfig) -> bool {
+    if cfg.exclude || !crate::openai_chat::is_reasoning_object(cfg) {
+        return false;
+    }
+    cfg.effort
+        .as_ref()
+        .is_some_and(|e| *e != ReasoningEffort::None)
+        || cfg.budget_tokens.is_some()
+        || matches!(
+            cfg.mode,
+            Some(kaeso_kpp::ReasoningMode::Enabled | kaeso_kpp::ReasoningMode::Adaptive)
+        )
+}
+
 pub fn is_allowlisted(origin: DialectId, scope: &str, key: &str) -> bool {
     EXTRAS_ALLOWLIST
         .iter()
@@ -496,9 +510,13 @@ pub(crate) fn app_field(r: &GenerateRequest, setting: Setting, target: DialectId
         (Setting::OutputFormat, C) => "response_format",
         (Setting::OutputFormat, _) => "text.format",
         (Setting::Reasoning, A) => "thinking",
+        (Setting::Reasoning, C) if crate::openai_chat::uses_reasoning_object(r) => "reasoning",
         (Setting::Reasoning, C) => "reasoning_effort",
         (Setting::Reasoning, _) => "reasoning",
         (Setting::ReasoningEffort, A) => "output_config.effort",
+        (Setting::ReasoningEffort, C) if crate::openai_chat::uses_reasoning_object(r) => {
+            "reasoning.effort"
+        }
         (Setting::ReasoningEffort, C) => "reasoning_effort",
         (Setting::ReasoningEffort, _) => "reasoning.effort",
         (Setting::Modalities, G) => "generationConfig.responseModalities",

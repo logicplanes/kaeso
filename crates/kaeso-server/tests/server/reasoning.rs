@@ -11,7 +11,11 @@ use serde_json::{Value, json};
 async fn env() -> Env {
     let env = common::v1::env(Some(Arc::new(Capture::default())), None).await;
     let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
-    for (provider, model) in [("anthropic", "claude-opus-4-8"), ("openai", "gpt-5.5")] {
+    for (provider, model) in [
+        ("anthropic", "claude-opus-4-8"),
+        ("anthropic", "claude-sonnet-5-5"),
+        ("openai", "gpt-5.5"),
+    ] {
         let r = env
             .app
             .post(
@@ -239,4 +243,256 @@ async fn an_anthropic_app_on_an_openai_reasoning_model_gets_readable_thinking() 
                 .unwrap()
                 .starts_with("kpp:reasoning:v1:")
     }));
+}
+
+fn chat_tools() -> Value {
+    json!([{
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "Weather in a city",
+            "parameters": {
+                "type": "object",
+                "properties": { "location": { "type": "string" } },
+                "required": ["location"]
+            }
+        }
+    }])
+}
+
+async fn chat(env: &Env, body: Value) -> Answer {
+    let r = call(
+        env,
+        "/v1/chat/completions",
+        Some(&env.key),
+        false,
+        Some(body),
+    )
+    .await;
+    assert_eq!(r.status, StatusCode::OK, "{}", r.text());
+    r
+}
+
+#[tokio::test]
+async fn an_openrouter_chat_app_on_claude_streams_reasoning_carries_it_through_tools_and_hides_it_when_excluded()
+ {
+    let env = env().await;
+    let original = fixture("thinking-redacted.json");
+    let expected_thinking = original["content"][0]["thinking"].as_str().unwrap();
+    let expected_call_id = original["content"][2]["id"].as_str().unwrap();
+
+    let first = chat(
+        &env,
+        json!({
+            "model": "claude-sonnet-5-5",
+            "stream": true,
+            "stream_options": { "include_usage": true },
+            "reasoning": { "effort": "max" },
+            "tools": chat_tools(),
+            "messages": [
+                { "role": "system", "content": "Use tools when needed." },
+                { "role": "user", "content": "Can I see the aurora tonight? [mock:fixture=thinking-redacted]" }
+            ]
+        }),
+    )
+    .await;
+    let upstream = sent(&env);
+    assert_eq!(upstream["model"], "claude-sonnet-5-5");
+    assert_eq!(
+        upstream["thinking"],
+        json!({ "type": "adaptive", "display": "summarized" })
+    );
+    assert_eq!(upstream["output_config"]["effort"], "max");
+    assert_eq!(upstream["stream"], true);
+
+    let chunks = events(&first);
+    let reasoning: String = chunks
+        .iter()
+        .filter_map(|c| c["choices"][0]["delta"]["reasoning"].as_str())
+        .collect();
+    assert_eq!(reasoning, expected_thinking, "{chunks:?}");
+    let tool_name = chunks
+        .iter()
+        .filter_map(|c| c["choices"][0]["delta"]["tool_calls"][0]["function"]["name"].as_str())
+        .next();
+    assert_eq!(tool_name, Some("get_weather"), "{chunks:?}");
+    let usage = chunks
+        .iter()
+        .find_map(|c| c.get("usage").filter(|u| !u.is_null()))
+        .unwrap();
+    assert_eq!(
+        usage["completion_tokens_details"]["reasoning_tokens"],
+        original["usage"]["output_tokens_details"]["thinking_tokens"]
+    );
+
+    chat(
+        &env,
+        json!({
+            "model": "claude-sonnet-5-5",
+            "stream": true,
+            "reasoning": { "effort": "max" },
+            "tools": chat_tools(),
+            "messages": [
+                { "role": "system", "content": "Use tools when needed." },
+                { "role": "user", "content": "Can I see the aurora tonight?" },
+                {
+                    "role": "assistant",
+                    "content": null,
+                    "tool_calls": [{
+                        "id": expected_call_id,
+                        "type": "function",
+                        "function": {
+                            "name": "get_weather",
+                            "arguments": "{\"location\":\"Reykjavik, Iceland\",\"unit\":\"celsius\"}"
+                        }
+                    }]
+                },
+                {
+                    "role": "tool",
+                    "tool_call_id": expected_call_id,
+                    "content": "{\"cloud_cover\":0.1}"
+                }
+            ]
+        }),
+    )
+    .await;
+    let upstream = sent(&env);
+    let blocks = upstream["messages"][1]["content"].as_array().unwrap();
+    let kinds: Vec<&str> = blocks.iter().map(|b| b["type"].as_str().unwrap()).collect();
+    assert_eq!(kinds, ["thinking", "redacted_thinking", "tool_use"]);
+    assert_eq!(blocks[0]["signature"], original["content"][0]["signature"]);
+    assert_eq!(blocks[1]["data"], original["content"][1]["data"]);
+
+    let excluded_stream = chat(
+        &env,
+        json!({
+            "model": "claude-sonnet-5-5",
+            "stream": true,
+            "stream_options": { "include_usage": true },
+            "reasoning": { "effort": "max", "exclude": true },
+            "tools": chat_tools(),
+            "messages": [
+                { "role": "user", "content": "Can I see the aurora tonight? [mock:fixture=thinking-redacted]" }
+            ]
+        }),
+    )
+    .await;
+    let upstream = sent(&env);
+    assert_eq!(upstream["thinking"], json!({ "type": "adaptive" }));
+    assert_eq!(upstream["output_config"]["effort"], "max");
+    let excl_chunks = events(&excluded_stream);
+    assert!(
+        excl_chunks
+            .iter()
+            .all(|c| c["choices"][0]["delta"].get("reasoning").is_none()),
+        "{excl_chunks:?}"
+    );
+    assert!(excl_chunks.iter().any(|c| {
+        c["choices"][0]["delta"]["tool_calls"][0]["function"]["name"] == "get_weather"
+    }));
+    let excl_usage = excl_chunks
+        .iter()
+        .find_map(|c| c.get("usage").filter(|u| !u.is_null()))
+        .unwrap();
+    assert_eq!(
+        excl_usage["completion_tokens_details"]["reasoning_tokens"],
+        original["usage"]["output_tokens_details"]["thinking_tokens"]
+    );
+
+    let sync_inc = chat(
+        &env,
+        json!({
+            "model": "claude-sonnet-5-5",
+            "reasoning": { "effort": "max" },
+            "tools": chat_tools(),
+            "messages": [
+                { "role": "user", "content": "Can I see the aurora tonight? [mock:fixture=thinking-redacted]" }
+            ]
+        }),
+    )
+    .await
+    .json();
+    assert_eq!(
+        sync_inc["choices"][0]["message"]["reasoning"],
+        expected_thinking
+    );
+    assert_eq!(
+        sync_inc["choices"][0]["message"]["tool_calls"][0]["function"]["name"],
+        "get_weather"
+    );
+
+    let sync_excl = chat(
+        &env,
+        json!({
+            "model": "claude-sonnet-5-5",
+            "reasoning": { "effort": "max", "exclude": true },
+            "tools": chat_tools(),
+            "messages": [
+                { "role": "user", "content": "Can I see the aurora tonight? [mock:fixture=thinking-redacted]" }
+            ]
+        }),
+    )
+    .await
+    .json();
+    assert!(
+        sync_excl["choices"][0]["message"]
+            .get("reasoning")
+            .is_none()
+    );
+    assert_eq!(
+        sync_excl["choices"][0]["message"]["tool_calls"][0]["function"]["name"],
+        "get_weather"
+    );
+    assert_eq!(
+        sync_excl["usage"]["completion_tokens_details"]["reasoning_tokens"],
+        original["usage"]["output_tokens_details"]["thinking_tokens"]
+    );
+}
+
+#[tokio::test]
+async fn an_openrouter_chat_app_on_openai_responses_streams_reasoning_and_hides_it_when_excluded() {
+    let env = env().await;
+    let inc = chat(
+        &env,
+        json!({
+            "model": "gpt-5.5",
+            "stream": true,
+            "reasoning": { "effort": "high" },
+            "messages": [
+                { "role": "user", "content": "What is 17 * 24? [mock:fixture=reasoning-summary-stream]" }
+            ]
+        }),
+    )
+    .await;
+    let upstream = sent(&env);
+    assert_eq!(
+        upstream["reasoning"],
+        json!({ "effort": "high", "summary": "auto" })
+    );
+    assert_eq!(upstream["include"], json!(["reasoning.encrypted_content"]));
+    let reasoning: String = events(&inc)
+        .iter()
+        .filter_map(|c| c["choices"][0]["delta"]["reasoning"].as_str())
+        .collect();
+    assert!(reasoning.contains("Multiplying 17 by 24"), "{reasoning}");
+
+    let excl = chat(
+        &env,
+        json!({
+            "model": "gpt-5.5",
+            "stream": true,
+            "reasoning": { "effort": "high", "exclude": true },
+            "messages": [
+                { "role": "user", "content": "What is 17 * 24? [mock:fixture=reasoning-summary-stream]" }
+            ]
+        }),
+    )
+    .await;
+    let upstream = sent(&env);
+    assert_eq!(upstream["reasoning"], json!({ "effort": "high" }));
+    assert!(
+        events(&excl)
+            .iter()
+            .all(|c| c["choices"][0]["delta"].get("reasoning").is_none())
+    );
 }

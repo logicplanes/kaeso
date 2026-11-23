@@ -135,7 +135,7 @@ Schema `Part`。一个 part 恰好带有 `text`、`inlineData`、`fileData`、`f
 | 大于 0 的 `thinkingBudget` | `mode = Enabled`、`budget_tokens` | 其他负值 → 推理字段 `thinkingBudget`。 |
 | `includeThoughts: true` | `reasoning.summary = Auto` | `false` → 形式标记 `include_thoughts`。 |
 
-来自其他方言时，推理强度 `minimal`、`low`、`medium` 和 `high` 变为 `thinkingLevel`，`xhigh` 和 `max` 变为 `HIGH`。预算变为 `thinkingBudget`，Gemini 3 会把它映射到最接近的级别。推理强度 `none` 和关闭的思考变为 `thinkingBudget: 0`，两者都没有的自适应或开启的思考变为 `-1`。应用请求了推理摘要，或请求了不为 `omitted` 的 Anthropic 思考时，会发送 `includeThoughts: true`。规则见[推理](reasoning.md#推理强度与预算)。
+来自其他方言时，推理强度 `minimal`、`low`、`medium` 和 `high` 变为 `thinkingLevel`，`xhigh` 和 `max` 变为 `HIGH`。预算变为 `thinkingBudget`，Gemini 3 会把它映射到最接近的级别。推理强度 `none` 和关闭的思考变为 `thinkingBudget: 0`，两者都没有的自适应或开启的思考变为 `-1`。应用请求了推理摘要、请求了不为 `omitted` 的 Anthropic 思考，或在 Chat Completions 中发送了 OpenRouter `reasoning` 对象且未设 `exclude: true` 时，会发送 `includeThoughts: true`。规则见[推理](reasoning.md#推理强度与预算)。
 
 ### 思考签名
 

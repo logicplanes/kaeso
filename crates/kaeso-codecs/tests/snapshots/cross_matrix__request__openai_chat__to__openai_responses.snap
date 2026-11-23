@@ -504,6 +504,47 @@ expression: outcomes
   "n-2": {
     "rejected_by_source": "n"
   },
+  "openrouter-reasoning": {
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Check the weather in Berlin and explain whether I need an umbrella.",
+          "role": "user"
+        }
+      ],
+      "instructions": "You are a helpful assistant. Use the tools when needed.",
+      "model": "claude-sonnet-5-5",
+      "reasoning": {
+        "effort": "max",
+        "summary": "auto"
+      },
+      "store": false,
+      "stream": true,
+      "tools": [
+        {
+          "description": "Get the current weather for a city.",
+          "name": "get_weather",
+          "parameters": {
+            "properties": {
+              "city": {
+                "description": "City name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "city"
+            ],
+            "type": "object"
+          },
+          "type": "function"
+        }
+      ]
+    },
+    "path": "/v1/responses"
+  },
   "plain-developer-string": {
     "body": {
       "input": [
@@ -3843,9 +3884,25 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "providers/ollama-cloud/reasoning-object": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Name one prime number above 100.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 400,
+      "model": "gpt-oss:20b",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
   },
   "providers/ollama-cloud/reasoning-sent-back": {
     "body": {
@@ -4041,19 +4098,62 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "providers/openrouter/free-reasoning": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 91 a prime number? Answer yes or no with one short reason.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
   },
   "providers/openrouter/free-reasoning-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 91 a prime number? Answer yes or no with one short reason.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 512,
+      "model": "nvidia/nemotron-3.5-lightning:free",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
   },
   "providers/openrouter/free-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "input": [
+        {
+          "content": "Count from one to five in words, separated by commas.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 2048,
+      "model": "google/gemma-4-31b-it:free",
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
   },
   "providers/openrouter/free-stream-rate-limited": {
     "body": {
@@ -5540,14 +5640,47 @@ expression: outcomes
     "path": "/v1/responses"
   },
   "providers/vercel/reasoning": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 91 a prime number? Answer yes or no with one short reason.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false
+    },
+    "path": "/v1/responses"
   },
   "providers/vercel/reasoning-stream": {
-    "message": "`reasoning` comes from an OpenAI Chat Completions request and has no equivalent in OpenAI Responses. Remove it, or send the request to a model served through its original format.",
-    "param": null,
-    "unsupported": "reasoning"
+    "body": {
+      "include": [
+        "reasoning.encrypted_content"
+      ],
+      "input": [
+        {
+          "content": "Is 91 a prime number? Answer yes or no with one short reason.",
+          "role": "user"
+        }
+      ],
+      "max_output_tokens": 1024,
+      "model": "nvidia/nemotron-3.5-lightning-free",
+      "reasoning": {
+        "effort": "low",
+        "summary": "auto"
+      },
+      "store": false,
+      "stream": true
+    },
+    "path": "/v1/responses"
   },
   "providers/vercel/restricted-model": {
     "body": {

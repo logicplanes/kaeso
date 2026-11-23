@@ -15,7 +15,8 @@ nav: 网关
 
 | OpenRouter 字段 | KPP | 说明 |
 |---|---|---|
-| `provider`、`models`、`transforms`、`usage`、`reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `provider`、`models`、`transforms`、`usage` | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同。 |
+| `reasoning`（请求：`effort`、`max_tokens`、`enabled`、`exclude`） | `reasoning`（类型化） | 通过 `with_reasoning_object()` 为 OpenRouter 保留为 `reasoning`，并对其他服务商和格式进行转换（[OpenAI Chat](openai-chat.md#请求createchatcompletionrequest)、[推理](reasoning.md)）。 |
 | `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`。Chat 应用会原样收到它们；Anthropic Messages 应用得到 `thinking` 块，Responses 应用得到推理项（[推理](reasoning.md)）。 |
 | `message.reasoning_details`、`delta.reasoning_details` | extras | OpenRouter 结构化形式的同一推理；Chat 应用原样收回，其他方言从 `reasoning` 得到文本。 |
 | 回复中的 `provider`、`native_finish_reason` | extras | 发往其他方言时省略。 |
@@ -32,7 +33,8 @@ nav: 网关
 
 | Vercel 字段 | KPP | 说明 |
 |---|---|---|
-| `providerOptions`（`gateway` 下的路由，例如 `order`、`only`、`sort`、`models`、`byok`、`tags`、`user`）、`models`、`provider`、`reasoning`（请求） | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同（`requests/gateway-options`）。 |
+| `providerOptions`（`gateway` 下的路由，例如 `order`、`only`、`sort`、`models`、`byok`、`tags`、`user`）、`models`、`provider` | extras | 请求发往其他方言时会被拒绝，与其他仅限 Chat 的字段相同（`requests/gateway-options`）。 |
+| `reasoning`（请求） | `reasoning`（类型化） | 通过 `with_reasoning_object()` 为 Vercel 保留为 `reasoning`，与 OpenRouter 相同。 |
 | `message.reasoning`、`delta.reasoning` | `Block::Reasoning` | 通过配置的 `reasoning_fields`，与 OpenRouter 相同。 |
 | `message.reasoning_details`、`delta.reasoning_details` | extras | OpenRouter 结构化形式的同一推理；对于既非 OpenAI 也非 Anthropic 的模型，`format` 为 `"unknown"`。 |
 | 消息中和最后一个数据块 delta 中的 `provider_metadata`（`gateway.routing`、`cost`、`marketCost`、`gatewayCost`、`generationId`），以及顶层的 `generationId` | extras | 发往其他方言时省略。录制中的 `clientSessionId` 是客户端指纹，已替换为零。 |

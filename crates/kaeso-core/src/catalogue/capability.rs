@@ -62,6 +62,23 @@ fn app_param(ingress: DialectId, field: &'static str) -> &'static str {
     }
 }
 
+fn reasoning_param(g: &GenerateRequest, ingress: DialectId, field: &'static str) -> &'static str {
+    match (field, ingress) {
+        ("budget", DialectId::OpenAiChat | DialectId::OpenAiResponses) => "reasoning.max_tokens",
+        ("effort", DialectId::OpenAiChat)
+            if kaeso_codecs::openai_chat::uses_reasoning_object(g) =>
+        {
+            "reasoning.effort"
+        }
+        ("reasoning", DialectId::OpenAiChat)
+            if kaeso_codecs::openai_chat::uses_reasoning_object(g) =>
+        {
+            "reasoning"
+        }
+        _ => app_param(ingress, field),
+    }
+}
+
 fn forced_choice(choice: Option<&ToolChoice>, ingress: DialectId) -> Option<&'static str> {
     let anthropic = ingress == DialectId::AnthropicMessages;
     match choice? {
@@ -539,6 +556,8 @@ fn leave_out_reasoning(
     eff: &Effective,
 ) -> Vec<String> {
     let mut left_out = Vec::new();
+    let effort_field = reasoning_param(g, ingress, "effort");
+    let reasoning_field = reasoning_param(g, ingress, "reasoning");
     let Some(r) = g.reasoning.as_mut() else {
         return left_out;
     };
@@ -551,18 +570,19 @@ fn leave_out_reasoning(
     {
         r.effort = None;
         effort_gone = true;
-        left_out.push(app_param(ingress, "effort").to_owned());
+        left_out.push(effort_field.to_owned());
     }
     if !reasons && r.mode == Some(ReasoningMode::Adaptive) {
         r.mode = None;
         r.extras.fields.shift_remove("display");
-        left_out.push(app_param(ingress, "reasoning").to_owned());
+        left_out.push(reasoning_field.to_owned());
     }
     let nothing_left = r.mode.is_none()
         && r.effort.is_none()
         && r.budget_tokens.is_none()
         && r.summary.is_none()
         && !r.include_encrypted
+        && !r.exclude
         && r.extras.fields.is_empty();
     if !left_out.is_empty() && nothing_left {
         g.reasoning = None;
@@ -627,6 +647,7 @@ fn rank(level: &str) -> usize {
 // Claude Code and Codex send one effort to every model; a model that lists levels but not that
 // one gets the nearest level it lists, the lower one on a tie, never `none`.
 fn nearest_effort(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    let effort_field = reasoning_param(g, ingress, "effort");
     let Some(r) = g.reasoning.as_mut() else {
         return Vec::new();
     };
@@ -666,13 +687,14 @@ fn nearest_effort(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) 
     let level = (*level).clone();
     r.effort = Some(ReasoningEffort::from_wire(&level));
     message_efforts(g, Some(&wire), Some(&level));
-    vec![app_param(ingress, "effort").to_owned()]
+    vec![effort_field.to_owned()]
 }
 
 // Claude Code sends adaptive thinking to every model; a Claude model without it takes
 // `enabled` thinking with a budget, which the effort sets as it does for requests from other
 // formats ([reasoning_map]).
 fn adaptive_to_budget(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    let field = reasoning_param(g, ingress, "reasoning");
     let Some(r) = g.reasoning.as_mut() else {
         return Vec::new();
     };
@@ -697,7 +719,7 @@ fn adaptive_to_budget(g: &mut GenerateRequest, ingress: DialectId, eff: &Effecti
         }
     }
     r.extras.fields.shift_remove("display");
-    vec![app_param(ingress, "reasoning").to_owned()]
+    vec![field.to_owned()]
 }
 
 // Claude Opus 4.7 and later refuse `enabled` thinking, so a budget, such as a Gemini app's
@@ -706,6 +728,7 @@ fn adaptive_to_budget(g: &mut GenerateRequest, ingress: DialectId, eff: &Effecti
 // took budgets away in the same models as sampling settings, which the catalogue marks as
 // taking only the default temperature; Claude 4.6 still takes budgets.
 fn budget_to_adaptive(g: &mut GenerateRequest, ingress: DialectId, eff: &Effective) -> Vec<String> {
+    let field = reasoning_param(g, ingress, "reasoning");
     let Some(r) = g.reasoning.as_mut() else {
         return Vec::new();
     };
@@ -728,7 +751,7 @@ fn budget_to_adaptive(g: &mut GenerateRequest, ingress: DialectId, eff: &Effecti
             r.effort = Some(reasoning_map::effort_for_budget(budget));
         }
     }
-    vec![app_param(ingress, "reasoning").to_owned()]
+    vec![field.to_owned()]
 }
 
 // Apps send a temperature and `top_p` with no switch per model; Claude 5 models take only their
@@ -775,6 +798,8 @@ fn lowest_effort_for_off(
     ingress: DialectId,
     eff: &Effective,
 ) -> Vec<String> {
+    let effort_field = reasoning_param(g, ingress, "effort");
+    let reasoning_field = reasoning_param(g, ingress, "reasoning");
     let Some(r) = g.reasoning.as_mut() else {
         return Vec::new();
     };
@@ -802,8 +827,12 @@ fn lowest_effort_for_off(
     if mode_off {
         r.mode = None;
     }
-    let field = if effort_off { "effort" } else { "reasoning" };
-    vec![app_param(ingress, field).to_owned()]
+    let field = if effort_off {
+        effort_field
+    } else {
+        reasoning_field
+    };
+    vec![field.to_owned()]
 }
 
 // Anthropic's `metadata.user_id` may be longer than a provider takes, such as Claude Code's
@@ -952,14 +981,14 @@ fn check_generation(
     if caps.reasoning && eff.fields.reasoning != Some(true) {
         return Err(refuse(
             "reasoning",
-            Some(app_param(ingress, "reasoning")),
+            Some(reasoning_param(g, ingress, "reasoning")),
             format!("The model `{name}` does not support reasoning."),
         ));
     }
     if let Some(effort) = g.reasoning.as_ref().and_then(|r| r.effort.as_ref()) {
-        check_effort(effort, ingress, eff)?;
+        check_effort(g, effort, ingress, eff)?;
     } else if let Some(budget) = budget_sent_as_effort(g, eff) {
-        check_budget(budget, ingress, eff)?;
+        check_budget(g, budget, ingress, eff)?;
     }
     Ok(())
 }
@@ -975,7 +1004,12 @@ fn budget_sent_as_effort(g: &GenerateRequest, eff: &Effective) -> Option<u32> {
         .flatten()
 }
 
-fn check_budget(budget: u32, ingress: DialectId, eff: &Effective) -> Result<(), Unsupported> {
+fn check_budget(
+    g: &GenerateRequest,
+    budget: u32,
+    ingress: DialectId,
+    eff: &Effective,
+) -> Result<(), Unsupported> {
     let levels = effort_levels(eff, ingress);
     let effort = reasoning_map::effort_for_budget(budget);
     if levels.is_empty() || levels.iter().any(|l| l == effort.as_wire()) {
@@ -1012,7 +1046,7 @@ fn check_budget(budget: u32, ingress: DialectId, eff: &Effective) -> Result<(), 
     };
     Err(refuse(
         "effort",
-        Some(app_param(ingress, "budget")),
+        Some(reasoning_param(g, ingress, "budget")),
         message,
     ))
 }
@@ -1052,6 +1086,7 @@ pub fn effort_levels(eff: &Effective, ingress: DialectId) -> Vec<String> {
 }
 
 fn check_effort(
+    g: &GenerateRequest,
     effort: &ReasoningEffort,
     ingress: DialectId,
     eff: &Effective,
@@ -1079,7 +1114,7 @@ fn check_effort(
     );
     Err(refuse(
         "effort",
-        Some(app_param(ingress, "effort")),
+        Some(reasoning_param(g, ingress, "effort")),
         message,
     ))
 }

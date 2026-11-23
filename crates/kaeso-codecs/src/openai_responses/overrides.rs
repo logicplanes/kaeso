@@ -231,6 +231,16 @@ impl Overrides {
         self.unset = keep;
         out
     }
+
+    pub(crate) fn drop_keys(&mut self, set_keys: &[&str], unset_keys: &[&str]) {
+        if !set_keys.is_empty() {
+            self.set.retain(|(p, _, _)| !set_keys.contains(&p.as_str()));
+        }
+        if !unset_keys.is_empty() {
+            self.unset
+                .retain(|(p, _)| !unset_keys.contains(&p.as_str()));
+        }
+    }
 }
 
 pub(crate) fn has_canon(extras: &Extras, dialect: DialectId, key: &str) -> bool {

@@ -24,6 +24,12 @@ pub(crate) const FORM_THINKING: &str = "thinking";
 pub(crate) const FORM_REASONING_FIELD: &str = "reasoning_field";
 pub(crate) const CHOICE: &str = "choice";
 pub(crate) const MESSAGE: &str = "choice.message";
+pub(super) const EXCLUDED_REASONING_KEYS: &[&str] = &[
+    "reasoning_content",
+    "reasoning",
+    "reasoning_details",
+    "encrypted_content",
+];
 
 pub(crate) fn decode_response(body: &[u8], ctx: &EgressCtx) -> Result<Reply, KppError> {
     if ctx.kind != RequestKind::Generate {
@@ -302,6 +308,29 @@ fn reply_audio(resp: &Response, created: u64) -> Result<Option<RawJson>, KppErro
     Ok(Some(to_raw(&out)?))
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum ReasoningOutput {
+    Default,
+    Include,
+    Exclude,
+}
+
+pub(crate) fn chat_reasoning_output(ctx: &EncodeCtx) -> ReasoningOutput {
+    let Some(kaeso_kpp::Request::Generate(req)) = ctx.request.as_deref() else {
+        return ReasoningOutput::Default;
+    };
+    let Some(cfg) = &req.reasoning else {
+        return ReasoningOutput::Default;
+    };
+    if cfg.exclude {
+        ReasoningOutput::Exclude
+    } else if super::request::is_reasoning_object(cfg) {
+        ReasoningOutput::Include
+    } else {
+        ReasoningOutput::Default
+    }
+}
+
 pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {
     let Reply::Generate(resp) = reply else {
         return Err(KppError::unsupported_by(
@@ -312,6 +341,7 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
     };
     let own = resp.extras.is_from(DIALECT);
     let as_parts = own && resp.extras.form_flag(DIALECT, FORM_CONTENT_PARTS);
+    let reasoning_out = chat_reasoning_output(ctx);
     let mut parts: Vec<RawJson> = Vec::new();
     let mut text: Option<String> = None;
     let mut citations = Vec::new();
@@ -320,16 +350,37 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
     let mut reasoning: IndexMap<String, String> = IndexMap::new();
     for block in &resp.blocks {
         match block {
-            Block::Reasoning(r) if r.extras.is_from(DIALECT) && reasoning_field(r).is_some() => {
-                let thought = r.text.concat();
-                if let Some(field) = reasoning_field(r).filter(|_| !thought.is_empty()) {
-                    let joined = reasoning.entry(field.to_owned()).or_default();
-                    if !joined.is_empty() {
-                        joined.push_str("\n\n");
+            Block::Reasoning(r) => match reasoning_out {
+                ReasoningOutput::Exclude => {}
+                _ if r.extras.is_from(DIALECT) && reasoning_field(r).is_some() => {
+                    let thought = r.text.concat();
+                    if let Some(field) = reasoning_field(r).filter(|_| !thought.is_empty()) {
+                        let joined = reasoning.entry(field.to_owned()).or_default();
+                        if !joined.is_empty() {
+                            joined.push_str("\n\n");
+                        }
+                        joined.push_str(&thought);
                     }
-                    joined.push_str(&thought);
                 }
-            }
+                ReasoningOutput::Include => {
+                    let thought = r
+                        .summary
+                        .iter()
+                        .chain(r.text.iter())
+                        .filter(|t| !t.is_empty())
+                        .cloned()
+                        .collect::<Vec<_>>()
+                        .join("\n\n");
+                    if !thought.is_empty() {
+                        let joined = reasoning.entry("reasoning".to_owned()).or_default();
+                        if !joined.is_empty() {
+                            joined.push_str("\n\n");
+                        }
+                        joined.push_str(&thought);
+                    }
+                }
+                ReasoningOutput::Default => {}
+            },
             Block::Text(t) => {
                 if as_parts {
                     parts.push(to_raw(
@@ -356,11 +407,7 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
             Block::Unknown(item) if as_parts && item.origin.is(DIALECT) => {
                 parts.push(item.raw.clone());
             }
-            Block::Reasoning(_)
-            | Block::Unknown(_)
-            | Block::Image(_)
-            | Block::Document(_)
-            | Block::ToolResult(_) => {}
+            Block::Unknown(_) | Block::Image(_) | Block::Document(_) | Block::ToolResult(_) => {}
             _ => {}
         }
     }
@@ -377,6 +424,12 @@ pub(crate) fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>,
         annotations: citations,
     };
     let mut message = ext_nested(message, &resp.extras, MESSAGE);
+    if reasoning_out == ReasoningOutput::Exclude {
+        for key in EXCLUDED_REASONING_KEYS {
+            message.extra.shift_remove(*key);
+            message.verbatim.shift_remove(*key);
+        }
+    }
     if let Some(audio) = reply_audio(resp, ctx.created_at.unwrap_or(0))? {
         message.extra.insert(AUDIO.to_owned(), audio);
     }

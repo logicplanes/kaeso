@@ -134,6 +134,25 @@ fn describe(raw: &RawValue, err: &serde_json::Error) -> KppError {
         if !check(&v) {
             return invalid(format!("`{name}` must be {expected}")).with_param(*name);
         }
+        if *name == "reasoning"
+            && let Some(obj) = v.as_object()
+        {
+            let subfields: &[(&str, Check, &str)] = &[
+                ("effort", string, "a string"),
+                ("summary", string, "a string"),
+                ("max_tokens", int, "an integer from 1 to 4294967295"),
+                ("enabled", boolean, "true or false"),
+                ("exclude", boolean, "true or false"),
+            ];
+            for (sub, sub_check, sub_expected) in subfields {
+                if let Some(sv) = obj.get(*sub)
+                    && !sub_check(sv)
+                {
+                    let param = format!("reasoning.{sub}");
+                    return invalid(format!("`{param}` must be {sub_expected}")).with_param(param);
+                }
+            }
+        }
     }
     let text = err.to_string();
     let text = text.split(" at line ").next().unwrap_or(&text).to_owned();
@@ -237,16 +256,36 @@ pub(super) fn decode(
     req.parallel_tool_calls = w.parallel_tool_calls;
     req.output = decode_format(w.text.as_ref().and_then(|t| t.format.as_deref()), &origin);
 
-    let mut reasoning = w.reasoning.as_ref().map(|r| {
-        let mut cfg = ReasoningConfig::default();
-        cfg.effort = r.effort.as_deref().map(ReasoningEffort::from_wire);
-        cfg.summary = r.summary.as_deref().map(ReasoningSummary::from_wire);
-        cfg.extras = Extras::new(origin.clone());
-        if cfg.effort.is_none() && cfg.summary.is_none() {
-            cfg.extras.form.insert(OBJECT.to_owned(), true.into());
+    let mut reasoning = match &w.reasoning {
+        Some(r) => {
+            let decoded = crate::openai_chat::decode_openrouter_reasoning_fields(
+                None,
+                r.effort.clone(),
+                r.max_tokens,
+                r.enabled,
+                r.exclude,
+            )?;
+            let mut cfg = ReasoningConfig::default();
+            cfg.effort = decoded.effort;
+            cfg.mode = decoded.mode;
+            cfg.budget_tokens = decoded.budget_tokens;
+            cfg.summary = r.summary.as_deref().map(ReasoningSummary::from_wire);
+            cfg.exclude = decoded.exclude;
+            cfg.extras = Extras::new(origin.clone());
+            if cfg.effort.is_none()
+                && cfg.summary.is_none()
+                && cfg.mode.is_none()
+                && cfg.budget_tokens.is_none()
+                && !cfg.exclude
+                && r.enabled.is_none()
+                && r.exclude.is_none()
+            {
+                cfg.extras.form.insert(OBJECT.to_owned(), true.into());
+            }
+            Some(cfg)
         }
-        cfg
-    });
+        None => None,
+    };
     if !count && w.include.iter().flatten().any(|i| i == ENCRYPTED) {
         let cfg = reasoning.get_or_insert_with(|| {
             let mut cfg = ReasoningConfig::default();
@@ -277,7 +316,10 @@ pub(super) fn decode(
     } else {
         Input::Encoded
     };
-    let canon = canonical_body_with(&req, kind, &origin, &mut Names::none(), input);
+    let mut canon = canonical_body_with(&req, kind, &origin, &mut Names::none(), input);
+    if w.reasoning.is_some() && !canon.has("reasoning") {
+        canon.insert("reasoning", Node::obj());
+    }
     let mut overrides = Overrides::diff_entries_with(
         &canon,
         raw,
@@ -294,7 +336,29 @@ pub(super) fn decode(
     if let Some(cfg) = &mut req.reasoning
         && !cfg.extras.form_flag(DIALECT, NO_OBJECT)
     {
-        overrides.split_off("reasoning").record(&mut cfg.extras, "");
+        let mut r_ov = overrides.split_off("reasoning");
+        if let Some(r) = &w.reasoning {
+            let mut set_drop = Vec::new();
+            if r.max_tokens.is_some() {
+                set_drop.push("max_tokens");
+            }
+            if r.enabled.is_some() {
+                set_drop.push("enabled");
+            }
+            if r.exclude.is_some() {
+                set_drop.push("exclude");
+            }
+            if r.effort.is_none()
+                && (r.max_tokens.is_some() || r.enabled.is_some() || r.exclude.is_some())
+            {
+                set_drop.push("effort");
+            }
+            let unset_drop: &[&str] = if r.effort.is_none() { &["effort"] } else { &[] };
+            if !set_drop.is_empty() || !unset_drop.is_empty() {
+                r_ov.drop_keys(&set_drop, unset_drop);
+            }
+        }
+        r_ov.record(&mut cfg.extras, "");
     }
     overrides.record(&mut req.extras, "");
 
@@ -447,11 +511,12 @@ fn egress_reasoning(
         .fields
         .get("display")
         .is_some_and(|d| d.get().trim() == r#""omitted""#);
+    let wants_summary = (anthropic && !omitted) || crate::cross::wants_chat_reasoning(cfg);
     if on
         && !count
-        && anthropic
+        && !cfg.exclude
+        && wants_summary
         && cfg.summary.is_none()
-        && !omitted
         && cfg.effort != Some(ReasoningEffort::None)
     {
         out.summary = Some(ReasoningSummary::Auto);
@@ -464,7 +529,14 @@ fn reasoning_object(cfg: &ReasoningConfig) -> Option<Node> {
         return None;
     }
     let effort = crate::cross::reasoning_map::openai_effort(cfg);
-    if effort.is_none() && cfg.summary.is_none() && !cfg.extras.form_flag(DIALECT, OBJECT) {
+    if effort.is_none()
+        && cfg.summary.is_none()
+        && !cfg.extras.form_flag(DIALECT, OBJECT)
+        && cfg
+            .extras
+            .fields_for(DIALECT)
+            .is_none_or(indexmap::IndexMap::is_empty)
+    {
         return None;
     }
     let mut node = Node::obj()
