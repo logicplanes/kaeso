@@ -259,6 +259,77 @@ async fn a_batch_runs_at_openai_and_its_lines_are_charged_at_the_batch_price() {
     assert_eq!(r.status, StatusCode::NOT_FOUND);
 }
 
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn batch_uploads_hold_the_translation_budget_and_check_line_depth() {
+    let env = common::v1::env(None, Some(&[("KAESO_BODY_LIMITS_IN_FLIGHT", "64MiB")])).await;
+    let base = format!("/orgs/{}/projects/{}", env.owner.org_id, env.project);
+    let make_key = |name: &'static str| {
+        let app = &env.app;
+        let path = format!("{base}/keys");
+        let cookie = env.owner.cookie.clone();
+        async move {
+            let r = app
+                .post(&path, json!({ "name": name }), Some(&cookie))
+                .await
+                .expect_status(StatusCode::CREATED);
+            let secret = r.body["secret"].as_str().unwrap().to_owned();
+            let id: kaeso_core::id::ApiKeyId = r.body["id"].as_str().unwrap().parse().unwrap();
+            (secret, id.uuid())
+        }
+    };
+    let (greedy, greedy_id) = make_key("greedy-batch").await;
+    let (other, _) = make_key("other-batch").await;
+
+    let deep = format!("{}1{}", "[".repeat(150), "]".repeat(150));
+    let deep_line = format!(
+        r#"{{"custom_id":"deep-1","method":"POST","url":"/v1/chat/completions","body":{{"model":"openai/gpt-4o","messages":[{{"role":"user","content":"Hi"}}],"extra":{deep}}}}}"#
+    );
+    let deep_res = upload(&env, &other, &[deep_line]).await;
+    assert_eq!(
+        deep_res.status,
+        StatusCode::BAD_REQUEST,
+        "{}",
+        deep_res.text()
+    );
+    assert!(
+        deep_res.text().contains("more than 127 levels deep"),
+        "{}",
+        deep_res.text()
+    );
+
+    let budget = &env.app.state.translating;
+    let share = budget.hold(greedy_id, u64::MAX).await.unwrap();
+    let one_line = [line(
+        "req-1",
+        "/v1/chat/completions",
+        "openai/gpt-4o",
+        "Say blue.",
+    )];
+    let refused = upload(&env, &greedy, &one_line);
+    let served = async {
+        common::eventually("the greedy key's batch upload waits", || async {
+            budget.waiting() == 1
+        })
+        .await;
+        upload(&env, &other, &one_line).await
+    };
+    let (refused, served) = tokio::join!(refused, served);
+    assert_eq!(served.status, StatusCode::OK, "{}", served.text());
+    assert_eq!(
+        refused.status,
+        StatusCode::SERVICE_UNAVAILABLE,
+        "{}",
+        refused.text()
+    );
+    assert_eq!(refused.header("retry-after"), Some("10"));
+    assert_eq!(
+        refused.json()["error"]["message"],
+        "Kaeso is busy translating other requests; try again shortly."
+    );
+    drop(share);
+    assert_eq!(budget.free(), 64 << 20);
+}
+
 #[tokio::test]
 async fn a_file_is_refused_by_the_line_that_breaks_the_rules() {
     let env = env().await;

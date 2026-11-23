@@ -126,4 +126,61 @@ fn an_inline_image_is_held_once_while_a_request_is_decoded_and_once_more_while_i
             "{path}: the image is sent"
         );
     }
+
+    let array = format!("[{}]", vec!["0"; 262_144].join(","));
+    let elevenlabs_body =
+        format!(r#"{{"model_id":"eleven_multilingual_v2","text":"Hi","extra":{array}}}"#)
+            .into_bytes();
+    let call = kaeso_codecs::elevenlabs::ElevenLabsCall::from_path(
+        "/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",
+        "",
+    )
+    .unwrap();
+    let (el_res, el_peak) = measure(|| {
+        dispatch::decode_elevenlabs_request(&call, &elevenlabs_body, &HeaderList::new())
+    });
+    assert!(el_res.is_ok());
+    assert!(
+        el_peak <= elevenlabs_body.len() * 2,
+        "ElevenLabs speech decode took {el_peak} bytes at its peak for a body of {}",
+        elevenlabs_body.len()
+    );
+
+    let speech_bad = format!(
+        r#"{{"model":"tts-1","input":"Hi","voice":"alloy","speed":"bad","extra":{array}}}"#
+    )
+    .into_bytes();
+    let (sp_res, sp_peak) = measure(|| {
+        dispatch::decode_request(
+            DialectId::OpenAiSpeech,
+            RequestKind::Speech,
+            &speech_bad,
+            &HeaderList::new(),
+        )
+    });
+    assert_eq!(sp_res.unwrap_err().param.as_deref(), Some("speed"));
+    assert!(
+        sp_peak <= speech_bad.len(),
+        "OpenAI Speech error path took {sp_peak} bytes at its peak for a body of {}",
+        speech_bad.len()
+    );
+
+    let chat_bad = format!(
+        r#"{{"model":"gpt-4o","messages":[{{"role":"user","content":"Hi"}}],"temperature":"bad","extra":{array}}}"#
+    )
+    .into_bytes();
+    let (ch_res, ch_peak) = measure(|| {
+        dispatch::decode_request(
+            DialectId::OpenAiChat,
+            RequestKind::Generate,
+            &chat_bad,
+            &HeaderList::new(),
+        )
+    });
+    assert_eq!(ch_res.unwrap_err().param.as_deref(), Some("temperature"));
+    assert!(
+        ch_peak <= chat_bad.len(),
+        "OpenAI Chat error path took {ch_peak} bytes at its peak for a body of {}",
+        chat_bad.len()
+    );
 }

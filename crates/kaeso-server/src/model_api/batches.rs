@@ -251,10 +251,147 @@ struct Checked {
     lines: Vec<Vec<u8>>,
 }
 
+type RawFields<'a> = Vec<(String, &'a serde_json::value::RawValue)>;
+
+fn within_depth(raw: &[u8], limit: usize) -> bool {
+    let mut depth = 0usize;
+    let mut in_string = false;
+    let mut escaped = false;
+    for &byte in raw {
+        if in_string {
+            match byte {
+                _ if escaped => escaped = false,
+                b'\\' => escaped = true,
+                b'"' => in_string = false,
+                _ => {}
+            }
+            continue;
+        }
+        match byte {
+            b'"' => in_string = true,
+            b'{' | b'[' => {
+                depth += 1;
+                if depth > limit {
+                    return false;
+                }
+            }
+            b'}' | b']' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    true
+}
+
+fn raw_object(raw: &[u8]) -> Option<RawFields<'_>> {
+    struct MapVisitor;
+    impl<'de> serde::de::Visitor<'de> for MapVisitor {
+        type Value = RawFields<'de>;
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("a JSON object")
+        }
+        fn visit_map<A: serde::de::MapAccess<'de>>(
+            self,
+            mut map: A,
+        ) -> Result<Self::Value, A::Error> {
+            let mut out: RawFields<'de> = Vec::new();
+            let mut index: Option<std::collections::HashMap<String, usize>> = None;
+            while let Some((k, v)) = map.next_entry::<String, &'de serde_json::value::RawValue>()? {
+                if let Some(idx) = &mut index {
+                    if let Some(&pos) = idx.get(&k) {
+                        if let Some(slot) = out.get_mut(pos) {
+                            slot.1 = v;
+                        }
+                    } else {
+                        let pos = out.len();
+                        idx.insert(k.clone(), pos);
+                        out.push((k, v));
+                    }
+                } else if let Some((_, slot)) = out.iter_mut().find(|(existing, _)| existing == &k)
+                {
+                    *slot = v;
+                } else {
+                    out.push((k, v));
+                    if out.len() > 16 {
+                        index = Some(
+                            out.iter()
+                                .enumerate()
+                                .map(|(pos, (key, _))| (key.clone(), pos))
+                                .collect(),
+                        );
+                    }
+                }
+            }
+            Ok(out)
+        }
+    }
+    if raw.iter().find(|b| !b.is_ascii_whitespace()) != Some(&b'{') {
+        return None;
+    }
+    let mut de = serde_json::Deserializer::from_slice(raw);
+    let fields = serde::Deserializer::deserialize_map(&mut de, MapVisitor).ok()?;
+    de.end().ok()?;
+    Some(fields)
+}
+
+fn translating_busy() -> KppError {
+    error(
+        ErrorKind::Overloaded,
+        503,
+        "Kaeso is busy translating other requests; try again shortly.",
+    )
+    .with_retry_after(super::memory::WAIT)
+}
+
+fn field_str(fields: &RawFields<'_>, name: &str) -> Option<String> {
+    fields
+        .iter()
+        .find(|(k, _)| k == name)
+        .and_then(|(_, v)| serde_json::from_str::<String>(v.get()).ok())
+}
+
+fn field_bool(fields: &RawFields<'_>, name: &str) -> Option<bool> {
+    fields
+        .iter()
+        .find(|(k, _)| k == name)
+        .and_then(|(_, v)| serde_json::from_str::<bool>(v.get()).ok())
+}
+
+fn set_raw_field<'a>(
+    fields: &mut RawFields<'a>,
+    name: &str,
+    value: &'a serde_json::value::RawValue,
+) {
+    if let Some((_, slot)) = fields.iter_mut().find(|(k, _)| k == name) {
+        *slot = value;
+    } else {
+        fields.push((name.to_owned(), value));
+    }
+}
+
+fn encode_raw_object(fields: &RawFields<'_>) -> String {
+    use serde::ser::SerializeMap as _;
+    struct Object<'a>(&'a RawFields<'a>);
+    impl serde::Serialize for Object<'_> {
+        fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            let mut map = serializer.serialize_map(Some(self.0.len()))?;
+            for (k, v) in self.0 {
+                map.serialize_entry(k, v)?;
+            }
+            map.end()
+        }
+    }
+    serde_json::to_string(&Object(fields)).unwrap_or_else(|_| "{}".to_owned())
+}
+
 /// Checks each line as the endpoint it names would check a live request, and writes it again
 /// with the model as the provider names it. Every line must name the same endpoint and model,
 /// as OpenAI's batches require, and the key must be allowed that model.
-async fn check(state: &AppState, caller: &Caller, file: &[u8]) -> Result<Checked, KppError> {
+async fn check(
+    state: &AppState,
+    caller: &Caller,
+    (holder, base_needed, mut held): (Uuid, u64, super::memory::Held),
+    file: &[u8],
+) -> Result<(Checked, super::memory::Held), KppError> {
     let models = super::listing::project_models(
         state,
         caller.project_id,
@@ -278,24 +415,21 @@ async fn check(state: &AppState, caller: &Caller, file: &[u8]) -> Result<Checked
                 format!("A batch file holds at most {MAX_LINES} requests."),
             ));
         }
-        let mut v: Value = serde_json::from_slice(raw)
-            .map_err(|_| at_line(n, "it isn't a JSON object.".to_owned()))?;
-        let custom_id = v
-            .get("custom_id")
-            .and_then(Value::as_str)
+        let mut line_fields =
+            raw_object(raw).ok_or_else(|| at_line(n, "it isn't a JSON object.".to_owned()))?;
+        let custom_id = field_str(&line_fields, "custom_id")
             .filter(|s| !s.is_empty())
-            .ok_or_else(|| at_line(n, "it has no `custom_id`.".to_owned()))?
-            .to_owned();
+            .ok_or_else(|| at_line(n, "it has no `custom_id`.".to_owned()))?;
         if !ids.insert(custom_id.clone()) {
             return Err(at_line(
                 n,
                 format!("`custom_id` `{custom_id}` is used before."),
             ));
         }
-        if v.get("method").and_then(Value::as_str) != Some("POST") {
+        if field_str(&line_fields, "method").as_deref() != Some("POST") {
             return Err(at_line(n, "`method` must be `POST`.".to_owned()));
         }
-        let url = v.get("url").and_then(Value::as_str).unwrap_or_default();
+        let url = field_str(&line_fields, "url").unwrap_or_default();
         let Some(&(endpoint, dialect, kind)) = ENDPOINTS.iter().find(|(e, _, _)| *e == url) else {
             return Err(at_line(
                 n,
@@ -304,21 +438,39 @@ async fn check(state: &AppState, caller: &Caller, file: &[u8]) -> Result<Checked
                 ),
             ));
         };
-        let body = v
-            .get("body")
-            .filter(|b| b.is_object())
+        let body_raw = line_fields
+            .iter()
+            .find(|(k, _)| k == "body")
+            .map(|(_, v)| *v)
+            .filter(|b| b.get().trim_start().starts_with('{'))
             .ok_or_else(|| at_line(n, "`body` must be an object.".to_owned()))?;
-        if body.get("stream").and_then(Value::as_bool) == Some(true) {
+        let checked_body = kaeso_codecs::limits::Checked::new(dialect, body_raw.get().as_bytes())
+            .map_err(|e| at_line(n, e.message))?;
+        if !within_depth(raw, kaeso_codecs::limits::MAX_DEPTH + 1) {
+            kaeso_codecs::limits::Checked::new(dialect, raw).map_err(|e| at_line(n, e.message))?;
+        }
+        let line_peak = base_needed.saturating_add(super::memory::estimate(
+            kind,
+            body_raw.get().len(),
+            checked_body.shape(),
+        ));
+        if !state.translating.try_grow(&mut held, line_peak) {
+            drop(held);
+            held = state
+                .translating
+                .hold(holder, line_peak)
+                .await
+                .map_err(|_| translating_busy())?;
+        }
+        let mut body_fields = raw_object(body_raw.get().as_bytes())
+            .ok_or_else(|| at_line(n, "`body` must be an object.".to_owned()))?;
+        if field_bool(&body_fields, "stream") == Some(true) {
             return Err(at_line(
                 n,
                 "a batch can't stream; leave `stream` out.".to_owned(),
             ));
         }
-        let model = body
-            .get("model")
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_owned();
+        let model = field_str(&body_fields, "model").unwrap_or_default();
         match &first {
             None => first = Some((endpoint, dialect, kind, model.clone())),
             Some((e, _, _, _)) if *e != endpoint => {
@@ -339,8 +491,7 @@ async fn check(state: &AppState, caller: &Caller, file: &[u8]) -> Result<Checked
             }
             Some(_) => {}
         }
-        let body_bytes = serde_json::to_vec(body).unwrap_or_default();
-        dispatch::decode_request(dialect, kind, &body_bytes, &HeaderList::new())
+        dispatch::decode_checked_request(kind, &checked_body, &HeaderList::new())
             .map_err(|e| at_line(n, e.message))?;
         if target.is_none() {
             target = Some(resolve(state, caller, &models, n, &model, dialect).await?);
@@ -348,23 +499,31 @@ async fn check(state: &AppState, caller: &Caller, file: &[u8]) -> Result<Checked
         let Some((_, eff, _)) = &target else {
             continue;
         };
-        if let Some(b) = v.get_mut("body").and_then(Value::as_object_mut) {
-            b.insert("model".into(), Value::from(eff.sent_model()));
-        }
-        lines.push(serde_json::to_vec(&v).unwrap_or_default());
+        let sent_model = serde_json::value::to_raw_value(eff.sent_model())
+            .map_err(|e| at_line(n, e.to_string()))?;
+        set_raw_field(&mut body_fields, "model", &sent_model);
+        let rewritten_body = encode_raw_object(&body_fields);
+        let rewritten_raw = serde_json::value::RawValue::from_string(rewritten_body)
+            .map_err(|e| at_line(n, e.to_string()))?;
+        set_raw_field(&mut line_fields, "body", &rewritten_raw);
+        lines.push(encode_raw_object(&line_fields).into_bytes());
+        held.keep(base_needed);
     }
     let (Some((endpoint, _, _, model)), Some((entry, eff, credential))) = (first, target) else {
         return Err(invalid("file", "The file holds no requests.".to_owned()));
     };
-    Ok(Checked {
-        endpoint,
-        entry,
-        upstream_model: eff.sent_model().to_owned(),
-        model,
-        provider: eff.provider.clone(),
-        credential,
-        lines,
-    })
+    Ok((
+        Checked {
+            endpoint,
+            entry,
+            upstream_model: eff.sent_model().to_owned(),
+            model,
+            provider: eff.provider.clone(),
+            credential,
+            lines,
+        },
+        held,
+    ))
 }
 
 type Target = (
@@ -482,6 +641,19 @@ async fn upload(
             )
         }
     })?;
+    let holder = caller
+        .key_id
+        .or(caller.user_id)
+        .or(caller.service_account_id)
+        .unwrap_or(caller.project_id);
+    let base_needed = u64::try_from(bytes.len())
+        .unwrap_or(u64::MAX)
+        .saturating_mul(5);
+    let held = state
+        .translating
+        .hold(holder, base_needed)
+        .await
+        .map_err(|_| translating_busy())?;
     let content_type = headers
         .get(header::CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
@@ -492,28 +664,32 @@ async fn upload(
             format!("Send the file as `multipart/form-data`: {e}."),
         )
     })?;
-    let parts = read_form(&bytes, &boundary, FormLimits::new(8, limit))
-        .map_err(|e| invalid("file", format!("The form can't be read: {e}.")))?;
-    let purpose = parts
-        .iter()
-        .find(|p| p.name == "purpose")
-        .and_then(|p| p.text())
-        .unwrap_or_default();
-    if purpose != "batch" {
-        return Err(invalid(
-            "purpose",
-            "Kaeso takes files with the purpose `batch` only.".to_owned(),
-        ));
-    }
-    let file = parts
-        .iter()
-        .find(|p| p.name == "file")
-        .ok_or_else(|| invalid("file", "The form has no `file`.".to_owned()))?;
-    let filename = file
-        .filename
-        .clone()
-        .unwrap_or_else(|| "batch.jsonl".to_owned());
-    let checked = check(state, caller, file.body).await?;
+    let (filename, checked, held) = {
+        let parts = read_form(&bytes, &boundary, FormLimits::new(8, limit))
+            .map_err(|e| invalid("file", format!("The form can't be read: {e}.")))?;
+        let purpose = parts
+            .iter()
+            .find(|p| p.name == "purpose")
+            .and_then(|p| p.text())
+            .unwrap_or_default();
+        if purpose != "batch" {
+            return Err(invalid(
+                "purpose",
+                "Kaeso takes files with the purpose `batch` only.".to_owned(),
+            ));
+        }
+        let file = parts
+            .iter()
+            .find(|p| p.name == "file")
+            .ok_or_else(|| invalid("file", "The form has no `file`.".to_owned()))?;
+        let filename = file
+            .filename
+            .clone()
+            .unwrap_or_else(|| "batch.jsonl".to_owned());
+        let (checked, held) = check(state, caller, (holder, base_needed, held), file.body).await?;
+        (filename, checked, held)
+    };
+    drop(bytes);
     pipeline::admit_follow_up(state, caller, Some(checked.entry)).await?;
     let mut joined = checked.lines.join(&b'\n');
     joined.push(b'\n');
@@ -522,6 +698,8 @@ async fn upload(
         FormField::File("file", &filename, "application/jsonl", &joined),
     ]);
     let content_type = form.content_type();
+    let form_body = Bytes::from(form.into_body());
+    drop(held);
     let sent = send(
         state,
         &checked.provider,
@@ -529,7 +707,7 @@ async fn upload(
         "POST",
         "/v1/files".to_owned(),
         HeaderList::new().with("content-type", content_type),
-        Bytes::from(form.into_body()),
+        form_body,
     )
     .await?;
     let answer = provider_json(&sent)?;

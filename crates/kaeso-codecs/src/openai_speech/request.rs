@@ -28,7 +28,7 @@ pub(super) struct SpeechRequestW {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub instructions: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub voice: Option<Value>,
+    pub voice: Option<Box<serde_json::value::RawValue>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub response_format: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -104,13 +104,15 @@ pub(crate) fn media_type_of(format: Option<&AudioFormat>) -> &'static str {
 // serde names a missing or unknown field but not one of the wrong type, so each typed field
 // is tried on its own.
 fn field_of_wrong_type(body: &[u8]) -> Option<&'static str> {
-    let Ok(Value::Object(m)) = serde_json::from_slice::<Value>(body) else {
-        return None;
-    };
+    let entries = serde_json::from_slice::<&serde_json::value::RawValue>(body)
+        .ok()
+        .and_then(crate::wire::entries_of)?;
     FIELDS.iter().copied().find(|f| {
-        let Some(v) = m.get(*f) else { return false };
-        let one = Value::Object(Map::from_iter([((*f).to_owned(), v.clone())]));
-        serde_json::from_value::<SpeechRequestW>(one).is_err()
+        let Some((_, v)) = entries.iter().find(|(k, _)| k == *f) else {
+            return false;
+        };
+        let one = format!("{{\"{f}\":{}}}", v.get());
+        serde_json::from_str::<SpeechRequestW>(&one).is_err()
     })
 }
 
@@ -139,15 +141,32 @@ pub(super) fn decode(body: &[u8], headers: &HeaderList) -> Result<Request, KppEr
     req.instructions = w.instructions.clone();
     req.voice = match &w.voice {
         None => None,
-        Some(Value::String(name)) => Some(Voice::Named(name.clone())),
-        Some(Value::Object(o)) if o.len() == 1 => match o.get("id") {
-            Some(Value::String(id)) => Some(Voice::Id(id.clone())),
-            _ => return Err(invalid("`voice.id` must be a string").with_param("voice")),
-        },
-        Some(_) => {
-            return Err(
-                invalid("`voice` must be a voice name or `{\"id\": …}`").with_param("voice")
-            );
+        Some(raw) => {
+            let trimmed = raw.get().trim();
+            if trimmed == "null" {
+                None
+            } else if trimmed.starts_with('"') {
+                let name: String = serde_json::from_str(trimmed)
+                    .map_err(|_| invalid("`voice` must be a voice name").with_param("voice"))?;
+                Some(Voice::Named(name))
+            } else if let Some(entries) = crate::wire::entries_of(raw) {
+                match entries.as_slice() {
+                    [(k, v)] if k == "id" => {
+                        let id: String = serde_json::from_str(v.get()).map_err(|_| {
+                            invalid("`voice.id` must be a string").with_param("voice")
+                        })?;
+                        Some(Voice::Id(id))
+                    }
+                    _ => {
+                        return Err(invalid("`voice` must be a voice name or `{\"id\": …}`")
+                            .with_param("voice"));
+                    }
+                }
+            } else {
+                return Err(
+                    invalid("`voice` must be a voice name or `{\"id\": …}`").with_param("voice")
+                );
+            }
         }
     };
     // OpenAI answers mp3 when no format is named; other providers need to be asked for it.

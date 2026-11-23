@@ -701,9 +701,10 @@ impl Codec for GeminiEmbeddings {
         if kind != RequestKind::Embed {
             return Err(not_generation());
         }
-        let action = if serde_json::from_slice::<Value>(body)
+        let action = if serde_json::from_slice::<&serde_json::value::RawValue>(body)
             .ok()
-            .is_some_and(|v| v.get("requests").is_some())
+            .and_then(|r| crate::wire::field_of(r, "requests"))
+            .is_some()
         {
             GeminiAction::BatchEmbedContents
         } else {

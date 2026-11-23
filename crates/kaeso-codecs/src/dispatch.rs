@@ -132,7 +132,7 @@ pub fn decode_checked_request<B: RequestBody>(
         DialectId::MinimaxImages => MinimaxImages::decode_request(kind, body, headers),
         DialectId::OpenAiSpeech => OpenAiSpeech::decode_checked(kind, body, headers),
         DialectId::MinimaxSpeech => MinimaxSpeech::decode_request(kind, body, headers),
-        DialectId::ElevenLabs => ElevenLabs::decode_request(kind, body, headers),
+        DialectId::ElevenLabs => ElevenLabs::decode_checked(kind, body, headers),
         DialectId::OpenAiVideos => OpenAiVideos::decode_checked(kind, body, headers),
         DialectId::XaiVideos => XaiVideos::decode_request(kind, body, headers),
         DialectId::GeminiInteractions => GeminiInteractions::decode_request(kind, body, headers),

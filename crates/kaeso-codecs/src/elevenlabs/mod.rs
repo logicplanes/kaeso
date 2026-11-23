@@ -165,26 +165,16 @@ impl ElevenLabs {
     ) -> Result<Request, KppError> {
         request::decode(call, body, headers)
     }
-}
 
-impl Codec for ElevenLabs {
-    const DIALECT: DialectId = D;
-
-    /// Decodes a video or image generation body, or a body without its path as text to speech
-    /// with no voice; apps' speech requests go through
-    /// [`crate::dispatch::decode_elevenlabs_request`].
-    fn decode_request(
+    pub(crate) fn decode_checked(
         kind: RequestKind,
         body: &[u8],
         headers: &HeaderList,
     ) -> Result<Request, KppError> {
-        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
         if kind == RequestKind::Video {
-            crate::limits::request_shape(D, body)?;
             return video::decode(body);
         }
         if kind == RequestKind::Image {
-            crate::limits::request_shape(D, body)?;
             return images::decode_request(body);
         }
         let operation = match kind {
@@ -199,6 +189,23 @@ impl Codec for ElevenLabs {
             query: String::new(),
         };
         request::decode(&call, crate::multipart::Upload::Borrowed(body), headers)
+    }
+}
+
+impl Codec for ElevenLabs {
+    const DIALECT: DialectId = D;
+
+    /// Decodes a video or image generation body, or a body without its path as text to speech
+    /// with no voice; apps' speech requests go through
+    /// [`crate::dispatch::decode_elevenlabs_request`].
+    fn decode_request(
+        kind: RequestKind,
+        body: &[u8],
+        headers: &HeaderList,
+    ) -> Result<Request, KppError> {
+        crate::decisions::refuse_kind(kind, Self::DIALECT)?;
+        crate::limits::request_shape(D, body)?;
+        Self::decode_checked(kind, body, headers)
     }
 
     fn encode_response(reply: &Reply, ctx: &EncodeCtx) -> Result<Vec<u8>, KppError> {

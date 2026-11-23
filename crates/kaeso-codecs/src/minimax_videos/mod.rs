@@ -648,7 +648,8 @@ impl Codec for MinimaxVideos {
 }
 
 fn f_has_task(body: &[u8]) -> bool {
-    serde_json::from_slice::<Value>(body)
+    serde_json::from_slice::<&serde_json::value::RawValue>(body)
         .ok()
-        .is_some_and(|v| v.get("task").is_some())
+        .and_then(|r| crate::wire::field_of(r, "task"))
+        .is_some()
 }

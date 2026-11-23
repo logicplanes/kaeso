@@ -80,22 +80,28 @@ pub(crate) fn decode_request(
 }
 
 fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
-    type Check = fn(&Value) -> bool;
-    let string: Check = |v| v.is_null() || v.is_string();
-    let int: Check = |v| v.is_null() || v.as_u64().is_some_and(|n| u32::try_from(n).is_ok());
-    let count: Check = |v| v.is_null() || v.as_u64().is_some();
-    let signed: Check = |v| v.is_null() || v.as_i64().is_some();
-    let number: Check = |v| v.is_null() || v.is_number();
-    let boolean: Check = |v| v.is_null() || v.is_boolean();
-    let array: Check = |v| v.is_array();
-    let list: Check = |v| v.is_null() || v.is_array();
-    let object: Check = |v| v.is_null() || v.is_object();
-    let stop: Check = |v| {
-        v.is_null() || v.is_string() || v.as_array().is_some_and(|a| a.iter().all(Value::is_string))
+    type Check = fn(&str) -> bool;
+    fn is_null(s: &str) -> bool {
+        s == "null"
+    }
+    fn is_str(s: &str) -> bool {
+        s.starts_with('"')
+    }
+    let string: Check = |s| is_null(s) || is_str(s);
+    let int: Check = |s| is_null(s) || serde_json::from_str::<u32>(s).is_ok();
+    let count: Check = |s| is_null(s) || serde_json::from_str::<u64>(s).is_ok();
+    let signed: Check = |s| is_null(s) || serde_json::from_str::<i64>(s).is_ok();
+    let number: Check = |s| is_null(s) || serde_json::from_str::<serde_json::Number>(s).is_ok();
+    let boolean: Check = |s| is_null(s) || matches!(s, "true" | "false");
+    let array: Check = |s| s.starts_with('[');
+    let list: Check = |s| is_null(s) || s.starts_with('[');
+    let object: Check = |s| is_null(s) || s.starts_with('{');
+    let stop: Check = |s| {
+        is_null(s) || is_str(s) || serde_json::from_str::<Vec<std::borrow::Cow<'_, str>>>(s).is_ok()
     };
-    let choice: Check = |v| v.is_null() || v.is_string() || v.is_object();
+    let choice: Check = |s| is_null(s) || is_str(s) || s.starts_with('{');
     let fields: &[(&str, Check, &str)] = &[
-        ("model", |v| v.is_string(), "a string"),
+        ("model", is_str, "a string"),
         ("messages", array, "an array of messages"),
         ("temperature", number, "a number"),
         ("top_p", number, "a number"),
@@ -128,12 +134,15 @@ fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
             "The request body is not a valid OpenAI Chat Completions request: {text}."
         ))
     };
-    let Ok(Value::Object(map)) = serde_json::from_slice::<Value>(body) else {
+    let Some(entries) = serde_json::from_slice::<&RawValue>(body)
+        .ok()
+        .and_then(crate::wire::entries_of)
+    else {
         return invalid(crate::wire::without_position(err));
     };
     for (name, check, expected) in fields {
-        match map.get(*name) {
-            Some(v) if !check(v) => {
+        match entries.iter().find(|(k, _)| k == *name) {
+            Some((_, v)) if !check(v.get().trim()) => {
                 return invalid(format!("`{name}` must be {expected}")).with_param(*name);
             }
             None if matches!(*name, "model" | "messages") => {
@@ -142,7 +151,11 @@ fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
             _ => {}
         }
     }
-    if let Some(Value::Object(reasoning)) = map.get("reasoning") {
+    if let Some(reasoning) = entries
+        .iter()
+        .find(|(k, _)| k == "reasoning")
+        .and_then(|(_, v)| crate::wire::entries_of(v))
+    {
         let subfields: &[(&str, Check, &str)] = &[
             ("effort", string, "a string"),
             ("max_tokens", int, "an integer from 1 to 4294967295"),
@@ -150,8 +163,8 @@ fn describe(body: &[u8], err: &serde_json::Error) -> KppError {
             ("exclude", boolean, "true or false"),
         ];
         for (name, check, expected) in subfields {
-            if let Some(v) = reasoning.get(*name)
-                && !check(v)
+            if let Some((_, v)) = reasoning.iter().find(|(k, _)| k == *name)
+                && !check(v.get().trim())
             {
                 let param = format!("reasoning.{name}");
                 return invalid(format!("`{param}` must be {expected}")).with_param(param);

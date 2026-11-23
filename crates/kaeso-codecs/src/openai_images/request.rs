@@ -92,8 +92,10 @@ pub(super) fn guess_operation(body: &[u8], headers: &HeaderList) -> ImageOperati
             .to_ascii_lowercase()
             .starts_with("multipart/")
     });
-    let has_images =
-        serde_json::from_slice::<Map<String, Value>>(body).is_ok_and(|m| m.contains_key("images"));
+    let has_images = serde_json::from_slice::<&serde_json::value::RawValue>(body)
+        .ok()
+        .and_then(|r| crate::wire::field_of(r, "images"))
+        .is_some();
     if multipart || has_images {
         ImageOperation::Edit
     } else {

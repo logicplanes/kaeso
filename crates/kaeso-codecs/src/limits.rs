@@ -748,6 +748,16 @@ impl<B: AsRef<[u8]>> Checked<B> {
     }
 }
 
+pub(crate) fn check_depth(body: &[u8]) -> Result<(), KppError> {
+    if significant_bytes(body, MAX_DEPTH).is_none() {
+        return Err(KppError::invalid_request(format!(
+            "The body nests more than {MAX_DEPTH} levels deep; Kaeso takes at most {MAX_DEPTH}."
+        ))
+        .with_status(400));
+    }
+    Ok(())
+}
+
 /// Counts the messages, content blocks and tools of a request body without decoding it,
 /// and refuses one over [`MAX_MESSAGES`], [`MAX_BLOCKS_PER_MESSAGE`], [`MAX_TOOLS`],
 /// [`MAX_EMBEDDING_INPUTS`], [`MAX_RERANK_DOCUMENTS`], [`MAX_DECISION_QUESTIONS`],

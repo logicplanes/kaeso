@@ -379,3 +379,48 @@ fn a_provider_response_nested_thousands_deep_is_carried_whole_on_a_worker_stack(
         "the annotation keeps every level"
     );
 }
+
+#[test]
+fn deeply_nested_elevenlabs_speech_and_form_fields_are_refused_on_a_worker_stack() {
+    let deep = nested_objects("zzz_unknown", DEEP);
+    let speech =
+        format!(r#"{{"model_id":"eleven_multilingual_v2","text":"Hi","zzz":{deep}}}"#).into_bytes();
+    let err = on_worker_stack(move || {
+        dispatch::decode_request(
+            DialectId::ElevenLabs,
+            RequestKind::Speech,
+            &speech,
+            &HeaderList::new(),
+        )
+    })
+    .unwrap_err();
+    too_deep(&err);
+
+    for (path, file_field, json_field) in [
+        ("/v1/speech-to-text", "file", "webhook_metadata"),
+        (
+            "/v1/voice-changer/21m00Tcm4TlvDq8ikWAM",
+            "audio",
+            "voice_settings",
+        ),
+    ] {
+        let deep_json = nested_arrays(DEEP);
+        let form = kaeso_codecs::multipart::FormWriter::write(&[
+            kaeso_codecs::multipart::FormField::Text("model_id", "scribe_v1"),
+            kaeso_codecs::multipart::FormField::Text(json_field, &deep_json),
+            kaeso_codecs::multipart::FormField::File(
+                file_field,
+                "clip.wav",
+                "audio/wav",
+                b"RIFF\x24\x00\x00\x00WAVE",
+            ),
+        ]);
+        let headers = HeaderList::new().with("content-type", form.content_type());
+        let body = form.into_body();
+        let call = kaeso_codecs::elevenlabs::ElevenLabsCall::from_path(path, "").unwrap();
+        let err =
+            on_worker_stack(move || dispatch::decode_elevenlabs_request(&call, &body, &headers))
+                .unwrap_err();
+        too_deep(&err);
+    }
+}

@@ -398,9 +398,10 @@ impl Codec for XaiVideos {
             return Err(crate::video_jobs::not_videos(D, kind));
         }
         crate::limits::request_shape(D, body)?;
-        let edit = serde_json::from_slice::<Value>(body)
+        let edit = serde_json::from_slice::<&serde_json::value::RawValue>(body)
             .ok()
-            .is_some_and(|v| v.get("video").is_some());
+            .and_then(|r| crate::wire::field_of(r, "video"))
+            .is_some();
         decode_request(body, edit)
     }
 

@@ -1,8 +1,10 @@
+use indexmap::IndexMap;
 use kaeso_kpp::{
     AudioFormat, AudioInput, DialogueLine, Extras, KppError, Origin, RawJson, Request, Source,
     SpeechOperation, SpeechRequest, StreamMode, TimestampGranularity, TranscriptFormat,
     TranscriptionOperation, TranscriptionRequest, Voice,
 };
+use serde_json::value::RawValue;
 use serde_json::{Map, Value};
 
 use super::format;
@@ -73,20 +75,75 @@ fn operation_of(call: &ElevenLabsCall) -> SpeechOperation {
     }
 }
 
-fn take_str(m: &mut Map<String, Value>, key: &str) -> Result<Option<String>, KppError> {
-    match m.remove(key) {
-        None | Some(Value::Null) => Ok(None),
-        Some(Value::String(s)) => Ok(Some(s)),
-        Some(_) => Err(invalid(format!("`{key}` must be a string")).with_param(key)),
+type RawMap = IndexMap<String, RawJson>;
+
+fn parse_json_object(body: &[u8]) -> Result<RawMap, KppError> {
+    let raw: &RawValue =
+        serde_json::from_slice(body).map_err(|e| invalid(crate::wire::without_position(&e)))?;
+    if !raw.get().trim_start().starts_with('{') {
+        return Err(invalid("the body must be a JSON object"));
+    }
+    let entries: IndexMap<String, &RawValue> =
+        serde_json::from_str(raw.get()).map_err(|e| invalid(crate::wire::without_position(&e)))?;
+    Ok(entries
+        .into_iter()
+        .map(|(k, v)| (k, RawJson::from(v)))
+        .collect())
+}
+
+fn take_str(m: &mut RawMap, key: &str) -> Result<Option<String>, KppError> {
+    let Some(raw) = m.shift_remove(key) else {
+        return Ok(None);
+    };
+    if raw.get().trim() == "null" {
+        return Ok(None);
+    }
+    serde_json::from_str::<String>(raw.get())
+        .map(Some)
+        .map_err(|_| invalid(format!("`{key}` must be a string")).with_param(key))
+}
+
+fn into_extras(extras: &mut Extras, rest: RawMap) {
+    for (k, v) in rest {
+        extras.fields.insert(k, v);
     }
 }
 
-fn into_extras(extras: &mut Extras, rest: Map<String, Value>) -> Result<(), KppError> {
-    for (k, v) in rest {
-        let raw = RawJson::from_serialize(&v).map_err(|_| invalid("a field cannot be read"))?;
-        extras.fields.insert(k, raw);
+fn parse_dialogue_inputs(text: &str) -> Result<Vec<&RawValue>, KppError> {
+    const OVER: &str = "inputs_over_limit";
+    struct BoundedSeq;
+    impl<'de> serde::de::Visitor<'de> for BoundedSeq {
+        type Value = Vec<&'de RawValue>;
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("a JSON array")
+        }
+        fn visit_seq<A: serde::de::SeqAccess<'de>>(
+            self,
+            mut seq: A,
+        ) -> Result<Self::Value, A::Error> {
+            let mut out = Vec::new();
+            while let Some(item) = seq.next_element::<&'de RawValue>()? {
+                if out.len() == crate::limits::MAX_MESSAGES {
+                    return Err(serde::de::Error::custom(OVER));
+                }
+                out.push(item);
+            }
+            Ok(out)
+        }
     }
-    Ok(())
+    if !text.trim_start().starts_with('[') {
+        return Err(invalid("`inputs` must be a list").with_param("inputs"));
+    }
+    let mut de = serde_json::Deserializer::from_str(text);
+    match serde::Deserializer::deserialize_seq(&mut de, BoundedSeq) {
+        Ok(items) if de.end().is_ok() => Ok(items),
+        Err(e) if e.to_string().contains(OVER) => Err(invalid(format!(
+            "`inputs` holds more than {} lines",
+            crate::limits::MAX_MESSAGES
+        ))
+        .with_param("inputs")),
+        _ => Err(invalid("`inputs` must be a list").with_param("inputs")),
+    }
 }
 
 /// Decodes an ElevenLabs-format request: JSON for speech, dialogue, sound effects and music,
@@ -145,11 +202,7 @@ pub(super) fn decode(
     let mut m = if call.operation == ElevenLabsOperation::VoiceChanger {
         decode_voice_change_form(upload, headers, &mut req)?
     } else {
-        match serde_json::from_slice::<Value>(body) {
-            Ok(Value::Object(m)) => m,
-            Ok(_) => return Err(invalid("the body must be a JSON object")),
-            Err(e) => return Err(invalid(crate::wire::without_position(&e))),
-        }
+        parse_json_object(body)?
     };
     req.model = match take_str(&mut m, "model_id")? {
         Some(model) => model,
@@ -170,14 +223,26 @@ pub(super) fn decode(
         }
         ElevenLabsOperation::Music => req.input = take_str(&mut m, "prompt")?,
         ElevenLabsOperation::TextToDialogue => {
-            let Some(Value::Array(inputs)) = m.remove("inputs") else {
+            let Some(inputs_raw) = m.shift_remove("inputs") else {
                 return Err(invalid("`inputs` must be a list").with_param("inputs"));
             };
+            let inputs = parse_dialogue_inputs(inputs_raw.get())?;
             for (i, item) in inputs.into_iter().enumerate() {
-                let Value::Object(mut line) = item else {
+                if !item.get().trim_start().starts_with('{') {
                     return Err(invalid("a dialogue line must be an object")
                         .with_param(format!("inputs[{i}]")));
-                };
+                }
+                let mut line: RawMap =
+                    serde_json::from_str::<IndexMap<String, &RawValue>>(item.get())
+                        .map(|map| {
+                            map.into_iter()
+                                .map(|(k, v)| (k, RawJson::from(v)))
+                                .collect()
+                        })
+                        .map_err(|_| {
+                            invalid("a dialogue line must be an object")
+                                .with_param(format!("inputs[{i}]"))
+                        })?;
                 let text = take_str(&mut line, "text")?.unwrap_or_default();
                 let voice = take_str(&mut line, "voice_id")?;
                 if let Some(id) = voice.as_deref() {
@@ -187,7 +252,7 @@ pub(super) fn decode(
                 let mut l = DialogueLine::new(text, voice);
                 if !line.is_empty() {
                     let mut e = Extras::new(Origin::new(D));
-                    into_extras(&mut e, line)?;
+                    into_extras(&mut e, line);
                     l.extras = e;
                 }
                 req.dialogue.push(l);
@@ -196,37 +261,46 @@ pub(super) fn decode(
         _ => {}
     }
     req.language = take_str(&mut m, "language_code")?;
-    match m.remove("seed") {
-        None | Some(Value::Null) => {}
-        Some(Value::Number(n)) => req.seed = n.as_i64(),
-        Some(_) => return Err(invalid("`seed` must be a whole number").with_param("seed")),
+    if let Some(raw) = m.shift_remove("seed")
+        && raw.get().trim() != "null"
+    {
+        let n: serde_json::Number = serde_json::from_str(raw.get())
+            .map_err(|_| invalid("`seed` must be a whole number").with_param("seed"))?;
+        req.seed = n.as_i64();
     }
-    match m.remove("duration_seconds") {
-        None => {}
-        Some(Value::Number(n)) => {
+    if let Some(raw) = m.shift_remove("duration_seconds") {
+        if raw.get().trim() == "null" {
+            extras.form.insert("duration_null".into(), true.into());
+        } else {
+            let n: serde_json::Number = serde_json::from_str(raw.get()).map_err(|_| {
+                invalid("`duration_seconds` must be a number").with_param("duration_seconds")
+            })?;
             req.duration = n.as_f64();
             note_integers(&mut extras, &[("duration_seconds", Some(&n))]);
         }
-        Some(Value::Null) => {
-            extras.form.insert("duration_null".into(), true.into());
-        }
-        Some(_) => {
-            return Err(
-                invalid("`duration_seconds` must be a number").with_param("duration_seconds")
-            );
-        }
     }
-    if let Some(Value::Number(ms)) = m.get("music_length_ms") {
-        req.duration = ms.as_f64().map(|ms| ms / 1000.0);
-        m.remove("music_length_ms");
-    }
-    if let Some(Value::Object(settings)) = m.get_mut("voice_settings")
-        && let Some(Value::Number(speed)) = settings.remove("speed")
+    if let Some(ms) = m
+        .get("music_length_ms")
+        .and_then(|r| serde_json::from_str::<serde_json::Number>(r.get()).ok())
     {
+        req.duration = ms.as_f64().map(|ms| ms / 1000.0);
+        m.shift_remove("music_length_ms");
+    }
+    if let Some(vs_raw) = m.get("voice_settings")
+        && vs_raw.get().trim_start().starts_with('{')
+        && let Ok(mut settings) =
+            serde_json::from_str::<IndexMap<String, Box<RawValue>>>(vs_raw.get())
+        && let Some(speed_raw) = settings.get("speed")
+        && let Ok(speed) = serde_json::from_str::<serde_json::Number>(speed_raw.get())
+    {
+        settings.shift_remove("speed");
         req.speed = speed.as_f64();
         note_integers(&mut extras, &[("speed", Some(&speed))]);
+        if let Ok(rewritten) = RawJson::from_serialize(&settings) {
+            m.insert("voice_settings".to_owned(), rewritten);
+        }
     }
-    into_extras(&mut extras, m)?;
+    into_extras(&mut extras, m);
     req.extras = extras;
     Ok(Request::Speech(req))
 }
@@ -260,22 +334,25 @@ fn uploaded(part: &FormPart<'_>, body: Upload<'_>) -> AudioInput {
 
 // Text fields of a form as JSON values: numbers and booleans as ElevenLabs reads them, and the
 // JSON strings it documents (`voice_settings`, `additional_formats`, `webhook_metadata`).
-fn form_value(name: &str, text: &str) -> Value {
+fn form_value(name: &str, text: &str) -> Result<RawJson, KppError> {
     const JSON_FIELDS: &[&str] = &["voice_settings", "additional_formats", "webhook_metadata"];
-    if JSON_FIELDS.contains(&name)
-        && let Ok(v) = serde_json::from_str::<Value>(text)
-    {
-        return v;
+    if JSON_FIELDS.contains(&name) {
+        if matches!(text.trim_start().as_bytes().first(), Some(b'{' | b'[')) {
+            crate::limits::check_depth(text.as_bytes())?;
+        }
+        if let Ok(raw) = serde_json::from_str::<Box<RawValue>>(text) {
+            return Ok(RawJson::from(&*raw));
+        }
     }
-    Value::String(text.to_owned())
+    RawJson::from_serialize(&text).map_err(|_| invalid("a field cannot be read"))
 }
 
 fn decode_voice_change_form(
     body: Upload<'_>,
     headers: &HeaderList,
     req: &mut SpeechRequest,
-) -> Result<Map<String, Value>, KppError> {
-    let mut m = Map::new();
+) -> Result<RawMap, KppError> {
+    let mut m = RawMap::new();
     for part in form(body.bytes(), headers)? {
         if part.name == "audio" && part.filename.is_some() {
             req.audio = Some(uploaded(&part, body));
@@ -292,7 +369,7 @@ fn decode_voice_change_form(
                     })?);
             }
             name => {
-                m.insert(name.to_owned(), form_value(name, text));
+                m.insert(name.to_owned(), form_value(name, text)?);
             }
         }
     }
@@ -307,7 +384,7 @@ fn decode_transcription(
     headers: &HeaderList,
     mut extras: Extras,
 ) -> Result<Request, KppError> {
-    let mut text_fields = Map::new();
+    let mut text_fields = RawMap::new();
     let mut audio = None;
     for part in form(body.bytes(), headers)? {
         if part.name == "file" && part.filename.is_some() {
@@ -317,12 +394,12 @@ fn decode_transcription(
         let value = part
             .text()
             .ok_or_else(|| invalid(format!("`{}` is not UTF-8 text", part.name)))?;
-        text_fields.insert(part.name.clone(), form_value(&part.name, value));
+        text_fields.insert(part.name.clone(), form_value(&part.name, value)?);
     }
     let mut m = text_fields;
-    let mut text = |k: &str| match m.remove(k) {
-        Some(Value::String(s)) => Some(s),
-        _ => None,
+    let mut text = |k: &str| {
+        m.shift_remove(k)
+            .and_then(|r| serde_json::from_str::<String>(r.get()).ok())
     };
     let model =
         text("model_id").ok_or_else(|| invalid("`model_id` is missing").with_param("model_id"))?;
@@ -378,7 +455,7 @@ fn decode_transcription(
             extras.form.insert(FORM_GRANULARITY.to_owned(), g.into());
         }
     }
-    into_extras(&mut extras, m)?;
+    into_extras(&mut extras, m);
     r.extras = extras;
     Ok(Request::Transcription(r))
 }
