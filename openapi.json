@@ -37587,6 +37587,7 @@
                 "credential_mode",
                 "scopes",
                 "auto_approve_tool_changes",
+                "change_policy",
                 "status",
                 "tools",
                 "projects",
@@ -37603,6 +37604,10 @@
                 "auto_approve_tool_changes": {
                   "type": "boolean",
                   "description": "Whether a tool's changed definition is approved as Kaeso finds it. Off holds the\ntool until someone approves the change."
+                },
+                "change_policy": {
+                  "$ref": "#/components/schemas/McpChangePolicy",
+                  "description": "Deprecated: `auto_approve_tool_changes` as 0.7.0 named it, `accept` when on and\n`hold` when off."
                 },
                 "connection": {
                   "oneOf": [
@@ -41020,6 +41025,14 @@
           "oauth"
         ]
       },
+      "McpChangePolicy": {
+        "type": "string",
+        "description": "How 0.7.0 named whether changed tools are approved as they come.",
+        "enum": [
+          "hold",
+          "accept"
+        ]
+      },
       "McpConnectionAnswer": {
         "type": "object",
         "description": "The server after a sign-in was set or started.",
@@ -41307,11 +41320,20 @@
           "added",
           "held",
           "auto_approved",
+          "accepted",
           "removed",
           "skipped",
           "server"
         ],
         "properties": {
+          "accepted": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Deprecated: `auto_approved` as 0.7.0 named it.",
+            "deprecated": true
+          },
           "added": {
             "type": "array",
             "items": {
@@ -41380,6 +41402,17 @@
               "null"
             ],
             "description": "Whether its changed tools are approved as Kaeso finds them; `true` when absent."
+          },
+          "change_policy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpChangePolicy",
+                "description": "Deprecated: `auto_approve_tool_changes` as 0.7.0 named it, `accept` for `true` and\n`hold` for `false`."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "credential_mode": {
             "oneOf": [
@@ -41570,6 +41603,17 @@
             ],
             "description": "Whether its changed tools are approved as Kaeso finds them. Switching it on also\napproves the changes held for review now."
           },
+          "change_policy": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpChangePolicy",
+                "description": "Deprecated: `auto_approve_tool_changes` as 0.7.0 named it, `accept` for `true` and\n`hold` for `false`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "handle": {
             "type": [
               "string",
@@ -41609,6 +41653,7 @@
           "credential_mode",
           "scopes",
           "auto_approve_tool_changes",
+          "change_policy",
           "status",
           "tools",
           "projects",
@@ -41625,6 +41670,10 @@
           "auto_approve_tool_changes": {
             "type": "boolean",
             "description": "Whether a tool's changed definition is approved as Kaeso finds it. Off holds the\ntool until someone approves the change."
+          },
+          "change_policy": {
+            "$ref": "#/components/schemas/McpChangePolicy",
+            "description": "Deprecated: `auto_approve_tool_changes` as 0.7.0 named it, `accept` when on and\n`hold` when off."
           },
           "connection": {
             "oneOf": [

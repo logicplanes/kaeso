@@ -405,6 +405,7 @@ const messages = (): Rule[] => [
   rule("errors.tools.notProjectTool", (v) => t("errors.tools.notProjectTool", "`{tool}` is not a tool of the project's MCP servers.", v)),
   rule("errors.tools.allOrList", () => t("errors.tools.allOrList", "Send either `all: true` or a `tools` list.")),
   rule("errors.tools.notMemberTool", (v) => t("errors.tools.notMemberTool", "`{tool}` is not among the tools the key's member may call.", v)),
+  rule("errors.mcp.changePolicy", () => t("errors.mcp.changePolicy", "Leave out `change_policy`, or make it agree with `auto_approve_tool_changes`.")),
   rule("errors.mcp.urlLength", () => t("errors.mcp.urlLength", "`url` must be a URL of at most 2048 characters.")),
   rule("errors.mcp.urlScheme", () => t("errors.mcp.urlScheme", "`url` must start with `https://`, or `http://` for an allowed network.")),
   rule("errors.mcp.urlHost", () => t("errors.mcp.urlHost", "`url` must be a full URL with a host, such as `https://mcp.example.com/mcp`.")),
