@@ -357,6 +357,7 @@
   "errors.mayExceed.key": "This request could exceed this key's {limit}; ask for fewer output tokens.",
   "errors.mayExceed.member": "This request could exceed the member's {limit}; ask for fewer output tokens.",
   "errors.mayExceed.project": "This request could exceed the project's {limit}; ask for fewer output tokens.",
+  "errors.mcp.changePolicy": "Leave out `change_policy`, or make it agree with `auto_approve_tool_changes`.",
   "errors.mcp.clientId": "`client_id` must be 1 to 2048 characters.",
   "errors.mcp.clientRefused": "The server's sign-in refused Kaeso's client; check it and try again.",
   "errors.mcp.handleForm": "`handle` must be 1 to 24 lowercase letters, digits and hyphens.",

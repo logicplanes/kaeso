@@ -671,6 +671,7 @@
   "errors.mcp.noAccounts": "Ein Server ohne Anmeldung hat keine Konten; nutzen Sie `shared`.",
   "errors.mcp.oauthOnly": "`oauth_client` und `scopes` gibt es nur für `oauth`-Server.",
   "errors.mcp.scopes": "`scopes` nimmt höchstens 30 Scopes ohne Leer- oder Anführungszeichen.",
+  "errors.mcp.changePolicy": "Lassen Sie `change_policy` weg, oder bringen Sie es mit `auto_approve_tool_changes` in Einklang.",
   "errors.mcp.clientId": "`client_id` muss 1 bis 2048 Zeichen haben.",
   "errors.mcp.perPerson": "Bei diesem Server verbindet jede Person ihr eigenes Konto, unter Konto › Verbindungen.",
   "errors.mcp.personSignsIn": "Bei einem MCP-Server meldet sich eine Person an; starten Sie aus einer Konsolensitzung.",

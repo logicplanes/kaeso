@@ -950,6 +950,10 @@ async fn a_new_server_auto_approves_tool_changes_and_says_so_in_its_history() {
         (&refreshed.body["held"], &refreshed.body["auto_approved"]),
         (&json!([]), &json!(["create_post", "search_posts"]))
     );
+    assert_eq!(
+        refreshed.body["accepted"], refreshed.body["auto_approved"],
+        "0.7.0's name for the same list"
+    );
     assert_eq!(refreshed.body["server"]["tools"]["changed"], 0);
     let tools = app.get(&format!("{at_project}/tools"), &owner.cookie).await;
     let p = named(&tools.body, "name", "create_post");
@@ -1085,5 +1089,58 @@ async fn switching_auto_approve_on_approves_the_changes_held_for_review() {
         refreshed.body["held"],
         json!(["create_post"]),
         "off again holds it again"
+    );
+}
+
+#[tokio::test]
+async fn an_app_written_for_0_7_0_still_sets_and_reads_the_change_policy() {
+    let s = TestServices::start().await;
+    let mock = MockMcp::start(Options::default()).await;
+    let app = App::start_with(&s, &[LOOPBACK]).await;
+    let owner = app.setup().await;
+    let created = add(
+        &app,
+        &owner,
+        json!({ "handle": "x", "name": "X", "url": mock.url(), "auth_method": "none", "change_policy": "hold" }),
+    )
+    .await;
+    assert_eq!(
+        (
+            &created["change_policy"],
+            &created["auto_approve_tool_changes"]
+        ),
+        (&json!("hold"), &json!(false))
+    );
+    let at = format!("{}/{}", servers(&owner), created["id"].as_str().unwrap());
+    let r = app
+        .call(
+            Method::PATCH,
+            &at,
+            Some(json!({ "change_policy": "accept" })),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    assert_eq!(
+        (
+            &r.body["change_policy"],
+            &r.body["auto_approve_tool_changes"]
+        ),
+        (&json!("accept"), &json!(true))
+    );
+    let r = app
+        .call(
+            Method::PATCH,
+            &at,
+            Some(json!({ "change_policy": "hold", "auto_approve_tool_changes": true })),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::BAD_REQUEST);
+    assert_eq!(r.body["error"]["param"], "change_policy");
+    assert_eq!(
+        app.get(&at, &owner.cookie).await.body["change_policy"],
+        "accept",
+        "a refused change changes nothing"
     );
 }
