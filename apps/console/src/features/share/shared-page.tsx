@@ -68,6 +68,7 @@ export function rowLabel(by: string, r: SharedRow): string {
   if (r.key === "playground") return t("kaeso.share.playground", "Playground");
   if (r.name) return r.name;
   if (r.number) {
+    if (r.key === "source") return t("kaeso.share.sourceNumber", "Source {n}", { n: r.number });
     if (by === "member") return t("kaeso.share.memberNumber", "Member {n}", { n: r.number });
     if (by === "key") return t("kaeso.share.keyNumber", "Key {n}", { n: r.number });
     return t("kaeso.share.projectNumber", "Project {n}", { n: r.number });

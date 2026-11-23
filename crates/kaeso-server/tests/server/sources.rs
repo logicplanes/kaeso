@@ -76,6 +76,7 @@ fn haiku(id: &str, email: Option<&str>) -> ObservedRequest {
             cache_read: 10_000,
             cache_write: 0,
             reasoning: 0,
+            cache_write_1h: 0,
         },
         reported_cost: Some(Decimal::from_str("0.5").unwrap()),
         client: Some("claude-cli/2.1.322".into()),
@@ -810,6 +811,191 @@ async fn a_budget_says_how_much_of_its_use_sources_reported() {
         .await
         .body;
     assert!(rate_view["observed"].is_null());
+}
+
+#[tokio::test]
+async fn every_key_a_grouping_returns_filters_and_the_playground_counts_only_its_own() {
+    let env = env().await;
+    common::v1::call(
+        &env,
+        "/v1/messages",
+        Some(&env.key),
+        true,
+        Some(common::v1::messages("claude-haiku-4-5", "Hi")),
+    )
+    .await;
+    let made = add(&env, json!({ "kind": "codex", "name": "Codex" })).await;
+    let id = made["source"]["id"].as_str().unwrap().to_owned();
+    let source = source_row(&env, &id).await;
+    observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("req_a", None), haiku("req_b", None)],
+            tool_calls: vec![ObservedToolCall {
+                external_id: "call_a".into(),
+                tool: "list_issues".into(),
+                server: Some("linear".into()),
+                ok: true,
+                ..ObservedToolCall::default()
+            }],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    flush(&env).await;
+    let now = env.app.state.clock.now();
+    let rfc = |t: time::OffsetDateTime| {
+        t.format(&time::format_description::well_known::Rfc3339)
+            .unwrap()
+    };
+    let range = format!(
+        "from={}&to={}",
+        rfc(now - time::Duration::hours(1)),
+        rfc(now + time::Duration::hours(1))
+    );
+    let get = |path: String| {
+        let env = &env;
+        async move { env.app.get(&path, &env.owner.cookie).await }
+    };
+    let requests = |body: &Value| -> i64 {
+        body["data"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r["requests"].as_i64().unwrap())
+            .sum()
+    };
+    let at = base(&env);
+
+    let playground = get(format!("{at}/usage?group_by=day&key=playground")).await;
+    assert_eq!(playground.status, StatusCode::OK, "{:?}", playground.body);
+    assert_eq!(
+        requests(&playground.body),
+        0,
+        "a source's requests aren't the Playground's"
+    );
+
+    let org = get(format!("/orgs/{}/usage?group_by=source", env.owner.org_id)).await;
+    assert_eq!(org.status, StatusCode::OK, "{:?}", org.body);
+    assert_eq!(requests(&org.body), 3);
+
+    for (query, expected) in [
+        (format!("key=source:{id}"), 2),
+        ("source=gateway".to_owned(), 1),
+        (format!("source={id}"), 2),
+    ] {
+        let t = get(format!("{at}/usage/timeline?step=hour&{range}&{query}")).await;
+        assert_eq!(t.status, StatusCode::OK, "{query}: {:?}", t.body);
+        assert_eq!(requests(&t.body), expected, "the timeline with {query}");
+    }
+    let logs = get(format!("{at}/logs?key=source:{id}")).await;
+    assert_eq!(logs.status, StatusCode::OK, "{:?}", logs.body);
+    assert_eq!(
+        logs.body["data"].as_array().unwrap().len(),
+        2,
+        "the log takes a source as a key"
+    );
+
+    for query in [
+        "source=garbage".to_owned(),
+        format!("key=source:{id}&source=gateway"),
+    ] {
+        let r = get(format!("{at}/usage?group_by=day&{query}")).await;
+        assert_eq!(r.status, StatusCode::BAD_REQUEST, "{query}: {:?}", r.body);
+    }
+    let r = get(format!("{at}/logs?key=source:nonsense")).await;
+    assert_eq!(r.status, StatusCode::BAD_REQUEST);
+    assert_eq!(
+        r.body["error"]["message"],
+        "`key` must be an API key's id or `source:` and a source's id."
+    );
+
+    let (status, _, csv) = env
+        .app
+        .raw_bytes(
+            axum::http::Request::builder()
+                .uri(format!(
+                    "/platform/v1{at}/logs/tool-calls/export?format=csv&source_id={id}"
+                ))
+                .header(
+                    "cookie",
+                    format!("__Host-kaeso_session={}", env.owner.cookie),
+                )
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let csv = String::from_utf8(csv).unwrap();
+    let lines: Vec<&str> = csv.lines().collect();
+    assert!(lines[0].starts_with("id,started_at,tool,upstream_tool,server,server_name,"));
+    assert!(
+        lines[1].contains(",\"\",\"linear\","),
+        "a reported server is a name, not a server's id: {}",
+        lines[1]
+    );
+}
+
+#[tokio::test]
+async fn a_members_limit_counts_what_sources_reported_for_them_and_a_keys_none() {
+    let env = env().await;
+    let limit = |body: Value| {
+        let env = &env;
+        async move {
+            let r = env
+                .app
+                .post(
+                    &format!("{}/limits", base(env)),
+                    body,
+                    Some(&env.owner.cookie),
+                )
+                .await;
+            assert_eq!(r.status, StatusCode::CREATED, "{:?}", r.body);
+            r.body["id"].as_str().unwrap().to_owned()
+        }
+    };
+    let member = limit(json!({ "level": "member", "user": env.owner.user_id, "kind": "token_budget", "period": "day", "amount": 1_000_000 })).await;
+    let key_id = env
+        .app
+        .get(&format!("{}/keys", base(&env)), &env.owner.cookie)
+        .await
+        .body["data"][0]["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let key = limit(json!({ "level": "key", "key": key_id, "kind": "token_budget", "period": "day", "amount": 1_000_000 })).await;
+    let made = add(
+        &env,
+        json!({ "kind": "claude_code", "name": "Claude Code" }),
+    )
+    .await;
+    let source = source_row(&env, made["source"]["id"].as_str().unwrap()).await;
+    observed::record(
+        &env.app.state,
+        &source,
+        Batch {
+            requests: vec![haiku("req_a", None)],
+            ..Batch::default()
+        },
+    )
+    .await
+    .unwrap();
+    flush(&env).await;
+    let view = |id: String| {
+        let env = &env;
+        async move {
+            env.app
+                .get(&format!("{}/limits/{id}", base(env)), &env.owner.cookie)
+                .await
+                .body
+        }
+    };
+    let m = view(member).await;
+    assert_eq!(m["observed"], "13000", "{m}");
+    assert_eq!(m["used"], "13000");
+    assert_eq!(view(key).await["observed"], "0");
 }
 
 #[tokio::test]

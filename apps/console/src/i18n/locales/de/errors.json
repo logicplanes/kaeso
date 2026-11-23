@@ -800,6 +800,7 @@
   "errors.logTag": "`tag` muss aus 1 bis 64 Kleinbuchstaben, Ziffern, `.`, `_`, `:` oder `-` bestehen.",
   "errors.modelApi.tagsHeader": "Der Header `kaeso-tags` nimmt bis zu 10 kommagetrennte Tags aus je 1 bis 64 Kleinbuchstaben, Ziffern, `.`, `_`, `:` oder `-`.",
   "errors.logErrorMessage": "`error_message` muss 1 bis 200 Zeichen lang sein.",
+  "errors.logKeyFilter": "`key` muss die ID eines API-Schlüssels sein oder `source:` und die ID einer Quelle.",
   "errors.limitOneToFifty": "`limit` muss zwischen 1 und 50 liegen.",
   "errors.logClient": "`client` muss eine Client-App sein, etwa `codex` oder `other`.",
   "errors.retriesRange": "`retries` muss zwischen 0 und 3 liegen.",

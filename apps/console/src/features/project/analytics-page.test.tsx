@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { UsageRow } from "~/api/generated/types";
 import { exchangeRates, myMembership, signedIn, without } from "~/test/fixtures";
-import { apiKey, catalogueModel, listed, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
+import { apiKey, catalogueModel, externalSource, listed, projectData, projectMember, projectPath, serviceAccount, usageRow } from "~/test/fixtures/project";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -330,10 +330,16 @@ describe("AnalyticsPage", () => {
 
   it("groups by key, member and day from the segmented control", async () => {
     signedIn();
-    projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()] });
+    projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()], sources: [externalSource()] });
     usage({
       day: [usageRow({ key: "2026-10-12", requests: 5 }), usageRow({ key: "2026-10-13", requests: 9 })],
-      key: [usageRow({ key: "key_web", requests: 10 }), usageRow({ key: "playground", requests: 4 }), usageRow({ key: "key_gone", requests: 1 })],
+      key: [
+        usageRow({ key: "key_web", requests: 10 }),
+        usageRow({ key: "playground", requests: 4 }),
+        usageRow({ key: "source:src_claude", requests: 3 }),
+        usageRow({ key: "source:src_gone", requests: 2 }),
+        usageRow({ key: "key_gone", requests: 1 }),
+      ],
       member: [
         usageRow({ key: "user:usr_grace", requests: 8 }),
         usageRow({ key: "service_account:sa_deploy", requests: 6 }),
@@ -350,6 +356,8 @@ describe("AnalyticsPage", () => {
       expect(bodyRows(table).map((r) => r.textContent)).toEqual([
         expect.stringContaining("checkout-web"),
         expect.stringContaining("Playground"),
+        expect.stringContaining("Claude Code, Ada's laptop (source)"),
+        expect.stringContaining("A source"),
         expect.stringContaining("key_gone"),
       ]),
     );
@@ -467,7 +475,7 @@ describe("AnalyticsPage", () => {
     projectData({ keys: [apiKey()], members: [projectMember()], accounts: [serviceAccount()], models: [catalogueModel()] });
     usage({
       model: [usageRow({ key: "anthropic/claude-sonnet-4-5" }), usageRow({ key: "unpriced", requests: 1 })],
-      key: [usageRow({ key: "key_web" }), usageRow({ key: "playground", requests: 4 })],
+      key: [usageRow({ key: "key_web" }), usageRow({ key: "playground", requests: 4 }), usageRow({ key: "source:src_claude", requests: 3 })],
       member: [usageRow({ key: "service_account:sa_deploy" }), usageRow({ key: "user:usr_grace", requests: 2 })],
       route: [usageRow({ key: "openai_chat:anthropic_messages:anthropic" }), usageRow({ key: "", requests: 1 })],
     });
@@ -492,6 +500,8 @@ describe("AnalyticsPage", () => {
     await opened({ key: "key_web" });
     await open("key", 1);
     await opened({ source: "playground" });
+    await open("key", 2);
+    await opened({ key: "source:src_claude" });
     await open("member", 0);
     await opened({ member: "sa:sa_deploy" });
     await open("member", 1);

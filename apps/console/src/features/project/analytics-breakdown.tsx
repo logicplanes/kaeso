@@ -5,6 +5,7 @@ import { Button, DataTable, Empty, ModelLabel, ProviderBadge, Section, Text, col
 import { formatNumber, formatPercent, formatTokens } from "@logicplanes/kaeso-ui/format";
 import type { UsageRow } from "~/api/generated/types";
 import { allKeysQuery } from "~/api/queries/keys";
+import { sourcesQuery } from "~/api/queries/sources";
 import { useProviders } from "~/kaeso/providers";
 import { totalTokens } from "~/kaeso/tokens";
 import { costWidth, PHONE_NAME_MIN_WIDTH, hasMedia, mediaSummary, UsageCost } from "~/kaeso/media-usage";
@@ -89,8 +90,13 @@ export function Breakdown({
   const keys = useQuery({ ...allKeysQuery(org, project, { include_archived: true }), enabled: by === "key" && rights.has("keys.all.view") });
   const partyName = usePartyName(org, project);
   const partiesLoading = usePartyNamesLoading(org, project);
+  const sources = useQuery({ ...sourcesQuery(org, project), enabled: by === "key" && rights.has("sources.view") });
   const keyName = (id: string) => {
     if (id === "playground") return t("project.overview.playground", "Playground");
+    if (id.startsWith("source:")) {
+      const source = sources.data?.find((s) => `source:${s.id}` === id);
+      return source ? t("project.analytics.sourceKey", "{name} (source)", { name: source.name }) : t("project.analytics.aSource", "A source");
+    }
     const key = keys.data?.find((k) => k.id === id);
     return key ? keyLabel(key) : id;
   };

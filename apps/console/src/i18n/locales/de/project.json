@@ -1,5 +1,7 @@
 {
+  "project.analytics.aSource": "Eine Quelle",
   "project.analytics.overview": "Übersicht",
+  "project.analytics.sourceKey": "{name} (Quelle)",
   "project.analytics.title": "Analysen",
   "project.analytics.views": "Analyseansichten",
   "project.auditLog.title": "Audit-Log",

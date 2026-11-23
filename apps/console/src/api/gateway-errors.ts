@@ -332,6 +332,7 @@ const messages = (): Rule[] => [
   rule("errors.usageGroupValuesProject", () =>
     t("errors.usageGroupValuesProject", "Use a grouping the usage API lists, such as `day`, `model`, `key` or `source`."),
   ),
+  rule("errors.logKeyFilter", () => t("errors.logKeyFilter", "`key` must be an API key's id or `source:` and a source's id.")),
   rule("errors.usageFilterKey", (v) => t("errors.usageFilterKey", "`{name}` must be a `key` that grouping by `{name}` returns.", v)),
   rule("errors.usageByDayRange", () => t("errors.usageByDayRange", "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.")),
   rule("errors.timelineStepValues", () => t("errors.timelineStepValues", "Use `minute` or `hour`.")),

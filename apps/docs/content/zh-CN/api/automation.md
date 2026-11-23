@@ -119,7 +119,7 @@ curl -s "$ORG_URL/projects/$PROJECT/logs?limit=10" \
 - `usage/span` 返回有用量的第一天和最后一天，便于按周或按月读取较长的时间段。
 - `usage/timeline` 按 `step=minute`（最多 2 天）或 `step=hour`（最多 62 天）读取请求日志，范围从 `from` 到 `to`，时间采用 RFC 3339；不指定时读取最近一天。它需要开启请求日志。它接受相同的筛选条件以及 `failed`。指定 `group_by` 时，每个时间步按模型、服务商、密钥、成员、路由、错误类型（`error_kind`）、别名（`alias`，直接指定模型的请求为空）、端点（`endpoint`）、HTTP 状态（`status`）、响应缓存结果（`response_cache`：`hit`、`miss` 或 `bypass`，缓存关闭时为空）、客户端应用（`client`，没有 User-Agent 时为空）、来源（`source`）或（组织级）项目各有一个条目，`top` 只保留请求最多的 1 到 50 个分组。每个条目包含其请求耗时的中位数、第 95 百分位和最大值（`duration_p50_ms`、`duration_p95_ms`、`duration_max_ms`），以及到服务商首字节时间的中位数和第 95 百分位（`ttfb_p50_ms`、`ttfb_p95_ms`），单位为毫秒。按别名、端点、状态和响应缓存分组只在这里提供，`usage` 中没有；要查看某个条目的请求，请用 `status` 或 `response_cache` 筛选请求日志。完成的视频任务或图像生成会把其费用和 Token 计入结束时所在的条目（与用量相同），但不算作一个单独的请求，也没有耗时。
 
-每行用量都有 `cache_hit_rate`，即其输入中从缓存读取的占比，取值 0 到 1。没有输入的行以及嵌入的路由（从不缓存）为 `null`。日志接受 `ingress_dialect` 和 `egress_dialect` 以选择一条路由，例如 `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`；`source_id` 只看某个来源上报的请求（工具调用也接受它）；`min_duration_ms` 可用来查找慢请求，例如超过某个条目 `duration_p95_ms` 的请求。日志导出接受相同的筛选条件。
+每行用量都有 `cache_hit_rate`，即其输入中从缓存读取的占比，取值 0 到 1。没有输入的行以及嵌入的路由（从不缓存）为 `null`。日志接受 `ingress_dialect` 和 `egress_dialect` 以选择一条路由，例如 `logs?ingress_dialect=openai_responses&egress_dialect=anthropic_messages`；`source_id` 只看某个来源上报的请求（工具调用也接受它；也可以像用量那样写成 `key=source:<id>`）；`min_duration_ms` 可用来查找慢请求，例如超过某个条目 `duration_p95_ms` 的请求。日志导出接受相同的筛选条件。
 
 在地址后加上日志条目的 ID 即可读取单个请求，例如 `logs/req_…`。项目记录内容时，条目中包含请求的内容。
 

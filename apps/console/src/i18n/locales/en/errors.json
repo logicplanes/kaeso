@@ -344,6 +344,7 @@
   "errors.logDeletionsWaiting": "{count} log deletions are still waiting; try again once they have run.",
   "errors.logEndpoint": "`endpoint` must be an endpoint, such as `responses`.",
   "errors.logErrorMessage": "`error_message` must be 1 to 200 characters.",
+  "errors.logKeyFilter": "`key` must be an API key's id or `source:` and a source's id.",
   "errors.logMinCost": "`min_cost` must be an amount, such as `0.5`.",
   "errors.logTag": "`tag` must be 1 to 64 lowercase letters, digits, `.`, `_`, `:` or `-`.",
   "errors.logsOff": "Request logs are off on this install.",

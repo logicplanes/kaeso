@@ -190,6 +190,7 @@ pub async fn costs_by_day(
          AND ($10::text IS NULL OR (ingress_dialect = $10 AND egress_dialect = $11 AND provider = $12)) \
          AND ($13::text IS NULL OR provider = $13) \
          AND ($14::uuid IS NULL OR coalesce(source_id, '00000000-0000-0000-0000-000000000000') = $14) \
+         AND ($15::uuid IS NULL OR coalesce(credential_id, '00000000-0000-0000-0000-000000000000') = $15) \
          GROUP BY 1, 2",
         key = group.key()
     );
@@ -211,6 +212,7 @@ pub async fn costs_by_day(
             .bind(route.map(|r| r.provider.as_str()))
             .bind(model.and_then(|m| m.provider.as_deref()))
             .bind(filter.source)
+            .bind(filter.billed_to)
             .fetch_all(db)
             .await?,
     )

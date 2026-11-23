@@ -1,4 +1,5 @@
 import type {
+  ExternalSourceView,
   AliasView,
   CatalogueModelView,
   GrantView,
@@ -284,6 +285,26 @@ export interface ProjectData {
   aliases?: AliasView[];
   retiring?: RetiringModelView[];
   soon?: number;
+  sources?: ExternalSourceView[];
+}
+
+export function externalSource(overrides: Partial<ExternalSourceView> = {}): ExternalSourceView {
+  return {
+    id: "src_claude",
+    project_id: PROJECT,
+    kind: "claude_code",
+    name: "Claude Code, Ada's laptop",
+    key: "sk-kso-src-AbC1…wXyZ",
+    match_members: true,
+    content: false,
+    status: "connected",
+    activity: [],
+    ingest_url: "https://kaeso.example.com/ingest",
+    created_at: NOW,
+    created_by: USER,
+    user_id: USER,
+    ...overrides,
+  };
 }
 
 export function projectData(d: ProjectData = {}): void {
@@ -304,6 +325,7 @@ export function projectData(d: ProjectData = {}): void {
     ),
   );
   on("GET", "orgs/:org/projects/:project/models", page(d.models ?? []));
+  on("GET", "orgs/:org/projects/:project/sources", page(d.sources ?? []));
   on("GET", "orgs/:org/projects/:project/aliases", page(d.aliases ?? []));
   on("GET", "orgs/:org/projects/:project/deprecations", { data: d.retiring ?? [], soon: d.soon ?? 0 });
   on("GET", "orgs/:org/projects/:project/model-lifecycle", { move_on_shutdown: false, serve_replacement: false });

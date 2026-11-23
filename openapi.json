@@ -17259,10 +17259,10 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key.",
+            "description": "Only this key's requests, or `source:<id>` for a source's, as usage grouped by `key` names them.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ApiKeyId"
+              "type": "string"
             }
           },
           {
@@ -17583,10 +17583,10 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key.",
+            "description": "Only this key's requests, or `source:<id>` for a source's, as usage grouped by `key` names them.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ApiKeyId"
+              "type": "string"
             }
           },
           {
@@ -17914,10 +17914,10 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key.",
+            "description": "Only this key's requests, or `source:<id>` for a source's, as usage grouped by `key` names them.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ApiKeyId"
+              "type": "string"
             }
           },
           {

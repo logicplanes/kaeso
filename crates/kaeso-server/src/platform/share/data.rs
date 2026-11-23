@@ -254,6 +254,10 @@ fn name_rows(rows: &mut [SharedRow], names: &HashMap<String, String>, show: bool
             row.name = Some(name.clone());
         } else {
             row.number = u32::try_from(i + 1).ok();
+            // A source's requests stay apart from a key's, without saying which source.
+            if key.starts_with("source:") {
+                row.key = Some("source".to_owned());
+            }
         }
     }
 }
@@ -282,7 +286,7 @@ async fn fill_names(
     rows: &[UsageRow],
     by: &str,
 ) -> ApiResult<()> {
-    use kaeso_core::id::{ApiKeyId, ServiceAccountId, UserId};
+    use kaeso_core::id::{ApiKeyId, ServiceAccountId, SourceId, UserId};
     match by {
         "key" => {
             let ids: Vec<Uuid> = rows
@@ -291,6 +295,15 @@ async fn fill_names(
                 .collect();
             for (id, name) in store::key_names(&state.pg, &ids).await? {
                 book.keys.insert(ApiKeyId::from_uuid(id).to_string(), name);
+            }
+            let sources: Vec<Uuid> = rows
+                .iter()
+                .filter_map(|r| r.key.strip_prefix("source:")?.parse::<SourceId>().ok())
+                .map(|s| s.uuid())
+                .collect();
+            for (id, name) in store::source_names(&state.pg, &sources).await? {
+                book.keys
+                    .insert(format!("source:{}", SourceId::from_uuid(id)), name);
             }
         }
         "member" => {

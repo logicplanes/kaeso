@@ -280,7 +280,7 @@ pub async fn get(
     }))
 }
 
-const CSV_HEADER: &str = "id,started_at,tool,upstream_tool,server,caller_kind,caller_id,key_id,grant_id,client,protocol_version,source,status,error_type,error_message,duration_ms,upstream_ms,request_bytes,response_bytes,has_content\n";
+const CSV_HEADER: &str = "id,started_at,tool,upstream_tool,server,server_name,caller_kind,caller_id,key_id,grant_id,client,protocol_version,source,status,error_type,error_message,duration_ms,upstream_ms,request_bytes,response_bytes,has_content\n";
 
 fn csv_line(v: &ToolCallView) -> String {
     let text = |s: &str| csv_text(s);
@@ -290,12 +290,8 @@ fn csv_line(v: &ToolCallView) -> String {
         text(&v.started_at.format(&Rfc3339).unwrap_or_default()),
         text(&v.tool),
         text(&v.upstream_tool),
-        text(
-            &v.server
-                .map(|s| s.to_string())
-                .or_else(|| v.server_name.clone())
-                .unwrap_or_default(),
-        ),
+        text(&v.server.map(|s| s.to_string()).unwrap_or_default()),
+        text(v.server_name.as_deref().unwrap_or_default()),
         text(&v.caller.kind),
         text(v.caller.id.as_deref().unwrap_or_default()),
         text(&v.key_id.map(|k| k.to_string()).unwrap_or_default()),

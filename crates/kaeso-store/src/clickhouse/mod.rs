@@ -133,6 +133,11 @@ const MIGRATIONS: &[Migration] = &[
         name: "sources",
         sql: include_str!("../../migrations/clickhouse/0020_sources.sql"),
     },
+    Migration {
+        version: 21,
+        name: "source_skip",
+        sql: include_str!("../../migrations/clickhouse/0021_source_skip.sql"),
+    },
 ];
 
 #[derive(Clone)]

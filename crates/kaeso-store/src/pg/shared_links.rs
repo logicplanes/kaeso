@@ -262,6 +262,20 @@ pub async fn key_names(
     )
 }
 
+pub async fn source_names(
+    db: impl PgExecutor<'_>,
+    ids: &[Uuid],
+) -> Result<Vec<(Uuid, String)>, StoreError> {
+    Ok(
+        sqlx::query!("SELECT id, name FROM sources WHERE id = ANY($1)", ids)
+            .fetch_all(db)
+            .await?
+            .into_iter()
+            .map(|r| (r.id, r.name))
+            .collect(),
+    )
+}
+
 pub async fn service_account_names(
     db: impl PgExecutor<'_>,
     ids: &[Uuid],

@@ -642,8 +642,8 @@ pub struct LogFilter {
     pub from: Option<String>,
     #[doc = "To (exclusive), RFC 3339."]
     pub to: Option<String>,
-    #[doc = "Only this key."]
-    pub key: Option<ApiKeyId>,
+    #[doc = "Only this key's requests, or `source:<id>` for a source's, as usage grouped by `key` names them."]
+    pub key: Option<String>,
     #[doc = "Only this user's requests."]
     pub user: Option<UserId>,
     #[doc = "Only this service account's requests."]
@@ -784,6 +784,13 @@ impl ResponseCacheResult {
     }
 }
 
+fn bad_key() -> ApiError {
+    ApiError::invalid(
+        "key",
+        "`key` must be an API key's id or `source:` and a source's id.",
+    )
+}
+
 impl LogFilter {
     fn filter(&self, money: &Money) -> ApiResult<Filter> {
         if let Some(s) = &self.source
@@ -793,6 +800,22 @@ impl LogFilter {
                 "source",
                 "`source` must be `api`, `playground` or `observed`.",
             ));
+        }
+        let (key, key_source) = match self.key.as_deref().map(str::trim) {
+            None => (None, None),
+            Some(k) => match k.strip_prefix("source:") {
+                Some(s) => (
+                    None,
+                    Some(s.parse::<SourceId>().map_err(|_| bad_key())?.uuid()),
+                ),
+                None => (
+                    Some(k.parse::<ApiKeyId>().map_err(|_| bad_key())?.uuid()),
+                    None,
+                ),
+            },
+        };
+        if key_source.is_some() && self.source_id.is_some_and(|s| Some(s.uuid()) != key_source) {
+            return Err(bad_key());
         }
         Ok(Filter {
             from: self
@@ -805,7 +828,7 @@ impl LogFilter {
                 .as_deref()
                 .map(|s| parse_time("to", s))
                 .transpose()?,
-            key: self.key.map(|k| k.uuid()),
+            key,
             principal: self
                 .user
                 .map(|u| u.uuid())
@@ -846,7 +869,7 @@ impl LogFilter {
                 .transpose()?,
             client: self.client.as_deref().map(client_filter).transpose()?,
             guardrail_action: self.guardrail_action.map(|a| a.as_str().to_owned()),
-            source_id: self.source_id.map(|s| s.uuid()),
+            source_id: self.source_id.map(|s| s.uuid()).or(key_source),
         })
     }
 }

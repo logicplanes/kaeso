@@ -800,6 +800,7 @@
   "errors.logTag": "`tag` 必须由 1 到 64 个小写字母、数字、`.`、`_`、`:` 或 `-` 组成。",
   "errors.modelApi.tagsHeader": "请求头 `kaeso-tags` 最多接受 10 个以逗号分隔的标签，每个标签由 1 到 64 个小写字母、数字、`.`、`_`、`:` 或 `-` 组成。",
   "errors.logErrorMessage": "`error_message` 必须为 1 到 200 个字符。",
+  "errors.logKeyFilter": "`key` 必须是 API 密钥的 ID，或 `source:` 加来源的 ID。",
   "errors.limitOneToFifty": "`limit` 必须介于 1 到 50 之间。",
   "errors.logClient": "`client` 必须是一个客户端应用，例如 `codex` 或 `other`。",
   "errors.retriesRange": "`retries` 必须介于 0 到 3 之间。",

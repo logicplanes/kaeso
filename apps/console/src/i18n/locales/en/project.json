@@ -1,5 +1,7 @@
 {
+  "project.analytics.aSource": "A source",
   "project.analytics.overview": "Overview",
+  "project.analytics.sourceKey": "{name} (source)",
   "project.analytics.title": "Analytics",
   "project.analytics.views": "Analytics views",
   "project.auditLog.title": "Audit log",

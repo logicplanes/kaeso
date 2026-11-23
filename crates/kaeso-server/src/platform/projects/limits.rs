@@ -121,35 +121,46 @@ pub(crate) async fn view(
 ) -> ApiResult<LimitView> {
     let l = row.limit()?;
     let money = Money::of(state, l.currency());
-    let used = engine::current(state, project, &l, now)
-        .await
-        .map(|units| match l.kind {
-            Kind::SpendBudget => {
-                let usd = kaeso_core::cost::from_nano(units);
-                money
-                    .now(usd)
-                    .map_or_else(|| usd.to_string(), |v| money.text(v))
-            }
-            _ => units.to_string(),
-        });
+    let units = engine::current(state, project, &l, now).await;
+    // The part of `used` that sources reported, in the same units and never more than `used`
+    // (their daily rows can be written a moment after the counter moved). A figure Kaeso can't
+    // read is left out, as `used` is.
     let observed = if l.kind.is_rate() {
         None
     } else {
-        let part = kaeso_store::pg::limits::used_observed(
+        match kaeso_store::pg::limits::used_observed(
             &state.pg,
             project,
             l.subject,
             l.model,
             l.period.start(now),
         )
-        .await?;
-        Some(match l.kind {
-            Kind::SpendBudget => money
-                .now(part.cost)
-                .map_or_else(|| part.cost.normalize().to_string(), |v| money.text(v)),
-            _ => part.tokens.to_string(),
-        })
+        .await
+        {
+            Ok(part) => {
+                let part = match l.kind {
+                    Kind::SpendBudget => kaeso_core::cost::nano_usd(part.cost),
+                    _ => part.tokens,
+                };
+                Some(units.map_or(part, |u| part.min(u)))
+            }
+            Err(e) => {
+                tracing::warn!(error = %e, limit = %l.id, "cannot read a limit's observed part");
+                None
+            }
+        }
     };
+    let text = |units: i64| match l.kind {
+        Kind::SpendBudget => {
+            let usd = kaeso_core::cost::from_nano(units);
+            money
+                .now(usd)
+                .map_or_else(|| usd.to_string(), |v| money.text(v))
+        }
+        _ => units.to_string(),
+    };
+    let used = units.map(text);
+    let observed = observed.map(text);
     Ok(LimitView {
         id: LimitId::from_uuid(l.id),
         level: l.subject.level().as_str(),
