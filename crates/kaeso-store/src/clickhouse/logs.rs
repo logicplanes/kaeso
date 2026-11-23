@@ -186,7 +186,7 @@ pub const CLIENTS: &[(&str, &str)] = &[
     ("ai-sdk/", "ai-sdk"),
     ("curl/", "curl"),
     ("geminicli", "gemini-cli"),
-    ("antigravity/", "antigravity"),
+    ("antigravity", "antigravity"),
     ("litellm", "litellm"),
 ];
 
