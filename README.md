@@ -239,7 +239,7 @@ The gateway is one Rust process with no garbage collector between your app and t
 
 ## How it compares
 
-These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 23 November 2026 and every entry is sourced below. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we'll correct it.
+These tables compare Kaeso with the gateways people most often weigh it against, as their own documentation, pricing pages and licenses describe them. They were read on 23 November 2026 and every entry is sourced below; [kaeso.app/compare](https://kaeso.app/compare) has a page for each product. Products change: [open an issue](https://github.com/logicplanes/kaeso/issues/new/choose) when an entry is out of date, and we'll correct it.
 
 **Yes** means the free or open-source version has it. **Paid** means a paid plan or enterprise license has it. **Partial** is explained in a note. **–** means we didn't find it in their documentation.
 
@@ -329,7 +329,7 @@ These tables compare Kaeso with the gateways people most often weigh it against,
 
 ### Performance on BerriAI's benchmark
 
-We ran [`BerriAI/ai-gateway-bench`](https://github.com/BerriAI/ai-gateway-bench) (`44365ca`) with Kaeso 0.7 beside the four gateways that benchmark compares, each pinned to two dedicated cores on the same 4-vCPU machine (median of three randomized rounds; full method, image digests, scripts and raw JSON on [kaeso.app/benchmarks](https://kaeso.app/benchmarks), product-by-product pages on [kaeso.app/compare](https://kaeso.app/compare), [performance docs](https://docs.kaeso.app/self-hosting/performance) and [Kaeso on LiteLLM's own benchmark](https://kaeso.app/articles/kaeso-on-litellms-benchmark)):
+We ran [`BerriAI/ai-gateway-bench`](https://github.com/BerriAI/ai-gateway-bench) (`44365ca`) with Kaeso 0.7 beside the four gateways that benchmark compares, each pinned to two dedicated cores on the same 4-vCPU machine (median of three randomized rounds; full method, image digests, scripts and raw JSON on [kaeso.app/benchmarks](https://kaeso.app/benchmarks), [performance docs](https://docs.kaeso.app/self-hosting/performance) and [Kaeso on LiteLLM's own benchmark](https://kaeso.app/articles/kaeso-on-litellms-benchmark)):
 
 | Gateway                            | Requests/s (64 clients) | Added p50 / p99 (16 clients) | CPU per request | Peak memory                        | Checked and kept per request                           |
 | ---------------------------------- | ----------------------- | ---------------------------- | --------------- | ---------------------------------- | ------------------------------------------------------ |
