@@ -184,7 +184,8 @@ async fn retrieve_as(state: &AppState, caller: &Caller, id: &str) -> Result<Vec<
     if status == 404 {
         return Err(not_found(id));
     }
-    let reply = dispatch::decode_response(D, status, &headers, &body, &ectx)?;
+    let reply = dispatch::decode_response(D, status, &headers, &body, &ectx)
+        .map_err(pipeline::without_key_fragments)?;
     let ctx = EncodeCtx::new(RequestKind::Generate, StreamMode::Off);
     dispatch::encode_response(D, &reply, &ctx)
 }
@@ -195,7 +196,9 @@ async fn delete_as(state: &AppState, caller: &Caller, id: &str) -> Result<Vec<u8
     let found = find(state, caller, id).await?;
     let (status, headers, body) = send(state, &found, "DELETE", id).await?;
     if !(200..300).contains(&status) && status != 404 {
-        return Err(dispatch::decode_error(D, status, &headers, &body));
+        return Err(pipeline::without_key_fragments(dispatch::decode_error(
+            D, status, &headers, &body,
+        )));
     }
     store::delete(&state.pg, caller.project_id, &found.row.id_hash)
         .await

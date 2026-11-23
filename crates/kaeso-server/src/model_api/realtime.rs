@@ -399,14 +399,31 @@ impl Opening {
 }
 
 async fn close_with(client: &mut WebSocket, api: RealtimeApi, err: &KppError) {
-    let (body, code) = rt::error_message(api, err);
+    let clean = super::pipeline::without_key_fragments(err.clone());
+    let (body, code) = rt::error_message(api, &clean);
     let _ = client.send(ws::Message::Text(body.into())).await;
     let _ = client
         .send(ws::Message::Close(Some(ws::CloseFrame {
             code,
-            reason: short_reason(&err.message).into(),
+            reason: short_reason(&clean.message).into(),
         })))
         .await;
+}
+
+fn scrub_provider_text(text: &str) -> Option<String> {
+    if !text.contains("\"error\"") && !text.contains("\"detail\"") && !text.contains("\"code\"") {
+        return None;
+    }
+    let mut v: serde_json::Value = serde_json::from_str(text).ok()?;
+    let has_error = v.get("error").is_some_and(|e| !e.is_null())
+        || v.get("detail").is_some_and(|d| !d.is_null())
+        || (v.get("message").is_some_and(|m| !m.is_null())
+            && v.get("code").is_some_and(|c| !c.is_null()));
+    if !has_error {
+        return None;
+    }
+    kaeso_core::secret::redact_json(&mut v);
+    Some(v.to_string())
 }
 
 // A close frame's reason is at most 123 bytes (RFC 6455, section 5.5).
@@ -549,7 +566,9 @@ impl Session {
                     last = tokio::time::Instant::now();
                     match from_provider {
                         Some(Ok(Message::Text(text))) => {
-                            if client.send(ws::Message::Text(text.as_str().into())).await.is_err() {
+                            let cleaned = scrub_provider_text(text.as_str());
+                            let out = cleaned.as_deref().unwrap_or(text.as_str());
+                            if client.send(ws::Message::Text(out.into())).await.is_err() {
                                 let _ = self.upstream.close(None).await;
                                 break;
                             }
@@ -561,18 +580,20 @@ impl Session {
                             }
                         }
                         Some(Ok(Message::Close(frame))) => {
-                            if let Some(f) = frame.as_ref().filter(|f| {
-                                !matches!(f.code, CloseCode::Normal | CloseCode::Away)
-                            }) {
-                                provider_closed = Some(format!(
-                                    "ElevenLabs closed the session ({}): {}",
-                                    u16::from(f.code),
-                                    f.reason.as_str()
-                                ));
+                            let cleaned = frame.map(|f| {
+                                let reason = kaeso_core::secret::redact_tokens(f.reason.as_str());
+                                (u16::from(f.code), f.code, reason)
+                            });
+                            if let Some((code, _, reason)) = cleaned
+                                .as_ref()
+                                .filter(|(_, k, _)| !matches!(k, CloseCode::Normal | CloseCode::Away))
+                            {
+                                provider_closed =
+                                    Some(format!("ElevenLabs closed the session ({code}): {reason}"));
                             }
-                            let frame = frame.map(|f| ws::CloseFrame {
-                                code: u16::from(f.code),
-                                reason: f.reason.as_str().into(),
+                            let frame = cleaned.map(|(code, _, reason)| ws::CloseFrame {
+                                code,
+                                reason: short_reason(&reason).into(),
                             });
                             let _ = client.send(ws::Message::Close(frame)).await;
                             break;
@@ -714,5 +735,22 @@ mod tests {
         let mut none = Measured::default();
         none.add(&chunk, None);
         assert_eq!(none.audio_ms, 0);
+    }
+
+    #[test]
+    fn provider_error_frames_drop_key_fragments_and_leave_audio_untouched() {
+        assert!(scrub_provider_text(r#"{"audio":"AAAA","isFinal":false}"#).is_none());
+        assert!(
+            scrub_provider_text(r#"{"message_type":"committed_transcript","text":"ok"}"#).is_none()
+        );
+        for raw in [
+            r#"{"message_type":"quota_exceeded","error":"Quota exceeded for sk_1234567890abcdef in org-AbCdEf123456."}"#,
+            r#"{"detail":{"status":"invalid_api_key","message":"Rejected sk_1234567890abcdef in org-AbCdEf123456."}}"#,
+            r#"{"code":1008,"message":"Rejected sk_1234567890abcdef in org-AbCdEf123456."}"#,
+        ] {
+            let err = scrub_provider_text(raw).unwrap();
+            assert!(!err.contains("1234567890abcdef"), "{err}");
+            assert!(!err.contains("AbCdEf123456"), "{err}");
+        }
     }
 }

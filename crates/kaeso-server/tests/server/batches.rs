@@ -805,3 +805,434 @@ async fn another_projects_files_and_batches_answer_404_and_a_running_batch_can_b
     assert_eq!(r.json()["data"], json!([]));
     let _: Value = r.json();
 }
+
+#[tokio::test]
+async fn follow_up_routes_and_jobs_leave_key_fragments_out_of_provider_errors() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let tries = Arc::new(AtomicUsize::new(0));
+    let tries_post = Arc::clone(&tries);
+    let upstream = axum::Router::new()
+        .route(
+            "/v1/files",
+            axum::routing::post(|| async {
+                axum::Json(json!({ "id": "file-up1", "object": "file", "purpose": "batch" }))
+            }),
+        )
+        .route(
+            "/v1/batches",
+            axum::routing::post(move || {
+                let n = tries_post.fetch_add(1, Ordering::SeqCst);
+                async move {
+                    if n == 0 {
+                        (
+                            StatusCode::TOO_MANY_REQUESTS,
+                            axum::Json(json!({
+                                "error": {
+                                    "message": "Rate limit for key sk-proj-SecretFragment999 in org-AbCdEf123456.",
+                                    "type": "rate_limit_error"
+                                }
+                            })),
+                        )
+                    } else {
+                        (
+                            StatusCode::OK,
+                            axum::Json(json!({
+                                "id": "batch_up1",
+                                "object": "batch",
+                                "status": "failed",
+                                "output_file_id": "file-out1",
+                                "error_file_id": "file-err1",
+                                "errors": {
+                                    "object": "list",
+                                    "data": [{
+                                        "code": "rate_limit",
+                                        "message": "Key sk-proj-SecretFragment999 in org-AbCdEf123456 hit RPM."
+                                    }]
+                                },
+                                "organization_id": "org-AbCdEf123456"
+                            })),
+                        )
+                    }
+                }
+            }),
+        )
+        .route(
+            "/v1/batches/batch_up1",
+            axum::routing::get(|| async {
+                axum::Json(json!({
+                    "id": "batch_up1",
+                    "object": "batch",
+                    "status": "failed",
+                    "output_file_id": "file-out1",
+                    "error_file_id": "file-err1",
+                    "errors": {
+                        "object": "list",
+                        "data": [{
+                            "code": "rate_limit",
+                            "message": "Key sk-proj-SecretFragment999 in org-AbCdEf123456 hit RPM."
+                        }]
+                    },
+                    "organization_id": "org-AbCdEf123456"
+                }))
+            }),
+        )
+        .route(
+            "/v1/files/file-err1/content",
+            axum::routing::get(|| async {
+                format!(
+                    "{}\n",
+                    json!({
+                        "id": "batch_req_1",
+                        "custom_id": "request-1",
+                        "response": null,
+                        "error": {
+                            "code": "invalid_api_key",
+                            "message": "Rejected sk-proj-SecretFragment999 for org-AbCdEf123456."
+                        }
+                    })
+                )
+            }),
+        )
+        .route(
+            "/v1/files/file-out1/content",
+            axum::routing::get(|| async {
+                format!(
+                    "{}\n{}\n{}\n",
+                    json!({
+                        "id": "batch_req_2",
+                        "custom_id": "request-2",
+                        "response": {
+                            "status_code": 200,
+                            "body": {
+                                "id": "chatcmpl-1",
+                                "object": "chat.completion",
+                                "model": "gpt-4o",
+                                "choices": [{
+                                    "index": 0,
+                                    "message": { "role": "assistant", "content": "Literal sk-proj-ExampleLiteral123456 stays as written." },
+                                    "finish_reason": "stop"
+                                }]
+                            }
+                        },
+                        "error": null
+                    }),
+                    json!({
+                        "id": "batch_req_3",
+                        "custom_id": "request-3",
+                        "response": {
+                            "status_code": 401,
+                            "body": {
+                                "error": {
+                                    "message": "Incorrect key sk-proj-SecretFragment999 in org-AbCdEf123456."
+                                }
+                            }
+                        },
+                        "error": null
+                    }),
+                    json!({
+                        "id": "batch_req_4",
+                        "custom_id": "request-4",
+                        "response": {
+                            "status_code": 200,
+                            "body": {
+                                "id": "resp_failed_1",
+                                "object": "response",
+                                "status": "failed",
+                                "error": {
+                                    "code": "server_error",
+                                    "message": "Response failed for sk-proj-SecretFragment999 in org-AbCdEf123456."
+                                }
+                            }
+                        },
+                        "error": null
+                    })
+                )
+            }),
+        )
+        .route(
+            "/v1/voices",
+            axum::routing::get(|| async {
+                (
+                    StatusCode::TOO_MANY_REQUESTS,
+                    axum::Json(json!({
+                        "detail": {
+                            "status": "quota_exceeded",
+                            "message": "Quota exceeded for sk-proj-SecretFragment999 in org-AbCdEf123456."
+                        }
+                    })),
+                )
+            }),
+        )
+        .route(
+            "/v2/videos",
+            axum::routing::post(|| async {
+                axum::Json(json!({
+                    "id": "vid_up1",
+                    "object": "video",
+                    "status": "in_progress",
+                    "progress": 10
+                }))
+            }),
+        )
+        .route(
+            "/v2/videos/vid_up1",
+            axum::routing::get(|| async {
+                axum::Json(json!({
+                    "id": "vid_up1",
+                    "object": "video",
+                    "status": "failed",
+                    "error": {
+                        "code": "server_error",
+                        "message": "Video failed for sk-proj-SecretFragment999 in org-AbCdEf123456."
+                    }
+                }))
+            }),
+        )
+        .route(
+            "/v1/flows/image",
+            axum::routing::post(|| async {
+                axum::Json(json!({
+                    "id": "gen_up1",
+                    "status": "pending"
+                }))
+            }),
+        )
+        .route(
+            "/v1/flows/image/gen_up1",
+            axum::routing::get(|| async {
+                axum::Json(json!({
+                    "id": "gen_up1",
+                    "status": "failed",
+                    "failure_reason": "timeout",
+                    "error_message": "Image failed for sk-proj-SecretFragment999 in org-AbCdEf123456."
+                }))
+            }),
+        );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    tokio::spawn(async move {
+        let _ = axum::serve(listener, upstream).await;
+    });
+
+    let env = common::v1::env(
+        None,
+        Some(&[
+            ("KAESO_PROVIDERS_OPENAI_BASE_URL", &base),
+            ("KAESO_PROVIDERS_ELEVENLABS_BASE_URL", &base),
+            ("KAESO_PROVIDERS_TOGETHERAI_BASE_URL", &base),
+        ]),
+    )
+    .await;
+    for (provider, secret) in [
+        ("elevenlabs", "sk_test_elevenlabs_000000000000"),
+        ("togetherai", "tgp_v1_test_togetherai_000000000000"),
+    ] {
+        env.app
+            .post(
+                &format!("/orgs/{}/credentials", env.owner.org_id),
+                json!({ "provider": provider, "name": provider, "secret": secret }),
+                Some(&env.owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+    }
+    for (provider, model) in [
+        ("togetherai", "ByteDance/Seedance-1.0-lite"),
+        ("elevenlabs", "bytedance-seedream-5-lite"),
+    ] {
+        env.app
+            .post(
+                &format!("/orgs/{}/projects/{}/models", env.owner.org_id, env.project),
+                json!({ "provider": provider, "model_id": model }),
+                Some(&env.owner.cookie),
+            )
+            .await
+            .expect_status(StatusCode::CREATED);
+    }
+
+    let file = upload(
+        &env,
+        &env.key,
+        &[line("request-1", "/v1/chat/completions", "gpt-4o", "Hi")],
+    )
+    .await
+    .json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    let first = create(&env, &env.key, &file).await;
+    assert_eq!(
+        first.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        first.text()
+    );
+    assert!(
+        !first.text().contains("SecretFragment999"),
+        "{}",
+        first.text()
+    );
+    assert!(!first.text().contains("AbCdEf123456"), "{}", first.text());
+
+    let second = create(&env, &env.key, &file).await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    assert!(
+        !second.text().contains("SecretFragment999"),
+        "{}",
+        second.text()
+    );
+    assert!(!second.text().contains("AbCdEf123456"), "{}", second.text());
+    let second_json = second.json();
+    let batch_id = second_json["id"].as_str().unwrap().to_owned();
+
+    let fetched = send(
+        &env,
+        &env.key,
+        "GET",
+        &format!("/v1/batches/{batch_id}"),
+        None,
+        vec![],
+    )
+    .await;
+    assert_eq!(fetched.status, StatusCode::OK);
+    assert!(
+        !fetched.text().contains("SecretFragment999"),
+        "{}",
+        fetched.text()
+    );
+    assert!(
+        !fetched.text().contains("AbCdEf123456"),
+        "{}",
+        fetched.text()
+    );
+    let fetched_json = fetched.json();
+    let out_file = fetched_json["output_file_id"].as_str().unwrap().to_owned();
+    let err_file = fetched_json["error_file_id"].as_str().unwrap().to_owned();
+
+    let err_content = send(
+        &env,
+        &env.key,
+        "GET",
+        &format!("/v1/files/{err_file}/content"),
+        None,
+        vec![],
+    )
+    .await;
+    assert_eq!(err_content.status, StatusCode::OK);
+    assert!(
+        !err_content.text().contains("SecretFragment999"),
+        "{}",
+        err_content.text()
+    );
+    assert!(
+        !err_content.text().contains("AbCdEf123456"),
+        "{}",
+        err_content.text()
+    );
+
+    let out_content = send(
+        &env,
+        &env.key,
+        "GET",
+        &format!("/v1/files/{out_file}/content"),
+        None,
+        vec![],
+    )
+    .await;
+    assert_eq!(out_content.status, StatusCode::OK);
+    assert!(
+        !out_content.text().contains("SecretFragment999"),
+        "{}",
+        out_content.text()
+    );
+    assert!(
+        !out_content.text().contains("AbCdEf123456"),
+        "{}",
+        out_content.text()
+    );
+    assert!(
+        out_content.text().contains("sk-proj-ExampleLiteral123456"),
+        "{}",
+        out_content.text()
+    );
+
+    let voices = send(&env, &env.key, "GET", "/v1/voices", None, vec![]).await;
+    assert_eq!(
+        voices.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        voices.text()
+    );
+    assert!(
+        !voices.text().contains("SecretFragment999"),
+        "{}",
+        voices.text()
+    );
+    assert!(!voices.text().contains("AbCdEf123456"), "{}", voices.text());
+
+    let started = send(
+        &env,
+        &env.key,
+        "POST",
+        "/v1/videos",
+        Some("application/json".into()),
+        json!({ "model": "ByteDance/Seedance-1.0-lite", "prompt": "A calm ocean wave." })
+            .to_string()
+            .into_bytes(),
+    )
+    .await;
+    assert_eq!(started.status, StatusCode::OK, "{}", started.text());
+    let video_id = started.json()["id"].as_str().unwrap().to_owned();
+    let polled = send(
+        &env,
+        &env.key,
+        "GET",
+        &format!("/v1/videos/{video_id}"),
+        None,
+        vec![],
+    )
+    .await;
+    assert_eq!(polled.status, StatusCode::OK, "{}", polled.text());
+    assert!(
+        !polled.text().contains("SecretFragment999"),
+        "{}",
+        polled.text()
+    );
+    assert!(!polled.text().contains("AbCdEf123456"), "{}", polled.text());
+
+    let gen_started = send(
+        &env,
+        &env.key,
+        "POST",
+        "/v1/flows/image",
+        Some("application/json".into()),
+        json!({ "model_id": "bytedance-seedream-5-lite", "prompt": "A calm ocean wave." })
+            .to_string()
+            .into_bytes(),
+    )
+    .await;
+    assert_eq!(gen_started.status, StatusCode::OK, "{}", gen_started.text());
+    let gen_id = gen_started.json()["id"].as_str().unwrap().to_owned();
+    let gen_polled = send(
+        &env,
+        &env.key,
+        "GET",
+        &format!("/v1/flows/image/{gen_id}"),
+        None,
+        vec![],
+    )
+    .await;
+    assert_eq!(gen_polled.status, StatusCode::OK, "{}", gen_polled.text());
+    assert!(
+        !gen_polled.text().contains("SecretFragment999"),
+        "{}",
+        gen_polled.text()
+    );
+    assert!(
+        !gen_polled.text().contains("AbCdEf123456"),
+        "{}",
+        gen_polled.text()
+    );
+}

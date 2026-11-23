@@ -222,12 +222,12 @@ async fn send(
 
 fn provider_json(sent: &Sent) -> Result<Value, KppError> {
     if !(200..300).contains(&sent.status) {
-        return Err(dispatch::decode_error(
+        return Err(pipeline::without_key_fragments(dispatch::decode_error(
             D,
             sent.status,
             &sent.headers,
             &sent.body,
-        ));
+        )));
     }
     serde_json::from_slice(&sent.body).map_err(|_| {
         error(
@@ -960,6 +960,61 @@ async fn load_file(
         .ok_or_else(|| not_found("file", id, param))
 }
 
+fn scrub_batch_output(body: Bytes) -> Bytes {
+    let Ok(text) = std::str::from_utf8(&body) else {
+        return body;
+    };
+    let mut changed = false;
+    let mut out = String::with_capacity(text.len());
+    for (i, line) in text.split('\n').enumerate() {
+        if i > 0 {
+            out.push('\n');
+        }
+        if line.is_empty() {
+            continue;
+        }
+        let Ok(mut v) = serde_json::from_str::<Value>(line) else {
+            out.push_str(line);
+            continue;
+        };
+        let mut line_changed = false;
+        if let Some(err) = v.get_mut("error").filter(|e| !e.is_null()) {
+            kaeso_core::secret::redact_json(err);
+            line_changed = true;
+        }
+        let failed_status = v
+            .get("response")
+            .and_then(|r| r.get("status_code"))
+            .and_then(Value::as_u64)
+            .is_some_and(|s| !(200..300).contains(&s));
+        if failed_status {
+            if let Some(resp_body) = v.get_mut("response").and_then(|r| r.get_mut("body")) {
+                kaeso_core::secret::redact_json(resp_body);
+                line_changed = true;
+            }
+        } else if let Some(body_err) = v
+            .get_mut("response")
+            .and_then(|r| r.get_mut("body"))
+            .and_then(|b| b.get_mut("error"))
+            .filter(|e| !e.is_null())
+        {
+            kaeso_core::secret::redact_json(body_err);
+            line_changed = true;
+        }
+        if line_changed {
+            changed = true;
+            out.push_str(&v.to_string());
+        } else {
+            out.push_str(line);
+        }
+    }
+    if changed {
+        Bytes::from(out.into_bytes())
+    } else {
+        body
+    }
+}
+
 async fn file_content(state: &AppState, caller: &Caller, id: &str) -> Result<Bytes, KppError> {
     let f = load_file(state, caller, id, "file_id").await?;
     let (provider, credential) = reach(state, caller, &f.provider, f.credential_id).await?;
@@ -974,14 +1029,18 @@ async fn file_content(state: &AppState, caller: &Caller, id: &str) -> Result<Byt
     )
     .await?;
     if !(200..300).contains(&sent.status) {
-        return Err(dispatch::decode_error(
+        return Err(pipeline::without_key_fragments(dispatch::decode_error(
             D,
             sent.status,
             &sent.headers,
             &sent.body,
-        ));
+        )));
     }
-    Ok(sent.body)
+    if f.purpose == "batch_output" {
+        Ok(scrub_batch_output(sent.body))
+    } else {
+        Ok(sent.body)
+    }
 }
 
 async fn delete_file(state: &AppState, caller: &Caller, id: &str) -> Result<Value, KppError> {
@@ -998,12 +1057,12 @@ async fn delete_file(state: &AppState, caller: &Caller, id: &str) -> Result<Valu
     )
     .await?;
     if !(200..300).contains(&sent.status) && sent.status != 404 {
-        return Err(dispatch::decode_error(
+        return Err(pipeline::without_key_fragments(dispatch::decode_error(
             D,
             sent.status,
             &sent.headers,
             &sent.body,
-        ));
+        )));
     }
     store::delete_file(&state.pg, caller.project_id, f.id)
         .await
@@ -1016,6 +1075,7 @@ async fn delete_file(state: &AppState, caller: &Caller, id: &str) -> Result<Valu
 /// The batch as OpenAI's API shows it, with Kaeso's ids and the model as the app named it.
 fn batch_view(row: &BatchRow) -> Value {
     let mut v = row.view.clone();
+    kaeso_core::secret::redact_json(&mut v);
     if let Some(o) = v.as_object_mut() {
         o.insert("id".into(), BatchId::from_uuid(row.id).to_string().into());
         o.insert(
@@ -1193,7 +1253,11 @@ async fn create(state: &AppState, caller: &Caller, body: &[u8]) -> Result<BatchR
             .and_then(Value::as_str)
             .unwrap_or("validating")
             .to_owned(),
-        view: answer,
+        view: {
+            let mut v = answer;
+            kaeso_core::secret::redact_json(&mut v);
+            v
+        },
         created_at: now,
         accounted_at: None,
     };
@@ -1273,7 +1337,11 @@ async fn output_file(
 }
 
 /// Takes the provider's answer about the batch into its row.
-async fn take(state: &AppState, mut row: BatchRow, answer: Value) -> Result<BatchRow, KppError> {
+async fn take(
+    state: &AppState,
+    mut row: BatchRow,
+    mut answer: Value,
+) -> Result<BatchRow, KppError> {
     let status = answer
         .get("status")
         .and_then(Value::as_str)
@@ -1291,6 +1359,7 @@ async fn take(state: &AppState, mut row: BatchRow, answer: Value) -> Result<Batc
         answer.get("error_file_id").and_then(Value::as_str),
     )
     .await?;
+    kaeso_core::secret::redact_json(&mut answer);
     store::update(
         &state.pg,
         row.id,
@@ -1338,7 +1407,18 @@ async fn account(
     provider: &ProviderRef,
     credential: &crate::services::credentials::Resolved,
 ) -> Result<(), KppError> {
-    let output = match row.view.get("output_file_id").and_then(Value::as_str) {
+    let upstream_out = match row.output_file_id {
+        Some(id) => store::file(&state.pg, row.org_id, row.project_id, id)
+            .await
+            .map_err(store_error)?
+            .map(|f| f.upstream_id),
+        None => row
+            .view
+            .get("output_file_id")
+            .and_then(Value::as_str)
+            .map(str::to_owned),
+    };
+    let output = match upstream_out.as_deref() {
         Some(up) if !up.is_empty() => {
             let sent = send(
                 state,
@@ -1351,12 +1431,12 @@ async fn account(
             )
             .await?;
             if !(200..300).contains(&sent.status) {
-                return Err(dispatch::decode_error(
+                return Err(pipeline::without_key_fragments(dispatch::decode_error(
                     D,
                     sent.status,
                     &sent.headers,
                     &sent.body,
-                ));
+                )));
             }
             sent.body
         }
@@ -1457,6 +1537,7 @@ pub(crate) async fn settle_open(
             Ok(_) => {}
             Err(e) => {
                 failed += 1;
+                let e = pipeline::without_key_fragments(e);
                 tracing::warn!(error = %e.message, "cannot ask the provider about a batch");
             }
         }

@@ -110,7 +110,10 @@ fn app_view(row: &ImageGenerationRow) -> Generation {
     g.content_url.clone_from(&row.content_url);
     g.content_mime_type.clone_from(&row.content_mime_type);
     g.failure_reason.clone_from(&row.failure_reason);
-    g.error_message.clone_from(&row.error_message);
+    g.error_message = row
+        .error_message
+        .as_deref()
+        .map(kaeso_core::secret::redact_tokens);
     g
 }
 
@@ -120,7 +123,10 @@ fn state_of(g: &Generation, completed_at: Option<time::OffsetDateTime>) -> Image
         content_url: g.content_url.clone(),
         content_mime_type: g.content_mime_type.clone(),
         failure_reason: g.failure_reason.clone(),
-        error_message: g.error_message.clone(),
+        error_message: g
+            .error_message
+            .as_deref()
+            .map(kaeso_core::secret::redact_tokens),
         completed_at: g.status.is_done().then_some(completed_at).flatten(),
     }
 }
@@ -478,7 +484,7 @@ async fn poll(
             Bytes::from(all)
         }
     };
-    decode_generation(resp.status, &resp.headers, &body)
+    decode_generation(resp.status, &resp.headers, &body).map_err(pipeline::without_key_fragments)
 }
 
 /// The generation after asking its provider, for one that hasn't failed: a running one may

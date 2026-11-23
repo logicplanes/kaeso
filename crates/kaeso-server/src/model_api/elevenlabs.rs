@@ -184,7 +184,8 @@ async fn relay_voices(
             all
         }
     };
-    let body = voices_reply(resp.status, &resp.headers, &bytes)?;
+    let body = voices_reply(resp.status, &resp.headers, &bytes)
+        .map_err(pipeline::without_key_fragments)?;
     let mut out = Response::new(axum::body::Body::from(body));
     out.headers_mut().insert(
         header::CONTENT_TYPE,

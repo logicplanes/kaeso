@@ -238,17 +238,18 @@ pub fn server_timing(
 }
 
 pub fn respond(dialect: DialectId, err: &KppError, served: &Served) -> Response {
+    let clean = super::pipeline::without_key_fragments(err.clone());
     let encoded = match request_id::current() {
-        Some(id) => dispatch::encode_error_for_request(dialect, err, &id.to_string()),
-        None => dispatch::encode_error(dialect, err),
+        Some(id) => dispatch::encode_error_for_request(dialect, &clean, &id.to_string()),
+        None => dispatch::encode_error(dialect, &clean),
     };
     let mut resp = Response::new(Body::from(encoded.body));
     // The codecs choose a status by the error's kind, and no kind means 415: the gateway's own
     // refusal of a content encoding keeps it, as a refused method keeps 405, and its refusal of
     // a retired model keeps 410.
-    *resp.status_mut() = match err.status {
-        Some(415) if err.origin.is_none() => StatusCode::UNSUPPORTED_MEDIA_TYPE,
-        Some(410) if err.origin.is_none() => StatusCode::GONE,
+    *resp.status_mut() = match clean.status {
+        Some(415) if clean.origin.is_none() => StatusCode::UNSUPPORTED_MEDIA_TYPE,
+        Some(410) if clean.origin.is_none() => StatusCode::GONE,
         _ => StatusCode::from_u16(encoded.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
     };
     for (name, value) in encoded.headers.iter() {

@@ -241,7 +241,10 @@ fn progress_of(job: &VideoJob) -> i16 {
 }
 
 fn error_value(e: &VideoError) -> Value {
-    json!({ "code": e.code, "message": e.message })
+    json!({
+        "code": e.code,
+        "message": kaeso_core::secret::redact_tokens(&e.message),
+    })
 }
 
 fn param_str(row: &VideoRow, key: &str) -> Option<String> {
@@ -289,7 +292,9 @@ fn app_view(row: &VideoRow, remixed_from: Option<VideoId>) -> VideoJob {
     job.error = row.error.as_ref().map(|e| {
         VideoError::new(
             e.get("code").and_then(Value::as_str).unwrap_or_default(),
-            e.get("message").and_then(Value::as_str).unwrap_or_default(),
+            kaeso_core::secret::redact_tokens(
+                e.get("message").and_then(Value::as_str).unwrap_or_default(),
+            ),
         )
     });
     job
@@ -937,6 +942,7 @@ async fn poll(state: &AppState, up: &Reached, row: &VideoRow) -> Result<VideoJob
         dispatch::encode_video_poll(up.dialect, &row.upstream_id, &row.upstream_model, &up.ectx)?;
     let (status, headers, body) = send(state, up, req).await?;
     dispatch::decode_video_poll(up.dialect, status, &headers, &body, &up.ectx)
+        .map_err(pipeline::without_key_fragments)
 }
 
 /// The job after asking its provider, for a job that hasn't ended. Asking is best effort: when
