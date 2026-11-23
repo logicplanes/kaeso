@@ -388,6 +388,22 @@ impl CtxInner {
             _ => Ok(()),
         }
     }
+
+    pub(crate) async fn require_instance_right(
+        &self,
+        state: &AppState,
+        right: InstanceRight,
+    ) -> ApiResult<()> {
+        match &self.caller {
+            Caller::Agent(agent) => {
+                if !agent.instance_rights().contains(right) {
+                    return Err(refused(&self.caller, Right::Instance(right), "instance"));
+                }
+                instance_admin(state, &agent.sign_in).await
+            }
+            _ => instance_admin(state, self.session()?).await,
+        }
+    }
 }
 
 impl<S: Send + Sync> FromRequestParts<S> for Ctx {

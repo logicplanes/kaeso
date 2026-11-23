@@ -106,6 +106,16 @@ pub async fn claim_window(
     Ok(claimed.rows_affected() == 1)
 }
 
+pub async fn reset_window(db: impl PgExecutor<'_>, at: OffsetDateTime) -> Result<(), StoreError> {
+    sqlx::query!(
+        "UPDATE update_settings SET auto_window_at = $1, updated_at = now() WHERE id = 1",
+        at,
+    )
+    .execute(db)
+    .await?;
+    Ok(())
+}
+
 pub async fn record_check(
     db: impl PgExecutor<'_>,
     at: OffsetDateTime,

@@ -458,7 +458,7 @@ pub struct UpdateSchedule {
 pub struct UpdateSettingsChange {
     #[doc = "Which releases are offered."]
     pub channel: Option<UpdateChannel>,
-    #[doc = "`manual` or `automatic`; choosing `automatic` needs a recent sign-in."]
+    #[doc = "`manual` or `automatic`; turning `automatic` on needs `instance.updates.apply` and a recent sign-in."]
     pub mode: Option<UpdateMode>,
     #[doc = "When automatic updates run."]
     pub schedule: Option<UpdateSchedule>,
@@ -499,7 +499,8 @@ fn window_audit(window: &Window) -> serde_json::Value {
 #[utoipa::path(
     patch,
     path = "/instance/updates/settings",
-    summary = "Changes which releases the gateway offers, and whether updates install by hand or in the update window (choosing that needs a recent sign-in).",
+    summary = "Changes which releases the gateway offers, and whether updates install by hand or in the update window.",
+    description = "Turning `automatic` on, or changing `channel` or `schedule` while `automatic` is on, also needs `instance.updates.apply` and a recent sign-in.",
     tag = "instance",
     request_body = UpdateSettingsChange,
     responses((status = 200, body = UpdatesView))
@@ -511,9 +512,6 @@ pub async fn settings(
 ) -> ApiResult<Json<UpdatesView>> {
     let mut tx = state.pg.begin().await?;
     let before = updates::settings_for_update(&mut tx).await?;
-    if req.mode == Some(UpdateMode::Automatic) && before.mode != Mode::Automatic.as_str() {
-        ctx.require_recent_sign_in()?;
-    }
     let after = Choices {
         channel: req.channel.map_or(before.channel.clone(), |c| {
             Channel::from(c).as_str().to_owned()
@@ -528,6 +526,18 @@ pub async fn settings(
         hour: before.auto_hour,
     };
     let window_after = window(&before, &req)?;
+    let changes_automatic = after.mode == Mode::Automatic.as_str()
+        && (before.mode != Mode::Automatic.as_str()
+            || after.channel != before.channel
+            || window_after != window_before);
+    if changes_automatic {
+        ctx.require_instance_right(
+            &state,
+            kaeso_core::rights::InstanceRight::InstanceUpdatesApply,
+        )
+        .await?;
+        ctx.require_recent_sign_in()?;
+    }
     updates::choose(&mut *tx, &after, &window_after, ctx.now).await?;
     ctx.audit(None, Action::InstanceUpdateSettings)
         .before(json!({

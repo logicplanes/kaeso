@@ -2594,7 +2594,7 @@
           "instance"
         ],
         "summary": "Changes who may create accounts and orgs and the allowed domains (with a\nrecent sign-in), org deletion, and the retention defaults and maximums.\nContent is never kept longer than metadata.",
-        "description": "**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "description": "Changing `timezone` while automatic updates are on also needs `instance.updates.apply` and a recent sign-in.\n\n**Right:** `instance.settings.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "patchInstanceSettings",
         "requestBody": {
           "content": {
@@ -3278,8 +3278,8 @@
         "tags": [
           "instance"
         ],
-        "summary": "Changes which releases the gateway offers, and whether updates install by hand or in the update window (choosing that needs a recent sign-in).",
-        "description": "**Right:** `instance.updates.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
+        "summary": "Changes which releases the gateway offers, and whether updates install by hand or in the update window.",
+        "description": "Turning `automatic` on, or changing `channel` or `schedule` while `automatic` is on, also needs `instance.updates.apply` and a recent sign-in.\n\n**Right:** `instance.updates.manage`. Instance admins hold every instance right with a console session that didn't come from an organization's SSO, or came from the SSO of the org chosen for instance admins; an agent of an instance admin needs it granted.",
         "operationId": "patchInstanceUpdatesSettings",
         "requestBody": {
           "content": {
@@ -50836,7 +50836,7 @@
             "oneOf": [
               {
                 "$ref": "#/components/schemas/UpdateMode",
-                "description": "`manual` or `automatic`; choosing `automatic` needs a recent sign-in."
+                "description": "`manual` or `automatic`; turning `automatic` on needs `instance.updates.apply` and a recent sign-in."
               },
               {
                 "type": "null"

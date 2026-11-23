@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE update_settings SET auto_window_at = $1, updated_at = now() WHERE id = 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e65885faa7f466adf3a8f74acb88d2b358fd1a6bb13940985783aa3e5d48abcb"
+}

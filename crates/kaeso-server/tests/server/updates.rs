@@ -2141,4 +2141,372 @@ async fn the_update_metric_names_the_newer_release_and_is_absent_while_checks_ar
         None,
         "a list nothing keeps current says nothing"
     );
+    s.cleanup().await;
+}
+
+async fn sign_in_instance_agent(app: &App, owner: &Owner, instance_rights: &[&str]) -> String {
+    const VERIFIER: &str = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+    const CHALLENGE: &str = "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM";
+    const REDIRECT: &str = "http://127.0.0.1:33418/callback";
+    let reg = app
+        .raw(
+            axum::http::Request::builder()
+                .method(Method::POST)
+                .uri("/oauth/register")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(axum::body::Body::from(
+                    json!({
+                        "client_name": "Ops tool",
+                        "redirect_uris": [REDIRECT],
+                        "token_endpoint_auth_method": "none",
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let client = reg.body["client_id"].as_str().unwrap();
+    let mut q = url::form_urlencoded::Serializer::new(String::new());
+    for (k, v) in [
+        ("response_type", "code"),
+        ("client_id", client),
+        ("redirect_uri", REDIRECT),
+        ("state", "st4te"),
+        ("code_challenge", CHALLENGE),
+        ("code_challenge_method", "S256"),
+        ("resource", "https://kaeso.test/mcp"),
+        ("scope", "kaeso"),
+    ] {
+        q.append_pair(k, v);
+    }
+    let auth = app
+        .raw(
+            axum::http::Request::builder()
+                .uri(format!("/oauth/authorize?{}", q.finish()))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect_status(StatusCode::SEE_OTHER);
+    let request = auth.headers[header::LOCATION]
+        .to_str()
+        .unwrap()
+        .split_once("#request=")
+        .unwrap()
+        .1;
+    let approved = app
+        .post(
+            "/me/agent-requests/approve",
+            json!({
+                "request": request,
+                "name": "Ops tool",
+                "grant": {
+                    "preset": "builder",
+                    "customized": true,
+                    "instance": instance_rights,
+                    "account": ["account.view"],
+                    "orgs": [],
+                    "future_orgs": null,
+                }
+            }),
+            Some(&owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let code: String = url::Url::parse(approved.body["redirect_to"].as_str().unwrap())
+        .unwrap()
+        .query_pairs()
+        .find(|(k, _)| k == "code")
+        .unwrap()
+        .1
+        .into_owned();
+    let mut form = url::form_urlencoded::Serializer::new(String::new());
+    for (k, v) in [
+        ("grant_type", "authorization_code"),
+        ("code", code.as_str()),
+        ("client_id", client),
+        ("redirect_uri", REDIRECT),
+        ("code_verifier", VERIFIER),
+    ] {
+        form.append_pair(k, v);
+    }
+    let exchanged = app
+        .raw(
+            axum::http::Request::builder()
+                .method(Method::POST)
+                .uri("/oauth/token")
+                .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                .body(axum::body::Body::from(form.finish()))
+                .unwrap(),
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    exchanged.body["access_token"].as_str().unwrap().to_owned()
+}
+
+#[tokio::test]
+async fn automatic_update_settings_need_the_apply_right_and_a_recent_sign_in() {
+    let s = TestServices::start().await;
+    let (_, url) = github(stable()).await;
+    let app = App::start_with(&s, &[("KAESO_UPDATES_RELEASES_URL", url.as_str())]).await;
+    let owner = app.setup().await;
+
+    let configure_agent = sign_in_instance_agent(
+        &app,
+        &owner,
+        &[
+            "instance.system.view",
+            "instance.settings.manage",
+            "instance.updates.manage",
+        ],
+    )
+    .await;
+
+    app.with_key(
+        Method::PATCH,
+        "/instance/updates/settings",
+        Some(json!({
+            "channel": "prerelease",
+            "schedule": { "frequency": "weekly", "weekday": "sunday", "hour": 4 },
+        })),
+        &configure_agent,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let refused_auto = app
+        .with_key(
+            Method::PATCH,
+            "/instance/updates/settings",
+            Some(json!({ "mode": "automatic" })),
+            &configure_agent,
+        )
+        .await;
+    assert_eq!(
+        refused_auto.status,
+        StatusCode::FORBIDDEN,
+        "{:?}",
+        refused_auto.body
+    );
+    assert_eq!(
+        refused_auto.body["error"]["right"],
+        "instance.updates.apply"
+    );
+
+    update_settings(
+        &app,
+        &owner,
+        json!({ "channel": "stable", "mode": "automatic" }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    for change in [
+        json!({ "channel": "prerelease" }),
+        json!({ "schedule": { "frequency": "daily", "weekday": "monday", "hour": 5 } }),
+    ] {
+        let r = app
+            .with_key(
+                Method::PATCH,
+                "/instance/updates/settings",
+                Some(change.clone()),
+                &configure_agent,
+            )
+            .await;
+        assert_eq!(r.status, StatusCode::FORBIDDEN, "{change}: {:?}", r.body);
+        assert_eq!(r.body["error"]["right"], "instance.updates.apply");
+    }
+
+    let tz_refused = app
+        .with_key(
+            Method::PATCH,
+            "/instance/settings",
+            Some(json!({ "timezone": "Pacific/Midway" })),
+            &configure_agent,
+        )
+        .await;
+    assert_eq!(
+        tz_refused.status,
+        StatusCode::FORBIDDEN,
+        "{:?}",
+        tz_refused.body
+    );
+    assert_eq!(tz_refused.body["error"]["right"], "instance.updates.apply");
+
+    app.with_key(
+        Method::PATCH,
+        "/instance/updates/settings",
+        Some(json!({ "mode": "manual" })),
+        &configure_agent,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.with_key(
+        Method::PATCH,
+        "/instance/settings",
+        Some(json!({ "timezone": "UTC" })),
+        &configure_agent,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    let (updater, updater_url) = updater().await;
+    let live = App::start_with(
+        &s,
+        &[
+            ("KAESO_UPDATES_RELEASES_URL", url.as_str()),
+            ("KAESO_UPDATER_URL", updater_url.as_str()),
+            ("KAESO_UPDATER_TOKEN", token()),
+        ],
+    )
+    .await;
+    let t0 = next_hour(&live) + time::Duration::minutes(5);
+    live.clock.set(t0);
+    let fresh_t0 = live
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": common::PASSWORD }),
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let live_owner = Owner {
+        cookie: fresh_t0.cookie().unwrap(),
+        user_id: owner.user_id.clone(),
+        org_id: owner.org_id.clone(),
+    };
+    let lagos_hour = (t0.hour() + 3) % 24;
+    update_settings(
+        &live,
+        &live_owner,
+        json!({
+            "mode": "automatic",
+            "schedule": { "frequency": "daily", "weekday": "monday", "hour": lagos_hour },
+        }),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    live.clock.set(t0 + time::Duration::hours(2));
+    let fresh_t1 = live
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": common::PASSWORD }),
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    live.call(
+        Method::PATCH,
+        "/instance/settings",
+        Some(json!({ "timezone": "Africa/Lagos" })),
+        Some(fresh_t1.cookie().unwrap().as_str()),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let job = kaeso_server::jobs::all()
+        .into_iter()
+        .find(|j| j.name == "update_check")
+        .unwrap();
+    kaeso_server::jobs::run_once(&live.state, job)
+        .await
+        .unwrap();
+    assert!(
+        updater.lock().unwrap().started.is_empty(),
+        "moving the time zone into the current hour resets auto_window_at instead of starting at once"
+    );
+
+    app.clock.advance(time::Duration::minutes(16));
+    for change in [
+        json!({ "channel": "prerelease" }),
+        json!({ "schedule": { "frequency": "daily", "weekday": "monday", "hour": (lagos_hour + 1) % 24 } }),
+    ] {
+        let stale = update_settings(&app, &owner, change.clone()).await;
+        assert_eq!(
+            stale.status,
+            StatusCode::FORBIDDEN,
+            "{change}: {:?}",
+            stale.body
+        );
+        assert_eq!(stale.error_type(), "recent_sign_in_required");
+    }
+    let stale_tz = app
+        .call(
+            Method::PATCH,
+            "/instance/settings",
+            Some(json!({ "timezone": "Pacific/Midway" })),
+            Some(&owner.cookie),
+        )
+        .await;
+    assert_eq!(
+        stale_tz.status,
+        StatusCode::FORBIDDEN,
+        "{:?}",
+        stale_tz.body
+    );
+    assert_eq!(stale_tz.error_type(), "recent_sign_in_required");
+    update_settings(&app, &owner, json!({ "mode": "manual" }))
+        .await
+        .expect_status(StatusCode::OK);
+
+    let fresh = app
+        .post(
+            "/auth/password",
+            json!({ "email": "owner@example.com", "password": common::PASSWORD }),
+            None,
+        )
+        .await
+        .expect_status(StatusCode::OK);
+    let owner = Owner {
+        cookie: fresh.cookie().unwrap(),
+        ..owner
+    };
+    app.call(
+        Method::PUT,
+        "/instance/settings/agents",
+        Some(json!({ "allowed": true, "max": "admin" })),
+        Some(&owner.cookie),
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    let admin_agent = sign_in_instance_agent(
+        &app,
+        &owner,
+        &[
+            "instance.system.view",
+            "instance.settings.manage",
+            "instance.updates.manage",
+            "instance.updates.apply",
+        ],
+    )
+    .await;
+    app.with_key(
+        Method::PATCH,
+        "/instance/updates/settings",
+        Some(json!({ "mode": "automatic" })),
+        &admin_agent,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.with_key(
+        Method::PATCH,
+        "/instance/updates/settings",
+        Some(json!({
+            "channel": "prerelease",
+            "schedule": { "frequency": "daily", "weekday": "monday", "hour": 2 },
+        })),
+        &admin_agent,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+    app.with_key(
+        Method::PATCH,
+        "/instance/settings",
+        Some(json!({ "timezone": "UTC" })),
+        &admin_agent,
+    )
+    .await
+    .expect_status(StatusCode::OK);
+
+    s.cleanup().await;
 }

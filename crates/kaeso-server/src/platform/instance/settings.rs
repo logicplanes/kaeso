@@ -288,6 +288,7 @@ pub struct SettingsUpdate {
     summary = "Changes who may create accounts and orgs and the allowed domains (with a\n\
     recent sign-in), org deletion, and the retention defaults and maximums.\n\
     Content is never kept longer than metadata.",
+    description = "Changing `timezone` while automatic updates are on also needs `instance.updates.apply` and a recent sign-in.",
     tag = "instance",
     request_body = SettingsUpdate,
     responses((status = 200, body = SettingsView))
@@ -369,6 +370,18 @@ pub async fn update(
     }
     if let Some(zone) = &req.timezone {
         after.timezone = crate::platform::validate::validate_time_zone("timezone", zone)?;
+    }
+    if after.timezone != before.timezone {
+        let updates = kaeso_store::pg::updates::settings_for_update(&mut tx).await?;
+        if updates.mode == kaeso_update::schedule::Mode::Automatic.as_str() {
+            ctx.require_instance_right(
+                &state,
+                kaeso_core::rights::InstanceRight::InstanceUpdatesApply,
+            )
+            .await?;
+            ctx.require_recent_sign_in()?;
+            kaeso_store::pg::updates::reset_window(&mut *tx, ctx.now).await?;
+        }
     }
     if after.content_retention_days > after.metadata_retention_days {
         return Err(ApiError::invalid(

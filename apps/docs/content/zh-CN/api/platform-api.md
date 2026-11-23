@@ -106,7 +106,7 @@ docker compose exec gateway kaeso openapi > openapi.json
 
 - **组织和项目中：** 在 `orgs/{org}/rights` 中带有 `recent_sign_in` 标记的权限，即 `org.delete`、`org.ownership.transfer`、`provider_credentials.create`、`provider_credentials.replace`、`providers.custom.manage`、`mcp_servers.manage`、`webhooks.manage`、`security.sso.manage`、`security.sso.require`、`security.2fa.require`、`guardrails.manage`、`platform_keys.create`、`logs.settings.manage`、`logs.delete` 和 `keys.platform_access.grant`。
 - **自己的账户中：** 更改电子邮件地址、为没有密码的账户设置密码和删除账户。设置或关闭双重验证、生成新的恢复码，以及关联或取消关联单点登录，同样需要近期登录。
-- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新，应用更新，以及计划删除或删除组织。将某人设为实例管理员或取消其身份、删除用户、重置用户的双重验证和指定组织的所有者同样需要。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
+- **实例管理员：** 更改账户创建、组织创建或允许的域名，选择自动更新或在启用自动更新时更改发布渠道、更新窗口或时区，应用更新，以及计划删除或删除组织。将某人设为实例管理员或取消其身份、删除用户、重置用户的双重验证和指定组织的所有者同样需要。选择实例管理员的单点登录也要求近期登录，且只能用密码或登录链接确认。
 
 ## 约定
 
