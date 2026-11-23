@@ -63,11 +63,13 @@ describe("the email step", () => {
   it("keeps account creation out of sight on an install by invitation", async () => {
     signedOut();
     on("GET", "auth/methods", methods({ sign_up: false }));
-    await renderApp("/sign-in");
+    const { user } = await renderApp("/sign-in");
     await screen.findByRole("textbox", { name: "Email" });
     await waitFor(() => expect(requests("GET", "auth/methods")).toHaveLength(1));
     expect(screen.queryByRole("link", { name: "Create an account" })).not.toBeInTheDocument();
     expectDisabledBecause(screen.getByRole("button", { name: "Continue" }), "Enter your email address");
+    await user.type(screen.getByRole("textbox", { name: "Email" }), "{Enter}");
+    expect(requests("POST", "auth/methods")).toHaveLength(0);
   });
 
   it("says when the gateway can't be reached", async () => {

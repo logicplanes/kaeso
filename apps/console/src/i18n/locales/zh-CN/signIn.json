@@ -22,7 +22,7 @@
   "signIn.password": "密码",
   "signIn.passwordNeeded": "请输入您的密码",
   "signIn.recoveryCode": "恢复码",
-  "signIn.recoveryCodeNeeded": "请输入一个恢复码",
+  "signIn.recoveryCodeNeeded": "请输入恢复码",
   "signIn.recoveryHint": "输入一个恢复码，每个仅可使用一次。",
   "signIn.sso": "使用 SSO 继续",
   "signIn.ssoError.acceptInvite": "您已有账户；请用其他方式登录以接受邀请。",

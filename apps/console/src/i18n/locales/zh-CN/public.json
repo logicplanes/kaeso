@@ -70,7 +70,7 @@
   "public.linkUsed": "此链接已过期或已被使用",
   "public.lookingUpAgentRequest": "正在查找智能体的请求",
   "public.lookingUpInvitation": "正在查询邀请",
-  "public.nameNeeded": "请输入您的姓名",
+  "public.nameNeeded": "请输入您的名称",
   "public.needsCancelLink": "此页面需要取消链接",
   "public.needsCancelLinkHint": "请打开关于此更改的邮件中的链接；它以 #token=… 结尾",
   "public.needsConfirmationLink": "此页面需要确认链接",

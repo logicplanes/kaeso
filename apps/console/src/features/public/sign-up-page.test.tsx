@@ -26,6 +26,8 @@ describe("creating an account", () => {
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveClass("tap-target");
     const go = screen.getByRole("button", { name: "Continue" });
     expectDisabledBecause(go, "Enter your email address");
+    await user.type(screen.getByRole("textbox", { name: "Email" }), "{Enter}");
+    expect(requests("POST", "auth/signup")).toHaveLength(0);
     await user.type(screen.getByRole("textbox", { name: "Email" }), "  grace@example.com ");
     await user.click(go);
     expect(await screen.findByText("Check your email")).toBeInTheDocument();
