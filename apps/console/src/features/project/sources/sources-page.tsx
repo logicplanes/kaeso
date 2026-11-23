@@ -213,6 +213,7 @@ function AddSourceDialog({ org, project, onClose }: { org: string; project: stri
         footer: <Button onClick={onClose}>{common.finish()}</Button>,
         content: (
           <div className="flex flex-col gap-24">
+            <Connection org={org} project={project} source={created.source} />
             <SecretReveal
               secret={created.key}
               name={created.source.name}
@@ -224,7 +225,6 @@ function AddSourceDialog({ org, project, onClose }: { org: string; project: stri
                 content: created.source.content,
               })}
             />
-            <Connection org={org} project={project} source={created.source} />
           </div>
         ),
       }
