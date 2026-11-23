@@ -1,7 +1,7 @@
 ---
 title: 自托管
 description: 在自己的服务器上运行 Kaeso，并保持其配置正确、版本最新、数据有备份。
-order: 5
+order: 6
 ---
 
 Kaeso 以一个 Docker Compose 项目的形式运行在您的服务器上。[快速开始](../get-started/quick-start.md)负责安装，之后的一切都在这些页面中。

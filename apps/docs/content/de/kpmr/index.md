@@ -1,7 +1,7 @@
 ---
 title: KPMR
 description: Die Registry, die jede Kaeso-Installation mit Preisen, Limits und Fähigkeiten der Modelle versorgt, die sie aufruft.
-order: 6
+order: 7
 ---
 
 Jedes Modell im Katalog eines Projekts beginnt mit den Werten aus KPMR, der Kaeso Provider & Model Registry: Preise, Limits, Ein- und Ausgaben und was das Modell annimmt. Wenn Sie wissen, woher sie kommen, verstehen Sie, warum sich ein Preis von selbst ändert und wie Sie Kaeso ohne Internetzugang betreiben.

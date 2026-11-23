@@ -1,7 +1,7 @@
 ---
 title: API
 description: Call models from your apps and manage your install over HTTP.
-order: 4
+order: 5
 ---
 
 Every install serves two APIs on its domain. Apps call models through the model API at `/v1`, `/v1beta` and `/v2` with an API key, and scripts manage the install through the Platform API at `/platform/v1`. Agents reach the Platform API through the MCP server at `/mcp`, and clients call a project's tools through its MCP portal at `/mcp/<project id>`. [APIs by provider](../concepts/provider-apis.md) shows which providers each model API reaches.
