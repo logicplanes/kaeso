@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, credential_id, provider, upstream_id, purpose, filename, bytes, lines, endpoint, catalogue_model_id, model, upstream_model, created_at, expires_at FROM batch_files WHERE org_id = $1 AND project_id = $2 AND id = $3",
+  "query": "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, credential_id, provider, upstream_id, purpose, filename, bytes, lines, endpoint, catalogue_model_id, model, upstream_model, demand, created_at, expires_at FROM batch_files WHERE org_id = $1 AND project_id = $2 AND id = $3",
   "describe": {
     "columns": [
       {
@@ -192,6 +192,17 @@
       },
       {
         "ordinal": 17,
+        "name": "demand",
+        "type_info": "Jsonb",
+        "origin": {
+          "Table": {
+            "table": "batch_files",
+            "name": "demand"
+          }
+        }
+      },
+      {
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -202,7 +213,7 @@
         }
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "expires_at",
         "type_info": "Timestamptz",
         "origin": {
@@ -238,9 +249,10 @@
       true,
       true,
       true,
+      true,
       false,
       true
     ]
   },
-  "hash": "cf0a9a5ea54bf5d887f478c3ccde4d7b99f65505492acfea8b02fcbe8e6507eb"
+  "hash": "aae4b44dbe8604757f5e1478701308ca8d7417f1e104d2773bb0192b4ceba00d"
 }

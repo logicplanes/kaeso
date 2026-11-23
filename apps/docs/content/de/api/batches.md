@@ -52,6 +52,6 @@ Dateien und Batches haben Kaeso-IDs und antworten nur Schlüsseln des Projekts, 
 
 ## Kosten, Limits und Protokolle
 
-- Das Hochladen einer Datei und das Anlegen eines Batches zählen je als eine Anfrage gegen die Raten des Schlüssels. Die Zeilen zählen nicht gegen Raten pro Minute.
+- Das Hochladen einer Datei und das Anlegen eines Batches zählen je als eine Anfrage gegen die Raten des Schlüssels. Die Zeilen zählen nicht gegen Raten pro Minute; das Anlegen eines Batches prüft und reserviert seine Höchstzahl an Tokens und die Ausgaben zum Batch-Preis gegen harte Token- und Ausgabenbudgets, bis der Batch endet, und lehnt Funktionen ab, die ein Ausgabenbudget nicht bepreisen kann.
 - Endet ein Batch, liest Kaeso seine Ausgabe einmal und verbucht jede Zeile als Anfrage an das Modell des Batches, mit der Nutzung des Anbieters zum Batch-Preis. Zeilen, die beim Anbieter scheiterten, werden mit ihrem Status und ohne Nutzung verbucht. Für jede Zeile entsteht ein Eintrag im Anfrageprotokoll.
 - Kaeso fragt den Anbieter alle fünf Minuten nach offenen Batches, und immer, wenn eine App nach einem Batch fragt.

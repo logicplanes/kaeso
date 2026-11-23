@@ -52,6 +52,6 @@ Files and batches have Kaeso ids, and answer only to keys of the project that ma
 
 ## Costs, limits and logs
 
-- Uploading a file and creating a batch each count as one request against the key's rates. The lines don't count against per-minute rates.
+- Uploading a file and creating a batch each count as one request against the key's rates. The lines don't count against per-minute rates; creating a batch checks and holds its worst-case tokens and batch-discounted spend against hard token and spend budgets until the batch ends, and refuses features a spend budget can't price.
 - When a batch ends, Kaeso reads its output once and records each line as a request of the batch's model, with the provider's usage at the batch price. Lines the provider failed are recorded with their status and no usage. A request log entry is written for each line.
 - Kaeso asks the provider about open batches every five minutes, and whenever an app asks for a batch.

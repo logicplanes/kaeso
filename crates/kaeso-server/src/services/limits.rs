@@ -955,13 +955,16 @@ impl Limits for ValkeyLimits {
                     });
                 }
             };
-            let applicable = limits::applicable(
+            let applicable: Vec<&Limit> = limits::applicable(
                 &all,
                 a.caller.project_id,
                 member_of(&a.caller),
                 a.caller.key_id,
                 a.catalogue_model_id,
-            );
+            )
+            .into_iter()
+            .filter(|l| l.kind != Kind::TokenRate || a.timeout <= Duration::from_secs(24 * 60 * 60))
+            .collect();
             if applicable.is_empty() {
                 return Ok(Reservation::default());
             }
@@ -1544,4 +1547,48 @@ fn unreadable(e: &LimitsError) {
             .increment(1);
     }
     tracing::warn!(error = %e, "cannot read what a limit has used");
+}
+
+pub async fn release_batch_hold(
+    state: &AppState,
+    caller: &Caller,
+    catalogue_model_id: Uuid,
+    request_id: kaeso_core::id::RequestId,
+    created_at: OffsetDateTime,
+    now: OffsetDateTime,
+) {
+    let Ok(all) = project_limits(state, caller.project_id).await else {
+        return;
+    };
+    let applicable = limits::applicable(
+        &all,
+        caller.project_id,
+        member_of(caller),
+        caller.key_id,
+        catalogue_model_id,
+    );
+    let mut counters = Vec::new();
+    for l in applicable
+        .into_iter()
+        .filter(|l| !l.kind.is_rate() && l.enforced())
+    {
+        let start_key = state.valkey.key(&l.counter(created_at));
+        counters.push(start_key.clone());
+        let now_key = state.valkey.key(&l.counter(now));
+        if now_key != start_key {
+            counters.push(now_key);
+        }
+    }
+    if counters.is_empty() {
+        return;
+    }
+    let held = Reservation {
+        counters,
+        ttl: 0,
+        left: Vec::new(),
+    };
+    state
+        .limits
+        .release(state, &held, &request_id.to_string())
+        .await;
 }

@@ -1,5 +1,6 @@
 pub(crate) mod accounts;
 pub mod auth;
+mod batch_limits;
 pub(crate) mod batches;
 mod elevenlabs;
 pub mod errors;

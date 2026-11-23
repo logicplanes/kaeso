@@ -88,6 +88,316 @@ async fn create(env: &Env, key: &str, file: &str) -> Answer {
 }
 
 #[tokio::test]
+async fn batches_respect_hard_budgets_and_unpriced_features() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let files = Arc::new(AtomicUsize::new(0));
+    let batches = Arc::new(AtomicUsize::new(0));
+    let files_post = Arc::clone(&files);
+    let batches_post = Arc::clone(&batches);
+    let out_line = |completion_tokens: u64| {
+        format!(
+            "{}\n",
+            json!({
+                "id": "batch_req_1",
+                "custom_id": "fit-1",
+                "response": {
+                    "status_code": 200,
+                    "request_id": "req_1",
+                    "body": {
+                        "id": "chatcmpl-1",
+                        "object": "chat.completion",
+                        "created": 1_700_000_000,
+                        "model": "gpt-4o",
+                        "choices": [{
+                            "index": 0,
+                            "message": { "role": "assistant", "content": "blue" },
+                            "finish_reason": "stop"
+                        }],
+                        "usage": {
+                            "prompt_tokens": 10,
+                            "completion_tokens": completion_tokens,
+                            "total_tokens": 10 + completion_tokens
+                        }
+                    }
+                },
+                "error": null
+            })
+        )
+    };
+    let out_one = out_line(18);
+    let out_two = out_line(100);
+    let upstream = axum::Router::new()
+        .route(
+            "/v1/files",
+            axum::routing::post(move || {
+                let n = files_post.fetch_add(1, Ordering::SeqCst) + 1;
+                async move {
+                    axum::Json(json!({
+                        "id": format!("file-up-{n}"),
+                        "object": "file",
+                        "purpose": "batch"
+                    }))
+                }
+            }),
+        )
+        .route(
+            "/v1/batches",
+            axum::routing::post(move || {
+                let n = batches_post.fetch_add(1, Ordering::SeqCst) + 1;
+                async move {
+                    axum::Json(json!({
+                        "id": format!("batch-up-{n}"),
+                        "object": "batch",
+                        "endpoint": "/v1/chat/completions",
+                        "status": "validating",
+                        "completion_window": "24h"
+                    }))
+                }
+            }),
+        )
+        .route(
+            "/v1/batches/batch-up-1",
+            axum::routing::get(|| async {
+                axum::Json(json!({
+                    "id": "batch-up-1",
+                    "object": "batch",
+                    "endpoint": "/v1/chat/completions",
+                    "status": "completed",
+                    "output_file_id": "file-out-1"
+                }))
+            }),
+        )
+        .route(
+            "/v1/batches/batch-up-2",
+            axum::routing::get(|| async {
+                axum::Json(json!({
+                    "id": "batch-up-2",
+                    "object": "batch",
+                    "endpoint": "/v1/chat/completions",
+                    "status": "completed",
+                    "output_file_id": "file-out-2"
+                }))
+            }),
+        )
+        .route(
+            "/v1/files/file-out-1/content",
+            axum::routing::get(move || {
+                let body = out_one.clone();
+                async move { body }
+            }),
+        )
+        .route(
+            "/v1/files/file-out-2/content",
+            axum::routing::get(move || {
+                let body = out_two.clone();
+                async move { body }
+            }),
+        );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let up_url = format!("http://{}", listener.local_addr().unwrap());
+    tokio::spawn(async move {
+        let _ = axum::serve(listener, upstream).await;
+    });
+
+    let env = common::v1::env(None, Some(&[("KAESO_PROVIDERS_OPENAI_BASE_URL", &up_url)])).await;
+    let limits_path = format!("/orgs/{}/projects/{}/limits", env.owner.org_id, env.project);
+    for body in [
+        json!({ "level": "project", "kind": "token_rate", "period": "minute", "amount": 20 }),
+        json!({ "level": "project", "kind": "token_budget", "period": "day", "amount": 250, "hard": true }),
+    ] {
+        env.app
+            .post(&limits_path, body, Some(&env.owner.cookie))
+            .await
+            .expect_status(StatusCode::CREATED);
+    }
+
+    let big_line = json!({
+        "custom_id": "big-1",
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": { "model": "gpt-4o", "messages": [{ "role": "user", "content": "Hi" }], "max_tokens": 300 }
+    })
+    .to_string();
+    let big_file = upload(&env, &env.key, &[big_line]).await.json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let over_tokens = create(&env, &env.key, &big_file).await;
+    assert_eq!(
+        over_tokens.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        over_tokens.text()
+    );
+
+    let fit_line = json!({
+        "custom_id": "fit-1",
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": { "model": "gpt-4o", "messages": [{ "role": "user", "content": "Say blue." }], "max_tokens": 140 }
+    })
+    .to_string();
+    let fit_file = upload(&env, &env.key, &[fit_line]).await.json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    let nul_meta = send(
+        &env,
+        &env.key,
+        "POST",
+        "/v1/batches",
+        Some("application/json".into()),
+        json!({
+            "input_file_id": fit_file,
+            "endpoint": "/v1/chat/completions",
+            "completion_window": "24h",
+            "metadata": { "note": "a\u{0000}b" }
+        })
+        .to_string()
+        .into_bytes(),
+    )
+    .await;
+    assert_eq!(
+        nul_meta.status,
+        StatusCode::BAD_REQUEST,
+        "{}",
+        nul_meta.text()
+    );
+
+    let first = create(&env, &env.key, &fit_file).await;
+    assert_eq!(first.status, StatusCode::OK, "{}", first.text());
+    let first_id = first.json()["id"].as_str().unwrap().to_owned();
+
+    let held_busy = create(&env, &env.key, &fit_file).await;
+    assert_eq!(
+        held_busy.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        held_busy.text()
+    );
+
+    let settled = send(
+        &env,
+        &env.key,
+        "GET",
+        &format!("/v1/batches/{first_id}"),
+        None,
+        vec![],
+    )
+    .await;
+    assert_eq!(settled.status, StatusCode::OK, "{}", settled.text());
+    assert_eq!(settled.json()["status"], "completed");
+
+    let second = create(&env, &env.key, &fit_file).await;
+    assert_eq!(second.status, StatusCode::OK, "{}", second.text());
+    let second_id = second.json()["id"].as_str().unwrap().to_owned();
+    let second_settled = send(
+        &env,
+        &env.key,
+        "GET",
+        &format!("/v1/batches/{second_id}"),
+        None,
+        vec![],
+    )
+    .await;
+    assert_eq!(second_settled.status, StatusCode::OK);
+
+    let after_settled_usage = create(&env, &env.key, &fit_file).await;
+    assert_eq!(
+        after_settled_usage.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        after_settled_usage.text()
+    );
+
+    env.app
+        .post(
+            &limits_path,
+            json!({ "level": "project", "kind": "spend_budget", "period": "day", "amount": "10", "hard": true }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+
+    let priority_line = json!({
+        "custom_id": "prio-1",
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": {
+            "model": "gpt-4o",
+            "messages": [{ "role": "user", "content": "Hi" }],
+            "max_tokens": 20,
+            "service_tier": "priority"
+        }
+    })
+    .to_string();
+    let priority_file = upload(&env, &env.key, &[priority_line]).await.json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let unpriced = create(&env, &env.key, &priority_file).await;
+    assert_eq!(
+        unpriced.status,
+        StatusCode::FORBIDDEN,
+        "{}",
+        unpriced.text()
+    );
+    assert!(
+        unpriced.text().contains("service_tier: priority"),
+        "{}",
+        unpriced.text()
+    );
+
+    let small_line = json!({
+        "custom_id": "small-1",
+        "method": "POST",
+        "url": "/v1/chat/completions",
+        "body": { "model": "gpt-4o", "messages": [{ "role": "user", "content": "Hi" }], "max_tokens": 20 }
+    })
+    .to_string();
+    let small_file = upload(&env, &env.key, &[small_line]).await.json()["id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    let key_resp = env
+        .app
+        .post(
+            &format!("/orgs/{}/projects/{}/keys", env.owner.org_id, env.project),
+            json!({ "name": "tight-spend" }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let tight_key = key_resp.body["secret"].as_str().unwrap().to_owned();
+    let tight_id = key_resp.body["id"].as_str().unwrap().to_owned();
+    env.app
+        .post(
+            &limits_path,
+            json!({
+                "level": "key",
+                "key": tight_id,
+                "kind": "spend_budget",
+                "period": "day",
+                "amount": "0.00001",
+                "hard": true
+            }),
+            Some(&env.owner.cookie),
+        )
+        .await
+        .expect_status(StatusCode::CREATED);
+    let over_spend = create(&env, &tight_key, &small_file).await;
+    assert_eq!(
+        over_spend.status,
+        StatusCode::TOO_MANY_REQUESTS,
+        "{}",
+        over_spend.text()
+    );
+}
+
+#[tokio::test]
 async fn a_batch_runs_at_openai_and_its_lines_are_charged_at_the_batch_price() {
     let env = env().await;
     let lines = [

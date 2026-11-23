@@ -24,6 +24,7 @@ pub struct FileRow {
     pub catalogue_model_id: Option<Uuid>,
     pub model: Option<String>,
     pub upstream_model: Option<String>,
+    pub demand: Option<Value>,
     pub created_at: OffsetDateTime,
     pub expires_at: Option<OffsetDateTime>,
 }
@@ -58,8 +59,8 @@ pub async fn insert_file(db: impl PgExecutor<'_>, f: &FileRow) -> Result<(), Sto
     sqlx::query!(
         "INSERT INTO batch_files (id, org_id, project_id, api_key_id, user_id, service_account_id, \
          credential_id, provider, upstream_id, purpose, filename, bytes, lines, endpoint, \
-         catalogue_model_id, model, upstream_model, created_at, expires_at) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19) \
+         catalogue_model_id, model, upstream_model, demand, created_at, expires_at) \
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20) \
          ON CONFLICT (provider, upstream_id) DO NOTHING",
         f.id,
         f.org_id,
@@ -78,6 +79,7 @@ pub async fn insert_file(db: impl PgExecutor<'_>, f: &FileRow) -> Result<(), Sto
         f.catalogue_model_id,
         f.model,
         f.upstream_model,
+        f.demand,
         f.created_at,
         f.expires_at
     )
@@ -96,7 +98,7 @@ pub async fn file(
         FileRow,
         "SELECT id, org_id, project_id, api_key_id, user_id, service_account_id, credential_id, \
          provider, upstream_id, purpose, filename, bytes, lines, endpoint, catalogue_model_id, \
-         model, upstream_model, created_at, expires_at FROM batch_files \
+         model, upstream_model, demand, created_at, expires_at FROM batch_files \
          WHERE org_id = $1 AND project_id = $2 AND id = $3",
         org_id,
         project_id,

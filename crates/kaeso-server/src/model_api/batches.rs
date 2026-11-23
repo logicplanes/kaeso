@@ -717,6 +717,15 @@ async fn upload(
         .unwrap_or_default()
         .to_owned();
     let now = state.clock.now();
+    let demand = super::batch_limits::summarize(
+        state,
+        caller,
+        checked.credential.id.uuid(),
+        checked.endpoint,
+        &checked.provider,
+        &checked.lines,
+    )
+    .await;
     let row = FileRow {
         id: Uuid::now_v7(),
         org_id: caller.org_id,
@@ -735,6 +744,7 @@ async fn upload(
         catalogue_model_id: Some(checked.entry),
         model: Some(checked.model),
         upstream_model: Some(checked.upstream_model),
+        demand: Some(demand),
         created_at: now,
         expires_at: answer
             .get("expires_at")
@@ -840,6 +850,28 @@ fn batch_view(row: &BatchRow) -> Value {
     v
 }
 
+fn has_nul(v: &Value) -> bool {
+    match v {
+        Value::String(s) => s.contains('\0'),
+        Value::Array(items) => items.iter().any(has_nul),
+        Value::Object(map) => map.iter().any(|(k, val)| k.contains('\0') || has_nul(val)),
+        _ => false,
+    }
+}
+
+fn strip_nul(v: Value) -> Value {
+    match v {
+        Value::String(s) if s.contains('\0') => Value::String(s.replace('\0', "")),
+        Value::Array(items) => Value::Array(items.into_iter().map(strip_nul).collect()),
+        Value::Object(map) => Value::Object(
+            map.into_iter()
+                .map(|(k, val)| (k.replace('\0', ""), strip_nul(val)))
+                .collect(),
+        ),
+        other => other,
+    }
+}
+
 async fn create(state: &AppState, caller: &Caller, body: &[u8]) -> Result<BatchRow, KppError> {
     let asked: Value = serde_json::from_slice(body)
         .ok()
@@ -870,6 +902,12 @@ async fn create(state: &AppState, caller: &Caller, body: &[u8]) -> Result<BatchR
             "`completion_window` must be `24h`.".to_owned(),
         ));
     }
+    if asked.get("metadata").is_some_and(has_nul) {
+        return Err(invalid(
+            "metadata",
+            "`metadata` must be text without a NUL character.".to_owned(),
+        ));
+    }
     let models = super::listing::project_models(
         state,
         caller.project_id,
@@ -889,7 +927,17 @@ async fn create(state: &AppState, caller: &Caller, body: &[u8]) -> Result<BatchR
         .ok_or_else(unknown)?;
     let percent = kaeso_core::cost::batch_percent(eff.provider.id()).ok_or_else(unknown)?;
     let (provider, credential) = reach(state, caller, &file.provider, file.credential_id).await?;
-    pipeline::admit_follow_up(state, caller, Some(entry)).await?;
+    let batch_id = Uuid::now_v7();
+    let now = state.clock.now();
+    let held = super::batch_limits::admit_batch(
+        state,
+        caller,
+        (batch_id, now),
+        (entry_ref, &eff, percent),
+        &file,
+    )
+    .await?;
+    let req_id = RequestId::from_uuid(batch_id).to_string();
     let mut sent_body = json!({
         "input_file_id": file.upstream_id,
         "endpoint": endpoint,
@@ -901,7 +949,7 @@ async fn create(state: &AppState, caller: &Caller, body: &[u8]) -> Result<BatchR
     ) {
         o.insert("metadata".into(), m.clone());
     }
-    let sent = send(
+    let sent = match send(
         state,
         &provider,
         &credential,
@@ -910,11 +958,24 @@ async fn create(state: &AppState, caller: &Caller, body: &[u8]) -> Result<BatchR
         HeaderList::new().with("content-type", "application/json"),
         Bytes::from(sent_body.to_string()),
     )
-    .await?;
-    let answer = provider_json(&sent)?;
+    .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            state.limits.release(state, &held, &req_id).await;
+            return Err(e);
+        }
+    };
+    let answer = match provider_json(&sent) {
+        Ok(a) => strip_nul(a),
+        Err(e) => {
+            state.limits.release(state, &held, &req_id).await;
+            return Err(e);
+        }
+    };
     let prices: Fields = kaeso_core::cost::at_share(&eff.fields, percent);
     let row = BatchRow {
-        id: Uuid::now_v7(),
+        id: batch_id,
         org_id: caller.org_id,
         project_id: caller.project_id,
         api_key_id: caller.key_id,
@@ -942,10 +1003,18 @@ async fn create(state: &AppState, caller: &Caller, body: &[u8]) -> Result<BatchR
             .unwrap_or("validating")
             .to_owned(),
         view: answer,
-        created_at: state.clock.now(),
+        created_at: now,
         accounted_at: None,
     };
     store::insert(&state.pg, &row).await.map_err(store_error)?;
+    if !ENDED.contains(&row.status.as_str()) {
+        return Ok(row);
+    }
+    // A batch that ended as it was created is settled now, with its files registered first,
+    // since asking about it later finds it settled and reads nothing more.
+    let answer = row.view.clone();
+    let row = take(state, row, answer).await?;
+    account(state, &row, &provider, &credential).await?;
     Ok(row)
 }
 
@@ -1000,6 +1069,7 @@ async fn output_file(
         catalogue_model_id: None,
         model: None,
         upstream_model: None,
+        demand: None,
         created_at: state.clock.now(),
         expires_at: None,
     };
@@ -1108,6 +1178,7 @@ async fn account(
         return Ok(());
     }
     let Some(&(_, dialect, kind)) = ENDPOINTS.iter().find(|(e, _, _)| *e == row.endpoint) else {
+        super::batch_limits::release_batch(state, row).await;
         return Ok(());
     };
     let prices: Option<Fields> = row
@@ -1158,6 +1229,7 @@ async fn account(
             .map(str::to_owned);
         state.sink.finish(state, o).await;
     }
+    super::batch_limits::release_batch(state, row).await;
     Ok(())
 }
 
@@ -1198,7 +1270,11 @@ async fn cancel(state: &AppState, caller: &Caller, id: &str) -> Result<BatchRow,
     )
     .await?;
     let answer = provider_json(&sent)?;
-    take(state, row, answer).await
+    let row = take(state, row, answer).await?;
+    if ENDED.contains(&row.status.as_str()) {
+        account(state, &row, &provider, &credential).await?;
+    }
+    Ok(row)
 }
 
 async fn list(state: &AppState, caller: &Caller, query: Option<&str>) -> Result<Value, KppError> {
