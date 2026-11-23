@@ -19,6 +19,7 @@ import { PublicPage } from "~/shell/public-page";
 import { usePageTitle } from "~/shell/title";
 import { readStored, writeStored } from "~/storage";
 import { useSubmit } from "./form";
+import { disabledUntil } from "~/shell/disabled-until";
 
 function requestToken(): string | null {
   return takeFragment("request") ?? readStored(AGENT_REQUEST_KEY, "session");
@@ -313,7 +314,14 @@ function ConsentForm({
         <Input label={t("common.name", "Name")} value={name} onChange={(e) => setName(e.target.value)} maxLength={100} error={fieldError(error, "name")} />
       </AgentGrantEditor>
       <div className="mt-8 flex flex-col gap-8">
-        <Button variant="primary" size="xl" fullWidth loading={busy} disabled={!name.trim() || busy} onClick={askFirst}>
+        <Button
+          variant="primary"
+          size="xl"
+          fullWidth
+          loading={busy}
+          {...disabledUntil(name.trim() ? undefined : t("public.agentNameNeeded", "Give the agent a name in Customize"), busy)}
+          onClick={askFirst}
+        >
           {t("public.authorizeAgent", "Authorize")}
         </Button>
         <Button variant="ghost" size="xl" fullWidth disabled={busy} onClick={() => void deny()}>

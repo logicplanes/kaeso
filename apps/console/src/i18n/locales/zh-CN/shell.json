@@ -48,6 +48,7 @@
   "shell.notFound.description": "链接可能已过期，或页面已移动。",
   "shell.notFound.title": "此页面不存在",
   "shell.opening": "正在打开 Kaeso…",
+  "shell.orgNameNeeded": "请为组织命名",
   "shell.orgSettings": "组织设置",
   "shell.orgSwitcher.description": "切换或打开设置",
   "shell.orgSwitcher.personDescription": "账户与退出登录",

@@ -13,6 +13,7 @@ import { sessionQuery } from "~/auth/session";
 import { usePageTitle } from "~/shell/title";
 import { fieldError } from "~/api/field-error";
 import { passwordHint, passwordOk, useSubmit } from "./form";
+import { disabledUntil } from "~/shell/disabled-until";
 import { t } from "~/i18n";
 import { readStored, writeStored } from "~/storage";
 import { INVITE_KEY } from "~/auth/user-data";
@@ -206,7 +207,9 @@ function Invitation({ token }: { token: string }) {
     );
   }
 
-  const ready = name.trim() && passwordOk(password);
+  const nameNeeded = name.trim() ? undefined : t("public.nameNeeded", "Enter your name");
+  const ready = !nameNeeded && passwordOk(password);
+  const createNeeds = nameNeeded ?? (passwordOk(password) ? undefined : t("public.passwordNeeded", "Enter a password of 12 to 128 characters"));
   return (
     <PublicPage
       title={title}
@@ -238,10 +241,10 @@ function Invitation({ token }: { token: string }) {
           description={passwordHint(password)}
           error={fieldError(error, "password")}
         />
-        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy && !byLink} disabled={!ready || busy}>
+        <Button type="submit" variant="primary" size="xl" fullWidth loading={busy && !byLink} {...disabledUntil(createNeeds, busy)}>
           {t("public.createAndJoin", "Create account and join")}
         </Button>
-        <Button size="xl" fullWidth loading={busy && byLink} disabled={!name.trim() || busy} onClick={() => void accept({ name: name.trim() })}>
+        <Button size="xl" fullWidth loading={busy && byLink} {...disabledUntil(nameNeeded, busy)} onClick={() => void accept({ name: name.trim() })}>
           {t("public.linkInstead", "Continue with a sign-in link instead")}
         </Button>
         <Text variant="small" tone="secondary" className="text-center">

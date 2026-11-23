@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Dialog, OTPInput, Input, Text } from "@logicplanes/kaeso-ui";
 import { toastApiError } from "~/api/toast-error";
 import { t } from "~/i18n";
+import { disabledUntil } from "~/shell/disabled-until";
 import { CONFIRMED_PATH, onConfirmed } from "./confirm-channel";
 import { settleRecentSignIn, signInAgainKind } from "./recent-sign-in-store";
 import { sessionQuery, useSession } from "./session";
@@ -159,7 +160,12 @@ export default function RecentSignInDialog() {
           <Button>{t("common.cancel", "Cancel")}</Button>
         </Dialog.Close>
         {step.kind === "choose" && (loading || ways.primary === "password") && (
-          <Button variant="primary" loading={busy || loading} disabled={!password} onClick={submitPassword}>
+          <Button
+            variant="primary"
+            loading={busy || loading}
+            {...disabledUntil(password || loading ? undefined : t("auth.recent.passwordNeeded", "Enter your password"), loading)}
+            onClick={submitPassword}
+          >
             {t("auth.recent.signIn", "Sign in")}
           </Button>
         )}
@@ -179,7 +185,20 @@ export default function RecentSignInDialog() {
           </Button>
         )}
         {step.kind === "totp" && (
-          <Button variant="primary" loading={busy} disabled={step.recovery ? !code.trim() : code.length < 6} onClick={() => submitCode(step)}>
+          <Button
+            variant="primary"
+            loading={busy}
+            {...disabledUntil(
+              step.recovery
+                ? code.trim()
+                  ? undefined
+                  : t("auth.recent.recoveryCodeNeeded", "Enter a recovery code")
+                : code.length < 6
+                  ? t("auth.recent.codeNeeded", "Enter the 6-digit code")
+                  : undefined,
+            )}
+            onClick={() => submitCode(step)}
+          >
             {t("auth.recent.verify", "Verify")}
           </Button>
         )}

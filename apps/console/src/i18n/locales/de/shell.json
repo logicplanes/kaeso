@@ -48,6 +48,7 @@
   "shell.notFound.description": "Der Link ist vielleicht veraltet, oder die Seite wurde verschoben.",
   "shell.notFound.title": "Diese Seite gibt es nicht",
   "shell.opening": "Kaeso wird geöffnet…",
+  "shell.orgNameNeeded": "Geben Sie der Organisation einen Namen",
   "shell.orgSettings": "Organisationseinstellungen",
   "shell.orgSwitcher.description": "Wechseln oder Einstellungen öffnen",
   "shell.orgSwitcher.personDescription": "Konto und Abmelden",

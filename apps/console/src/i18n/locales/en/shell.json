@@ -52,6 +52,7 @@
   "shell.notFound.description": "The link may be old, or the page moved.",
   "shell.notFound.title": "This page doesn't exist",
   "shell.opening": "Opening Kaeso…",
+  "shell.orgNameNeeded": "Give the organization a name",
   "shell.orgSettings": "Organization settings",
   "shell.orgSwitcher.description": "Switch or open settings",
   "shell.orgSwitcher.personDescription": "Account and sign out",

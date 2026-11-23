@@ -4,6 +4,7 @@ import { ORG, signedIn } from "~/test/fixtures";
 import { methods, signedInReply } from "~/test/fixtures/public";
 import { apiError, on, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
+import { expectDisabledBecause } from "~/test/disabled";
 
 const notifications = async () => within(await screen.findByRole("region", { name: "Notifications" }));
 
@@ -36,7 +37,7 @@ describe("setting up Kaeso", () => {
       "12 to 128 characters. A few unrelated words are easy to remember and hard to guess.",
     );
     const submit = screen.getByRole("button", { name: "Set up Kaeso" });
-    expect(submit).toBeDisabled();
+    expectDisabledBecause(submit, "Enter your name");
     await user.type(screen.getByLabelText("Password"), "short");
     expect(screen.getByLabelText("Password")).toHaveAccessibleDescription("7 more characters to go.");
     await user.type(screen.getByLabelText("Password"), "1234567");
