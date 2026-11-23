@@ -487,7 +487,7 @@ async fn mcp_sign_in_secrets_and_tokens_never_reach_the_log() {
         credential_mode: "shared",
         oauth_registration: (auth == "oauth").then_some("cimd"),
         scopes: &[],
-        change_policy: "hold",
+        auto_approve_tool_changes: false,
         created_by_kind: "system",
         created_by_id: None,
     };

@@ -13,7 +13,7 @@ order: 4
 3. Keep or change the name and the handle. The handle prefixes the server's tools for clients, such as `x__create_post`.
 4. Choose how Kaeso signs in: **No sign-in**, **Secret header** or **OAuth**, and whether the account is **Shared** or **Each person signs in**.
 5. For a shared secret header, enter the header's name and value. For shared OAuth, choose **Sign in to** the server: the sign-in opens in a new tab and the dialog shows **Connected as** the account once you're back.
-6. Choose the tools projects should offer. Read-only tools are chosen, and destructive ones are marked. Keep **Hold changed tools for review** on unless you control the server.
+6. Choose the tools projects should offer. Read-only tools are chosen, and destructive ones are marked. **Auto-approve tool changes** is on; turn it off to review each change the server makes.
 7. Choose the projects that use the server and choose **Add server**. The chosen tools are on in those projects.
 
 An address on a private network works only when the install allows its network in `mcp_servers.allowed_networks` ([configuration](../self-hosting/configuration.md)). Plain `http` works only on those networks.
@@ -26,9 +26,15 @@ Choose a server to open its sheet. Under **Connection**, **Sign in again** start
 
 For a server where each person signs in, the sheet lists no connection: every person connects their own account under **Account** › **Connections**. The server's tools appear once the first person has connected.
 
+## Tool changes
+
+**Auto-approve tool changes**, on by default, offers a tool's changed definition as soon as Kaeso finds it. Turned off, Kaeso holds each changed tool for review instead, and tells the people who manage MCP servers. Turning it on while tools wait for review approves them too, after you confirm; the audit log records the switch and each approval. Turn it off for a server you don't control to review each change before models see it.
+
+The sheet lists the server's tool changes, newest first, each with what became of it: **Auto-approved**, **Approved** or **Kept off** by someone, **Waiting for review**, **Changed again** before anyone decided, or **Changed back** to the approved definition. The audit log has every change Kaeso approved by itself as **Changed tool auto-approved**.
+
 ## Review a changed tool
 
-When a server changes a tool held for review, the sheet shows how many tools wait, and the tool shows **Changed** with **Review**. The review shows what changed in the title, description, input and output schema and hints, with the approved and the current definition's hash.
+When a server that doesn't auto-approve changes a tool, the sheet shows how many tools wait, and the tool shows **Changed** with **Review**. The review shows what changed in the title, description, input and output schema and hints, with the approved and the current definition's hash.
 
 - **Approve change** approves the definition you reviewed. Projects that have the tool on offer it again.
 - **Keep off** keeps the tool held and turns it off in every project.
@@ -39,7 +45,7 @@ If the server changes the tool again before you approve, nothing is approved, an
 
 - **Check for new tools** asks the server for its tools now, instead of at the next check.
 - **Choose projects** sets the projects that use the server. Each project still chooses its own tools.
-- **Edit** renames the server, changes its handle or turns **Hold changed tools for review** on or off. A new handle renames every tool for clients.
+- **Edit** renames the server or changes its handle. A new handle renames every tool for clients.
 - **Delete** removes the server with its sign-ins and tools. Every project's portal stops offering them.
 
 ## Next steps

@@ -299,6 +299,7 @@
   "format.audit.action.sourceRotate": "Schlüssel der Quelle ersetzt",
   "format.audit.action.sourceUpdate": "Quelle geändert",
   "format.audit.kind.sharedLink": "Geteilte Links",
+  "format.audit.action.toolAutoApprove": "Geändertes Tool automatisch freigegeben",
   "format.audit.kind.source": "Quellen",
   "format.targetKind.sharedLink": "Geteilter Link",
   "format.targetKind.source": "Quelle"

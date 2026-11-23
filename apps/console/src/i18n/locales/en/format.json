@@ -137,6 +137,7 @@
   "format.audit.action.storedResponsesProjectUpdate": "A project's stored responses changed",
   "format.audit.action.toolAccessUpdate": "Tool access changed",
   "format.audit.action.toolApprove": "Changed tool approved",
+  "format.audit.action.toolAutoApprove": "Changed tool auto-approved",
   "format.audit.action.toolReject": "Changed tool kept off",
   "format.audit.action.user2faReset": "Two-factor authentication reset",
   "format.audit.action.userCreateByInvite": "Account created from an invitation",

@@ -85,7 +85,7 @@ describe("Add MCP server", () => {
       url: "https://mcp.x.example/mcp",
       auth_method: "none",
       credential_mode: "shared",
-      change_policy: "hold",
+      auto_approve_tool_changes: true,
       projects: [PROJECT],
     });
     expect(requests("PATCH", PROJECT_TOOLS).map((r) => [r.params.project, r.body])).toEqual([[PROJECT, { tools: [{ id: "tool_get_me", enabled: true }] }]]);
@@ -167,13 +167,18 @@ describe("Add MCP server", () => {
 
     expect(await within(dialog).findByRole("heading", { name: "Which tools should projects offer?" })).toBeInTheDocument();
     expect(within(dialog).getByText("The server lists no tools.")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("switch", { name: /Hold changed tools for review/ }));
+    await user.click(within(dialog).getByRole("switch", { name: /Auto-approve tool changes/ }));
     await next(user, dialog);
     await user.click(within(dialog).getByRole("button", { name: "Add server" }));
 
     expect(await notifications().findByText("github.example added")).toBeInTheDocument();
     expect(requests("POST", PROBE).at(-1)?.body).toEqual({ url: "https://mcp.github.example/mcp", header: { name: "Authorization", value: "Bearer t-1" } });
-    expect(requests("POST", SERVERS)[0]?.body).toMatchObject({ auth_method: "header", credential_mode: "shared", change_policy: "accept", projects: [] });
+    expect(requests("POST", SERVERS)[0]?.body).toMatchObject({
+      auth_method: "header",
+      credential_mode: "shared",
+      auto_approve_tool_changes: false,
+      projects: [],
+    });
     expect(requests("POST", `${SERVER}/connection`)[0]?.body).toEqual({ header: { name: "Authorization", value: "Bearer t-1" } });
     expect(requests("PATCH", PROJECT_TOOLS)).toHaveLength(0);
   });
@@ -240,7 +245,7 @@ describe("Add MCP server", () => {
 
     expect(await notifications().findByText("mock-x added")).toBeInTheDocument();
     expect(requests("POST", SERVERS)).toHaveLength(1);
-    expect(requests("PATCH", SERVER)[0]?.body).toEqual({ change_policy: "hold", projects: [PROJECT, OTHER_PROJECT] });
+    expect(requests("PATCH", SERVER)[0]?.body).toEqual({ auto_approve_tool_changes: true, projects: [PROJECT, OTHER_PROJECT] });
     expect(requests("PATCH", PROJECT_TOOLS).map((r) => r.params.project)).toEqual([PROJECT, OTHER_PROJECT]);
   });
 
@@ -278,11 +283,11 @@ describe("Add MCP server", () => {
     await next(user, dialog);
     await next(user, dialog);
     expect(await within(dialog).findByText("The server lists no tools.")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("switch", { name: /Hold changed tools for review/ }));
+    await user.click(within(dialog).getByRole("switch", { name: /Auto-approve tool changes/ }));
     await next(user, dialog);
     await user.click(within(dialog).getByRole("button", { name: "Add server" }));
     expect(await notifications().findByText("X added")).toBeInTheDocument();
-    expect(requests("PATCH", SERVER)[0]?.body).toEqual({ name: "X", handle: "x", change_policy: "accept", projects: [] });
+    expect(requests("PATCH", SERVER)[0]?.body).toEqual({ name: "X", handle: "x", auto_approve_tool_changes: false, projects: [] });
   });
 
   it("takes a client registered by hand and links to the sign-in when the tab is blocked, until it expires", async () => {

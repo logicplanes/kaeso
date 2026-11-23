@@ -94,7 +94,7 @@ async fn server(pg: &PgPool, org: Uuid, handle: &str, auth: &str) -> Uuid {
             credential_mode: "shared",
             oauth_registration: (auth == "oauth").then_some("cimd"),
             scopes: &[],
-            change_policy: "hold",
+            auto_approve_tool_changes: false,
             created_by_kind: "system",
             created_by_id: None,
         },
@@ -149,7 +149,7 @@ async fn servers_are_stored_per_organization_with_unique_handles() {
             credential_mode: "shared",
             oauth_registration: None,
             scopes: &[],
-            change_policy: "hold",
+            auto_approve_tool_changes: false,
             created_by_kind: "system",
             created_by_id: None,
         },
@@ -176,7 +176,7 @@ async fn servers_are_stored_per_organization_with_unique_handles() {
         &Changes {
             name: Some("GitHub"),
             handle: Some("gh"),
-            change_policy: Some("accept"),
+            auto_approve_tool_changes: Some(true),
         },
     )
     .await
@@ -188,9 +188,9 @@ async fn servers_are_stored_per_organization_with_unique_handles() {
         (
             row.name.as_str(),
             row.handle.as_str(),
-            row.change_policy.as_str()
+            row.auto_approve_tool_changes
         ),
-        ("GitHub", "gh", "accept")
+        ("GitHub", "gh", true)
     );
     assert_eq!(row.revision, 2);
     assert_eq!(
@@ -258,7 +258,7 @@ async fn the_server_table_refuses_what_kaeso_would_never_write() {
                 credential_mode: mode,
                 oauth_registration: registration,
                 scopes: &[],
-                change_policy: "hold",
+                auto_approve_tool_changes: false,
                 created_by_kind: "system",
                 created_by_id: None,
             },
@@ -638,9 +638,23 @@ async fn tools_keep_their_definition_and_hold_changes() {
     assert!(tools::get(&s.pg, globex.id, post).await.unwrap().is_none());
 
     assert!(
+        !tools::update_definition(
+            &s.pg,
+            post,
+            &[7; 32],
+            &definition("create_post", &schema, &[3; 32]),
+            None,
+            at(5)
+        )
+        .await
+        .unwrap(),
+        "a definition someone else changed meanwhile is left"
+    );
+    assert!(
         tools::update_definition(
             &s.pg,
             post,
+            &[1; 32],
             &definition("create_post", &schema, &[3; 32]),
             None,
             at(5)
@@ -658,6 +672,7 @@ async fn tools_keep_their_definition_and_hold_changes() {
         tools::update_definition(
             &s.pg,
             post,
+            &[3; 32],
             &definition("create_post", &schema, &[1; 32]),
             None,
             at(6)
@@ -676,6 +691,7 @@ async fn tools_keep_their_definition_and_hold_changes() {
     tools::update_definition(
         &s.pg,
         post,
+        &[1; 32],
         &definition("create_post", &schema, &[4; 32]),
         Some(&Approval {
             hash: &[4; 32],
@@ -692,6 +708,7 @@ async fn tools_keep_their_definition_and_hold_changes() {
         !tools::update_definition(
             &s.pg,
             post,
+            &[4; 32],
             &definition("renamed", &schema, &[4; 32]),
             None,
             at(8)
@@ -1436,4 +1453,104 @@ async fn tool_calls_are_logged_and_deleted_with_the_request_log() {
     })
     .await;
     s.cleanup().await;
+}
+
+#[tokio::test]
+async fn the_upgrade_turns_auto_approve_on_and_keeps_held_changes_in_the_history() {
+    const BEFORE: i64 = 20261123010000;
+    let s = TestServices::start().await;
+    let schema = format!("upgrade_{}", Uuid::now_v7().simple());
+    let mut conn = s.pg.acquire().await.unwrap();
+    for sql in [
+        format!("CREATE SCHEMA {schema}"),
+        format!("SET search_path TO {schema}"),
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(sql))
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+    }
+    kaeso_store::pg::MIGRATOR
+        .run_to(BEFORE, &mut *conn)
+        .await
+        .unwrap();
+    let (org, hold, accept, held, active) = (
+        Uuid::now_v7(),
+        Uuid::now_v7(),
+        Uuid::now_v7(),
+        Uuid::now_v7(),
+        Uuid::now_v7(),
+    );
+    sqlx::query(
+        "INSERT INTO organizations (id, name, metadata_retention_days, content_retention_days) \
+         VALUES ($1, 'Acme', 90, 30)",
+    )
+    .bind(org)
+    .execute(&mut *conn)
+    .await
+    .unwrap();
+    for (id, handle, policy) in [(hold, "x", "hold"), (accept, "gh", "accept")] {
+        sqlx::query(
+            "INSERT INTO mcp_servers (id, org_id, handle, name, url, auth_method, change_policy, created_by_kind) \
+             VALUES ($1, $2, $3, 'X', 'https://mcp.example.com/mcp', 'none', $4, 'system')",
+        )
+        .bind(id)
+        .bind(org)
+        .bind(handle)
+        .bind(policy)
+        .execute(&mut *conn)
+        .await
+        .unwrap();
+    }
+    for (id, name, state, hash) in [
+        (held, "create_post", "changed", [2u8; 32]),
+        (active, "search", "active", [1u8; 32]),
+    ] {
+        sqlx::query(
+            "INSERT INTO mcp_tools (id, server_id, org_id, name, input_schema, definition_hash, \
+             approved_hash, approved, state, first_seen_at, changed_at) \
+             VALUES ($1, $2, $3, $4, '{}', $5, $6, '{\"name\": \"x\"}', $7, $8, $8)",
+        )
+        .bind(id)
+        .bind(hold)
+        .bind(org)
+        .bind(name)
+        .bind(hash.as_slice())
+        .bind([1u8; 32].as_slice())
+        .bind(state)
+        .bind(at(3))
+        .execute(&mut *conn)
+        .await
+        .unwrap();
+    }
+
+    kaeso_store::pg::MIGRATOR.run(&mut *conn).await.unwrap();
+
+    let on: Vec<(Uuid, bool)> =
+        sqlx::query_as("SELECT id, auto_approve_tool_changes FROM mcp_servers ORDER BY handle")
+            .fetch_all(&mut *conn)
+            .await
+            .unwrap();
+    assert_eq!(on, [(accept, true), (hold, true)], "on for every server");
+    type HistoryRow = (Uuid, Vec<u8>, Vec<u8>, OffsetDateTime, Option<String>);
+    let history: Vec<HistoryRow> = sqlx::query_as(
+        "SELECT tool_id, from_hash, to_hash, detected_at, outcome FROM mcp_tool_changes",
+    )
+    .fetch_all(&mut *conn)
+    .await
+    .unwrap();
+    assert_eq!(
+        history,
+        [(held, vec![1; 32], vec![2; 32], at(3), None)],
+        "the held change waits in the history for the next check to approve it"
+    );
+    for sql in [
+        "SET search_path TO public".to_owned(),
+        format!("DROP SCHEMA {schema} CASCADE"),
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(sql))
+            .execute(&mut *conn)
+            .await
+            .unwrap();
+    }
 }

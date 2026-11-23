@@ -1,9 +1,9 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { McpServerView, McpToolView } from "~/api/generated/types";
-import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, PROJECT, signedIn, withRights } from "~/test/fixtures";
+import type { McpServerView, McpToolChangeEntry, McpToolView } from "~/api/generated/types";
+import { ALL_ORG_RIGHTS, ORG, OTHER_PROJECT, PROJECT, USER, signedIn, withRights } from "~/test/fixtures";
 import { hoverReason, member, notifications } from "~/test/fixtures/org";
-import { SERVER, SERVERS, SERVER_TOOLS, mcpConnection, mcpServer, mcpTool, obj, probeView } from "~/test/fixtures/mcp";
+import { SERVER, SERVERS, SERVER_CHANGES, SERVER_TOOLS, mcpConnection, mcpServer, mcpTool, mcpToolChange, obj, probeView } from "~/test/fixtures/mcp";
 import { apiError, noContent, on, page, requests } from "~/test/network";
 import { renderApp } from "~/test/render";
 
@@ -18,7 +18,7 @@ const changed = mcpTool({
   annotations: obj({ destructiveHint: true }),
 });
 
-function serve(servers: McpServerView[], tools: McpToolView[] = [mcpTool(), changed]) {
+function serve(servers: McpServerView[], tools: McpToolView[] = [mcpTool(), changed], changes: McpToolChangeEntry[] = []) {
   on("GET", "orgs/:org/members", page([member()]));
   on("GET", SERVERS, { data: servers });
   on(
@@ -28,6 +28,7 @@ function serve(servers: McpServerView[], tools: McpToolView[] = [mcpTool(), chan
       servers.find((s) => s.id === params.server) ?? apiError(404, "not_found", "No such MCP server, or you cannot see it."),
   );
   on("GET", SERVER_TOOLS, page(tools));
+  on("GET", SERVER_CHANGES, page(changes));
 }
 
 const table = () => screen.findByRole("grid", { name: "MCP servers" });
@@ -199,7 +200,8 @@ describe("an MCP server's sheet", () => {
     // Handle, version and id are set alike: mono text on the values' edge, not a chip.
     for (const value of ["x", "2026-07-28", "mcp_x"]) expect(within(s).getByText(value).closest("dd")).toHaveClass("mono");
     expect(within(s).queryByText("x", { selector: "code" })).not.toBeInTheDocument();
-    expect(within(s).getByText("Held for review")).toBeInTheDocument();
+    expect(within(s).getByRole("switch", { name: /Auto-approve tool changes/ })).not.toBeChecked();
+    expect(await within(s).findByText("No tool has changed yet")).toBeInTheDocument();
     expect(within(s).getByText("Ada Okafor (you), 15 Oct 2026")).toBeInTheDocument();
     expect(within(s).getByText("Connected as @kaesoapp")).toBeInTheDocument();
     expect(within(s).getByText("Never")).toBeInTheDocument();
@@ -278,19 +280,19 @@ describe("an MCP server's sheet", () => {
   it("checks a server for new tools", async () => {
     signedIn();
     serve([mcpServer()]);
-    let found = { added: ["post_thread"], held: [], accepted: [], removed: 0, skipped: [], server: mcpServer() };
+    let found = { added: ["post_thread"], held: [] as string[], auto_approved: ["search_posts"], removed: 0, skipped: [], server: mcpServer() };
     on("POST", `${SERVER}/refresh`, () => found);
     const { user } = await renderApp(`${PATH}?server=mcp_x`);
     const s = await sheet("X");
     await user.click(await within(s).findByRole("button", { name: "Check for new tools" }));
-    expect(await notifications().findByText("1 new and 0 changed tools found")).toBeInTheDocument();
-    found = { ...found, added: [] };
+    expect(await notifications().findByText("1 new and 1 changed tools found")).toBeInTheDocument();
+    found = { ...found, added: [], auto_approved: [] };
     await user.click(within(s).getByRole("button", { name: "Server actions" }));
     await user.click(await screen.findByRole("menuitem", { name: "Check for new tools" }));
     expect(await notifications().findByText("No new or changed tools")).toBeInTheDocument();
   });
 
-  it("renames a server, changes its handle and lets changed tools through", async () => {
+  it("renames a server and changes its handle", async () => {
     signedIn();
     serve([mcpServer()]);
     on("PATCH", SERVER, ({ body }: { body: Record<string, unknown> }) =>
@@ -312,11 +314,11 @@ describe("an MCP server's sheet", () => {
     await user.clear(handle);
     await user.type(handle, "x-posts");
     expect(within(dialog).getByText("Its tools are named x_posts__tool outside Kaeso.")).toBeInTheDocument();
-    await user.click(within(dialog).getByRole("switch", { name: /Hold changed tools for review/ }));
+    expect(within(dialog).queryByRole("switch")).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
     expect(await notifications().findByText("X posts saved")).toBeInTheDocument();
     const sent = requests("PATCH", SERVER)[0];
-    expect(sent?.body).toEqual({ name: "X posts", handle: "x-posts", change_policy: "accept" });
+    expect(sent?.body).toEqual({ name: "X posts", handle: "x-posts" });
     expect(sent?.headers.get("if-match")).toBe('"3"');
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "Edit X" })).not.toBeInTheDocument());
     await user.click(within(s).getByRole("button", { name: "Server actions" }));
@@ -329,7 +331,95 @@ describe("an MCP server's sheet", () => {
     again = await screen.findByRole("dialog", { name: "Edit X" });
     await user.type(within(again).getByRole("textbox", { name: "Name" }), "{Enter}");
     await waitFor(() => expect(requests("PATCH", SERVER)).toHaveLength(2));
-    expect(requests("PATCH", SERVER)[1]?.body).toEqual({ change_policy: "hold" });
+    expect(requests("PATCH", SERVER)[1]?.body).toEqual({});
+  });
+
+  it("turns auto-approve on after saying the waiting changes are approved too, and off again at once", async () => {
+    signedIn();
+    serve([mcpServer()]);
+    on("PATCH", SERVER, ({ body }: { body: { auto_approve_tool_changes: boolean } }) =>
+      mcpServer({ auto_approve_tool_changes: body.auto_approve_tool_changes, tools: { total: 3, changed: 0 } }),
+    );
+    const { user } = await renderApp(`${PATH}?server=mcp_x`);
+    const s = await sheet("X");
+    await within(s).findByText("x__create_post");
+    await user.click(within(s).getByRole("switch", { name: /Auto-approve tool changes/ }));
+    const confirm = await screen.findByRole("alertdialog", { name: "Auto-approve tool changes of X?" });
+    expect(confirm).toHaveTextContent("The 1 tool waiting for review is approved too; projects that have them on offer them again.");
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    expect(requests("PATCH", SERVER)).toHaveLength(0);
+    await user.click(within(s).getByRole("switch", { name: /Auto-approve tool changes/ }));
+    on("PATCH", SERVER, apiError(412, "conflict", "Changed meanwhile."));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Turn on and approve" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    on("PATCH", SERVER, ({ body }: { body: { auto_approve_tool_changes: boolean } }) =>
+      mcpServer({ auto_approve_tool_changes: body.auto_approve_tool_changes, tools: { total: 3, changed: 0 } }),
+    );
+    await user.click(within(s).getByRole("switch", { name: /Auto-approve tool changes/ }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Turn on and approve" }));
+    expect(await notifications().findByText("X auto-approves tool changes")).toBeInTheDocument();
+    expect(requests("PATCH", SERVER).at(-1)?.body).toEqual({ auto_approve_tool_changes: true });
+    expect(requests("PATCH", SERVER).at(-1)?.headers.get("if-match")).toBe('"3"');
+  });
+
+  it("turns auto-approve off without asking", async () => {
+    signedIn();
+    serve([mcpServer({ auto_approve_tool_changes: true, tools: { total: 2, changed: 0 } })], [mcpTool()]);
+    on("PATCH", SERVER, mcpServer({ auto_approve_tool_changes: false }));
+    const { user } = await renderApp(`${PATH}?server=mcp_x`);
+    const s = await sheet("X");
+    const toggle = await within(s).findByRole("switch", { name: /Auto-approve tool changes/ });
+    expect(toggle).toBeChecked();
+    await user.click(toggle);
+    expect(await notifications().findByText("X holds tool changes for review")).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(requests("PATCH", SERVER)[0]?.body).toEqual({ auto_approve_tool_changes: false });
+  });
+
+  it("turns auto-approve on at once when no change waits", async () => {
+    signedIn();
+    serve([mcpServer({ tools: { total: 1, changed: 0 } })], [mcpTool()]);
+    on("PATCH", SERVER, mcpServer({ auto_approve_tool_changes: true }));
+    const { user } = await renderApp(`${PATH}?server=mcp_x`);
+    const s = await sheet("X");
+    await within(s).findByText("x__get_me");
+    await user.click(within(s).getByRole("switch", { name: /Auto-approve tool changes/ }));
+    expect(await notifications().findByText("X auto-approves tool changes")).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  it("lists each tool change with how it was decided", async () => {
+    signedIn();
+    serve(
+      [mcpServer()],
+      [mcpTool(), changed],
+      [
+        mcpToolChange({ name: "create_post", outcome: "waiting", decided_by: null, decided_at: null }),
+        mcpToolChange(),
+        mcpToolChange({ id: "tchg_2", outcome: "approved", decided_by: { kind: "user", id: USER } }),
+        mcpToolChange({ id: "tchg_2b", outcome: "approved", decided_by: null }),
+        mcpToolChange({ id: "tchg_3", outcome: "kept_off", decided_by: { kind: "user", id: USER } }),
+        mcpToolChange({ id: "tchg_3b", outcome: "kept_off", decided_by: null }),
+        mcpToolChange({ id: "tchg_4", outcome: "superseded" }),
+        mcpToolChange({ id: "tchg_5", outcome: "restored" }),
+      ],
+    );
+    await renderApp(`${PATH}?server=mcp_x`);
+    const s = await sheet("X");
+    const history = await within(s).findByRole("grid", { name: "Tool changes" });
+    const rows = await within(history).findAllByRole("row");
+    expect(rows.map((r) => r.textContent)).toEqual([
+      expect.stringContaining("Waiting for review"),
+      expect.stringContaining("Auto-approved"),
+      expect.stringContaining("Approved by Ada Okafor (you)"),
+      expect.stringContaining("Approved"),
+      expect.stringContaining("Kept off by Ada Okafor (you)"),
+      expect.stringContaining("Kept off"),
+      expect.stringContaining("Changed again"),
+      expect.stringContaining("Changed back"),
+    ]);
+    expect(rows[1]).toHaveTextContent("x__search_posts");
+    expect(rows[1]).not.toHaveTextContent("Kaeso");
   });
 
   it("chooses the projects that use a server", async () => {
@@ -497,7 +587,7 @@ describe("an MCP server's sheet", () => {
           name: "Docs",
           auth_method: "none",
           connection: null,
-          change_policy: "accept",
+          auto_approve_tool_changes: true,
           server_info: null,
           protocol_version: null,
           last_checked_at: null,
@@ -514,7 +604,7 @@ describe("an MCP server's sheet", () => {
     await user.click(await row("Docs"));
     s = await sheet("Docs");
     expect(await within(s).findByText("Tools appear once Kaeso can sign in and list them.")).toBeInTheDocument();
-    expect(within(s).getByText("Offered as they come")).toBeInTheDocument();
+    expect(within(s).getByRole("switch", { name: /Auto-approve tool changes/ })).toBeChecked();
     expect(within(s).getAllByText("Nothing answered.")).not.toHaveLength(0);
   });
 
@@ -522,10 +612,13 @@ describe("an MCP server's sheet", () => {
     withRights(ALL_ORG_RIGHTS.filter((r) => r !== "mcp_servers.manage"));
     serve([mcpServer()]);
     on("GET", SERVER_TOOLS, apiError(403, "permission_denied", "You can't see these tools."));
+    on("GET", SERVER_CHANGES, apiError(403, "permission_denied", "You can't see these changes."));
     const { user } = await renderApp(`${PATH}?server=mcp_x`);
     const s = await sheet("X");
     await hoverReason(user, await within(s).findByRole("button", { name: "Server actions" }), /Manage MCP servers/);
     await hoverReason(user, within(s).getByRole("button", { name: "Sign in again" }), /Manage MCP servers/);
+    expect(within(s).getByRole("switch", { name: /Auto-approve tool changes/ })).toHaveAttribute("aria-disabled", "true");
+    expect(within(s).getByText(/Manage MCP servers/)).toBeInTheDocument();
     expect(await within(s).findByText("No tools listed yet")).toBeInTheDocument();
     expect(within(s).queryByText("1 tool waits for review")).not.toBeInTheDocument();
   });

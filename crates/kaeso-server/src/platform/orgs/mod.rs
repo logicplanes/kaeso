@@ -168,6 +168,7 @@ pub fn routes(s: &Secure) -> OpenApiRouter<AppState> {
         .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::refresh)))
         .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::list_tools)))
         .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::change)))
+        .routes(s.route(Access::Org(R::McpServersView), routes!(mcp_servers::tool_changes)))
         .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::approve)))
         .routes(s.route(Access::Org(R::McpServersManage), routes!(mcp_servers::reject)))
         .routes(s.route(Access::Org(R::UsageShare), routes!(crate::platform::share::create)))

@@ -223,6 +223,7 @@ pub fn kinds(action: crate::platform::audit::Action) -> &'static [Kind] {
         | A::SourceRotate
         | A::SourceUpdate
         | A::ToolApprove
+        | A::ToolAutoApprove
         | A::ToolReject
         | A::ToolAccessUpdate
         | A::UserCreateByInvite

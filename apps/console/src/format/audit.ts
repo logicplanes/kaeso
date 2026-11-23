@@ -167,6 +167,7 @@ const ACTION_LABELS: Record<string, () => string> = {
   "service_account.update": () => t("format.audit.action.serviceAccountUpdate", "Service account changed"),
   "service_account.archive": () => t("format.audit.action.serviceAccountArchive", "Service account archived"),
   "tool.approve": () => t("format.audit.action.toolApprove", "Changed tool approved"),
+  "tool.auto_approve": () => t("format.audit.action.toolAutoApprove", "Changed tool auto-approved"),
   "tool.reject": () => t("format.audit.action.toolReject", "Changed tool kept off"),
   "tool_access.update": () => t("format.audit.action.toolAccessUpdate", "Tool access changed"),
   "user.signup": () => t("format.audit.action.userSignup", "Account created by sign-up"),

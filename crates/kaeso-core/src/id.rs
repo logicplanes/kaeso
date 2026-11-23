@@ -175,6 +175,7 @@ public_id!(WebhookId, "whk_");
 public_id!(WebhookMessageId, "msg_");
 public_id!(McpConnectionId, "conn_");
 public_id!(ToolId, "tool_");
+public_id!(ToolChangeId, "tchg_");
 public_id!(PortalGrantId, "grant_");
 public_id!(ToolCallId, "call_");
 public_id!(VideoId, "video_");

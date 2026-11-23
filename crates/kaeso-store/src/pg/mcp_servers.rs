@@ -20,7 +20,7 @@ pub struct ServerRow {
     pub oauth_client_id: Option<String>,
     pub has_client_secret: bool,
     pub scopes: Vec<String>,
-    pub change_policy: String,
+    pub auto_approve_tool_changes: bool,
     pub protocol_version: Option<String>,
     pub server_info: Option<Value>,
     pub status: String,
@@ -44,7 +44,7 @@ pub struct NewServer<'a> {
     pub credential_mode: &'a str,
     pub oauth_registration: Option<&'a str>,
     pub scopes: &'a [String],
-    pub change_policy: &'a str,
+    pub auto_approve_tool_changes: bool,
     pub created_by_kind: &'a str,
     pub created_by_id: Option<Uuid>,
 }
@@ -53,7 +53,7 @@ pub struct NewServer<'a> {
 pub struct Changes<'a> {
     pub name: Option<&'a str>,
     pub handle: Option<&'a str>,
-    pub change_policy: Option<&'a str>,
+    pub auto_approve_tool_changes: Option<bool>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -98,7 +98,7 @@ fn is_unique_violation(e: &sqlx::Error) -> bool {
 pub async fn insert(db: impl PgExecutor<'_>, s: &NewServer<'_>) -> Result<bool, StoreError> {
     Ok(sqlx::query!(
         "INSERT INTO mcp_servers (id, org_id, handle, name, url, auth_method, credential_mode, \
-         oauth_registration, scopes, change_policy, created_by_kind, created_by_id) \
+         oauth_registration, scopes, auto_approve_tool_changes, created_by_kind, created_by_id) \
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) \
          ON CONFLICT (org_id, handle) DO NOTHING",
         s.id,
@@ -110,7 +110,7 @@ pub async fn insert(db: impl PgExecutor<'_>, s: &NewServer<'_>) -> Result<bool, 
         s.credential_mode,
         s.oauth_registration,
         s.scopes,
-        s.change_policy,
+        s.auto_approve_tool_changes,
         s.created_by_kind,
         s.created_by_id
     )
@@ -125,7 +125,7 @@ pub async fn list(db: impl PgExecutor<'_>, org_id: Uuid) -> Result<Vec<ServerRow
         ServerRow,
         "SELECT id, org_id, handle, name, url, auth_method, credential_mode, oauth_registration, \
          oauth_issuer, oauth_client_id, oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", \
-         scopes, change_policy, protocol_version, server_info, status, last_checked_at, last_error, \
+         scopes, auto_approve_tool_changes, protocol_version, server_info, status, last_checked_at, last_error, \
          created_by_kind, created_by_id, created_at, updated_at, revision \
          FROM mcp_servers WHERE org_id = $1 ORDER BY name, handle",
         org_id
@@ -143,7 +143,7 @@ pub async fn get(
         ServerRow,
         "SELECT id, org_id, handle, name, url, auth_method, credential_mode, oauth_registration, \
          oauth_issuer, oauth_client_id, oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", \
-         scopes, change_policy, protocol_version, server_info, status, last_checked_at, last_error, \
+         scopes, auto_approve_tool_changes, protocol_version, server_info, status, last_checked_at, last_error, \
          created_by_kind, created_by_id, created_at, updated_at, revision \
          FROM mcp_servers WHERE org_id = $1 AND id = $2",
         org_id,
@@ -158,7 +158,7 @@ pub async fn get_by_id(db: impl PgExecutor<'_>, id: Uuid) -> Result<Option<Serve
         ServerRow,
         "SELECT id, org_id, handle, name, url, auth_method, credential_mode, oauth_registration, \
          oauth_issuer, oauth_client_id, oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", \
-         scopes, change_policy, protocol_version, server_info, status, last_checked_at, last_error, \
+         scopes, auto_approve_tool_changes, protocol_version, server_info, status, last_checked_at, last_error, \
          created_by_kind, created_by_id, created_at, updated_at, revision \
          FROM mcp_servers WHERE id = $1",
         id
@@ -176,17 +176,17 @@ pub async fn update(
     let row = sqlx::query_as!(
         ServerRow,
         "UPDATE mcp_servers SET name = COALESCE($3, name), handle = COALESCE($4, handle), \
-         change_policy = COALESCE($5, change_policy), revision = revision + 1, updated_at = now() \
+         auto_approve_tool_changes = COALESCE($5, auto_approve_tool_changes), revision = revision + 1, updated_at = now() \
          WHERE org_id = $1 AND id = $2 \
          RETURNING id, org_id, handle, name, url, auth_method, credential_mode, oauth_registration, \
          oauth_issuer, oauth_client_id, oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", \
-         scopes, change_policy, protocol_version, server_info, status, last_checked_at, last_error, \
+         scopes, auto_approve_tool_changes, protocol_version, server_info, status, last_checked_at, last_error, \
          created_by_kind, created_by_id, created_at, updated_at, revision",
         org_id,
         id,
         c.name,
         c.handle,
-        c.change_policy
+        c.auto_approve_tool_changes
     )
     .fetch_optional(db)
     .await;
@@ -325,7 +325,7 @@ pub async fn of_project(
         ServerRow,
         "SELECT s.id, s.org_id, s.handle, s.name, s.url, s.auth_method, s.credential_mode, s.oauth_registration, \
          s.oauth_issuer, s.oauth_client_id, s.oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", \
-         s.scopes, s.change_policy, s.protocol_version, s.server_info, s.status, s.last_checked_at, s.last_error, \
+         s.scopes, s.auto_approve_tool_changes, s.protocol_version, s.server_info, s.status, s.last_checked_at, s.last_error, \
          s.created_by_kind, s.created_by_id, s.created_at, s.updated_at, s.revision \
          FROM project_mcp_servers ps JOIN mcp_servers s ON s.id = ps.server_id \
          WHERE ps.project_id = $1 ORDER BY s.name, s.handle",
@@ -466,7 +466,7 @@ pub async fn per_person_of_member(
         ServerRow,
         "SELECT s.id, s.org_id, s.handle, s.name, s.url, s.auth_method, s.credential_mode, s.oauth_registration, \
          s.oauth_issuer, s.oauth_client_id, s.oauth_client_secret_ciphertext IS NOT NULL AS \"has_client_secret!\", \
-         s.scopes, s.change_policy, s.protocol_version, s.server_info, s.status, s.last_checked_at, s.last_error, \
+         s.scopes, s.auto_approve_tool_changes, s.protocol_version, s.server_info, s.status, s.last_checked_at, s.last_error, \
          s.created_by_kind, s.created_by_id, s.created_at, s.updated_at, s.revision \
          FROM mcp_servers s JOIN org_memberships m ON m.org_id = s.org_id AND m.user_id = $1 \
          WHERE s.credential_mode = 'per_user' AND s.auth_method <> 'none' ORDER BY s.name, s.handle",
