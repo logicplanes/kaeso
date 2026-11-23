@@ -960,7 +960,16 @@ async fn record_with(state: &AppState, o: &Outcome, body: Option<Bytes>) {
         fallbacks: if o.fallbacks.is_empty() {
             String::new()
         } else {
-            serde_json::to_string(&o.fallbacks).unwrap_or_default()
+            let redacted: Vec<crate::model_api::hooks::FellBack> = o
+                .fallbacks
+                .iter()
+                .map(|f| {
+                    let mut f = f.clone();
+                    f.error_message = kaeso_core::secret::redact_tokens(&f.error_message);
+                    f
+                })
+                .collect();
+            serde_json::to_string(&redacted).unwrap_or_default()
         },
         media_unit: o
             .media
@@ -1028,6 +1037,7 @@ pub async fn record_tool_call(
             return;
         }
     };
+    row.error_message = kaeso_core::secret::redact_tokens(&row.error_message);
     row.expires_at = days(row.started_at, cfg.metadata_days);
     let keep = if cfg.org_media && cfg.project_media {
         Keep::media()

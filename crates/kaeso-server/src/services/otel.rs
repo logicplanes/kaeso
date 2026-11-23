@@ -449,6 +449,10 @@ pub fn record_tool_call(state: &AppState, call: &ToolCall<'_>) {
     if !exporter.sampled(&trace_id, call.parent) {
         return;
     }
+    exporter.push(vec![tool_call_span(call, trace_id).into_value()]);
+}
+
+fn tool_call_span(call: &ToolCall<'_>, trace_id: [u8; 16]) -> Span {
     let start = call.at;
     let mut span = Span::new(
         trace_id,
@@ -486,9 +490,9 @@ pub fn record_tool_call(state: &AppState, call: &ToolCall<'_>) {
     a.push(string("kaeso.tool_call.status", call.status));
     if !call.error_type.is_empty() {
         a.push(string("error.type", call.error_type));
-        span.error = Some(call.error_message.to_owned());
+        span.error = Some(kaeso_core::secret::redact_tokens(call.error_message));
     }
-    exporter.push(vec![span.into_value()]);
+    span
 }
 
 struct Span {
@@ -722,6 +726,10 @@ fn request_trace(o: &Outcome, trace_id: [u8; 16]) -> Trace {
     }
     a.push(boolean("gen_ai.request.stream", o.stream));
     a.push(int("http.response.status_code", o.status));
+    let redacted_error = o
+        .error_message
+        .as_deref()
+        .map(kaeso_core::secret::redact_tokens);
     if o.status >= 400 {
         a.push(string(
             "error.type",
@@ -729,7 +737,7 @@ fn request_trace(o: &Outcome, trace_id: [u8; 16]) -> Trace {
         ));
     }
     if o.status >= 500 {
-        server.error = Some(o.error_message.clone().unwrap_or_default());
+        server.error = Some(redacted_error.clone().unwrap_or_default());
     }
     let a = &mut server.attributes;
     a.push(string("kaeso.request_id", o.request_id.to_string()));
@@ -833,7 +841,7 @@ fn request_trace(o: &Outcome, trace_id: [u8; 16]) -> Trace {
                 "error.type",
                 o.error_kind.clone().unwrap_or_else(|| o.status.to_string()),
             ));
-            step.error = Some(o.error_message.clone().unwrap_or_default());
+            step.error = Some(redacted_error.unwrap_or_default());
         }
         clients.push(step);
     }
@@ -876,7 +884,7 @@ fn fallback_span(
     if f.retried {
         a.push(boolean("kaeso.retried", true));
     }
-    span.error = Some(f.error_message.clone());
+    span.error = Some(kaeso_core::secret::redact_tokens(&f.error_message));
     span
 }
 
@@ -1185,5 +1193,105 @@ mod tests {
         assert_eq!(provider_name("google"), "gcp.gemini");
         assert_eq!(provider_name("openai"), "openai");
         assert_eq!(provider_name("fireworks-ai"), "fireworks-ai");
+    }
+
+    #[test]
+    fn error_messages_on_spans_have_tokens_redacted() {
+        let outcome = Outcome {
+            request_id: kaeso_core::id::RequestId::new(),
+            caller: None,
+            sees_cost: false,
+            sees_limits: false,
+            source: crate::model_api::hooks::Source::Api,
+            ingress: DialectId::OpenAiChat,
+            kind: RequestKind::Generate,
+            egress: Some(DialectId::OpenAiChat),
+            provider: Some("openai"),
+            custom_provider: None,
+            credential_id: None,
+            requested_model: Some("gpt-4o".into()),
+            catalogue_model_id: None,
+            model_id: Some("gpt-4o".into()),
+            response_model: None,
+            prices: None,
+            stream: false,
+            status: 502,
+            error_kind: Some("provider_error".into()),
+            error_message: Some("upstream closed with sk-proj-secret1234567890".into()),
+            usage: None,
+            started_at: OffsetDateTime::UNIX_EPOCH,
+            duration: Duration::from_millis(50),
+            ttfb: None,
+            upload: None,
+            overhead: Some(Duration::from_millis(5)),
+            stream_processing: None,
+            user_agent: None,
+            tags: Vec::new(),
+            trace: None,
+            client_ip: None,
+            upstream_request_id: None,
+            request_body: None,
+            request_logged: None,
+            reply: None,
+            cancelled: false,
+            stream_progress: None,
+            usage_estimated: false,
+            content_kept: false,
+            media_kept: false,
+            media_reply: None,
+            media_reply_logged: None,
+            cache_breakpoints: None,
+            response_cache: None,
+            alias: None,
+            line: None,
+            fallbacks: vec![FellBack {
+                catalogue_model_id: uuid::Uuid::nil(),
+                path: "route.primary".into(),
+                model: "xai/grok-4".into(),
+                status: 502,
+                error_kind: "provider_error".into(),
+                error_message: "refused key xai-secret1234567890".into(),
+                duration_ms: 10,
+                skipped: false,
+                retried: false,
+            }],
+            gemini: None,
+            image: None,
+            transcription: None,
+            elevenlabs: None,
+            realtime: None,
+            media: None,
+            video: None,
+            generation: None,
+            content_type: None,
+            guardrails: Vec::new(),
+            log_masks: Vec::new(),
+        };
+        let trace = request_trace(&outcome, [2; 16]);
+        let server_err = trace.server.error.as_deref().unwrap_or_default();
+        assert!(!server_err.contains("sk-proj-secret"), "{server_err}");
+        assert_eq!(trace.clients.len(), 2);
+        let fallback_err = trace.clients[0].error.as_deref().unwrap_or_default();
+        assert!(!fallback_err.contains("xai-secret"), "{fallback_err}");
+        let step_err = trace.clients[1].error.as_deref().unwrap_or_default();
+        assert!(!step_err.contains("sk-proj-secret"), "{step_err}");
+
+        let call = ToolCall {
+            parent: None,
+            at: OffsetDateTime::UNIX_EPOCH,
+            duration: Duration::from_millis(12),
+            tool: "search",
+            org_id: uuid::Uuid::nil(),
+            project_id: uuid::Uuid::nil(),
+            server_id: uuid::Uuid::nil(),
+            key_id: None,
+            client: "cli",
+            status: "error",
+            error_type: "upstream_error",
+            error_message: "server answered with sk-ant-api03-secret1234567890",
+        };
+        let tool_span = tool_call_span(&call, [3; 16]);
+        let tool_err = tool_span.error.as_deref().unwrap_or_default();
+        assert!(!tool_err.contains("sk-ant-api03-secret"), "{tool_err}");
     }
 }
