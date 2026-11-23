@@ -302,6 +302,7 @@ describe("shared rows", () => {
   it("are named by what they are", () => {
     expect(rowLabel("key", row({ key: "playground" }))).toBe("Playground");
     expect(rowLabel("key", row({ key: null, number: 2 }))).toBe("Key 2");
+    expect(rowLabel("key", row({ key: "source", number: 4 }))).toBe("Source 4");
     expect(rowLabel("project", row({ key: null, number: 3 }))).toBe("Project 3");
     expect(rowLabel("client", row({ key: "" }))).toBe("No user agent");
     expect(rowLabel("route", row({ key: "openai_chat:anthropic_messages:anthropic" }))).toBe("OpenAI Chat Completions to Anthropic Messages at anthropic");

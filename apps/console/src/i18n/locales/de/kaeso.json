@@ -545,6 +545,7 @@
   "kaeso.share.forecast": "Auf dem Weg zu {amount} bei diesem Tempo",
   "kaeso.share.hard": "Anfragen enden, sobald es aufgebraucht ist",
   "kaeso.share.soft": "Warnt nur, sobald es aufgebraucht ist",
+  "kaeso.share.sourceNumber": "Quelle {n}",
   "kaeso.share.never": "Nie",
   "kaeso.share.afterDays": "Nach {count, plural, one {# Tag} other {# Tagen}}",
   "kaeso.share.off": "Diese Organisation erlaubt keine geteilten Links; fragen Sie einen ihrer Admins",

@@ -7,7 +7,8 @@ use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bytes::Bytes;
 use kaeso_core::id::{
-    ApiKeyId, McpServerId, OrgId, PortalGrantId, ProjectId, ServiceAccountId, ToolCallId, UserId,
+    ApiKeyId, McpServerId, OrgId, PortalGrantId, ProjectId, ServiceAccountId, SourceId, ToolCallId,
+    UserId,
 };
 use kaeso_core::rights::ProjectRight;
 use kaeso_store::clickhouse::ClickHouse;
@@ -47,6 +48,8 @@ pub struct ToolCallFilter {
     pub service_account: Option<ServiceAccountId>,
     #[doc = "Only this MCP server's tools."]
     pub server: Option<McpServerId>,
+    #[doc = "Only the calls this source reported."]
+    pub source_id: Option<SourceId>,
     #[doc = "Only this tool, by its name for clients, such as `x__create_post`."]
     pub tool: Option<String>,
     #[doc = "Only calls that went through (`ok`), failed (`error`) or were refused before\n\
@@ -88,6 +91,7 @@ impl ToolCallFilter {
             tool: self.tool.clone(),
             status: self.status.clone(),
             error_type: self.error_type.clone(),
+            source_id: self.source_id.map(|s| s.uuid()),
         })
     }
 }
@@ -106,8 +110,14 @@ pub struct ToolCallView {
     #[doc = "Its name on the server."]
     #[schema(example = "create_post")]
     pub upstream_tool: String,
-    #[doc = "The MCP server."]
-    pub server: McpServerId,
+    #[doc = "The MCP server; `null` for a call a source reported, which names it in\n\
+        `server_name` when it can."]
+    pub server: Option<McpServerId>,
+    #[doc = "The MCP server a source's call named, as the source wrote it; `null` for the\n\
+        portal's own calls and for sources that keep the name hidden."]
+    pub server_name: Option<String>,
+    #[doc = "The source that reported the call; `null` for the portal's own calls."]
+    pub source_id: Option<SourceId>,
     #[doc = "The person or service account the call ran as."]
     pub caller: Party,
     #[doc = "The key it came with, for a key."]
@@ -151,7 +161,9 @@ fn view(r: &ToolCallRow) -> ToolCallView {
         started_at: r.started_at,
         tool: r.tool.clone(),
         upstream_tool: r.upstream_tool.clone(),
-        server: McpServerId::from_uuid(r.server_id),
+        server: (!r.server_id.is_nil()).then(|| McpServerId::from_uuid(r.server_id)),
+        server_name: (!r.server_name.is_empty()).then(|| r.server_name.clone()),
+        source_id: (!r.source_id.is_nil()).then(|| SourceId::from_uuid(r.source_id)),
         caller: Party {
             kind: r.caller_kind.clone(),
             id: Some(caller_id),
@@ -268,7 +280,7 @@ pub async fn get(
     }))
 }
 
-const CSV_HEADER: &str = "id,started_at,tool,upstream_tool,server,caller_kind,caller_id,key_id,grant_id,client,protocol_version,source,status,error_type,error_message,duration_ms,upstream_ms,request_bytes,response_bytes,has_content\n";
+const CSV_HEADER: &str = "id,started_at,tool,upstream_tool,server,server_name,caller_kind,caller_id,key_id,grant_id,client,protocol_version,source,status,error_type,error_message,duration_ms,upstream_ms,request_bytes,response_bytes,has_content\n";
 
 fn csv_line(v: &ToolCallView) -> String {
     let text = |s: &str| csv_text(s);
@@ -278,7 +290,8 @@ fn csv_line(v: &ToolCallView) -> String {
         text(&v.started_at.format(&Rfc3339).unwrap_or_default()),
         text(&v.tool),
         text(&v.upstream_tool),
-        text(&v.server.to_string()),
+        text(&v.server.map(|s| s.to_string()).unwrap_or_default()),
+        text(v.server_name.as_deref().unwrap_or_default()),
         text(&v.caller.kind),
         text(v.caller.id.as_deref().unwrap_or_default()),
         text(&v.key_id.map(|k| k.to_string()).unwrap_or_default()),

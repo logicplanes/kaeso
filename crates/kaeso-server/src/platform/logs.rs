@@ -8,7 +8,8 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use bytes::Bytes;
 use kaeso_core::cost::cost_from_raw;
 use kaeso_core::id::{
-    ApiKeyId, CatalogueModelId, GuardrailId, OrgId, ProjectId, RequestId, ServiceAccountId, UserId,
+    ApiKeyId, CatalogueModelId, GuardrailId, OrgId, ProjectId, RequestId, ServiceAccountId,
+    SourceId, UserId,
 };
 use kaeso_core::rights::ProjectRight;
 use kaeso_kpp::DialectId;
@@ -641,8 +642,8 @@ pub struct LogFilter {
     pub from: Option<String>,
     #[doc = "To (exclusive), RFC 3339."]
     pub to: Option<String>,
-    #[doc = "Only this key."]
-    pub key: Option<ApiKeyId>,
+    #[doc = "Only this key's requests, or `source:<id>` for a source's, as usage grouped by `key` names them."]
+    pub key: Option<String>,
     #[doc = "Only this user's requests."]
     pub user: Option<UserId>,
     #[doc = "Only this service account's requests."]
@@ -665,6 +666,8 @@ pub struct LogFilter {
     #[doc = "Only requests from the model API (`api`), the console's\n\
         Playground (`playground`) or reported by a source (`observed`)."]
     pub source: Option<String>,
+    #[doc = "Only requests this source reported."]
+    pub source_id: Option<SourceId>,
     #[doc = "Only requests the app sent in this format."]
     #[param(value_type = Option<super::RequestFormat>)]
     pub ingress_dialect: Option<String>,
@@ -781,6 +784,13 @@ impl ResponseCacheResult {
     }
 }
 
+fn bad_key() -> ApiError {
+    ApiError::invalid(
+        "key",
+        "`key` must be an API key's id or `source:` and a source's id.",
+    )
+}
+
 impl LogFilter {
     fn filter(&self, money: &Money) -> ApiResult<Filter> {
         if let Some(s) = &self.source
@@ -790,6 +800,22 @@ impl LogFilter {
                 "source",
                 "`source` must be `api`, `playground` or `observed`.",
             ));
+        }
+        let (key, key_source) = match self.key.as_deref().map(str::trim) {
+            None => (None, None),
+            Some(k) => match k.strip_prefix("source:") {
+                Some(s) => (
+                    None,
+                    Some(s.parse::<SourceId>().map_err(|_| bad_key())?.uuid()),
+                ),
+                None => (
+                    Some(k.parse::<ApiKeyId>().map_err(|_| bad_key())?.uuid()),
+                    None,
+                ),
+            },
+        };
+        if key_source.is_some() && self.source_id.is_some_and(|s| Some(s.uuid()) != key_source) {
+            return Err(bad_key());
         }
         Ok(Filter {
             from: self
@@ -802,7 +828,7 @@ impl LogFilter {
                 .as_deref()
                 .map(|s| parse_time("to", s))
                 .transpose()?,
-            key: self.key.map(|k| k.uuid()),
+            key,
             principal: self
                 .user
                 .map(|u| u.uuid())
@@ -843,6 +869,7 @@ impl LogFilter {
                 .transpose()?,
             client: self.client.as_deref().map(client_filter).transpose()?,
             guardrail_action: self.guardrail_action.map(|a| a.as_str().to_owned()),
+            source_id: self.source_id.map(|s| s.uuid()).or(key_source),
         })
     }
 }
@@ -974,6 +1001,8 @@ pub struct LogView {
         reported it; Kaeso didn't make it)."]
     #[schema(example = "api")]
     pub source: String,
+    #[doc = "The source that reported an observed request; `null` for the gateway's own."]
+    pub source_id: Option<SourceId>,
     #[doc = "`user` or `service_account`."]
     pub principal_kind: String,
     #[doc = "The user or service account."]
@@ -1259,6 +1288,7 @@ fn view(r: &LogRow) -> LogView {
         overhead_us: r.overhead_us,
         key_id: (!r.key_id.is_nil()).then(|| ApiKeyId::from_uuid(r.key_id)),
         source: r.source.clone(),
+        source_id: (!r.source_id.is_nil()).then(|| SourceId::from_uuid(r.source_id)),
         principal_kind: r.principal_kind.clone(),
         principal_id,
         endpoint: r.endpoint.clone(),

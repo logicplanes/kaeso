@@ -821,7 +821,7 @@ async fn usage_filters_take_the_keys_groupings_return_and_combine_with_any_group
         (
             format!("{p}/usage?group_by=project"),
             "group_by",
-            "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`.",
+            "Use a grouping the usage API lists, such as `day`, `model`, `key` or `source`.",
         ),
         (
             format!("{o}/usage?group_by=hour"),

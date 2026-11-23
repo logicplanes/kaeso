@@ -65,6 +65,12 @@ pub struct LimitView {
     #[doc = "Used in the current period (same unit as `amount`), when known."]
     #[schema(value_type = Option<String>)]
     pub used: Option<String>,
+    #[doc = "The part of `used` that sources reported (same unit), as of the last daily\n\
+        usage Kaeso wrote. Kaeso counts these requests and alerts on them, but can't refuse\n\
+        them: a hard budget used up by them refuses only the gateway's own requests. `null`\n\
+        for rates."]
+    #[schema(value_type = Option<String>)]
+    pub observed: Option<String>,
     #[doc = "When the current period ends; `null` for `total`."]
     #[serde(with = "time::serde::rfc3339::option")]
     pub resets_at: Option<OffsetDateTime>,
@@ -115,17 +121,46 @@ pub(crate) async fn view(
 ) -> ApiResult<LimitView> {
     let l = row.limit()?;
     let money = Money::of(state, l.currency());
-    let used = engine::current(state, project, &l, now)
+    let units = engine::current(state, project, &l, now).await;
+    // The part of `used` that sources reported, in the same units and never more than `used`
+    // (their daily rows can be written a moment after the counter moved). A figure Kaeso can't
+    // read is left out, as `used` is.
+    let observed = if l.kind.is_rate() {
+        None
+    } else {
+        match kaeso_store::pg::limits::used_observed(
+            &state.pg,
+            project,
+            l.subject,
+            l.model,
+            l.period.start(now),
+        )
         .await
-        .map(|units| match l.kind {
-            Kind::SpendBudget => {
-                let usd = kaeso_core::cost::from_nano(units);
-                money
-                    .now(usd)
-                    .map_or_else(|| usd.to_string(), |v| money.text(v))
+        {
+            Ok(part) => {
+                let part = match l.kind {
+                    Kind::SpendBudget => kaeso_core::cost::nano_usd(part.cost),
+                    _ => part.tokens,
+                };
+                Some(units.map_or(part, |u| part.min(u)))
             }
-            _ => units.to_string(),
-        });
+            Err(e) => {
+                tracing::warn!(error = %e, limit = %l.id, "cannot read a limit's observed part");
+                None
+            }
+        }
+    };
+    let text = |units: i64| match l.kind {
+        Kind::SpendBudget => {
+            let usd = kaeso_core::cost::from_nano(units);
+            money
+                .now(usd)
+                .map_or_else(|| usd.to_string(), |v| money.text(v))
+        }
+        _ => units.to_string(),
+    };
+    let used = units.map(text);
+    let observed = observed.map(text);
     Ok(LimitView {
         id: LimitId::from_uuid(l.id),
         level: l.subject.level().as_str(),
@@ -138,6 +173,7 @@ pub(crate) async fn view(
         hard: l.hard,
         alert_thresholds: l.thresholds.clone(),
         used,
+        observed,
         resets_at: if l.period == Period::Minute {
             None
         } else {

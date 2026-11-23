@@ -167,6 +167,8 @@ pub struct Filter {
     pub client: Option<String>,
     /// An action a guardrail took on the request: `allow`, `block` or `replace`.
     pub guardrail_action: Option<String>,
+    /// The source that reported the requests; the nil id for the gateway's own.
+    pub source_id: Option<Uuid>,
 }
 
 /// User-agent prefixes and the client app each names, compared without case. An entry's
@@ -183,6 +185,9 @@ pub const CLIENTS: &[(&str, &str)] = &[
     ("anthropic/js", "anthropic-js"),
     ("ai-sdk/", "ai-sdk"),
     ("curl/", "curl"),
+    ("geminicli", "gemini-cli"),
+    ("antigravity", "antigravity"),
+    ("litellm", "litellm"),
 ];
 
 /// The client a request without a known user agent prefix counts as.
@@ -334,6 +339,10 @@ fn filter_sql(f: &Filter, sql: &mut String, binds: &mut Vec<Bind>) {
     if let Some(s) = &f.source {
         sql.push_str(" AND source = ?");
         binds.push(Bind::Str(s.clone()));
+    }
+    if let Some(s) = f.source_id {
+        sql.push_str(" AND source_id = ?");
+        binds.push(Bind::Uuid(s));
     }
     if let Some(d) = &f.ingress_dialect {
         sql.push_str(" AND ingress_dialect = ?");
@@ -737,6 +746,8 @@ pub enum TimelineGroup {
     Status,
     /// `hit`, `miss` or `bypass`; empty where the response cache was off.
     ResponseCache,
+    /// The source that reported observed requests, the nil id for the gateway's own.
+    Source,
 }
 
 impl TimelineGroup {
@@ -746,7 +757,10 @@ impl TimelineGroup {
             TimelineGroup::Project => "toString(project_id)",
             TimelineGroup::Model => "concat(provider, '/', resolved_model)",
             TimelineGroup::Provider => "provider",
-            TimelineGroup::Key => "toString(key_id)",
+            TimelineGroup::Key => {
+                "if(source_id = toUUID('00000000-0000-0000-0000-000000000000'), toString(key_id), \
+                 concat('source:', toString(source_id)))"
+            }
             TimelineGroup::Member => "concat(principal_kind, ':', toString(principal_id))",
             TimelineGroup::Route => "concat(ingress_dialect, ':', egress_dialect, ':', provider)",
             TimelineGroup::ErrorKind => "error_kind",
@@ -754,6 +768,7 @@ impl TimelineGroup {
             TimelineGroup::Endpoint => "endpoint",
             TimelineGroup::Status => "toString(status)",
             TimelineGroup::ResponseCache => "response_cache",
+            TimelineGroup::Source => "toString(source_id)",
         }
     }
 }
@@ -816,8 +831,14 @@ fn timeline_where(
         }
     }
     if let Some(k) = f.key {
-        sql.push_str(" AND key_id = ?");
+        sql.push_str(
+            " AND key_id = ? AND source_id = toUUID('00000000-0000-0000-0000-000000000000')",
+        );
         binds.push(Bind::Uuid(k));
+    }
+    if let Some(s) = f.source {
+        sql.push_str(" AND source_id = ?");
+        binds.push(Bind::Uuid(s));
     }
     if let Some(m) = f.member {
         let (kind, id) = match m {
@@ -934,6 +955,9 @@ mod client_tests {
                 "anthropic-js",
                 "ai-sdk",
                 "curl",
+                "gemini-cli",
+                "antigravity",
+                "litellm",
                 "other"
             ]
         );

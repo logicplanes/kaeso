@@ -1,5 +1,7 @@
 {
+  "project.analytics.aSource": "某个来源",
   "project.analytics.overview": "概览",
+  "project.analytics.sourceKey": "{name}（来源）",
   "project.analytics.title": "分析",
   "project.analytics.views": "分析视图",
   "project.auditLog.title": "审计日志",

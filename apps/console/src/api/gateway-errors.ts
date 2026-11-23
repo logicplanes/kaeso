@@ -330,8 +330,9 @@ const messages = (): Rule[] => [
   rule("errors.exportContentRight", () => t("errors.exportContentRight", "Exporting content needs the right `logs.content.view`.")),
   rule("errors.usageGroupValues", () => t("errors.usageGroupValues", "Use `project`, `billed_to` or what a project's usage groups by, such as `day`.")),
   rule("errors.usageGroupValuesProject", () =>
-    t("errors.usageGroupValuesProject", "Use `day`, `week`, `month`, `model`, `provider`, `key`, `member`, `route` or `billed_to`."),
+    t("errors.usageGroupValuesProject", "Use a grouping the usage API lists, such as `day`, `model`, `key` or `source`."),
   ),
+  rule("errors.logKeyFilter", () => t("errors.logKeyFilter", "`key` must be an API key's id or `source:` and a source's id.")),
   rule("errors.usageFilterKey", (v) => t("errors.usageFilterKey", "`{name}` must be a `key` that grouping by `{name}` returns.", v)),
   rule("errors.usageByDayRange", () => t("errors.usageByDayRange", "By day, `from` and `to` are at most 400 days apart; use `week` or `month`.")),
   rule("errors.timelineStepValues", () => t("errors.timelineStepValues", "Use `minute` or `hour`.")),

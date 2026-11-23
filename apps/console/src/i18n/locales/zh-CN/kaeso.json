@@ -545,6 +545,7 @@
   "kaeso.share.forecast": "按此速度将达到 {amount}",
   "kaeso.share.hard": "用完后请求会被拒绝",
   "kaeso.share.soft": "用完后仅发出提醒",
+  "kaeso.share.sourceNumber": "来源 {n}",
   "kaeso.share.never": "永不",
   "kaeso.share.afterDays": "{count, plural, other {# 天后}}",
   "kaeso.share.off": "此组织不允许共享链接；请联系其管理员",

@@ -267,10 +267,32 @@ async fn members(
     Ok(found)
 }
 
+/// Whether the source's own member still sees its project, or its service account is still an
+/// active one of the project: who its records count for when no email address names a member.
+async fn owner_counts(state: &AppState, source: &Source) -> Result<bool, StoreError> {
+    if let Some(user) = source.user_id {
+        return sees_project(state, source.org_id, source.project_id, user).await;
+    }
+    if let Some(account) = source.service_account_id {
+        let found =
+            kaeso_store::pg::service_accounts::get(&state.pg, source.project_id, account).await?;
+        return Ok(found.is_some_and(|a| a.archived_at.is_none()));
+    }
+    Ok(false)
+}
+
 /// Whom a record counts for: the member its email address names, else the source's member or
-/// service account; none when the source counts for nobody any more.
-fn caller(source: &Source, members: &HashMap<String, Uuid>, email: Option<&str>) -> Option<Caller> {
+/// service account while it still counts; none when the source counts for nobody.
+fn caller(
+    source: &Source,
+    members: &HashMap<String, Uuid>,
+    owner_counts: bool,
+    email: Option<&str>,
+) -> Option<Caller> {
     let matched = email.and_then(|e| members.get(&e.to_lowercase()).copied());
+    if matched.is_none() && !owner_counts {
+        return None;
+    }
     let (user, service_account) = match (matched, source.user_id, source.service_account_id) {
         (Some(u), _, _) | (None, Some(u), _) => (Some(u), None),
         (None, None, Some(s)) => (None, Some(s)),
@@ -481,6 +503,7 @@ pub async fn record(
     // Everything that can fail runs before the records are marked as seen: an exporter whose
     // batch failed sends it again, and must not find its records taken for duplicates.
     let people = members(state, source, emails).await?;
+    let owner = owner_counts(state, source).await?;
     let request_ids: Vec<Uuid> = batch
         .requests
         .iter()
@@ -506,7 +529,7 @@ pub async fn record(
             out.duplicates += 1;
             continue;
         }
-        let Some(who) = caller(source, &people, r.email.as_deref()) else {
+        let Some(who) = caller(source, &people, owner, r.email.as_deref()) else {
             out.refused += 1;
             out.refusal = Some(Refusal::Nobody);
             continue;
@@ -519,7 +542,7 @@ pub async fn record(
             out.duplicates += 1;
             continue;
         }
-        let Some(who) = caller(source, &people, c.email.as_deref()) else {
+        let Some(who) = caller(source, &people, owner, c.email.as_deref()) else {
             out.refused += 1;
             out.refusal = Some(Refusal::Nobody);
             continue;

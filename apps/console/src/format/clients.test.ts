@@ -37,6 +37,9 @@ describe("client apps", () => {
       "Anthropic Node.js SDK",
       "AI SDK",
       "curl",
+      "Gemini CLI",
+      "Antigravity",
+      "LiteLLM",
       "Other client",
     ]);
     expect([clientLabel(""), clientLabel("vim")]).toEqual(["No user agent", "vim"]);

@@ -365,6 +365,39 @@ pub async fn used(
     })
 }
 
+/// The part of [`used`] that sources reported, which Kaeso counts but can't refuse.
+pub async fn used_observed(
+    db: impl PgExecutor<'_>,
+    project_id: Uuid,
+    subject: Subject,
+    model: Option<Uuid>,
+    since: Option<Date>,
+) -> Result<Used, StoreError> {
+    let (level, user, account, key) = subject_columns(subject);
+    let r = sqlx::query!(
+        "SELECT coalesce(sum(input_tokens + output_tokens + cache_read_tokens + cache_write_tokens), 0)::bigint AS \"tokens!\", \
+           coalesce(sum(cost), 0) AS \"cost!\", coalesce(sum(requests - errors), 0)::bigint AS \"succeeded!\" FROM usage_daily WHERE project_id = $1 \
+           AND source_id IS NOT NULL \
+           AND ($2 <> 'member' OR user_id IS NOT DISTINCT FROM $3 AND service_account_id IS NOT DISTINCT FROM $4) \
+           AND ($5::uuid IS NULL OR api_key_id = $5) AND ($6::uuid IS NULL OR catalogue_model_id = $6) \
+           AND ($7::date IS NULL OR day >= $7)",
+        project_id,
+        level,
+        user,
+        account,
+        key,
+        model,
+        since
+    )
+    .fetch_one(db)
+    .await?;
+    Ok(Used {
+        tokens: r.tokens,
+        cost: r.cost,
+        succeeded: r.succeeded,
+    })
+}
+
 pub async fn mark_alert(
     db: impl PgExecutor<'_>,
     limit_id: Uuid,

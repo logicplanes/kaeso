@@ -12,6 +12,9 @@ export const CLIENT_IDS: readonly ClientApp[] = [
   "anthropic-js",
   "ai-sdk",
   "curl",
+  "gemini-cli",
+  "antigravity",
+  "litellm",
   "other",
 ];
 
@@ -24,6 +27,9 @@ const NAMES: Record<string, string> = {
   "anthropic-js": "Anthropic Node.js SDK",
   "ai-sdk": "AI SDK",
   curl: "curl",
+  "gemini-cli": "Gemini CLI",
+  antigravity: "Antigravity",
+  litellm: "LiteLLM",
 };
 
 /** A client app by its product name; requests without a user agent have none. */

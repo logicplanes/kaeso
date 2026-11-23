@@ -17259,10 +17259,10 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key.",
+            "description": "Only this key's requests, or `source:<id>` for a source's, as usage grouped by `key` names them.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ApiKeyId"
+              "type": "string"
             }
           },
           {
@@ -17346,6 +17346,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "query",
+            "description": "Only requests this source reported.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
             }
           },
           {
@@ -17574,10 +17583,10 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key.",
+            "description": "Only this key's requests, or `source:<id>` for a source's, as usage grouped by `key` names them.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ApiKeyId"
+              "type": "string"
             }
           },
           {
@@ -17661,6 +17670,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "query",
+            "description": "Only requests this source reported.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
             }
           },
           {
@@ -17896,10 +17914,10 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key.",
+            "description": "Only this key's requests, or `source:<id>` for a source's, as usage grouped by `key` names them.",
             "required": false,
             "schema": {
-              "$ref": "#/components/schemas/ApiKeyId"
+              "type": "string"
             }
           },
           {
@@ -17983,6 +18001,15 @@
             "required": false,
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "query",
+            "description": "Only requests this source reported.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
             }
           },
           {
@@ -18414,6 +18441,15 @@
             }
           },
           {
+            "name": "source_id",
+            "in": "query",
+            "description": "Only the calls this source reported.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
+            }
+          },
+          {
             "name": "tool",
             "in": "query",
             "description": "Only this tool, by its name for clients, such as `x__create_post`.",
@@ -18585,6 +18621,15 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/McpServerId"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "query",
+            "description": "Only the calls this source reported.",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/SourceId"
             }
           },
           {
@@ -24630,7 +24675,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, `billed_to` (the provider key that paid, `none` for requests no\nprovider was sent), or for orgs `project`. A week or month that starts\nbefore `from` or ends after `to` counts only the days in the period.",
+            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, `billed_to` (the provider key that paid, `none` for requests no\nprovider was sent), `source` (the source that reported observed requests,\n`gateway` for the gateway's own), or for orgs `project`. By `key`, a source's\nrequests group as `source:<id>`. A week or month that starts\nbefore `from` or ends after `to` counts only the days in the period.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24657,7 +24702,7 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key: a key id, or `playground` for the requests members made\nin the console's Playground.",
+            "description": "Only this key: a key id, `playground` for the requests members made\nin the console's Playground, or `source:<id>` for a source's requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24685,6 +24730,15 @@
             "name": "billed_to",
             "in": "query",
             "description": "Only the requests this provider key paid for, as grouping by `billed_to`\nnames it: a provider key id, or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Only the requests this source reported, as grouping by `source` names it: a\nsource id, or `gateway` for the gateway's own requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24870,7 +24924,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), `alias`\n(empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n`response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\nfor orgs `project`; default one bucket per step. The request log filters\n`status` and `response_cache` narrow a bucket down to its requests.",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), `alias`\n(empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n`response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off),\n`source` (`gateway` for the gateway's own requests), or for orgs `project`;\ndefault one bucket per step. The request log filters\n`status` and `response_cache` narrow a bucket down to its requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24918,7 +24972,7 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key: a key id, or `playground` for the requests members made\nin the console's Playground.",
+            "description": "Only this key: a key id, `playground` for the requests members made\nin the console's Playground, or `source:<id>` for a source's requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -24946,6 +25000,15 @@
             "name": "billed_to",
             "in": "query",
             "description": "Only the requests this provider key paid for, as grouping by `billed_to`\nnames it: a provider key id, or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Only the requests this source reported, as grouping by `source` names it: a\nsource id, or `gateway` for the gateway's own requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -27307,7 +27370,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, `billed_to` (the provider key that paid, `none` for requests no\nprovider was sent), or for orgs `project`. A week or month that starts\nbefore `from` or ends after `to` counts only the days in the period.",
+            "description": "`day` (default), `week` (Monday to Sunday, named by its Monday),\n`month` (named by its first day), `model`, `provider`, `key`, `member`,\n`route`, `billed_to` (the provider key that paid, `none` for requests no\nprovider was sent), `source` (the source that reported observed requests,\n`gateway` for the gateway's own), or for orgs `project`. By `key`, a source's\nrequests group as `source:<id>`. A week or month that starts\nbefore `from` or ends after `to` counts only the days in the period.",
             "required": false,
             "schema": {
               "type": "string"
@@ -27334,7 +27397,7 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key: a key id, or `playground` for the requests members made\nin the console's Playground.",
+            "description": "Only this key: a key id, `playground` for the requests members made\nin the console's Playground, or `source:<id>` for a source's requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -27362,6 +27425,15 @@
             "name": "billed_to",
             "in": "query",
             "description": "Only the requests this provider key paid for, as grouping by `billed_to`\nnames it: a provider key id, or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Only the requests this source reported, as grouping by `source` names it: a\nsource id, or `gateway` for the gateway's own requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -27540,7 +27612,7 @@
           {
             "name": "group_by",
             "in": "query",
-            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), `alias`\n(empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n`response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off), or\nfor orgs `project`; default one bucket per step. The request log filters\n`status` and `response_cache` narrow a bucket down to its requests.",
+            "description": "A bucket per step and `model`, `provider`, `key`, `member`, `route`,\n`error_kind` (the request log's, empty for requests that succeeded),\n`client` (the client app the user agent names, empty without one), `alias`\n(empty for requests that named a model), `endpoint`, `status` (the HTTP status),\n`response_cache` (`hit`, `miss` or `bypass`, empty where the cache was off),\n`source` (`gateway` for the gateway's own requests), or for orgs `project`;\ndefault one bucket per step. The request log filters\n`status` and `response_cache` narrow a bucket down to its requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -27588,7 +27660,7 @@
           {
             "name": "key",
             "in": "query",
-            "description": "Only this key: a key id, or `playground` for the requests members made\nin the console's Playground.",
+            "description": "Only this key: a key id, `playground` for the requests members made\nin the console's Playground, or `source:<id>` for a source's requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -27616,6 +27688,15 @@
             "name": "billed_to",
             "in": "query",
             "description": "Only the requests this provider key paid for, as grouping by `billed_to`\nnames it: a provider key id, or `none`.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Only the requests this source reported, as grouping by `source` names it: a\nsource id, or `gateway` for the gateway's own requests.",
             "required": false,
             "schema": {
               "type": "string"
@@ -29827,6 +29908,9 @@
           "anthropic-js",
           "ai-sdk",
           "curl",
+          "gemini-cli",
+          "antigravity",
+          "litellm",
           "other"
         ],
         "examples": [
@@ -35022,6 +35106,13 @@
               }
             ]
           },
+          "observed": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The part of `used` that sources reported (same unit), as of the last daily\nusage Kaeso wrote. Kaeso counts these requests and alerts on them, but can't refuse\nthem: a hard budget used up by them refuses only the gateway's own requests. `null`\nfor rates."
+          },
           "period": {
             "type": "string",
             "description": "`minute` (rates), `day`, `month` or `total` (budgets; UTC calendar periods)."
@@ -36885,6 +36976,13 @@
                     }
                   ]
                 },
+                "observed": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The part of `used` that sources reported (same unit), as of the last daily\nusage Kaeso wrote. Kaeso counts these requests and alerts on them, but can't refuse\nthem: a hard budget used up by them refuses only the gateway's own requests. `null`\nfor rates."
+                },
                 "period": {
                   "type": "string",
                   "description": "`minute` (rates), `day`, `month` or `total` (budgets; UTC calendar periods)."
@@ -37283,6 +37381,17 @@
                   "type": "string",
                   "description": "Where the request came from: `api` (the model API, with a key),\n`playground` (the console's Playground, as the member) or `observed` (a source\nreported it; Kaeso didn't make it).",
                   "example": "api"
+                },
+                "source_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SourceId",
+                      "description": "The source that reported an observed request; `null` for the gateway's own."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "started_at": {
                   "type": "string",
@@ -39536,7 +39645,6 @@
                 "started_at",
                 "tool",
                 "upstream_tool",
-                "server",
                 "caller",
                 "client",
                 "protocol_version",
@@ -39621,12 +39729,37 @@
                   "minimum": 0
                 },
                 "server": {
-                  "$ref": "#/components/schemas/McpServerId",
-                  "description": "The MCP server."
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/McpServerId",
+                      "description": "The MCP server; `null` for a call a source reported, which names it in\n`server_name` when it can."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "server_name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The MCP server a source's call named, as the source wrote it; `null` for the\nportal's own calls and for sources that keep the name hidden."
                 },
                 "source": {
                   "type": "string",
                   "description": "`portal`, `playground`, or `observed` for a call a source reported."
+                },
+                "source_id": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SourceId",
+                      "description": "The source that reported the call; `null` for the portal's own calls."
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "started_at": {
                   "type": "string",
@@ -40503,6 +40636,17 @@
             "type": "string",
             "description": "Where the request came from: `api` (the model API, with a key),\n`playground` (the console's Playground, as the member) or `observed` (a source\nreported it; Kaeso didn't make it).",
             "example": "api"
+          },
+          "source_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SourceId",
+                "description": "The source that reported an observed request; `null` for the gateway's own."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "started_at": {
             "type": "string",
@@ -49563,7 +49707,6 @@
           "started_at",
           "tool",
           "upstream_tool",
-          "server",
           "caller",
           "client",
           "protocol_version",
@@ -49648,12 +49791,37 @@
             "minimum": 0
           },
           "server": {
-            "$ref": "#/components/schemas/McpServerId",
-            "description": "The MCP server."
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/McpServerId",
+                "description": "The MCP server; `null` for a call a source reported, which names it in\n`server_name` when it can."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "server_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The MCP server a source's call named, as the source wrote it; `null` for the\nportal's own calls and for sources that keep the name hidden."
           },
           "source": {
             "type": "string",
             "description": "`portal`, `playground`, or `observed` for a call a source reported."
+          },
+          "source_id": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SourceId",
+                "description": "The source that reported the call; `null` for the portal's own calls."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "started_at": {
             "type": "string",

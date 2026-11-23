@@ -537,6 +537,7 @@
   "kaeso.share.snapshot": "Snapshot: this period, as it is now",
   "kaeso.share.snapshotBadge": "Snapshot",
   "kaeso.share.soft": "Only alerts once it's used up",
+  "kaeso.share.sourceNumber": "Source {n}",
   "kaeso.share.thisPeriod": "This period",
   "kaeso.share.title": "Share a read-only link",
   "kaeso.share.titleBudget": "{scope} budgets",
