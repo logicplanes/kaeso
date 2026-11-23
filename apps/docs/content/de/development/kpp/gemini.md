@@ -44,7 +44,7 @@ Schema `GenerateContentRequest`.
 | Wire-Feld | KPP | Anmerkungen |
 |---|---|---|
 | `contents[]` (`Content`) | `messages[]` | Eine Nachricht pro Content; aufeinanderfolgende Contents derselben Rolle bleiben wie geschrieben. Unbekannte Schlüssel → Felder der Nachricht. |
-| `contents[].role` `user` / `model` | `Role::User` / `Role::Assistant` | Fehlt → `Role::User`, Form `role: "absent"`. Jede andere Rolle → eine Nutzernachricht, die den ganzen Content als einen unbekannten Block hält und über Dialekte hinweg als `` `<role>` message `` abgelehnt wird ([Anfragen](cross-format.md#anfragen)). Gemini beantwortete einen Content mit der Rolle `assistant` (`requests/role-assistant.json`). |
+| `contents[].role` `user` / `model` | `Role::User` / `Role::Assistant` | Fehlt → `Role::User`, Form `role: null`. Ein Content, dessen Parts alle `functionResponse` sind, wird unabhängig von seiner Rolle als `Role::User` dekodiert (Form `role` behält die Wire-Rolle für Gemini, wie `google.golang.org/genai` `role: "model"` sendet, `requests/tool-result-role-model.json`). Jede andere Rolle → eine Nutzernachricht, die den ganzen Content als einen unbekannten Block hält und über Dialekte hinweg als `` `<role>` message `` abgelehnt wird ([Anfragen](cross-format.md#anfragen)). Gemini beantwortete einen Content mit der Rolle `assistant` (`requests/role-assistant.json`). |
 | `systemInstruction` | `system` | Seine Parts als Blöcke; `role` → Form `systemInstruction.role`; unbekannte Schlüssel → Felder `systemInstruction.*`. Die Systemanweisung hält nur Text, daher ist ein fremder Systemblock ohne Text `Unsupported`. |
 | `tools[]` nur mit `functionDeclarations` | `tools[]` als `ToolDef::Function` | Der Index des Tools jeder Deklaration → Form `group`, damit eine Kodierung im selben Dialekt die Gruppierung behält. Fremde Tools kommen in ein Tool. |
 | `tools[]` mit einem anderen Schlüssel (`googleSearch`, `urlContext`, `codeExecution`, `googleMaps`, `fileSearch`, `computerUse`, `mcpServers`, `googleSearchRetrieval`) oder mit leeren `functionDeclarations` | `ToolDef::Unknown` (roh) | Über Dialekte hinweg abgelehnt. |
@@ -201,7 +201,7 @@ Eine Zählung aus einem anderen Dialekt mit Systemprompt oder Tools geht als `ge
 - **Zurückspielen im selben Dialekt.** Das erste Event jedes Chunks trägt die Form-Markierung `chunk`: den Chunk ohne seine Parts, seinen Finish-Grund und seine letzte Nutzung. Der Encoder setzt sie wieder ein, sodass jeder Chunk wie empfangen herauskommt.
 - **Andere Dialekte** bekommen einen Chunk pro Text-Delta, einen pro Funktionsaufruf und einen letzten Chunk mit leerem Text-Part, `finishReason` und `usageMetadata`.
 - **Fehler.** Eine `data:`-Zeile mit einem `error`-Objekt ist ein Fehler-Event; der Encoder schreibt Fehler genauso.
-- **Keepalives.** Eine Leerzeile ([Keepalives](cross-format.md#keepalives)). Das SDK `google-genai` liest jede Zeile, die nicht mit `data: ` beginnt, als JSON, ein Kommentar würde es also brechen.
+- **Keepalives.** Zwei Zeilenumbrüche (`\n\n`, [Keepalives](cross-format.md#keepalives)). Das Python-SDK `google-genai` liest jede Zeile ohne `data: ` als JSON, sodass ein Kommentar es bricht; die Go- (`google.golang.org/genai`) und JS-SDKs (`@google/genai`) teilen Chunks an `\n\n`, sodass ein einzelner Umbruch an der nächsten `data: `-Zeile hängen bliebe.
 - Kommentare, benannte Events und Frames, die keine JSON-Objekte sind, gehen als `Extra` durch.
 
 ## Fehler
