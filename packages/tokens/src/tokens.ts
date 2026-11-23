@@ -119,6 +119,8 @@ export const providerMark = {
   "togetherai-lavender": mode("#a488cd", "#caaef5"),
   "togetherai-orange": mode("#fc4c02", "#fc4c02"),
   openrouter: mode("#03080a", "#fcfcfe"),
+  "claude-code": mode("#c15f3c", "#d97757"),
+  opentelemetry: mode("#425cc7", "#7b8fe6"),
   "mistral-yellow": mode("#ffaf01", "#ffaf01"),
   "mistral-amber": mode("#ff8204", "#ff8204"),
   "mistral-orange": mode("#fa500f", "#fa500f"),

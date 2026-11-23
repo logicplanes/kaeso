@@ -11,6 +11,21 @@ describe("SourceBadge", () => {
     expect(tile).toHaveClass("size-20");
   });
 
+  it("draws each client's mark in its maker's colour", () => {
+    const colour = (kind: string) => {
+      const { container, unmount } = render(<SourceBadge kind={kind} />);
+      const svg = container.querySelector("svg");
+      unmount();
+      return [...(svg?.classList ?? [])].find((c) => c.startsWith("text-"));
+    };
+    expect(colour("claude_code")).toBe("text-mark-claude-code");
+    expect(colour("gemini_cli")).toBe("text-mark-gemini-agent-platform-blue");
+    expect(colour("antigravity")).toBe("text-mark-gemini-agent-platform-blue");
+    expect(colour("opentelemetry")).toBe("text-mark-opentelemetry");
+    expect(colour("openrouter")).toBe("text-mark-openrouter");
+    expect(colour("codex")).toBe("text-fg");
+  });
+
   it("shows its name beside the tile, which then hides from assistive technology", () => {
     render(<SourceBadge kind="codex" name="Codex, build server" withName size="sm" />);
     expect(screen.getByText("Codex, build server")).toBeInTheDocument();

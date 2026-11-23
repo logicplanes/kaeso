@@ -16,9 +16,8 @@ export const KAESO_SOURCE_BADGE_VARIANTS = {
 export const KAESO_SOURCE_BADGE_DEFAULT_VARIANTS = { size: "md" } as const;
 
 /**
- * The marks of the clients and gateways that report to Kaeso as sources, on a 24px grid, drawn
- * in the text colour. OpenRouter's is its provider mark; LiteLLM publishes no vector mark and
- * HTTP is no product, so both show an icon.
+ * The marks of the clients and gateways that report to Kaeso as sources, on a 24px grid. OpenRouter's
+ * is its provider mark; LiteLLM publishes no vector mark and HTTP is no product, so both show an icon.
  */
 export const SOURCE_MARKS: Readonly<Record<string, string>> = {
   claude_code:
@@ -33,6 +32,19 @@ export const SOURCE_MARKS: Readonly<Record<string, string>> = {
     "M12.6974 13.1173c-1.0224 1.0224-1.0224 2.68 0 3.7024 1.0224 1.0224 2.68 1.0224 3.7024 0 1.0224-1.0223 1.0224-2.68 0-3.7024-1.0223-1.0223-2.68-1.0223-3.7024 0zm2.7677 2.7701c-.5063.5063-1.3267.5063-1.833 0s-.5063-1.3266 0-1.833c.5063-.5062 1.3267-.5062 1.833 0 .5063.504.5063 1.3267 0 1.833zM16.356.2355l-1.6041 1.6042c-.314.314-.314.83 0 1.144L21.015 9.247c.314.314.83.314 1.144 0l1.6042-1.6041c.314-.314.314-.83 0-1.144L17.4976.2354c-.314-.314-.8276-.314-1.1416 0zM5.1173 20.734c.2848-.2848.2848-.7497 0-1.0345l-.8155-.8155c-.2848-.2848-.7497-.2848-1.0345 0l-1.6845 1.6845-.0024.0024-.4625-.4625c-.2556-.2556-.6718-.2556-.925 0-.2556.2556-.2556.6718 0 .925l2.775 2.775c.2556.2556.6718.2556.925 0 .2532-.2556.2556-.6718 0-.925l-.4625-.4625.0024-.0024zm8.4856-15.893-3.5637 3.5637c-.3164.3164-.3164.8374 0 1.1538l2.2006 2.2005c1.5554-1.1197 3.7365-.981 5.1361.4187l1.7819-1.7818c.3164-.3165.3164-.8374 0-1.1538l-4.401-4.401c-.3165-.319-.8374-.319-1.1539 0zm-2.2881 7.8455-1.2999-1.2999c-.3043-.3043-.8033-.3043-1.1076 0l-4.5836 4.586c-.3042.3043-.3042.8033 0 1.1076l2.5973 2.5973c.3043.3043.8033.3043 1.1076 0l2.9478-2.9527c-.6231-1.2877-.5112-2.8431.3384-4.0383z",
   openrouter:
     "M18.376 3.806c2.693 0 4.876 2.201 4.876 4.917s-2.183 4.916-4.876 4.916l4.836 4.876c.615.62.18 1.679-.689 1.679H8.626C4.138 20.194.5 16.525.5 12s3.638-8.194 8.126-8.194zm-9.75 3.278c-2.693 0-4.876 2.2-4.876 4.916 0 2.715 2.183 4.916 4.876 4.916 2.692 0 4.875-2.2 4.875-4.916 0-2.715-2.183-4.916-4.875-4.916",
+};
+
+/**
+ * Each mark's colour, as its maker shows it: Claude's orange for Claude Code, Gemini's blue for
+ * Gemini CLI and Antigravity, OpenTelemetry's blue; Codex and OpenRouter in their black and white.
+ */
+export const SOURCE_MARK_COLORS: Readonly<Record<string, string>> = {
+  claude_code: "text-mark-claude-code",
+  codex: "text-fg",
+  gemini_cli: "text-mark-gemini-agent-platform-blue",
+  antigravity: "text-mark-gemini-agent-platform-blue",
+  opentelemetry: "text-mark-opentelemetry",
+  openrouter: "text-mark-openrouter",
 };
 
 const SOURCE_ICONS: Readonly<Record<string, IconData>> = {
@@ -67,7 +79,7 @@ export interface SourceBadgeProps {
   className?: string | undefined;
 }
 
-/** A source's client as a tile the size of a provider's, with its mark in the text colour, and its name beside it. */
+/** A source's client as a tile the size of a provider's, with its mark in its maker's colour, and its name beside it. */
 export const SourceBadge = forwardRef<HTMLSpanElement, SourceBadgeProps>(function SourceBadge(
   { kind, name, size = "md", withName, decorative, className },
   ref,
@@ -82,7 +94,7 @@ export const SourceBadge = forwardRef<HTMLSpanElement, SourceBadgeProps>(functio
       className={cn("inline-flex shrink-0 items-center justify-center bg-raised text-fg shadow-ring", KAESO_SOURCE_BADGE_VARIANTS.size[size].classes)}
     >
       {mark ? (
-        <MarkGlyph mark={{ d: mark, color: "text-fg" }} className={MARK_SIZE[size]} />
+        <MarkGlyph mark={{ d: mark, color: SOURCE_MARK_COLORS[kind] ?? "text-fg" }} className={cn(MARK_SIZE[size], SOURCE_MARK_COLORS[kind] ?? "text-fg")} />
       ) : (
         <Icon icon={SOURCE_ICONS[kind] ?? icons.source} className={MARK_SIZE[size]} />
       )}

@@ -5,6 +5,7 @@ import { KeyDisplay, ModelLabel, ProviderBadge, StatusCode, KAESO_IDENTITY_VARIA
 import { providerMark } from "@logicplanes/kaeso-tokens";
 import { PROVIDER_MARKS, type ProviderMark, type ProviderMarkPart } from "./provider-marks.js";
 import { VENDOR_MARKS } from "./vendor-marks.js";
+import { SOURCE_MARK_COLORS } from "./source-badge.js";
 import { Slider } from "../slider/slider.js";
 import { icons } from "../../icons/vocabulary.js";
 import { LocaleProvider, loadUiMessages } from "../../i18n/index.js";
@@ -427,6 +428,12 @@ describe("provider marks", () => {
         expect(providerMark, id).toHaveProperty(token);
         used.add(token);
       }
+    }
+    for (const cls of Object.values(SOURCE_MARK_COLORS)) {
+      if (cls === "text-fg") continue;
+      const token = cls.replace(/^text-mark-/, "");
+      expect(providerMark, cls).toHaveProperty(token);
+      used.add(token);
     }
     expect([...used].sort()).toEqual(Object.keys(providerMark).sort());
     expect(providerMark.openrouter).toEqual({ light: "#03080a", dark: "#fcfcfe" });
